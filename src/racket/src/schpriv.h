@@ -3659,6 +3659,10 @@ int scheme_can_inline_fp_comp();
 # define scheme_can_inline_fp_comp() 0
 #endif
 
+/* To suppress compiler warnings when it's difficult to avoid them otherwise: */
+void scheme_unused_object(Scheme_Object*);
+void scheme_unused_intptr(intptr_t);
+
 /*========================================================================*/
 /*                           places                                       */
 /*========================================================================*/

@@ -237,7 +237,7 @@ static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t add
   /* If MZ_PRECISE_GC, then offset and addr are not used. */
 {
   int i, m, j;
-  void *p, *val, **subt;
+  void *val, **subt;
 
   /* Note: this function might be called  (via a GC callback)
      while add_symbol is running. */
@@ -250,7 +250,7 @@ static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t add
 	/* GCable pointer starts here */
 #ifndef MZ_PRECISE_GC
 	/* Conservative GC: GCable flag means use GC_is_marked */
-	p = (void *)(addr + ((uintptr_t)i << offset));
+	void *p = (void *)(addr + ((uintptr_t)i << offset));
 	if (!GC_is_marked(p))
 	  clearing = 1;
 #else

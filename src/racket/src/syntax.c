@@ -4283,7 +4283,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
   WRAP_POS wraps;
   Scheme_Object *result;
   int is_in_module = 0, skip_other_mods = 0, sealed = STX_SEAL_ALL, floating_checked = 0;
-  int no_lexical = !free_id_recur, unsealed_reason = 0;
+  int no_lexical = !free_id_recur;
   Scheme_Object *phase = orig_phase;
   Scheme_Object *bdg = NULL, *floating = NULL;
 
@@ -4309,9 +4309,9 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	result = SCHEME_STX_VAL(a);
 
 #if 0
-      printf("%p %p %s (%d) %d %p %d\n", 
+      printf("%p %p %s (%d) %d %p\n", 
              a, orig_phase, SCHEME_SYMBOLP(result) ? SCHEME_SYM_VAL(result) : "!?", 
-             can_cache, sealed, free_id_recur, unsealed_reason);
+             can_cache, sealed, free_id_recur);
 #endif 
 
       if (can_cache && SAME_OBJ(orig_phase, scheme_make_integer(0)))
@@ -4333,10 +4333,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
         
         if ((!is_in_module || (mrns->kind != mzMOD_RENAME_TOPLEVEL))
             && !skip_other_mods) {
-          if (mrns->sealed < sealed) {
+          if (mrns->sealed < sealed)
             sealed = mrns->sealed;
-            unsealed_reason = 2;
-          }
         }
 
         mrn = extract_renames(mrns, phase);
@@ -4351,10 +4349,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	  /* Module rename: */
 	  Scheme_Object *rename, *glob_id;
 
-          if (mrn->sealed < sealed) {
+          if (mrn->sealed < sealed)
             sealed = mrn->sealed;
-            unsealed_reason = 3;
-          }
           
 	  if (mrn->needs_unmarshal) {
 	    /* Use resolve_env to trigger unmarshal, so that we
@@ -4394,10 +4390,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
                                                       rename,
                                                       &sd,
                                                       free_id_recur);
-              if (!sd) {
+              if (!sd)
                 sealed = 0;
-                unsealed_reason = 4;
-              }
             }
           } else
             rename = NULL;
@@ -4467,7 +4461,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 
       do {
         if (rib) {
-          if (!*rib->sealed) { sealed = 0; unsealed_reason = 1; }
+          if (!*rib->sealed) sealed = 0;
           rename = rib->rename;
           rib = rib->next;
         }
@@ -4515,10 +4509,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
                 names[6] = NULL;
 
                 modname = resolve_env(a, orig_phase, 1, names, NULL, NULL, &rib_dep, 0, free_id_recur);
-                if (rib_dep) {
+                if (rib_dep)
                   sealed = 0;
-                  unsealed_reason = 5;
-                }
 
                 if (!SCHEME_FALSEP(modname)
                     && !SAME_OBJ(names[0], scheme_undefined)) {

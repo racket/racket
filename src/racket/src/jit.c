@@ -1118,8 +1118,7 @@ static int generate_closure(Scheme_Closure_Data *data,
                             int immediately_filled)
 {
   Scheme_Native_Closure_Data *code;
-  int retptr;
-  
+
   ensure_closure_native(data, NULL);
   code = data->u.native_code;
 
@@ -1156,8 +1155,7 @@ static int generate_closure(Scheme_Closure_Data *data,
         jit_movi_l(JIT_R1, init_word);
         jit_str_l(JIT_R0, JIT_R1); 
       }
-    retptr = mz_retain(code);
-    scheme_mz_load_retained(jitter, JIT_R1, retptr);
+    scheme_mz_load_retained(jitter, JIT_R1, code);
     jit_stxi_p((intptr_t)&((Scheme_Native_Closure *)0x0)->code, JIT_R0, JIT_R1);
 
     return 1;
@@ -1167,12 +1165,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
 
   mz_prepare(1);
-  retptr = mz_retain(code);
-#ifdef JIT_PRECISE_GC
-  scheme_mz_load_retained(jitter, JIT_R0, retptr);
-#else
-  (void)jit_patchable_movi_p(JIT_R0, code); /* !! */
-#endif
+  scheme_mz_load_retained(jitter, JIT_R0, code);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr;
@@ -1295,7 +1288,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
   Scheme_Native_Closure_Data *ndata;
   Scheme_Closure_Data *data;
   Scheme_Object *o;
-  int i, offset, count, retptr;
+  int i, offset, count;
 
   ensure_case_closure_native(c);
   ndata = c->native_code;
@@ -1304,12 +1297,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
 
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(1);
-  retptr = mz_retain(ndata);
-#ifdef JIT_PRECISE_GC
-  scheme_mz_load_retained(jitter, JIT_R0, retptr);
-#else
-  (void)jit_patchable_movi_p(JIT_R0, ndata); /* !! */
-#endif
+  scheme_mz_load_retained(jitter, JIT_R0, ndata);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr;
@@ -2947,7 +2935,6 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       return 1;
     } else if (!result_ignored) {
-      int retptr;
       Scheme_Type type = SCHEME_TYPE(obj);
       START_JIT_DATA();
 
@@ -2966,21 +2953,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	}
       }
 
-      if (!SCHEME_INTP(obj)
-	  && !SAME_OBJ(obj, scheme_true)
-	  && !SAME_OBJ(obj, scheme_false)
-	  && !SAME_OBJ(obj, scheme_void)
-	  && !SAME_OBJ(obj, scheme_null)) {
-	retptr = mz_retain(obj);
-      } else
-	retptr = 0;
-
-#ifdef JIT_PRECISE_GC
-      if (retptr)
-	scheme_mz_load_retained(jitter, target, retptr);
-      else
-#endif
-	(void)jit_patchable_movi_p(target, obj); /* !! */
+      scheme_mz_load_retained(jitter, target, obj);
 
       END_JIT_DATA(19);
       return 1;

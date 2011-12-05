@@ -1110,9 +1110,7 @@ int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset);
 #ifdef USE_FLONUM_UNBOXING
 int scheme_mz_flonum_pos(mz_jit_state *jitter, int i);
 #endif
-#ifdef JIT_PRECISE_GC
-void scheme_mz_load_retained(mz_jit_state *jitter, int rs, int retptr);
-#endif
+void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *o);
 
 void scheme_mz_runstack_skipped(mz_jit_state *jitter, int n);
 void scheme_mz_runstack_unskipped(mz_jit_state *jitter, int n);

@@ -9384,12 +9384,12 @@ static void close_fds_after_fork(int skip1, int skip2, int skip3)
 
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
 {
-  int show;
 #ifdef WINDOWS_PROCESSES
   char *dir;
-# define mzseSHOW(x) x
+  int show = 0;
+# define mzseSHOW(s, x) s = x
 #else
-# define mzseSHOW(x) 1
+# define mzseSHOW(s, x) /* empty */
 #endif
 
   if (!SCHEME_FALSEP(argv[0]) && !SCHEME_CHAR_STRINGP(argv[0]))
@@ -9402,11 +9402,10 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     scheme_wrong_type("shell-execute", SCHEME_PATH_STRING_STR, 3, c, argv);
   {
     int show_set = 0;
-    show = 0;
 # define mzseCMP(id, str)			       \
     if (SAME_OBJ(scheme_intern_symbol(str), argv[4])   \
         || SAME_OBJ(scheme_intern_symbol(# id), argv[4])) { \
-      show = mzseSHOW(id); show_set = 1; }
+      mzseSHOW(show, id); show_set = 1; }
     mzseCMP(SW_HIDE, "sw_hide");
     mzseCMP(SW_MAXIMIZE, "sw_maximize");
     mzseCMP(SW_MINIMIZE, "sw_minimize");

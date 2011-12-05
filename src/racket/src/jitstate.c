@@ -65,15 +65,29 @@ int scheme_mz_retain_it(mz_jit_state *jitter, void *v)
   return jitter->retained;
 }
 
-#ifdef JIT_PRECISE_GC
-void scheme_mz_load_retained(mz_jit_state *jitter, int rs, int retptr)
+void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *obj)
+/* obj is a pointer, but not necesarily tagged (in CGC) */
 {
-  void *p;
-  p = jitter->retain_start + retptr - 1;
-  (void)jit_patchable_movi_p(rs, p);
-  jit_ldr_p(rs, rs);
-}
+  if (!SCHEME_INTP((Scheme_Object *)obj)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_true)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_false)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_void)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_null)) {
+#ifdef JIT_PRECISE_GC
+    int retptr;
+    void *p;
+    retptr = mz_retain(obj);
+    p = jitter->retain_start + retptr - 1;
+    (void)jit_patchable_movi_p(rs, p);
+    jit_ldr_p(rs, rs);
+#else
+    mz_retain(obj);
+    (void)jit_patchable_movi_p(rs, obj);
 #endif
+  } else {
+    (void)jit_patchable_movi_p(rs, obj);
+  }
+}
 
 #if defined(MZ_USE_JIT_I386)
 double *scheme_mz_retain_double(mz_jit_state *jitter, double d)

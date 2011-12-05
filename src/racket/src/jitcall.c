@@ -379,16 +379,9 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
     JIT_UPDATE_THREAD_RSPTR();
   }
   if (direct_native && direct_to_code) {
-    int retptr;
     __END_SHORT_JUMPS__(num_rands < 100);
     /* load closure pointer into R0: */
-    retptr = mz_retain(direct_to_code);
-#ifdef JIT_PRECISE_GC
-    if (retptr)
-      scheme_mz_load_retained(jitter, JIT_R0, retptr);
-    else
-#endif
-      (void)jit_patchable_movi_p(JIT_R0, direct_to_code);
+    scheme_mz_load_retained(jitter, JIT_R0, direct_to_code);
     /* jump directly: */
     (void)jit_jmpi(direct_to_code->code->u.tail_code);
     /* no slow path in this mode */
@@ -927,8 +920,9 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   GC_CAN_IGNORE jit_insn *refslow, *refagain;
   int i, jmp_tiny, jmp_short;
   int closure_size = jitter->self_closure_size;
-  int space, offset, arg_offset, arg_tmp_offset;
+  int space, offset;
 #ifdef USE_FLONUM_UNBOXING
+  int arg_offset = 1, arg_tmp_offset;
   Scheme_Object *rand;
 #endif
 
@@ -953,10 +947,11 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
 
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
 
-  arg_tmp_offset = offset = jitter->flostack_offset;
+  offset = jitter->flostack_offset;
   space = jitter->flostack_space;
-
-  arg_offset = 1;
+#ifdef USE_FLONUM_UNBOXING
+  arg_tmp_offset = offset;
+#endif
 
   /* Copy args to runstack after closure data: */
   mz_ld_runstack_base_alt(JIT_R2);

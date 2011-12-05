@@ -1618,9 +1618,8 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
           ch = scheme_getc_special_ok(port);
           if ((ch == ' ') || (ch == '/')) {
             /* line comment, with '\' as a continuation */
-            int was_backslash = 0, was_backslash_cr = 0, prev_backslash_cr;
+            int was_backslash = 0, was_backslash_cr = 0;
             while(1) {
-              prev_backslash_cr = was_backslash_cr;
               was_backslash_cr = 0;
               ch = scheme_getc_special_ok(port);
               if (ch == EOF) {

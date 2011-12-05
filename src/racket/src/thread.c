@@ -691,6 +691,7 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 #ifdef MZ_PRECISE_GC
   retval = GC_get_memory_use(arg);
 #else
+  scheme_unused_object(arg);
   retval = GC_get_memory_use();
 #endif
   
@@ -767,6 +768,8 @@ static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
 #ifdef MZ_PRECISE_GC
   if (GC_set_account_hook(MZACCT_REQUIRE, c1, lim, c2))
     return scheme_void;
+#else
+  scheme_unused_intptr(lim);
 #endif
 
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
@@ -809,6 +812,8 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
 #ifdef MZ_PRECISE_GC
   if (GC_set_account_hook(MZACCT_LIMIT, args[0], lim, (argc > 2) ? args[2] : args[0]))
     return scheme_void;
+#else
+  scheme_unused_intptr(lim);
 #endif
 
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
@@ -3100,7 +3105,9 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
 				       int suspend_to_kill)
 {
   Scheme_Object *result;
+#ifndef MZ_PRECISE_GC
   void *stack_marker;
+#endif
 
 #ifdef DO_STACK_CHECK
   /* Make sure the thread starts out with a reasonable stack size, so

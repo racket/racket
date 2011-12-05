@@ -1771,7 +1771,12 @@ regranges(int parse_flags, int at_start)
 {
   int c;
   rxpos ret, save_regparse = 0;
-  int count, all_ci, num_ci, off_ranges, on_ranges, now_on, last_on, prev_last_on;
+  int count, off_ranges, on_ranges, now_on, last_on, prev_last_on;
+#ifdef COUNT_CI_CHARS
+  /* These could be used to pick an encoding as a _CI variant, but
+     _CI variants are not picked currently: */
+  int all_ci, num_ci;
+#endif
   char *new_map = NULL, *accum_map = NULL;
 
   count = 0;
@@ -1873,8 +1878,10 @@ regranges(int parse_flags, int at_start)
     /* Collect stats to pick the best run-time implementation for a range.
        We may do this twice if we decide to use a _CI variant. */
     count = 0;
+#ifdef COUNT_CI_CHARS
     num_ci = 0;
     all_ci = 1;
+#endif
     on_ranges = 0;
     off_ranges = 0;
     now_on = 0;
@@ -1889,6 +1896,7 @@ regranges(int parse_flags, int at_start)
 	prev_last_on = last_on;
 	last_on = c;
 
+#ifdef COUNT_CI_CHARS
 	if (c != rx_tolower(c)) {
 	  if (accum_map[rx_tolower(c)] != accum_map[c])
 	    all_ci = 0;
@@ -1898,6 +1906,7 @@ regranges(int parse_flags, int at_start)
 	    all_ci = 0;
 	  num_ci++;
 	}
+#endif
       } else {
 	if (now_on > 0)
 	  on_ranges++;

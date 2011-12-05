@@ -413,7 +413,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
   int report, delta;
   Scheme_Object *next_complain;
   int has_hash, has_expt, has_i, has_sign, has_at, has_hash_since_slash;
-  int saw_digit, saw_digit_since_slash, saw_nonzero_digit;
+  int saw_digit_since_slash, saw_nonzero_digit;
   Scheme_Object *o;
 #ifdef MZ_USE_SINGLE_FLOATS
   int sgl;
@@ -936,7 +936,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
   }
 
   has_decimal = has_slash = has_hash = has_hash_since_slash = has_expt = 0;
-  saw_digit = saw_digit_since_slash = saw_nonzero_digit = 0;
+  saw_digit_since_slash = saw_nonzero_digit = 0;
   for (i = delta; i < len; i++) {
     mzchar ch = str[i];
     if (ch == '.') {
@@ -1028,7 +1028,6 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       }
       break;
     } else {
-      saw_digit = 1;
       saw_digit_since_slash = 1;
       if (ch != '0')
 	saw_nonzero_digit = 1;

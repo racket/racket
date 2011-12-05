@@ -2938,7 +2938,7 @@ static char *locale_recase(int to_up,
      multibyte, then convert back. */
 # define MZ_WC_BUF_SIZE 32
   GC_CAN_IGNORE mbstate_t state;
-  size_t wl, wl2, ml, ml2;
+  size_t wl, ml;
   wchar_t *wc, *ws, wcbuf[MZ_WC_BUF_SIZE], cwc;
   const char *s;
   unsigned int j;
@@ -2964,7 +2964,7 @@ static char *locale_recase(int to_up,
   /* Convert */
   memset(&state, 0, sizeof(mbstate_t));
   s = in XFORM_OK_PLUS id;
-  wl2 = mz_mbsnrtowcs(wc, &s, iilen, wl + 1, &state);
+  (void)mz_mbsnrtowcs(wc, &s, iilen, wl + 1, &state);
   s = NULL;
 
   wc[wl] = 0; /* just in case */
@@ -3001,7 +3001,7 @@ static char *locale_recase(int to_up,
   /* Convert */
   memset(&state, 0, sizeof(mbstate_t));
   ws = wc;
-  ml2 = mz_wcsnrtombs(out + od, (const wchar_t **)&ws, wl, ml + 1, &state);
+  (void)mz_wcsnrtombs(out + od, (const wchar_t **)&ws, wl, ml + 1, &state);
   ws = NULL;
 
   out[od + ml] = 0;

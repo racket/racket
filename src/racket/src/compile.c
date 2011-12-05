@@ -3356,7 +3356,7 @@ static Scheme_Object *
 begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Scheme_Expand_Info *rec, int drec)
 {
   Scheme_Expand_Info recs[1];
-  Scheme_Object *form, *context_key, *l, *fn, *vec, *dummy;
+  Scheme_Object *form, *l, *fn, *vec, *dummy;
   Scheme_Comp_Env *env;
 
   SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(rec[drec].observer);
@@ -3383,8 +3383,6 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
   else
     dummy = NULL;
 
-  context_key = scheme_generate_lifts_key();
-  
   l = SCHEME_STX_CDR(form);
   form = scheme_null;
 

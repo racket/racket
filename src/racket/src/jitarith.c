@@ -1838,7 +1838,7 @@ static void patch_nary_branches(mz_jit_state *jitter, Branch_Info *for_nary_bran
 int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
                                int arith, int cmp, Branch_Info *for_branch, int branch_short)
 {
-  int c, i, non_simple_c = 0, stack_c, use_fl = 1, use_fx = 1, trigger_arg = 0;
+  int c, i, non_simple_c = 0, stack_c, use_fx = 1, trigger_arg = 0;
   Scheme_Object *non_simples[1+MAX_NON_SIMPLE_ARGS], **alt_args, *v;
   Branch_Info for_nary_branch;
   Branch_Info_Addr nary_addrs[3];
@@ -1847,6 +1847,10 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
 #ifdef INLINE_FP_OPS
   int args_unboxed;
   GC_CAN_IGNORE jit_insn *reffl, *refdone2;
+  int use_fl = 1;
+# define mzSET_USE_FL(x) x
+#else
+# define mzSET_USE_FL(x) /* empty */
 #endif
 
   if (arith == ARITH_DIV) {
@@ -1856,7 +1860,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
              || (arith == ARITH_IOR)
              || (arith == ARITH_XOR)) {
     /* bitwise operators are fixnum, only */
-    use_fl = 0;
+    mzSET_USE_FL(use_fl = 0);
   }
 
   c = app->num_args;
@@ -1868,7 +1872,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       non_simple_c++;
     }
     if (SCHEME_INTP(v)) {
-      use_fl = 0;
+      mzSET_USE_FL(use_fl = 0);
       if (trigger_arg == i)
         trigger_arg++;
     } else if (SCHEME_FLOATP(v)) {
@@ -1877,7 +1881,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
         trigger_arg++;
     } else if (SCHEME_TYPE(v) >= _scheme_compiled_values_types_) {
       use_fx = 0;
-      use_fl = 0;
+      mzSET_USE_FL(use_fl = 0);
     }
   }
 

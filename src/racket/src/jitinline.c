@@ -1757,7 +1757,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
     if (SCHEME_TYPE(a1) > _scheme_values_types_) {
       /* Compare to constant: */
-      int retptr, reg_status;
+      int reg_status;
 
       mz_runstack_skipped(jitter, 2);
 
@@ -1767,14 +1767,6 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       
       mz_runstack_unskipped(jitter, 2);
 
-      if (!SCHEME_INTP(a1)
-	  && !SCHEME_FALSEP(a1)
-	  && !SCHEME_VOIDP(a1)
-	  && !SAME_OBJ(a1, scheme_true))
-	retptr = mz_retain(a1);
-      else
-	retptr = 0;
-      
       __START_SHORT_JUMPS__(branch_short);
 
       if (for_branch) {
@@ -1784,23 +1776,23 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       reg_status = mz_CURRENT_REG_STATUS_VALID();
       
-#ifdef JIT_PRECISE_GC
-      if (retptr) {
-	scheme_mz_load_retained(jitter, JIT_R1, retptr);
+      if (!SCHEME_INTP(a1)
+	  && !SCHEME_FALSEP(a1)
+	  && !SCHEME_VOIDP(a1)
+	  && !SAME_OBJ(a1, scheme_true)) {
+	scheme_mz_load_retained(jitter, JIT_R1, a1);
 	ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
-      } else
-#endif
+        /* In case true is a fall-through, note that the test 
+           didn't disturb R0: */
+        if (for_branch) mz_SET_R0_STATUS_VALID(reg_status);
+      } else {
 	ref = mz_bnei_p(jit_forward(), JIT_R0, a1);
+        /* In case true is a fall-through, note that the test 
+           didn't disturb R0 or R1: */
+        if (for_branch) mz_SET_REG_STATUS_VALID(reg_status);
+      }
 
       if (for_branch) {
-        /* In case true is a fall-through, note that the test 
-           didn't disturb R0 (and maybe not R1): */
-#ifdef JIT_PRECISE_GC
-        if (retptr)
-          mz_SET_R0_STATUS_VALID(reg_status);
-        else
-#endif
-          mz_SET_REG_STATUS_VALID(reg_status);
         scheme_add_branch_false(for_branch, ref);
         scheme_branch_for_true(jitter, for_branch);
         CHECK_LIMIT();

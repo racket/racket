@@ -1818,8 +1818,10 @@ typedef struct RBNode {
 
 #if 0
 # define RB_ASSERT(p) if (p) { } else { scheme_signal_error("hash-tree assert failure %d", __LINE__); }
+# define RB_ASSERT_ONLY(x) x
 #else
 # define RB_ASSERT(p) /* empty */
+# define RB_ASSERT_ONLY(x) /* empty */
 #endif
 
 static RBNode *make_rb(int red, 
@@ -2573,9 +2575,9 @@ int scheme_hash_tree_index(Scheme_Hash_Tree *tree, intptr_t pos, Scheme_Object *
   else
     elems = NULL;
   if (!elems) {
-    int total_pos;
+    RB_ASSERT_ONLY(int total_pos);
     elems = scheme_make_vector(tree->count * 2, NULL);
-    total_pos = fill_elems(tree->root, elems, 0, tree->count);
+    RB_ASSERT_ONLY(total_pos = ) fill_elems(tree->root, elems, 0, tree->count);
     RB_ASSERT(total_pos == tree->count);
     elems_box = scheme_make_weak_box(elems);
     tree->elems_box = elems_box;

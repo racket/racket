@@ -1213,7 +1213,7 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
 {
   Scheme_Object *c;
   unsigned char* str, *str2;
-  intptr_t i, slen, start, clen;
+  intptr_t i, slen, start;
   bigdig *c_digs;
   SAFE_SPACE(csd)
 
@@ -1244,8 +1244,7 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
   str = (unsigned char *)MALLOC_PROTECT(slen);
 
   c_digs = SCHEME_BIGDIG_SAFE(c, csd);
-  clen = SCHEME_BIGLEN(c);
-  PROTECT(c_digs, clen);
+  PROTECT(c_digs, SCHEME_BIGLEN(c));
 
   slen = mpn_get_str(str, radix, c_digs, SCHEME_BIGLEN(c) - 1);
 
