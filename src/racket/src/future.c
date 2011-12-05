@@ -275,21 +275,6 @@ void scheme_end_futures_per_place()
 # define FUTURE_ASSERT(x) /* empty */
 #endif
 
-#ifdef DEBUG_FUTURES 
-#define DO_LOG(pr) do { pthread_t self; self = pthread_self(); fprintf(stderr, "%x:%s:%s:%d ", (unsigned) self, __FILE__, __FUNCTION__, __LINE__); pr; fprintf(stderr, "\n"); fflush(stdout); } while(0)
-#define LOG0(t) DO_LOG(fprintf(stderr, t))
-#define LOG(t, a) DO_LOG(fprintf(stderr, t, a))
-#define LOG2(t, a, b) DO_LOG(fprintf(stderr, t, a, b))
-#define LOG3(t, a, b, c) DO_LOG(fprintf(stderr, t, a, b, c))
-#define LOG4(t, a, b, c, d) DO_LOG(fprintf(stderr, t, a, b, c, d))
-#else
-#define LOG0(t)
-#define LOG(t, a)
-#define LOG2(t, a, b)
-#define LOG3(t, a, b, c)
-#define LOG4(t, a, b, c, d)
-#endif
-
 static Scheme_Object *make_fsemaphore(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
@@ -1764,11 +1749,6 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
 
   ft = (future_t*)argv[0];
 
-#ifdef DEBUG_FUTURES 
-  LOG("touch (future %d)", futureid);	
-  dump_state();
-#endif
-
   /* Spin waiting for primitive calls or a return value from
      the worker thread */
   while (1) {
@@ -1818,9 +1798,7 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
         ft->status = HANDLING_PRIM;
         ft->want_lw = 0;
         mzrt_mutex_unlock(fs->future_mutex);
-        LOG("Invoking primitive on behalf of future %d...", ft->id);
         invoke_rtcall(fs, ft, 0);
-        LOG0("done.\n");
       }
     else if (ft->maybe_suspended_lw && (ft->status != WAITING_FOR_FSEMA))
       {
@@ -2056,8 +2034,6 @@ void *worker_thread_future_loop(void *arg)
     ft = get_pending_future(fs);
 
     if (ft) {
-      LOG0("Got a signal that a future is pending...");
-        
       fid = ft->id;
       record_fevent(FEVENT_START_WORK, fid);
 
@@ -2097,7 +2073,6 @@ void *worker_thread_future_loop(void *arg)
            including runtime calls. 
            If jitcode asks the runtime thread to do work, then
            a GC can occur. */
-        LOG("Running JIT code at %p...\n", ft->code);
 
         scheme_current_thread->error_buf = &newbuf;
         if (scheme_future_setjmp(newbuf)) {
@@ -2110,8 +2085,6 @@ void *worker_thread_future_loop(void *arg)
             v = scheme_ts_scheme_force_value_same_mark(v);
           }
         }
-
-        LOG("Finished running JIT code at %p.\n", ft->code);
       }
 
       /* Get future again, since a GC may have occurred or
