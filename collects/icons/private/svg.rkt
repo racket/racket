@@ -22,7 +22,7 @@
     (let ([h  (for/first ([h  (in-list hs)] #:when (height . <= . h)) h)])
       (if h h (last hs))))
   (define icon-path
-    (build-path svg-icons-base-path (format "~a/~a/~a.png" category icon-height name)))
+    (build-path svg-icons-base-path category (format "~a" icon-height) (format "~a.png" name)))
   (scale (bitmap icon-path) (/ height icon-height)))
 
 (defproc (load-icon [category string?] [name string?] [height (>=/c 0)]) (is-a?/c bitmap%)
