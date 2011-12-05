@@ -1376,6 +1376,14 @@
              (define-values (start end)
                (cond
                  [(equal? token 'string) (word-based)]
+                 [(and (equal? token 'other)
+                       (let-values ([(start end) (send text get-token-range click-pos)])
+                         (and start
+                              end
+                              (let ([str (send text get-text start end)])
+                                (or (regexp-match? #rx"^#lang" str)
+                                    (regexp-match? #rx"^#!" str))))))
+                  (word-based)]
                  [(and (equal? token 'parenthesis)
                        (ormap (λ (pr) (equal? (cdr pr) (string (send text get-character click-pos))))
                               (racket-paren:get-paren-pairs)))
