@@ -3,7 +3,7 @@
 
 #ifdef MZ_USE_FUTURES
 
-typedef Scheme_Object **(*prim_on_demand_t)(Scheme_Object **, Scheme_Object **);
+typedef Scheme_Object **(*prim_on_demand_t)(Scheme_Object **, Scheme_Object **, int);
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
@@ -144,7 +144,8 @@ typedef struct future_t {
   void *retval_p; /* use only with conservative GC */
   MZ_MARK_STACK_TYPE retval_m;
   int retval_i;
-  int no_retval, retval_is_rs_argv;
+  char no_retval;
+  char retval_is_rs_plus_two; /* => special result handling for on-demand JIT */
 
   Scheme_Object **multiple_array;
   int multiple_count;

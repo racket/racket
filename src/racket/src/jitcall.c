@@ -1455,7 +1455,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             nc = (Scheme_Native_Closure *)scheme_jit_closure((Scheme_Object *)data, NULL);
             if (nc->code->code == scheme_on_demand_jit_code) {
               if (nc->code->arity_code != sjc.in_progress_on_demand_jit_arity_code) {
-                scheme_on_demand_generate_lambda(nc, 0, NULL);
+                scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
               }
             }
             if (nc->code->code != scheme_on_demand_jit_code) {

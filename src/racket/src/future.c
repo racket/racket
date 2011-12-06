@@ -1180,7 +1180,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda)
   /* JIT the code if not already JITted */
   if (ncd) {
     if (ncd->code == scheme_on_demand_jit_code)
-      scheme_on_demand_generate_lambda(nc, 0, NULL);
+      scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
   
     if (ncd->max_let_depth > FUTURE_RUNSTACK_SIZE * sizeof(void*)) {
       /* Can't even call it in a future thread */
@@ -2139,24 +2139,24 @@ static Scheme_Object *_apply_future_lw(future_t *ft)
 {
   struct Scheme_Lightweight_Continuation *lw = ft->suspended_lw;
   Scheme_Object *v;
-  int result_is_rs_argv;
+  int result_is_rs_plus_two;
 
   ft->suspended_lw = NULL;
   
   v = ft->retval_s;
-  if (ft->retval_is_rs_argv) {
-    result_is_rs_argv = 1;
-    ft->retval_is_rs_argv = 0;
+  if (ft->retval_is_rs_plus_two) {
+    result_is_rs_plus_two = 1;
+    ft->retval_is_rs_plus_two = 0;
   } else {
     ft->retval_s = NULL;
     receive_special_result(ft, v, 1);
-    result_is_rs_argv = 0;
+    result_is_rs_plus_two = 0;
   }
 
-  FUTURE_ASSERT((ft->prim_protocol != SIG_ON_DEMAND) == !result_is_rs_argv);
+  FUTURE_ASSERT((ft->prim_protocol != SIG_ON_DEMAND) == !result_is_rs_plus_two);
   FUTURE_ASSERT(v || (ft->prim_protocol != SIG_ALLOC));
 
-  v = scheme_apply_lightweight_continuation(lw, v, result_is_rs_argv, 
+  v = scheme_apply_lightweight_continuation(lw, v, result_is_rs_plus_two, 
                                             FUTURE_RUNSTACK_SIZE);
   
   if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
@@ -2568,10 +2568,7 @@ Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_d
 
   future->prim_protocol = SIG_ON_DEMAND;
 
-  if ((MZ_RUNSTACK + 2) != argv) {
-    fprintf(stderr, "internal error: expected arguments on runstack");
-    abort();
-  }
+  FUTURE_ASSERT(argv == (MZ_RUNSTACK + 2));
 
   future->arg_S0 = MZ_RUNSTACK;
 
@@ -2585,7 +2582,7 @@ Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_d
   future = fts->thread->current_ft;
 
   future->arg_S0 = NULL;
-  future->retval_is_rs_argv = 0;
+  future->retval_is_rs_plus_two = 0;
 
   return MZ_RUNSTACK + 2;
 }
@@ -2898,9 +2895,9 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
 
         ADJUST_RS_ARG(future, arg_S0);
 
-        func(arg_S0, arg_S0 + 2);
+        func(arg_S0, arg_S0, 2);
 
-        future->retval_is_rs_argv = 1;
+        future->retval_is_rs_plus_two = 1;
 
         break;
       }

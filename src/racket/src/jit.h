@@ -313,7 +313,7 @@ typedef struct mz_jit_state {
   int self_pos, self_closure_size, self_toplevel_pos;
   int self_to_closure_delta, closure_to_args_delta;
   int closure_self_on_runstack;
-  int example_argc;
+  int example_argc, example_argv_delta;
   Scheme_Object **example_argv;
   void *self_restart_code;
   void *self_nontail_code;
@@ -1242,7 +1242,7 @@ int scheme_generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 void scheme_generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
 
 Scheme_Object **scheme_on_demand(Scheme_Object **argv);
-Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv);
+Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv, int argv_delta);
 
 void scheme_prepare_branch_jump(mz_jit_state *jitter, Branch_Info *for_branch);
 void scheme_branch_for_true(mz_jit_state *jitter, Branch_Info *for_branch);

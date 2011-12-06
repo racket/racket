@@ -483,7 +483,7 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
          a closure element into an argument */
       pos -= jitter->closure_to_args_delta;
       if (pos < jitter->example_argc)
-        return jitter->example_argv[pos];
+        return jitter->example_argv[pos + jitter->example_argv_delta];
     }
   }
 
@@ -3042,7 +3042,7 @@ typedef struct {
   void *arity_code, *code, *tail_code, *code_end, **patch_depth;
   int max_extra, max_depth, max_tail_depth;
   Scheme_Native_Closure *nc;
-  int argc;
+  int argc, argv_delta;
   Scheme_Object **argv;
 } Generate_Closure_Data;
 
@@ -3051,7 +3051,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
   Scheme_Closure_Data *data = gdata->data;
   void *code, *tail_code, *code_end, *arity_code;
-  int i, r, cnt, has_rest, is_method, num_params, to_args, argc;
+  int i, r, cnt, has_rest, is_method, num_params, to_args, argc, argv_delta;
   Scheme_Object **argv;
 
   code = jit_get_ip().ptr;
@@ -3060,6 +3060,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
   argc = gdata->argc;
   argv = gdata->argv;
+  argv_delta = gdata->argv_delta;
 
   generate_function_prolog(jitter, code, 
 			   /* max_extra_pushed may be wrong the first time around,
@@ -3347,6 +3348,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   jitter->closure_to_args_delta = to_args;
   jitter->example_argc = argc;
   jitter->example_argv = argv;
+  jitter->example_argv_delta = argv_delta;
 
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
@@ -3380,7 +3382,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
-static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
+static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv, int argv_delta)
 {
   Scheme_Native_Closure_Data *ndata = nc->code;
   Scheme_Closure_Data *data;
@@ -3394,6 +3396,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   gdata.nc = nc;
   gdata.argc = argc;
   gdata.argv = argv;
+  gdata.argv_delta = argv_delta;
 
   /* This action is not atomic: */
   scheme_delay_load_closure(data);
@@ -3461,28 +3464,28 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   ndata->max_let_depth = max_depth;
 }
 
-void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
+void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv, int argv_delta)
 {
-  on_demand_generate_lambda(nc, argc, argv);
+  on_demand_generate_lambda(nc, argc, argv, argv_delta);
 }
 
-Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv)
+Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv, int argv_delta)
 {
-  /* On runstack: closure (nearest), argc, argv (deepest) */
+  /* On runstack: closure (nearest), argc, probably argv (deepest) */
   Scheme_Object *c, *argc;
 
   c = in_argv[0];
   argc = in_argv[1];
 
   if (((Scheme_Native_Closure *)c)->code->code == scheme_on_demand_jit_code)
-    scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+    scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv, argv_delta);
 
   return argv;
 }
 
 Scheme_Object **scheme_on_demand(Scheme_Object **rs)
 {
-  return scheme_on_demand_with_args(MZ_RUNSTACK, rs);
+  return scheme_on_demand_with_args(MZ_RUNSTACK, rs, 0);
 }
 
 static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
