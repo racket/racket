@@ -1866,6 +1866,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/stress/contract-lifting.rkt" responsible (robby sstrickl)
 "collects/tests/racket/stress/dict.rkt" drdr:timeout 180
 "collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket "-t" * "--" "-c") drdr:random #t
+"collects/tests/racket/stress/module-stack.rkt" drdr:timeout 180
 "collects/tests/racket/string-mzlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/string.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
