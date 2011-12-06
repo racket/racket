@@ -1753,7 +1753,7 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
      the worker thread */
   while (1) {
     mzrt_mutex_lock(fs->future_mutex);
-    if ((((ft->status == PENDING) 
+    if ((((ft->status == PENDING)
           && prefer_to_apply_future_in_runtime())
          || (ft->status == PENDING_OVERSIZE)
          || (ft->status == SUSPENDED))
@@ -2823,7 +2823,7 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
     p->ku.apply.tail_rator = NULL;
     p->ku.apply.tail_rands = NULL;
 
-    if (p->ku.apply.tail_rands == p->tail_buffer) {
+    if (f->tail_rands == p->tail_buffer) {
       /* This only happens in the runtime thread; we need to
          disconnect the tail buffer from `f->tail_rands' in
          case of a GC. Beware that XFORM is disabled here. */
