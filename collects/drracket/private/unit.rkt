@@ -3101,7 +3101,7 @@ module browser threading seems wrong.
                 (string-constant interactions-menu-item-help-string)))
         
         (new menu:can-restore-menu-item%
-             [label (string-constant put-interactions-beside-definitions)]
+             [label (string-constant use-horizontal-layout)]
              [parent (get-show-menu)]
              [callback (λ (x y) 
                          (define vertical? (send resizable-panel get-vertical?)) 
@@ -3117,9 +3117,9 @@ module browser threading seems wrong.
                            (update-shown)))]
              [demand-callback
               (λ (mi) (send mi set-label (if (send resizable-panel get-vertical?)
-                                             (string-constant put-interactions-beside-definitions)
-                                             (string-constant put-interactions-below-definitions))))]
-             [shortcut #\d]
+                                             (string-constant use-horizontal-layout)
+                                             (string-constant use-vertical-layout))))]
+             [shortcut #\l]
              [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))])
         
         (new separator-menu-item% [parent (get-show-menu)])
