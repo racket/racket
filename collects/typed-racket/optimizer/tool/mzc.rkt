@@ -158,8 +158,45 @@
       (define head (car group))
       (match head ; events are grouped, first element is representative
         [(log-entry kind msg stx located-stx pos)
-         (define n-successes    (length (filter success?     group)))
+
+         ;; We consider that a function is a loop if it gets inlined in itself
+         ;; at least once.
+         ;; We treat loops specially, mostly to avoid spurious reports.
+         ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
+         ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
+         ;; Therefore, we don't want to report these as inlinings (or failed
+         ;; inlinings).
+         ;; However, we care about `f' being unrolled at least once in `g'.
+         ;; If we run out of fuel trying to inline `f' in `g' for the first
+         ;; time, we report. The reason for this is that it's possible to
+         ;; optimize better if `f''s body inside `g' calls `f' than if `g'
+         ;; calls `f' directly. For instance, `f' may be a loop involving
+         ;; floats, in which case having all calls to `f' originate from `f''s
+         ;; body (as opposed to `g') may make unboxing possible.
+         ;; Of course, we lose precision if `g' has multiple call sites to `f'.
          (define n-unrollings   (length (filter unrolling?   group)))
+         (define is-a-loop?     (> n-unrollings 0))
+         (define inlining-sites
+           (group-by equal? #:key (lambda (x)
+                                    (inlining-event-where-loc
+                                     (inliner-log-entry-inlining-event x)))
+                     group))
+
+         (define pruned-group
+           (if (not is-a-loop?)
+               group
+               ;; `f' is a loop. We ignore anything beyond the first inlining
+               ;; in `g'.
+               (apply
+                append
+                (for/list ([site (in-list inlining-sites)]
+                           #:when
+                           ;; If at least one inlining of `f' in `g', prune.
+                           (not (for/or ([evt (in-list site)])
+                                  (success? evt))))
+                  site))))
+
+         (define n-successes    (length (filter success?     group)))
          (define n-failures     (length (filter failure?     group)))
          (define n-out-of-fuels (length (filter out-of-fuel? group)))
 
