@@ -1,6 +1,6 @@
 #lang racket/gui
 (require mrlib/private/image-core-bitmap)
-(define img (make-object bitmap% (build-path (collection-path "icons") "plt-logo-red-shiny.png")))
+(define img (read-bitmap (build-path (collection-path "icons") "plt-logo-red-shiny.png")))
 
 (define amount .5)
 (define remove-margin 50)
@@ -46,9 +46,8 @@
 (void (new grow-box-spacer-pane% [parent f]))
 (send f show #t)
 
-(define heart-bm (make-object bitmap% heart-w heart-h))
+(define heart-bm (make-bitmap heart-w heart-h))
 (define heart-bdc (make-object bitmap-dc% heart-bm))
-(send heart-bdc clear)
 (draw-heart heart-bdc)
 (send heart-bdc set-bitmap #f)
 ;; uncomment the next line to actually save the icon in the collects dir
