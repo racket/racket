@@ -79,8 +79,6 @@
       (define r
         (with-disconnect-on-error
          (recv* fsym expectation field-dvecs)))
-      (when DEBUG-RESPONSES
-        (eprintf "  << ~s\n" r))
       (when (error-packet? r)
         (raise-backend-error fsym r))
       r)
@@ -95,6 +93,8 @@
         (error/comm fsym))
       (let-values ([(msg-num next) (parse-packet inport expectation field-dvecs)])
         (set! next-msg-num (add1 msg-num))
+        (when DEBUG-RESPONSES
+          (eprintf "  << ~s\n" next))
         ;; Update transaction status (see Transactions below)
         (when (ok-packet? next)
           (set! tx-status
@@ -127,6 +127,8 @@
            (advance 'prep-params)]
           [(? eof-packet?)
            (advance 'field 'data 'binary-data 'prep-params)]
+          [(struct unknown-packet (expected contents))
+           (error/comm fsym expected)]
           [else
            (err next)])
         next))

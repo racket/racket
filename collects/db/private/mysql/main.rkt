@@ -21,7 +21,8 @@
                                       (case ssl
                                         ((no) #f)
                                         (else (ssl-make-client-context 'tls)))]
-                       #:notice-handler [notice-handler void])
+                       #:notice-handler [notice-handler void]
+                       #:debug? [debug? #f])
   (let ([connection-options
          (+ (if (or server port) 1 0)
             (if socket 1 0))])
@@ -31,6 +32,7 @@
           (cond [(procedure? notice-handler) notice-handler]
                 [else (make-print-notice notice-handler)])]
          [c (new connection% (notice-handler notice-handler))])
+    (when debug? (send c debug #t))
     (cond [socket
            (let ([socket (if (eq? socket 'guess)
                              (mysql-guess-socket-path)

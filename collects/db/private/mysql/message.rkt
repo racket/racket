@@ -30,6 +30,7 @@ Based on protocol documentation here:
          (struct-out parameter-packet)
          (struct-out long-data-packet)
          (struct-out execute-packet)
+         (struct-out unknown-packet)
 
          supported-result-typeid?
          parse-field-dvec
@@ -305,6 +306,11 @@ Based on protocol documentation here:
    params)
   #:transparent)
 
+(define-struct (unknown-packet packet)
+  (expected
+   contents)
+  #:transparent)
+
 (define (write-packet out p number)
   (let ([o (open-output-bytes)])
     (write-packet* o p)
@@ -382,13 +388,15 @@ Based on protocol documentation here:
     ((handshake)
      (parse-handshake-packet in len))
     ((auth)
-     (unless (eq? (peek-byte in) #x00)
-       (error/comm 'parse-packet "(expected authentication ok packet)"))
-     (parse-ok-packet in len))
+     (cond [(eq? (peek-byte in) #x00)
+            (parse-ok-packet in len)]
+           [else
+            (parse-unknown-packet in len "(expected authentication ok packet)")]))
     ((ok)
-     (unless (eq? (peek-byte in) #x00)
-       (error/comm 'parse-packet "(expected ok packet)"))
-     (parse-ok-packet in len))
+     (cond [(eq? (peek-byte in) #x00)
+            (parse-ok-packet in len)]
+           [else
+            (parse-unknown-packet in len "(expected ok packet)")]))
     ((result)
      (if (eq? (peek-byte in) #x00)
          (parse-ok-packet in len)
@@ -406,7 +414,10 @@ Based on protocol documentation here:
          (parse-eof-packet in len)
          (parse-binary-row-data-packet in len field-dvecs)))
     ((prep-ok)
-     (parse-ok-prepared-statement-packet in len))
+     (cond [(eq? (peek-byte in) #x00)
+            (parse-ok-prepared-statement-packet in len)]
+           [else
+            (parse-unknown-packet in len "(expected ok for prepared statement packet)")]))
     ((prep-params)
      (if (and (eq? (peek-byte in) #xFE) (< len 9))
          (parse-eof-packet in len)
@@ -415,6 +426,9 @@ Based on protocol documentation here:
      (error/comm 'parse-packet (format "(bad expected packet type: ~s)" expect)))))
 
 ;; Individual parsers
+
+(define (parse-unknown-packet in len expected)
+  (make-unknown-packet expected (io:read-bytes-to-eof in)))
 
 (define (parse-handshake-packet in len)
   (let* ([protocol-version (io:read-byte in)]
