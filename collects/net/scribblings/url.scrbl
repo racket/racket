@@ -2,6 +2,7 @@
 @(require "common.rkt" scribble/bnf
           (for-label net/url net/url-unit net/url-sig 
                      net/head net/uri-codec net/tcp-sig
+                     (only-in net/url-connect current-https-protocol)
                      openssl))
 
 @title[#:tag "url"]{URLs and HTTP}
@@ -363,6 +364,18 @@ connections. Each mapping is a list of three elements:
 
 Currently, the only proxiable scheme is @racket["http"]. The default
 mapping is the empty list (i.e., no proxies).}
+
+@defproc[(url-exception? [x any/c])
+         boolean?]{
+ Identifies an error thrown by URL functions.         
+}
+
+@section{URL HTTPS mode}
+
+@defmodule[net/url-connect]
+
+These bindings are provided by the @racketmodname[net/url-connect] library, and
+used by @racketmodname[net/url].
 
 @defparam[current-https-protocol protocol (or/c ssl-client-context? symbol?)]{
 
