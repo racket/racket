@@ -262,7 +262,7 @@
                      (parameterize ([current-error-port os])
                    (output output-file/boundary tmp-file #"GET" #"text/html" '((-10 . -5) (1000 . 1050) (50 . 49)) #"BOUNDARY"))
                      (get-output-string os))
-                   "convert-http-ranges: No satisfiable ranges in ((-10 . -5) (1000 . 1050) (50 . 49))/81.")
+                   "")
       
       (test-equi? "(head) whole file - no Range header"
                    (output output-file tmp-file #"HEAD" #"text/html" #f)
@@ -304,6 +304,4 @@
                    
                    (output output-file/boundary tmp-file #"HEAD" #"text/html" '((-10 . -5) (1000 . 1050) (50 . 49)) #"BOUNDARY"))
                      (get-output-string os))
-                  "convert-http-ranges: No satisfiable ranges in ((-10 . -5) (1000 . 1050) (50 . 49))/81.")
-      
-      ))))
+                  "")))))
