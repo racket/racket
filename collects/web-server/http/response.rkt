@@ -189,8 +189,6 @@
   ; If convert-http-ranges fails, send a 416 bad range resposne:
   (with-handlers ([exn:fail?
                    (lambda (exn)
-                     (fprintf (current-error-port)
-                              (exn-message exn))
                      (output-response-head
                       conn
                       (make-416-response modified-seconds maybe-mime-type)))])
