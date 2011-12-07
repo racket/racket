@@ -4048,7 +4048,8 @@ module browser threading seems wrong.
       (define/private (jump-to-source-loc srcloc)
         (define ed (srcloc-source srcloc))
         (send ed set-position (- (srcloc-position srcloc) 1))
-        (send ed set-caret-owner #f 'global))
+        (send ed set-caret-owner #f 'global)
+        (send (get-interactions-text) highlight-a-single-error srcloc))
       
       (define/public (move-to-interactions) 
         (ensure-rep-shown (get-interactions-text))

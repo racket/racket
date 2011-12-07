@@ -546,18 +546,18 @@ TODO
       ;;;                                            ;;;
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
-      ;; error-ranges : (union false? (cons (list file number number) (listof (list file number number))))
+      ;; error-ranges : (union false? (cons srcloc (listof srcloc)))
       (define error-ranges #f)
       (define/public (get-error-ranges) error-ranges)
       (define/public (set-error-ranges ranges)
         (set! error-ranges (and ranges 
                                 (not (null? ranges))
                                 (cleanup-locs ranges))))
-      (define internal-reset-callback void)
-      (define internal-reset-error-arrows-callback void)
+      (define clear-error-highlighting void)
       (define/public (reset-error-ranges) 
-        (internal-reset-callback)
-        (internal-reset-error-arrows-callback))
+        (set-error-ranges #f)
+        (when definitions-text (send definitions-text set-error-arrows #f))
+        (clear-error-highlighting))
       
       ;; highlight-error : file number number -> void
       (define/public (highlight-error file start end)
@@ -577,11 +577,11 @@ TODO
       ;;                       (union #f (listof srcloc))
       ;;                    -> (void)
       (define/public (highlight-errors raw-locs [raw-error-arrows #f])
+        (clear-error-highlighting)
+        (when definitions-text (send definitions-text set-error-arrows #f))
         (set-error-ranges raw-locs)
         (define locs (or (get-error-ranges) '())) ;; calling set-error-range cleans up the locs
         (define error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows)))
-        
-        (reset-highlighting)
         
         (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
         
@@ -594,7 +594,6 @@ TODO
                                [finish (+ start span)])
                           (send file highlight-range start finish (drracket:debug:get-error-color) #f 'high)))
                       locs)])
-            
             (when (and definitions-text error-arrows)
               (let ([filtered-arrows
                      (remove-duplicate-error-arrows
@@ -603,12 +602,9 @@ TODO
                        error-arrows))])
                 (send definitions-text set-error-arrows filtered-arrows)))
             
-            (set! internal-reset-callback
+            (set! clear-error-highlighting
                   (λ ()
-                    (set-error-ranges #f)
-                    (when definitions-text
-                      (send definitions-text set-error-arrows #f))
-                    (set! internal-reset-callback void)
+                    (set! clear-error-highlighting void)
                     (for-each (λ (x) (x)) resets)))))
         
         (let* ([first-loc (and (pair? locs) (car locs))]
@@ -634,7 +630,47 @@ TODO
                   (send tlw ensure-defs-shown))))
             
             (send first-file set-caret-owner (get-focus-snip) 'global))))
-      
+
+      ;; unlike highlight-error just above, this function does not change 
+      ;; what the currently noted errors locations are, it just highlights 
+      ;; one of them.
+      (define/public (highlight-a-single-error raw-loc)
+        (define loc (car (cleanup-locs (list raw-loc))))
+        (define source (srcloc-source loc))
+        (when (and (is-a? source text%)
+                   (srcloc-position loc)
+                   (srcloc-span loc))
+          (send source begin-edit-sequence)
+          
+          (clear-error-highlighting) ;; clear the 'highlight-range' from previous errors
+          
+          (define start (- (srcloc-position loc) 1))
+          (define span (srcloc-span loc))
+          (define finish (+ start span))
+          
+          (let ([reset (send source highlight-range start finish (drracket:debug:get-error-color) #f 'high)])
+            (set! clear-error-highlighting
+                  (λ ()
+                    (set! clear-error-highlighting void)
+                    (reset))))
+          
+          (when (and start span)
+            (let ([finish (+ start span)])
+              (when (eq? source definitions-text) ;; only move set the cursor in the defs window
+                (send source set-position start span))
+              (send source scroll-to-position start #f finish)))
+          
+          (send source end-edit-sequence)
+          
+          (when (eq? source definitions-text)
+            ;; when we're highlighting something in the defs window,
+            ;; make sure it is visible
+            (let ([tlw (send source get-top-level-window)]) 
+              (when (is-a? tlw drracket:unit:frame<%>)
+                (send tlw ensure-defs-shown))))
+          
+          (send source set-caret-owner (get-focus-snip) 'global)))
+        
       (define/private (cleanup-locs locs)
         (let ([ht (make-hasheq)])
           (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
