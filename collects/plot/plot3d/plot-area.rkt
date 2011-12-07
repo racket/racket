@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/class racket/match racket/list racket/math racket/contract racket/vector racket/flonum
+         unstable/flonum
          "../common/math.rkt"
          "../common/plot-device.rkt"
          "../common/ticks.rkt"
@@ -683,8 +684,16 @@
     (define light (m3-apply rotate-rho-matrix (vector (- -0.5 2.0)
                                                       (- -0.5 2.0)
                                                       (+ 0.5 5.0))))
-    ;; View direction, in normalized view coordinates: many graph widths backward
-    (define view-dir (vector 0.0 -50.0 0.0))
+    
+    ;; Do lighting only by direction so we can precalculate light-dir and half-dir
+    ;; Conceptually, the viewer and light are at infinity
+    
+    ;; Light direction
+    (define light-dir (vnormalize light))
+    ;; View direction, in normalized view coordinates
+    (define view-dir (vector 0.0 -1.0 0.0))
+    ;; Blinn-Phong "half angle" direction
+    (define half-dir (vnormalize (v* (v+ light-dir view-dir) 0.5)))
     
     (define diffuse-light? (plot3d-diffuse-light?))
     (define specular-light? (plot3d-specular-light?))
@@ -695,18 +704,18 @@
         [(not (or diffuse-light? specular-light?))  (λ (v normal) (values 1.0 0.0))]
         [else
          (λ (v normal)
-           ; common lighting values
-           (define light-dir (vnormalize (v- light v)))
-           ; diffuse lighting: typical Lambertian surface model
-           (define diff (if diffuse-light? (abs (vdot normal light-dir)) 1.0))
-           ; specular highlighting: Blinn-Phong model
-           (define spec (cond [specular-light?
-                               (define lv (v* (v+ light-dir view-dir) 0.5))
-                               (define cos-angle (/ (abs (vdot normal lv)) (vmag lv)))
-                               (* 32.0 (expt cos-angle 10.0))]
-                              [else  0.0]))
-           ; put it all together
-           (values (+ ambient-light (* (- 1.0 ambient-light) diff)) spec))]))
+           ;; Diffuse lighting: typical Lambertian surface model (using absolute value because we
+           ;; can't expect surface normals to point the right direction)
+           (define diff
+             (cond [diffuse-light?  (flabs (vdot normal light-dir))]
+                   [else  1.0]))
+           ;; Specular highlighting: Blinn-Phong model
+           (define spec
+             (cond [specular-light?  (fl* 32.0 (flexpt (flabs (vdot normal half-dir)) 20.0))]
+                   [else  0.0]))
+           ;; Blend ambient light with diffuse light, return specular as it is
+           ;; As ambient-light -> 1.0, contribution of diffuse -> 0.0
+           (values (fl+ ambient-light (fl* (fl- 1.0 ambient-light) diff)) spec))]))
     
     ;; ===============================================================================================
     ;; Public drawing control (used by plot3d/dc)

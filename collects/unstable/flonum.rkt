@@ -2,7 +2,7 @@
 
 (require racket/unsafe/ops)
 
-(provide flatan2 flmodulo
+(provide flatan2 flmodulo flexpt
          flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev
@@ -17,6 +17,11 @@
   (cond [(not (flonum? x))  (raise-type-error 'flmodulo "flonum" 0 x y)]
         [(not (flonum? y))  (raise-type-error 'flmodulo "flonum" 1 x y)]
         [else  (unsafe-fl- x (unsafe-fl* y (unsafe-flfloor (unsafe-fl/ x y))))]))
+
+(define (flexpt b x)
+  (cond [(not (flonum? b))  (raise-type-error 'flexpt "flonum" 0 b x)]
+        [(not (flonum? x))  (raise-type-error 'flexpt "flonum" 1 b x)]
+        [else  (unsafe-flexp (unsafe-fl* x (unsafe-fllog b)))]))
 
 (define (flonum->bit-field x)
   (cond [(flonum? x)  (integer-bytes->integer (real->floating-point-bytes x 8) #f)]
@@ -62,13 +67,3 @@
 (define -min.0 (flprev 0.0))
 (define +min.0 (flnext 0.0))
 (define +max.0 (flprev +inf.0))
-
-#|
-(require plot)
-
-(parameterize ([plot-x-ticks   (log-ticks #:base 2 #:number 5)]
-               [y-axis-ticks?  #f])
-  (plot (list (function (λ (x) (flonum->ordinal (exact->inexact x)))
-                        1/4 4)
-              (map y-axis '(1/2 1 2)))))
-|#

@@ -63,8 +63,10 @@
   (min (max i 1) 255))
 
 (define (real->color-byte f)
-  (define i (inexact->exact (floor f)))
-  (min (max i 0) 255))
+  (cond [(rational? f)  (define i (inexact->exact (floor f)))
+                        (min (max i 0) 255)]
+        [(eqv? f +inf.0)  255]
+        [else  0]))
 
 ;; Returns an immutable instance of color%. Immutable colors are faster because they don't have to
 ;; have immutable copies made when they're used in a dc.
