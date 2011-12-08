@@ -32,7 +32,7 @@
 (define-syntax stream
   (syntax-rules ()
     ((_)
-     stream-empty)
+     empty-stream)
     ((_ hd tl ...)
      (stream-cons hd (stream tl ...)))))
 

@@ -27,4 +27,12 @@
 (test "hello" stream-first (sequence->stream (in-producer (lambda () "hello") (void))))
 (test 65 stream-first (sequence->stream (in-port read-byte (open-input-string "A"))))
 
+(define one-to-four (stream 1 2 3 4))
+
+(test 1 stream-first one-to-four)
+(test 2 stream-ref one-to-four 1)
+(test 3 stream-ref one-to-four 2)
+(test 4 stream-ref one-to-four 3)
+(test #t stream-empty? (stream-rest (stream 1)))
+
 (report-errs)
