@@ -4127,12 +4127,24 @@ Scheme_Object *scheme_make_application(Scheme_Object *v)
 Scheme_App_Rec *scheme_malloc_application(int n)
 {
   Scheme_App_Rec *app;
-  int size;
+  intptr_t size;
 
-  size = (sizeof(Scheme_App_Rec) 
-	  + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *))
-	  + n * sizeof(char));
-  app = (Scheme_App_Rec *)scheme_malloc_tagged(size);
+  if (n < 0) {
+    scheme_signal_error("bad application count");
+    app = NULL;
+  } else if (n > 4096) {
+    size = scheme_check_overflow(n, 
+                                 sizeof(char),
+                                 (sizeof(Scheme_App_Rec) 
+                                  + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *))));
+    app = (Scheme_App_Rec *)scheme_malloc_fail_ok(scheme_malloc_tagged, size);
+    if (!app) scheme_signal_error("out of memory allocating application bytecode");
+  } else {
+    size = (sizeof(Scheme_App_Rec) 
+            + ((n - mzFLEX_DELTA) * sizeof(Scheme_Object *))
+            + n * sizeof(char));
+    app = (Scheme_App_Rec *)scheme_malloc_tagged(size);
+  }
 
   app->so.type = scheme_application_type;
 

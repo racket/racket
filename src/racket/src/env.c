@@ -1352,6 +1352,10 @@ Scheme_Object **scheme_make_builtin_references_table(void)
   scheme_misc_count += sizeof(Scheme_Object *) * (builtin_ref_counter + 1);
 #endif
 
+  for (j = builtin_ref_counter + 1; j--; ) {
+    t[j] = scheme_false;
+  }
+
   for (j = 0; j < 4; j++) {
     if (!j)
       kenv = kernel_env;

@@ -7279,6 +7279,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
 	--cnt;
       }
+      if (!first) return_NULL;
       if (!SCHEME_NULLP(o)) {
 	o = datum_to_syntax_inner(o, ut, stx_src, sub_stx_wraps, ht, tainted);
 	if (!o) return_NULL;

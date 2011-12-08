@@ -3663,6 +3663,8 @@ int scheme_can_inline_fp_comp();
 void scheme_unused_object(Scheme_Object*);
 void scheme_unused_intptr(intptr_t);
 
+intptr_t scheme_check_overflow(intptr_t n, intptr_t m, intptr_t a);
+
 /*========================================================================*/
 /*                           places                                       */
 /*========================================================================*/

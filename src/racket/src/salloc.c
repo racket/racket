@@ -632,6 +632,17 @@ static void raise_out_of_memory(void)
   scheme_raise_out_of_memory(NULL, NULL);
 }
 
+intptr_t scheme_check_overflow(intptr_t n, intptr_t m, intptr_t a)
+{
+  intptr_t v;
+
+  v = (n * m) + a;
+  if ((v < n) || (v < m) || (v < a) || (((v - a) / n) != m))
+    scheme_signal_error("allocation size overflow");
+
+  return v;
+}
+
 void *scheme_malloc_fail_ok(void *(*f)(size_t), size_t s)
 {
   void *v;

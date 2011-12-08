@@ -8,8 +8,15 @@
   (bytes-set! bs byte (bitwise-xor (expt 2 bit) val)))
 
 (define (run-file bs)
-  (eval (parameterize ([read-accept-compiled #t])
-          (with-input-from-bytes bs read))))
+  (sync
+   (parameterize ([current-custodian (make-custodian)])
+     (thread
+      (lambda ()
+        (custodian-limit-memory (current-custodian)
+                                (* 512 (expt 2 20)))
+        (with-handlers ([void void])
+          (eval (parameterize ([read-accept-compiled #t])
+                  (with-input-from-bytes bs read)))))))))
 
 (define (run fname seed0)
   (define seed (or seed0 (+ 1 (random (expt 2 30)))))
@@ -21,17 +28,20 @@
   (for ([i (in-range (quotient len 10000))]) (flip-bit bs (random len)))
   (with-handlers ([void void]) (run-file bs)))
 
-(let ([seed #f] [file #f] [dir #f])
+(let ([seed0 #f] [file #f] [dir #f] [forever? #f])
   (command-line
    #:once-each
-   ["-s" seed "random seed" (set! seed (string->number seed))]
+   ["-s" seed "random seed" (set! seed0 (string->number seed))]
+   ["--oo" "forever" (set! forever? #t)]
    #:once-any
    ["-f" file "filename to run"     (set! file file)]
    ["-d" dir* "dir to run"          (set! dir dir*)]
    ["-c" "run over all collections" (set! dir (find-collects-dir))]
    #:args () (void))
-  (cond [file (run file seed)]
-        [dir (for ([p (in-directory dir)]
-                   #:when (regexp-match #rx"\\.zo" p))
-               (run p seed))]
-        [else (printf "Nothing to do.\n")]))
+  (let loop ()
+    (cond [file (run file seed0)]
+          [dir (for ([p (in-directory dir)]
+                     #:when (regexp-match #rx"\\.zo" p))
+                 (run p seed0))]
+          [else (printf "Nothing to do.\n")])
+    (when forever? (loop))))

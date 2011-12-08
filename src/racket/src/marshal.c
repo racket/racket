@@ -275,7 +275,13 @@ static Scheme_Object *read_letrec(Scheme_Object *obj)
   lr->body = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
 
-  sa = MALLOC_N(Scheme_Object*, c);
+  if (c < 0) return NULL;
+  if (c < 4096)
+    sa = MALLOC_N(Scheme_Object*, c);
+  else {
+    sa = scheme_malloc_fail_ok(scheme_malloc, scheme_check_overflow(c, sizeof(Scheme_Object *), 0));
+    if (!sa) scheme_signal_error("out of memory allocating letrec bytecode");
+  }
   lr->procs = sa;
   for (i = 0; i < c; i++) {
     if (!SCHEME_PAIRP(obj)) return NULL;
@@ -312,6 +318,8 @@ static Scheme_Object *read_top(Scheme_Object *obj)
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->prefix = (Resolve_Prefix *)SCHEME_CAR(obj);
   top->code = SCHEME_CDR(obj);
+  if (!SAME_TYPE(SCHEME_TYPE(top->prefix), scheme_resolve_prefix_type)) 
+    return NULL;
 
   return (Scheme_Object *)top;
 }
@@ -585,6 +593,8 @@ static Scheme_Object *read_sequence_save_first(Scheme_Object *obj)
 static Scheme_Object *read_sequence_splice(Scheme_Object *obj)
 {
   obj = scheme_make_sequence_compilation(obj, 1);
+  if (!obj) return NULL;
+
   if (SAME_TYPE(SCHEME_TYPE(obj), scheme_sequence_type))
     obj->type = scheme_splice_sequence_type;
   return obj;
@@ -958,6 +968,9 @@ static Scheme_Object *read_toplevel(Scheme_Object *obj)
     flags = 0;
   }
 
+  if (depth < 0) return NULL;
+  if (pos < 0) return NULL;
+
   return scheme_make_toplevel(depth, pos, 1, flags);
 }
 
@@ -1029,6 +1042,7 @@ static Scheme_Object *do_read_local(Scheme_Type t, Scheme_Object *obj)
     flags = 0;
 
   n = (int)SCHEME_INT_VAL(obj);
+  if (n < 0) return NULL;
 
   return scheme_make_local(t, n, flags);
 }
@@ -1086,7 +1100,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp;
-  Scheme_Object *tv, *sv, **a, *stx;
+  Scheme_Object *tv, *sv, **a, *stx, *tl;
   intptr_t i;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
@@ -1119,7 +1133,15 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   i = rp->num_toplevels;
   a = MALLOC_N(Scheme_Object *, i);
   while (i--) {
-    a[i] = SCHEME_VEC_ELS(tv)[i];
+    tl = SCHEME_VEC_ELS(tv)[i];
+    if (!SCHEME_FALSEP(tl)
+        && !SCHEME_SYMBOLP(tl)
+        && (!SCHEME_PAIRP(tl)
+            || !SCHEME_SYMBOLP(SCHEME_CAR(tl)))
+        && !SAME_TYPE(SCHEME_TYPE(tl), scheme_variable_type)
+        && !SAME_TYPE(SCHEME_TYPE(tl), scheme_module_variable_type))
+      return NULL;
+    a[i] = tl;
   }
   rp->toplevels = a;
   

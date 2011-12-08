@@ -4723,10 +4723,10 @@ byte_converter_p(int argc, Scheme_Object *argv[])
 /**********************************************************************/
 
 static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t end,
-			 unsigned int *us, intptr_t dstart, intptr_t dend,
-			 intptr_t *ipos, intptr_t *jpos,
-			 char compact, char utf16, int *_state,
-			 int might_continue, int permissive)
+                              unsigned int *us, intptr_t dstart, intptr_t dend,
+                              intptr_t *ipos, intptr_t *jpos,
+                              char compact, char utf16, int *_state,
+                              int might_continue, int permissive)
      /* Results:
 	non-negative => translation complete, = number of produced chars
 	-1 => input ended in middle of encoding (only if might_continue)
@@ -5079,16 +5079,16 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
 }
 
 intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end,
-		       unsigned int *us, intptr_t dstart, intptr_t dend,
-		       intptr_t *ipos, char utf16, int permissive)
+                            unsigned int *us, intptr_t dstart, intptr_t dend,
+                            intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
 		       ipos, NULL, utf16, utf16, NULL, 0, permissive);
 }
 
 intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end,
-				 unsigned int *us, intptr_t dstart, intptr_t dend,
-				 intptr_t *ipos, char utf16, int permissive)
+                                      unsigned int *us, intptr_t dstart, intptr_t dend,
+                                      intptr_t *ipos, char utf16, int permissive)
      /* Always returns number of read characters, not error codes. */
 {
   intptr_t opos;

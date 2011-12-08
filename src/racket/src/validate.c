@@ -793,7 +793,7 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     if (q == self_pos)
       self_pos_in_closure = i;
     p = q + delta;
-    if ((q < 0) || (p >= depth) || (stack[p] <= VALID_UNINIT))
+    if ((q < 0) || (p < 0) || (p >= depth) || (stack[p] <= VALID_UNINIT))
       scheme_ill_formed_code(port);
     vld = stack[p];
     if (vld == VALID_VAL_NOCLEAR)
@@ -883,6 +883,10 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
 
   if (!SCHEME_MODNAMEP(m->modname))
     scheme_ill_formed_code(port);
+
+  validate_toplevel(m->dummy, port, stack, tls, depth, delta, 
+                    num_toplevels, num_stxes, num_lifts, tl_use_map,
+                    0);
 
   scheme_validate_code(port, m->bodies[0], m->max_let_depth,
                        m->prefix->num_toplevels, m->prefix->num_stxes, m->prefix->num_lifts,
@@ -1012,7 +1016,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       no_flo(need_flonum, port);
 
-      if ((c < 0) || (p < 0) || (d >= depth)
+      if ((c < 0) || (p < 0) || (d < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
 	  || (p >= (num_toplevels + num_lifts + num_stxes + (num_stxes ? 1 : 0)))
 	  || ((p >= num_toplevels) && (p < num_toplevels + num_stxes + (num_stxes ? 1 : 0))))
@@ -1071,7 +1075,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int q = SCHEME_LOCAL_POS(expr);
       int p = q + delta;
 
-      if ((q < 0) || (p >= depth))
+      if ((q < 0) || (p >= depth) || (p < 0))
 	scheme_ill_formed_code(port);
 
       if (SCHEME_GET_LOCAL_FLAGS(expr) != SCHEME_LOCAL_FLONUM)
@@ -1128,8 +1132,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       no_flo(need_flonum, port);
 
-      if ((q < 0) || (p >= depth) || ((stack[p] != VALID_BOX)
-                                      && (stack[p] != VALID_BOX_NOCLEAR)))
+      if ((q < 0) || (p >= depth) || (p < 0)
+          || ((stack[p] != VALID_BOX)
+              && (stack[p] != VALID_BOX_NOCLEAR)))
 	scheme_ill_formed_code(port);
 
       if (SCHEME_GET_LOCAL_FLAGS(expr) == SCHEME_LOCAL_CLEAR_ON_READ) {
@@ -1315,7 +1320,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       no_flo(need_flonum, port);
 
-      if ((c < 0) || (p < 0) || (d >= depth)
+      if ((c < 0) || (p < 0) || (d < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
 	  || (p != num_toplevels)
 	  || (i >= num_stxes))
@@ -1346,6 +1351,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       for (i = 0; i < c; i++, p++) {
 	if ((q < 0) 
+            || (p < 0)
 	    || (SCHEME_LET_AUTOBOX(lv) && ((p >= depth)
 					   || ((stack[p] != VALID_BOX)
                                                && (stack[p] != VALID_BOX_NOCLEAR))))
