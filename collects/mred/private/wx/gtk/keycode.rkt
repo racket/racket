@@ -66,7 +66,11 @@
          (#xffc9 . f12)
          (#xffca . f13)
          (#xffcb . f14)
-         (#xffcc . f15))
+         (#xffcc . f15)
+         (#xffe1 . shift)
+         (#xffe2 . rshift)
+         (#xffe3 . control)
+         (#xffe4 . rcontrol))
    v
    #f))
 

@@ -71,8 +71,10 @@ Gets the virtual key code for the key event. The virtual key code is
 @item{@indexed-racket['start]}
 @item{@indexed-racket['cancel]}
 @item{@indexed-racket['clear]}
-@item{@indexed-racket['shift]}
-@item{@indexed-racket['control]}
+@item{@indexed-racket['shift] --- Shift key}
+@item{@indexed-racket['rshift] --- right Shift key}
+@item{@indexed-racket['control] --- Control key}
+@item{@indexed-racket['rcontrol] --- right Control key}
 @item{@indexed-racket['menu]}
 @item{@indexed-racket['pause]}
 @item{@indexed-racket['capital]}

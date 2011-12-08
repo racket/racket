@@ -127,10 +127,14 @@
 
 
 (define (make-key-event just-check? wParam lParam is-char? is-up? hwnd)
-  (let ([control-down? (not (zero? (arithmetic-shift (GetKeyState VK_CONTROL) -1)))]
-        [shift-down? (not (zero? (arithmetic-shift (GetKeyState VK_SHIFT) -1)))]
-        [caps-down? (not (zero? (arithmetic-shift (GetKeyState VK_CAPITAL) -1)))]
-        [alt-down? (= (bitwise-and (HIWORD lParam) KF_ALTDOWN) KF_ALTDOWN)])
+  (let* ([control-down? (not (zero? (arithmetic-shift (GetKeyState VK_CONTROL) -1)))]
+         [rcontrol-down? (and control-down?
+                              (not (zero? (arithmetic-shift (GetKeyState VK_RCONTROL) -1))))]
+         [shift-down? (not (zero? (arithmetic-shift (GetKeyState VK_SHIFT) -1)))]
+	 [rshift-down? (and shift-down?
+                            (not (zero? (arithmetic-shift (GetKeyState VK_RSHIFT) -1))))]
+         [caps-down? (not (zero? (arithmetic-shift (GetKeyState VK_CAPITAL) -1)))]
+         [alt-down? (= (bitwise-and (HIWORD lParam) KF_ALTDOWN) KF_ALTDOWN)])
     (let-values ([(id other-shift other-altgr other-shift-altgr)
                   (cond
 		   [(symbol? wParam)
@@ -212,15 +216,11 @@
                                         (values id s a sa))))
                                 (values (and is-up? (try-generate-release)) #f #f #f))
                             (cond
-                             [(and (not is-up?) (= wParam VK_CONTROL))
-                              ;; Don't generate control-key down events:
-                              (values #f #f #f #f)]
                              [(and (not override-mapping?) (not is-up?)
                                    ;; Let these get translated to WM_CHAR or skipped
                                    ;; entirely:
                                    (memq wParam
-                                         (list VK_ESCAPE VK_SHIFT VK_CONTROL
-                                               VK_SPACE VK_RETURN VK_TAB VK_BACK)))
+                                         (list VK_ESCAPE VK_SPACE VK_RETURN VK_TAB VK_BACK)))
                               (values #f #f #f #f)]
                              [(and (not id) is-up?)
                               (values (try-generate-release) #f #f #f)]
@@ -230,9 +230,15 @@
            (if just-check?
                #t
                (let* ([id (if (number? id) (integer->char id) id)]
-		      [key-id (if (equal? id #\033)
-				  'escape
-				  id)]
+		      [key-id (case id
+                                [(#\033) 'escape]
+                                [(shift) (if rshift-down?
+                                             'rshift
+                                             id)]
+                                [(control) (if rcontrol-down?
+                                               'rcontrol
+                                               id)]
+                                [else id])]
                       [e (new key-event%
                               [key-code (if is-up?
                                            'release

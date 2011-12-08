@@ -169,15 +169,18 @@
                              [(positive? delta-x) '(wheel-left)]
                              [else '(wheel-right)]))])
           (unless (and (pair? evts)
-                       (do-key-event wxb event self #f evts))
+                       (do-key-event wxb event self #f #f evts))
             (super-tell #:type _void scrollWheel: event))))]
   
   [-a _void (keyDown: [_id event])
-      (unless (do-key-event wxb event self #t #f)
+      (unless (do-key-event wxb event self #t #f #f)
         (super-tell #:type _void keyDown: event))]
   [-a _void (keyUp: [_id event])
-      (unless (do-key-event wxb event self #f #f)
+      (unless (do-key-event wxb event self #f #f #f)
         (super-tell #:type _void keyUp: event))]
+  [-a _void (flagsChanged: [_id event])
+      (unless (do-key-event wxb event self #f #t #f)
+        (super-tell #:type _void flagsChanged: event))]
   [-a _void (insertText: [_NSStringOrAttributed str])
       (set-saved-marked! wxb #f #f)
       (let ([cit (current-insert-text)])
@@ -291,7 +294,7 @@
         (when wx
           (send wx reset-cursor-rects)))])
 
-(define (do-key-event wxb event self down? wheel)
+(define (do-key-event wxb event self down? mod-change? wheel)
   (let ([wx (->wx wxb)])
     (and
      wx
@@ -318,6 +321,7 @@
               [pos (tell #:type _NSPoint event locationInWindow)]
               [str (cond
                     [wheel #f]
+                    [mod-change? #f]
                     [(unbox set-mark) ""] ; => dead key for composing characters
                     [(unbox inserted-text)]
                     [else
@@ -327,6 +331,12 @@
               [option? (bit? modifiers NSAlternateKeyMask)]
               [codes (cond
                       [wheel wheel]
+                      [mod-change? (case (tell #:type _ushort event keyCode)
+                                     [(56) '(shift)]
+                                     [(59) '(control)]
+                                     [(60) '(rshift)]
+                                     [(62) '(rcontrol)]
+                                     [else '()])]
                       [had-saved-text? str]
                       [(map-key-code (tell #:type _ushort event keyCode))
                        => list]
@@ -355,7 +365,7 @@
                             [y (->long y)]
                             [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
                             [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-                (unless wheel
+                (unless (or wheel mod-change?)
                   (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
                     (when (and (string? alt-str)
                                (= 1 (string-length alt-str)))
@@ -370,8 +380,13 @@
                     ;; swap altenate with main
                     (let ([other (send k get-other-altgr-key-code)])
                       (send k set-other-altgr-key-code (send k get-key-code))
-                      (send k set-key-code other)))
-                  (unless down?
+                      (send k set-key-code other))))
+                (unless wheel
+                  (unless (or down? (and mod-change?
+                                         (case (send k get-key-code)
+                                           [(shift rshift) (send k get-shift-down)]
+                                           [(control rcontrol) (send k get-control-down)]
+                                           [else #t])))
                     ;; swap altenate with main
                     (send k set-key-release-code (send k get-key-code))
                     (send k set-key-code 'release)))
