@@ -14,6 +14,7 @@
          prop:stream
          in-stream
 
+         stream
          stream->list
          stream-length
          stream-ref
@@ -27,7 +28,14 @@
          stream-filter
          stream-add-between
          stream-count)
-  
+
+(define-syntax stream
+  (syntax-rules ()
+    ((_)
+     empty-stream)
+    ((_ hd tl ...)
+     (stream-cons hd (stream tl ...)))))
+
 (define (stream->list s)
   (for/list ([v (in-stream s)]) v))
   
