@@ -1239,15 +1239,18 @@ real_p(int argc, Scheme_Object *argv[])
   return (SCHEME_REALP(o) ? scheme_true : scheme_false);
 }
 
+static int is_rational(const Scheme_Object *o)
+{
+  if (SCHEME_FLOATP(o))
+    return rational_dbl_p(SCHEME_FLOAT_VAL(o));
+  else
+    return SCHEME_REALP(o);
+}
+
 static Scheme_Object *
 rational_p(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *o = argv[0];
-
-  if (SCHEME_FLOATP(o))
-    return (rational_dbl_p(SCHEME_FLOAT_VAL(o)) ? scheme_true : scheme_false);
-  else
-    return (SCHEME_REALP(o) ? scheme_true : scheme_false);
+  return (is_rational(argv[0]) ? scheme_true : scheme_false);
 }
 
 int scheme_is_integer(const Scheme_Object *o)
@@ -1507,8 +1510,8 @@ static Scheme_Object *int_abs(Scheme_Object *v)
     return v;
 }
 
-GEN_NARY_OP(static, gcd, "gcd", scheme_bin_gcd, 0, scheme_is_integer, "integer", int_abs)
-GEN_NARY_OP(static, lcm, "lcm", bin_lcm, 1, scheme_is_integer, "integer", int_abs)
+GEN_NARY_OP(static, gcd, "gcd", scheme_bin_gcd, 0, is_rational, "rational", int_abs)
+GEN_NARY_OP(static, lcm, "lcm", bin_lcm, 1, is_rational, "rational", int_abs)
 
 Scheme_Object *
 scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
@@ -1536,6 +1539,22 @@ scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
       b = r;
     }
     return (scheme_make_integer(a));
+  } else if (!scheme_is_integer(n1) || !scheme_is_integer(n2)) {
+    Scheme_Object *n1a, *n2a, *a[1], *num;
+
+    a[0] = (Scheme_Object *)n1;
+    n1a = numerator(1, a);
+    a[0] = (Scheme_Object *)n2;
+    n2a = numerator(1, a);
+    num = scheme_bin_gcd(n1a, n2a);
+    
+    a[0] = (Scheme_Object *)n1;
+    n1a = denominator(1, a);
+    a[0] = (Scheme_Object *)n2;
+    n2a = denominator(1, a);
+    n1a = bin_lcm(n1a, n2a);
+
+    return scheme_bin_div(num, n1a);
   } else if (SCHEME_FLOATP(n1) || SCHEME_FLOATP(n2)) {
     double i1, i2, a, b, r;
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -1620,7 +1639,7 @@ bin_lcm (Scheme_Object *n1, Scheme_Object *n2)
   if (scheme_is_zero(d))
     return d;
   
-  ret = scheme_bin_mult(n1, scheme_bin_quotient(n2, d));
+  ret = scheme_bin_mult(n1, scheme_bin_div(n2, d));
 
   return scheme_abs(1, &ret);
 }

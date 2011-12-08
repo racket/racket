@@ -363,23 +363,28 @@ Returns the smallest of the @racket[x]s, or @racket[+nan.0] if any
 @mz-examples[(min 1 3 2) (min 1 3 2.0)]}
 
 
-@defproc[(gcd [n integer?] ...) integer?]{
+@defproc[(gcd [n rational?] ...) rational?]{
 
 Returns the @as-index{greatest common divisor} (a non-negative
- number) of the @racket[n]s. If no arguments are provided, the result
+ number) of the @racket[n]s; for non-integer @racket[n]s, the result
+ is the @racket[gcd] of the numerators divided
+ by the @racket[lcm] of the denominators. 
+ If no arguments are provided, the result
  is @racket[0]. If all arguments are zero, the result is zero.
 
-@mz-examples[(gcd 10) (gcd 12 81.0)]}
+@mz-examples[(gcd 10) (gcd 12 81.0) (gcd 1/2 1/3)]}
 
 
-@defproc[(lcm [n integer?] ...) integer?]{
+@defproc[(lcm [n rational?] ...) rational?]{
 
 Returns the @as-index{least common multiple} (a non-negative number)
- of the @racket[n]s. If no arguments are provided, the result is
+ of the @racket[n]s; non-integer @racket[n]s, the result is
+ the absolute value of the product divided by the
+ @racket[gcd]. If no arguments are provided, the result is
  @racket[1]. If any argument is zero, the result is zero; furthermore,
  if any argument is exact @racket[0], the result is exact @racket[0].
 
-@mz-examples[(lcm 10) (lcm 3 4.0)]}
+@mz-examples[(lcm 10) (lcm 3 4.0) (lcm 1/2 2/3)]}
 
 
 @defproc[(round [x real?]) (or/c integer? +inf.0 -inf.0 +nan.0)]{
