@@ -172,6 +172,16 @@
         (tc-e (- -23524623547234734568) -PosInt)
         (tc-e (- 241.3) -NegFlonum)
         (tc-e (- -24.3) -PosFlonum)
+
+        (tc-e (gcd 1/2) -PosRat)
+        (tc-e (gcd 3 1/2) -PosRat)
+        (tc-e (gcd (ann 3 Integer) 1/2) -NonNegRat)
+        (tc-e (gcd (ann 3 Integer) -1/2) -NonNegRat)
+        (tc-e (lcm 1/2) -PosRat)
+        (tc-e (lcm 3 1/2) -PosRat)
+        (tc-e (lcm (ann 3 Integer) 1/2) -NonNegRat)
+        (tc-e (lcm (ann 3 Integer) -1/2) -NonNegRat)
+
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : -true-lfilter)]

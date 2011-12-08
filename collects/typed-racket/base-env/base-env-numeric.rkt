@@ -1677,7 +1677,7 @@
        (map binop (list -Flonum -SingleFlonum -InexactReal -Real)))]
 
 [gcd (from-cases (varop -Zero)
-                 (varop -One)
+                 (varop-1+ -One)
                  (varop-1+ -PosByte)
                  (varop -Byte)
                  (varop-1+ -PosIndex)
@@ -1686,6 +1686,8 @@
                  (varop -Fixnum -NonNegFixnum)
                  (varop-1+ -PosInt)
                  (varop -Int -Nat)
+                 (varop-1+ -PosRat)
+                 (varop -Rat -NonNegRat)
                  ;; also supports inexact integers
                  (varop-1+ -PosFlonum)
                  (commutative-case -PosFlonum -PosReal -PosFlonum)
@@ -1712,6 +1714,8 @@
                  (binop -Byte -Index)
                  (varop (Un -PosInt -NegInt) -PosInt)
                  (varop -Int -Nat)
+                 (varop (Un -PosRat -NegRat) -PosRat)
+                 (varop -Rat -NonNegRat)
                  ;; also supports inexact integers
                  (commutative-case -FlonumZero -Real -FlonumPosZero)
                  (commutative-case -SingleFlonumZero -Real -SingleFlonumPosZero)
