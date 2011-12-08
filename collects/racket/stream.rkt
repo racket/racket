@@ -93,14 +93,14 @@
                     (lambda () (stream-first (car l)))
                     (lambda () (streams-append (cons (stream-rest (car l)) (cdr l)))))]))
   
-(define (stream-map f s)
-  (unless (procedure? f) (raise-type-error 'stream-map "procedure" f))
-  (unless (stream? s) (raise-type-error 'stream-map "stream" s))
-  (let loop ([s s])
-    (cond
-     [(stream-empty? s) empty-stream]
-     [else (stream-cons (call-with-values (lambda () (stream-first s)) f)
-                        (loop (stream-rest s)))])))
+(define (stream-map f strm1 . more)
+  (let ([strms (cons strm1 more)])
+   (unless (procedure? f) (raise-type-error 'stream-map "procedure" f))
+   (unless (andmap stream? strms) (raise-type-error 'stream-map "stream" strms))
+   (let loop ([strms strms])
+     (cond [(stream-ormap stream-empty? strms) empty-stream]
+           [else (stream-cons (apply f (map stream-first strms))
+                              (loop (map stream-rest strms)))]))))
   
 (define (stream-andmap f s)
   (unless (procedure? f) (raise-type-error 'stream-andmap "procedure" f))

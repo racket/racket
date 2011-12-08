@@ -35,4 +35,24 @@
 (test 4 stream-ref one-to-four 3)
 (test #t stream-empty? (stream-rest (stream 1)))
 
+(define fibonacci
+  (stream-cons 0 (stream-cons 1 (stream-map +
+                                            fibonacci
+                                            (stream-rest fibonacci)))))
+
+(test 0 'stream-map-fib (stream-ref fibonacci 0))
+(test 1 'stream-map-fib (stream-ref fibonacci 1))
+(test 1 'stream-map-fib (stream-ref fibonacci 2))
+(test 21 'stream-map-fib (stream-ref fibonacci 8))
+
+(test 7 'stream-map-single-arg (stream-ref (stream-map add1
+                                                       (stream 1 2 3 4 5 6))
+                                           5))
+
+(test 9 'stream-map-three-arg (stream-ref (stream-map +
+                                                      (stream 1 2 3)
+                                                      (stream 1 2 3)
+                                                      (stream 1 2 3))
+                                          2))
+
 (report-errs)
