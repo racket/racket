@@ -152,6 +152,7 @@
 (define-png png_set_gray_to_rgb (_fun _png_structp -> _void))
 (define-png png_set_tRNS_to_alpha (_fun _png_structp -> _void))
 (define-png png_set_strip_16 (_fun _png_structp -> _void))
+(define-png png_set_strip_alpha (_fun _png_structp -> _void))
 (define-png png_set_gray_1_2_4_to_8 (_fun _png_structp -> _void)
   #:fail (lambda () #f))
 (define-png png_set_expand_gray_1_2_4_to_8 (_fun _png_structp -> _void)
@@ -267,9 +268,13 @@
                                        [(macosx) 1.7]
                                        [else 2.0]))
                              gamma))))
-        (when alpha?
-          ;; Add filler (or alpha) byte (before each RGB triplet)
-          (png_set_filler png 255 PNG_FILLER_AFTER))
+        (cond
+         [alpha?
+          ;; Make sure there's an alpha or filler byte (before each RGB triplet):
+          (png_set_filler png 255 PNG_FILLER_AFTER)]
+         [tRNS?
+          ;; Make sure there's no alpha channel:
+          (png_set_strip_alpha png)])
         (let ([num-passes (png_set_interlace_handling png)])
           (png_read_update_info png info)
           (values (make-reader png info ib num-passes w h)
