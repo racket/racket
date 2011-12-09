@@ -179,6 +179,31 @@
        (values out #'rest #t)])))
 
 (provide honu-dot)
+(define-honu-fixture honu-dot
+  (lambda (left rest)
+    (syntax-parse rest #:literal-sets (cruft)
+                       #:literals (honu-assignment)
+      [(_ name:identifier honu-assignment argument:honu-expression . more)
+       (with-syntax ([left left])
+         (values #'(%racket
+                     (let ([left* left])
+                       (cond
+                         [(honu-struct? left*)
+                          (honu-struct-set! left* 'name argument.result)]
+                         [(object? left*) (error 'set "implement set for objects")])))
+                 #'more))]
+      [(_ name:identifier . more)
+       (with-syntax ([left left])
+         (values #'(%racket
+                     (let ([left* left])
+                       (cond
+                         [(honu-struct? left*) (let ([use (honu-struct-get left*)])
+                                                 (use left* 'name))]
+                         [(object? left*) (get-field name left*)]
+                         ;; possibly handle other types of data
+                         [else (error 'dot "don't know how to deal with ~a (~a)" 'left left*)])))
+                 #'more))])))
+#;
 (define-honu-operator/syntax honu-dot 10000 'left
   (lambda (left right)
     (debug "dot left ~a right ~a\n" left right)
