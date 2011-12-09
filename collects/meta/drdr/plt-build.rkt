@@ -75,7 +75,8 @@
    (tar-path) 
    (list "-czvf" 
          (path->string (revision-trunk.tgz rev))
-         (path->string trunk-dir))))
+         "-C" (path->string rev-dir)
+         "trunk")))
 
 (define (call-with-temporary-directory thunk)
   (define tempdir (symbol->string (gensym 'tmpdir)))
