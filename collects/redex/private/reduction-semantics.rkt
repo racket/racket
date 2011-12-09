@@ -481,7 +481,7 @@
   (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
        (extract-pattern-binds pat)))
 
-(define-for-syntax (check-judgment-arity judgment)
+(define-for-syntax (check-judgment-arity stx judgment)
   (syntax-case judgment ()
     [(form-name pat ...)
      (judgment-form-id? #'form-name)
@@ -492,7 +492,9 @@
           #f 
           (format "mode specifies a ~a-ary relation but use supplied ~a term~a" 
                   expected actual (if (= actual 1) "" "s"))
-          judgment)))]))
+          judgment)))]
+    [(form-name pat ...)
+     (raise-syntax-error #f "expected a judgment form name" stx #'form-name)]))
 
 (define-syntax-set (do-reduction-relation)
   (define (do-reduction-relation/proc stx)
@@ -689,8 +691,11 @@
                                                  [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
                                      (cons (to-lw/proc #'(form-name . pieces))
                                            (for/fold ([binds scs/withs]) ([out outs])
-                                                     (append (name-pattern-lws/rr out) binds))))
-                                   fvars)])]))])
+                                             (append (name-pattern-lws/rr out) binds))))
+                                   fvars)]
+                            [_
+                             ;; just skip over junk here, and expect a syntax error to be raised elsewhere
+                             (loop (cdr stuffs) label computed-label scs/withs fvars)])]))])
          (with-syntax ([(scs/withs ...) scs/withs]
                        [(fvars ...) fvars]
                        [((bind-id . bind-pat) ...) 
@@ -1055,7 +1060,7 @@
                     (raise-syntax-error orig-name "malformed computed-name clause" stx (car extras))]
                    [(judgment-holds judgment)
                     (begin
-                      (check-judgment-arity #'judgment)
+                      (check-judgment-arity stx #'judgment)
                       (cons #'judgment (loop (cdr extras))))]
                    [_
                     (raise-syntax-error orig-name "unknown extra" stx (car extras))])]))])
@@ -1873,7 +1878,7 @@
             [lang (judgment-form-lang (syntax-local-value #'form-name))]
             [nts (definition-nts lang stx syn-err-name)]
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
-       (check-judgment-arity judgment)
+       (check-judgment-arity stx judgment)
        #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
                              'flatten #`(list (term #,#'tmpl)) '() '())
                string<=?
@@ -1967,7 +1972,7 @@
                              description (car rest-terms) pos))
             (loop (cdr rest-modes) rest-terms rest-ctcs (+ 1 pos)))))))
 
-(define-for-syntax (mode-check mode clauses nts syn-err-name)
+(define-for-syntax (mode-check mode clauses nts syn-err-name orig-stx)
   (define ((check-template bound-anywhere) temp bound)
     (let check ([t temp])
       (syntax-case t (unquote)
@@ -2009,7 +2014,7 @@
     (syntax-case clause ()
       [(conc . prems)
        (let-values ([(conc-in conc-out) (split-body #'conc)])
-         (check-judgment-arity #'conc)
+         (check-judgment-arity orig-stx #'conc)
          (define acc-out
            (for/fold ([acc (foldl pat-pos acc-init conc-in)])
                      ([prem (drop-ellipses #'prems)])
@@ -2022,7 +2027,7 @@
                        [(form-name . _)
                         (if (judgment-form-id? #'form-name)
                             (let-values ([(prem-in prem-out) (split-body prem)])
-                              (check-judgment-arity prem)
+                              (check-judgment-arity orig-stx prem)
                               (for ([pos prem-in]) (tmpl-pos pos acc))
                               (foldl pat-pos acc prem-out))
                             (raise-syntax-error syn-err-name "expected judgment form name" #'form-name))]
@@ -2125,7 +2130,7 @@
   (syntax-case stx ()
     [(_ judgment-form-name lang mode clauses ctcs full-def syn-err-name)
      (let ([nts (definition-nts #'lang #'full-def (syntax-e #'syn-err-name))])
-       (mode-check (syntax->datum #'mode) (syntax->list #'clauses) nts (syntax-e #'syn-err-name))
+       (mode-check (syntax->datum #'mode) (syntax->list #'clauses) nts (syntax-e #'syn-err-name) stx)
        (do-compile-judgment-form-proc
         (syntax-e #'judgment-form-name) 
         (syntax->datum #'mode) 
