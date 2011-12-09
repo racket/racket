@@ -8,7 +8,7 @@
 (provide set seteq seteqv
          set? set-eq? set-eqv? set-equal?
          set-empty? set-count
-         set-member? set-add set-remove
+         set-member? set-add set-remove set-some-element
          set-union set-intersect set-subtract set-symmetric-difference
          subset? proper-subset?
          set-map set-for-each 
@@ -146,6 +146,10 @@
 (define (set-remove set v)
   (unless (set? set) (raise-type-error 'set-remove "set" 0 set v))
   (make-set (hash-remove (set-ht set) v)))
+
+(define (set-some-element set)
+  (unless (set? set) (raise-type-error 'set-some-element "set" 0 set))
+  (car (hash-keys (set-ht set))))
 
 (define set-union
   (case-lambda

@@ -50,6 +50,8 @@
   (test #t set-member? (set-remove s 5) 3)
   (test #f set-member? (set-remove s 3) 3)
 
+  (test #t set-member? s (set-some-element s))
+
   (test #t subset? (set 1 3) s)
   (test #t subset? (set 1 2 3) s)
   (test #f subset? (set 1 4) s)
