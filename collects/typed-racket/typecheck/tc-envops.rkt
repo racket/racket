@@ -13,7 +13,7 @@
                   env? update-type/lexical env-map env-props replace-props)
          scheme/contract racket/match
          mzlib/trace  unstable/struct
-         (typecheck tc-metafunctions)
+         "tc-metafunctions.rkt"
          (for-syntax scheme/base))
 
 ;(trace replace-nth)

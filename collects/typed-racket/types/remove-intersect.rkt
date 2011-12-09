@@ -24,6 +24,8 @@
          [(list _ (Univ:)) #t]
          [(list (F: _) _) #t]
          [(list _ (F: _)) #t]
+         [(list (Opaque: _ _) _) #t]
+         [(list _ (Opaque: _ _)) #t]
          [(list (Name: n) (Name: n*))
           (or (free-identifier=? n n*)
               (overlap (resolve-once t1) (resolve-once t2)))]

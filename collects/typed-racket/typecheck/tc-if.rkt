@@ -7,7 +7,7 @@
          (env lexical-env type-env-structs)
          (r:infer infer)
 	 (utils tc-utils)
-         (typecheck tc-envops tc-metafunctions)
+         "tc-envops.rkt" "tc-metafunctions.rkt"
          (types type-table)
          syntax/kerncase
          racket/trace
