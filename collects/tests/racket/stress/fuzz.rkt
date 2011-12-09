@@ -34,7 +34,7 @@
    ["-s" seed "random seed" (set! seed0 (string->number seed))]
    ["--oo" "forever" (set! forever? #t)]
    #:once-any
-   ["-f" file "filename to run"     (set! file file)]
+   ["-f" file* "filename to run"     (set! file file*)]
    ["-d" dir* "dir to run"          (set! dir dir*)]
    ["-c" "run over all collections" (set! dir (find-collects-dir))]
    #:args () (void))
