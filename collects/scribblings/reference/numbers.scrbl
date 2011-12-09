@@ -796,7 +796,13 @@ Seeds the current pseudo-random number generator with
 @racket[k]. Seeding a generator sets its internal state
 deterministically; that is, seeding a generator with a particular
 number forces it to produce a sequence of pseudo-random numbers that
-is the same across runs and across platforms.}
+is the same across runs and across platforms.
+
+The @racket[random-seed] function is convenient for some purposes, but
+note that the space of states for a pseudo-random number generator is
+much larger that the space of allowed values for @racket[k]. Use
+@racket[vector->pseudo-random-generator!] to set a pseudo-random
+number generator to any of its possible states.}
 
 
 @defproc[(make-pseudo-random-generator) pseudo-random-generator?]{
@@ -818,7 +824,7 @@ used by @racket[random].}
 
 
 @defproc[(pseudo-random-generator->vector [generator pseudo-random-generator?])
-         vector?]{
+         pseudo-random-generator-vector?]{
 
 Produces a vector that represents the complete internal state of
 @racket[generator]. The vector is suitable as an argument to
@@ -826,24 +832,29 @@ Produces a vector that represents the complete internal state of
 its current state (across runs and across platforms).}
 
 
-@defproc[(vector->pseudo-random-generator [vec vector?])
+@defproc[(vector->pseudo-random-generator [vec pseudo-random-generator-vector?])
          pseudo-random-generator?]{
 
 Produces a pseudo-random number generator whose internal state
-corresponds to @racket[vec]. The vector @racket[vec] must contain six
-exact integers; the first three integers must be in the range
-@racket[0] to @racket[4294967086], inclusive; the last three integers
-must be in the range @racket[0] to @racket[4294944442], inclusive; at
-least one of the first three integers must be non-zero; and at least
-one of the last three integers must be non-zero.}
+corresponds to @racket[vec].}
 
 @defproc[(vector->pseudo-random-generator! [generator pseudo-random-generator?]
-                                           [vec vector?])
+                                           [vec pseudo-random-generator-vector?])
          void?]{
 
 Like @racket[vector->pseudo-random-generator], but changes
 @racket[generator] to the given state, instead of creating a new
 generator.}
+
+
+@defproc[(pseudo-random-generator-vector? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a vector of six exact integers,
+where the first three integers are in the range @racket[0] to
+@racket[4294967086], inclusive; the last three integers are in the
+range @racket[0] to @racket[4294944442], inclusive; at least one of
+the first three integers is non-zero; and at least one of the last
+three integers is non-zero. Otherwise, the result is @racket[#f].}
 
 @; ------------------------------------------------------------------------
 @subsection{Number--String Conversions}

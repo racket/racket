@@ -1,3 +1,6 @@
+Version 5.2.0.6
+Added pseudo-random-generator-vector?
+
 Version 5.2.0.5
 Cross-module inlining of trivial functions, plus map, for-each,
  andmap, and ormap; 'compiler-hint:cross-module-inline hint

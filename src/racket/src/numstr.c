@@ -28,7 +28,7 @@
    the error messages are better this way.
 
    Also, for no particularly good reason, random-number support is
-   here, though the real work is in random.inc (from FreeBSD). */
+   here, though the real work is in newrandom.inc. */
 
 #include "schpriv.h"
 #include <math.h>
@@ -53,6 +53,7 @@ static Scheme_Object *pseudo_random_generator_p(int argc, Scheme_Object **argv);
 static Scheme_Object *sch_unpack(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_pack(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_pack_bang(int argc, Scheme_Object *argv[]);
+static Scheme_Object *sch_check_pack(int argc, Scheme_Object *argv[]);
 
 static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc);
 
@@ -149,6 +150,11 @@ void scheme_init_numstr(Scheme_Env *env)
   scheme_add_global_constant("pseudo-random-generator->vector",
 			     scheme_make_prim_w_arity(sch_unpack,
 						      "pseudo-random-generator->vector", 
+						      1, 1), 
+			     env);
+  scheme_add_global_constant("pseudo-random-generator-vector?",
+                             scheme_make_prim_w_arity(sch_check_pack,
+						      "pseudo-random-generator-vector?", 
 						      1, 1), 
 			     env);
   scheme_add_global_constant("pseudo-random-generator?", 
@@ -2292,7 +2298,7 @@ sch_random(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-do_pack(const char *name, int argc, Scheme_Object *argv[], int set)
+do_pack(const char *name, int argc, Scheme_Object *argv[], int set, int check)
 {
   Scheme_Object *s;
   GC_CAN_IGNORE Scheme_Random_State rs;
@@ -2304,10 +2310,13 @@ do_pack(const char *name, int argc, Scheme_Object *argv[], int set)
     }
   }
 
-  if (SCHEME_VECTORP(argv[set]))
-    s = pack_rand_state(argv[set], (set ? &rs : NULL));
+  if (SCHEME_VECTORP(argv[set]) && (SCHEME_VEC_SIZE(argv[set]) == 6))
+    s = pack_rand_state(argv[set], ((set || check) ? &rs : NULL));
   else
     s = NULL;
+
+  if (check)
+    return (s ? scheme_true : scheme_false);
 
   if (!s)
     scheme_wrong_type(name,
@@ -2333,13 +2342,19 @@ do_pack(const char *name, int argc, Scheme_Object *argv[], int set)
 static Scheme_Object *
 sch_pack(int argc, Scheme_Object *argv[])
 {
-  return do_pack("vector->pseudo-random-generator", argc, argv, 0);
+  return do_pack("vector->pseudo-random-generator", argc, argv, 0, 0);
 }
 
 static Scheme_Object *
 sch_pack_bang(int argc, Scheme_Object *argv[])
 {
-  return do_pack("vector->pseudo-random-generator!", argc, argv, 1);
+  return do_pack("vector->pseudo-random-generator!", argc, argv, 1, 0);
+}
+
+static Scheme_Object *
+sch_check_pack(int argc, Scheme_Object *argv[])
+{
+  return do_pack("pseudo-random-generator-vector?", argc, argv, 0, 1);
 }
 
 static Scheme_Object *

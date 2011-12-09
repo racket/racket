@@ -2230,6 +2230,22 @@
 (arity-test current-evt-pseudo-random-generator 0 1)
 (err/rt-test (current-pseudo-random-generator 10))
 
+(let ([g (current-pseudo-random-generator)])
+  (test #t pseudo-random-generator-vector? (pseudo-random-generator->vector g)))
+(test #f pseudo-random-generator-vector? #())
+(test #t pseudo-random-generator-vector? #(1 2 3 4 5 6))
+(test #f pseudo-random-generator-vector? #(0 0 0 4 5 6))
+(test #f pseudo-random-generator-vector? #(1 2 3 0 0 0))
+(test #f pseudo-random-generator-vector? #(1 2 3 4 5 #f))
+(err/rt-test (vector->pseudo-random-generator #()))
+(err/rt-test (vector->pseudo-random-generator #(0 0 0 1 2 3)))
+;; Known state should produce known values:
+(parameterize ([current-pseudo-random-generator
+                (vector->pseudo-random-generator
+                 #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
+  (test 5353 random 10000)
+  (test 8571 random 10000)
+  (test 9729 random 10000))
 
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))
