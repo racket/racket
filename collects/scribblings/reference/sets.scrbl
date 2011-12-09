@@ -65,6 +65,11 @@ Produces a set that includes @racket[v] plus all elements of
 Produces a set that includes all elements of @racket[st] except
 @racket[v]. This operation runs in constant time.}
 
+@defproc[(set-some-element [st set?]) any/c]{
+
+Produces a random element from @racket[st]. This procedure is not guaranteed to
+produce the same element if it is called again with the same set. This operation
+runs in constant time.}
 
 @defproc[(set-union [st set?] ...+) set?]{
 
