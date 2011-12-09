@@ -50,6 +50,12 @@
   (test #t set-member? (set-remove s 5) 3)
   (test #f set-member? (set-remove s 3) 3)
 
+  (test #t 'set-get-one (set-member? s (set-get-one s)))
+
+  (test #t 'set-get-one/rest (set-member? s (let-values (((e _) (set-get-one/rest s))) e)))
+  (test #f 'set-get-one/rest (let-values (((e s-no-e) (set-get-one/rest s)))
+                               (set-member? s-no-e e)))
+
   (test #t subset? (set 1 3) s)
   (test #t subset? (set 1 2 3) s)
   (test #f subset? (set 1 4) s)
