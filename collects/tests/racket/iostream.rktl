@@ -64,7 +64,7 @@
       (let* ([s (read-bytes 5000 p)]
 	     [s2 (read-bytes (if (bytes? s) (bytes-length s) 100) in)])
 	(unless (equal? s s2)
-	  (error "fast check failed"))
+	  (error 'check-file/fast "failed: ~s vs. ~s" s s2))
 	(unless (eof-object? s)
 	  (loop))))
     (close-input-port p)))
