@@ -145,7 +145,7 @@
                        (if (eq? mode 'new)
                          (make-element
                           #f (list (racketparenfont "[")
-                                   (racketidfont (keyword->string (arg-kw arg)))
+                                   (racketidfont (read-intern-literal (keyword->string (arg-kw arg))))
                                    spacer
                                    (to-element (make-var-id (arg-id arg)))
                                    (racketparenfont "]")))
@@ -267,7 +267,7 @@
                                    #f
                                    content
                                    tag
-                                   (list (symbol->string mname))
+                                   (list (read-intern-literal (symbol->string mname)))
                                    content
                                    (with-exporting-libraries
                                     (lambda (libs)
@@ -289,7 +289,7 @@
                  #f
                  (list (make-index-element
                         #f content tag
-                        (list (symbol->string (extract-id prototype)))
+                        (list (read-intern-literal (symbol->string (extract-id prototype))))
                         content
                         (with-exporting-libraries
                          (lambda (libs)
@@ -899,7 +899,7 @@
                                    #f
                                    content
                                    tag
-                                   (list (symbol->string name))
+                                   (list (read-intern-literal (symbol->string name)))
                                    content
                                    (with-exporting-libraries
                                     (lambda (libs) (make-thing-index-desc name libs)))))
@@ -942,7 +942,7 @@
     (make-target-element*
      make-target-element
      stx-id
-     (let* ([name (string-append* (map symbol->string (cdar wrappers)))]
+     (let* ([name (read-intern-literal (string-append* (map symbol->string (cdar wrappers))))]
             [target-maker
              (id-to-target-maker (datum->syntax stx-id (string->symbol name))
                                  #t)])

@@ -40,10 +40,13 @@
 (provide include-section)
 
 (define (gen-tag content)
-  (regexp-replace* "[^-a-zA-Z0-9_=]" (content->string content) "_"))
+  (read-intern-literal
+   (regexp-replace* "[^-a-zA-Z0-9_=]" (content->string content) "_")))
 
 (define (prefix->string p)
-  (and p (if (string? p) p (module-path-prefix->string p))))
+  (and p (if (string? p) 
+             (read-intern-literal p)
+             (module-path-prefix->string p))))
 
 (define (convert-tag tag content)
   (if (list? tag)
@@ -171,7 +174,7 @@
 (define (intern-taglet v)
   (let ([v (if (list? v)
                (map intern-taglet v)
-               v)])
+               (read-intern-literal v))])
     (if (or (string? v)
             (bytes? v)
             (list? v))
@@ -226,7 +229,8 @@
         v)))
 
 (define (module-path-prefix->string p)
-  (format "~a" (module-path-index->taglet (module-path-index-join p #f))))
+  (read-intern-literal
+   (format "~a" (module-path-index->taglet (module-path-index-join p #f)))))
 
 (define doc-prefix
   (case-lambda

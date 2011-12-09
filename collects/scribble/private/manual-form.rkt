@@ -326,7 +326,7 @@
             (if kw-id
                 (list (make-index-element
                        #f content tag
-                       (list (symbol->string (syntax-e kw-id)))
+                       (list (read-intern-literal (symbol->string (syntax-e kw-id))))
                        content
                        (with-exporting-libraries
                         (lambda (libs)

@@ -112,8 +112,9 @@
 (define (indexed-file . str)
   (let* ([f (apply filepath str)]
          [s (element->string f)])
-    (index* (list (clean-up-index-string
-                   (substring s 1 (sub1 (string-length s)))))
+    (index* (list (read-intern-literal
+                   (clean-up-index-string
+                    (substring s 1 (sub1 (string-length s))))))
             (list f)
             f)))
 (define (exec . str)

@@ -88,7 +88,7 @@
   (let* ([s (regexp-replace* #px"\\s+" s " ")]
          [s (regexp-replace* #rx"^ " s "")]
          [s (regexp-replace* #rx" $" s "")])
-    s))
+    (read-intern-literal s)))
 
 (define (decode-string s)
   (let loop ([l '((#rx"---" mdash)
@@ -99,9 +99,10 @@
     (cond [(null? l) (list s)]
           [(regexp-match-positions (caar l) s)
            => (lambda (m)
-                (append (decode-string (substring s 0 (caar m)))
-                        (cdar l)
-                        (decode-string (substring s (cdar m)))))]
+                (read-intern-literal
+                 (append (decode-string (substring s 0 (caar m)))
+                         (cdar l)
+                         (decode-string (substring s (cdar m))))))]
           [else (loop (cdr l))])))
 
 (define (line-break? v)

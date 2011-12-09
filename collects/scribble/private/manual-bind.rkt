@@ -4,6 +4,8 @@
          "../search.rkt"
          "../basic.rkt"
          "../manual-struct.rkt"
+         (only-in "../core.rkt" make-style)
+         "../html-properties.rkt"
          "manual-ex.rkt"
          racket/contract/base
          (for-syntax scheme/base)
@@ -53,21 +55,28 @@
      (lambda () s)
      (lambda () s))))
 
+(define hovers (make-weak-hasheq))
+(define (intern-hover-style text)
+  (let ([text (read-intern-literal text)])
+    (or (hash-ref hovers text #f)
+        (let ([s (make-style #f (list (make-hover-property text)))])
+          (hash-set! hovers text s)
+          s))))
+
 (define (annote-exporting-library e)
   (make-delayed-element
    (lambda (render p ri)
      (let ([from (resolve-get/tentative p ri '(exporting-libraries #f))])
        (if (and from (pair? from))
-         (list (make-hover-element
-                #f
-                (list e)
-                (intern-taglet
+         (list (make-element
+                (intern-hover-style
                  (string-append
                   "Provided from: "
                   (let loop ([from from])
                     (if (null? (cdr from))
                       (format "~s" (car from))
-                      (format "~s, ~a" (car from) (loop (cdr from)))))))))
+                      (format "~s, ~a" (car from) (loop (cdr from)))))))
+                e))
          (list e))))
    (lambda () e)
    (lambda () e)))
@@ -184,7 +193,7 @@
                           (if index?
                               (make-index-element
                                #f (list elem) tag
-                               (list (symbol->string (syntax-e id)))
+                               (list (read-intern-literal (symbol->string (syntax-e id))))
                                (list elem)
                                (and show-libs?
                                     (with-exporting-libraries
@@ -218,23 +227,25 @@
              #f
              (list (make-one (if form? 'form 'def))
                    (make-one 'dep)
-                   (make-index-element #f
-                                       null
-                                       (list (if form? 'form 'def)
-                                             (list taglet id))
-                                       (list (symbol->string id))
-                                       (list
-                                        (make-element
-                                         symbol-color
+                   (let ([str (read-intern-literal (symbol->string id))])
+                     (make-index-element #f
+                                         null
+                                         (intern-taglet
+                                          (list (if form? 'form 'def)
+                                                (list taglet id)))
+                                         (list str)
                                          (list
                                           (make-element
-                                           (if form?
-                                             syntax-link-color
-                                             value-link-color)
-                                           (list (symbol->string id))))))
-                                       ((if form?
-                                          make-form-index-desc
-                                          make-procedure-index-desc)
-                                        id
-                                        (list mod-path))))))))
+                                           symbol-color
+                                           (list
+                                            (make-element
+                                             (if form?
+                                                 syntax-link-color
+                                                 value-link-color)
+                                             (list str)))))
+                                         ((if form?
+                                              make-form-index-desc
+                                              make-procedure-index-desc)
+                                          id
+                                          (list mod-path)))))))))
       redirects))))

@@ -149,18 +149,19 @@
                     (lambda (renderer sec ri)
                       (let* ([tag (find-racket-tag sec ri c #f)])
                         (if tag
-                            (list
-                             (case (car tag)
-                               [(form)
-                                (make-link-element syntax-link-color (nonbreak-leading-hyphens s) tag)]
-                               [else
-                                (make-link-element value-link-color (nonbreak-leading-hyphens s) tag)]))
+                            (let ([tag (intern-taglet tag)])
+                              (list
+                               (case (car tag)
+                                 [(form)
+                                  (make-link-element syntax-link-color (nonbreak-leading-hyphens s) tag)]
+                                 [else
+                                  (make-link-element value-link-color (nonbreak-leading-hyphens s) tag)])))
                             (list 
                              (make-element "badlink"
                                            (make-element value-link-color s))))))
                     (lambda () s)
                     (lambda () s)
-                    key)])
+                    (intern-taglet key))])
             (when key
               (hash-set! id-element-cache key (make-weak-box e)))
             e))))
@@ -194,13 +195,18 @@
           (inc!)
           (to-unquoted expr? (sub1 quote-depth) out color? inc!))))
 
+  (define iformat
+    (case-lambda
+     [(str val) (read-intern-literal (format str val))]
+     [(str . vals) (read-intern-literal (apply format str vals))]))
+
   (define (typeset-atom c out color? quote-depth expr?)
     (if (and (var-id? (syntax-e c))
              (zero? quote-depth))
-        (out (format "~s" (let ([v (var-id-sym (syntax-e c))])
-                            (if (syntax? v)
-                                (syntax-e v)
-                                v)))
+        (out (iformat "~s" (let ([v (var-id-sym (syntax-e c))])
+                             (if (syntax? v)
+                                 (syntax-e v)
+                                 v)))
              variable-color)
         (let*-values ([(is-var?) (and (identifier? c)
                                       (memq (syntax-e c) (current-variable-list)))]
@@ -208,8 +214,8 @@
                        (let ([sc (syntax-e c)])
                          (let ([s (cond
                                     [(syntax-property c 'display-string) => values]
-                                    [(literal-syntax? sc) (format "~s" (literal-syntax-stx sc))]
-                                    [(var-id? sc) (format "~s" (var-id-sym sc))]
+                                    [(literal-syntax? sc) (iformat "~s" (literal-syntax-stx sc))]
+                                    [(var-id? sc) (iformat "~s" (var-id-sym sc))]
                                     [(eq? sc #t) 
                                      (if (equal? (syntax-span c) 5)
                                          "#true"
@@ -218,7 +224,7 @@
                                      (if (equal? (syntax-span c) 6)
                                          "#false"
                                          "#f")]
-                                    [else (format "~s" sc)])])
+                                    [else (iformat "~s" sc)])])
                            (if (and (symbol? sc)
                                     ((string-length s) . > . 1)
                                     (char=? (string-ref s 0) #\_)
@@ -564,10 +570,10 @@
                                             "cons"))]
                                    [(vector? (syntax-e c)) "vector"]
                                    [(mpair? (syntax-e c)) "mcons"]
-                                   [else (format "~a"
-                                                 (if (struct-proxy? (syntax-e c)) 
-                                                     (syntax-e (struct-proxy-name (syntax-e c)))
-                                                     (object-name (syntax-e c))))])])
+                                   [else (iformat "~a"
+                                                  (if (struct-proxy? (syntax-e c)) 
+                                                      (syntax-e (struct-proxy-name (syntax-e c)))
+                                                      (object-name (syntax-e c))))])])
                            (set! src-col (+ src-col (if (struct-proxy? (syntax-e c)) 
                                                         1 
                                                         (string-length s))))
@@ -785,7 +791,7 @@
                 (set! src-col (+ orig-col (syntax-span c)))))]
            [(graph-reference? (syntax-e c))
             (advance c init-line!)
-            (out (format "#~a#" (unbox (graph-reference-bx (syntax-e c)))) 
+            (out (iformat "#~a#" (unbox (graph-reference-bx (syntax-e c)))) 
                  (if (positive? quote-depth) 
                      value-color
                      paren-color))
@@ -793,7 +799,7 @@
            [(graph-defn? (syntax-e c))
             (advance c init-line!)
             (let ([bx (graph-defn-bx (syntax-e c))])
-              (out (format "#~a=" (unbox bx))
+              (out (iformat "#~a=" (unbox bx))
                    (if (positive? quote-depth) 
                        value-color
                        paren-color))
