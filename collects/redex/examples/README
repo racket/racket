@@ -21,7 +21,7 @@ to demonstrate various different uses of PLT Redex:
   closure. Also, one of the first examples from Matthias
   Felleisen and Matthew Flatt's monograph
 
-  cont-mark-transform: the continuation mark transformation from
+  cont-mark-transform/: the continuation mark transformation from
   McCarthy's ICFP '09 paper “Automatically RESTful Web Applications
   Or, Marking Modular Serializable Continuations" 
 
@@ -31,12 +31,15 @@ to demonstrate various different uses of PLT Redex:
 
   define-judgment-form: example uses of `define-judgment-form'
 
-  delim-cont: The model from Flatt, Yu, Findler, and Felleisen's ICFP
+  delim-cont/: The model from Flatt, Yu, Findler, and Felleisen's ICFP
   '07 paper "Adding Delimited and Composable Control to a Production
   Programming Environment"
 
   letrec.rkt: shows how to model letrec with a store and
   some infinite looping terms
+
+  list-machine/: the List Machine benchmark by Appel, Dockins, and
+  Leroy.
 
   omega.rkt: the call by value lambda calculus with call/cc.
   Includes omega and two call/cc-based infinite loops, one of
@@ -46,10 +49,10 @@ to demonstrate various different uses of PLT Redex:
   pi-calculus.rkt: a formulation of the pi calculus, following
   Milner's 1990 paper, "Functions as Processes"
 
-  racket-machine: an operational semantics for (much of) Racket 
+  racket-machine/: an operational semantics for (much of) Racket
   bytecode
 
-  r6rs: an implementation of the R6RS Scheme formal semantics
+  r6rs/: an implementation of the R6RS Scheme formal semantics
 
   semaphores.rkt: a simple threaded language with semaphores
 
