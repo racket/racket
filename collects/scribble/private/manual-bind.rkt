@@ -45,13 +45,12 @@
               [vtag (and tag `(sig-val ,taglet))]
               [stag (and tag `(sig-form ,taglet))]
               [sd (and stag (resolve-get/tentative sec ri stag))])
-         (list
-          (make-element
-           symbol-color
-           (list
-            (cond [sd (make-link-element  syntax-link-color (list s) stag)]
-                  [vtag (make-link-element value-link-color (list s) vtag)]
-                  [else s]))))))
+         (make-element
+          symbol-color
+          (list
+           (cond [sd (make-link-element  syntax-link-color (list s) stag)]
+                 [vtag (make-link-element value-link-color (list s) vtag)]
+                 [else s])))))
      (lambda () s)
      (lambda () s))))
 
@@ -68,16 +67,16 @@
    (lambda (render p ri)
      (let ([from (resolve-get/tentative p ri '(exporting-libraries #f))])
        (if (and from (pair? from))
-         (list (make-element
-                (intern-hover-style
-                 (string-append
-                  "Provided from: "
-                  (let loop ([from from])
-                    (if (null? (cdr from))
-                      (format "~s" (car from))
-                      (format "~s, ~a" (car from) (loop (cdr from)))))))
-                e))
-         (list e))))
+           (make-element
+            (intern-hover-style
+             (string-append
+              "Provided from: "
+              (let loop ([from from])
+                (if (null? (cdr from))
+                    (format "~s" (car from))
+                    (format "~s, ~a" (car from) (loop (cdr from)))))))
+            e)
+           e)))
    (lambda () e)
    (lambda () e)))
 
@@ -163,12 +162,12 @@
                                   ,@(if sig (list (syntax-e (sig-id sig))) null)
                                   ,(syntax-e id))))])
                (if (or sig (not dep?))
-                 (list (mk tag))
-                 (list (make-dep (list lib-taglet (syntax-e id))
-                                 (mk tag)))))
+                   (mk tag)
+                   (make-dep (list lib-taglet (syntax-e id))
+                             (mk tag))))
              content)))
-       (lambda () (car content))
-       (lambda () (car content))))))
+       (lambda () content)
+       (lambda () content)))))
 
 (define (defidentifier id 
                        #:form? [form? #f]
@@ -184,7 +183,7 @@
                     (definition-site (syntax-e id) id form?)
                     (to-element id))])
       (if maker
-          (maker (list elem)
+          (maker elem
                  (lambda (tag)
                    (let ([elem
                           (if index?

@@ -326,7 +326,7 @@
    (or (current-load-relative-directory) (current-directory))))
 
 (provide/contract
- (struct delayed-element ([resolve (any/c part? resolve-info? . -> . list?)]
+ (struct delayed-element ([resolve (any/c part? resolve-info? . -> . content?)]
                           [sizer (-> any)]
                           [plain (-> any)])))
 
@@ -369,7 +369,7 @@
    (or (current-load-relative-directory) (current-directory))))
 
 (provide/contract
- (struct part-relative-element ([collect (collect-info? . -> . list?)]
+ (struct part-relative-element ([collect (collect-info? . -> . content?)]
                                 [sizer (-> any)]
                                 [plain (-> any)])))
 

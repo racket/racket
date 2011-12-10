@@ -234,12 +234,11 @@
   (let ([content (decode-content s)])
     (make-delayed-element
      (lambda (r p ri)
-       (list
-        (make-link-element
-         #f
-         content
-         (or (find-racket-tag p ri stx-id #f)
-             `(undef ,(format "--UNDEFINED:~a--" (syntax-e stx-id)))))))
+       (make-link-element
+        #f
+        content
+        (or (find-racket-tag p ri stx-id #f)
+            `(undef ,(format "--UNDEFINED:~a--" (syntax-e stx-id))))))
      (lambda () content)
      (lambda () content))))
 

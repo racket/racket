@@ -189,7 +189,7 @@ Use syntax/modcollapse instead.
                                          (list (ss->rkt (cadr s))))
                                  "/")))
             ;; No suffix, so we must keep the old style:
-            (cons 'lib (map read-intern-literal s)))))
+            (cons 'lib (map read-intern-literal (cdr s))))))
   
   (define (normalize-planet s)
     (cond

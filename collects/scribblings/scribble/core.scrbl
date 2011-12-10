@@ -878,7 +878,7 @@ Like @racket[traverse-block], but the @racket[traverse] procedure must
 eventually produce @tech{content}, rather than a @tech{block}.}
 
 
-@defstruct[delayed-element ([resolve (any/c part? resolve-info? . -> . list?)]
+@defstruct[delayed-element ([resolve (any/c part? resolve-info? . -> . content?)]
                             [sizer (-> any/c)]
                             [plain (-> any/c)])]{
 
@@ -898,7 +898,7 @@ such as when @racket[element->string] is used before the @tech{collect
 pass}.}
 
 
-@defstruct[part-relative-element ([resolve (collect-info? . -> . list?)]
+@defstruct[part-relative-element ([resolve (collect-info? . -> . content?)]
                                   [sizer (-> any/c)]
                                   [plain (-> any/c)])]{
 

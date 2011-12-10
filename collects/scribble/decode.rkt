@@ -81,6 +81,8 @@
  [decode-string (-> string? content?)]
  [clean-up-index-string (-> string? string?)])
 
+(define the-part-index-desc (make-part-index-desc))
+
 (define (clean-up-index-string s)
   ;; Collapse whitespace, and remove leading or trailing spaces, which
   ;; might appear there due to images or something else that gets
@@ -151,7 +153,7 @@
                             (regexp-replace #px"^\\s+(?:(?:A|An|The)\\s)?"
                                             (content->string title) "")))
                      (list (make-element #f title))
-                     (make-part-index-desc))
+                     the-part-index-desc)
                     l)
               l))
           (decode-accum-para accum)
