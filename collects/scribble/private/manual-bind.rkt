@@ -164,11 +164,8 @@
                                   ,(syntax-e id))))])
                (if (or sig (not dep?))
                  (list (mk tag))
-                 (list (make-target-element
-                        #f
-                        (list (mk tag))
-                        (intern-taglet
-                         `(dep ,(list lib-taglet (syntax-e id))))))))
+                 (list (make-dep (list lib-taglet (syntax-e id))
+                                 (mk tag)))))
              content)))
        (lambda () (car content))
        (lambda () (car content))))))
@@ -226,7 +223,7 @@
             (make-element
              #f
              (list (make-one (if form? 'form 'def))
-                   (make-one 'dep)
+                   (make-dep (list taglet id) null)
                    (let ([str (read-intern-literal (symbol->string id))])
                      (make-index-element #f
                                          null
@@ -249,3 +246,13 @@
                                           id
                                           (list mod-path)))))))))
       redirects))))
+
+
+(define (make-dep t content)
+  (make-collect-element
+   #f
+   content
+   (lambda (ci)
+     (collect-put! ci 
+                   (intern-taglet (list 'dep t))
+                   #t))))
