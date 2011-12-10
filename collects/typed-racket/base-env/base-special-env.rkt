@@ -7,7 +7,7 @@
  string-constants/string-constant
  racket/private/kw racket/file racket/port syntax/parse racket/path
  (for-template (only-in racket/private/kw kw-expander-proc kw-expander-impl)
-               racket/base racket/file racket/port racket/path)
+               racket/base racket/file racket/port racket/path racket/list)
  (utils tc-utils)
  (env init-envs)
  (except-in (rep filter-rep object-rep type-rep) make-arr)
@@ -310,6 +310,29 @@
             -Boolean -Boolean (a . -> . b) (-val #t)
             (-lst a) (b b . -> . -Boolean)
             (-lst a))))]
+  
+  [((kw-expander-proc (syntax-local-value #'remove-duplicates)))
+   (-poly (a b) (cl->* 
+                 ((-lst a) . -> . (-lst a))
+                 ((-lst a) (a a . -> . Univ)
+                           . -> . (-lst a))
+                 ((-lst a) #:key (a . -> . b) #f
+                           . ->key . (-lst a))                     
+                 ((-lst a) (b b . -> . Univ)
+                           #:key (a . -> . b) #t
+                           . ->key . (-lst a))))]
+  [((kw-expander-impl (syntax-local-value #'remove-duplicates)))
+   (-poly (a b)
+          (cl->*
+           (Univ (-val #f) ;; no key
+            (-lst a) (-val #f) -Boolean
+            . -> . (-lst a))
+           (Univ (-val #f) ;; no key
+            (-lst a) (-> a a Univ) -Boolean
+            . -> . (-lst a))
+           ((a . -> . b) (-val #t) ;; no key
+            (-lst a) (-opt (-> b b Univ)) -Boolean
+            . -> . (-lst a))))]
 
   [((kw-expander-proc (syntax-local-value #'open-input-file)))
    (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Input-Port)]

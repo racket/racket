@@ -705,7 +705,7 @@
              [cs  (cgen/list null X Y S T #:expected-cset expected-cset)]
              [cs* (cset-meet cs expected-cset)])
             (if R (subst-gen cs* Y R) #t))))
-  infer)) ;to export a variable binding and not syntax
+   infer)) ;to export a variable binding and not syntax
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X Y S T T-var R [expected #f])

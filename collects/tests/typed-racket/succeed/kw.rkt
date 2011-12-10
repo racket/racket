@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed/scheme
 
 (lambda ()
   (open-input-file "foo" #:mode 'binary)
@@ -12,3 +12,7 @@
 ((inst sort Real String) (list 1 2 3) #:key number->string string<?)
 
 ((inst sort Real String) (list 1 2 3) #:key number->string string<? #:cache-keys? #t)
+
+(remove-duplicates  '("foo"))
+
+(sort (list 1 2 3) >)

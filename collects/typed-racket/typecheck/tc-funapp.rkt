@@ -105,23 +105,25 @@
          [else (infer fixed-vars (list dotted-var) argtys-t dom rng
                       (and expected (tc-results->values expected)))]))
       t argtys expected)]
-    ;; regular polymorphic functions without dotted rest, and without mandatory
-    ;; keyword args
+    ;; regular polymorphic functions without dotted rest, 
+    ;; we do not choose any instantiations with mandatory keyword arguments
     [((tc-result1:
        (and t (Poly:
                vars
                (Function: (list (and arrs (arr: doms rngs rests (and drests #f)
-                                                (list (Keyword: _ _ #f) ...)))
+                                                (list (Keyword: _ _ kw?) ...)))
                                 ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses
-      (doms rngs rests arrs) f-stx args-stx
+      (doms rngs rests kw? arrs) f-stx args-stx
       ;; only try inference if the argument lengths are appropriate
-      (λ (dom _ rest a) ((if rest <= =) (length dom) (length argtys)))
+      ;; and there's no mandatory kw
+      (λ (dom _ rest kw? a) 
+        (and (andmap not kw?) ((if rest <= =) (length dom) (length argtys))))
       ;; Only try to infer the free vars of the rng (which includes the vars
       ;; in filters/objects). Note that we have to use argtys-t here, since
       ;; argtys is a list of tc-results.
-      (λ (dom rng rest a)
+      (λ (dom rng rest kw? a)
          (infer/vararg vars null argtys-t dom rest rng
                        (and expected (tc-results->values expected))))
       t argtys expected)]

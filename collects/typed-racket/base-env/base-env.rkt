@@ -1383,11 +1383,6 @@
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> .
                        (Un (-pair a a) (-pair a (-val '())))))]
-[remove-duplicates
- (-poly (a)
-        (cl->*
-         ((-lst a) . -> . (-lst a))
-         ((-lst a) (a a . -> . Univ) . -> . (-lst a))))]
 [append-map
  (-polydots (c a b) ((list ((list a) (b b) . ->... . (-lst c)) (-lst a))
                      ((-lst b) b) . ->... .(-lst c)))]
