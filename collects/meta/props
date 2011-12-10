@@ -1202,6 +1202,7 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:command-line (racket "-tm" * "--" "--rules" "2250" "--size" "3") drdr:timeout 240 drdr:random #t
 "collects/redex/examples/delim-cont/test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/list-machine/slides.rkt" drdr:command-line (raco "make" *)
 "collects/redex/examples/omega.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/r6rs/r6rs-tests.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/r6rs/racket-vs-redex.rkt" drdr:timeout 180
