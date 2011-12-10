@@ -1391,8 +1391,10 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   if (!SCHEME_PAIRP(obj)) return_NULL();
   me->src_modidx = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
-  ((Scheme_Modidx *)m->me->src_modidx)->resolved = m->modname;
-  m->self_modidx = m->me->src_modidx;
+  if (!SAME_TYPE(SCHEME_TYPE(me->src_modidx), scheme_module_index_type))
+    return_NULL();
+  ((Scheme_Modidx *)me->src_modidx)->resolved = m->modname;
+  m->self_modidx = me->src_modidx;
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   e = SCHEME_CAR(obj);
