@@ -374,7 +374,7 @@
                      who
                      (length lst)
                      (apply string-append
-                            (format "~s" (car lst))
+                            (format "~s" fst)
                             (map (λ (x) (format " ~s" x)) (cdr lst)))))
             (values fst snd))
           (values fst (blank)))))
@@ -679,7 +679,6 @@
       [(pict-token? tok) (pict-token-pict tok)]
       [else (error 'token->pict "~s" tok)]))
   
-    
   (define (atom->tokens col span atom all-nts unquoted?)
     (cond
       [(pict? atom)
@@ -702,7 +701,7 @@
                     (make-pict-token (+ col span) 0 sub+sup)))])]
       [(or (memq atom all-nts)
            (memq atom '(number variable variable-except variable-not-otherwise-mentioned)))
-       (list (non-terminal->token col span (format "~s" atom)))]
+       (list (non-terminal->token col span (symbol->string atom)))]
       [(symbol? atom)
        (list (or (rewrite-atomic col span atom literal-style)
                  (make-string-token col span (symbol->string atom) (literal-style))))]
