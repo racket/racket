@@ -588,11 +588,12 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
     if (flags & SCHEME_SNF_KEYWORD) {
       digit_start = 0;
     } else {
-      digit_start = (isdigit((unsigned char)s[0]) || (s[0] == '.')
-		     || (s[0] == '+') || (s[0] == '-'));
-      if (s[0] == '#' && (len == 1 || s[1] != '%'))
+      int ch = ((unsigned char *)s)[0];
+      digit_start = (((ch < 128) && isdigit(ch)) || (ch == '.')
+		     || (ch == '+') || (ch == '-'));
+      if (ch == '#' && (len == 1 || s[1] != '%'))
 	has_special = 1;
-      if (s[0] == '.' && len == 1)
+      if (ch == '.' && len == 1)
 	has_special = 1;
     }
   } else {
@@ -602,39 +603,41 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
   }
 
   for (i = 0; i < len; i++) {
-    if (isspace((unsigned char)s[i])) { /* used to have || !isprint((unsigned char)s[i]) */
-      if ((flags & SCHEME_SNF_FOR_TS) && (s[i] == ' ')) {
+    int ch = ((unsigned char *)s)[i];
+
+    if (ch > 127) {
+      /* Decode UTF-8. */
+      mzchar buf[2];
+      int ul = 2;
+      while (1) {
+        if (scheme_utf8_decode((unsigned char *)s, i, i + ul,
+                               buf, 0, 1,
+                               NULL, 0, 0) > 0)
+          break;
+        ul++;
+      }
+      ch = buf[0];
+      if (scheme_isspecialcasing(ch)) {
+        mzchar *rc;
+        buf[1] = 0;
+        rc = scheme_string_recase(buf, 0, 1, 3, 1, NULL);
+        if ((rc != buf) || (rc[0] != ch))
+          has_upper = 1;
+        ch = 'a';
+      }
+      i += (ul - 1);
+    }
+
+    if (scheme_isspace(ch)) { /* used to have || !isprint(ch) */
+      if ((flags & SCHEME_SNF_FOR_TS) && (ch == ' ')) {
 	/* space is OK in type symbols */
       } else
 	has_space = 1;
-    } else if (isSpecial(s[i]))
+    } else if (isSpecial(ch))
       has_special = 1;
-    else if (s[i] == '|')
+    else if (ch == '|')
       has_pipe = 1;
     else if (flags & SCHEME_SNF_NEED_CASE) {
-      int ch = ((unsigned char *)s)[i];
-      if (ch > 127) {
-	/* Decode UTF-8. */
-	mzchar buf[2];
-	int ul = 2;
-	while (1) {
-	  if (scheme_utf8_decode((unsigned char *)s, i, i + ul,
-				 buf, 0, 1,
-				 NULL, 0, 0) > 0)
-	    break;
-	  ul++;
-	}
-	ch = buf[0];
-	if (scheme_isspecialcasing(ch)) {
-	  mzchar *rc;
-	  buf[1] = 0;
-	  rc = scheme_string_recase(buf, 0, 1, 3, 1, NULL);
-	  if ((rc != buf) || (rc[0] != ch))
-	    has_upper = 1;
-	  ch = 'a';
-	}
-	i += (ul - 1);
-      }
       if (scheme_tofold(ch) != ch)
 	has_upper = 1;
     }
@@ -679,24 +682,30 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
       result[len + 1] = '|';
       result[len + 2] = 0;
     } else {
+      mzchar cbuf[100], *cs, *cresult;
+      intptr_t clen;
       int p = 0;
       uintptr_t i = 0;
+      intptr_t rlen;
 
-      result = (char *)scheme_malloc_atomic((2 * len) + 1);
+      dz = 0;
+      cs = scheme_utf8_decode_to_buffer_len((unsigned char *)s, len, cbuf, 100, &clen);
 
-      for (i = 0; i < len; i++) {
-	if (isspace((unsigned char)s[i])
-	    || isSpecial(s[i])
-	    || ((s[i] == '|') && pipe_quote)
+      cresult = (mzchar *)scheme_malloc_atomic(((2 * len) + 1) * sizeof(mzchar));
+
+      for (i = 0; i < clen; i++) {
+        mzchar ch = cs[i];
+        if (scheme_isspace(ch)
+	    || isSpecial(ch)
+	    || ((ch == '|') && pipe_quote)
 	    || (!i && s[0] == '#')
-	    || (has_upper && ((((unsigned char)s[i]) >= 'A')
-			      && (((unsigned char)s[i]) <= 'Z'))))
-	  result[p++] = '\\';
-	result[p++] = s[i];
+	    || (has_upper && (ch >= 'A') && (ch <= 'Z')))
+	  cresult[p++] = '\\';
+	cresult[p++] = ch;
       }
 
-      result[p] = 0;
-      total_length = p;
+      result = scheme_utf8_encode_to_buffer_len(cresult, p, NULL, 0, &rlen);
+      total_length = rlen;
     }
   }
 

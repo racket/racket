@@ -192,4 +192,14 @@
 
   (void))
 
+(let ([in-string (lambda (f v)
+                   (let ([o (open-output-bytes)])
+                     (f v o)
+                     (get-output-string o)))])
+  (test "Π" in-string write 'Π) ;; UTF-8 encoding can be misinterpreted as having a space
+  (test "|a\xA0b|" in-string write (string->symbol "a\xA0b"))
+  (parameterize ([read-accept-bar-quote #f])
+    (test "Π" in-string write 'Π)
+    (test "a\\\xA0b" in-string write (string->symbol "a\xA0b"))))
+
 (report-errs)
