@@ -238,23 +238,33 @@
 
 ;; strings for everyone
 
-(let ([f (open-input-string (string-append
-			     "1"
-			     (make-string 50000 #\0)
-			     "\n"))]
-      [f2 (open-output-string)])
-  (let ([p (process*/ports f2 f f2 cat "-" "nosuchfile")])
-    (test #f car p)
-    (test #f cadr p)
-    (test #f cadddr p)
+(let ([all-strings
+       (lambda (stderr-is-stdout?)
+         (let ([f (open-input-string (string-append
+                                      "1"
+                                      (make-string 50000 #\0)
+                                      "\n"))]
+               [f2 (open-output-string)]
+               [f3 (if stderr-is-stdout?
+                       'stdout
+                       (open-output-string))])
+           (let ([p (process*/ports f2 f f3 cat "-" "nosuchfile")])
+             (test #f car p)
+             (test #f cadr p)
+             (test #f cadddr p)
 
-    ((list-ref p 4) 'wait)
-    (test 'done-error (list-ref p 4) 'status)
-    
-    (let ([p (open-input-string (get-output-string f2))])
-      (test (expt 10 50000) read p)
-      (test "" read-line p)
-      (test '("nosuchfile") regexp-match "nosuchfile" (read-line p)))))
+             ((list-ref p 4) 'wait)
+             (test 'done-error (list-ref p 4) 'status)
+             
+             (let ([p (open-input-string (get-output-string f2))])
+               (test (expt 10 50000) read p)
+               (test "" read-line p)
+               (let ([p (if (eq? f3 'stdout)
+                            p
+                            (open-input-string (get-output-string f3)))])
+                 (test '("nosuchfile") regexp-match "nosuchfile" (read-line p)))))))])
+  (all-strings #t)
+  (all-strings #f))
 
 ;; Check error cases
 
