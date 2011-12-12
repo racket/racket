@@ -220,7 +220,12 @@ a URL that refreshes the password file, servlet cache, etc.}
  ]}
 
 @defthing[apache-default-format format-req/c]{
- Formats a request like Apache's default.
+
+ Formats a request like Apache's default. However, Apache's default
+ includes information about the response to a request, which this
+ function does not have access to, so it defaults the last two fields
+ to 200 and 512.
+
 }
 
 @defthing[log-format/c contract?]{
