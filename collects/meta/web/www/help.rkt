@@ -23,12 +23,6 @@
                   of Racket's features.}]
    @parlist[@strong{Learning how to Program}
             @text{Try going through @|-htdp|.}]
-   @parlist[@strong{Searching the Web}
-            @text{The
-                  @-cookbook is
-                  a wiki for Scheme snippets, many of which work in Racket.
-                  Additionally, your favorite search engine may well provide
-                  answers for many of your questions.}]
    @parlist[@strong{The Mailing List}
             @text{The @tt|{users@racket-lang.org}| mailing list is a great
                   source for answers to questions when the above resources

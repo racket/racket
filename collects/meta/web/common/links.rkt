@@ -38,12 +38,6 @@
 (define* -pbd
   @make-link["http://programbydesign.org/"]{Program by Design})
 
-(define* -cookbook
-  @make-link["http://schemecookbook.org/"]{Schematics Scheme Cookbook})
-
-(define* -schematics
-  @make-link["http://sourceforge.net/projects/schematics/"]{Schematics})
-
 (define* -schemers
   @make-link["http://schemers.org/"]{@tt{schemers.org}})
 

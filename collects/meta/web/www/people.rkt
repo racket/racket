@@ -109,9 +109,7 @@
     @p{We work with
        @ul*{@~ The crew at @a[href: "http://untyped.com"]{Untyped}
             @~ Dorai Sitaram, GTE Labs
-            @~ Mike Sperber, Universität Tübingen}
-       In particular, please check out the Racket-related work being done at
-       @|-schematics|.}
+            @~ Mike Sperber, Universität Tübingen}}
     @h4{And ...}
     @p{Finally, Racket is supported by a band of volunteers who contribute not
        only code and documentation but also infectious enthusiasm—too many to
