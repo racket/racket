@@ -105,12 +105,6 @@
                    @li{@a[href: (place-url p)]{
                          @(place-name p), @(place-location p)}})
                  all-places))}
-    @h4{Affiliates}
-    @p{We work with
-       @ul*{@~ The crew at @a[href: "http://untyped.com"]{Untyped}
-            @~ Dorai Sitaram, GTE Labs
-            @~ Mike Sperber, Universität Tübingen}}
-    @h4{And ...}
-    @p{Finally, Racket is supported by a band of volunteers who contribute not
+    @p{Also, Racket is supported by a band of volunteers who contribute not
        only code and documentation but also infectious enthusiasm—too many to
        name but whose help and encouragement make this fun and worthwhile.}})
