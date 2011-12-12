@@ -552,9 +552,6 @@
     
     ;; id-level : integer-or-#f-or-'lexical identifier -> symbol
     (define (id-level phase-level id)
-      (define (self-module? mpi)
-        (let-values ([(a b) (module-path-index-split mpi)])
-          (and (not a) (not b))))
       (let ([binding (identifier-binding id phase-level)])
         (cond [(list? binding)
                (if (self-module? (car binding))
@@ -562,6 +559,10 @@
                    'imported)]
               [(eq? binding 'lexical) 'lexical]
               [else 'top-level])))
+    
+    (define (self-module? mpi)
+      (let-values ([(a b) (module-path-index-split mpi)])
+        (and (not a) (not b))))
     
     ;; connect-identifier : syntax
     ;;                      id-set 
@@ -581,11 +582,8 @@
                     binders))
         
         (when (and unused/phases phase-to-requires)
-          (let ([req-path/pr (get-module-req-path (identifier-binding var phase-level)
-                                                  phase-level)]
-                [source-req-path/pr (get-module-req-path (identifier-binding var phase-level)
-                                                          phase-level
-                                                          #:nominal? #f)])
+          (let ([req-path/pr (get-module-req-path var phase-level)]
+                [source-req-path/pr (get-module-req-path var phase-level #:nominal? #f)])
             (when (and req-path/pr source-req-path/pr)
               (let* ([req-path (list-ref req-path/pr 0)]
                      [id (list-ref req-path/pr 1)]
@@ -602,12 +600,12 @@
                                                        id 
                                                        (syntax->datum req-stx))
                                 (when id
-                                  (let ([filename (get-require-filename source-req-path user-namespace user-directory)])
-                                    (when filename
-                                      (add-jump-to-definition
-                                       var
-                                       source-id
-                                       filename))))
+                                  (define filename (get-require-filename source-req-path user-namespace user-directory))
+                                  (when filename
+                                    (add-jump-to-definition
+                                     var
+                                     source-id
+                                     filename)))
                                 (add-mouse-over var
                                                 (format 
                                                  (string-constant cs-mouse-over-import)
@@ -639,7 +637,8 @@
     
     ;; get-module-req-path : binding number [#:nominal? boolean] -> (union #f (list require-sexp sym ?? module-path))
     ;; argument is the result of identifier-binding or identifier-transformer-binding
-    (define (get-module-req-path binding phase-level #:nominal? [nominal-source-path? #t])
+    (define (get-module-req-path var phase-level #:nominal? [nominal-source-path? #t])
+      (define binding (identifier-binding var phase-level))
       (and (pair? binding)
            (or (not (number? phase-level))
                (= phase-level
@@ -685,9 +684,7 @@
                   (and (pair? b)
                        (let ([path (caddr b)])
                          (and (module-path-index? path)
-                              (let-values ([(a b) (module-path-index-split path)])
-                                (and (not a)
-                                     (not b)))))))])
+                              (self-module? path)))))])
         (cond
           [(get-ids varsets var)
            (color var set!d-variable-style-name 'default-mode)]
