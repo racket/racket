@@ -50,8 +50,8 @@
           (request-client-ip req)
           (srfi-date:date->string request-time "~d/~b/~Y:~T ~z")
           (request-line-raw req)
-          200
-          512))
+          "-"
+          "-"))
 
 (define (paren-format req)
   (format "~s\n"
