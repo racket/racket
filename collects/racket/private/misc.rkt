@@ -33,7 +33,7 @@
            (syntax/loc stx
              (define-syntax name
                (lambda (user-stx)
-                 (syntax-case** dr #t user-stx () free-identifier=?
+                 (syntax-case** dr #t user-stx () free-identifier=? #f
                    [(_ . pattern) (syntax-protect (syntax/loc user-stx template))]
                    [_ (pattern-failure user-stx 'pattern)]))))]
           [(_ (name . ptrn) tmpl)         (err "expected an identifier" #'name)]

@@ -134,22 +134,34 @@
 
   (-define interp-match
      (lambda (pat e literals immediate=?)
+       (interp-gen-match pat e literals immediate=? #f)))
+
+  (-define interp-s-match
+     (lambda (pat e literals immediate=?)
+       (interp-gen-match pat e literals immediate=? #t)))
+
+  (-define interp-gen-match
+     (lambda (pat e literals immediate=? s-exp?)
        (let loop ([pat pat][e e][cap e])
          (cond
           [(null? pat) 
-           (stx-null? e)]
+           (if s-exp?
+               (null? e)
+               (stx-null? e))]
           [(number? pat)
-           (and (identifier? e)
-                (immediate=? e (vector-ref (syntax-e literals) pat)))]
+           (and (if s-exp? (symbol? e) (identifier? e))
+                (immediate=? e (vector-ref (if s-exp? literals (syntax-e literals)) pat)))]
           [(not pat)
            #t]
           [else
            (let ([i (vector-ref pat 0)])
              (cond
               [(eq? i 'bind)
-               (let ([e (if (vector-ref pat 2)
-                            (datum->syntax cap e cap)
-                            e)])
+               (let ([e (if s-exp?
+                            e
+                            (if (vector-ref pat 2)
+                                (datum->syntax cap e cap)
+                                e))])
                  (if (vector-ref pat 1)
                      e
                      (list e)))]
@@ -170,23 +182,29 @@
                                               h)
                                           t))))))))]
               [(eq? i 'quote)
-               (and (syntax? e)
-                    (equal? (vector-ref pat 1) (syntax-e e))
-                    null)]
+               (if s-exp?
+                   (and (equal? (vector-ref pat 1) e)
+                        null)
+                   (and (syntax? e)
+                        (equal? (vector-ref pat 1) (syntax-e e))
+                        null))]
               [(eq? i 'ellipses)
                (let ([match-head (vector-ref pat 1)]
                      [nest-cnt (vector-ref pat 2)]
                      [last? (vector-ref pat 3)])
-                 (and (stx-list? e)
+                 (and (if s-exp?
+                          (list? e)
+                          (stx-list? e))
                       (if (zero? nest-cnt)
-                          (andmap (lambda (e) (loop match-head e cap)) (stx->list e))
+                          (andmap (lambda (e) (loop match-head e cap)) 
+                                  (if s-exp? e (stx->list e)))
                           (let/ec esc
                             (let ([l (map (lambda (e)
                                             (let ([m (loop match-head e cap)])
                                               (if m
                                                   m
                                                   (esc #f))))
-                                          (stx->list e))])
+                                          (if s-exp? e (stx->list e)))])
                               (if (null? l)
                                   (let loop ([cnt nest-cnt])
                                     (cond
@@ -214,10 +232,14 @@
                                               t)
                                           h))))))))]
               [(eq? i 'veclist)
-               (and (stx-vector? e #f)
-                    (loop (vector-ref pat 1) (vector->list (syntax-e e)) cap))]
+               (and (if s-exp?
+                        (vector? e)
+                        (stx-vector? e #f))
+                    (loop (vector-ref pat 1) (vector->list (if s-exp? e (syntax-e e))) cap))]
               [(eq? i 'vector)
-               (and (stx-vector? e (vector-ref pat 1))
+               (and (if s-exp?
+                        (and (vector? e) (= (vector-length e) (vector-ref pat 1)))
+                        (stx-vector? e (vector-ref pat 1)))
                     (let vloop ([p (vector-ref pat 2)][pos 0])
                       (cond
                        [(null? p) null]
@@ -225,7 +247,7 @@
                         (let ([clause (car p)])
                           (let ([match-elem (car clause)]
                                 [elem-did-var? (cdr clause)])
-                            (let ([m (loop match-elem (stx-vector-ref e pos) cap)])
+                            (let ([m (loop match-elem (if s-exp? (vector-ref e pos) (stx-vector-ref e pos)) cap)])
                               (and m
                                    (let ([body (vloop (cdr p) (add1 pos))])
                                      (and body
@@ -235,8 +257,10 @@
                                                   (append m body))
                                               body)))))))])))]
               [(eq? i 'prefab)
-               (and (stx-prefab? (vector-ref pat 1) e)
-                    (loop (vector-ref pat 2) (cdr (vector->list (struct->vector (syntax-e e)))) cap))]
+               (and (if s-exp?
+                        (equal? (vector-ref pat 1) (prefab-struct-key e))
+                        (stx-prefab? (vector-ref pat 1) e))
+                    (loop (vector-ref pat 2) (cdr (vector->list (struct->vector (if s-exp? e (syntax-e e))))) cap))]
               [else (error "yikes!" pat)]))]))))
 
   (-define-syntax syntax-case**
@@ -253,7 +277,8 @@
 	    [expr (caddr l)]
 	    [kws (cadddr l)]
 	    [lit-comp (cadddr (cdr l))]
-	    [clauses (cddddr (cdr l))])
+            [s-exp? (syntax-e (cadddr (cddr l)))]
+	    [clauses (cddddr (cddr l))])
 	(unless (stx-list? kws)
 	  (raise-syntax-error
 	   (syntax-e who)
@@ -300,7 +325,7 @@
             (syntax-arm
              (datum->syntax
               (quote-syntax here)
-              (list (quote-syntax let) (list (list arg (if (syntax-e arg-is-stx?)
+              (list (quote-syntax let) (list (list arg (if (or s-exp? (syntax-e arg-is-stx?))
                                                            expr
                                                            (list (quote-syntax datum->syntax)
                                                                  (list
@@ -348,7 +373,8 @@
                                           pattern
                                           pattern
                                           (stx->list kws)
-                                          (not lit-comp-is-mod?))]
+                                          (not lit-comp-is-mod?)
+                                          s-exp?)]
                                    [cant-fail? (if lit-comp-is-mod?
                                                    (equal? mtch '(lambda (e) e))
                                                    (equal? mtch '(lambda (e free-identifier=?) e)))]
@@ -366,15 +392,16 @@
                                                      [else (sub1 fuel)]))))]
                                    [mtch (if interp?
                                              (let ([interp-box (box null)])
-                                               (let ([pat (make-interp-match pattern (syntax->list kws) interp-box)])
+                                               (let ([pat (make-interp-match pattern (syntax->list kws) interp-box s-exp?)])
                                                  (list 'lambda
                                                        '(e)
-                                                       (list 'interp-match 
+                                                       (list (if s-exp? 'interp-s-match 'interp-match)
                                                              (list 'quote pat)
                                                              'e
                                                              (if (null? (unbox interp-box))
                                                                  #f
-                                                                 (list 'quote-syntax (list->vector (reverse (unbox interp-box)))))
+                                                                 (list (if s-exp? 'quote 'quote-syntax)
+                                                                       (list->vector (reverse (unbox interp-box)))))
                                                              lit-comp))))
                                              mtch)]
                                    [m
@@ -436,7 +463,9 @@
                                              (map (lambda (pattern-var unflat-pattern-var temp-var)
                                                     (list (list pattern-var)
                                                           (list
-                                                           (quote-syntax make-syntax-mapping)
+                                                           (if s-exp?
+                                                               (quote-syntax make-s-exp-mapping)
+                                                               (quote-syntax make-syntax-mapping))
                                                            ;; Tell it the shape of the variable:
                                                            (let loop ([var unflat-pattern-var][d 0])
                                                              (if (syntax? var)
@@ -469,8 +498,9 @@
                                   m))))])))
               x)))))))
 
-  (-define-syntax syntax
-    (lambda (x)
+  (begin-for-syntax
+   (define-values (gen-template)
+    (lambda (x s-exp?)
       (-define here-stx (quote-syntax here))
       (unless (and (stx-pair? x)
 		   (let ([rest (stx-cdr x)])
@@ -484,19 +514,24 @@
        (datum->syntax
         here-stx
         (let ([pattern (stx-car (stx-cdr x))])
-          (let-values ([(unique-vars all-varss) (make-pexpand pattern #f null #f)])
+          (let-values ([(unique-vars all-varss) (make-pexpand pattern #f null #f s-exp?)])
             (let ([var-bindings
                    (map
                     (lambda (var)
                       (and (let ([v (syntax-local-value var (lambda () #f))])
-                             (and (syntax-pattern-variable? v)
+                             (and (if s-exp?
+                                      (s-exp-pattern-variable? v)
+                                      (syntax-pattern-variable? v))
                                   v))))
                     unique-vars)])
               (if (and (or (null? var-bindings)
                            (not (ormap (lambda (x) x) var-bindings)))
                        (no-ellipses? pattern))
                   ;; Constant template:
-                  (list (quote-syntax quote-syntax) pattern)
+                  (list (if s-exp?
+                            (quote-syntax quote) 
+                            (quote-syntax quote-syntax))
+                        pattern)
                   ;; Non-constant:
                   (let ([proto-r (let loop ([vars unique-vars][bindings var-bindings])
                                    (if (null? bindings)
@@ -505,7 +540,9 @@
                                                          (cdr bindings))])
                                          (if (car bindings)
                                              (cons (let loop ([v (car vars)]
-                                                              [d (syntax-mapping-depth (car bindings))])
+                                                              [d (if s-exp?
+                                                                     (s-exp-mapping-depth (car bindings))
+                                                                     (syntax-mapping-depth (car bindings)))])
                                                      (if (zero? d)
                                                          v
                                                          (loop (list v) (sub1 d))))
@@ -522,14 +559,16 @@
                     (let ([build-from-template
                            ;; Even if we don't use the builder, we need to check
                            ;; for a well-formed pattern:
-                           (make-pexpand pattern proto-r non-pattern-vars pattern)]
+                           (make-pexpand pattern proto-r non-pattern-vars pattern s-exp?)]
                           [r (let loop ([vars unique-vars][bindings var-bindings][all-varss all-varss])
                                (cond
                                 [(null? bindings) null]
                                 [(car bindings)
                                  (cons
                                   (syntax-property 
-                                   (let ([id (syntax-mapping-valvar (car bindings))])
+                                   (let ([id (if s-exp?
+                                                 (s-exp-mapping-valvar (car bindings))
+                                                 (syntax-mapping-valvar (car bindings)))])
                                      (datum->syntax
                                       id
                                       (syntax-e id)
@@ -552,7 +591,10 @@
                                    [(= len 1) (car r)]
                                    [else
                                     (cons (quote-syntax list*) r)]))))))))))
-        x))))
+        x)))))
 
-  (#%provide (all-from "ellipses.rkt") syntax-case** syntax 
+  (-define-syntax syntax (lambda (stx) (gen-template stx #f)))
+  (-define-syntax datum (lambda (stx) (gen-template stx #t)))
+
+  (#%provide (all-from "ellipses.rkt") syntax-case** syntax datum
              (for-syntax syntax-pattern-variable?)))

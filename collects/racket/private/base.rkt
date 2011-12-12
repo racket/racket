@@ -29,8 +29,8 @@
                               -regexp-replace*)
              (rename -regexp-replace* regexp-replace*)
              identifier?
-             (all-from "stxcase-scheme.rkt")
-             (all-from "qqstx.rkt")
+             (all-from-except "stxcase-scheme.rkt" datum datum-case with-datum)
+             (all-from-except "qqstx.rkt" quasidatum undatum undatum-splicing)
              (all-from "namespace.rkt")
              (all-from "cert.rkt")
              (for-syntax syntax-rules syntax-id-rules ... _)

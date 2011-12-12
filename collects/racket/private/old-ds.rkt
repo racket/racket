@@ -4,7 +4,7 @@
              (for-syntax '#%kernel
                          "stxcase-scheme.rkt"))
 
-  (#%provide define-struct let-struct datum)
+  (#%provide define-struct let-struct old-datum)
   
   (define-syntaxes (define-struct)
     (lambda (stx)
@@ -28,6 +28,6 @@
          (define-struct base (field ...))
          body1 body ...)]))
 
-  (define-syntaxes (datum)
+  (define-syntaxes (old-datum)
     (syntax-rules ()
       [(_ . any) (quote any)])))

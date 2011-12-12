@@ -98,7 +98,7 @@
              #%top-interaction
              map for-each andmap ormap
              assq assv assoc reverse memq memv member
-             (rename datum #%datum)
+             (rename old-datum #%datum)
              (rename mzscheme-in-stx-module-begin #%module-begin)
              (rename #%module-begin #%plain-module-begin)
              (rename lambda #%plain-lambda)

@@ -5,6 +5,7 @@
                      syntax/boundmap
                      syntax/parse
                      racket/syntax)
+         syntax/datum
          "error.rkt"
          "matcher.rkt")
 
@@ -36,7 +37,7 @@
     (let-values ([(rewritten max-depth) (rewrite/max-depth args depth)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
-          (let loop ([func (syntax (λ (x) (fn (syntax->datum x))))]
+          (let loop ([func (syntax (λ (x) (fn x)))]
                      [args-stx rewritten]
                      [res result-id]
                      [args-depth (min depth max-depth)])
@@ -46,10 +47,10 @@
               (if (zero? args-depth)
                   (begin
                     (set! outer-bindings 
-                          (cons (syntax [res (func (quasisyntax args))])
+                          (cons (syntax [res (func (quasidatum args))])
                                 outer-bindings))
                     (values result-id (min depth max-depth)))
-                  (loop (syntax (λ (l) (map func (syntax->list l))))
+                  (loop (syntax (λ (l) (map func l)))
                         (syntax/loc args-stx (args (... ...)))
                         (syntax (res (... ...)))
                         (sub1 args-depth)))))))))
@@ -82,18 +83,18 @@
                               #,ref)])
            (values #'#,v 0)))]
       [(unquote x)
-       (values (syntax (unsyntax x)) 0)]
+       (values (syntax (undatum x)) 0)]
       [(unquote . x)
        (raise-syntax-error 'term "malformed unquote" orig-stx stx)]
       [(unquote-splicing x)
-       (values (syntax (unsyntax-splicing x)) 0)]
+       (values (syntax (undatum-splicing x)) 0)]
       [(unquote-splicing . x)
        (raise-syntax-error 'term "malformed unquote splicing" orig-stx stx)]
       [(in-hole id body)
        (rewrite-application (syntax (λ (x) (apply plug x))) (syntax/loc stx (id body)) depth)]
       [(in-hole . x)
        (raise-syntax-error 'term "malformed in-hole" orig-stx stx)]
-      [hole (values (syntax (unsyntax the-hole)) 0)]
+      [hole (values (syntax (undatum the-hole)) 0)]
       
       
       [() (values stx 0)]
@@ -130,10 +131,10 @@
                 (λ (f _) (defined-check f "metafunction")))
             #,(let loop ([bs (reverse outer-bindings)])
                 (cond
-                  [(null? bs) (syntax (syntax->datum (quasisyntax rewritten)))]
+                  [(null? bs) (syntax (quasidatum rewritten))]
                   [else (with-syntax ([rec (loop (cdr bs))]
                                       [fst (car bs)])
-                          (syntax (with-syntax (fst)
+                          (syntax (with-datum (fst)
                                     rec)))])))))]))
 
 (define-syntax (term-let-fn stx)
@@ -200,9 +201,9 @@
                      [no-match (syntax/loc (syntax rhs1)
                                  (error 'error-name "term ~s does not match pattern ~s" rhs1 'x1))])
          (syntax
-          (syntax-case rhs1 ()
+          (datum-case rhs1 ()
             [new-x1 
-             (let-syntax ([orig-names (make-term-id #'new-names (syntax-e #'depths))] ...)
+             (let-syntax ([orig-names (make-term-id #'new-names depths)] ...)
                (term-let/error-name error-name ((x rhs) ...) body1 body2 ...))]
             [_ no-match]))))]
     [(_ error-name () body1 body2 ...)

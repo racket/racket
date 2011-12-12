@@ -40,26 +40,26 @@
   ;; From Dybvig, mostly:
   (-define-syntax syntax-rules
     (lambda (stx)
-      (syntax-case** syntax-rules #t stx () free-identifier=?
+      (syntax-case** syntax-rules #t stx () free-identifier=? #f
 	((sr (k ...) ((keyword . pattern) template) ...)
 	 (andmap identifier? (syntax->list (syntax (k ...))))
 	 (begin
            (check-sr-rules stx (syntax (keyword ...)))
 	   (syntax/loc stx
 	     (lambda (x)
-	       (syntax-case** sr #t x (k ...) free-identifier=?
+	       (syntax-case** sr #t x (k ...) free-identifier=? #f
 		 ((_ . pattern) (syntax-protect (syntax/loc x template)))
 		 ...))))))))
 
   (-define-syntax syntax-id-rules
     (lambda (x)
-      (syntax-case** syntax-id-rules #t x () free-identifier=?
+      (syntax-case** syntax-id-rules #t x () free-identifier=? #f
 	((sidr (k ...) (pattern template) ...)
 	 (andmap identifier? (syntax->list (syntax (k ...))))
 	 (syntax/loc x
 	   (make-set!-transformer
 	    (lambda (x)
-	      (syntax-case** sidr #t x (k ...) free-identifier=?
+	      (syntax-case** sidr #t x (k ...) free-identifier=? #f
 		(pattern (syntax-protect (syntax/loc x template)))
 		...))))))))
 
@@ -68,7 +68,7 @@
         (syntax-arm stx #f #t)
         (raise-type-error 'syntax-protect "syntax-object" stx)))
 
-  (#%provide syntax (all-from "with-stx.rkt") (all-from "stxloc.rkt") 
+  (#%provide syntax datum (all-from "with-stx.rkt") (all-from "stxloc.rkt") 
              check-duplicate-identifier syntax-protect
              syntax-rules syntax-id-rules
              (for-syntax syntax-pattern-variable?)))

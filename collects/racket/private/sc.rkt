@@ -83,7 +83,7 @@
   ;; does not contain the pattern variables as "keys", since the positions
   ;; can also be determined by the prototype.
   ;;
-  (-define (make-match&env/extract-vars who top p k just-vars? phase-param? interp-box)
+  (-define (make-match&env/extract-vars who top p k just-vars? phase-param? interp-box s-exp?)
            ;;  The m&e function returns three values. If just-vars? is true,
            ;;  only the first result is used, and it is the variable list.
            ;;  Otherwise, the first result is the code assuming an input bound to `e'.
@@ -109,17 +109,19 @@
                                                  (length nest-vars)
                                                  last?)
                                          `(lambda (e)
-                                            (if (stx-list? e)
+                                            (if (,(if s-exp? 'list? 'stx-list?) e)
                                                 ,(let ([b (app-e match-head)])
                                                    (if (equal? b '(list e))
-                                                       (if last?
-                                                           '(stx->list e)
-                                                           '(list (stx->list e)))
+                                                       (if s-exp?
+                                                           (if last? 'e '(list e))
+                                                           (if last?
+                                                               '(stx->list e)
+                                                               '(list (stx->list e))))
                                                        (if (null? nest-vars)
-                                                           `(andmap (lambda (e) ,b) (stx->list e))
+                                                           `(andmap (lambda (e) ,b) ,(if s-exp? 'e '(stx->list e)))
                                                            `(let/ec esc
                                                               (let ([l (map (lambda (e) (stx-check/esc ,b esc))
-                                                                            (stx->list e))])
+                                                                            ,(if s-exp? 'e '(stx->list e)))])
                                                                 (if (null? l)
                                                                     (quote ,(let ([empties (map (lambda (v) '()) nest-vars)])
                                                                               (if last?
@@ -178,7 +180,7 @@
                                                               (if mh-did-var?
                                                                   (app-append apph appt)
                                                                   `(if ,apph ,appt #f)))])
-                                                     (if cap?
+                                                     (if (and cap? (not s-exp?))
                                                          (if id-is-rest?
                                                              `(let ([cap (if (syntax? e) e cap)]) ,s)
                                                              `(let ([cap e]) ,s))
@@ -221,15 +223,15 @@
                                                mh-did-var?
                                                mt-did-var?)
                                        `(lambda (e)
-                                          (if (stx-pair? e)
-                                              ,(let ([s (let ([apph (app match-head '(stx-car e))]
-                                                              [appt (app match-tail '(stx-cdr e))])
+                                          (if (,(if s-exp? 'pair? 'stx-pair?) e)
+                                              ,(let ([s (let ([apph (app match-head (if s-exp? '(car e) '(stx-car e)))]
+                                                              [appt (app match-tail (if s-exp? '(cdr e) '(stx-cdr e)))])
                                                           (if mh-did-var?
                                                               (if mt-did-var?
                                                                   (app-append apph appt)
                                                                   `(let ([mh ,apph]) (and mh ,appt mh)))
                                                               `(if ,apph ,appt #f)))])
-                                                 (if cap?
+                                                 (if (and cap? (not s-exp?))
                                                      (if id-is-rest?
                                                          `(let ([cap (if (syntax? e) e cap)]) ,s)
                                                          `(let ([cap e]) ,s))
@@ -242,7 +244,9 @@
                           (values null #f #f)
                           (values (if interp-box
                                       '()
-                                      'stx-null/#f) 
+                                      (if s-exp?
+                                          '(lambda (e) (if (null? e) null #f))
+                                          'stx-null/#f))
                                   #f 
                                   #f))]
                      [(identifier? p)
@@ -264,11 +268,11 @@
                                                       (sub1 (length (unbox interp-box))))))])
                                      pos)
                                    `(lambda (e)
-                                      (if (identifier? e)
+                                      (if (,(if s-exp? 'symbol? 'identifier?) e)
                                           ;; This free-identifier=? can be turned into
                                           ;;  free-transformer-identifier=? by an
                                           ;;  enclosing binding.
-                                          (if (free-identifier=? e (quote-syntax ,p))
+                                          (if (free-identifier=? e (,(if s-exp? 'quote 'quote-syntax) ,p))
                                               null
                                               #f)
                                           #f)))
@@ -300,7 +304,7 @@
                                            (let ([wrap (if last?
                                                            (lambda (x) `(lambda (e) ,x))
                                                            (lambda (x) `(lambda (e) (list ,x))))])
-                                             (if id-is-rest?
+                                             (if (and id-is-rest? (not s-exp?))
                                                  (wrap '(datum->syntax cap e cap))
                                                  (wrap 'e))))
                                        #t
@@ -320,7 +324,9 @@
                                      (if interp-box
                                          (vector 'vector len body)
                                          `(lambda (e)
-                                            (if (stx-vector? e ,len)
+                                            (if ,(if s-exp?
+                                                     `(and (vector? e) (= ,len (vector-length e)))
+                                                     `(stx-vector? e ,len))
                                                 ,body
                                                 #f)))
                                      did-var?
@@ -332,7 +338,9 @@
                                             (or did-var? elem-did-var?)
                                             (if interp-box
                                                 (cons (cons match-elem elem-did-var?) body)
-                                                (let ([app-elem (app match-elem `(stx-vector-ref e ,(sub1 pos)))])
+                                                (let ([app-elem (app match-elem `(,(if s-exp? 'vector-ref 'stx-vector-ref)
+                                                                                  e 
+                                                                                  ,(sub1 pos)))])
                                                   (if (null? body)
                                                       app-elem
                                                       (if elem-did-var?
@@ -346,8 +354,10 @@
                                    (if interp-box
                                        (vector 'veclist match-content)
                                        `(lambda (e)
-                                          (if (stx-vector? e #f)
-                                              ,(app match-content '(vector->list (syntax-e e)))
+                                          (if ,(if s-exp?
+                                                   '(vector? e)
+                                                   '(stx-vector? e #f))
+                                              ,(app match-content `(vector->list ,(if s-exp? 'e '(syntax-e e))))
                                               #f)))
                                    did-var?
                                    #f)))))]
@@ -364,7 +374,9 @@
                                  (if interp-box
                                      (vector 'prefab key match-content)
                                      `(lambda (e)
-                                        (if (stx-prefab? ',key e)
+                                        (if ,(if s-exp?
+                                                 `(equal? ',key (prefab-struct-key e))
+                                                 `(stx-prefab? ',key e))
                                             ,(app match-content '(cdr (vector->list (struct->vector (syntax-e e)))))
                                             #f)))
                                  did-var?
@@ -416,17 +428,17 @@
                                            null))
                             ,(app-e r)))))))
 
-  (-define (make-match&env who top p k phase-param?)
-           (make-match&env/extract-vars who top p k #f phase-param? #f))
+  (-define (make-match&env who top p k phase-param? s-exp?)
+           (make-match&env/extract-vars who top p k #f phase-param? #f s-exp?))
   
   (-define (get-match-vars who top p k)
-           (make-match&env/extract-vars who top p k #t #f #f))
+           (make-match&env/extract-vars who top p k #t #f #f #f))
 
-  (-define (make-interp-match p keys interp-box)
+  (-define (make-interp-match p keys interp-box s-exp?)
            (make-match&env/extract-vars (quote-syntax interp) 
                                         #f p 
                                         keys
-                                        #f #f interp-box))
+                                        #f #f interp-box s-exp?))
   
   ;; Create an S-expression that applies
   ;; rest to `e'. Optimize ((lambda (e) E) e) to E.
@@ -483,7 +495,7 @@
   ;; An environment for an expander is a list*; see the note above,
   ;; under "Input Matcher", for details.
   ;;
-  (-define (make-pexpand p proto-r k dest)
+  (-define (make-pexpand p proto-r k dest s-exp?)
            (-define top p)
            ;; Helper function: avoid generating completely new symbols
            ;;  for substitution. Instead, try to generate normal symbols
@@ -616,7 +628,7 @@
                                     (let ([v (if (eq? post 'null)
                                                  pre
                                                  `(append ,pre ,post))])
-                                      (if (and (not need-list?) (syntax? p))
+                                      (if (and (not need-list?) (syntax? p) (not s-exp?))
                                           ;; Keep srcloc, properties, etc.:
                                           (let ([small-dest (datum->syntax p
                                                                            'dest
@@ -643,14 +655,14 @@
                                   [etl (expander (stx-cdr p) proto-r local-top use-ellipses? use-tail-pos hash! need-list?)])
                               (if proto-r
                                   `(lambda (r)
-                                     ,(apply-cons p (apply-to-r ehd) (apply-to-r etl) p sub-gensym))
+                                     ,(apply-cons p (apply-to-r ehd) (apply-to-r etl) p sub-gensym s-exp?))
                                   ;; variables were hashed
                                   (void)))))]
                      [(stx-vector? p #f)
                       (let ([e (expander (vector->list (syntax-e p)) proto-r p use-ellipses? use-tail-pos hash! #t)])
                         (if proto-r
                             `(lambda (r)
-                               (list->vector (stx->list ,(apply-to-r e))))
+                               (list->vector (,(if s-exp? 'values 'stx->list) ,(apply-to-r e))))
                             ;; variables were hashed
                             (void)))]
                      [(and (syntax? p)
@@ -659,13 +671,14 @@
                       (let ([e (expander (cdr (vector->list (struct->vector (syntax-e p)))) proto-r p use-ellipses? use-tail-pos hash! #t)])
                         (if proto-r
                             `(lambda (r)
-                               (apply make-prefab-struct ',(prefab-struct-key (syntax-e p)) (stx->list ,(apply-to-r e))))
+                               (apply make-prefab-struct ',(prefab-struct-key (syntax-e p)) 
+                                      (,(if s-exp? 'values 'stx->list) ,(apply-to-r e))))
                             ;; variables were hashed
                             (void)))]
                      [(identifier? p)
                       (if (stx-memq p k) 
                           (if proto-r 
-                              `(lambda (r) (quote-syntax ,p))
+                              `(lambda (r) (,(if s-exp? 'quote 'quote-syntax) ,p))
                               (void))
                           (if proto-r
                               (let ((x (stx-memq p proto-r)))
@@ -680,7 +693,7 @@
                                          top
                                          p))
                                       (check-not-pattern p proto-r)
-                                      `(lambda (r) (quote-syntax ,p)))))
+                                      `(lambda (r) (,(if s-exp? 'quote 'quote-syntax) ,p)))))
                               (unless (and (...? p)
                                            use-ellipses?)
                                 (hash! p))))]
@@ -690,7 +703,7 @@
                           `(lambda (r) null)
                           (void))]
                      [else (if proto-r 
-                               `(lambda (r) (quote-syntax ,p))
+                               `(lambda (r) (,(if s-exp? 'quote 'quote-syntax) ,p))
                                (void))]))
            (let* ([ht (if proto-r
                           #f
@@ -712,8 +725,9 @@
              (if proto-r
                  `(lambda (r)
                     ,(let ([main (let ([build (apply-to-r l)])
-                                   (if (and (pair? build)
-                                            (eq? (car build) 'pattern-substitute))
+                                   (if (or s-exp?
+                                           (and (pair? build)
+                                                (eq? (car build) 'pattern-substitute)))
                                        build
                                        (let ([small-dest ;; In case dest has significant structure...
                                               (and dest (datum->syntax
@@ -753,52 +767,58 @@
   ;; a quoted as the "optimization" --- one that
   ;; is necessary to preserve the syntax wraps
   ;; associated with p.
-  (-define (apply-cons stx h t p sub-gensym)
+  (-define (apply-cons stx h t p sub-gensym s-exp?)
            (cond
             [(and (pair? h)
-                  (eq? (car h) 'quote-syntax)
+                  (if s-exp?
+                      (eq? (car h) 'quote)
+                      (eq? (car h) 'quote-syntax))
                   (eq? (cadr h) (stx-car p))
                   (or (eq? t 'null)
                       (and
                        (pair? t)
-                       (eq? (car t) 'quote-syntax)
+                       (eq? (car t) (car h))
                        (eq? (cadr t) (stx-cdr p)))))
-             `(quote-syntax ,p)]
+             `(,(if s-exp? 'quote 'quote-syntax) ,p)]
             [(and (pair? t)
                   (eq? (car t) 'pattern-substitute))
              ;; fold h into the existing pattern-substitute:
              (cond
               [(and (pair? h)
-                    (eq? (car h) 'quote-syntax)
+                    (or (eq? (car h) 'quote-syntax)
+                        (eq? (car h) 'quote))
                     (eq? (cadr h) (stx-car p)))
                ;; Just extend constant part:
                `(pattern-substitute
-                 (quote-syntax ,(let ([v (cons (cadr h) (cadadr t))])
-                                  ;; We exploit the fact that we're
-                                  ;;  building an S-expression to
-                                  ;;  preserve the source's distinction
-                                  ;;  between (x y) and (x . (y)).
-                                  (if (syntax? stx)
-                                      (datum->syntax stx
-						     v
-						     stx
-						     stx
-                                                     stx)
-                                      v)))
+                 (,(if s-exp? 'quote 'quote-syntax)
+                  ,(let ([v (cons (cadr h) (cadadr t))])
+                     ;; We exploit the fact that we're
+                     ;;  building an S-expression to
+                     ;;  preserve the source's distinction
+                     ;;  between (x y) and (x . (y)).
+                     (if (syntax? stx)
+                         (datum->syntax stx
+                                        v
+                                        stx
+                                        stx
+                                        stx)
+                         v)))
                  . ,(cddr t))]
               [(and (pair? h)
-                    (eq? 'pattern-substitute (car h)))
+                    (eq? (car t) #| = 'pattern-substitute |# (car h)))
                ;; Combine two pattern substitutions:
-               `(pattern-substitute (quote-syntax ,(let ([v (cons (cadadr h) (cadadr t))])
-                                                     (if (syntax? stx)
-                                                         (datum->syntax stx
-									v
-									stx
-									stx
-                                                                        stx)
-                                                         v)))
-                                    ,@(cddr h) ;; <-- WARNING: potential quadratic expansion
-                                    . ,(cddr t))]
+               `(pattern-substitute
+                 (,(if s-exp? 'quote 'quote-syntax)
+                  ,(let ([v (cons (cadadr h) (cadadr t))])
+                     (if (syntax? stx)
+                         (datum->syntax stx
+                                        v
+                                        stx
+                                        stx
+                                        stx)
+                         v)))
+                 ,@(cddr h) ;; <-- WARNING: potential quadratic expansion
+                 . ,(cddr t))]
               [else
                ;; General case: add a substitution:
                (let* ([id (sub-gensym)]
@@ -811,34 +831,54 @@
                                                stx)
                                 expr)])
                  `(pattern-substitute
-                   (quote-syntax ,expr)
+                   (,(if s-exp? 'quote 'quote-syntax) ,expr)
                    ,id ,h
                    . ,(cddr t)))])]
-            [(eq? t 'null)
-             (apply-cons stx h 
-                         `(pattern-substitute (quote-syntax ()))
-                         p
-                         sub-gensym)]
-            
-            [(and (pair? t)
-                  (eq? (car t) 'quote-syntax)
-                  (stx-smaller-than? (cdr t) 10))
-             ;; Shift into `pattern-substitute' mode with an intitial constant.
-             ;; (Only do this for small constants, so we don't traverse
-             ;; big constants when looking for substitutions.)
-             (apply-cons stx h 
-                         `(pattern-substitute ,t)
-                         p
-                         sub-gensym)]
+            [(not s-exp?)
+             (cond
+              [(eq? t 'null)
+               (apply-cons stx h 
+                           `(pattern-substitute (quote-syntax ()))
+                           p
+                           sub-gensym
+                           s-exp?)]
+              
+              [(and (pair? t)
+                    (eq? (car t) 'quote-syntax)
+                    (stx-smaller-than? (cdr t) 10))
+               ;; Shift into `pattern-substitute' mode with an intitial constant.
+               ;; (Only do this for small constants, so we don't traverse
+               ;; big constants when looking for substitutions.)
+               (apply-cons stx h 
+                           `(pattern-substitute ,t)
+                           p
+                           sub-gensym
+                           s-exp?)]
+              [else
+               ;; Shift into `pattern-substitute' with an initial substitution:
+               (apply-cons stx h
+                           (let ([id (sub-gensym)])
+                             `(pattern-substitute (quote-syntax ,id)
+                                                  ,id ,t))
+                           p
+                           sub-gensym
+                           s-exp?)])]
             [else
-             ;; Shift into `pattern-substitute' with an initial substitution:
-             (apply-cons stx h
-                         (let ([id (sub-gensym)])
-                           `(pattern-substitute (quote-syntax ,id)
-                                                ,id ,t))
-                         p
-                         sub-gensym)]))
-
+             ;; In S-expression mode, `cons' on, but collapse to `list'
+             ;; or `list*' if possible:
+             (cond
+              [(eq? t 'null)
+               (list 'list h)]
+              [(and (pair? t)
+                    (eq? (car t) 'list))
+               (list* 'list h (cdr t))]
+              [(and (pair? t)
+                    (or (eq? (car t) 'list*)
+                        (eq? (car t) 'cons)))
+               (list* 'list* h (cdr t))]
+              [else
+               (list 'cons h t)])]))
+            
   (-define (stx-smaller-than? stx sz)
            (sz . > . (stx-size stx (add1 sz))))
 
@@ -1022,22 +1062,23 @@
              (not (...? stx))]
             [else #t]))
 
+  (-define (raise-pattern-error self stx)
+           (if (identifier? stx)
+               (raise-syntax-error
+                #f
+                "pattern variable cannot be used outside of a template"
+                stx)
+               (raise-syntax-error
+                #f
+                "pattern variable cannot be used outside of a template"
+                stx
+                (if (free-identifier=? (quote-syntax set!) (stx-car stx))
+                    (stx-car (stx-cdr stx))
+                    (stx-car stx)))))
+
   ;; Structure for communicating first-order pattern variable information:
   (define-values (struct:syntax-mapping -make-syntax-mapping -syntax-mapping? syntax-mapping-ref syntax-mapping-set!)
-    (make-struct-type 'syntax-mapping #f 2 0 #f null (current-inspector)
-                      (lambda (self stx)
-                        (if (identifier? stx)
-                            (raise-syntax-error
-                             #f
-                             "pattern variable cannot be used outside of a template"
-                             stx)
-                            (raise-syntax-error
-                             #f
-                             "pattern variable cannot be used outside of a template"
-                             stx
-                             (if (free-identifier=? (quote-syntax set!) (stx-car stx))
-                                 (stx-car (stx-cdr stx))
-                                 (stx-car stx)))))))
+    (make-struct-type 'syntax-mapping #f 2 0 #f null (current-inspector) raise-pattern-error))
   (-define (make-syntax-mapping depth valvar)
            (make-set!-transformer (-make-syntax-mapping depth valvar)))
   (-define (syntax-pattern-variable? v)
@@ -1048,8 +1089,23 @@
   (-define (syntax-mapping-valvar v)
            (syntax-mapping-ref (set!-transformer-procedure v) 1))
 
+  ;; Ditto for S-expression patterns:
+  (define-values (struct:s-exp-mapping -make-s-exp-mapping -s-exp-mapping? s-exp-mapping-ref s-exp-mapping-set!)
+    (make-struct-type 's-exp-mapping #f 2 0 #f null (current-inspector) raise-pattern-error))
+  (-define (make-s-exp-mapping depth valvar)
+           (make-set!-transformer (-make-s-exp-mapping depth valvar)))
+  (-define (s-exp-pattern-variable? v)
+           (and (set!-transformer? v)
+                (-s-exp-mapping? (set!-transformer-procedure v))))
+  (-define (s-exp-mapping-depth v)
+           (s-exp-mapping-ref (set!-transformer-procedure v) 0))
+  (-define (s-exp-mapping-valvar v)
+           (s-exp-mapping-ref (set!-transformer-procedure v) 1))
+
   (#%provide (protect make-match&env get-match-vars make-interp-match 
                       make-pexpand
                       make-syntax-mapping syntax-pattern-variable?
                       syntax-mapping-depth syntax-mapping-valvar
+                      make-s-exp-mapping s-exp-pattern-variable?
+                      s-exp-mapping-depth s-exp-mapping-valvar
                       stx-memq-pos no-ellipses?)))
