@@ -47,7 +47,6 @@
               ,(if (assume-primitives)
                    '(void)
                    '(namespace-require/copy 'scheme))
-              (require compiler/cffi)
               ,@(map (lambda (s) `(load ,s)) (prefixes))
               (void))])
       ((compile-zos prefix #:verbose? (verbose))
