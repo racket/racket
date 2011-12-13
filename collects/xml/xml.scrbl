@@ -315,7 +315,7 @@ is the part of @racket[v] that caused the exception.}
                          [fail-k (exn:invalid-xexpr? . -> . any/c)])
          any/c]{
 
-Like @racket[validate-expr], except that @racket[success-k] is called
+Like @racket[validate-xexpr], except that @racket[success-k] is called
 on each valid leaf, and @racket[fail-k] is called on invalid leaves;
 the @racket[fail-k] may return a value instead of raising an exception
 of otherwise escaping. Results from the leaves are combined with
