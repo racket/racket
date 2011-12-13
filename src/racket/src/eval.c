@@ -2763,12 +2763,6 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       
       DO_CHECK_FOR_BREAK(p, );
 
-      if (!scheme_native_arity_check(obj, num_rands)) {
-	scheme_wrong_count_m((const char *)obj, -1, -1,
-			     num_rands, rands, 0);
-	return NULL;
-      }
-
       data = ((Scheme_Native_Closure *)obj)->code;
 
       /* Enlarge the runstack? This max_let_depth is in bytes instead of words. */

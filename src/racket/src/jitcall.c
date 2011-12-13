@@ -78,7 +78,8 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   CHECK_LIMIT();
 
   /* It's a native closure, but we can't just jump to it, in case
-     the arity is wrong. */
+     the arity is wrong and an error needs to be reported using
+     the original wrapper. */
   mz_prepare(2);
   jit_movi_i(JIT_R0, num_rands);
   jit_pusharg_i(JIT_R0); /* argc */

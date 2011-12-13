@@ -3678,14 +3678,11 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
     if (has_rest && num_params)
       --num_params;
 
-    /* Check for arity match - not needed in getarg mode if this
-       is the last case, since the arity check as already done. */
-    if (!do_getarg || (i < cnt - 1)) {
-      if (!has_rest)
-	ref = jit_bnei_i(jit_forward(), JIT_R1, num_params);
-      else
-	ref = jit_blti_i(jit_forward(), JIT_R1, num_params);
-    }
+    /* Check for arity match. */
+    if (!has_rest)
+      ref = jit_bnei_i(jit_forward(), JIT_R1, num_params);
+    else
+      ref = jit_blti_i(jit_forward(), JIT_R1, num_params);
 
     /* Function-argument handling for this case: */
     if (do_getarg) {
@@ -3701,9 +3698,7 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
     jit_jmpr(JIT_V1);
     CHECK_LIMIT();
     
-    if (!do_getarg || (i < cnt - 1)) {
-      mz_patch_branch(ref);
-    }
+    mz_patch_branch(ref);
     /* Try the next one... */
   }
 
