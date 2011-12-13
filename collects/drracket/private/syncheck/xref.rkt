@@ -35,17 +35,20 @@
                                    (list (entry-desc index-entry)
                                          path
                                          tag)))))))))
-       (sync (channel-put-evt resp-chan resp)
-             nack-evt)
+       (thread
+        (λ ()
+          (sync (channel-put-evt resp-chan resp)
+                nack-evt)))
        (loop)))))
 
 ;; this function is called from a thread that might be killed
 ;; (but the body of this module is run in a context where it is
 ;; guaranteed that that custodian doesn't get shut down)
 (define (get-index-entry-info binding-info)
-  (sync
-   (nack-guard-evt
-    (λ (nack-evt)
-      (define resp-chan (make-channel))
-      (channel-put req-chan (list binding-info resp-chan nack-evt))
-      resp-chan))))
+  (and (not (thread-dead? thd))
+       (sync
+        (nack-guard-evt
+         (λ (nack-evt)
+           (define resp-chan (make-channel))
+           (channel-put req-chan (list binding-info resp-chan nack-evt))
+           resp-chan)))))
