@@ -90,6 +90,7 @@
       [(log-entry kind msg stx located-stx (? number? pos))
        (define start     (sub1 pos))
        (define end       (+ start (syntax-span stx)))
+       ;; When we first create report entries, they have a single sub.
        (report-entry (list (if (opt-log-entry? l)
                                (opt-report-entry located-stx msg)
                                (missed-opt-report-entry

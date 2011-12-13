@@ -36,6 +36,13 @@
     (define highlights  '())
     (define color-table #f)
 
+    ;; Listof (report-entry -> Bool)
+    ;; If any of these predicates return true for a given log entry's
+    ;; sub, show it.
+    ;; Note: at the point where these are called, report entries have
+    ;; a single sub.
+    (define filters (list missed-opt-report-entry? opt-report-entry?))
+
     (define/private (highlight-entry l)
       (match l
         [(report-entry subs start end badness)
@@ -48,7 +55,13 @@
            (list start end color))]))
 
     (define/public (add-highlights)
-      (define report (collapse-report (generate-report this)))
+      (define report
+        (collapse-report
+         (for/list ([entry (in-list (generate-report this))]
+                    ;; At this point, report enties have a single sub.
+                    #:when (for/or ([f (in-list filters)])
+                             (f (first (report-entry-subs entry)))))
+           entry)))
       (define max-badness
         (apply max (cons 0 (map report-entry-badness report))))
       (unless (= max-badness 0) ; no missed opts, color table code would error
