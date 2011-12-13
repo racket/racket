@@ -330,14 +330,14 @@ naming a predicate, and @racket[_r] is an optionally-renamed identifier.
  [struct-option
    (code:line #:constructor-name constructor-id)
    (code:line #:extra-constructor-name constructor-id)])]
-{This form requires identifiers from the module @racket[m], giving
+This form requires identifiers from the module @racket[m], giving
 them the specified types.
 
-The first form requires @racket[r], giving it type @racket[t].
+The first case requires @racket[r], giving it type @racket[t].
 
-@index["struct"]{The second and third forms} require the struct with name @racket[name]
+@index["struct"]{The second and third cases} require the struct with name @racket[name]
 with fields @racket[f ...], where each field has type @racket[t].  The
-third form allows a @racket[parent] structure type to be specified.
+third case allows a @racket[parent] structure type to be specified.
 The parent type must already be a structure type known to Typed
 Racket, either built-in or via @racket[require/typed].  The
 structure predicate has the appropriate Typed Racket filter type so
