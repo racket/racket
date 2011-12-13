@@ -22,7 +22,7 @@
   (thread
    (λ ()
      (let loop ()
-       (define-values (binding-info resp-chan nack-evt requesting-thread) (apply values (channel-get req-chan)))
+       (define-values (binding-info resp-chan nack-evt) (apply values (channel-get req-chan)))
        (define xref (force delayed-xref))
        (define resp
          (and xref
@@ -36,8 +36,7 @@
                                          path
                                          tag)))))))))
        (sync (channel-put-evt resp-chan resp)
-             nack-evt
-             (thread-dead-evt requesting-thread))
+             nack-evt)
        (loop)))))
 
 ;; this function is called from a thread that might be killed
@@ -48,5 +47,5 @@
    (nack-guard-evt
     (λ (nack-evt)
       (define resp-chan (make-channel))
-      (channel-put req-chan (list binding-info resp-chan nack-evt (current-thread)))
+      (channel-put req-chan (list binding-info resp-chan nack-evt))
       resp-chan))))
