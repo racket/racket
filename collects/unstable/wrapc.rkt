@@ -4,6 +4,7 @@
                        racket/contract/base
                        syntax/location)
          syntax/srcloc
+         syntax/modcollapse
          racket/syntax)
 
 (provide/contract
@@ -71,17 +72,20 @@
          (if (syntax? ctx)
              (get-source-expr (extract-source ctx) #f)
              (get-source-expr 'unknown #f))]
-        [else
-         (let ([source-string
-                (cond [(string? source) source]
-                      [(syntax? source) (source-location->string source)]
-                      [(module-path-index? source)
-                       ;; FIXME: share with syntax/location ??
-                       (let ([name (resolved-module-path-name
-                                    (module-path-index-resolve source))])
-                         (cond [(path? name) (format "(file ~s)" (path->string name))]
-                               [(symbol? name) (format "(quote ~s)" name)]))])])
-           #`(quote #,source-string))]))
+        [(string? source) #`(quote #,source)]
+        [(syntax? source) #`(quote #,(source-location->string source))]
+        [(module-path-index? source)
+         ;; FIXME: extend collapse-module-path-index to accept #f, return rel mod path
+         (let* ([here (current-load-relative-directory)]
+                [collapsed
+                 (collapse-module-path-index source (or here (build-path 'same)))])
+           (cond [(and (path? collapsed) here)
+                  #`(quote #,(path->string collapsed))]
+                 [(path? collapsed)
+                  (let-values ([(rel base) (module-path-index-split source)])
+                    #`(quote #,rel))]
+                 [else
+                  #`(quote #,(format "~s" collapsed))]))]))
 
 (define (extract-source stx)
   (let ([id (syntax-case stx ()
