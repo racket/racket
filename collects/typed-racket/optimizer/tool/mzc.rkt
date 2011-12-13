@@ -196,7 +196,7 @@
                                   (success? evt))))
                   site))))
 
-         (define n-successes    (length (filter success?     group)))
+         (define n-successes (- (length (filter success?     group)) n-unrollings))
          (define n-failures     (length (filter failure?     group)))
          (define n-out-of-fuels (length (filter out-of-fuel? group)))
 
