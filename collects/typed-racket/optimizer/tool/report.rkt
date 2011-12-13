@@ -10,7 +10,8 @@
          (struct-out sub-report-entry)
          (struct-out opt-report-entry)
          (struct-out missed-opt-report-entry)
-         generate-report)
+         generate-report
+         collapse-report)
 
 ;; Similar to the log-entry family of structs, but geared towards GUI display.
 ;; Also designed to contain info for multiple overlapping log entries.
@@ -25,10 +26,9 @@
 (struct missed-opt-report-entry sub-report-entry (badness irritants))
 
 (define (generate-report this)
-  (collapse-report
-   (log->report
-    (post-process-inline-log
-     (generate-log this)))))
+  (log->report
+   (post-process-inline-log
+    (generate-log this))))
 
 
 (define (generate-log this)
