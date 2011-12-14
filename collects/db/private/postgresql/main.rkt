@@ -22,7 +22,8 @@
                                              ((no) #f)
                                              (else (ssl-make-client-context 'sslv3)))]
                             #:notice-handler [notice-handler void]
-                            #:notification-handler [notification-handler void])
+                            #:notification-handler [notification-handler void]
+                            #:debug? [debug? #f])
   (let ([connection-options
          (+ (if (or server port) 1 0)
             (if socket 1 0))]
@@ -41,6 +42,7 @@
                   (notice-handler notice-handler)
                   (notification-handler notification-handler)
                   (allow-cleartext-password? allow-cleartext-password?))])
+      (when debug? (send c debug #t))
       (let-values ([(in out)
                     (cond [socket (unix-socket-connect socket)]
                           [else (let ([server (or server "localhost")]

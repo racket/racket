@@ -17,7 +17,8 @@
         #:ssl (or/c 'yes 'no 'optional)
         #:ssl-context ssl-client-context?
         #:notice-handler (or/c 'output 'error output-port? procedure?)
-        #:notification-handler (or/c 'output 'error output-port? procedure?))
+        #:notification-handler (or/c 'output 'error output-port? procedure?)
+        #:debug? any/c)
        connection?)]
  [postgresql-guess-socket-path
   (-> path-string?)]

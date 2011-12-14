@@ -219,7 +219,8 @@
         #:allow-cleartext-password? boolean?
         #:ssl (or/c 'yes 'optional 'no)
         #:notice-handler (or/c 'output 'error)
-        #:notification-handler (or/c 'output 'error))
+        #:notification-handler (or/c 'output 'error)
+        #:debug? any/c)
        data-source?)]
  [mysql-data-source
   (->* ()
@@ -229,7 +230,8 @@
         #:port exact-positive-integer?
         #:socket (or/c string? 'guess)
         #:password (or/c string? #f)
-        #:notice-handler (or/c 'output 'error))
+        #:notice-handler (or/c 'output 'error)
+        #:debug? any/c)
        data-source?)]
  [sqlite3-data-source
   (->* ()

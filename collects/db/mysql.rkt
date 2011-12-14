@@ -15,7 +15,8 @@
         #:socket (or/c path-string? 'guess #f)
         #:ssl (or/c 'yes 'no 'optional)
         #:ssl-context ssl-client-context?
-        #:notice-handler (or/c 'output 'error output-port? procedure?))
+        #:notice-handler (or/c 'output 'error output-port? procedure?)
+        #:debug? any/c)
        connection?)]
  [mysql-guess-socket-path
   (-> path-string?)]
