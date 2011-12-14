@@ -34,7 +34,7 @@
                               hash-update hash-update!)
              (rename old-case case)
              (all-from racket/private/misc)
-             (all-from-except racket/private/stxcase-scheme _)
+             (all-from-except racket/private/stxcase-scheme _ datum datum-case with-datum)
              (all-from-except racket/private/letstx-scheme 
                               -define -define-syntax -define-struct
                               cond old-cond else =>)
@@ -42,7 +42,7 @@
              define-struct let-struct
              identifier? ;; from racket/private/stx
              (all-from racket/private/cert)
-             (all-from racket/private/qqstx)
+             (all-from-except racket/private/qqstx quasidatum undatum undatum-splicing)
              (all-from racket/private/define)
              (all-from racket/private/kernstruct)
              force delay promise?
