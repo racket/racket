@@ -63,7 +63,8 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
     if (t == scheme_prim_type) {
       return PRIM_APPLY_NAME_FAST(rator, argc, argv);
     } if ((t == scheme_proc_chaperone_type)
-          && (SCHEME_MPAIRP(((Scheme_Chaperone *)rator)->redirects))) {
+          && 0 /* disable for now */
+          && SCHEME_MPAIRP(((Scheme_Chaperone *)rator)->redirects)) {
       return scheme_apply_chaperone(rator, argc, argv, NULL, PRIM_CHECK_MULTI | (PRIM_CHECK_VALUE << 1));
     }
   }

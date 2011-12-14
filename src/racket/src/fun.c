@@ -3114,6 +3114,7 @@ static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
 {
   Scheme_Native_Closure_Data *data;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
+  GC_MAYBE_IGNORE_INTERIOR Scheme_Object **rs;
 
   data = ((Scheme_Native_Closure *)obj)->code;
 
@@ -3123,14 +3124,16 @@ static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
 
   MZ_CONT_MARK_POS += 2;
   old_cont_mark_stack = MZ_CONT_MARK_STACK;
+  rs = MZ_RUNSTACK;
 
   obj = data->start_code(obj, num_rands, rands EXTRA_NATIVE_ARGUMENT);
 
   if (obj == SCHEME_TAIL_CALL_WAITING)
-    return force_values(obj, 1);
+    obj = force_values(obj, 1);
 
   MZ_CONT_MARK_STACK = old_cont_mark_stack;
   MZ_CONT_MARK_POS -= 2;
+  MZ_RUNSTACK = rs;
 
   return obj;
 }
@@ -3146,7 +3149,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark;
   int c, i, need_restore = 0;
   int need_pop_mark;
-  Scheme_Cont_Frame_Data cframe;
+  Scheme_Cont_Frame_Data cframe, cframe2;
 
   if (argv == MZ_RUNSTACK) {
     /* Pushing onto the runstack ensures that `(mcar px->redirects)' won't
@@ -3197,11 +3200,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     SCHEME_CDR(px->redirects) = scheme_make_integer(argc);
   }
 
-  if (checks) {
-    scheme_push_continuation_frame(&cframe);
-    need_pop_mark = 1;
-  } else
-    need_pop_mark = 0;
+  if (checks)
+    scheme_push_continuation_frame(&cframe2);
 
   if (px->props) {
     app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_impersonator_property);
@@ -3214,15 +3214,14 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   if (app_mark) {
     v = scheme_extract_one_cc_mark(NULL, SCHEME_CAR(app_mark));
     if (v) {
-      if (!checks)
-        scheme_push_continuation_frame(&cframe);
+      scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), v);
-      if (!checks) {
-        MZ_CONT_MARK_POS -= 2;
-        need_pop_mark = 1;
-      }
-    } 
-  }
+      MZ_CONT_MARK_POS -= 2;
+      need_pop_mark = 1;
+    } else
+      need_pop_mark = 0;
+  } else
+    need_pop_mark = 0;
 
   v = SCHEME_CAR(px->redirects);
   if (SAME_TYPE(SCHEME_TYPE(v), scheme_native_closure_type))
@@ -3250,10 +3249,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
 
   if (need_pop_mark) {
-    if (!checks)
-      MZ_CONT_MARK_POS += 2;
+    MZ_CONT_MARK_POS += 2;
     scheme_pop_continuation_frame(&cframe);
   }
+  if (checks)
+    scheme_pop_continuation_frame(&cframe2);
   
   if ((c == argc) || (c == (argc + 1))) {
     if (c > argc) {
@@ -3337,12 +3337,15 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        SCHEME_CAR(px->redirects),
                        post);
 
+    if (checks)
+      scheme_push_continuation_frame(&cframe2);
+
     if (app_mark) {
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
       MZ_CONT_MARK_POS -= 2;
       need_pop_mark = 1;
-    } else
+    }else
       need_pop_mark = 0;
 
     if (auto_val) {
@@ -3386,6 +3389,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       MZ_CONT_MARK_POS += 2;
       scheme_pop_continuation_frame(&cframe);
     }
+    if (checks)
+      scheme_pop_continuation_frame(&cframe2);
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
