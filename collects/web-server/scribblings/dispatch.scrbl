@@ -94,6 +94,13 @@ After mastering the world of blogging software, you decide to put the ubiquitous
  (sum-url sum (list 2 3 5 7))
 ]
 
+When you use @racketmodname[web-server/dispatch] with
+@racket[serve/servlet], you almost always want to use the
+@racket[#:servlet-regexp] argument with the value @racket[""] to
+capture all top-level requests. However, make sure you don't include
+an @racket[else] in your rules if you are also serving static files,
+or else the filesystem server will never see the requests.
+
 @section{API Reference}
 
 @defform*[#:literals (else)
