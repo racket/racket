@@ -129,7 +129,7 @@
       (append (map (lambda (modpath)
                      (make-part-tag-decl 
                       (intern-taglet
-                       `(mod-path ,(read-intern-literal
+                       `(mod-path ,(datum-intern-literal
                                     (element->string modpath))))))
                    modpaths)
               (flow-paragraphs (decode-flow content)))))))
@@ -137,8 +137,8 @@
 (define the-module-path-index-desc (make-module-path-index-desc))
 
 (define (make-defracketmodname mn mp)
-  (let ([name-str (read-intern-literal (element->string mn))]
-        [path-str (read-intern-literal (element->string mp))])
+  (let ([name-str (datum-intern-literal (element->string mn))]
+        [path-str (datum-intern-literal (element->string mp))])
     (make-index-element #f
                         (list mn)
                         (intern-taglet `(mod-path ,path-str))

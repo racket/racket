@@ -325,33 +325,3 @@ except that special-comment values (see
 The default port read handler itself can be customized through a
 readtable; see @secref["readtables"] for more information.}
 
-
-@defproc[(read-intern-literal [v any/c]) any/c]{
-
-Converts some values to be consistent with an @tech{interned} result
-produced by the default reader.
-
-If @racket[v] is a @tech{number}, @tech{character}, @tech{string},
-@tech{byte string}, or @tech{regular expression}, then the result is a
-value that is @racket[equal?] to @racket[v] and @racket[eq?] to a
-potential result of the default reader. (Note that mutable strings and
-byte strings are @tech{interned} as immutable strings and byte
-strings.)
-
-If @racket[v] is an @tech{uninterned} or an @tech{unreadable symbol},
-the result is still @racket[v], since an @tech{interned} symbol would
-not be @racket[equal?] to @racket[v].
-
-The conversion process does not traverse compound values. For example,
-if @racket[v] is a @tech{pair} containing strings, then the strings
-within @racket[v] are not @tech{interned}.
-
-If @racket[_v1] and @racket[_v2] are @racket[equal?] but not
-@racket[eq?], then it is possible that @racket[(read-intern-literal
-_v1)] will return @racket[_v1] and---sometime after @racket[_v1]
-becomes unreachable as determined by the garbage collector (see
-@secref["gc-model"])---@racket[(read-intern-literal _v2)] can still
-return @racket[_v2]. In other words, @racket[read-intern-literal]
-may adopt a given value as an @tech{interned} representative, but
-if a former representative becomes otherwise unreachable, then
-@racket[read-intern-literal] may adopt a new representative.}

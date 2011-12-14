@@ -101,7 +101,7 @@
                      (if (hash-ref ht k #f)
                        #f
                        (begin (hash-set! ht k #t)
-                              (cons (read-intern-literal (symbol->string k))
+                              (cons (datum-intern-literal (symbol->string k))
                                     (**method k (car super))))))
                    (cls/intf-methods (cdr super)))])
          (if (null? inh)
@@ -133,7 +133,7 @@
             symbol-color
             (list (make-link-element
                    value-link-color
-                   (list (read-intern-literal
+                   (list (datum-intern-literal
                           (symbol->string (syntax-e (decl-name decl)))))
                    tag)))
            (map id-info (decl-app-mixins decl))
@@ -207,7 +207,7 @@
                             (list
                              (make-index-element
                               #f content tag
-                              (list (read-intern-literal
+                              (list (datum-intern-literal
                                      (symbol->string (syntax-e stx-id))))
                               content
                               (with-exporting-libraries

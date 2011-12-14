@@ -145,7 +145,7 @@
                        (if (eq? mode 'new)
                          (make-element
                           #f (list (racketparenfont "[")
-                                   (racketidfont (read-intern-literal (keyword->string (arg-kw arg))))
+                                   (racketidfont (datum-intern-literal (keyword->string (arg-kw arg))))
                                    spacer
                                    (to-element (make-var-id (arg-id arg)))
                                    (racketparenfont "]")))
@@ -267,7 +267,7 @@
                                    #f
                                    content
                                    tag
-                                   (list (read-intern-literal (symbol->string mname)))
+                                   (list (datum-intern-literal (symbol->string mname)))
                                    content
                                    (with-exporting-libraries
                                     (lambda (libs)
@@ -289,7 +289,7 @@
                  #f
                  (list (make-index-element
                         #f content tag
-                        (list (read-intern-literal (symbol->string (extract-id prototype))))
+                        (list (datum-intern-literal (symbol->string (extract-id prototype))))
                         content
                         (with-exporting-libraries
                          (lambda (libs)
@@ -899,7 +899,7 @@
                                    #f
                                    content
                                    tag
-                                   (list (read-intern-literal (symbol->string name)))
+                                   (list (datum-intern-literal (symbol->string name)))
                                    content
                                    (with-exporting-libraries
                                     (lambda (libs) (make-thing-index-desc name libs)))))
@@ -942,7 +942,7 @@
     (make-target-element*
      make-target-element
      stx-id
-     (let* ([name (read-intern-literal (string-append* (map symbol->string (cdar wrappers))))]
+     (let* ([name (datum-intern-literal (string-append* (map symbol->string (cdar wrappers))))]
             [target-maker
              (id-to-target-maker (datum->syntax stx-id (string->symbol name))
                                  #t)])

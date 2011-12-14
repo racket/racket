@@ -168,28 +168,28 @@ Use syntax/modcollapse instead.
              ;; It has a suffix:
              (if (regexp-match? #rx"/" e)
                  ;; It has a path, so it's fine:
-                 (let ([e2 (read-intern-literal (ss->rkt e))])
+                 (let ([e2 (datum-intern-literal (ss->rkt e))])
                    (if (eq? e e2)
                        s
                        `(lib ,e2)))
                  ;; No path, so add "mzlib/":
-                 `(lib ,(read-intern-literal 
+                 `(lib ,(datum-intern-literal 
                          (string-append "mzlib/" (ss->rkt e)))))]
             [(regexp-match? #rx"/" e)
              ;; It has a separator, so add a suffix:
-             `(lib ,(read-intern-literal (string-append e ".rkt")))]
+             `(lib ,(datum-intern-literal (string-append e ".rkt")))]
             [else
              ;; No separator or suffix, so add "/main.rkt":
-             `(lib ,(read-intern-literal (string-append e "/main.rkt")))]))
+             `(lib ,(datum-intern-literal (string-append e "/main.rkt")))]))
         ;; multi-string version:
         (if (regexp-match? #rx"[.]" (cadr s))
             ;; there's a suffix, so we can collapse to a single string:
-            `(lib ,(read-intern-literal
+            `(lib ,(datum-intern-literal
                     (string-join (append (cddr s) 
                                          (list (ss->rkt (cadr s))))
                                  "/")))
             ;; No suffix, so we must keep the old style:
-            (cons 'lib (map read-intern-literal (cdr s))))))
+            (cons 'lib (map datum-intern-literal (cdr s))))))
   
   (define (normalize-planet s)
     (cond

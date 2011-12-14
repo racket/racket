@@ -22,7 +22,7 @@
          [s (regexp-replace #rx"ies$" s "y")]
          [s (regexp-replace #rx"s$" s "")]
          [s (regexp-replace* #px"[-\\s]+" s " ")]
-         [s (read-intern-literal s)])
+         [s (datum-intern-literal s)])
     (make-elem style c (list 'tech (doc-prefix doc prefix s)))))
 
 (define (deftech #:style? [style? #t] . s)
@@ -33,7 +33,7 @@
     (make-index-element #f
                         (list t)
                         (target-element-tag t)
-                        (list (read-intern-literal
+                        (list (datum-intern-literal
                                (clean-up-index-string (element->string e))))
                         (list e)
                         'tech)))

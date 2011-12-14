@@ -17,7 +17,7 @@ characters whose values range from @racketvalfont{#x0} to
 Two characters are @racket[eqv?] if they correspond to the same scalar
 value. For each scalar value less than 256, character values that are
 @racket[eqv?] are also @racket[eq?]. Characters produced by the default
-reader are @tech{interned}.
+reader are @tech{interned} in @racket[read-syntax] mode.
 
 @see-read-print["character"]{characters}
 

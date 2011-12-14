@@ -56,7 +56,7 @@
 
 (define hovers (make-weak-hasheq))
 (define (intern-hover-style text)
-  (let ([text (read-intern-literal text)])
+  (let ([text (datum-intern-literal text)])
     (or (hash-ref hovers text #f)
         (let ([s (make-style #f (list (make-hover-property text)))])
           (hash-set! hovers text s)
@@ -189,7 +189,7 @@
                           (if index?
                               (make-index-element
                                #f (list elem) tag
-                               (list (read-intern-literal (symbol->string (syntax-e id))))
+                               (list (datum-intern-literal (symbol->string (syntax-e id))))
                                (list elem)
                                (and show-libs?
                                     (with-exporting-libraries
@@ -223,7 +223,7 @@
              #f
              (list (make-one (if form? 'form 'def))
                    (make-dep (list taglet id) null)
-                   (let ([str (read-intern-literal (symbol->string id))])
+                   (let ([str (datum-intern-literal (symbol->string id))])
                      (make-index-element #f
                                          null
                                          (intern-taglet

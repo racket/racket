@@ -81,7 +81,7 @@ with fixnums. See also the @racketmodname[racket/fixnum] module, below.
 Two fixnums that are @racket[=] are also the same
 according to @racket[eq?]. Otherwise, the result of @racket[eq?]
 applied to two numbers is undefined, except that numbers produced
-by the default reader are @tech{interned} and therefore @racket[eq?]
+by the default reader in @racket[read-syntax] mode are @tech{interned} and therefore @racket[eq?]
 when they are @racket[eqv?].
 
 Two numbers are @racket[eqv?] when they are both inexact with the same precision or both

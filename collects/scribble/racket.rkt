@@ -197,8 +197,8 @@
 
   (define iformat
     (case-lambda
-     [(str val) (read-intern-literal (format str val))]
-     [(str . vals) (read-intern-literal (apply format str vals))]))
+     [(str val) (datum-intern-literal (format str val))]
+     [(str . vals) (datum-intern-literal (apply format str vals))]))
 
   (define (typeset-atom c out color? quote-depth expr?)
     (if (and (var-id? (syntax-e c))

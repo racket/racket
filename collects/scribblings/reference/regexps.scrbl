@@ -58,7 +58,8 @@ or both byte regexps.
 
 A literal or printed regular expression starts with @litchar{#rx} or
 @litchar{#px}. @see-read-print["regexp"]{regular expressions} Regular
-expressions produced by the default reader are @tech{interned}.
+expressions produced by the default reader are @tech{interned} in 
+@racket[read-syntax] mode.
 
 The internal size of a regexp value is limited to 32 kilobytes; this
 limit roughly corresponds to a source string with 32,000 literal

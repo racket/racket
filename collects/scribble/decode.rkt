@@ -90,7 +90,7 @@
   (let* ([s (regexp-replace* #px"\\s+" s " ")]
          [s (regexp-replace* #rx"^ " s "")]
          [s (regexp-replace* #rx" $" s "")])
-    (read-intern-literal s)))
+    (datum-intern-literal s)))
 
 (define (decode-string s)
   (let loop ([l '((#rx"---" mdash)
@@ -101,7 +101,7 @@
     (cond [(null? l) (list s)]
           [(regexp-match-positions (caar l) s)
            => (lambda (m)
-                (read-intern-literal
+                (datum-intern-literal
                  (append (decode-string (substring s 0 (caar m)))
                          (cdar l)
                          (decode-string (substring s (cdar m))))))]

@@ -207,7 +207,7 @@
 (define (*as-modname-link s e)
   (make-link-element module-link-color
                      (list e)
-                     `(mod-path ,(read-intern-literal (format "~s" s)))))
+                     `(mod-path ,(datum-intern-literal (format "~s" s)))))
 
 (define-syntax-rule (indexed-racket x)
   (add-racket-index 'x (racket x)))

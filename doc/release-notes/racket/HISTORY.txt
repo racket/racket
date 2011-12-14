@@ -1,3 +1,6 @@
+Version 5.2.0.7
+Intern strings, etc., only in read-syntax mode, not read mode
+
 Version 5.2.0.6
 Added pseudo-random-generator-vector?
 
