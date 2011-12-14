@@ -81,7 +81,7 @@
          (with-syntax ([v #`(begin
                               #,(defined-check ref "term" #:external #'x)
                               #,ref)])
-           (values #'#,v 0)))]
+           (values #`(undatum v) 0)))]
       [(unquote x)
        (values (syntax (undatum x)) 0)]
       [(unquote . x)
