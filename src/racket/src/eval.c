@@ -2783,7 +2783,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       tmpv = obj;
       obj = NULL; /* save for space, since tmpv is ignored by the GC */
-      v = data->start_code(tmpv, num_rands, rands);
+      v = data->start_code(tmpv, num_rands, rands EXTRA_NATIVE_ARGUMENT);
 
       if (v == SCHEME_TAIL_CALL_WAITING) {
         /* [TC-SFS]; see schnapp.inc */

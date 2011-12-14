@@ -454,15 +454,15 @@ static jit_state 			_jit;
 #define jit_getarg_ul(reg, ofs)		jit_extr_uc_ul((reg), jit_arg_reg(ofs))
 #define jit_getarg_us(reg, ofs)		jit_extr_us_ul((reg), jit_arg_reg(ofs))
 #else
-#define jit_getarg_c(reg, ofs)		jit_ldxi_c((reg), JIT_FP, (ofs));
-#define jit_getarg_uc(reg, ofs)		jit_ldxi_uc((reg), JIT_FP, (ofs));
-#define jit_getarg_s(reg, ofs)		jit_ldxi_s((reg), JIT_FP, (ofs));
-#define jit_getarg_us(reg, ofs)		jit_ldxi_us((reg), JIT_FP, (ofs));
-#define jit_getarg_i(reg, ofs)		jit_ldxi_i((reg), JIT_FP, (ofs));
-#define jit_getarg_ui(reg, ofs)		jit_ldxi_ui((reg), JIT_FP, (ofs));
-#define jit_getarg_l(reg, ofs)		jit_ldxi_l((reg), JIT_FP, (ofs));
-#define jit_getarg_ul(reg, ofs)		jit_ldxi_ul((reg), JIT_FP, (ofs));
-#define jit_getarg_p(reg, ofs)		jit_ldxi_p((reg), JIT_FP, (ofs));
+#define jit_getarg_c(reg, ofs)		jit_ldxi_c((reg), JIT_FP, (ofs))
+#define jit_getarg_uc(reg, ofs)		jit_ldxi_uc((reg), JIT_FP, (ofs))
+#define jit_getarg_s(reg, ofs)		jit_ldxi_s((reg), JIT_FP, (ofs))
+#define jit_getarg_us(reg, ofs)		jit_ldxi_us((reg), JIT_FP, (ofs))
+#define jit_getarg_i(reg, ofs)		jit_ldxi_i((reg), JIT_FP, (ofs))
+#define jit_getarg_ui(reg, ofs)		jit_ldxi_ui((reg), JIT_FP, (ofs))
+#define jit_getarg_l(reg, ofs)		jit_ldxi_l((reg), JIT_FP, (ofs))
+#define jit_getarg_ul(reg, ofs)		jit_ldxi_ul((reg), JIT_FP, (ofs))
+#define jit_getarg_p(reg, ofs)		jit_ldxi_p((reg), JIT_FP, (ofs))
 #endif
 #endif
 

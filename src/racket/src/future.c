@@ -1974,7 +1974,7 @@ void *worker_thread_future_loop(void *arg)
   Scheme_Future_Thread_State *fts = params->fts;
   Scheme_Future_State *fs = params->fs;
   Scheme_Object *v;
-  Scheme_Closed_Prim *jitcode;
+  Scheme_Native_Proc *jitcode;
   future_t *ft;
   mz_jmp_buf newbuf;
   int fid;

@@ -120,10 +120,6 @@ static Scheme_Object *clear_rs_arguments(Scheme_Object *v, int size, int delta) 
   return v;
 }
 
-#ifdef JIT_THREAD_LOCAL
-void *scheme_jit_get_threadlocal_table() XFORM_SKIP_PROC { return &BOTTOM_VARIABLE; }
-#endif
-
 #define JIT_TS_PROCS
 #define JIT_BOX_TS_PROCS
 #include "jit_ts.c"
@@ -134,14 +130,20 @@ void *scheme_jit_get_threadlocal_table() XFORM_SKIP_PROC { return &BOTTOM_VARIAB
 
 THREAD_LOCAL_DECL(Scheme_Current_LWC *scheme_current_lwc);
 
-Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Closed_Prim *code,
+Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
                                                        void *data,
                                                        int argc, 
                                                        Scheme_Object **argv)
 {
+#ifdef JIT_THREAD_LOCAL
+# define THDLOC &BOTTOM_VARIABLE
+#else
+# define THDLOC NULL
+#endif
   scheme_current_lwc->runstack_start = MZ_RUNSTACK;
   scheme_current_lwc->cont_mark_stack_start = MZ_CONT_MARK_STACK;
-  return sjc.native_starter_code(data, argc, argv, code, (void **)&scheme_current_lwc->stack_start);
+  return sjc.native_starter_code(data, argc, argv, THDLOC, code, (void **)&scheme_current_lwc->stack_start);
+#undef THDLOC
 }
 
 void scheme_fill_stack_lwc_end(void) XFORM_SKIP_PROC
@@ -2974,6 +2976,8 @@ static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_l
 
   jit_prolog(NATIVE_ARG_COUNT);
   
+  mz_push_threadlocal_early();
+
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
   in = jit_arg_i();
@@ -2982,7 +2986,7 @@ static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_l
   jit_getarg_p(JIT_R2, in); /* argv */
   
   mz_push_locals();
-  mz_push_threadlocal();
+  mz_push_threadlocal(in);
 
   mz_tl_ldi_p(JIT_RUNSTACK, tl_MZ_RUNSTACK);
 
@@ -3835,7 +3839,7 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
     return 1;
   }
 
-  return sjc.check_arity_code(closure, argc + 1, 0);
+  return sjc.check_arity_code(closure, argc + 1, 0 EXTRA_NATIVE_ARGUMENT);
 }
 
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
@@ -3878,7 +3882,7 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure)
     return a;
   }
 
-  return sjc.get_arity_code(closure, 0, 0);
+  return sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
 }
 
 /**********************************************************************/

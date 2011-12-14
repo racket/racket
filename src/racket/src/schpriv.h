@@ -1337,6 +1337,18 @@ void scheme_clean_cust_box_list(void);
 void scheme_notify_code_gc(void);
 #endif
 
+#ifdef USE_THREAD_LOCAL
+# define BOTTOM_VARIABLE GC_variable_stack
+# define EXTRA_NATIVE_ARGUMENT , &BOTTOM_VARIABLE
+# define EXTRA_NATIVE_ARGUMENT_TYPE , void* thdloc
+#else
+# define EXTRA_NATIVE_ARGUMENT /* empty */
+# define EXTRA_NATIVE_ARGUMENT_TYPE /* empty */
+#endif
+
+typedef struct Scheme_Object *(Scheme_Native_Proc)(void *d, int argc, struct Scheme_Object *argv[] 
+                                                   EXTRA_NATIVE_ARGUMENT_TYPE);
+
 /*========================================================================*/
 /*                              control flow                              */
 /*========================================================================*/
@@ -2321,7 +2333,7 @@ typedef struct {
 typedef struct Scheme_Native_Closure_Data {
   Scheme_Inclhash_Object iso; /* type tag only set when needed, but
                                  flags always needed */
-  Scheme_Closed_Prim *start_code; /* When not yet JITted, this is = to
+  Scheme_Native_Proc *start_code; /* When not yet JITted, this is = to
                                      scheme_on_demand_jit_code */  
   union {
     void *tail_code;                       /* For non-case-lambda */
@@ -2379,7 +2391,7 @@ void scheme_clear_lwc(void);
 
 THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Current_LWC *scheme_current_lwc);
 
-Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Closed_Prim *code,
+Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
                                                        void *data,
                                                        int argc, 
                                                        Scheme_Object **argv);

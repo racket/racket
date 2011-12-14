@@ -678,7 +678,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     jit_base_prolog();
 #else
     refr = jit_patchable_movi_p(JIT_R1, jit_forward());
-    _jit_prolog_again(jitter, 3, JIT_R1); /* saves V registers (or copied V registers) */
+    _jit_prolog_again(jitter, NATIVE_ARG_COUNT, JIT_R1); /* saves V registers (or copied V registers) */
 #endif
     if (num_rands >= 0) {
       if (nontail_self) { jit_movr_p(JIT_R1, JIT_R0); }

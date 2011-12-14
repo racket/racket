@@ -14,9 +14,14 @@
      is related to the way the x86_64 port shuffles arguments into
      temporary registers.
 
-  5) On x86_64, arguments are delivered in JIT_V2, JIT_V3, and JIT_R2,
-     in that order. So don't set JIT_R2 before getting the third
-     argument, etc.
+  5) On non-Win64 x86_64, arguments are delivered in JIT_V2, JIT_V3,
+     JIT_R2, and JIT_R1 in that order. So don't set JIT_R2 before
+     getting the third argument, etc.
+  
+     On non-Win64 x86_64, arguments are delivered in JIT_R1, JIT_R2,
+     and other registers. So don't set JIT_R2 before getting the
+     second argument, etc.
+
 */
 
 #ifdef __APPLE__
@@ -83,7 +88,11 @@ END_XFORM_ARITH;
 #define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
 #define MAX_TRY_SHIFT 30
 
-#define NATIVE_ARG_COUNT 3
+#ifdef USE_THREAD_LOCAL
+# define NATIVE_ARG_COUNT 4
+#else
+# define NATIVE_ARG_COUNT 3
+#endif
 
 #define JIT_LOG_DOUBLE_SIZE 3
 #define JIT_DOUBLE_SIZE (1 << JIT_LOG_DOUBLE_SIZE)
@@ -166,12 +175,13 @@ extern int scheme_jit_malloced;
 THREAD_LOCAL_DECL(extern double scheme_jit_save_fp);
 #endif
 
-typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy);
-typedef Scheme_Object *(*Native_Get_Arity_Proc)(Scheme_Object *o, int dumm1, int dummy2);
+typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy EXTRA_NATIVE_ARGUMENT_TYPE);
+typedef Scheme_Object *(*Native_Get_Arity_Proc)(Scheme_Object *o, int dumm1, int dummy2 EXTRA_NATIVE_ARGUMENT_TYPE);
 typedef Scheme_Object *(*LWC_Native_Starter)(void *data,
                                              int argc,
                                              Scheme_Object **argv,
-                                             Scheme_Closed_Prim *chain_to,
+                                             void *thdloc,
+                                             Scheme_Native_Proc *chain_to,
                                              void **save_pos);
 
 typedef struct Apply_LWC_Args {
@@ -374,7 +384,6 @@ typedef struct {
 #endif
 
 #ifdef JIT_THREAD_LOCAL
-# define BOTTOM_VARIABLE GC_variable_stack
 # define tl_delta(id) ((uintptr_t)&(id) - (uintptr_t)&BOTTOM_VARIABLE)
 # define tl_MZ_RUNSTACK                    tl_delta(MZ_RUNSTACK)
 # define tl_MZ_RUNSTACK_START              tl_delta(MZ_RUNSTACK_START)
@@ -787,19 +796,16 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 
 #ifdef JIT_THREAD_LOCAL
-# define mz_get_threadlocal() (mz_prepare(0), (void)mz_finish(scheme_jit_get_threadlocal_table), jit_retval(JIT_R0))
 # ifdef JIT_X86_64
 #  define mz_pop_threadlocal() mz_get_local_p(JIT_R14, JIT_LOCAL4)
-#  define mz_push_threadlocal() (mz_set_local_p(JIT_R14, JIT_LOCAL4), \
-                                 PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
-                                 mz_get_threadlocal(), jit_retval(JIT_R0), jit_movr_p(JIT_R14, JIT_R0), \
-                                 POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
+#  define mz_push_threadlocal(in) /* empty */
+#  define mz_push_threadlocal_early() (mz_set_local_p(JIT_R14, JIT_LOCAL4), jit_movr_p(JIT_R14, JIT_R1))
 #  define mz_repush_threadlocal() mz_set_local_p(JIT_R14, JIT_LOCAL4)
 # else
 #  define mz_pop_threadlocal() /* empty */
 #  ifdef THREAD_LOCAL_USES_JIT_V2
 #   define _mz_install_threadlocal(reg) jit_movr_p(JIT_V2, reg)
-#   define mz_repush_threadlocal() /* empty */
+#   define mz_repush_threadlocal(in) /* empty */
 #  else
 #   define _mz_install_threadlocal(reg) mz_set_local_p(reg, JIT_LOCAL4)
 #   define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
@@ -807,13 +813,13 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
                                     jit_stxi_p(JIT_LOCAL4, _EBP, JIT_R0), \
                                     POPQr(JIT_R0))
 #  endif
-#  define mz_push_threadlocal() (PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
-                                 mz_get_threadlocal(), jit_retval(JIT_R0), _mz_install_threadlocal(JIT_R0), \
-                                 POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
+#  define mz_push_threadlocal(in) (in = jit_arg_p(), jit_getarg_p(JIT_V2, in), _mz_install_threadlocal(JIT_V2))
+#  define mz_push_threadlocal_early() /* empty */
 # endif
 #else
 # define mz_pop_threadlocal() /* empty */
-# define mz_push_threadlocal() /* empty */
+# define mz_push_threadlocal(in) /* empty */
+# define mz_push_threadlocal_early() /* empty */
 # define mz_repush_threadlocal() /* empty */
 #endif
 
