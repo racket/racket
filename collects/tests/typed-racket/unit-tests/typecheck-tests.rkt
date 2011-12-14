@@ -1385,6 +1385,16 @@
                 (for/and: : Any ([i (in-range 4)])
                           (my-pred)))
               #:ret (ret Univ (-FS -top -top) (make-NoObject))]
+        [tc-e
+         (let ()
+           (define: long : (List 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 Integer)
+             (list 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1))
+           
+           (define-syntax-rule (go acc ...)
+             (begin (ann (acc long) One) ...))
+           
+           (go first second third fourth fifth sixth seventh eighth ninth tenth))
+         (-val 1)]
         )
   (test-suite
    "check-type tests"

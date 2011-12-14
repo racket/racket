@@ -175,19 +175,33 @@
               (cl->*
                (->acc (list (-pair a (-lst b))) a (list -car))
                (->* (list (-lst a)) a)))]
-[second (-poly (a b c)
-               (cl->* [->acc (list (-pair a (-pair b (-lst c)))) b (list -car -cdr)]
+[second (-poly (a r t)
+               (cl->* [->acc (list (-lst* a r #:tail (-lst t))) r (list -car -cdr)]
                       [->* (list (-lst a)) a]))]
-[third (-poly (a b c d)
-              (cl->* [->acc (list (-pair a (-pair b (-pair c (-lst d))))) c (list -car -cdr -cdr)]
+[third (-poly (a b r t)
+              (cl->* [->acc (list (-lst* a b r #:tail (-lst t))) r (list -car -cdr -cdr)]
                      [->* (list (-lst a)) a]))]
-[fourth  (-poly (a) ((-lst a) . -> .  a))]
-[fifth   (-poly (a) ((-lst a) . -> .  a))]
-[sixth   (-poly (a) ((-lst a) . -> .  a))]
-[seventh (-poly (a) ((-lst a) . -> .  a))]
-[eighth  (-poly (a) ((-lst a) . -> .  a))]
-[ninth   (-poly (a) ((-lst a) . -> .  a))]
-[tenth   (-poly (a) ((-lst a) . -> .  a))]
+[fourth  (-poly (a b c r t)
+              (cl->* [->acc (list (-lst* a b c r #:tail (-lst t))) r (list -car -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
+[fifth   (-poly (a b c d r t)
+              (cl->* [->acc (list (-lst* a b c d r #:tail (-lst t))) r (list -car -cdr -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
+[sixth   (-poly (a b c d e r t)
+              (cl->* [->acc (list (-lst* a b c d e r #:tail (-lst t))) r (list -car -cdr -cdr -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
+[seventh (-poly (a b c d e f r t)
+              (cl->* [->acc (list (-lst* a b c d e f r #:tail (-lst t))) r (list -car -cdr -cdr -cdr -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
+[eighth  (-poly (a b c d e f g r t)
+              (cl->* [->acc (list (-lst* a b c d e f g r #:tail (-lst t))) r (list -car -cdr -cdr -cdr -cdr -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
+[ninth   (-poly (a b c d e f g h r t)
+              (cl->* [->acc (list (-lst* a b c d e f g h r #:tail (-lst t))) r (list -car -cdr -cdr -cdr -cdr -cdr -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
+[tenth   (-poly (a b c d e f g h i r t)
+              (cl->* [->acc (list (-lst* a b c d e f g h i r #:tail (-lst t))) r (list -car -cdr -cdr -cdr -cdr -cdr -cdr -cdr -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
 [rest (-poly (a b)
              (cl->*
               (->acc (list (-pair a (-lst b))) (-lst b) (list -cdr))
