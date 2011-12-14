@@ -14,11 +14,14 @@
 (define tt-style-delta (new style-delta%))
 (send tt-style-delta set-family 'modern)
 
-(define ((popup-callback entry) ed start end)
+(define ((popup-callback entry check-boxes) ed start end)
   (match-define (report-entry subs start end badness) entry)
   (define win (new frame% [label "Performance Report"]
                    [width popup-width] [height popup-height]))
   (define pane (new text% [auto-wrap #t]))
+  (for ([x (in-list check-boxes)])
+    (match-define `(,l ,v ,c) x)
+    (new check-box% [label l] [parent win] [callback c] [value (v)]))
   (define canvas
     (new editor-canvas% [parent win] [editor pane] [style '(no-hscroll)]))
   (for-each (format-sub-report-entry pane) subs)

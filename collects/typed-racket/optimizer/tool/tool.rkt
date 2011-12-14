@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/port racket/list racket/match
+(require racket/class racket/port racket/list racket/match unstable/sequence
          racket/gui/base racket/unit drracket/tool mrlib/switchable-button
          images/compile-time
          (for-syntax racket/base images/icons/misc images/icons/style))
@@ -36,12 +36,26 @@
     (define highlights  '())
     (define color-table #f)
 
-    ;; Listof (report-entry -> Bool)
+    ;; filters : Listof (report-entry -> Bool)
     ;; If any of these predicates return true for a given log entry's
     ;; sub, show it.
     ;; Note: at the point where these are called, report entries have
     ;; a single sub.
-    (define filters (list missed-opt-report-entry? opt-report-entry?))
+    (define labels+filters
+      `(("Report missed optimizations?" . ,missed-opt-report-entry?)
+        ("Report optimization?"         . ,opt-report-entry?)))
+    (define filters (map cdr labels+filters)) ; all enabled by default
+    (define check-boxes
+      ;; We can't create the actual check-box% here since we don't know its
+      ;; parent. Instead, we package up the necessary bits.
+      (for/list ([(l f) (in-pairs labels+filters)])
+        (list l                            ; label
+              (lambda () (memq f filters)) ; value
+              (lambda _                    ; callback
+                (if (memq f filters)
+                    (set! filters (remq f filters))
+                    (set! filters (cons f filters)))
+                (add-highlights #:use-cache? #t)))))
 
     (define/private (highlight-entry l)
       (match l
@@ -50,14 +64,18 @@
                           "lightgreen"
                           (vector-ref color-table badness))])
            (send this highlight-range start end color #f 'high)
-           (send this set-clickback start end (popup-callback l))
+           (send this set-clickback start end (popup-callback l check-boxes))
            ;; record highlight to undo it later
            (list start end color))]))
 
-    (define/public (add-highlights)
+    (define report-cache #f)
+    (define/public (add-highlights #:use-cache? [use-cache? #f])
+      (clear-highlights)
+      (unless (and report-cache use-cache?)
+        (set! report-cache (generate-report this)))
       (define report
         (collapse-report
-         (for/list ([entry (in-list (generate-report this))]
+         (for/list ([entry (in-list report-cache)]
                     ;; At this point, report enties have a single sub.
                     #:when (for/or ([f (in-list filters)])
                              (f (first (report-entry-subs entry)))))
