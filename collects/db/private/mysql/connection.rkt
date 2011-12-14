@@ -111,6 +111,8 @@
            (advance 'handshake)]
           [(? ok-packet?)
            (advance)]
+          [(? change-plugin-packet?)
+           (advance 'auth)]
           [(? error-packet?)
            (advance)]
           [(struct result-set-header-packet (field-count _))
@@ -190,33 +192,49 @@
           (match r
             [(struct handshake-packet (pver sver tid scramble capabilities charset status auth))
              (check-required-flags capabilities)
-             (unless (equal? auth "mysql_native_password")
+             (unless (member auth '("mysql_native_password" #f))
                (uerror 'mysql-connect "unsupported authentication plugin: ~s" auth))
              (define do-ssl?
                (and (case ssl ((yes optional) #t) ((no) #f))
                     (memq 'ssl capabilities)))
              (when (and (eq? ssl 'yes) (not do-ssl?))
                (uerror 'mysql-connect "server refused SSL connection"))
+             (define wanted-capabilities (desired-capabilities capabilities do-ssl?))
              (when do-ssl?
                (send-message
-                (make-abbrev-client-authentication-packet
-                 (desired-capabilities capabilities #t)))
+                (make-abbrev-client-auth-packet
+                 wanted-capabilities))
                (let-values ([(sin sout)
                              (ports->ssl-ports inport outport
                                                #:mode 'connect
                                                #:context ssl-context
                                                #:close-original? #t)])
                  (attach-to-ports sin sout)))
-             (send-message
-              (make-client-authentication-packet
-               (desired-capabilities capabilities do-ssl?)
-               MAX-PACKET-LENGTH
-               'utf8-general-ci ;; charset
-               username
-               (scramble-password scramble password)
-               dbname))
-             (expect-auth-confirmation)]
+             (authenticate wanted-capabilities username password dbname
+                           (or auth "mysql_native_password") scramble)]
             [_ (error/comm 'mysql-connect "during authentication")]))))
+
+    (define/private (authenticate capabilities username password dbname auth-plugin scramble)
+      (let loop ([auth-plugin auth-plugin] [scramble scramble] [first? #t])
+        (define (auth data)
+          (if first?
+              (make-client-auth-packet capabilities MAX-PACKET-LENGTH 'utf8-general-ci
+                                       username data dbname auth-plugin)
+              (make-auth-followup-packet data)))
+        (cond [(equal? auth-plugin "mysql_native_password")
+               (send-message (auth (scramble-password scramble password)))]
+              [(equal? auth-plugin "mysql_old_password")
+               (send-message (auth (bytes-append (old-scramble-password scramble password)
+                                                 (bytes 0))))]
+              [else (uerror 'mysql-connect
+                            "server does not support authentication plugin: ~s"
+                            auth-plugin)])
+        (match (recv 'mysql-connect 'auth)
+          [(struct ok-packet (_ _ status warnings message))
+           (after-connect)]
+          [(struct change-plugin-packet (plugin data))
+           ;; if plugin = #f, means "mysql_old_password"
+           (loop (or plugin "mysql_old_password") (or data scramble) #f)])))
 
     (define/private (check-required-flags capabilities)
       (for-each (lambda (rf)
@@ -233,14 +251,6 @@
                            capabilities))])
         (cond [ssl? (cons 'ssl base)]
               [else base])))
-
-    ;; expect-auth-confirmation : -> void
-    (define/private (expect-auth-confirmation)
-      (let ([r (recv 'mysql-connect 'auth)])
-        (match r
-          [(struct ok-packet (_ _ status warnings message))
-           (after-connect)]
-          [_ (error/comm 'mysql-connect "after authentication")])))
 
     ;; Set connection to use utf8 encoding
     (define/private (after-connect)
@@ -495,6 +505,65 @@
         (loop (add1 i))))
     c))
 
+;; =======================================
+
+(provide old-scramble-password
+         hash323
+         hash323->string)
+
+(define (old-scramble-password scramble password)
+  (define (xor a b) (bitwise-xor a b))
+  (define RMAX #x3FFFFFFF)
+  (and scramble password
+       (let* ([scramble (subbytes scramble 0 8)]
+              [password (string->bytes/utf-8 password)]
+              [hp (hash323 password)]
+              [hm (hash323 scramble)]
+              [r1 (modulo (xor (car hp) (car hm)) RMAX)]
+              [r2 (modulo (xor (cdr hp) (cdr hm)) RMAX)]
+              [out (make-bytes 8 0)])
+         (define (rnd)
+           (set! r1 (modulo (+ (* 3 r1) r2) RMAX))
+           (set! r2 (modulo (+ r1 r2 33) RMAX))
+           (/ (exact->inexact r1) (exact->inexact RMAX)))
+         (for ([i (in-range (bytes-length scramble))])
+           (let ([b (+ (inexact->exact (floor (* (rnd) 31))) 64)])
+             (bytes-set! out i b)
+             (values r1 r2)))
+         (let ([extra (inexact->exact (floor (* (rnd) 31)))])
+           (for ([i (in-range (bytes-length scramble))])
+             (bytes-set! out i (xor (bytes-ref out i) extra))))
+         out)))
+
+(define (hash323 bs)
+  (define (xor a b) (bitwise-xor a b))
+  (define-syntax-rule (normalize! var)
+    (set! var (bitwise-and var (sub1 (arithmetic-shift 1 64)))))
+  (let ([nr 1345345333]
+        [add 7]
+        [nr2 #x12345671])
+    (for ([i (in-range (bytes-length bs))]
+          #:when (not (memv (bytes-ref bs i) '(#\space #\tab))))
+      (let ([tmp (bytes-ref bs i)])
+        (set! nr  (xor nr
+                       (+ (* (+ (bitwise-and nr 63) add) tmp)
+                          (arithmetic-shift nr 8))))
+        (normalize! nr)
+        (set! nr2 (+ nr2
+                     (xor (arithmetic-shift nr2 8) nr)))
+        (normalize! nr2)
+        (set! add (+ add tmp))
+        (normalize! add)))
+    (cons (bitwise-and nr  (sub1 (arithmetic-shift 1 31)))
+          (bitwise-and nr2 (sub1 (arithmetic-shift 1 31))))))
+
+(define (hash323->string bs)
+  (let ([p (hash323 bs)])
+    (bytes-append (integer->integer-bytes (car p) 4 #f #f)
+                  (integer->integer-bytes (cdr p) 4 #f #f))))
+
+;; ========================================
+
 (define REQUIRED-CAPABILITIES
   '(long-flag
     connect-with-db
@@ -507,7 +576,8 @@
     transactions
     protocol-41
     secure-connection
-    connect-with-db))
+    connect-with-db
+    plugin-auth))
 
 ;; raise-backend-error : symbol ErrorPacket -> raises exn
 (define (raise-backend-error who r)
