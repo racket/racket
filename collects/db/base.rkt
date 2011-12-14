@@ -224,7 +224,7 @@
  [mysql-data-source
   (->* ()
        (#:user string?
-        #:database string?
+        #:database (or/c string? #f)
         #:server string?
         #:port exact-positive-integer?
         #:socket (or/c string? 'guess)

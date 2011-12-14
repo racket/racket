@@ -46,9 +46,9 @@
 
  ;; Duplicates contracts at mysql.rkt
  [mysql-connect
-  (->* (#:user string?
-        #:database string?)
-       (#:password (or/c string? (list/c 'hash string?) #f)
+  (->* (#:user string?)
+       (#:database (or/c string? #f)
+        #:password (or/c string? (list/c 'hash string?) #f)
         #:server (or/c string? #f)
         #:port (or/c exact-positive-integer? #f)
         #:socket (or/c path-string? 'guess #f)

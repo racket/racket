@@ -184,7 +184,7 @@
       (set! inport in)
       (set! outport out))
 
-    ;; start-connection-protocol : string string string/#f -> void
+    ;; start-connection-protocol : string/#f string string/#f -> void
     (define/public (start-connection-protocol dbname username password ssl ssl-context)
       (with-disconnect-on-error
         (fresh-exchange)
@@ -199,11 +199,9 @@
                     (memq 'ssl capabilities)))
              (when (and (eq? ssl 'yes) (not do-ssl?))
                (uerror 'mysql-connect "server refused SSL connection"))
-             (define wanted-capabilities (desired-capabilities capabilities do-ssl?))
+             (define wanted-capabilities (desired-capabilities capabilities do-ssl? dbname))
              (when do-ssl?
-               (send-message
-                (make-abbrev-client-auth-packet
-                 wanted-capabilities))
+               (send-message (make-abbrev-client-auth-packet wanted-capabilities))
                (let-values ([(sin sout)
                              (ports->ssl-ports inport outport
                                                #:mode 'connect
@@ -244,13 +242,11 @@
                             rf)))
                 REQUIRED-CAPABILITIES))
 
-    (define/private (desired-capabilities capabilities ssl?)
-      (let ([base
-             (cons 'interactive
-                   (filter (lambda (c) (memq c DESIRED-CAPABILITIES))
-                           capabilities))])
-        (cond [ssl? (cons 'ssl base)]
-              [else base])))
+    (define/private (desired-capabilities capabilities ssl? dbname)
+      (append (if ssl?   '(ssl)             '())
+              (if dbname '(connect-with-db) '())
+              '(interactive)
+              (filter (lambda (c) (memq c DESIRED-CAPABILITIES)) capabilities)))
 
     ;; Set connection to use utf8 encoding
     (define/private (after-connect)
@@ -576,7 +572,6 @@
     transactions
     protocol-41
     secure-connection
-    connect-with-db
     plugin-auth))
 
 ;; raise-backend-error : symbol ErrorPacket -> raises exn

@@ -343,9 +343,9 @@ Based on protocol documentation here:
      (io:write-bytes out (make-bytes 23 0))
      (io:write-null-terminated-string out user)
      (cond [(memq 'secure-connection client-flags)
-            (io:write-length-coded-bytes out scramble)]
+            (io:write-length-coded-bytes out (or scramble #""))]
            [else ;; old-style scramble is *not* length-coded, but \0-terminated
-            (io:write-bytes out scramble)])
+            (io:write-bytes out (or scramble (bytes 0)))])
      (when (memq 'connect-with-db client-flags)
        (io:write-null-terminated-string out database))
      (when (memq 'plugin-auth client-flags)

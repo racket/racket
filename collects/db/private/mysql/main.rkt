@@ -11,7 +11,7 @@
          mysql-password-hash)
 
 (define (mysql-connect #:user user
-                       #:database database
+                       #:database [database #f]
                        #:password [password #f]
                        #:server [server #f]
                        #:port [port #f]

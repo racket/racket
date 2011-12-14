@@ -144,7 +144,7 @@ Base connections are made using the following functions.
 }
 
 @defproc[(mysql-connect [#:user user string?]
-                  [#:database database string?]
+                  [#:database database (or/c string? #f) #f]
                   [#:server server string? "localhost"]
                   [#:port port exact-positive-integer? 3306]
                   [#:socket socket (or/c path-string? #f) #f]
@@ -158,12 +158,16 @@ Base connections are made using the following functions.
                    void])
          connection?]{
 
-  Creates a connection to a MySQL server. The meaning of the keyword
-  arguments is similar to those of the @racket[postgresql-connect]
-  function, except that the first argument to a
-  @racket[notice-handler] function is a MySQL-specific integer code
-  rather than a SQLSTATE string, and a @racket[socket] argument of
-  @racket['guess] is the same as supplying
+  Creates a connection to a MySQL server. If @racket[database] is
+  @racket[#f], the connection is established without setting the
+  current database; it should be subsequently set with the @tt{USE}
+  SQL command.
+
+  The meaning of the other keyword arguments is similar to those of
+  the @racket[postgresql-connect] function, except that the first
+  argument to a @racket[notice-handler] function is a MySQL-specific
+  integer code rather than a SQLSTATE string, and a @racket[socket]
+  argument of @racket['guess] is the same as supplying
   @racket[(mysql-guess-socket-path)].
 
   If the connection cannot be made, an exception is raised.
