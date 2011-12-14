@@ -2763,6 +2763,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       
       DO_CHECK_FOR_BREAK(p, );
 
+      /* See also _apply_native(), which effectively copies this code. */
+
       data = ((Scheme_Native_Closure *)obj)->code;
 
       /* Enlarge the runstack? This max_let_depth is in bytes instead of words. */
@@ -2781,7 +2783,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       tmpv = obj;
       obj = NULL; /* save for space, since tmpv is ignored by the GC */
-      v = data->code(tmpv, num_rands, rands);
+      v = data->start_code(tmpv, num_rands, rands);
 
       if (v == SCHEME_TAIL_CALL_WAITING) {
         /* [TC-SFS]; see schnapp.inc */
@@ -2885,7 +2887,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
             /* Chaperone is for function arguments */
             VACATE_TAIL_BUFFER_USE_RUNSTACK();
             UPDATE_THREAD_RSPTR();
-            v = scheme_apply_chaperone(scheme_make_raw_pair(obj, orig_obj), num_rands, rands, NULL);
+            v = scheme_apply_chaperone(scheme_make_raw_pair(obj, orig_obj), num_rands, rands, NULL, 0);
             
             if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
               /* Need to stay in this loop, because a tail-call result must
@@ -2914,7 +2916,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
         /* Chaperone is for function arguments */
         VACATE_TAIL_BUFFER_USE_RUNSTACK();
         UPDATE_THREAD_RSPTR();
-        v = scheme_apply_chaperone(obj, num_rands, rands, NULL);
+        v = scheme_apply_chaperone(obj, num_rands, rands, NULL, 0);
       }
     } else if (type == scheme_closed_prim_type) {
       GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;

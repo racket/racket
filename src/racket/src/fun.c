@@ -3023,7 +3023,7 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
                                              int is_impersonator, int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
-  Scheme_Object *val = argv[0], *orig, *naya;
+  Scheme_Object *val = argv[0], *orig, *naya, *r;
   Scheme_Hash_Tree *props;
 
   if (SCHEME_CHAPERONEP(val))
@@ -3052,7 +3052,9 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   px->val = val;
   px->prev = argv[0];
   px->props = props;
-  px->redirects = argv[1];
+  /* put procedure with known-good arity (to speed checking) in a mutable pair: */
+  r = scheme_make_mutable_pair(argv[1], scheme_make_integer(-1));
+  px->redirects = r;
 
   if (is_impersonator)
     SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
@@ -3081,10 +3083,10 @@ static Scheme_Object *apply_chaperone_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return scheme_apply_chaperone(o, p->ku.k.i1, argv, auto_val);
+  return scheme_apply_chaperone(o, p->ku.k.i1, argv, auto_val, p->ku.k.i2);
 }
 
-static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
+static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val, int checks)
 {
 #ifdef DO_STACK_CHECK
   {
@@ -3098,25 +3100,56 @@ static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Obje
       p->ku.k.p2 = (void *)argv2;
       p->ku.k.p3 = (void *)auto_val;
       p->ku.k.i1 = argc;
+      p->ku.k.i2 = checks;
       return scheme_handle_stack_overflow(apply_chaperone_k);
     }
   }
 #endif
 
-  return scheme_apply_chaperone(o, argc, argv, auto_val);
+  return scheme_apply_chaperone(o, argc, argv, auto_val, checks);
 }
 
-Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
+
+static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Object **rands)
+{
+  Scheme_Native_Closure_Data *data;
+  GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
+
+  data = ((Scheme_Native_Closure *)obj)->code;
+
+  if ((uintptr_t)data->max_let_depth > ((uintptr_t)scheme_current_runstack - (uintptr_t)scheme_current_runstack_start)) {
+    return _scheme_apply_multi(obj, num_rands, rands);
+  }
+
+  MZ_CONT_MARK_POS += 2;
+  old_cont_mark_stack = MZ_CONT_MARK_STACK;
+
+  obj = data->start_code(obj, num_rands, rands);
+
+  if (obj == SCHEME_TAIL_CALL_WAITING)
+    return force_values(obj, 1);
+
+  MZ_CONT_MARK_STACK = old_cont_mark_stack;
+  MZ_CONT_MARK_POS -= 2;
+
+  return obj;
+}
+
+/* must be at least 3: */
+#define MAX_QUICK_CHAP_ARGV 5
+
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val, int checks)
+/* checks & 0x2 => no tail; checks == 0x3 => no tail or multiple;  */
 {
   const char *what;
   Scheme_Chaperone *px;
-  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v, *orig_obj, *app_mark;
+  Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark;
   int c, i, need_restore = 0;
-  int need_pop_mark = 0;
+  int need_pop_mark;
   Scheme_Cont_Frame_Data cframe;
 
   if (argv == MZ_RUNSTACK) {
-    /* Pushing onto the runstack ensures that px->redirects won't
+    /* Pushing onto the runstack ensures that `(mcar px->redirects)' won't
        modify argv. */
     if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
       --MZ_RUNSTACK;
@@ -3131,7 +3164,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
 
   if (SCHEME_RPAIRP(o)) {
-    /* An applicable struct, where a layout of struct chaperones
+    /* An applicable struct, where a layer of struct chaperones
        has been removed from the object to apply, but we will
        eventually need to extract the procedure from the original
        object. */
@@ -3148,16 +3181,27 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     what = "impersonator";
 
   /* Ensure that the original procedure accepts `argc' arguments: */
-  a[0] = px->prev;
-  if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
-    /* Apply the original procedure, in case the chaperone would accept
-       `argc' arguments (in addition to the original procedure's arity)
-       in case the methodness of the original procedure is different
-       from the chaperone, or in case the procedures have different names. */
-    (void)_scheme_apply_multi(px->prev, argc, argv);
-    scheme_signal_error("internal error: unexpected success applying chaperoned/proxied procedure");
-    return NULL;
+  if (argc != SCHEME_INT_VAL(SCHEME_CDR(px->redirects))) {
+    a[0] = px->prev;
+    if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
+      /* Apply the original procedure, in case the chaperone would accept
+         `argc' arguments (in addition to the original procedure's arity)
+         in case the methodness of the original procedure is different
+         from the chaperone, or in case the procedures have different names. */
+      (void)_scheme_apply_multi(px->prev, argc, argv);
+      scheme_signal_error("internal error: unexpected success applying chaperoned/proxied procedure");
+      return NULL;
+    }
+    /* record that argc is ok, on the grounds that the function is likely
+       to be applied to argc arguments again */
+    SCHEME_CDR(px->redirects) = scheme_make_integer(argc);
   }
+
+  if (checks) {
+    scheme_push_continuation_frame(&cframe);
+    need_pop_mark = 1;
+  } else
+    need_pop_mark = 0;
 
   if (px->props) {
     app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_impersonator_property);
@@ -3170,22 +3214,35 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   if (app_mark) {
     v = scheme_extract_one_cc_mark(NULL, SCHEME_CAR(app_mark));
     if (v) {
-      scheme_push_continuation_frame(&cframe);
+      if (!checks)
+        scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), v);
-      MZ_CONT_MARK_POS -= 2;
-      need_pop_mark = 1;
-    } else
-      need_pop_mark = 0;
-  } else
-    need_pop_mark = 0;
+      if (!checks) {
+        MZ_CONT_MARK_POS -= 2;
+        need_pop_mark = 1;
+      }
+    } 
+  }
 
-  v = _scheme_apply_multi(px->redirects, argc, argv);
+  v = SCHEME_CAR(px->redirects);
+  if (SAME_TYPE(SCHEME_TYPE(v), scheme_native_closure_type))
+    v = _apply_native(v, argc, argv);
+  else
+    v = _scheme_apply_multi(v, argc, argv);
   if (v == SCHEME_MULTIPLE_VALUES) {
     GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
-    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
-      p->values_buffer = NULL;
     c = p->ku.multiple.count;
     argv2 = p->ku.multiple.array;
+    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer)) {
+      if (c <= MAX_QUICK_CHAP_ARGV) {
+        for (i = 0; i < c; i++) {
+          a2[i] = argv2[i];
+        }
+        argv2 = a2;
+      } else {
+        p->values_buffer = NULL;
+      }
+    }
   } else {
     c = 1;
     a2[0] = v;
@@ -3193,7 +3250,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
 
   if (need_pop_mark) {
-    MZ_CONT_MARK_POS += 2;
+    if (!checks)
+      MZ_CONT_MARK_POS += 2;
     scheme_pop_continuation_frame(&cframe);
   }
   
@@ -3205,16 +3263,17 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       post = NULL;
     if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
       for (i = 0; i < argc; i++) {
-        if (!scheme_chaperone_of(argv2[i], argv[i])) {
+        if (!SAME_OBJ(argv2[i], argv[i])
+            && !scheme_chaperone_of(argv2[i], argv[i])) {
           if (argc == 1)
             scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                              "procedure chaperone: %V: result: %V is not a chaperone of argument: %V",
-                             px->redirects,
+                             SCHEME_CAR(px->redirects),
                              argv2[i], argv[i]);
           else
             scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                              "procedure chaperone: %V: %d%s result: %V is not a chaperone of argument: %V",
-                             px->redirects,
+                             SCHEME_CAR(px->redirects),
                              i, scheme_number_suffix(i),
                              argv2[i], argv[i]);
         }
@@ -3224,7 +3283,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
                      "procedure %s: %V: returned %d values, expected %d or %d",
                      what,
-                     px->redirects,
+                     SCHEME_CAR(px->redirects),
                      c, argc, argc + 1);
     return NULL;
   }
@@ -3245,7 +3304,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
-        return do_apply_chaperone(px->prev, c, argv2, auto_val);
+        return do_apply_chaperone(px->prev, c, argv2, auto_val, 0);
       else
         return argv2[0];
     } else {
@@ -3254,7 +3313,20 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         orig_obj = scheme_make_raw_pair(px->prev, orig_obj);
       else
         orig_obj = px->prev;
-      return scheme_tail_apply(orig_obj, c, argv2);
+      if (checks) {
+        /* cannot return a tail call */
+        MZ_CONT_MARK_POS -= 2;
+        if (checks & 0x1) {
+          v = _scheme_apply(orig_obj, c, argv2);
+        } else if (SAME_TYPE(SCHEME_TYPE(orig_obj), scheme_native_closure_type)) {
+          v = _apply_native(orig_obj, c, argv2);
+        } else {
+          v = _scheme_apply_multi(orig_obj, c, argv2);
+        }
+        MZ_CONT_MARK_POS += 2;
+        return v;
+      } else
+        return scheme_tail_apply(orig_obj, c, argv2);
     }
   } else {
     /* First element is a filter for the result(s) */
@@ -3262,7 +3334,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                        "procedure %s: %V: expected <procedure> as first result, produced: %V",
                        what,
-                       px->redirects,
+                       SCHEME_CAR(px->redirects),
                        post);
 
     if (app_mark) {
@@ -3275,7 +3347,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
-        result_v = do_apply_chaperone(px->prev, argc, argv2, auto_val);
+        result_v = do_apply_chaperone(px->prev, argc, argv2, auto_val, 0);
       else
         result_v = argv2[0];
       v = auto_val;
@@ -3285,16 +3357,25 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         orig_obj = scheme_make_raw_pair(px->prev, orig_obj);
       else
         orig_obj = px->prev;
-      v = _scheme_apply_multi(orig_obj, argc, argv2);
+      if (SAME_TYPE(SCHEME_TYPE(orig_obj), scheme_native_closure_type))
+        v = _apply_native(orig_obj, argc, argv2);
+      else
+        v = _scheme_apply_multi(orig_obj, argc, argv2);
       result_v = NULL;
     }
 
     if (v == SCHEME_MULTIPLE_VALUES) {
       GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
-      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
-        p->values_buffer = NULL;
-      c = p->ku.multiple.count;
-      argv = p->ku.multiple.array;
+      if (checks & 0x1) {
+        scheme_wrong_return_arity(NULL, 1, p->ku.multiple.count, 
+                                  p->ku.multiple.array,
+                                  NULL);
+      } else {
+        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+          p->values_buffer = NULL;
+        c = p->ku.multiple.count;
+        argv = p->ku.multiple.array;
+      }
     } else {
       c = 1;
       a[0] = v;
@@ -3328,7 +3409,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     if (c == argc) {
       if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
         for (i = 0; i < argc; i++) {
-          if (!scheme_chaperone_of(argv2[i], argv[i])) {
+          if (!SAME_OBJ(argv2[i], argv[i])
+              && !scheme_chaperone_of(argv2[i], argv[i])) {
             if (argc == 1)
               scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                                "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",

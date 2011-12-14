@@ -858,7 +858,8 @@ typedef struct Scheme_Chaperone {
 Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
 void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
 
-Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val);
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, 
+                                      Scheme_Object *auto_val, int checks);
 
 Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
 
@@ -2320,8 +2321,8 @@ typedef struct {
 typedef struct Scheme_Native_Closure_Data {
   Scheme_Inclhash_Object iso; /* type tag only set when needed, but
                                  flags always needed */
-  Scheme_Closed_Prim *code; /* When not yet JITted, this is = to
-                               scheme_on_demand_jit_code */  
+  Scheme_Closed_Prim *start_code; /* When not yet JITted, this is = to
+                                     scheme_on_demand_jit_code */  
   union {
     void *tail_code;                       /* For non-case-lambda */
     mzshort *arities;                      /* For case-lambda */

@@ -1179,7 +1179,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda)
    
   /* JIT the code if not already JITted */
   if (ncd) {
-    if (ncd->code == scheme_on_demand_jit_code)
+    if (ncd->start_code == scheme_on_demand_jit_code)
       scheme_on_demand_generate_lambda(nc, 0, NULL, 0);
   
     if (ncd->max_let_depth > FUTURE_RUNSTACK_SIZE * sizeof(void*)) {
@@ -1187,7 +1187,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda)
       ft->status = PENDING_OVERSIZE;
     }
 
-    ft->code = (void*)ncd->code;
+    ft->code = (void*)ncd->start_code;
   } else
     ft->status = PENDING_OVERSIZE;
 
@@ -1220,7 +1220,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
     Scheme_Object *proc = argv[0];
     if (SAME_TYPE(SCHEME_TYPE(proc), scheme_native_closure_type)
         && scheme_native_arity_check(proc, 0)
-        && (((Scheme_Native_Closure *)proc)->code->code != scheme_on_demand_jit_code)
+        && (((Scheme_Native_Closure *)proc)->code->start_code != scheme_on_demand_jit_code)
         && (((Scheme_Native_Closure *)proc)->code->max_let_depth < FUTURE_RUNSTACK_SIZE * sizeof(void*))) {
       /* try to alocate a future in the future thread */
       future_t *ft;
@@ -1232,7 +1232,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
         ft->orig_lambda = proc;
         ft->status = PENDING;
         ft->cust = scheme_current_thread->current_ft->cust;
-        ft->code = ((Scheme_Native_Closure *)proc)->code->code;
+        ft->code = ((Scheme_Native_Closure *)proc)->code->start_code;
 
         mzrt_mutex_lock(fs->future_mutex);
         ft->id = ++fs->next_futureid;

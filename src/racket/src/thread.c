@@ -6852,7 +6852,7 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
       key = argv[i + 1];
       if (SCHEME_CHAPERONEP(param)) {
         a[0] = key;
-        key = scheme_apply_chaperone(param, 1, a, scheme_void);
+        key = scheme_apply_chaperone(param, 1, a, scheme_void, 0);
         param = SCHEME_CHAPERONE_VAL(param);
       }
       a[0] = key;
