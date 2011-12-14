@@ -3149,7 +3149,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark;
   int c, i, need_restore = 0;
   int need_pop_mark;
-  Scheme_Cont_Frame_Data cframe, cframe2;
+  Scheme_Cont_Frame_Data cframe;
 
   if (argv == MZ_RUNSTACK) {
     /* Pushing onto the runstack ensures that `(mcar px->redirects)' won't
@@ -3200,9 +3200,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     SCHEME_CDR(px->redirects) = scheme_make_integer(argc);
   }
 
-  if (checks)
-    scheme_push_continuation_frame(&cframe2);
-
   if (px->props) {
     app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_impersonator_property);
     /* app_mark should be (cons mark val) */
@@ -3252,8 +3249,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     MZ_CONT_MARK_POS += 2;
     scheme_pop_continuation_frame(&cframe);
   }
-  if (checks)
-    scheme_pop_continuation_frame(&cframe2);
   
   if ((c == argc) || (c == (argc + 1))) {
     if (c > argc) {
@@ -3337,9 +3332,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        SCHEME_CAR(px->redirects),
                        post);
 
-    if (checks)
-      scheme_push_continuation_frame(&cframe2);
-
     if (app_mark) {
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
@@ -3369,16 +3361,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 
     if (v == SCHEME_MULTIPLE_VALUES) {
       GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
-      if (checks & 0x1) {
-        scheme_wrong_return_arity(NULL, 1, p->ku.multiple.count, 
-                                  p->ku.multiple.array,
-                                  NULL);
-      } else {
-        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
-          p->values_buffer = NULL;
-        c = p->ku.multiple.count;
-        argv = p->ku.multiple.array;
-      }
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+      c = p->ku.multiple.count;
+      argv = p->ku.multiple.array;
     } else {
       c = 1;
       a[0] = v;
@@ -3389,8 +3375,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       MZ_CONT_MARK_POS += 2;
       scheme_pop_continuation_frame(&cframe);
     }
-    if (checks)
-      scheme_pop_continuation_frame(&cframe2);
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -3398,7 +3382,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        post,
                        c);
     
-    v = _scheme_apply_multi(post, c, argv);
+    if (SAME_TYPE(SCHEME_TYPE(post), scheme_native_closure_type))
+      v = _apply_native(post, c, argv);
+    else
+      v = _scheme_apply_multi(post, c, argv);
     if (v == SCHEME_MULTIPLE_VALUES) {
       GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
       if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
@@ -3443,8 +3430,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       return result_v;
     else if (c == 1)
       return argv2[0];
-    else
+    else {
+      if (checks & 0x1)
+        scheme_wrong_return_arity(NULL, 1, c, argv2, NULL);
       return scheme_values(c, argv2);
+    }
   }
 }
 
