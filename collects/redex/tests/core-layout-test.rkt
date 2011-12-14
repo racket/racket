@@ -56,6 +56,25 @@
 
 (test (replace-pict-tokens
        (build-lines
+        '(|+1|)
+        (normalize-lw
+         (to-lw
+          ,(term
+            (|+1| x))))))
+      (list (make-line 0
+                       (list (make-spacer-token 0 2)
+                             (make-string-token 2 1 "(" 'roman)
+                             (make-string-token 3 4 "+1" '(italic . roman))
+                             (make-string-token 7 1 " " 'roman)
+                             (make-string-token 8 1 "x" 'swiss)
+                             (make-string-token 9 1 ")" 'roman)))
+            (make-line 0
+                       (list (make-string-token 0 0 "" 'roman) 
+                             (make-pict-token 0 1 'pict)
+                             (make-pict-token 1 0 'pict)))))
+
+(test (replace-pict-tokens
+       (build-lines
         '()
         (normalize-lw
          (to-lw
