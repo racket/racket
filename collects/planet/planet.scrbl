@@ -84,8 +84,8 @@ packages that planet has available, visit
 It returns a list matching the contract
 @racketblock[(listof (list/c string? 
                              string?
-                             (list/c exact-integer?
-                                     exact-integer?)))]
+                             (list/c exact-positive-integer?
+                                     exact-nonnegative-integer?)))]
 Each sublist represents
 the latest version of one of the packages and contains the
 userid, the package name (including ".plt"), and
