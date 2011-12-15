@@ -4,7 +4,7 @@
 	 signature-name signature-syntax signature-enforcer
 	 signature-arbitrary-promise
 	 signature-<=?-proc signature-=?-proc
-	 signature-arbitrary set-signature-arbitrary!
+	 signature-arbitrary set-signature-arbitrary! set-signature-arbitrary-promise!
 	 signature-info-promise
 	 signature-violation
 	 signature-violation-proc call-with-signature-violation-proc
