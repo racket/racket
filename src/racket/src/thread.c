@@ -6247,16 +6247,43 @@ static Scheme_Object *evt_p(int argc, Scheme_Object *argv[])
 	  : scheme_false);
 }
 
-Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delta)
+static int evt_set_flatten(Evt_Set *e, int pos, Scheme_Object **args, Evt **ws)
+{
+  Scheme_Object *stack = scheme_null;
+  int i;
+
+  while (1) {
+    for (i = e->argc; i--; ) {
+      if (!SCHEME_EVTSETP(e->argv[i])) {
+        if (args) {
+          args[pos] = e->argv[i];
+          ws[pos] = e->ws[i];
+        }
+        pos++;
+      } else
+        stack = scheme_make_pair(e->argv[i], stack);
+    }
+
+    if (!SCHEME_NULLP(stack)) {
+      e = (Evt_Set *)SCHEME_CAR(stack);
+      stack = SCHEME_CDR(stack);
+    } else
+      break;
+  }
+
+  return pos;
+}
+
+Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delta, int flatten)
 {
   Evt *w, **iws, **ws;
   Evt_Set *evt_set, *subset;
   Scheme_Object **args;
-  int i, j, count = 0, reuse = 1;
+  int i, j, count = 0, reuse = 1, unflattened = 0;
 
   iws = MALLOC_N(Evt*, argc-delta);
   
-  /* Find Evt record for each non-set argument, and compute flattened size. */
+  /* Find Evt record for each non-set argument, and compute size --- possibly flattened. */
   for (i = 0; i < (argc - delta); i++) {
     if (!SCHEME_EVTSETP(argv[i+delta])) {
       w = find_evt(argv[i+delta]);
@@ -6266,18 +6293,27 @@ Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delt
       }
       iws[i] = w;
       count++;
-    } else {
+    } else if (flatten) {
       int n;
-      n = ((Evt_Set *)argv[i+delta])->argc;
+      if (SCHEME_EVTSET_UNFLATTENEDP(argv[i+delta])) {
+        n = evt_set_flatten((Evt_Set *)argv[i+delta], 0, NULL, NULL);
+      } else {
+        n = ((Evt_Set *)argv[i+delta])->argc;
+      }
       if (n != 1)
         reuse = 0;
       count += n;
+    } else {
+      count++;
+      unflattened = 1;
     }
   }
 
   evt_set = MALLOC_ONE_TAGGED(Evt_Set);
-  evt_set->so.type = scheme_evt_set_type;
+  evt_set->iso.so.type = scheme_evt_set_type;
   evt_set->argc = count;
+  if (unflattened)
+    SCHEME_SET_EVTSET_UNFLATTENED(evt_set);
 
   if (reuse && (count == (argc - delta)))
     ws = iws;
@@ -6286,15 +6322,20 @@ Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delt
 
   args = MALLOC_N(Scheme_Object*, count);
   for (i = delta, j = 0; i < argc; i++, j++) {
-    if (SCHEME_EVTSETP(argv[i])) {
-      int k, n;
-      subset = (Evt_Set *)argv[i];
-      n = subset->argc;
-      for (k = 0; k < n; k++, j++) {
-	args[j] = subset->argv[k];
-	ws[j] = subset->ws[k];
+    if (flatten && SCHEME_EVTSETP(argv[i])) {
+      if (SCHEME_EVTSET_UNFLATTENEDP(argv[i])) {
+        j = evt_set_flatten((Evt_Set *)argv[i], j, args, ws);
+        j--;
+      } else {
+        int k, n;
+        subset = (Evt_Set *)argv[i];
+        n = subset->argc;
+        for (k = 0; k < n; k++, j++) {
+          args[j] = subset->argv[k];
+          ws[j] = subset->ws[k];
+        }
+        --j;
       }
-      --j;
     } else {
       ws[j] = iws[i-delta];
       args[j] = argv[i];
@@ -6309,7 +6350,7 @@ Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delt
 
 Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv)
 {
-  return (Scheme_Object *)make_evt_set("internal-make-evt-set", argc, argv, 0);
+  return (Scheme_Object *)make_evt_set("internal-make-evt-set", argc, argv, 0, 1);
 }
 
 void scheme_post_syncing_nacks(Syncing *syncing)
@@ -6377,7 +6418,9 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
   evt_set = NULL;
 
   /* Special case: only argument is an immutable evt set: */
-  if ((argc == (with_timeout + 1)) && SCHEME_EVTSETP(argv[with_timeout])) {
+  if ((argc == (with_timeout + 1)) 
+      && SCHEME_EVTSETP(argv[with_timeout])
+      && !SCHEME_EVTSET_UNFLATTENEDP(argv[with_timeout])) {
     int i;
     evt_set = (Evt_Set *)argv[with_timeout];
     for (i = evt_set->argc; i--; ) {
@@ -6390,7 +6433,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
   }
 
   if (!evt_set)
-    evt_set = make_evt_set(name, argc, argv, with_timeout);
+    evt_set = make_evt_set(name, argc, argv, with_timeout, 1);
 
   if (with_break) {
     scheme_push_break_enable(&cframe, 1, 1);
@@ -6573,7 +6616,7 @@ static Scheme_Object *sch_sync_timeout_enable_break(int argc, Scheme_Object *arg
 
 static Scheme_Object *evts_to_evt(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)make_evt_set("choice-evt", argc, argv, 0);
+  return (Scheme_Object *)make_evt_set("choice-evt", argc, argv, 0, 0);
 }
 
 /*========================================================================*/

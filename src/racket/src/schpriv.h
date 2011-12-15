@@ -1671,14 +1671,15 @@ typedef struct Scheme_Channel_Put {
 #define SLEEP_BLOCKED 1
 
 typedef struct Evt_Set {
-  Scheme_Object so;
-
+  Scheme_Inclhash_Object iso; /* 0x1 => unflattened */
   int argc;
   Scheme_Object **argv; /* no evt sets; nested sets get flattened */
   struct Evt **ws;
 } Evt_Set;
 
 #define SCHEME_EVTSETP(o) SAME_TYPE(SCHEME_TYPE(o), scheme_evt_set_type)
+#define SCHEME_EVTSET_UNFLATTENEDP(o) SCHEME_IMMUTABLEP(o)
+#define SCHEME_SET_EVTSET_UNFLATTENED(o) SCHEME_SET_IMMUTABLE(o)
 
 typedef struct Syncing {
   MZTAG_IF_REQUIRED

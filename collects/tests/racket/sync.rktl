@@ -1138,5 +1138,16 @@
   (test p sync p))
 
 ;; ----------------------------------------
+;; Check large `choice-evt' chain in reasonable time (e.g., not quadratic)
+
+(let ([N 50000])
+  (test
+   #t
+   (lambda (v) (< -1 v N))
+   (sync
+    (for/fold ([e (wrap-evt always-evt (lambda (x) 0))]) ([i (in-range N)])
+      (choice-evt (wrap-evt always-evt (lambda (x) i)) e)))))
+
+;; ----------------------------------------
 
 (report-errs)
