@@ -78,6 +78,14 @@ and there's no need for you to even know whether or not a particular
 package is installed on your computer or the computers where your code
 will be deployed.
 
+If you want to find all of the packages that planet has available,
+visit
+@centered{@url{http://planet.racket-lang.org/servlets/pkg-info.ss}}
+It returns a list of lists of length 4. Each sublist represents
+the latest version of one of the packages and contains the
+userid (as a string), the package name (including ".plt"), and
+the version.
+
 @subsection{Shorthand Syntax}
 
 The code snippet above can also be written using a new shorter syntax:
