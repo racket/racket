@@ -28,16 +28,22 @@
   (for ([i (in-range (quotient len 10000))]) (flip-bit bs (random len)))
   (with-handlers ([void void]) (run-file bs)))
 
-(let ([seed0 #f] [file #f] [dir #f] [forever? #f])
+(let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f])
   (command-line
    #:once-each
-   ["-s" seed "random seed" (set! seed0 (string->number seed))]
    ["--oo" "forever" (set! forever? #t)]
+   #:once-any
+   ["-g" global-seed* "gloabl random seed"  (set! global-seed (string->number global-seed*))]
+   ["-s" seed "random seed" (set! seed0 (string->number seed))]
    #:once-any
    ["-f" file* "filename to run"     (set! file file*)]
    ["-d" dir* "dir to run"          (set! dir dir*)]
    ["-c" "run over all collections" (set! dir (find-collects-dir))]
    #:args () (void))
+  (unless global-seed
+    (set! global-seed (+ 1 (random (expt 2 30)))))
+  (printf "Global seed: ~a\n" global-seed)
+  (random-seed global-seed)
   (let loop ()
     (cond [file (run file seed0)]
           [dir (for ([p (in-directory dir)]
