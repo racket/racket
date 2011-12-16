@@ -22,19 +22,20 @@
   (thread
    (λ ()
      (let loop ()
-       (define-values (binding-info resp-chan nack-evt) (apply values (channel-get req-chan)))
-       (define xref (force delayed-xref))
+       (define-values (binding-info cd resp-chan nack-evt) (apply values (channel-get req-chan)))
        (define resp
-         (and xref
-              (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
-                (and definition-tag
-                     (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
-                       (and path
-                            (let ([index-entry (xref-tag->index-entry xref definition-tag)])
-                              (and index-entry
-                                   (list (entry-desc index-entry)
-                                         path
-                                         tag)))))))))
+         (parameterize ([current-directory cd])
+           (define xref (force delayed-xref))
+           (and xref
+                (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
+                  (and definition-tag
+                       (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
+                         (and path
+                              (let ([index-entry (xref-tag->index-entry xref definition-tag)])
+                                (and index-entry
+                                     (list (entry-desc index-entry)
+                                           path
+                                           tag))))))))))
        (thread
         (λ ()
           (sync (channel-put-evt resp-chan resp)
@@ -50,5 +51,5 @@
         (nack-guard-evt
          (λ (nack-evt)
            (define resp-chan (make-channel))
-           (channel-put req-chan (list binding-info resp-chan nack-evt))
+           (channel-put req-chan (list binding-info (current-directory) resp-chan nack-evt))
            resp-chan)))))
