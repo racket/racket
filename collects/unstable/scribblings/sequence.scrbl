@@ -43,4 +43,18 @@ Produces the sequence of @racket[f] applied to each element of @racket[seq].
   x)]
 }
 
+
+@addition{David Vanderson}
+
+@defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
+         sequence?]{
+  Returns a sequence where each element is a list with @racket[length]
+  elements from the given sequence.
+
+  @examples[#:eval the-eval
+  (for/list ([e (in-slice 3 (in-range 8))]) e)
+  ]
+}
+
+
 @close-eval[the-eval]
