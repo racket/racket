@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base))
+(require (for-syntax scheme/base)
+         "performance-hint.rkt")
 
 (provide mmap
          mfor-each
@@ -23,40 +24,41 @@
          list->mlist
          mlistof)
 
-(define mmap
-  (case-lambda
-   [(f l) (let loop ([l l])
-            (cond
-             [(null? l) null]
-             [else (mcons (f (mcar l)) (loop (mcdr l)))]))]
-   [(f l1 l2) (let loop ([l1 l1][l2 l2])
-                (cond
-                 [(null? l1) null]
-                 [else (mcons (f (mcar l1) (mcar l2))
-                              (loop (mcdr l1) (mcdr l2)))]))]
-   [(f l . ls) (let loop ([l l][ls ls])
+(begin-encourage-inline
+ (define mmap
+   (case-lambda
+    [(f l) (let loop ([l l])
+             (cond
+              [(null? l) null]
+              [else (mcons (f (mcar l)) (loop (mcdr l)))]))]
+    [(f l1 l2) (let loop ([l1 l1][l2 l2])
                  (cond
-                  [(null? l) null]
-                  [else (mcons (apply f (mcar l) (map mcar ls))
-                               (loop (mcdr l) (map mcdr ls)))]))]))
+                  [(null? l1) null]
+                  [else (mcons (f (mcar l1) (mcar l2))
+                               (loop (mcdr l1) (mcdr l2)))]))]
+    [(f l . ls) (let loop ([l l][ls ls])
+                  (cond
+                   [(null? l) null]
+                   [else (mcons (apply f (mcar l) (map mcar ls))
+                                (loop (mcdr l) (map mcdr ls)))]))]))
 
-(define mfor-each
-  (case-lambda
-   [(f l) (let loop ([l l])
-            (cond
-             [(null? l) (void)]
-             [else (f (mcar l))
-                   (loop (mcdr l))]))]
-   [(f l1 l2) (let loop ([l1 l1][l2 l2])
-                (cond
-                 [(null? l1) (void)]
-                 [else (f (mcar l1) (mcar l2))
-                       (loop (mcdr l1) (mcdr l2))]))]
-   [(f l . ls) (let loop ([l l][ls ls])
+ (define mfor-each
+   (case-lambda
+    [(f l) (let loop ([l l])
+             (cond
+              [(null? l) (void)]
+              [else (f (mcar l))
+                    (loop (mcdr l))]))]
+    [(f l1 l2) (let loop ([l1 l1][l2 l2])
                  (cond
-                  [(null? l) (void)]
-                  [else (apply f (mcar l) (map mcar ls))
-                        (loop (mcdr l) (map mcdr ls))]))]))
+                  [(null? l1) (void)]
+                  [else (f (mcar l1) (mcar l2))
+                        (loop (mcdr l1) (mcdr l2))]))]
+    [(f l . ls) (let loop ([l l][ls ls])
+                  (cond
+                   [(null? l) (void)]
+                   [else (apply f (mcar l) (map mcar ls))
+                         (loop (mcdr l) (map mcdr ls))]))])))
 
 (define (list->mlist l)
   (cond
