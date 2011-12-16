@@ -188,10 +188,10 @@
 
 (define-on-demand void-const
   (make-v+u-link
-   (racketresultfont "#<void>")))
+   (nonbreaking (racketresultfont "#<void>"))))
 (define-on-demand undefined-const
   (make-v+u-link
-   (racketresultfont "#<undefined>")))
+   (nonbreaking (racketresultfont "#<undefined>"))))
 
 (define (link url 
               #:underline? [underline? #t]
