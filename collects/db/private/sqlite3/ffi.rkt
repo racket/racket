@@ -36,13 +36,25 @@
 
 ;; -- Stmt --
 
+(define (copy-buffer buffer)
+  (let* ([buffer (string->bytes/utf-8 buffer)]
+         [n (bytes-length buffer)]
+         [rawcopy (malloc (add1 n) 'atomic-interior)]
+         [copy (make-sized-byte-string rawcopy n)])
+    (memcpy copy buffer n)
+    (ptr-set! rawcopy _byte n 0)
+    copy))
+
 (define-sqlite sqlite3_prepare_v2
-  (_fun (db zsql) ::
-        (db : _sqlite3_database) (zsql : _string) ((string-utf-8-length zsql) : _int)
+  (_fun (db sql) ::
+        (db : _sqlite3_database)
+        (sql-buffer : _bytes = (copy-buffer sql))
+        ((bytes-length sql-buffer) : _int)
         ;; bad prepare statements set statement to NULL, with no error reported
-        (statement : (_ptr o _sqlite3_statement/null)) (tail : (_ptr o _string))
+        (statement : (_ptr o _sqlite3_statement/null))
+        (tail : (_ptr o _bytes)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
-        -> (values result statement tail)))
+        -> (values result statement (and tail (positive? (bytes-length tail))))))
 
 (define-sqlite sqlite3_finalize
   (_fun _sqlite3_statement
