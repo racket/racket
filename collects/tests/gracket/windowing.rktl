@@ -22,7 +22,12 @@
 ;;                           Windowing Tests                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-syntax FAILS (lambda (stx) (syntax (void))))
+;; Some tests can't work on X due to window-manager 
+;; prerogative and race conditions
+(define-syntax (X-FAILS stx)
+  (if (eq? (system-type) 'unix)
+      (syntax (void))
+      (syntax-case stx () [(_ e) #'e])))
 
 (define (pause)
   (let ([s (make-semaphore)])
@@ -31,15 +36,7 @@
     (test s 'yield (yield s))))
 
 (define (iconize-pause)
-  (if (eq? 'unix (system-type))
-      ;; iconization might take a while
-      ;; for the window manager to report back
-      (begin
-        (pause)
-        (when (regexp-match? #rx"darwin" (path->string (system-library-subpath)))
-          (sleep 0.75))
-        (pause))
-      (pause)))
+  (pause))
 
 (let ([s (make-semaphore 1)])
   (test s 'yield-wrapped (yield s)))
@@ -68,10 +65,12 @@
 (define (client->screen-tests f)
   (printf "Client<->Screen ~a\n" f)
   (send (or (send f get-parent) f) reflow-container)
-  (let-values ([(x y) (send f client->screen 0 0)])
-    (stvals '(0 0) f screen->client x y))
-  (let-values ([(x y) (send f screen->client 0 0)])
-    (stvals '(0 0) f client->screen x y))
+  (X-FAILS
+   (let-values ([(x y) (send f client->screen 0 0)])
+     (stvals '(0 0) f screen->client x y)))
+  (X-FAILS
+   (let-values ([(x y) (send f screen->client 0 0)])
+     (stvals '(0 0) f client->screen x y)))
   (let-values ([(cw ch) (send f get-client-size)]
 	       [(w h) (send f get-size)])
     (test #t `(client-size ,f ,cw ,ch ,w ,h) (and (<= 1 cw w) (<= 1 ch h))))
@@ -190,11 +189,11 @@
 	   (stv f set-label "Yes & No")
 	   (st #f f get-parent)
 	   (st f f get-top-level-window)
-           (st 70 f get-x)
-           (st 21 f get-y)
-	   (st 150 f get-width)
-	   (st 151 f get-height)
-	   (stvals (list (send f get-width) (send f get-height)) f get-size)
+           (X-FAILS (st 70 f get-x))
+           (X-FAILS (st 21 f get-y))
+	   (X-FAILS (st 150 f get-width))
+	   (X-FAILS (st 151 f get-height))
+	   (X-FAILS (stvals (list (send f get-width) (send f get-height)) f get-size))
 	   (st #f f has-status-line?)
 	   (st #f f is-iconized?)
 	   (st #f f get-menu-bar))]
@@ -268,16 +267,16 @@
     (printf "Iconize\n")
     (stv f iconize #t)
     (iconize-pause)
-    (st #t f is-iconized?)
+    (X-FAILS (st #t f is-iconized?))
     (stv f iconize #f)
     (iconize-pause)
-    (st #f f is-iconized?)
+    (X-FAILS (st #f f is-iconized?))
     (stv f iconize #t)
     (iconize-pause)
-    (st #t f is-iconized?)
+    (X-FAILS (st #t f is-iconized?))
     (stv f show #t)
     (iconize-pause)
-    (st #f f is-iconized?)
+    (X-FAILS (st #f f is-iconized?))
 
     (stv f maximize #t)
     (pause)
@@ -287,23 +286,23 @@
     (printf "Move\n")
     (stv f move 34 37)
     (pause)
-    (FAILS (st 34 f get-x))
-    (FAILS (st 37 f get-y))
-    (st 150 f get-width)
-    (st 151 f get-height)
+    (X-FAILS (st 34 f get-x))
+    (X-FAILS (st 37 f get-y))
+    (X-FAILS (st 150 f get-width))
+    (X-FAILS (st 151 f get-height))
 
     (printf "Resize\n")
     (stv f resize 156 57)
     (pause)
-    (FAILS (st 34 f get-x))
-    (FAILS (st 37 f get-y))
-    (st 156 f get-width)
-    (st 57 f get-height)
+    (X-FAILS (st 34 f get-x))
+    (X-FAILS (st 37 f get-y))
+    (X-FAILS (st 156 f get-width))
+    (X-FAILS (st 57 f get-height))
 
     (stv f center)
     (pause)
-    (st 156 f get-width)
-    (st 57 f get-height)
+    (X-FAILS (st 156 f get-width))
+    (X-FAILS (st 57 f get-height))
 
     (client->screen-tests)
 
