@@ -10,21 +10,10 @@
 
 @unstable-header[]
 
-@deftogether[[
-@defproc[(non-empty-string? [x any/c]) boolean?]
-@defproc[(non-empty-list? [x any/c]) boolean?]
-@defproc[(non-empty-bytes? [x any/c]) boolean?]
-@defproc[(non-empty-vector? [x any/c]) boolean?]]]{
+@defproc[(non-empty-string? [x any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[x] is of the appropriate data type
-(string, list, bytes, or vector, respectively) and is not empty;
+Returns @racket[#t] if @racket[x] is a string and is not empty;
 returns @racket[#f] otherwise.
-}
-
-@defproc[(singleton-list? [x any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[x] is a list of one element; returns
-@racket[#f] otherwise.
 }
 
 @defthing[port-number? contract?]{
@@ -93,91 +82,11 @@ or default value may be used.
 
 @addition[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
-@section{Flat Contracts}
-
-@defthing[nat/c flat-contract?]{
-
-This contract recognizes natural numbers that satisfy
-@racket[exact-nonnegative-integer?].
-
-}
-
-@defthing[pos/c flat-contract?]{
-
-This contract recognizes positive integers that satisfy
-@racket[exact-positive-integer?].
-
-}
-
 @defthing[truth/c flat-contract?]{
 
 This contract recognizes Scheme truth values, i.e., any value, but with a more
 informative name and description.  Use it in negative positions for arguments
 that accept arbitrary truth values that may not be booleans.
-
-}
-
-@section{Syntax Object Contracts}
-
-@defproc[(syntax-datum/c [datum/c any/c]) flat-contract?]{
-
-Recognizes syntax objects @racket[stx] such that @racket[(syntax->datum stx)]
-satisfies @racket[datum/c].
-
-}
-
-@defproc[(syntax-listof/c [elem/c any/c]) flat-contract?]{
-
-Recognizes syntax objects @racket[stx] such that @racket[(syntax->list stx)]
-satisfies @racket[(listof elem/c)].
-
-}
-
-@defproc[(syntax-list/c [elem/c any/c] ...) flat-contract?]{
-
-Recognizes syntax objects @racket[stx] such that @racket[(syntax->list stx)]
-satisfies @racket[(list/c elem/c ...)].
-
-}
-
-@section{Higher-Order Contracts}
-
-@deftogether[(
-@defthing[thunk/c contract?]
-@defthing[unary/c contract?]
-@defthing[binary/c contract?]
-)]{
-
-These contracts recognize functions that accept 0, 1, or 2 arguments,
-respectively, and produce a single result.
-
-}
-
-@deftogether[(
-@defthing[predicate-like/c contract?]
-)]{
-
-This contract recognizes unary functions whose results satisfy @racket[truth/c].  Use
-@racket[predicate-like/c] in negative position for predicates passed as
-arguments that may return arbitrary values as truth values.
-
-}
-
-@deftogether[(
-@defthing[comparison/c contract?]
-@defthing[comparison-like/c contract?]
-)]{
-
-These contracts recognize comparisons: functions of two arguments that
-produce a boolean result.
-
-The first constrains its output to satisfy @racket[boolean?].  Use
-@racket[comparison/c] in positive position for comparisons that guarantee a
-result of @racket[#t] or @racket[#f].
-
-The second constrains its output to satisfy @racket[truth/c].  Use
-@racket[comparison-like/c] in negative position for comparisons passed as
-arguments that may return arbitrary values as truth values.
 
 }
 
@@ -205,33 +114,6 @@ for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
 (for ([(N S) numbers&strings])
   (printf "~s: ~a\n" N S))
 ]
-
-}
-
-@defproc[(dict/c [key/c contract?] [value/c contract?]) contract?]{
-
-Wraps a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dictionary},
-obligating its keys to satisfy @racket[key/c] and their corresponding values to
-satisfy @racket[value/c].  The result is not guaranteed to be the same kind of
-dictionary as the original value; for instance, a wrapped hash table is not
-guaranteed to satisfy @racket[hash?].
-
-@defexamples[
-#:eval the-eval
-(define/contract table
-  (dict/c symbol? string?)
-  (make-immutable-hash (list (cons 'A "A") (cons 'B 2) (cons 3 "C"))))
-(dict-ref table 'A)
-(dict-ref table 'B)
-(dict-ref table 3)
-]
-
-@emph{Warning:} Bear in mind that key and value contracts are re-wrapped on
-every dictionary operation, and dictionaries wrapped in @racket[dict/c] multiple
-times will perform the checks as many times for each operation.  Especially for
-immutable dictionaries (which may be passed through a constructor that involves
-@racket[dict/c] on each update), contract-wrapped dictionaries may be much less
-efficient than the original dictionaries.
 
 }
 

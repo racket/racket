@@ -76,7 +76,6 @@
 
              (define (make-idtbl [init-dict null]
                                  #:phase [phase (syntax-local-phase-level)])
-               ;; init-dict is good candidate for object/c-like dict/c
                (let ([t (mutable-idtbl (make-hasheq) phase)])
                  (for ([(k v) (in-dict init-dict)])
                    (unless (identifier? k)

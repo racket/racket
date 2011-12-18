@@ -13,7 +13,8 @@
           maybe-function/c maybe-apply
           plot-colors/c pen-widths/c plot-pen-styles/c plot-brush-styles/c alphas/c
           labels/c)
-         nat/c pos/c truth/c)
+         (rename-out [natural-number/c nat/c])
+         truth/c)
 
 ;; ===================================================================================================
 ;; Convenience
