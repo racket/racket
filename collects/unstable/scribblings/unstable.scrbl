@@ -93,7 +93,6 @@ Keep documentation and tests up to date.
 @include-section["parameter-group.scrbl"]
 @include-section["match.scrbl"]
 @include-section["net.scrbl"]
-@include-section["path.scrbl"]
 @include-section["port.scrbl"]
 @include-section["pretty.scrbl"]
 @include-section["require.scrbl"]

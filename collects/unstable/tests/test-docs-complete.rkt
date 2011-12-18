@@ -9,7 +9,6 @@
 (check-docs (quote unstable/prop-contract))
 (check-docs (quote unstable/pretty))
 (check-docs (quote unstable/port))
-(check-docs (quote unstable/path))
 (check-docs (quote unstable/mutated-vars))
 (check-docs (quote unstable/match))
 (check-docs (quote unstable/markparam) #:skip #rx"^deserialize-info:")
