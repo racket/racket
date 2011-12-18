@@ -16,7 +16,7 @@
                     [-> t:->])
          (except-in (utils tc-utils utils) infer)
          typed-racket/infer/infer-dummy typed-racket/infer/infer
-         unstable/mutated-vars
+         (utils mutated-vars)
          (env type-name-env type-env-structs init-envs)
          rackunit rackunit/text-ui
          syntax/parse

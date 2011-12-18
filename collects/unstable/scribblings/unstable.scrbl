@@ -81,7 +81,6 @@ Keep documentation and tests up to date.
 @include-section["file.scrbl"]
 @include-section["find.scrbl"]
 @include-section["future.scrbl"]
-@include-section["mutated-vars.scrbl"] ;; Finding Mutable Variables
 @include-section["function.scrbl"]
 @include-section["generics.scrbl"]
 @include-section["hash.scrbl"]

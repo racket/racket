@@ -9,10 +9,10 @@
 (require "../utils/utils.rkt"
 	 "type-env-structs.rkt"
          "global-env.rkt"
-	 unstable/mutated-vars syntax/id-table
+	 syntax/id-table
          (for-syntax syntax/parse syntax/parse/experimental/contract racket/base)
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
-         (utils tc-utils)
+         (utils tc-utils mutated-vars)
          (only-in (rep type-rep) Type/c)
          (typecheck tc-metafunctions)
 	 (except-in (types utils convenience) -> ->*))

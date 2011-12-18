@@ -14,8 +14,8 @@
          (types utils convenience type-table)
          (private parse-type type-annotation type-contract)
          (env global-env init-envs type-name-env type-alias-env lexical-env)
-	 unstable/mutated-vars syntax/id-table
-         (utils tc-utils)
+	 syntax/id-table
+         (utils tc-utils mutated-vars)
          "provide-handling.rkt"
          "def-binding.rkt"
          (prefix-in c: racket/contract)

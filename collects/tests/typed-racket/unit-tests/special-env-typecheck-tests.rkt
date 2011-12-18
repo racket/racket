@@ -11,14 +11,14 @@
                                 [-> t:->]))
          (except-in (utils tc-utils utils) infer)
          typed-racket/infer/infer-dummy typed-racket/infer/infer
-         unstable/mutated-vars
+         (utils mutated-vars)
          
          rackunit rackunit/text-ui
          syntax/parse         
          racket/file racket/port
          (for-syntax syntax/kerncase syntax/parse racket/syntax
                      (types abbrev convenience utils)
-                     unstable/mutated-vars
+                     (utils mutated-vars)
                      (utils tc-utils) (typecheck typechecker))
          typed-racket/base-env/prims
          typed-racket/base-env/base-types

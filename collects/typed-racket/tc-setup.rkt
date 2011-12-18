@@ -2,14 +2,13 @@
 
 (require (rename-in "utils/utils.rkt" [infer r:infer])
          (except-in syntax/parse id)
-         unstable/mutated-vars
          racket/pretty
          (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env)
          (r:infer infer)
-         (utils tc-utils disarm)
+         (utils tc-utils disarm mutated-vars)
          (rep type-rep)
          (except-in (utils utils) infer)
          (only-in (r:infer infer-dummy) infer-param)
