@@ -1649,7 +1649,7 @@ within the @racket[body]s to the procedure itself.}
 
 @defform[(let* ([id val-expr] ...) body ...+)]{
 
-Similar to @racket[let], but evaluates the @racket[val-expr]s one by
+Like @racket[let], but evaluates the @racket[val-expr]s one by
 one, creating a @tech{location} for each @racket[id] as soon as the value is
 available. The @racket[id]s are bound in the remaining @racket[val-expr]s
 as well as the @racket[body]s, and the @racket[id]s need not be
@@ -1663,10 +1663,12 @@ distinct; later bindings shadow earlier bindings.
 
 @defform[(letrec ([id val-expr] ...) body ...+)]{
 
-Similar to @racket[let], but the @tech{locations} for all @racket[id]s are
-created first and filled with @|undefined-const|, and all
+Like @racket[let], including left-to-right evaluation of the @racket[val-expr]s,
+but the @tech{locations} for all @racket[id]s are
+created first and filled with @|undefined-const|, all
 @racket[id]s are bound in all @racket[val-expr]s as well as the
-@racket[body]s. The @racket[id]s must be distinct according to
+@racket[body]s, and each @racket[id] is set immediately after the
+corresponding @racket[val-expr] is evaluated. The @racket[id]s must be distinct according to
 @racket[bound-identifier=?].
 
 @mz-examples[
