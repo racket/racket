@@ -799,7 +799,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # ifdef JIT_X86_64
 #  define mz_pop_threadlocal() mz_get_local_p(JIT_R14, JIT_LOCAL4)
 #  define mz_push_threadlocal(in) /* empty */
-#  define mz_push_threadlocal_early() (mz_set_local_p(JIT_R14, JIT_LOCAL4), jit_movr_p(JIT_R14, JIT_R1))
+#  define mz_push_threadlocal_early() (mz_set_local_p(JIT_R14, JIT_LOCAL4), jit_movr_p(JIT_R14, JIT_R_ARG4))
 #  define mz_repush_threadlocal() mz_set_local_p(JIT_R14, JIT_LOCAL4)
 # else
 #  define mz_pop_threadlocal() /* empty */

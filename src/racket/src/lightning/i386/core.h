@@ -368,11 +368,13 @@ struct jit_local_state {
 #  define jit_getprearg_pip_p(r) (MOVQrr(JIT_R(9), r))
 #  define jit_getprearg_pipp_p(r) (jit_ldxi_p(r, JIT_SP, 40))
 #  define jit_getprearg_pippp_p(r) (jit_ldxi_p(r, JIT_SP, 48))
+#  define JIT_R_ARG4 JIT_R(9)
 # else
 #  define jit_getprearg__p(r) (MOVQrr(_EDI, r))
 #  define jit_getprearg_pip_p(r) (MOVQrr(_ECX, r))
 #  define jit_getprearg_pipp_p(r) (MOVQrr(JIT_R(8), r))
 #  define jit_getprearg_pippp_p(r) (MOVQrr(JIT_R(9), r))
+#  define JIT_R_ARG4 _ECX
 # endif
 #else
 # define jit_getprearg__p(r) (jit_ldxi_p(r, JIT_SP, 4))
