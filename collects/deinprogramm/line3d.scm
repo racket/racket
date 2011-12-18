@@ -365,8 +365,8 @@
           (screenheight/2 (/ screenheight 2)))
       (make-matrix4x4
        (make-vec4 screenwidth/2 0 0 screenwidth/2)
-       (make-vec4 0 screenwidth/2 0 screenheight/2)
-       (make-vec4 0 0 0 0)
+       (make-vec4 0 screenheight/2 0 screenheight/2)
+       (make-vec4 0 0 1/2 0)
        (make-vec4 0 0 0 1)))))
 
 ; create a complete camera matrix
