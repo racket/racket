@@ -289,9 +289,11 @@ Dieser Testfall überprüft experimentell, ob die @tech{Eigenschaft}
 @emph{Wichtig:} @racket[check-property] funktioniert nur für
 Eigenschaften, bei denen aus den Signaturen sinnvoll Werte generiert
 werden können.  Dies ist für die meisten eingebauten Signaturen der
-Fall, aber nicht für Signaturvariablen und Signaturen, die mit @racket[predicate]
-erzeugt wurden.  In diesen Fällen erzeugt @racket[check-property] eine Fehlermeldung.
-}
+Fall, aber nicht für Signaturvariablen und Signaturen, die mit
+@scheme[predicate] oder @scheme[define-record-procedures] definiert
+wurden - wohl aber für Signaturen, die mit dem durch
+@scheme[define-record-procedures-parametric] definierten
+Signaturkonstruktor erzeugt wurden.}
 
 @section{Parametrische Record-Typ-Definitionen}
 
