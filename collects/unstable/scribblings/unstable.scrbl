@@ -6,12 +6,15 @@
 
 @title[#:tag "unstable"]{Unstable: May Change Without Warning}
 
-@defmodule[unstable]
-
 This manual documents some of the libraries available in the
-@racketmodname[unstable] collection.
+@racketidfont{unstable} collection.
 
-The name @racketmodname[unstable] is intended as a warning that the @bold{interfaces} in particular are unstable. Developers of planet packages and external projects should avoid using modules in the unstable collection. Contracts may change, names may change or disappear, even entire modules may move or disappear without warning to the outside world.
+The name @racketidfont{unstable} is intended as a warning that the
+@bold{interfaces} in particular are unstable. Developers of planet
+packages and external projects should avoid using modules in the
+unstable collection. Contracts may change, names may change or
+disappear, even entire modules may move or disappear without warning
+to the outside world.
 
 Developers of unstable libraries must follow the guidelines in
 @secref{guidelines}.
@@ -20,10 +23,10 @@ Developers of unstable libraries must follow the guidelines in
 
 @;{--------}
 
-@section[#:tag "guidelines"]{Guidelines for Developing @racketmodname[unstable] Libraries}
+@section[#:tag "guidelines"]{Guidelines for Developing @racketidfont{unstable} Libraries}
 
 Any collection developer may add modules to the
-@racketmodname[unstable] collection.
+@racketidfont{unstable} collection.
 
 Every module needs an owner to be responsible for it.
 
@@ -57,7 +60,7 @@ in @tt{unstable/scribblings/gui} and include them with
 @racket[include-section] from @tt{unstable/scribblings/gui.scrbl}.}
 
 @item{Do not add modules depending on DrRacket to the
-@racketmodname[unstable] collection.}
+@tt{unstable} collection.}
 
 @item{Put tests in @tt{tests/unstable}.}
 ]
