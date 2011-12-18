@@ -20,13 +20,6 @@
 
    (test-suite "Syntax Lists"
 
-     (test-suite "syntax-list"
-       (test
-        (check-equal?
-         (with-syntax ([([x ...] ...) #'([1 2] [3] [4 5 6])])
-           (map syntax->datum (syntax-list x ... ...)))
-         (list 1 2 3 4 5 6))))
-
      (test-suite "syntax-map"
        (test-case "identifiers to symbols"
          (check-equal? (syntax-map syntax-e #'(a b c)) '(a b c)))))

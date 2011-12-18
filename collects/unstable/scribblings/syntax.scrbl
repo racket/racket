@@ -76,18 +76,6 @@ Performs @racket[(map f (syntax->list stxl) ...)].
 
 @addition[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
-@defform[(syntax-list template ...)]{
-
-This form constructs a list of syntax objects based on the given templates.  It
-is equivalent to @racket[(syntax->list (syntax (template ...)))].
-
-@defexamples[
-#:eval the-eval
-(with-syntax ([(x ...) (syntax (1 2 3))]) (syntax-list x ...))
-]
-}
-
-
 @section{Syntax Object Source Locations}
 
 @deftogether[(

@@ -5,7 +5,6 @@
          (for-syntax racket/base))
 
 (provide (rename-out [stx-map syntax-map])
-         syntax-list
 
          ;; by cce:
          syntax-source-file-name
@@ -24,15 +23,6 @@
 ;;  By Carl Eastlund, below
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Pattern Bindings
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-syntax-rule (syntax-list template ...)
-  (syntax->list (syntax (template ...))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
