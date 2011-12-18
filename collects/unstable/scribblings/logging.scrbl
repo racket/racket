@@ -5,12 +5,11 @@
 @(the-eval '(require unstable/logging))
 
 @title{Logging}
+@unstable[@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]
 
 @defmodule[unstable/logging]
 
 This module provides tools for logging.
-
-@unstable[@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]
 
 @defproc[(with-logging-to-port
            [port output-port?] [proc (-> any)]

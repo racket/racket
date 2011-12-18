@@ -6,10 +6,9 @@
 @(the-eval '(require unstable/find racket/shared))
 
 @title[#:tag "find"]{Find}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/find]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defproc[(find [pred (-> any/c any/c)]
                [x any/c]

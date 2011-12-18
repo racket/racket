@@ -2,15 +2,15 @@
 @(require scribble/manual
           scribble/bnf
           scribble/eval
+          unstable/scribblings/utils
           (for-label racket/base
                      racket/contract
                      racket/list))
 
 @(define our-eval (make-base-eval))
 
-@title{@bold{Automata}: Compiling State Machines}
-
-@author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
+@title{Automata: Compiling State Machines}
+@unstable[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 @defmodule[unstable/automata]
 

@@ -5,12 +5,11 @@
 @(the-eval '(require racket/pretty unstable/pretty))
 
 @title{Pretty-Printing}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/pretty]
 
 This module provides tools for pretty-printing.
-
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defproc[(pretty-format/write [x any/c]
                               [columns

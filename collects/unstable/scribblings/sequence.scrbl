@@ -13,10 +13,9 @@
           " clause.")]))
 
 @title[#:tag "sequence"]{Sequences}
+@unstable[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]]
 
 @defmodule[unstable/sequence]
-
-@unstable[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]]
 
 
 @defproc[(in-syntax [stx syntax?]) sequence?]{

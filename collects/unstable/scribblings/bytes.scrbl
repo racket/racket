@@ -4,10 +4,9 @@
                      racket/contract))
 
 @title[#:tag "bytes"]{Bytes}
+@unstable-header[]
 
 @defmodule[unstable/bytes]
-
-@unstable-header[]
 
 @defproc[(read/bytes [b bytes?])
          printable/c]{

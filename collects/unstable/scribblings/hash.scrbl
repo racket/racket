@@ -5,10 +5,9 @@
 @(the-eval '(require unstable/hash))
 
 @title{Hash Tables}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/hash]
-
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides tools for manipulating hash tables.
 

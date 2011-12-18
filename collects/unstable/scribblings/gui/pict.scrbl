@@ -14,7 +14,6 @@
 @(the-eval '(require racket/math slideshow/pict unstable/gui/pict))
 
 @title[#:tag "pict"]{Pict Utilities}
-
 @unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/gui/pict]

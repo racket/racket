@@ -5,10 +5,9 @@
 @(the-eval '(require unstable/function))
 
 @title{Functions}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/function]
-
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides tools for higher-order programming and creating functions.
 

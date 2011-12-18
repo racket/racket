@@ -6,10 +6,9 @@
 @(the-eval '(require unstable/debug))
 
 @title{Debugging}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/debug]
-
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides macros and functions for printing out debugging
 information.

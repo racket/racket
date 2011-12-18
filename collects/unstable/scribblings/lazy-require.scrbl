@@ -6,10 +6,9 @@
                      unstable/lazy-require))
 
 @title[#:tag "lazy-require"]{Lazy Require}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/lazy-require]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defform/subs[#:literals (unquote)
               (lazy-require [mod (imported-fun-id ...)] ...)

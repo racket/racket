@@ -5,12 +5,11 @@
 @(the-eval '(require unstable/port))
 
 @title{Ports}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/port]
 
 This module provides tools for port I/O.
-
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defproc[(read-all [reader (-> any/c) read]
                    [port input-port? (current-input-port)])

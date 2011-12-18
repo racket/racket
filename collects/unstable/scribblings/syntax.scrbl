@@ -7,10 +7,9 @@
 @(the-eval '(require unstable/syntax (for-syntax racket/base unstable/syntax)))
 
 @title[#:tag "syntax"]{Syntax}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/syntax]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defproc[(explode-module-path-index [mpi module-path-index?])
          (listof (or/c module-path? resolved-module-path? #f))]{

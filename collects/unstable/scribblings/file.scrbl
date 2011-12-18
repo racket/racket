@@ -8,10 +8,9 @@
                      racket/base))
 
 @title[#:tag "file"]{Filesystem}
+@unstable[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 @defmodule[unstable/file]
-
-@unstable[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 @defproc[(make-directory*/ignore-exists-exn [pth path-string?])
          void]{

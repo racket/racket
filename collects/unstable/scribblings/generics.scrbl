@@ -2,11 +2,10 @@
 @(require "utils.rkt" (for-label racket/base unstable/generics))
 
 @title{Generics}
-
-@defmodule[unstable/generics]
-
 @unstable["Eli Barzilay"
           @author+email["Jay McCarthy" "jay@racket-lang.org"]]
+
+@defmodule[unstable/generics]
 
 @defform/subs[(define-generics (name prop:name name?)
                 [method . kw-formals*]

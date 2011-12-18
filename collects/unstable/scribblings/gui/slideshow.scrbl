@@ -5,7 +5,6 @@
                      unstable/gui/slideshow))
 
 @title{Slideshow Presentations}
-
 @unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/gui/slideshow]

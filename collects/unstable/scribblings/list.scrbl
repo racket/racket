@@ -7,10 +7,9 @@
 @(the-eval '(require unstable/list))
 
 @title[#:tag "list"]{Lists}
+@unstable-header[]
 
 @defmodule[unstable/list]
-
-@unstable-header[]
 
 @defproc[(list-prefix? [l list?]
                        [r list?])

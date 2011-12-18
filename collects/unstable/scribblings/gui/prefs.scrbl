@@ -5,10 +5,9 @@
                      racket/base))
 
 @title[#:tag "gui-prefs"]{Preferences}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/gui/prefs]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defproc[(pref:get/set [pref symbol?])
          (case-> (-> any/c) (-> any/c void?))]{

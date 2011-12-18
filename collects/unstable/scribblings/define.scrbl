@@ -7,10 +7,9 @@
 @(the-eval '(require unstable/define (for-syntax racket/base)))
 
 @title{Definitions}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defmodule[unstable/define]
-
-@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 Provides macros for creating and manipulating definitions.
 

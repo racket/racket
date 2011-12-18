@@ -2,10 +2,9 @@
 @(require "utils.rkt" (for-label racket unstable/markparam))
 
 @title{Mark Parameters}
+@unstable[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 @defmodule[unstable/markparam]
-
-@unstable[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 This library provides a simplified version of parameters that are backed by continuation marks, rather than parameterizations. This means they are slightly slower, are not inherited by child threads, do not have initial values, and cannot be imperatively mutated.
 

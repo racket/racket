@@ -3,7 +3,6 @@
 @(require scribble/eval "utils.rkt" (for-label racket unstable/parameter-group))
 
 @title{Parameter Groups}
-
 @unstable[@author+email["Neil Toronto" "ntoronto@racket-lang.org"]]
 
 @defmodule[unstable/parameter-group]

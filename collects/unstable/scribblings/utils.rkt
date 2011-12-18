@@ -4,6 +4,11 @@
          unstable-header
          addition)
 
+#|
+Place either @unstable or @unstable-header immediately after the
+@title form, before any @defmodule form or introductory/summary text.
+|#
+
 (define (unstable . authors)
   (make-compound-paragraph plain
     (list (apply author authors)

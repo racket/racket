@@ -6,10 +6,9 @@
 @(the-eval '(require unstable/struct))
 
 @title[#:tag "struct"]{Structs}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/struct]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defform[(make struct-id expr ...)]{
 

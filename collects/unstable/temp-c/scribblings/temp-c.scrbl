@@ -2,6 +2,7 @@
 @(require scribble/manual
           scribble/bnf
           scribble/eval
+          unstable/scribblings/utils
           (for-label racket/base
                      racket/contract
                      racket/match
@@ -9,9 +10,8 @@
 
 @(define our-eval (make-base-eval))
 
-@title[#:tag "temp-c"]{@bold{Temporal Contracts}: Explicit Contract Monitors}
-
-@author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
+@title[#:tag "temp-c"]{Temporal Contracts: Explicit Contract Monitors}
+@unstable[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 @defmodule[unstable/temp-c]
 

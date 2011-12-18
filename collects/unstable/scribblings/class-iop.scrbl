@@ -10,10 +10,9 @@
 @(the-eval '(require racket/class unstable/class-iop (for-syntax racket/base)))
 
 @title[#:tag "class-iop"]{Interface-Oriented Programming for Classes}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/class-iop]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defform[(define-interface name-id (super-ifc-id ...) (method-id ...))]{
 

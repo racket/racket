@@ -6,13 +6,12 @@
 @(the-eval '(require racket/contract (for-syntax racket/base unstable/wrapc)))
 
 @title[#:tag "wrapc"]{Contracts for Macro Subexpressions}
-
-This library provides a procedure @racket[wrap-expr/c] for applying
-contracts to macro subexpressions.
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/wrapc]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
+This library provides a procedure @racket[wrap-expr/c] for applying
+contracts to macro subexpressions.
 
 @defproc[(wrap-expr/c [contract-expr syntax?]
                       [expr syntax?]

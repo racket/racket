@@ -5,10 +5,9 @@
 @(the-eval '(require racket/contract racket/dict unstable/contract))
 
 @title[#:tag "contract"]{Contracts}
+@unstable-header[]
 
 @defmodule[unstable/contract]
-
-@unstable-header[]
 
 @defproc[(non-empty-string? [x any/c]) boolean?]{
 

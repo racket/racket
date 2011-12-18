@@ -7,10 +7,9 @@
 @(the-eval '(require racket/class unstable/private/notify))
 
 @title[#:tag "gui-notify"]{Notify-boxes}
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defmodule[unstable/gui/notify]
-
-@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defclass[notify-box% object% ()]{
 

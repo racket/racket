@@ -7,10 +7,9 @@
                      racket/base))
 
 @title[#:tag "string"]{Strings}
+@unstable-header[]
 
 @defmodule[unstable/string]
-
-@unstable-header[]
 
 @addition{Vincent St-Amour}
 
