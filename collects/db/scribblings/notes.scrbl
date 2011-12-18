@@ -71,9 +71,10 @@ not supported.
 
 As of version 5.5.7, MySQL supports
 @hyperlink["http://dev.mysql.com/doc/mysql-security-excerpt/5.5/en/pluggable-authentication.html"]{authentication
-plugins}. The only plugin currently supported by this library is
-@tt{mysql_native_password} (the default), which corresponds to the
-password authentication mechanism used since version 4.1.
+plugins}. The only plugins currently supported by this library are
+@tt{mysql_native_password} (the default) and @tt{mysql_old_password},
+which corresponds to the password authentication mechanisms used since
+version 4.1 and before 4.1, respectively.
 
 
 @section[#:tag "sqlite3-requirements"]{SQLite Requirements}

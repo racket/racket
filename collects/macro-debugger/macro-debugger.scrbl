@@ -43,7 +43,7 @@ syntax properties, such as lexical binding information and source
 location.
 
 
-@section{Macro stepper}
+@section{Macro Stepper}
 
 @defmodule[macro-debugger/stepper]
 
@@ -62,7 +62,7 @@ single module declaration, and opens a macro stepper frame for
 stepping through the expansion.
 }
 
-@section{Macro expansion tools}
+@section{Macro Expansion Tools}
 
 @defmodule[macro-debugger/expand]
 
@@ -112,7 +112,7 @@ result as the original syntax.
 }
 
 
-@section{Macro stepper API for macros}
+@section{Macro Stepper API for Macros}
 
 @defmodule[macro-debugger/emit]
 
@@ -169,7 +169,7 @@ of macro hiding.
 }
 
 
-@section{Macro stepper text interface}
+@section{Macro Stepper Text Interface}
 
 @defmodule[macro-debugger/stepper-text]
 
@@ -204,7 +204,7 @@ of macro hiding.
 }
 
 
-@section{Syntax browser}
+@section{Syntax Browser}
 
 @defmodule[macro-debugger/syntax-browser]
 
@@ -225,7 +225,7 @@ of macro hiding.
 }
 
 
-@section{Using the macro stepper}
+@section{Using the Macro Stepper}
 
 @subsection{Navigation}
 
@@ -238,7 +238,7 @@ provides ``Previous term'' and ``Next term'' buttons to go up and down in
 the list of expansions. Horizontal lines delimit the current expansion
 from the others.
 
-@subsection{Macro hiding}
+@subsection{Macro Hiding}
 
 Macro hiding lets one see how expansion would look if certain macros
 were actually primitive syntactic forms. The macro stepper skips over
@@ -259,7 +259,7 @@ Macro hiding, even with no macros marked opaque, also hides certain
 other kinds of steps: internal defines are not rewritten to letrecs,
 begin forms are not spliced into module or block bodies, etc.
 
-@section{Using the syntax browser}
+@section{Using the Syntax Browser}
 
 @subsection{Selection}
 
@@ -276,7 +276,7 @@ object in the properties panel on the right, when that panel is
 shown. The selected syntax also determines the highlighting done by
 the secondary partitioning (see below).
 
-@subsection{Primary partition}
+@subsection{Primary Partition}
 
 The primary partition is indicated by foreground color.
 
@@ -296,7 +296,7 @@ different environments.
 
 @;@example[(bound-identifier=? (let ([x 1]) #'x) #'x)]
 
-@subsection{Secondary partitioning}
+@subsection{Secondary Partitioning}
 
 The user may select a secondary partitioning through the Syntax
 menu. This partitioning applies only to identifiers. When the user
@@ -328,7 +328,7 @@ selected syntax object. The properties pane has two tabbed pages:
 }
 ]
 
-@subsection{Interpreting syntax}
+@subsection{Interpreting Syntax}
 
 The binding information of a syntax object may not be the same as
 the binding structure of the program it represents. The binding

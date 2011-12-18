@@ -16,7 +16,7 @@ This module provides tools for manipulating hash tables.
                      [h hash?] ...
                      [#:combine combine
                                 (-> any/c any/c any/c)
-                                (lambda _ (error 'hash-union ...))]
+                                (lambda _ (error 'hash-union ....))]
                      [#:combine/key combine/key
                                     (-> any/c any/c any/c any/c)
                                     (lambda (k a b) (combine a b))])
@@ -30,7 +30,9 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 
 @defexamples[
 #:eval the-eval
-(hash-union (make-immutable-hash '([1 . one])) (make-immutable-hash '([2 . two])) (make-immutable-hash '([3 . three])))
+(hash-union (make-immutable-hash '([1 . one]))
+            (make-immutable-hash '([2 . two]))
+            (make-immutable-hash '([3 . three])))
 (hash-union (make-immutable-hash '([1 . (one uno)] [2 . (two dos)]))
             (make-immutable-hash '([1 . (ein une)] [2 . (zwei deux)]))
             #:combine/key (lambda (k v1 v2) (append v1 v2)))
@@ -42,7 +44,7 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
                       [h hash?] ...
                       [#:combine combine
                                  (-> any/c any/c any/c)
-                                 (lambda _ (error 'hash-union ...))]
+                                 (lambda _ (error 'hash-union ....))]
                       [#:combine/key combine/key
                                      (-> any/c any/c any/c any/c)
                                      (lambda (k a b) (combine a b))])

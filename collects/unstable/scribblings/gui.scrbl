@@ -3,7 +3,7 @@
           scribble/manual
           (for-label scribble/base))
 
-@title[#:style '(toc) #:tag "unstable-gui"]{GUI libraries}
+@title[#:style '(toc) #:tag "unstable-gui"]{GUI Libraries}
 
 @local-table-of-contents[#:style 'immediate-only]
 

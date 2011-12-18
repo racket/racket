@@ -5,7 +5,7 @@
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/contract (for-syntax racket/base unstable/wrapc)))
 
-@title[#:tag "wrapc"]{Contracts for macro subexpressions}
+@title[#:tag "wrapc"]{Contracts for Macro Subexpressions}
 
 This library provides a procedure @racket[wrap-expr/c] for applying
 contracts to macro subexpressions.

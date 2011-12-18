@@ -20,7 +20,7 @@ Developers of unstable libraries must follow the guidelines in
 
 @;{--------}
 
-@section[#:tag "guidelines"]{Guidelines for developing @racketmodname[unstable] libraries}
+@section[#:tag "guidelines"]{Guidelines for Developing @racketmodname[unstable] Libraries}
 
 Any collection developer may add modules to the
 @racketmodname[unstable] collection.

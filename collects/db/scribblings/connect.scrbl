@@ -627,7 +627,7 @@ ODBC's DSNs.
          data-source?]
 @defproc[(mysql-data-source
            [#:user user string? @#,absent]
-           [#:database database string? @#,absent]
+           [#:database database (or/c string? #f) @#,absent]
            [#:server server string? @#,absent]
            [#:port port exact-positive-integer? @#,absent]
            [#:socket socket (or/c path-string? 'guess #f) @#,absent]
