@@ -169,8 +169,14 @@
 					 (syntax->list #'(?param ...)))))
 		       (with-syntax ((base-signature
 				      (stepper-syntax-property
-				       #'(define ?type-name 
-					   (signature ?type-name (predicate real-predicate)))
+				       #`(define ?type-name
+					   (let ((sig (signature ?type-name (predicate real-predicate))))
+					     #,(if (null? (syntax->list #'(?field-spec ...)))
+						   #'(set-signature-arbitrary-promise!
+						      sig
+						      (delay (arbitrary-one-of equal? (?constructor))))
+						   #'(begin))
+					     sig))
 				       'stepper-skip-completely 
 				       #t))
 				     (constructor-signature
