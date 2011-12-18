@@ -78,7 +78,6 @@ Keep documentation and tests up to date.
 @include-section["prop-contract.scrbl"]
 @include-section["debug.scrbl"]
 @include-section["define.scrbl"]
-@include-section["exn.scrbl"]
 @include-section["file.scrbl"]
 @include-section["find.scrbl"]
 @include-section["future.scrbl"]
