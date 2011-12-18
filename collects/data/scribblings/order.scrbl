@@ -2,7 +2,6 @@
 @(require scribble/eval
           (for-label data/order
                      racket/contract
-                     unstable/prop-contract
                      racket/dict
                      racket/base))
 

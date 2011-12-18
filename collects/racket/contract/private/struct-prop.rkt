@@ -1,6 +1,9 @@
 #lang racket/base
-(require racket/contract/base
-         racket/contract/combinator)
+(require "guts.rkt"
+         "blame.rkt"
+         "prop.rkt"
+         "misc.rkt")
+(provide (rename-out [struct-type-property/c* struct-type-property/c]))
 
 (define (get-stpc-proj stpc)
   (let ([get-val-proj
@@ -40,5 +43,3 @@
            (struct-type-property/c
             (coerce-contract 'struct-type-property/c value-contract)))])
     struct-type-property/c))
-
-(provide (rename-out [struct-type-property/c* struct-type-property/c]))

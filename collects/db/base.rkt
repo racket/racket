@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/contract/base
-         unstable/prop-contract)
+(require racket/contract/base)
 
 ;; ============================================================
 

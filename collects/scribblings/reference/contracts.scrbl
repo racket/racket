@@ -967,6 +967,10 @@ lazy contract.
 
 @; ------------------------------------------------------------------------
 
+@include-section["contracts-struct-prop.scrbl"]
+
+@; ------------------------------------------------------------------------
+
 @section[#:tag "attaching-contracts-to-values"]{Attaching Contracts to Values}
 @declare-exporting-ctc[racket/contract/base]
 

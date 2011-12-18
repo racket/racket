@@ -2,7 +2,6 @@
 (require racket/dict
          racket/contract/base
          racket/string
-         unstable/prop-contract
          ffi/unsafe/atomic)
 
 (define ordering/c

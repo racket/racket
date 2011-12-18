@@ -5,8 +5,7 @@
           racket/sandbox
           "config.rkt"
           "tabbing.rkt"
-          (for-label db db/util/geometry db/util/postgresql
-                     unstable/prop-contract))
+          (for-label db db/util/geometry db/util/postgresql))
 
 @title[#:tag "query-api"]{Queries}
 
