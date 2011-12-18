@@ -639,7 +639,7 @@
 (define listof-func (*-listof list? list listof listof-generate))
 (define/subexpression-pos-prop (listof x) (listof-func x))
 
-(define (non-empty-list? x) (and (pair? x) (list (cdr x))))
+(define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
 (define non-empty-listof-func (*-listof non-empty-list? non-empty-list non-empty-listof (λ (ctc) (make-generate-ctc-fail))))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
