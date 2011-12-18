@@ -1,103 +1,12 @@
 #lang racket/base
-
-(require
-  (for-syntax
-    racket/base
-    racket/list
-    racket/match
-    syntax/parse
-    racket/syntax
-    unstable/syntax
-    (for-syntax ;; phase 2!
-      racket/base)))
-
-(provide
-
-  in-phase1 in-phase1/pass2
-
-  at-end
-
-  define-syntax-block
-
-  declare-names
-  define-renaming
-  define-renamings
-  define-single-definition
-  define-with-parameter
-
-  define-if-unbound
-  define-values-if-unbound
-  define-syntax-if-unbound
-  define-syntaxes-if-unbound)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Macro Definitions
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-syntax define-syntax-block
-  (let ()
-
-    (define-syntax-class declaration
-      #:attributes [internal external]
-      (pattern external:id
-        #:attr internal
-        (format-id #'external #:source #'external
-          "~a/proc" #'external))
-      (pattern [external:id internal:id]))
-
-    (syntax-parser
-      [(_ (decl:declaration ...) body:expr ...)
-       #:fail-when (check-duplicate-identifier
-                     (syntax-list decl.external ...))
-       "duplicate defined name"
-       #'(define-syntaxes [decl.external ...]
-           (let () body ... (values decl.internal ...)))])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Definition Generalization
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-syntax-rule (define-single-definition define-one define-many)
-  (define-syntax define-one
-    (syntax-rules []
-      [(_ (head . args) . body) (define-one head (lambda args . body))]
-      [(_ name expr) (define-many [name] expr)])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Potentially Redundant Bindings
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-syntax (define-many-if-unbound stx)
-  (syntax-case stx []
-    [(_ def [name ...] expr)
-     (let* ([ids (syntax->list #'(name ...))])
-       (for ([bad (in-list ids)] #:unless (identifier? bad))
-         (wrong-syntax bad "expected an identifier"))
-       (let*-values ([(bound unbound) (partition identifier-binding ids)])
-         (cond
-          [(null? bound) (syntax/loc stx (def [name ...] expr))]
-          [(null? unbound) (syntax/loc stx (def [] (values)))]
-          [else (wrong-syntax
-                 stx
-                 "conflicting definitions for ~s; none for ~s"
-                 (map syntax-e bound)
-                 (map syntax-e unbound))])))]))
-
-(define-syntax-rule (define-values-if-unbound [name ...] expr)
-  (define-many-if-unbound define-values [name ...] expr))
-
-(define-single-definition define-if-unbound define-values-if-unbound)
-
-(define-syntax-rule (define-syntaxes-if-unbound [name ...] expr)
-  (define-many-if-unbound define-syntaxes [name ...] expr))
-
-(define-single-definition define-syntax-if-unbound define-syntaxes-if-unbound)
+(require (for-syntax racket/base
+                     racket/list
+                     racket/match
+                     racket/syntax
+                     unstable/syntax))
+(provide in-phase1
+         in-phase1/pass2
+         at-end)
 
 (define-syntax (at-end stx)
   (syntax-case stx ()
@@ -111,23 +20,6 @@
        [ctx (wrong-syntax stx
                           "can only be used in module context; got: ~s"
                           ctx)])]))
-
-(define-syntax-rule (define-with-parameter name parameter)
-  (define-syntax-rule (name value body (... ...))
-    (parameterize ([parameter value]) body (... ...))))
-
-(define-syntax (declare-names stx)
-  (match (syntax-local-context)
-    ['top-level
-     (syntax-case stx []
-       [(_ name ...) (syntax/loc stx (define-syntaxes [name ...] (values)))])]
-    [_ (syntax/loc stx (begin))]))
-
-(define-syntax-rule (define-renamings [new old] ...)
-  (define-syntaxes [new ...] (values (make-rename-transformer #'old) ...)))
-
-(define-syntax-rule (define-renaming new old)
-  (define-renamings [new old]))
 
 (define-syntax (in-phase1 stx)
   (syntax-case stx []

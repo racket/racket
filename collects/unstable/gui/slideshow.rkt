@@ -1,10 +1,13 @@
 #lang racket/base
 (require slideshow/base slideshow/pict
          racket/contract/base racket/list racket/match
-         unstable/define
          (for-syntax racket/base)
          "pict.rkt")
 (provide (all-from-out "pict.rkt"))
+
+(define-syntax-rule (define-with-parameter name parameter)
+  (define-syntax-rule (name value body (... ...))
+    (parameterize ([parameter value]) body (... ...))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
