@@ -95,7 +95,6 @@ Keep documentation and tests up to date.
 @include-section["net.scrbl"]
 @include-section["port.scrbl"]
 @include-section["pretty.scrbl"]
-@include-section["require.scrbl"]
 @include-section["sequence.scrbl"]
 @include-section["string.scrbl"]
 @include-section["struct.scrbl"]

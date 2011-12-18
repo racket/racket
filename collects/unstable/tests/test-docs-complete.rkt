@@ -5,7 +5,6 @@
 (check-docs (quote unstable/struct))
 (check-docs (quote unstable/string))
 (check-docs (quote unstable/sequence))
-(check-docs (quote unstable/require))
 (check-docs (quote unstable/prop-contract))
 (check-docs (quote unstable/pretty))
 (check-docs (quote unstable/port))
