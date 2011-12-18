@@ -22,13 +22,4 @@
                 (parameterize ([current-input-port
                                 (open-input-string "1 2 3")])
                   (read-all-syntax)))
-               (list 1 2 3))))
-   
-   (test-suite "port->srcloc"
-     (test-ok (define port (open-input-string "\n x "))
-              (port-count-lines! port)
-              (check-equal? (port->srcloc port)
-                            (make-srcloc 'string 1 0 1 0))
-              (read port)
-              (check-equal? (port->srcloc port 'here 1)
-                            (make-srcloc 'here 2 2 4 1))))))
+               (list 1 2 3))))))

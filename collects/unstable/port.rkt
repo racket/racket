@@ -33,5 +33,4 @@
  [read-all (->* [] [(-> any/c) input-port?] list?)]
  [read-all-syntax
   (->* [] [(-> (or/c syntax? eof-object?)) input-port?]
-       (syntax/c list?))]
- [port->srcloc (->* [port?] [any/c exact-nonnegative-integer?] srcloc?)])
+       (syntax/c list?))])
