@@ -74,17 +74,3 @@
              (cond [(and any-opaque? (eq? on-opaque 'return-false))
                     #f]
                    [else elems])]))))
-;; Eli: Why is there that `false-on-opaque?' business instead of having
-;;   an interface similar to `struct->vector'?  I'd prefer an optional
-;;   on-opaque value, and have it throw an error if it's opaque and no
-;;   value is given.  Also, `gensym' seems much better to me than a box
-;;   for a unique value.
-
-;; ryanc: I've never seen any code that wanted the on-opaque filler
-;;   value except printers, whereas lots of code assumes the struct is
-;;   fully transparent and wants all of the fields. #:false-on-opaque?
-;;   also lets this act as a predicate-plus (like member, assoc, etc)
-;;   for fully-transparent structs.
-
-;; Eli: Your change to `#:on-opaque' looks good enough to me (and leaves room
-;;   for extension if needed).  (BTW, the contract still has `?'.)
