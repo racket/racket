@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/base scribble/manual "utils.rkt"
-          (for-label racket/base unstable/bytes racket/serialize
+          (for-label racket/base unstable/bytes
                      racket/contract))
 
 @title[#:tag "bytes"]{Bytes}
@@ -9,16 +9,12 @@
 
 @unstable-header[]
 
-@defproc[(bytes-ci=? [b1 bytes?] [b2 bytes?]) boolean?]{
- Compares two bytes case insensitively.
-}
-
 @defproc[(read/bytes [b bytes?])
-         serializable?]{
+         printable/c]{
  @racket[read]s a value from @racket[b] and returns it.
 }
 
-@defproc[(write/bytes [v serializable?])
+@defproc[(write/bytes [v printable/c])
          bytes?]{
  @racket[write]s @racket[v] to a bytes and returns it.
 }

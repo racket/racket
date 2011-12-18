@@ -16,6 +16,19 @@
 
 ;; --
 
+(define (bytes-ci=? b0 b1)
+  (string-ci=? (bytes->string/utf-8 b0)
+               (bytes->string/utf-8 b1)))
+;; Eli: If this ever gets in, it should say that the memory requirements
+;;   are 4 times the input size, especially since bytes are often used to save
+;;   space.  Also, fails on (bytes-ci=? #"\277" #"\277"), and a trivial fix
+;;   would still fail on (bytes-ci=? #"\276\277" #"\277\276")
+
+(provide/contract
+ [bytes-ci=? (bytes? bytes? . -> . boolean?)])
+
+;; --
+
 ;; network-error: symbol string . values -> void
 ;; throws a formatted exn:fail:network
 (define (network-error src fmt . args)

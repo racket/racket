@@ -1,19 +1,9 @@
 #lang racket/base
-(require racket/contract/base
-         racket/serialize)
+(require racket/contract/base)
 
 (provide/contract
- [read/bytes (bytes? . -> . serializable?)]
- [write/bytes (serializable? . -> . bytes?)]
- [bytes-ci=? (bytes? bytes? . -> . boolean?)])
-
-(define (bytes-ci=? b0 b1)
-  (string-ci=? (bytes->string/utf-8 b0)
-               (bytes->string/utf-8 b1)))
-;; Eli: If this ever gets in, it should say that the memory requirements
-;;   are 4 times the input size, especially since bytes are often used to save
-;;   space.  Also, fails on (bytes-ci=? #"\277" #"\277"), and a trivial fix
-;;   would still fail on (bytes-ci=? #"\276\277" #"\277\276")
+ [read/bytes (bytes? . -> . printable/c)]
+ [write/bytes (printable/c . -> . bytes?)])
 
 (define (read/bytes bs)
   (read (open-input-bytes bs)))
