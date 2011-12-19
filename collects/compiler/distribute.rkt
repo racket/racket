@@ -310,7 +310,8 @@
 			  (error 'patch-stub-exe-paths
 				 "cannot find config info"))
 			(read-byte i)
-			(read-one-int i) ; start of prog
+			(read-one-int i) ; start of decls
+			(read-one-int i) ; start of program
 			(let ([start (read-one-int i)] ; start of data
 			      [end (read-one-int i)]) ; end of data
 			  (file-position i start)
@@ -333,7 +334,7 @@
 	    #:exists 'update
 	    (lambda ()
 	      (let ([o (current-output-port)])
-		(file-position o (+ config-pos 8)) ; update the end of the program data
+		(file-position o (+ config-pos 12)) ; update the end of the program data
 		(write-one-int (- end delta) o)
 		(flush-output o)
 		(file-position o start)
