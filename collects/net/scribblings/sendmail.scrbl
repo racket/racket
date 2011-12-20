@@ -14,7 +14,7 @@ corresponding SMTP specifications, except as noted otherwise.
 
 @section{Sendmail Functions}
 
-@defproc[(send-mail-message/port [from string?]
+@defproc[(send-mail-message/port [from (or/c string? false/c)]
                                  [subject string?]
                                  [to (listof string?)]
                                  [cc (listof string?)]
@@ -34,8 +34,10 @@ the message.  Clients are urged to use @racket[close-output-port] on
 the return value as soon as the necessary text has been written, so
 that the sendmail process can complete.
 
-The @racket[from] argument can be any value; of course, spoofing
-should be used with care.}
+The @racket[from] argument can be any value; of course, spoofing should
+be used with care.  If it is @racket[#f], no ``From:'' header is
+generated, which usually means that your sendmail program will fill in
+the right value based on the user.}
 
 @defproc[(send-mail-message [from string?]
                             [subject string?]
@@ -50,13 +52,6 @@ Like @racket[send-mail-message/port], but with @racket[body] as a list
 of strings, each providing a line of the message body.
 
 Lines that contain a single period do not need to be quoted.}
-
-
-@defstruct[(no-mail-recipients exn) ()]{
-
-Raised when no mail recipients were specified for
-@racket[send-mail-message/port].}
-
 
 
 @; ----------------------------------------

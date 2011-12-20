@@ -1,120 +1,74 @@
 #lang racket/base
 
-(require racket/system)
-
-(provide send-mail-message/port
-         send-mail-message
-         (struct-out no-mail-recipients))
-
-(define-struct (no-mail-recipients exn) ())
+(provide send-mail-message/port send-mail-message)
 
 (define sendmail-search-path
-  '("/usr/lib" "/usr/sbin"))
+  '("/usr/sbin" "/sbin" "/usr/local/sbin" "/usr/lib"))
 
 (define sendmail-program-file
-  (if (or (eq? (system-type) 'unix)
-          (eq? (system-type) 'macosx))
-    (let loop ([paths sendmail-search-path])
-      (if (null? paths)
+  (let ([exe (case (system-type)
+               [(windows) "sendmail.exe"]
+               [else "sendmail"])])
+    (or (for/or ([path (in-list sendmail-search-path)])
+          (define p (build-path path exe))
+          (and (file-exists? p)
+               (memq 'execute (file-or-directory-permissions p))
+               p))
         (raise (make-exn:fail:unsupported
-                "unable to find sendmail on this Unix variant"
-                (current-continuation-marks)))
-        (let ([p (build-path (car paths) "sendmail")])
-          (if (and (file-exists? p)
-                   (memq 'execute (file-or-directory-permissions p)))
-            p
-            (loop (cdr paths))))))
-    (raise (make-exn:fail:unsupported
-            "sendmail only available under Unix"
-            (current-continuation-marks)))))
+                (format "unable to find a sendmail executable in ~s"
+                        sendmail-search-path)
+                (current-continuation-marks))))))
 
-;; send-mail-message/port :
-;; string x string x list (string) x list (string) x list (string)
-;;   [x list (string)] -> oport
+;; Main implementation, returns a port
+(define (send-mail-core who sender subject TOs CCs BCCs headers)
+  (define all-recipients (append TOs CCs BCCs))
+  (when (null? all-recipients)
+    (error who "no mail recipients were specified"))
+  (define-values [p pout pin perr]
+    ;; use -i, so "." lines are not a problem
+    (apply subprocess #f #f #f sendmail-program-file "-i" all-recipients))
+  (close-input-port pout)
+  (close-input-port perr)
+  (port-count-lines! pin)
+  (fprintf pin "X-Mailer: Racket (racket-lang.org)\n")
+  (when sender (fprintf pin "From: ~a\n" sender))
+  (for ([header (in-list '("To" "CC"))]
+        [recipients (in-list (list TOs CCs))]
+        #:unless (null? recipients))
+    (fprintf pin "~a: ~a" header (car recipients))
+    (for ([recipient (in-list (cdr recipients))])
+      (define col (let-values ([(line col pos) (port-next-location pin)]) col))
+      (fprintf pin ",~a~a"
+               (if ((+ col 2 (string-length recipient)) . > . 78)
+                 "\n    " " ")
+               recipient))
+    (newline pin))
+  (fprintf pin "Subject: ~a\n" subject)
+  (for ([h (in-list headers)]) (fprintf pin "~a\n" h))
+  (newline pin)
+  pin)
+
+;; send-mail-message/port:
+;;  String String (Listof String) (Listof String) (Listof String) String ...
+;;  -> Output-Port
 
 ;; -- sender can be anything, though spoofing is not recommended.
-;; The recipients must all be pure email addresses.  Note that
-;; everything is expected to follow RFC conventions.  If any other
-;; headers are specified, they are expected to be completely
-;; formatted already.  Clients are urged to use close-output-port on
-;; the port returned by this procedure as soon as the necessary text
-;; has been written, so that the sendmail process can complete.
-
-(define (send-mail-message/port
-         sender subject to-recipients cc-recipients bcc-recipients
-         . other-headers)
-  (when (and (null? to-recipients) (null? cc-recipients)
-             (null? bcc-recipients))
-    (raise (make-no-mail-recipients
-            "no mail recipients were specified"
-            (current-continuation-marks))))
-  (let ([return (apply process* sendmail-program-file "-i"
-                       (append to-recipients cc-recipients bcc-recipients))])
-    (let ([reader (car return)]
-          [writer (cadr return)]
-          [pid (caddr return)]
-          [error-reader (cadddr return)])
-      (close-input-port reader)
-      (close-input-port error-reader)
-      (fprintf writer "From: ~a\n" sender)
-      (letrec ([write-recipient-header
-                (lambda (header-string recipients)
-                  (let ([header-space
-                         (+ (string-length header-string) 2)])
-                    (fprintf writer "~a: " header-string)
-                    (let loop ([to recipients] [indent header-space])
-                      (if (null? to)
-                        (newline writer)
-                        (let ([first (car to)]
-                              [rest (cdr to)])
-                          (let ([len (string-length first)])
-                            (if (>= (+ len indent) 80)
-                              (begin
-                                (fprintf writer
-                                         (if (null? rest)
-                                           "\n    ~a"
-                                           "\n    ~a, ")
-                                         first)
-                                (loop (cdr to)
-                                      (+ len header-space 2)))
-                              (begin
-                                (fprintf writer
-                                         (if (null? rest)
-                                           "~a "
-                                           "~a, ")
-                                         first)
-                                (loop (cdr to)
-                                      (+ len indent 2))))))))))])
-        (write-recipient-header "To" to-recipients)
-        (unless (null? cc-recipients)
-          (write-recipient-header "CC" cc-recipients)))
-      (fprintf writer "Subject: ~a\n" subject)
-      (fprintf writer "X-Mailer: Racket (racket-lang.org)\n")
-      (for-each (lambda (s)
-                  (display s writer)
-                  (newline writer))
-                other-headers)
-      (newline writer)
-      writer)))
+;; The recipients must all be valid email addresses, they're passed to
+;; sendmail as arguments -- and seems that it handles various name+email
+;; formats correctly.  Note that everything is expected to follow RFC
+;; conventions.  If any other headers are specified, they are expected
+;; to be completely formatted already.  Clients are urged to use
+;; close-output-port on the port returned by this procedure as soon as
+;; the necessary text has been written, so that the sendmail process can
+;; complete.
+(define (send-mail-message/port sender subject TOs CCs BCCs . headers)
+  (send-mail-core 'send-mail-message/port sender subject TOs CCs BCCs headers))
 
 ;; send-mail-message :
 ;; string x string x list (string) x list (string) x list (string) x
 ;;   list (string) [x list (string)] -> ()
-
-;; -- sender can be anything, though spoofing is not recommended.  The
-;; recipients must all be pure email addresses.  The text is expected
-;; to be pre-formatted.  Note that everything is expected to follow
-;; RFC conventions.  If any other headers are specified, they are
-;; expected to be completely formatted already.
-
-(define (send-mail-message
-         sender subject to-recipients cc-recipients bcc-recipients text
-         . other-headers)
-  (let ([writer (apply send-mail-message/port sender subject
-                       to-recipients cc-recipients bcc-recipients
-                       other-headers)])
-    (for-each (lambda (s)
-                (display s writer)      ; We use -i, so "." is not a problem
-                (newline writer))
-              text)
-    (close-output-port writer)))
+(define (send-mail-message sender subject TOs CCs BCCs text . headers)
+  (define pin
+    (send-mail-core 'send-mail-message sender subject TOs CCs BCCs headers))
+  (for ([t (in-list text)]) (fprintf pin "~a\n" t))
+  (close-output-port pin))
