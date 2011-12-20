@@ -73,7 +73,8 @@
              (-> Univ (-seq a b) (seq-vals (list a b))))))]
   ;; in-range
   [(make-template-identifier 'in-range 'racket/private/for)
-   (cl->* (-PosFixnum -Fixnum [-Nat] . ->opt . (-seq -PosFixnum))
+   (cl->* (-Byte [-Byte -Byte] . ->opt . (-seq -Byte))
+          (-PosFixnum -Fixnum [-Nat] . ->opt . (-seq -PosFixnum))
           (-NonNegFixnum [-Fixnum -Nat] . ->opt . (-seq -NonNegFixnum))
           (-Fixnum [-Fixnum -Int] . ->opt . (-seq -Fixnum))
           (-PosInt -Int [-Nat] . ->opt . (-seq -PosInt))
