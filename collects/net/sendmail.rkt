@@ -2,6 +2,8 @@
 
 (provide send-mail-message/port send-mail-message)
 
+(require net/unihead)
+
 (define sendmail-search-path
   '("/usr/sbin" "/sbin" "/usr/local/sbin" "/usr/lib"))
 
@@ -21,7 +23,10 @@
 
 ;; Main implementation, returns a port
 (define (send-mail-core who sender subject TOs CCs BCCs headers)
-  (define all-recipients (append TOs CCs BCCs))
+  (define qTOs  (map encode-for-header TOs))
+  (define qCCs  (map encode-for-header CCs))
+  (define qBCCs (map encode-for-header BCCs))
+  (define all-recipients (append qTOs qCCs qBCCs))
   (when (null? all-recipients)
     (error who "no mail recipients were specified"))
   (define-values [p pout pin perr]
@@ -31,9 +36,9 @@
   (close-input-port perr)
   (port-count-lines! pin)
   (fprintf pin "X-Mailer: Racket (racket-lang.org)\n")
-  (when sender (fprintf pin "From: ~a\n" sender))
+  (when sender (fprintf pin "From: ~a\n" (encode-for-header sender)))
   (for ([header (in-list '("To" "CC"))]
-        [recipients (in-list (list TOs CCs))]
+        [recipients (in-list (list qTOs qCCs))]
         #:unless (null? recipients))
     (fprintf pin "~a: ~a" header (car recipients))
     (for ([recipient (in-list (cdr recipients))])
@@ -43,7 +48,7 @@
                  "\n    " " ")
                recipient))
     (newline pin))
-  (fprintf pin "Subject: ~a\n" subject)
+  (fprintf pin "Subject: ~a\n" (encode-for-header subject))
   (for ([h (in-list headers)]) (fprintf pin "~a\n" h))
   (newline pin)
   pin)

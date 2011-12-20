@@ -23,11 +23,14 @@ corresponding SMTP specifications, except as noted otherwise.
          output-port?]{
 
 The first argument is the header for the sender, the second is the
-subject line, the third a list of ``To:'' recipients, the fourth a
-list of ``CC:'' recipients, and the fifth a list of ``BCC:''
-recipients.  Additional arguments argument supply other mail headers,
-which must be provided as lines (not terminated by a linefeed or
-carriage return) to include verbatim in the header.
+subject line, the third a list of ``To:'' recipients, the fourth a list
+of ``CC:'' recipients, and the fifth a list of ``BCC:'' recipients.  All
+of these are quoted if they contain non-ASCII characters.
+@margin-note{Note that passing already-quoted strings would be fine,
+  since then there are no non-ASCII characters.}
+Additional arguments argument supply other mail headers, which must be
+provided as lines (not terminated by a linefeed or carriage return) to
+include verbatim in the header.
 
 The return value is an output port into which the client must write
 the message.  Clients are urged to use @racket[close-output-port] on
