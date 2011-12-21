@@ -3191,7 +3191,7 @@ static MZ_INLINE intptr_t get_one_byte(GC_CAN_IGNORE const char *who,
     ip = (Scheme_Input_Port *)port;
     if (!ip->slow) {
       Scheme_Get_String_Fun gs;
-      int v;
+      intptr_t v;
 
       gs = ip->get_string_fun;
 
@@ -8695,7 +8695,7 @@ static void close_subprocess_handle(void *sp, void *ignored)
   CloseHandle(subproc->handle);
 }
 
-static void CopyFileHandleForSubprocess(int *hs, int pos)
+static void CopyFileHandleForSubprocess(intptr_t *hs, int pos)
 {
   HANDLE h2;
   int alt_pos = (pos ? 0 : 1);
@@ -8714,7 +8714,7 @@ static void CopyFileHandleForSubprocess(int *hs, int pos)
   }
 }
 
-static void CloseFileHandleForSubprocess(int *hs, int pos)
+static void CloseFileHandleForSubprocess(intptr_t *hs, int pos)
 {
   int alt_pos = (pos ? 0 : 1);
   if (hs[alt_pos]) {
