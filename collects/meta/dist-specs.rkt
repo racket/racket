@@ -661,8 +661,6 @@ mz-extras :+= (- (package: "swindle")
 
 ;; -------------------- plot
 plt-extras :+= (package: "plot")
-               (src: "fit")
-               (lib: "libfit*")
 
 ;; -------------------- mzcom
 plt-extras :+= (- (package: "mzcom" #:src? #t)

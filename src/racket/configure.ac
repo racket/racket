@@ -31,7 +31,6 @@ AC_ARG_ENABLE(jit,     [  --enable-jit            support JIT compiler (enabled 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        support foreign calls (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(places,  [  --enable-places         support places (3m only; usually enabled by default)])
 AC_ARG_ENABLE(futures, [  --enable-futures        support futures (usually enabled by default)])
-AC_ARG_ENABLE(plot,    [  --enable-plot           support plot libraries (enabled by default)], , enable_plot=yes )
 AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default])
 
@@ -239,7 +238,6 @@ show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
-show_explicitly_disabled "${enable_plot}" Plot fit library
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
@@ -1262,7 +1260,6 @@ AC_SUBST(MRLIBINSTALL)
 AC_SUBST(LIBFINISH)
 
 AC_SUBST(MAKE_GRACKET)
-AC_SUBST(MAKE_FIT)
 AC_SUBST(MAKE_COPYTREE)
 AC_SUBST(MAKE_FINISH)
 
@@ -1339,14 +1336,6 @@ else
 fi
 makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
-
-if test -d "${srcdir}/fit" && test "${enable_plot}" = "yes" ; then
-  makefiles="$makefiles
-             fit/Makefile"
-  MAKE_FIT=fit
-else
-  MAKE_FIT=no
-fi
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles

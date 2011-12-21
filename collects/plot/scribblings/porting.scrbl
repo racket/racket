@@ -18,6 +18,8 @@ The update from PLoT version 5.1.3 to 5.2 introduces a few incompatibilities:
                 The argument change in @(racket plot3d) is similar.
                 This should not affect most code because PLoT encourages regarding these data types as black boxes.}
           @item{The @(racket plot-extend) module no longer exists.}
+          @item{The @racket[fit] function and @racket[fit-result] functions have been removed.}
+
           ]
 
 This section of the PLoT manual will help you port code written for PLoT 5.1.3 and earlier to the most recent PLoT.
