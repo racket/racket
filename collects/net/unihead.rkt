@@ -1,16 +1,14 @@
 #lang racket/base
-(require net/base64 net/qp racket/string)
+(require net/base64 net/qp)
 
 (provide encode-for-header decode-for-header generalize-encoding)
 
-(define re:ascii #rx"^[\u0-\u7F]*$")
+(define re:non-ascii #rx"[^\u0-\u7F]")
 
 (define (encode-for-header s)
-  (if (regexp-match? re:ascii s)
-    s
-    (let ([l (regexp-split #rx"\r\n" s)])
-      (apply string-append
-             (map encode-line-for-header l)))))
+  (cond [(not (regexp-match? re:non-ascii s)) s]
+        [(not (regexp-match? #rx"\r\n" s)) (encode-line-for-header s)] ; speed
+        [else (regexp-replace* #rx"[^\r\n]+" s encode-line-for-header)]))
 
 (define (encode-line-for-header s)
   (define (loop s string->bytes charset encode encoding)
@@ -32,14 +30,13 @@
                                      (encode (string->bytes s))
                                      #"")))))))
   (cond
-    [(regexp-match? re:ascii s)
-     ;; ASCII - do nothing
-     s]
+    ;; ASCII - do nothing
+    [(not (regexp-match? re:non-ascii s)) s]
+    ;; Not Latin-1, so use UTF-8
     [(regexp-match? #rx"[^\u0-\uFF]" s)
-     ;; Not Latin-1, so use UTF-8
      (loop s string->bytes/utf-8 "UTF-8" base64-encode "B")]
+    ;; use Latin-1
     [else
-     ;; use Latin-1
      (loop s string->bytes/latin-1 "ISO-8859-1"
            (lambda (s)
              (regexp-replace #rx#" " (qp-encode s) #"_"))
