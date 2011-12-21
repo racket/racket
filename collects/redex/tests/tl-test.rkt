@@ -2533,7 +2533,7 @@
     ; test that names are properly bound for side-conditions in shortcuts
     (let* ([lhs ((rewrite-proc-lhs (first (reduction-relation-make-procs r))) grammar)]
            [proc (third lhs)]
-           [name (cadadr lhs)]
+           [name (cadar (cddadr lhs))]
            [bind (λ (n) (make-bindings (list (make-bind name n))))])
       (test (and (proc (bind 4)) (not (proc (bind 3)))) #t))
     
@@ -2551,7 +2551,7 @@
     
     ; test shortcut in terms of shortcut
     (test (match ((rewrite-proc-lhs (third (reduction-relation-make-procs r))) grammar)
-            [`(((side-condition 5 ,(? procedure?) ,_) 2) 1) #t]
+            [`(list (list (side-condition 5 ,(? procedure?) ,_) 2) 1) #t]
             [else #f])
           #t))
   

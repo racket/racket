@@ -171,7 +171,7 @@
   
   (test (send annotations collected-rename-class def-name)
         (expected-rename-class (list def-name use-name)))
-  (test (send annotations collected-rename-class def-name)
+  (test (send annotations collected-rename-class use-name)
         (expected-rename-class (list def-name use-name))))
 
 (print-tests-passed 'check-syntax-test.rkt)

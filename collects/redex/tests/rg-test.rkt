@@ -43,14 +43,11 @@
                     [(exn:fail:redex:test _ _ (? exn:fail:contract:blame? e) _) e]
                     [x x])))]))
 
-(define find-base-cases/unparsed
-  (compose find-base-cases parse-language))
-
 (let ()
   (define-language lc
     (e x (e e) (λ (x) e))
     (x variable))
-  (let ([bc (find-base-cases/unparsed lc)])
+  (let ([bc (find-base-cases lc)])
     (test (to-table (base-cases-non-cross bc))
           '((e . (1 2 2)) (x . (0))))
     (test (to-table (base-cases-cross bc))
@@ -59,7 +56,7 @@
 (let ()
   (define-language lang
     (e (e e)))
-  (let ([bc (find-base-cases/unparsed lang)])
+  (let ([bc (find-base-cases lang)])
     (test (to-table (base-cases-non-cross bc)) '((e . (inf))))
     (test (to-table (base-cases-cross bc)) '((e-e . (0 inf inf))))))
 
@@ -67,11 +64,11 @@
   (define-language lang
     (a 1 2 3)
     (b a (a_1 b_!_1)))
-  (let ([bc (find-base-cases/unparsed lang)])
+  (let ([bc (find-base-cases lang)])
     (test (to-table (base-cases-non-cross bc))
           '((a . (0 0 0)) (b . (1 2))))
     (test (to-table (base-cases-cross bc))
-          '((a-a . (0)) (a-b . (1)) (b-b . (0))))))
+          '((a-a . (0)) (a-b . (1 2 2)) (b-b . (0 1))))))
 
 (let ()
   (define-language lc
@@ -82,7 +79,7 @@
     (v (λ (x) e)
        number)
     (x variable))
-  (let ([bc (find-base-cases/unparsed lc)])
+  (let ([bc (find-base-cases lc)])
     (test (to-table (base-cases-non-cross bc)) 
           '((e . (2 2 1 1)) (v . (2 0)) (x . (0))))
     (test (to-table (base-cases-cross bc))
@@ -96,7 +93,7 @@
        (name x 1)
        (name y 1))
     (y y))
-  (test (hash-ref (base-cases-non-cross (find-base-cases/unparsed L)) 'x)
+  (test (hash-ref (base-cases-non-cross (find-base-cases L)) 'x)
         '(0 0 0 0)))
 
 (define (make-random . nums)
@@ -325,7 +322,7 @@
   (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
   (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang e 5 #:retries 42)) 
-        #rx"generate-term: unable to generate pattern \\(n_1 ..._!_1 n_2 ..._!_1 \\(n_1 n_2\\) ..._3\\) in 42")
+        #rx"generate-term: unable to generate pattern .* in 42")
   (test (raised-exn-msg 
          exn:fail:redex:generation-failure?
          (parameterize ([generation-decisions
@@ -340,7 +337,9 @@
         #rx"generate-term: unable to generate pattern variable-not-otherwise-mentioned in 1")
   (test (generate-term/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
   (test (generate-term/decisions 
-         lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+         lang
+         ((0 ..._!_1) ... (1 ..._!_1) ...)
+         5 0
          (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 4)
                                 (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 1) (λ (_) 3))))
         '((0 0 0) (0 0 0 0) (1 1 1)))
@@ -412,7 +411,7 @@
   (test (generate-term lang b 5) 43)
   (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
   (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang c 5))
-        #px"unable to generate pattern \\(side-condition a\\_1 #<syntax:.*\\/rg-test\\.(?:.+):\\d+:\\d+>\\)")
+        #rx"unable to generate pattern")
   (test (let/ec k
           (generate-term lang (number_1 (side-condition 7 (k (term number_1)))) 5))
         'number_1)
@@ -603,7 +602,7 @@
                                  (decisions #:nt (patterns first)))
         47)
   
-  (test (hash-ref (base-cases-non-cross (find-base-cases/unparsed name-collision)) 'e-e)
+  (test (hash-ref (base-cases-non-cross (find-base-cases name-collision)) 'e-e)
         '(0)))
 
 (let ()
@@ -1217,109 +1216,66 @@
          (check-metafunction n (λ (_) #t) #:retries 42))
         #rx"check-metafunction: unable .* in 42"))
 
-;; parse/unparse-pattern
-(let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
-      (define-language lang (x variable))
-      (let ([pattern '((x_1 number) ... 3)])
-        (test-match (list 
-                     (struct ellipsis 
-                             ('... 
-                              (list (struct binder ('x_1)) (struct binder ('number)))
-                              _
-                              (list (struct binder ('number)) (struct binder ('x_1)))))
-                     3)
-                    (parse-pattern pattern lang 'top-level))
-        (test (unparse-pattern (parse-pattern pattern lang 'top-level)) pattern))
-      (let ([pattern '((x_1 ..._1 x_2) ..._!_1)])
-        (test-match (struct ellipsis 
-                            ((struct mismatch (i_1 '..._!_1)) 
-                             (list 
-                              (struct ellipsis 
-                                      ('..._1 
-                                       (struct binder ('x_1))
-                                       (struct class ('..._1))
-                                       (list (struct binder ('x_1)))))
-                              (struct binder ('x_2)))
-                             _ 
-                             (list (struct binder ('x_2)) '..._1 (struct class ('..._1)) (struct binder ('x_1)))))
-                    (car (parse-pattern pattern lang 'grammar)))
-        (test (unparse-pattern (parse-pattern pattern lang 'grammar)) pattern))
-      (let ([pattern '((name x_1 x_!_2) ...)])
-        (test-match (struct ellipsis 
-                            ('... `(name x_1 ,(struct mismatch (i_2 'x_!_2))) _ 
-                                  (list (struct binder ('x_1)) (struct mismatch (i_2 'x_!_2)))))
-                    (car (parse-pattern pattern lang 'grammar)))
-        (test (unparse-pattern (parse-pattern pattern lang 'grammar)) pattern))
-      (let ([pattern '((x ...) ..._1)])
-        (test-match (struct ellipsis 
-                            ('..._1
-                             (list 
-                              (struct ellipsis 
-                                      ('...
-                                       (struct binder ('x))
-                                       (struct class (c_1))
-                                       (list (struct binder ('x))))))
-                             _
-                             (list (struct class (c_1)) (struct binder ('x)))))
-                    (car (parse-pattern pattern lang 'top-level)))
-        (test (unparse-pattern (parse-pattern pattern lang 'top-level)) pattern))
-      (let ([pattern '((variable_1 ..._!_1) ...)])
-        (test-match (struct ellipsis 
-                            ('...
-                             (list 
-                              (struct ellipsis 
-                                      ((struct mismatch (i_1 '..._!_1))
-                                       (struct binder ('variable_1))
-                                       (struct class (c_1))
-                                       (list (struct binder ('variable_1))))))
-                             _
-                             (list (struct class (c_1)) (struct mismatch (i_1 '..._!_1)) (struct binder ('variable_1)))))
-                    (car (parse-pattern pattern lang 'grammar)))
-        (test (unparse-pattern (parse-pattern pattern lang 'grammar)) pattern))
-      (test (parse-pattern '(cross x) lang 'grammar) '(cross x-x))
-      (test (parse-pattern '(cross x) lang 'cross) '(cross x))
-      (test (parse-pattern 'x lang 'grammar) 'x)
-      (test (parse-pattern 'variable lang 'grammar) 'variable))
-
 (let ()
   (define-language lang (x variable))
   (define-syntax test-class-reassignments
     (syntax-rules ()
       [(_ pattern expected)
-       (test (to-table (class-reassignments (parse-pattern pattern lang 'top-level)))
+       (test (to-table (class-reassignments pattern))
              expected)]))
   
   (test-class-reassignments 
-   '(x_1 ..._1 x_2 ..._2 x_2 ..._1)
+   '(list (repeat (name x_1 (nt x)) ..._1 #f) (repeat (name x_2 (nt x)) ..._2 #f) (repeat (name x_2 (nt x)) ..._1 #f))
    '((..._2 . ..._1)))
   (test-class-reassignments
-   '((x_1 ..._1 x_1 ..._2) (x_2 ..._1 x_2 ..._2) x_3 ..._2)
+   '(list (list (repeat (name x_1 (nt x)) ..._1 #f) (repeat (name x_1 (nt x)) ..._2 #f))
+          (list (repeat (name x_2 (nt x)) ..._1 #f) (repeat (name x_2 (nt x)) ..._2 #f)) 
+          (repeat (name x_3 (nt x)) ..._2 #f))
    '((..._1 . ..._2) (..._2 . ..._2)))
   (test-class-reassignments
-   '(x_1 ..._1 x ..._2 x_1 ..._2)
+   '(list (repeat (name x_1 (nt x)) ..._1 #f) (repeat (name x (nt x)) ..._2 #f) (repeat (name x_1 (nt x)) ..._2 #f))
    '((..._1 . ..._2)))
   (test-class-reassignments
-   '(x_1 ..._1 x_2 ..._2 (x_1 x_2) ..._3)
+   '(list (repeat (name x_1 (nt x)) ..._1 #f) (repeat (name x_2 (nt x)) ..._2 #f) (repeat (list (name x_1 (nt x)) (name x_2 (nt x))) ..._3 #f))
    '((..._1 . ..._3) (..._2 . ..._3)))
   (test-class-reassignments
-   '((x_1 ..._1) ..._2 x_2 ..._3 (x_1 ..._4 x_2) ..._5)
+   '(list (repeat (list (repeat (name x_1 (nt x)) ..._1 #f)) ..._2 #f)
+          (repeat (name x_2 (nt x)) ..._3 #f)
+          (repeat (list (repeat (name x_1 (nt x)) ..._4 #f)
+                        (name x_2 (nt x)))
+                  ..._5
+                  #f))
    '((..._1 . ..._4) (..._2 . ..._5) (..._3 . ..._5)))
   (test-class-reassignments
-   '((x_1 ..._1) ..._2 (x_1 ..._3) ..._4 (x_1 ..._5) ..._6)
+   '(list (repeat (list (repeat (name x_1 (nt x)) ..._1 #f)) ..._2 #f)
+          (repeat (list (repeat (name x_1 (nt x)) ..._3 #f)) ..._4 #f)
+          (repeat (list (repeat (name x_1 (nt x)) ..._5 #f)) ..._6 #f))
    '((..._1 . ..._5) (..._2 . ..._6) (..._3 . ..._5) (..._4 . ..._6)))
   (test-class-reassignments
-   '(x_1 ..._1 x_1 ..._2 x_2 ..._1 x_2 ..._4 x_2 ..._3)
+   '(list (repeat (name x_1 (nt x)) ..._1 #f)
+          (repeat (name x_1 (nt x)) ..._2 #f)
+          (repeat (name x_2 (nt x)) ..._1 #f)
+          (repeat (name x_2 (nt x)) ..._4 #f)
+          (repeat (name x_2 (nt x)) ..._3 #f))
    '((..._1 . ..._3) (..._2 . ..._3) (..._4 . ..._3)))
   (test 
    (hash-map 
-    (class-reassignments (parse-pattern '(x_1 ... x_1 ..._!_1 x_1 ..._1) lang 'top-level)) 
+    (class-reassignments '(list (repeat (name x_1 (nt x)) #f #f)
+                                (repeat (name x_1 (nt x)) ..._!_1 #t)
+                                (repeat (name x_1 (nt x)) ..._1 #f))) 
     (λ (_ cls) cls))
-   '(..._1 ..._1))    
+   '(..._1 ..._1))
   (test-class-reassignments
-   '((3 ..._1) ..._2 (4 ..._1) ..._3)
+   '(list (repeat (list (repeat 3 ..._1 #f)) ..._2 #f)
+          (repeat (list (repeat 4 ..._1 #f)) ..._3 #f))
    '((..._2 . ..._3)))
   (test-class-reassignments
-   '(x ..._1 x ..._2 variable ..._2 variable ..._3 variable_1 ..._3 variable_1 ..._4)
+   '(list (repeat (name x (nt x)) ..._1 #f)
+          (repeat (name x (nt x)) ..._2 #f)
+          (repeat (name variable variable) ..._2 #f)
+          (repeat (name variable variable) ..._3 #f)
+          (repeat (name variable_1 variable) ..._3 #f)
+          (repeat (name variable_1 variable) ..._4 #f))
    '((..._1 . ..._4) (..._2 . ..._4) (..._3 . ..._4))))
 
 ;; redex-test-seed

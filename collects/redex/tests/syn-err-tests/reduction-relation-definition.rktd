@@ -32,7 +32,7 @@
 
 
 (#rx"different depths"
- ([binder2 number_1] [binder1 number_1]) ([ellipsis ...])
+ ([binder1 number_1] [binder2 number_1]) ([ellipsis ...])
  (reduction-relation
   syn-err-lang
   (--> binder1

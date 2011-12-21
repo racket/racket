@@ -18,6 +18,7 @@
   (append
    '("lw-test.rkt"
      "matcher-test.rkt"
+     "rewrite-side-condition-test.rkt"
      "tl-test.rkt"
      "term-test.rkt"
      "rg-test.rkt"
@@ -34,6 +35,7 @@
        '("../examples/cbn-letrec.rkt"
          "../examples/stlc.rkt"
          "../examples/pi-calculus.rkt"
+         "../examples/list-machine/test.rkt"
          ("../examples/beginner.rkt" main)
          "../examples/racket-machine/reduction-test.rkt"
          "../examples/racket-machine/verification-test.rkt"

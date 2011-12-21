@@ -171,8 +171,8 @@
  (let ()
    (define-judgment-form syn-err-lang
      #:mode (pat-depth I O)
-     [(pat-depth (binder2 ellipsis) ())
-      (pat-depth () binder1)])
+     [(pat-depth (binder1 ellipsis) ())
+      (pat-depth () binder2)])
    (void)))
 (#rx"too many ellipses"
  ([premise (no-ellipsis any)])
