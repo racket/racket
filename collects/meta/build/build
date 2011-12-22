@@ -116,6 +116,8 @@ msets "/"
 ulimit -c unlimited
 # make sure that everything is group-readable
 umask 002
+# needed for some hacks below
+shopt -s extglob
 
 # get this script's name and path
 cd "$(dirname "$0")"
@@ -382,7 +384,6 @@ cleanup_lockfile() {
 # associative arrays, with names that are treated similarly to paths and a
 # default context similar to the current directory.  (Implemented as plain
 # variables, using "__" as the translation of "/" level separators.)
-shopt -s extglob # needed for some hacks below
 mcontext="/" # the current context for m-ops
 mset() {
   # mset goes over all args, which can have the following shapes:
@@ -497,9 +498,9 @@ is_yes() {
       while true; do
         echo_n ">>> QUESTION >>> $var [y/n/Y/N] ? " 1>&2
         if [[ "$fixed_reply" != "" ]]; then reply="$fixed_reply"
-        elif [[ "$ask_answers" =~ "^(.)(.*)$" ]]; then
-          reply="${BASH_REMATCH[1]}"
-          ask_answers="${BASH_REMATCH[2]}"
+        elif [[ "x$ask_answers" != "x" ]]; then
+          reply="${ask_answers:0:1}"
+          ask_answers="${ask_answers:1}"
         else read -sn 1 reply; fi
         echo "$reply" 1>&2
         case "$reply" in
@@ -995,7 +996,7 @@ MAIN_BUILD() {
   htmltimestamp="$(date '+updated at %A, %B %d %Y, %H:%M %Z')"
   if [[ "$1" = "ask" ]]; then
     ask_mode="yes"; shift
-    if [[ "$1" =~ "[yYnN ][yYnN ]*" ]]; then
+    if [[ "$1" = +([yYnN ]) ]]; then
       ask_answers="$(echo "$1" | tr -d ' ')"; shift
     fi
   fi
