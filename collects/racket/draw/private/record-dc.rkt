@@ -24,7 +24,9 @@
 (define black (send the-color-database find-color "black"))
 
 (define (clone-point p)
-  (make-object point% (point-x p) (point-y p)))
+  (if (pair? p)
+      p
+      (make-object point% (point-x p) (point-y p))))
 
 (define (clone-color c)
   (if (string? c)

@@ -65,11 +65,12 @@
     (send f show #t)))
 
 (define star
-  (list (make-object point% 30 0)
-	(make-object point% 48 60)
-	(make-object point% 0 20)
-	(make-object point% 60 20)
-	(make-object point% 12 60)))
+  ;; uses pairs instead of point%s
+  (list (cons 30 0)
+	(cons 48 60)
+	(cons 0 20)
+	(cons 60 20)
+	(cons 12 60)))
 
 (define octagon
   (list (make-object point% 60 60)
