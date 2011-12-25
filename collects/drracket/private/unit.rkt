@@ -1388,12 +1388,19 @@ module browser threading seems wrong.
       ;; so it stays alive as long 
       ;; as the frame stays alive
       (define show-line-numbers-pref-fn
-        (let ([fn (lambda (pref value) (show-line-numbers! value))])
+        (let ([fn (lambda (pref value)
+                    (when show-line-numbers-menu-item
+                      (send show-line-numbers-menu-item set-label
+                            (if value
+                                (string-constant hide-line-numbers/menu)
+                                (string-constant show-line-numbers/menu))))
+                    (show-line-numbers! value))])
           (preferences:add-callback
            'drracket:show-line-numbers?
            fn
            #t)
           fn))
+      (define show-line-numbers-menu-item #f)
       
       (define/override (add-line-number-menu-items menu)
         (define on? (preferences:get 'drracket:show-line-numbers?))
@@ -3978,19 +3985,16 @@ module browser threading seems wrong.
               has-editor-on-demand)
             (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
           
-          (new menu:can-restore-menu-item%
-               [label (if (show-line-numbers?)
-                          (string-constant hide-line-numbers/menu)
-                          (string-constant show-line-numbers/menu))]
-               [parent (get-show-menu)]
-               [callback (lambda (self event)
-                           (define value (preferences:get 'drracket:show-line-numbers?))
-                           (send self set-label
-                                 (if value
-                                     (string-constant show-line-numbers/menu)
-                                     (string-constant hide-line-numbers/menu)))
-                           (preferences:set 'drracket:show-line-numbers? (not value))
-                           (show-line-numbers! (not value)))])
+          (set! show-line-numbers-menu-item
+                (new menu:can-restore-menu-item%
+                     [label (if (show-line-numbers?)
+                                (string-constant hide-line-numbers/menu)
+                                (string-constant show-line-numbers/menu))]
+                     [parent (get-show-menu)]
+                     [callback (lambda (self event)
+                                 (define value (preferences:get 'drracket:show-line-numbers?))
+                                 (preferences:set 'drracket:show-line-numbers? (not value))
+                                 (show-line-numbers! (not value)))]))
           
           (make-object separator-menu-item% (get-show-menu))
           
