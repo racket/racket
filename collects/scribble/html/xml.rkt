@@ -22,8 +22,8 @@
       (and (symbol? x)
            (hash-ref! t x
              (lambda ()
-               (let ([m (regexp-match #rx"^(.*):$" (symbol->string x))])
-                 (and m (string->symbol (cadr m))))))))))
+               (define m (regexp-match #rx"^(.*):$" (symbol->string x)))
+               (and m (string->symbol (cadr m)))))))))
 
 (provide attribute?)
 (define attribute? attribute->symbol)
@@ -31,11 +31,11 @@
 (provide attributes+body)
 (define (attributes+body xs)
   (let loop ([xs xs] [as '()])
-    (let ([a (and (pair? xs) (attribute->symbol (car xs)))])
-      (cond [(not a) (values (reverse as) xs)]
-            [(null? (cdr xs)) (error 'attriubtes+body
-                                     "missing attribute value for `~s:'" a)]
-            [else (loop (cddr xs) (cons (cons a (cadr xs)) as))]))))
+    (define a (and (pair? xs) (attribute->symbol (car xs))))
+    (cond [(not a) (values (reverse as) xs)]
+          [(null? (cdr xs)) (error 'attriubtes+body
+                                   "missing attribute value for `~s:'" a)]
+          [else (loop (cddr xs) (cons (cons a (cadr xs)) as))])))
 
 ;; similar, but keeps the attributes as a list, useful to build new functions
 ;; that accept attributes without knowing about the xml structs.
@@ -53,15 +53,15 @@
 (define (write-string/xml-quote str p [start 0] [end (string-length str)])
   (let loop ([start start])
     (when (< start end)
-      (let ([m (regexp-match-positions #rx"[&<>\"]" str start end p)])
-        (when m
-          (write-string (case (string-ref str (caar m))
-                          [(#\&) "&amp;"]
-                          [(#\<) "&lt;"]
-                          [(#\>) "&gt;"]
-                          [(#\") "&quot;"])
-                        p)
-          (loop (cdar m)))))))
+      (define m (regexp-match-positions #rx"[&<>\"]" str start end p))
+      (when m
+        (write-string (case (string-ref str (caar m))
+                        [(#\&) "&amp;"]
+                        [(#\<) "&lt;"]
+                        [(#\>) "&gt;"]
+                        [(#\") "&quot;"])
+                      p)
+        (loop (cdar m))))))
 
 (provide xml-writer)
 (define xml-writer (make-parameter write-string/xml-quote))
@@ -87,38 +87,39 @@
 
 (provide element)
 (define (element tag . args)
-  (let-values ([(attrs body) (attributes+body args)])
-    (make-element tag attrs body)))
+  (define-values [attrs body] (attributes+body args))
+  (make-element tag attrs body))
 
 ;; similar to element, but will always have a closing tag instead of using the
 ;; short syntax (see also `element->output' below)
 (provide element/not-empty)
 (define (element/not-empty tag . args)
-  (let-values ([(attrs body) (attributes+body args)])
-    (make-element tag attrs (if (null? body) '(#f) body))))
+  (define-values [attrs body] (attributes+body args))
+  (make-element tag attrs (if (null? body) '(#f) body)))
 
 ;; convert an element to something output-able
 (define (element->output e)
-  (let ([tag   (element-tag   e)]
-        [attrs (element-attrs e)]
-        [body  (element-body  e)])
-    ;; null body means a lone tag, tags that should always have a closer will
-    ;; have a '(#f) as their body (see below)
-    (list (with-writer #f "<" tag)
-          (map (lambda (attr)
-                 (let ([name (car attr)] [val (cdr attr)])
-                   (cond [(not val) #f]
-                         ;; #t means just mention the attribute
-                         [(eq? #t val) (with-writer #f (list " " name))]
-                         [else (list (with-writer #f (list " " name "=\""))
-                                     val
-                                     (with-writer #f "\""))])))
-               attrs)
-          (if (null? body)
-            (with-writer #f " />")
-            (list (with-writer #f ">")
-                  body
-                  (with-writer #f "</" tag ">"))))))
+  (define tag   (element-tag   e))
+  (define attrs (element-attrs e))
+  (define body  (element-body  e))
+  ;; null body means a lone tag, tags that should always have a closer will
+  ;; have a '(#f) as their body (see below)
+  (list (with-writer #f "<" tag)
+        (map (lambda (attr)
+               (define name (car attr))
+               (define val (cdr attr))
+               (cond [(not val) #f]
+                     ;; #t means just mention the attribute
+                     [(eq? #t val) (with-writer #f (list " " name))]
+                     [else (list (with-writer #f (list " " name "=\""))
+                                 val
+                                 (with-writer #f "\""))]))
+             attrs)
+        (if (null? body)
+          (with-writer #f " />")
+          (list (with-writer #f ">")
+                body
+                (with-writer #f "</" tag ">")))))
 
 ;; ----------------------------------------------------------------------------
 ;; Literals
@@ -134,12 +135,12 @@
 ;; comments and cdata
 (provide comment)
 (define (comment #:newlines? [newlines? #f] . body)
-  (let ([newline (and newlines? "\n")])
-    (literal "<!--" newline body newline "-->")))
+  (define newline (and newlines? "\n"))
+  (literal "<!--" newline body newline "-->"))
 (provide cdata)
 (define (cdata #:newlines? [newlines? #t] #:line-prefix [pfx #f] . body)
-  (let ([newline (and newlines? "\n")])
-    (literal pfx "<![CDATA[" newline body newline pfx "]]>")))
+  (define newline (and newlines? "\n"))
+  (literal pfx "<![CDATA[" newline body newline pfx "]]>"))
 
 ;; ----------------------------------------------------------------------------
 ;; Template definition forms

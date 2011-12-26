@@ -182,8 +182,30 @@
               (set! write old))]
            #; ; no need for this hack yet
            [(with-writer-change)
-            ;; the function gets the old writer and return a new one
-            ;; (useful to sabe the current writer then restore it inside)
+            ;; The function gets the old writer and return a new one (useful to
+            ;; save the current writer and restore it inside).  Could also be
+            ;; used to extend a writer, but that shows why a customizable
+            ;; writer is a bad choice: instead, it should be a list of
+            ;; substitutions that can be extended more conveniently.  A simple
+            ;; implementation would be to chain functions that do
+            ;; substitutions.  But that runs into problems when functions want
+            ;; to substitute the same thing, and worse: when the output of one
+            ;; function would get substituted again by another.  Another
+            ;; approach would be to join matcher regexps with "|" after
+            ;; wrapping each one with parens, then find out which one matched
+            ;; by looking at the result and applying its substitution, but the
+            ;; problem with that is that is that it forbids having parens in
+            ;; the regexps -- this could be fixed by not parenthesizing each
+            ;; expression, and instead running the found match against each of
+            ;; the input regexps to find the matching one, but that can be very
+            ;; inefficient.  Yet another issue is that in some cases we might
+            ;; *want* the "worse" feature mentioned earlier: for example, when
+            ;; we want to do some massaging of the input texts yet still have
+            ;; the result encoded for HTML output -- so perhaps the simple
+            ;; approach is still better.  The only difference from the current
+            ;; `with-writer' is using a substituting function, so it can be
+            ;; composed with the current one instead of replacing it
+            ;; completely.
             (let ([old write])
               (set! write ((car c) write))
               (for-each loop (cdr c))

@@ -51,17 +51,17 @@
   ;; produces an alist with lists of strings for the keys; the prefix-strings
   ;; are split on "/"s, and the url-strings can be anything at all actually
   ;; (they are put as-is before the path with a "/" between them).
-  (let ([roots (url-roots)])
-    (unless (eq? roots (car cached-roots))
-      (set! cached-roots
-            (cons roots
-                  (and (list? roots) (pair? roots)
-                       (map (lambda (root)
-                              (list* (regexp-match* #rx"[^/]+" (car root))
-                                     (regexp-replace #rx"/$" (cadr root) "")
-                                     (cddr root)))
-                            roots)))))
-    (cdr cached-roots)))
+  (define roots (url-roots))
+  (unless (eq? roots (car cached-roots))
+    (set! cached-roots
+          (cons roots
+                (and (list? roots) (pair? roots)
+                     (map (lambda (root)
+                            (list* (regexp-match* #rx"[^/]+" (car root))
+                                   (regexp-replace #rx"/$" (cadr root) "")
+                                   (cddr root)))
+                          roots)))))
+  (cdr cached-roots))
 
 ;; a utility for relative paths, taking the above `default-file' and
 ;; `url-roots' into consideration.
@@ -167,50 +167,50 @@
 ;; can be one of: #f (do nothing), 'delete-file (delete if a file exists, error
 ;; if exists as a directory)
 (provide resource)
-(define (resource path renderer referrer #:exists [exists 'delete-file])
-  (define (bad reason) (error 'resource "bad path, ~a: ~e" reason path))
-  (unless (string? path) (bad "must be a string"))
+(define (resource path0 renderer referrer #:exists [exists 'delete-file])
+  (define (bad reason) (error 'resource "bad path, ~a: ~e" reason path0))
+  (unless (string? path0) (bad "must be a string"))
   (for ([x (in-list '([#rx"^/" "must be relative"]
                       [#rx"//" "must not have empty elements"]
                       [#rx"(?:^|/)[.][.]?(?:/|$)"
                           "must not contain `.' or `..'"]))])
-    (when (regexp-match? (car x) path) (bad (cadr x))))
-  (let ([path (regexp-replace #rx"(?<=^|/)$" path default-file)])
-    (define-values (dirpathlist filename)
-      (let-values ([(l r) (split-at-right (regexp-split #rx"/" path) 1)])
-        (values l (car r))))
-    (define (render)
-      (let loop ([ps dirpathlist])
-        (if (pair? ps)
-          (begin (unless (directory-exists? (car ps))
-                   (if (or (file-exists? (car ps)) (link-exists? (car ps)))
-                     (bad "exists as a file/link")
-                     (make-directory (car ps))))
-                 (parameterize ([current-directory (car ps)])
-                   (loop (cdr ps))))
-          (begin (cond [(not exists)] ; do nothing
-                       [(or (file-exists? filename) (link-exists? filename))
-                        (delete-file filename)]
-                       [(directory-exists? filename)
-                        (bad "exists as directory")])
-                 (parameterize ([rendered-dirpath dirpathlist])
-                   (printf "  ~a\n" path)
-                   (renderer filename))))))
-    (define (url) (relativize filename dirpathlist (rendered-dirpath)))
-    (define absolute-url
-      (delay (let ([url (relativize filename dirpathlist '())])
-               (if (url-roots)
-                 url
-                 ;; we're in local build mode, and insist on an absolute url,
-                 ;; so construct a `file://' result
-                 (list* "file://" (current-directory) url)))))
-    (add-renderer path render)
-    (make-keyword-procedure
-     (lambda (kws kvs . args) (keyword-apply referrer kws kvs (url) args))
-     (case-lambda [(x) (if (and (pair? x) (eq? (car x) get-path))
-                         (if (cdr x) absolute-url (url))
-                         (referrer (url) x))]
-                  [args (apply referrer (url) args)]))))
+    (when (regexp-match? (car x) path0) (bad (cadr x))))
+  (define path (regexp-replace #rx"(?<=^|/)$" path0 default-file))
+  (define-values [dirpathlist filename]
+    (let-values ([(l r) (split-at-right (regexp-split #rx"/" path) 1)])
+      (values l (car r))))
+  (define (render)
+    (let loop ([ps dirpathlist])
+      (if (pair? ps)
+        (begin (unless (directory-exists? (car ps))
+                 (if (or (file-exists? (car ps)) (link-exists? (car ps)))
+                   (bad "exists as a file/link")
+                   (make-directory (car ps))))
+               (parameterize ([current-directory (car ps)])
+                 (loop (cdr ps))))
+        (begin (cond [(not exists)] ; do nothing
+                     [(or (file-exists? filename) (link-exists? filename))
+                      (delete-file filename)]
+                     [(directory-exists? filename)
+                      (bad "exists as directory")])
+               (parameterize ([rendered-dirpath dirpathlist])
+                 (printf "  ~a\n" path)
+                 (renderer filename))))))
+  (define (url) (relativize filename dirpathlist (rendered-dirpath)))
+  (define absolute-url
+    (delay (define url (relativize filename dirpathlist '()))
+           (if (url-roots)
+             url
+             ;; we're in local build mode, and insist on an absolute url, so
+             ;; construct a `file://' result
+             (list* "file://" (current-directory) url))))
+  (add-renderer path render)
+  (make-keyword-procedure
+   (lambda (kws kvs . args) (keyword-apply referrer kws kvs (url) args))
+   (case-lambda [(x) (if (and (pair? x) (eq? (car x) get-path))
+                       (if (cdr x) absolute-url (url))
+                       (referrer (url) x))]
+                [args (apply referrer (url) args)])))
 
 ;; make it possible to always get the path to a resource
 (provide get-resource-path)

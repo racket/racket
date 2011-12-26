@@ -162,15 +162,14 @@
 ;; [*] elements with a cdata/comment body
 (provide script/inline)
 (define (script/inline . args)
-  (let-values ([(attrs body) (attributes+body args)])
-    (make-element 'script attrs
-                  `("\n"
-                    ,(set-prefix 0 (apply cdata #:line-prefix "//" body))
-                    "\n"))))
+  (define-values [attrs body] (attributes+body args))
+  (make-element
+   'script attrs
+   `("\n" ,(set-prefix 0 (apply cdata #:line-prefix "//" body)) "\n")))
 (provide style/inline)
 (define (style/inline . args)
-  (let-values ([(attrs body) (attributes+body args)])
-    (make-element 'style attrs `("\n" ,body "\n"))))
+  (define-values [attrs body] (attributes+body args))
+  (make-element 'style attrs `("\n" ,body "\n")))
 
 ;; ----------------------------------------------------------------------------
 ;; Entities
