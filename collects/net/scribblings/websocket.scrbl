@@ -74,6 +74,8 @@ This module also provides the exports from @racketmodname[net/websocket/conn].
 
 @defmodule[net/websocket/conn]
 
+WebSocket connection are synchronizable events.
+
 @defparam[framing-mode mode (symbols 'old 'new)]{ Controls whether framing is as before August 16th, 2010 or after. (Most Web browsers currently support only @racket['old] and they are incompatible, so you must choose the correct one.) Defaults to @racket['old].}
 
 @defproc[(ws-conn? [x any/c]) boolean?]{ Returns true if @racket[x] is a WebSocket connection. }
