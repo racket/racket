@@ -3,7 +3,8 @@
 
 (define framing-mode (make-parameter 'old))
 
-(struct ws-conn ([closed? #:mutable] line headers ip op))
+(struct ws-conn ([closed? #:mutable] line headers ip op)
+        #:property prop:evt (struct-field-index ip))
 (define (open-ws-conn? x)
   (and (ws-conn? x) (not (ws-conn-closed? x))))
 (provide/contract
