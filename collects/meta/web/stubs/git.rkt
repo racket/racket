@@ -11,18 +11,18 @@
 ;; gitweb stuff
 
 (define header+footer
-  (delay (cdr (or (regexp-match
-                   ;; extract just the meat between the <body>...</body>
-                   #rx"<body[^<>]*>(.*?){{{BODY}}}(.*?)</body>"
-                   (xml->string @page[#:id 'git #:html-only #t "{{{BODY}}}"]))
-                  (error 'gitweb-skeleton "internal error")))))
+  (lazy (cdr (or (regexp-match
+                  ;; extract just the meat between the <body>...</body>
+                  #rx"<body[^<>]*>(.*?){{{BODY}}}(.*?)</body>"
+                  (xml->string @page[#:id 'git #:html-only #t "{{{BODY}}}"]))
+                 (error 'gitweb-skeleton "internal error")))))
 (define header @plain[#:file "header.html" (car  (force header+footer))])
 (define footer @plain[#:file "footer.html" (cadr (force header+footer))])
 
 (define gitweb-logo (copyfile (in-here "gitweb-logo.png") "tiny-logo.png"))
 
 (define home-text
-  (delay @text{
+  (lazy @text{
     @p{This is the Racket git server.}
     @p{See the "brief", PLT-oriented @intro{introduction to git}.}}))
 (define home-file @plain[#:file "home-text.html" #:referrer values home-text])

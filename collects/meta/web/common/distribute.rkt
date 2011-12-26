@@ -2,8 +2,8 @@
 
 (require racket/system racket/list racket/promise)
 
-(define rsync-exe (delay (or (find-executable-path "rsync")
-                             (error 'distribute "couldn't find `rsync'"))))
+(define rsync-exe (lazy (or (find-executable-path "rsync")
+                            (error 'distribute "couldn't find `rsync'"))))
 
 (define (rsync . args)
   (unless (apply system* (force rsync-exe) args)

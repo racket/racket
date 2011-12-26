@@ -198,12 +198,12 @@
                  (renderer filename))))))
   (define (url) (relativize filename dirpathlist (rendered-dirpath)))
   (define absolute-url
-    (delay (define url (relativize filename dirpathlist '()))
-           (if (url-roots)
-             url
-             ;; we're in local build mode, and insist on an absolute url, so
-             ;; construct a `file://' result
-             (list* "file://" (current-directory) url))))
+    (lazy (define url (relativize filename dirpathlist '()))
+          (if (url-roots)
+            url
+            ;; we're in local build mode, and insist on an absolute url, so
+            ;; construct a `file://' result
+            (list* "file://" (current-directory) url))))
   (add-renderer path render)
   (make-keyword-procedure
    (lambda (kws kvs . args) (keyword-apply referrer kws kvs (url) args))

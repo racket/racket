@@ -7,7 +7,7 @@
 ;; name.
 
 (define index
-  (page #:title "DrRacket" #:extra-headers (delay headers) (center-div logo)))
+  (page #:title "DrRacket" #:extra-headers (lazy headers) (center-div logo)))
 
 (require (only-in "../www/all.rkt" main))
 

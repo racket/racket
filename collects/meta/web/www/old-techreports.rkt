@@ -274,8 +274,8 @@
 
 (define (display-attr attr)
   (let* ([prefix (format "  ~a = {" (car attr))]
-         [sep (delay (string-append "\n" (make-string (string-length prefix)
-                                                      #\space)))])
+         [sep (lazy (string-append "\n" (make-string (string-length prefix)
+                                                     #\space)))])
     (display* prefix
               (if (regexp-match? #rx"\n" (cdr attr))
                 (regexp-replace* #rx"\n" (cdr attr) (force sep))

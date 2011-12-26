@@ -262,7 +262,7 @@
 (define index
   (page #:link-title "About" #:window-title "Racket"
         #:extra-headers @list{@meta[name: 'description content: blurb]
-                              @(delay more.css)}
+                              @(lazy more.css)}
     @div[class: 'leftpane]{
       @span[style: "font-size: large; font-weight: bold;"]{Racket}
       is a programming language.
