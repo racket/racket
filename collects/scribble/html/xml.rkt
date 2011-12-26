@@ -78,7 +78,8 @@
 ;; Structs for xml data: elements, literals, entities
 
 (provide make-element)
-(define-struct element (tag attrs body [cache #:auto #:mutable])
+(struct element (tag attrs body [cache #:auto #:mutable])
+  #:constructor-name make-element
   #:transparent #:omit-define-syntaxes #:auto-value #f
   #:property prop:procedure
   (lambda (e)

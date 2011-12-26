@@ -164,7 +164,10 @@
 ;; `#:exists' determines what happens when the render destination exists, it
 ;; can be one of: #f (do nothing), 'delete-file (delete if a file exists, error
 ;; if exists as a directory)
-(provide resource)
+(provide resource resource?)
+;; use a struct to make resources identifiable as such
+(struct resource (url) #:constructor-name make-resource
+        #:property prop:procedure 0 #:omit-define-syntaxes)
 (define (resource path0 renderer #:exists [exists 'delete-file])
   (define (bad reason) (error 'resource "bad path, ~a: ~e" reason path0))
   (unless (string? path0) (bad "must be a string"))
@@ -208,7 +211,7 @@
       [(#f) (relativize filename dirpathlist (rendered-dirpath))]
       [(#t) (force absolute-url)]
       [else (error 'resource "bad absolute flag value: ~e" absolute?)]))
-  url)
+  (make-resource url))
 
 ;; a convenient utility to create renderers from some output function (like
 ;; `output-xml' or `display') and some content
