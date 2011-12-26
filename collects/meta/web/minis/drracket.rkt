@@ -48,7 +48,7 @@
                                 }})
                         colors)))
    (meta http-equiv: "refresh"
-         content: (list "2;URL=" (get-resource-path main)))))
+         content: (list "2;URL=" (url-of main)))))
 
 (define char-matrix
   @list|{

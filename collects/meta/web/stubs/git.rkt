@@ -25,7 +25,7 @@
   (lazy @text{
     @p{This is the Racket git server.}
     @p{See the "brief", PLT-oriented @intro{introduction to git}.}}))
-(define home-file @plain[#:file "home-text.html" #:referrer values home-text])
+(define home-file @plain[#:file "home-text.html" home-text])
 
 (define gitweb-config
   @plain[#:file "gitweb_config.perl"]{

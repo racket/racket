@@ -65,7 +65,7 @@
           number      = {|@tr-name},
           institution = {PLT Inc.},
           year        = {2010},
-          note        = {\url{|@(get-resource-path cite-page #t)}}
+          note        = {\url{|@(url-of cite-page #t)}}
         }}|
       @@refblock{Scribble}|{
         (define plt-tr|@num
@@ -74,7 +74,7 @@
                     #:date     "2010"
                     #:location (techrpt-location #:institution "PLT Inc."
                                                  #:number "|@tr-name")
-                    #:url      "|@(get-resource-path cite-page #t)"))}|
+                    #:url      "|@(url-of cite-page #t)"))}|
       @h2{Specific Versions}
       @blockquote{
         @table[frame: 'box rules: 'rows cellpadding: 10]{

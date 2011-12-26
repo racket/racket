@@ -11,7 +11,7 @@
 
 (define irc-logs
   (let ()
-    @plain[#:file "irc-logs/.htaccess" #:referrer values]{
+    @plain[#:file "irc-logs/.htaccess"]{
       RewriteEngine on
       RewriteRule ^(.*)$ http://pre.racket-lang.org@;
          /irc-logs/@||racket/@|"$1"| [P]

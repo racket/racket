@@ -41,14 +41,12 @@
   (syntax-case stx () [(_ . xs) (process-contents 'plain #'plain* stx #'xs)]))
 (define (plain* #:id [id #f] #:suffix [suffix #f]
                 #:dir [dir #f] #:file [file #f]
-                #:referrer
-                [referrer (lambda (url)
-                            (error 'plain "no referrer for ~e" file))]
+                #:referrer [referrer values]
                 #:newline [newline? #t]
                 content)
-  (resource (get-path 'plain id file suffix dir)
-            (file-writer output (list content (and newline? "\n")))
-            referrer))
+  (resource/referrer (get-path 'plain id file suffix dir)
+                     (file-writer output (list content (and newline? "\n")))
+                     referrer))
 
 ;; page layout function
 (define-syntax (page stx)
@@ -96,9 +94,9 @@
                 (body content))
              @||}))
   (define this (and (not html-only?)
-                    (resource (get-path 'plain id file "html" dir)
-                              (file-writer output-xml page)
-                              referrer)))
+                    (resource/referrer (get-path 'plain id file "html" dir)
+                                       (file-writer output-xml page)
+                                       referrer)))
   (when this (pages->part-of this (or part-of this)))
   (or this page))
 
@@ -140,7 +138,7 @@
           (middle-text 80 ")")
           (middle-text 100 ")")))
   (define (header-cell logo)
-    (td (a href: (get-resource-path (force top-promise))
+    (td (a href: (url-of (force top-promise))
            OPEN
            (img src: logo alt: "[logo]"
                 style: '("vertical-align: middle; "
@@ -193,9 +191,9 @@
                [(head)   make-head]
                [(navbar) make-navbar]
                [(favicon-headers) favicon]
-               [(icon-path)  (lambda () (get-resource-path icon))]
-               [(logo-path)  (lambda () (get-resource-path logo))]
-               [(style-path) (lambda () (get-resource-path style))]
+               [(icon-path)  (lambda () (url-of icon))]
+               [(logo-path)  (lambda () (url-of logo))]
+               [(style-path) (lambda () (url-of style))]
                [else (error 'resources "internal error")])
              more))))
 

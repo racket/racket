@@ -20,10 +20,10 @@
 (define make-icon (make-file-copier "plticon.ico"))
 
 (define (make-style dir)
-  (resource (web-path dir "plt.css")
-            (file-writer output (list racket-style "\n"))
-            (lambda (url) (link rel: "stylesheet" type: "text/css"
-                                href: url title: "default"))))
+  (resource/referrer (web-path dir "plt.css")
+                     (file-writer output (list racket-style "\n"))
+                     (lambda (url) (link rel: "stylesheet" type: "text/css"
+                                         href: url title: "default"))))
 
 (define page-sizes
   @list{

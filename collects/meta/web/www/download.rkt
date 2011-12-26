@@ -35,7 +35,7 @@
       }
       setTimeout(init_rollovers, 400);
     }
-    @a[href: (get-resource-path download)
+    @a[href: (url-of download)
        onmouseover: "set_download_image(1);"
        onmouseout: "set_download_image(0);"]{
       @img[id: "download_button" src: (car images) style: "border-width: 0;"
