@@ -12,21 +12,17 @@
                            'in-here "missing source information" stx)))])
        #`(build-path '#,src path paths ...))]))
 
-(define ((make-path-resourcer file-op)
-         source [target #f] [referrer values] #:dir [dir #f])
+(define ((make-path-resourcer file-op) source [target #f] #:dir [dir #f])
   (let ([target (or target (let-values ([(base file dir?) (split-path source)])
                              (path->string file)))])
     (resource (if (eq? void file-op)
                 (void) (if dir (web-path dir target) target))
-              (lambda (file) (file-op source file)) referrer)))
+              (lambda (file) (file-op source file))
+              values)))
 
-(define (write-to-file text file)
-  (with-output-to-file file (lambda () (write-string text))))
-
-(provide copyfile-resource symlink-resource content-resource)
+(provide copyfile-resource symlink-resource)
 (define copyfile-resource (make-path-resourcer copy-file))
 (define symlink-resource  (make-path-resourcer make-file-or-directory-link))
-(define content-resource (make-path-resourcer write-to-file))
 
 (provide web-path)
 (define (web-path . xs)
