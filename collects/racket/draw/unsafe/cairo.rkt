@@ -428,3 +428,59 @@
   CAIRO_FILTER_GAUSSIAN)
 
 (define/provide CAIRO_CONTENT_COLOR_ALPHA #x3000)
+
+;; ----------------------------------------
+
+(define-cstruct _cairo_path_data_t_header ([type _int]
+                                           [length _int]))
+(define-cstruct _cairo_path_data_t_point ([x _double]
+                                          [y _double]))
+
+(define _cairo_path_data_t (_union
+                            _cairo_path_data_t_header
+                            _cairo_path_data_t_point))
+
+(define-cstruct _cairo_path_t ([status _int]
+                               [data _pointer]
+                               [num_data _int]))
+
+(define-cairo cairo_path_destroy (_fun _cairo_path_t-pointer -> _void)
+  #:wrap (deallocator))
+
+(define-cairo cairo_copy_path (_fun _cairo_t -> _cairo_path_t-pointer)
+  #:wrap (allocator cairo_path_destroy))
+
+(define-enum 0
+  CAIRO_PATH_MOVE_TO
+  CAIRO_PATH_LINE_TO
+  CAIRO_PATH_CURVE_TO
+  CAIRO_PATH_CLOSE_PATH)
+
+(provide cairo-path->list)
+
+(define (cairo-path->list path)
+  (define len (cairo_path_t-num_data path))
+  (define data (cairo_path_t-data path))
+  (let loop ([i 0])
+    (if (= i len)
+        null
+        (let ([h (union-ref (ptr-ref data _cairo_path_data_t i) 0)])
+          (cons (let ([t (cairo_path_data_t_header-type h)])
+                  (cond
+                   [(or (= t CAIRO_PATH_MOVE_TO)
+                        (= t CAIRO_PATH_LINE_TO))
+                    (define a (union-ref (ptr-ref data _cairo_path_data_t (add1 i)) 1))
+                    (list (if (= t CAIRO_PATH_MOVE_TO) 'move 'line)
+                          (cairo_path_data_t_point-x a)
+                          (cairo_path_data_t_point-y a))]
+                   [(= t CAIRO_PATH_CURVE_TO)
+                    (define a (union-ref (ptr-ref data _cairo_path_data_t (+ 1 i)) 1))
+                    (define b (union-ref (ptr-ref data _cairo_path_data_t (+ 2 i)) 1))
+                    (define c (union-ref (ptr-ref data _cairo_path_data_t (+ 3 i)) 1))
+                    (list 'curve
+                          (cairo_path_data_t_point-x a) (cairo_path_data_t_point-y a)
+                          (cairo_path_data_t_point-x b) (cairo_path_data_t_point-y b)
+                          (cairo_path_data_t_point-x c) (cairo_path_data_t_point-y c))]
+                   [(= t CAIRO_PATH_CLOSE_PATH)
+                    '(close)]))
+                (loop (+ i (cairo_path_data_t_header-length h))))))))

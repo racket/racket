@@ -1,5 +1,6 @@
 Version 5.2.0.7
 Intern strings, etc., only in read-syntax mode, not read mode
+racket/draw: add text-outline to dc-path%
 
 Version 5.2.0.6
 Added pseudo-random-generator-vector?
