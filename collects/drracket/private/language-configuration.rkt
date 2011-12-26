@@ -1757,9 +1757,8 @@
           (send txt change-style link-sd 0 (send txt last-position))))
       
       (define link-sd (make-object style-delta% 'change-underline #t))
-      (define stupid-internal-define-syntax1
-        (begin (send link-sd set-delta-foreground "blue")
-               (send link-sd set-family 'default)))
+      (send link-sd set-delta-foreground "blue")
+      (send link-sd set-family 'default)
       
       (main))
     

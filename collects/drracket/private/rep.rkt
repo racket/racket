@@ -369,17 +369,16 @@ TODO
   
   
   ;; insert/delta : (instanceof text%) (union snip string) (listof style-delta%) *-> (values number number)
-  ;; inserts the string/stnip into the text at the end and changes the
+  ;; inserts the string/snip into the text at the end and changes the
   ;; style of the newly inserted text based on the style deltas.
   (define (insert/delta text s . deltas)
-    (let ([before (send text last-position)])
-      (send text insert s before before #f)
-      (let ([after (send text last-position)])
-        (for-each (λ (delta)
-                    (when (is-a? delta style-delta%)
-                      (send text change-style delta before after)))
-                  deltas)
-        (values before after))))
+    (define before (send text last-position))
+    (send text insert s before before #f)
+    (define after (send text last-position))
+    (for ([delta (in-list deltas)])
+      (when (is-a? delta style-delta%)
+        (send text change-style delta before after)))
+    (values before after))
   
   (define log-max-size 1000)
   (define log-entry-max-size 1000)
