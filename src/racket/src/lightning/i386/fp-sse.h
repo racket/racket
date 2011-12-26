@@ -35,15 +35,21 @@
 #ifndef __lightning_fp_sse_h
 #define __lightning_fp_sse_h
 
-#define JIT_FPR_NUM	       6
+#ifdef _WIN64
+/* Win64 ABI has only 6 volatile XMM registers, and we need to
+   use one register as scratch: */
+# define JIT_FPR_NUM 5
+#else
+# define JIT_FPR_NUM 6
+#endif
 
 #define _XMM0 0x60
-#ifdef JIT_X86_64
-# define JIT_FPR(i) (_XMM0 + 8 + (i))
-#else
-# define JIT_FPR(i) (_XMM0 + (i))
-#endif
-#define JIT_FPTMP0 JIT_FPR(6)
+/* It night be better to avoid the first 8 registers for
+   non-Win64 x86_64 mode, since those registers can be
+   used for arguments in C function calls. Racket doesn't
+   use FP arguments for C calls, though. */
+#define JIT_FPR(i) (_XMM0 + (i))
+#define JIT_FPTMP0 JIT_FPR(JIT_FPR_NUM)
 
 #define jit_addr_d(f0, f1, f2)                   \
   ((f0 == f1)  \

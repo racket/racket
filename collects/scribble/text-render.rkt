@@ -99,12 +99,13 @@
                                       (if (eq? i 'cont)
                                           0
                                           (apply max d (map string-length i)))))
-                                  (apply map list strs))])
+                                  (apply map list strs))]
+                     [x-length (lambda (col) (if (eq? col 'cont) 0 (length col)))])
                 (for/fold ([indent? #f]) ([row (in-list strs)])
-                  (let ([h (apply max 0 (map length row))])
+                  (let ([h (apply max 0 (map x-length row))])
                     (let ([row* (for/list ([i (in-range h)])
                                   (for/list ([col (in-list row)])
-                                    (if (i . < . (length col))
+                                    (if (i . < . (x-length col))
                                         (list-ref col i)
                                         "")))])
                       (for/fold ([indent? indent?]) ([sub-row (in-list row*)])
@@ -116,7 +117,7 @@
                                          ""
                                          col)])
                             (display col)
-                            (display (make-string (- w (string-length col)) #\space)))
+                            (display (make-string (max 0 (- w (string-length col))) #\space)))
                           #t)
                         (newline)
                         #t)))

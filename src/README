@@ -101,14 +101,14 @@ Detailed instructions:
     remove it (unless you are using an "in-place" build from a
     repository as described below).
 
-    Also, make sure that you have libraries and header files for
-    Cairo, Pango, and GTk.  These libraries are not distributed with
-    Racket.  The configure process checks automatically whether these
-    libraries are available.
+    To run `racket/draw' and `racket/gui' programs, you will need
+    Cairo, Pango, and GTk install.  These libraries are not
+    distributed with Racket, and they are not needed for compilation,
+    except for building documentation that uses `racket/draw'.
 
-    Finally, the content of the "foreign" subdirectory may require GNU
-    `make'.  If the build fails with another variant of `make', please
-    try using GNU `make'.
+    The content of the "foreign" subdirectory may require GNU `make'
+    if no installed "libffi" is detected.  If the build fails with
+    another variant of `make', please try using GNU `make'.
 
  1. Select (or create) a build directory.
 
@@ -175,13 +175,6 @@ Detailed instructions:
     which includes C compilation, and the Racket build normally uses
     the C pre-processor directly for some parts of the build.
 
-    For cross compilation, set the compiler variables to a compiler for
-    the target platform compiler, but also set CC_FOR_BUILD to a
-    compiler for the host platform (for building binaries to execute
-    during the build process).  If the target machine's stack grows up,
-    you'll have to supply `--enable-stackup'; if the target machine is
-    big-endian, you may have to supply `--enable-bigendian'.
-
     If you re-run `configure' after running `make', then products of the
     `make' may be incorrect due to changes in the compiler command line.
     To be safe, run `make clean' each time after running `configure'.
@@ -221,9 +214,10 @@ Detailed instructions:
     location originally specified with `--prefix'.
 
     Finally, the `make install' step compiles ".zo" bytecode files for
-    installed Racket source, and generates launcher programs like
-    DrRacket.  Use `make plain-install' to install without compiling
-    ".zo" files or creating launchers.
+    installed Racket source, generates launcher programs like
+    DrRacket, and builds documentation.  Use `make plain-install' to
+    install without compiling ".zo" files, creating launchers, or
+    building documentation.
 
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you want,
@@ -264,6 +258,12 @@ Cross-compilation requires at least two flags to `configure':
 
 The `--enable-racket' flag is needed because building and installing
 Racket requires running (an intermediate version of) Racket.
+
+You may also need to set CC_FOR_BUILD to a compiler for the host
+platform (for building binaries to execute during the build process).
+If the target machine's stack grows up, you may have to supply
+`--enable-stackup'; if the target machine is big-endian, you may have
+to supply `--enable-bigendian'.
 
 ========================================================================
  CGC versus 3m
@@ -329,12 +329,12 @@ At a mininum, to port Racket to a new platform, edit "racket/sconfig.h"
 to provide a platform-specific compilation information.  As distributed,
 "racket/sconfig.h" contains configurations for the following platforms:
 
-              Windows (x86)
+              Windows (x86, x86_64)
               Mac OS X (PPC, x86, x86_64)
               Linux (x86, x86_64, PPC, 68k)
               Cygwin (x86)
               Solaris (x86, Sparc)
-              FreeBSD (x86)
+              FreeBSD (x86, x86_64)
               OpenBSD (x86)
               NetBSD (x86)
 
@@ -357,9 +357,8 @@ finalization is handled.
 Configuration Options
 ---------------------
 
-By default, Racket is compiled without support for single-precision
-floating point numbers.  This and other options can be modified by
-setting flags in "racket/sconfig.h".
+Athough `configure' flags control most options, some configrations
+options can be modified by setting flags in "racket/sconfig.h".
 
 Modifying Racket
 ----------------

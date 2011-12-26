@@ -65,11 +65,12 @@
     (send f show #t)))
 
 (define star
-  (list (make-object point% 30 0)
-	(make-object point% 48 60)
-	(make-object point% 0 20)
-	(make-object point% 60 20)
-	(make-object point% 12 60)))
+  ;; uses pairs instead of point%s
+  (list (cons 30 0)
+	(cons 48 60)
+	(cons 0 20)
+	(cons 60 20)
+	(cons 12 60)))
 
 (define octagon
   (list (make-object point% 60 60)
@@ -658,6 +659,17 @@
 					(loop (cdr fam) (cdr stl) (cdr wgt) (cdr sze) x (+ y h) #f)))))
 				(send dc set-pen save-pen)))
 
+                            ;; Text paths:
+                            (let ([p (make-object dc-path%)]
+                                  [old-pen (send dc get-pen)]
+                                  [old-brush (send dc get-brush)])
+                              (send p text-outline (make-font #:size 32) "A8" 360 190)
+                              (send dc set-pen "black" 1 'solid)
+                              (send dc set-brush "pink" 'solid)
+                              (send dc draw-path p)
+                              (send dc set-pen old-pen)
+                              (send dc set-brush old-brush))
+
 			    ; Bitmap copying:
 			    (when (and (not no-bitmaps?) last?)
 			      (let ([x 5] [y 165])
@@ -1079,6 +1091,11 @@
                                 [(lam) (let ([r (make-object region% clip-dc)])
                                          (send r set-path lambda-path)
                                          (send dc set-clipping-region r))]
+                                [(A) (let ([p (new dc-path%)]
+                                           [r (make-object region% clip-dc)])
+                                       (send p text-outline (make-font #:size 256) "A" 10 10)
+                                       (send r set-path p)
+                                       (send dc set-clipping-region r))]
                                 [(rect+poly) (let ([r (mk-poly 'winding)])
                                                (send r union (mk-rect))
                                                (send dc set-clipping-region r))]
@@ -1160,7 +1177,8 @@
 			      (let*-values ([(x y w h) (send r get-bounding-box)]
 					    [(l) (list x y w h)]
 					    [(=~) (lambda (x y)
-						    (<= (- x 2) y (+ x 2)))])
+						    (or (not y)
+                                                        (<= (- x 2) y (+ x 2))))])
 				(unless (andmap =~ l
 						(let ([l
 						       (case clip
@@ -1169,6 +1187,7 @@
 							 [(poly circle poly-rect) '(0. 60. 180. 180.)]
 							 [(wedge) '(26. 60. 128. 90.)]
 							 [(lam) '(58. 10. 202. 281.)]
+							 [(A) '(#f #f #f #f)]
 							 [(rect+poly rect+circle poly^rect) '(0. -25. 180. 400.)]
 							 [(poly&rect) '(100. 60. 10. 180.)]
 							 [(roundrect) '(80. 200. 125. 40.)]
@@ -1292,14 +1311,14 @@
 		   (send canvas set-kern (send self get-value))))
     (make-object choice% "Clip" 
 		 '("None" "Rectangle" "Rectangle2" "Octagon" 
-		   "Circle" "Wedge" "Round Rectangle" "Lambda"
+		   "Circle" "Wedge" "Round Rectangle" "Lambda" "A"
 		   "Rectangle + Octagon" "Rectangle + Circle" 
 		   "Octagon - Rectangle" "Rectangle & Octagon" "Rectangle ^ Octagon" "Polka"
 		   "Empty")
 		 hp3
 		 (lambda (self event)
 		   (set! clip (list-ref
-		               '(none rect rect2 poly circle wedge roundrect lam 
+		               '(none rect rect2 poly circle wedge roundrect lam A 
 				      rect+poly rect+circle poly-rect poly&rect poly^rect 
 				      polka empty)
 		               (send self get-selection)))

@@ -7,12 +7,14 @@
          "fmod.rkt"
          "point.rkt"
          "transform.rkt"
+         "font.rkt"
          (only-in scheme/base 
                   [append s:append]
                   [reverse s:reverse]))
 
 (provide dc-path%
-         do-path)
+         (protect-out do-path
+                      set-text-to-path!))
 
 (define-local-member-name
   get-closed-points
@@ -21,6 +23,9 @@
 
 (define 2pi (* 2.0 pi))
 (define pi/2 (/ pi 2.0))
+
+(define text-to-path #f)
+(define (set-text-to-path! proc) (set! text-to-path proc))
 
 (define dc-path%
   (class object%
@@ -275,6 +280,19 @@
                          [nonnegative-real? w] [nonnegative-real? h])
       (when (open?) (close))
       (do-arc x y w h 0 2pi #f)
+      (close))
+
+    (def/public (text-outline [font% font] [string? str] [real? x] [real? y] [any? [combine? #f]])
+      (when (open?) (close))
+      (let ([p (text-to-path font str x y combine?)])
+        (for ([a (in-list p)])
+          (case (car a)
+            [(move) (move-to (cadr a) (caddr a))]
+            [(line) (line-to (cadr a) (caddr a))]
+            [(curve) (curve-to (cadr a) (caddr a)
+                               (list-ref a 3) (list-ref a 4)
+                               (list-ref a 5) (list-ref a 6))]
+            [(close) (close)])))
       (close))
 
     (def/public (scale [real? x][real? y])

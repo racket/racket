@@ -264,6 +264,21 @@ If @racket[radius] is less than @racket[-0.5] or more than half of
 
 }
 
+@defmethod[(text-outline [font (is-a?/c font%)]
+                         [str string?]
+                         [x real?]
+                         [y real?]
+                         [combine? any/c #f])
+           void?]{
+
+Closes the @tech{open sub-path}, if any, and adds a @tech{closed
+ sub-path} to outline @racket[str] using @racket[font]. The
+ top left of the text is positioned at @racket[x] and @racket[y]. The
+ @racket[combine?] argument enables kerning and character combinations
+ as for @xmethod[dc<%> draw-text].
+
+}
+
 @defmethod[(translate [x real?]
                       [y real?])
            void?]{

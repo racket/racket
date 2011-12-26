@@ -18,8 +18,6 @@
                                   plot-foreground plot-background
                                   plot3d-angle plot3d-altitude))
          "deprecated/renderers.rkt"
-         ;; Curve fitting
-         "deprecated/fit.rkt"
          ;; Miscellaneous
          "deprecated/math.rkt")
 
@@ -31,9 +29,6 @@
                                 contour shade
                                 surface)
          (only-doc-out (all-defined-out))
-         ;; Curve fitting
-         (rename-out [fit-int fit])
-         (struct-out fit-result)
          ;; Miscellaneous
          make-vec derivative gradient)
 

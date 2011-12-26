@@ -204,7 +204,7 @@ If the namespace does not, they are colored the unbound color.
     
     (define-struct graphic (pos* locs->thunks draw-fn click-fn))
     
-    (define-struct arrow (start-x start-y end-x end-y) #:mutable #:transparent)
+    (define-struct arrow () #:mutable #:transparent)
     (define-struct (var-arrow arrow)
       (start-text start-pos-left start-pos-right
                   end-text end-pos-left end-pos-right
@@ -420,12 +420,12 @@ If the namespace does not, they are colored the unbound color.
                    xr 
                    yr))))
             
-            (define/private (update-arrow-poss arrow)
+            (define/private (get-arrow-poss arrow)
               (cond
-                [(var-arrow? arrow) (update-var-arrow-poss arrow)]
-                [(tail-arrow? arrow) (update-tail-arrow-poss arrow)]))
+                [(var-arrow? arrow) (get-var-arrow-poss arrow)]
+                [(tail-arrow? arrow) (get-tail-arrow-poss arrow)]))
             
-            (define/private (update-var-arrow-poss arrow)
+            (define/private (get-var-arrow-poss arrow)
               (let-values ([(start-x start-y) (find-poss 
                                                (var-arrow-start-text arrow)
                                                (var-arrow-start-pos-left arrow)
@@ -434,12 +434,9 @@ If the namespace does not, they are colored the unbound color.
                                            (var-arrow-end-text arrow)
                                            (var-arrow-end-pos-left arrow)
                                            (var-arrow-end-pos-right arrow))])
-                (set-arrow-start-x! arrow start-x)
-                (set-arrow-start-y! arrow start-y)
-                (set-arrow-end-x! arrow end-x)
-                (set-arrow-end-y! arrow end-y)))
+                (values start-x start-y end-x end-y)))
             
-            (define/private (update-tail-arrow-poss arrow)
+            (define/private (get-tail-arrow-poss arrow)
               ;; If the item is an embedded editor snip, redirect
               ;; the arrow to point at the left edge rather than the
               ;; midpoint.
@@ -458,24 +455,22 @@ If the namespace does not, they are colored the unbound color.
                            [(end-x end-y) (find-poss/embedded
                                            (tail-arrow-to-text arrow)
                                            (tail-arrow-to-pos arrow))])
-                (set-arrow-start-x! arrow start-x)
-                (set-arrow-start-y! arrow start-y)
-                (set-arrow-end-x! arrow end-x)
-                (set-arrow-end-y! arrow end-y)))
-                       
+                (values start-x start-y end-x end-y)))
+
+            (define xlb (box 0))
+            (define ylb (box 0))
+            (define xrb (box 0))
+            (define yrb (box 0))
+
             (define/private (find-poss text left-pos right-pos)
-              (let ([xlb (box 0)]
-                    [ylb (box 0)]
-                    [xrb (box 0)]
-                    [yrb (box 0)])
-                (send text position-location left-pos xlb ylb #t)
-                (send text position-location right-pos xrb yrb #f)
-                (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
-                              [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
-                              [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
-                              [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
-                  (values (/ (+ xl xr) 2)
-                          (/ (+ yl yr) 2)))))
+              (send text position-location left-pos xlb ylb #t)
+              (send text position-location right-pos xrb yrb #f)
+              (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
+                            [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
+                            [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
+                            [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
+                (values (/ (+ xl xr) 2)
+                        (/ (+ yl yr) 2))))
             
             ;; syncheck:init-arrows : -> void
             (define/public (syncheck:init-arrows)
@@ -701,8 +696,7 @@ If the namespace does not, they are colored the unbound color.
                 (when (add-to-bindings-table
                        start-text start-pos-left start-pos-right
                        end-text end-pos-left end-pos-right)
-                  (let ([arrow (make-var-arrow #f #f #f #f
-                                               start-text start-pos-left start-pos-right
+                  (let ([arrow (make-var-arrow start-text start-pos-left start-pos-right
                                                end-text end-pos-left end-pos-right
                                                actual? level)])
                     (add-to-range/key start-text start-pos-left start-pos-right arrow #f #f)
@@ -711,7 +705,7 @@ If the namespace does not, they are colored the unbound color.
             ;; syncheck:add-tail-arrow : text number text number -> void
             (define/public (syncheck:add-tail-arrow from-text from-pos to-text to-pos)
               (when arrow-records
-                (let ([tail-arrow (make-tail-arrow #f #f #f #f to-text to-pos from-text from-pos)])
+                (let ([tail-arrow (make-tail-arrow to-text to-pos from-text from-pos)])
                   (add-to-range/key from-text from-pos (+ from-pos 1) tail-arrow #f #f)
                   (add-to-range/key to-text to-pos (+ to-pos 1) tail-arrow #f #f))))
             
@@ -761,7 +755,6 @@ If the namespace does not, they are colored the unbound color.
             (define/augment (on-change)
               (inner (void) on-change)
               (when arrow-records
-                (flush-arrow-coordinates-cache)
                 (let ([any-tacked? #f])
                   (when tacked-hash-table
                     (let/ec k
@@ -772,18 +765,6 @@ If the namespace does not, they are colored the unbound color.
                          (k (void))))))
                   (when any-tacked?
                     (invalidate-bitmap-cache)))))
-            
-            ;; flush-arrow-coordinates-cache : -> void
-            ;; pre-condition: arrow-records is not #f.
-            (define/private (flush-arrow-coordinates-cache)
-              (for ([(text arrow-record) (in-hash arrow-records)])
-                (for ([(start+end eles) (in-dict arrow-record)])
-                  (for ([ele (in-list eles)])
-                    (when (arrow? ele)
-                      (set-arrow-start-x! ele #f)
-                      (set-arrow-start-y! ele #f)
-                      (set-arrow-end-x! ele #f)
-                      (set-arrow-end-y! ele #f))))))
             
             (define view-corner-hash (make-weak-hasheq))
             
@@ -835,21 +816,17 @@ If the namespace does not, they are colored the unbound color.
                     (start-arrow-draw-timer syncheck-arrow-delay)))
                 (let ([draw-arrow2
                        (λ (arrow)
-                         (unless (arrow-start-x arrow)
-                           (update-arrow-poss arrow))
-                         (let ([start-x (arrow-start-x arrow)]
-                               [start-y (arrow-start-y arrow)]
-                               [end-x   (arrow-end-x arrow)]
-                               [end-y   (arrow-end-y arrow)])
-                           (unless (and (= start-x end-x)
-                                        (= start-y end-y))
-                             (drracket:arrow:draw-arrow dc start-x start-y end-x end-y dx dy
-                                                        #:pen-width 2)
-                             (when (and (var-arrow? arrow) (not (var-arrow-actual? arrow)))
-                               (let-values ([(fw fh _d _v) (send dc get-text-extent "x")])
-                                 (send dc draw-text "?"
-                                       (+ end-x dx fw)
-                                       (+ end-y dy (- fh))))))))]
+                         (define-values (start-x start-y end-x end-y)
+                           (get-arrow-poss arrow))
+                         (unless (and (= start-x end-x)
+                                      (= start-y end-y))
+                           (drracket:arrow:draw-arrow dc start-x start-y end-x end-y dx dy
+                                                      #:pen-width 2)
+                           (when (and (var-arrow? arrow) (not (var-arrow-actual? arrow)))
+                             (let-values ([(fw fh _d _v) (send dc get-text-extent "x")])
+                               (send dc draw-text "?"
+                                     (+ end-x dx fw)
+                                     (+ end-y dy (- fh)))))))]
                       [old-brush (send dc get-brush)]
                       [old-pen   (send dc get-pen)]
                       [old-font  (send dc get-font)]
@@ -1013,11 +990,6 @@ If the namespace does not, they are colored the unbound color.
               
               (update-tooltip-frame)
               (update-docs-background cursor-eles)
-              
-              (when cursor-eles
-                (for ([ele (in-list cursor-eles)])
-                  (when (arrow? ele)
-                    (update-arrow-poss ele))))
               
               (invalidate-bitmap-cache))
             

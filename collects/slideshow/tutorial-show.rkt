@@ -431,7 +431,7 @@
 (slide
  #:title "Arbitrary Drawing"
  (para "The" (code dc) "function provides an escape hatch to the underlying"
-            "GRacket toolkit")
+            (code racket/draw) "library")
  (para "For example," (code (disk 100)) "is the same as")
  (code
   (dc (lambda (dc dx dy)
@@ -878,4 +878,4 @@
   0.9)
  (blank)
  (para "For further information, search for"
-            (tt "slideshow") "in Help Desk"))
+            (tt "slideshow") "in the documentation"))

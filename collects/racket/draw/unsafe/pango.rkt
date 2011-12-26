@@ -185,6 +185,7 @@
 (define-pangocairo pango_cairo_show_layout (_pfun _cairo_t PangoLayout -> _void))
 (define-pangocairo pango_cairo_show_layout_line (_pfun _cairo_t PangoLayoutLine -> _void))
 (define-pangocairo pango_cairo_show_glyph_string (_pfun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
+(define-pangocairo pango_cairo_layout_line_path (_pfun _cairo_t PangoLayoutLine -> _void))
 
 (define-pango pango_layout_iter_free (_pfun PangoLayoutIter -> _void)
   #:wrap (deallocator))

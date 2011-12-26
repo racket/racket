@@ -445,7 +445,9 @@
   (def/public (handle-key-event [any? obj] [key-event% event])
     (let ([code (send event get-key-code)])
       (or (eq? code 'shift)
+          (eq? code 'rshift)
           (eq? code 'control)
+          (eq? code 'rcontrol)
           (eq? code 'release)
           (let ([score (get-best-score 
                         code
