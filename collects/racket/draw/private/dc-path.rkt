@@ -290,8 +290,8 @@
             [(move) (move-to (cadr a) (caddr a))]
             [(line) (line-to (cadr a) (caddr a))]
             [(curve) (curve-to (cadr a) (caddr a)
-                               (list-ref a 2) (list-ref a 3)
-                               (list-ref a 4) (list-ref a 5))]
+                               (list-ref a 3) (list-ref a 4)
+                               (list-ref a 5) (list-ref a 6))]
             [(close) (close)])))
       (close))
 
