@@ -663,7 +663,7 @@
                             (let ([p (make-object dc-path%)]
                                   [old-pen (send dc get-pen)]
                                   [old-brush (send dc get-brush)])
-                              (send p text-outline (make-font #:size 32) "A" 360 190)
+                              (send p text-outline (make-font #:size 32) "A8" 360 190)
                               (send dc set-pen "black" 1 'solid)
                               (send dc set-brush "pink" 'solid)
                               (send dc draw-path p)
