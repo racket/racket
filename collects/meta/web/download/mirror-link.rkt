@@ -158,10 +158,13 @@ Polling a URL can result in one of four options:
            (cdr (or (regexp-match #rx"^ftp://([^/:]+)(?::([0-9]+))?(/.*)$" url)
                     (error 'verify-ftp "bad ftp url: ~a" url)))))
   (define port (or port? 21))
-  (define r
-    (with-handlers ([exn:fail? exn-message])
-      (let ([c (ftp-establish-connection host port "anonymous" "anonymous@")])
-        (begin0 (ftp-directory-list c path) (ftp-close-connection c)))))
+  (define ch (make-channel))
+  (thread (lambda ()
+            (with-handlers ([exn:fail? exn-message])
+              (define c
+                (ftp-establish-connection host port "anonymous" "anonymous@"))
+              (begin0 (ftp-directory-list c path) (ftp-close-connection c)))))
+  (define r (or (sync/timeout 30 ch) "timeout"))
   (cond [(not (and (list? r) (= 1 (length r)) (list? (car r))))
          (eprintf "WARNING: failure getting ftp info for ~a~a\n"
                   url (if (string? r) (format " (~a)" r) ""))
