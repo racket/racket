@@ -33,7 +33,7 @@
   (define url (resource path renderer))
   (if (eq? referrer values)
     url
-    (referable (lambda args (apply referrer (url) args)) url)))
+    (referable (λ args (apply referrer (url) args)) url)))
 (define (url-of referable [absolute? #f])
   (cond [(referable? referable) ((referable-resource referable) absolute?)]
         [(resource? referable)  (referable absolute?)]
@@ -45,7 +45,7 @@
                              (path->string file)))])
     (resource (if (eq? void file-op)
                 (void) (if dir (web-path dir target) target))
-              (lambda (file) (file-op source file)))))
+              (λ (file) (file-op source file)))))
 
 (provide copyfile-resource symlink-resource)
 (define copyfile-resource (make-path-resourcer copy-file))

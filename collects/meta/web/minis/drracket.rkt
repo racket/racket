@@ -22,7 +22,7 @@
            (text->lines (cons (string-append (car text) (cadr text))
                               (cddr text)))]))
   (define (do-line chars colors)
-    (let loop ([chars (map (lambda (c) (if (eq? #\space c) nbsp c))
+    (let loop ([chars (map (λ (c) (if (eq? #\space c) nbsp c))
                            (string->list chars))]
                [colors (string->list colors)])
       (let* ([class (car colors)]
@@ -41,11 +41,10 @@
 (define (headers)
   (list
    (style/inline type: 'text/css
-     (add-newlines (map (lambda (c)
-                          @list{.c@(car c) {
-                                  color: #@(cadr c);
-                                  background-color: #@(caddr c);
-                                }})
+     (add-newlines (map (λ (c) @list{.c@(car c) {
+                                       color: #@(cadr c);
+                                       background-color: #@(caddr c);
+                                     }})
                         colors)))
    (meta http-equiv: "refresh"
          content: (list "2;URL=" (url-of main)))))

@@ -22,8 +22,8 @@
 (define (make-style dir)
   (resource/referrer (web-path dir "plt.css")
                      (file-writer output (list racket-style "\n"))
-                     (lambda (url) (link rel: "stylesheet" type: "text/css"
-                                         href: url title: "default"))))
+                     (λ (url) (link rel: "stylesheet" type: "text/css"
+                                    href: url title: "default"))))
 
 (define page-sizes
   @list{

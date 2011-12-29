@@ -17,7 +17,7 @@
                                           (syntax-local-name))])
                             (if name (list '#:id `',name) '())))]
                        ;; delay body, allow definitions
-                       [body #`(lambda () (begin/text #,@xs))])
+                       [body #`(λ () (begin/text #,@xs))])
            #'(layouter id ... x ... body))])))
 
 (define (get-path who id file sfx dir)
@@ -71,7 +71,7 @@
                #:extra-body-attrs [body-attrs #f]
                #:resources resources ; see below
                #:referrer [referrer
-                           (lambda (url . more)
+                           (λ (url . more)
                              (a href: url (if (null? more) linktitle more)))]
                ;; will be used instead of `this' to determine navbar highlights
                #:part-of [part-of #f]
@@ -146,7 +146,7 @@
            CLOSE)))
   (define (links-table this)
     (table width: "100%"
-      (tr (map (lambda (nav navpart)
+      (tr (map (λ (nav navpart)
                  (td class: 'navlinkcell
                    (span class: 'navitem
                      (span class: (if (eq? (pages->part-of this) navpart)
@@ -154,7 +154,7 @@
                        nav))))
                (force pages-promise)
                (force pages-parts-of-promise)))))
-  (lambda (this)
+  (λ (this)
     (div class: 'racketnav
       (div class: 'navcontent
         (table border: 0 cellspacing: 0 cellpadding: 0 width: "100%"
@@ -168,7 +168,7 @@
   (define headers
     @list{@link[rel: "icon" href: icon type: "image/ico"]
           @link[rel: "shortcut icon" href: icon]})
-  (lambda () headers))
+  (λ () headers))
 
 (define (html-head-maker style favicon)
   (define headers
@@ -176,7 +176,7 @@
           @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
           @favicon
           @style})
-  (lambda (title* more-headers)
+  (λ (title* more-headers)
     (head "\n" (title title*)
           "\n" headers
           (and more-headers (list "\n" more-headers))
@@ -186,14 +186,14 @@
   (let* ([favicon     (html-favicon-maker icon)]
          [make-head   (html-head-maker style favicon)]
          [make-navbar (navbar-maker logo)])
-    (lambda (what . more)
+    (λ (what . more)
       (apply (case what
                [(head)   make-head]
                [(navbar) make-navbar]
                [(favicon-headers) favicon]
-               [(icon-path)  (lambda () (url-of icon))]
-               [(logo-path)  (lambda () (url-of logo))]
-               [(style-path) (lambda () (url-of style))]
+               [(icon-path)  (λ () (url-of icon))]
+               [(logo-path)  (λ () (url-of logo))]
+               [(style-path) (λ () (url-of style))]
                [else (error 'resources "internal error")])
              more))))
 

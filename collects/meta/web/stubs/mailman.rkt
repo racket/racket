@@ -577,14 +577,13 @@
              @a[href: "author.html#%(sequence)s"]{[author]}})
     @(define navcell
        (let ([n 0])
-         (lambda ()
-           (set! n (add1 n))
-           @td{@ul[style: "font-size: x-small;"]{
-                 @; need only one of these things, at the end
-                 @(when (= n 2) (list "\n" @comment{threads} "\n"))@;
-                 %(prev_wsubj)s
-                 %(next_wsubj)s
-                 @li{@sorted-by}}})))
+         (λ () (set! n (add1 n))
+               @td{@ul[style: "font-size: x-small;"]{
+                     @; need only one of these things, at the end
+                     @(when (= n 2) (list "\n" @comment{threads} "\n"))@;
+                     %(prev_wsubj)s
+                     %(next_wsubj)s
+                     @li{@sorted-by}}})))
     @; --------------------
     @; Based on the Mailman file "article.html" (no revision specified)
     @; Modified to fit the racket pages

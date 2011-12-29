@@ -21,16 +21,14 @@
 
 (define lists
   @page[#:title "Mailing Lists" #:file "" #:part-of 'community
-    (define (list-cells what) (map (lambda (r) (r what)) list-renderers))
+    (define (list-cells what) (map (λ (r) (r what)) list-renderers))
     ]{
     @p{This is the Racket mailing list server.  We have several public mailing
        lists, some are listed below with several mirrors for each one.  The
        complete list of public mailing lists is available on
        @a[href: "listinfo"]{this page}.}
-    @(define gap1
-       (tr (map (lambda (_) @td{@div[style: "height: 1ex;"]{}}) MLs)))
-    @(define gap2
-       (tr (map (lambda (_) @td{}) MLs)))
+    @(define gap1 (tr (map (λ (_) @td{@div[style: "height: 1ex;"]{}}) MLs)))
+    @(define gap2 (tr (map (λ (_) @td{}) MLs)))
     @(define (sec . text)
        @list{@gap1
              @tr{@td[style: '("background-color: #dddddd; font-weight: bold;"
@@ -77,7 +75,7 @@
     @td{@form[action: url method: method
               style: "display: inline; clear: none;"]{
           @div{@body}}})
-  (lambda (what)
+  (λ (what)
     (case what
       [(header-cell)
        @th[style: "width: 33%;"]{
@@ -147,7 +145,7 @@
          @div[style: "margin-left: 2em;"]{
            @description
            @br
-           [@a[href: (list lists name "/")]{list page},
+           [@a[href: (list (url-of lists) name "/")]{list page},
             @gmane-link["dir"]{gmane mirror},
             @mail-archive-link[""]{mail-archive}@;
             @(and google-groups-url
@@ -159,5 +157,5 @@
 
 (define (mailing-lists-quick)
   @text{@(apply parlist @strong{Mailing Lists}
-                (map (lambda (r) (r 'quick)) list-renderers))
-        @p{See the @a[href: lists]{mailing list server} for more details.}})
+                (map (λ (r) (r 'quick)) list-renderers))
+        @p{See the @lists{mailing list server} for more details.}})

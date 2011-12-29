@@ -33,7 +33,7 @@
              background: @|color|@";"})
     @(define place-names
        (add-between
-        (sort (map (lambda (p)
+        (sort (map (λ (p)
                      (regexp-replace #rx", [A-Z][A-Z]$" (place-location p) ""))
                    all-places)
               string<?)

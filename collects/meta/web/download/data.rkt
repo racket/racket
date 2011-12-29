@@ -9,12 +9,12 @@
     ["i386-win32" "Windows x86"]
     ["x86_64-win32" "Windows x64"]
     ["(ppc|i386|x86_64)-osx-mac"
-     ,(lambda (_ cpu)
+     ,(λ (_ cpu)
         (format "Macintosh OS X (~a)"
                 (if (equal? cpu "ppc") "PPC" (format "Intel ~a" cpu))))]
     ["(ppc|68k)-mac-classic" "Macintosh Classic (\\1)"]
     ["(ppc|i386)-darwin"
-     ,(lambda (_ cpu)
+     ,(λ (_ cpu)
         (format "Macintosh Darwin (~a)"
                 (if (equal? cpu "ppc") "PPC" "Intel")))]
     ["i386-linux(-gcc2)?"                  "Linux i386"]
@@ -114,9 +114,8 @@
 (struct mirror (location url person email))
 
 (define mirrors
-  (map (lambda (m)
-         (mirror (car m) (regexp-replace #rx"/?$" (cadr m) "/")
-                 (caddr m) (cadddr m)))
+  (map (λ (m) (mirror (car m) (regexp-replace #rx"/?$" (cadr m) "/")
+                      (caddr m) (cadddr m)))
        -mirrors-))
 
 ;; ----------------------------------------------------------------------------
@@ -132,9 +131,9 @@
   (let ([t (make-hash)]
         [months '#("January" "February" "March" "April" "May" "June" "July"
                    "August" "September" "October" "November" "December")])
-    (lambda (v)
+    (λ (v)
       (hash-ref! t v
-        (lambda ()
+        (λ ()
           (define info (get-version-tag-info v))
           (if info
             (let* ([tagger (car info)]
@@ -198,18 +197,18 @@
              (error 'precedes "could not find ~s in precedence list: ~s" x l)]
             [(=? (car l) x) n]
             [else (loop (cdr l) (add1 n))])))
-  (lambda (x y) (< (num-of x) (num-of y))))
+  (λ (x y) (< (num-of x) (num-of y))))
 
 ;; sorted by version (newest first), and then by -installer-orders-
 (define all-installers
   (sort
    (call-with-input-file installers-data parse-installers)
-   (let ([fns `([,(lambda (i)
+   (let ([fns `([,(λ (i)
                     (version->integer (release-version (installer-release i))))
                  . ,>]
-                ,@(map (lambda (o) (cons (car o) (order->precedes (cdr o))))
+                ,@(map (λ (o) (cons (car o) (order->precedes (cdr o))))
                        (-installer-orders-)))])
-     (lambda (i1 i2)
+     (λ (i1 i2)
        (let loop ([fns fns])
          (if (null? fns)
            #f
@@ -224,11 +223,10 @@
 
 (define package->name
   (let ([t (make-hasheq)])
-    (lambda (package)
+    (λ (package)
       (hash-ref! t package
-        (lambda ()
-          (string-titlecase
-           (regexp-replace #rx"-" (symbol->string package) " ")))))))
+        (λ () (string-titlecase
+               (regexp-replace #rx"-" (symbol->string package) " ")))))))
 
 (define platform-names
   (for/list ([pn (in-list -platform-names-)])
@@ -236,17 +234,16 @@
 
 (define platform->name
   (let ([t (make-hash)])
-    (lambda (platform)
+    (λ (platform)
       (hash-ref! t platform
-        (lambda ()
-          (or (for/or ([pn (in-list platform-names)])
-                ;; find out if a regexp applied by checking if the result is
-                ;; different (relies on regexp-replace returning the same
-                ;; string when fails)
-                (let ([new (regexp-replace (car pn) platform (cadr pn))])
-                  (and (not (eq? new platform)) new)))
-              (error 'platform->name "unrecognized platform: ~e"
-                     platform)))))))
+        (λ () (or (for/or ([pn (in-list platform-names)])
+                    ;; find out if a regexp applied by checking if the result
+                    ;; is different (relies on regexp-replace returning the
+                    ;; same string when fails)
+                    (let ([new (regexp-replace (car pn) platform (cadr pn))])
+                      (and (not (eq? new platform)) new)))
+                  (error 'platform->name "unrecognized platform: ~e"
+                         platform)))))))
 
 (define (suffix->name suffix)
   (cond [(assoc suffix -file-type-names-) => cadr]

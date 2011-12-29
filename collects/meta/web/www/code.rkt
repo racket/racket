@@ -27,7 +27,7 @@
                 null
                 (cons (list type (sub1 start) (sub1 end) 0)
                       (loop mode)))))]
-         [substring* (lambda (bstr start [end (bytes-length bstr)])
+         [substring* (λ (bstr start [end (bytes-length bstr)])
                        (bytes->string/utf-8 (subbytes bstr start end)))]
          [e (parameterize ([read-accept-reader #t]
                            [current-namespace expand-namespace])
@@ -67,7 +67,7 @@
                                      null)))]
                   [(pair? e) (append (loop (car e)) (loop (cdr e)))]
                   [else null]))]
-         [link-mod (lambda (mp-stx priority #:orig? [always-orig? #f])
+         [link-mod (λ (mp-stx priority #:orig? [always-orig? #f])
                      (if (or always-orig?
                              (syntax-original? mp-stx))
                        (let ([mp (syntax->datum mp-stx)])
@@ -93,7 +93,7 @@
                            (map loop (syntax->list #'(form ...))))]
                    [(#%require spec ...)
                     (apply append
-                           (map (lambda (spec)
+                           (map (λ (spec)
                                   ;; Need to add support for renaming forms, etc.:
                                   (if (module-path? (syntax->datum spec))
                                     (link-mod spec 2)
@@ -114,13 +114,12 @@
                        null))]
          [tokens
           (sort (append ids mods language
-                        (filter (lambda (x) (not (eq? (car x) 'symbol)))
+                        (filter (λ (x) (not (eq? (car x) 'symbol)))
                                 ;; Drop #lang entry:
                                 (cdr tokens)))
-                (lambda (a b)
-                  (or (< (cadr a) (cadr b))
-                      (and (= (cadr a) (cadr b))
-                           (> (cadddr a) (cadddr b))))))])
+                (λ (a b) (or (< (cadr a) (cadr b))
+                             (and (= (cadr a) (cadr b))
+                                  (> (cadddr a) (cadddr b))))))])
     (let loop ([pos 0] [tokens tokens])
       (cond
         [(null? tokens) (list (substring* bstr pos))]

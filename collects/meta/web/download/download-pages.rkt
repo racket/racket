@@ -56,7 +56,7 @@
   })
 (define release-page
   (let ([t (make-hash)])
-    (lambda (rel) (hash-ref! t rel (lambda () (release-page* rel))))))
+    (λ (rel) (hash-ref! t rel (λ () (release-page* rel))))))
 
 (define all-version-pages
   (let ()
@@ -86,21 +86,21 @@
              rules: 'groups]{
         @thead{
           @tr{@td{@nbsp @strong{Version & Release Notes}}
-              @(map (lambda (p) @th[align: 'center]{@(package->name p)})
+              @(map (λ (p) @th[align: 'center]{@(package->name p)})
                     all-packages)}}
         @(let ([sep (tr style: "height: 4px; margin: 0; padding: 0;"
-                        (td) (map (lambda (_) (td)) all-packages))])
+                        (td) (map (λ (_) (td)) all-packages))])
            (define (cell rel pkg)
              @td[align: 'center]{
                @nbsp @(make-page rel pkg){[download]} @nbsp})
            @tbody{
              @sep
-             @(map (lambda (r)
+             @(map (λ (r)
                      @list{
                        @tr[class: 'version-row]{
                          @td{@|nbsp nbsp| @strong{Version @release-version[r]},
                              @(release-page r){@release-date-string[r]} @nbsp}
-                         @(map (lambda (p) (cell r p)) all-packages)}
+                         @(map (λ (p) (cell r p)) all-packages)}
                        @sep})
                    all-releases)})
         @tfoot{

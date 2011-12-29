@@ -49,15 +49,14 @@
             (Choose the nearest site)}
           @ul{@(let ([mirrors
                       (filter-map
-                       (lambda (m)
+                       (λ (m)
                          (define url
                            (mirror-link
                             (string-append (mirror-url m) path)
                             size
-                            (lambda ()
-                              (format "~a <~a>"
-                                      (mirror-person m)
-                                      (mirror-email m)))))
+                            (λ () (format "~a <~a>"
+                                          (mirror-person m)
+                                          (mirror-email m)))))
                          (and url @li{@a[href: url]{@(mirror-location m)}}))
                        mirrors)])
                  (case (length mirrors)
@@ -75,7 +74,6 @@
 (provide installer->page)
 (define installer->page
   (let ([t (make-hasheq)])
-    (lambda (inst . more)
-      (let ([page (hash-ref! t inst (lambda ()
-                                      (render-installer-page inst)))])
+    (λ (inst . more)
+      (let ([page (hash-ref! t inst (λ () (render-installer-page inst)))])
         (if (null? more) page (apply page more))))))

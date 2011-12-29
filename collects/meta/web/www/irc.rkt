@@ -16,7 +16,7 @@
       RewriteRule ^(.*)$ http://pre.racket-lang.org@;
          /irc-logs/@||racket/@|"$1"| [P]
     }
-    (lambda (text) @a[href: "irc-logs/"]{@text})))
+    (λ (text) @a[href: "irc-logs/"]{@text})))
 
 (provide irc-quick)
 (define (irc-quick)

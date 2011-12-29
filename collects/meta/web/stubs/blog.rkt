@@ -36,7 +36,7 @@
 
 (provide blog)
 (define blog
-  @plain[#:file "" #:referrer (lambda (u) @a[href: u]{Blog})]{
+  @plain[#:file "" #:referrer (λ (u) @a[href: u]{Blog})]{
 @; This is the blogger style template file, with one hole for the CSS and one
 @; for the navbar, and a few more tweaks (first by soegaard and then by eli).
 @;

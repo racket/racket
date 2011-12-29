@@ -275,10 +275,9 @@
          @doc["more/"]{build a web server from scratch}.  Racket includes both
          @doc[""]{batteries} and a @doc["drracket/"]{programming environment},
          so @doc["getting-started/"]{get started}!}}
-    @((lambda xs
-        (table class: 'threepanes
-          (tr (map (lambda (x) (td (div class: 'panetitle (car x)) (cdr x)))
-                   xs))))
+    @((λ xs (table class: 'threepanes
+              (tr (map (λ (x) (td (div class: 'panetitle (car x)) (cdr x)))
+                       xs))))
       (list "Grow your Program"
         @p{Racket's
            @doc["guide/intro.html#(part._.Interacting_with_.Racket)"]{
@@ -408,8 +407,8 @@
 (define loud (copyfile (in-here "loud.png")))
 
 (define more.css
-  @plain[#:referrer (lambda (url) (link rel: "stylesheet" type: "text/css"
-                                        href: url title: "default"))]{
+  @plain[#:referrer (λ (url) (link rel: "stylesheet" type: "text/css"
+                                   href: url title: "default"))]{
     .bodycontent {
       background-image: url('@loud');
       background-repeat: no-repeat;

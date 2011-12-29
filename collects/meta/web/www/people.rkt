@@ -70,28 +70,26 @@
     (define places0
       (make-all
        ;; make a place
-       (lambda (nick name #:location loc #:url url #:pubs [pubs #f] . people)
+       (λ (nick name #:location loc #:url url #:pubs [pubs #f] . people)
          (place nick name loc url pubs people))
        ;; make a person
-       (lambda (nick name #:url url #:bibname [bibname name])
+       (λ (nick name #:url url #:bibname [bibname name])
          (person nick name url bibname (make-placeholder #f)))))
     (for* ([place (in-list places0)]
            [person (in-list (place-people place))])
       (placeholder-set! (person-place person) place))
     (define places (make-reader-graph places0))
     (define people (append-map place-people places))
-    (when (ormap (lambda (p) (null? (place-people p))) places)
+    (when (ormap (λ (p) (null? (place-people p))) places)
       (error 'places "all places should have people in them"))
     (define (make-finder what xs get-nick)
       (define t (make-hasheq))
       (for ([x (in-list xs)])
         (hash-update! t (get-nick x)
-                      (lambda (old)
-                        (if old (error what "got duplicate nicks") x))
+                      (λ (old) (if old (error what "got duplicate nicks") x))
                       #f))
-      (lambda (nick)
-        (or (hash-ref t nick #f)
-            (error what "nick not found: ~s" nick))))
+      (λ (nick) (or (hash-ref t nick #f)
+                    (error what "nick not found: ~s" nick))))
     (values places (make-finder 'places places place-nick)
             people (make-finder 'people people person-nick))))
 
@@ -101,9 +99,8 @@
     @p{“PLT” refers to the group that is the core of the Racket development
        team.  PLT consists of numerous people distributed across several
        different universities in the USA:
-       @(ul (map (lambda (p)
-                   @li{@a[href: (place-url p)]{
-                         @(place-name p), @(place-location p)}})
+       @(ul (map (λ (p) @li{@a[href: (place-url p)]{
+                              @(place-name p), @(place-location p)}})
                  all-places))}
     @p{Also, Racket is supported by a band of volunteers who contribute not
        only code and documentation but also infectious enthusiasm—too many to

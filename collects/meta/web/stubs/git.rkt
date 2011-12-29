@@ -125,8 +125,7 @@
 
 ;; xhtml strict doesn't allow lists inside <p>, so fake our own paragraphs
 ;; using divs:
-(define p*
-  (make-separated-tag values (lambda text (apply div class: 'p text))))
+(define p* (make-separated-tag values (λ text (apply div class: 'p text))))
 
 @page[#:title "git intro" #:extra-headers style]{
 
@@ -2570,7 +2569,7 @@
      your global .gitconfig file.  For example, I have these settings:
      @pre|{[sendemail]
              from = Eli Barzilay <eli@barzilay.org>
-             bcc = eli@eli.barzilay.org
+             bcc = eli@barzilay.org
              suppresscc = self}|
      and you can see more in the @man{git-config} and @man{git-send-email} man
      pages.  The address to send the patches to is also configurable — you can

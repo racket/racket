@@ -13,19 +13,18 @@
 (define git
   (let* ([exe (or (find-executable-path "git")
                   (warn "no `git' executable => no release info"))]
-         [try (lambda (dir) (and dir (directory-exists? dir) dir))]
+         [try (λ (dir) (and dir (directory-exists? dir) dir))]
          [dir (and exe (or (ormap try (list (getenv "GIT_DIR") THIS-GIT))
                            (warn "no git dir found => no release info\n  (~a)"
                                  "set $GIT_DIR to a racket repo .git dir")))]
          [nowhere (open-output-nowhere)])
     (and dir
-         (lambda args
-           (define o (open-output-string))
-           (parameterize ([current-directory dir]
-                          [current-output-port o]
-                          [current-error-port nowhere])
-             (and (apply system* exe "--no-pager" args)
-                  (get-output-string o)))))))
+         (λ args (define o (open-output-string))
+                 (parameterize ([current-directory dir]
+                                [current-output-port o]
+                                [current-error-port nowhere])
+                   (and (apply system* exe "--no-pager" args)
+                        (get-output-string o)))))))
 
 (provide get-version-tag-info)
 (define (get-version-tag-info version)
@@ -41,9 +40,9 @@
                       (bad "no git info for ~s (missing tag)" version))]
            [tag   (car text)]
            [text  (cdr text)]
-           [check (lambda (x) (or x (bad "malformed git info for ~s" tag)))]
+           [check (λ (x) (or x (bad "malformed git info for ~s" tag)))]
            [sep   (check (regexp-match-positions #rx"\n\n" text))]
-           [meta  (map (lambda (h)
+           [meta  (map (λ (h)
                          (let ([m (check (regexp-match-positions #rx" " h))])
                            (list (string->symbol (substring h 0 (caar m)))
                                  (substring h (cdar m)))))

@@ -7,7 +7,7 @@
 (provide parlist)
 (define (parlist first . rest)
   (list (div class: 'parlisttitle first)
-        (map (lambda (p) (div class: 'parlistitem p)) rest)))
+        (map (λ (p) (div class: 'parlistitem p)) rest)))
 
 ;; a div that is centered, but the text is still left-justified
 (provide center-div)
@@ -58,7 +58,7 @@
               [else (let ([len (string-length (cadr text))])
                       (set! N (if N (min len N) len))
                       (loop (cddr text)
-                            (list* (lambda () (make-string (- len N) #\space))
+                            (list* (λ () (make-string (- len N) #\space))
                                    "\n" r)))]))))
   (let loop ([list (drop-ws list #t)] [cur '()] [r '()])
     (define (get-r) (cons (drop-indentation/reverse (drop-ws cur #f)) r))
@@ -119,7 +119,7 @@
                       "page-break-before: always;")
           (if sec-in-subsec? title* title)))))
   (values (add-section #f) (add-section #t)
-          (and toc? (lambda () (collect-subs) (->li/reverse sections)))))
+          (and toc? (λ () (collect-subs) (->li/reverse sections)))))
 (define-syntax (sections stx)
   (define (make-it stx args)
     (with-syntax ([sec (datum->syntax stx 'section)]

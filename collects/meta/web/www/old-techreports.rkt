@@ -260,9 +260,8 @@
 
 (define key->number
   (let ([t (for/hash ([k bib-fields] [i (in-naturals)]) (values k i))])
-    (lambda (key)
-      (hash-ref t key (lambda ()
-                        (error 'key->number "unknown field name: ~e" key))))))
+    (λ (key) (hash-ref t key
+               (λ () (error 'key->number "unknown field name: ~e" key))))))
 
 ;; converts the hash to an alist with the order specified by bib-fields
 (define (bib->alist bib)
@@ -315,8 +314,7 @@
                ;; turn non-strings to strings, join multiple strings, normalize
                ;; spaces
                (let* ([val (cdr a)]
-                      [val (map (lambda (x) (if (string? x) x (format "~a" x)))
-                                val)]
+                      [val (map (λ (x) (if (string? x) x (format "~a" x))) val)]
                       [val (string-append* (add-between val "\n"))]
                       [val (regexp-replace* #rx"\t" val " ")]
                       [val (regexp-replace* #rx"  +" val " ")]
@@ -337,10 +335,9 @@
 (define version->integer
   (let ([t (for*/hash ([v (in-list (map car versions+dates))])
              (values v (-version->integer (regexp-replace #rx"^0+" v ""))))])
-    (lambda (ver)
+    (λ (ver)
       (hash-ref t ver
-        (lambda ()
-          (error 'version->integer "unknown pltreport version: ~e" ver))))))
+        (λ () (error 'version->integer "unknown pltreport version: ~e" ver))))))
 
 ;; "V...V"        version range
 ;; "...V", "V..." open-ended version range
@@ -356,7 +353,7 @@
          [str (regexp-replace #rx"^ +" str "")]
          [str (regexp-replace #rx" +$" str "")]
          [l (regexp-split #rx" *[.][.][.] *" str)]
-         [l (map (lambda (x)
+         [l (map (λ (x)
                    (cond [(equal? "" x) #f]
                          [(equal? "*"  x) v:3->4]
                          [(equal? "!"  x) v:4->5]
@@ -366,12 +363,12 @@
     (apply
      (case-lambda [(ver)
                    (if ver
-                     (lambda (v) (equal? ver (version->integer v)))
-                     (lambda (v) #f))]
+                     (λ (v) (equal? ver (version->integer v)))
+                     (λ (v) #f))]
                   [(from to)
                    (let ([from (or from -inf.0)]
                          [to   (or to   +inf.0)])
-                     (lambda (v) (<= from (version->integer v) to)))]
+                     (λ (v) (<= from (version->integer v) to)))]
                   [_ (error 'versions->pred "bad versions spec: ~e" str)])
      l)))
 
@@ -387,7 +384,7 @@
 
 (define (author->string author)
   (let ([r (hash-ref authors* author
-                     (lambda () (person-bibname (find-person author))))])
+                     (λ () (person-bibname (find-person author))))])
     (if (string? r)
       r
       (let ([r (string-join (map author->string r) " and ")])
@@ -400,7 +397,7 @@
 (define doc-defs*
   (for/list ([d doc-defs])
     (apply
-     (lambda (docname docnum versions author title . attrs)
+     (λ (docname docnum versions author title . attrs)
        `(,(versions->pred versions)
          [#:docname ,docname]
          [#:number-template ,(format "PLT-TR~~a-~a-v~~a" (or docnum docname))]

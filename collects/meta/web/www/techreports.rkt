@@ -31,7 +31,7 @@
             #:note [note #f])
   (define tr-name @list{PLT-TR-2010-@num})
   (define author-strings
-    (map (lambda (a) (if (eq? 'plt a) "PLT" (person-bibname (find-person a))))
+    (map (λ (a) (if (eq? 'plt a) "PLT" (person-bibname (find-person a))))
          authors*))
   (define (link fmt [ver 'recent]) @a[href: (doc-url docname fmt ver)]{[@fmt]})
   (define (title-line link?)

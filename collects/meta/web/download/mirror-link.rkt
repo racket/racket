@@ -41,7 +41,7 @@ Polling a URL can result in one of four options:
 (define known-mirrors
   (if (and known-mirrors-file (file-exists? known-mirrors-file))
     (call-with-input-file* known-mirrors-file
-      (lambda (inp) (for/list ([x (in-producer read eof inp)]) x)))
+      (λ (inp) (for/list ([x (in-producer read eof inp)]) x)))
     '()))
 
 ;; main entry to getting a known entry result: given the url, return the
@@ -76,9 +76,8 @@ Polling a URL can result in one of four options:
     (set! known-mirrors
           `(,@(if entry (remq entry known-mirrors) known-mirrors) ,new))
     (call-with-output-file* known-mirrors-file #:exists 'truncate
-      (lambda (outp)
-        (for ([entry (in-list known-mirrors)])
-          (fprintf outp "~s\n" entry)))))
+      (λ (outp) (for ([entry (in-list known-mirrors)])
+                  (fprintf outp "~s\n" entry)))))
   (when (and new                              ; we computed a new value
              (equal? result size)             ; we had a good result
              (not (equal? (caddr new) size))) ; but now it's bad
@@ -102,9 +101,8 @@ Polling a URL can result in one of four options:
 (provide mirror-link)
 (define (mirror-link url size get-responsible-email)
   (and (or (not known-mirrors-file) ; no file => don't check, just use all
-           (let ([r (known-mirror-get
-                     url size (lambda () (validate url size))
-                     get-responsible-email)])
+           (let ([r (known-mirror-get url size (λ () (validate url size))
+                                      get-responsible-email)])
              (or (eq? r #t) (equal? r size))))
        url))
 
@@ -159,7 +157,7 @@ Polling a URL can result in one of four options:
                     (error 'verify-ftp "bad ftp url: ~a" url)))))
   (define port (or port? 21))
   (define ch (make-channel))
-  (thread (lambda ()
+  (thread (λ ()
             (with-handlers ([exn:fail? exn-message])
               (define c
                 (ftp-establish-connection host port "anonymous" "anonymous@"))
