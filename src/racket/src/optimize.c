@@ -1022,7 +1022,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
               iv = scheme_hash_get(iv_ht, scheme_false);
           }
           if (SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type)) {
-            int has_cases;
+            int has_cases = 0;
             Scheme_Object *orig_iv = iv;
             iv = scheme_unresolve(iv, argc, &has_cases);
             if (has_cases) {
