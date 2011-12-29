@@ -271,7 +271,7 @@ usually not worthwhile, as discussed below.}
      [(empty? lst) (reverse backward-result)]
      [else (iter (rest lst)
                  (cons (f (first lst))
-                          backward-result))]))
+                       backward-result))]))
   (iter lst empty))
 ]
 
