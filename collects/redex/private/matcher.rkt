@@ -16,6 +16,8 @@
 ;;    there are no names underneath an ellipsis),
 ;;    pre-allocate the space to store the result (in a vector)
 
+;; -- inline lookup-binding
+
 #|
 
 Note: the patterns described in the documentation are

@@ -840,13 +840,12 @@
 (define-syntax (redex-check stx)
   (syntax-case stx ()
     [(form lang pat property . kw-args)
-     (let-values ([(pattern names names/ellipses) 
-                   (with-syntax ([(pattern names names/ellipses)
-                                  (rewrite-side-conditions/check-errs 
-                                   (language-id-nts #'lang 'redex-check)
-                                   'redex-check #t #'pat)])
-                     (values #'pattern #'names #'names/ellipses))]
-                  [(attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
+     (with-syntax ([(pattern (name ...) (name/ellipses ...))
+                    (rewrite-side-conditions/check-errs 
+                     (language-id-nts #'lang 'redex-check)
+                     'redex-check #t #'pat)]
+                   [show (show-message stx)])
+     (let-values ([(attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
                    (apply values
                           (parse-kw-args (list attempts-keyword
                                                source-keyword
@@ -857,9 +856,6 @@
                                          (syntax kw-args)
                                          stx
                                          (syntax-e #'form)))])
-       (with-syntax ([(name ...) names]
-                     [(name/ellipses ...) names/ellipses]
-                     [show (show-message stx)])
          (with-syntax ([property (syntax
                                   (bind-prop
                                    (λ (bindings)
