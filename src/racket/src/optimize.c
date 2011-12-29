@@ -1013,18 +1013,35 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       if (info->cp->inline_variants) {
         Scheme_Object *iv;
         iv = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
-        if (iv) {
-          if (SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type)) {
-            iv = scheme_unresolve(iv, argc);
-            scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), iv);
+        if (iv && SCHEME_TRUEP(iv)) {
+          Scheme_Hash_Table *iv_ht = NULL;
+          if (SCHEME_HASHTP(iv)) {
+            iv_ht = (Scheme_Hash_Table *)iv;
+            iv = scheme_hash_get(iv_ht, scheme_make_integer(argc));
+            if (!iv)
+              iv = scheme_hash_get(iv_ht, scheme_false);
           }
-          if (iv) {
+          if (SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type)) {
+            int has_cases;
+            Scheme_Object *orig_iv = iv;
+            iv = scheme_unresolve(iv, argc, &has_cases);
+            if (has_cases) {
+              if (!iv_ht) {
+                iv_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+                scheme_hash_set(iv_ht, scheme_false, orig_iv);
+                scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), (Scheme_Object *)iv_ht);
+              }
+              scheme_hash_set(iv_ht, scheme_make_integer(argc), iv ? iv : scheme_false);
+            } else
+              scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), iv ? iv : scheme_false);
+          }
+          if (iv && SCHEME_TRUEP(iv)) {
             le = iv;
             break;
           }
         }
       }
-      if (info->top_level_consts) {
+      if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type) && info->top_level_consts) {
         le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
         if (le && SCHEME_BOXP(le)) {
           psize = SCHEME_INT_VAL(SCHEME_BOX_VAL(le));

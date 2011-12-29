@@ -3514,7 +3514,7 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
   }
 }
 
-Scheme_Object *scheme_unresolve(Scheme_Object *iv, int argc)
+Scheme_Object *scheme_unresolve(Scheme_Object *iv, int argc, int *_has_cases)
 {
   Scheme_Object *o;
   Scheme_Closure_Data *data = NULL;
@@ -3530,6 +3530,7 @@ Scheme_Object *scheme_unresolve(Scheme_Object *iv, int argc)
     Scheme_Case_Lambda *seqin = (Scheme_Case_Lambda *)o;
     int i, cnt;
     cnt = seqin->count;
+    if (cnt > 1) *_has_cases = 1;
     for (i = 0; i < cnt; i++) {
       if (SAME_TYPE(SCHEME_TYPE(seqin->array[i]), scheme_closure_type)) {
         /* An empty closure, created at compile time */
