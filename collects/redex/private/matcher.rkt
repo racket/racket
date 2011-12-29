@@ -686,7 +686,10 @@ See match-a-pattern.rkt for more details
         [(eq? compiled-cache uniq)
          (let-values ([(compiled-pattern has-hole?)
                        (true-compile-pattern pattern)])
-           (let ([val (list (memoize compiled-pattern has-hole?)
+           (let ([val (list (match pattern
+                              [`(nt ,p)
+                               (memoize compiled-pattern has-hole?)]
+                              [_ compiled-pattern])
                             has-hole?)])
              (hash-set! compiled-pattern-cache pattern val)
              (apply values val)))]
