@@ -39,8 +39,8 @@ See match-a-pattern.rkt for more details
 ;; nt = (make-nt sym (listof rhs))
 ;; rhs = (make-rhs single-pattern)
 ;; single-pattern = sexp
-(define-struct nt (name rhs) #:inspector (make-inspector))
-(define-struct rhs (pattern) #:inspector  (make-inspector))
+(define-struct nt (name rhs) #:transparent)
+(define-struct rhs (pattern) #:transparent)
 
 ;; var = (make-var sym sexp)
 ;; patterns are sexps with `var's embedded
@@ -54,17 +54,17 @@ See match-a-pattern.rkt for more details
 ;;       by merge-multiples/remove, a helper function called from match-pattern
 (define-values (make-bindings bindings-table bindings?)
   (let () 
-    (define-struct bindings (table) #:inspector (make-inspector)) ;; for testing, add inspector
+    (define-struct bindings (table) #:transparent) ;; for testing, add inspector
     (define mt-bindings (make-bindings null))
     (values (lambda (table) (if (null? table) mt-bindings (make-bindings table)))
             bindings-table
             bindings?)))
 
-(define-struct bind (name exp) #:inspector (make-inspector)) ;; for testing, add inspector
-(define-struct mismatch-bind (name exp) #:inspector (make-inspector)) ;; for testing, add inspector
+(define-struct bind (name exp) #:transparent)
+(define-struct mismatch-bind (name exp) #:transparent)
 
 ;; repeat = (make-repeat compiled-pattern (listof rib) (or/c #f symbol?) (or/c #f symbol?))
-(define-struct repeat (pat empty-bindings name mismatch) #:inspector (make-inspector)) ;; inspector for tests below
+(define-struct repeat (pat empty-bindings name mismatch) #:transparent)
 
 ;; compiled-pattern : exp hole-info -> (union #f (listof mtch))
 ;; mtch = (make-mtch bindings sexp[context] (union none sexp[hole]))
@@ -686,7 +686,8 @@ See match-a-pattern.rkt for more details
         [(eq? compiled-cache uniq)
          (let-values ([(compiled-pattern has-hole?)
                        (true-compile-pattern pattern)])
-           (let ([val (list (memoize compiled-pattern has-hole?) has-hole?)])
+           (let ([val (list (memoize compiled-pattern has-hole?)
+                            has-hole?)])
              (hash-set! compiled-pattern-cache pattern val)
              (apply values val)))]
         [else
@@ -1595,18 +1596,18 @@ See match-a-pattern.rkt for more details
  (set-cache-size! (-> (and/c integer? positive?) void?))
  (cache-size (and/c integer? positive?))
  
- (make-bindings ((listof bind?) . -> . bindings?))
- (bindings-table (bindings? . -> . (listof bind?)))
- (bindings? (any/c . -> . boolean?))
- 
- (mtch? (any/c . -> . boolean?))
+ (mtch? predicate/c)
  (make-mtch (bindings? any/c any/c . -> . mtch?))
  (mtch-bindings (mtch? . -> . bindings?))
  (mtch-context (mtch? . -> . any/c))
  (mtch-hole (mtch? . -> . (or/c none? any/c)))
  
+ (make-bindings ((listof bind?) . -> . bindings?))
+ (bindings-table (bindings? . -> . (listof bind?)))
+ (bindings? predicate/c)
+ 
  (make-bind (symbol? any/c . -> . bind?))
- (bind? (any/c . -> . boolean?))
+ (bind? predicate/c)
  (bind-name (bind? . -> . symbol?))
  (bind-exp (bind? . -> . any/c))
  (compile-language (-> any/c (listof nt?) (listof (listof symbol?)) compiled-lang?)))
