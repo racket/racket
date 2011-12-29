@@ -1269,7 +1269,7 @@
                    [(nts) (language-id-nts #'lang-exp what)])
        (with-syntax ([(side-condition-rewritten (vars ...) (ids/depths ...))
                       (rewrite-side-conditions/check-errs nts what #t #'pattern)])
-         (with-syntax ([binders (map syntax-e (syntax->list #'(ids/depths ...)))]
+         (with-syntax ([binders (map syntax-e (syntax->list #'(vars ...)))]
                        [name (syntax-local-infer-name stx)])
            (syntax 
             (do-test-match lang-exp `side-condition-rewritten 'binders 'name)))))]
@@ -2788,7 +2788,7 @@
           (set! visit-already-failed? #t)
           (inc-failures)
           (print-failed srcinfo)
-          (fprintf (current-error-port) "found a term that failed #:pred: ~v\n" t)))))
+          (eprintf "found a term that failed #:pred: ~v\n" t)))))
   (let-values ([(got got-cycle?) (apply-red red arg #:visit visit)])
     
     (cond
@@ -2796,7 +2796,7 @@
             (not cycles-ok?))
        (inc-failures)
        (print-failed srcinfo)
-       (fprintf (current-error-port) "found a cycle in the reduction graph\n")]
+       (eprintf "found a cycle in the reduction graph\n")]
       [else
        (unless visit-already-failed?
          (let* ([⊆ (λ (s1 s2) (andmap (λ (x1) (memf (λ (x) (equiv? x1 x)) s2)) s1))]
@@ -2805,12 +2805,12 @@
              (inc-failures)
              (print-failed srcinfo)
              (for-each
-              (λ (v2) (fprintf (current-error-port) "expected: ~v\n" v2))
+              (λ (v2) (eprintf "expected: ~v\n" v2))
               expected)
              (if (empty? got)
-                 (fprintf (current-error-port) "got nothing\n")
+                 (eprintf "got nothing\n")
                  (for-each
-                  (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
+                  (λ (v1) (eprintf "  actual: ~v\n" v1))
                   got)))))])))
 
 (define-syntax (test-->>∃ stx)
@@ -2839,12 +2839,10 @@
       (inc-failures)
       (begin
         (if (procedure? goal)
-            (fprintf (current-error-port) 
-                     "no term satisfying ~a reachable from ~a" goal start)
-            (fprintf (current-error-port) 
-                     "term ~a not reachable from ~a" goal start))
+            (eprintf "no term satisfying ~a reachable from ~a" goal start)
+            (eprintf "term ~a not reachable from ~a" goal start))
         (when (search-failure-cutoff? result)
-          (fprintf (current-error-port) " (within ~a steps)" steps))
+          (eprintf " (within ~a steps)" steps))
         (newline (current-error-port))))))
 
 (define-syntax (test-predicate stx)
@@ -2857,7 +2855,7 @@
   (unless (pred arg)
     (inc-failures)
     (print-failed srcinfo)
-    (fprintf (current-error-port) "  ~v does not hold for\n  ~v\n" 
+    (eprintf "  ~v does not hold for\n  ~v\n" 
              pred arg)))
 
 (define-syntax (test-equal stx)
@@ -2870,16 +2868,15 @@
   (unless (equal? v1 v2)
     (inc-failures)
     (print-failed srcinfo)
-    (fprintf (current-error-port) "  actual: ~v\n" v1)
-    (fprintf (current-error-port) "expected: ~v\n" v2)))
+    (eprintf "  actual: ~v\n" v1)
+    (eprintf "expected: ~v\n" v2)))
 
 (define (print-failed srcinfo)
   (let ([file (list-ref srcinfo 0)]
         [line (list-ref srcinfo 1)]
         [column (list-ref srcinfo 2)]
         [pos (list-ref srcinfo 3)])
-    (fprintf (current-error-port)
-             "FAILED ~a~a\n"
+    (eprintf "FAILED ~a~a\n"
              (cond
                [(path? file) 
                 (let-values ([(base name dir) (split-path file)])

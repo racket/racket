@@ -344,6 +344,8 @@
   (define-struct id/depth (id depth mismatch?))
   
   ;; extract-names : syntax syntax -> (values (listof syntax) (listof syntax[x | (x ...) | ((x ...) ...) | ...]))
+  ;; this function is obsolete and uses of it are suspect. Things should be using 
+  ;; rewrite-side-conditions/check-errs instead
   (define (extract-names all-nts what bind-names? orig-stx [mode 'rhs-only])
     (let* ([dups
             (let loop ([stx orig-stx]

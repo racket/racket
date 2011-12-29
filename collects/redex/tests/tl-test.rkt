@@ -55,6 +55,15 @@
     (UN (add1 UN)
         zero))
   
+  (test (let ([m (redex-match 
+                  empty-language
+                  (side-condition (any_1 ...) #t)
+                  '())])
+          (and m
+               (= 1 (length m))
+               (match-bindings (car m))))
+        (list (make-bind 'any_1 '())))
+  
   (test (pair? (redex-match grammar M '(1 1))) #t)
   (test (pair? (redex-match grammar M '(1 1 1))) #f)
   (test (pair? (redex-match grammar

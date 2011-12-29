@@ -212,12 +212,10 @@
                               pre-threshold-incr))))))))
   
   (define (generate/prior name env gen)
-    ;(printf "generate/prior ~s ~s ~s\n" name env gen)
     (let* ([none (gensym)]
            [prior (hash-ref env name none)])
       (if (eq? prior none)
           (let-values ([(term env) (gen)])
-            ;(printf "generated ~s for ~s\n" term name)
             (values term (hash-set env name term)))
           (values prior env))))
   
@@ -265,7 +263,7 @@
   
   (define (bindings env)
     (make-bindings
-     (for/fold ([bindings null]) ([(key val) env])
+     (for/fold ([bindings null]) ([(key val) (in-hash env)])
        (if (symbol? key) 
            (cons (make-bind key val) bindings)
            bindings))))
@@ -341,7 +339,7 @@
            (add/ret `(list ,@(reverse lpats-rewritten))
                     vars)]
           [(? (compose not pair?)) (values pat '())])))
-
+    
     (let* ([nt? (is-nt? (if any? sexpp langp))]
            [mismatches? #f]
            [generator 
@@ -751,11 +749,8 @@
   (let ([m (metafunc name)])
     (if m m (raise-syntax-error #f "not a metafunction" stx name))))
 
-(define-for-syntax (term-generator lang pat what)
-  (with-syntax ([(pattern (vars ...) (vars/ellipses ...)) 
-                 (rewrite-side-conditions/check-errs 
-                  (language-id-nts lang what)
-                  what #t pat)])
+(define-for-syntax (term-generator lang pattern what)
+  (with-syntax ([pattern pattern])
     #`((compile #,lang '#,what) `pattern)))
 
 (define-syntax (generate-term stx)
@@ -781,8 +776,12 @@
                             (reduction-relation-make-procs r)))])
         #'rest)]
       [(_ lang pat . rest)
-       (values #`(list #,(term-generator #'lang #'pat form-name))
-               #'rest)]))
+       (with-syntax ([(pattern (vars ...) (vars/ellipses ...)) 
+                      (rewrite-side-conditions/check-errs 
+                       (language-id-nts #'lang form-name)
+                       form-name #t #'pat)])
+         (values #`(list #,(term-generator #'lang #'pattern form-name))
+                 #'rest))]))
   (define generator-syntax
     #`(make-generator #,raw-generators '#,form-name #,(client-name stx form-name) #,(src-loc-stx stx)))
   (syntax-case args ()
@@ -841,9 +840,12 @@
 (define-syntax (redex-check stx)
   (syntax-case stx ()
     [(form lang pat property . kw-args)
-     (let-values ([(names names/ellipses) 
-                   (extract-names (language-id-nts #'lang 'redex-check)
-                                  'redex-check #t #'pat)]
+     (let-values ([(pattern names names/ellipses) 
+                   (with-syntax ([(pattern names names/ellipses)
+                                  (rewrite-side-conditions/check-errs 
+                                   (language-id-nts #'lang 'redex-check)
+                                   'redex-check #t #'pat)])
+                     (values #'pattern #'names #'names/ellipses))]
                   [(attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
                    (apply values
                           (parse-kw-args (list attempts-keyword
@@ -891,7 +893,7 @@
                           fix
                           #:term-match term-match))
                      #`(check-one
-                        #,(term-generator #'lang #'pat 'redex-check)
+                        #,(term-generator #'lang #'pattern 'redex-check)
                         property att ret (and print? show) fix (and fix term-match)))))))))]))
 
 (define (format-attempts a)
