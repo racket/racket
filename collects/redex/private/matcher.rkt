@@ -16,8 +16,6 @@
 ;;    there are no names underneath an ellipsis),
 ;;    pre-allocate the space to store the result (in a vector)
 
-;; -- inline lookup-binding
-
 #|
 
 Note: the patterns described in the documentation are
@@ -29,6 +27,7 @@ See match-a-pattern.rkt for more details
          scheme/match
          scheme/contract
          racket/promise
+         racket/performance-hint
          "underscore-allowed.rkt"
          "match-a-pattern.rkt")
 
@@ -113,18 +112,19 @@ See match-a-pattern.rkt for more details
   (compiled-lang-raw-across-list-ht x))
 
 ;; lookup-binding : bindings (union sym (cons sym sym)) [(-> any)] -> any
-(define (lookup-binding bindings
-                        sym
-                        [fail (lambda () 
-                                (error 'lookup-binding "didn't find ~e in ~e" sym bindings))])
-  (let loop ([ribs (bindings-table bindings)])
-    (cond
-      [(null? ribs) (fail)]
-      [else
-       (let ([rib (car ribs)])
-         (if (and (bind? rib) (equal? (bind-name rib) sym))
-             (bind-exp rib)
-             (loop (cdr ribs))))])))
+(begin-encourage-inline
+  (define (lookup-binding bindings
+                          sym
+                          [fail (lambda () 
+                                  (error 'lookup-binding "didn't find ~e in ~e" sym bindings))])
+    (let loop ([ribs (bindings-table bindings)])
+      (cond
+        [(null? ribs) (fail)]
+        [else
+         (let ([rib (car ribs)])
+           (if (and (bind? rib) (eq? (bind-name rib) sym))
+               (bind-exp rib)
+               (loop (cdr ribs))))]))))
 
 ;; compile-language : language-pict-info[see pict.rkt] (listof nt) (listof (listof sym)) -> compiled-lang
 (define (compile-language pict-info lang nt-map)
