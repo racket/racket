@@ -1085,6 +1085,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     {
       /* We'd like to use strtod() for the common case, but we don't trust it entirely. */
       char ffl_buf[MAX_FAST_FLOATREAD_LEN + 1];
+      GC_CAN_IGNORE char *loc;
 
       {
         int k;
@@ -1100,7 +1101,12 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (has_expt && (str[has_expt] != 'e' && str[has_expt] != 'E')) {
         ffl_buf[has_expt - delta] = 'e';
       }
+
+      loc = scheme_push_c_numeric_locale();
+
       d = STRTOD(ffl_buf, &ptr);
+
+      scheme_pop_c_numeric_locale(loc);
 
       if ((ptr XFORM_OK_MINUS ffl_buf) < (len - delta)) {
         if (report)
