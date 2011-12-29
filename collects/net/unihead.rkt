@@ -7,7 +7,7 @@
 
 (define (encode-for-header s)
   (cond [(not (regexp-match? re:non-ascii s)) s]
-        [(not (regexp-match? #rx"\r\n" s)) (encode-line-for-header s)] ; speed
+        [(not (regexp-match? #rx"[\r\n]" s)) (encode-line-for-header s)] ; speed
         [else (regexp-replace* #rx"[^\r\n]+" s encode-line-for-header)]))
 
 ;; Note: the following two encoder wrappers remove newlines from the
