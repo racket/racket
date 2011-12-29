@@ -94,7 +94,7 @@ Like @racket[cocreate-instance-from-coclass], but using a ProgID.}
   method in @racket[obj/type]. See @secref["com-types"] for
   information on the symbols.}
 
-@defproc[(com-invoke [obj com-object?] [method-name string?] [v any/c])
+@defproc[(com-invoke [obj com-object?] [method-name string?] [v any/c] ...)
          any/c]{
 
   Invokes @racket[method-name] on @racket[obj] with @racket[v]s as the
