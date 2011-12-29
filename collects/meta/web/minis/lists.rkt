@@ -21,11 +21,12 @@
 
 (define lists
   @page[#:title "Mailing Lists" #:file "" #:part-of 'community
-        #:referrer values
     (define (list-cells what) (map (lambda (r) (r what)) list-renderers))
     ]{
-    @p{This is the Racket mailing list server.  We have three public mailing
-       lists listed below, with several mirrors for each one.}
+    @p{This is the Racket mailing list server.  We have several public mailing
+       lists, some are listed below with several mirrors for each one.  The
+       complete list of public mailing lists is available on
+       @a[href: "listinfo"]{this page}.}
     @(define gap1
        (tr (map (lambda (_) @td{@div[style: "height: 1ex;"]{}}) MLs)))
     @(define gap2
@@ -87,8 +88,7 @@
            @span[style: "font-size: small;"]{@at-domain}}}]
       [(description) @td{@description}]
       [(main-page-cell)
-       @td{@big{@b{@TT{@name}}}
-           @a[href: (list name "/")]{page}
+       @td{@a[href: (list name "/")]{@big{@b{@TT{@name}}} page}
            @bull
            @a[href: (list name "/archive/")]{archive}}]
       [(graph-cell)

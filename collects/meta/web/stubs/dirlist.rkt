@@ -13,5 +13,7 @@
                                          #:part-of 'download
                                          "{{{BODY}}}"]))))
 
-(define header @plain[#:file "header.html" (car  (force header+footer))])
-(define footer @plain[#:file "footer.html" (cadr (force header+footer))])
+(define header
+  @plain[#:file "header.html" #:newline #f (car  (force header+footer))])
+(define footer
+  @plain[#:file "footer.html" #:newline #f (cadr (force header+footer))])
