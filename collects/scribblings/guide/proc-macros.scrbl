@@ -266,7 +266,7 @@ Now we need an expression in place of @racket[....] that
 generates as many identifiers as there are @racket[id] matches in
 the original pattern. Since this is a common task, Racket
 provides a helper function, @racket[generate-temporaries], that
-takes a sequece of identifiers and returns a sequence of
+takes a sequence of identifiers and returns a sequence of
 generated identifiers:
 
 @racketblock[
