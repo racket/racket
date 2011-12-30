@@ -53,7 +53,7 @@ The @racket[file-guard] procedure must accept three arguments:
   @item{a path (see @secref["pathutils"]) or @racket[#f] for
   pathless queries, such as @racket[(current-directory)],
   @racket[(filesystem-root-list)], and @racket[(find-system-path
-  symbol)]. A path provided to @racket[file-guard] is not expanded or
+  _symbol)]. A path provided to @racket[file-guard] is not expanded or
   otherwise normalized before checking access; it may be a relative
   path, for example.}
 
