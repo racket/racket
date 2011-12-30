@@ -1247,6 +1247,16 @@ See also the @racketmodname[2htdp/planetcute] library.
   and then paste it into your program or download it and use @racket[bitmap].
 }
 
+@defproc[(bitmap/file [ps path-string?]) image?]{
+  Loads the image from @racket[ps].
+
+  If @racket[ps] is a relative path, the file is relative to
+  the current directory. (When running in DrRacket, the current
+  directory is set to the place where the definitions window is
+  saved, but in general this can be an arbitrary directory.)
+}
+
+
 @defproc[(image->color-list [image image?]) (listof color?)]{
   Returns a list of colors that correspond to the colors in the
   image, reading from left to right, top to bottom.

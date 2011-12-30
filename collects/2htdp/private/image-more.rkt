@@ -1317,6 +1317,14 @@
                    (λ (port)
                      (make-object bitmap% port 'unknown #f #t)))))
                       
+(define/chk (bitmap/file filename)
+  (unless (file-exists? filename)
+    (error 'bitmap/file 
+           "could not find the file ~a" 
+           filename))
+  (rotate
+   0
+   (read-bitmap filename)))
 
 (define/chk (image->color-list image)
   (let* ([w (image-width image)]
@@ -1495,6 +1503,7 @@
          
          bitmap
          bitmap/url
+         bitmap/file
          
          swizzle
          

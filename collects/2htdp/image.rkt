@@ -135,7 +135,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          save-svg-image
          
          freeze
-         bitmap/url)
+         bitmap/url
+         bitmap/file)
 
 (provide bitmap
          empty-image)
