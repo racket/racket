@@ -6,6 +6,8 @@
          "checked-cell.rkt"
          "stop.rkt"
          "universe-image.rkt"
+	 "pad.rkt"
+	 (only-in 2htdp/image scale overlay/align)
          htdp/error
          mzlib/runtime-path
          mrlib/bitmap-label
@@ -30,6 +32,8 @@
 ;                                     
 ;                                     
 
+(define MIN-WIDT-FOR-GAME-PAD 300)
+
 ;; -----------------------------------------------------------------------------
 ;; packages for broadcasting information to the universe 
 
@@ -52,7 +56,7 @@
     (class* object% (start-stop<%>)
       (inspect #f)
       (init-field world0)
-      (init-field name state register check-with on-key on-release on-mouse record?)
+      (init-field name state register check-with on-key on-release on-pad on-mouse record?)
       (init on-receive on-draw stop-when)
       
       ;; -----------------------------------------------------------------------
@@ -148,20 +152,30 @@
                 (unless (and width height)
                   (set! width first-width)
                   (set! height first-height))))
+	  (when pad
+	    (unless (>= width MIN-WIDT-FOR-GAME-PAD)
+	      (error 'big-bang
+		"a game pad requires a scene whose width is greater or equal to ~a, given ~e"
+		MIN-WIDT-FOR-GAME-PAD fst-scene))
+	    (set! game-pad-image (scale (/ width (image-width game-pad)) game-pad)))
           (create-frame)
           (show fst-scene)))
+
+      (define/private (add-game-pad scene)
+	(if (boolean? pad) scene (overlay/align 'left 'bottom game-pad-image scene)))
       
       (define/public (deal-with-key %)
-        (if (and (not on-key) (not on-release))
+        (if (and (not on-key) (not on-pad) (not on-release))
             %
             (class %
               (super-new)
               (define/override (on-char e) 
                 (when live
                   (let ([e:str (key-event->parts e)])
-                    (if (string=? e:str "release")
-                        (prelease (key-release->parts e))
-                        (pkey e:str))))))))
+                    (cond
+		      [(string=? e:str "release") (prelease (key-release->parts e))]
+		      [(and pad (pad-event? e:str)) (ppad e:str)]
+		      [else (pkey e:str)])))))))
       
       (define/public (deal-with-mouse %)
         (if (not on-mouse) 
@@ -216,7 +230,8 @@
       
       ;; Image -> Void
       ;; show the image in the visible world
-      (define/public (show pict)
+      (define/public (show pict0)
+	(define pict (add-game-pad pict0))
         (send visible begin-edit-sequence)
         (send visible lock #f)
         (let ([s (send visible find-first-snip)]
@@ -237,6 +252,8 @@
       ;; callbacks 
       (field
        (key     (if on-key on-key (lambda (w ke) w)))
+       (pad     on-pad)
+       (game-pad-image #f)
        (release (if on-release on-release (lambda (w ke) w)))
        (mouse  on-mouse)
        (rec    on-receive))
@@ -315,7 +332,10 @@
       
       ;; key events 
       (def/cback pubment (pkey ke) key)
-      
+
+      ;; key events 
+      (def/cback pubment (ppad ke) pad)
+
       ;; release events 
       (def/cback pubment (prelease ke) release)
       
@@ -494,7 +514,7 @@
 ;; EXPLORE: put random into the library and make it an event 
 (define aworld-old%
   (class world% (super-new)
-    (inherit-field world0 tick key release mouse rec draw rate width height record?)
+    (inherit-field world0 tick key pad release mouse rec draw rate width height record?)
     (inherit show callback-stop!)
     
     ;; Frame Custodian ->* (-> Void) (-> Void)
@@ -537,6 +557,7 @@
     
     (def/cb augment (ptock tick))
     (def/cb augment (pkey key e))
+    (def/cb augment (ppad pad e))
     (def/cb augment (prelease release e))
     (def/cb augment (pmouse mouse x y me))
     (def/cb augment (prec rec m))

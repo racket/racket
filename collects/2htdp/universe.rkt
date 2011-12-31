@@ -88,13 +88,16 @@
   ;; World Nat Nat MouseEvent -> World 
   ;; on-mouse must specify a mouse event handler 
   [on-mouse DEFAULT #f (function-with-arity 4)]
-  ;; World KeyEvent -> World 
+  ;; (U #f (World KeyEvent -> World))
   ;; on-key must specify a key event handler 
   [on-key DEFAULT #f (function-with-arity 2)]
-  ;; World KeyEvent -> World 
+  ;; (U #f (World PadEvent -> World))
+  ;; on-pad must specify a pad event handler 
+  [on-pad DEFAULT #f (function-with-arity 2)]
+  ;; (U #f (World KeyEvent -> World))
   ;; on-release must specify a release event handler 
   [on-release DEFAULT #f (function-with-arity 2)]
-  ;; (U #f (World S-expression -> World))
+  ;; (World S-expression -> World)
   ;; -- on-receive must specify a receive handler 
   [on-receive DEFAULT #'(lambda (w m) w) (function-with-arity 2)]
   ;; World -> Boolean 
