@@ -23,7 +23,7 @@
 
 The library supports Objective-C interaction in two layers. The upper
 layer provides syntactic forms for sending messages and deriving
-subclasses. The lower layer is a think wrapper on the
+subclasses. The lower layer is a thin wrapper on the
 @link["http://developer.apple.com/DOCUMENTATION/Cocoa/Reference/ObjCRuntimeRef/index.html"]{Objective-C
 runtime library} functions. Even the upper layer is unsafe and
 relatively low-level compared to normal Racket libraries, because

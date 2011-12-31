@@ -1213,9 +1213,10 @@ typewriter font with two leading @litchar{+}s).}
 
 See also @secref["base-links"].
 
-@defform[(racketlink id pre-content ...)
-         #:contracts ([id identifier?]
-                      [pre-content pre-content?])]{
+@defform*[[(racketlink id #:style style-expr pre-content ...)
+           (racketlink id pre-content ...)]
+          #:contracts ([id identifier?]
+                       [pre-content pre-content?])]{
 
 An element where the @tech{decode}d @racket[pre-content] is hyperlinked to the definition
 of @racket[id].}

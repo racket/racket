@@ -9,6 +9,11 @@
      (lambda (stx)
        #'@racketidfont{_float*})))
 
+@(define-syntax-rule (defform-arrow . content)
+   (begin
+     (require (only-in (for-label ffi/unsafe) ->))
+     (defidform -> . content)))
+
 @title[#:tag "types" #:style 'toc]{C Types}
 
 @deftech{C types} are the main concept of the @tech{FFI}, either
@@ -539,8 +544,8 @@ values: @itemize[
 
 ]}
 
-@defform/subs[#:literals (-> :: :)
-              (_fun fun-option ... maybe-args type-spec ... -> type-spec
+@defform/subs[#:literals (->> :: :)
+              (_fun fun-option ... maybe-args type-spec ... ->> type-spec
                     maybe-wrapper)
               ([fun-option (code:line #:abi abi-expr)
                            (code:line #:save-errno save-errno-expr)
@@ -557,7 +562,7 @@ values: @itemize[
                           (type-expr = value-expr)
                           (id : type-expr = value-expr)]
                [maybe-wrapper code:blank
-                               (code:line -> output-expr)])]{
+                               (code:line ->> output-expr)])]{
 
 Creates a new function type.  The @racket[_fun] form is a convenient
 syntax for the @racket[_cprocedure] type constructor. In its simplest
@@ -568,7 +573,7 @@ straightforward function type.
 For instance,
 
 @racketblock[
-(_fun _int _string -> _int)
+(_fun _int _string ->> _int)
 ]
 
 specifies a function that receives an integer and a
@@ -599,7 +604,7 @@ labels, so if an argument is there is no need to use an expression.
 For example,
 
 @racketblock[
-(_fun (n s) :: (s : _string) (n : _int) -> _int)
+(_fun (n s) :: (s : _string) (n : _int) ->> _int)
 ]
 
 specifies a function that receives an integer and a string, but the
@@ -610,6 +615,12 @@ foreign function receives the string first.}
          cpointer?]{
 
 Casts @racket[ptr-or-proc] to a function pointer of type @racket[fun-type].}
+
+@defform-arrow{
+
+A literal used in @racket[_fun] forms. (It's unfortunate that this
+literal has the same name as @racket[->] from
+@racketmodname[racket/contract], but it's a different binding.}}
 
 @; ----------------------------------------------------------------------
 
@@ -696,7 +707,7 @@ the @racket[_float] type.
   (syntax-id-rules (_float*)
     [(_float*) (type: _float pre: (x => (+ 0.0 x)))]))
 
-(_fun _float* -> _bool)]}
+(_fun _float* ->> _bool)]}
 
 @defidform[_?]{
 
@@ -748,8 +759,8 @@ following type:
 
 @racketblock[
 (_fun (i : (_ptr o _int))
-      -> (d : _double)
-      -> (values d i))
+      ->> (d : _double)
+      ->> (values d i))
 ]
 
 creates a function that calls the foreign function with a fresh
@@ -957,7 +968,7 @@ work:
 @racketblock[
 (define makeB
   (get-ffi-obj 'makeB "foo.so"
-    (_fun -> (_list-struct (_list-struct _int _byte) _int))))
+    (_fun ->> (_list-struct (_list-struct _int _byte) _int))))
 (makeB) (code:comment @#,t{should return @racket['((1 2) 3)]})
 ]
 
@@ -966,7 +977,7 @@ than the struct itself.  The following works as expected:
 
 @racketblock[
 (define makeB
-  (get-ffi-obj 'makeB "foo.so" (_fun -> _pointer)))
+  (get-ffi-obj 'makeB "foo.so" (_fun ->> _pointer)))
 (ptr-ref (makeB) (_list-struct (_list-struct _int _byte) _int))
 ]
 
@@ -978,7 +989,7 @@ define a type for @cpp{A} which makes it possible to use @cpp{makeA}:
 (define-cstruct #,(racketidfont "_A") ([x _int] [y _byte]))
 (define makeA
   (get-ffi-obj 'makeA "foo.so"
-    (_fun -> #,(racketidfont "_A-pointer")))) (code:comment @#,t{using @racketidfont{_A} is a memory-corrupting bug!})
+    (_fun ->> #,(racketidfont "_A-pointer")))) (code:comment @#,t{using @racketidfont{_A} is a memory-corrupting bug!})
 (define a (makeA))
 (list a (A-x a) (A-y a))
 (code:comment @#,t{produces an @racket[A] containing @racket[1] and @racket[2]})
@@ -989,7 +1000,7 @@ Using @cpp{gety} is also simple:
 @racketblock[
 (define gety
   (get-ffi-obj 'gety "foo.so"
-    (_fun #,(racketidfont "_A-pointer") -> _byte)))
+    (_fun #,(racketidfont "_A-pointer") ->> _byte)))
 (gety a) (code:comment @#,t{produces @racket[2]})
 ]
 
@@ -1000,7 +1011,7 @@ using it:
 (define-cstruct #,(racketidfont "_B") ([a #,(racketidfont "_A")] [z _int]))
 (define makeB
   (get-ffi-obj 'makeB "foo.so"
-    (_fun -> #,(racketidfont "_B-pointer"))))
+    (_fun ->> #,(racketidfont "_B-pointer"))))
 (define b (makeB))
 ]
 

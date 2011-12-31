@@ -230,18 +230,21 @@
 (define-/form racketblock/form racketblock)
 (define-/form racket/form racket)
 
-(define (*racketlink stx-id id . s)
+(define (*racketlink stx-id id style . s)
   (let ([content (decode-content s)])
     (make-delayed-element
      (lambda (r p ri)
        (make-link-element
-        #f
+        style
         content
         (or (find-racket-tag p ri stx-id #f)
             `(undef ,(format "--UNDEFINED:~a--" (syntax-e stx-id))))))
      (lambda () content)
      (lambda () content))))
 
-(define-syntax-rule (racketlink id . content)
-  (*racketlink (quote-syntax id) 'id . content))
-
+(define-syntax racketlink
+  (syntax-rules ()
+    [(_ id #:style style . content)
+     (*racketlink (quote-syntax id) 'id style . content)]
+    [(_ id . content)
+     (*racketlink (quote-syntax id) 'id #f . content)]))
