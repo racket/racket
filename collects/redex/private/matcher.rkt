@@ -773,7 +773,7 @@ See match-a-pattern.rkt for more details
                         [else
                          (match-nt (hash-ref clang-list-ht nt)
                                    (hash-ref clang-ht nt)
-                                   nt exp hole-info in-name? clang-ht)]))])
+                                   nt exp hole-info (and #f in-name?) clang-ht)]))])
             try-again)
           (hash-ref has-hole-ht nt)))]
       [`(name ,name ,pat)
