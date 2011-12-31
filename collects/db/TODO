@@ -78,3 +78,30 @@ Misc
   - sqlite3: sqlite3_last_insert_rowid(), use sqlite3_changes() to see if insert succeeded,
     but still need to tell if stmt was even insert (parse sql?)
   - odbc: ???
+
+- add recursive locking?
+  - cons: - considered by experts to be bad design, sloppy
+  - pros: - would simplify cleanup for one-shot pstmts
+          - would enable simple impl of user-level 'call-with-lock' for grouping 
+            multiple operations together
+            (but this could also be done by two locks: outer "ownership" lock 
+            and inner "invariant-protecting" lock)
+
+- audit code for break-safety, disable breaks as needed
+
+- dialect info for ODBC
+  - can get some tx data from ODBC...
+  - on the other hand, not supposed to do tx-SQL in ODBC anyway, so low-priority
+
+- postgresql query path optimizations
+  - once all types have binary readers...
+  - can eliminate prepare step when args given (use unnamed statement)
+  - then, can remember what SQL in unnamed statement, avoid re-parse
+
+- mysql, sqlite3, odbc query path optimization
+  - can do something similar, but messier because no unnamed statement
+  - might make close-on-exec? obsolete
+  - add sql field to pstmt%, add sql=>pstmt hash in connection (update on pstmt finalize)
+    - use as stmt cache, avoid re-prepare
+    - sql field would be good for eventually implementing cursors, too
+  - PROBLEM: if schema changes, may invalidate pstmt, change types, etc

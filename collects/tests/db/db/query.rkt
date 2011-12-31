@@ -266,12 +266,196 @@
         (check-equal? (in-transaction? c) #t)
         (check-pred void? (rollback-transaction c))
         (check-equal? (in-transaction? c) #f)))
-    (test-case "error on repeated start"
+    (test-case "error on managed st, unmanaged end"
       (with-connection c
         (start-transaction c)
-        (check-exn #rx"already in transaction"
-                   (lambda () (start-transaction c)))))
-    (test-case "call-with-tx"
+        (check-exn #rx"ROLLBACK not allowed within managed transaction"
+                   (lambda () (query-exec c "ROLLBACK")))
+        (check-equal? (in-transaction? c) #t)
+        ;; SQLite-ODBC is unhappy with open tx on disconnect
+        (rollback-transaction c)))
+    (unless (ANYFLAGS 'odbc)
+      (test-case "unmanaged st, managed end ok"
+        (with-connection c
+          (query-exec c (cond [(ANYFLAGS 'ispg 'ismy) "START TRANSACTION"]
+                              [(ANYFLAGS 'issl) "BEGIN TRANSACTION"]))
+          (check-equal? (in-transaction? c) #t)
+          (rollback-transaction c)
+          (check-equal? (in-transaction? c) #f))))
+    (test-case "error on cwt, unmanaged end"
+      (with-connection c
+        (check-exn #rx"ROLLBACK not allowed within managed transaction"
+                   (lambda ()
+                     (call-with-transaction c
+                       (lambda () (query-exec c "ROLLBACK")))))
+        (check-equal? (in-transaction? c) #f)))
+    (when (and (ANYFLAGS 'ispg 'issl) (not (ANYFLAGS 'odbc)))
+      (test-case "transactional ddl"
+        (with-connection c
+          (start-transaction c)
+          (query-exec c "create table foo (n integer)")
+          (define exists1 (table-exists? c "foo"))
+          (rollback-transaction c)
+          (define exists2 (table-exists? c "foo"))
+          (when exists2 (query-exec c "drop table foo")) ;; shouldn't happen
+          (check-equal? exists1 #t)
+          (check-equal? exists2 #f))))
+    (when (ANYFLAGS 'ismy 'odbc)
+      (test-case "error on implicit-commit stmt"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"statement with implicit commit not allowed"
+                     (lambda () (query-exec c "create table foo (n integer)")))
+          ;; SQLite-ODBC is unhappy with open tx on disconnect
+          (rollback-transaction c))))
+    (when (ANYFLAGS 'odbc)
+      (test-case "error on repeated start"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"already in transaction"
+                     (lambda () (start-transaction c))))))
+    (unless (ANYFLAGS 'odbc)
+      (test-case "start, start"
+        (with-connection c
+          (check-pred void? (start-transaction c))
+          (check-pred void? (start-transaction c))
+          (check-equal? (in-transaction? c) #t)
+          (check-pred void? (commit-transaction c))
+          (check-equal? (in-transaction? c) #t)
+          (check-pred void? (commit-transaction c))
+          (check-equal? (in-transaction? c) #f))))
+    (when (ANYFLAGS 'odbc)
+      (test-case "start, start fails"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"already in transaction"
+                     (lambda () (start-transaction c)))))
+      (test-case "cwt, start fails"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"already in transaction"
+                     (lambda () (call-with-transaction c void))))))
+    (test-case "commit w/o start is no-op"
+      (with-connection c
+        (check-pred void? (commit-transaction c))))
+    (test-case "rollback w/o start is no-op"
+      (with-connection c
+        (check-pred void? (rollback-transaction c))))
+    (test-case "cwt normal"
+      (with-connection c
+        (check-equal? (call-with-transaction c
+                        (lambda () (query-value c (select-val "'abc'"))))
+                      "abc")))
+    (test-case "cwt w/ error"
+      (with-connection c
+        (check-exn exn:fail?
+                   (lambda ()
+                     (call-with-transaction c
+                       (lambda () (query-value c (select-val "foo"))))))
+        (check-equal? (in-transaction? c) #f)))
+    (test-case "cwt w/ caught error"
+      (with-connection c
+        (define (check-pg-exn proc)
+          (if (ANYFLAGS 'ispg 'odbc) (check-exn exn:fail? proc) (proc)))
+        (let ([ok? #f])
+          (check-pg-exn
+           (lambda ()
+             (call-with-transaction c
+               (lambda ()
+                 (with-handlers ([exn:fail? void?])
+                   (query-value c (select-val "foo")))
+                 (set! ok? (in-transaction? c))))))
+          (check-equal? ok? #t "still in tx after caught error")
+          (check-equal? (in-transaction? c) #f))))
+
+    (unless (ANYFLAGS 'odbc)
+      (test-case "cwt w/ unclosed tx"
+        (with-connection c
+          (check-exn #rx"unclosed nested tr.* .within .* call-with-transaction"
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda ()
+                           (start-transaction c)
+                           (query-value c (select-val "17"))))))
+          (check-equal? (in-transaction? c) #f)))
+      (test-case "cwt w/ unbalanced commit"
+        (with-connection c
+          (check-exn #rx"commit-tr.* start-tr.* .within .* call-with-transaction"
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda ()
+                           (commit-transaction c)))))
+          (check-equal? (in-transaction? c) #f)))
+      (test-case "cwt w/ unbalanced rollback"
+        (with-connection c
+          (check-exn #rx"rollback-tr.* start-tr.* .within .* call-with-transaction"
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda ()
+                           (rollback-transaction c)))))
+          (check-equal? (in-transaction? c) #f)))
+
+      ;; start-tx, then call-with-tx
+      (test-case "st, cwt normal"
+        (with-connection c
+          (start-transaction c)
+          (check-equal? (call-with-transaction c
+                          (lambda () (query-value c (select-val "17"))))
+                        17)
+          (check-equal? (in-transaction? c) #t)))
+      (test-case "st, cwt w/ error"
+        (with-connection c
+          (start-transaction c)
+          (check-exn exn:fail?
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda () (query-value c (select-val "foo"))))))
+          (check-equal? (in-transaction? c) #t)))
+      (test-case "st, cwt w/ caught error"
+        (with-connection c
+          (define (check-pg-exn proc)
+            (if (ANYFLAGS 'ispg) (check-exn exn:fail? proc) (proc)))
+          (let ([ok? #f])
+            (start-transaction c)
+            (check-pg-exn
+             (lambda ()
+               (call-with-transaction c
+                 (lambda ()
+                   (with-handlers ([exn:fail? void?])
+                     (query-value c (select-val "foo")))
+                   (set! ok? (in-transaction? c))))))
+            (check-equal? ok? #t "still in tx after caught error")
+            (check-equal? (in-transaction? c) #t))))
+      (test-case "st, cwt w/ unclosed tx"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"unclosed nested tr.* .within .* call-with-transaction"
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda ()
+                           (start-transaction c)
+                           (query-value c (select-val "17"))))))
+          (check-equal? (in-transaction? c) #t)))
+      (test-case "st, cwt w/ unbalanced commit"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"commit-tr.* start-tr.* .within .* call-with-transaction"
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda ()
+                           (commit-transaction c)))))
+          (check-equal? (in-transaction? c) #t)))
+      (test-case "cwt w/ unbalanced rollback"
+        (with-connection c
+          (start-transaction c)
+          (check-exn #rx"rollback-tr.* start-tr.* .within .* call-with-transaction"
+                     (lambda ()
+                       (call-with-transaction c
+                         (lambda ()
+                           (rollback-transaction c)))))
+          (check-equal? (in-transaction? c) #t))))
+
+    (test-case "cwt misc"
       (with-connection c
         (check-equal? (call-with-transaction c
                         (lambda ()

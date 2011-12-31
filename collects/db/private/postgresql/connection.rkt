@@ -33,7 +33,10 @@
     (inherit call-with-lock
              call-with-lock*
              add-delayed-call!
-             check-valid-tx-status)
+             check-valid-tx-status
+             check-statement/tx
+             transaction-nesting
+             tx-state->string)
     (inherit-field tx-status)
 
     (super-new)
@@ -48,12 +51,10 @@
     ;; == Debugging
 
     ;; Debugging
-    (define DEBUG-RESPONSES #f)
-    (define DEBUG-SENT-MESSAGES #f)
+    (define DEBUG? #f)
 
-    (define/public (debug incoming? [outgoing? incoming?])
-      (set! DEBUG-RESPONSES incoming?)
-      (set! DEBUG-SENT-MESSAGES outgoing?))
+    (define/public (debug debug?)
+      (set! DEBUG? debug?))
 
     ;; ========================================
 
@@ -64,7 +65,7 @@
     (define/private (raw-recv)
       (with-disconnect-on-error
        (let ([r (parse-server-message inport)])
-         (when DEBUG-RESPONSES
+         (when DEBUG?
            (fprintf (current-error-port) "  << ~s\n" r))
          r)))
 
@@ -88,7 +89,7 @@
 
     ;; buffer-message : message -> void
     (define/private (buffer-message msg)
-      (when DEBUG-SENT-MESSAGES
+      (when DEBUG?
         (fprintf (current-error-port) "  >> ~s\n" msg))
       (with-disconnect-on-error
        (write-message msg outport)))
@@ -141,7 +142,7 @@
     ;; disconnect* : boolean -> void
     (define/private (disconnect* no-lock-held?)
       (define (go politely?)
-        (when DEBUG-SENT-MESSAGES
+        (when DEBUG?
           (fprintf (current-error-port) "  ** Disconnecting\n"))
         (let ([outport* outport]
               [inport* inport])
@@ -243,43 +244,55 @@
                     (call-with-lock fsym
                       (lambda ()
                         (check-valid-tx-status fsym)
-                        (query1 fsym stmt0)))])
+                        (let* ([stmt (check-statement fsym stmt0)]
+                               [stmt-type (send (statement-binding-pst stmt) get-stmt-type)])
+                          (check-statement/tx fsym stmt-type)
+                          (values stmt (query1 fsym stmt #f)))))])
         (statement:after-exec stmt)
         (query1:process-result fsym result)))
 
-    (define/private (query1 fsym stmt)
-      (let ([stmt (check-statement fsym stmt)])
-        (query1:enqueue stmt)
-        (send-message (make-Sync))
-        (begin0 (values stmt (query1:collect fsym stmt))
-          (check-ready-for-query fsym #f))))
+    (define/private (query1 fsym stmt simple?)
+      ;; if simple?: stmt must be string, no params, & results must be binary-readable
+      (query1:enqueue stmt)
+      (send-message (make-Sync))
+      (begin0 (query1:collect fsym simple?)
+        (check-ready-for-query fsym #f)
+        (when DEBUG?
+          (fprintf (current-error-port) "  ** ~a\n" (tx-state->string)))))
 
     ;; check-statement : symbol statement -> statement-binding
-    ;; Always prepare, so we can have type information to choose result formats.
+    ;; Convert to statement-binding; need to prepare to get type information, used to
+    ;; choose result formats.
+    ;; FIXME: if text format eliminated, can skip prepare
+    ;; FIXME: can use classify-pg-sql to avoid preparing stmts with no results
     (define/private (check-statement fsym stmt)
       (cond [(statement-binding? stmt)
              (let ([pst (statement-binding-pst stmt)])
-               (send pst check-owner fsym this stmt))
-             stmt]
+               (send pst check-owner fsym this stmt)
+               stmt)]
             [(string? stmt)
              (let ([pst (prepare1 fsym stmt #t)])
                (send pst bind fsym null))]))
 
     ;; query1:enqueue : Statement -> void
     (define/private (query1:enqueue stmt)
-      (let* ([pst (statement-binding-pst stmt)]
-             [pst-name (send pst get-handle)]
-             [params (statement-binding-params stmt)])
-        (buffer-message (make-Bind "" pst-name
-                                   (map typeid->format (send pst get-param-typeids))
-                                   params
-                                   (map typeid->format (send pst get-result-typeids)))))
+      (cond [(statement-binding? stmt)
+             (let* ([pst (statement-binding-pst stmt)]
+                    [pst-name (send pst get-handle)]
+                    [params (statement-binding-params stmt)])
+               (buffer-message (make-Bind "" pst-name
+                                          (map typeid->format (send pst get-param-typeids))
+                                          params
+                                          (map typeid->format (send pst get-result-typeids)))))]
+            [(string? stmt)
+             (buffer-message (make-Parse "" stmt '()))
+             (buffer-message (make-Bind "" "" '() '() '(1)))])
       (buffer-message (make-Describe 'portal ""))
       (buffer-message (make-Execute "" 0))
       (buffer-message (make-Close 'portal "")))
 
-    (define/private (query1:collect fsym stmt)
-      (when (string? stmt)
+    (define/private (query1:collect fsym simple?)
+      (when simple?
         (match (recv-message fsym)
           [(struct ParseComplete ()) (void)]
           [other-r (query1:error fsym other-r)]))
@@ -360,14 +373,14 @@
       (let ([name (generate-name)])
         (prepare1:enqueue name stmt)
         (send-message (make-Sync))
-        (begin0 (prepare1:collect fsym name close-on-exec?)
+        (begin0 (prepare1:collect fsym name close-on-exec? (classify-pg-sql stmt))
           (check-ready-for-query fsym #f))))
 
     (define/private (prepare1:enqueue name stmt)
       (buffer-message (make-Parse name stmt null))
       (buffer-message (make-Describe 'statement name)))
 
-    (define/private (prepare1:collect fsym name close-on-exec?)
+    (define/private (prepare1:collect fsym name close-on-exec? stmt-type)
       (match (recv-message fsym)
         [(struct ParseComplete ()) (void)]
         [other-r (prepare1:error fsym other-r)])
@@ -378,6 +391,7 @@
              (close-on-exec? close-on-exec?)
              (param-typeids param-typeids)
              (result-dvecs field-dvecs)
+             (stmt-type stmt-type)
              (owner this))))
 
     (define/private (prepare1:describe-params fsym)
@@ -423,57 +437,52 @@
 
     ;; == Transactions
 
-    (define/public (transaction-status fsym)
-      (call-with-lock fsym (lambda () tx-status)))
+    (define/override (start-transaction* fsym isolation)
+      (cond [(eq? isolation 'nested)
+             (let ([savepoint (generate-name)])
+               (query1 fsym (format "SAVEPOINT ~a" savepoint) #t)
+               savepoint)]
+            [else
+             (let* ([isolation-level (isolation-symbol->string isolation)]
+                    [stmt (if isolation-level
+                              (string-append "BEGIN WORK ISOLATION LEVEL " isolation-level)
+                              "BEGIN WORK")])
+               ;; FIXME: also support
+               ;;   'read-only  => "READ ONLY"
+               ;;   'read-write => "READ WRITE"
+               (query1 fsym stmt #t)
+               #f)]))
 
-    (define/public (start-transaction fsym isolation)
-      (internal-query fsym
-                      (lambda ()
-                        (when tx-status
-                          (error/already-in-tx fsym)))
-                      (let ([isolation-level (isolation-symbol->string isolation)])
-                        ;; 'read-only  => "READ ONLY"
-                        ;; 'read-write => "READ WRITE"
-                        (if isolation-level
-                            (string-append "BEGIN WORK ISOLATION LEVEL " isolation-level)
-                            "BEGIN WORK")))
-      (void))
-
-    (define/public (end-transaction fsym mode)
-      (internal-query fsym
-                      (lambda ()
-                        (unless (eq? mode 'rollback)
-                          ;; otherwise, COMMIT statement would cause silent ROLLBACK !!!
-                          (check-valid-tx-status fsym)))
-                      (case mode
-                        ((commit) "COMMIT WORK")
-                        ((rollback) "ROLLBACK WORK")))
+    (define/override (end-transaction* fsym mode savepoint)
+      (case mode
+        ((commit)
+         (cond [savepoint
+                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #t)]
+               [else
+                (query1 fsym "COMMIT WORK" #t)]))
+        ((rollback)
+         (cond [savepoint
+                (query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint) #t)
+                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #t)]
+               [else
+                (query1 fsym "ROLLBACK WORK" #t)])))
       (void))
 
     ;; == Reflection
 
     (define/public (list-tables fsym schema)
-      (let* ([where-cond
-              (case schema
-                ((search search-or-current)
-                 "table_schema = SOME (current_schemas(false))")
-                ((current)
-                 "table_schema = current_schema"))]
-             [stmt
-              (string-append "SELECT table_name FROM information_schema.tables WHERE "
-                             where-cond)]
-             [rows (vector-ref (internal-query fsym void stmt) 2)])
+      (let* ([stmt
+              (string-append
+               "SELECT table_name FROM information_schema.tables WHERE "
+               (case schema
+                 ((search search-or-current)
+                  "table_schema = SOME (current_schemas(false))")
+                 ((current)
+                  "table_schema = current_schema")))]
+             [result (call-with-lock fsym (lambda () (query1 fsym stmt #t)))]
+             [rows (vector-ref result 2)])
         (for/list ([row (in-list rows)])
           (bytes->string/utf-8 (vector-ref row 0)))))
-
-    (define/private (internal-query fsym pre-thunk stmt)
-      (let-values ([(stmt result)
-                    (call-with-lock fsym
-                      (lambda ()
-                        (pre-thunk)
-                        (query1 fsym stmt)))])
-        (statement:after-exec stmt)
-        result))
     ))
 
 ;; ========================================

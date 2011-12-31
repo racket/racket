@@ -4,7 +4,8 @@
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt")
 (provide dbsystem
-         supported-typeid?)
+         supported-typeid?
+         classify-odbc-sql)
 
 (define odbc-dbsystem%
   (class* object% (dbsystem<%>)
@@ -25,6 +26,37 @@
 
 (define dbsystem
   (new odbc-dbsystem%))
+
+;; ----
+
+;; SQL "parsing"
+;; We just care about detecting commands that affect transaction status.
+
+;; Since we have no idea what the actual database system is, just cover
+;; standard commands and assume DDL is not transactional.
+
+;; classify-odbc-sql : string [nat] -> symbol/#f
+(define classify-odbc-sql
+  (make-sql-classifier #:hash-comments? #t
+   '(;; Explicit transaction commands
+     ("ROLLBACK TRANSACTION TO"  rollback-savepoint)
+     ("ROLLBACK WORK TO"  rollback-savepoint)
+     ("ROLLBACK TO"       rollback-savepoint)
+     ("RELEASE"           release-savepoint)
+     ("SAVEPOINT"         savepoint)
+     ("START"             start)
+     ("BEGIN"             start)
+     ("COMMIT"            commit)
+     ("END"               commit)
+     ("ROLLBACK"          rollback) ;; Note: after ROLLBACK TO, etc
+
+     ;; Implicit commit
+     ("ALTER"             implicit-commit)
+     ("CREATE"            implicit-commit)
+     ("DROP"              implicit-commit)
+     ("GRANT"             implicit-commit)
+     ("RENAME"            implicit-commit)
+     ("TRUNCATE"          implicit-commit))))
 
 ;; ----
 

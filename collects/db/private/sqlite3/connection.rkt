@@ -24,11 +24,12 @@
 
     (inherit call-with-lock*
              add-delayed-call!
-             check-valid-tx-status)
-    (inherit-field tx-status)  ;; only #f or 'invalid for compat w/ check-valid-tx-status
+             check-valid-tx-status
+             check-statement/tx)
+    (inherit-field tx-status)
 
     (define/override (call-with-lock fsym proc)
-      (call-with-lock* fsym (lambda () (set! saved-tx-status (get-tx-status)) (proc)) #f #t))
+      (call-with-lock* fsym (lambda () (set! saved-tx-status tx-status) (proc)) #f #t))
 
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
@@ -41,11 +42,11 @@
                     (call-with-lock fsym
                       (lambda ()
                         (check-valid-tx-status fsym)
-                        (query1 fsym stmt)))])
+                        (query1 fsym stmt #t)))])
         (statement:after-exec stmt)
         result))
 
-    (define/private (query1 fsym stmt)
+    (define/private (query1 fsym stmt check-tx?)
       (let* ([stmt (cond [(string? stmt)
                           (let* ([pst (prepare1 fsym stmt #t)])
                             (send pst bind fsym null))]
@@ -54,6 +55,7 @@
              [pst (statement-binding-pst stmt)]
              [params (statement-binding-params stmt)])
         (send pst check-owner fsym this stmt)
+        (when check-tx? (check-statement/tx fsym (send pst get-stmt-type)))
         (let ([db (get-db fsym)]
               [stmt (send pst get-handle)])
           (HANDLE fsym (sqlite3_reset stmt))
@@ -68,18 +70,13 @@
                  [rows (step* fsym db stmt)])
             (HANDLE fsym (sqlite3_reset stmt))
             (HANDLE fsym (sqlite3_clear_bindings stmt))
+            (unless (eq? tx-status 'invalid)
+              (set! tx-status (get-tx-status)))
             (values stmt
                     (cond [(pair? info)
                            (rows-result info rows)]
                           [else
-                           (let ([changes (sqlite3_changes db)])
-                             (cond [(and (positive? changes)
-                                         #f ;; Note: currently disabled
-                                         #| FIXME: statement was INSERT stmt |#)
-                                    (simple-result
-                                     (list (cons 'last-insert-rowid
-                                                 (sqlite3_last_insert_rowid db))))]
-                                   [else (simple-result '())]))]))))))
+                           (simple-result '())]))))))
 
     (define/private (load-param fsym db stmt i param)
       (HANDLE fsym
@@ -155,6 +152,7 @@
                          (close-on-exec? close-on-exec?)
                          (param-typeids param-typeids)
                          (result-dvecs result-dvecs)
+                         (stmt-type (classify-sl-sql sql))
                          (owner this))])
           (hash-set! statement-table pst #t)
           pst)))
@@ -194,49 +192,46 @@
 
     ;; http://www.sqlite.org/lang_transaction.html
 
-    (define/public (transaction-status fsym)
-      (call-with-lock fsym
-        (lambda ()
-          (let ([db (get-db fsym)])
-            (or tx-status (get-tx-status db))))))
+    (define/private (get-tx-status)
+      (not (sqlite3_get_autocommit -db)))
 
-    (define/private (get-tx-status [db -db])
-      (and db (not (sqlite3_get_autocommit db))))
-
-    (define/public (start-transaction fsym isolation)
+    (define/override (start-transaction* fsym isolation)
       ;; Isolation level can be set to READ UNCOMMITTED via pragma, but
       ;; ignored in all but a few cases, don't bother.
       ;; FIXME: modes are DEFERRED | IMMEDIATE | EXCLUSIVE
-      (let ([stmt
-             (call-with-lock fsym
-               (lambda ()
-                 (let ([db (get-db fsym)])
-                   (when (get-tx-status db)
-                     (error/already-in-tx fsym))
-                   (let-values ([(stmt* _result)
-                                 (query1 fsym "BEGIN TRANSACTION")])
-                     stmt*))))])
-        (statement:after-exec stmt)
-        (void)))
+      (cond [(eq? isolation 'nested)
+             (let ([savepoint (generate-name)])
+               (query1 fsym (format "SAVEPOINT ~a" savepoint) #f)
+               savepoint)]
+            [else
+             (query1 fsym "BEGIN TRANSACTION" #f)
+             #f]))
 
-    (define/public (end-transaction fsym mode)
-      (let ([stmt
-             (call-with-lock fsym
-               (lambda ()
-                 (let ([db (get-db fsym)])
-                   (unless (eq? mode 'rollback)
-                     (check-valid-tx-status fsym))
-                   (when (get-tx-status db)
-                     (let-values ([(stmt* _result)
-                                   (case mode
-                                     ((commit)
-                                      (query1 fsym "COMMIT TRANSACTION"))
-                                     ((rollback)
-                                      (query1 fsym "ROLLBACK TRANSACTION")))])
-                       (set! tx-status #f)
-                       stmt*)))))])
-        (statement:after-exec stmt)
-        (void)))
+    (define/override (end-transaction* fsym mode savepoint)
+      (case mode
+        ((commit)
+         (cond [savepoint
+                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #f)]
+               [else
+                (query1 fsym "COMMIT TRANSACTION" #f)]))
+        ((rollback)
+         (cond [savepoint
+                (query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint) #f)
+                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #f)]
+               [else
+                (query1 fsym "ROLLBACK TRANSACTION" #f)])
+         ;; remove 'invalid status, if necessary
+         (set! tx-status (get-tx-status))))
+      (void))
+
+    ;; name-counter : number
+    (define name-counter 0)
+
+    ;; generate-name : -> string
+    (define/private (generate-name)
+      (let ([n name-counter])
+        (set! name-counter (add1 name-counter))
+        (format "λmz_~a" n)))
 
     ;; Reflection
 
@@ -247,7 +242,7 @@
                             "WHERE type = 'table' or type = 'view'")])
         (let-values ([(stmt result)
                       (call-with-lock fsym
-                        (lambda () (query1 fsym stmt)))])
+                        (lambda () (query1 fsym stmt #f)))])
           (statement:after-exec stmt)
           (for/list ([row (in-list (rows-result-rows result))])
             (vector-ref row 0)))))
@@ -272,7 +267,7 @@
     ;; Can't figure out how to test...
     (define/private (handle-status who s)
       (when (memv s maybe-rollback-status-list)
-        (when (and saved-tx-status -db (not (get-tx-status -db))) ;; was in trans, now not
+        (when (and saved-tx-status -db (not (get-tx-status))) ;; was in trans, now not
           (set! tx-status 'invalid)))
       (handle-status* who s -db))
 

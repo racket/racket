@@ -67,8 +67,8 @@
       (get-base)
       (free-statement stmt)
       (transaction-status fsym)
-      (start-transaction fsym isolation)
-      (end-transaction fsym mode)
+      (start-transaction fsym isolation cwt?)
+      (end-transaction fsym mode cwt?)
       (list-tables fsym schema))
 
     (super-new)))
@@ -177,8 +177,8 @@
       (#f #f     (connected?))
       (#t '_     (get-dbsystem))
       (#t '_     (query fsym stmt))
-      (#t '_     (start-transaction fsym isolation))
-      (#f (void) (end-transaction fsym mode))
+      (#t '_     (start-transaction fsym isolation cwt?))
+      (#f (void) (end-transaction fsym mode cwt?))
       (#f #f     (transaction-status fsym))
       (#t '_     (list-tables fsym schema)))
 
@@ -340,8 +340,8 @@
       (get-base)
       (free-statement stmt)
       (transaction-status fsym)
-      (start-transaction fsym isolation)
-      (end-transaction fsym mode)
+      (start-transaction fsym isolation cwt?)
+      (end-transaction fsym mode cwt?)
       (list-tables fsym schema))
 
     ;; (define-forward define/override (connected?))

@@ -492,19 +492,34 @@ closed.
 The functions described in this section provide a consistent interface
 to transactions.
 
-ODBC connections should use these functions exclusively instead of
-transaction-changing SQL statements such as @tt{START TRANSACTION} and
-@tt{COMMIT}. Using transaction-changing SQL may cause these functions
-to behave incorrectly and may cause additional problems in the ODBC
-driver.
+A @deftech{managed transaction} is one created via either
+@racket[start-transaction] or @racket[call-with-transaction]. In
+contrast, an @deftech{unmanaged transaction} is one created by
+evaluating a SQL statement such as @tt{START TRANSACTION}. A
+@deftech{nested transaction} is a transaction created within the
+extent of an existing transaction. If a nested transaction is
+committed, its changes are promoted to the enclosing transaction,
+which may itself be committed or rolled back. If a nested transaction
+is rolled back, its changes are discarded, but the enclosing
+transaction remains open. Nested transactions are implemented via SQL
+@tt{SAVEPOINT}, @tt{RELEASE SAVEPOINT}, and @tt{ROLLBACK TO
+SAVEPOINT}.
 
-PostgreSQL, MySQL, and SQLite connections are discouraged from using
-transaction-changing SQL statements, but the consequences are less
-dire. The functions below will behave correctly, but the syntax and
-behavior of the SQL statements is idiosyncratic. For example, in MySQL
-@tt{START TRANSACTION} commits the current transaction, if one is
-active; in PostgreSQL @tt{COMMIT} silently rolls back the current
-transaction if an error occurred in a previous statement.
+ODBC connections must use @tech{managed transactions} exclusively;
+using transaction-changing SQL may cause these functions to behave
+incorrectly and may cause additional problems in the ODBC driver. ODBC
+connections do not support @tech{nested transactions}.
+
+PostgreSQL, MySQL, and SQLite connections must not mix @tech[#:key
+"managed transaction"]{managed} and @tech[#:key "unmanaged
+transaction"]{unmanaged} transactions. For example, calling
+@racket[start-transaction] and then executing a @tt{ROLLBACK}
+statement is not allowed. Note that in MySQL, some SQL statements have
+@hyperlink["http://dev.mysql.com/doc/refman/5.0/en/implicit-commit.html"]{implicit
+transaction effects}. For example, in MySQL a @tt{CREATE TABLE}
+statement implicitly commits the current transaction. These statements
+also must not be used within @tech{managed transactions}. (In
+contrast, PostgreSQL and SQLite both support transactional DDL.)
 
 @bold{Errors} Query errors may affect an open transaction in one of
 three ways:
@@ -512,8 +527,7 @@ three ways:
 @item{the transaction remains open and unchanged}
 @item{the transaction is automatically rolled back}
 @item{the transaction becomes an @deftech{invalid transaction}; all
-subsequent queries will fail until the transaction is explicitly
-rolled back}
+subsequent queries will fail until the transaction is rolled back}
 ]
 To avoid the silent loss of information, this library attempts to
 avoid behavior (2) completely by marking transactions as invalid
@@ -525,31 +539,37 @@ to what errors cause which behaviors:
   parameter arity and type errors, leave the transaction open and
   unchanged (1).}
 @item{All errors originating from PostgreSQL cause the transaction to
-  become invalid (3).}
+  become @tech[#:key "invalid transaction"]{invalid} (3).}
 @item{Most errors originating from MySQL leave the transaction open
-  and unchanged (1), but a few cause the transaction to become invalid
-  (3). In the latter cases, the underlying behavior
-  of MySQL is to roll back the transaction but @emph{leave it open}
-  (see @hyperlink["http://dev.mysql.com/doc/refman/5.1/en/innodb-error-handling.html"]{the
+  and unchanged (1), but a few cause the transaction to become
+  @tech[#:key "invalid transaction"]{invalid} (3). In the latter
+  cases, the underlying behavior of MySQL is to roll back the
+  transaction but @emph{leave it open} (see
+  @hyperlink["http://dev.mysql.com/doc/refman/5.1/en/innodb-error-handling.html"]{the
   MySQL documentation}). This library detects those cases and marks
-  the transaction invalid instead.}
+  the transaction @tech[#:key "invalid transaction"]{invalid}
+  instead.}
 @item{Most errors originating from SQLite leave the transaction open
   and unchanged (1), but a few cause the transaction to become
-  invalid (3). In the latter cases, the underlying behavior of SQLite
-  is to roll back the transaction (see
+  @tech[#:key "invalid transaction"]{invalid} (3). In the latter
+  cases, the underlying behavior of SQLite is to roll back the
+  transaction (see
   @hyperlink["http://www.sqlite.org/lang_transaction.html"]{the SQLite
   documentation}). This library detects those cases and marks the
-  transaction invalid instead.}
+  transaction @tech[#:key "invalid transaction"]{invalid} instead.}
 @item{All errors originating from an ODBC driver cause the transaction
-  to become invalid (3). The underlying behavior of ODBC drivers
-  varies widely, and ODBC provides no mechanism to detect when an
-  existing transaction has been rolled back, so this library
-  intercepts all errors and marks the transaction invalid instead.}
+  to become @tech[#:key "invalid transaction"]{invalid} (3). The
+  underlying behavior of ODBC drivers varies widely, and ODBC provides
+  no mechanism to detect when an existing transaction has been rolled
+  back, so this library intercepts all errors and marks the
+  transaction @tech[#:key "invalid transaction"]{invalid} instead.}
 ]
-Future versions of this library may refine the set of errors that
-invalidate a transaction (for example, by identifying innocuous ODBC
-errors by SQLSTATE) and may provide an option to automatically
-rollback invalid transactions.
+If a nested transaction marked @tech[#:key "invalid
+transaction"]{invalid} is rolled back, the enclosing transaction is
+typically still valid.
+
+If a transaction is open when a connection is disconnected, it is
+implicitly rolled back.
 
 @defproc[(start-transaction [c connection?]
                             [#:isolation isolation-level
@@ -566,37 +586,50 @@ rollback invalid transactions.
   database-dependent; it may be a default isolation level or it may be
   the isolation level of the previous transaction.
 
-  If @racket[c] is already in a transaction, an exception is raised.
+  If @racket[c] is already in a transaction, @racket[isolation-level]
+  must be @racket[#f], and a @tech{nested transaction} is opened.
 }
 
 @defproc[(commit-transaction [c connection?]) void?]{
 
-  Attempts to commit the current transaction, if one is active. If the
-  transaction cannot be commited, an exception is raised.
+  Attempts to commit the current transaction, if one is open. If the
+  transaction cannot be commited (for example, if it is @tech[#:key
+  "invalid transaction"]{invalid}), an exception is raised.
 
-  If no transaction is active, this function has no effect.
+  If the current transaction is a @tech{nested transaction}, the
+  nested transaction is closed, its changes are incorporated into the
+  enclosing transaction, and the enclosing transaction is resumed.
+
+  If no transaction is open, this function has no effect.
 }
 
 @defproc[(rollback-transaction [c connection?]) void?]{
 
-  Rolls back the current transaction, if one is active.
+  Rolls back the current transaction, if one is open.
 
-  If no transaction is active, this function has no effect.
+  If the current transaction is a @tech{nested transaction}, the
+  nested transaction is closed, its changes are abandoned, and the
+  enclosing transaction is resumed.
+
+  If no transaction is open, this function has no effect.
 }
 
 @defproc[(in-transaction? [c connection?])
          boolean?]{
 
-  Returns @racket[#t] if @racket[c] has a transaction is active,
-  @racket[#f] otherwise.
+  Returns @racket[#t] if @racket[c] has an open transaction
+  (@tech[#:key "managed transaction"]{managed} or @tech[#:key
+  "unmanaged transaction"]{unmanaged}), @racket[#f] otherwise.
 }
 
 @defproc[(needs-rollback? [c connection?]) boolean?]{
 
   Returns @racket[#t] if @racket[c] is in an @tech{invalid
   transaction}. All queries executed using @racket[c] will fail until
-  the transaction is explicitly rolled back using
-  @racket[rollback-transaction].
+  the transaction is rolled back (either using
+  @racket[rollback-transaction], if the transaction was created with
+  @racket[start-transaction], or when the procedure passed to
+  @racket[call-with-transaction] returns).
 }
 
 @defproc[(call-with-transaction [c connection?]
@@ -613,8 +646,26 @@ rollback invalid transactions.
   Calls @racket[proc] in the context of a new transaction with
   isolation level @racket[isolation-level]. If @racket[proc] completes
   normally, the transaction is committed and @racket[proc]'s results
-  are returned. If @racket[proc] raises an exception, the transaction
-  is rolled back.
+  are returned. If @racket[proc] raises an exception (or if the
+  implicit commit at the end raises an exception), the transaction is
+  rolled back and the exception is re-raised.
+
+  If @racket[call-with-transaction] is called within a transaction,
+  @racket[isolation-level] must be @racket[#f], and it creates a
+  @tech{nested transaction}. Within the extent of a call to
+  @racket[call-with-transaction], transactions must be properly
+  nested. In particular:
+  @itemlist[
+  @item{Calling either @racket[commit-transaction] or
+  @racket[rollback-transaction] when the open transaction was
+  created by @racket[call-with-transaction] causes an exception to be
+  raised.}
+  @item{If a further nested transaction is open when @racket[proc]
+  completes (that is, created by an unmatched
+  @racket[start-transaction] call), an exception is raised and the
+  nested transaction created by @racket[call-with-transaction] is
+  rolled back.}
+  ]
 }
 
 @section{SQL Errors}
@@ -651,7 +702,7 @@ type.
   provide SQLSTATE error codes.
 }
 
-@section{Database Information}
+@section{Database Catalog Information}
 
 @defproc[(list-tables [c connection?]
                       [#:schema schema

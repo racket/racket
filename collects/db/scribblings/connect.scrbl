@@ -22,15 +22,15 @@ connections}. PostgreSQL and MySQL connections are wire-based, and
 SQLite and ODBC connections are FFI-based.
 
 Wire-based connections communicate using @tech/reference{ports}, which
-do not cause other Racket threads to block. In contrast, all Racket
-threads are blocked during an FFI call, so FFI-based connections can
-seriously degrade the interactivity of a Racket program, particularly
-if long-running queries are performed using the connection. This
-problem can be avoided by creating the FFI-based connection in a
-separate @tech/reference{place} using the @racket[#:use-place]
-keyword argument. Such a connection will not block all Racket threads
-during queries; the disadvantage is the cost of creating and
-communicating with a separate @tech/reference{place}.
+do not cause other Racket threads to block. In contrast, an FFI call
+causes all Racket threads to block until it completes, so FFI-based
+connections can degrade the interactivity of a Racket program,
+particularly if long-running queries are performed using the
+connection. This problem can be avoided by creating the FFI-based
+connection in a separate @tech/reference{place} using the
+@racket[#:use-place] keyword argument. Such a connection will not
+block all Racket threads during queries; the disadvantage is the cost
+of creating and communicating with a separate @tech/reference{place}.
 
 Base connections are made using the following functions.
 
@@ -567,14 +567,14 @@ ODBC's DSNs.
   @racket[data-source], then @racket[dsn-file] is ignored.
 
 @examples/results[
-[(put-dsn 'mydb
+[(put-dsn 'pg
           (postgresql-data-source #:user "me"
                                   #:database "mydb" 
                                   #:password "icecream"))
  (void)]
-[(dsn-connect 'mydb)
+[(dsn-connect 'pg)
  (new connection%)]
-[(dsn-connect 'mydb #:notice-handler (lambda (code msg) ....))
+[(dsn-connect 'pg #:notice-handler (lambda (code msg) ....))
  (new connection%)]
 ]
 }

@@ -8,11 +8,12 @@
 ;; prepared-statement%
 (define prepared-statement%
   (class* object% (prepared-statement<%>)
+    (init ([-owner owner]))
     (init-field handle            ;; handle, determined by database system, #f means closed
                 close-on-exec?    ;; boolean
                 param-typeids     ;; (listof typeid)
-                result-dvecs)     ;; (listof vector), layout depends on dbsys
-    (init ([-owner owner]))
+                result-dvecs      ;; (listof vector), layout depends on dbsys
+                [stmt-type #f])   ;; usually symbol or #f (see classify-*-sql)
 
     (define owner (make-weak-box -owner))
     (define dbsystem (send -owner get-dbsystem))
@@ -38,6 +39,8 @@
       (send dbsystem describe-typeids param-typeids))
     (define/public (get-result-types)
       (send dbsystem describe-typeids result-typeids))
+
+    (define/public (get-stmt-type) stmt-type)
 
     ;; checktype is either #f, 'rows, or exact-positive-integer
     (define/public (check-results fsym checktype obj)

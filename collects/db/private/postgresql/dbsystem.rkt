@@ -13,7 +13,8 @@
          (only-in "message.rkt" field-dvec->typeid))
 (provide dbsystem
          typeid->type-reader
-         typeid->format)
+         typeid->format
+         classify-pg-sql)
 
 (define postgresql-dbsystem%
   (class* object% (dbsystem<%>)
@@ -42,6 +43,38 @@
 
 (define dbsystem
   (new postgresql-dbsystem%))
+
+;; ========================================
+
+;; SQL "parsing"
+;; We just care about detecting commands that affect transaction status.
+
+;; classify-pg-sql : string [nat] -> symbol/#f
+(define classify-pg-sql
+  ;; Source: http://www.postgresql.org/docs/current/static/sql-commands.html
+  (make-sql-classifier
+   `(("ABORT"                        rollback)
+     ("BEGIN"                        start)
+     ;; COMMIT PREPARED itself is harmless.
+     ("COMMIT PREPARED"              #f) ;; Note: before COMMIT
+     ("COMMIT"                       commit)
+     ("DO"                           *do) ;; can do anything
+     ("END"                          commit)
+     ("EXECUTE"                      *execute) ;; can do anything
+     ;; PREPARE TRANSACTION is like shift: it saves and aborts current transaction.
+     ;; Perhaps all we care about is that it ends transaction, treat like commit/rollback.
+     ("PREPARE TRANSACTION"          prepare-transaction) ;; Note: before PREPARE
+     ("RELEASE SAVEPOINT"            release-savepoint)
+     ;; For ROLLBACK variants, ordered carefully and expanded optional words
+     ;; ROLLBACK PREPARED just deletes saved transaction
+     ("ROLLBACK PREPARED"            #f)
+     ("ROLLBACK WORK TO"             rollback-savepoint)
+     ("ROLLBACK TRANSACTION TO"      rollback-savepoint)
+     ("ROLLBACK TO"                  rollback-savepoint)
+     ("ROLLBACK"                     rollback)
+     ("SAVEPOINT"                    savepoint)
+     ("START TRANSACTION"            start)
+     )))
 
 ;; ========================================
 

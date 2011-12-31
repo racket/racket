@@ -42,7 +42,8 @@
     (inherit call-with-lock
              call-with-lock*
              add-delayed-call!
-             check-valid-tx-status)
+             check-valid-tx-status
+             check-statement/tx)
     (inherit-field tx-status)
 
     (define/public (get-db fsym)
@@ -58,12 +59,12 @@
                     (call-with-lock fsym
                       (lambda ()
                         (check-valid-tx-status fsym)
-                        (query1 fsym stmt)))])
+                        (query1 fsym stmt #t)))])
         (statement:after-exec stmt*)
         (cond [(pair? dvecs) (rows-result (map field-dvec->field-info dvecs) rows)]
               [else (simple-result '())])))
 
-    (define/private (query1 fsym stmt)
+    (define/private (query1 fsym stmt check-tx?)
       (let* ([stmt (cond [(string? stmt)
                           (let* ([pst (prepare1 fsym stmt #t)])
                             (send pst bind fsym null))]
@@ -72,6 +73,7 @@
              [pst (statement-binding-pst stmt)]
              [params (statement-binding-params stmt)])
         (send pst check-owner fsym this stmt)
+        (when check-tx? (check-statement/tx fsym (send pst get-stmt-type)))
         (let ([result-dvecs (send pst get-result-dvecs)])
           (for ([dvec (in-list result-dvecs)])
             (let ([typeid (field-dvec->typeid dvec)])
@@ -409,9 +411,10 @@
         (let ([pst (new prepared-statement%
                         (handle stmt)
                         (close-on-exec? close-on-exec?)
-                        (owner this)
                         (param-typeids param-typeids)
-                        (result-dvecs result-dvecs))])
+                        (result-dvecs result-dvecs)
+                        (stmt-type (classify-odbc-sql sql))
+                        (owner this))])
           (hash-set! statement-table pst #t)
           pst)))
 
@@ -473,59 +476,50 @@
 
     ;; Transactions
 
-    (define/public (transaction-status fsym)
-      (call-with-lock fsym
-        (lambda () (let ([db (get-db fsym)]) tx-status))))
+    (define/override (start-transaction* fsym isolation)
+      (when (eq? isolation 'nested)
+        (uerror fsym "already in transaction (nested transactions not supported for ODBC)"))
+      (let* ([db (get-db fsym)]
+             [ok-levels
+              (let-values ([(status value)
+                            (SQLGetInfo db SQL_TXN_ISOLATION_OPTION)])
+                (begin0 value (handle-status fsym status db)))]
+             [default-level
+               (let-values ([(status value)
+                             (SQLGetInfo db SQL_DEFAULT_TXN_ISOLATION)])
+                 (begin0 value (handle-status fsym status db)))]
+             [requested-level
+              (case isolation
+                ((serializable) SQL_TXN_SERIALIZABLE)
+                ((repeatable-read) SQL_TXN_REPEATABLE_READ)
+                ((read-committed) SQL_TXN_READ_COMMITTED)
+                ((read-uncommitted) SQL_TXN_READ_UNCOMMITTED)
+                (else
+                 ;; MySQL ODBC returns 0 for default level, seems no good.
+                 ;; So if 0, use serializable.
+                 (if (zero? default-level) SQL_TXN_SERIALIZABLE default-level)))])
+        (when (zero? (bitwise-and requested-level ok-levels))
+          (uerror fsym "requested isolation level ~a is not available" isolation))
+        (let ([status (SQLSetConnectAttr db SQL_ATTR_TXN_ISOLATION requested-level)])
+          (handle-status fsym status db)))
+      (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_OFF)])
+        (handle-status fsym status db)
+        (set! tx-status #t)
+        (void)))
 
-    (define/public (start-transaction fsym isolation)
-      (call-with-lock fsym
-        (lambda ()
-          (let* ([db (get-db fsym)])
-            (when tx-status
-              (error/already-in-tx fsym))
-            (let* ([ok-levels
-                    (let-values ([(status value)
-                                  (SQLGetInfo db SQL_TXN_ISOLATION_OPTION)])
-                      (begin0 value (handle-status fsym status db)))]
-                   [default-level
-                     (let-values ([(status value)
-                                   (SQLGetInfo db SQL_DEFAULT_TXN_ISOLATION)])
-                       (begin0 value (handle-status fsym status db)))]
-                   [requested-level
-                    (case isolation
-                      ((serializable) SQL_TXN_SERIALIZABLE)
-                      ((repeatable-read) SQL_TXN_REPEATABLE_READ)
-                      ((read-committed) SQL_TXN_READ_COMMITTED)
-                      ((read-uncommitted) SQL_TXN_READ_UNCOMMITTED)
-                      (else
-                       ;; MySQL ODBC returns 0 for default level, seems no good.
-                       ;; So if 0, use serializable.
-                       (if (zero? default-level) SQL_TXN_SERIALIZABLE default-level)))])
-              (when (zero? (bitwise-and requested-level ok-levels))
-                (uerror fsym "requested isolation level ~a is not available" isolation))
-              (let ([status (SQLSetConnectAttr db SQL_ATTR_TXN_ISOLATION requested-level)])
-                (handle-status fsym status db)))
-            (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_OFF)])
-              (handle-status fsym status db)
-              (set! tx-status #t)
-              (void))))))
-
-    (define/public (end-transaction fsym mode)
-      (call-with-lock fsym
-        (lambda () 
-          (unless (eq? mode 'rollback)
-            (check-valid-tx-status fsym))
-          (let ([db (get-db fsym)]
-                [completion-type
-                 (case mode
-                   ((commit) SQL_COMMIT)
-                   ((rollback) SQL_ROLLBACK))])
-            (handle-status fsym (SQLEndTran db completion-type) db)
-            (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_ON)])
-              (handle-status fsym status db)
-              ;; commit/rollback can fail; don't change status until possible error handled
-              (set! tx-status #f)
-              (void))))))
+    (define/override (end-transaction* fsym mode _savepoint)
+      ;; _savepoint = #f, because nested transactions not supported on ODBC
+      (let ([db (get-db fsym)]
+            [completion-type
+             (case mode
+               ((commit) SQL_COMMIT)
+               ((rollback) SQL_ROLLBACK))])
+        (handle-status fsym (SQLEndTran db completion-type) db)
+        (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_ON)])
+          (handle-status fsym status db)
+          ;; commit/rollback can fail; don't change status until possible error handled
+          (set! tx-status #f)
+          (void))))
 
     ;; GetTables
 
@@ -669,7 +663,7 @@ all Racket threads for a long time.
 1) The postgresql, mysql, and oracle drivers don't even support async
 execution. Only DB2 (and probably SQL Server, but I didn't try it).
 
-2) Tests using the DB2 driver gave bafflind HY010 (function sequence
+2) Tests using the DB2 driver gave baffling HY010 (function sequence
 error). My best theory so far is that DB2 (or maybe unixodbc) requires
 poll call arguments to be identical to original call arguments, which
 means that I would have to replace all uses of (_ptr o X) with

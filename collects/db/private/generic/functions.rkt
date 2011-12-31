@@ -253,28 +253,28 @@
 ;; ========================================
 
 (define (start-transaction c #:isolation [isolation #f])
-  (send c start-transaction 'start-transaction isolation))
+  (send c start-transaction 'start-transaction isolation #f))
 
 (define (commit-transaction c)
-  (send c end-transaction 'commit-transaction 'commit))
+  (send c end-transaction 'commit-transaction 'commit #f))
 
 (define (rollback-transaction c)
-  (send c end-transaction 'rollback-transaction 'rollback))
+  (send c end-transaction 'rollback-transaction 'rollback #f))
+
+(define (call-with-transaction c proc #:isolation [isolation #f])
+  (send c start-transaction '|call-with-transaction (start)| isolation #t)
+  (with-handlers ([(lambda (e) #t)
+                   (lambda (e)
+                     (send c end-transaction '|call-with-transaction (rollback)| 'rollback #t)
+                     (raise e))])
+    (begin0 (call-with-continuation-barrier proc)
+      (send c end-transaction '|call-with-transaction (commit)| 'commit #t))))
 
 (define (in-transaction? c)
   (and (send c transaction-status 'in-transaction?) #t))
 
 (define (needs-rollback? c)
   (eq? (send c transaction-status 'needs-rollback?) 'invalid))
-
-(define (call-with-transaction c proc #:isolation [isolation #f])
-  (send c start-transaction 'call-with-transaction isolation)
-  (begin0 (with-handlers ([(lambda (e) #t)
-                           (lambda (e)
-                             (send c end-transaction 'call-with-transaction 'rollback)
-                             (raise e))])
-            (proc))
-    (send c end-transaction 'call-with-transaction 'commit)))
 
 ;; ========================================
 

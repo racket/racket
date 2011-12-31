@@ -13,7 +13,8 @@
                                 "db/sql-types.rkt"
                                 "db/concurrent.rkt"))
          (prefix-in gen-
-                    (combine-in "gen/sql-types.rkt"
+                    (combine-in "gen/misc.rkt"
+                                "gen/sql-types.rkt"
                                 "gen/query.rkt")))
 (provide (all-defined-out))
 
@@ -193,7 +194,8 @@ Testing profiles are flattened, not hierarchical.
 
 (define generic-test
   (make-test-suite "Generic tests (no db)"
-    (list gen-sql-types:test
+    (list gen-misc:test
+          gen-sql-types:test
           gen-query:test)))
 
 ;; ----
