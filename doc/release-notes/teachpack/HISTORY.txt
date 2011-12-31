@@ -1,5 +1,9 @@
 ------------------------------------------------------------------------
 
+* added: universe.rkt now comes with a game-pad simulation option 
+  A game-pad is a special-purpose key handler plus an icon that maps out
+  the legal key strokes. 
+
 * fixed
   -- on-receive doesn't have to exist for universe/world interactions 
   -- name clause accepts strings and symbols 
