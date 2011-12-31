@@ -10,6 +10,9 @@
   ;; KeyEvent -> Boolean
   ;; is the given key-event also a pad-event? 
   pad-event? 
+  ;; PadEvent PadEvent -> Boolean 
+  ;; are the two pad-events equal? 
+  pad=?
   )
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -30,3 +33,5 @@
 (define (pad-event? ke)
   (pair? (member ke pad-buttons)))
 
+(define (pad=? ke)
+  (pair? (member ke pad-buttons)))

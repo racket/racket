@@ -25,6 +25,7 @@
          (only-in "private/launch-many-worlds.rkt" launch-many-worlds launch-many-worlds/proc)
          (only-in "private/stop.rkt" make-stop-the-world)
          (only-in "private/check-aux.rkt" sexp?)
+         (only-in "private/pad.rkt" pad-event? pad=?)
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
 
@@ -39,6 +40,15 @@
  ;; launch-many-worlds/proc : (-> Any) *-> [Listof Any]
  launch-many-worlds/proc
  )
+
+(provide
+ ;; KeyEvent -> Boolean
+  ;; is the given key-event also a pad-event? 
+  pad-event? 
+  ;; PadEvent PadEvent -> Boolean 
+  ;; are the two pad-events equal? 
+  pad=?
+  )
 
 (provide-primitive
  sexp?  ;; Any -> Boolean 
