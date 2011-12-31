@@ -2,6 +2,7 @@
 (require racket/match
          redex/reduction-semantics
          (for-syntax racket/base)
+         (only-in redex/private/matcher strip-nt-match)
          "test.rkt"
          "r6rs.rkt")
 
@@ -38,7 +39,7 @@
                                 t
                                 (or verbose? 'dots)
                                 (verify-p* t))])
-        (let ([rewritten-results (remove-duplicates (map rewrite-actual results))])
+        (let ([rewritten-results (remove-duplicates (map (λ (x) (rewrite-actual (strip-nt-match x))) results))])
           (for-each (verify-a* t) results)
           (unless (set-same? expected rewritten-results equal?)
             (set! failed-tests (+ failed-tests 1))
@@ -143,7 +144,7 @@
 
 (define (appears-in-set? x e)
   (let loop ([e e])
-    (match e
+    (match (strip-nt-match e)
       [`(set! ,x2 ,e2) (or (eq? x x2)
                            (loop e2))]
       [else
@@ -164,7 +165,7 @@
             (term (r6rs-subst-many (sub-vars ... body)))))
 
 (define (do-one-subst sub-vars term)
-  (match term
+  (match (strip-nt-match term)
     [`(store ,str ,exps ...)
      (let* ([keep-vars 
              (map (λ (pr)
@@ -2040,7 +2041,7 @@ of digits with deconv-base
              [i (in-naturals)])
          (for ([test (in-list (cadr set))]
                [j (in-naturals)])
-           (match (r6test-test test)
+           (match (strip-nt-match (r6test-test test))
              [(and `(store () ,exp)
                    (? no-bads?))
               (set! r6-module-bodies (cons exp r6-module-bodies))
