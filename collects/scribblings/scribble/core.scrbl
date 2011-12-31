@@ -862,12 +862,12 @@ See also @racket[index].}
 
 
 @defstruct[multiarg-element ([style element-style?]
-                             [content (listof content?)])]{
+                             [contents (listof content?)])]{
 
 Like @racket[element] with a list for content, except that for Latex
 output, if the @tech{style name} in @racket[style] is a string, then
 it corresponds to a Latex command that accepts as many arguments (each
-in curly braces) as elements of @racket[content].}
+in curly braces) as elements of @racket[contents].}
 
 
 @defstruct[traverse-element ([traverse element-traverse-procedure/c])]{
