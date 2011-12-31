@@ -1,4 +1,4 @@
-;;; Copyright (C) 2005-2011 by Chongkai Zhu.
+;;; Copyright (C) 2005-2012 by Chongkai Zhu.
 ;;; Distributed under the same terms as Racket, by permission.
 
 (module vector-lib mzscheme

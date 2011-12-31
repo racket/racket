@@ -26,7 +26,7 @@ for more information.
 
 @copyright{
   Racket
-  Copyright (c) 2010-2011 PLT Scheme Inc.
+  Copyright (c) 2010-2012 PLT Scheme Inc.
 }
 
 Racket software includes or extends the following copyrighted material:
