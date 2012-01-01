@@ -28,7 +28,7 @@ arrive at a symbol, but the reader preserves case by default.
 (eq? 'a (string->symbol "a"))
 (eq? 'a 'b)
 (eq? 'a 'A)
-(eval:alts @#,elem{@racketfont{#ci}@racketvalfont{'A}} #ci'A)
+(eval:alts @#,elem{@racketfont{#ci}@racketvalfont{@literal{'A}}} #ci'A)
 ]
 
 Any string (i.e., any character sequence) can be supplied to
