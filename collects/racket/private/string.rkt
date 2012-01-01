@@ -211,7 +211,7 @@
                         [end (and end m (- end skipped got))])
                    (if m
                      (let ([0-ok? (not (zero? got))])
-                       (loop (port-success-choose m discarded/leftovers ms acc)
+                       (loop (port-success-choose discarded/leftovers ms acc)
                              0 end ipre 0-ok?))
                      (port-failure-k acc discarded/leftovers)))))
 
@@ -261,8 +261,7 @@
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-peek-positions* pattern string [start 0] [end #f]
                                         [ipre #""])
-    (regexp-loop regexp-match-peek-positions* loop start end
-      pattern string ipre
+    (regexp-loop regexp-match-peek-positions* loop start end pattern string ipre
       ;; success-choose:
       (lambda (start ms acc) (cons (car ms) acc))
       ;; failure-k:
@@ -274,15 +273,15 @@
 
   ;; Small helper for the functions below
   (define (get-buf+sub string pattern)
-    (let ([buf
-           (if (and (string? string)
-                    (or (byte-regexp? pattern) (bytes? pattern)))
-             (string->bytes/utf-8 string (char->integer #\?))
-             string)])
+    (let ([buf (if (and (string? string)
+                        (or (byte-regexp? pattern) (bytes? pattern)))
+                 (string->bytes/utf-8 string (char->integer #\?))
+                 string)])
       (values
        buf
-       (if (or (bytes? buf) (and (path? string)
-                                 (or (bytes? pattern) (byte-regexp? pattern))))
+       (if (or (bytes? buf)
+               (and (path? string)
+                    (or (bytes? pattern) (byte-regexp? pattern))))
          subbytes substring))))
 
   ;; Splits a string into a list by removing any piece which matches
@@ -298,7 +297,7 @@
       ;; port-success-k:
       #f
       ;; port-success-choose:
-      (lambda (match-string leftovers ms acc) (cons leftovers acc))
+      (lambda (leftovers ms acc) (cons leftovers acc))
       ;; port-failure-k:
       (lambda (acc leftover) (if leftover (cons leftover acc) acc))
       ;; flags
@@ -322,10 +321,10 @@
                  (unless (if needs-string? (string? v) (bytes? v))
                    (raise-mismatch-error
                     '|regexp-replace* (calling given filter procedure)|
-                      (if needs-string?
-                        "expected a string result: "
-                        "expected a byte string result: ")
-                      v))
+                    (if needs-string?
+                      "expected a string result: "
+                      "expected a byte string result: ")
+                    v))
                  v))
              (define need-replac?
                (and (not (procedure? replacement))
@@ -426,7 +425,7 @@
       ;; port-success-k:
       #f
       ;; port-success-choose:
-      (lambda (match-string leftovers ms acc) (cons match-string acc))
+      (lambda (leftovers ms acc) (cons (car ms) acc))
       ;; port-failure-k:
       (lambda (acc leftover) acc)
       ;; flags
