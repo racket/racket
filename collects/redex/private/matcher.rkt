@@ -1005,11 +1005,11 @@ See match-a-pattern.rkt for more details
 
 (define (memoize f needs-all-args?)
   (case (procedure-arity f)
-    [(1) (memoize/key1 f nohole)]
-    [(2) (memoize/key2 f w/hole)]
+    [(1) (memoize/1 f nohole)]
+    [(2) (memoize/2 f w/hole)]
     [else (error 'memoize "unknown arity for ~s" f)]))
 
-(define cache-size 350)
+(define cache-size 63)
 (define (set-cache-size! cs) (set! cache-size cs))
 
 ;; original version, but without closure allocation in hash lookup
@@ -1042,8 +1042,41 @@ See match-a-pattern.rkt for more details
                              res)]
                           [else ans])))]))))))]))
 
-(define memoize/key1 (mk-memoize-key 1))
-(define memoize/key2 (mk-memoize-key 2))
+;(define memoize/1 (mk-memoize-key 1))
+;(define memoize/2 (mk-memoize-key 2))
+
+(define-syntax (mk-memoize-vec stx)
+  (syntax-case stx ()
+    [(_ arity)
+     (with-syntax ([(args ...) (generate-temporaries (build-list (syntax-e #'arity) (λ (x) 'x)))])
+       (with-syntax ([key-exp (if (= 1 (syntax-e #'arity))
+                                  (car (syntax->list #'(args ...)))
+                                  #'(list args ...))])
+         #'(λ (f statsbox)
+             (let* ([uniq (gensym)]
+                    [this-cache-size cache-size]
+                    [ans-vec (make-vector this-cache-size uniq)]
+                    [key-vec (make-vector this-cache-size uniq)])
+               (lambda (args ...)
+                 (cond
+                   [(not (caching-enabled?)) (f args ...)]
+                   [else
+                    ;(record-cache-test! statsbox)
+                    (let* ([key key-exp]
+                           [index (modulo (equal-hash-code key) this-cache-size)])
+                      (cond
+                        [(equal? (vector-ref key-vec index) key)
+                         (vector-ref ans-vec index)]
+                        [else
+                         ;(record-cache-miss! statsbox)
+                         ;(when (eq? uniq (vector-ref key-vec index)) (record-cache-clobber! statsbox))
+                         (let ([ans (f args ...)])
+                           (vector-set! key-vec index key)
+                           (vector-set! ans-vec index ans)
+                           ans)]))]))))))]))
+
+(define memoize/1 (mk-memoize-vec 1))
+(define memoize/2 (mk-memoize-vec 2))
 
 ;; hash version, but with an extra hash that tells when to evict cache entries
 #;
@@ -1223,8 +1256,11 @@ See match-a-pattern.rkt for more details
 (define (record-cache-test! statsbox)
   (set-cache-stats-hits! statsbox (add1 (cache-stats-hits statsbox))))
 
-(define-struct cache-stats (name misses hits) #:mutable)
-(define (new-cache-stats name) (make-cache-stats name 0 0))
+(define (record-cache-clobber! statsbox)
+  (set-cache-stats-clobber-hits! statsbox (add1 (cache-stats-clobber-hits statsbox))))
+
+(define-struct cache-stats (name misses hits clobber-hits) #:mutable)
+(define (new-cache-stats name) (make-cache-stats name 0 0 0))
 
 (define w/hole (new-cache-stats "hole"))
 (define nohole (new-cache-stats "no-hole"))
@@ -1243,12 +1279,14 @@ See match-a-pattern.rkt for more details
                             (+ (cache-stats-hits s) (cache-stats-misses s))))))))
      stats)
     (let ((overall-hits (apply + (map cache-stats-hits stats)))
-          (overall-miss (apply + (map cache-stats-misses stats))))
+          (overall-miss (apply + (map cache-stats-misses stats)))
+          (overall-clobber-hits (apply + (map cache-stats-clobber-hits stats))))
       (printf "---\nOverall hits: ~a\n" overall-hits)
       (printf "Overall misses: ~a\n" overall-miss)
       (when (> (+ overall-hits overall-miss) 0)
         (printf "Overall miss rate: ~a%\n" 
-                (floor (* 100 (/ overall-miss (+ overall-hits overall-miss)))))))))
+                (floor (* 100 (/ overall-miss (+ overall-hits overall-miss))))))
+      (printf "Overall clobbering hits: ~a\n" overall-clobber-hits))))
 
 ;; match-hole : compiled-pattern
 (define match-hole
