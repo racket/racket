@@ -1017,27 +1017,30 @@ See match-a-pattern.rkt for more details
   (syntax-case stx ()
     [(_ arity)
      (with-syntax ([(args ...) (generate-temporaries (build-list (syntax-e #'arity) (λ (x) 'x)))])
-       #'(λ (f statsbox)
-           (let ([ht (make-hash)]
-                 [entries 0])
-             (lambda (args ...)
-               (cond
-                 [(not (caching-enabled?)) (f args ...)]
-                 [else
-                  (let* ([key (list args ...)])
-                    ;(record-cache-test! statsbox)
-                    (unless (< entries cache-size)
-                      (set! entries 0)
-                      (set! ht (make-hash)))
-                    (let ([ans (hash-ref ht key uniq)])
-                      (cond
-                        [(eq? ans uniq)
-                         ;(record-cache-miss! statsbox)
-                         (set! entries (+ entries 1))
-                         (let ([res (f args ...)])
-                           (hash-set! ht key res)
-                           res)]
-                        [else ans])))])))))]))
+       (with-syntax ([key-exp (if (= 1 (syntax-e #'arity))
+                                  (car (syntax->list #'(args ...)))
+                                  #'(list args ...))])
+         #'(λ (f statsbox)
+             (let ([ht (make-hash)]
+                   [entries 0])
+               (lambda (args ...)
+                 (cond
+                   [(not (caching-enabled?)) (f args ...)]
+                   [else
+                    (let* ([key key-exp])
+                      ;(record-cache-test! statsbox)
+                      (unless (< entries cache-size)
+                        (set! entries 0)
+                        (set! ht (make-hash)))
+                      (let ([ans (hash-ref ht key uniq)])
+                        (cond
+                          [(eq? ans uniq)
+                           ;(record-cache-miss! statsbox)
+                           (set! entries (+ entries 1))
+                           (let ([res (f args ...)])
+                             (hash-set! ht key res)
+                             res)]
+                          [else ans])))]))))))]))
 
 (define memoize/key1 (mk-memoize-key 1))
 (define memoize/key2 (mk-memoize-key 2))
