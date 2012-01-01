@@ -264,7 +264,7 @@ See match-a-pattern.rkt for more details
 ; build-has-hole-ht : (listof nt) -> hash[symbol -o> boolean]
 ; produces a map of nonterminal -> whether that nonterminal could produce a hole
 (define (build-has-hole-ht lang)
-  (build-nt-property/fp 
+  (build-nt-property 
    lang
    (lambda (pattern ht)
      (let loop ([pattern pattern])
@@ -296,46 +296,14 @@ See match-a-pattern.rkt for more details
    #f
    (λ (x y) (or x y))))
 
-;; build-nt-property : lang (pattern[not-non-terminal] (pattern -> boolean) -> boolean) boolean
-;;                  -> hash[symbol[nt] -> boolean]
-(define (build-nt-property lang test-rhs conservative-answer combine-rhss)
-  (define ht (make-hasheq))
-  (define rhs-ht (make-hasheq))
-  (for ([nt (in-list lang)])
-    (hash-set! rhs-ht (nt-name nt) (nt-rhs nt))
-    (hash-set! ht (nt-name nt) 'unknown))
-  (define (check-nt nt-sym)
-    (let ([current (hash-ref ht nt-sym)])
-      (case current
-        [(unknown)
-         (hash-set! ht nt-sym 'computing)
-         (let ([answer (combine-rhss 
-                        (map (lambda (x) (check-rhs (rhs-pattern x)))
-                             (hash-ref rhs-ht nt-sym)))])
-           (hash-set! ht nt-sym answer)
-           answer)]
-        [(computing) conservative-answer]
-        [else current])))
-  (define (check-rhs rhs)
-    (match rhs
-      [`(nt ,nt)
-       (cond
-         [(hash-maps? ht nt)
-          (check-nt nt)]
-         [else (test-rhs rhs check-rhs)])]
-      [_ (test-rhs rhs check-rhs)]))
-  (for ([nt (in-list lang)])
-    (check-nt (nt-name nt)))
-  ht)
-
-;; build-nt-property/fp : lang 
-;;                        (pattern hash[nt -o> ans] -> ans)
-;;                        init-ans
-;;                        (ans ans ans) 
-;;                     -> hash[nt -o> ans]
+;; build-nt-property : lang 
+;;                     (pattern hash[nt -o> ans] -> ans)
+;;                     init-ans
+;;                     (ans ans ans) 
+;;                  -> hash[nt -o> ans]
 ;; builds a property table using a fixed point computation,
 ;; using base-answer and lub as the lattice
-(define (build-nt-property/fp lang test-rhs base-answer lub)
+(define (build-nt-property lang test-rhs base-answer lub)
   (define ht (make-hash))
   (for ([nt (in-list lang)])
     (hash-set! ht (nt-name nt) base-answer))
@@ -540,96 +508,70 @@ See match-a-pattern.rkt for more details
 
 ;; build-list-nt-label : lang -> hash[symbol -o> boolean]
 (define (build-list-nt-label lang)
-  (build-nt-property 
-   lang
-   (lambda (pattern recur)
-     (may-be-list-pattern?/internal pattern
-                                    (lambda (sym) #f)
-                                    recur))
-   #t
-   (lambda (lst) (ormap values lst))))
+  (build-nt-property lang
+                     may-be-list-pattern?
+                     #f
+                     (λ (x y) (or x y))))
 
-(define (may-be-list-pattern? pattern list-nt-table)
+(define (may-be-list-pattern? pattern nt-table)
   (let loop ([pattern pattern])
-    (may-be-list-pattern?/internal
-     pattern
-     (lambda (nt) 
-       (hash-ref list-nt-table nt #t))
-     loop)))
-
-(define (may-be-list-pattern?/internal pattern handle-nt recur)
-  (match-a-pattern pattern
-    [`any #t]
-    [`number #f]
-    [`string #f]
-    [`natural #f]
-    [`integer #f]
-    [`real #f]
-    [`variable #f] 
-    [`(variable-except ,vars ...) #f]
-    [`(variable-prefix ,var) #f]
-    [`variable-not-otherwise-mentioned #f]
-    [`hole #t]
-    [`(nt ,id) (handle-nt id)]
-    [`(name ,id ,pat) (recur pat)]
-    [`(mismatch-name ,id ,pat) (recur pat)]
-    [`(in-hole ,context ,contractum)
-     (recur context)]
-    [`(hide-hole ,p)
-     (recur p)]
-    [`(side-condition ,pat ,condition ,expr)
-     (recur pat)]
-    [`(cross ,nt) #t]
-    [`(list ,pats ...) #t]
-    [(? (compose not pair?)) #f]))
+    (match-a-pattern pattern
+      [`any #t]
+      [`number #f]
+      [`string #f]
+      [`natural #f]
+      [`integer #f]
+      [`real #f]
+      [`variable #f] 
+      [`(variable-except ,vars ...) #f]
+      [`(variable-prefix ,var) #f]
+      [`variable-not-otherwise-mentioned #f]
+      [`hole #t]
+      [`(nt ,id) (hash-ref nt-table id)]
+      [`(name ,id ,pat) (loop pat)]
+      [`(mismatch-name ,id ,pat) (loop pat)]
+      [`(in-hole ,context ,contractum) 
+       ;; pessimistic, assumes that context can be 'hole' directly
+       (or (loop context) (loop contractum))]
+      [`(hide-hole ,p) (loop p)]
+      [`(side-condition ,pat ,condition ,expr) (loop pat)]
+      [`(cross ,nt) #t]
+      [`(list ,pats ...) #t]
+      [(? (compose not pair?)) #f])))
 
 
 ;; build-non-list-nt-label : lang -> hash[symbol -o> boolean]
 (define (build-non-list-nt-label lang)
-  (build-nt-property 
-   lang
-   (lambda (pattern recur)
-     (may-be-non-list-pattern?/internal pattern
-                                        (lambda (sym) #t)
-                                        recur))
-   #t
-   (lambda (lst) (ormap values lst))))
+  (build-nt-property lang
+                     may-be-non-list-pattern?
+                     #f
+                     (λ (x y) (or x y))))
 
-(define (may-be-non-list-pattern? pattern non-list-nt-table)
+(define (may-be-non-list-pattern? pattern ht)
   (let loop ([pattern pattern])
-    (may-be-non-list-pattern?/internal
-     pattern
-     (lambda (nt)
-       (hash-ref non-list-nt-table nt #t))
-     loop)))
-
-(define (may-be-non-list-pattern?/internal pattern handle-nt recur)
-  (match-a-pattern pattern
-    [`any #t]
-    [`number #t]
-    [`string #t]
-    [`natural #t]
-    [`integer #t]
-    [`real #t]
-    [`variable #t]
-    [`(variable-except ,vars ...) #t]
-    [`(variable-prefix ,prefix) #t]
-    [`variable-not-otherwise-mentioned #t]
-    [`hole #t]
-    [`(nt ,nt) (handle-nt nt)]
-    [`(name ,name ,pat)
-     (recur pat)]
-    [`(mismatch-name ,name ,pat)
-     (recur pat)]
-    [`(in-hole ,context ,contractum)
-     (recur context)]
-    [`(hide-hole ,p)
-     (recur p)]
-    [`(side-condition ,pat ,condition ,expr)
-     (recur pat)]
-    [`(cross ,nt) #t]
-    [`(list ,pats ...) #f]
-    [(? (compose not pair?)) #t]))
+    (match-a-pattern pattern
+      [`any #t]
+      [`number #t]
+      [`string #t]
+      [`natural #t]
+      [`integer #t]
+      [`real #t]
+      [`variable #t]
+      [`(variable-except ,vars ...) #t]
+      [`(variable-prefix ,prefix) #t]
+      [`variable-not-otherwise-mentioned #t]
+      [`hole #t]
+      [`(nt ,nt) (hash-ref ht nt)]
+      [`(name ,name ,pat) (loop pat)]
+      [`(mismatch-name ,name ,pat) (loop pat)]
+      [`(in-hole ,context ,contractum) 
+       ;; pessimistic, assumes that context can be 'hole' directly
+       (or (loop context) (loop contractum))]
+      [`(hide-hole ,p) (loop p)]
+      [`(side-condition ,pat ,condition ,expr) (loop pat)]
+      [`(cross ,nt) #t]
+      [`(list ,pats ...) #f]
+      [(? (compose not pair?)) #t])))
 
 ;; match-pattern : compiled-pattern exp -> (union #f (listof bindings))
 (define (match-pattern compiled-pattern exp)
