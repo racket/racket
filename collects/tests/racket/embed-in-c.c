@@ -20,7 +20,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   scheme_set_collects_path(scheme_make_path(MZ_COLLECTION_PATH));
   scheme_init_collection_paths(e, scheme_null);
 
-  v = scheme_intern_symbol("scheme/base");
+  v = scheme_intern_symbol("racket/base");
   scheme_namespace_require(v);
   
   config = scheme_current_config();
@@ -43,11 +43,11 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   /* RESET: */
   e = scheme_basic_env();
   scheme_init_collection_paths(e, scheme_null);
-  v = scheme_intern_symbol("scheme/base");
+  v = scheme_intern_symbol("racket/base");
   scheme_namespace_require(v);
 
   /* read-eval-print loop, uses initial Scheme_Env: */
-  a[0] = scheme_intern_symbol("scheme/base");
+  a[0] = scheme_intern_symbol("racket/base");
   a[1] = scheme_intern_symbol("read-eval-print-loop");
   v = scheme_dynamic_require(2, a);
   scheme_apply(v, 0, NULL);

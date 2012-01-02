@@ -417,12 +417,16 @@ void scheme_init_module_resolver(void)
   Scheme_Object *o;
   Scheme_Config *config;
 
-  REGISTER_SO(starts_table);
-  starts_table = scheme_make_weak_equal_table();
+  /* this function is called multiple times when scheme_basic_env() is called multiple times */
+
+  if (!starts_table) {
+    REGISTER_SO(starts_table);
+    starts_table = scheme_make_weak_equal_table();
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  REGISTER_SO(place_local_modpath_table);
-  place_local_modpath_table = scheme_make_weak_equal_table();
+    REGISTER_SO(place_local_modpath_table);
+    place_local_modpath_table = scheme_make_weak_equal_table();
 #endif
+  }
 
   config = scheme_current_config();
 
