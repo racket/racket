@@ -1554,21 +1554,19 @@ See match-a-pattern.rkt for more details
       (let loop ([rhss (if (or (null? term) (pair? term))
                            list-rhs
                            non-list-rhs)]
-                 [ht #f])
+                 [ans '()])
         (cond
           [(null? rhss) 
-           (if ht
-               (hash-map ht (λ (k v) k))
-               #f)]
+           (if (null? ans)
+               #f
+               ans)]
           [else
            (let ([mth (call-nt-proc/bindings (car rhss) term hole-info #f #f #f)])
              (cond
                [mth
-                (let ([ht (or ht (make-hash))])
-                  (for-each (λ (x) (hash-set! ht x #t)) mth)
-                  (loop (cdr rhss) ht))]
+                (loop (cdr rhss) (append mth ans))]
                [else 
-                (loop (cdr rhss) ht)]))]))
+                (loop (cdr rhss) ans)]))]))
       
       ;; if we're not doing a decomposition, we just need
       ;; to find the first match, not all of the matches
