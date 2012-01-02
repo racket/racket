@@ -1779,21 +1779,26 @@ See match-a-pattern.rkt for more details
 (define (reverse-context x) (reverse x))
 (define (build-nested-context c1 c2) 
   (plug c1 c2))
+
 (define (plug exp hole-stuff)
-  (let ([done? #f])
-    (let loop ([exp exp])
-      (cond
-        [(pair? exp) 
-         (cons (loop (car exp))
-               (loop (cdr exp)))]
-        [(eq? the-not-hole exp)
-         the-not-hole]
-        [(eq? the-hole exp)
-         (if done?
-             exp
-             (begin (set! done? #t)
-                    hole-stuff))]
-        [else exp]))))
+  (let loop ([exp exp])
+    (cond
+      [(pair? exp) 
+       (define old-car (car exp))
+       (define new-car (loop old-car))
+       (cond
+         [(eq? new-car old-car)
+          (define old-cdr (cdr exp))
+          (define new-cdr (loop old-cdr))
+          (if (eq? new-cdr old-cdr)
+              exp
+              (cons new-car new-cdr))]
+         [else (cons new-car (cdr exp))])]
+      [(eq? the-not-hole exp)
+       the-not-hole]
+      [(eq? the-hole exp)
+       hole-stuff]
+      [else exp])))
 
 ;;
 ;; end context adt
