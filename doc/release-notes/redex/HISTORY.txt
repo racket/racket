@@ -1,7 +1,16 @@
 v5.2.1
 
+  * rewrote the internals of the pattern matcher to be more consistent
+    (centralized more error checking, moving more of it to compile
+    time, and various other internal cleanups).
+
+  * improved the way caching works so it uses about 1/5th memory and
+    speeds up the R6RS test suite by a factor of 2.
+
   * added support for side-conditions and where clauses to
     define-relation
+
+  * added the List-machine benchmark (by Appel, Dockins & Leroy)
 
 v5.2
 
