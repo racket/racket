@@ -618,6 +618,66 @@
     
     (test-xab '(name underscore (nt underscore)) '(+ 1 2) (list (make-mtch (make-bindings (list (make-bind 'underscore '(+ 1 2)))) '(+ 1 2) none)))
     (test-xab '(name underscore (nt underscore)) '2 (list (make-mtch (make-bindings (list (make-bind 'underscore 2))) 2 none)))
+  
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;
+    ;; tests to check on the name/non-name optimization likely
+    ;; many of these are duplicates of the ones above, but it 
+    ;; is hard to know which are and which aren't.
+    ;;
+    
+    (test-xab '(name x (name y 1)) 1 (list (make-mtch (make-bindings (list (make-bind 'x 1) (make-bind 'y 1))) 1 none)))
+    (test-xab '(list (mismatch-name y_!_1 1)
+                     (mismatch-name y_!_1 2))
+              '(1 2)
+              (list (make-mtch (make-bindings '()) '(1 2) none)))
+    (test-xab '(list (mismatch-name x_!_1 (name a 1))
+                     (mismatch-name x_!_1 (name b 2)))
+              '(1 2)
+              (list (make-mtch (make-bindings (list (make-bind 'a 1) (make-bind 'b 2))) '(1 2) none)))
+    (test-xab '(in-hole (name x hole) (name y 1)) 1 (list (make-mtch (make-bindings (list (make-bind 'x the-hole) (make-bind 'y 1)))
+                                                                     1
+                                                                     none)))
+    (test-xab '(in-hole (name x hole) 1) 1 (list (make-mtch (make-bindings (list (make-bind 'x the-hole)))
+                                                            1
+                                                            none)))
+    (test-xab '(in-hole hole (name y 1)) 1 (list (make-mtch (make-bindings (list (make-bind 'y 1)))
+                                                            1
+                                                            none)))
+    (test-xab '(in-hole hole 1) 1 (list (make-mtch (make-bindings '()) 1 none)))
+    (test-xab '(hide-hole (list hole 1)) `(,the-hole 1) (list (make-mtch (make-bindings '()) `(,the-hole 1) none)))
+    (test-xab '(hide-hole (list 2 1)) `(2 1) (list (make-mtch (make-bindings '()) `(2 1) none)))
+    (test-xab '(hide-hole (list (name z 2) 1)) `(2 1) (list (make-mtch (make-bindings (list (make-bind 'z 2))) `(2 1) none)))
+    (test-xab `(side-condition (name x 1) ,(λ (bindings) (equal? bindings (make-bindings (list (make-bind 'x 1))))) 'srcloc)
+              1
+              (list (make-mtch (make-bindings (list (make-bind 'x 1))) 1 none)))
+    (test-xab `(side-condition 2 ,(λ (bindings) (equal? bindings (make-bindings '()))) 'srcloc)
+              2
+              (list (make-mtch (make-bindings '()) 2 none)))
+    (test-xab '(list (repeat (name x 1) #f #f))
+              '(1 1 1)
+              (list (make-mtch (make-bindings (list (make-bind 'x '(1 1 1)))) '(1 1 1) none)))
+    (test-xab '(list (repeat 1 ..._1 #f))
+              '(1 1 1)
+              (list (make-mtch (make-bindings (list (make-bind '..._1 3))) '(1 1 1) none)))
+    (test-xab '(list (repeat 1 #f ..._!_1)
+                     (repeat 2 #f ..._!_1))
+              '(1 1 2)
+              (list (make-mtch (make-bindings '()) '(1 1 2) none)))
+    (test-xab '(list (repeat 1 #f #f))
+              '(1 1 1)
+              (list (make-mtch (make-bindings '()) '(1 1 1) none)))
+    
+    (test-xab '(in-hole (name hh-D (nt hh-D)) whatever)
+              `(,the-hole whatever)
+              (list (make-mtch (make-bindings (list (make-bind 'hh-D (list the-hole the-not-hole))))
+                               `(,the-hole whatever)
+                               none)))
+
+    ;;
+    ;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
     
     (run-test
      (this-line)
@@ -839,6 +899,10 @@
                    (make-nt 'var (list (make-rhs `variable-not-otherwise-mentioned)))
                    
                    (make-nt 'underscore (list (make-rhs '(name exp_1 (nt exp)))))
+
+                   (make-nt 'hh-v (list (make-rhs '(hide-hole (nt hh-D)))))
+                   (make-nt 'hh-D (list (make-rhs 'hole) (make-rhs '(list (nt hh-v) (nt hh-D)))))
+                   
                    )])
       (set! xab-lang
             (compile-language 'pict-stuff-not-used
@@ -851,7 +915,7 @@
      ans))
   
   (define ab-lang #f)
-  ;; test-xab : sexp[pattern] sexp[term] answer -> void
+  ;; test-ab : sexp[pattern] sexp[term] answer -> void
   ;; returns #t if pat matching exp with a simple language produces ans.
   (define (test-ab line pat exp ans)
     (unless ab-lang

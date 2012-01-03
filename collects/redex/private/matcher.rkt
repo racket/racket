@@ -123,7 +123,7 @@ See match-a-pattern.rkt for more details
 ;;                                     (listof (listof symbol))) -- keeps track of `primary' non-terminals
 
 (define-struct compiled-lang (lang delayed-cclang ht list-ht raw-across-ht raw-across-list-ht
-                                   has-hole-ht cache bind-names-cache pict-builder
+                                   has-hole-or-hide-hole-ht cache bind-names-cache pict-builder
                                    literals nt-map))
 (define (compiled-lang-cclang x) (force (compiled-lang-delayed-cclang x)))
 (define (compiled-lang-across-ht x)
@@ -154,13 +154,13 @@ See match-a-pattern.rkt for more details
          [clang-list-ht (make-hasheq)]
          [across-ht (make-hasheq)]
          [across-list-ht (make-hasheq)]
-         [has-hole-ht (build-has-hole-ht lang)]
+         [has-hole-or-hide-hole-ht (build-has-hole-or-hide-hole-ht lang)]
          [cache (make-hash)]
          [bind-names-cache (make-hash)]
          [literals (extract-literals lang)]
          [clang (make-compiled-lang lang #f clang-ht clang-list-ht 
                                     across-ht across-list-ht
-                                    has-hole-ht 
+                                    has-hole-or-hide-hole-ht 
                                     cache bind-names-cache
                                     pict-info
                                     literals
@@ -261,9 +261,9 @@ See match-a-pattern.rkt for more details
              (unless (memq pat nts)
                (hash-set! ht pat #t)))))])))
 
-; build-has-hole-ht : (listof nt) -> hash[symbol -o> boolean]
+; build-has-hole-or-hide-hole-ht : (listof nt) -> hash[symbol -o> boolean]
 ; produces a map of nonterminal -> whether that nonterminal could produce a hole
-(define (build-has-hole-ht lang)
+(define (build-has-hole-or-hide-hole-ht lang)
   (build-nt-property 
    lang
    (lambda (pattern ht)
@@ -284,7 +284,7 @@ See match-a-pattern.rkt for more details
          [`(name ,name ,pat) (loop pat)]
          [`(mismatch-name ,name ,pat) (loop pat)]
          [`(in-hole ,context ,contractum) (loop contractum)]
-         [`(hide-hole ,arg) #f]
+         [`(hide-hole ,arg) #t]
          [`(side-condition ,pat ,condition ,expr) (loop pat)]
          [`(cross ,nt) #f]
          [`(list ,pats ...)
@@ -686,7 +686,7 @@ See match-a-pattern.rkt for more details
 (define (compile-pattern/cross? clang pattern bind-names?)
   (define clang-ht (compiled-lang-ht clang))
   (define clang-list-ht (compiled-lang-list-ht clang))
-  (define has-hole-ht (compiled-lang-has-hole-ht clang))
+  (define has-hole-or-hide-hole-ht (compiled-lang-has-hole-or-hide-hole-ht clang))
   
   (define (compile-pattern/default-cache pattern)
     (compile-pattern/cache pattern 
@@ -755,7 +755,7 @@ See match-a-pattern.rkt for more details
        (values match-hole #t #f)]
       [`(nt ,nt)
        (define in-name? (in-name-parameter))
-       (define has-hole? (hash-ref has-hole-ht nt))
+       (define has-hole? (hash-ref has-hole-or-hide-hole-ht nt))
        (values
         (if has-hole?
             (letrec ([try-again
@@ -1758,9 +1758,9 @@ See match-a-pattern.rkt for more details
 (define (context? x) #t)
 (define-values (the-hole the-not-hole hole?)
   (let ()
-    (define-struct hole () #:inspector #f)
-    (define the-hole (make-hole))
-    (define the-not-hole (make-hole))
+    (define-struct hole (id) #:inspector #f)
+    (define the-hole (make-hole 'the-hole))
+    (define the-not-hole (make-hole 'the-not-hole))
     (values the-hole the-not-hole hole?)))
 
 (define hole->not-hole
