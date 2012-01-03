@@ -10,16 +10,21 @@
 (define (next-name i)
   (values (format "input_~a" i) (add1 i)))
 
-(define (make-input* render)
+(define (make-input*/forest render)
   (lambda (i)
     (let-values ([(w i) (next-name i)])
       (define wb (string->bytes/utf-8 w))
-      (values (list (render w))
+      (values (render w)
               (lambda (env) 
                 (for/list ([b (in-list env)]
                            #:when (bytes=? wb (binding-id b)))
                   b))
               i))))
+
+(define (make-input* render)
+  (make-input*/forest
+   (lambda (w)
+     (list (render w)))))
 
 (define (make-input render)
   (lambda (i)
@@ -109,8 +114,73 @@
                #:attributes [attrs empty])
   (input
    #:type "radio"
+   #:value value
    #:attributes
    (if checked? (append (list (list 'checked "true")) attrs) attrs)))
+
+(define (input-group l
+                     #:kind kind
+                     #:attributes [attrs (λ (x) empty)]
+                     #:checked? [checked? (λ (x) #f)]
+                     #:display [display (λ (x) x)])
+  (define value->element (make-hasheq))
+  (define i 0)
+  (define (remember! e)
+    (define this-i
+      (begin0 i (set! i (add1 i))))
+    (hash-set! value->element this-i e))
+  (define (recall i)
+    (hash-ref value->element i
+              (λ () (error 'input-group "Invalid selection: ~e" i))))
+  (for ([e l])
+    (remember! e))
+  (define (radio-first l)
+    (if (string=? kind "radio")
+        (first l)
+        l))
+  (cross
+   (pure
+    (lambda (bs)
+      (radio-first
+       (map (compose recall string->number
+                     bytes->string/utf-8
+                     binding:form-value)
+            bs))))
+   (make-input*/forest
+    (lambda (name)
+      (apply append
+             (for/list ([vn (in-range i)])
+                       (define e (hash-ref value->element vn))
+                       (define v (number->string vn))
+                       (list
+                        `(input ([name ,name]
+                                 [type ,kind]
+                                 [value ,v]
+                                 ,@(if (checked? e)
+                                       '([checked "true"])
+                                       empty)
+                                 ,@(attrs e)))
+                        (display e))))))))
+
+(define (radio-group l 
+                     #:attributes [attrs (λ (x) empty)]
+                     #:checked? [checked? (λ (x) #f)]
+                     #:display [display (λ (x) x)])
+  (input-group l
+               #:kind "radio"
+               #:attributes attrs
+               #:checked? checked?
+               #:display display))
+
+(define (checkbox-group l 
+                     #:attributes [attrs (λ (x) empty)]
+                     #:checked? [checked? (λ (x) #f)]
+                     #:display [display (λ (x) x)])
+  (input-group l
+               #:kind "checkbox"
+               #:attributes attrs
+               #:checked? checked?
+               #:display display))
 
 (define (submit value
                 #:attributes [attrs empty])
@@ -265,6 +335,20 @@
          (#:attributes (listof (list/c symbol? string?)))
          . ->* .
          (formlet/c (or/c false/c binding?)))]
+ [radio-group ((sequence?)
+               (#:attributes 
+                (-> any/c (listof (list/c symbol? string?)))
+                #:checked? (any/c . -> . boolean?)
+                #:display (any/c . -> . pretty-xexpr/c))
+               . ->* .
+               (formlet/c any/c))]
+ [checkbox-group ((sequence?)
+                  (#:attributes 
+                   (-> any/c (listof (list/c symbol? string?)))
+                   #:checked? (any/c . -> . boolean?)
+                   #:display (any/c . -> . pretty-xexpr/c))
+                  . ->* .
+                  (formlet/c (listof any/c)))]
  [submit ((bytes?)         
           (#:attributes (listof (list/c symbol? string?)))
           . ->* .

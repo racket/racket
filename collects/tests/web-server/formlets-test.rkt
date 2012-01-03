@@ -259,13 +259,67 @@
                    (cons #"input_0" #"value"))
       (test-equal? "radio"
                    (test-display (radio #"start" #t))
-                   '((input ((name "input_0") (type "radio") (checked "true")))))
+                   '((input ((name "input_0") (type "radio") (value "start") (checked "true")))))
       (test-equal? "radio"
                    (test-display (radio #"start" #f))
-                   '((input ((name "input_0") (type "radio")))))
+                   '((input ((name "input_0") (type "radio") (value "start")))))
       (test-equal? "radio"
                    (test-display (radio #"start" #t #:attributes '([test "Test"])))
-                   '((input ((name "input_0") (type "radio") (checked "true") (test "Test")))))
+                   '((input ((name "input_0") (type "radio") (value "start") (checked "true") (test "Test")))))
+
+      ; radio-group
+      (test-equal? "radio-group"
+                   (test-process (radio-group (list "1" "2" "3"))
+                                 (list (make-binding:form #"input_0" #"0")))
+                   "1")
+      (test-equal? "radio-group"
+                   (test-process (radio-group (list 1 2 3) #:display number->string)
+                                 (list (make-binding:form #"input_0" #"0")))
+                   1)
+      (test-equal? "radio-group"
+                   (test-process (radio-group (list 1 2 3) #:display number->string)
+                                 (list (make-binding:form #"input_0" #"0")
+                                       (make-binding:form #"input_0" #"1")))
+                   1)
+      (test-equal? "radio-group"
+                   (test-display (radio-group 
+                                  (list 1 2 3)
+                                  #:display number->string 
+                                  #:checked? even?
+                                  #:attributes (λ (e) (list (list 'plus-one (number->string (add1 e)))))))
+                   '((input ((name "input_0") (type "radio") (value "0") (plus-one "2")))
+                     "1"
+                     (input ((name "input_0") (type "radio") (value "1") (checked "true") (plus-one "3")))
+                     "2"
+                     (input ((name "input_0") (type "radio") (value "2") (plus-one "4")))
+                     "3"))
+
+      ; checkbox-group
+      (test-equal? "checkbox-group"
+                   (test-process (checkbox-group (list "1" "2" "3"))
+                                 (list (make-binding:form #"input_0" #"0")))
+                   (list "1"))
+      (test-equal? "checkbox-group"
+                   (test-process (checkbox-group (list 1 2 3) #:display number->string)
+                                 (list (make-binding:form #"input_0" #"0")))
+                   (list 1))
+      (test-equal? "checkbox-group"
+                   (test-process (checkbox-group (list 1 2 3) #:display number->string)
+                                 (list (make-binding:form #"input_0" #"0")
+                                       (make-binding:form #"input_0" #"1")))
+                   (list 1 2))
+      (test-equal? "checkbox-group"
+                   (test-display (checkbox-group 
+                                  (list 1 2 3)
+                                  #:display number->string 
+                                  #:checked? even?
+                                  #:attributes (λ (e) (list (list 'plus-one (number->string (add1 e)))))))
+                   '((input ((name "input_0") (type "checkbox") (value "0") (plus-one "2")))
+                     "1"
+                     (input ((name "input_0") (type "checkbox") (value "1") (checked "true") (plus-one "3")))
+                     "2"
+                     (input ((name "input_0") (type "checkbox") (value "2") (plus-one "4")))
+                     "3"))
       
       ; submit
       (test-equal? "submit"
