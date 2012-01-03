@@ -92,7 +92,12 @@ bindings for these names to @racket[formlet-process], the following list is retu
       (list 10 6))
 ]
 
-The rest of the manual gives the details of @tech{formlet} usage and extension.
+In all these examples, we used the @racket[input-int] and
+@racket[input-string] formlets. Any value with the @tech{formlet}
+contract can be used in these positions. For example,
+@racket[(to-string (required (text-input)))] could be used as
+well. The rest of the manual gives the details of @tech{formlet}
+usage, extension, and existing formlet combinators.
 
 @section{Static Syntactic Shorthand}
 
