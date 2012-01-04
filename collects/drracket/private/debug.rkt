@@ -286,17 +286,19 @@ profile todo:
            [stack2 (if (exn? exn)
                        (map cdr (filter cdr (cut-stack-at-checkpoint exn)))
                        '())]
+           [port-name-matches-cache (make-hasheq)]
+           [stack1-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack1)]
+           [stack2-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack2)]
            [src-locs (cond
                        [(exn:srclocs? exn)
                         ((exn:srclocs-accessor exn) exn)]
+                       [(pick-first-defs port-name-matches-cache defs stack1) => list]
+                       [(pick-first-defs port-name-matches-cache defs stack2) => list]
                        [(pair? stack1)
                         (list (car stack1))]
                        [(pair? stack2)
                         (list (car stack2))]
                        [else '()])]
-           [port-name-matches-cache (make-hasheq)]
-           [stack1-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack1)]
-           [stack2-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack2)]
            [src-locs-edition (and (pair? src-locs)
                                   (srcloc->edition/pair defs ints (car src-locs) port-name-matches-cache))])
 
@@ -330,16 +332,12 @@ profile todo:
         [(and (or (symbol? src)
                   (path? src))
               ints
-              (if port-name-matches-cache
-                  (hash-ref! port-name-matches-cache (cons ints src) (λ () (send ints port-name-matches? src)))
-                  (send ints port-name-matches? src)))
+              (port-name-matches?/use-cache ints src port-name-matches-cache))
          (cons (make-weak-box ints) (send ints get-edition-number))]
         [(and (or (symbol? src)
                   (path? src))
               defs
-              (if port-name-matches-cache
-                  (hash-ref! port-name-matches-cache (cons defs src) (λ () (send defs port-name-matches? src)))
-                  (send defs port-name-matches? src)))
+              (port-name-matches?/use-cache defs src port-name-matches-cache))
          (cons (make-weak-box defs) (send defs get-edition-number))]
         [(path? src)
          (let ([frame (send (group:get-the-frame-group) locate-file src)])
@@ -348,6 +346,17 @@ profile todo:
                 (cons (make-weak-box (send frame get-definitions-text))
                       (send (send frame get-definitions-text) get-edition-number))))]
         [else #f])))
+  
+  (define (pick-first-defs port-name-matches-cache defs stack)
+    (for/or ([srcloc (in-list stack)])
+      (and (srcloc? srcloc)
+           (port-name-matches?/use-cache defs (srcloc-source srcloc) port-name-matches-cache)
+           srcloc)))
+  
+  (define (port-name-matches?/use-cache txt src port-name-matches-cache)
+    (if port-name-matches-cache
+        (hash-ref! port-name-matches-cache (cons txt src) (λ () (send txt port-name-matches? src)))
+        (send txt port-name-matches? src)))
   
   ;; =User=
   (define (print-planet-icon-to-stderr exn)

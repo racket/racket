@@ -605,7 +605,7 @@ TODO
                   (λ ()
                     (set! clear-error-highlighting void)
                     (for-each (λ (x) (x)) resets)))))
-        
+
         (let* ([first-loc (and (pair? locs) (car locs))]
                [first-file (and first-loc (srcloc-source first-loc))]
                [first-start (and first-loc (- (srcloc-position first-loc) 1))]
