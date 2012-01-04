@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 (allocator-setup "../good-collectors/good-collector.rkt" 60)
 
 (define lst '(2 -10)) ; (cons 2 (cons -10 empty)))

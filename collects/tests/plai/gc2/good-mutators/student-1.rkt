@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 
 ; mark-and-sweep-test.rkt - Ben Childs
 ; Designed to test the mark and sweep collector

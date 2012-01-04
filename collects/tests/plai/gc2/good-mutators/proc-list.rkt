@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 ; Demonstrates garbage collection while a closure is on the stack.  A correct collector must ensure that the roots
 ; reachable from (make-adder 90) and (make-adder 200) -- that is, the values 90 and 200 that k is bound to -- do
 ; not get discarded.

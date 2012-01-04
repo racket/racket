@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 (allocator-setup "../bad-collectors/broken-collector.rkt" 12)
 
 50

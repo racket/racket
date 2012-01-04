@@ -1,3 +1,3 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 (allocator-setup "../good-collectors/good-collector.rkt" 400)
-(error 'error "plai/gc2mutator has error")
+(error 'error "plai/gc2/mutator has error")

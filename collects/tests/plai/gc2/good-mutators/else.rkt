@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 ; Is else defined?
 (allocator-setup "../good-collectors/good-collector.rkt" 40)
 

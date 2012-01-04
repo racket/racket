@@ -1,5 +1,5 @@
 ; Ensure that call by value is correctly implemented.
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 (allocator-setup "../good-collectors/good-collector.rkt" 40)
 
 (define global-val 'global)

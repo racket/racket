@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
+#lang plai/gc2/mutator
 ; This is `classic' in that it caught many bugs in copying collectors that students wrote for CS173, Fall 2007.
 (allocator-setup "../good-collectors/good-collector.rkt" 28)
 

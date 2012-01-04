@@ -1,4 +1,4 @@
-#lang plai/gc2mutator
-(allocator-setup tests/plai/gc2gc/good-collectors/good-collector 10)
+#lang plai/gc2/mutator
+(allocator-setup tests/plai/gc2/good-collectors/good-collector 10)
 1
 2
