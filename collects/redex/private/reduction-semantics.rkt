@@ -2267,7 +2267,8 @@
                                                      [current-trace-print-results
                                                       (λ (name results level)
                                                         (display " ")
-                                                        (otr name results level))])
+                                                        (otr name results level))]
+                                                     [print-as-expression #f])
                                         (trace-call name metafunc exp))
                                       (metafunc exp)))])
         traced-metafunc))
