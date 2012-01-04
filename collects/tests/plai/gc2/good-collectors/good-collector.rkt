@@ -1,4 +1,4 @@
-#lang plai/gc2collector
+#lang plai/gc2/collector
 
 #|
 
@@ -68,7 +68,7 @@ A collector for use in testing the random mutator generator.
     [(equal? (heap-ref loc) 'flat)
      (heap-ref (+ loc 1))]
     [else
-     (error 'gc:deref "attempted to deref a non flat value, loc ~s" loc)]))
+     (error 'gc:deref "attempted to deref a non flat value, loc ~s, tag ~s" loc (heap-ref loc))]))
 
 (test (with-heap (vector 'free 'free 'free 'flat 14 'free 'free)
                  (gc:deref 3))
@@ -92,6 +92,18 @@ A collector for use in testing the random mutator generator.
                  (gc:rest 3))
       1)
 
+(define (gc:closure-code-ptr a)
+  (if (gc:closure? a)
+      (heap-ref (+ a 1))
+      (error 'closure-code "non closure")))
+
+;; XXX test
+
+(define (gc:closure-env-ref a i)
+  (if (gc:closure? a)
+      (heap-ref (+ a 3 i))
+      (error 'closure-env-ref "non closure")))
+
 (define (gc:flat? loc) (equal? (heap-ref loc) 'flat))
 
 (test (with-heap (vector 'free 'free 'pair 0 1 'flat 14)
@@ -110,6 +122,15 @@ A collector for use in testing the random mutator generator.
                  (gc:cons? 5))
       #f)
 
+(define (gc:closure? loc) (equal? (heap-ref loc) 'closure))
+
+(test (with-heap (vector 'free 'free 'closure #f 0 'flat 14)
+                 (gc:closure? 2))
+      #t)
+(test (with-heap (vector 'free 'free 'closure #f 0 'flat 14)
+                 (gc:closure? 5))
+      #f)
+
 (define (gc:set-first! pr-ptr new) 
   (if (equal? (heap-ref pr-ptr) 'pair)
       (heap-set! (+ pr-ptr 1) new)
@@ -122,11 +143,7 @@ A collector for use in testing the random mutator generator.
 
 
 (define (gc:alloc-flat fv) 
-  (let ([ptr (alloc 2 (λ () 
-                        (if (procedure? fv)
-                            (append (procedure-roots fv)
-                                    (get-root-set))
-                            (get-root-set))))])
+  (let ([ptr (alloc 2 (λ () (get-root-set)))])
     (heap-set! ptr 'flat)
     (heap-set! (+ ptr 1) fv)
     ptr))
@@ -137,6 +154,17 @@ A collector for use in testing the random mutator generator.
     (heap-set! (+ ptr 1) hd)
     (heap-set! (+ ptr 2) tl)
     ptr))
+
+(define (gc:closure code env)
+  (define len (vector-length env))
+  (define ptr (alloc (+ 3 len) (λ () (append (get-root-set) (vector->roots env)))))
+  (heap-set! ptr 'closure)
+  (heap-set! (+ ptr 1) code)
+  (heap-set! (+ ptr 2) len)
+  (for ([v (in-vector env)]
+        [i (in-naturals)])
+       (heap-set! (+ ptr 3 i) v))
+  ptr)
 
 (define (alloc n get-roots)
   (let ([next (find-free-space 0 n)])
@@ -162,18 +190,27 @@ A collector for use in testing the random mutator generator.
      (case (heap-ref (car gray))
        [(flat) 
         (let ([proc (heap-ref (+ (car gray) 1))])
-          (if (procedure? proc)
-              (let ([new-locs (map read-root (procedure-roots proc))])
-                (collect-garbage-help 
-                 (add-in new-locs (cdr gray) white)
-                 (remove* new-locs white)))
-              (collect-garbage-help (cdr gray) white)))]
+          (collect-garbage-help (cdr gray) white))]
        [(pair) 
         (let ([hd (heap-ref (+ (car gray) 1))]
               [tl (heap-ref (+ (car gray) 2))])
           (collect-garbage-help 
            (add-in (list hd tl) (cdr gray) white)
            (remove tl (remove hd white))))]
+       [(closure)
+        (define env-count
+          (heap-ref (+ (car gray) 2)))
+        (define-values
+          (gray* white*)
+          (for/fold ([gray* (cdr gray)]
+                     [white* white])
+                    ([i (in-range env-count)])
+                    (define env (gc:closure-env-ref (car gray) i))
+                    (values (add-in (list env) gray* white)
+                            (remove env white*))))
+        (collect-garbage-help
+         gray*
+         white*)]
        [else
         (error 'collect-garbage "unknown tag ~s, loc ~s" (heap-ref (car gray)) (car gray))])]))
 
@@ -190,6 +227,12 @@ A collector for use in testing the random mutator generator.
          [(flat)
           (heap-set! white 'free)
           (heap-set! (+ white 1) 'free)]
+         [(closure)
+          (heap-set! white 'free)
+          (heap-set! (+ white 1) 'free)
+          (for ([i (in-range (heap-ref (+ white 2)))])
+               (heap-set! (+ white 3 i) 'free))          
+          (heap-set! (+ white 2) 'free)]
          [else 
           (error 'free! "unknown tag ~s\n" (heap-ref white))])
        (free! (cdr whites)))]))
@@ -221,15 +264,16 @@ A collector for use in testing the random mutator generator.
   (cond
     [(< i (heap-size))
      (case (heap-ref i)
+       [(closure) (cons i (get-all-records (+ i 3 (heap-ref (+ i 2)))))]
        [(pair) (cons i (get-all-records (+ i 3)))]
        [(flat) (cons i (get-all-records (+ i 2)))]
        [(free) (get-all-records (+ i 1))]
-       [else (get-all-records (+ i 1))])]
+       [else (error 'get-all-records "Unknown tag ~e in cell ~e" (heap-ref i) i)])]
     [else null]))
 
-(test (with-heap (vector #f #t '() 0 1 2 3 4 5 6 'pair 0 1 'flat 14 'pair 0 1 'flat 12)
-                 (get-all-records 0))
-      (list 10 13 15 18))
+(test (with-heap (vector #f #t '() 0 1 2 3 4 5 6 'pair 0 1 'flat 14 'pair 0 1 'flat 12 'closure #f 1 10 'flat 16)
+                 (get-all-records 10))
+      (list 10 13 15 18 20 24))
 
 (test (with-heap (make-vector 10 'free) (gc:alloc-flat #f))
       0)
@@ -272,3 +316,4 @@ A collector for use in testing the random mutator generator.
                                            (remove 4 (get-all-records 0))))
         v)
       (vector 'free 'free 'free 'free 'pair 4 4))
+

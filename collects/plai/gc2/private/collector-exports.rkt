@@ -1,39 +1,32 @@
 #lang scheme
+(require (for-syntax racket/syntax))
 (provide (all-defined-out))
 
-(define collector:deref false)
-(define collector:alloc-flat false)
-(define collector:cons false)
-(define collector:first false)
-(define collector:rest false)
-(define collector:flat? false)
-(define collector:cons? false)
-(define collector:set-first! false)
-(define collector:set-rest! false)
+(define-syntax (define-collector-export stx)
+  (syntax-case stx ()
+    [(_ i)
+     (with-syntax 
+      ([collector:i (format-id #'i "collector:~a" #'i)]
+       [set-collector:i! (format-id #'i "set-collector:~a!" #'i)])
+      #'(begin (define collector:i false)
+               (define (set-collector:i! proc)
+                 (set! collector:i proc))))]))
 
-(define (set-collector:deref! proc)
-  (set! collector:deref proc))
+(define-syntax-rule (define-collector-exports i ...)
+  (begin (define-collector-export i)
+         ...))
 
-(define (set-collector:alloc-flat! proc)
-  (set! collector:alloc-flat proc))
-
-(define (set-collector:cons! proc)
-  (set! collector:cons proc))
-
-(define (set-collector:first! proc)
-  (set! collector:first proc))
-
-(define (set-collector:rest! proc)
-  (set! collector:rest proc))
-
-(define (set-collector:flat?! proc)
-  (set! collector:flat? proc))
-
-(define (set-collector:cons?! proc)
-  (set! collector:cons? proc))
-
-(define (set-collector:set-first!! proc)
-  (set! collector:set-first! proc))
-
-(define (set-collector:set-rest!! proc)
-  (set! collector:set-rest! proc))
+(define-collector-exports
+  deref
+  alloc-flat
+  cons
+  first
+  rest
+  flat?
+  cons?
+  set-first!
+  set-rest!
+  closure
+  closure?
+  closure-code-ptr
+  closure-env-ref)

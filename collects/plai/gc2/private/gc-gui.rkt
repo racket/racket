@@ -103,10 +103,8 @@
       (cond
         [(boolean? obj) (if obj "#t" "#f")]
         [(number? obj) (format "~a" obj)]
-        [(procedure? obj)
-         (if (object-name obj)
-             (format "~a" (object-name obj))
-             "#<proc>")]
+        [(closure-code? obj)
+         (format "~a" (or (object-name (closure-code-proc obj)) "#<closure>"))]
         [(symbol? obj) (format "'~s" obj)]
         [(null? obj) "empty"]
         [else (error 'val->string "unknown object, expected a heap-value.")]))
@@ -324,8 +322,8 @@
                     (<= 0 n)
                     (< n (vector-length heap-vec)))
                (list n)]
-              [(procedure? n)
-               (map read-root (procedure-roots n))]
+              [(closure-code? n)
+               '()]
               [else
                '()]))
           '()))

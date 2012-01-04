@@ -179,20 +179,23 @@
                                         #f))
                                   (string->symbol "#<proc>"))])
          (quasisyntax/loc stx
-           (let ([closure (lambda (id ...) 
-                            (syntax-parameterize ([mutator-env-roots 
-                                                   (list #'id ...
-                                                         #'free-id ...)]
-                                                  [mutator-tail-call? #t])
-                                                 (->address body)))])
-             (add-closure-env! closure (list (make-env-root free-id) ...))
+           (let ([closure 
+                  (closure-code
+                   #,(length (syntax->list #'(free-id ...)))
+                   (lambda (free-id ... id ...) 
+                     (syntax-parameterize ([mutator-env-roots 
+                                            (list #'id ...
+                                                  #'free-id ...)]
+                                           [mutator-tail-call? #t])
+                                          (->address body))))])
              #,(if (syntax-parameter-value #'mutator-tail-call?)
                    (syntax/loc stx
-                     (#%app collector:alloc-flat closure))
+                     (#%app collector:closure closure (vector free-id ...)))
                    (syntax/loc stx
-                     (with-continuation-mark gc-roots-key 
-                       (list (make-env-root env-id) ...)
-                       (#%app collector:alloc-flat closure))))))))]
+                     (with-continuation-mark 
+                      gc-roots-key 
+                      (list (make-env-root env-id) ...)
+                      (#%app collector:closure closure (vector free-id ...)))))))))]
     [(_ (id ...) body ...)
      (syntax/loc stx
        (mutator-lambda (id ...) (mutator-begin body ...)))]))
@@ -282,11 +285,13 @@
   (syntax-case stx ()
     [(collector-module heap-size)
      (with-syntax ([(init-allocator gc:deref gc:alloc-flat gc:cons 
+                                    gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
                                     gc:first gc:rest 
                                     gc:flat? gc:cons?
                                     gc:set-first! gc:set-rest!)
                     (map (λ (s) (datum->syntax stx s))
                          '(init-allocator gc:deref gc:alloc-flat gc:cons 
+                                          gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
                                           gc:first gc:rest 
                                           gc:flat? gc:cons?
                                           gc:set-first! gc:set-rest!))]) 
@@ -305,11 +310,15 @@
              (set-collector:cons?! gc:cons?)
              (set-collector:set-first!! gc:set-first!)
              (set-collector:set-rest!! gc:set-rest!)
+             (set-collector:closure! gc:closure)
+             (set-collector:closure?! gc:closure?)
+             (set-collector:closure-code-ptr! gc:closure-code-ptr)
+             (set-collector:closure-env-ref! gc:closure-env-ref)
              
              (init-heap! (#%datum . heap-size))
              (when (gui-available?) 
                (if (<= (#%datum . heap-size) 500)
-                   (set-ui! (dynamic-require `plai/private/gc-gui 'heap-viz%))
+                   (set-ui! (dynamic-require `plai/gc2/private/gc-gui 'heap-viz%))
                    (printf "Large heap; the heap visualizer will not be displayed.\n")))
              (init-allocator))))]
     [_ (raise-syntax-error 'mutator 
@@ -390,8 +399,20 @@
      (andmap identifier? (syntax->list #'(id ...)))
      (with-syntax ([(lifted-id ...) (generate-temporaries #'(id ...))])
        #'(begin
-           (define lifted-id (mutator-lift id)) ...
-           (provide (rename-out [lifted-id id] ...))))]))
+           (define-syntax lifted-id
+             (make-set!-transformer
+              (lambda (stx)
+                (syntax-case stx (set!)
+                  ;; Redirect mutation of x to y
+                  [(set! x v)
+                   (raise-syntax-error 'id "Cannot mutate primitive functions")]
+                  [(x (... ...))
+                   #'(mutator-app x (... ...))]
+                  [x (identifier? #'x)
+                      #'(collector:closure (closure-code 0 (mutator-lift id)) (vector))]))))
+           ...
+           (provide (rename-out [lifted-id id]
+                                ...))))]))
 
 (provide/lift 
  symbol? boolean? number? symbol=?
@@ -460,20 +481,28 @@
     [(_ arg) #'(#%app print-only-errors (#%datum . arg))]))
 
 ; Implementation Functions
-(define (deref proc/loc)
-  (cond
-    [(procedure? proc/loc) proc/loc]
-    [(location? proc/loc) (collector:deref proc/loc)]
-    [else (error 'deref "expected <location?> or <procedure?>; received ~a" proc/loc)]))
-
 (define (deref-proc proc-or-loc)
+  (define (deref proc/loc)
+    (cond
+     [(procedure? proc/loc) proc/loc]
+     [(location? proc/loc) (collector:closure-code-ptr proc/loc)]
+     [else (error 'deref "expected <location?> or <procedure?>; received ~a" proc/loc)]))
   (define v 
     (with-handlers ([exn? (lambda (x) 
                             (error 'procedure-application "expected procedure, given something else"))])
       (deref proc-or-loc)))
-  (if (procedure? v)
-      v
-      (error 'procedure-application "expected procedure, given ~e" v)))
+  (cond
+   [(procedure? v)
+    v]
+   [(closure-code? v)
+    (lambda args
+      (apply (closure-code-proc v) 
+             (append 
+              (for/list ([i (in-range (closure-code-env-count v))])
+                        (collector:closure-env-ref proc-or-loc i))
+              args)))]
+   [else
+    (error 'procedure-application "expected procedure, given ~e" v)]))
 
 (define (gc->scheme loc)
   (define-struct an-unset ())
@@ -494,8 +523,11 @@
                  (placeholder-set! ph (cons car-ph cdr-ph))
                  (placeholder-set! car-ph (unwrap (collector:first loc)))
                  (placeholder-set! cdr-ph (unwrap (collector:rest loc))))]
+              [(collector:closure? loc)
+               ;; XXX get env?
+               (placeholder-set! ph (closure-code-proc (collector:closure-code-ptr loc)))]
               [else 
-               (error (format "gc:flat? and gc:cons? both returned false for ~a" loc))])
+               (error (format "gc:flat?, gc:cons?, gc:closure? all returned false for ~a" loc))])
             (placeholder-get ph)))))
   (make-reader-graph (unwrap loc)))
 

@@ -1,4 +1,4 @@
-#lang plai/gc2collector
+#lang plai/gc2/collector
 
 (define ptr 0)
 

@@ -1,9 +1,29 @@
-#lang plai/gc2collector
+#lang plai/gc2/collector
 (define heap-ptr 'uninitialized-heap-ptr)
 
 (define (init-allocator)
   ; calling heap-offset before init-allocator is called gives 'undefined
  (set! heap-ptr 0))
+
+(define (gc:closure code vs)
+  (define len (vector-length vs))
+  (when (> (+ heap-ptr len) (heap-size))
+        (error "out of memory"))
+  (heap-set! heap-ptr 'closure)
+  (heap-set! (+ 1 heap-ptr) code)
+  (for ([v (in-vector vs)]
+        [i (in-naturals 1)])
+       (heap-set! (+ 1 i heap-ptr) v))
+  (set! heap-ptr (+ len heap-ptr))
+  ;; return the location of this flat data
+  (- heap-ptr len))
+
+(define (gc:closure-code-ptr a)
+  (heap-ref (+ a 1)))
+(define (gc:closure-env-ref a i)
+  (heap-ref (+ a 1 1 i)))
+(define (gc:closure? a)
+  (eq? (heap-ref a) 'closure))
 
 (define (gc:alloc-flat p)
   (begin 

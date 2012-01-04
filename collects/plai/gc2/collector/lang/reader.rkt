@@ -1,2 +1,2 @@
 (module reader syntax/module-reader
-  #:language `plai/collector)
+  #:language `plai/gc2/collector)

@@ -1,5 +1,5 @@
 #lang plai/gc2/mutator
-(allocator-setup "../good-collectors/good-collector.rkt" 6)
+(allocator-setup "../good-collectors/good-collector.rkt" 7)
 
 (define (go)
   (let ([obj 'z])

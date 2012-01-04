@@ -28,8 +28,8 @@
 (test
  (if (run-good?)
      (for ([m (in-directory (build-path here "good-mutators") #rx"rkt$")])
-       (test
-        (test-mutator m)))
+       (test #:failure-prefix (format "~a" m)
+             (test-mutator m)))
      (void))
  (for ([m (in-directory (build-path here "bad-mutators") #rx"rkt$")])
    (test
@@ -37,7 +37,7 @@
  
  (test-mutator (build-path here "other-mutators" "error.rkt"))
  =error>
- #rx"plai/gc2mutator has error"
+ #rx"plai/gc2/mutator has error"
  
  (test-mutator (build-path here "other-mutators" "top.rkt"))
  =error>
@@ -48,8 +48,8 @@
  #<<END
 (good lst '(1 2 3) '(1 2 3) "at line 6")
 (good (length (quote (hello goodbye))) 2 2 "at line 13")
-(good (heap-loc head) 62 62 "at line 18")
-(bad (heap-loc head) 62 47 "at line 19")
+(good (heap-loc head) 69 69 "at line 18")
+(bad (heap-loc head) 69 54 "at line 19")
 
 END
  

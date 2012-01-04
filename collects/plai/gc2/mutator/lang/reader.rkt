@@ -1,2 +1,2 @@
 (module reader syntax/module-reader
-  #:language `plai/mutator)
+  #:language `plai/gc2/mutator)

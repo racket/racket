@@ -33,9 +33,11 @@
   (syntax-case stx ()
     [(_ body ...) 
      (with-syntax ([(init-allocator gc:deref gc:alloc-flat gc:cons gc:first gc:rest gc:flat?
+                                    gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
                                     gc:cons? gc:set-first! gc:set-rest!)
                     (map (λ (s) (datum->syntax stx s))
                          '(init-allocator gc:deref gc:alloc-flat gc:cons gc:first gc:rest gc:flat? 
+                                          gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
                                           gc:cons? gc:set-first! gc:set-rest!))])
        #`(#%module-begin 
           
@@ -47,12 +49,17 @@
           
           (provide/contract (gc:alloc-flat (heap-value? . -> . location?)))
           (provide/contract (gc:cons (location? location? . -> . location?)))
-          
+          (provide/contract (gc:closure (closure-code? (vectorof location?) . -> . location?))) 
+
+          (provide/contract (gc:closure-code-ptr (location? . -> . closure-code?)))
+          (provide/contract (gc:closure-env-ref (location? integer? . -> . location?)))          
+
           (provide/contract (gc:first (location? . -> . location?)))
           (provide/contract (gc:rest (location? . -> . location?)))
           
           (provide/contract (gc:flat? (location? . -> . boolean?)))
           (provide/contract (gc:cons? (location? . -> . boolean?)))
+          (provide/contract (gc:closure? (location? . -> . boolean?)))
           
           (provide/contract (gc:set-first! (location? location? . -> . void?)))
           (provide/contract (gc:set-rest! (location? location? . -> . void?)))

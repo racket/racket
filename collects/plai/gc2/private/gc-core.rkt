@@ -50,10 +50,10 @@
                   (string-append " " (format-cell elt)))])))))
 
 ;;; Predicate determines values that may be stored on the heap.  Limit this to "small" values that
-;;; conceptually occupy a small, fixed amount of space.  Closures are an exception.
+;;; conceptually occupy a small, fixed amount of space.
 (provide/contract [heap-value? (any/c . -> . boolean?)])
 (define (heap-value? v)
-  (or (number? v) (symbol? v) (boolean? v) (empty? v) (procedure? v)))
+  (or (number? v) (symbol? v) (boolean? v) (empty? v) (closure-code? v)))
 
 (provide location?)
 (define (location? v)
@@ -87,16 +87,22 @@
 (define gc-roots-key (gensym 'gc-roots-key))
 
 ;;; Roots are defined with custom getters and setters as they can be created in various ways.
-(provide root? root-name make-root)
 (define-struct root (name get set!)
   #:property prop:custom-write (λ (v port write?)
                                  (display (format "#<root:~a>" (root-name v)) port)))
+(provide/contract
+ [root? (-> any/c boolean?)]
+ [root-name (-> root? any/c)]
+ [make-root (-> any/c (-> location?) (-> location? void) root?)])
 
 (provide make-env-root)
 (define-syntax (make-env-root stx)
   (syntax-case stx ()
     [(_ id) (identifier? #'id)
-            #`(make-root 'id (λ () id) (λ (loc) (set! id loc)))]))
+            #`(make-root 'id
+                         (λ () 
+                            id)
+                         (λ (loc) (set! id loc)))]))
 
 ;;; Roots on the stack.
 (provide/contract (stack-roots (-> (listof root?))))
@@ -110,7 +116,10 @@
 
 (provide/contract (make-stack-root (symbol? location? . -> . root?)))
 (define (make-stack-root id location)
-  (make-root id (λ () location) (λ (new-location) (set! location new-location))))
+  (make-root id
+             (λ () 
+                location)
+             (λ (new-location) (set! location new-location))))
 
 (provide/contract (read-root (root? . -> . location?)))
 (define (read-root root)
@@ -137,9 +146,13 @@
      (andmap identifier? (syntax->list #'(root-id ...)))
      #`(begin
          (append
-          (list (make-root 'root-id (λ () root-id) 
-                           (λ (loc) 
-                             (set! root-id loc)))
+          (list (if (location? root-id)
+                    (make-root 'root-id 
+                               (λ ()
+                                  root-id) 
+                               (λ (loc) 
+                                  (set! root-id loc)))
+                    (error 'get-root-set "expected a location, given ~e" root-id))
                 ...)
           (get-global-roots)
           (stack-roots)))]
@@ -153,24 +166,23 @@
                            "missing open parenthesis"
                            stx)]))
 
+(provide/contract
+ [vector->roots (-> (vectorof location?) (listof root?))])
+(define (vector->roots v)
+  (for/list ([e (in-vector v)]
+             [i (in-naturals)])
+            (make-root 'vector
+                       (λ () 
+                          (vector-ref v i))
+                       (λ (ne) (vector-set! v ne)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Environments of closures
 
-; Once the closure is garbage collected, its environment is only reachable by a weak reference to 
-; the closure.
-(define closure-envs (make-weak-hash))
-
-(provide/contract (add-closure-env! (procedure? (listof root?) . -> . any)))
-(define (add-closure-env! proc roots)
-  (hash-set! closure-envs proc roots))
-
-(provide/contract (get-closure-env (procedure? . -> . (or/c false/c (listof root?)))))
-(define (get-closure-env proc)
-  (hash-ref closure-envs proc false))
-
-(provide/contract (procedure-roots (procedure? . -> . (listof root?))))
-(define (procedure-roots proc)
-  (filter is-mutable-root? (hash-ref closure-envs proc empty)))
+(define-struct closure-code (env-count proc) #:transparent)
+(provide/contract
+ [struct closure-code ([env-count exact-nonnegative-integer?]
+                       [proc procedure?])])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Optional UI

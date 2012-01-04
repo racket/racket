@@ -1,7 +1,7 @@
 #lang plai/gc2/mutator
-(allocator-setup "../good-collectors/good-collector.rkt" 4)
+(allocator-setup "../good-collectors/good-collector.rkt" 5)
 
-; 2
+; 3
 (define thunker
   (lambda ()
     ; 2
@@ -10,6 +10,6 @@
     'bananna
     ; 2
     'frog))
-; 4 total
+; 5 total
 
 (thunker)
