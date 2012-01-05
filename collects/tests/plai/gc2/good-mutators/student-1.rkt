@@ -15,7 +15,7 @@
 ; Finally it runs the sample tests distributed with the assignment
 
 
-(allocator-setup "../good-collectors/good-collector.rkt" 80)
+(allocator-setup "../good-collectors/good-collector.rkt" 110)
 
 ; Helper to generate long lists
 (define (gen-list x)

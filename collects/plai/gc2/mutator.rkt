@@ -225,10 +225,11 @@
     [(_ fe ae ...)
      (with-syntax ([(env-id ...) (syntax-parameter-value #'mutator-env-roots)])
        (if (syntax-parameter-value #'mutator-tail-call?)
-           ; If this call is in tail position, we will not need access to its environment when it returns.
+           ; If this call is in tail position, we will not need access
+           ; to its environment when it returns.
            (syntax/loc stx ((deref-proc fe) ae ...))
-           ; If this call is not in tail position, we make the environment at the call site
-           ; reachable.
+           ; If this call is not in tail position, we make the
+           ; environment at the call site reachable.
            #`(with-continuation-mark gc-roots-key 
                (list (make-env-root env-id) ...)
                #,(syntax/loc stx ((deref-proc fe) ae ...)))))]))
@@ -363,6 +364,7 @@
                             (syntax-local-introduce #'scheme))])
        #`(begin
            (require (only-in source [id renamed-id] ...))
+           ;; XXX make a macro to unify this and provide/lift
            (define id
              (lambda args
                (unless (andmap (lambda (v) (and (location? v) (collector:flat? v))) args)
@@ -409,7 +411,21 @@
                   [(x (... ...))
                    #'(mutator-app x (... ...))]
                   [x (identifier? #'x)
-                      #'(collector:closure (closure-code 0 (mutator-lift id)) (vector))]))))
+                     ;; XXX Make a macro to unify this and mutator-lambda
+                     (with-syntax 
+                      ([(env-id (... ...)) (syntax-parameter-value #'mutator-env-roots)])
+                      (if (syntax-parameter-value #'mutator-tail-call?)
+                          (syntax/loc stx
+                                      (#%app collector:closure
+                                             (closure-code 0 (mutator-lift id))
+                                             (vector)))
+                          (syntax/loc stx
+                                      (with-continuation-mark 
+                                       gc-roots-key 
+                                       (list (make-env-root env-id) (... ...))
+                                       (#%app collector:closure
+                                              (closure-code 0 (mutator-lift id))
+                                              (vector))))))]))))
            ...
            (provide (rename-out [lifted-id id]
                                 ...))))]))

@@ -31,6 +31,9 @@ A collector for use in testing the random mutator generator.
 (test (with-heap #(free free free)
                  (n-free-blocks? 0 3))
       #t)
+(test (with-heap #(free free free free)
+                 (n-free-blocks? 0 4))
+      #t)
 (test (with-heap #(free free free)
                  (n-free-blocks? 0 4))
       #f)
@@ -101,8 +104,12 @@ A collector for use in testing the random mutator generator.
 
 (define (gc:closure-env-ref a i)
   (if (gc:closure? a)
-      (heap-ref (+ a 3 i))
+      (if (< i (heap-ref (+ a 2)))
+          (heap-ref (+ a 3 i))
+          (error 'closure-env-ref "closure-env-ref out of bounds"))
       (error 'closure-env-ref "non closure")))
+
+;; XXX test
 
 (define (gc:flat? loc) (equal? (heap-ref loc) 'flat))
 
@@ -230,9 +237,10 @@ A collector for use in testing the random mutator generator.
          [(closure)
           (heap-set! white 'free)
           (heap-set! (+ white 1) 'free)
-          (for ([i (in-range (heap-ref (+ white 2)))])
-               (heap-set! (+ white 3 i) 'free))          
-          (heap-set! (+ white 2) 'free)]
+          (define env-len (heap-ref (+ white 2)))
+          (heap-set! (+ white 2) 'free)
+          (for ([i (in-range env-len)])
+               (heap-set! (+ white 3 i) 'free))]
          [else 
           (error 'free! "unknown tag ~s\n" (heap-ref white))])
        (free! (cdr whites)))]))
@@ -264,10 +272,10 @@ A collector for use in testing the random mutator generator.
   (cond
     [(< i (heap-size))
      (case (heap-ref i)
-       [(closure) (cons i (get-all-records (+ i 3 (heap-ref (+ i 2)))))]
-       [(pair) (cons i (get-all-records (+ i 3)))]
-       [(flat) (cons i (get-all-records (+ i 2)))]
-       [(free) (get-all-records (+ i 1))]
+       [(closure) (cons i (get-all-records (+ i 2 (heap-ref (+ i 2)) 1)))]
+       [(pair) (cons i (get-all-records (+ i 2 1)))]
+       [(flat) (cons i (get-all-records (+ i 1 1)))]
+       [(free) (get-all-records (+ i 0 1))]
        [else (error 'get-all-records "Unknown tag ~e in cell ~e" (heap-ref i) i)])]
     [else null]))
 

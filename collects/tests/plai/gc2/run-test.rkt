@@ -56,7 +56,7 @@ END
   (capture-output (test-mutator (build-path here "other-mutators" "begin.rkt")))
  =>
  #<<END
-Value at location 2:
+Value at location 8:
 #t
 
 END

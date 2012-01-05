@@ -1,5 +1,5 @@
 #lang plai/gc2/mutator
-(allocator-setup "../good-collectors/good-collector.rkt" 84)
+(allocator-setup "../good-collectors/good-collector.rkt" 104)
 (halt-on-errors)
 
 ;(check-temps1 temps) -> boolean?
