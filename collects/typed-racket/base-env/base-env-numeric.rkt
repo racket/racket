@@ -1641,6 +1641,7 @@
       (-SingleFlonum . -> . (Un -SingleFlonum -SingleFlonumComplex))
       (-InexactRealZero . -> . -NegInexactReal)
       (-NonNegInexactReal . -> . -InexactReal)
+      (-NonNegReal . -> . -Real)
       (-ExactNumber . -> . (Un -ExactNumber -FloatComplex))
       (-FloatComplex . -> . -FloatComplex)
       (-SingleFlonumComplex . -> . -SingleFlonumComplex)
