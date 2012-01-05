@@ -40,7 +40,7 @@
   (provide cfg-parser)
   
   ;; A raw token, wrapped so that we can recognize it:
-  (define-struct tok (name orig-name val))
+  (define-struct tok (name orig-name val start end))
 
   ;; Represents the thread scheduler:
   (define-struct tasks (active active-back waits multi-waits cache progress?))
@@ -321,10 +321,14 @@
   (define-for-syntax (map-token toks tok)
     (car (token-identifier-mapping-get toks tok)))
 
-  (define no-pos-val (make-position 0 0 0))
+  (define no-pos-val (make-position #f #f #f))
   (define-for-syntax no-pos 
     (let ([npv ((syntax-local-certifier) #'no-pos-val)])
       (lambda (stx) npv)))
+  (define-for-syntax at-tok-pos
+    (lambda (sel expr)
+      (lambda (stx)
+        #`(let ([v #,expr]) (if v (#,sel v) no-pos-val)))))
     
   ;; Builds a matcher for a particular alternative
   (define-for-syntax (build-match nts toks pat handle $ctx)
@@ -339,7 +343,9 @@
 		[id-start-pos (datum->syntax-object (car pat)
 						    (string->symbol (format "$~a-start-pos" pos)))]
 		[id-end-pos (datum->syntax-object (car pat)
-						  (string->symbol (format "$~a-end-pos" pos)))])
+						  (string->symbol (format "$~a-end-pos" pos)))]
+                [n-end-pos (and (null? (cdr pat))
+                                (datum->syntax-object (car pat) '$n-end-pos))])
             (cond
               [(bound-identifier-mapping-get nts (car pat) (lambda () #f))
                ;; Match non-termimal
@@ -350,8 +356,11 @@
                           (andmap values (caddr l))))
                   #,(car pat)
                   (lambda (#,id stream depth end success-k fail-k max-depth tasks)
-		    (let-syntax ([#,id-start-pos no-pos]
-				 [#,id-end-pos no-pos])
+		    (let-syntax ([#,id-start-pos (at-tok-pos #'tok-start #'(and (pair? stream) (car stream)))]
+				 [#,id-end-pos (at-tok-pos #'tok-end #'(and (pair? stream) (car stream)))]
+                                 #,@(if n-end-pos
+                                        #`([#,n-end-pos (at-tok-pos #'tok-end #'(and (pair? stream) (car stream)))])
+                                        null))
 		      #,(loop (cdr pat) (add1 pos))))
                   stream depth 
                   #,(let ([cnt (apply +
@@ -368,13 +377,17 @@
                (let ([tok-id (map-token toks (car pat))])
                  #`(if (and (pair? stream)
                             (eq? '#,tok-id (tok-name (car stream))))
-                       (let ([#,id (tok-val (car stream))]
-                             [stream (cdr stream)]
-                             [depth (add1 depth)])
+                       (let* ([stream-a (car stream)]
+                              [#,id (tok-val stream-a)]
+                              [stream (cdr stream)]
+                              [depth (add1 depth)])
                          (let ([max-depth (max max-depth depth)])
-			   (let-syntax ([#,id-start-pos no-pos]
-					[#,id-end-pos no-pos])
-			     #,(loop (cdr pat) (add1 pos)))))
+			   (let-syntax ([#,id-start-pos (at-tok-pos #'tok-start #'stream-a)]
+					[#,id-end-pos (at-tok-pos #'tok-end #'stream-a)]
+                                        #,@(if n-end-pos
+                                               #`([#,n-end-pos (at-tok-pos #'tok-end #'stream-a)])
+                                               null))
+                             #,(loop (cdr pat) (add1 pos)))))
                        (fail-k max-depth tasks)))])))))
   
   ;; Starts parsing to match a non-terminal. There's a minor
@@ -506,17 +519,18 @@
 				    [cfg-start #f]
 				    [cfg-grammar #f]
 				    [cfg-error #f]
+                                    [src-pos? #f]
 				    [parser-clauses null])
 			   (if (null? clauses)
 			       (values cfg-start
 				       cfg-grammar
 				       cfg-error
 				       (reverse parser-clauses))
-			       (syntax-case (car clauses) (start error grammar)
+			       (syntax-case (car clauses) (start error grammar src-pos)
 				 [(start tok)
-				  (loop (cdr clauses) #'tok cfg-grammar cfg-error parser-clauses)]
+				  (loop (cdr clauses) #'tok cfg-grammar cfg-error src-pos? parser-clauses)]
 				 [(error expr)
-				  (loop (cdr clauses) cfg-start cfg-grammar #'expr parser-clauses)]
+				  (loop (cdr clauses) cfg-start cfg-grammar #'expr src-pos? parser-clauses)]
 				 [(grammar [nt [pat handle0 handle ...] ...] ...)
 				  (let ([nts (make-bound-identifier-mapping)]
 					[toks (make-token-identifier-mapping)]
@@ -667,6 +681,7 @@
 					       (syntax->list #'(((begin handle0 handle ...) ...) ...))
 					       (syntax->list #'((handle0 ...) ...)))
 					  cfg-error
+                                          src-pos?
 					  (list*
 					   (with-syntax ([((tok tok-id . $e) ...)
 							  (token-identifier-mapping-map toks
@@ -675,10 +690,14 @@
 												 (car v)
 												 (if (cdr v)
 												     #f
-												     '$1))))])
+												     '$1))))]
+                                                         [(pos ...) 
+                                                          (if src-pos?
+                                                              #'($1-start-pos $1-end-pos)
+                                                              #'(#f #f))])
 					     #`(grammar (start [() null]
 							       [(atok start) (cons $1 $2)])
-							(atok [(tok) (make-tok 'tok-id 'tok $e)] ...)))
+							(atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
 					   #`(start start)
 					   parser-clauses)))]
 				 [(grammar . _)
@@ -687,11 +706,19 @@
 				   "bad grammar clause"
 				   stx
 				   (car clauses))]
+                                 [(src-pos)
+                                  (loop (cdr clauses)
+					cfg-start
+					cfg-grammar
+					cfg-error
+                                        #t
+					(cons (car clauses) parser-clauses))]
 				 [_else
 				  (loop (cdr clauses)
 					cfg-start
 					cfg-grammar
 					cfg-error
+                                        src-pos?
 					(cons (car clauses) parser-clauses))]))))])
            #`(let ([orig-parse (parser 
                                 [error (lambda (a b c)
@@ -713,7 +740,9 @@
                                           (if error-proc
                                               (error-proc #t
                                                           (tok-orig-name bad-tok)
-                                                          (tok-val bad-tok))
+                                                          (tok-val bad-tok)
+                                                          (tok-start bad-tok)
+                                                          (tok-end bad-tok))
                                               (error
                                                'cfg-parse
                                                "failed at ~a" 
