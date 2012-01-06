@@ -181,8 +181,11 @@ stampfile="stamp"
 # directory for temporary stuff (absolute path) -- on all machines
 tmpdir="/tmp/build"
 mkdir -p "$tmpdir" # make sure that it exists asap
-# lockfile for this script
+# lockfile for this script (date marks when the build started)
 lockfile="$tmpdir/build-lock"
+# status file, and a file to save it when done
+statusfile="$tmpdir/status"
+statusfile_last="$tmpdir/last_status"
 # name for running this script remotely
 remotebuildscript="$tmpdir/build"
 # full name for clean repository tgz file to transfer for distributed builds
@@ -370,6 +373,7 @@ exit_error() {
     echo ""
   else
     echo "Aborting" 1>&2
+    write_status "Build error, aborted"
     exit 1
   fi
 }
@@ -377,8 +381,10 @@ dont_exit() {
   no_exit_on_error="yes" ; "$@" ; no_exit_on_error="no"
 }
 
-cleanup_lockfile() {
+cleanup_run_files() {
   rm -f "$lockfile"
+  rm -f "$statusfile_last"
+  if [[ -e "$statusfile" ]]; then mv "$statusfile" "$statusfile_last"; fi
 }
 
 # Utilities for multi-level variables that can be used as sort of an
@@ -698,7 +704,23 @@ append_dots() { # inputs: width, string
   echo "${2}${line:0:$(( ${1} - ${#2} ))}"
 }
 
+base_status=""
+write_status() {
+  local msg="$*"
+  if [[ "$gitbranch" != "master" ]]; then
+    msg="($gitbranch build) $msg"
+  fi
+  if [[ "$machine" = "$workmachine" ]]; then
+    echo "$*" > "$statusfile"
+  else
+    # greppable lines for status, filtered out in final log (see below)
+    echo "### <<< $* >>>"
+  fi
+}
+
 separator() {
+  if [[ "x$1" = "x-s" ]]; then shift; base_status="$*"; write_status "$*"
+  elif [[ "x$1" = "x-s" ]]; then shift; write_status "$base_status ($*)"; fi
   local line="============================================================"
   local sep="$*"
   local sep_len=${#sep}
@@ -717,7 +739,7 @@ separator() {
 
 build_step() { # inputs: name, command
   local jobname="$1"; shift
-  separator "Building: $jobname [${machine}(${platform})]"
+  separator -s "Building: $jobname [${machine}(${platform})]"
   show "Running \"$*\""
   start_timer
   "$@" || exit_error "\"$jobname\" part of build process failed"
@@ -988,10 +1010,10 @@ MAIN_BUILD() {
   ## --------------------------------------------------------------------------
   # use a lock file, no retries, and recreate it if it's over 3 hours old
   _run lockfile -r 0 -l 10800 "$lockfile"
-  trap cleanup_lockfile 0 3 9 15
+  trap cleanup_run_files 0 3 9 15
 
   ## --------------------------------------------------------------------------
-  separator "Begin ($(date))"
+  separator -s "Begin ($(date))"
 
   timestamp="$(date '+%Y%m%d%H%M')"
   htmltimestamp="$(date '+updated at %A, %B %d %Y, %H:%M %Z')"
@@ -1004,7 +1026,7 @@ MAIN_BUILD() {
 
   ## --------------------------------------------------------------------------
   if is_yes make_repo; then
-    separator "Repository updates"
+    separator -s "Repository updates"
     git_get "plt" "$gitbranch" "$cleandir"
     git_get "iplt" "$gitibranch" "$internaldir"
   else
@@ -1037,7 +1059,7 @@ MAIN_BUILD() {
   fi
 
   ## --------------------------------------------------------------------------
-  separator "Dispatching build jobs"
+  separator -s "Dispatching build jobs"
 
   local m
   if is_yes make_bins; then
@@ -1059,7 +1081,7 @@ MAIN_BUILD() {
       machineget mplatform=platform
       if [[ "$machine" != "$workmachine" ]]; then
         separator "{{{ Building ${machine}(${mplatform}) remotely }}}"
-        _cat "$bglogfile-$machine"
+        _cat "$bglogfile-$machine" | grep -v "^### <<< .* >>>"
         _rm "$bglogfile-$machine"
       fi
     done
@@ -1078,7 +1100,7 @@ MAIN_BUILD() {
 
   _rm "$lockfile"
 
-  separator "Done ($(date))"
+  separator -s "Done ($(date))"
 
 }
 
@@ -1087,7 +1109,7 @@ MAIN_BUILD() {
 DO_AUTO_UPDATES() {
 
   ## --------------------------------------------------------------------------
-  separator "Updating version-dependent files"
+  separator -s "Updating version-dependent files"
 
   _cd "$maindir/$cleandir"
 
@@ -1182,7 +1204,7 @@ DO_BUILD() { # inputs -- releasing
   fi
 
   ## --------------------------------------------------------------------------
-  separator "${machine}(${platform}): Stripping binaries"
+  separator -s "${machine}(${platform}): Stripping binaries"
 
   # Strip binaries
   _cd "$PLTHOME"
@@ -1204,7 +1226,7 @@ DO_BUILD() { # inputs -- releasing
   esac
 
   ## --------------------------------------------------------------------------
-  separator "${machine}(${platform}): Creating \"$fulltgz\""
+  separator -s "${machine}(${platform}): Creating \"$fulltgz\""
 
   _rm "$fulltgz"
   _cd "$workdir"
@@ -1222,7 +1244,7 @@ DO_BUILD() { # inputs -- releasing
   elif [[ "$releasing" = "yes" ]];       then test_mode="all";
   elif [[ "$(( $RANDOM % 2 ))" = "0" ]]; then test_mode="rnd";
   fi;
-  separator "${machine}(${platform}) testing Racket ($test_mode)"
+  separator -s "${machine}(${platform}) testing Racket ($test_mode)"
   local testdir="$tmpdir/tests"
   _rmcd "$testdir"
 
@@ -1245,7 +1267,7 @@ DO_BUILD() { # inputs -- releasing
 
   # GRacket-based tests on the main machine, in an Xvnc session
   if [[ "$test_gui" = "yes" ]]; then
-    separator "${machine}(${platform}) testing DrRacket"
+    separator -s "${machine}(${platform}) testing DrRacket"
     if [[ "$platform" = *"-win32" ]]; then
       dont_exit "$PLTHOME/gracket.exe" "$(cygpath -w "$PLTHOME/$drtestscript")"
     else
@@ -1265,7 +1287,7 @@ DO_BUILD() { # inputs -- releasing
     targetdir="$moveto"; mode="mv"; op="Moving"
   fi
   if [[ "$targetdir" != "" ]]; then
-    separator "${machine}(${platform}): $op installation to \"$targetdir\""
+    separator -s "${machine}(${platform}): $op installation to \"$targetdir\""
     _md "$targetdir/$installdir-new"
     _cd "$workdir/$installdir"
     show "Copying \"$PLTHOME\" to \"$targetdir/$installdir-new\""
@@ -1297,7 +1319,7 @@ DO_BUILD() { # inputs -- releasing
   fi
 
   ## --------------------------------------------------------------------------
-  separator "${machine}(${platform}) done"
+  separator -s "${machine}(${platform}) done"
 
 }
 
@@ -1404,7 +1426,7 @@ DO_WINDOWS_BUILD() {
 
   export VSNET NMAKE PATH INCLUDE LIB
 
-  # separator "Windows: Convert .sln files"
+  # separator -s "Windows: Convert .sln files"
   # local SAVED_IFS="$IFS"; IFS=$'\n'
   # local sln
   # for sln in $(find "$PLTHOME/src/worksp" -type f -name "*.sln"); do
@@ -1413,7 +1435,7 @@ DO_WINDOWS_BUILD() {
   # done
   # IFS="$SAVED_IFS"
 
-  separator "Windows: Use new .sln files"
+  separator -s "Windows: Use new .sln files"
   local SAVED_IFS="$IFS"; IFS=$'\n'
   local file
   for file in $(find "$PLTHOME/src/worksp10" -type f); do
@@ -1421,7 +1443,7 @@ DO_WINDOWS_BUILD() {
   done
   IFS="$SAVED_IFS"
 
-  separator "Windows: Full build"
+  separator -s "Windows: Full build"
   win_build_step VSNET "racket"
   win_build_step VSNET "gracket"
   _cd "$PLTHOME/src/worksp/gc2"; win_build_step RKT "3M" make.rkt
@@ -1435,7 +1457,7 @@ DO_WINDOWS_BUILD() {
   win_build_step RKT "get-libs (gui)" ../src/get-libs.rkt gui
   win_build_step RKT "get-libs (db)" ../src/get-libs.rkt db
 
-  separator "Windows: Building libraries"
+  separator -s "Windows: Building libraries"
   _cd "$PLTHOME"
   win_build_step RKT "compiler" -N raco -l- raco setup -Dl compiler
 
@@ -1444,7 +1466,7 @@ DO_WINDOWS_BUILD() {
 
   _cd "$PLTHOME"; win_build_step RKT "raco setup" $SETUP_ARGS
 
-  separator "Windows: Building Cygwin libreries"
+  separator -s "Windows: Building Cygwin libreries"
   _mcd "$PLTHOME/src/build"
   _run ../configure --disable-gracket
   _cd "racket/dynsrc"
@@ -1453,7 +1475,7 @@ DO_WINDOWS_BUILD() {
   || exit_error "Errors when running \"make\" for Cygwin"
 
   # Borland is no longer supported:
-  # separator "Windows: Building Borland libreries"
+  # separator -s "Windows: Building Borland libreries"
   # _cd "$PLTHOME/src/racket/dynsrc"
   # _run bcc32 -I"../include" -I"g:/borland/bcc55/include" \
   #        -o"mzdynb.obj" -c "mzdyn.c"
@@ -1469,7 +1491,7 @@ DO_WINDOWS_BUILD() {
 
 BUILD_DOCS_AND_PDFS() {
 
-  separator "Copying and making \"$docdir\""
+  separator -s "Copying and making \"$docdir\""
 
   _rmcd "$maindir/$docdir"
   html_begin "Documentation"
@@ -1506,7 +1528,7 @@ COPY_AND_BUILD_BINARY_DIRS() {
   # pre-installers are built in their own steps.
 
   ## --------------------------------------------------------------------------
-  separator "Copying and making \"$bindir\""
+  separator -s "Copying and making \"$bindir\""
 
   _rmcd "$maindir/$bindir"
 
@@ -1560,7 +1582,7 @@ BUILD_BUNDLES() {
   ## --------------------------------------------------------------------------
   # the index in this directory is made by BUILD_INSTALLERS below
 
-  separator "Creating pre-installer bundles"
+  separator -s "Creating pre-installer bundles"
   _rmd "$maindir/$preinstdir"
   show "Running the bundle script"
   local bundleflags=""
@@ -1911,7 +1933,7 @@ do_installers_page_body() { # input: selector-html table-html
 BUILD_INSTALLERS() {
 
   ## --------------------------------------------------------------------------
-  separator "Creating platform-specific installers"
+  separator -s "Creating platform-specific installers"
   _rmd "$maindir/$instdir"
   _cd "$maindir/$preinstdir"
   html_begin "Pre-installers"
@@ -1928,7 +1950,7 @@ BUILD_INSTALLERS() {
       "$(name_of_dist_package "$dpackage") for" \
       "$(name_of_platform "$dplatform")"
     convert="tgz_to_$(installer_of_dist_type_platform "$dtype-$dplatform")"
-    separator "Making \"$dpackage-$dtype\" installer for \"$dplatform\""
+    separator +s "Making \"$dpackage-$dtype\" installer for \"$dplatform\""
     show "Using \"$convert\" to convert \"$dname\""
     "$convert" "$maindir/$preinstdir/$tgz" \
                "$maindir/$instdir/$dpackage-$version-$dtype-$dplatform" \
@@ -2014,10 +2036,10 @@ BUILD_WEB() {
   webflags="$webflags -e $maindir/$internaldir/web/all.rkt"
   # distribute only if this is a normal build
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
-    separator "Making and distributing web content"
+    separator -s "Building and distributing web content"
     webflags="$webflags --dist"
   else
-    separator "Making web content -- not distributing"
+    separator -s "Building web content -- not distributing"
   fi
   GIT_DIR="$maindir/$cleandir/.git" \
   KNOWN_MIRRORS_FILE="$maindir/$knownmirrors" \
@@ -2029,9 +2051,9 @@ BUILD_PRE_WEB() {
 
   ## --------------------------------------------------------------------------
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
-    separator "Making external web pages"
+    separator -s "Making external web pages"
   else
-    separator "Making external web pages at $prewebdir"
+    separator -s "Making external web pages at $prewebdir"
   fi
 
   _mcd "$maindir/$prewebdir"
