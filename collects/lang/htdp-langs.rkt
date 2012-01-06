@@ -741,9 +741,10 @@
                [parent user-installed-gb]))
         
         (define (selected lb)
-          (unless compiling?
-            (set! answer (figure-out-answer))
-            (send dlg show #f)))
+          (when (send lb get-selection)
+            (unless compiling?
+              (set! answer (figure-out-answer))
+              (send dlg show #f))))
         
         (define (clear-selection lb)
           (for-each
