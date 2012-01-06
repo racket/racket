@@ -3,6 +3,8 @@
 
 @title[#:tag "browsers"]{Browsers}
 
+@(deprecated)
+
 @defclass[mx-browser% object% ()]{
 
 @defconstructor[([label string? "MysterX"] 

@@ -3,6 +3,8 @@
 
 @title[#:tag "documents"]{Documents}
 
+@(deprecated)
+
  A browser contains one document at a time.  If
  hyperlinks are clicked, or the navigation methods
  (navigate, go-forward, go-back) are used, the

@@ -5,6 +5,8 @@
 
 @title[#:tag "html" #:style 'toc]{HTML and Dynamic HTML}
 
+@(deprecated)
+
   The @racket[mx-element%] class encapsulates HTML elements.  By
   calling the methods of the class, you can change the appearance of
   elements, and place new HTML before or after the element.  While the
@@ -27,6 +29,8 @@
 @; ----------------------------------------
 
 @section{Generating ActiveX HTML}
+
+@(deprecated)
 
 @deftogether[(
 @defproc[(coclass->html [name string?]
@@ -54,6 +58,8 @@
 
 @section{CSS}
 
+@(deprecated)
+
   In the @racket[mx-element%] method descriptions, ``CSS'' refers to
   the Cascading Style Sheets specification.  A CSS length is string
   consisting of a decimal integer number followed by one of the units
@@ -75,6 +81,8 @@
 @; ----------------------------------------
 
 @section{Colors}
+
+@(deprecated)
 
  Many element properties represent colors.  In HTML, colors may be
  represented by an RGB string, which contains 7 characters.  The first

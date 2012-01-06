@@ -89,6 +89,8 @@
 
 @title[#:tag "html-element"]{HTML Elements}
 
+@(deprecated)
+
 @defclass[mx-element% object% ()]{
 
 @defmethod[(get-html)

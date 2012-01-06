@@ -10,6 +10,10 @@
 Dynamic HTML (DHTML) is used for component presentation and
 event-handling.
 
+@yellow{@bold{WARNING:}} All ActiveX support (as described in
+@secref["activex"]) is scheduled for removal from MysterX after
+version 5.2.1.
+
 @defmodule[mysterx]
 
 @table-of-contents[]
