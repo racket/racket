@@ -59,6 +59,7 @@
 [Exact-Positive-Integer -PosInt] ; both of these are valid
 [Positive-Integer -PosInt]
 [Fixnum -Fixnum]
+[Negative-Fixnum -NegFixnum]
 [Nonpositive-Fixnum -NonPosFixnum]
 [Nonnegative-Fixnum -NonNegFixnum]
 [Positive-Fixnum -PosFixnum]
