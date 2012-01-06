@@ -182,15 +182,15 @@ stampfile="stamp"
 tmpdir="/tmp/build"
 mkdir -p "$tmpdir" # make sure that it exists asap
 # lockfile for this script
-lockfile="$tmpdir/racket-build-lock"
+lockfile="$tmpdir/build-lock"
 # name for running this script remotely
-remotebuildscript="$tmpdir/build-racket"
+remotebuildscript="$tmpdir/build"
 # full name for clean repository tgz file to transfer for distributed builds
 repotgz="$tmpdir/$cleantgz"
 # full name for full tgz file (with binaries etc)
 fulltgz="$tmpdir/$installdir-full.tgz"
 # log file name prefix for background jobs
-bglogfile="$tmpdir/racket-bg-log"
+bglogfile="$tmpdir/bg-log"
 
 last_part() {
   echo "$*" | sed 's/.*[ -]//'
@@ -345,7 +345,7 @@ explanation_of_installer_type() {
 # This is for running racket scripts, unrelated to the build itself
 export PLTHOME="$maindir/$installdir" \
        PLT_EXTENSION_LIB_PATHS="" \
-       PLTPLANETDIR="$tmpdir/racket-build-planet"
+       PLTPLANETDIR="$tmpdir/planet"
 export PATH="$PLTHOME/bin:$PATH"
 unset PLTCOLLECTS; export PLTCOLLECTS
 
@@ -806,7 +806,7 @@ _timeout_run() { # first input is the timeout
 Xvncpid=""
 Xwmpid=""
 _start_xvnc() {
-  local xvnclog="$tmpdir/racket-xvnc-log"
+  local xvnclog="$tmpdir/xvnc-log"
   show "Starting Xvnc (logfile at \"$xvnclog\")"
   # Create Xauth cookie
   cookie="$(mcookie)"
@@ -1058,7 +1058,7 @@ MAIN_BUILD() {
       machine="$m"
       machineget mplatform=platform
       if [[ "$machine" != "$workmachine" ]]; then
-        separator "{{{ Doing ${machine}(${mplatform}) remotely }}}"
+        separator "{{{ Building ${machine}(${mplatform}) remotely }}}"
         _cat "$bglogfile-$machine"
         _rm "$bglogfile-$machine"
       fi
@@ -1223,7 +1223,7 @@ DO_BUILD() { # inputs -- releasing
   elif [[ "$(( $RANDOM % 2 ))" = "0" ]]; then test_mode="rnd";
   fi;
   separator "${machine}(${platform}) testing Racket ($test_mode)"
-  local testdir="$tmpdir/racket-tests"
+  local testdir="$tmpdir/tests"
   _rmcd "$testdir"
 
   local _exe _jit exe flags
@@ -1940,17 +1940,17 @@ BUILD_INSTALLERS() {
 
   _cd "$maindir/$instdir"
   show "Making the distributions page"
-  _rm "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
-  do_installers_page_body "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
+  _rm "$tmpdir/tmp-selector" "$tmpdir/tmp-table"
+  do_installers_page_body "$tmpdir/tmp-selector" "$tmpdir/tmp-table"
   # selector page
   html_begin "Installers"
-  html_show -f "$tmpdir/rkt-tmp-selector"
+  html_show -f "$tmpdir/tmp-selector"
   html_end
   # static table page
   html_begin "Installers (static)" "table.html"
   html_table_begin "all"
-  html_show -f "$tmpdir/rkt-tmp-table"
-  _rm "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
+  html_show -f "$tmpdir/tmp-table"
+  _rm "$tmpdir/tmp-selector" "$tmpdir/tmp-table"
   html_table_end
   html_end
 
