@@ -879,13 +879,13 @@ version_init() { # input: plthome
 }
 
 # html functions -- all write to $htmloutput
-# ($htmloutput is usually $index; also, assume that $htmloutput is in the
-# current directory -- be careful when cd-ing!)
+# ($htmloutput is usually $index in the current directory)
 html_begin() { # inputs: title [output-name]
   local htmltitle="$1"; shift
   htmloutput="$index"
   if [[ "$1" != "" ]]; then htmloutput="$1"; shift; fi
-  show "Creating \"$(pwd)/$htmloutput\" for \"$htmltitle\""
+  if [[ "$htmloutput" != /* ]]; then htmloutput="$(pwd)/htmloutput"; fi
+  show "Creating \"$htmloutput\" for \"$htmltitle\""
   # the *.title. file marks this for later patching through the web templates,
   # so it should be created even if it won't get used later.
   _rm "$htmloutput" "$htmloutput.title."
