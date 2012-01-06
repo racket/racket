@@ -179,9 +179,10 @@ index="index.html"
 stampfile="stamp"
 
 # directory for temporary stuff (absolute path) -- on all machines
-tmpdir="/tmp"
+tmpdir="/tmp/build"
+mkdir -p "$tmpdir" # make sure that it exists asap
 # lockfile for this script
-lockfile="/tmp/racket-build-lock"
+lockfile="$tmpdir/racket-build-lock"
 # name for running this script remotely
 remotebuildscript="$tmpdir/build-racket"
 # full name for clean repository tgz file to transfer for distributed builds
@@ -344,7 +345,7 @@ explanation_of_installer_type() {
 # This is for running racket scripts, unrelated to the build itself
 export PLTHOME="$maindir/$installdir" \
        PLT_EXTENSION_LIB_PATHS="" \
-       PLTPLANETDIR="/tmp/racket-build-planet"
+       PLTPLANETDIR="$tmpdir/racket-build-planet"
 export PATH="$PLTHOME/bin:$PATH"
 unset PLTCOLLECTS; export PLTCOLLECTS
 
@@ -1317,21 +1318,23 @@ grab_one_batch_var() {
 }
 grab_batch_vars() { # input: batchfile args ...
   local exe="$1"; shift
-  local tmpbatch="/tmp/grab_vars.bat"
+  local tmpbatch="$tmpdir/grab_vars.bat"
   rm -f "$tmpbatch"
   cat >> "$tmpbatch" <<-EOF
 	@echo off
-	"$(cygpath -w "$(which env)")" > "$(cygpath -w "/tmp/E1")"
+	"$(cygpath -w "$(which env)")" > "$(cygpath -w "$tmpdir/E1")"
 	call "$exe" $*
-	"$(cygpath -w "$(which env)")" > "$(cygpath -w "/tmp/E2")"
+	"$(cygpath -w "$(which env)")" > "$(cygpath -w "$tmpdir/E2")"
 EOF
   chmod +x "$tmpbatch"
   "$tmpbatch"
   rm "$tmpbatch"
-  sort "/tmp/E1" | grep -v '^!' > "/tmp/E1s"; mv "/tmp/E1s" "/tmp/E1"
-  sort "/tmp/E2" | grep -v '^!' > "/tmp/E2s"; mv "/tmp/E2s" "/tmp/E2"
-  local vars="$(comm -13 "/tmp/E1" "/tmp/E2")"
-  rm "/tmp/E1" "/tmp/E2"
+  local a_file
+  for a_file in "$tmpdir/E1" "$tmpdir/E2"; do
+    sort "$a_file" | grep -v '^!' > "$a_file.s"; mv "$a_file.s" "$a_file"
+  done
+  local vars="$(comm -13 "$tmpdir/E1" "$tmpdir/E2")"
+  rm "$tmpdir/E1" "$tmpdir/E2"
   local NL=$'\n'
   while [[ "$vars" = *"$NL"* ]]; do
     grab_one_batch_var "${vars%%${NL}*}"
