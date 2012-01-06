@@ -27,81 +27,133 @@ any expression of this type will not evaluate to a value.}
 
 @subsection{Numeric Types}
 
+These types represent the hierarchy of @rtech{numbers} of Racket.
+
+@defnums[(Number Complex)]
+@racket[Number] and @racket[Complex] are synonyms. This is the most general
+numeric type, including all Racket numbers, both exact and inexact, including
+complex numbers.
+
+@defnums[(Integer)]
+Includes Racket's exact integers and corresponds to the
+@racket[exact-integer?] predicate. This is the most general type that is still
+valid for indexing and other operations that require integral values.
+
+@defnums[(Float Flonum)]
+Includes Racket's double-precision (default) floating-point numbers and
+corresponds to the @racket[flonum?] predicate. This type excludes
+single-precision floating-point numbers.
+
+@defnums[(Single-Flonum)]
+Includes Racket's single-precision floating-point numbers and corresponds to
+the @racket[single-flonum?] predicate. This type excludes double-precision
+floating-point numbers.
+
+@defnums[(Inexact-Real)]
+Includes all of Racket's floating-point numbers, both single- and
+double-precision.
+
+@defnums[(Exact-Rational)]
+Includes Racket's exact rationals, which include fractions and exact integers.
+
+@defnums[(Real)]
+Includes all of Racket's real numbers, which include both exact rationals and
+all floating-point numbers. This is the most general type for which comparisons
+(e.g. @racket[<]) are defined.
+
 @defnums[(
-Number
-Complex
-Float-Complex
-Real
-Float
-Nonnegative-Float
-Inexact-Real
-Exact-Rational
-Integer
-Natural
-Exact-Nonnegative-Integer
-Exact-Positive-Integer
-Fixnum
-Nonnegative-Fixnum
-Positive-Fixnum
-Zero
-Byte
 Exact-Number
-Float-Negative-Zero
-Float-Positive-Zero
-Float-Zero
-Flonum
-Flonum-Negative-Zero
-Flonum-Positive-Zero
-Flonum-Zero
-Index
-Inexact-Complex
-Inexact-Real-Negative-Zero
-Inexact-Real-Positive-Zero
-Inexact-Real-Zero
-Negative-Exact-Rational
-Negative-Float
-Negative-Flonum
-Negative-Inexact-Real
-Negative-Integer
-Negative-Real
-Negative-Single-Flonum
-Nonnegative-Exact-Rational
-Nonnegative-Flonum
-Nonnegative-Inexact-Real
+Float-Complex
+Single-Flonum-Complex
+Inexact-Complex)]
+These types correspond to Racket's complex numbers.
+
+
+The above types can be subdivided into more precise types if you want to
+enforce tighter constraints. Typed Racket provides types for the positive,
+negative, non-negative and non-positive subsets of the above types (where
+applicable).
+
+@defnums[(
+Positive-Integer
+Exact-Positive-Integer
 Nonnegative-Integer
-Nonnegative-Real
-Nonnegative-Single-Flonum
-Nonpositive-Exact-Rational
-Nonpositive-Fixnum
-Nonpositive-Float
-Nonpositive-Flonum
-Nonpositive-Inexact-Real
+Exact-Nonnegative-Integer
+Natural
+Negative-Integer
 Nonpositive-Integer
-Nonpositive-Real
-Nonpositive-Single-Flonum
-One
-Positive-Byte
-Positive-Exact-Rational
+Zero
 Positive-Float
 Positive-Flonum
-Positive-Index
-Positive-Inexact-Real
-Positive-Integer
-Positive-Real
+Nonnegative-Float
+Nonnegative-Flonum
+Negative-Float
+Negative-Flonum
+Nonpositive-Float
+Nonpositive-Flonum
+Float-Negative-Zero
+Flonum-Negative-Zero
+Float-Positive-Zero
+Flonum-Positive-Zero
+Float-Zero
+Flonum-Zero
 Positive-Single-Flonum
-Real-Zero
-Single-Flonum
-Single-Flonum-Complex
+Nonnegative-Single-Flonum
+Negative-Single-Flonum
+Nonpositive-Single-Flonum
 Single-Flonum-Negative-Zero
 Single-Flonum-Positive-Zero
 Single-Flonum-Zero
-)]{These types represent the hierarchy of @rtech{numbers} of Racket.
-@racket[Integer] includes only @rtech{integers} that are @rtech{exact
-numbers}, corresponding to the predicate @racket[exact-integer?].
-@racket[Real] includes both exact and inexact reals.
-An @racket[Inexact-Real] can be either 32- or 64-bit floating-point
-numbers. @racket[Float] is restricted to 64-bit floats, which are the
-default in Racket.
+Positive-Inexact-Real
+Nonnegative-Inexact-Real
+Negative-Inexact-Real
+Nonpositive-Inexact-Real
+Inexact-Real-Negative-Zero
+Inexact-Real-Positive-Zero
+Inexact-Real-Zero
+Positive-Exact-Rational
+Nonnegative-Exact-Rational
+Negative-Exact-Rational
+Nonpositive-Exact-Rational
+Positive-Real
+Nonnegative-Real
+Negative-Real
+Nonpositive-Real
+Real-Zero
+)]
+@racket[Natural] and @racket[Exact-Nonnegative-Integer] are synonyms. So are
+the integer and exact-integer types, and the float and flonum
+types. @racket[Zero] includes only the integer @racket[0]. @racket[Real-Zero]
+includes exact @racket[0] and all the floating-point zeroes.
+
+These types are useful when enforcing that values have a specific
+sign. However, programs using them may require additional dynamic checks when
+the type-checker cannot guarantee that the sign constraints will be respected.
+
+In addition to being divided by sign, integers are further subdivided into
+range-bounded types.
+@defnums[(
+One
+Byte
+Positive-Byte
+Index
+Positive-Index
+Fixnum
+Positive-Fixnum
+Nonnegative-Fixnum
+Negative-Fixnum
+Nonpositive-Fixnum
+)]
+@racket[One] includes only the integer @racket[1]. @racket[Byte] includes
+numbers from @racket[0] to @racket[255]. @racket[Index] is bounded by
+@racket[0] and by the length of the longest possible Racket
+vector. @racket[Fixnum] includes all numbers represented by Racket as machine
+integers. For the latter two families, the sets of values included in the types
+are architecture-dependent, but typechecking is architecture-independent.
+
+These types are useful to enforce bounds on numeric values, but given the
+limited amount of closure properties these types offer, dynamic checks may be
+needed to check the desired bounds at runtime.
 
 @ex[
 7
@@ -110,7 +162,6 @@ default in Racket.
 0
 -12
 3+4i]
-}
 
 @subsection{Other Base Types}
 
