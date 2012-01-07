@@ -63,8 +63,9 @@
       (connected?)
       (disconnect)
       (get-dbsystem)
-      (query fsym stmt)
+      (query fsym stmt cursor?)
       (prepare fsym stmt close-on-exec?)
+      (fetch/cursor fsym cursor fetch-size)
       (get-base)
       (free-statement stmt need-lock?)
       (transaction-status fsym)
@@ -177,7 +178,8 @@
     (define-forward
       (#f #f     (connected?))
       (#t '_     (get-dbsystem))
-      (#t '_     (query fsym stmt))
+      (#t '_     (query fsym stmt cursor?))
+      (#t '_     (fetch/cursor fsym stmt fetch-size))
       (#t '_     (start-transaction fsym isolation cwt?))
       (#f (void) (end-transaction fsym mode cwt?))
       (#f #f     (transaction-status fsym))
@@ -336,8 +338,9 @@
 
     (define-forward define/public
       (get-dbsystem)
-      (query fsym stmt)
+      (query fsym stmt cursor?)
       (prepare fsym stmt close-on-exec?)
+      (fetch/cursor fsym stmt fetch-size)
       (get-base)
       (free-statement stmt need-lock?)
       (transaction-status fsym)

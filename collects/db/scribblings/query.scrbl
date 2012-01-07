@@ -244,20 +244,32 @@ The types of parameters and returned fields are described in
 
 @defproc[(in-query [connection connection?]
                    [stmt statement?]
-                   [arg any/c] ...)
+                   [arg any/c] ...
+                   [#:fetch fetch-size (or/c exact-positive-integer? +inf.0) +inf.0])
          sequence?]{
 
   Executes a SQL query, which must produce rows, and returns a
   sequence. Each step in the sequence produces as many values as the
-  rows have columns.
+  rows have columns. 
+
+  If @racket[fetch-size] is @racket[+inf.0], all rows are fetched when
+  the sequence is created. If @racket[fetch-size] is finite, a
+  @deftech{cursor} is created and @racket[fetch-size] rows are fetched
+  at a time, allowing processing to be interleaved with retrieval. On
+  some database systems, ending a transaction implicitly closes all
+  open cursors; attempting to fetch more rows may fail. On PostgreSQL,
+  a cursor can be opened only within a transaction.
 
 @examples/results[
 [(for/list ([n (in-query pgc "select n from the_numbers where n < 2")])
    n)
  '(0 1)]
-[(for ([(n d)
-        (in-query pgc "select * from the_numbers where n < $1" 4)])
-   (printf "~a is ~a\n" n d))
+[(call-with-transaction pgc
+   (lambda ()
+     (for ([(n d)
+            (in-query pgc "select * from the_numbers where n < $1" 4
+                      #:fetch 1)])
+       (printf "~a is ~a\n" n d))))
  (for-each (lambda (n d) (printf "~a: ~a\n" n d))
            '(0 1 2 3) '("nothing" "the loneliest number" "company" "a crowd"))]
 ]

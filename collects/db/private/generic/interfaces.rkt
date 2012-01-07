@@ -12,6 +12,7 @@
 
          (struct-out simple-result)
          (struct-out rows-result)
+         (struct-out cursor-result)
 
          init-private
 
@@ -33,6 +34,7 @@
     get-dbsystem  ;; -> dbsystem<%>
     query         ;; symbol statement -> QueryResult
     prepare       ;; symbol preparable boolean -> prepared-statement<%>
+    fetch/cursor  ;; symbol cursor nat -> #f or (listof vector)
     get-base      ;; -> connection<%> or #f (#f means base isn't fixed)
     list-tables   ;; symbol symbol -> (listof string)
 
@@ -70,6 +72,9 @@
 
     get-close-on-exec? ;; -> boolean
     after-exec         ;; boolean -> void (for close-on-exec)
+
+    get-stmt           ;; -> string/#f
+    get-stmt-type      ;; -> symbol/#f
 
     get-param-count    ;; -> nat or #f
     get-param-typeids  ;; -> (listof typeid)
@@ -109,6 +114,10 @@
 ;;    for user-visible rows-results: headers present, data is (listof vector)
 (struct simple-result (info) #:transparent)
 (struct rows-result (headers rows) #:transparent)
+
+;; A cursor-result is
+;;  - (cursor-result Header prepared-statement ???)
+(struct cursor-result (headers pst extra))
 
 ;; A Header is (listof FieldInfo)
 ;; A FieldInfo is an alist, contents dbsys-dependent

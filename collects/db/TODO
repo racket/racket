@@ -62,10 +62,6 @@ Misc
   - SQL_CURSOR_{COMMIT,ROLLBACK}_BEHAVIOR - check that commit/rollback doesn't delete pstmts!
   - SQL_MAX_{CATALOG,COLUMN,IDENTIFIER,SCHEMA_NAME,TABLE_NAME}_NAME (min 128)
 
-- cursors? (Olin thinks cursors are important. I'm not sure.)
-  - how do people want to use cursors?
-  - how about implicit support only in 'in-query'?
-
 - add evt versions of functions
   - for query functions (?)
   - connection-pool-lease-evt

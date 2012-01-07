@@ -38,21 +38,16 @@
     (define/public (get-dbsystem) dbsystem)
     (define/override (connected?) (and -db #t))
 
-    (define/public (query fsym stmt)
+    (define/public (query fsym stmt cursor?)
       (call-with-lock fsym
         (lambda ()
           (check-valid-tx-status fsym)
-          (query1 fsym stmt #t))))
+          (query1 fsym stmt #t cursor?))))
 
-    (define/private (query1 fsym stmt check-tx?)
-      (let* ([stmt (cond [(string? stmt)
-                          (let* ([pst (prepare1 fsym stmt #t)])
-                            (send pst bind fsym null))]
-                         [(statement-binding? stmt)
-                          stmt])]
+    (define/private (query1 fsym stmt check-tx? cursor?)
+      (let* ([stmt (check-statement fsym stmt cursor?)]
              [pst (statement-binding-pst stmt)]
              [params (statement-binding-params stmt)])
-        (send pst check-owner fsym this stmt)
         (when check-tx? (check-statement/tx fsym (send pst get-stmt-type)))
         (let ([db (get-db fsym)]
               [stmt (send pst get-handle)])
@@ -61,20 +56,46 @@
           (for ([i (in-naturals 1)]
                 [param (in-list params)])
             (load-param fsym db stmt i param))
-          (let* ([info
-                  (for/list ([i (in-range (sqlite3_column_count stmt))])
-                    `((name . ,(sqlite3_column_name stmt i))
-                      (decltype . ,(sqlite3_column_decltype stmt i))))]
-                 [rows (step* fsym db stmt)])
-            (HANDLE fsym (sqlite3_reset stmt))
-            (HANDLE fsym (sqlite3_clear_bindings stmt))
+          (let ([info
+                 (for/list ([i (in-range (sqlite3_column_count stmt))])
+                   `((name . ,(sqlite3_column_name stmt i))
+                     (decltype . ,(sqlite3_column_decltype stmt i))))]
+                [result
+                 (or cursor?
+                     (step* fsym db stmt #f +inf.0))])
             (unless (eq? tx-status 'invalid)
               (set! tx-status (get-tx-status)))
-            (send pst after-exec #f)
-            (cond [(pair? info)
-                   (rows-result info rows)]
+            (unless cursor? (send pst after-exec #f))
+            (cond [(and (pair? info) (not cursor?))
+                   (rows-result info result)]
+                  [(and (pair? info) cursor?)
+                   (cursor-result info pst (box #f))]
                   [else
                    (simple-result '())])))))
+
+    (define/public (fetch/cursor fsym cursor fetch-size)
+      (let ([pst (cursor-result-pst cursor)]
+            [end-box (cursor-result-extra cursor)])
+        (send pst check-owner fsym this pst)
+        (call-with-lock fsym
+          (lambda ()
+            (cond [(unbox end-box) #f]
+                  [else
+                   (begin0 (step* fsym (get-db fsym) (send pst get-handle) end-box fetch-size)
+                     (when (unbox end-box)
+                       (send pst after-exec #f)))])))))
+
+    (define/private (check-statement fsym stmt cursor?)
+      (cond [(statement-binding? stmt)
+             (let ([pst (statement-binding-pst stmt)])
+               (send pst check-owner fsym this stmt)
+               (cond [cursor?
+                      (let ([pst* (prepare1 fsym (send pst get-stmt) #f)])
+                        (statement-binding pst* (statement-binding-params stmt)))]
+                     [else stmt]))]
+            [(string? stmt)
+             (let* ([pst (prepare1 fsym stmt (not cursor?))])
+               (send pst bind fsym null))]))
 
     (define/private (load-param fsym db stmt i param)
       (HANDLE fsym
@@ -91,9 +112,17 @@
              [else
               (error/internal fsym "bad parameter: ~e" param)])))
 
-    (define/private (step* fsym db stmt)
-      (let ([c (step fsym db stmt)])
-        (if c (cons c (step* fsym db stmt)) null)))
+    (define/private (step* fsym db stmt end-box fetch-limit)
+      (if (zero? fetch-limit)
+          null
+          (let ([c (step fsym db stmt)])
+            (cond [c
+                   (cons c (step* fsym db stmt end-box (sub1 fetch-limit)))]
+                  [else
+                   (HANDLE fsym (sqlite3_reset stmt))
+                   (HANDLE fsym (sqlite3_clear_bindings stmt))
+                   (when end-box (set-box! end-box #t))
+                   null]))))
 
     (define/private (step fsym db stmt)
       (let ([s (HANDLE fsym (sqlite3_step stmt))])
@@ -132,13 +161,11 @@
                      (HANDLE fsym
                       (let-values ([(prep-status stmt tail?)
                                     (sqlite3_prepare_v2 db sql)])
-                        (define (free!) (when stmt (sqlite3_finalize stmt)))
-                        (unless stmt
-                          (uerror fsym "SQL syntax error in ~e" sql))
                         (when tail?
-                          (free!) (uerror fsym "multiple SQL statements given: ~e" sql))
+                          (when stmt (sqlite3_finalize stmt))
+                          (uerror fsym "multiple SQL statements given: ~e" sql))
                         (values prep-status stmt)))])
-        (unless stmt (error/internal fsym "prepare failed"))
+        (unless stmt (uerror fsym "SQL syntax error in ~e" sql))
         (let* ([param-typeids
                 (for/list ([i (in-range (sqlite3_bind_parameter_count stmt))])
                   'any)]
@@ -190,7 +217,7 @@
     ;; Internal query
 
     (define/private (internal-query1 fsym sql)
-      (query1 fsym sql #f))
+      (query1 fsym sql #f #f))
 
     ;; == Transactions
 

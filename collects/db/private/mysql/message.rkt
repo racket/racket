@@ -32,6 +32,7 @@ Based on protocol documentation here:
          (struct-out parameter-packet)
          (struct-out long-data-packet)
          (struct-out execute-packet)
+         (struct-out fetch-packet)
          (struct-out unknown-packet)
 
          supported-result-typeid?
@@ -313,6 +314,11 @@ Based on protocol documentation here:
    params)
   #:transparent)
 
+(define-struct (fetch-packet packet)
+  (statement-id
+   count)
+  #:transparent)
+
 (define-struct (change-plugin-packet packet)
   (plugin
    data)
@@ -379,13 +385,24 @@ Based on protocol documentation here:
        (for-each (lambda (type param)
                    (unless (sql-null? param)
                      (write-binary-datum out type param)))
-                 param-types params))]))
+                 param-types params))]
+    [(struct fetch-packet (statement-id count))
+     (io:write-byte out (encode-command 'statement-fetch))
+     (io:write-le-int32 out statement-id)
+     (io:write-le-int32 out count)]))
 
 (define (parse-packet in expect field-dvecs)
   (let* ([len (io:read-le-int24 in)]
          [num (io:read-byte in)]
-         [inp (subport in len)]
-         [msg (parse-packet/1 inp expect len field-dvecs)])
+         ;; [inp (subport in len)]
+         [bs (read-bytes len in)]
+         [inp (open-input-bytes bs)]
+         [msg
+          (with-handlers ([exn?
+                           (lambda (e)
+                             (eprintf "packet was: ~s\n" (bytes->list bs))
+                             (raise e))])
+            (parse-packet/1 inp expect len field-dvecs))])
     (when (port-has-bytes? inp)
       (error/internal 'parse-packet "bytes left over after parsing ~s; bytes were: ~s" 
                       msg (io:read-bytes-to-eof inp)))
@@ -853,7 +870,9 @@ Based on protocol documentation here:
 
 (define server-status-flags/decoding
   '((#x1     . in-transaction)
-    (#x2     . auto-commit)))
+    (#x2     . auto-commit)
+    (64      . cursor-exists)
+    (128     . last-row-sent)))
 
 (define commands/decoding
   '((#x00 . sleep)

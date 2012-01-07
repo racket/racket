@@ -250,7 +250,7 @@
 
     ;; Set connection to use utf8 encoding
     (define/private (after-connect)
-      (query 'mysql-connect "set names 'utf8'")
+      (query 'mysql-connect "set names 'utf8'" #f)
       (void))
 
 
@@ -258,20 +258,20 @@
 
     ;; == Query
 
-    ;; query : symbol Statement -> QueryResult
-    (define/public (query fsym stmt)
-      (check-valid-tx-status fsym)
+    ;; query : symbol Statement boolean -> QueryResult
+    (define/public (query fsym stmt cursor?)
       (let ([result
              (call-with-lock fsym
                (lambda ()
-                 (let* ([stmt (check-statement fsym stmt)]
+                 (check-valid-tx-status fsym)
+                 (let* ([stmt (check-statement fsym stmt cursor?)]
                         [stmt-type
                          (cond [(statement-binding? stmt)
                                 (send (statement-binding-pst stmt) get-stmt-type)]
                                [(string? stmt)
                                 (classify-my-sql stmt)])])
                    (check-statement/tx fsym stmt-type)
-                   (begin0 (query1 fsym stmt #t)
+                   (begin0 (query1 fsym stmt cursor? #t)
                      (when #f ;; DISABLED!
                        ;; For some reason, *really* slow; the concurrent tests slow
                        ;; down by over an order of magnitude when this is enabled.
@@ -279,42 +279,49 @@
         (query1:process-result fsym result)))
 
     ;; query1 : symbol Statement -> QueryResult
-    (define/private (query1 fsym stmt warnings?)
+    (define/private (query1 fsym stmt cursor? warnings?)
       (let ([wbox (and warnings? (box 0))])
         (fresh-exchange)
-        (query1:enqueue stmt)
-        (begin0 (query1:collect fsym (not (string? stmt)) wbox)
+        (query1:enqueue stmt cursor?)
+        (begin0 (query1:collect fsym stmt (not (string? stmt)) cursor? wbox)
           (when (and warnings? (not (zero? (unbox wbox))))
             (fetch-warnings fsym)))))
 
-    ;; check-statement : symbol any -> statement-binding
-    (define/private (check-statement fsym stmt)
+    ;; check-statement : symbol any boolean -> statement-binding
+    ;; For cursor, need to clone pstmt, because only one cursor can be
+    ;; open for a statement at a time. (Could delay clone until
+    ;; needed, but that seems more complicated.)
+    (define/private (check-statement fsym stmt cursor?)
       (cond [(statement-binding? stmt)
              (let ([pst (statement-binding-pst stmt)])
                (send pst check-owner fsym this stmt)
                (for ([typeid (in-list (send pst get-result-typeids))])
                  (unless (supported-result-typeid? typeid)
                    (error/unsupported-type fsym typeid)))
-               stmt)]
+               (cond [cursor?
+                      (let ([pst* (prepare1 fsym (send pst get-stmt) #f)])
+                        (statement-binding pst* (statement-binding-params stmt)))]
+                     [else stmt]))]
             [(and (string? stmt) (force-prepare-sql? fsym stmt))
-             (let ([pst (prepare1 fsym stmt #t)])
-               (check-statement fsym (send pst bind fsym null)))]
+             (let ([pst (prepare1 fsym stmt (not cursor?))])
+               (check-statement fsym (send pst bind fsym null) #f))]
             [else stmt]))
 
     ;; query1:enqueue : statement -> void
-    (define/private (query1:enqueue stmt)
+    (define/private (query1:enqueue stmt cursor?)
       (cond [(statement-binding? stmt)
              (let* ([pst (statement-binding-pst stmt)]
                     [id (send pst get-handle)]
                     [params (statement-binding-params stmt)]
                     [null-map (map sql-null? params)])
                (send-message
-                (make-execute-packet id null null-map params)))]
+                (let ([flags (if cursor? '(cursor/read-only) '())])
+                  (make-execute-packet id flags null-map params))))]
             [else ;; string
              (send-message (make-command-packet 'query stmt))]))
 
     ;; query1:collect : symbol bool -> QueryResult stream
-    (define/private (query1:collect fsym binary? wbox)
+    (define/private (query1:collect fsym stmt binary? cursor? wbox)
       (let ([r (recv fsym 'result)])
         (match r
           [(struct ok-packet (affected-rows insert-id status warnings message))
@@ -324,9 +331,12 @@
                               (status . ,status)
                               (message . ,message)))]
           [(struct result-set-header-packet (fields extra))
-           (let* ([field-dvecs (query1:get-fields fsym binary?)]
-                  [rows (query1:get-rows fsym field-dvecs binary? wbox)])
-             (vector 'rows field-dvecs rows))])))
+           (let* ([field-dvecs (query1:get-fields fsym binary?)])
+             (if cursor?
+                 (vector 'cursor field-dvecs (statement-binding-pst stmt))
+                 (vector 'rows
+                         field-dvecs
+                         (query1:get-rows fsym field-dvecs binary? wbox #f))))])))
 
     (define/private (query1:get-fields fsym binary?)
       (let ([r (recv fsym 'field)])
@@ -336,16 +346,18 @@
           [(struct eof-packet (warning status))
            null])))
 
-    (define/private (query1:get-rows fsym field-dvecs binary? wbox)
+    (define/private (query1:get-rows fsym field-dvecs binary? wbox end-box)
       ;; Note: binary? should always be #t, unless force-prepare-sql? misses something.
       (let ([r (recv fsym (if binary? 'binary-data 'data) field-dvecs)])
         (match r
           [(struct row-data-packet (data))
-           (cons data (query1:get-rows fsym field-dvecs binary? wbox))]
+           (cons data (query1:get-rows fsym field-dvecs binary? wbox end-box))]
           [(struct binary-row-data-packet (data))
-           (cons data (query1:get-rows fsym field-dvecs binary? wbox))]
+           (cons data (query1:get-rows fsym field-dvecs binary? wbox end-box))]
           [(struct eof-packet (warnings status))
            (when wbox (set-box! wbox warnings))
+           (when (and end-box (bitwise-bit-set? status 7)) ;; 'last-row-sent
+             (set-box! end-box #t))
            null])))
 
     (define/private (query1:process-result fsym result)
@@ -353,7 +365,31 @@
         [(vector 'rows field-dvecs rows)
          (rows-result (map field-dvec->field-info field-dvecs) rows)]
         [(vector 'command command-info)
-         (simple-result command-info)]))
+         (simple-result command-info)]
+        [(vector 'cursor field-dvecs pst)
+         (cursor-result (map field-dvec->field-info field-dvecs)
+                        pst
+                        (list field-dvecs (box #f)))]))
+
+    ;; == Cursor
+
+    (define/public (fetch/cursor fsym cursor fetch-size)
+      (let ([pst (cursor-result-pst cursor)]
+            [extra (cursor-result-extra cursor)])
+        (send pst check-owner fsym this pst)
+        (let ([field-dvecs (car extra)]
+              [end-box (cadr extra)])
+          (call-with-lock fsym
+            (lambda ()
+              (cond [(unbox end-box)
+                     #f]
+                    [else
+                     (let ([wbox (box 0)])
+                       (fresh-exchange)
+                       (send-message (make-fetch-packet (send pst get-handle) fetch-size))
+                       (begin0 (query1:get-rows fsym field-dvecs #t wbox end-box)
+                         (when (not (zero? (unbox wbox)))
+                           (fetch-warnings fsym))))]))))))
 
     ;; == Prepare
 
@@ -379,6 +415,7 @@
                   (close-on-exec? close-on-exec?)
                   (param-typeids (map field-dvec->typeid param-dvecs))
                   (result-dvecs field-dvecs)
+                  (stmt stmt)
                   (stmt-type (classify-my-sql stmt))
                   (owner this)))])))
 
@@ -407,7 +444,7 @@
 
     (define/private (fetch-warnings fsym)
       (unless (eq? notice-handler void)
-        (let ([result (query1 fsym "SHOW WARNINGS" #f)])
+        (let ([result (query1 fsym "SHOW WARNINGS" #f #f)])
           (define (find-index name dvecs)
             (for/or ([dvec (in-list dvecs)]
                      [i (in-naturals)])
@@ -435,28 +472,28 @@
     (define/override (start-transaction* fsym isolation)
       (cond [(eq? isolation 'nested)
              (let ([savepoint (generate-name)])
-               (query1 fsym (format "SAVEPOINT ~a" savepoint) #t)
+               (query1 fsym (format "SAVEPOINT ~a" savepoint) #f #t)
                savepoint)]
             [else
              (let ([isolation-level (isolation-symbol->string isolation)])
                (when isolation-level
-                 (query1 fsym (format "SET TRANSACTION ISOLATION LEVEL ~a" isolation-level) #t))
-               (query1 fsym "START TRANSACTION" #t)
+                 (query1 fsym (format "SET TRANSACTION ISOLATION LEVEL ~a" isolation-level) #f #t))
+               (query1 fsym "START TRANSACTION" #f #t)
                #f)]))
 
     (define/override (end-transaction* fsym mode savepoint)
       (case mode
         ((commit)
          (cond [savepoint
-                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #t)]
+                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #f #t)]
                [else
-                (query1 fsym "COMMIT" #t)]))
+                (query1 fsym "COMMIT" #f #t)]))
         ((rollback)
          (cond [savepoint
-                (query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint) #t)
-                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #t)]
+                (query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint) #f #t)
+                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #f #t)]
                [else
-                (query1 fsym "ROLLBACK" #t)])))
+                (query1 fsym "ROLLBACK" #f #t)])))
       (void))
 
     ;; name-counter : number
@@ -476,7 +513,7 @@
               (string-append "SELECT table_name FROM information_schema.tables "
                              "WHERE table_schema = schema()")]
              [rows
-              (vector-ref (call-with-lock fsym (lambda () (query1 fsym stmt #t))) 2)])
+              (vector-ref (call-with-lock fsym (lambda () (query1 fsym stmt #f #t))) 2)])
         (for/list ([row (in-list rows)])
           (vector-ref row 0))))
 

@@ -2,6 +2,7 @@
 (require (for-syntax racket/base)
          racket/vector
          racket/class
+         racket/promise
          "interfaces.rkt"
          (only-in "sql-data.rkt" sql-null sql-null?))
 (provide (all-defined-out))
@@ -73,7 +74,7 @@
 
 ;; query1 : connection symbol Statement -> QueryResult
 (define (query1 c fsym stmt)
-  (send c query fsym stmt))
+  (send c query fsym stmt #f))
 
 ;; query/rows : connection symbol Statement nat/#f -> rows-result
 (define (query/rows c fsym sql want-columns)
@@ -84,6 +85,17 @@
       (when (and want-columns (not (= got-columns want-columns)))
         (uerror fsym "query returned ~a ~a (expected ~a): ~e"
                 got-columns (if (= got-columns 1) "column" "columns") want-columns sql)))
+    result))
+
+(define (query/cursor c fsym sql want-columns)
+  (let ([result (send c query fsym sql #t)])
+    (unless (cursor-result? result)
+      (uerror fsym "query did not return cursor: ~e" sql))
+    (let ([got-columns (length (cursor-result-headers result))])
+      (when (and want-columns (not (= got-columns want-columns)))
+        (uerror fsym "query returned ~a ~a (expected ~a): ~e"
+                got-columns (if (= got-columns 1) "column" "columns")
+                want-columns sql)))
     result))
 
 (define (rows-result->row fsym rs sql maybe-row? one-column?)
@@ -192,16 +204,8 @@
 
 ;; ========================================
 
-(define (in-query c stmt . args)
-  (let ([rows (in-query-helper #f c stmt args)])
-    (make-do-sequence
-     (lambda ()
-       (values (lambda (p) (vector->values (car p)))
-               cdr
-               rows
-               pair?
-               (lambda _ #t)
-               (lambda _ #t))))))
+(define (in-query c stmt #:fetch [fetch-size +inf.0] . args)
+  (apply in-query-helper #f c stmt #:fetch fetch-size args))
 
 (define-sequence-syntax in-query*
   (lambda () #'in-query)
@@ -209,25 +213,55 @@
     (syntax-case stx ()
       [[(var ...) (in-query c stmt arg ...)]
        #'[(var ...)
-          (:do-in ([(rows) (in-query-helper (length '(var ...)) c stmt (list arg ...))])
-                  (void) ;; outer check
-                  ([rows rows]) ;; loop inits
-                  (pair? rows) ;; pos guard
-                  ([(var ...) (vector->values (car rows))]) ;; inner bindings
-                  #t ;; pre guard
-                  #t ;; post guard
-                  ((cdr rows)))]] ;; loop args
+          (in-query-helper (length '(var ...)) c stmt arg ...)]]
       [_ #f])))
 
-(define (in-query-helper vars c stmt args)
+(define (in-query-helper vars c stmt
+                         #:fetch [fetch-size +inf.0]
+                         . args)
   ;; Not protected by contract
   (unless (connection? c)
     (apply raise-type-error 'in-query "connection" 0 c stmt args))
   (unless (statement? stmt)
     (apply raise-type-error 'in-query "statement" 1 c stmt args))
+  (unless (or (exact-positive-integer? fetch-size) (eqv? fetch-size +inf.0))
+    (raise-type-error 'in-query "positive integer or +inf.0" fetch-size))
   (let* ([check (or vars 'rows)]
          [stmt (compose-statement 'in-query c stmt args check)])
-    (rows-result-rows (query/rows c 'in-query stmt vars))))
+    (cond [(eqv? fetch-size +inf.0)
+           (in-list/vector->values
+            (rows-result-rows
+             (query/rows c 'in-query stmt vars)))]
+          [else
+           (let ([cursor (query/cursor c 'in-query stmt vars)])
+             (in-list-generator/vector->values
+              (lambda () (send c fetch/cursor 'in-query cursor fetch-size))))])))
+
+(define (in-list/vector->values vs)
+  (make-do-sequence
+   (lambda ()
+     (values (lambda (p) (vector->values (car p)))
+             cdr
+             vs
+             pair? #f #f))))
+
+(define (in-list-generator/vector->values fetch-proc)
+  ;; fetch-proc : symbol nat -> (U list #f)
+  ;; state = #f | (cons vector (U state (promise-of state)))
+
+  ;; more-promise : -> (promise-of state)
+  (define (more-promise)
+    (delay (let ([more (fetch-proc)])
+             ;; note: improper append, list onto promise
+             (and more (append more (more-promise))))))
+
+  (make-do-sequence
+   (lambda ()
+     (values (lambda (p) (vector->values (car p)))
+             (lambda (p)
+               (let ([next (cdr p)]) (if (promise? next) (force next) next)))
+             (force (more-promise))
+             pair? #f #f))))
 
 ;; ========================================
 

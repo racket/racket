@@ -376,7 +376,7 @@
 
 (define-struct PortalSuspended () #:transparent)
 (define (parse:PortalSuspended p)
-  (with-length-in p #\p
+  (with-length-in p #\s
     (make-PortalSuspended)))
 
 (define-struct Query (query) #:transparent)
@@ -464,7 +464,7 @@
       ((#\t) (parse:ParameterDescription p))
       ((#\S) (parse:ParameterStatus p))
       ((#\1) (parse:ParseComplete p))
-      ((#\p) (parse:PortalSuspended p))
+      ((#\s) (parse:PortalSuspended p))
       ((#\Z) (parse:ReadyForQuery p))
       ((#\T) (parse:RowDescription p))
       (else

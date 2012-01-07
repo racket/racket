@@ -132,7 +132,55 @@
               (for ([(x y) (in-query c (bind-prepared-statement (prepare c stmt) (list 2)))])
                 0))
              ((gen)
-              (for ([(x y) (in-query c (virtual-statement stmt) 2)]) 0)))))))))
+              (for ([(x y) (in-query c (virtual-statement stmt) 2)]) 0)))))))
+    ))
+
+(define in-query-tests
+  (test-suite "in-query (cursor)"
+    ;; call-with-transaction necessary for postresql
+    (test-case "in-query w/ #:fetch"
+      (with-connection c
+        (for ([fs (in-range 1 10)])
+          (check equal?
+                 (call-with-transaction c
+                   (lambda ()
+                     (for/list ([n (in-query c "select N from the_numbers order by N asc" #:fetch fs)]) n)))
+                 (map car test-data)))
+        (check equal?
+               (call-with-transaction c
+                 (lambda ()
+                   (for/first ([n (in-query c "select N from the_numbers order by N asc" #:fetch 1)]) n)))
+               (for/first ([n (map car test-data)]) n))))
+    (test-case "in-query multiple different"
+      (with-connection c
+        (check equal?
+               (call-with-transaction c
+                 (lambda ()
+                   (for/list ([n (in-query c "select N from the_numbers order by N asc" #:fetch 1)]
+                              [m (in-query c "select N from the_numbers order by N desc" #:fetch 1)])
+                     (list n m))))
+               (let ([nums (map car test-data)])
+                 (map list nums (reverse nums))))))
+    (test-case "in-query multiple same"
+      (with-connection c
+        (let ([pst (prepare c "select N from the_numbers order by N asc")])
+          (check equal?
+                 (call-with-transaction c
+                   (lambda ()
+                     (for/list ([n (in-query c pst #:fetch 1)]
+                                [m (in-query c pst #:fetch 1)])
+                       (list n m))))
+                 (let ([nums (map car test-data)])
+                   (map list nums nums))))))
+    (test-case "in-query with interleaved queries"
+      (with-connection c
+        (check equal?
+               (call-with-transaction c
+                 (lambda ()
+                   (for/list ([n (in-query c "select N from the_numbers order by N asc" #:fetch 1)])
+                     (list n (query-value c (sql "select descr from the_numbers where N = $1") n)))))
+               test-data)))
+    ))
 
 (define low-level-tests
   (test-suite "low-level"
@@ -556,6 +604,7 @@
     (simple-tests 'prepare)
     (simple-tests 'bind)
     (simple-tests 'gen)
+    in-query-tests
     low-level-tests
     tx-tests
     misc-tests

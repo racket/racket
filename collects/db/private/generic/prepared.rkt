@@ -14,6 +14,7 @@
                 close-on-exec?    ;; boolean
                 param-typeids     ;; (listof typeid)
                 result-dvecs      ;; (listof vector), layout depends on dbsys
+                [stmt #f]         ;; string/#f
                 [stmt-type #f])   ;; usually symbol or #f (see classify-*-sql)
 
     (define owner (make-weak-box -owner))
@@ -30,6 +31,9 @@
       (when close-on-exec? ;; indicates ad-hoc prepared statement
         (finalize need-lock?)))
 
+    (define/public (get-stmt) stmt)
+    (define/public (get-stmt-type) stmt-type)
+
     (define/public (get-param-count) (length param-typeids))
     (define/public (get-param-typeids) param-typeids)
 
@@ -41,8 +45,6 @@
       (send dbsystem describe-typeids param-typeids))
     (define/public (get-result-types)
       (send dbsystem describe-typeids result-typeids))
-
-    (define/public (get-stmt-type) stmt-type)
 
     ;; checktype is either #f, 'rows, or exact-positive-integer
     (define/public (check-results fsym checktype obj)
@@ -61,6 +63,8 @@
             [else (void)]))
 
     (define/public (check-owner fsym c obj)
+      (unless handle
+        (error fsym "prepared statement is closed"))
       (unless (eq? c (weak-box-value owner))
         (error fsym "prepared statement owned by another connection: ~e" obj)))
 

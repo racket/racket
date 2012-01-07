@@ -70,14 +70,17 @@
     (define/public (get-dbsystem) (error 'get-dbsystem "not implemented"))
     (define/public (get-base) this)
 
-    (define/public (query fsym stmt)
+    (define/public (query fsym stmt cursor?)
       (call 'query fsym
             (match stmt
               [(? string?) (list 'string stmt)]
               [(statement-binding pst params)
-               (list 'statement-binding (send pst get-handle) params)])))
+               (list 'statement-binding (send pst get-handle) params)])
+            cursor?))
     (define/public (prepare fsym stmt close-on-exec?)
       (call 'prepare fsym stmt close-on-exec?))
+    (define/public (fetch/cursor fsym cursor fetch-size)
+      (call 'fetch/cursor fsym (cursor-result-extra cursor) fetch-size))
     (define/public (transaction-status fsym)
       (call 'transaction-status fsym))
     (define/public (start-transaction fsym iso cwt?)
@@ -101,6 +104,8 @@
          (simple-result y)]
         [(list 'rows-result h rows)
          (rows-result h rows)]
+        [(list 'cursor-result info handle)
+         (cursor-result info #f handle)]
         [(list 'prepared-statement handle close-on-exec? param-typeids result-dvecs)
          (new prepared-statement%
               (handle handle)

@@ -55,33 +55,37 @@
     (define/public (get-dbsystem) dbsystem)
     (define/override (connected?) (and db #t))
 
-    (define/public (query fsym stmt)
-      (let-values ([(dvecs rows)
-                    (call-with-lock fsym
-                      (lambda ()
-                        (check-valid-tx-status fsym)
-                        (query1 fsym stmt #t)))])
-        (cond [(pair? dvecs) (rows-result (map field-dvec->field-info dvecs) rows)]
-              [else (simple-result '())])))
+    (define/public (query fsym stmt cursor?)
+      (call-with-lock fsym
+        (lambda ()
+          (check-valid-tx-status fsym)
+          (query1 fsym stmt #t cursor?))))
 
-    (define/private (query1 fsym stmt check-tx?)
-      (let* ([stmt (cond [(string? stmt)
-                          (let* ([pst (prepare1 fsym stmt #t)])
-                            (send pst bind fsym null))]
-                         [(statement-binding? stmt)
-                          stmt])]
+    (define/private (query1 fsym stmt check-tx? cursor?)
+      (let* ([stmt (check-statement fsym stmt cursor?)]
              [pst (statement-binding-pst stmt)]
              [params (statement-binding-params stmt)])
-        (send pst check-owner fsym this stmt)
         (when check-tx? (check-statement/tx fsym (send pst get-stmt-type)))
         (let ([result-dvecs (send pst get-result-dvecs)])
           (for ([dvec (in-list result-dvecs)])
             (let ([typeid (field-dvec->typeid dvec)])
               (unless (supported-typeid? typeid)
                 (error/unsupported-type fsym typeid)))))
-        (query1:inner fsym pst params)))
+        (query1:inner fsym pst params cursor?)))
 
-    (define/private (query1:inner fsym pst params)
+    (define/private (check-statement fsym stmt cursor?)
+      (cond [(statement-binding? stmt)
+             (let ([pst (statement-binding-pst stmt)])
+               (send pst check-owner fsym this stmt)
+               (cond [cursor?
+                      (let ([pst* (prepare1 fsym (send pst get-stmt) #f)])
+                        (statement-binding pst* (statement-binding-params stmt)))]
+                     [else stmt]))]
+            [(string? stmt)
+             (let* ([pst (prepare1 fsym stmt (not cursor?))])
+               (send pst bind fsym null))]))
+
+    (define/private (query1:inner fsym pst params cursor?)
       (let* ([db (get-db fsym)]
              [stmt (send pst get-handle)])
         (let* ([param-bufs
@@ -94,12 +98,32 @@
           (strong-void param-bufs))
         (let* ([result-dvecs (send pst get-result-dvecs)]
                [rows
-                (and (pair? result-dvecs)
-                     (fetch* fsym stmt (map field-dvec->typeid result-dvecs)))])
-          (handle-status fsym (SQLFreeStmt stmt SQL_CLOSE) stmt)
-          (handle-status fsym (SQLFreeStmt stmt SQL_RESET_PARAMS) stmt)
-          (send pst after-exec #f)
-          (values result-dvecs rows))))
+                (and (not cursor?)
+                     (pair? result-dvecs)
+                     (fetch* fsym stmt (map field-dvec->typeid result-dvecs) #f +inf.0))])
+          (unless cursor? (send pst after-exec #f))
+          (cond [(and (pair? result-dvecs) (not cursor?))
+                 (rows-result (map field-dvec->field-info result-dvecs) rows)]
+                [(and (pair? result-dvecs) cursor?)
+                 (cursor-result (map field-dvec->field-info result-dvecs)
+                                pst
+                                (list (map field-dvec->typeid result-dvecs)
+                                      (box #f)))]
+                [else (simple-result '())]))))
+
+    (define/public (fetch/cursor fsym cursor fetch-size)
+      (let ([pst (cursor-result-pst cursor)]
+            [extra (cursor-result-extra cursor)])
+        (send pst check-owner fsym this pst)
+        (call-with-lock fsym
+          (lambda ()
+            (let ([typeids (car extra)]
+                  [end-box (cadr extra)])
+              (cond [(unbox end-box) #f]
+                    [else
+                     (begin0 (fetch* fsym (send pst get-handle) typeids end-box fetch-size)
+                       (when (unbox end-box)
+                         (send pst after-exec #f)))]))))))
 
     (define/private (load-param fsym db stmt i param typeid)
       ;; NOTE: param buffers must not move between bind and execute
@@ -208,16 +232,24 @@
              (bind SQL_C_CHAR SQL_VARCHAR #f)]
             [else (error/internal fsym "cannot convert to typeid ~a: ~e" typeid param)]))
 
-    (define/private (fetch* fsym stmt result-typeids)
+    (define/private (fetch* fsym stmt result-typeids end-box limit)
       ;; scratchbuf: create a single buffer here to try to reduce garbage
       ;; Don't make too big; otherwise bad for queries with only small data.
       ;; Doesn't need to be large, since get-varbuf already smart for long data.
       ;; MUST be at least as large as any int/float type (see get-num)
       ;; SHOULD be at least as large as any structures (see uses of get-int-list)
       (let ([scratchbuf (make-bytes 50)]) 
-        (let loop ()
-          (let ([c (fetch fsym stmt result-typeids scratchbuf)])
-            (if c (cons c (loop)) null)))))
+        (let loop ([fetched 0])
+          (cond [(< fetched limit)
+                 (let ([c (fetch fsym stmt result-typeids scratchbuf)])
+                   (cond [c
+                          (cons c (loop (add1 fetched)))]
+                         [else
+                          (when end-box (set-box! end-box #t))
+                          (handle-status fsym (SQLFreeStmt stmt SQL_CLOSE) stmt)
+                          (handle-status fsym (SQLFreeStmt stmt SQL_RESET_PARAMS) stmt)
+                          null]))]
+                [else null]))))
 
     (define/private (fetch fsym stmt result-typeids scratchbuf)
       (let ([s (SQLFetch stmt)])
@@ -413,6 +445,7 @@
                         (close-on-exec? close-on-exec?)
                         (param-typeids param-typeids)
                         (result-dvecs result-dvecs)
+                        (stmt sql)
                         (stmt-type (classify-odbc-sql sql))
                         (owner this))])
           (hash-set! statement-table pst #t)
@@ -556,7 +589,7 @@
                                 "WHERE " schema-cond))]
               [else
                (uerror fsym "not supported for this DBMS")])])
-        (let* ([result (query fsym stmt)]
+        (let* ([result (query fsym stmt #f)]
                [rows (rows-result-rows result)])
           (for/list ([row (in-list rows)])
             (vector-ref row 0)))))
