@@ -526,74 +526,81 @@
                          (λ ()
                            (delete-file tmp-filename)))))))
   
-  
   (define keybindings-dialog%
     (class dialog%
-      (override on-size)
-      [define on-size
-        (lambda (w h)
-          (preferences:set 'drracket:keybindings-window-size (cons w h))
-          (super on-size w h))]
-      (super-instantiate ())))
+      (init-field bindings)
+      
+      (define/override (on-size w h)
+        (preferences:set 'drracket:keybindings-window-size (cons w h))
+        (super on-size w h))
+
+      (super-new)
   
-  (define (show-keybindings-to-user bindings frame)
-    (letrec ([f (instantiate keybindings-dialog% ()
-                  (label (string-constant keybindings-frame-title))
-                  (parent frame)
-                  (width (car (preferences:get 'drracket:keybindings-window-size)))
-                  (height (cdr (preferences:get 'drracket:keybindings-window-size)))
-                  (style '(resize-border)))]
-             [bp (make-object horizontal-panel% f)]
-             [search-field (new text-field% 
-                                [parent f]
+      (define/public (set-bindings _bindings)
+        (set! bindings _bindings)
+        (update-bindings))
+      
+      (define bp (make-object horizontal-panel% this))
+      (define search-field (new text-field% 
+                                [parent this]
                                 [label (string-constant mfs-search-string)]
-                                [callback (λ (a b) (update-bindings))])]
-             [b-name (make-object button% (string-constant keybindings-sort-by-name)
-                       bp (λ x 
-                            (set! by-key? #f)
-                            (update-bindings)))]
-             [b-key (make-object button% (string-constant keybindings-sort-by-key)
-                      bp (λ x 
-                           (set! by-key? #t)
-                           (update-bindings)))]
-             [lb
-              (make-object list-box% #f null f void)]
-             [bp2 (make-object horizontal-panel% f)]
-             [cancel (make-object button% (string-constant close)
-                       bp2 (λ x (send f show #f)))]
-             [space (make-object grow-box-spacer-pane% bp2)]
-             [filter-search
-              (λ (bindings)
-                (let ([str (send search-field get-value)])
-                  (if (equal? str "")
-                      bindings
-                      (let ([reg (regexp (regexp-quote str #f))])
-                        (filter (λ (x) (or (regexp-match reg (cadr x))
-                                           (regexp-match reg (format "~a" (car x)))))
-                                bindings)))))]
-             [by-key? #f]
-             [update-bindings
-              (λ ()
-                (let ([format-binding/name
-                       (λ (b) (format "~a (~a)" (cadr b) (car b)))]
-                      [format-binding/key
-                       (λ (b) (format "~a (~a)" (car b) (cadr b)))]
-                      [predicate/key
-                       (λ (a b) (string-ci<=? (format "~a" (car a))
-                                              (format "~a" (car b))))]
-                      [predicate/name
-                       (λ (a b) (string-ci<=? (cadr a) (cadr b)))])
-                  (send lb set
-                        (if by-key?
-                            (map format-binding/key (sort (filter-search bindings) predicate/key))
-                            (map format-binding/name (sort (filter-search bindings) predicate/name))))))])
+                                [callback (λ (a b) (update-bindings))]))
+      (define b-name (new button%
+                          [label (string-constant keybindings-sort-by-name)]
+                          [parent bp]
+                          [callback
+                           (λ x 
+                             (set! by-key? #f)
+                             (update-bindings))]))
+      (define b-key (new button%
+                         [label (string-constant keybindings-sort-by-key)]
+                         [parent bp]
+                         [callback (λ x 
+                                     (set! by-key? #t)
+                                     (update-bindings))]))
+      (define lb (new list-box% [parent this] [label #f] [choices '()]))
+      (define by-key? #f)
+      (define bp2 (make-object horizontal-panel% this))
+      (define cancel (make-object button% (string-constant close)
+                       bp2 (λ x (send this show #f))))
+
+      (define/private (update-bindings)
+        (let ([format-binding/name
+               (λ (b) (format "~a (~a)" (cadr b) (car b)))]
+              [format-binding/key
+               (λ (b) (format "~a (~a)" (car b) (cadr b)))]
+              [predicate/key
+               (λ (a b) (string-ci<=? (format "~a" (car a))
+                                      (format "~a" (car b))))]
+              [predicate/name
+               (λ (a b) (string-ci<=? (cadr a) (cadr b)))])
+          (send lb set
+                (if by-key?
+                    (map format-binding/key (sort (filter-search bindings) predicate/key))
+                    (map format-binding/name (sort (filter-search bindings) predicate/name))))))
+      
+      (define/private (filter-search bindings)
+        (let ([str (send search-field get-value)])
+          (if (equal? str "")
+              bindings
+              (let ([reg (regexp (regexp-quote str #f))])
+                (filter (λ (x) (or (regexp-match reg (cadr x))
+                                   (regexp-match reg (format "~a" (car x)))))
+                        bindings)))))
       (send search-field focus)
       (send bp stretchable-height #f)
       (send bp set-alignment 'center 'center)
       (send bp2 stretchable-height #f)
       (send bp2 set-alignment 'right 'center)
-      (update-bindings)
-      (send f show #t)))
+      (update-bindings)))
+
+  (define (show-keybindings-to-user bindings frame)
+    (send (new keybindings-dialog% 
+               [label (string-constant keybindings-frame-title)]
+               [width (car (preferences:get 'drracket:keybindings-window-size))]
+               [height (cdr (preferences:get 'drracket:keybindings-window-size))]
+               [bindings bindings])
+          show #t))
   
   (define -mixin
     (mixin (frame:editor<%> frame:text-info<%> drracket:frame:basics<%>) (drracket:frame:<%>)
