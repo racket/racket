@@ -2007,7 +2007,9 @@
              get-focus-snip
              get-view-size
              scroll-to-position
-             position-location)
+             position-location
+             get-styles-fixed
+             set-styles-fixed)
     
     ;; private field
     (define eventspace (current-eventspace))
@@ -2305,9 +2307,11 @@
     ;; do-insertion : (listof (cons (union string snip) style-delta)) boolean -> void
     ;; thread: eventspace main thread
     (define/private (do-insertion txts showing-input?)
-      (let ([locked? (is-locked?)])
+      (let ([locked? (is-locked?)]
+            [sf? (get-styles-fixed)])
         (begin-edit-sequence)
         (lock #f)
+        (set-styles-fixed #f)
         (set! allow-edits? #t)
         (let loop ([txts txts])
           (cond
@@ -2341,6 +2345,7 @@
                  (unless (is-a? str/snp string-snip%)
                    (change-style style old-insertion-point insertion-point))))
              (loop (cdr txts))]))
+        (set-styles-fixed sf?)
         (set! allow-edits? #f)
         (lock locked?)
         (unless showing-input?

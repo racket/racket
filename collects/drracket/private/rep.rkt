@@ -1641,9 +1641,9 @@ TODO
                          (λ args (drracket:app:about-drscheme))
                          click-delta))
         (set! setting-up-repl? #f)
-        (thaw-colorer)
         (send context disable-evaluation)
         (reset-console)
+        (thaw-colorer)
         (insert-prompt)
         
         ;; call the first-opened method on the user's thread, but wait here for that to terminate
@@ -1710,7 +1710,9 @@ TODO
              obj
              (if (eq? (car i) sp-err-other-end)
                  (get-err-port)
-                 (get-out-port)))))
+                 (get-out-port))))
+          (flush-output (get-err-port))
+          (flush-output (get-out-port)))
         
         (send context enable-evaluation)
         (end-edit-sequence)
