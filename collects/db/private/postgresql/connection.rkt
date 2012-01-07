@@ -5,6 +5,7 @@
          file/md5
          openssl
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/sql-data.rkt"
          "../generic/prepared.rkt"
          "message.rkt"

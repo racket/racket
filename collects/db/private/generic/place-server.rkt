@@ -119,8 +119,8 @@ server -> client: (or (list 'values result ...)
     (define/private (sexpr->statement x)
       (match x
         [(list 'string s) s]
-        [(list 'statement-binding pstmt-index meta args)
-         (statement-binding (hash-ref pstmt-table pstmt-index) meta args)]))
+        [(list 'statement-binding pstmt-index args)
+         (statement-binding (hash-ref pstmt-table pstmt-index) args)]))
 
     (define/private (result->sexpr x)
       (match x

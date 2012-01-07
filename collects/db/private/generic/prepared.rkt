@@ -3,7 +3,8 @@
          "interfaces.rkt"
          "sql-data.rkt")
 (provide prepared-statement%
-         statement:after-exec)
+         statement:after-exec
+         apply-type-handlers)
 
 ;; prepared-statement%
 (define prepared-statement%
@@ -63,20 +64,7 @@
         (error fsym "prepared statement owned by another connection: ~e" obj)))
 
     (define/public (bind fsym params)
-      (check-param-count fsym params param-typeids)
-      (let* ([params
-              (for/list ([handler (in-list param-handlers)]
-                         [index (in-naturals)]
-                         [param (in-list params)])
-                (cond [(sql-null? param) sql-null]
-                      [else (handler fsym index param)]))])
-        (statement-binding this #f params)))
-
-    (define/private (check-param-count fsym params param-typeids)
-      (define len (length params))
-      (define tlen (length param-typeids))
-      (when (not (= len tlen))
-        (error fsym "prepared statement requires ~s parameters, given ~s" tlen len)))
+      (statement-binding this (apply-type-handlers fsym params param-handlers)))
 
     (define/public (finalize)
       (let ([owner (weak-box-value owner)])
@@ -93,6 +81,17 @@
 (define (statement:after-exec stmt)
   (when (statement-binding? stmt)
     (send (statement-binding-pst stmt) after-exec)))
+
+(define (apply-type-handlers fsym params param-handlers)
+  (let ([given-len (length params)]
+        [expected-len (length param-handlers)])
+    (when (not (= given-len expected-len))
+      (uerror fsym "statement requires ~s parameters, given ~s" expected-len given-len)))
+  (for/list ([handler (in-list param-handlers)]
+             [index (in-naturals)]
+             [param (in-list params)])
+    (cond [(sql-null? param) sql-null]
+          [else (handler fsym index param)])))
 
 ;; ----
 

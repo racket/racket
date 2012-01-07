@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
-         "../generic/interfaces.rkt")
+         "../generic/interfaces.rkt"
+         "../generic/common.rkt")
 (provide dbsystem
          classify-sl-sql)
 
@@ -37,7 +38,6 @@
   param)
 
 ;; ========================================
-
 
 ;; SQL "parsing"
 ;; We just care about detecting commands that affect transaction status.

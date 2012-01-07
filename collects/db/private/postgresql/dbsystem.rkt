@@ -5,6 +5,7 @@
          racket/match
          (prefix-in srfi: srfi/19)
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt"
          "../../util/datetime.rkt"

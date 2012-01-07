@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/place-client.rkt"
          "connection.rkt"
          "dbsystem.rkt"

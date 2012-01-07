@@ -5,7 +5,7 @@
 
 (provide misc:test)
 
-(require db/private/generic/interfaces)
+(require db/private/generic/common)
 
 (define misc:test
   (test-suite "Misc internal function tests"

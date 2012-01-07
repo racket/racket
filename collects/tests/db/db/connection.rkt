@@ -4,7 +4,7 @@
          rackunit
          "../config.rkt"
          db/base
-         (only-in db/private/generic/interfaces locking%))
+         (only-in db/private/generic/common locking%))
 (import config^ database^)
 (export test^)
 

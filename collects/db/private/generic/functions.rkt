@@ -8,9 +8,6 @@
 
 ;; == Administrative procedures
 
-(define (connection? x)
-  (is-a? x connection<%>))
-
 (define (connected? x)
   (send x connected?))
 
@@ -19,9 +16,6 @@
 
 (define (connection-dbsystem x)
   (send x get-dbsystem))
-
-(define (dbsystem? x)
-  (is-a? x dbsystem<%>))
 
 (define (dbsystem-name x)
   (send x get-short-name))
@@ -43,9 +37,6 @@
 
 (define (bind-prepared-statement pst params)
   (send pst bind 'bind-prepared-statement params))
-
-(define (prepared-statement? x)
-  (is-a? x prepared-statement<%>))
 
 (define (prepared-statement-parameter-types pst)
   (send pst get-param-types))

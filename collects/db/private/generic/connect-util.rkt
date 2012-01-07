@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
-         "interfaces.rkt")
+         "interfaces.rkt"
+         "common.rkt")
 (provide kill-safe-connection
          virtual-connection
          connection-pool

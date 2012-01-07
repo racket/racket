@@ -8,6 +8,7 @@
          (for-syntax (only-in racket/base quote))
          ffi/unsafe/atomic
          "interfaces.rkt"
+         "common.rkt"
          "prepared.rkt")
 (provide place-connect
          place-proxy-connection%)
@@ -73,8 +74,8 @@
       (call 'query fsym
             (match stmt
               [(? string?) (list 'string stmt)]
-              [(statement-binding pst meta params)
-               (list 'statement-binding (send pst get-handle) meta params)])))
+              [(statement-binding pst params)
+               (list 'statement-binding (send pst get-handle) params)])))
     (define/public (prepare fsym stmt close-on-exec?)
       (call 'prepare fsym stmt close-on-exec?))
     (define/public (transaction-status fsym)

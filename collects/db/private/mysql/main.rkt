@@ -2,8 +2,8 @@
 (require racket/class
          racket/tcp
          openssl
-         file/sha1
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/socket.rkt"
          "connection.rkt")
 (provide mysql-connect
@@ -62,6 +62,3 @@
 
 (define (mysql-guess-socket-path)
   (guess-socket-path/paths 'mysql-guess-socket-path socket-paths))
-
-(define (mysql-password-hash password)
-  (bytes->hex-string (password-hash password)))

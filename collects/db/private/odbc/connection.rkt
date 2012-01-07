@@ -5,6 +5,7 @@
          ffi/unsafe
          ffi/unsafe/atomic
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/prepared.rkt"
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt"

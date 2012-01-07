@@ -4,12 +4,13 @@
          openssl
          openssl/sha1
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/prepared.rkt"
          "../generic/sql-data.rkt"
          "message.rkt"
          "dbsystem.rkt")
 (provide connection%
-         password-hash)
+         mysql-password-hash)
 
 (define MAX-PACKET-LENGTH #x1000000)
 
@@ -481,12 +482,15 @@
 
 ;; ========================================
 
+;; mysql-password-hash : string -> string
+(define (mysql-password-hash password)
+  (bytes->hex-string (password-hash password)))
+
 ;; scramble-password : bytes string -> bytes
 (define (scramble-password scramble password)
   (and scramble password
        (let* ([stage1 (cond [(string? password) (password-hash password)]
-                            [(pair? password)
-                             (hex-string->bytes (cadr password))])]
+                            [(pair? password) (hex-string->bytes (cadr password))])]
               [stage2 (sha1-bytes (open-input-bytes stage1))]
               [stage3 (sha1-bytes (open-input-bytes (bytes-append scramble stage2)))]
               [reply (bytes-xor stage1 stage3)])
@@ -508,6 +512,27 @@
                     (bitwise-xor (bytes-ref a i) (bytes-ref b i)))
         (loop (add1 i))))
     c))
+
+(define (hex-string->bytes s)
+  (define (hex-digit->int c)
+    (let ([c (char->integer c)])
+      (cond [(<= (char->integer #\0) c (char->integer #\9))
+             (- c (char->integer #\0))]
+            [(<= (char->integer #\a) c (char->integer #\f))
+             (- c (char->integer #\a))]
+            [(<= (char->integer #\A) c (char->integer #\F))
+             (- c (char->integer #\A))])))
+  (unless (and (string? s) (even? (string-length s))
+               (regexp-match? #rx"[0-9a-zA-Z]*" s))
+    (raise-type-error 'hex-string->bytes
+                      "string containing an even number of hexadecimal digits" s))
+  (let* ([c (quotient (string-length s) 2)]
+         [b (make-bytes c)])
+    (for ([i (in-range c)])
+      (let ([high (hex-digit->int (string-ref s (+ i i)))]
+            [low  (hex-digit->int (string-ref s (+ i i 1)))])
+        (bytes-set! b i (+ (arithmetic-shift high 4) low))))
+    b))
 
 ;; =======================================
 

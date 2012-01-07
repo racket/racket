@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt")
 (provide dbsystem

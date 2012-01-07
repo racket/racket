@@ -3,6 +3,7 @@
          racket/tcp
          openssl
          "../generic/interfaces.rkt"
+         "../generic/common.rkt"
          "../generic/socket.rkt"
          "connection.rkt")
 (provide postgresql-connect
