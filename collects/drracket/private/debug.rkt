@@ -521,8 +521,8 @@ profile todo:
                (send-out (format "~s" (syntax->datum expr))
                          (λ (snp)
                            (send snp set-style
-                                 (send the-style-list find-or-create-style
-                                       (send snp get-style)
+                                 (send (editor:get-standard-style-list) find-or-create-style
+                                       (send (editor:get-standard-style-list) find-named-style "Standard")
                                        error-text-style-delta)))))]
             [exprs (exn:fail:syntax-exprs exn)])
         (cond
