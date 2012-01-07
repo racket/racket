@@ -179,8 +179,11 @@ index="index.html"
 stampfile="stamp"
 
 # directory for temporary stuff (absolute path) -- on all machines
-tmpdir="/tmp/build"
+tmpdir="/tmp/racket-build"
 mkdir -p "$tmpdir" # make sure that it exists asap
+if [[ "x$1" != "x--dispatch" ]]; then
+  chcon --type=httpd_sys_content_t "$tmpdir" # and readable on main machine
+fi
 # lockfile for this script (date marks when the build started)
 lockfile="$tmpdir/build-lock"
 # status file, and a file to save it when done
@@ -706,11 +709,15 @@ append_dots() { # inputs: width, string
 
 base_status=""
 write_status() {
-  local msg="$*"
+  local message="$*"
   if [[ "$gitbranch" != "master" ]]; then
-    msg="($gitbranch build) $msg"
+    message="($gitbranch build) $message"
   fi
   if [[ "$machine" = "$workmachine" ]]; then
+    if [[ ! -e "$statusfile" ]]; then
+      touch "$statusfile"
+      chcon --type=httpd_sys_content_t "$statusfile"
+    fi
     echo "$*" > "$statusfile"
   else
     # greppable lines for status, filtered out in final log (see below)
@@ -718,28 +725,36 @@ write_status() {
   fi
 }
 
-separator() {
-  if [[ "x$1" = "x-s" ]]; then shift; base_status="$*"; write_status "$*"
-  elif [[ "x$1" = "x-s" ]]; then shift; write_status "$base_status ($*)"; fi
+header() {
+  local suffix=""
+  if [[ "${machine:-$workmachine}" != "$workmachine" ]]; then
+    suffix=" [${machine}(${platform})]"
+  fi
+  local status=""
+  case "x$1" in
+    ( "x-s" ) shift; status="${*}${suffix}"; base_status="$*";;
+    ( "x+s" ) shift; status="$base_status, ${*}${suffix}";;
+  esac
+  local message="${*}${suffix}"
   local line="============================================================"
-  local sep="$*"
-  local sep_len=${#sep}
-  local idx1=$(( ( 77 - $sep_len ) / 2 ))
-  local idx2=$(( ( 78 - $sep_len ) / 2 ))
+  local message_len=${#message}
+  local idx1=$(( ( 77 - $message_len ) / 2 ))
+  local idx2=$(( ( 78 - $message_len ) / 2 ))
   local line1=${line:0:$(( ( $idx1 < 3 ) ? 3 : $idx1 ))}
   local line2=${line:0:$(( ( $idx2 < 3 ) ? 3 : $idx2 ))}
-  local dashes="$(echo "$line1 $sep $line2" | sed 's/./-/g')"
+  local dashes="$(echo "$line1 $message $line2" | sed 's/./-/g')"
   echo ""
   echo ""
   echo "$dashes"
-  echo "$line1 $sep $line2"
+  echo "$line1 $message $line2"
   echo "$dashes"
+  if [[ "x$status" != "x" ]]; then write_status "$status"; fi
   echo ""
 }
 
 build_step() { # inputs: name, command
   local jobname="$1"; shift
-  separator -s "Building: $jobname [${machine}(${platform})]"
+  header -s "Building: $jobname"
   show "Running \"$*\""
   start_timer
   "$@" || exit_error "\"$jobname\" part of build process failed"
@@ -886,15 +901,15 @@ version_init() { # input: plthome
     || exit_error "Mismatch in \"$vfile\": $version vs $VER"
   # release is when the last one is zero
   if [[ "$version4" = "0" ]]; then
-    separator "This is a release version ($version)"
+    header "This is a release version ($version)"
     releasing="yes"
     reallyreleasing="yes"
   elif [[ "$gitbranch" = "release" ]]; then
-    separator "This is a pre-release version ($version)"
+    header "This is a pre-release version ($version)"
     releasing="yes"
     reallyreleasing="no"
   else
-    separator "This is a non-release version ($version)"
+    header "This is a non-release version ($version)"
     releasing="no"
     reallyreleasing="no"
   fi
@@ -1013,7 +1028,7 @@ MAIN_BUILD() {
   trap cleanup_run_files 0 3 9 15
 
   ## --------------------------------------------------------------------------
-  separator -s "Begin ($(date))"
+  header -s "Begin ($(date +'%Y-%m-%d %H:%M'))"
 
   timestamp="$(date '+%Y%m%d%H%M')"
   htmltimestamp="$(date '+updated at %A, %B %d %Y, %H:%M %Z')"
@@ -1026,7 +1041,7 @@ MAIN_BUILD() {
 
   ## --------------------------------------------------------------------------
   if is_yes make_repo; then
-    separator -s "Repository updates"
+    header -s "Repository updates"
     git_get "plt" "$gitbranch" "$cleandir"
     git_get "iplt" "$gitibranch" "$internaldir"
   else
@@ -1039,10 +1054,10 @@ MAIN_BUILD() {
   fi
 
   if is_yes make_bins; then
+    header "Creating archive"
     _cd "$maindir"
     _rm "$repotgz"
     _cd "$maindir/$cleandir"
-    show "Creating archive"
     git archive --format=tar "$gitbranch" | gzip > "$repotgz" \
       || exit_error "Could not create archive"
     git archive --format=tar --prefix=racket/ "$gitbranch" \
@@ -1054,14 +1069,15 @@ MAIN_BUILD() {
   # send build notification message
   if [[ "$buildnotifyemail" != "" && "$CRON" != "yes" ]]; then
     show "Sending notifications"
-    echo "Build starting at $(date)" \
+    echo "Build starting at $(date +'%Y-%m-%d %H:%M')" \
     | mail -s "A build is starting..." "$buildnotifyemail"
   fi
 
   ## --------------------------------------------------------------------------
-  separator -s "Dispatching build jobs"
+  header -s "Dispatching build jobs"
 
   local m
+  _rm "$bglogfile-"*
   if is_yes make_bins; then
     for m in "${machines[@]}"; do DO_COPY_BUILD "$m"; done
   else
@@ -1080,7 +1096,7 @@ MAIN_BUILD() {
       machine="$m"
       machineget mplatform=platform
       if [[ "$machine" != "$workmachine" ]]; then
-        separator "{{{ Building ${machine}(${mplatform}) remotely }}}"
+        header "{{{ Building ${machine}(${mplatform}) remotely }}}"
         _cat "$bglogfile-$machine" | grep -v "^### <<< .* >>>"
         _rm "$bglogfile-$machine"
       fi
@@ -1100,7 +1116,7 @@ MAIN_BUILD() {
 
   _rm "$lockfile"
 
-  separator -s "Done ($(date))"
+  header -s "Done ($(date +'%Y-%m-%d %H:%M'))"
 
 }
 
@@ -1109,7 +1125,7 @@ MAIN_BUILD() {
 DO_AUTO_UPDATES() {
 
   ## --------------------------------------------------------------------------
-  separator -s "Updating version-dependent files"
+  header -s "Updating version-dependent files"
 
   _cd "$maindir/$cleandir"
 
@@ -1137,12 +1153,15 @@ DO_COPY_BUILD() { # inputs -- machine-name (for ssh)
 
   if [[ "$machine" != "$workmachine" ]]; then
     show "Running DO_BUILD on $machine in the background"
-    _scp "$repotgz" "${machine}:$repotgz"
-    _rm "$bglogfile-$machine"
+    _run ssh "$machine" \
+      "mkdir -p \"$tmpdir\"; cat > \"$repotgz\"" \
+      < "$repotgz"
+    touch "$bglogfile-$machine"
+    chcon --type=httpd_sys_content_t "$bglogfile-$machine"
     run_part -bg "$machine" "DO_BUILD" "$releasing" "$@" \
              &> "$bglogfile-$machine"
   else
-    separator "{{{ Doing ${machine}(${platform}) locally }}}"
+    header "{{{ Doing ${machine}(${platform}) locally }}}"
     run_part "$machine" "DO_BUILD" "$releasing" "$@"
   fi
 
@@ -1156,6 +1175,8 @@ DO_BUILD() { # inputs -- releasing
   releasing="$1"; shift
   machineget platform workdir moveto copytobak \
              configure_args ext_lib_paths renice more_setup_args test_gui
+
+  header -s "Starting build"
 
   if [[ "$renice" != "" ]]; then dont_exit _run renice "$renice" "$$"; fi
 
@@ -1175,7 +1196,8 @@ DO_BUILD() { # inputs -- releasing
     export PLT_EXTENSION_LIB_PATHS="${ext_lib_paths}:$PLT_EXTENSION_LIB_PATHS"
   fi
 
-  # create the tree to be built
+  header -s "Unpacking source tree"
+
   _rmcd "$PLTHOME"
   _tgunzipm "$repotgz"
   if [[ "$machine" != "$workmachine" ]]; then
@@ -1204,7 +1226,7 @@ DO_BUILD() { # inputs -- releasing
   fi
 
   ## --------------------------------------------------------------------------
-  separator -s "${machine}(${platform}): Stripping binaries"
+  header -s "Stripping binaries"
 
   # Strip binaries
   _cd "$PLTHOME"
@@ -1226,7 +1248,7 @@ DO_BUILD() { # inputs -- releasing
   esac
 
   ## --------------------------------------------------------------------------
-  separator -s "${machine}(${platform}): Creating \"$fulltgz\""
+  header -s "Creating \"$fulltgz\""
 
   _rm "$fulltgz"
   _cd "$workdir"
@@ -1243,8 +1265,8 @@ DO_BUILD() { # inputs -- releasing
   if [[ "$run_all_tests" = "yes" ]];     then test_mode="all";
   elif [[ "$releasing" = "yes" ]];       then test_mode="all";
   elif [[ "$(( $RANDOM % 2 ))" = "0" ]]; then test_mode="rnd";
-  fi;
-  separator -s "${machine}(${platform}) testing Racket ($test_mode)"
+  fi
+  header -s "Testing Racket ($test_mode)"
   local testdir="$tmpdir/tests"
   _rmcd "$testdir"
 
@@ -1267,7 +1289,7 @@ DO_BUILD() { # inputs -- releasing
 
   # GRacket-based tests on the main machine, in an Xvnc session
   if [[ "$test_gui" = "yes" ]]; then
-    separator -s "${machine}(${platform}) testing DrRacket"
+    header -s "Testing DrRacket"
     if [[ "$platform" = *"-win32" ]]; then
       dont_exit "$PLTHOME/gracket.exe" "$(cygpath -w "$PLTHOME/$drtestscript")"
     else
@@ -1287,7 +1309,7 @@ DO_BUILD() { # inputs -- releasing
     targetdir="$moveto"; mode="mv"; op="Moving"
   fi
   if [[ "$targetdir" != "" ]]; then
-    separator -s "${machine}(${platform}): $op installation to \"$targetdir\""
+    header -s "$op installation to \"$targetdir\""
     _md "$targetdir/$installdir-new"
     _cd "$workdir/$installdir"
     show "Copying \"$PLTHOME\" to \"$targetdir/$installdir-new\""
@@ -1319,7 +1341,7 @@ DO_BUILD() { # inputs -- releasing
   fi
 
   ## --------------------------------------------------------------------------
-  separator -s "${machine}(${platform}) done"
+  header -s "Done"
 
 }
 
@@ -1366,7 +1388,7 @@ EOF
 }
 
 win_build_step() { # inputs: type, name, [args...]
-  separator "Building: $2 [${machine}(${platform})] ($1)"
+  header "Building: $2 ($1)"
   local btype="$1" bname="$2"; shift 2
   local arch="Win32"
   if [[ "$platform" = "x86_64-"* ]]; then arch="x64"; fi
@@ -1426,7 +1448,7 @@ DO_WINDOWS_BUILD() {
 
   export VSNET NMAKE PATH INCLUDE LIB
 
-  # separator -s "Windows: Convert .sln files"
+  # header -s "Windows: Convert .sln files"
   # local SAVED_IFS="$IFS"; IFS=$'\n'
   # local sln
   # for sln in $(find "$PLTHOME/src/worksp" -type f -name "*.sln"); do
@@ -1435,7 +1457,7 @@ DO_WINDOWS_BUILD() {
   # done
   # IFS="$SAVED_IFS"
 
-  separator -s "Windows: Use new .sln files"
+  header -s "Windows: Use new .sln files"
   local SAVED_IFS="$IFS"; IFS=$'\n'
   local file
   for file in $(find "$PLTHOME/src/worksp10" -type f); do
@@ -1443,7 +1465,7 @@ DO_WINDOWS_BUILD() {
   done
   IFS="$SAVED_IFS"
 
-  separator -s "Windows: Full build"
+  header -s "Windows: Full build"
   win_build_step VSNET "racket"
   win_build_step VSNET "gracket"
   _cd "$PLTHOME/src/worksp/gc2"; win_build_step RKT "3M" make.rkt
@@ -1457,7 +1479,7 @@ DO_WINDOWS_BUILD() {
   win_build_step RKT "get-libs (gui)" ../src/get-libs.rkt gui
   win_build_step RKT "get-libs (db)" ../src/get-libs.rkt db
 
-  separator -s "Windows: Building libraries"
+  header -s "Windows: Building libraries"
   _cd "$PLTHOME"
   win_build_step RKT "compiler" -N raco -l- raco setup -Dl compiler
 
@@ -1466,7 +1488,7 @@ DO_WINDOWS_BUILD() {
 
   _cd "$PLTHOME"; win_build_step RKT "raco setup" $SETUP_ARGS
 
-  separator -s "Windows: Building Cygwin libreries"
+  header -s "Windows: Building Cygwin libreries"
   _mcd "$PLTHOME/src/build"
   _run ../configure --disable-gracket
   _cd "racket/dynsrc"
@@ -1475,7 +1497,7 @@ DO_WINDOWS_BUILD() {
   || exit_error "Errors when running \"make\" for Cygwin"
 
   # Borland is no longer supported:
-  # separator -s "Windows: Building Borland libreries"
+  # header -s "Windows: Building Borland libreries"
   # _cd "$PLTHOME/src/racket/dynsrc"
   # _run bcc32 -I"../include" -I"g:/borland/bcc55/include" \
   #        -o"mzdynb.obj" -c "mzdyn.c"
@@ -1491,7 +1513,7 @@ DO_WINDOWS_BUILD() {
 
 BUILD_DOCS_AND_PDFS() {
 
-  separator -s "Copying and making \"$docdir\""
+  header -s "Copying and making \"$docdir\""
 
   _rmcd "$maindir/$docdir"
   html_begin "Documentation"
@@ -1528,7 +1550,7 @@ COPY_AND_BUILD_BINARY_DIRS() {
   # pre-installers are built in their own steps.
 
   ## --------------------------------------------------------------------------
-  separator -s "Copying and making \"$bindir\""
+  header -s "Copying and making \"$bindir\""
 
   _rmcd "$maindir/$bindir"
 
@@ -1567,7 +1589,7 @@ COPY_AND_BUILD_BINARY_DIRS() {
   html_end
 
   ## --------------------------------------------------------------------------
-  separator "Making \"$stampfile\""
+  header "Making \"$stampfile\""
 
   _cd "$maindir"
   _rm "$stampfile"
@@ -1582,7 +1604,7 @@ BUILD_BUNDLES() {
   ## --------------------------------------------------------------------------
   # the index in this directory is made by BUILD_INSTALLERS below
 
-  separator -s "Creating pre-installer bundles"
+  header -s "Creating pre-installer bundles"
   _rmd "$maindir/$preinstdir"
   show "Running the bundle script"
   local bundleflags=""
@@ -1933,7 +1955,7 @@ do_installers_page_body() { # input: selector-html table-html
 BUILD_INSTALLERS() {
 
   ## --------------------------------------------------------------------------
-  separator -s "Creating platform-specific installers"
+  header -s "Creating platform-specific installers"
   _rmd "$maindir/$instdir"
   _cd "$maindir/$preinstdir"
   html_begin "Pre-installers"
@@ -1950,7 +1972,7 @@ BUILD_INSTALLERS() {
       "$(name_of_dist_package "$dpackage") for" \
       "$(name_of_platform "$dplatform")"
     convert="tgz_to_$(installer_of_dist_type_platform "$dtype-$dplatform")"
-    separator +s "Making \"$dpackage-$dtype\" installer for \"$dplatform\""
+    header +s "Making \"$dpackage-$dtype\" installer for \"$dplatform\""
     show "Using \"$convert\" to convert \"$dname\""
     "$convert" "$maindir/$preinstdir/$tgz" \
                "$maindir/$instdir/$dpackage-$version-$dtype-$dplatform" \
@@ -2036,10 +2058,10 @@ BUILD_WEB() {
   webflags="$webflags -e $maindir/$internaldir/web/all.rkt"
   # distribute only if this is a normal build
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
-    separator -s "Building and distributing web content"
+    header -s "Building and distributing web content"
     webflags="$webflags --dist"
   else
-    separator -s "Building web content -- not distributing"
+    header -s "Building web content -- not distributing"
   fi
   GIT_DIR="$maindir/$cleandir/.git" \
   KNOWN_MIRRORS_FILE="$maindir/$knownmirrors" \
@@ -2051,9 +2073,9 @@ BUILD_PRE_WEB() {
 
   ## --------------------------------------------------------------------------
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
-    separator -s "Making external web pages"
+    header -s "Making build web pages"
   else
-    separator -s "Making external web pages at $prewebdir"
+    header -s "Making build web pages at $prewebdir"
   fi
 
   _mcd "$maindir/$prewebdir"
@@ -2147,7 +2169,7 @@ BUILD_PRE_WEB() {
 
   ## --------------------------------------------------------------------------
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
-    separator "Creating a site-map"
+    header "Creating a site-map"
     _cd "$maindir/$prewebdir"
     _run "$PLTHOME/$sitemapdir/sitemap_gen.py" \
          --config="$PLTHOME/$sitemapdir/plt-pre.xml" \
@@ -2177,6 +2199,7 @@ elif [[ "$scriptlog" = "yes" ]]; then
     echo "Search for \"BOOM\" for any errors."; echo ""
     # set | grep "^[a-z].*=" | awk '{ print "  " $0 }'; echo ""
   } > "$maindir/$scriptlogfile"
+  chcon --type=httpd_sys_content_t "$maindir/$scriptlogfile"
   if [[ "$scriptlog" = "only" ]]; then
     exec >> "$maindir/$scriptlogfile" 2>&1
     MAIN "$@"
