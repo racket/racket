@@ -1154,7 +1154,7 @@ DO_COPY_BUILD() { # inputs -- machine-name (for ssh)
   if [[ "$machine" != "$workmachine" ]]; then
     show "Running DO_BUILD on $machine in the background"
     _run ssh "$machine" \
-      "mkdir -p \"$tmpdir\"; cat > \"$repotgz\"" \
+      "rm -rf \"$tmpdir\"; mkdir -p \"$tmpdir\"; cat > \"$repotgz\"" \
       < "$repotgz"
     touch "$bglogfile-$machine"
     chcon --type=httpd_sys_content_t "$bglogfile-$machine"
