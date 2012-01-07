@@ -158,6 +158,8 @@ drtestscript="$scriptdir/test-drracket.rkt"
 bundlescript="$scriptdir/bundle"
 # web build script
 webscript="collects/meta/web/build.rkt"
+# status script
+statusscript="$scriptdir/current-build-status.cgi"
 # url mirrors file (relative to $maindir)
 knownmirrors="known-mirror-urls"
 # sitemap materials
@@ -2174,6 +2176,22 @@ BUILD_PRE_WEB() {
     _run "$PLTHOME/$sitemapdir/sitemap_gen.py" \
          --config="$PLTHOME/$sitemapdir/plt-pre.xml" \
            > /dev/null
+  fi
+
+  ## --------------------------------------------------------------------------
+  # Make the status script available for use
+
+  if [[ "$prewebdir" = "$prewebdir_default" ]]; then
+    {
+      echo "#!/bin/bash"
+      local v
+      for v in tmpdir lockfile statusfile statusfile_last bglogfile; do
+        echo "$v=$(eval "\$$var")"
+      done
+      echo ""
+      cat "$PLTHOME/$statusscript"
+    } > "${prewebdir}/$(basename "$statusscript")"
+    chmod +x "${prewebdir}/$(basename "$statusscript")"
   fi
 
 }
