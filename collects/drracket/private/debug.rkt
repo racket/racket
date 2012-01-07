@@ -26,7 +26,7 @@ profile todo:
          net/url
          racket/match
          mrlib/include-bitmap
-         icons
+         images/icons/misc images/icons/style images/icons/control
          (for-syntax racket/base))
 
 (define orig (current-output-port))
@@ -187,10 +187,11 @@ profile todo:
                      (super-make-object bitmap))])
            note%)))
   
-  (define bug-note% (make-note% "stop-multi.png" (stop-signs-icon)))
+  (define file-note% (make-note% "stop-22x22.png" (stop-sign-icon halt-icon-color)))
+  (define bug-note% (make-note% "stop-multi.png" (stop-signs-icon halt-icon-color)))
+  
   (define mf-note% (make-note% "mf.gif" (include-bitmap (lib "icons/mf.gif") 'gif)))
-  (define file-note% (make-note% "stop-22x22.png" (stop-sign-icon)))
-  (define small-planet-bitmap (earth-icon))
+  (define small-planet-bitmap (record-icon "blue"))
   (define planet-note% (make-note% "small-planet.png" small-planet-bitmap))
   
   ;; display-stats : (syntax -> syntax)

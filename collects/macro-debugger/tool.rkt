@@ -10,7 +10,7 @@
          (only-in "view/view.rkt" macro-stepper-director%)
          "view/stepper.rkt"
          "view/prefs.rkt"
-         icons slideshow/pict
+         images/icons/tool
          ;; FIXME:
          drracket/private/syncheck/local-member-names)
 
@@ -94,7 +94,7 @@
          (new switchable-button%
                (label macro-stepper-button-label)
                (bitmap macro-debugger-bitmap)
-               (alternate-bitmap macro-debugger-up-bitmap)
+               (alternate-bitmap small-macro-debugger-bitmap)
                (parent parent)
                (callback (lambda (button) (send frame run-macro-stepper)))))
        'macro-stepper)
@@ -109,11 +109,8 @@
 
     (define-local-member-name check-language)
     
-    (define macro-debugger-up-pict (step-icon-pict 'blue (toolbar-icon-height)))
-    (define macro-debugger-up-bitmap (pict->bitmap macro-debugger-up-pict))
-    (define macro-debugger-bitmap
-      (pict->bitmap (ht-append (hash-quote-icon-pict (toolbar-icon-height))
-                               macro-debugger-up-pict)))
+    (define macro-debugger-bitmap (macro-stepper-icon))
+    (define small-macro-debugger-bitmap (small-macro-stepper-icon))
     
     (define (macro-debugger-unit-frame-mixin %)
       (class* % (frame/supports-macro-stepper<%>)
@@ -135,7 +132,7 @@
           (new switchable-button%
                (label macro-stepper-button-label)
                (bitmap macro-debugger-bitmap)
-               (alternate-bitmap macro-debugger-up-bitmap)
+               (alternate-bitmap small-macro-debugger-bitmap)
                (parent macro-debug-panel)
                (callback (lambda (button) (run-macro-stepper)))))
         (inherit register-toolbar-button)

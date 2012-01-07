@@ -15,7 +15,7 @@
            framework
            string-constants
            lang/debugger-language-interface
-           icons)
+           images/icons/tool)
   
   (provide tool@)
   
@@ -40,6 +40,7 @@
            (new switchable-button%
                 (label (string-constant debug-tool-button-name))
                 (bitmap debug-bitmap)
+                (alternate-bitmap small-debug-bitmap)
                 (parent parent)
                 (callback (λ (button) (send frame debug-callback)))))
          'macro-stepper)
@@ -1081,7 +1082,8 @@
           
           (super-new)))
       
-      (define debug-bitmap (step-icon 'green (toolbar-icon-height)))
+      (define debug-bitmap (debugger-icon))
+      (define small-debug-bitmap (small-debugger-icon))
       
       (define make-pause-label
         (bitmap-label-maker
@@ -1353,6 +1355,7 @@
             (new switchable-button%
                  (label (string-constant debug-tool-button-name))
                  (bitmap debug-bitmap)
+                 (alternate-bitmap small-debug-bitmap)
                  (parent (new vertical-pane%
 			      [parent (get-button-panel)]
 			      [alignment '(center center)]))

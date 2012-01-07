@@ -201,13 +201,13 @@
              (standard-fish w h direction color eye-color open-mouth))])
       standard-fish))
 
-  (define (pict->bitmap p)
+  (define (pict->bitmap p [smoothing 'aligned])
     (define w (pict-width p))
     (define h (pict-height p))
     (define bm (make-bitmap (max 1 (inexact->exact (ceiling w)))
                             (max 1 (inexact->exact (ceiling h)))))
     (define dc (make-object bitmap-dc% bm))
-    (send dc set-smoothing 'smoothed)
+    (send dc set-smoothing smoothing)
     (draw-pict p dc 0 0)
     bm)
 
@@ -274,5 +274,6 @@
 
                        find-pen find-brush)
            (rename-out [fish standard-fish])
-           (contract-out [pict->bitmap (pict? . -> . (is-a?/c bitmap%))])
+           (contract-out [pict->bitmap ((pict?) ((one-of/c 'unsmoothed 'smoothed 'aligned))
+                                                . ->* . (is-a?/c bitmap%))])
            ))

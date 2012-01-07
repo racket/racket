@@ -38,7 +38,7 @@ module browser threading seems wrong.
          "local-member-names.rkt"
          "eval-helpers.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
-         (prefix-in icons: icons) (prefix-in pict: slideshow/pict)
+         (prefix-in icons: (combine-in images/icons/file images/icons/control images/icons/style))
          
          mred
          (prefix-in mred: mred)
@@ -385,18 +385,12 @@ module browser threading seems wrong.
                    frame
                    program-filename)))])))
   
-  (define execute-bitmap (icons:go-icon 'green (icons:toolbar-icon-height)))
-  (define break-bitmap (icons:stop-icon 'red (icons:toolbar-icon-height)))
-  
-  (define blue-arrow-pict (icons:right-arrow-icon-pict 'blue (* 3/4 (icons:toolbar-icon-height))))
-  (define disk-pict (icons:disk-icon-pict 'orange (icons:toolbar-icon-height)))
-  
-  (define small-save-bitmap
-    (pict:pict->bitmap
-     (pict:rc-superimpose
-      disk-pict (pict:inset blue-arrow-pict 0 0 (* 1/2 (icons:toolbar-icon-height)) 0))))
-  
-  (define save-bitmap (pict:pict->bitmap (pict:hc-append blue-arrow-pict disk-pict)))
+  (define execute-bitmap (icons:play-icon icons:run-icon-color (icons:toolbar-icon-height)))
+  (define break-bitmap (icons:stop-icon icons:halt-icon-color (icons:toolbar-icon-height)))
+  (define small-save-bitmap (icons:small-save-icon icons:syntax-icon-color icons:metal-icon-color
+                                                   (icons:toolbar-icon-height)))
+  (define save-bitmap (icons:save-icon icons:syntax-icon-color icons:metal-icon-color
+                                       (icons:toolbar-icon-height)))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)
     (let* ([program-editor-mixin
@@ -4702,7 +4696,7 @@ module browser threading seems wrong.
         [(null? l) '()]
         [else (cons (car l) (loop (cdr l) (- n 1)))])))
   
-  (define very-small-planet-bitmap (icons:earth-icon (icons:toolbar-icon-height)))
+  (define very-small-planet-bitmap (icons:record-icon "blue" (icons:toolbar-icon-height)))
   
   (define saved-bug-reports-window #f)
   (define saved-bug-reports-panel #f)
