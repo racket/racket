@@ -464,7 +464,7 @@ please adhere to these guidelines:
  (give-up-and-use-the-default "Give up and use the default") ;; button label
   
  (prefs-file-still-locked "The preferences file is still locked (because the file ~a exists), so your preference change will not be saved.")
- (prefs-file-locked-nothing-doing "The preferences file is locked (via ~s) so changes to the preferences not be saved.") ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
+ (prefs-file-locked-nothing-doing "The preferences file is locked (via ~s) so changes to the preferences cannot be saved.") ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
  (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Warnings")
  (editor-prefs-panel-label "Editing")

@@ -113,9 +113,10 @@
   (untitled-n "Sans Nom ~a")
   (warning "Avertissement")
   (error "Erreur")
-  (close "Fermer") ;; as in, close an open window. must match close-menu-item
+  (close "Fermer") ;; as in, close an open window or tab. must match close-menu-item
                    ;; in the sense that, when the &s have been stripped from
                    ;; close-menu-item, it must be the same string as this.
+  (close-window "Fermer la fenêtre")
   (stop "Stop")
   (&stop "&Stop") ;; for use in button and menu item labels, with short cut.
   (are-you-sure-delete? "Etes-vous certain de vouloir effacer ~a ?") ;; ~a is a filename
@@ -140,6 +141,9 @@
   (cancel-bug-report? "Annuler la soumission du rapport de bogue ?")
   (are-you-sure-cancel-bug-report?
    "Etes-vous certain de vouloir annuler la soumission de ce rapport de bogue ?")
+  (do-you-want-to-discard-or-save-this-bug-report
+   "Voulez-vous abandonner ou sauvegarder ce rapport de bogue ?")
+  (discard "Abandonner") ;; a button label for a dialog box with the above question
   (bug-report-form "Formulaire de soumission de bogue")
   (bug-report-field-name "Nom")
   (bug-report-field-email "Email")
@@ -152,6 +156,7 @@
   (bug-report-field-environment "Environnement")
   (bug-report-field-docs-installed "Documentations installées")
   (bug-report-field-collections "Collections")
+  (bug-report-field-links "Liens")  ;; from 'raco link'
   (bug-report-field-human-language "Langage humain")
   (bug-report-field-memory-use "Mémoire utilisée")
   (bug-report-field-version "Version")
@@ -179,6 +184,8 @@
   (cs-bold "Gras")
   (cs-underline "Souligné")
   (cs-change-color "Changer la couleur")
+  (cs-foreground-color "Couleur d'avant-plan")
+  (cs-background-color "Couleur d'arrière-plan")
   (cs-tack/untack-arrow "Coller/décoller les flèches")
   (cs-jump-to-next-bound-occurrence "Aller à l'occurence suivante")
   (cs-jump-to-binding "Aller à l'occurence liant celle-ci")
@@ -202,6 +209,8 @@
   (cs-lexical-variable "variables lexicales")
   (cs-set!d-variable "variables modifiées à l'aide de set!")
   (cs-imported-variable "variables importées")
+  (cs-unused-require "\"require\" unitilisé")
+  (cs-free-variable "variable libre")
 
   ;; mode sub-menu in the "view" menu
   (cs-check-syntax-mode "Mode de vérification syntaxique")
@@ -209,6 +218,28 @@
   (cs-mode-menu-show-client-obligations "Les obligations de contrat du client")
   (cs-mode-menu-show-syntax "Catégories syntaxiques")
   
+  ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
+  (online-expansion-running "Vérification syntaxique en cours")
+  (online-expansion-only-raw-text-files-supported "Seul les fichiers texte purs sont supportés")
+  (online-expansion-abnormal-termination "Terminaison anormale de la vérification syntaxique")
+  (online-expansion-finished-successfully "Vérification syntaxique terminée correctement")
+
+  (jump-to-error "Aller à l'erreur")
+  (online-expansion-is-disabled "Vérification syntaxique supprimée")
+  ;; these next two show up in the bar along the bottom of the drracket window
+  (online-expansion-pending "Vérification syntaxique en cours...")
+  (online-expansion-finished "Vérification syntaxique terminée") ;; note: there may still be errors in this case
+  
+  ;; the online expansion preferences pane
+  (online-expansion "Vérification syntaxique en ligne") ;; title of prefs pane
+  ; the different kinds of errors
+  (online-expansion-show-read-errors-as "Montrer les erreurs syntaxiques") ; erreurs structurelles, erreurs provenants de "read"?
+  (online-expansion-show-variable-errors-as "Montrer les identificateurs libres")
+  (online-expansion-show-other-errors-as "Montrer les autres erreurs")
+  ; locations the errors can be shown
+  (online-expansion-error-in-corner "dans le coin de la fenêtre")
+  (online-expansion-error-gold-highlight "par surlignage doré")
+  (online-expansion-error-margin "dans la marge")
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
   (read-only "Lecture seulement")
@@ -216,6 +247,7 @@
   (overwrite "Écrasement") ; vs Insertion ? surimpression ?
   (running "en cours")
   (not-running "en attente") ; "en attente" ; pause ?
+  
   
   ;;; misc
   (welcome-to-something "Bienvenue dans ~a.")
@@ -299,6 +331,7 @@
   
   ;; Help Desk
   (help "Aide")
+  (racket-documentation "Documentation Racket")
   (help-desk "Aide")
   (plt:hd:search "Chercher")
   (plt:hd:feeling-lucky "D'humeur chanceuse")
@@ -420,10 +453,18 @@
   (error-saving-preferences "Erreur durant la sauvegarde des préférences : ~a.")
   (error-saving-preferences-title "Erreur durant la sauvegarde des préférences")
   (steal-the-lock-and-retry "Casser le verrou et réessayer") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes). 
+
   (error-reading-preferences "Erreur durant la lecture des préférences.")
+  (error-reading-preferences-explanation "Le fichier de préférences est verrouillé, ce qui empêche la lecture de la préférence ~a") ;; ~a is filled with the name of the preference (a symbol)
+  (dont-ask-again-until-drracket-restarted "Ne pas redemander (jusqu'à ce que DrRacket soit redémarré)")
+  ; difference between the above and below is one comes with a question (steal the lock or not) and the other with just a notation saying "the file is locked"
+  (dont-notify-again-until-drracket-restarted "Ne pas renotifier (jusqu'à ce que DrRacket soit redémarré)") 
   (prefs-file-locked "Le fichier de préférences est verrouillé (car le fichier ~a existe), donc vos préférences n'ont pu être sauvegardées.  Annuler le changement des préférences ?")
   (try-again "Essayer à nouveau") ;; button label
+  (give-up-and-use-the-default "Abandonner et utiliser la valeur par défaut") ;; button label
+  
   (prefs-file-still-locked "Le fichier de préférences est toujours verrouillé (car le fichier ~a existe), donc vos changements ne vont pas être sauvegardés.")
+  (prefs-file-locked-nothing-doing "Le fichier de préférences est verrouillé (via ~s), donc vos changements de préférences ne peuvent être sauvegardés.") ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
   (scheme-prefs-panel-label "Racket")
   (warnings-prefs-panel-label "Avertissements")
   (editor-prefs-panel-label "Edition")
@@ -455,12 +496,13 @@
   (switch-to-module-language-automatically "Automatiquement utiliser le langage \"module\" lors de l'ouverture d'un fichier contenant un module")
   (interactions-beside-definitions "Mettre la fenêtre d'interaction à côté de la fenêtre de définition") ;; in preferences, below the checkbox one line above this one
   (show-line-numbers "Montrer les numéros de lignes")
-  (show-line-numbers/menu "Montrer les numéros de lignes")  ;; just like the above, but capitalized for appearance in a menu item
-  (hide-line-numbers/menu "Cacher les numéros de lignes")
+  (show-line-numbers/menu "Montrer les &numéros de lignes")  ;; just like the above, but capitalized for appearance in a menu item
+  (hide-line-numbers/menu "Cacher les &numéros de lignes")
+  (show-line-numbers-in-definitions "Numéros de ligne dans la fenêtre de définition") ;; shows up in the popup menu item in the bottom of the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
   (limit-interactions-size "Limiter la taille de la fenêtre d'interaction")
   (background-color "Couleur d'arrière-plan")
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
-  (choose-a-background-color "Sélectionnez une couleur d'avant-plan")
+  (choose-a-background-color "Sélectionnez une couleur d'arrière-plan")
   (revert-to-defaults "Retour aux valeurs par défaut")
   (undo-changes "Fermer sans rien changer") ;; used in the preferences dialog to undo preference changes
 
@@ -648,7 +690,8 @@
   (page-setup-menu-item "Paramètres d'impression...")
 
   (close-info "Fermer ce fichier.")
-  (close-menu-item "Fermer")
+  (close-menu-item "&Fermer")
+  (close-window-menu-item "&Fermer la fenêtre")
   
   (quit-info "Fermer toutes les fenêtres.")
   (quit-menu-item-windows "&Quitter")
@@ -704,6 +747,8 @@
   
   (overwrite-mode "Mode d'écrasement")
   (enable-overwrite-mode-keybindings "Raccourci clavier pour le mode d'écrasement")
+  
+  (enable-automatic-parens "Parenthèses automatiques") ; should "and square brackets and quotes" appear here?
   
   (preferences-info "Configurer vos préférences.")
   (preferences-menu-item "Préférences...")
@@ -765,6 +810,11 @@
   (clear-current "Effacer celle-ci")
   (new-window "Nouvelle fenêtre")
   
+  ;; popup menu when right-clicking in the gap between
+  ;; the definitions and interactions window
+  (change-to-vertical-alignment "Passer à la verticale")
+  (change-to-horizontal-alignment "Passer à l'horizontale")
+
   ;;; exiting and quitting ``are you sure'' dialog
   ;;; exit is used on windows, quit on macos, in English. Other
   ;;; languages probably use the same word on both platforms.
@@ -856,6 +906,8 @@
   (definitions-menu-item-help-string "Cacher/montrer la fenêtre de définition")
   (show-interactions-menu-item-label "Montrer les &interactions")
   (hide-interactions-menu-item-label "Cacher les &interactions")
+  (use-horizontal-layout "Disposition horizontale")
+  (use-vertical-layout "Disposition verticale")
   (interactions-menu-item-help-string "Montrer/cacher la fenêtre d'interaction")
   (toolbar "Barre d'outils")
   (toolbar-on-top "Barre d'outils en haut")
@@ -881,6 +933,7 @@
   ;;; edit menu
   (split-menu-item-label "Di&viser")
   (collapse-menu-item-label "&Rassembler")
+  (find-longest-line "Trouver la ligne la plus longue")
   
   ;;; language menu
   (language-menu-name "&Langage")
@@ -901,6 +954,8 @@
   (limit-memory-megabytes "megaoctets")
   (clear-error-highlight-menu-item-label "Effacer le surlignage d'erreur")
   (clear-error-highlight-item-help-string "Efface le surlignage rose après une erreur")
+  (jump-to-next-error-highlight-menu-item-label "Aller à l'erreur suivante")
+  (jump-to-prev-error-highlight-menu-item-label "Aller à l'erreur précédente")
   (reindent-menu-item-label "&Réindenter")
   (reindent-all-menu-item-label "Réindenter &tout")
   (semicolon-comment-out-menu-item-label "&Commenter à l'aide de points-virgules")
@@ -1144,8 +1199,11 @@
   
   ;; test coverage
   (test-coverage-clear? "Modifier le contenu de la fenêtre de définition invalide l'information de couverture de vos tests. Voulez-vous continuer ?")
-  (test-coverage-clear-and-do-not-ask-again "Oui, et ne me demandez pas à nouveau")
+  (test-coverage-clear-and-do-not-ask-again "Oui, et ne me redemandez pas")
   (test-coverage-ask? "Demander à propos de l'invalidation de l'information de couverture des tests ?")
+  
+  (test-coverage-on "Tests couverts")
+  (test-coverage-off "Tests non couverts")
   
   ;; tracing
   (tracing-enable-tracing "Traçage")
@@ -1165,6 +1223,10 @@
   (exited-successfully "Évaluation terminée avec succès.")
   (exited-with-error-code "Évaluation terminée avec le code d'erreur ~a.") ;; ~a is filled in with a number between 1 and 255
   (program-ran-out-of-memory "Le programme est à cours de mémoire.")
+  
+  (show-evaluation-terminated-dialog "Montrer le dialogue ‘évaluation terminée’")
+  (evaluation-terminated-ask "Montrer ce dialogue la prochaine fois")
+  
   (last-stack-frame "Montrer le dernier appel de fonction sur la pile.")
   (last-stack-frames "Montrer les derniers ~a appels de fonction sur la pile.")
   (next-stack-frames "Montrer les ~a appels de fonction suivants sur la pile.")
@@ -1212,6 +1274,8 @@
   (module-browser-open-file-format "Ouvrir ~a")
   (module-browser "Navigateur de modules") ;; frame title
   (module-browser... "Navigateur de &modules...") ;; menu item title
+  (module-browser-in-file "Navigateur de m&odules pour ~a") ;; menu item title; ~a is filled with a filename
+  (module-browser-no-file "Navigateur de modules pour ce fichier") ;; menu item title for above menu item; used when there is no saved file
   (module-browser-error-expanding "Erreur durant l'expansion du programme :\n\n~a")
   (module-browser-show-lib-paths "Montrer les fichiers chargés à l'aide de chemins de fichiers du type (lib ..)")
   (module-browser-progress "Navigateur de modules : ~a") ;; prefix in the status line
@@ -1219,6 +1283,7 @@
   (module-browser-show-lib-paths/short "(require (lib ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-show-planet-paths/short "(require (planet ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Rafraîchir") ;; button label in show module browser pane in drscheme window.
+  (module-browser-highlight "Chercher") ;; used to search in the graph; the label on a text-field% object
   (module-browser-only-in-plt-and-module-langs
    "Le navigateur de modules n'est disponible que pour les programmes qui contiennent des modules.")
   (module-browser-name-length "Noms")
@@ -1581,4 +1646,6 @@
   (normalize-string-preference "Normaliser les chaînes de caractères durant le collage")
   (ask-about-normalizing-strings "Demander à propos de la normalisation des chaînes de caractères")
 
+  (always-use-platform-specific-linefeed-convention "Toujours utiliser la convention spécifique au système d'exploitation pour les fins de lignes")
+  
   ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
