@@ -89,15 +89,25 @@ Misc
   - can get some tx data from ODBC...
   - on the other hand, not supposed to do tx-SQL in ODBC anyway, so low-priority
 
-- postgresql query path optimizations
-  - once all types have binary readers...
-  - can eliminate prepare step when args given (use unnamed statement)
-  - then, can remember what SQL in unnamed statement, avoid re-parse
+- make implementation notes section of docs
+  - explain cursor impl (& rationale)
+  - explain nested tx impl
+  - ...
 
-- mysql, sqlite3, odbc query path optimization
-  - can do something similar, but messier because no unnamed statement
-  - might make close-on-exec? obsolete
-  - add sql field to pstmt%, add sql=>pstmt hash in connection (update on pstmt finalize)
-    - use as stmt cache, avoid re-prepare
-    - sql field would be good for eventually implementing cursors, too
-  - PROBLEM: if schema changes, may invalidate pstmt, change types, etc
+- better query path: IMMEDIATE STATEMENTS vs PREPARED STATEMENT CACHE
+  - IMMEDIATE STATEMENTS
+    In pg terms, pipeline Parse and Bind (ie, 1 round-trip instead of 2).
+    Can do immediate query with args using typeids of parameters
+    - problem: results in worse error messages
+    - problem: error invalidates tx (in pg)
+    - problem: same problem exists even with no args: arity errors
+    - benefit: I like the code cleanup.
+  - PREPARED STATEMENT CACHE
+    Add sql=>pstmt cache in collection.
+    - schema can change without warning, invalidate pst type information
+      - mitigation: only cache w/in tx (but is isolation level sufficient?)
+        and clear cache on any tx rollback or potential ddl stmt
+    - problem: (cached) prepare and query not done atomically (two lock entries)
+      so a statement can be invalidated between cache retrieval and execution
+
+- support logging

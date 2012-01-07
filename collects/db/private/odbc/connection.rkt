@@ -18,6 +18,10 @@
 
 ;; == Connection
 
+;; ODBC connections do not use statement-cache%
+;;  - safety depends on sql dialect
+;;  - transaction interactions more complicated
+
 (define connection%
   (class* transactions% (connection<%>)
     (init-private db
@@ -27,7 +31,6 @@
     (init strict-parameter-types?)
 
     (define statement-table (make-hasheq))
-    (define lock (make-semaphore 1))
 
     (define use-describe-param?
       (and strict-parameter-types?

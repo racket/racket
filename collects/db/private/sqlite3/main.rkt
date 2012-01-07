@@ -11,6 +11,7 @@
                          #:mode [mode 'read/write]
                          #:busy-retry-delay [busy-retry-delay 0.1]
                          #:busy-retry-limit [busy-retry-limit 10]
+                         #:debug? [debug? #f]
                          #:use-place [use-place #f])
   (let ([path
          (case path
@@ -40,10 +41,13 @@
                                               ((create)
                                                (+ SQLITE_OPEN_READWRITE SQLITE_OPEN_CREATE))))])
                (handle-status* 'sqlite3-connect open-status db)
-               (new connection%
-                    (db db)
-                    (busy-retry-limit busy-retry-limit)
-                    (busy-retry-delay busy-retry-delay))))])))
+               (let ([c
+                      (new connection%
+                           (db db)
+                           (busy-retry-limit busy-retry-limit)
+                           (busy-retry-delay busy-retry-delay))])
+                 (when debug? (send c debug #t))
+                 c)))])))
 
 (define sqlite-place-proxy%
   (class place-proxy-connection%

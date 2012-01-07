@@ -69,7 +69,8 @@
        (#:mode (or/c 'read-only 'read/write 'create)
         #:busy-retry-limit (or/c exact-nonnegative-integer? +inf.0)
         #:busy-retry-delay (and/c rational? (not/c negative?))
-        #:use-place boolean?)
+        #:use-place boolean?
+        #:debug? any/c)
        connection?)]
 
  ;; Duplicates contracts at odbc.rkt

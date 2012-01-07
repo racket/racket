@@ -288,9 +288,15 @@
 
 (define (call-with-transaction c proc #:isolation [isolation #f])
   (send c start-transaction '|call-with-transaction (start)| isolation #t)
-  (with-handlers ([(lambda (e) #t)
+  (with-handlers ([exn?
                    (lambda (e)
-                     (send c end-transaction '|call-with-transaction (rollback)| 'rollback #t)
+                     (with-handlers ([exn?
+                                      (lambda (e2)
+                                        (error 'call-with-transaction
+                                               "error during rollback: ~a\ncaused by underlying error: ~a"
+                                               (exn-message e2)
+                                               (exn-message e)))])
+                       (send c end-transaction '|call-with-transaction (rollback)| 'rollback #t))
                      (raise e))])
     (begin0 (call-with-continuation-barrier proc)
       (send c end-transaction '|call-with-transaction (commit)| 'commit #t))))

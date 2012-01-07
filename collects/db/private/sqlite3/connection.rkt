@@ -14,7 +14,7 @@
 ;; == Connection
 
 (define connection%
-  (class* transactions% (connection<%>)
+  (class* statement-cache% (connection<%>)
     (init db)
     (init-private busy-retry-limit
                   busy-retry-delay)
@@ -28,7 +28,11 @@
              get-tx-status
              set-tx-status!
              check-valid-tx-status
-             check-statement/tx)
+             check-statement/tx
+             dprintf
+             prepare1
+             check/invalidate-cache)
+    (inherit-field DEBUG?)
 
     (define/override (call-with-lock fsym proc)
       (call-with-lock* fsym (lambda () (set! saved-tx-status (get-tx-status)) (proc)) #f #t))
@@ -51,7 +55,13 @@
              [params (statement-binding-params stmt)])
         (when check-tx? (check-statement/tx fsym (send pst get-stmt-type)))
         (let ([db (get-db fsym)]
+              [delenda (check/invalidate-cache stmt)]
               [stmt (send pst get-handle)])
+          (when DEBUG?
+            (dprintf "  >> query statement #x~x with ~e\n" (cast stmt _pointer _uintptr) params))
+          (when delenda
+            (for ([pst (in-hash-values delenda)])
+              (send pst finalize #f)))
           (HANDLE fsym (sqlite3_reset stmt))
           (HANDLE fsym (sqlite3_clear_bindings stmt))
           (for ([i (in-naturals 1)]
@@ -149,14 +159,11 @@
                                           fsym "unknown column type: ~e" type)]))))
                  vec)])))
 
-    (define/public (prepare fsym stmt close-on-exec?)
-      (call-with-lock fsym
-        (lambda ()
-          (check-valid-tx-status fsym)
-          (prepare1 fsym stmt close-on-exec?))))
+    (define/override (classify-stmt sql) (classify-sl-sql sql))
 
-    (define/private (prepare1 fsym sql close-on-exec?)
+    (define/override (prepare1* fsym sql close-on-exec? stmt-type)
       ;; no time between sqlite3_prepare and table entry
+      (dprintf "  >> prepare ~e~a\n" sql (if close-on-exec? " close-on-exec" ""))
       (let*-values ([(db) (get-db fsym)]
                     [(prep-status stmt)
                      (HANDLE fsym
@@ -166,6 +173,8 @@
                           (when stmt (sqlite3_finalize stmt))
                           (uerror fsym "multiple SQL statements given: ~e" sql))
                         (values prep-status stmt)))])
+        (when DEBUG?
+          (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
         (unless stmt (uerror fsym "SQL syntax error in ~e" sql))
         (let* ([param-typeids
                 (for/list ([i (in-range (sqlite3_bind_parameter_count stmt))])
@@ -178,7 +187,8 @@
                          (close-on-exec? close-on-exec?)
                          (param-typeids param-typeids)
                          (result-dvecs result-dvecs)
-                         (stmt-type (classify-sl-sql sql))
+                         (stmt-type stmt-type)
+                         (stmt sql)
                          (owner this))])
           (hash-set! statement-table pst #t)
           pst)))

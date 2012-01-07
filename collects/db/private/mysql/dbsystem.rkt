@@ -61,6 +61,7 @@
 ;; We care about:
 ;;  - determining whether commands must be prepared (to use binary data)
 ;;    see http://dev.mysql.com/doc/refman/5.0/en/c-api-prepared-statements.html
+;;  - determining what statements are safe for the statement cache
 ;;  - detecting commands that affect transaction status (maybe implicitly)
 ;;    see http://dev.mysql.com/doc/refman/5.0/en/implicit-commit.html
 
@@ -70,6 +71,11 @@
    '(;; Must be prepared
      ("SELECT"            select)
      ("SHOW"              show)
+
+     ;; Do not invalidate statement cache
+     ("INSERT"            insert)
+     ("DELETE"            delete)
+     ("UPDATE"            update)
 
      ;; Explicit transaction commands
      ("ROLLBACK WORK TO"  rollback-savepoint)

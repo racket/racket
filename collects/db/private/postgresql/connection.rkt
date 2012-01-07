@@ -23,7 +23,7 @@
     start-connection-protocol))  ;; string string string/#f -> void
 
 (define connection-base%
-  (class* transactions% (connection<%> connector<%>)
+  (class* statement-cache% (connection<%> connector<%>)
     (init-private notice-handler
                   notification-handler
                   allow-cleartext-password?)
@@ -38,7 +38,10 @@
              set-tx-status!
              check-valid-tx-status
              check-statement/tx
-             tx-state->string)
+             tx-state->string
+             dprintf
+             prepare1
+             check/invalidate-cache)
 
     (super-new)
 
@@ -49,16 +52,6 @@
 
     ;; ========================================
 
-    ;; == Debugging
-
-    ;; Debugging
-    (define DEBUG? #f)
-
-    (define/public (debug debug?)
-      (set! DEBUG? debug?))
-
-    ;; ========================================
-
     ;; == Communication
     ;; (Must be called with lock acquired.)
 
@@ -66,8 +59,7 @@
     (define/private (raw-recv)
       (with-disconnect-on-error
        (let ([r (parse-server-message inport)])
-         (when DEBUG?
-           (fprintf (current-error-port) "  << ~s\n" r))
+         (dprintf "  << ~s\n" r)
          r)))
 
     ;; recv-message : symbol -> message
@@ -90,8 +82,7 @@
 
     ;; buffer-message : message -> void
     (define/private (buffer-message msg)
-      (when DEBUG?
-        (fprintf (current-error-port) "  >> ~s\n" msg))
+      (dprintf "  >> ~s\n" msg)
       (with-disconnect-on-error
        (write-message msg outport)))
 
@@ -144,8 +135,7 @@
     ;; disconnect* : boolean -> void
     (define/private (disconnect* no-lock-held?)
       (define (go politely?)
-        (when DEBUG?
-          (fprintf (current-error-port) "  ** Disconnecting\n"))
+        (dprintf "  ** Disconnecting\n")
         (let ([outport* outport]
               [inport* inport])
           (when outport*
@@ -259,12 +249,11 @@
 
     (define/private (query1 fsym stmt close-on-exec? cursor?)
       ;; if stmt is string, must take no params & results must be binary-readable
-      (let ([portal (query1:enqueue stmt close-on-exec? cursor?)])
+      (let* ([delenda (check/invalidate-cache stmt)]
+             [portal (query1:enqueue delenda stmt close-on-exec? cursor?)])
         (send-message (make-Sync))
-        (begin0 (query1:collect fsym stmt portal (string? stmt) close-on-exec? cursor?)
-          (check-ready-for-query fsym #f)
-          (when DEBUG?
-            (fprintf (current-error-port) "  ** ~a\n" (tx-state->string))))))
+        (begin0 (query1:collect fsym delenda stmt portal (string? stmt) close-on-exec? cursor?)
+          (check-ready-for-query fsym #f))))
 
     ;; check-statement : symbol statement -> statement-binding
     ;; Convert to statement-binding; need to prepare to get type information, used to
@@ -281,12 +270,18 @@
                (send pst bind fsym null))]))
 
     ;; query1:enqueue : Statement boolean boolean -> string
-    (define/private (query1:enqueue stmt close-on-exec? cursor?)
+    (define/private (query1:enqueue delenda stmt close-on-exec? cursor?)
+      (when delenda
+        (for ([(_sql pst) (in-hash delenda)])
+          (buffer-message (make-Close 'statement (send pst get-handle)))
+          (send pst set-handle #f)))
       (let ([portal (if cursor? (generate-name) "")])
         (cond [(statement-binding? stmt)
                (let* ([pst (statement-binding-pst stmt)]
                       [pst-name (send pst get-handle)]
                       [params (statement-binding-params stmt)])
+                 (unless pst-name
+                   (error/internal 'query1:enqueue "statement was deleted: ~s" (send pst get-stmt)))
                  (buffer-message (make-Bind portal pst-name
                                             (map typeid->format (send pst get-param-typeids))
                                             params
@@ -304,7 +299,12 @@
               (send pst set-handle #f))))
         portal))
 
-    (define/private (query1:collect fsym stmt portal simple? close-on-exec? cursor?)
+    (define/private (query1:collect fsym delenda stmt portal simple? close-on-exec? cursor?)
+      (when delenda
+        (for ([(_sql _pst) (in-hash delenda)])
+          (match (recv-message fsym)
+            [(struct CloseComplete ()) (void)]
+            [other-r (query1:error fsym other-r)])))
       (when simple?
         (match (recv-message fsym)
           [(struct ParseComplete ()) (void)]
@@ -423,25 +423,21 @@
 
     ;; == Prepare
 
-    (define/public (prepare fsym stmt close-on-exec?)
-      (call-with-lock fsym
-        (lambda ()
-          (check-valid-tx-status fsym)
-          (prepare1 fsym stmt close-on-exec?))))
+    (define/override (classify-stmt sql) (classify-pg-sql sql))
 
-    (define/private (prepare1 fsym stmt close-on-exec?)
+    (define/override (prepare1* fsym stmt close-on-exec? stmt-type)
       ;; name generation within exchange: synchronized
       (let ([name (generate-name)])
         (prepare1:enqueue name stmt)
         (send-message (make-Sync))
-        (begin0 (prepare1:collect fsym name close-on-exec? (classify-pg-sql stmt))
+        (begin0 (prepare1:collect fsym stmt name close-on-exec? stmt-type)
           (check-ready-for-query fsym #f))))
 
     (define/private (prepare1:enqueue name stmt)
       (buffer-message (make-Parse name stmt null))
       (buffer-message (make-Describe 'statement name)))
 
-    (define/private (prepare1:collect fsym name close-on-exec? stmt-type)
+    (define/private (prepare1:collect fsym stmt name close-on-exec? stmt-type)
       (match (recv-message fsym)
         [(struct ParseComplete ()) (void)]
         [other-r (prepare1:error fsym other-r)])
@@ -452,6 +448,7 @@
              (close-on-exec? close-on-exec?)
              (param-typeids param-typeids)
              (result-dvecs field-dvecs)
+             (stmt stmt)
              (stmt-type stmt-type)
              (owner this))))
 

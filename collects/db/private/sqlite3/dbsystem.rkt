@@ -45,7 +45,13 @@
 ;; classify-sl-sql : string [nat] -> symbol/#f
 (define classify-sl-sql
   (make-sql-classifier
-   '(;; Explicit transaction commands
+   '(;; Statements that do not invalidate the statement cache
+     ("SELECT" select)
+     ("INSERT" insert)
+     ("UPDATE" update)
+     ("DELETE" delete)
+
+     ;; Explicit transaction commands
      ("ROLLBACK TRANSACTION TO"  rollback-savepoint)
      ("ROLLBACK TO"       rollback-savepoint)
      ("RELEASE"           release-savepoint)

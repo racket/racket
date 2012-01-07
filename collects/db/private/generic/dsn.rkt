@@ -195,7 +195,8 @@ considered important.
 
 (define sqlite3-data-source
   (mk-specialized 'sqlite3-data-source 'sqlite3 0
-                  '(#:database #:mode #:busy-retry-limit #:busy-retry-delay #:use-place)))
+                  '(#:database #:mode #:busy-retry-limit #:busy-retry-delay
+                    #:use-place #:debug?)))
 
 (define odbc-data-source
   (mk-specialized 'odbc-data-source 'odbc 0

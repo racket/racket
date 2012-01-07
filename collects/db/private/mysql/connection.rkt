@@ -17,7 +17,7 @@
 ;; ========================================
 
 (define connection%
-  (class* transactions% (connection<%>)
+  (class* statement-cache% (connection<%>)
     (init-private notice-handler)
     (define inport #f)
     (define outport #f)
@@ -28,7 +28,10 @@
              check-valid-tx-status
              get-tx-status
              set-tx-status!
-             check-statement/tx)
+             check-statement/tx
+             dprintf
+             prepare1
+             check/invalidate-cache)
 
     (super-new)
 
@@ -36,15 +39,6 @@
     (define-syntax-rule (with-disconnect-on-error . body)
       (with-handlers ([exn:fail? (lambda (e) (disconnect* #f) (raise e))])
         . body))
-
-    ;; ========================================
-
-    ;; == Debugging
-
-    (define DEBUG? #f)
-
-    (define/public (debug debug?)
-      (set! DEBUG? debug?))
 
     ;; ========================================
 
@@ -63,8 +57,7 @@
 
     ;; buffer-message : message -> void
     (define/private (buffer-message msg)
-      (when DEBUG?
-        (fprintf (current-error-port) "  >> ~s\n" msg))
+      (dprintf "  >> ~s\n" msg)
       (with-disconnect-on-error
        (write-packet outport msg next-msg-num)
        (set! next-msg-num (add1 next-msg-num))))
@@ -94,8 +87,7 @@
         (error/comm fsym))
       (let-values ([(msg-num next) (parse-packet inport expectation field-dvecs)])
         (set! next-msg-num (add1 msg-num))
-        (when DEBUG?
-          (eprintf "  << ~s\n" next))
+        (dprintf "  << ~s\n" next)
         ;; Update transaction status (see Transactions below)
         (when (ok-packet? next)
           (set-tx-status! fsym (bitwise-bit-set? (ok-packet-server-status next) 0)))
@@ -144,8 +136,7 @@
 
     (define/private (disconnect* lock-not-held?)
       (define (go politely?)
-        (when DEBUG?
-          (eprintf "  ** Disconnecting\n"))
+        (dprintf "  ** Disconnecting\n")
         (let ([outport* outport]
               [inport* inport])
           (when outport
@@ -252,7 +243,6 @@
       (query 'mysql-connect "set names 'utf8'" #f)
       (void))
 
-
     ;; ========================================
 
     ;; == Query
@@ -279,6 +269,10 @@
 
     ;; query1 : symbol Statement -> QueryResult
     (define/private (query1 fsym stmt cursor? warnings?)
+      (let ([delenda (check/invalidate-cache stmt)])
+        ;; Don't do anything with delenda; too slow!
+        ;; (See comment in query method above.)
+        (void))
       (let ([wbox (and warnings? (box 0))])
         (fresh-exchange)
         (query1:enqueue stmt cursor?)
@@ -392,14 +386,9 @@
 
     ;; == Prepare
 
-    ;; prepare : symbol string boolean -> PreparedStatement
-    (define/public (prepare fsym stmt close-on-exec?)
-      (check-valid-tx-status fsym)
-      (call-with-lock fsym
-        (lambda ()
-          (prepare1 fsym stmt close-on-exec?))))
+    (define/override (classify-stmt sql) (classify-my-sql sql))
 
-    (define/private (prepare1 fsym stmt close-on-exec?)
+    (define/override (prepare1* fsym stmt close-on-exec? stmt-type)
       (fresh-exchange)
       (send-message (make-command-packet 'statement-prepare stmt))
       (let ([r (recv fsym 'prep-ok)])
@@ -415,7 +404,7 @@
                   (param-typeids (map field-dvec->typeid param-dvecs))
                   (result-dvecs field-dvecs)
                   (stmt stmt)
-                  (stmt-type (classify-my-sql stmt))
+                  (stmt-type stmt-type)
                   (owner this)))])))
 
     (define/private (prepare1:get-field-descriptions fsym)

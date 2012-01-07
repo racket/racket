@@ -5,7 +5,9 @@
          "interfaces.rkt")
 (provide define-type-table
          locking%
+         debugging%
          transactions%
+         statement-cache%
          isolation-symbol->string
          make-sql-classifier
          sql-skip-comments
@@ -165,8 +167,27 @@
 
 ;; ----------------------------------------
 
-(define transactions%
+(define debugging%
   (class locking%
+    (super-new)
+
+    (field [DEBUG? #f])
+
+    (define/public (debug debug?)
+      (set! DEBUG? debug?))
+
+    (define/public (dprintf fmt . args)
+      (when DEBUG? (apply fprintf (current-error-port) fmt args)))
+    
+    ))
+
+;; ----------------------------------------
+
+(define transactions%
+  (class debugging%
+    (inherit dprintf)
+    (inherit-field DEBUG?)
+
     #|
     A transaction created via SQL is "unmanaged".
     A transaction created via start-tx, call-with-tx is "managed".
@@ -202,6 +223,7 @@
       (super call-with-lock fsym
              (lambda ()
                (begin0 (proc)
+                 (when DEBUG? (dprintf "  ** ~a\n" (tx-state->string)))
                  (when (and (eq? tx-status #f) (not (null? tx-stack)))
                    (error/internal fsym "managed transaction unexpectedly closed"))))))
 
@@ -347,6 +369,97 @@
            (else (void))))))
 
     (super-new)))
+
+;; ----------------------------------------
+
+(define statement-cache%
+  (class transactions%
+    (init-field [cache-statements 'in-transaction])
+    (inherit call-with-lock
+             get-tx-status
+             check-valid-tx-status
+             dprintf)
+    (super-new)
+
+    ;; Statement Cache
+    ;; updated by prepare; potentially invalidated by query (via check/invalidate-cache)
+
+    (define pst-cache '#hash())
+
+    (define/public (get-cached-statement stmt)
+      (cond [(use-cache?)
+             (let ([cached-pst (hash-ref pst-cache stmt #f)])
+               (cond [cached-pst
+                      (dprintf "  ** using cached statement\n")
+                      cached-pst]
+                     [else
+                      (dprintf "  ** statement not in cache\n")
+                      #f]))]
+            [else
+             (dprintf "  ** not using statement cache\n")
+             #f]))
+
+    (define/public (safe-statement-type? stmt-type)
+      (memq stmt-type '(select insert update delete with)))
+
+    (define/public (cache-statement! pst)
+      (when (and (use-cache?) (safe-statement-type? (send pst get-stmt-type)))
+        (let ([sql (send pst get-stmt)])
+          (when sql
+            (dprintf "  ** caching statement\n")
+            (set! pst-cache (hash-set pst-cache sql pst))))))
+
+    (define/private (use-cache?)
+      (case cache-statements
+        ((always) #t)
+        ((never) #f)
+        ((in-transaction) (eq? (get-tx-status) #t))))
+
+    ;; check/invalidate-cache : statement/pst/symbol/#f -> hash/#f
+    ;; Returns old cache on invalidation, or #f if stmt is safe.
+    (define/public (check/invalidate-cache x)
+      #|
+      Sufficient to check on every query execution whether statement type is safe
+      (ie, SELECT, INSERT, etc). All statements sent as strings are considered
+      unsafe, because they're usually transactional SQL.
+      |#
+      (cond [(statement-binding? x)
+             (check/invalidate-cache (statement-binding-pst x))]
+            [(prepared-statement? x)
+             (check/invalidate-cache (send x get-stmt-type))]
+            [else
+             (cond [(safe-statement-type? x)
+                    #f]
+                   [else
+                    (dprintf "  ** invalidating statement cache\n")
+                    (begin0 pst-cache
+                      (set! pst-cache '#hash()))])]))
+
+    ;; Prepare
+
+    (define/public (prepare fsym stmt close-on-exec?)
+      (call-with-lock fsym
+        (lambda ()
+          (check-valid-tx-status fsym)
+          (prepare1 fsym stmt close-on-exec?))))
+
+    (define/public (prepare1 fsym stmt close-on-exec?)
+      (cond [close-on-exec?
+             (or (get-cached-statement stmt)
+                 (let* ([stmt-type (classify-stmt stmt)]
+                        [safe? (safe-statement-type? stmt-type)]
+                        [pst (prepare1* fsym stmt (if safe? #f close-on-exec?) stmt-type)])
+                   (when safe? (cache-statement! pst))
+                   pst))]
+            [else (prepare1* fsym stmt #f (classify-stmt stmt))]))
+
+    (define/public (prepare1* fsym stmt close-on-exec?)
+      (error/internal 'prepare1* "not implemented"))
+
+    (define/public (classify-stmt stmt)
+      (error/internal 'classify-stmt "not implemented"))
+
+    ))
 
 ;; ----------------------------------------
 
