@@ -1056,7 +1056,7 @@ MAIN_BUILD() {
   fi
 
   if is_yes make_bins; then
-    header "Creating archive"
+    header -s "Creating archive"
     _cd "$maindir"
     _rm "$repotgz"
     _cd "$maindir/$cleandir"
@@ -2186,9 +2186,11 @@ BUILD_PRE_WEB() {
     local target="$maindir/$prewebdir/$(basename "$statusscript")"
     {
       echo "#!/bin/bash"
-      local v
-      for v in tmpdir lockfile statusfile statusfile_last bglogfile; do
-        echo "$v=$(eval "\$$var")"
+      echo ""
+      local var
+      for var in tmpdir lockfile statusfile statusfile_last bglogfile; do
+        local val; eval val="\$$var"
+        echo "$var=\$$val"
       done
       echo ""
       cat "$PLTHOME/$statusscript"
