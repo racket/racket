@@ -952,7 +952,8 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     jitter->unbox_depth -= flonum_depth;
     if (!jitter->unbox && jitter->unbox_depth && rand)
       scheme_signal_error("internal error: broken unbox depth");
-    if (for_branch)
+    if (for_branch
+        || (arith == ARITH_INEX_EX)) /* has slow path */
       mz_rs_sync(); /* needed if arguments were unboxed */
 
     generate_double_arith(jitter, rator, arith, cmp, reversed, !!rand2, 0,
@@ -966,7 +967,6 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
     if ((arith == ARITH_INEX_EX) && (unsafe_fl < 1)) {
       /* need a slow path */
-      mz_rs_sync(); /* needed if arguments were unboxed */
       if (args_unboxed) {
         (void)jit_calli(sjc.box_flonum_from_reg_code);
       }
