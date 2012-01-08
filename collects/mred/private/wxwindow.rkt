@@ -143,7 +143,7 @@
 
   (define (make-window-glue% %)  ; implies make-glue%
     (class100 (make-glue% %) (mred proxy . args)
-      (inherit get-x get-y get-width get-height area-parent get-mred get-proxy skip-subwindow-events?)
+      (inherit get-x get-y get-width get-height area-parent get-mred get-proxy skip-subwindow-events? get-parent)
       (private-field
        [pre-wx->proxy (lambda (orig-w e k)
 			;; MacOS: w may not be something the user knows
@@ -214,10 +214,16 @@
                        (as-exit (lambda () (send mred on-move x y)))))))))))]
 	[on-set-focus (lambda () 
                         (super on-set-focus)
-                        (when expose-focus? (send (get-proxy) on-focus #t)))]
+                        (when expose-focus? 
+                          (let ([p (get-proxy)])
+                            (send p on-focus #t)
+                            (on-subwindow-focus p #t))))]
 	[on-kill-focus (lambda () 
                          (super on-kill-focus)
-                         (when expose-focus? (send (get-proxy) on-focus #f)))]
+                         (when expose-focus? 
+                           (let ([p (get-proxy)])
+                             (send p on-focus #f)
+                             (on-subwindow-focus p #f))))]
 	[pre-on-char (lambda (w e)
 		       (or (super pre-on-char w e)
                            (if (skip-subwindow-events?)
@@ -236,4 +242,11 @@
                                             (lambda (m e) 
                                               (as-exit (lambda () 
                                                          (send (get-proxy) on-subwindow-event m e))))))))])
+      (public
+        [on-subwindow-focus (lambda (win on?)
+                              (unless (or (is-a? this wx:frame%)
+                                          (is-a? this wx:dialog%))
+                                (send (get-parent) on-subwindow-focus win on?))
+                              (unless (skip-subwindow-events?)
+                                (send (get-proxy) on-subwindow-focus win on?)))])
       (sequence (apply super-init mred proxy args)))))

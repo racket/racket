@@ -338,9 +338,8 @@ Called when the window is moved. (For windows that are not top-level
 
 Does nothing.
 
-
-
 }}
+
 
 @defmethod[(on-size [width (integer-in 0 10000)]
                     [height (integer-in 0 10000)])
@@ -355,8 +354,6 @@ Called when the window is resized. The window's new size (in pixels)
 @methimpl{
 
 Does nothing.
-
-
 
 }}
 
@@ -427,6 +424,20 @@ If the @method[window<%> on-subwindow-event] method chain does not complete
 Returns @racket[#f].
 
 }}
+
+
+@defmethod[(on-subwindow-focus [receiver (is-a?/c window<%>)]
+                               [on? boolean?])
+           void?]{
+
+Called when this window or a child window receives or loses the keyboard focus.
+ This method is called after the @method[window<%> on-focus] method of @racket[receiver].
+ The
+@method[window<%> on-subwindow-focus] method of the receiver's top-level window is called first (see
+@method[area<%> get-top-level-window]), then the
+@method[window<%> on-subwindow-focus] method is called for the next child in the path to the receiver, and
+ so on.}
+
 
 @defmethod[(on-superwindow-enable [enabled? any/c])
            void?]{

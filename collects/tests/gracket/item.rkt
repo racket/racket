@@ -323,6 +323,8 @@
                [on-subwindow-char (lambda args 
                                     (or (apply pre-on args)
                                         (super on-subwindow-char . args)))]
+               [on-subwindow-focus (lambda (win on?)
+                                     (printf "focus ~s ~s\n" (send win get-label) on?))]
                [on-activate (lambda (on?) (printf "active: ~a\n" on?))]
                [on-move (lambda (x y) (printf "moved: ~a ~a\n" x y))]
                [on-size (lambda (x y) (printf "sized: ~a ~a\n" x y))])

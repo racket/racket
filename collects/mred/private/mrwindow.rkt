@@ -145,6 +145,7 @@
 				 (send m on-demand)
 				 (send wx popup-menu mwx x y)))))))]
 	[on-focus (lambda (x) (void))]
+        [on-subwindow-focus (lambda (win active?) (void))]
 	[on-size (lambda (w h)
 		   (check-range-integer '(method window<%> on-size) w)
 		   (check-range-integer '(method window<%> on-size) h))]
