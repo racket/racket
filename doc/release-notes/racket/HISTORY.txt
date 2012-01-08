@@ -1,6 +1,8 @@
 Version 5.2.0.7
 Intern strings, etc., only in read-syntax mode, not read mode
 racket/draw: add text-outline to dc-path%
+net/mime: allow any subtype in input; made exception structs a
+ subtype of exn:fail
 
 Version 5.2.0.6
 Added pseudo-random-generator-vector?

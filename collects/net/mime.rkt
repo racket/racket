@@ -34,7 +34,7 @@
  ;; -- exceptions raised --
  (struct-out mime-error)
  (struct-out unexpected-termination)
- (struct-out missing-multipart-boundary-parameter)
+ (struct-out missing-multipart-boundary-parameter) ; this is the only one actually raised
  (struct-out malformed-multipart-entity)
  (struct-out empty-mechanism)
  (struct-out empty-type)
@@ -77,6 +77,9 @@
     ("base64" . base64)))
 
 (define ietf-extensions '())
+
+;; We don't try to keep up with IANA substypes
+#;
 (define iana-extensions
   '(;; text
     ("plain" . plain)
@@ -140,9 +143,10 @@
   #:mutable)
 
 ;; Exceptions
-(define-struct mime-error ())
+(define-struct (mime-error exn:fail) ())
 (define-struct (unexpected-termination mime-error) (msg))
 (define-struct (missing-multipart-boundary-parameter mime-error) ())
+
 (define-struct (malformed-multipart-entity mime-error) (msg))
 (define-struct (empty-mechanism mime-error) ())
 (define-struct (empty-type mime-error) ())
@@ -238,7 +242,9 @@
        (let ([boundary (entity-boundary entity)])
          (when (not boundary)
            (when (eq? 'multipart (entity-type entity))
-             (raise (make-missing-multipart-boundary-parameter))))
+             (raise (make-missing-multipart-boundary-parameter
+                     "missing multipart \"boundary\" parameter"
+                     (current-continuation-marks)))))
          (set-entity-parts! entity
                             (map (lambda (part)
                                    (mime-analyze part #t))
@@ -615,9 +621,10 @@
 ;; iana-token := <A publicly-defined extension token. Tokens
 ;;               of this form must be registered with IANA
 ;;               as specified in RFC 2048.>
+;;              Instead of trying to list all registered types
+;;              here, we just convert to a symbol.
 (define (iana-token value)
-  (let ([ans (assoc (lowercase (trim-spaces value)) iana-extensions)])
-    (and ans (cdr ans))))
+  (string->symbol (lowercase (trim-spaces value))))
 
 ;; parameter := attribute "=" value
 (define re:parameter (regexp "([^=]+)=(.+)"))

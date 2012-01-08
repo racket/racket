@@ -36,11 +36,16 @@ The library was written by Francisco Solsona.}
 @section{Message Decoding}
 
 @defproc[(mime-analyze [message-in (or/c bytes? input-port)]
-                       [part? any/c])
+                       [part? any/c #f])
          message?]{
 
 Parses @racket[message-in] and returns the parsed result as a
-@racket[message] instance.}
+@racket[message] instance.
+
+If @racket[part?] is @racket[#f], then @racket[message-in] should
+start with the header for a full message; otherwise,
+@racket[message-in] should start with the header for a part within a
+message.}
 
 @defstruct[message ([version real?]
                     [entity entity]
@@ -61,16 +66,20 @@ field contains one string for each field in the message header.}
                    [other (listof string?)]
                    [fields (listof string?)]
                    [parts (listof message?)]
-                   [body (output-port? . -> . void?)])]{
+                   [body (or/c (output-port? . -> . void?) null?)])]{
 
-Represents the content of a message or a sub-part.
+Represents the content of a message or a sub-part. The
+@racket[mime-analyze] function chooses default values for fields
+when they are not specified in input.
 
 Standard values for the @racket[type] field include @racket['text],
 @racket['image], @racket['audio], @racket['video],
 @racket['application], @racket['message], and @racket['multipart].
 
 Standard values for the @racket[subtype] field depend on the
-@racket[type] field, and include the following:
+@racket[type] field, and include the following, but any
+@racket[subtype] is allowed as a downcased version of the
+specification from the header.
 
 @mime-table[
 (
@@ -150,11 +159,11 @@ messages. This list is non-empty only when @racket[type] is
 @racket['multipart] or @racket['message].
 
 The @racket[body] field represents the body as a function that
-consumes an output out and writes the decoded message to the port.  No
-bytes are written if @racket[type] is @racket['multipart] or
-@racket['message].  All of the standard values of @racket[encoding]
-are supported. The procedure only works once (since the encoded body
-is pulled from a stream).}
+consumes an output out and writes the decoded message to the port. If
+@racket[type] is @racket['multipart] or @racket['message]., then
+@racket[body] is @racket['()]. All of the standard values of
+@racket[encoding] are supported. The procedure only works once (since
+the encoded body is pulled from a stream).}
 
 @defstruct[disposition ([type symbol?]
                         [filename (or/c string? false/c)]
@@ -189,48 +198,43 @@ the @racket["Content-Disposition"] header, if included in the message.}
 
 @section[#:tag "mime-exns"]{Exceptions}
 
-@defstruct[mime-error ()]{
+@defstruct[(mime-error exn:fail) ()]{
 
-The supertype of all MIME exceptions.}
+The supertype of all MIME exceptions. Only the subtype
+@racket[missing-multipart-boundary-parameter] is ever actually
+raised.}
 
 @defstruct[(unexpected-termination mime-error) ([msg string?])]{
 
-Raised when an end-of-file is reached while parsing the headers of a
-MIME entity.  It usually means that the message does not conform
-to RFC 2045 and friends.}
+Originally raised when an end-of-file is reached while parsing the
+headers of a MIME entity, but currently a mere warning is logged.}
 
 @defstruct[(missing-multipart-boundary-parameter mime-error) ()]{
 
 Raised when a multipart type is specified, but no @racket["Boundary"]
-parameter is given or an end-of-file is encountered before the
-boundary.}
+parameter is given.}
 
 @defstruct[(malformed-multipart-entity mime-error) ([msg string?])]{
 
-Similar to @racket[unexpected-termination], but used only while
-scanning parts of a multipart message.}
+Never actually raised.}
 
 @defstruct[(empty-mechanism mime-error) ()]{
 
-Raised when no transport encoding mechanism was provided with the
-@racket["Content-Transfer-Encoding"] field.}
+Never actually raised.}
 
 @defstruct[(empty-type mime-error) ()]{
 
-Raised when no type is specified for @racket["Content-Type"], or when
-the specification is incorrectly formatted.}
+Never actually raised.}
 
 
 @defstruct[(empty-subtype mime-error) ()]{
 
-Raised when no sub-type is specified for @racket["Content-Type"], or
-when the specification is incorrectly formatted.}
+Never actually raised.}
 
 
 @defstruct[(empty-disposition-type mime-error) ()]{
 
-Raised when type specified for the @racket["Content-Disposition"]
-field, or when the specification is incorrectly formatted.}
+Never actually raised.}
 
 @; ----------------------------------------
 
