@@ -62,14 +62,15 @@
      "http://mirror.informatik.uni-tuebingen.de/mirror/racket/"
      "Marcus Crestani"
      "crestani@informatik.uni-tuebingen.de"]
-    ["Belgium (Infogroep, Vrije Universiteit Brussel)"
-     "ftp://infogroep.be/pub/racket/installers/"
-     "Infogroep"
-     "research@infogroep.be"]
     ["Turkey, Istanbul (Bilgi University)"
      "http://russell.cs.bilgi.edu.tr/racket-installers/"
      "Onur Gungor"
      "onurgu@cs.bilgi.edu.tr"]
+    #; ; Unreliable, timeouts very frequently
+    ["Belgium (Infogroep, Vrije Universiteit Brussel)"
+     "ftp://infogroep.be/pub/racket/installers/"
+     "Infogroep"
+     "research@infogroep.be"]
     #;
     ["Austria (Vienna University of Technology)"
      "http://gd.tuwien.ac.at/languages/scheme/plt/"
