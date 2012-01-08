@@ -11,6 +11,9 @@
 
   . DrRacket no longer shows a stacktrace for syntax errors in the REPL.
 
+  . The keybindings window is no longer a modal dialog (and its contents
+    will change to reflect where the keyboard focus currently is)
+
   . The preference that makes a single "(" keystroke insert "()" (and
     similarly for [ { " and |) now only takes effect in Racket mode,
     instead of taking effect in all of the modes, as it used to. This

@@ -26,6 +26,14 @@
   (define basics-mixin
     (mixin (frame:standard-menus<%>) (drracket:frame:basics<%>)
       
+      (define/override (on-subwindow-focus win on?)
+        (when the-keybindings-frame
+          (when on? 
+            (send the-keybindings-frame set-bindings
+                  (if (can-show-keybindings?)
+                      (get-keybindings-to-show)
+                      '())))))
+      
       (define/override (on-subwindow-char receiver event)
         (let ([user-key? (send (keymap:get-user) 
                                handle-key-event
@@ -109,6 +117,7 @@
            ht
            (λ (x y) (hash-set! res x y)))
           res))
+      
       (define/private (can-show-keybindings?)
         (let ([edit-object (get-edit-target-object)])
           (and edit-object
@@ -116,22 +125,24 @@
                (let ([keymap (send edit-object get-keymap)])
                  (is-a? keymap keymap:aug-keymap<%>)))))
       
+      ;; pre: (can-show-keybindings?) = #t
+      (define/private (get-keybindings-to-show)
+        (define edit-object (get-edit-target-object))
+        (define keymap (send edit-object get-keymap))
+        (define menu-names (get-menu-bindings))
+        (define table (send keymap get-map-function-table))
+        (define bindings (hash-map table list))
+        (define w/menus 
+          (append (hash-map menu-names list)
+                  (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
+                          bindings)))
+        (sort
+         w/menus
+         (λ (x y) (string-ci<=? (cadr x) (cadr y)))))
+      
       (define/private (show-keybindings)
         (if (can-show-keybindings?)
-            (let* ([edit-object (get-edit-target-object)]
-                   [keymap (send edit-object get-keymap)]
-                   [menu-names (get-menu-bindings)]
-                   [table (send keymap get-map-function-table)]
-                   [bindings (hash-map table list)]
-                   [w/menus 
-                    (append (hash-map menu-names list)
-                            (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
-                                    bindings))]
-                   [structured-list
-                    (sort
-                     w/menus
-                     (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
-              (show-keybindings-to-user structured-list this))
+            (show-keybindings-to-user (get-keybindings-to-show) this)
             (bell)))
       
       (define/private (bound-by-menu? binding menu-table)
@@ -526,8 +537,8 @@
                          (λ ()
                            (delete-file tmp-filename)))))))
   
-  (define keybindings-dialog%
-    (class dialog%
+  (define keybindings-frame%
+    (class frame%
       (init-field bindings)
       
       (define/override (on-size w h)
@@ -594,13 +605,17 @@
       (send bp2 set-alignment 'right 'center)
       (update-bindings)))
 
+  (define the-keybindings-frame #f)
+  
   (define (show-keybindings-to-user bindings frame)
-    (send (new keybindings-dialog% 
-               [label (string-constant keybindings-frame-title)]
-               [width (car (preferences:get 'drracket:keybindings-window-size))]
-               [height (cdr (preferences:get 'drracket:keybindings-window-size))]
-               [bindings bindings])
-          show #t))
+    (unless the-keybindings-frame
+      (set! the-keybindings-frame
+            (new keybindings-frame% 
+                 [label (string-constant keybindings-frame-title)]
+                 [width (car (preferences:get 'drracket:keybindings-window-size))]
+                 [height (cdr (preferences:get 'drracket:keybindings-window-size))]
+                 [bindings bindings])))
+    (send the-keybindings-frame show #t))
   
   (define -mixin
     (mixin (frame:editor<%> frame:text-info<%> drracket:frame:basics<%>) (drracket:frame:<%>)
