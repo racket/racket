@@ -261,26 +261,27 @@ Indicates whether the window currently has the keyboard focus. See
 
 }
 
+
 @defmethod[(is-enabled?)
            boolean?]{
 
-Returns @racket[#t] if the window is enabled when all of its ancestors
- are enabled, @racket[#f] otherwise.
-
-}
+Indicates whether the window is currently enabled or not. The result is
+ @racket[#t] if this window is enabled when its ancestors are enabled, or
+ @racket[#f] if this window remains disable when its ancestors are
+ enabled. (That is, the result of this method is affected only by calls
+ to @method[window<%> enable] for @this-obj[], not by the enable state of
+ parent windows.)}
 
 
 @defmethod[(is-shown?)
            boolean?]{
 
-Indicates whether the window is currently shown or not (when
- all of its ancestors are also shown).
-
-The result is @racket[#t] if this window is shown when its ancestors are
- shown, or @racket[#f] if this window remains hidden when its ancestors
- are shown.
-
-}
+Indicates whether the window is currently shown or not. The result is
+ @racket[#t] if this window is shown when its ancestors are shown, or
+ @racket[#f] if this window remains hidden when its ancestors are
+ shown. (That is, the result of this method is affected only by calls
+ to @method[window<%> show] for @this-obj[], not by the visibility of
+ parent windows.)}
 
 
 @defmethod[(on-drop-file [pathname path?])
@@ -430,17 +431,27 @@ Returns @racket[#f].
                                [on? boolean?])
            void?]{
 
+@methspec{
+
 Called when this window or a child window receives or loses the keyboard focus.
  This method is called after the @method[window<%> on-focus] method of @racket[receiver].
  The
 @method[window<%> on-subwindow-focus] method of the receiver's top-level window is called first (see
 @method[area<%> get-top-level-window]), then the
 @method[window<%> on-subwindow-focus] method is called for the next child in the path to the receiver, and
- so on.}
+ so on.
 
+}
+@methimpl{
+
+Does nothing.
+
+}}
 
 @defmethod[(on-superwindow-enable [enabled? any/c])
            void?]{
+
+@methspec{
 
 Called via the event queue whenever the enable state of a window has
  changed, either through a call to the window's
@@ -462,9 +473,15 @@ If the enable state of a window's ancestor changes while the window is
  enable event is immediately queued.
 
 }
+@methimpl{
 
+Does nothing.
+
+}}
 @defmethod[(on-superwindow-show [shown? any/c])
            void?]{
+
+@methspec{
 
 Called via the event queue whenever the visibility of a window has
  changed, either through a call to the window's
@@ -481,6 +498,11 @@ This method is not called when the window is initially created; it is
  dispatched, then the dispatch is canceled.
 
 }
+@methimpl{
+
+Does nothing.
+
+}}
 
 @defmethod[(popup-menu [menu (is-a?/c popup-menu%)]
                        [x (integer-in 0 10000)]
