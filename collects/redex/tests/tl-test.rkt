@@ -1,7 +1,7 @@
 #lang racket
   (require "../reduction-semantics.rkt"
            "test-util.rkt"
-           (only-in "../private/matcher.rkt" make-bindings make-bind)
+           (only-in "../private/matcher.rkt" make-bindings make-bind the-not-hole)
            racket/match
            racket/trace
            "../private/struct.rkt")
@@ -313,7 +313,7 @@
       L 
       (in-hole (cross e) e)
       (term (cont (1 hole))))
-     (((e (cont (1 hole))))
+     (((e (cont (1 ,the-not-hole))))
       ((e 1)))))
   (let ()
     (define-language L
@@ -338,10 +338,10 @@
       (in-hole (cross e) e)
       (term ((cont ((λ (x) x) hole)) (λ (y) y))))
      (((e x))
-      ((e ((cont ((λ (x) x) hole)) (λ (y) y))))
+      ((e ((cont ((λ (x) x) ,the-not-hole)) (λ (y) y))))
       ((e y))
       ((e (λ (y) y)))
-      ((e (cont ((λ (x) x) hole)))))))
+      ((e (cont ((λ (x) x) ,the-not-hole)))))))
   
   ;; test caching
   (let ()

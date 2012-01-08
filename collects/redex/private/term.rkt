@@ -22,7 +22,7 @@
     [(_ (a b ...) e) (syntax (with-syntax (a) (with-syntax* (b ...) e)))]))
 
 (define-syntax-rule (term t)
-  (#%expression (strip-nt-match (term/private t))))
+  (#%expression (term/private t)))
 
 (define-syntax (term/private orig-stx)
   (define outer-bindings '())

@@ -662,45 +662,6 @@ See match-a-pattern.rkt for more details
                               (not (for/or ([name (in-list names)])
                                      (pair? name))))))
 
-;; name-to-key/binding : hash[symbol -o> key-wrap]
-(define name-to-key/binding (make-hasheq))
-(define-struct key-wrap (sym) #:inspector (make-inspector))
-
-(define-struct nt-match (exp nt clang-ht) #:transparent)
-(define-syntax (nt-match/try-again stx)
-  (syntax-case stx ()
-    [(_ (λ (exp hole-info) body ...))
-     (with-syntax ([(try-again) (generate-temporaries (list (string->symbol 
-                                                             (format "try-again:~a.~a"
-                                                                     (syntax-line stx)
-                                                                     (syntax-column stx)))))])
-       #'(letrec ([try-again (λ (exp hole-info)
-                               (if (nt-match? exp)
-                                   (try-again (nt-match-exp exp) hole-info)
-                                   (begin body ...)))])
-           try-again))]))
-(define-syntax (nt-match/try-again1 stx)
-  (syntax-case stx ()
-    [(_ (λ (exp) body ...))
-     (with-syntax ([(try-again) (generate-temporaries (list (string->symbol 
-                                                             (format "try-again:~a.~a"
-                                                                     (syntax-line stx)
-                                                                     (syntax-column stx)))))])
-       #'(letrec ([try-again (λ (exp)
-                               (if (nt-match? exp)
-                                   (try-again (nt-match-exp exp))
-                                   (begin body ...)))])
-           try-again))]))
-
-
-(define (strip-nt-match exp)
-  (let loop ([exp exp])
-    (cond
-      [(pair? exp) (cons (loop (car exp))
-                         (loop (cdr exp)))]
-      [(nt-match? exp) (loop (nt-match-exp exp))]
-      [else exp])))
-
 ;; compile-pattern/cross? : compiled-lang pattern boolean -> (values compiled-pattern boolean)
 (define (compile-pattern/cross? clang pattern bind-names?)
   (define clang-ht (compiled-lang-ht clang))
@@ -778,35 +739,15 @@ See match-a-pattern.rkt for more details
        (define has-hole? (hash-ref has-hole-or-hide-hole-ht nt))
        (values
         (if has-hole?
-            (letrec ([try-again
-                      (λ (exp hole-info)
-                        (cond
-                          [(nt-match? exp)
-                           (if (and (eq? nt (nt-match-nt exp))
-                                    (eq? clang-ht (nt-match-clang-ht exp))
-                                    (not hole-info))
-                               (list 
-                                (make-mtch empty-bindings exp none))
-                               (try-again (nt-match-exp exp) hole-info))]
-                          [else
-                           (match-nt (hash-ref clang-list-ht nt)
-                                     (hash-ref clang-ht nt)
-                                     nt exp hole-info (and #f in-name?) clang-ht)]))])
-              try-again)
-            (letrec ([try-again
-                      (λ (exp)
-                        (cond
-                          [(nt-match? exp)
-                           (if (and (eq? nt (nt-match-nt exp))
-                                    (eq? clang-ht (nt-match-clang-ht exp)))
-                               #t
-                               (try-again (nt-match-exp exp)))]
-                          [else
-                           (match-nt/boolean
-                            (hash-ref clang-list-ht nt)
-                            (hash-ref clang-ht nt)
-                            nt exp)]))])
-              try-again))
+            (λ (exp hole-info)
+              (match-nt (hash-ref clang-list-ht nt)
+                        (hash-ref clang-ht nt)
+                        nt exp hole-info))
+            (λ (exp)
+              (match-nt/boolean
+               (hash-ref clang-list-ht nt)
+               (hash-ref clang-ht nt)
+               nt exp)))
         has-hole?
         #f
         '())]
@@ -865,20 +806,18 @@ See match-a-pattern.rkt for more details
        (values
         (cond
           [(or has-hole? has-hide-hole? (not (null? names)))
-           (nt-match/try-again
-            (lambda (exp hole-info)
-              (let ([matches (match-pat exp #f)])
-                (and matches
-                     (map (λ (match) (make-mtch (mtch-bindings match) (hole->not-hole (mtch-context match)) none))
-                          matches)))))]
+           (lambda (exp hole-info)
+             (let ([matches (match-pat exp #f)])
+               (and matches
+                    (map (λ (match) (make-mtch (mtch-bindings match) (hole->not-hole (mtch-context match)) none))
+                         matches))))]
           [else
-           (nt-match/try-again
-            (lambda (exp hole-info)
-              (let ([matches (match-pat exp)])
-                (and matches
-                     (list (make-mtch empty-bindings
-                                      (hole->not-hole exp)
-                                      none))))))])
+           (lambda (exp hole-info)
+             (let ([matches (match-pat exp)])
+               (and matches
+                    (list (make-mtch empty-bindings
+                                     (hole->not-hole exp)
+                                     none)))))])
         #f
         #t
         names)]
@@ -886,19 +825,17 @@ See match-a-pattern.rkt for more details
        (define-values (match-pat has-hole? has-hide-hole? names) (compile-pattern/default-cache pat))
        (values
         (if (or has-hole? has-hide-hole? (not (null? names)))
-            (nt-match/try-again
-             (λ (exp hole-info)
-               (let ([matches (match-pat exp hole-info)])
-                 (and matches
-                      (let ([filtered (filter (λ (m) (condition (mtch-bindings m))) 
-                                              (filter-multiples matches))])
-                        (if (null? filtered)
-                            #f
-                            filtered))))))
-            (nt-match/try-again1
-             (λ (exp)
-               (and (match-pat exp)
-                    (condition empty-bindings)))))
+            (λ (exp hole-info)
+              (let ([matches (match-pat exp hole-info)])
+                (and matches
+                     (let ([filtered (filter (λ (m) (condition (mtch-bindings m))) 
+                                             (filter-multiples matches))])
+                       (if (null? filtered)
+                           #f
+                           filtered)))))
+            (λ (exp)
+              (and (match-pat exp)
+                   (condition empty-bindings))))
         has-hole?
         has-hide-hole?
         names)]
@@ -908,11 +845,10 @@ See match-a-pattern.rkt for more details
        (cond
          [(hash-maps? across-ht id)
           (values
-           (nt-match/try-again
-            (λ (exp hole-info)
-              (match-nt (hash-ref across-list-ht id)
-                        (hash-ref across-ht id)
-                        id exp hole-info #f clang-ht)))
+           (λ (exp hole-info)
+             (match-nt (hash-ref across-list-ht id)
+                       (hash-ref across-ht id)
+                       id exp hole-info))
            #t
            #f
            '())]
@@ -947,32 +883,29 @@ See match-a-pattern.rkt for more details
        (values
         (cond
           [(not (or any-has-hole? any-has-hide-hole? (not (null? names))))
-           (nt-match/try-again1
-            (λ (exp)
-              (cond
-                [(list? exp) (match-list/boolean rewritten exp)]
-                [else #f])))]
+           (λ (exp)
+             (cond
+               [(list? exp) (match-list/boolean rewritten exp)]
+               [else #f]))]
           [(= 0 repeats)
-           (nt-match/try-again
-            (λ (exp hole-info)
-              (cond
-                [(list? exp)
-                 ;; shortcircuit: if the list isn't the right length, give up immediately.
-                 (if (= (length exp) non-repeats)
-                     (match-list/no-repeats rewritten/coerced exp hole-info)
-                     #f)]
-                [else #f])))]
+           (λ (exp hole-info)
+             (cond
+               [(list? exp)
+                ;; shortcircuit: if the list isn't the right length, give up immediately.
+                (if (= (length exp) non-repeats)
+                    (match-list/no-repeats rewritten/coerced exp hole-info)
+                    #f)]
+               [else #f]))]
           [else
-           (nt-match/try-again
-            (λ (exp hole-info)
-              (cond
-                [(list? exp)
-                 ;; shortcircuit: if the list doesn't have the right number of
-                 ;; fixed parts, give up immediately
-                 (if (>= (length exp) non-repeats)
-                     (match-list rewritten/coerced exp hole-info)
-                     #f)]
-                [else #f])))])
+           (λ (exp hole-info)
+             (cond
+               [(list? exp)
+                ;; shortcircuit: if the list doesn't have the right number of
+                ;; fixed parts, give up immediately
+                (if (>= (length exp) non-repeats)
+                    (match-list rewritten/coerced exp hole-info)
+                    #f)]
+               [else #f]))])
         any-has-hole?
         any-has-hide-hole?
         names)]
@@ -995,8 +928,7 @@ See match-a-pattern.rkt for more details
   ;; simple-match : (any -> bool) -> (values <compiled-pattern> boolean boolean)
   ;; does a match based on a built-in Scheme predicate
   (define (simple-match pred)
-    (values (nt-match/try-again1 
-             (lambda (exp) (pred exp)))
+    (values (lambda (exp) (pred exp))
             #f
             #f
             '()))
@@ -1018,19 +950,18 @@ See match-a-pattern.rkt for more details
 
 ;; match-named-pat : symbol <compiled-pattern> -> <compiled-pattern>
 (define (match-named-pat name match-pat mismatch-bind?)
-  (nt-match/try-again
-   (λ (exp hole-info)
-     (let ([matches (match-pat exp hole-info)])
-       (and matches 
-            (map (lambda (match)
-                   (make-mtch
-                    (make-bindings (cons (if mismatch-bind?
-                                             (make-mismatch-bind name (mtch-context match))
-                                             (make-bind name (mtch-context match)))
-                                         (bindings-table (mtch-bindings match))))
-                    (mtch-context match)
-                    (mtch-hole match)))
-                 matches))))))
+  (λ (exp hole-info)
+    (let ([matches (match-pat exp hole-info)])
+      (and matches 
+           (map (lambda (match)
+                  (make-mtch
+                   (make-bindings (cons (if mismatch-bind?
+                                            (make-mismatch-bind name (mtch-context match))
+                                            (make-bind name (mtch-context match)))
+                                        (bindings-table (mtch-bindings match))))
+                   (mtch-context match)
+                   (mtch-hole match)))
+                matches)))))
 
 ;; has-underscore? : symbol -> boolean
 (define (has-underscore? sym)
@@ -1323,20 +1254,18 @@ See match-a-pattern.rkt for more details
 
 ;; match-hole : compiled-pattern
 (define match-hole
-  (nt-match/try-again
-   (λ (exp hole-info)
-     (if hole-info
-         (list (make-mtch empty-bindings
-                          the-hole
-                          exp))
-         (and (hole? exp)
-              (list (make-mtch empty-bindings
-                               the-hole
-                               none)))))))
+  (λ (exp hole-info)
+    (if hole-info
+        (list (make-mtch empty-bindings
+                         the-hole
+                         exp))
+        (and (hole? exp)
+             (list (make-mtch empty-bindings
+                              the-hole
+                              none))))))
 
 ;; match-in-hole : sexp sexp sexp compiled-pattern compiled-pattern -> compiled-pattern
 (define (match-in-hole context contractum exp match-context match-contractum)
-  (nt-match/try-again
    (λ (exp old-hole-info)
      (let ([mtches (match-context exp #t)])
        (and mtches
@@ -1369,24 +1298,23 @@ See match-a-pattern.rkt for more details
                                                  (mtch-context contractum-mtch))
                                                 (mtch-hole contractum-mtch))
                                      acc)))]))
-                       (loop (cdr mtches) acc)))])))))))
+                       (loop (cdr mtches) acc)))]))))))
 
 (define (match-in-hole/contractum-boolean context contractum exp match-context match-contractum)
-  (nt-match/try-again1
-   (λ (exp)
-     (let ([mtches (match-context exp #t)])
-       (and mtches
-            (let loop ([mtches mtches])
-              (cond
-                [(null? mtches) #f]
-                [else 
-                 (let* ([mtch (car mtches)]
-                        [hole-exp (mtch-hole mtch)]
-                        [contractum-mtches (match-contractum hole-exp)])
-                   (when (eq? none hole-exp)
-                     (error 'matcher.rkt "found no hole when matching a decomposition"))
-                   (or contractum-mtches
-                       (loop (cdr mtches))))])))))))
+  (λ (exp)
+    (let ([mtches (match-context exp #t)])
+      (and mtches
+           (let loop ([mtches mtches])
+             (cond
+               [(null? mtches) #f]
+               [else 
+                (let* ([mtch (car mtches)]
+                       [hole-exp (mtch-hole mtch)]
+                       [contractum-mtches (match-contractum hole-exp)])
+                  (when (eq? none hole-exp)
+                    (error 'matcher.rkt "found no hole when matching a decomposition"))
+                  (or contractum-mtches
+                      (loop (cdr mtches))))]))))))
 
 ;; match-list/boolean : (listof (union repeat (any hole-info -> boolean))) sexp hole-info -> boolean
 (define (match-list/boolean patterns exp)
@@ -1660,9 +1588,9 @@ See match-a-pattern.rkt for more details
             (mtch-hole match))))
        matches))
 
-;; match-nt : (listof compiled-rhs) (listof compiled-rhs) sym exp hole-info boolean clang
+;; match-nt : (listof compiled-rhs) (listof compiled-rhs) sym exp hole-info
 ;;        -> (union #f (listof bindings))
-(define (match-nt list-rhs non-list-rhs nt term hole-info use-nt-match? clang-ht)
+(define (match-nt list-rhs non-list-rhs nt term hole-info)
   (if hole-info
       
       (let loop ([rhss (if (or (null? term) (pair? term))
@@ -1675,7 +1603,7 @@ See match-a-pattern.rkt for more details
                #f
                ans)]
           [else
-           (let ([mth (call-nt-proc/bindings (car rhss) term hole-info #f #f #f)])
+           (let ([mth (call-nt-proc/bindings (car rhss) term hole-info)])
              (cond
                [mth
                 (loop (cdr rhss) (append mth ans))]
@@ -1690,7 +1618,7 @@ See match-a-pattern.rkt for more details
         (cond
           [(null? rhss) #f]
           [else
-           (or (call-nt-proc/bindings (car rhss) term hole-info use-nt-match? nt clang-ht)
+           (or (call-nt-proc/bindings (car rhss) term hole-info)
                (loop (cdr rhss)))]))))
 
 (define (match-nt/boolean list-rhs non-list-rhs nt term)
@@ -1706,9 +1634,9 @@ See match-a-pattern.rkt for more details
 (define (call-nt-proc/bool nt-proc exp)
   (if (procedure-arity-includes? nt-proc 1)
       (nt-proc exp)
-      (and (remove-bindings/filter (nt-proc exp #f) #f #f #f) #t)))
+      (and (remove-bindings/filter (nt-proc exp #f)) #t)))
 
-(define (call-nt-proc/bindings compiled-pattern exp hole-info use-nt-match? nt clang-ht)
+(define (call-nt-proc/bindings compiled-pattern exp hole-info)
   (define nt-proc (compiled-pattern-cp compiled-pattern))
   (define skip-dup? (compiled-pattern-skip-dup-check? compiled-pattern))
   (define has-names? (compiled-pattern-binds-names? compiled-pattern))
@@ -1725,26 +1653,22 @@ See match-a-pattern.rkt for more details
           (if has-names?
               (map (λ (match)
                      (make-mtch empty-bindings
-                                (if use-nt-match?
-                                    (make-nt-match (mtch-context match) nt clang-ht)
-                                    (mtch-context match))
+                                (mtch-context match)
                                 (mtch-hole match)))
                    res)
               res))]
     [else
-     (remove-bindings/filter (nt-proc exp hole-info) use-nt-match? nt clang-ht)]))
+     (remove-bindings/filter (nt-proc exp hole-info))]))
 
 ;; remove-bindings/filter : (union #f (listof mtch)) -> (union #f (listof mtch))
-(define (remove-bindings/filter matches use-nt-match? nt clang-ht)
+(define (remove-bindings/filter matches)
   (and matches
        (let ([filtered (filter-multiples matches)])
          ;(printf ">> ~s\n=> ~s\n\n" matches filtered)
          (and (not (null? filtered))
               (map (λ (match)
                      (make-mtch empty-bindings
-                                (if use-nt-match?
-                                    (make-nt-match (mtch-context match) nt clang-ht)
-                                    (mtch-context match))
+                                (mtch-context match)
                                 (mtch-hole match)))
                    matches)))))
 
@@ -1996,5 +1920,4 @@ See match-a-pattern.rkt for more details
          the-not-hole the-hole hole?
          rewrite-ellipses
          build-compatible-context-language
-         caching-enabled?
-         strip-nt-match)
+         caching-enabled?)

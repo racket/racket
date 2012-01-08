@@ -415,7 +415,6 @@
     (test-empty '(hide-hole a) 'b #f)
     (test-empty '(hide-hole a) 'a (list (make-test-mtch (make-bindings '()) 'a none)))
     (test-empty '(hide-hole a) '(block-in-hole a) #f)
-    (eprintf "skipping test ~s\n" '(test-empty '(in-hole (list x (hide-hole hole)) 1) '(x 1) #f))
     (test-empty '(in-hole (list x hole) 1) '(x 1) (list (make-test-mtch (make-bindings '()) '(x 1) none)))
     (test-empty '(in-hole (list hole (hide-hole hole)) junk)
                 '(junk junk2)
