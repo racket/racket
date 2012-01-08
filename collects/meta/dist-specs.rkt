@@ -1,13 +1,5 @@
 #lang reader meta/spec-reader
 
-#|
-Note: TEMP-ICONS-FIX marks a few spots where things that normally
-belong to the "plt" (largest) distribution have been temporarily
-changed to the "dr" distribution so the nightly builds can
-proceed. The dist-spec changes should be undone when the underlying
-problem is fixed.
-|#
-
 ;; -*- scheme -*-
 
 ;; ============================================================================
@@ -596,11 +588,11 @@ plt-extras :+= (package: "lazy")
 ;; -------------------- combinator-parser
 plt-extras :+= (collects: "combinator-parser")
 
-;; -------------------- icons
+;; -------------------- icons, images
 dr-extras :+= (collects: "icons/*.{jpg|png|gif|bmp|xbm|xpm}")
+dr-extras :+= (package: "images/")
 
-;; TEMP-ICONS-FIX: was plt-extras
-dr-extras :+= (package: "icons/")
+plt-extras :+= (package: "icons/")
 
 ;; -------------------- string
 dr-extras :+= (package: "string-constants")
@@ -636,8 +628,7 @@ plt-extras :+= (- (+ (package: "games/" #:executable "plt-games")
                   "paint-by-numbers/{hattori|solution-sets|raw-problems}")
 
 ;; -------------------- texpict & slideshow
-;; TEMP-ICONS-FIX: was plt-extras
-dr-extras :+= (collects: "texpict/") 
+plt-extras :+= (collects: "texpict/") 
                (package: "slideshow")
 
 ;; -------------------- frtime
