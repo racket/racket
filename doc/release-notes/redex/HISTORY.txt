@@ -5,7 +5,11 @@ v5.2.1
     time, and various other internal cleanups).
 
   * improved the way caching works so it uses about 1/5th memory and
-    speeds up the R6RS test suite by a factor of 2.
+    speeds up the R6RS test suite by about a factor of 2.
+
+  * added a number of optimizations to the pattern matcher that
+    speed up the R6RS test suite by 50% or so and speed up a
+    lambdaJS benchmark by about a factor of 25.
 
   * added support for side-conditions and where clauses to
     define-relation
