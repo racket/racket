@@ -60,7 +60,7 @@
   (test (normalize-lw (to-lw ()))
         (build-lw (list (build-lw "(" 0 0 0 1)
                         (build-lw ")" 0 0 1 1))
-                           0 0 0 2))
+                  0 0 0 2))
   
   (test (normalize-lw (to-lw "x"))
         (build-lw "“x”" 0 0 0 3))

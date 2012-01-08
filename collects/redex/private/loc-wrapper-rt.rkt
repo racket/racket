@@ -1,15 +1,22 @@
-#lang scheme/base
+#lang racket/base
 
 ;; this is the runtime code for loc-wrapper-ct.rkt.
 ;; it isn't really its own module, but separated
 ;; out in order to get the phases right.
 (provide (all-defined-out))
 
-(require mzlib/etc
+(require racket/match
          "term.rkt")
 
 (define (init-loc-wrapper e line column quoted?)
-  (make-lw e line #f column #f (not quoted?) #f))
+  (if quoted?
+      (make-lw e line #f column #f #f #f)
+      (make-lw e line #f column #f #t #f)))
+
+(define (init-loc-wrapper/unquoted e line column)
+  (init-loc-wrapper e line column #f))
+(define (init-loc-wrapper/quoted e line column)
+  (init-loc-wrapper e line column #t))
 
 ;; lw = (union 'spring loc-wrapper)
 
@@ -32,6 +39,48 @@
                      "”")
       s))
 
+(define (add-spans/interp-lws arg)
+  (add-spans
+   (let loop ([arg arg])
+     (match arg
+       [(vector 'init-loc-wrapper/quoted e line column)
+        (init-loc-wrapper/quoted (loop e) (loop line) (loop column))]
+       [(vector 'init-loc-wrapper/unquoted e line column)
+        (init-loc-wrapper/unquoted (loop e) (loop line) (loop column))]
+       [(vector 'make-lw e line line-span column column-span unq? metafunction?)
+        (make-lw (loop e) (loop line) (loop line-span) (loop column) 
+                 (loop column-span) (loop unq?) (loop metafunction?))]
+       [(vector 'rewrite-quotes arg)
+        (rewrite-quotes (loop arg))]
+       [(vector 'list x ...)
+        (map loop x)]
+       [(vector (and (or 'init-loc-wrapper-sequence/quoted
+                         'init-loc-wrapper-sequence/unquoted)
+                     kwd)
+                open line col args ...)
+        (define quoted? (eq? 'init-loc-wrapper-sequence/quoted kwd))
+        (define l-line (loop line))
+        (define l-col (loop col))
+        (init-loc-wrapper 
+         (cons (init-loc-wrapper open l-line l-col quoted?)
+               (append (map loop args)
+                       (list (init-loc-wrapper (open->close open) #f #f quoted?))))
+         l-line l-col quoted?)]
+       [`(quote ,x) x]
+       [(? number?) arg]
+       [(? boolean?) arg]
+       [(? string?) arg]
+       [(? symbol?) arg]
+       [else
+        (error 'add-spans/interp-lws "unk ~s" arg)]))))
+
+(define (open->close open)
+  (cond
+    [(equal? open "(") ")"]
+    [(equal? open "[") "]"]
+    [(equal? open "{") "}"]
+    [(equal? open #f) #f]
+    [else (error 'open->close "unk ~s" open)]))
 
 (define (add-spans lw)
   (define line-seen-so-far 0)
@@ -92,5 +141,4 @@
     [a a]
     [b b]
     [else 0]))
-
 
