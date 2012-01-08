@@ -2190,7 +2190,7 @@ BUILD_PRE_WEB() {
       local var
       for var in tmpdir lockfile statusfile statusfile_last bglogfile; do
         local val; eval val="\$$var"
-        echo "$var=\$$val"
+        echo "$var=\"$val\""
       done
       echo ""
       cat "$PLTHOME/$statusscript"
