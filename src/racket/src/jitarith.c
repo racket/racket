@@ -966,6 +966,7 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
     if ((arith == ARITH_INEX_EX) && (unsafe_fl < 1)) {
       /* need a slow path */
+      mz_rs_sync(); /* needed if arguments were unboxed */
       if (args_unboxed) {
         (void)jit_calli(sjc.box_flonum_from_reg_code);
       }
