@@ -7,7 +7,8 @@ printf 'Content-type: text/plain\r\n\r\n'
 # cache status reports (avoids excessive work during builds)
 
 # use a lockfile as a cheap hack to time cache refreshing
-if ! lockfile -r 0 -l 5 -s 0 "$cachelock" && [[ -e "$cache" ]]; then
+if ! lockfile -r 0 -l 5 -s 0 "$cachelock" >& /dev/null \
+   && [[ -e "$cache" ]]; then
   cat "$cache"; exit
 fi
 
@@ -21,21 +22,27 @@ if [[ -e "$statusfile_last" ]]; then S1="Y"; else S1="N"; fi
 if [[ "$L$S" = "NY" ]]; then
   printf 'Last build crashed abnormally.\n'
 elif [[ "$S" = "Y" ]]; then
-  printf 'Running: '; cat "$statusfile"
   time_for_file() {
     local t="$(($(date +"%s") - $(stat -c "%Z" "$1")))"
     printf "%d:%02d:%02d" "$((t/3600))" "$(((t%3600)/60))" "$((t%60))"
   }
-  printf "The build has been running for %s, current step for %s\n" \
-         "$(time_for_file "$lockfile")" "$(time_for_file "$statusfile")"
+  printf 'A build is running (%s)\n' "$(time_for_file "$lockfile")"
+  printf 'Status: %s (%s)\n' "$(cat "$statusfile")" \
+                             "$(time_for_file "$statusfile")"
   shopt -s nullglob
   if [[ "x$(echo "$bglogfile"*)" != "x" ]]; then
     printf '\n%s build jobs running:\n' "$(ls "$bglogfile"* | wc -l)"
     for bg in "$bglogfile"*; do
-      printf '  %s: ' "${bg#$bglogfile-}"
       s="$(grep "^### <<< .* >>>" "$bg" | tail -1 \
            | sed -e 's/^### <<< \(.*\) >>>/\1/')"
-      if [[ "x$s" = "x" ]]; then echo "(just starting)"; else echo "$s"; fi
+      if [[ "x$s" = "x" ]]; then
+        printf '  %s: (just starting)\n' "${bg#$bglogfile-}"
+      else
+        s="${bg#$bglogfile-}: $s"
+        s="$(echo "$s" \
+           | sed -e 's/^\(.*\): \(.*\) \[\1(\(.*\))\]$/\3(\1): \2/')"
+        echo "  $s"
+      fi
     done
   fi
 else
