@@ -101,13 +101,8 @@
 (define lowercase string-downcase)
 
 (define warning
-  void
-  #;
   (lambda (msg . args)
-    (fprintf (current-error-port)
-             (apply format (cons msg args)))
-    (newline (current-error-port)))
-  )
+    (log-warning (apply format (cons msg args)))))
 
 ;; Copies its input `in' to its ouput port if given, it uses
 ;; current-output-port if out is not provided.
