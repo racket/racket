@@ -945,7 +945,7 @@
     (run-test
      line
      `(rewrite-ellipses ',pats (lambda (x) (values x #f #f)))
-     (let-values ([(compiled-pattern has-hole? has-name?) (rewrite-ellipses pats (lambda (x) (values x #f #f)))])
+     (let-values ([(compiled-pattern has-hole? has-hide-hole? names) (rewrite-ellipses pats (lambda (x) (values x #f #f '())))])
        compiled-pattern)
      expected))
   

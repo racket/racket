@@ -290,14 +290,13 @@
   (define-syntax (test-match stx)
     (syntax-case stx ()
       [(_ actual (((var val) ...) ...))
-       #`(test (equal?
-                (apply
-                 set
-                 (for/list ([match actual])
+       (syntax/loc stx
+         (test (apply
+                set
+                (for/list ([match actual])
                   (for/list ([bind (match-bindings match)])
                     (list (bind-name bind) (bind-exp bind)))))
-                (apply set (list (list (list 'var (term val)) ...) ...)))
-               #,(syntax/loc stx #t))]))
+               (apply set (list (list (list 'var (term val)) ...) ...))))]))
   
   ;; cross
   (let ()
@@ -1362,7 +1361,7 @@
                         (length (term (number_0 ...)))
                         (length (term (number_0* ...)))))))
          '(9 7))
-        '(("(0, 0)" (9 9)) ("(0, 1)" (9 7)) ("(1, 0)" (7 9)) ("(1, 1)" (7 7))))
+        '(("(1, 1)" (7 7)) ("(1, 0)" (7 9)) ("(0, 1)" (9 7)) ("(0, 0)" (9 9))))
   
   (test (apply-reduction-relation/tag-with-names
          (reduction-relation grammar (--> 1 2 (computed-name 3))) 1)
@@ -2422,7 +2421,7 @@
                                      (term number_1))])
                  '(1 2 3))
                 x))
-        '((3 2 1) . 3))
+        '((1 2 3) . 3))
   
   (test ((term-match empty-language
                      [number_1
@@ -2515,7 +2514,7 @@
             (where (y ... w z ...) (x ...)))))
     
     (test (apply-reduction-relation red (term (a b c)))
-          (list (term (b c)) (term (a c)) (term (a b)))))
+          (list (term (a b)) (term (a c)) (term (b c)))))
   
   
   (let ([r (reduction-relation
