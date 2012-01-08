@@ -58,6 +58,21 @@
          (send k chain-to-keymap k1 #t)
          (hash-map (send k get-map-function-table) list)))))
   
+  (test
+   'keymap:aug-keymap%/get-table/normalize-case
+   (lambda (x)
+     (equal? x '((|esc;p| "abc-k2"))))
+   (lambda ()
+     (queue-sexp-to-mred
+      '(let ([k (make-object keymap:aug-keymap%)]
+             [k1 (make-object keymap:aug-keymap%)])
+         (send k1 add-function "abc-k1" void)
+         (send k1 map-function "esc;p" "abc-k1")
+         (send k add-function "abc-k2" void)
+         (send k map-function "ESC;p" "abc-k2")
+         (send k chain-to-keymap k1 #t)
+         (hash-map (send k get-map-function-table) list)))))
+  
   (define (test-canonicalize name str1 str2)
     (test
      (string->symbol (format "keymap:canonicalize-keybinding-string/~a" name))
@@ -79,6 +94,7 @@
   (test-canonicalize 10 ":d:a" "~a:~c:d:~m:~s:a")
   (test-canonicalize 11 "esc;s:a" "esc;s:a")
   (test-canonicalize 12 "s:a;esc" "s:a;esc")
+  (test-canonicalize 13 "ESC;p" "esc;p")
   
   
   ;; a key-spec is (make-key-spec buff-spec buff-spec (listof ?) (listof ?) (listof ?))

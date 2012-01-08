@@ -150,18 +150,15 @@
         (get-map-function-table/ht (make-hasheq)))
       
       (define/public (get-map-function-table/ht table)
-        (hash-for-each
-         function-table
-         (λ (keyname fname)
-           (unless (hash-ref table keyname (λ () #f))
-             (let ([cs (canonicalize-keybinding-string (format "~a" keyname))])
-               (when (on-this-platform? cs)
-                 (hash-set! table keyname fname))))))
-        (for-each
-         (λ (chained-keymap)
-           (when (is-a? chained-keymap aug-keymap<%>)
-             (send chained-keymap get-map-function-table/ht table)))
-         chained-keymaps)
+        (for ([(keyname fname) (in-hash function-table)])
+          (define cs (canonicalize-keybinding-string (format "~a" keyname)))
+          (define key (string->symbol cs))
+          (unless (hash-ref table key #f)
+            (when (on-this-platform? cs)
+              (hash-set! table key fname))))
+        (for ([chained-keymap (in-list chained-keymaps)])
+          (when (is-a? chained-keymap aug-keymap<%>)
+            (send chained-keymap get-map-function-table/ht table)))
         table)
       
       (define/private (on-this-platform? cs)
