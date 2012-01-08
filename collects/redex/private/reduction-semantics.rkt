@@ -6,6 +6,7 @@
          "fresh.rkt"
          "loc-wrapper.rkt"
          "error.rkt"
+         (for-syntax "cycle-check.rkt")
          racket/trace
          racket/contract
          racket/list
@@ -2369,7 +2370,7 @@
          (let ([non-terms (parse-non-terminals #'nt-defs stx)])
            (with-syntax ([((names prods ...) ...) non-terms]
                          [(all-names ...) (apply append (map car non-terms))])
-             (syntax/loc stx
+             (quasisyntax/loc stx
                (begin
                  (define-syntax lang-name
                    (make-set!-transformer
@@ -2383,10 +2384,12 @@
                           (identifier? #'x)
                           #'define-language-name]))
                      '(all-names ...))))
-                 (define define-language-name (language form-name lang-name (all-names ...) (names prods ...) ...))))))))]))
+                 (define define-language-name
+                   #,(syntax/loc stx (language form-name lang-name (all-names ...) (names prods ...) ...)))))))))]))
 
 (define-struct binds (source binds))
 
+  
 (define-syntax (language stx)
   (syntax-case stx ()
     [(_ form-name lang-id (all-names ...) (name rhs ...) ...)
@@ -2420,6 +2423,7 @@
                               (append (loop (car stx))
                                       (loop (cdr stx)))]
                              [else '()]))])
+            (check-for-cycles stx #'(name ...) #'((r-rhs ...) ...))
             (with-syntax ([(the-stx ...) (cdr (syntax-e stx))]
                           [(all-names ...) all-names]
                           [((uniform-names ...) ...)
