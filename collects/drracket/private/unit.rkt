@@ -38,7 +38,8 @@ module browser threading seems wrong.
          "local-member-names.rkt"
          "eval-helpers.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
-         (prefix-in icons: (combine-in images/icons/file images/icons/control images/icons/style))
+         (prefix-in icons: (combine-in images/icons/file images/icons/control images/icons/style
+                                       images/logos))
          
          mred
          (prefix-in mred: mred)
@@ -385,11 +386,12 @@ module browser threading seems wrong.
                    frame
                    program-filename)))])))
   
+  (define disk-color (make-object color% 255 233 112))
   (define execute-bitmap (icons:play-icon icons:run-icon-color (icons:toolbar-icon-height)))
   (define break-bitmap (icons:stop-icon icons:halt-icon-color (icons:toolbar-icon-height)))
-  (define small-save-bitmap (icons:small-save-icon icons:syntax-icon-color icons:metal-icon-color
+  (define small-save-bitmap (icons:small-save-icon icons:syntax-icon-color disk-color
                                                    (icons:toolbar-icon-height)))
-  (define save-bitmap (icons:save-icon icons:syntax-icon-color icons:metal-icon-color
+  (define save-bitmap (icons:save-icon icons:syntax-icon-color disk-color
                                        (icons:toolbar-icon-height)))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)
@@ -4696,7 +4698,7 @@ module browser threading seems wrong.
         [(null? l) '()]
         [else (cons (car l) (loop (cdr l) (- n 1)))])))
   
-  (define very-small-planet-bitmap (icons:record-icon "blue" (icons:toolbar-icon-height)))
+  (define very-small-planet-bitmap (icons:planet-logo (icons:toolbar-icon-height)))
   
   (define saved-bug-reports-window #f)
   (define saved-bug-reports-panel #f)

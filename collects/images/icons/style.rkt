@@ -3,8 +3,7 @@
 (require racket/draw unstable/parameter-group
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
-         "../private/renderfx.rkt"
-         "../private/transient-box.rkt")
+         "../private/renderfx.rkt")
 
 (provide (all-defined-out))
 
@@ -31,7 +30,7 @@
 
 (define metal-icon-color "lightsteelblue")
 (define dark-metal-icon-color "steelblue")
-(define syntax-icon-color (make-object color% 38 38 128))
+(define syntax-icon-color (make-object color% 76 76 255))
 (define halt-icon-color (make-object color% 255 32 24))
 (define run-icon-color "lawngreen")
 
@@ -72,50 +71,3 @@
   (let* ([fm  (draw-icon-flomap w h draw-proc scale)]
          [fm  (flomap-render-icon fm material)])
     fm))
-
-(define (clean-cache! h)
-  (define ks (for*/list ([(k v)  (in-hash h)]
-                         [vv  (in-value (transient-box-value v))]
-                         #:when (not vv))
-               k))
-  (for ([k  (in-list ks)]) (hash-remove! h k)))
-
-(define (transient-value-hash-ref! h k thnk)
-  (thnk)
-  #;(begin
-  (define bx (hash-ref! h k (λ () (make-transient-box (thnk)))))
-  (transient-box-touch! bx)
-  (define val (transient-box-value bx))
-  (cond [val  val]
-        [else  (clean-cache! h)
-               (let ([val  (thnk)])
-                 (hash-set! h k (make-transient-box val))
-                 val)])))
-
-(define caches empty)
-
-(define (add-cache! cache) (set! caches (cons cache caches)))
-
-(define (clean-caches!)
-  (for ([h  (in-list caches)])
-    (clean-cache! h)))
-
-(define (read-caches)
-  (for*/list ([cache  (in-list caches)]
-              [(k v)  (in-hash cache)])
-    (cons k v)))
-
-(define-syntax-rule (define-icon-flomap-proc name name* min-height args ...)
-  (define name
-    (let ([cache  (make-hash)])
-      (add-cache! cache)
-      (λ (args ...
-          [height    (default-icon-height)]
-          [material  (default-icon-material)])
-        (cond [(height . < . min-height)
-               (flomap-scale (transient-value-hash-ref! cache (list args ... min-height material)
-                                                        (λ () (name* args ... min-height material)))
-                             (/ height min-height))]
-              [else
-               (transient-value-hash-ref! cache (list args ... height material)
-                                          (λ () (name* args ... height material)))])))))
