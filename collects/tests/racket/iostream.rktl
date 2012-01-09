@@ -123,15 +123,12 @@
         (flush-output (cadr p))
 	(thread-wait t)
 	(fprintf (cadr p) "(begin ((copy-stream r w2)) (exit))\n"))
-      (fprintf (cadr p) "(begin (flush-output) ((copy-stream (current-input-port) (current-output-port))) (exit))\n"))
+      (fprintf (cadr p) "(begin (display \"!READY!\") (flush-output) ((copy-stream (current-input-port) (current-output-port))) (exit))"))
   (flush-output (cadr p))
 
   (unless tcp?
     ;; Flush initial output from other process:
-    (let loop ()
-      (sleep 0.3)
-      (unless (zero? (read-bytes-avail!* s (car p)))
-        (loop))))
+    (regexp-match #rx"!READY!" (car p)))
 
   (if tcp?
       (values r w r2 w2)
