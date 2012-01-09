@@ -809,7 +809,9 @@ See match-a-pattern.rkt for more details
            (lambda (exp hole-info)
              (let ([matches (match-pat exp #f)])
                (and matches
-                    (map (λ (match) (make-mtch (mtch-bindings match) (hole->not-hole (mtch-context match)) none))
+                    (map (λ (match) (make-mtch (mtch-bindings match) 
+                                               (hole->not-hole (mtch-context match))
+                                               none))
                          matches))))]
           [else
            (lambda (exp hole-info)
@@ -926,7 +928,7 @@ See match-a-pattern.rkt for more details
              (equal? pattern exp)))])]))
   
   ;; simple-match : (any -> bool) -> (values <compiled-pattern> boolean boolean)
-  ;; does a match based on a built-in Scheme predicate
+  ;; does a match based on a predicate
   (define (simple-match pred)
     (values (lambda (exp) (pred exp))
             #f
@@ -973,7 +975,7 @@ See match-a-pattern.rkt for more details
     [(2) (memoize/2 f w/hole)]
     [else (error 'memoize "unknown arity for ~s" f)]))
 
-(define cache-size 255 #;63)
+(define cache-size 63)
 (define (set-cache-size! cs) (set! cache-size cs))
 
 ;; original version, but without closure allocation in hash lookup
@@ -1025,15 +1027,17 @@ See match-a-pattern.rkt for more details
                  (cond
                    [(not (caching-enabled?)) (f args ...)]
                    [else
-                    (record-cache-test! statsbox)
+                    ;(record-cache-test! statsbox)
+                    ;(when (zero? (modulo (cache-stats-hits statsbox) 1000))
+                    ;  (record-cache-size! statsbox (cons ans-vec key-vec)))
                     (let* ([key key-exp]
                            [index (modulo (equal-hash-code key) this-cache-size)])
                       (cond
                         [(equal? (vector-ref key-vec index) key)
                          (vector-ref ans-vec index)]
                         [else
-                         (record-cache-miss! statsbox)
-                         (when (eq? uniq (vector-ref key-vec index)) (record-cache-clobber! statsbox))
+                         ;(record-cache-miss! statsbox)
+                         (unless (eq? uniq (vector-ref key-vec index)) (record-cache-clobber! statsbox))
                          (let ([ans (f args ...)])
                            (vector-set! key-vec index key)
                            (vector-set! ans-vec index ans)
@@ -1223,11 +1227,24 @@ See match-a-pattern.rkt for more details
 (define (record-cache-clobber! statsbox)
   (set-cache-stats-clobber-hits! statsbox (add1 (cache-stats-clobber-hits statsbox))))
 
-(define-struct cache-stats (name misses hits clobber-hits) #:mutable)
-(define (new-cache-stats name) (make-cache-stats name 0 0 0))
+(define-struct cache-stats (name misses hits clobber-hits sizes) #:mutable)
+(define (new-cache-stats name) (make-cache-stats name 0 0 0 '()))
 
 (define w/hole (new-cache-stats "hole"))
 (define nohole (new-cache-stats "no-hole"))
+
+(define (record-cache-size! cache-stats cache)
+  (define size 
+    (let loop ([cache cache])
+      (cond
+        [(vector? cache)
+         (for/fold ([size (vector-length cache)])
+                   ([ele (in-vector cache)])
+           (+ size (loop ele)))]
+        [(pair? cache)
+         (+ 1 (loop (car cache)) (loop (cdr cache)))]
+        [else 1])))
+  (set-cache-stats-sizes! cache-stats (cons size (cache-stats-sizes cache-stats))))
 
 (define (print-stats)
   (let ((stats (list w/hole nohole)))
@@ -1250,7 +1267,13 @@ See match-a-pattern.rkt for more details
       (when (> (+ overall-hits overall-miss) 0)
         (printf "Overall miss rate: ~a%\n" 
                 (floor (* 100 (/ overall-miss (+ overall-hits overall-miss))))))
-      (printf "Overall clobbering hits: ~a\n" overall-clobber-hits))))
+      (printf "Overall clobbering hits: ~a\n" overall-clobber-hits))
+    
+    (let* ([sizes (apply append (map cache-stats-sizes stats))]
+           [len (length sizes)])
+      (unless (zero? len)
+        (let ([avg (/ (apply + 0.0 sizes) len)])
+          (printf "Average cache size ~s; ~a samples\n" avg len))))))
 
 ;; match-hole : compiled-pattern
 (define match-hole
@@ -1828,12 +1851,23 @@ See match-a-pattern.rkt for more details
     (define the-not-hole (make-hole 'the-not-hole))
     (values the-hole the-not-hole hole?)))
 
-(define hole->not-hole
-  (match-lambda
-    [(? hole?) the-not-hole]
-    [(list-rest f r)
-     (cons (hole->not-hole f) (hole->not-hole r))]
-    [x x]))
+(define (hole->not-hole exp)
+  (let loop ([exp exp])
+    (cond
+      [(pair? exp) 
+       (define old-car (car exp))
+       (define new-car (loop old-car))
+       (cond
+         [(eq? new-car old-car)
+          (define old-cdr (cdr exp))
+          (define new-cdr (loop old-cdr))
+          (if (eq? new-cdr old-cdr)
+              exp
+              (cons new-car new-cdr))]
+         [else (cons new-car (cdr exp))])]
+      [(eq? exp the-hole)
+       the-not-hole]
+      [else exp])))
 
 (define (build-flat-context exp) exp)
 (define (build-cons-context e1 e2) (cons e1 e2))
