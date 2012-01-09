@@ -197,9 +197,18 @@
                      (f v o)
                      (get-output-string o)))])
   (test "Π" in-string write 'Π) ;; UTF-8 encoding can be misinterpreted as having a space
+  (test "Σ" in-string write 'Σ) ;; interesting because it's special-casing
+  (test "ς" in-string write 'ς) ;; also special-casing
+  (test "σ" in-string write 'σ)
   (test "|a\xA0b|" in-string write (string->symbol "a\xA0b"))
+  (parameterize ([read-case-sensitive #f])
+    (test "|Π|" in-string write 'Π)
+    (test "|Σ|" in-string write 'Σ)
+    (test "σ" in-string write 'σ)
+    (test "|ς|" in-string write 'ς))
   (parameterize ([read-accept-bar-quote #f])
     (test "Π" in-string write 'Π)
+    (test "Σ" in-string write 'Σ)
     (test "a\\\xA0b" in-string write (string->symbol "a\xA0b"))))
 
 (report-errs)
