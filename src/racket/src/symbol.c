@@ -617,7 +617,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
         ul++;
       }
       ch = buf[0];
-      if (scheme_isspecialcasing(ch)) {
+      if ((flags & SCHEME_SNF_NEED_CASE) && scheme_isspecialcasing(ch)) {
         mzchar *rc;
         buf[1] = 0;
         rc = scheme_string_recase(buf, 0, 1, 3, 1, NULL);
