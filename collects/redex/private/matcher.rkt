@@ -1624,7 +1624,18 @@ See match-a-pattern.rkt for more details
           [(null? rhss) 
            (if (null? ans)
                #f
-               ans)]
+               (begin
+                 (when (check-redudancy)
+                   (let ([rd (remove-duplicates ans)])
+                     (unless (= (length rd) (length ans))
+                       (eprintf "found redundancy when matching the non-terminal ~s against:\n~s~a"
+                                nt
+                                term
+                                (apply
+                                 string-append
+                                 (map (λ (x) (format "\n  ~s" x))
+                                      ans))))))
+                 ans))]
           [else
            (let ([mth (call-nt-proc/bindings (car rhss) term hole-info)])
              (cond
@@ -1643,6 +1654,8 @@ See match-a-pattern.rkt for more details
           [else
            (or (call-nt-proc/bindings (car rhss) term hole-info)
                (loop (cdr rhss)))]))))
+
+(define check-redudancy (make-parameter #f))
 
 (define (match-nt/boolean list-rhs non-list-rhs nt term)
   (let loop ([rhss (if (or (null? term) (pair? term))
@@ -1956,4 +1969,5 @@ See match-a-pattern.rkt for more details
          the-not-hole the-hole hole?
          rewrite-ellipses
          build-compatible-context-language
-         caching-enabled?)
+         caching-enabled?
+         check-redudancy)

@@ -33,7 +33,8 @@
          judgment-holds
          in-domain?
          caching-enabled?
-         make-coverage)
+         make-coverage
+         check-redudancy)
 
 (provide (rename-out [test-match redex-match])
          term-match
