@@ -2,12 +2,12 @@
 cache="/tmp/racket-build-status-cache"
 cachelock="$cache-lock"
 
-printf 'Content-type: text/plain\r\n\r\n'
+printf 'Content-type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\n'
 
 # cache status reports (avoids excessive work during builds)
 
 # use a lockfile as a cheap hack to time cache refreshing
-if ! lockfile -r 0 -l 30 -s 0 "$cachelock" >& /dev/null \
+if ! lockfile -r 0 -l 25 -s 0 "$cachelock" >& /dev/null \
    && [[ -e "$cache" ]]; then
   cat "$cache"; exit
 fi

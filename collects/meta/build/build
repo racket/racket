@@ -1056,7 +1056,7 @@ MAIN_BUILD() {
   fi
 
   if is_yes make_bins; then
-    header -s "Creating archive"
+    header -s "Creating source archive"
     _cd "$maindir"
     _rm "$repotgz"
     _cd "$maindir/$cleandir"
