@@ -973,7 +973,7 @@ See match-a-pattern.rkt for more details
     [(2) (memoize/2 f w/hole)]
     [else (error 'memoize "unknown arity for ~s" f)]))
 
-(define cache-size 63)
+(define cache-size 255 #;63)
 (define (set-cache-size! cs) (set! cache-size cs))
 
 ;; original version, but without closure allocation in hash lookup
@@ -1821,7 +1821,9 @@ See match-a-pattern.rkt for more details
 (define (context? x) #t)
 (define-values (the-hole the-not-hole hole?)
   (let ()
-    (define-struct hole (id) #:inspector #f)
+    (define-struct hole (id)
+      #:property prop:equal+hash (list (λ (x y recur) #t) (λ (v recur) 255) (λ (v recur) 65535))
+      #:inspector #f)
     (define the-hole (make-hole 'the-hole))
     (define the-not-hole (make-hole 'the-not-hole))
     (values the-hole the-not-hole hole?)))

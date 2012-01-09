@@ -92,7 +92,7 @@
        (variable-except y)
        (name x 1)
        (name y 1))
-    (y y))
+    (y 12))
   (test (hash-ref (base-cases-non-cross (find-base-cases L)) 'x)
         '(0 0 0 0)))
 
@@ -666,7 +666,7 @@
 (let ()
   (define-language lang
     (d 5)
-    (e e 4)
+    (e 17 4)
     (n number))
   
   (test (let ([checked 0])
@@ -884,7 +884,7 @@
   (define-language L
     (e (+ e ...) number)
     (E (+ number ... E* e ...))
-    (E* hole E*)
+    (E* hole)
     (n 4))
   
   (let ([R (reduction-relation
