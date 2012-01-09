@@ -1,5 +1,11 @@
 \usepackage{ccaption}
 
+% \legend relies on \belowcaptionskip, which is not defined
+% by the JFP class file:
+\makeatletter
+\@ifundefined{belowcaptionskip}{\newlength{\belowcaptionskip}}{}
+\makeatother
+
 \newcommand{\Legend}[1]{~
 
                         \hrule width \hsize height .33pt
