@@ -230,6 +230,7 @@
   (void))
 
 (define master-branch "refs/heads/master")
+(define release-branch "refs/heads/release")
 
 (define (contains-drdr-request? p)
   (for*/or ([c (in-list (git-push-commits p))]
@@ -243,6 +244,7 @@
              (let ([info (push-info rev)])
                (and info 
                     (or (hash-has-key? (push-data-branches info) master-branch)
+                        (hash-has-key? (push-data-branches info) release-branch)
                         (contains-drdr-request? (get-scm-commit-msg rev repo))))))
     rev))
 
