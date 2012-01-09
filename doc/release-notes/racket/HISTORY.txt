@@ -1,39 +1,28 @@
-Version 5.2.0.7
-Intern strings, etc., only in read-syntax mode, not read mode
-racket/draw: add text-outline to dc-path%
-net/mime: allow any subtype in input; made exception structs a
- subtype of exn:fail
-
-Version 5.2.0.6
-Added pseudo-random-generator-vector?
-
-Version 5.2.0.5
-Cross-module inlining of trivial functions, plus map, for-each,
+Version 5.2.1, January 2012
+Changed I/O scheduling to use epoll()/kqueue() when available
+Cross-module inline trivial functions, plus map, for-each,
  andmap, and ormap; 'compiler-hint:cross-module-inline hint
-Generalize gcd and lcm to work on rationals
-compiler/zo-structs: added inline-variant
-racket/stream: added stream constructor
-
-Version 5.2.0.4
+Intern numbers, characters, strings, byte strings, and regexps in
+ read and datum->syntax
+Added datum-intern-literal
 Regexps are `equal?' when they have the same source [byte] string
  and mode
-Numbers, characters, strings, byte strings, and regexps are interned by
- read and datum->syntax
-Added read-intern-literal
+Added pseudo-random-generator-vector?
+Added port-closed-evt
+Generalized gcd and lcm to work on rationals
+Added module-predefined?
+Changed the racket -k command-line flag
 racket/class: added send/keyword-apply and dynamic-send
 racket/draw: added get-names to color-database<%>
 mzlib/pconvert: added add-make-prefix-to-constructor parameter,
  which changes the default constructor-style printing in DrRacket
  to avoid a make- prefix; the HtDP languages set the parameter to #t
 at-exp, scribble: dropped distinctness of @{}-introduced newline strings
-
-Version 5.2.0.3
-Added module-predefined?
-Changed the raacket -k command-line flag
-
-Version 5.2.0.2
-Added port-closed-evt
-Changed I/O scheduling to use epoll()/kqueue() when available
+racket/draw: add text-outline to dc-path%
+net/mime: allow any subtype in input; made exception structs a
+ subtype of exn:fail
+compiler/zo-structs: added inline-variant
+racket/stream: added stream constructor
 
 Version 5.2, November 2011
 Generalized begin-with-syntax to allow phase-N definitions,
