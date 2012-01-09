@@ -11,53 +11,50 @@
 
 (provide (all-defined-out))
 
-(define (check-syntax-icon-flomap [height  (toolbar-icon-height)]
-                                  [material  (default-icon-material)])
-  (flomap-ht-append
-   (left-magnifying-glass-icon-flomap metal-icon-color syntax-icon-color height material)
-   (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
-   (check-icon-flomap run-icon-color height material)))
+(define debugger-bomb-color (make-object color% 128 64 64))
+(define macro-stepper-hash-color (make-object color% 30 96 30))
 
-(define (small-check-syntax-icon-flomap [height  (toolbar-icon-height)]
-                                        [material  (default-icon-material)])
+(define (check-syntax-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+  (flomap-ht-append
+   (left-magnifying-glass-flomap metal-icon-color "chocolate" height material)
+   (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
+   (check-flomap syntax-icon-color height material)))
+
+(define (small-check-syntax-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-pin*
    1 1 5/16 1
-   (check-icon-flomap run-icon-color height material)
-   (magnifying-glass-icon-flomap metal-icon-color syntax-icon-color (* 3/4 height) material)))
+   (check-flomap syntax-icon-color height material)
+   (magnifying-glass-flomap metal-icon-color "chocolate" (* 3/4 height) material)))
 
-(define (macro-stepper-icon-flomap [height  (toolbar-icon-height)]
-                                   [material  (default-icon-material)])
+(define (macro-stepper-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-ht-append
-   (text-icon-flomap "#'" (make-object font% 12 'system 'normal 'normal)
-                     run-icon-color #t #t height material)
+   (text-flomap "#'" (make-object font% 12 'system 'normal 'normal)
+                macro-stepper-hash-color #t #t height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
-   (step-icon-flomap (make-object color% 38 38 128) height material)))
+   (step-flomap syntax-icon-color height material)))
 
-(define (small-macro-stepper-icon-flomap [height  (toolbar-icon-height)]
-                                         [material  (default-icon-material)])
+(define (small-macro-stepper-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-pin*
    0 0 7/16 0
-   (step-icon-flomap (make-object color% 38 38 128) height material)
-   (text-icon-flomap "#'" (make-object font% 12 'system 'normal 'bold)
-                     run-icon-color #t #t (* 3/4 height) material)))
+   (step-flomap syntax-icon-color height material)
+   (text-flomap "#'" (make-object font% 12 'system 'normal 'bold)
+                macro-stepper-hash-color #t #t (* 3/4 height) material)))
 
-(define (debugger-icon-flomap [height  (toolbar-icon-height)]
-                              [material  (default-icon-material)])
+(define (debugger-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-ht-append
-   (left-bomb-icon-flomap metal-icon-color halt-icon-color height material)
+   (left-bomb-flomap metal-icon-color debugger-bomb-color height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (step-icon-flomap run-icon-color height material)))
+   (step-flomap run-icon-color height material)))
 
-(define (small-debugger-icon-flomap [height  (toolbar-icon-height)]
-                                    [material  (default-icon-material)])
+(define (small-debugger-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-pin*
    0 0 9/16 0
-   (step-icon-flomap run-icon-color height material)
-   (left-bomb-icon-flomap metal-icon-color halt-icon-color (* 3/4 height) material)))
+   (step-flomap run-icon-color height material)
+   (left-bomb-flomap metal-icon-color debugger-bomb-color (* 3/4 height) material)))
 
-(define check-syntax-icon (compose flomap->bitmap check-syntax-icon-flomap))
-(define small-check-syntax-icon (compose flomap->bitmap small-check-syntax-icon-flomap))
-(define macro-stepper-icon (compose flomap->bitmap macro-stepper-icon-flomap))
-(define small-macro-stepper-icon (compose flomap->bitmap small-macro-stepper-icon-flomap))
-(define debugger-icon (compose flomap->bitmap debugger-icon-flomap))
-(define small-debugger-icon (compose flomap->bitmap small-debugger-icon-flomap))
+(define check-syntax-icon (compose flomap->bitmap check-syntax-flomap))
+(define small-check-syntax-icon (compose flomap->bitmap small-check-syntax-flomap))
+(define macro-stepper-icon (compose flomap->bitmap macro-stepper-flomap))
+(define small-macro-stepper-icon (compose flomap->bitmap small-macro-stepper-flomap))
+(define debugger-icon (compose flomap->bitmap debugger-flomap))
+(define small-debugger-icon (compose flomap->bitmap small-debugger-flomap))
