@@ -49,7 +49,7 @@
      #`#(#,init-loc-wrapper/q? 
          #(list #(#,init-loc-wrapper/q? #,op #,(syntax-line stx) #,(syntax-column stx))
                 #,@(map (λ (x) (process-arg x quote-depth)) (syntax->list (syntax (a b ...))))
-                #(i,init-loc-wrapper/q? #," . " #f #f)
+                #(#,init-loc-wrapper/q? #," . " #f #f)
                 #,(process-arg #'c quote-depth)
                 #(#,init-loc-wrapper/q? #,cl #f #f))
          #,(syntax-line stx) 
