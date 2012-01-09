@@ -59,9 +59,7 @@
   [fmmin  ((or/c flomap? real?) (or/c flomap? real?) . -> . flomap?)]
   [fmmax  ((or/c flomap? real?) (or/c flomap? real?) . -> . flomap?)]
   ;; Blur
-  [flomap-gaussian-blur  ((flomap? real?)
-                          (real? #:x-stddevs real? #:y-stddevs real?)
-                          . ->* . flomap?)]
+  [flomap-gaussian-blur  ((flomap? real?) (real? real? real?) . ->* . flomap?)]
   [flomap-box-blur  ((flomap? real?) (real?) . ->* . flomap?)]
   [flomap-blur  ((flomap? real?) (real?) . ->* . flomap?)]
   ;[flomap-integral  (flomap? . -> . flomap?)]
@@ -119,10 +117,10 @@
   [flomap-hc-append  ([flomap?] #:rest (listof flomap?) . ->* . flomap?)]
   [flomap-hb-append  ([flomap?] #:rest (listof flomap?) . ->* . flomap?)]
   ;; Effects
-  [flomap-outline   ([flomap? real?] [#:color (or/c real? (listof real?))] . ->* . flomap?)]
-  [flomap-outlined  ([flomap? real?] [#:color (or/c real? (listof real?))] . ->* . flomap?)]
-  [flomap-shadow    ([flomap? real?] [#:color (or/c real? (listof real?))] . ->* . flomap?)]
-  [flomap-shadowed  ([flomap? real?] [#:color (or/c real? (listof real?))] . ->* . flomap?)]
+  [flomap-outline   ([flomap? real?] [#:color (or/c #f (listof real?))] . ->* . flomap?)]
+  [flomap-outlined  ([flomap? real?] [#:color (or/c #f (listof real?))] . ->* . flomap?)]
+  [flomap-shadow    ([flomap? real?] [#:color (or/c #f (listof real?))] . ->* . flomap?)]
+  [flomap-shadowed  ([flomap? real?] [#:color (or/c #f (listof real?))] . ->* . flomap?)]
   )
  unsafe-build-flomap
  flomap-lift/unsafe
@@ -445,7 +443,7 @@
 ;; ===================================================================================================
 ;; Gaussian blur
 
-(define (flomap-gaussian-blur fm xσ [yσ xσ] #:x-stddevs [x-stddevs 3.0] #:y-stddevs [y-stddevs 3.0])
+(define (flomap-gaussian-blur fm xσ [yσ xσ] [x-stddevs 3.0] [y-stddevs 3.0])
   (flomap-gaussian-blur-y
    (flomap-gaussian-blur-x fm (abs (exact->inexact xσ)) (abs (exact->inexact x-stddevs)))
    (abs (exact->inexact yσ)) (abs (exact->inexact y-stddevs))))
