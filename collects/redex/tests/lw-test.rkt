@@ -320,7 +320,10 @@
           (normalize-lw (to-lw (a b))))
     
     (test (normalize-lw (to-lw/stx (from-str "(a ((b)) c 1 #t)")))
-          (normalize-lw (to-lw (a ((b)) c 1 #t)))))
+          (normalize-lw (to-lw (a ((b)) c 1 #t))))
+    
+    (test (normalize-lw (to-lw/stx (from-str "(a b . c)")))
+          (normalize-lw (to-lw (a b . c)))))
   
   (print-tests-passed "lw-test.rkt"))
 
