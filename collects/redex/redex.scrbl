@@ -389,7 +389,17 @@ nested lists.
 }
 
 @defproc[(set-cache-size! [size positive-integer?]) void?]{
-Changes the size of the per-pattern and per-metafunction caches. The default size is @racket[350].
+Changes the size of the per-pattern and per-metafunction caches.
+
+The default size is @racket[350].
+}
+
+@defparam[check-redudancy check? boolean?]{
+  Ambiguous patterns can slow down
+  Redex's pattern matching implementation significantly. To help debug
+  such performance issues, set the @racket[check-redundancy]
+  parameter to @racket[#t]. This causes Redex to, at runtime,
+  report any redundant matches that it encounters.
 }
 
 @section{Terms}
