@@ -305,7 +305,8 @@
           (maybe (list (string->path c)) ->cc))
         (for ([cp (in-list (links #:root? #t #:user? #f))]
               #:when (directory-exists? cp)
-              [collection (directory-list cp)])
+              [collection (directory-list cp)]
+              #:when (directory-exists? (build-path cp collection)))
           (maybe (list collection) ->cc)))
       (when (make-user)
         (let ([user-collects (find-user-collects-dir)])
@@ -318,7 +319,8 @@
             (maybe (list (string->path c)) ->cc))
           (for ([cp (in-list (links #:root? #t))]
                 #:when (directory-exists? cp)
-                [collection (directory-list cp)])
+                [collection (directory-list cp)]
+                #:when (directory-exists? (build-path cp collection)))
             (maybe (list collection) ->cc))))
       (hash-map ht (lambda (k v) v))))
 
