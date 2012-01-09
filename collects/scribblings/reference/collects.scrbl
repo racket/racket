@@ -124,21 +124,38 @@ Produces a list of paths as follows:
 ]}
 
 
-@defproc[(collection-file-path [file path-string?] [collection path-string?] ...+) path?]{
+@defproc*[([(collection-file-path [file path-string?] [collection path-string?] ...+)
+            path?]
+           [(collection-file-path [file path-string?] [collection path-string?] ...+
+                                  [#:fail fail-proc (string? . -> . any)])
+            any])]{
 
 Returns the path to the file indicated by @racket[file] in the
 collection specified by the @racket[collection]s, where the second
-@racket[collection] (if any) names a sub-collection, and so on. If
-@racket[file] is not found, but @racket[file] ends in @filepath{.rkt}
-and a file with the suffix @filepath{.ss} exists, then the directory
-of the @filepath{.ss} file is used. If @racket[file] is not found and
-the @filepath{.rkt}/@filepath{.ss} conversion does not apply, but a
-directory corresponding to the @racket[collection]s is found, then a
-path using the first such directory is returned. Finally, if the
-collection is not found, the @exnraise[exn:fail:filesystem].}
+@racket[collection] (if any) names a sub-collection, and so on.
+
+If @racket[file] is not found, but @racket[file] ends in
+@filepath{.rkt} and a file with the suffix @filepath{.ss} exists, then
+the directory of the @filepath{.ss} file is used. If @racket[file] is
+not found and the @filepath{.rkt}/@filepath{.ss} conversion does not
+apply, but a directory corresponding to the @racket[collection]s is
+found, then a path using the first such directory is
+returned.
+
+Finally, if the collection is not found, and if @racket[fail-proc] is
+provided, then @racket[fail-proc] is applied to an error message (that
+does not start @scheme["collection-file-path:"] or otherwise claim a
+source), and its result is the result of
+@racket[collection-file-path].  If @racket[fail-proc] is not provided
+and the collection is not found, then the
+@exnraise[exn:fail:filesystem].}
 
 
-@defproc[(collection-path [collection path-string?] ...+) path?]{
+@defproc*[([(collection-path [collection path-string?] ...+)
+            path?]
+           [(collection-path [collection path-string?] ...+
+                             [#:fail fail-proc (string? . -> . any)])
+            any])]{
 
 Like @racket[collection-file-path], but without a specified file name,
 so that the first directory indicated by @racket[collection]s is

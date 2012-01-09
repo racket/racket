@@ -106,8 +106,31 @@
   (define-values (double-flonum?) ; for symmetry with single-flonum?
     (lambda (x) (flonum? x)))
 
+  (define-values (new:collection-path)
+    (let ([collection-path (new-lambda (collection 
+                                        #:fail [fail (lambda (s)
+                                                       (raise
+                                                        (exn:fail:filesystem
+                                                         (string-append "collection-path: " s)
+                                                         (current-continuation-marks))))]
+                                        . collections)
+                             (apply collection-path fail collection collections))])
+      collection-path))
+
+  (define-values (new:collection-file-path)
+    (let ([collection-file-path (new-lambda (file-name 
+                                             collection
+                                             #:fail [fail (lambda (s)
+                                                            (raise
+                                                             (exn:fail:filesystem
+                                                              (string-append "collection-file-path: " s)
+                                                              (current-continuation-marks))))]
+                                             . collections)
+                                  (apply collection-file-path fail file-name collection collections))])
+      collection-file-path))
+
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
-             (all-from "misc.rkt")
+             (all-from-except "misc.rkt" collection-path collection-file-path)
              (all-from "define.rkt")
              (all-from-except "letstx-scheme.rkt" -define -define-syntax -define-struct old-cond)
              (rename new-lambda lambda)
@@ -130,6 +153,8 @@
              (rename new:procedure-rename procedure-rename)
              (rename new:chaperone-procedure chaperone-procedure)
              (rename new:impersonate-procedure impersonate-procedure)
+             (rename new:collection-path collection-path)
+             (rename new:collection-file-path collection-file-path)
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
                               procedure-arity procedure-reduce-arity raise-arity-error
                               procedure->method procedure-rename
