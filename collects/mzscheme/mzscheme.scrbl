@@ -25,7 +25,8 @@
                                base-if base-cond base-case base-top-interaction
                                base-open-input-file base-apply base-prop:procedure
                                base-free-identifier=? base-free-template-identifier=?
-                               base-free-transformer-identifier=? base-free-label-identifier=?)
+                               base-free-transformer-identifier=? base-free-label-identifier=?
+                               base-collection-file-path base-collection-path)
    (begin
      (require (for-label scheme/base))
      (define base-define (racket define))
@@ -42,12 +43,15 @@
      (define base-free-identifier=? (racket free-identifier=?))
      (define base-free-template-identifier=? (racket free-template-identifier=?))
      (define base-free-transformer-identifier=? (racket free-transformer-identifier=?))
-     (define base-free-label-identifier=? (racket free-label-identifier=?))))
+     (define base-free-label-identifier=? (racket free-label-identifier=?))
+     (define base-collection-file-path (racket collection-file-path))
+     (define base-collection-path (racket collection-path))))
 @(def-base base-define base-define-syntax base-define-for-syntax base-define-struct
            base-if base-cond base-case base-top-interaction
            base-open-input-file base-apply base-prop:procedure
            base-free-identifier=? base-free-template-identifier=?
-           base-free-transformer-identifier=? base-free-label-identifier=?)
+           base-free-transformer-identifier=? base-free-label-identifier=?
+           base-collection-file-path base-collection-path)
 
 @(define-syntax-rule (additionals racket/base id ...)
    (begin
@@ -430,7 +434,13 @@ The same as @racket[cleanse-path].}
 
 The same as @racket[list].}
 
+@deftogether[(
+@defproc[(collection-file-path [file path-string?] [collection path-string?] ...+) path?]
+@defproc[(collection-path [collection path-string?] ...+) path?]
+)]{
 
+Like @base-collection-file-path and @base-collection-path, but without
+the @racket[#:fail] option.}
 
 @; ----------------------------------------
 

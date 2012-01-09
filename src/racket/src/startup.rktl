@@ -328,26 +328,28 @@
       (-check-relpath who collection) 
       (for-each (lambda (p) (-check-relpath who p)) collection-path)))
 
+  (define-values (-check-fail)
+    (lambda (who fail)
+      (unless (and (procedure? fail)
+                   (procedure-arity-includes? fail 1))
+        (raise-type-error who "procedure (arity 1)" fail))))
+
   (define-values (collection-path)
-    (lambda (collection . collection-path) 
+    (lambda (fail collection . collection-path) 
       (-check-collection 'collection-path collection collection-path)
-      (find-col-file 'collection-path (lambda (s)
-                                        (raise
-                                         (exn:fail:filesystem s (current-continuation-marks))))
+      (-check-fail 'collection-path fail)
+      (find-col-file fail
                      collection collection-path
                      #f)))
 
   (define-values (collection-file-path)
-    (lambda (file-name collection . collection-path) 
+    (lambda (fail file-name collection . collection-path) 
       (-check-relpath 'collection-file-path file-name)
       (-check-collection 'collection-file-path collection collection-path)
-      (build-path
-       (find-col-file 'collection-file-path (lambda (s)
-                                              (raise
-                                               (exn:fail:filesystem s (current-continuation-marks))))
-                      collection collection-path
-                      file-name)
-       file-name)))
+      (-check-fail 'collection-file-path fail)
+      (find-col-file fail
+                     collection collection-path
+                     file-name)))
 
   (define-values (user-links-path) (find-system-path 'links-file))
   (define-values (user-links-cache) (make-hasheq))
@@ -506,7 +508,7 @@
               (normalize-collection-reference base (cons name collection-path))))])))
 
   (define-values (find-col-file)
-    (lambda (who fail collection collection-path file-name)
+    (lambda (fail collection collection-path file-name)
       (let-values ([(collection collection-path)
                     (normalize-collection-reference collection collection-path)])
         (let ([all-paths (let ([sym (string->symbol (if (path? collection)
@@ -528,6 +530,9 @@
                                 null)
                             ;; list of paths:
                             (current-library-collection-paths)))])
+          (define-values (done)
+            (lambda (p)
+              (if file-name (build-path p file-name) p)))
           (define-values (*build-path-rep)
             (lambda (p c)
               (if (path? p)
@@ -544,7 +549,7 @@
           (let cloop ([paths all-paths] [found-col #f])
             (if (null? paths)
                 (if found-col
-                    found-col
+                    (done found-col)
                     (let ([rest-coll
                            (if (null? collection-path)
                                ""
@@ -562,8 +567,7 @@
                                   (cons (car l) (filter f (cdr l)))
                                   (filter f (cdr l))))))
                       (fail
-                       (format "~a: collection not found: ~s in any of: ~s~a" 
-                               who
+                       (format "collection not found: ~s in any of: ~s~a" 
                                (if (null? collection-path)
                                    (to-string collection)
                                    (string-append (to-string collection) "/" rest-coll))
@@ -591,12 +595,12 @@
                                                       (string-append (substring file-name 0 (- len 4)) ".ss")))])
                                           (and alt-file-name
                                                (file-exists? (build-path cpath alt-file-name)))))
-                                    cpath
+                                    (done cpath)
                                     ;; Look further for specific file, but remember
                                     ;; first found directory
                                     (cloop (cdr paths) (or found-col cpath)))
                                 ;; Just looking for dir; found it:
-                                cpath)
+                                (done cpath))
                             ;; sub-collection not here; try next instance
                             ;; of the top-level collection
                             (cloop (cdr paths) found-col)))
@@ -961,12 +965,13 @@
                                  (current-load-relative-directory)
                                  (current-directory)))]
                   [show-collection-err (lambda (s)
-                                         (if stx
-                                             (raise-syntax-error
-                                              #f
-                                              s
-                                              stx)
-                                             (error s)))]
+                                         (let ([s (string-append "standard-module-name-resolver: " s)])
+                                           (if stx
+                                               (raise-syntax-error
+                                                #f
+                                                s
+                                                stx)
+                                               (error s))))]
                   [ss->rkt (lambda (s)
                              (let ([len (string-length s)])
                                (if (and (len . >= . 3)
@@ -986,13 +991,11 @@
                            (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                              (let* ([f-file (if (null? cols)
                                                 "main.rkt"
-                                                (string-append file ".rkt"))]
-                                    [p (find-col-file 'standard-module-name-resolver
-                                                      show-collection-err
-                                                      (if (null? cols) file (car cols))
-                                                      (if (null? cols) null (cdr cols))
-                                                      f-file)])
-                               (build-path p f-file))))]
+                                                (string-append file ".rkt"))])
+                               (find-col-file show-collection-err
+                                              (if (null? cols) file (car cols))
+                                              (if (null? cols) null (cdr cols))
+                                              f-file))))]
                       [(string? s)
                        (let* ([dir (get-dir)])
                          (or (path-cache-get (cons s dir))
@@ -1025,25 +1028,23 @@
                                                     "main.rkt"
                                                     (if (regexp-match? #rx"[.]" file)
                                                         (ss->rkt file)
-                                                        (string-append file ".rkt"))))]
-                                    [p (let-values ([(cols)
-                                                    (if old-style?
-                                                        (append (if (null? (cddr s))
-                                                                    '("mzlib")
-                                                                    (apply append
-                                                                           (map (lambda (p)
-                                                                                  (split-relative-string p #t))
-                                                                                (cddr s))))
-                                                                cols)
-                                                        (if (null? cols)
-                                                            (list file)
-                                                            cols))])
-                                        (find-col-file 'standard-module-name-resolver
-                                                       show-collection-err
-                                                       (car cols)
-                                                       (cdr cols)
-                                                       f-file))])
-                               (build-path p f-file))))]
+                                                        (string-append file ".rkt"))))])
+                               (let-values ([(cols)
+                                             (if old-style?
+                                                 (append (if (null? (cddr s))
+                                                             '("mzlib")
+                                                             (apply append
+                                                                    (map (lambda (p)
+                                                                           (split-relative-string p #t))
+                                                                         (cddr s))))
+                                                         cols)
+                                                 (if (null? cols)
+                                                     (list file)
+                                                     cols))])
+                                 (find-col-file show-collection-err
+                                                (car cols)
+                                                (cdr cols)
+                                                f-file)))))]
                       [(eq? (car s) 'file)
                        ;; Use filesystem-sensitive `simplify-path' here:
                        (path-ss->rkt 

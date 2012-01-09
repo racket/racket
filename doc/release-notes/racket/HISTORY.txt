@@ -11,6 +11,8 @@ Added pseudo-random-generator-vector?
 Added port-closed-evt
 Generalized gcd and lcm to work on rationals
 Added module-predefined?
+Added optional #:fail argument to collection-file-path and
+ collection-path
 Changed the racket -k command-line flag
 racket/class: added send/keyword-apply and dynamic-send
 racket/draw: added get-names to color-database<%>

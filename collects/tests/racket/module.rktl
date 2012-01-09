@@ -466,6 +466,20 @@
 (test #t module-path? '(planet "foo%2e.rkt" ("robby%2e" "redex%2e.plt") "sub%2e" "%2edeeper"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check collection-path details
+
+(test-values '(not there) (lambda ()
+                            (collection-path "nonesuch" 
+                                             #:fail (lambda (s) 
+                                                      (test #t string? s)
+                                                      (values 'not 'there)))))
+(test-values '(1 2) (lambda ()
+                      (collection-file-path "none.rkt" "nonesuch" 
+                                       #:fail (lambda (s)
+                                                (test #t string? s)
+                                                (values 1 2)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check 'module-language, `module-compiled-language-info', and `module->language-info'
 
 (let ([mk (lambda (val)
