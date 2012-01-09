@@ -34,6 +34,7 @@ elif [[ "$S" = "Y" ]]; then
     printf '\n%s build jobs running:\n' "$(ls "$bglogfile"* | wc -l)"
     for bg in "$bglogfile"*; do
       s="$(grep "^### <<< .* >>>" "$bg" | tail -1 \
+           | sed -e 's/([^()]* build) //' \
            | sed -e 's/^### <<< \(.*\) >>>/\1/')"
       if [[ "x$s" = "x" ]]; then
         printf '  %s: (just starting)\n' "${bg#$bglogfile-}"
@@ -53,8 +54,14 @@ else
       last="${last#Done (}"
       last="${last%)}"
       printf 'Last build successfully ended at %s\n' "$last"
+    elif [[ "x$last" = "x("*" build) Done ("*")" ]]; then
+      last="${last#(}"
+      build="${last% build) Done*}"
+      last="${last#*) Done (}"
+      last="${last%)}"
+      printf 'Last %s build successfully ended at %s\n' "$build" "$last"
     else
-      printf 'Last build was unsuccessful (while: %s)\n' "$last"
+      printf 'Last build was unsuccessful (%s)\n' "$last"
     fi
   fi
   if [[ "$L" = "Y" ]]; then

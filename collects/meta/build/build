@@ -373,12 +373,12 @@ no_exit_on_error="no"
 exit_error() {
   echo ""
   echo "<<<BOOM>>>  (Working on $machine($platform))" 1>&2
-  echo "$@" 1>&2
+  echo "$*" 1>&2
   if [[ "$no_exit_on_error" = "yes" ]]; then
     echo ""
   else
     echo "Aborting" 1>&2
-    write_status "Build error, aborted"
+    write_status "Build error, aborted: $*"
     exit 1
   fi
 }
@@ -477,17 +477,18 @@ else
 fi
 
 show() {
+  if [[ "x$1" = "x-s" ]]; then shift; write_status "$*"; fi
   if [[ "$verbose" = "yes" ]]; then
     echo ""
     case "$platform" in
       ( *"-linux"* | "sparc-solaris" | *"-win32" )
-        echo ">>>" "$@" | fmt -t -w 79
+        echo ">>> $*" | fmt -t -w 79
         ;;
       ( *"-freebsd" | *"-osx-mac" | *"-darwin" )
-        echo ">>>" "$@" | fmt -w 79
+        echo ">>> $*" | fmt -w 79
         ;;
       ( * )
-        echo ">>>" "$@" | fmt
+        echo ">>> $*" | fmt
         ;;
     esac
   fi
@@ -704,11 +705,6 @@ git_get() { # inputs: git repository, git branch, path in $maindir
   _cd "$maindir"
 }
 
-append_dots() { # inputs: width, string
-  local line="............................................................"
-  echo "${2}${line:0:$(( ${1} - ${#2} ))}"
-}
-
 base_status=""
 write_status() {
   local message="$*"
@@ -720,10 +716,10 @@ write_status() {
       touch "$statusfile"
       chcon --type=httpd_sys_content_t "$statusfile"
     fi
-    echo "$*" > "$statusfile"
+    echo "$message" > "$statusfile"
   else
     # greppable lines for status, filtered out in final log (see below)
-    echo "### <<< $* >>>"
+    echo "### <<< $message >>>"
   fi
 }
 
@@ -1092,7 +1088,7 @@ MAIN_BUILD() {
 
   # and now wait for all builds
   if is_yes make_bins; then
-    show "Waiting for remote jobs to finish"
+    show -s "Waiting for remote jobs to finish"
     wait
     for m in "${machines[@]}"; do
       machine="$m"
