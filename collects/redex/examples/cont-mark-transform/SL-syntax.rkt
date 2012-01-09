@@ -9,6 +9,8 @@
      (call/cc w))
   (v ....
      (κ (hide-hole E)))
+  (a ....
+     (κ (hide-hole E)))
   
   (D (w-c-m v v D)
      hole
