@@ -2,8 +2,7 @@
 
 (require racket/draw unstable/parameter-group
          "../private/flomap.rkt"
-         "../private/deep-flomap.rkt"
-         "../private/renderfx.rkt")
+         "../private/deep-flomap.rkt")
 
 (provide (all-defined-out))
 

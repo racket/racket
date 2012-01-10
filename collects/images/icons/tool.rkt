@@ -3,7 +3,6 @@
 (require racket/draw racket/class racket/math racket/sequence
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
-         "../private/renderfx.rkt"
          "../private/utils.rkt"
          "control.rkt"
          "misc.rkt"

@@ -3,7 +3,6 @@
 (require racket/draw racket/class racket/math racket/sequence
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
-         "../private/renderfx.rkt"
          "../private/utils.rkt"
          "style.rkt")
 
@@ -119,7 +118,7 @@
           [indent-dfm  (deep-flomap-raise (flomap->deep-flomap indent-fm) (* -2 scale))]
           [fm   (regular-polygon-flomap 8 (/ (* 2 pi) 16) color height)]
           [dfm  (flomap->deep-flomap fm)]
-          [dfm  (deep-flomap-cc-superimpose dfm indent-dfm #:z-mode 'add)]
+          [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
           [dfm  (deep-flomap-icon-style dfm)]
           [fm  (deep-flomap-render-icon dfm material)])
      (flomap-cc-superimpose fm (x-flomap "azure" (* 22 scale) metal-material)))))
@@ -185,7 +184,7 @@
             [dfm  (flomap->deep-flomap fm)]
             ;[dfm  (deep-flomap-icon-style dfm)]
             [dfm  (deep-flomap-raise dfm (* 4 scale))]
-            [dfm  (deep-flomap-cc-superimpose dfm indent-dfm #:z-mode 'add)]
+            [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
             [dfm  (deep-flomap-smooth-z dfm (* 1 scale))]
             )
        (deep-flomap-render-icon dfm magnifying-glass-metal-material)))
@@ -268,8 +267,7 @@
             [sphere-dfm  (flomap->deep-flomap sphere-fm)]
             [sphere-dfm  (deep-flomap-bulge-spheroid sphere-dfm (* 15 scale))]
             [sphere-dfm  (deep-flomap-inset sphere-dfm 2 2 0 0)]
-            [sphere-dfm  (deep-flomap-lt-superimpose sphere-dfm cap-dfm #:z-mode 'add)]
-            )
+            [sphere-dfm  (deep-flomap-lt-superimpose 'add sphere-dfm cap-dfm)])
        (deep-flomap-render-icon sphere-dfm material)))
    (flomap-lt-superimpose sphere-fm cap-fm fuse-fm)))
 

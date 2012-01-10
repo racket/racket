@@ -7,7 +7,8 @@
          images/icons/misc
          images/icons/tool
          images/icons/style
-         images/private/renderfx)
+         images/private/deep-flomap-render
+         images/private/utils)
 
 (default-icon-height 16)
 ;(default-icon-material glass-icon-material)

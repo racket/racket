@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require racket/class
-         racket/serialize web-server/lang/serial-lambda
          "../private/flomap.rkt"
          "../private/utils.rkt"
          "style.rkt")
