@@ -10,7 +10,6 @@
 (define (get-num-callbacks) num-callbacks)
  
 (define (register-gc-callback proc)
-  (printf "registering~n")
   (register-finalizer (malloc 4) (λ (val)
                                   (set! num-callbacks (+ 1 num-callbacks))
                                   (printf "here~n")
@@ -142,6 +141,37 @@
                              (list->pairs xys))))
       (scale-path-commands cmds sx sy))]
     [(list)  (list)]))
+
+(define (relativize-path-commands cmds)
+  (let loop ([x 0] [y 0] [cmds cmds])
+    (cond
+      [(empty? cmds)  empty]
+      [else
+       (define cmd (first cmds))
+       (match cmd
+         ;; absolute commands
+         [`(M)  (loop x y (rest cmds))]
+         [`(L)  (loop x y (rest cmds))]
+         [`(C)  (loop x y (rest cmds))]
+         [`(M ,ax ,ay ,as ...)  (cons `(m ,(- ax x) ,(- ay y))
+                                      (loop ax ay (cons `(M ,@as) (rest cmds))))]
+         [`(L ,ax ,ay ,as ...)  (cons `(l ,(- ax x) ,(- ay y))
+                                      (loop ax ay (cons '(L ,@as) (rest cmds))))]
+         [`(C ,ax1 ,ay1 ,ax2 ,ay2 ,ax ,ay ,as ...)
+          (cons `(c ,(- ax1 x) ,(- ay1 y) ,(- ax2 x) ,(- ay2 y) ,(- ax x) ,(- ay y))
+                (loop ax ay (cons `(C ,@as) (rest cmds))))]
+         ;; relative commands
+         [`(m)  (loop x y (rest cmds))]
+         [`(l)  (loop x y (rest cmds))]
+         [`(c)  (loop x y (rest cmds))]
+         [`(m ,dx ,dy ,ds ...)  (cons `(m ,dx ,dy) (loop (+ x dx) (+ y dy)
+                                                         (cons `(m ,@ds) (rest cmds))))]
+         [`(l ,dx ,dy ,ds ...)  (cons `(l ,dx ,dy) (loop (+ x dx) (+ y dy)
+                                                         (cons `(l ,@ds) (rest cmds))))]
+         [`(c ,dx1 ,dy1 ,dx2 ,dy2 ,dx ,dy ,ds ...)
+          (cons `(c ,dx1 ,dy1 ,dx2 ,dy2 ,dx ,dy)
+                (loop (+ x dx) (+ y dy) (cons `(c ,@ds) (rest cmds))))]
+         [_  (error 'apply-path-commands "unknown path command ~e" cmd)])])))
 
 (define (get-text-size str font)
   (define bm (make-bitmap 1 1))

@@ -115,7 +115,7 @@
    [height color material]
    (define scale (/ height 32))
    (let* ([indent-fm  (fm* 0.5 (x-flomap "black" (* 22 scale)))]
-          [indent-dfm  (deep-flomap-raise (flomap->deep-flomap indent-fm) (* -2 scale))]
+          [indent-dfm  (deep-flomap-raise (flomap->deep-flomap indent-fm) (* -1 scale))]
           [fm   (regular-polygon-flomap 8 (/ (* 2 pi) 16) color height)]
           [dfm  (flomap->deep-flomap fm)]
           [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
@@ -218,16 +218,20 @@
    (define scale (/ height 32))
    (define fuse-fm
      (let* ([fm  (draw-icon-flomap
-                  16 16 (λ (dc)
-                          (send dc set-pen "black" 1/2 'solid)
+                  10 25 (λ (dc)
+                          (send dc set-pen "darkred" 1 'solid)
                           (send dc set-brush "gold" 'solid)
                           (draw-path-commands
                            dc 0 0
-                           '((m 0.5 5.5)
-                             (c -1.5 -2 -0.5 -5 2 -5.5
-                                3 0.5 5 2.5 6 5
-                                0.5 2.5 -1.5 4.5 -4 4
-                                -1 -2 -1.5 -3.5 -4 -3.5))))
+                             '((m 3.5 0)
+                               (c -5 0 -3.29080284 10.4205 -3 11.5
+                                  1.1137011 4.1343 2 6.5 0 8.5
+                                  -0.5711131 2.0524 1.5 4 3.5 3.5
+                                  2.5711131 -2.5524 3.1327042 -5.5355 2 -9.5
+                                  -2 -7 -2 -9 -1.5 -9
+                                  0 1 -0.5 2 1 3.5
+                                  2 0.5 4 -1.5 3.5 -3.5
+                                  -2 -2 -2 -5 -5.5 -5))))
                   scale)]
             [dfm  (flomap->deep-flomap fm)]
             [dfm  (deep-flomap-icon-style dfm)]

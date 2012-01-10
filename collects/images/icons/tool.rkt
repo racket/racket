@@ -10,7 +10,7 @@
 
 (provide (all-defined-out))
 
-(define debugger-bomb-color (make-object color% 128 64 64))
+(define debugger-bomb-color (make-object color% 128 32 32))
 (define macro-stepper-hash-color (make-object color% 30 96 30))
 
 (define (check-syntax-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
