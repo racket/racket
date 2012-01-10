@@ -6,37 +6,41 @@
 
 (provide (all-defined-out))
 
+(define num-callbacks 0)
+(define (get-num-callbacks) num-callbacks)
+ 
 (define (register-gc-callback proc)
-  (define val (box 0))
-  (register-finalizer val (λ (_)
-                            (define again? (proc))
-                            (when again? (register-gc-callback proc)))))
+  (printf "registering~n")
+  (register-finalizer (malloc 4) (λ (val)
+                                  (set! num-callbacks (+ 1 num-callbacks))
+                                  (printf "here~n")
+                                  (when (proc) (register-gc-callback proc)))))
 
 (define (weak-value-hash-clean! h)
   (define ks (for*/list ([(k bx)  (in-hash h)]
-                         [val  (in-value (weak-box-value bx))]
+                         [val  (in-value (weak-box-value (car bx)))]
                          #:when (not val))
                k))
   (for ([k  (in-list ks)]) (hash-remove! h k)))
 
-;(define total-time-saved 0)
-;(define total-time-spent 0)
+(define total-time-saved 0)
+(define total-time-spent 0)
 
 ;; Can't simply wrap hash-ref! with weak-box-value and thnk with make-weak-box, because
 ;; 1. If weak-box-value returns #f, we need to regenerate the value
 ;; 2. We need to keep a handle to the generated value while it's being stored in the hash
 (define (weak-value-hash-ref! h k thnk)
   (define (cache-ref!)
-    ;(define start (current-milliseconds))
+    (define start (current-milliseconds))
     (define val (thnk))
-    ;(define time (- (current-milliseconds) start))
-    ;(set! total-time-spent (+ total-time-spent time))
+    (define time (- (current-milliseconds) start))
+    (set! total-time-spent (+ total-time-spent time))
     ;(printf "total-time-spent = ~v~n" total-time-spent)
-    (hash-set! h k (cons (make-weak-box val) 0))
+    (hash-set! h k (cons (make-weak-box val) time))
     val)
-  (cond [(hash-has-key? h k)  (define p (hash-ref h k))
-                              (define val (weak-box-value (car p)))
-                              (cond [val   ;(set! total-time-saved (+ total-time-saved (cdr p)))
+  (cond [(hash-has-key? h k)  (define bx (hash-ref h k))
+                              (define val (weak-box-value (car bx)))
+                              (cond [val   (set! total-time-saved (+ total-time-saved (cdr bx)))
                                            ;(printf "total-time-saved = ~v~n" total-time-saved)
                                            val]
                                     [else  (cache-ref!)])]
@@ -45,13 +49,17 @@
 (define flomap-cache (make-hash))
 
 (define (clean-flomap-cache!)
-  (weak-value-hash-clean! flomap-cache))
+  (weak-value-hash-clean! flomap-cache)
+  #t)
 
 (register-gc-callback clean-flomap-cache!)
 
-(define (read-flomap-cache)
+(define (get-flomap-cache)
   (for/list ([(k bx)  (in-hash flomap-cache)])
-    (cons k (weak-box-value bx))))
+    (cons k (cons (weak-box-value (car bx)) (cdr bx)))))
+
+(define (get-total-time-saved) total-time-saved)
+(define (get-total-time-spent) total-time-spent)
 
 (define (make-cached-flomap* name proc size . args)
   (define rendered-size

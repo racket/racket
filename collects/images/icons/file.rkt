@@ -3,7 +3,6 @@
 (require racket/draw racket/class
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
-         "../private/renderfx.rkt"
          "../private/utils.rkt"
          "arrow.rkt"
          "style.rkt")
@@ -84,12 +83,12 @@
    
    (define disk-fm
      (let* ([dfm  (deep-flomap-ct-superimpose
+                   'add
                    (deep-flomap-cb-superimpose
+                    'add
                     (flomap->deep-flomap case-fm)
-                    (deep-flomap-raise (flomap->deep-flomap bottom-indent-fm) (* -4 scale))
-                    #:z-mode 'add)
-                   (deep-flomap-raise (flomap->deep-flomap top-indent-fm) (* -1 scale))
-                   #:z-mode 'add)]
+                    (deep-flomap-raise (flomap->deep-flomap bottom-indent-fm) (* -4 scale)))
+                   (deep-flomap-raise (flomap->deep-flomap top-indent-fm) (* -1 scale)))]
             [dfm  (deep-flomap-icon-style dfm)])
        (deep-flomap-render-icon dfm material)))
    

@@ -3,9 +3,7 @@
 (require racket/draw racket/class racket/match racket/math racket/flonum
          "private/flomap.rkt"
          "private/deep-flomap.rkt"
-         "private/renderfx.rkt"
          "icons/style.rkt"
-         "private/unsafe.rkt"
          "private/utils.rkt")
 
 (provide plt-logo planet-logo)
@@ -93,23 +91,8 @@
   (send p close)
   p)
 
-(define (flomap-add-sparkles! fm)
-  (match-define (flomap vs c w h) fm)
-  (for ([_  (in-range 2000)])
-    (define x (random w))
-    (define y (random h))
-    (define i (unsafe-fx* c (unsafe-fx+ x (unsafe-fx* w y))))
-    (define a (flvector-ref vs i))
-    (when (a . > . 0)
-      (define l (unsafe-fl+ 0.5 (unsafe-fl* 1.5 (random))))
-      (define-values (r g b) (unsafe-flvector-3ref vs (unsafe-fx+ 1 i)))
-      (unsafe-flvector-3set! vs (unsafe-fx+ 1 i)
-                             (unsafe-fl* r l)
-                             (unsafe-fl* g l)
-                             (unsafe-fl* b l)))))
-
 (define (make-random-flomap c w h)
-  (unsafe-build-flomap c w h (λ (k x y) (random))))
+  (build-flomap c w h (λ (k x y i) (random))))
 
 (define (flomap-rough fm z-amt)
   (match-define (flomap _ c w h) fm)
@@ -133,8 +116,6 @@
                 (draw-lambda dc 8 8 240 240))
       scale))
    
-   ;(flomap-add-sparkles! bulge-fm)
-   
    (define (lambda-flomap color pen-width)
      (draw-icon-flomap
       256 256 (λ (dc)
@@ -153,8 +134,9 @@
           [lambda-dfm  (flomap->deep-flomap (lambda-flomap "azure" 4))]
           [lambda-dfm  (deep-flomap-bulge-spheroid lambda-dfm (* 112 scale))]
           [lambda-dfm  (deep-flomap-smooth-z lambda-dfm (* 3 scale))]
-          [lambda-fm  (deep-flomap-render-icon lambda-dfm metal-material)]
-          [fm  (deep-flomap-render-icon bulge-dfm glass-logo-material)]
+          [lambda-fm  (time (printf "render lam:~n")
+                            (deep-flomap-render-icon lambda-dfm metal-material))]
+          [fm  (time (printf "render fm:~n") (deep-flomap-render-icon bulge-dfm glass-logo-material))]
           [fm  (flomap-cc-superimpose
                 fm
                 (lambda-flomap lambda-outline-color 10)
@@ -168,11 +150,13 @@
                            (send dc set-pen lambda-outline-color 4 'solid)
                            (send dc draw-ellipse 2 2 252 252))
                  scale)
-                fm)]
-          )
+                fm)])
      fm)))
 
-(define plt-logo (compose flomap->bitmap plt-flomap))
+(define (plt-logo height)
+  (define fm (plt-flomap height))
+  (time (printf "flomap->bitmap:~n")
+        (flomap->bitmap fm)))
 
 (define continents-path-commands
   '((m 11.526653 18.937779)
@@ -285,7 +269,7 @@
                         scale)]
             [earth-dfm  (flomap->deep-flomap earth-fm)]
             [earth-dfm  (deep-flomap-bulge-spheroid earth-dfm (* 16 scale))]
-            [earth-dfm  (deep-flomap-cc-superimpose earth-dfm indent-dfm #:z-mode 'add)])
+            [earth-dfm  (deep-flomap-cc-superimpose 'add earth-dfm indent-dfm)])
        (values (deep-flomap-render-icon earth-dfm water-logo-material)
                (deep-flomap-z earth-dfm))))
    
