@@ -386,12 +386,11 @@ module browser threading seems wrong.
                    frame
                    program-filename)))])))
   
-  (define disk-color (make-object color% 255 233 112))
   (define execute-bitmap (icons:play-icon icons:run-icon-color (icons:toolbar-icon-height)))
   (define break-bitmap (icons:stop-icon icons:halt-icon-color (icons:toolbar-icon-height)))
-  (define small-save-bitmap (icons:small-save-icon icons:syntax-icon-color disk-color
+  (define small-save-bitmap (icons:small-save-icon icons:syntax-icon-color "gold"
                                                    (icons:toolbar-icon-height)))
-  (define save-bitmap (icons:save-icon icons:syntax-icon-color disk-color
+  (define save-bitmap (icons:save-icon icons:syntax-icon-color "gold"
                                        (icons:toolbar-icon-height)))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)
