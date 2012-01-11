@@ -93,7 +93,7 @@ static void optimize_info_used_top(Optimize_Info *info);
 
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_flonum(Optimize_Info *info, int pos);
-static Scheme_Object *optimize_reverse(Optimize_Info *info, int pos, int unless_mutated);
+static Scheme_Object *optimize_reverse(Optimize_Info *info, int pos, int unless_mutated, int disrupt_single_use);
 static int optimize_is_used(Optimize_Info *info, int pos);
 static int optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos);
 static int optimize_is_mutated(Optimize_Info *info, int pos);
@@ -534,8 +534,9 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda)
   if (rator && SCHEME_PRIMP(rator)) {
     if (((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
       /* Although it's semantically ok to return -1 even when cross_lambda,
-         doing so risks duplicating a computation of the relevant `lambda'
+         doing so risks duplicating a computation if the relevant `lambda'
          is later inlined. */
+      if (cross_lambda) return 0;
       return -1;
     }
   }
@@ -1126,7 +1127,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
           sub_info = info;
 
 	/* If scheme_optimize_clone succeeds, inlining succeeds. */
-        le = scheme_optimize_clone(0, data->code, sub_info,
+        le = scheme_optimize_clone(single_use, data->code, sub_info,
                                    offset + (outside_nested ? nested_count : 0),
                                    data->num_params);
 
@@ -1225,7 +1226,7 @@ static void register_flonum_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec 
   }
 
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)) {
-    rator = optimize_reverse(info, SCHEME_LOCAL_POS(rator), 1);
+    rator = optimize_reverse(info, SCHEME_LOCAL_POS(rator), 1, 0);
     if (rator) {
       int offset, single_use;
       le = optimize_info_lookup(info, SCHEME_LOCAL_POS(rator), &offset, &single_use, 0, 0, NULL, NULL);
@@ -1997,7 +1998,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
   if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
     int offset;
     Scheme_Object *expr;
-    expr = optimize_reverse(info, SCHEME_LOCAL_POS(rand), 0);
+    expr = optimize_reverse(info, SCHEME_LOCAL_POS(rand), 0, 0);
     c = optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL, 0, 0, NULL, NULL);
   }
   if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_toplevel_type)) {
@@ -2436,7 +2437,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
   {
     Scheme_Object *rev;
     if (SAME_TYPE(SCHEME_TYPE(f), scheme_local_type)) {
-      rev = optimize_reverse(info, SCHEME_LOCAL_POS(f), 1);
+      rev = optimize_reverse(info, SCHEME_LOCAL_POS(f), 1, 0);
     } else
       rev = f;
 
@@ -3978,7 +3979,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
              Unless post_bind, this must be done with respect to
              body_info, not rhs_info, because we attach the value to
              body_info: */
-          value = optimize_reverse(post_bind ? rhs_info : body_info, vpos, 1);
+          value = optimize_reverse(post_bind ? rhs_info : body_info, vpos, 1, 0);
 
           /* Double-check that the value is ready, because we might be
              nested in the RHS of a `letrec': */
@@ -5269,7 +5270,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
     {
       int pos = SCHEME_LOCAL_POS(expr);
       if (pos >= closure_depth) {
-	expr = optimize_reverse(info, pos + delta - closure_depth, 0);
+	expr = optimize_reverse(info, pos + delta - closure_depth, 0, !dup_ok);
 	if (closure_depth)
 	  expr = scheme_make_local(scheme_local_type, SCHEME_LOCAL_POS(expr) + closure_depth, 0);
       }
@@ -5923,7 +5924,7 @@ static void optimize_produces_flonum(Optimize_Info *info, int pos)
   register_use(info, pos, 0x4);
 }
 
-static Scheme_Object *optimize_reverse(Optimize_Info *info, int pos, int unless_mutated)
+static Scheme_Object *optimize_reverse(Optimize_Info *info, int pos, int unless_mutated, int disrupt_single_use)
 /* pos is in new-frame counts, and we want to produce an old-frame reference if
    it's not mutated */
 {
@@ -5940,6 +5941,26 @@ static Scheme_Object *optimize_reverse(Optimize_Info *info, int pos, int unless_
   if (unless_mutated)
     if (info->use && (info->use[pos] & 0x1))
       return NULL;
+
+  if (disrupt_single_use) {
+    Scheme_Object *p, *n;
+    p = info->consts;
+    while (p) {
+      n = SCHEME_VEC_ELS(p)[1];
+      if (SCHEME_INT_VAL(n) == pos) {
+        if (SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3])) {
+          SCHEME_VEC_ELS(p)[3] = scheme_false; /* disable "single use" mark */
+        }
+        n = SCHEME_VEC_ELS(p)[2];
+        if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
+          ((Scheme_Once_Used *)n)->expr = NULL;
+          ((Scheme_Once_Used *)n)->vclock = -1;
+        }
+        break;
+      }
+      p = SCHEME_VEC_ELS(p)[0];
+    }
+  }
 
   return scheme_make_local(scheme_local_type, pos + delta, 0);
 }
@@ -6103,7 +6124,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
         o->cross_lambda = (j != orig_j);
         return (Scheme_Object *)o;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
-	int pos;
+	int pos, cross_lambda = (j != orig_j);
 
 	pos = SCHEME_LOCAL_POS(n);
 	if (info->flags & SCHEME_LAMBDA_FRAME)
@@ -6136,6 +6157,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
           /* Need to adjust delta: */
           delta = optimize_info_get_shift(info, pos);
           ((Scheme_Once_Used *)n)->delta += delta;
+          if (cross_lambda) ((Scheme_Once_Used *)n)->cross_lambda = 1;
         }
       }
       return n;

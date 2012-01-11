@@ -1393,6 +1393,37 @@
               (f)
               (list x)))
 
+;; don't duplicate formerly once-used variable due to inlining
+(test-comp '(lambda (y)
+              (let ([q (unsafe-fl* y y)]) ; => q is known flonum
+                (let ([x (unsafe-fl* q q)]) ; can delay (but don't duplicate)
+                  (define (f z) (unsafe-fl+ z x))
+                  (if y
+                      (f 10)
+                      f))))
+           '(lambda (y)
+              (let ([q (unsafe-fl* y y)])
+                (let ([x (unsafe-fl* q q)])
+                  (define (f z) (unsafe-fl+ z x))
+                  (if y
+                      (unsafe-fl+ 10 x)
+                      f)))))
+;; double-check that previous test doesn't succeed due to copying
+(test-comp '(lambda (y)
+              (let ([q (unsafe-fl* y y)])
+                (let ([x (unsafe-fl* q q)])
+                  (define (f z) (unsafe-fl+ z x))
+                  (if y
+                      (unsafe-fl+ 10 x)
+                      f))))
+           '(lambda (y)
+              (let ([q (unsafe-fl* y y)])
+                (define (f z) (unsafe-fl+ z (unsafe-fl* q q)))
+                (if y
+                    (unsafe-fl+ 10 (unsafe-fl* q q))
+                    f)))
+           #f)
+
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 
               (require racket/bool)
