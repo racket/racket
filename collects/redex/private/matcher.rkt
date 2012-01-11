@@ -785,7 +785,8 @@ See match-a-pattern.rkt for more details
                        contractum
                        exp
                        match-context
-                       match-contractum)
+                       match-contractum
+                       (or contractum-has-hole? contractum-has-hide-hole?))
         #t ; contractum-has-hole?
         (or ctxt-has-hide-hole? contractum-has-hide-hole?)
         (append ctxt-names contractum-names))]
@@ -994,6 +995,9 @@ See match-a-pattern.rkt for more details
 ;(define memoize/1 (mk-memoize-key 1))
 ;(define memoize/2 (mk-memoize-key 2))
 
+(define-syntax-rule (caching a ...) (begin a ...))
+;(define-syntax-rule (caching a ...) (void))
+
 (define-syntax (mk-memoize-vec stx)
   (syntax-case stx ()
     [(_ arity)
@@ -1001,30 +1005,33 @@ See match-a-pattern.rkt for more details
        (with-syntax ([key-exp (if (= 1 (syntax-e #'arity))
                                   (car (syntax->list #'(args ...)))
                                   #'(list args ...))])
-         #'(λ (f statsbox)
+         #`(λ (f statsbox)
              (let* ([uniq (gensym)]
                     [this-cache-size cache-size]
                     [ans-vec (make-vector this-cache-size uniq)]
                     [key-vec (make-vector this-cache-size uniq)])
-               (lambda (args ...)
-                 (cond
-                   [(not (caching-enabled?)) (f args ...)]
-                   [else
-                    ;(record-cache-test! statsbox)
-                    ;(when (zero? (modulo (cache-stats-hits statsbox) 1000))
-                    ;  (record-cache-size! statsbox (cons ans-vec key-vec)))
-                    (let* ([key key-exp]
-                           [index (modulo (equal-hash-code key) this-cache-size)])
-                      (cond
-                        [(equal? (vector-ref key-vec index) key)
-                         (vector-ref ans-vec index)]
-                        [else
-                         ;(record-cache-miss! statsbox)
-                         (unless (eq? uniq (vector-ref key-vec index)) (record-cache-clobber! statsbox))
-                         (let ([ans (f args ...)])
-                           (vector-set! key-vec index key)
-                           (vector-set! ans-vec index ans)
-                           ans)]))]))))))]))
+               #,(syntax/loc stx
+                   (lambda (args ...)
+                     (cond
+                       [(not (caching-enabled?)) (f args ...)]
+                       [else
+                        (caching
+                         (record-cache-test! statsbox)
+                         (when (zero? (modulo (cache-stats-hits statsbox) 1000))
+                           (record-cache-size! statsbox (cons ans-vec key-vec))))
+                        (let* ([key key-exp]
+                               [index (modulo (equal-hash-code key) this-cache-size)])
+                          (cond
+                            [(equal? (vector-ref key-vec index) key)
+                             (vector-ref ans-vec index)]
+                            [else
+                             (caching
+                              (record-cache-miss! statsbox)
+                              (unless (eq? uniq (vector-ref key-vec index)) (record-cache-clobber! statsbox)))
+                             (let ([ans (f args ...)])
+                               (vector-set! key-vec index key)
+                               (vector-set! ans-vec index ans)
+                               ans)]))])))))))]))
 
 (define memoize/1 (mk-memoize-vec 1))
 (define memoize/2 (mk-memoize-vec 2))
@@ -1281,9 +1288,11 @@ See match-a-pattern.rkt for more details
                                       contractum-match)))))))))
 
 ;; match-in-hole : sexp sexp sexp compiled-pattern compiled-pattern -> compiled-pattern
-(define (match-in-hole context contractum exp match-context match-contractum)
+(define (match-in-hole context contractum exp match-context match-contractum must-use-plug?)
   (λ (exp old-hole-info)
     (let ([mtches (match-context exp (cons match-contractum old-hole-info))])
+      ;(printf (if must-use-plug? "/" "-")) (flush-output)
+      ;  (when mtches (printf "mtchs ~s\n" (map (λ (x) (length (mtch-hole x))) mtches)))
       (and mtches
            (let loop ([mtches mtches]
                       [acc null])
@@ -1307,9 +1316,11 @@ See match-a-pattern.rkt for more details
                                 (make-mtch (make-bindings
                                             (append (bindings-table contractum-bindings)
                                                     (bindings-table bindings)))
-                                           (build-nested-context 
-                                            (mtch-context mtch)
-                                            (mtch-context contractum-mtch))
+                                           (if must-use-plug?
+                                               (build-nested-context 
+                                                (mtch-context mtch)
+                                                (mtch-context contractum-mtch))
+                                               (build-flat-context exp))
                                            (mtch-hole contractum-mtch))
                                 acc)))])))]))))))
 
