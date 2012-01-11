@@ -120,25 +120,21 @@ static int check_val_struct_prim(Scheme_Object *p, int arity)
 {
   if (p && SCHEME_PRIMP(p)) {
     if (arity == 1) {
-      if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
-        int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-        if (t == SCHEME_PRIM_STRUCT_TYPE_PRED)
-          return 1;
-        if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
-          return 2;
-        else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-          return 4;
-        else if (t == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
-          return 6;
-      }
+      int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+      if (t == SCHEME_PRIM_STRUCT_TYPE_PRED)
+        return 1;
+      if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
+        return 2;
+      else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+        return 4;
+      else if (t == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
+        return 6;
     } else if (arity == 2) {
-      if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER)) {
-        int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-        if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
-          return 3;
-        else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-          return 5;
-      }
+      int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+      if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+        return 3;
+      else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+        return 5;
     }
   }
   return 0;
@@ -535,6 +531,9 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     return 1;
   } else if (IS_NAMED_PRIM(rator, "null?")) {
     generate_inlined_constant_test(jitter, app, scheme_null, NULL, for_branch, branch_short, need_sync);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "void?")) {
+    generate_inlined_constant_test(jitter, app, scheme_void, NULL, for_branch, branch_short, need_sync);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "pair?")) {
     generate_inlined_type_test(jitter, app, scheme_pair_type, scheme_pair_type, 0, for_branch, branch_short, need_sync);

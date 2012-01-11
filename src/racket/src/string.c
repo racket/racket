@@ -405,7 +405,8 @@ scheme_init_string (Scheme_Env *env)
   SCHEME_SET_CHAR_STRING_IMMUTABLE(banner_str);
 
   p = scheme_make_folding_prim(string_p, "string?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("string?", p, env);
 
   scheme_add_global_constant("make-string",
@@ -679,7 +680,8 @@ scheme_init_string (Scheme_Env *env)
 			     env);
 
   p = scheme_make_folding_prim(byte_string_p, "bytes?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_NARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("bytes?", p, env);
 
   scheme_add_global_constant("make-bytes",

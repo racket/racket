@@ -236,7 +236,8 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(scheme_procedure_arity_includes_proc);
 
   o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("procedure?", o, env);
 
   scheme_procedure_p_proc = o;
@@ -284,7 +285,8 @@ scheme_init_fun (Scheme_Env *env)
 						 0, -1);
   SCHEME_PRIM_PROC_FLAGS(scheme_values_func) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                                  | SCHEME_PRIM_IS_BINARY_INLINED
-                                                 | SCHEME_PRIM_IS_NARY_INLINED);
+                                                 | SCHEME_PRIM_IS_NARY_INLINED
+                                                 | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("values",
 			     scheme_values_func,
 			     env);
@@ -436,12 +438,15 @@ scheme_init_fun (Scheme_Env *env)
   scheme_void_proc = scheme_make_folding_prim(void_func,
 					      "void",
 					      0, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(scheme_void_proc) |= SCHEME_PRIM_IS_OMITABLE;
   scheme_add_global_constant("void", scheme_void_proc, env);
-  scheme_add_global_constant("void?",
-			     scheme_make_folding_prim(void_p,
-						      "void?",
-						      1, 1, 1),
-			     env);
+
+  
+  o = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("void?", o, env);
+
 #ifdef TIME_SYNTAX
   scheme_add_global_constant("time-apply",
 			     scheme_make_prim_w_arity2(time_apply,

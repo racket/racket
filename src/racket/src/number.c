@@ -320,56 +320,61 @@ scheme_init_number (Scheme_Env *env)
 #endif
 
   p = scheme_make_folding_prim(number_p, "number?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("number?", p, env);
 
-  scheme_add_global_constant("complex?", 
-			     scheme_make_folding_prim(complex_p,
-						      "complex?",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_folding_prim(complex_p, "complex?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_OMITABLE;
+  scheme_add_global_constant("complex?", p, env);
 
   p = scheme_make_folding_prim(real_p, "real?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("real?", p, env);
 
-  scheme_add_global_constant("rational?", 
-			     scheme_make_folding_prim(rational_p,
-						      "rational?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("integer?", 
-			     scheme_make_folding_prim(integer_p,
-						      "integer?",
-						      1, 1, 1),
-			     env);
+  
+  p = scheme_make_folding_prim(rational_p, "rational?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_OMITABLE;
+  scheme_add_global_constant("rational?", p, env);
+
+  p = scheme_make_folding_prim(integer_p, "integer?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_OMITABLE;
+  scheme_add_global_constant("integer?", p, env);
 
   p = scheme_make_folding_prim(exact_integer_p, "exact-integer?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("exact-integer?", p, env);
 
   p = scheme_make_folding_prim(exact_nonnegative_integer_p, "exact-nonnegative-integer?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("exact-nonnegative-integer?", p, env);
 
   p = scheme_make_folding_prim(exact_positive_integer_p, "exact-positive-integer?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("exact-positive-integer?", p, env);
 
   p = scheme_make_immed_prim(fixnum_p, "fixnum?", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("fixnum?", p, env);
 
   p = scheme_make_folding_prim(inexact_real_p, "inexact-real?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("inexact-real?", p, env);
 
   p = scheme_make_folding_prim(flonum_p, "flonum?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("flonum?", p, env);
 
   p = scheme_make_folding_prim(single_flonum_p, "single-flonum?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("single-flonum?", p, env);
 
   p = scheme_make_folding_prim(real_to_single_flonum, "real->single-flonum", 1, 1, 1);
@@ -864,7 +869,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-f64vector-ref", p, env);
   
   p = scheme_make_immed_prim(fl_set, "unsafe-f64vector-set!",
@@ -887,7 +893,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-flvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_set, "unsafe-flvector-set!",
@@ -904,7 +911,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   p = scheme_make_immed_prim(unsafe_fxvector_ref, "unsafe-fxvector-ref",
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-fxvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_set, "unsafe-fxvector-set!",
@@ -914,8 +922,9 @@ void scheme_init_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(s16_ref, "unsafe-s16vector-ref",
                              2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-s16vector-ref", p, env);
   
   p = scheme_make_immed_prim(s16_set, "unsafe-s16vector-set!",
@@ -925,8 +934,9 @@ void scheme_init_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(u16_ref, "unsafe-u16vector-ref",
                              2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_OMITABLE;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-u16vector-ref", p, env);
   
   p = scheme_make_immed_prim(u16_set, "unsafe-u16vector-set!",

@@ -70,7 +70,8 @@ scheme_init_vector (Scheme_Env *env)
   Scheme_Object *p;
 
   p = scheme_make_folding_prim(vector_p, "vector?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("vector?", p, env);
 
   scheme_add_global_constant("make-vector", 
@@ -84,7 +85,8 @@ scheme_init_vector (Scheme_Env *env)
   scheme_vector_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_NARY_INLINED);
+                                | SCHEME_PRIM_IS_NARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("vector", p, env);
 
   REGISTER_SO(scheme_vector_immutable_proc);
@@ -92,7 +94,8 @@ scheme_init_vector (Scheme_Env *env)
   scheme_vector_immutable_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_NARY_INLINED);
+                                | SCHEME_PRIM_IS_NARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("vector-immutable", p, env);
   
   p = scheme_make_folding_prim(vector_length, "vector-length", 1, 1, 1);
@@ -176,12 +179,14 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_vector_ref, "unsafe-vector-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-vector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_vector_star_ref, "unsafe-vector*-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-vector*-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_vector_set, "unsafe-vector-set!", 3, 3);
@@ -194,12 +199,14 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-struct-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_struct_star_ref, "unsafe-struct*-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-struct*-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_struct_set, "unsafe-struct-set!", 3, 3);
@@ -217,7 +224,8 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_string_ref, "unsafe-string-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-string-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_string_set, "unsafe-string-set!", 3, 3);
@@ -231,7 +239,8 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_bytes_ref, "unsafe-bytes-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
+                                | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("unsafe-bytes-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_bytes_set, "unsafe-bytes-set!", 3, 3);

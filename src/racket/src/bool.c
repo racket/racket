@@ -83,20 +83,24 @@ void scheme_init_bool (Scheme_Env *env)
 
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
   scheme_not_prim = p;
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("not", p, env);
 
   p = scheme_make_folding_prim(boolean_p_prim, "boolean?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("boolean?", p, env);
 
   p = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_eq_prim = p;
   scheme_add_global_constant("eq?", p, env);
 
   p = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_eqv_prim = p;
   scheme_add_global_constant("eqv?", scheme_eqv_prim, env);
   
@@ -110,11 +114,13 @@ void scheme_init_bool (Scheme_Env *env)
                              env);
 
   p = scheme_make_immed_prim(chaperone_p, "chaperone?", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("chaperone?", p, env);
 
   p = scheme_make_immed_prim(impersonator_p, "impersonator?", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("impersonator?", p, env);
 
   scheme_add_global_constant("chaperone-of?",

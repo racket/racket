@@ -499,11 +499,9 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
     opts = ((Scheme_Prim_Proc_Header *)a)->flags & SCHEME_PRIM_OPT_MASK;
     if (opts >= SCHEME_PRIM_OPT_NONCM) {
       /* Structure-type predicates are handled specially, so don't claim NONCM: */
-      if (((Scheme_Prim_Proc_Header *)a)->flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
-        if ((((Scheme_Prim_Proc_Header *)a)->flags & SCHEME_PRIM_OTHER_TYPE_MASK)
-            == SCHEME_PRIM_STRUCT_TYPE_PRED)
-          return 0;
-      }
+      if ((((Scheme_Prim_Proc_Header *)a)->flags & SCHEME_PRIM_OTHER_TYPE_MASK)
+          == SCHEME_PRIM_STRUCT_TYPE_PRED)
+        return 0;
       return 1;
     }
   }

@@ -359,129 +359,73 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         }
       }
     }
-    /* (values <omittable> ...) */
-    if (SAME_OBJ(scheme_values_func, app->args[0])) {
-      note_match(app->num_args, vals, warn_info);
-      if ((app->num_args == vals) || (vals < 0)) {
-	int i;
-	for (i = app->num_args; i--; ) {
-	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
-                                     deeper_than + (resolved ? app->num_args : 0)))
-	    return 0;
-	}
-	return 1;
-      }
-    }
-    /* ({void,list,list*,vector,vector-immutable} <omittable> ...) */
-    if (SAME_OBJ(scheme_void_proc, app->args[0])
-        || SAME_OBJ(scheme_list_proc, app->args[0])
-        || SAME_OBJ(scheme_list_star_proc, app->args[0])
-        || SAME_OBJ(scheme_vector_proc, app->args[0])
-        || SAME_OBJ(scheme_vector_immutable_proc, app->args[0])) {
-      note_match(1, vals, warn_info);
-      if ((vals == 1) || (vals < 0)) {
-        int i;
-	for (i = app->num_args; i--; ) {
-	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
-                                     deeper_than + (resolved ? app->num_args : 0)))
-	    return 0;
-	}
-	return 1;
-      }
-    }
-    if (SCHEME_PRIMP(app->args[0])
-        && (SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
-        && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
-        && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)) {
-      note_match(1, vals, warn_info);
-      if ((vals == 1) || (vals < 0)) {
-        /* can omit an unsafe op */
+
+    if (SCHEME_PRIMP(app->args[0])) {
+      if ((SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_OMITABLE)
+          && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
+          && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)
+          && ((vals < 0) 
+              || ((vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_MULTI_RESULT))
+              || (SAME_OBJ(scheme_values_func, app->args[0])
+                  && (vals == app->num_args)))) {
         int i;
         for (i = app->num_args; i--; ) {
-	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
+          if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
                                      deeper_than + (resolved ? app->num_args : 0)))
-	    return 0;
-	}
+            return 0;
+        }
         return 1;
+      } else if (!(SCHEME_PRIM_PROC_FLAGS(app->args[0]) & SCHEME_PRIM_IS_MULTI_RESULT)) {
+        note_match(1, vals, warn_info);
+      } else if (SAME_OBJ(scheme_values_func, app->args[0])) {
+        note_match(app->num_args, vals, warn_info);
       }
     }
+  
     return 0;
   }
 
   if (vtype == scheme_application2_type) {
-    /* ({values,void,list,list*,vector,vector-immutable,box} <omittable>) */
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
-    if (SAME_OBJ(scheme_values_func, app->rator)
-        || SAME_OBJ(scheme_void_proc, app->rator)
-        || SAME_OBJ(scheme_list_proc, app->rator)
-        || SAME_OBJ(scheme_list_star_proc, app->rator)
-        || SAME_OBJ(scheme_vector_proc, app->rator)
-        || SAME_OBJ(scheme_vector_immutable_proc, app->rator)
-        || SAME_OBJ(scheme_box_proc, app->rator)) {
-      note_match(1, vals, warn_info);
-      if ((vals == 1) || (vals < 0)) {
-	if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 1 : 0)))
-	  return 1;
-      }
-    }
-    if (SCHEME_PRIMP(app->rator)
-        && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
-        && (1 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
-        && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
-      note_match(1, vals, warn_info);
-      if ((vals == 1) || (vals < 0)) {
+    if (SCHEME_PRIMP(app->rator)) {
+      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_OMITABLE)
+          && (1 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
+          && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)
+          && ((vals < 0) 
+              || ((vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT))
+              || ((vals == 1) && SAME_OBJ(scheme_values_func, app->rator)))) {
         if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info,
                                   deeper_than + (resolved ? 1 : 0)))
           return 1;
+      } else if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)
+                 || SAME_OBJ(scheme_values_func, app->rator)) {
+        note_match(1, vals, warn_info);
       }
     }
     return 0;
   }
 
   if (vtype == scheme_application3_type) {
-    /* (values <omittable> <omittable>) */
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
-    if (SAME_OBJ(scheme_values_func, app->rator)) {
-      note_match(2, vals, warn_info);
-      if ((vals == 2) || (vals < 0)) {
+    if (SCHEME_PRIMP(app->rator)) {
+      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_OMITABLE)
+          && (2 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
+          && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)
+          && ((vals < 0) 
+              || ((vals == 1) && !(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT))
+              || ((vals == 2) && SAME_OBJ(scheme_values_func, app->rator)))) {
         if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
                                   deeper_than + (resolved ? 2 : 0))
             && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
                                      deeper_than + (resolved ? 2 : 0)))
           return 1;
+      } else if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)) {
+        note_match(1, vals, warn_info);
+      } else if (SAME_OBJ(scheme_values_func, app->rator)) {
+        note_match(2, vals, warn_info);
       }
     }
-    /* ({void,cons,list,list*,vector,vector-immutable) <omittable> <omittable>) */
-    if (SAME_OBJ(scheme_void_proc, app->rator)
-        || SAME_OBJ(scheme_cons_proc, app->rator)
-        || SAME_OBJ(scheme_mcons_proc, app->rator)
-        || SAME_OBJ(scheme_list_proc, app->rator)
-        || SAME_OBJ(scheme_list_star_proc, app->rator)
-        || SAME_OBJ(scheme_vector_proc, app->rator)
-        || SAME_OBJ(scheme_vector_immutable_proc, app->rator)) {
-      note_match(1, vals, warn_info);
-      if ((vals == 1) || (vals < 0)) {
-	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 2 : 0))
-	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 2 : 0)))
-	  return 1;
-      }
-    }
-    if (SCHEME_PRIMP(app->rator)
-        && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
-        && (2 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
-        && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
-      note_match(1, vals, warn_info);
-      if ((vals == 1) || (vals < 0)) {
-	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 2 : 0))
-	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
-                                  deeper_than + (resolved ? 2 : 0)))
-          return 1;
-      }
-    }
+    return 0;
   }
 
   return 0;
@@ -1425,18 +1369,9 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
 static int is_nonmutating_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
+      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_OMITABLE)
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
-    return 1;
-
-  if (SAME_OBJ(scheme_void_proc, rator)
-      || SAME_OBJ(scheme_list_proc, rator)
-      || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
-      || SAME_OBJ(scheme_list_star_proc, rator)
-      || SAME_OBJ(scheme_vector_proc, rator)
-      || SAME_OBJ(scheme_vector_immutable_proc, rator)
-      || (SAME_OBJ(scheme_box_proc, rator) && (n == 1)))
     return 1;
 
   return 0;

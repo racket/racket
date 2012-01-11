@@ -1154,8 +1154,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   name[len+1] = 0;
 
   v = scheme_make_folding_prim_closure(prop_pred, 1, a, name, 1, 1, 0);
-  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= (SCHEME_PRIM_IS_STRUCT_OTHER
-                                                    | SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED);
+  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED;
   *predout = v;
 
   name = MALLOC_N_ATOMIC(char, len + 10);
@@ -1163,8 +1162,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   memcpy(name + len, "-accessor", 10);
 
   v = scheme_make_prim_closure_w_arity(prop_accessor, 1, a, name, 1, 2);
-  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= (SCHEME_PRIM_IS_STRUCT_OTHER
-                                                    | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER);
+  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER;
   
   *accessout = v;
 
@@ -3010,22 +3008,16 @@ int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)
 }
 
 
-#define STRUCT_mPROCP(o, t, v)						\
-  (SCHEME_PRIMP(o) && ((((Scheme_Primitive_Proc *)o)->pp.flags & (t)) == (v)))
-
-#define STRUCT_PROCP(o, t) STRUCT_mPROCP(o, t, t)
+#define STRUCT_mPROCP(o, v)						\
+  (SCHEME_PRIMP(o) && ((((Scheme_Primitive_Proc *)o)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == (v)))
 
 static Scheme_Object *
 struct_setter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, 
-			 SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-			 SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
-	   || STRUCT_mPROCP(v, 
-			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+	   || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3034,12 +3026,8 @@ struct_getter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, 
-                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
-           || STRUCT_mPROCP(v, 
-			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER)
+           || STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
 	  ? scheme_true : scheme_false);
 }
 
@@ -3048,9 +3036,7 @@ struct_pred_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return (STRUCT_mPROCP(v, 
-                        SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-                        SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_PRED)
+  return (STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_PRED)
 	  ? scheme_true : scheme_false);
 }
 
@@ -3059,9 +3045,7 @@ struct_constr_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return (STRUCT_mPROCP(v, 
-                        SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-                        SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_CONSTR)
+  return (STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_CONSTR)
 	  ? scheme_true : scheme_false);
 }
 
@@ -3070,9 +3054,7 @@ struct_prop_getter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, 
-                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type))
 	  ? scheme_true : scheme_false);
 }
@@ -3082,9 +3064,7 @@ chaperone_prop_getter_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
-  return ((STRUCT_mPROCP(v, 
-                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+  return ((STRUCT_mPROCP(v, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_chaperone_property_type))
 	  ? scheme_true : scheme_false);
 }
@@ -3102,11 +3082,9 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
   /* We don't allow chaperones on the getter or setter procedure, because we
      can't preserve them in the generated procedure. */
 
-  if (!STRUCT_mPROCP(argv[0], 
-		     SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
-		     SCHEME_PRIM_IS_STRUCT_OTHER | (getter 
-                                                    ? SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER
-                                                    : SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))) {
+  if (!STRUCT_mPROCP(argv[0], (getter 
+                               ? SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER
+                               : SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))) {
     scheme_wrong_type(who, (getter 
 			    ? "accessor procedure that requires a field index"
 			    : "mutator procedure that requires a field index"),
@@ -3779,14 +3757,14 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					 struct_type->num_islots,
 					 struct_type->num_islots,
 					 0);
-    flags |= SCHEME_PRIM_STRUCT_TYPE_CONSTR | SCHEME_PRIM_IS_STRUCT_OTHER;
+    flags |= SCHEME_PRIM_STRUCT_TYPE_CONSTR;
   } else if (proc_type == SCHEME_PRED) {
     a[0] = (Scheme_Object *)struct_type;
     p = scheme_make_folding_prim_closure(struct_pred,
 					 1, a,
 					 func_name,
 					 1, 1, 1);
-    flags |= SCHEME_PRIM_STRUCT_TYPE_PRED | SCHEME_PRIM_IS_STRUCT_OTHER;
+    flags |= SCHEME_PRIM_STRUCT_TYPE_PRED;
   } else {
     Struct_Proc_Info *i;
     int need_pos;
@@ -3813,9 +3791,9 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					   func_name,
 					   1 + need_pos, 1 + need_pos, 0);
       if (need_pos)
-	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER;
       else
-	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER;
       /* Cache the accessor only if `struct_info' is used.
 	 This avoids keep lots of useless accessors.
 	 if (need_pos) struct_type->accessor = p; */
@@ -3825,9 +3803,9 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 					   func_name,
 					   2 + need_pos, 2 + need_pos, 0);
       if (need_pos)
-	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER;
       else
-	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
+	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER;
       /* See note above:
 	 if (need_pos) struct_type->mutator = p; */
     }
@@ -3842,22 +3820,20 @@ Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
 {
   if (SCHEME_PRIMP(p)) {
     unsigned short flags = ((Scheme_Primitive_Proc *)p)->pp.flags;
-    if (flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
-      int is_getter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER);
-      int is_setter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER);
+    int is_getter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER);
+    int is_setter = ((flags & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER);
       
-      if (is_getter || is_setter) {
-        const char *func_name;
-        Struct_Proc_Info *i;
-        
-        func_name = scheme_symbol_name(sym);
-        
-        i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
-        
-        return make_struct_proc(i->struct_type, (char *)func_name, 
-                                is_getter ? SCHEME_GETTER : SCHEME_SETTER,
-                                i->field);
-      }
+    if (is_getter || is_setter) {
+      const char *func_name;
+      Struct_Proc_Info *i;
+      
+      func_name = scheme_symbol_name(sym);
+      
+      i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+      
+      return make_struct_proc(i->struct_type, (char *)func_name, 
+                              is_getter ? SCHEME_GETTER : SCHEME_SETTER,
+                              i->field);
     }
   }
 

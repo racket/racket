@@ -2377,10 +2377,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	cannot_print(pp, notdisplay, obj, ht, compact);
       else {
         int kind;
-        if (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER)
-          kind = (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-        else
-          kind = -1;
+        kind = (((Scheme_Primitive_Proc *)(obj))->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
 	if ((kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
             || (kind == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
