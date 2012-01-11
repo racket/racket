@@ -82,6 +82,10 @@
 (define-struct (git-diff git-commit) (mfiles) #:prefab)
 (define-struct (git-merge git-commit) (from to) #:prefab)
 
+(define-struct git-commit* (branch hash author date msg) #:prefab)
+(define-struct (git-diff* git-commit*) (mfiles) #:prefab)
+(define-struct (git-merge* git-commit*) (from to) #:prefab)
+
 (define (read-until-empty-line in-p)
   (let loop ()
     (let ([l (read-line in-p)])
@@ -94,7 +98,7 @@
         [else
          (list* (regexp-replace #rx"^ +" l "") (loop))]))))
 
-(define (read-commit in-p)
+(define (read-commit branch in-p)
   (match (read-line in-p)
     [(? eof-object?)
      #f]
@@ -105,24 +109,24 @@
         (match-define (regexp #rx"^Date: +(.+)$" (list _ date)) (read-line in-p))
         (define _1 (read-line in-p))
         (define msg (read-until-empty-line in-p))
-        (make-git-merge hash author date msg from to)]
+        (make-git-merge* branch hash author date msg from to)]
        [(regexp #rx"^Author: +(.+)$" (list _ author))
         (match-define (regexp #rx"^Date: +(.+)$" (list _ date)) (read-line in-p))
         (define _1 (read-line in-p))
         (define msg (read-until-empty-line in-p))
         (define mfiles (read-until-empty-line in-p))
-        (make-git-diff hash author date msg mfiles)])]))
+        (make-git-diff* branch hash author date msg mfiles)])]))
 
 (define port-empty? port-closed?)
 
-(define (read-commits in-p)
+(define (read-commits branch in-p)
   (cond
     [(port-empty? in-p)
      empty]
-    [(read-commit in-p)
+    [(read-commit branch in-p)
      => (lambda (c) 
           (printf "~S\n" c)
-          (list* c (read-commits in-p)))]
+          (list* c (read-commits branch in-p)))]
     [else
      empty]))
 
@@ -137,7 +141,7 @@
            (parameterize 
             ([current-directory repo])
             (system/output-port 
-             #:k read-commits
+             #:k (curry read-commits branch)
              (git-path)
              "--no-pager" "log" "--date=iso" "--name-only" "--no-merges"
              (format "~a..~a" start-commit end-commit)))))))
@@ -159,6 +163,27 @@
           [mfiles (listof string?)])]
  [struct git-merge 
          ([hash string?]
+          [author string?]
+          [date string?]
+          [msg (listof string?)]
+          [from string?]
+          [to string?])]
+ [struct git-commit* 
+         ([branch string?]
+          [hash string?]
+          [author string?]
+          [date string?]
+          [msg (listof string?)])]
+ [struct git-diff* 
+         ([branch string?]
+          [hash string?]
+          [author string?]
+          [date string?]
+          [msg (listof string?)]
+          [mfiles (listof string?)])]
+ [struct git-merge* 
+         ([branch string?]
+          [hash string?]
           [author string?]
           [date string?]
           [msg (listof string?)]

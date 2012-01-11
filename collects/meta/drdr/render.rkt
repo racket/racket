@@ -153,14 +153,21 @@
                   ".." ,(substring end-commit 0 8))))
        ,@(append-map
           (match-lambda
-            [(struct git-merge (hash author date msg from to))
+            [(or (and (struct git-merge (hash author date msg from to))
+                      (app (λ (x) #f) branch))
+                 (struct git-merge* (branch hash author date msg from to)))
              ; Don't display these "meaningless" commits
              empty]
-            [(struct git-diff (hash author date msg mfiles))
+            [(or (and (struct git-diff (hash author date msg mfiles))
+                      (app (λ (x) #f) branch))
+                 (struct git-diff* (branch hash author date msg mfiles)))
              (define cg-id (symbol->string (gensym 'changes)))
              (define ccss-id
                (symbol->string (gensym 'changes)))
-             `((tr 
+             `(,@(if branch
+                     (list `(tr ([class "branch"]) (td "Branch:") (td ,branch)))
+                     empty)
+               (tr 
                 ([class "hash"])
                 (td "Commit:")
                 (td 
@@ -649,7 +656,7 @@
                                    @p{The timing files are a list of S-expressions. Their grammar is: @code{(push duration ((cpu real gc) ...))} where @code{push} is an integer, @code{duration} is an inexact millisecond, and @code{cpu}, @code{real}, and @code{gc} are parsed from the @code{time-apply} function.}
                                    
                                    @h1{Why are some pushes missing?}
-                                   @p{Some pushes are missing because they only modify branches. Only pushes that change the @code{master} branch are tested.}
+                                   @p{Some pushes are missing because they only modify branches. Only pushes that change the @code{master} or @code{release} branch are tested.}
                                    
                                    @h1{How do I make the most use of DrDr?}
                                    @p{So DrDr can be effective with all testing packages and untested code, it only pays attention to error output and non-zero exit codes. You can make the most of this strategy by ensuring that when your tests are run successfully they have no STDERR output and exit cleanly, but have both when they fail.}
