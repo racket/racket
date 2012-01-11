@@ -515,27 +515,31 @@ profile todo:
                    (write-special snp (current-error-port)))
                  (display msg (current-error-port))))])
       (send error-text-style-delta set-delta-foreground (make-object color% 200 0 0))
-      (let ([show-one
-             (λ (expr)
-               (display " " (current-error-port))
-               (send-out (format "~s" (syntax->datum expr))
-                         (λ (snp)
-                           (send snp set-style
-                                 (send (editor:get-standard-style-list) find-or-create-style
-                                       (send (editor:get-standard-style-list) find-named-style "Standard")
-                                       error-text-style-delta)))))]
-            [exprs (exn:fail:syntax-exprs exn)])
-        (cond
-          [(null? exprs) (void)]
-          [(null? (cdr exprs))
-           (send-out " in:" void)
-           (show-one (car exprs))]
-          [else
-           (send-out " in:" void)
-           (for-each (λ (expr)
-                       (display "\n " (current-error-port))
-                       (show-one expr))
-                     exprs)]))))
+      (define (show-one expr)
+        (display " " (current-error-port))
+        (send-out (format "~s" (syntax->datum expr))
+                  (λ (snp)
+                    (send snp set-style
+                          (send (editor:get-standard-style-list) find-or-create-style
+                                (send (editor:get-standard-style-list) find-named-style "Standard")
+                                error-text-style-delta)))))
+      (define exprs (exn:fail:syntax-exprs exn))
+      (define (show-in)
+        (send-out " in:"
+                  (λ (snp)
+                    (send snp set-style
+                          (send (editor:get-standard-style-list) find-named-style "Standard")))))
+      (cond
+        [(null? exprs) (void)]
+        [(null? (cdr exprs))
+         (show-in)
+         (show-one (car exprs))]
+        [else
+         (show-in)
+         (for-each (λ (expr)
+                     (display "\n " (current-error-port))
+                     (show-one expr))
+                   exprs)])))
   
   
   ;; insert/clickback : (instanceof text%) (union string (instanceof snip%)) (-> void)
