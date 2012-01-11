@@ -4,7 +4,7 @@
          "../utils/utils.rkt"
          (contract-req)
          (rep type-rep object-rep)
-         (only-in (types utils) tc-results?)
+         (types utils union)
          (utils tc-utils)
          (env init-envs))
 
@@ -15,7 +15,23 @@
 
 (define (add-typeof-expr e t)
   (when (optimize?)
-    (hash-set! table e t)))
+    (hash-update! table e
+                  ;; when typechecking a case-> type, types get added for
+                  ;; the same subexpression multiple times, combine them
+                  (lambda (old)
+                    (match* (old t)
+                      [((tc-result1: old-t) (tc-result1: t-t))
+                       (ret (Un old-t t-t))]
+                      [((tc-results: old-ts) (tc-results: t-ts))
+                       ;; filters don't matter at this point, since only
+                       ;; the optimizer reads this table
+                       (unless (= (length old-ts) (length t-ts))
+                         (int-err
+                          "type table: number of values don't agree ~a ~a"
+                          old-ts t-ts))
+                       (ret (map Un old-ts t-ts))]
+                      [(_ _) t])) ; irrelevant to the optimizer, just clobber
+                  t)))
 
 (define (type-of e)
   (hash-ref table e
