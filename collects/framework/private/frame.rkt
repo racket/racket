@@ -1459,7 +1459,7 @@
                      (format (string-constant welcome-to-something)
                              (application:current-app-name))
                      #f
-                     '(ok app))))
+                     '(ok))))
     (define/override help-menu:about-string (λ () (application:current-app-name)))
     (define/override help-menu:create-about? (λ () #t))
     
