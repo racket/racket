@@ -102,6 +102,7 @@ static void unregister_mach_thread() {
   int index = thread_self % OSX_THREAD_TABLE_SIZE;
   OSXThreadData * thread, *prev = NULL;
 
+  pthread_mutex_lock(&osxthreadsmutex);
   thread = osxthreads[index];
   while (thread->thread_port_id != thread_self) {
     prev = thread;
@@ -114,6 +115,7 @@ static void unregister_mach_thread() {
       osxthreads[index] = thread->next;
     free(thread);
   }
+  pthread_mutex_unlock(&osxthreadsmutex);
 }
 
 #endif
