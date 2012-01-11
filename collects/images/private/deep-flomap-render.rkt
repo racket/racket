@@ -70,8 +70,9 @@
 ;; ===================================================================================================
 ;; Pass 1: tracing from a directional light source
 
-(: trace-directional-light (flomap flomap flomap flomap -> (values flomap flomap)))
-(define (trace-directional-light alpha-fm rgb-fm z-fm normal-fm)
+(: trace-directional-light (flomap flomap flomap flomap Integer Integer Integer Integer
+                                   -> (values flomap flomap)))
+(define (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max)
   (match-define (flomap alpha-vs 1 w h) alpha-fm)
   (match-define (list rgb-vs z-vs normal-vs) (map flomap-values (list rgb-fm z-fm normal-fm)))
   
@@ -115,7 +116,8 @@
   (define sy-vs (make-flvector (* w h) +nan.0))
   (define Irgb-vs (make-flvector (* 3 w h)))
   
-  (for*: ([int-y : Integer  (in-range h)] [int-x : Integer  (in-range w)])
+  (for*: ([int-y : Integer  (in-range y-min y-max)]
+          [int-x : Integer  (in-range x-min x-max)])
     (define i (fx+ int-x (fx* int-y w)))
     (define a (unsafe-flvector-ref alpha-vs i))
     (when (a . > . 0.0)
@@ -202,7 +204,8 @@
   (define ambient-shadow-fm (make-flomap 3 w h))
   (define ambient-shadow-vs (flomap-values ambient-shadow-fm))
   (when (Ta . > . 0.0)
-    (for*: ([int-y : Integer  (in-range h)] [int-x : Integer  (in-range w)])
+    (for*: ([int-y : Integer  (in-range y-min y-max)]
+            [int-x : Integer  (in-range x-min x-max)])
       (define i (fx+ int-x (fx* int-y w)))
       (define a (unsafe-flvector-ref alpha-vs i))
       (when (a . > . 0.0)
@@ -227,7 +230,8 @@
     ;; Gaussian kernels - make as wide as possible to keep from having to reallocate
     (define kxs (make-flvector w))
     (define kys (make-flvector h))
-    (for*: ([int-y : Integer  (in-range (- h 1))] [int-x : Integer  (in-range (- w 1))])
+    (for*: ([int-y : Integer  (in-range y-min (- y-max 1))]
+            [int-x : Integer  (in-range x-min (- x-max 1))])
       (define i00 (fx+ int-x (fx* int-y w)))
       (define i01 (fx+ i00 1))
       (define i10 (fx+ i00 w))
@@ -327,8 +331,9 @@
 ;; ===================================================================================================
 ;; Pass 2: tracing from a directional viewer
 
-(: trace-directional-view (flomap flomap flomap flomap flomap -> (values flomap flomap)))
-(define (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm)
+(: trace-directional-view (flomap flomap flomap flomap flomap Integer Integer Integer Integer
+                                  -> (values flomap flomap)))
+(define (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm x-min x-max y-min y-max)
   (define-values (w h) (flomap-size alpha-fm))
   (match-define (list alpha-vs rgb-vs z-vs normal-vs shadow-vs)
     (map flomap-values (list alpha-fm rgb-fm z-fm normal-fm shadow-fm)))
@@ -364,7 +369,8 @@
   (define transmitted-vs (flomap-values transmitted-fm))
   
   (when (or (Ri . > . 0.0) (Ti . > . 0.0))
-    (for*: ([int-y : Integer  (in-range h)] [int-x : Integer  (in-range w)])
+    (for*: ([int-y : Integer  (in-range y-min y-max)]
+            [int-x : Integer  (in-range x-min x-max)])
       (define i (fx+ int-x (fx* int-y w)))
       (define a (unsafe-flvector-ref alpha-vs i))
       (when (a . > . 0.0)
@@ -497,10 +503,11 @@
      (define z-fm (fmmax 0.0 (deep-flomap-z dfm)))
      (define normal-fm (flomap-gradient-normal z-fm))
      (define bg-fm (if background-fm (prep-background background-fm w h) #f))
+     (define-values (_1 x-min y-min _2 x-max y-max) (flomap-nonzero-rect alpha-fm))
      
      ;; pass 1: trace from the light source
      (define-values (diffracted-fm raw-shadow-fm)
-       (trace-directional-light alpha-fm rgb-fm z-fm normal-fm))
+       (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max))
      
      ;; blur the shadow to simulate internal scatter
      (define σ (* (min w h) (shadow-blur)))
@@ -517,7 +524,7 @@
      
      ;; pass 2: trace from the viewer
      (define-values (reflected-fm transmitted-fm)
-       (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm))
+       (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm x-min x-max y-min y-max))
      
      ;; add all the light together, convert to premultiplied-alpha flomap
      (let* ([fm  (fm+ (fm+ diffracted-fm transmitted-fm) reflected-fm)]
