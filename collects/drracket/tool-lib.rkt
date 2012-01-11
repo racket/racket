@@ -906,7 +906,7 @@ all of the names in the tools library, for use defining keybindings
  
  (parameter-doc
   drracket:rep:after-expression
-  (parameter/c (or/c #f (-> void?)))
+  (parameter/c (or/c #f (-> any)))
   top-level-expression
   @{This parameter is used by @method[drracket:rep:text% evaluate-from-port].
     When it is a thunk, then DrRacket invokes the thunk on the user's thread
