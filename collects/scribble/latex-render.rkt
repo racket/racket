@@ -247,9 +247,10 @@
             (printf "\\label{t:~a}"
                     (t-encode (add-current-tag-prefix (tag-key (target-element-tag e) ri)))))
           (when part-label?
-            (let ([dest (resolve-get part ri (link-element-tag e))])
+            (let* ([dest (resolve-get part ri (link-element-tag e))]
+                   [number (and dest (vector-ref dest 2))])
               (printf "\\~aRef~a{"
-                      (case (and dest (length (cadr dest)))
+                      (case (and dest (length number))
                         [(0) "Book"]
                         [(1) "Chap"]
                         [else "Sec"])
@@ -259,8 +260,8 @@
                           ""))
               (render-content
                (if dest
-                   (if (list? (cadr dest))
-                       (format-number (cadr dest) null)
+                   (if (list? number)
+                       (format-number number null)
                        (begin (fprintf (current-error-port)
                                        "Internal tag error: ~s -> ~s\n"
                                        (link-element-tag e)
@@ -390,7 +391,7 @@
           (printf ", \\pageref{t:~a}"
                   (t-encode 
                    (let ([v (resolve-get part ri (link-element-tag e))])
-                     (and v (last v))))))
+                     (and v (vector-ref v 1))))))
         null))
 
     (define/private (t-encode s)

@@ -284,48 +284,42 @@
       (for ([t (part-tags d)])
         (let ([key (generate-tag t ci)])
           (collect-put! ci key
-                        (vector (and (current-output-file)
+                        (vector (or (part-title-content d) '("???"))
+                                (add-current-tag-prefix key)
+                                number ; for consistency with base
+                                (and (current-output-file)
                                      (path->relative (current-output-file)))
-                                (or (part-title-content d) '("???"))
-                                (current-part-whole-page? d)
-                                (add-current-tag-prefix key))))))
+                                (current-part-whole-page? d))))))
 
     (define/override (collect-target-element i ci)
       (let ([key (generate-tag (target-element-tag i) ci)])
         (collect-put! ci key
-           (vector (path->relative
-                    (let ([p (current-output-file)])
-                      (if (redirect-target-element? i)
-                        (let-values ([(base name dir?) (split-path p)])
-                          (build-path base
-                                      (redirect-target-element-alt-path i)))
-                        p)))
-                   (let ([tag (target-element-tag i)])
-                     (if (and (pair? tag) (eq? 'part (car tag)))
-                         (element-content i)
-                         #f))
-                   (page-target-element? i)
-                   (if (redirect-target-element? i)
-                     (make-literal-anchor
-                      (redirect-target-element-alt-anchor i))
-                     (add-current-tag-prefix key))))))
+                      (vector (let ([tag (target-element-tag i)])
+                                (if (and (pair? tag) (eq? 'part (car tag)))
+                                    (element-content i)
+                                    #f))
+                              (if (redirect-target-element? i)
+                                  (make-literal-anchor
+                                   (redirect-target-element-alt-anchor i))
+                                  (add-current-tag-prefix key))
+                              #f ; for consistency with 'part info
+                              (path->relative
+                               (let ([p (current-output-file)])
+                                 (if (redirect-target-element? i)
+                                     (let-values ([(base name dir?) (split-path p)])
+                                       (build-path base
+                                                   (redirect-target-element-alt-path i)))
+                                     p)))
+                              (page-target-element? i)))))
 
     (define (dest-path dest)
-      (if (vector? dest) ; temporary
-        (vector-ref dest 0)
-        (list-ref dest 0)))
+      (vector-ref dest 3))
     (define (dest-title dest)
-      (if (vector? dest)
-        (vector-ref dest 1)
-        (list-ref dest 1)))
+      (vector-ref dest 0))
     (define (dest-page? dest)
-      (if (vector? dest)
-        (vector-ref dest 2)
-        (list-ref dest 2)))
+      (vector-ref dest 4))
     (define (dest-anchor dest)
-      (if (vector? dest)
-        (vector-ref dest 3)
-        (list-ref dest 3)))
+      (vector-ref dest 1))
 
     ;; ----------------------------------------
 

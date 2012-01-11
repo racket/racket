@@ -433,11 +433,15 @@
     (define/public (collect-part-tags d ci number)
       (for ([t (part-tags d)])
         (let ([t (generate-tag t ci)])
-          (hash-set! (collect-info-ht ci)
-                     t
-                     (list (or (part-title-content d) '("???")) 
-                           number
-                           (add-current-tag-prefix t))))))
+          (collect-put! ci
+                        t
+                        ;; INFO SHAPE:
+                        ;; The HTML renderer defines its info as an
+                        ;;  extension of this vector's shape, so that
+                        ;;  other renderers can use HTML info.
+                        (vector (or (part-title-content d) '("???")) 
+                                (add-current-tag-prefix t)
+                                number)))))
 
     (define/public (collect-paragraph p ci)
       (collect-content (paragraph-content p) ci))
@@ -490,7 +494,10 @@
 
     (define/public (collect-target-element i ci)
       (let ([t (generate-tag (target-element-tag i) ci)])
-        (collect-put! ci t (list i (add-current-tag-prefix t)))))
+        (collect-put! ci t
+                      ;; See "INFO SHAPE" above.
+                      (vector (element-content i)
+                              (add-current-tag-prefix t)))))
 
     (define/public (collect-index-element i ci)
       (collect-put! ci
@@ -699,8 +706,8 @@
               (null? (element-content i)))
          (let ([v (resolve-get part ri (link-element-tag i))])
            (if v
-             (render-content (strip-aux (car v)) part ri)
-             (render-content (list "[missing]") part ri)))]
+               (render-content (strip-aux (or (vector-ref v 0) "???")) part ri)
+               (render-content (list "[missing]") part ri)))]
         [(element? i)
          (when (render-element? i)
            ((render-element-render i) this part ri))

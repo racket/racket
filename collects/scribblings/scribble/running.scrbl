@@ -77,7 +77,7 @@ content of @filepath{scribble.css} or @filepath{scribble.tex} is
 weakly specified; replacements must define all of the same styles, and
 the set of styles can change across versions of Racket.
 
-Use @DFlag{prefix} to specify an alternate format-specific to start of
+Use @DFlag{prefix} to specify an alternate format-specific start of
 the output file. For HTML output, the starting file specifies the
 @tt{DOCTYPE} declaration of each output HTML file as a substitute for
 @filepath{scribble-prefix.html} in the @filepath{scribble}
@@ -96,8 +96,9 @@ the file automatically).
 
 Cross references within a document or documents rendered together are
 always resolved. When cross references span documents that are
-rendered separately, format-specific cross-reference information needs
-to be saved and loaded explicitly.
+rendered separately, cross-reference information needs to be saved and
+loaded explicitly. Cross-reference information is format-specific, but
+HTML-format information is usable for Latex (or PDF) or text rendering.
 
 A Racket installation includes HTML-format cross-reference information
 for all installed documentation. Each document's information is in a

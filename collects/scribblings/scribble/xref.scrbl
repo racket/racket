@@ -32,7 +32,9 @@ its result is ignored.
 
 Since the format of serialized information is specific to a rendering
 class, the optional @racket[using-render%] argument accepts the
-relevant class. It default to HTML rendering.
+relevant class. It defaults to HTML rendering, partly because
+HTML-format information is usable by other formats (including
+Latex/PDF and text).
 
 If @racket[root-path] is not @racket[#f], then file paths that are
 serialized as relative to an instantiation-supplied @racket[root-path]
