@@ -1271,25 +1271,18 @@
                     [(null? pieces)
                      (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
                     [else
-                     (let loop ([cps (current-library-collection-paths)])
-                       (cond
-                         [(null? cps)
-                          (raise-syntax-error 'bitmap
-                                              (format "could not find the ~a collection" (car pieces))
-                                              stx)]
-                         [else
-                          (if (and (directory-exists? (car cps))
-                                   (member (build-path (car pieces))
-                                           (directory-list (car cps))))
-                              (let ([candidate (apply build-path (car cps) pieces)])
-                                (if (file-exists? candidate)
-                                    candidate
-                                    (raise-syntax-error 'bitmap 
-                                                        (format "could not find ~a in the ~a collection"
-                                                                (apply string-append (add-between (cdr pieces) "/"))
-                                                                (car pieces))
-                                                        stx)))
-                              (loop (cdr cps)))]))]))]
+                     (define fn (last pieces))
+                     (define colls (reverse (cdr (reverse pieces))))
+                     (define candidate
+                       (apply collection-file-path fn colls
+                              #:fail
+                              (λ (msg) (raise-syntax-error 'bitmap msg stx))))
+                     (unless (file-exists? candidate)
+                       (raise-syntax-error 'bitmap 
+                                           (format "could not find ~s, expected it to be in ~a"
+                                                   arg candidate)
+                                           stx))
+                     candidate]))]
                [(string? arg)
                 (path->complete-path 
                  arg
