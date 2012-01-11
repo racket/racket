@@ -144,6 +144,7 @@ ROSYM static Scheme_Object *cr_symbol;
 ROSYM static Scheme_Object *lf_symbol;
 ROSYM static Scheme_Object *crlf_symbol;
 ROSYM static Scheme_Object *module_symbol;
+ROSYM static Scheme_Object *string_symbol;
 
 READ_ONLY static Scheme_Object *default_read_handler;
 READ_ONLY static Scheme_Object *default_display_handler;
@@ -191,6 +192,7 @@ scheme_init_port_fun(Scheme_Env *env)
   REGISTER_SO(lf_symbol);
   REGISTER_SO(crlf_symbol);
   REGISTER_SO(module_symbol);
+  REGISTER_SO(string_symbol);
 
   any_symbol      = scheme_intern_symbol("any");
   any_one_symbol  = scheme_intern_symbol("any-one");
@@ -198,6 +200,7 @@ scheme_init_port_fun(Scheme_Env *env)
   lf_symbol       = scheme_intern_symbol("linefeed");
   crlf_symbol     = scheme_intern_symbol("return-linefeed");
   module_symbol   = scheme_intern_symbol("module");
+  string_symbol   = scheme_intern_symbol("string");
 
   scheme_write_proc   = scheme_make_noncm_prim(sch_write, "write",    1, 2);
   scheme_display_proc = scheme_make_noncm_prim(display,   "display",  1, 2);
@@ -582,7 +585,7 @@ scheme_make_sized_byte_string_input_port(const char *str, intptr_t len)
 
   ip = scheme_make_input_port(scheme_string_input_port_type,
 			      make_indexed_string(str, len),
-			      scheme_intern_symbol("string"),
+			      string_symbol,
 			      string_get_bytes,
 			      string_peek_bytes,
 			      scheme_progress_evt_via_get,
@@ -2438,12 +2441,17 @@ static Scheme_Object *
 open_input_byte_string (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o;
+  intptr_t len;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_type("open-input-bytes", "byte string", 0, argc, argv);
 
+  len = SCHEME_BYTE_STRTAG_VAL(argv[0]);
+  if (SCHEME_IMMUTABLEP(argv[0]))
+    len = -len; /* negative means that the string doesn't have to be copied */
+
   o = scheme_make_sized_byte_string_input_port(SCHEME_BYTE_STR_VAL(argv[0]),
-					       SCHEME_BYTE_STRTAG_VAL(argv[0]));
+					       len);
   if (argc > 1)
     ((Scheme_Input_Port *)o)->name = argv[1];
 
@@ -2461,7 +2469,7 @@ open_input_char_string (int argc, Scheme_Object *argv[])
   o = scheme_char_string_to_byte_string(argv[0]);
 
   o = scheme_make_sized_byte_string_input_port(SCHEME_BYTE_STR_VAL(o),
-					       SCHEME_BYTE_STRTAG_VAL(o));
+					       -SCHEME_BYTE_STRTAG_VAL(o));
 
   if (argc > 1)
     ((Scheme_Input_Port *)o)->name = argv[1];
