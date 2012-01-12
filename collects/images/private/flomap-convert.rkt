@@ -18,10 +18,8 @@
   (define w (send bm get-width))
   (define h (send bm get-height))
   (define bs (make-bytes (* 4 w h)))
-  ;; get bytes without premultiplying alpha because doing it in flonums maintains precision
-  ;; (if RGB bytes are stored without premultiplying alpha)
-  (send bm get-argb-pixels 0 0 w h bs #t)
-  (send bm get-argb-pixels 0 0 w h bs #f)
+  (send bm get-argb-pixels 0 0 w h bs #t #t)
+  (send bm get-argb-pixels 0 0 w h bs #f #t)
   
   (define argb-fm (make-flomap 4 w h))
   (define argb-vs (flomap-values argb-fm))
@@ -38,7 +36,7 @@
     (unsafe-flvector-set! argb-vs i2 (unsafe-fl/ (unsafe-fx->fl g) 255.0))
     (unsafe-flvector-set! argb-vs i3 (unsafe-fl/ (unsafe-fx->fl b) 255.0)))
   
-  (flomap-multiply-alpha argb-fm))
+  argb-fm)
 
 (define (flomap->bitmap fm)
   (match-define (flomap vs c w h) fm)
@@ -52,9 +50,7 @@
                 [(4)  fm]
                 [else  (raise-type-error 'flomap->bitmap "flomap with 1, 2, 3 or 4 components" fm)])]
          ;; inset if zero (bitmaps can't have zero size)
-         [fm  (flomap-inset fm 0 0 (if (= w 0) 1 0) (if (= h 0) 1 0))]
-         ;; divide alphas before converting
-         [fm  (flomap-divide-alpha fm)])
+         [fm  (flomap-inset fm 0 0 (if (= w 0) 1 0) (if (= h 0) 1 0))])
     ;; guaranteed an ARGB flomap now
     (match-define (flomap vs 4 w h) fm)
     (define bs (make-bytes (* 4 w h)))
@@ -72,8 +68,8 @@
       (unsafe-bytes-set! bs i3 (unsafe-fl->byte (unsafe-fl* 255.0 b))))
     
     (define bm (make-bitmap w h))
-    (send bm set-argb-pixels 0 0 w h bs #t)
-    (send bm set-argb-pixels 0 0 w h bs #f)
+    (send bm set-argb-pixels 0 0 w h bs #t #t)
+    (send bm set-argb-pixels 0 0 w h bs #f #t)
     bm))
 
 (define (draw-flomap w h draw-proc)

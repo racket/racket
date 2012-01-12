@@ -127,16 +127,11 @@
    
    (let* ([bulge-dfm  (flomap->deep-flomap bulge-fm)]
           [bulge-dfm  (deep-flomap-bulge-spheroid bulge-dfm (* 112 scale))]
-          ;[bulge-dfm  (deep-flomap-raise bulge-dfm (* 8 scale))]
-          ;[bulge-dfm  (deep-flomap-smooth-z bulge-dfm (* 1/2 scale))]
-          #;[bulge-dfm  (deep-flomap (deep-flomap-argb bulge-dfm)
-                                     (flomap-rough (deep-flomap-z bulge-dfm) 0.5))]
           [lambda-dfm  (flomap->deep-flomap (lambda-flomap "azure" 4))]
           [lambda-dfm  (deep-flomap-bulge-spheroid lambda-dfm (* 112 scale))]
           [lambda-dfm  (deep-flomap-smooth-z lambda-dfm (* 3 scale))]
-          [lambda-fm  (time (printf "render lam:~n")
-                            (deep-flomap-render-icon lambda-dfm metal-material))]
-          [fm  (time (printf "render fm:~n") (deep-flomap-render-icon bulge-dfm glass-logo-material))]
+          [lambda-fm  (deep-flomap-render-icon lambda-dfm metal-material)]
+          [fm  (deep-flomap-render-icon bulge-dfm glass-logo-material)]
           [fm  (flomap-cc-superimpose
                 fm
                 (lambda-flomap lambda-outline-color 10)
@@ -152,11 +147,6 @@
                  scale)
                 fm)])
      fm)))
-
-(define (plt-logo height)
-  (define fm (plt-flomap height))
-  (time (printf "flomap->bitmap:~n")
-        (flomap->bitmap fm)))
 
 (define continents-path-commands
   '((m 11.526653 18.937779)
@@ -293,4 +283,5 @@
     earth-fm
     land-fm)))
 
+(define plt-logo (compose flomap->bitmap plt-flomap))
 (define planet-logo (compose flomap->bitmap planet-flomap))

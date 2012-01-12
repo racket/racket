@@ -6,6 +6,9 @@
 
 (provide (all-defined-out))
 
+;; ===================================================================================================
+;; Caching flomaps with a hash table of weak box values
+
 (define num-callbacks 0)
 (define (get-num-callbacks) num-callbacks)
  
@@ -74,7 +77,9 @@
      (with-syntax ([(name)  (generate-temporaries #'(make-cached-flomap))])
        (syntax/loc stx
          (make-cached-flomap* 'name (λ (size args ...) expr0 expr ...) size args ...)))]))
-  
+
+;; ===================================================================================================
+;; Drawing
 
 (define (draw-ellipse/smoothed dc x y w h)
   (define pen (send dc get-pen))
