@@ -16,6 +16,7 @@
                      syntax/define
                      syntax/flatten-begin
                      syntax/private/boundmap
+                     syntax/parse
                      "classidmap.rkt"))
 
 (define insp (current-inspector)) ; for all opaque structures
@@ -2576,6 +2577,10 @@
     (for ([m (class/c-absents ctc)])
       (when (hash-ref method-ht m #f)
         (fail "class already contains public method ~a" m)))
+    (when (class/c-opaque? ctc)
+      (for ([m (in-hash-keys method-ht)])
+        (unless (memq m (class/c-methods ctc))
+          (fail "method ~a not specified in contract" m))))
     (for ([m (class/c-inherits ctc)])
       (unless (hash-ref method-ht m #f)
         (fail "no public method ~a" m)))
@@ -2957,7 +2962,7 @@
    inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
-   augrides augride-contracts absents absent-fields)
+   augrides augride-contracts absents absent-fields opaque?)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -3155,9 +3160,20 @@
     (parse-spec form))
   parsed-forms)
 
+;; check keyword and pass off to -class/c
 (define-syntax (class/c stx)
+
+  (define-splicing-syntax-class opaque-keyword
+    (pattern (~seq #:opaque) #:with opaque? #'#t)
+    (pattern (~seq) #:with opaque? #'#f))
+
+  (syntax-parse stx
+    [(_ kwd:opaque-keyword form ...)
+     (syntax/loc stx (-class/c kwd.opaque? form ...))]))
+
+(define-syntax (-class/c stx)
   (syntax-case stx ()
-    [(_ form ...)
+    [(_ opaque? form ...)
      (let ([parsed-forms (parse-class/c-specs (syntax->list #'(form ...)) #f)])
        (with-syntax ([methods #`(list #,@(reverse (hash-ref parsed-forms 'methods null)))]
                      [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
@@ -3196,7 +3212,8 @@
                            overrides override-ctcs
                            augments augment-ctcs
                            augrides augride-ctcs
-                           absents absent-fields)))))]))
+                           absents absent-fields
+                           opaque?)))))]))
 
 (define (check-object-contract obj methods fields fail)
   (unless (object? obj)
