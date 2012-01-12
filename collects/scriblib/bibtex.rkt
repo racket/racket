@@ -171,6 +171,10 @@
                (define the-raw (hash-ref raw key (λ () (error 'bibtex "Unknown citation ~e" key))))
                (define (raw-attr a [def #f])
                  (hash-ref the-raw a def))
+               (define (raw-attr* a)
+                 (hash-ref the-raw a 
+                           (λ () (error 'bibtex "Key ~a is missing attribute ~a, has ~a"
+                                        key a the-raw))))
                (match (raw-attr 'type)
                  ["misc"
                   (make-bib #:title (raw-attr "title")
@@ -187,7 +191,7 @@
                   (make-bib #:title (raw-attr "title")
                             #:author (parse-author (raw-attr "author"))
                             #:date (raw-attr "year")
-                            #:location (journal-location (raw-attr "journal")
+                            #:location (journal-location (raw-attr* "journal")
                                                          #:pages (parse-pages (raw-attr "pages"))
                                                          #:number (raw-attr "number")
                                                          #:volume (raw-attr "volume"))
