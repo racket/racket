@@ -39,7 +39,7 @@ module browser threading seems wrong.
          "eval-helpers.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
          (prefix-in icons: (combine-in images/icons/file images/icons/control images/icons/style
-                                       images/logos))
+                                       images/icons/stickman images/logos))
          
          mred
          (prefix-in mred: mred)
@@ -4395,66 +4395,52 @@ module browser threading seems wrong.
   ;                                                   
   ;                                                   
   
-  
-  (define running-bitmap (include-bitmap (lib "icons/b-run.png")))
-  (define waiting-bitmap (include-bitmap (lib "icons/b-wait.png")))
-  (define waiting2-bitmap (include-bitmap (lib "icons/b-wait2.png")))
-  (define running/waiting-bitmaps (list running-bitmap waiting-bitmap waiting2-bitmap))
   (define running-canvas%
     (class canvas%
       (inherit get-dc refresh get-client-size)
-      (define/public (set-running r?) 
-        (unless (eq? r? is-running?)
-          (set! is-running? r?)
-          (refresh)))
-      (define is-running? #f)
-      (define toggle? #t)
-      (define timer #f)
-      (define inside? #f)
       
-      (define/override (on-event evt)
-        (let-values ([(w h) (get-client-size)])
-          (let ([new-inside?
-                 (and (< 0 (send evt get-x) w)
-                      (< 0 (send evt get-y) h))]
-                [old-inside? inside?])
-            (set! inside? new-inside?)
-            (cond
-              [(and new-inside? (not old-inside?))
-               (unless is-running?
-                 (set! timer
-                       (new timer%
-                            [notify-callback 
-                             (λ ()
-                               (set! toggle? (not toggle?))
-                               (refresh))]
-                            [interval 200])))]
-              [(and (not new-inside?) old-inside? timer)
-               (send timer stop)
-               (set! timer #f)]))))
+      (define stickman-height 18)
+      (define num-running-frames 12)
+      (define frame-delay 200)  ; 5 FPS at the most (when the user program is blocked or waiting)
+      (define running-frames
+        (for/vector ([t  (in-range 0 1 (/ 1 num-running-frames))])
+          (icons:running-stickman-icon t icons:run-icon-color "white" icons:run-icon-color
+                                       stickman-height)))
+      (define standing-frame
+        (icons:standing-stickman-icon icons:run-icon-color "white" icons:run-icon-color
+                                      stickman-height))
+      
+      (define all-running-frames
+        (cons standing-frame (vector->list running-frames)))
+  
+      (define is-running? #f)
+      (define frame 0)
+      (define timer (make-object timer% (λ () (refresh) (yield)) #f))
+      
+      (define/public (set-running r?)
+        (cond [r?    (unless is-running? (set! frame 4))
+                     (send timer start frame-delay #f)]
+              [else  (send timer stop)
+                     (refresh)])
+        (set! is-running? r?))
       
       (define/override (on-paint) 
-        (let ([dc (get-dc)]
-              [bm 
-               (if is-running?
-                   running-bitmap
-                   (if toggle?
-                       waiting-bitmap
-                       waiting2-bitmap))])
-          (let-values ([(cw ch) (get-client-size)])
-            (send dc draw-bitmap bm 
-                  (- (/ cw 2) (/ (send bm get-width) 2))
-                  (- (/ ch 2) (/ (send bm get-height) 2))
-                  'solid
-                  (send the-color-database find-color "black")
-                  (send bm get-loaded-mask)))))
+        (define dc (get-dc))
+        (define bm (cond [is-running?  (define bm (vector-ref running-frames frame))
+                                       (set! frame (modulo (+ frame 1) num-running-frames))
+                                       bm]
+                         [else  standing-frame]))
+        (define-values (w h) (get-client-size))
+        (send dc draw-bitmap bm 
+              (- (/ w 2) (/ (send bm get-width) 2))
+              (- (/ h 2) (/ (send bm get-height) 2))))
       
       (super-new [stretchable-width #f]
                  [stretchable-height #f]
                  [style '(transparent no-focus)])
       (inherit min-width min-height)
-      (min-width (apply max (map (λ (x) (send x get-width)) running/waiting-bitmaps)))
-      (min-height (apply max (map (λ (x) (send x get-height)) running/waiting-bitmaps)))))
+      (min-width (apply max (map (λ (x) (send x get-width)) all-running-frames)))
+      (min-height (apply max (map (λ (x) (send x get-height)) all-running-frames)))))
   
   ;; get-mbytes : top-level-window -> (union #f  ;; cancel
   ;;                                         integer[>=100] ;; a limit
