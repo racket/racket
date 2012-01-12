@@ -94,7 +94,9 @@ install-no:
 	$(NOOP)
 
 lib-finish:
-	@LIBFINISH@ "$(libdir)"
+	if [ "$(DESTDIR)" = "" ]; then \
+	  @LIBFINISH@ "$(libdir)"; \
+	fi
 
 no-run:
 	$(NOOP)
