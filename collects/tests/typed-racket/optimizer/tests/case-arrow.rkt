@@ -14,8 +14,8 @@ TR missed opt: case-arrow.rkt 21:2 (+ min (/ (* (- max min) x) p)) -- all args f
 (define A (expt 7 5))
 (define x 42)
 
-(: gen-random : (case-> (Integer Integer → Exact-Rational)
-                        (Float   Float   → Float)))
+(: gen-random : (case→ (Integer Integer → Exact-Rational)
+                       (Float   Float   → Float)))
 (define (gen-random min max)
   (set! x (modulo (* A x) p))
   (+ min (/ (* (- max min) x) p)))
