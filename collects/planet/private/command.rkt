@@ -104,7 +104,7 @@
     [(null? pil) '()]
     [(pair? pil) (cons (pimap f (car pil))
                        (pimap f (cdr pil)))]
-    [else (f pil)]))
+    [else (list (f pil))]))
 
 ;; wrap-to-count : string nat -> (listof string)
 ;; breaks str into substrings such that no substring
