@@ -686,7 +686,7 @@
 (define log->committer+title 
   (match-lambda
     [(struct git-push (num author commits))
-     (define lines (append-map (λ (c) (if (git-merge? c) empty (git-commit-msg c))) commits))
+     (define lines (append-map (λ (c) (if (git-merge? c) empty (git-commit-msg* c))) commits))
      (define title
        (if (empty? lines)
            ""

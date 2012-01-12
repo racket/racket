@@ -149,7 +149,7 @@
   [struct git-push 
          ([num exact-nonnegative-integer?]
           [author string?]
-          [commits (listof git-commit?)])]
+          [commits (listof (or/c git-commit? git-commit*?))])]
  [struct git-commit 
          ([hash string?]
           [author string?]
@@ -191,6 +191,19 @@
           [to string?])]
  [get-scm-commit-msg (exact-nonnegative-integer? path-string? . -> . git-push?)])
 
+(define (git-commit-msg* gc)
+  (if (git-commit? gc)
+      (git-commit-msg gc)
+      (git-commit*-msg gc)))
+(define (git-commit-hash* gc)
+  (if (git-commit? gc)
+      (git-commit-hash gc)
+      (git-commit*-hash gc)))
+
+(provide/contract
+ [git-commit-hash* (-> (or/c git-commit? git-commit*?) string?)]
+ [git-commit-msg* (-> (or/c git-commit? git-commit*?) (listof string?))])
+
 (define (git-push-previous-commit gp)
   (define start (git-push-start-commit gp))
   (parameterize ([current-directory (plt-repository)])
@@ -202,12 +215,12 @@
   (define cs (git-push-commits gp))
   (if (empty? cs)
       "xxxxxxxxxxxxxxxxxxxxxxxxx"
-      (git-commit-hash (last cs))))
+      (git-commit-hash* (last cs))))
 (define (git-push-end-commit gp)
   (define cs (git-push-commits gp))
   (if (empty? cs)
       "xxxxxxxxxxxxxxxxxxxxxxxxx"
-      (git-commit-hash (first cs))))
+      (git-commit-hash* (first cs))))
 (provide/contract
  [git-push-previous-commit (git-push? . -> . string?)]
  [git-push-start-commit (git-push? . -> . string?)]
@@ -259,7 +272,7 @@
 
 (define (contains-drdr-request? p)
   (for*/or ([c (in-list (git-push-commits p))]
-            [m (in-list (git-commit-msg c))])
+            [m (in-list (git-commit-msg* c))])
            (regexp-match #rx"DrDr, test this push" m)))
 
 (define (scm-revisions-after cur-rev repo)
