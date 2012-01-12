@@ -60,10 +60,13 @@
   (define weight (send font get-weight))
   (define underline? (send font get-underlined))
   (define smoothing (send font get-smoothing))
+  (define size 
+    (let* ([size  (inexact->exact (ceiling height))])
+      (min 255 (if trim? (* 2 size) size))))
+  
   (make-cached-flomap
    [height str family style weight underline? smoothing color trim? outline? material]
-   (let ([font  (make-object font% (min 255 (inexact->exact (ceiling height)))
-                  family style weight underline? smoothing #t)])
+   (let ([font  (make-object font% size family style weight underline? smoothing #t)])
      (define-values (w h) (get-text-size str font))
      (define outline-amt (if outline? (/ height 32) 0))
      (define ceiling-amt (inexact->exact (ceiling outline-amt)))
@@ -79,6 +82,9 @@
               [fm  (if outline? (flomap-outlined fm outline-amt) fm)])
          fm))
      (flomap-render-icon fm material))))
+
+(define (recycle-flomap color [height (default-icon-height)] [material (default-icon-material)])
+  (text-flomap "♻" (make-object font% 64 'default) color #t #t height material))
 
 (define (x-flomap color [height (default-icon-height)] [material (default-icon-material)])
   (make-cached-flomap
@@ -287,6 +293,7 @@
 ;; Bitmaps (icons)
 
 (define text-icon (compose flomap->bitmap text-flomap))
+(define recycle-icon (compose flomap->bitmap recycle-flomap))
 (define regular-polygon-icon (compose flomap->bitmap regular-polygon-flomap))
 (define octagon-icon (compose flomap->bitmap octagon-flomap))
 (define x-icon (compose flomap->bitmap x-flomap))
