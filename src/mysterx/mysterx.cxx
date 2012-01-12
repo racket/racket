@@ -72,7 +72,8 @@ static void GC_BOX_DONE(void *v) {
 
 static int is_member(Scheme_Object *a, Scheme_Object *l) {
   while (!SCHEME_NULLP(l)) {
-    if (SAME_OBJ(a, SCHEME_CAR(l))) return 1;
+    if (scheme_equal(a, SCHEME_CAR(l))) return 1;
+    l = SCHEME_CDR(l);
   }
   return 0;
 }
@@ -981,12 +982,12 @@ Scheme_Object *mx_set_coclass(int argc, Scheme_Object **argv)
 
 XFORM_NONGCING static int get_wow_flag(int pass)
 {
-#ifndef _WIN64
+#ifdef _WIN64
   /* Try 64-bit first, but fall back to 32-bit keys */
-# define NUM_WOW_PASSES 1
+# define NUM_WOW_PASSES 2
   return ((pass == 0) ? KEY_WOW64_64KEY : KEY_WOW64_32KEY);
 #else
-# define NUM_WOW_PASSES 0
+# define NUM_WOW_PASSES 1
   return 0;
 #endif
 }
@@ -1017,8 +1018,10 @@ Scheme_Object *mx_coclass(int argc, Scheme_Object **argv)
   // use CLSID to rummage through Registry to find coclass
 
   for (pass = 0; pass < NUM_WOW_PASSES; pass++) {
+    int wow;
+    wow = get_wow_flag(pass);
     result = RegOpenKeyEx(HKEY_CLASSES_ROOT, "CLSID", (DWORD)0, 
-                          KEY_READ | get_wow_flag(pass),
+                          KEY_READ | wow,
                           &hkey);
 
     if (result != ERROR_SUCCESS)
@@ -1051,7 +1054,7 @@ Scheme_Object *mx_coclass(int argc, Scheme_Object **argv)
         continue;
       // open subkey
       result = RegOpenKeyEx(hkey, clsIdBuffer, (DWORD)0, 
-                            KEY_READ | get_wow_flag(pass),
+                            KEY_READ | wow,
                             &hsubkey);
       if (result != ERROR_SUCCESS)
         scheme_signal_error("coclass: Error obtaining coclass value");
@@ -3729,7 +3732,8 @@ void unmarshalVariant(Scheme_Object *val, VARIANTARG *pVariantArg)
     break;
 
   case VT_VARIANT | VT_BYREF :
-	SCHEME_BOX_VAL(val) = variantToSchemeObject(pVariantArg->pvarVal);
+    v = variantToSchemeObject(pVariantArg->pvarVal);
+    SCHEME_BOX_VAL(val) = v;
     free(pVariantArg->pvarVal);
     break;
 
@@ -4539,8 +4543,10 @@ Scheme_Object *mx_all_clsid(int argc, Scheme_Object **argv, char **attributes)
   retval = scheme_null;
   
   for (pass = 0; pass < NUM_WOW_PASSES; pass++) {
+    int wow;
+    wow = get_wow_flag(pass);
     result = RegOpenKeyEx(HKEY_CLASSES_ROOT, "CLSID", (DWORD)0, 
-                          KEY_READ | get_wow_flag(pass),
+                          KEY_READ | wow,
                           &hkey);
 
     if (result != ERROR_SUCCESS) return retval;
@@ -4563,7 +4569,7 @@ Scheme_Object *mx_all_clsid(int argc, Scheme_Object **argv, char **attributes)
 
       // open subkey
       result = RegOpenKeyEx(hkey, clsidBuffer, (DWORD)0, 
-                            KEY_READ | get_wow_flag(pass),
+                            KEY_READ | wow,
                             &hsubkey);
 
       if (result != ERROR_SUCCESS)
