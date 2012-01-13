@@ -26,6 +26,9 @@
    st-mark-source
    st-mark-bindings))
 
+(define base-phase
+  (variable-reference->module-base-phase (#%variable-reference)))
+
 (define-unit stacktrace@
   (import stacktrace-imports^)
   (export stacktrace^)
@@ -543,14 +546,26 @@
            [(stx-null? (syntax body))
             ;; It's a null:
             expr]
-           [(syntax-case* expr (#%plain-app void)
-                          (if (positive? phase)
-                              free-transformer-identifier=?
-                              free-identifier=?)
-              [(#%plain-app void) #t]
+           ;; check for functions that are known to always succeed,
+           ;; in which case we can skip the wrapper:
+           [(syntax-case* expr (void cons mcons list list* vector box
+                                     vector-immutable)
+                          (lambda (a b)
+                            (free-identifier=? a b phase base-phase))
+              [(_ void . _) #t]
+              [(_ cons _ _) #t]
+              [(_ mcons _ _) #t]
+              [(_ list . _) #t]
+              [(_ list* _ . _) #t]
+              [(_ vector . _) #t]
+              [(_ vector-immutable . _) #t]
+              [(_ box _) #t]
               [_else #f])
-            ;; It's (void):
-            expr]
+            (rearm
+             expr
+             (annotate-seq disarmed-expr (syntax body)
+                           annotate phase))]
+           ;; general case:
            [else
             (with-mrk* expr (rearm
                              expr
