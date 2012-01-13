@@ -2285,13 +2285,35 @@ static Scheme_Object *make_chunk(int len, Scheme_Object *owner_wraps)
 	    else {
 	      /* Skip canceling marks */
 	      i++;
-	      l= SCHEME_CDR(l);
+	      l = SCHEME_CDR(l);
 	    }
 	  } else if (SCHEME_HASHTP(a)) {
 	    /* Skip chain-specific table */
 	  } else
 	    wc->a[j++] = a;
 	}
+
+        /* Despite our best efforts, some adjacent canceling 
+           marks may have gotten through to this point. Check
+           one last time. */
+        j = 0;
+        for (i = 0; i < count - 1; i++) {
+          if (SCHEME_NUMBERP(wc->a[i]) && SAME_OBJ(wc->a[i], wc->a[i+1])) {
+            i++;
+          } else {
+            if (j < i)
+              wc->a[j] = wc->a[i];
+            j++;
+          }
+        }
+        if (j < i) {
+          if (i < count)
+            wc->a[j++] = wc->a[i];
+          count = j;
+          wc->len = count;
+          if (!count)
+            return scheme_null;
+        }
 
 	if (count == 1) /* in case mark removal left only one */
 	  ml = wc->a[0];
@@ -3832,7 +3854,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 	    unmarshal_rename(mrn, modidx_shift_from, modidx_shift_to, export_registry);
           }
 
-          if (mrn->marked_names) {
+          if (mrn->marked_names && mrn->marked_names->count) {
 	    /* Resolve based on binding ignoring modules: */
             EXPLAIN(fprintf(stderr, "%d  tl_id_sym\n", depth));
 	    if (!bdg) {
@@ -4358,7 +4380,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    resolve_env(a, orig_phase, 1, NULL, NULL, NULL, NULL, 0, NULL);
 	  }
 
-	  if (mrn->marked_names) {
+	  if (mrn->marked_names && mrn->marked_names->count) {
 	    /* Resolve based on binding ignoring modules: */
 	    if (!bdg) {
 	      bdg = resolve_env(a, orig_phase, 0, NULL, NULL, NULL, NULL, 0, NULL);
