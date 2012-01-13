@@ -546,7 +546,8 @@
   (define (do-paths paths acc)
     (cond [(null? paths) acc]
           [else (do-paths (cdr paths) (do-path (car paths) acc))]))
-  (if path (do-path path init) (do-paths (sorted-dirlist) init)))
+  (define (to-path s) (if (path? s) s (string->path s)))
+  (if path (do-path (to-path path) init) (do-paths (sorted-dirlist) init)))
 
 (define (find-files f [path #f])
   (reverse
