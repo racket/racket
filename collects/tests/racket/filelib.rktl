@@ -68,6 +68,12 @@
     (test (list (build-path (current-directory) "filelib.rktl"))
 	  find-files (lambda (f) (regexp-match "filelib[.]rktl$" (path->string f)))
 	  (current-directory))
+    ;; check that path as string gives paths (not strings) to checker and result:
+    (test (list (current-directory)
+                (build-path (current-directory) "filelib.rktl"))
+	  find-files (lambda (f) (or (equal? f (current-directory))
+                                     (regexp-match "filelib[.]rktl$" (path->string f))))
+	  (path->string (current-directory)))
 
     (let ([rel2 (fold-files (lambda (name kind accum)
 			      (test kind name (if (file-exists? name)
