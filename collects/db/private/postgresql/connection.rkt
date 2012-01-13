@@ -241,22 +241,23 @@
 
     ;; query : symbol Statement -> QueryResult
     (define/public (query fsym stmt0)
-      (let-values ([(stmt result)
-                    (call-with-lock fsym
-                      (lambda ()
-                        (check-valid-tx-status fsym)
-                        (let* ([stmt (check-statement fsym stmt0)]
-                               [stmt-type (send (statement-binding-pst stmt) get-stmt-type)])
-                          (check-statement/tx fsym stmt-type)
-                          (values stmt (query1 fsym stmt #f)))))])
-        (statement:after-exec stmt)
+      (let ([result
+             (call-with-lock fsym
+               (lambda ()
+                 (check-valid-tx-status fsym)
+                 (let* ([stmt (check-statement fsym stmt0)]
+                        [pst (statement-binding-pst stmt)]
+                        [stmt-type (send pst get-stmt-type)]
+                        [close-on-exec? (send pst get-close-on-exec?)])
+                   (check-statement/tx fsym stmt-type)
+                   (query1 fsym stmt #f close-on-exec?))))])
         (query1:process-result fsym result)))
 
-    (define/private (query1 fsym stmt simple?)
+    (define/private (query1 fsym stmt simple? [close-on-exec? #f])
       ;; if simple?: stmt must be string, no params, & results must be binary-readable
-      (query1:enqueue stmt)
+      (query1:enqueue stmt close-on-exec?)
       (send-message (make-Sync))
-      (begin0 (query1:collect fsym simple?)
+      (begin0 (query1:collect fsym simple? close-on-exec?)
         (check-ready-for-query fsym #f)
         (when DEBUG?
           (fprintf (current-error-port) "  ** ~a\n" (tx-state->string)))))
@@ -276,7 +277,7 @@
                (send pst bind fsym null))]))
 
     ;; query1:enqueue : Statement -> void
-    (define/private (query1:enqueue stmt)
+    (define/private (query1:enqueue stmt close-on-exec?)
       (cond [(statement-binding? stmt)
              (let* ([pst (statement-binding-pst stmt)]
                     [pst-name (send pst get-handle)]
@@ -284,15 +285,21 @@
                (buffer-message (make-Bind "" pst-name
                                           (map typeid->format (send pst get-param-typeids))
                                           params
-                                          (map typeid->format (send pst get-result-typeids)))))]
+                                          (map typeid->format (send pst get-result-typeids))))
+               (buffer-message (make-Describe 'portal ""))
+               (buffer-message (make-Execute "" 0))
+               (buffer-message (make-Close 'portal ""))
+               (when close-on-exec?
+                 (buffer-message (make-Close 'statement pst-name))
+                 (send pst set-handle #f)))]
             [(string? stmt)
              (buffer-message (make-Parse "" stmt '()))
-             (buffer-message (make-Bind "" "" '() '() '(1)))])
-      (buffer-message (make-Describe 'portal ""))
-      (buffer-message (make-Execute "" 0))
-      (buffer-message (make-Close 'portal "")))
+             (buffer-message (make-Bind "" "" '() '() '(1)))
+             (buffer-message (make-Describe 'portal ""))
+             (buffer-message (make-Execute "" 0))
+             (buffer-message (make-Close 'portal ""))]))
 
-    (define/private (query1:collect fsym simple?)
+    (define/private (query1:collect fsym simple? close-on-exec?)
       (when simple?
         (match (recv-message fsym)
           [(struct ParseComplete ()) (void)]
@@ -303,11 +310,11 @@
       (match (recv-message fsym)
         [(struct RowDescription (field-dvecs))
          (let* ([rows (query1:data-loop fsym)])
-           (query1:expect-close-complete fsym)
+           (query1:expect-close-complete fsym close-on-exec?)
            (vector 'rows field-dvecs rows))]
         [(struct NoData ())
          (let* ([command (query1:expect-completion fsym)])
-           (query1:expect-close-complete fsym)
+           (query1:expect-close-complete fsym close-on-exec?)
            (vector 'command command))]
         [other-r (query1:error fsym other-r)]))
 
@@ -324,9 +331,10 @@
         [(struct EmptyQueryResponse ()) '()]
         [other-r (query1:error fsym other-r)]))
 
-    (define/private (query1:expect-close-complete fsym)
+    (define/private (query1:expect-close-complete fsym close-on-exec?)
       (match (recv-message fsym)
-        [(struct CloseComplete ()) (void)]
+        [(struct CloseComplete ())
+         (when close-on-exec? (query1:expect-close-complete fsym #f))]
         [other-r (query1:error fsym other-r)]))
 
     (define/private (query1:error fsym r)
@@ -421,20 +429,23 @@
     (define/public (get-base) this)
 
     ;; free-statement : prepared-statement -> void
-    (define/public (free-statement pst)
-      (call-with-lock* 'free-statement
-        (lambda ()
-          (let ([name (send pst get-handle)])
-            (when (and name outport) ;; outport = connected?
-              (send pst set-handle #f)
-              (buffer-message (make-Close 'statement name))
-              (buffer-message (make-Sync))
-              (let ([r (recv-message 'free-statement)])
-                (cond [(CloseComplete? r) (void)]
-                      [else (error/comm 'free-statement)])
-                (check-ready-for-query 'free-statement #t)))))
-        void
-        #f))
+    (define/public (free-statement pst need-lock?)
+      (define (do-free-statement)
+        (let ([name (send pst get-handle)])
+          (when (and name outport) ;; outport = connected?
+            (send pst set-handle #f)
+            (buffer-message (make-Close 'statement name))
+            (buffer-message (make-Sync))
+            (let ([r (recv-message 'free-statement)])
+              (cond [(CloseComplete? r) (void)]
+                    [else (error/comm 'free-statement)])
+              (check-ready-for-query 'free-statement #t)))))
+      (if need-lock?
+          (call-with-lock* 'free-statement
+                           do-free-statement
+                           void
+                           #f)
+          (do-free-statement)))
 
     ;; == Transactions
 

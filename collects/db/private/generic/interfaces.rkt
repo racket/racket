@@ -41,7 +41,7 @@
     start-transaction  ;; symbol (U 'serializable ...) boolean -> void
     end-transaction    ;; symbol (U 'commit 'rollback) boolean -> void
     transaction-status ;; symbol -> (U boolean 'invalid)
-    free-statement))   ;; prepared-statement<%> -> void
+    free-statement))   ;; prepared-statement<%> boolean -> void
 
 ;; dbsystem<%>
 ;; Represents brand of database system, SQL dialect, etc
@@ -68,7 +68,8 @@
     get-handle         ;; -> Handle (depends on database system)
     set-handle         ;; Handle -> void
 
-    after-exec         ;; -> void (for close-after-exec)
+    get-close-on-exec? ;; -> boolean
+    after-exec         ;; boolean -> void (for close-on-exec)
 
     get-param-count    ;; -> nat or #f
     get-param-typeids  ;; -> (listof typeid)
@@ -79,9 +80,6 @@
 
     check-owner        ;; symbol connection any -> #t (or error)
     bind               ;; symbol (listof param) -> statement-binding
-
-    ;; extension hooks: usually shouldn't need to override
-    finalize           ;; -> void
 
     ;; inspection only
     get-param-types    ;; -> (listof TypeDesc)

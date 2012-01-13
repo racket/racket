@@ -66,7 +66,7 @@
       (query fsym stmt)
       (prepare fsym stmt close-on-exec?)
       (get-base)
-      (free-statement stmt)
+      (free-statement stmt need-lock?)
       (transaction-status fsym)
       (start-transaction fsym isolation cwt?)
       (end-transaction fsym mode cwt?)
@@ -200,7 +200,7 @@
         (error fsym "cannot prepare statement with virtual connection"))
       (send (get-connection #t) prepare fsym stmt close-on-exec?))
 
-    (define/public (free-statement stmt)
+    (define/public (free-statement stmt need-lock?)
       (error 'free-statement
              "internal error: virtual connection does not own statements"))))
 
@@ -339,7 +339,7 @@
       (query fsym stmt)
       (prepare fsym stmt close-on-exec?)
       (get-base)
-      (free-statement stmt)
+      (free-statement stmt need-lock?)
       (transaction-status fsym)
       (start-transaction fsym isolation cwt?)
       (end-transaction fsym mode cwt?)

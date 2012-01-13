@@ -95,8 +95,8 @@ server -> client: (or (list 'values result ...)
                 [(list 'disconnect)
                  (send connection disconnect)
                  (set! connection #f)]
-                [(list 'free-statement pstmt-index)
-                 (send connection free-statement (hash-ref pstmt-table pstmt-index))
+                [(list 'free-statement pstmt-index need-lock?)
+                 (send connection free-statement (hash-ref pstmt-table pstmt-index) need-lock?)
                  (hash-remove! pstmt-table pstmt-index)]
                 [(list 'query fsym stmt)
                  (send connection query fsym (sexpr->statement stmt))]

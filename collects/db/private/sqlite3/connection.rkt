@@ -39,13 +39,10 @@
     (define/override (connected?) (and -db #t))
 
     (define/public (query fsym stmt)
-      (let-values ([(stmt* result)
-                    (call-with-lock fsym
-                      (lambda ()
-                        (check-valid-tx-status fsym)
-                        (query1 fsym stmt #t)))])
-        (statement:after-exec stmt)
-        result))
+      (call-with-lock fsym
+        (lambda ()
+          (check-valid-tx-status fsym)
+          (query1 fsym stmt #t))))
 
     (define/private (query1 fsym stmt check-tx?)
       (let* ([stmt (cond [(string? stmt)
@@ -73,11 +70,11 @@
             (HANDLE fsym (sqlite3_clear_bindings stmt))
             (unless (eq? tx-status 'invalid)
               (set! tx-status (get-tx-status)))
-            (values stmt
-                    (cond [(pair? info)
-                           (rows-result info rows)]
-                          [else
-                           (simple-result '())]))))))
+            (send pst after-exec #f)
+            (cond [(pair? info)
+                   (rows-result info rows)]
+                  [else
+                   (simple-result '())])))))
 
     (define/private (load-param fsym db stmt i param)
       (HANDLE fsym
@@ -174,9 +171,11 @@
 
     (define/public (get-base) this)
 
-    (define/public (free-statement pst)
+    (define/public (free-statement pst need-lock?)
       (define (go) (do-free-statement 'free-statement pst))
-      (call-with-lock* 'free-statement go go #f))
+      (if need-lock?
+          (call-with-lock* 'free-statement go go #f)
+          (go)))
 
     (define/private (do-free-statement fsym pst)
       (start-atomic)
@@ -188,6 +187,10 @@
           (HANDLE fsym (sqlite3_finalize stmt))
           (void))))
 
+    ;; Internal query
+
+    (define/private (internal-query1 fsym sql)
+      (query1 fsym sql #f))
 
     ;; == Transactions
 
@@ -202,25 +205,25 @@
       ;; FIXME: modes are DEFERRED | IMMEDIATE | EXCLUSIVE
       (cond [(eq? isolation 'nested)
              (let ([savepoint (generate-name)])
-               (query1 fsym (format "SAVEPOINT ~a" savepoint) #f)
+               (internal-query1 fsym (format "SAVEPOINT ~a" savepoint))
                savepoint)]
             [else
-             (query1 fsym "BEGIN TRANSACTION" #f)
+             (internal-query1 fsym "BEGIN TRANSACTION")
              #f]))
 
     (define/override (end-transaction* fsym mode savepoint)
       (case mode
         ((commit)
          (cond [savepoint
-                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #f)]
+                (internal-query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint))]
                [else
-                (query1 fsym "COMMIT TRANSACTION" #f)]))
+                (internal-query1 fsym "COMMIT TRANSACTION")]))
         ((rollback)
          (cond [savepoint
-                (query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint) #f)
-                (query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint) #f)]
+                (internal-query1 fsym (format "ROLLBACK TO SAVEPOINT ~a" savepoint))
+                (internal-query1 fsym (format "RELEASE SAVEPOINT ~a" savepoint))]
                [else
-                (query1 fsym "ROLLBACK TRANSACTION" #f)])
+                (internal-query1 fsym "ROLLBACK TRANSACTION")])
          ;; remove 'invalid status, if necessary
          (set! tx-status (get-tx-status))))
       (void))
@@ -241,10 +244,7 @@
              ;; schema ignored, because sqlite doesn't support
              (string-append "SELECT tbl_name from sqlite_master "
                             "WHERE type = 'table' or type = 'view'")])
-        (let-values ([(stmt result)
-                      (call-with-lock fsym
-                        (lambda () (query1 fsym stmt #f)))])
-          (statement:after-exec stmt)
+        (let ([result (call-with-lock fsym (lambda () (internal-query1 fsym stmt)))])
           (for/list ([row (in-list (rows-result-rows result))])
             (vector-ref row 0)))))
 

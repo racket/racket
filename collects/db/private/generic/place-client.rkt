@@ -87,13 +87,13 @@
     (define/public (list-tables fsym schema)
       (call 'list-tables fsym schema))
 
-    (define/public (free-statement pst)
+    (define/public (free-statement pst need-lock?)
       (start-atomic)
       (let ([handle (send pst get-handle)])
         (send pst set-handle #f)
         (end-atomic)
         (when channel
-          (call/d 'free-statement handle))))
+          (call/d 'free-statement handle need-lock?))))
 
     (define/private (sexpr->result x)
       (match x

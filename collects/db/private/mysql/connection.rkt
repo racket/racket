@@ -261,19 +261,21 @@
     ;; query : symbol Statement -> QueryResult
     (define/public (query fsym stmt)
       (check-valid-tx-status fsym)
-      (let*-values ([(stmt result)
-                     (call-with-lock fsym
-                       (lambda ()
-                         (let* ([stmt (check-statement fsym stmt)]
-                                [stmt-type
-                                 (cond [(statement-binding? stmt)
-                                        (send (statement-binding-pst stmt) get-stmt-type)]
-                                       [(string? stmt)
-                                        (classify-my-sql stmt)])])
-                           (check-statement/tx fsym stmt-type)
-                           (values stmt (query1 fsym stmt #t)))))])
-        (when #f ;; DISABLED---for some reason, *really* slow
-          (statement:after-exec stmt))
+      (let ([result
+             (call-with-lock fsym
+               (lambda ()
+                 (let* ([stmt (check-statement fsym stmt)]
+                        [stmt-type
+                         (cond [(statement-binding? stmt)
+                                (send (statement-binding-pst stmt) get-stmt-type)]
+                               [(string? stmt)
+                                (classify-my-sql stmt)])])
+                   (check-statement/tx fsym stmt-type)
+                   (begin0 (query1 fsym stmt #t)
+                     (when #f ;; DISABLED!
+                       ;; For some reason, *really* slow; the concurrent tests slow
+                       ;; down by over an order of magnitude when this is enabled.
+                       (statement:after-exec stmt #f))))))])
         (query1:process-result fsym result)))
 
     ;; query1 : symbol Statement -> QueryResult
@@ -390,16 +392,16 @@
 
     (define/public (get-base) this)
 
-    (define/public (free-statement pst)
-      (call-with-lock* 'free-statement
-        (lambda ()
-          (let ([id (send pst get-handle)])
-            (when (and id outport) ;; outport = connected?
-              (send pst set-handle #f)
-              (fresh-exchange)
-              (send-message (make-command:statement-packet 'statement-close id)))))
-        void
-        #f))
+    (define/public (free-statement pst need-lock?)
+      (define (do-free-statement)
+        (let ([id (send pst get-handle)])
+          (when (and id outport) ;; outport = connected?
+            (send pst set-handle #f)
+            (fresh-exchange)
+            (send-message (make-command:statement-packet 'statement-close id)))))
+      (if need-lock?
+          (call-with-lock* 'free-statement do-free-statement void #f)
+          (do-free-statement)))
 
     ;; == Warnings
 

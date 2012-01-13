@@ -56,12 +56,11 @@
     (define/override (connected?) (and db #t))
 
     (define/public (query fsym stmt)
-      (let-values ([(stmt* dvecs rows)
+      (let-values ([(dvecs rows)
                     (call-with-lock fsym
                       (lambda ()
                         (check-valid-tx-status fsym)
                         (query1 fsym stmt #t)))])
-        (statement:after-exec stmt*)
         (cond [(pair? dvecs) (rows-result (map field-dvec->field-info dvecs) rows)]
               [else (simple-result '())])))
 
@@ -80,8 +79,7 @@
             (let ([typeid (field-dvec->typeid dvec)])
               (unless (supported-typeid? typeid)
                 (error/unsupported-type fsym typeid)))))
-        (let-values ([(dvecs rows) (query1:inner fsym pst params)])
-          (values stmt dvecs rows))))
+        (query1:inner fsym pst params)))
 
     (define/private (query1:inner fsym pst params)
       (let* ([db (get-db fsym)]
@@ -100,6 +98,7 @@
                      (fetch* fsym stmt (map field-dvec->typeid result-dvecs)))])
           (handle-status fsym (SQLFreeStmt stmt SQL_CLOSE) stmt)
           (handle-status fsym (SQLFreeStmt stmt SQL_RESET_PARAMS) stmt)
+          (send pst after-exec #f)
           (values result-dvecs rows))))
 
     (define/private (load-param fsym db stmt i param typeid)
@@ -460,9 +459,11 @@
 
     (define/public (get-base) this)
 
-    (define/public (free-statement pst)
+    (define/public (free-statement pst need-lock?)
       (define (go) (free-statement* 'free-statement pst))
-      (call-with-lock* 'free-statement go go #f))
+      (if need-lock? 
+          (call-with-lock* 'free-statement go go #f)
+          (go)))
 
     (define/private (free-statement* fsym pst)
       (start-atomic)
