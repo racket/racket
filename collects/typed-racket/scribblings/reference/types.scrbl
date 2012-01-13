@@ -430,6 +430,7 @@ recursive type in the body @racket[t]
     (define-type (List A) (Rec List (Pair A (U List Null))))]}
 
 @defalias[→ ->]
+@defalias[case→ case->]
 @defalias[∀ All]
 
 @section{Other Types}
