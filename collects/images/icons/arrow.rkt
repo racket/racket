@@ -1,23 +1,39 @@
 #lang racket/base
 
-(require racket/class
+(require racket/class racket/draw
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
          "../private/utils.rkt"
          "style.rkt")
 
-(provide (all-defined-out))
+(provide
+ (activate-contract-out
+  flat-right-arrow-flomap
+  flat-right-over-arrow-flomap
+  right-arrow-flomap left-arrow-flomap up-arrow-flomap down-arrow-flomap
+  right-over-arrow-flomap left-over-arrow-flomap
+  right-under-arrow-flomap left-under-arrow-flomap
+  right-arrow-icon left-arrow-icon up-arrow-icon down-arrow-icon
+  right-over-arrow-icon left-over-arrow-icon
+  right-under-arrow-icon left-under-arrow-icon)
+ (only-doc-out (all-defined-out)))
 
-(define (flat-right-arrow-flomap color height)
-  (draw-icon-flomap
-   32 32 (λ (dc)
-           (send dc set-brush color 'solid)
-           (send dc draw-polygon (list '(0 . 9) '(15 . 9) '(14 . 0)
-                                       '(31 . 15.5)
-                                       '(14 . 31) '(15 . 22) '(0 . 22))))
-   (/ height 32)))
+(defproc (flat-right-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                                  [height (and/c rational? (>=/c 0))]
+                                  ) flomap?
+  (let ([color  (->color% color)])
+    (draw-icon-flomap
+     32 32 (λ (dc)
+             (send dc set-brush color 'solid)
+             (send dc draw-polygon (list '(0 . 9) '(15 . 9) '(14 . 0)
+                                         '(31 . 15.5)
+                                         '(14 . 31) '(15 . 22) '(0 . 22))))
+     (/ height 32))))
 
-(define (flat-right-over-arrow-flomap color height)
+(defproc (flat-right-over-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                                       [height (and/c rational? (>=/c 0))]
+                                       ) flomap?
   (draw-icon-flomap
    32 32 (λ (dc)
            (send dc set-brush color 'solid)
@@ -29,55 +45,72 @@
                      (l -4 -4))))
    (/ height 32)))
 
-(define (flomap-render-short-icon fm material)
-  (define scale (/ (flomap-height fm) 32))
-  (define dfm
-    (let* ([dfm  (flomap->deep-flomap fm)]
-           [dfm  (deep-flomap-icon-style dfm)]
-           [dfm  (deep-flomap-raise dfm (* -12 scale))])
-      dfm))
-  (deep-flomap-render-icon dfm material))
-
-(define (right-arrow-flomap color [height (default-icon-height)] [material (default-icon-material)])
+(defproc (right-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                             [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                             [material deep-flomap-material-value? (default-icon-material)]
+                             ) flomap?
   (make-cached-flomap
    [height color material]
-   (flomap-render-short-icon (flat-right-arrow-flomap color height) material)))
+   (flomap-render-thin-icon (flat-right-arrow-flomap color height) material)))
 
-(define (up-arrow-flomap color [height (default-icon-height)] [material (default-icon-material)])
+(defproc (up-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                          [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                          [material deep-flomap-material-value? (default-icon-material)]
+                          ) flomap?
   (make-cached-flomap
    [height color material]
    (flomap-render-icon (flomap-cw-rotate (flat-right-arrow-flomap color height)) material)))
 
-(define (down-arrow-flomap color [height (default-icon-height)] [material (default-icon-material)])
+(defproc (down-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                            [material deep-flomap-material-value? (default-icon-material)]
+                            ) flomap?
   (make-cached-flomap
    [height color material]
    (flomap-render-icon (flomap-ccw-rotate (flat-right-arrow-flomap color height)) material)))
 
-(define (right-over-arrow-flomap color
-                                 [height (default-icon-height)]
-                                 [material (default-icon-material)])
+(defproc (right-over-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                                  [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                  [material deep-flomap-material-value? (default-icon-material)]
+                                  ) flomap?
   (make-cached-flomap
    [height color material]
-   (flomap-render-short-icon (flat-right-over-arrow-flomap color height) material)))
+   (flomap-render-thin-icon (flat-right-over-arrow-flomap color height) material)))
 
-(define (right-under-arrow-flomap color
-                                  [height (default-icon-height)]
-                                  [material (default-icon-material)])
+(defproc (right-under-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                   [material deep-flomap-material-value? (default-icon-material)]
+                                   ) flomap?
   (make-cached-flomap
    [height color material]
-   (flomap-render-short-icon
+   (flomap-render-thin-icon
     (flomap-flip-vertical (flat-right-over-arrow-flomap color height)) material)))
 
-(define left-arrow-flomap (compose flomap-flip-horizontal right-arrow-flomap))
-(define left-over-arrow-flomap (compose flomap-flip-horizontal right-over-arrow-flomap))
-(define left-under-arrow-flomap (compose flomap-flip-horizontal right-under-arrow-flomap))
+(defproc (left-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                            [material deep-flomap-material-value? (default-icon-material)]
+                            ) flomap?
+  (flomap-flip-horizontal (right-arrow-flomap color height material)))
 
-(define right-arrow-icon (compose flomap->bitmap right-arrow-flomap))
-(define left-arrow-icon (compose flomap->bitmap left-arrow-flomap))
-(define up-arrow-icon (compose flomap->bitmap up-arrow-flomap))
-(define down-arrow-icon (compose flomap->bitmap down-arrow-flomap))
 
-(define right-over-arrow-icon (compose flomap->bitmap right-over-arrow-flomap))
-(define left-over-arrow-icon (compose flomap->bitmap left-over-arrow-flomap))
-(define right-under-arrow-icon (compose flomap->bitmap right-under-arrow-flomap))
-(define left-under-arrow-icon (compose flomap->bitmap left-under-arrow-flomap))
+(defproc (left-over-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                                 [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                 [material deep-flomap-material-value? (default-icon-material)]
+                                 ) flomap?
+  (flomap-flip-horizontal (right-over-arrow-flomap color height material)))
+
+(defproc (left-under-arrow-flomap [color (or/c string? (is-a?/c color%))]
+                                  [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                  [material deep-flomap-material-value? (default-icon-material)]
+                                  ) flomap?
+  (flomap-flip-horizontal (right-under-arrow-flomap color height material)))
+
+(define-simple-icon-wrapper left-arrow-icon left-arrow-flomap)
+(define-simple-icon-wrapper right-arrow-icon right-arrow-flomap)
+(define-simple-icon-wrapper up-arrow-icon up-arrow-flomap)
+(define-simple-icon-wrapper down-arrow-icon down-arrow-flomap)
+
+(define-simple-icon-wrapper right-over-arrow-icon right-over-arrow-flomap)
+(define-simple-icon-wrapper left-over-arrow-icon left-over-arrow-flomap)
+(define-simple-icon-wrapper right-under-arrow-icon right-under-arrow-flomap)
+(define-simple-icon-wrapper left-under-arrow-icon left-under-arrow-flomap)

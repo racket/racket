@@ -38,9 +38,7 @@ module browser threading seems wrong.
          "local-member-names.rkt"
          "eval-helpers.rkt"
          (prefix-in drracket:arrow: "../arrow.rkt")
-         (prefix-in icons: (combine-in images/icons/file images/icons/control images/icons/style
-                                       images/icons/stickman images/logos))
-         
+         (prefix-in icons: images/compile-time)
          mred
          (prefix-in mred: mred)
          
@@ -68,6 +66,46 @@ module browser threading seems wrong.
       (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
         (let ([fw (collection-path "framework")])
           (directory-exists? (build-path fw 'up 'up ".git"))))))
+
+;; ===================================================================================================
+;; Compiled bitmaps
+
+(require (for-syntax
+          racket/base
+          (prefix-in icons: (combine-in images/icons/file images/icons/control images/icons/style
+                                        images/icons/stickman images/logos))))
+
+(define execute-bitmap
+  (icons:compiled-bitmap (icons:play-icon icons:run-icon-color (icons:toolbar-icon-height))))
+(define break-bitmap
+  (icons:compiled-bitmap (icons:stop-icon icons:halt-icon-color (icons:toolbar-icon-height))))
+(define small-save-bitmap
+  (icons:compiled-bitmap (icons:small-save-icon icons:syntax-icon-color "gold"
+                                                (icons:toolbar-icon-height))))
+(define save-bitmap
+  (icons:compiled-bitmap (icons:save-icon icons:syntax-icon-color "gold"
+                                          (icons:toolbar-icon-height))))
+
+(begin-for-syntax
+  (define stickman-height 18)
+  (define num-running-frames 12))
+
+(define running-frame-list
+  (icons:compiled-bitmap-list
+   (for/list ([t  (in-range 0 1 (/ 1 num-running-frames))])
+     (icons:running-stickman-icon t icons:run-icon-color "white" icons:run-icon-color
+                                  stickman-height))))
+(define running-frames (list->vector running-frame-list))
+
+(define standing-frame
+  (icons:compiled-bitmap
+   (icons:standing-stickman-icon icons:run-icon-color "white" icons:run-icon-color
+                                 stickman-height)))
+
+(define very-small-planet-bitmap
+  (icons:compiled-bitmap (icons:planet-logo (icons:toolbar-icon-height))))
+
+;; ===================================================================================================
 
 (define-unit unit@
   (import [prefix help-desk: drracket:help-desk^]
@@ -385,13 +423,6 @@ module browser threading seems wrong.
                    (drracket:language-configuration:language-settings-settings settings)
                    frame
                    program-filename)))])))
-  
-  (define execute-bitmap (icons:play-icon icons:run-icon-color (icons:toolbar-icon-height)))
-  (define break-bitmap (icons:stop-icon icons:halt-icon-color (icons:toolbar-icon-height)))
-  (define small-save-bitmap (icons:small-save-icon icons:syntax-icon-color "gold"
-                                                   (icons:toolbar-icon-height)))
-  (define save-bitmap (icons:save-icon icons:syntax-icon-color "gold"
-                                       (icons:toolbar-icon-height)))
   
   (define-values (get-program-editor-mixin add-to-program-editor-mixin)
     (let* ([program-editor-mixin
@@ -4399,27 +4430,15 @@ module browser threading seems wrong.
     (class canvas%
       (inherit get-dc refresh get-client-size)
       
-      (define stickman-height 18)
-      (define num-running-frames 12)
-      (define frame-delay 200)  ; 5 FPS at the most (when the user program is blocked or waiting)
-      (define running-frames
-        (for/vector ([t  (in-range 0 1 (/ 1 num-running-frames))])
-          (icons:running-stickman-icon t icons:run-icon-color "white" icons:run-icon-color
-                                       stickman-height)))
-      (define standing-frame
-        (icons:standing-stickman-icon icons:run-icon-color "white" icons:run-icon-color
-                                      stickman-height))
-      
-      (define all-running-frames
-        (cons standing-frame (vector->list running-frames)))
-  
+      (define running-frame-delay 200)  ; 5 FPS at the most (if user program is blocked or waiting)
+      (define num-running-frames (vector-length running-frames))
       (define is-running? #f)
       (define frame 0)
       (define timer (make-object timer% (λ () (refresh) (yield)) #f))
       
       (define/public (set-running r?)
         (cond [r?    (unless is-running? (set! frame 4))
-                     (send timer start frame-delay #f)]
+                     (send timer start running-frame-delay #f)]
               [else  (send timer stop)
                      (refresh)])
         (set! is-running? r?))
@@ -4438,7 +4457,10 @@ module browser threading seems wrong.
       (super-new [stretchable-width #f]
                  [stretchable-height #f]
                  [style '(transparent no-focus)])
+      
       (inherit min-width min-height)
+      
+      (define all-running-frames (cons standing-frame running-frame-list))
       (min-width (apply max (map (λ (x) (send x get-width)) all-running-frames)))
       (min-height (apply max (map (λ (x) (send x get-height)) all-running-frames)))))
   
@@ -4682,8 +4704,6 @@ module browser threading seems wrong.
         [(zero? n) '()]
         [(null? l) '()]
         [else (cons (car l) (loop (cdr l) (- n 1)))])))
-  
-  (define very-small-planet-bitmap (icons:planet-logo (icons:toolbar-icon-height)))
   
   (define saved-bug-reports-window #f)
   (define saved-bug-reports-panel #f)

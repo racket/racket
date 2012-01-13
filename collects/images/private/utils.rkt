@@ -81,6 +81,13 @@
 ;; ===================================================================================================
 ;; Drawing
 
+(define (->color% c)
+  (match c
+    [(list r g b)  (make-object color% r g b)]
+    [(? (is-a?/c color%))  c]
+    [(? string?)  (send the-color-database find-color c)]
+    [else  (raise-type-error '->color% "list, color% or string" c)]))
+
 (define (draw-ellipse/smoothed dc x y w h)
   (define pen (send dc get-pen))
   (define brush (send dc get-brush))

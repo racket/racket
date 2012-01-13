@@ -1,6 +1,6 @@
-#lang racket/gui
+#lang racket/base
 
-(require racket/class racket/snip racket/vector
+(require racket/class racket/vector racket/match racket/math
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
          "../private/utils.rkt"
@@ -99,13 +99,6 @@
   (cons+ standing-right-elbow-point
          (polar->cartesian (+ standing-right-elbow-angle standing-torso-angle standing-right-hand-angle)
                            lower-arm-length)))
-
-(define (draw-short-rendered-icon-flomap w h proc scale material)
-  (let* ([fm  (draw-icon-flomap w h proc scale)]
-         [dfm  (flomap->deep-flomap fm)]
-         [dfm  (deep-flomap-icon-style dfm)]
-         [dfm  (deep-flomap-raise dfm (* -18 (/ (flomap-height fm) 32)))])
-    (deep-flomap-render-icon dfm material)))
 
 (define (standing-stickman-flomap color arm-color head-color
                                   [height (default-icon-height)]
@@ -298,9 +291,9 @@
 (define standing-stickman-icon (compose flomap->bitmap standing-stickman-flomap))
 (define running-stickman-icon (compose flomap->bitmap running-stickman-flomap))
 
-#;
+#;; FOR TESTING ONLY: Do not let this find its way into the repo uncommented!
 (begin
-  (require (planet "animated-canvas.rkt" ("williams" "animated-canvas.plt" 2 4)))
+  (require racket/gui (planet "animated-canvas.rkt" ("williams" "animated-canvas.plt" 2 4)))
   
   (define size 20)
   
