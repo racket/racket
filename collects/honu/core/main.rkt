@@ -33,6 +33,7 @@
                                    [honu-var var]
                                    [honu-val val]
                                    [honu-for for]
+                                   [honu-to to]
                                    [honu-if if]
                                    [honu-quote quote]
                                    [honu-quasiquote quasiquote]

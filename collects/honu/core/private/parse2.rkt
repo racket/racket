@@ -161,7 +161,7 @@
      (debug "Parse more: ~a unparsed ~a\n" parsed unparsed)
      (define output (if parsed
                       (honu->racket parsed)
-                      #'(begin)))
+                      #'(void)))
      (debug "Output ~a\n" output)
      (with-syntax ([output output]
                    [(unparsed-out ...) unparsed]

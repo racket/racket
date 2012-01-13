@@ -54,25 +54,7 @@
          #'rest
          #f)])))
 
-(provide honu-for)
-(define-honu-syntax honu-for
-  (lambda (code context)
-    (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-equal honu-in)
-      [(_ iterator:id honu-equal start:honu-expression honu-to end:honu-expression
-          honu-do body:honu-expression . rest)
-       (values
-           #'(%racket (for/list ([iterator (in-range start.result
-                                                     end.result)])
-                        body.result))
-         #'rest
-         #t)]
-      [(_ iterator:id honu-in stuff:honu-expression
-          honu-do body:honu-expression . rest)
-       (values #'(%racket (for/list ([iterator stuff.result])
-                            body.result))
-               #'rest
-               #t)])))
+
 
 (provide honu-if)
 (define-honu-syntax honu-if
@@ -259,6 +241,10 @@
 (define-binary-operator honu-string=? 1 'left string=?)
 (define-binary-operator honu-modulo 2 'left modulo)
 
+(define-binary-operator honu-to 0.001 'left
+                        (lambda (left right)
+                          (for/list ([i (in-range left right)]) i)))
+
 (define-unary-operator honu-not 0.7 'left not)
 
 (define-binary-operator honu-equal 1 'left equal?)
@@ -372,7 +358,8 @@
     [pattern (~seq (~var first (id-except separator end))
                    (~seq (~var between (id-must-be separator))
                          (~var next (id-except separator end))) ...)
-             #:with (id ...) #'(first.x next.x ...)]))
+             #:with (id ...) #'(first.x next.x ...)]
+    [pattern (~seq) #:with (id ...) '()]))
 
 (begin-for-syntax
   (provide honu-declaration)
@@ -417,3 +404,24 @@
 (provide true false)
 (define true #t)
 (define false #f)
+
+(provide honu-for)
+(define-honu-syntax honu-for
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-equal honu-in)
+                       #;
+      [(_ iterator:id honu-equal start:honu-expression honu-to end:honu-expression
+          honu-do body:honu-expression . rest)
+       (values
+           #'(%racket (for/list ([iterator (in-range start.result
+                                                     end.result)])
+                        body.result))
+         #'rest
+         #t)]
+      [(_ iterator:id honu-in stuff:honu-expression
+          honu-do body:honu-expression . rest)
+       (values #'(%racket (for/list ([iterator stuff.result])
+                            body.result))
+               #'rest
+               #t)])))
