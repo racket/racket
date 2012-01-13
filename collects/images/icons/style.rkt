@@ -1,6 +1,7 @@
 #lang racket
 
 (require racket/draw unstable/parameter-group
+         racket/contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt")
 
@@ -70,3 +71,31 @@
   (let* ([fm  (draw-icon-flomap w h draw-proc scale)]
          [fm  (flomap-render-icon fm material)])
     fm))
+
+;; TODO: make one of the following functions unnecessary
+
+(define (flomap-render-thin-icon fm material)
+  (define scale (/ (flomap-height fm) 32))
+  (define dfm
+    (let* ([dfm  (flomap->deep-flomap fm)]
+           [dfm  (deep-flomap-icon-style dfm)]
+           [dfm  (deep-flomap-raise dfm (* -12 scale))])
+      dfm))
+  (deep-flomap-render-icon dfm material))
+
+(define (draw-short-rendered-icon-flomap w h proc scale material)
+  (let* ([fm  (draw-icon-flomap w h proc scale)]
+         [dfm  (flomap->deep-flomap fm)]
+         [dfm  (deep-flomap-icon-style dfm)]
+         [dfm  (deep-flomap-raise dfm (* -12 (/ (flomap-height fm) 32)))])
+    (deep-flomap-render-icon dfm material)))
+
+;; ===================================================================================================
+;; Syntax for writing icon functions
+
+(define-syntax-rule (define-simple-icon-wrapper icon-fun flomap-fun)
+  (defproc (icon-fun [color (or/c string? (is-a?/c color%))]
+                     [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                     [material deep-flomap-material-value? (default-icon-material)]
+                     ) (is-a?/c bitmap%)
+    (flomap->bitmap (flomap-fun color height material))))

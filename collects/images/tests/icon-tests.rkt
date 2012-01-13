@@ -8,7 +8,10 @@
          images/icons/tool
          images/icons/style
          images/private/deep-flomap-render
-         images/private/utils)
+         images/private/utils
+         images/compile-time
+         (for-syntax images/icons/stickman
+                     images/icons/style))
 
 (default-icon-height 16)
 ;(default-icon-material glass-icon-material)
@@ -18,6 +21,20 @@
                               0.0 0.0 0.0
                               0.0))
 ;(default-icon-material diamond-material)
+
+;; ===================================================================================================
+;; Compiled stickman test
+
+(begin-for-syntax
+  (define stickman-height 32)
+  (define num-running-frames 12))
+
+(compiled-bitmap-list
+ (for/list ([t  (in-range 0 1 (/ 1 num-running-frames))])
+   (running-stickman-icon t run-icon-color "white" run-icon-color stickman-height)))
+
+;; ===================================================================================================
+;; Other icons, various colors
 
 (define icon-procss
   (list (list reverse-icon continue-back-icon step-back-icon back-icon pause-icon

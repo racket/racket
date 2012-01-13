@@ -2,7 +2,8 @@
 (require racket/class 
          racket/gui/base
          string-constants/string-constant
-         images/icons/tool images/icons/style)
+         images/compile-time
+         (for-syntax racket/base images/icons/tool images/icons/style))
 (provide syncheck-drracket-button
          syncheck-bitmap
          syncheck-small-bitmap
@@ -10,8 +11,10 @@
 
 (define-local-member-name syncheck:button-callback)
 
-(define syncheck-bitmap (check-syntax-icon (toolbar-icon-height)))
-(define syncheck-small-bitmap (small-check-syntax-icon (toolbar-icon-height)))
+(define syncheck-bitmap
+  (compiled-bitmap (check-syntax-icon (toolbar-icon-height))))
+(define syncheck-small-bitmap
+  (compiled-bitmap (small-check-syntax-icon (toolbar-icon-height))))
 
 (define syncheck-drracket-button
   (list 

@@ -10,7 +10,8 @@
          (only-in "view/view.rkt" macro-stepper-director%)
          "view/stepper.rkt"
          "view/prefs.rkt"
-         images/icons/tool
+         images/compile-time
+         (for-syntax racket/base images/icons/tool)
          ;; FIXME:
          drracket/private/syncheck/local-member-names)
 
@@ -83,6 +84,9 @@
 
 (define macro-stepper-button-label "Macro Stepper")
 
+(define macro-debugger-bitmap (compiled-bitmap (macro-stepper-icon)))
+(define small-macro-debugger-bitmap (compiled-bitmap (small-macro-stepper-icon)))
+
 (define tool@
   (unit
     (import drracket:tool^)
@@ -108,9 +112,6 @@
     (define drracket-custodian (current-custodian))
 
     (define-local-member-name check-language)
-    
-    (define macro-debugger-bitmap (macro-stepper-icon))
-    (define small-macro-debugger-bitmap (small-macro-stepper-icon))
     
     (define (macro-debugger-unit-frame-mixin %)
       (class* % (frame/supports-macro-stepper<%>)

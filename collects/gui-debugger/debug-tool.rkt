@@ -15,7 +15,8 @@
            framework
            string-constants
            lang/debugger-language-interface
-           images/icons/tool)
+           images/compile-time
+           (for-syntax images/icons/tool))
   
   (provide tool@)
   
@@ -1082,8 +1083,8 @@
           
           (super-new)))
       
-      (define debug-bitmap (debugger-icon))
-      (define small-debug-bitmap (small-debugger-icon))
+      (define debug-bitmap (compiled-bitmap (debugger-icon)))
+      (define small-debug-bitmap (compiled-bitmap (small-debugger-icon)))
       
       (define make-pause-label
         (bitmap-label-maker
