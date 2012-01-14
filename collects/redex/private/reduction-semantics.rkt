@@ -273,6 +273,9 @@
 (define-for-syntax (where-keyword? id)
   (or (free-identifier=? id #'where)
       (free-identifier=? id #'where/hidden)))
+(define-for-syntax (side-condition-keyword? id)
+  (or (free-identifier=? id #'side-condition)
+      (free-identifier=? id #'side-condition/hidden)))
 
 (define-for-syntax (split-by-mode xs mode)
   (for/fold ([ins '()] [outs '()])
@@ -317,7 +320,7 @@
        (free-identifier=? stx (quote-syntax ...))))
 
 ;; the withs, freshs, and side-conditions come in backwards order
-(define-for-syntax (bind-withs orig-name main lang lang-nts stx where-mode body names w/ellipses)
+(define-for-syntax (bind-withs orig-name main lang lang-nts stx where-mode body names w/ellipses side-condition-unquoted?)
   (with-disappeared-uses
    (let loop ([stx stx]
               [to-not-be-in main]
@@ -356,9 +359,10 @@
                           (term-let ([names/ellipses x] ...) 
                                     #,rest-body))))))))]
        [((-side-condition s ...) y ...)
-        (or (free-identifier=? #'-side-condition #'side-condition)
-            (free-identifier=? #'-side-condition #'side-condition/hidden))
-        #`(and s ... #,(loop #'(y ...) to-not-be-in env))]
+        (side-condition-keyword? #'-side-condition)
+        (if side-condition-unquoted?
+            #`(and s ... #,(loop #'(y ...) to-not-be-in env))
+            #`(and (term s) ... #,(loop #'(y ...) to-not-be-in env)))]
        [((fresh x) y ...)
         (identifier? #'x)
         #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
@@ -951,7 +955,8 @@
                         #`(list (cons #,(or computed-name #'none)
                                       (term #,to)))
                         (syntax->list #'(names ...))
-                        (syntax->list #'(names/ellipses ...))))
+                        (syntax->list #'(names/ellipses ...))
+                        #t))
           (define test-case-body-code
             ;; this contains some redundant code
             (bind-withs orig-name
@@ -962,7 +967,8 @@
                         'predicate
                         #'#t
                         (syntax->list #'(names ...))
-                        (syntax->list #'(names/ellipses ...))))
+                        (syntax->list #'(names/ellipses ...))
+                        #t))
           (with-syntax ([(lhs-w/extras (w/extras-names ...) (w/extras-names/ellipses ...))
                          (rw-sc #`(side-condition #,from #,test-case-body-code))]
                         [lhs-source (format "~a:~a:~a"
@@ -1045,8 +1051,7 @@
                                  (syntax->list #'(var ...)))
                             (loop (cdr extras)))]
                    [(-side-condition exp ...)
-                    (or (free-identifier=? #'-side-condition #'side-condition)
-                        (free-identifier=? #'-side-condition #'side-condition/hidden))
+                    (side-condition-keyword? #'-side-condition)
                     (cons (car extras) (loop (cdr extras)))]
                    [(-where x e)
                     (where-keyword? #'-where)
@@ -1496,7 +1501,8 @@
                                     sc/b 'flatten
                                     #`(list (term #,rhs))
                                     (syntax->list names) 
-                                    (syntax->list names/ellipses)))
+                                    (syntax->list names/ellipses)
+                                    #t))
                                  (syntax->list #'((stuff ...) ...))
                                  (syntax->list #'(rhs ...))
                                  (syntax->list #'(lhs-names ...))
@@ -1509,7 +1515,8 @@
                                     sc/b 'predicate
                                     #`#t
                                     (syntax->list names)
-                                    (syntax->list names/ellipses)))
+                                    (syntax->list names/ellipses)
+                                    #t))
                                  (syntax->list #'((stuff ...) ...))
                                  (syntax->list #'(rhs ...))
                                  (syntax->list #'(lhs-names ...))
@@ -1587,7 +1594,8 @@
                                            ((stuff ...) ...)
                                            #,(if relation?
                                                  #'((raw-rhses ...) ...)
-                                                 #'(rhs ...)))
+                                                 #'(rhs ...))
+                                           #t)
                              lang
                              #t ;; multi-args?
                              'name
@@ -1877,7 +1885,7 @@
             [judgment (syntax-case stx () [(_ judgment _) #'judgment])])
        (check-judgment-arity stx judgment)
        #`(sort #,(bind-withs syn-err-name '() lang nts (list judgment)
-                             'flatten #`(list (term #,#'tmpl)) '() '())
+                             'flatten #`(list (term #,#'tmpl)) '() '() #f)
                string<=?
                #:key (λ (x) (format "~s" x))))]
     [(_ (not-form-name . _) . _)
@@ -1911,7 +1919,8 @@
              (bind-withs syn-error-name '() lang nts (syntax->list #'prems) 
                          'flatten #`(list (term (#,@output-pats))) 
                          (syntax->list #'(names ...))
-                         (syntax->list #'(names/ellipses ...))))
+                         (syntax->list #'(names/ellipses ...))
+                         #f))
            #`(let ([compiled-lhs (compile-pattern #,lang `lhs #t)]
                    [compiled-input-ctcs #,(contracts-compilation input-contracts)]
                    [compiled-output-ctcs #,(contracts-compilation output-contracts)])
@@ -1956,7 +1965,7 @@
             (for/list ([prems (syntax->list #'(prems ...))])
               (reverse (syntax->list prems)))]
            [no-rhss (map (λ (_) '()) clauses)])
-       #`(generate-lws #t (conc-body ...) #,(lhs-lws clauses) #,rev-premss #,no-rhss))]))
+       #`(generate-lws #t (conc-body ...) #,(lhs-lws clauses) #,rev-premss #,no-rhss #f))]))
 
 (define (check-judgment-form-contract form-name terms contracts mode modes)
   (define description
@@ -2025,6 +2034,10 @@
                         (begin
                           (tmpl-pos #'tmpl acc)
                           (pat-pos #'pat acc))]
+                       [(-side-condition tmpl)
+                        (side-condition-keyword? #'-side-condition)
+                        (begin (tmpl-pos #'tmpl acc)
+                               acc)]
                        [(form-name . _)
                         (if (judgment-form-id? #'form-name)
                             (let-values ([(prem-in prem-out) (split-body prem)])
@@ -2036,14 +2049,14 @@
          (for ([pos conc-out]) (tmpl-pos pos acc-out))
          acc-out)]))
   (for ([clause clauses])
-       (define do-tmpl
-         (check-template
-          (fold-clause (bind 'rhs-only) void (make-immutable-free-id-table) clause)))
-       (fold-clause (bind 'rhs-only) do-tmpl (make-immutable-free-id-table) clause)))
+    (define do-tmpl
+      (check-template
+       (fold-clause (bind 'rhs-only) void (make-immutable-free-id-table) clause)))
+    (fold-clause (bind 'rhs-only) do-tmpl (make-immutable-free-id-table) clause)))
 
 (define-syntax (generate-lws stx)
   (syntax-case stx ()
-    [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs)
+    [(_ relation? seq-of-lhs seq-of-lhs-for-lw seq-of-tl-side-cond/binds seq-of-rhs side-condition-unquoted?)
      (with-syntax
          ([(rhs/lw ...) 
            (syntax-case #'relation? ()
@@ -2082,7 +2095,9 @@
                            #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                        [(side-condition x)
                         #`(make-metafunc-extra-side-cond
-                           #,(to-lw/uq/proc #'x))]
+                           #,(if (syntax-e #'side-condition-unquoted?)
+                                 (to-lw/uq/proc #'x)
+                                 (to-lw/proc #'x)))]
                        [maybe-ellipsis
                         (ellipsis? #'maybe-ellipsis)
                         (to-lw/proc #'maybe-ellipsis)]))

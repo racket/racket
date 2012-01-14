@@ -2215,6 +2215,20 @@
                                   
                                   })))
     
+    
+    
+    (let ()
+      (define-judgment-form empty-language
+        #:mode (R I I)
+        [(side-condition (different any_a any_b))
+         -----
+         (R any_a any_b)])
+      (define-metafunction empty-language
+        [(different any_a any_a) #f]
+        [(different any_a any_b) #t])
+      (test (judgment-holds (R 1 2)) #t)
+      (test (judgment-holds (R 1 1)) #f))
+    
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require errortrace))
       (eval '(require redex/reduction-semantics))

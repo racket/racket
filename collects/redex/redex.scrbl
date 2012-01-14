@@ -1101,7 +1101,7 @@ legtimate inputs according to @racket[metafunction-name]'s contract,
 and @racket[#f] otherwise.
 }
 
-@defform/subs[#:literals (I O where where/hidden etc.)
+@defform/subs[#:literals (I O where where/hidden side-condition side-condition/hidden etc.)
              (define-judgment-form language
                option ...
                rule ...)
@@ -1121,7 +1121,9 @@ and @racket[#f] otherwise.
               [conclusion (form-id pat/term ...)]
               [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
                        (where @#,ttpattern @#,tttterm)
-                       (where/hidden @#,ttpattern @#,tttterm)]
+                       (where/hidden @#,ttpattern @#,tttterm)
+                       (side-condition @#,tttterm)
+                       (side-condition/hidden @#,tttterm)]
               [pat/term @#,ttpattern
                         @#,tttterm]
               [maybe-ellipsis (code:line)
@@ -1204,6 +1206,12 @@ A rule's @racket[where] and @racket[where/hidden] premises behave as in
           (le n_2 n_3)])
        (judgment-holds (gt (s (s z)) (s z)))
        (judgment-holds (gt (s z) (s z)))]
+
+A rule's @racket[side-condition] and @racket[side-condition/hidden] premises are similar
+to those in @racket[reduction-relation] and @racket[define-metafunction], except that
+they do not implicitly unquote their right-hand sides. In other words, a premise
+of the form @racket[(side-condition exp)] is equivalent to the premise
+@racket[(where #t exp)], except it does not typeset with the ``#t = '', as that would.
 
 A literal ellipsis may follow a judgment premise when a template in one of the
 judgment's input positions contains a pattern variable bound at ellipsis-depth
@@ -2311,7 +2319,7 @@ This function sets @racket[dc-for-text-size]. See also
 Like @racket[render-metafunction] but for judgment forms.
 
 This function sets @racket[dc-for-text-size]. See also
-@racket[relation->pict].
+@racket[judgment-form->pict].
 }
 
 @defform[(relation->pict relation-name)]{
