@@ -3,10 +3,18 @@
 @(require scribble/eval
           unstable/latent-contract/defthing
           (for-label images/icons/arrow
+                     images/icons/control
+                     images/icons/file
+                     images/icons/misc
+                     images/icons/stickman
                      mrlib/switchable-button
                      racket
                      racket/draw)
-          images/icons/arrow)
+          images/icons/arrow
+          images/icons/control
+          images/icons/file
+          images/icons/misc
+          images/icons/stickman)
 
 @(define (author-email) "neil.toronto@gmail.com")
 
@@ -15,7 +23,8 @@
 
 
 @(define icons-eval (make-base-eval))
-@interaction-eval[#:eval icons-eval (require racket/math racket/list images/icons/style)]
+@interaction-eval[#:eval icons-eval (require racket/class racket/draw racket/math racket/list
+                                             images/icons/style)]
 
 @;{
 @section{Introduction (What is an icon, really?)}
@@ -41,6 +50,11 @@ It is composed of @(go-icon (solid-icon-color "blue") 16 'diffuse) to connote st
 
 The author of this collection is available to adapt or create SVG icons for DrRacket tools, and charges no more than your immortal soul.
 
+@interaction[#:eval icons-eval
+                    (require slideshow/pict)
+                    (cc-superimpose (bitmap (record-icon "forestgreen" 96 glass-icon-material))
+                                    (bitmap (step-icon "azure" 48 plastic-icon-material)))]
+
 @section{Icon Parameters}
 
 @doc-apply[toolbar-icon-height]{
@@ -64,303 +78,216 @@ The style of DrRacket icons, used as a default argument throughout the @racketmo
 @section[#:tag "arrows"]{Arrow Icons}
 
 @defmodule[images/icons/arrow]
-
 @interaction-eval[#:eval icons-eval (require images/icons/arrow)]
 
 @doc-apply[right-arrow-icon]
 @doc-apply[left-arrow-icon]
 @doc-apply[up-arrow-icon]
 @doc-apply[down-arrow-icon]{
-Cardinal direction arrows.
-
-@interaction[#:eval icons-eval
-                    (list (right-arrow-icon syntax-icon-color (toolbar-icon-height))
-                          (left-arrow-icon run-icon-color)
-                          (up-arrow-icon halt-icon-color 37)
-                          (down-arrow-icon "lightblue" 44 glass-icon-material))]
+@examples[#:eval icons-eval
+                 (list (right-arrow-icon syntax-icon-color (toolbar-icon-height))
+                       (left-arrow-icon run-icon-color)
+                       (up-arrow-icon halt-icon-color 37)
+                       (down-arrow-icon "lightblue" 44 glass-icon-material))]
 }
 
 @doc-apply[right-over-arrow-icon]
 @doc-apply[left-over-arrow-icon]
 @doc-apply[right-under-arrow-icon]
 @doc-apply[left-under-arrow-icon]{
-@interaction[#:eval icons-eval
-                    (list (right-over-arrow-icon metal-icon-color (toolbar-icon-height))
-                          (left-over-arrow-icon dark-metal-icon-color)
-                          (right-under-arrow-icon run-icon-color 37)
-                          (left-under-arrow-icon "lightgreen" 44 glass-icon-material))]
+@examples[#:eval icons-eval
+                 (list (right-over-arrow-icon metal-icon-color (toolbar-icon-height))
+                       (left-over-arrow-icon dark-metal-icon-color)
+                       (right-under-arrow-icon run-icon-color 37)
+                       (left-under-arrow-icon "lightgreen" 44 glass-icon-material))]
 }
 
 @section[#:tag "control"]{Control Icons}
 
-@section[#:tag "file"]{File Icons}
+@defmodule[images/icons/control]
+@interaction-eval[#:eval icons-eval (require images/icons/control)]
 
-@section[#:tag "tool"]{Tool Icons}
-
-@section[#:tag "stickman"]{Stickman Icons}
-
-@section[#:tag "misc"]{Miscellaneous Icons}
-
-@;{
-@subsection{Control Icons}
-
-@doc-apply[go-icon]
-@doc-apply[bar-icon]
+@doc-apply[play-icon]
 @doc-apply[back-icon]
+@doc-apply[fast-forward-icon]
+@doc-apply[rewind-icon]
+@doc-apply[bar-icon]
 @doc-apply[stop-icon]
 @doc-apply[record-icon]
+@doc-apply[pause-icon]
 @doc-apply[step-icon]
 @doc-apply[step-back-icon]
 @doc-apply[continue-icon]
-@doc-apply[continue-back-icon]
-@doc-apply[fast-forward-icon]
-@doc-apply[rewind-icon]
-@doc-apply[pause-icon]{
-These return typical ``playback'' icons.
-
-@interaction[#:eval icons-eval 
+@doc-apply[continue-back-icon]{
+Typical ``playback control'' icons.
+For example, a colorful tape deck:
+@interaction[#:eval icons-eval
                     (for/list ([make-icon  (list rewind-icon continue-back-icon
                                                  step-back-icon back-icon
                                                  pause-icon stop-icon
-                                                 go-icon step-icon
+                                                 play-icon step-icon
                                                  continue-icon fast-forward-icon
                                                  record-icon)]
-                               [style  (in-cycle icon-styles)])
-                      (make-icon (solid-icon-color "darkseagreen") 32 style))]
-
-The remaining icon @(bar-icon #f 16), returned by @racket[bar-icon], is used to build the others.
+                               [color  (list run-icon-color halt-icon-color
+                                             syntax-icon-color metal-icon-color
+                                             dark-metal-icon-color dark-metal-icon-color
+                                             metal-icon-color syntax-icon-color
+                                             halt-icon-color run-icon-color
+                                             "red")]
+                               [material  (in-cycle (list plastic-icon-material
+                                                          glass-icon-material))])
+                      (make-icon color 32 material))]
+The remaining icon @(bar-icon "red" 16), returned by @racket[bar-icon], is used to build the others.
 }
 
-@subsection{Arrow Icons}
+@section[#:tag "file"]{File Icons}
 
-@doc-apply[up-arrow-icon]
-@doc-apply[down-arrow-icon]
-@doc-apply[left-arrow-icon]
-@doc-apply[right-arrow-icon]{
+@defmodule[images/icons/file]
+@interaction-eval[#:eval icons-eval (require images/icons/file)]
+
+@doc-apply[floppy-disk-icon]{
+@examples[#:eval icons-eval (floppy-disk-icon "gold" 32 glass-icon-material)]
+}
+
+@doc-apply[save-icon]
+@doc-apply[small-save-icon]
+@doc-apply[load-icon]
+@doc-apply[small-load-icon]{
 @examples[#:eval icons-eval
-                 (for/list ([make-icon  (list up-arrow-icon down-arrow-icon
-                                              left-arrow-icon right-arrow-icon)])
-                   (for/list ([style  (in-list icon-styles)])
-                     (make-icon (solid-icon-color "brown") (default-icon-height) style)))]
+                 (for/list ([make-icon  (list save-icon small-save-icon
+                                              load-icon small-load-icon)]
+                            [color  (list run-icon-color halt-icon-color
+                                          metal-icon-color dark-metal-icon-color)])
+                   (make-icon syntax-icon-color color 32))]
 }
 
-@subsection{Sign Icons}
+@section[#:tag "misc"]{Miscellaneous Icons}
 
-@doc-apply[stop-sign-icon]{
-@examples[#:eval icons-eval (list (stop-sign-icon (default-icon-height) 'diffuse)
-                                 (stop-sign-icon (default-icon-height) 'shiny))]
+@defmodule[images/icons/misc]
+@interaction-eval[#:eval icons-eval (require images/icons/misc)]
+
+@doc-apply[text-icon]{
+Renders a text string as an icon. For example,
+@interaction[#:eval icons-eval
+                    (text-icon "An Important Point!"
+                               (make-object font% 48 'decorative 'normal 'bold #t)
+                               "lightskyblue" #t 2 48)]
+
+Before rendering, the drawn text is scaled so that it is exactly @racket[height] pixels tall.
+Make sure the font is large enough that scaling does not create blurry and jagged edge artifacts, as in the following example:
+@interaction[#:eval icons-eval
+                    (text-icon "Q" (make-object font% 32 'default 'normal 'bold)
+                               "green" #t 0 96)]
+When @racket[str] contains tall letters or @racket[trim?] is @racket[#f], using @racket[height] as the font size should be sufficient.
+
+To make it easy to create a large enough font, @racket[text-icon] always interpets font sizes as being in pixels, never points.
+See @racket[font%] for details on font sizes.
+
+If @racket[trim?] is @racket[#f], the drawn text is not cropped before rendering.
+Otherwise, it is cropped to the smallest rectangle containing all the non-zero-alpha pixels.
+Rendering very small glyphs shows the difference dramatically:
+@interaction[#:eval icons-eval
+                    (define font (make-object font% 32 'default))
+                    (list (text-icon "." font "white")
+                          (text-icon "." font "white" #f))]
+Note that both icons are @racket[(default-icon-height)] pixels tall.
+
+When @racket[outline] is @racket['auto], the outline drawn around the text is @racket[(/ height 32)] pixels wide.
+
+Because different platforms have slightly different fonts, @racket[text-icon] cannot guarantee the icons it returns have a consistent look or width across all platforms.
 }
 
-@subsection{Check Icons}
-
-@doc-apply[check-icon]{
-@examples[#:eval icons-eval
-                 (list (check-icon (solid-icon-color "green") 29 'diffuse)
-                       (check-icon (solid-icon-color "green") 29 'shiny))]
+@doc-apply[recycle-icon]{
+Returns the universal recycling symbol, rendered as an icon.
+Its implementation calls @racket[text-icon] with the string @racket["\u267b"].
+@examples[#:eval icons-eval (recycle-icon "forestgreen" 48)]
 }
 
 @doc-apply[x-icon]{
-@examples[#:eval icons-eval
-                 (for/list ([color  icon-colors]
-                            [style  (in-cycle icon-styles)])
-                   (x-icon color 29 style))]
+Returns an ``x'' icon that is guaranteed to look the same on all platforms.
+(Anything similar that would be constructed by @racket[text-icon] would differ at least slightly across platforms.)
+@examples[#:eval icons-eval (x-icon "red" 32)]
 }
 
-@subsection{Miscellaneous Icons}
+@doc-apply[check-icon]{
+@examples[#:eval icons-eval (check-icon "darkgreen" 32)]
+}
+
+@doc-apply[regular-polygon-icon]{
+Renders the largest regular polygon with @racket[sides] sides, with the first vertex at angle @racket[start], that can be centered in a @racket[height] × @racket[height] box.
+@examples[#:eval icons-eval (for/list ([sides  (in-range 1 9)]
+                                       [material  (in-cycle (list plastic-icon-material
+                                                                  glass-icon-material))])
+                              (regular-polygon-icon sides (* 1/4 pi) "cornflowerblue" 32
+                                                    material))]
+}
+
+@doc-apply[octagon-icon]{
+Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height material)].
+@examples[#:eval icons-eval (octagon-icon halt-icon-color 32)]
+}
+
+@doc-apply[stop-sign-icon]{
+@examples[#:eval icons-eval
+                 (stop-sign-icon halt-icon-color 32 glass-icon-material)]
+}
+
+@doc-apply[stop-signs-icon]{
+@examples[#:eval icons-eval
+                 (stop-signs-icon halt-icon-color 32 plastic-icon-material)]
+}
 
 @doc-apply[magnifying-glass-icon]{
-@examples[#:eval icons-eval (list (magnifying-glass-icon 31 'diffuse)
-                                 (magnifying-glass-icon 31 'shiny))]
-Note that the uncolorized magnifying glass has a brown handle.
-}
-
-@doc-apply[magnifying-glass-left-icon]{
-@examples[#:eval icons-eval (list (magnifying-glass-left-icon 31 'diffuse)
-                                 (magnifying-glass-left-icon 31 'shiny))]
-}
-
-@doc-apply[disk-icon]{
 @examples[#:eval icons-eval
-                 (for/list ([color  icon-colors]
-                            [style  (in-cycle icon-styles)])
-                   (disk-icon color 33 style))]
+                 (magnifying-glass-icon "azure" "lightblue" 32 glass-icon-material)]
 }
 
-@doc-apply[earth-icon]{
-@examples[#:eval icons-eval (list (earth-icon 48 'diffuse)
-                                 (earth-icon 48 'shiny))]
-}
-
-@doc-apply[moon-icon]{
-@examples[#:eval icons-eval (list (moon-icon 48 'diffuse)
-                                 (moon-icon 48 'shiny))]
-}
-
-@subsection{Symbols}
-
-@doc-apply[hash-quote-icon]{
-@examples[#:eval icons-eval (list (hash-quote-icon (toolbar-icon-height) 'diffuse)
-                                 (hash-quote-icon (toolbar-icon-height) 'shiny))]
-}
-
-@doc-apply[plus-icon]{
+@doc-apply[left-magnifying-glass-icon]{
 @examples[#:eval icons-eval
-                 (for/list ([color  icon-colors]
-                            [style  (in-cycle icon-styles)])
-                   (plus-icon color 24 style))]
+                 (left-magnifying-glass-icon metal-icon-color "red" 32)]
 }
 
-@doc-apply[times-icon]{
+@doc-apply[bomb-icon]{
 @examples[#:eval icons-eval
-                 (for/list ([color  icon-colors]
-                            [style  (in-cycle icon-styles)])
-                   (times-icon color 24 style))]
+                 (bomb-icon "azure" "black" 32 glass-icon-material)]
 }
 
-@subsection{Logos}
-
-@doc-apply[plt-logo]{
+@doc-apply[left-bomb-icon]{
 @examples[#:eval icons-eval
-                 (list (plt-logo 128 'diffuse) (plt-logo 128 'shiny))]
+                 (left-bomb-icon metal-icon-color dark-metal-icon-color 32)]
 }
 
-@doc-apply[planet-logo]{
-@examples[#:eval icons-eval (list (planet-logo 128 'diffuse)
-                                 (planet-logo 128 'shiny))]
+@section[#:tag "stickman"]{Stickman Icons}
+
+@defmodule[images/icons/stickman]
+@interaction-eval[#:eval icons-eval (require images/icons/stickman)]
+
+@doc-apply[standing-stickman-icon]{
+Returns the icon displayed in DrRacket's lower-right corner when no program is running.
+@examples[#:eval icons-eval (standing-stickman-icon run-icon-color "white" run-icon-color 64)]
 }
 
+@doc-apply[running-stickman-icon]{
+Returns a frame of the icon animated in DrRacket's lower-right corner when a program is running.
+The frame returned is for time @racket[t] of a run cycle with a one-second period.
 
-@section{Icon Constants and Contracts}
-
-@;{
-@doc-apply[icon-colors]{
-A list containing the names of allowed icon colors.
-
-When an SVG icon source file is rendered, it is rendered once directly. Then, for each color corresponding to a symbol in @racket[icon-colors], it is colorized by replacing gradients, and then rendered.
-
-When loading an icon, a @racket[#f] color name loads an uncolorized rendering.
-Every icon can be loaded with a @racket[#f] color name.
-An icon can be loaded using any name in @racket[icon-colors] only if its SVG source has gradients that can be colorized.
-See @secref["new-icons"] for details.
-
-The actual hues associated with the color names are the hues of the first seven @racketmodname[plot] color numbers.
-The following example illustrates the correspondence:
+It is difficult to put a code example in the API documentation that produces an animation.
+However, we might use code similar to the following to sample from the run cycle:
 @interaction[#:eval icons-eval
-                    (require plot)
-                    (for/list ([color  (rest icon-colors)])
-                      (stop-flomap color 48))
-                    (parameterize ([plot-width 48]
-                                   [plot-height 48]
-                                   [plot-decorations? #f]
-                                   [plot-background-alpha 0])
-                      (for/list ([n  (in-range 7)])
-                        (plot3d-pict (surface3d (λ (x y) (- (sqr x) (sqr y))) -1 1 -1 1
-                                                #:color n #:line-color n
-                                                #:samples 11 #:line-width 1))))]
-This example also shows how to use @racketmodname[plot] to create icon @racket[pict]s from mathematical functions.
-}}
+                    (for/list ([t  (in-range 0 1 1/12)])
+                      (running-stickman-icon t run-icon-color "white" run-icon-color 32))]
+If instead of putting the icons in a list, we call their @racket[save-file] methods and hand-assemble the files into a GIF, we get something like this:
 
-@doc-apply[icon-color/c]{
-A contract that identifies color names.
+@centered[@image["scribblings/running-stickman.gif"]]
+
+Here, the run cycle is sampled and played back at 30 Hz.
+The previous example samples the run cycle at 12 Hz, or every @racket[1/12] second.
+DrRacket samples it at 12 Hz and plays it back at 5 Hz at the most.
+
+The stickman's joint angles are defined by continuous periodic functions, so the run cycle can be sampled at any resolution, or at any real-valued time @racket[t].
+The cycle is modeled after the run cycle of the player's avatar in the Commodore 64 game @link["http://en.wikipedia.org/wiki/Impossible_Mission"]{Impossible Mission}.
 }
 
-@doc-apply[icon-styles]{
-Typical icon styles.
+@section[#:tag "tool"]{Tool Icons}
 
-It is not necessary to have a version of each icon in each style.
-But if an icon has different styles, it should have these.
-}
-
-@doc-apply[icon-style/c]{
-A contract that identifies icon styles.
-}
-
-
-@section{Icon @racket[pict]s}
-
-@interaction-eval[#:eval icons-eval (require slideshow/pict)]
-
-It is more flexible, but a little more complicated, to load icons as @racket[pict]s.
-As picts, icons can easily be appended, inset, superimposed, blurred, and more.
-For example, it is easy to make modern-looking media player controls using @racket[cc-superimpose] and the @racket['shiny] style:
-@interaction[#:eval icons-eval
-                    (define media-icon-background (record-flomap 'blue 64 'shiny))
-                    (list (cc-superimpose media-icon-background
-                                          (step-back-flomap 'white 32 'shiny))
-                          (cc-superimpose media-icon-background
-                                          (pause-flomap 'white 32 'shiny))
-                          (cc-superimpose media-icon-background
-                                          (step-flomap 'white 32 'shiny)))]
-
-Almost all of the functions in preceeding sections are defined in terms of the @racket[pict]-producing functions documented in this section.
-
-To use these functions effectively, you should require @racketmodname[icons] and @racketmodname[slideshow/pict] together.
-Use @racket[bitmap] to convert a @racket[bitmap%] (e.g. an icon) to a @racket[pict], and @racket[pict->bitmap] to convert back.
-
-Converting from @racket[pict]s to bitmaps can be lossy. For example, converting text can look especially horrible:
-@interaction[#:eval icons-eval
-                    (scale (text "Hello" null 10) 5)
-                    (scale (bitmap (pict->bitmap (text "Hello" null 10))) 5)]
-
-Therefore, when composing icons from parts, try to work only with @racket[pict]s, and convert to an icon using @racket[pict->bitmap] as the last step.
-
-When composing icons from parts, it is fine to use @racket[pict]s converted from @racket[bitmap%]s.
-Without scaling or rotating, the conversion is lossless:
-@interaction[#:eval icons-eval
-                    (define not-blurry (magnifying-glass-icon 64 'shiny))
-                    not-blurry
-                    (for/fold ([icon not-blurry]) ([i  (in-range 30)])
-                      (pict->bitmap (bitmap icon)))]
-
-Avoid converting between @racket[pict]s and @racket[bitmap%]s more than once if bitmap-backed @racket[pict]s are scaled, rotated by angles that are not multiples of 90 degrees, or superimposed or appended at non-integer coordinates.
-Avoid scaling up in general.
-
-@doc-apply[load-flomap]{
-Corresponds to @racket[load-icon]. In fact, @racket[load-icon] uses @racket[load-flomap] to load the icon as a @racket[pict], and passes it to @racket[pict->bitmap].
-}
-
-@doc-apply[go-flomap]
-@doc-apply[bar-flomap]
-@doc-apply[back-flomap]
-@doc-apply[stop-flomap]
-@doc-apply[record-flomap]
-@doc-apply[step-flomap]
-@doc-apply[step-back-flomap]
-@doc-apply[continue-flomap]
-@doc-apply[continue-back-flomap]
-@doc-apply[fast-forward-flomap]
-@doc-apply[rewind-flomap]
-@doc-apply[pause-flomap]{
-These return typical ``playback'' icons, as @racket[pict]s.
-
-@interaction[#:eval icons-eval
-                    (for/fold ([icon (blank)])
-                      ([make-flomap  (list rewind-flomap continue-back-flomap
-                                              step-back-flomap back-flomap
-                                              pause-flomap stop-flomap
-                                              go-flomap step-flomap
-                                              continue-flomap fast-forward-flomap
-                                              record-flomap)])
-                      (hc-append icon (make-flomap 'black 32 'shiny) (blank 12)))]
-}
-
-@doc-apply[up-arrow-flomap]{ Corresponds to @racket[up-arrow-icon]. }
-@doc-apply[down-arrow-flomap]{ Corresponds to @racket[down-arrow-icon]. }
-@doc-apply[left-arrow-flomap]{ Corresponds to @racket[left-arrow-icon]. }
-@doc-apply[right-arrow-flomap]{ Corresponds to @racket[right-arrow-icon]. }
-
-@doc-apply[stop-sign-flomap]{ Corresponds to @racket[stop-sign-icon]. }
-@doc-apply[check-flomap]{ Corresponds to @racket[check-icon]. }
-@doc-apply[x-flomap]{ Corresponds to @racket[x-icon]. }
-@doc-apply[magnifying-glass-flomap]{ Corresponds to @racket[magnifying-glass-icon]. }
-@doc-apply[magnifying-glass-left-flomap]{ Corresponds to @racket[magnifying-glass-left-icon]. }
-@doc-apply[disk-flomap]{ Corresponds to @racket[disk-icon]. }
-@doc-apply[earth-flomap]{ Corresponds to @racket[earth-icon]. }
-@doc-apply[moon-flomap]{ Corresponds to @racket[moon-icon]. }
-@doc-apply[hash-quote-flomap]{ Corresponds to @racket[hash-quote-icon]. }
-@doc-apply[plus-flomap]{ Corresponds to @racket[plus-icon]. }
-@doc-apply[times-flomap]{ Corresponds to @racket[times-icon]. }
-@doc-apply[plt-logo-pict]{ Corresponds to @racket[plt-logo]. }
-@doc-apply[planet-logo-pict]{ Corresponds to @racket[planet-logo]. }
-
-}
+@section[#:tag "const"]{Icon Constants and Contracts}

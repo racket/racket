@@ -2,6 +2,7 @@
 
 (require racket/draw unstable/parameter-group
          racket/contract unstable/latent-contract/defthing
+         (for-syntax unstable/latent-contract/serialize-syntax)
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt")
 
@@ -24,8 +25,8 @@
 (define glass-icon-material
   (deep-flomap-material-value
    'cubic-zirconia 1.0 0.75 0.15
-   0.5 0.2 1.0
-   0.0 0.4 0.25
+   1.0 0.2 1.0
+   0.2 0.4 0.25
    0.08))
 
 (define metal-icon-color "lightsteelblue")
@@ -51,7 +52,7 @@
   (define s (/ (deep-flomap-height dfm) 32))
   (let* ([dfm  (deep-flomap-emboss dfm (* s 2) (* s 2))]
          [dfm  (deep-flomap-bulge-round dfm (* s 6))]
-         [dfm  (deep-flomap-raise dfm (* s 18))])
+         [dfm  (deep-flomap-raise dfm (* s 20))])
     dfm))
 
 (define (draw-icon-flomap w h draw-proc scale)
@@ -93,9 +94,12 @@
 ;; ===================================================================================================
 ;; Syntax for writing icon functions
 
-(define-syntax-rule (define-simple-icon-wrapper icon-fun flomap-fun)
-  (defproc (icon-fun [color (or/c string? (is-a?/c color%))]
-                     [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                     [material deep-flomap-material-value? (default-icon-material)]
-                     ) (is-a?/c bitmap%)
-    (flomap->bitmap (flomap-fun color height material))))
+(define-syntax (define-icon-wrappers stx)
+  (syntax-case stx ()
+    [(_ ([arg-name arg-props ...] ...)
+        [icon-fun flomap-fun] ...)
+     (syntax/loc stx
+       (begin
+         (defproc (icon-fun [arg-name arg-props ...] ...) (is-a?/c bitmap%)
+           (flomap->bitmap (flomap-fun arg-name ...)))
+         ...))]))

@@ -1,13 +1,19 @@
 #lang racket/base
 
-(require racket/class racket/vector racket/match racket/math
+(require racket/class racket/draw racket/vector racket/match racket/math
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
          "../private/utils.rkt"
          "style.rkt")
 
-(provide standing-stickman-flomap standing-stickman-icon
-         running-stickman-flomap running-stickman-icon)
+(provide (activate-contract-out
+          standing-stickman-icon standing-stickman-flomap
+          running-stickman-icon running-stickman-flomap)
+         (only-doc-out (all-defined-out)))
+
+;; ===================================================================================================
+;; Common
 
 (define (cons+ p1 p2)
   (match-define (cons x1 y1) p1)
@@ -30,6 +36,9 @@
 (define thigh-length 6.5)
 (define shin-length 6.5)
 (define shoulder-breadth 7)
+
+;; ===================================================================================================
+;; Standing
 
 (define standing-torso-angle -90)
 (define standing-neck-angle 5)
@@ -100,9 +109,12 @@
          (polar->cartesian (+ standing-right-elbow-angle standing-torso-angle standing-right-hand-angle)
                            lower-arm-length)))
 
-(define (standing-stickman-flomap color arm-color head-color
-                                  [height (default-icon-height)]
-                                  [material (default-icon-material)])
+(defproc (standing-stickman-flomap [color (or/c string? (is-a?/c color%))]
+                                   [arm-color (or/c string? (is-a?/c color%))]
+                                   [head-color (or/c string? (is-a?/c color%))]
+                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                   [material deep-flomap-material-value? (default-icon-material)]
+                                   ) flomap?
   (make-cached-flomap
    [height color arm-color head-color material]
    (flomap-lt-superimpose
@@ -160,6 +172,9 @@
              (draw-ellipse/smoothed dc (- x 3.5) (- y 3.5) 8 8))
      (/ height 32)
      material))))
+
+;; ===================================================================================================
+;; Running
 
 (define running-neck-angle 20)
 (define running-torso-angle -70)
@@ -245,7 +260,7 @@
 (define (running-head-flomap t color height material)
   (make-cached-flomap
    [height t color material]
-   (draw-short-rendered-icon-flomap 
+   (draw-rendered-icon-flomap 
     26 32 (λ (dc)
             (send dc set-pen "black" line-width 'solid)
             (send dc set-brush color 'solid)
@@ -257,7 +272,7 @@
 (define (running-leg-flomap t body? color height material)
   (make-cached-flomap
    [height t body? color material]
-   (draw-short-rendered-icon-flomap 
+   (draw-rendered-icon-flomap 
     26 32 (λ (dc)
             (draw-running-leg dc t "black" (+ leg-width (* 2 line-width)))
             (when body?
@@ -270,16 +285,20 @@
 (define (running-arm-flomap t color height material)
   (make-cached-flomap
    [height t color material]
-   (draw-short-rendered-icon-flomap 
+   (draw-rendered-icon-flomap 
     26 32 (λ (dc)
             (draw-running-arm dc t "black" (+ arm-width (* 2 line-width)))
             (draw-running-arm dc t color arm-width))
     (/ height 32)
     material)))
 
-(define (running-stickman-flomap t color arm-color head-color
-                                 [height (default-icon-height)]
-                                 [material (default-icon-material)])
+(defproc (running-stickman-flomap [t rational?]
+                                  [color (or/c string? (is-a?/c color%))]
+                                  [arm-color (or/c string? (is-a?/c color%))]
+                                  [head-color (or/c string? (is-a?/c color%))]
+                                  [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                  [material deep-flomap-material-value? (default-icon-material)]
+                                  ) flomap?
   (make-cached-flomap
    [height t color arm-color head-color material]
    (flomap-lt-superimpose (running-arm-flomap (+ t 0.5) arm-color height material)
@@ -288,14 +307,28 @@
                           (running-head-flomap t head-color height material)
                           (running-arm-flomap t arm-color height material))))
 
-(define standing-stickman-icon (compose flomap->bitmap standing-stickman-flomap))
-(define running-stickman-icon (compose flomap->bitmap running-stickman-flomap))
+(defproc (standing-stickman-icon [color (or/c string? (is-a?/c color%))]
+                                 [arm-color (or/c string? (is-a?/c color%))]
+                                 [head-color (or/c string? (is-a?/c color%))]
+                                 [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                 [material deep-flomap-material-value? (default-icon-material)]
+                                 ) (is-a?/c bitmap%)
+  (flomap->bitmap (standing-stickman-flomap color arm-color head-color height material)))
+
+(defproc (running-stickman-icon [t rational?]
+                                [color (or/c string? (is-a?/c color%))]
+                                [arm-color (or/c string? (is-a?/c color%))]
+                                [head-color (or/c string? (is-a?/c color%))]
+                                [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                [material deep-flomap-material-value? (default-icon-material)]
+                                ) (is-a?/c bitmap%)
+  (flomap->bitmap (running-stickman-flomap t color arm-color head-color height material)))
 
 #;; FOR TESTING ONLY: Do not let this find its way into the repo uncommented!
 (begin
   (require racket/gui (planet "animated-canvas.rkt" ("williams" "animated-canvas.plt" 2 4)))
   
-  (define size 20)
+  (define size 64)
   
   (standing-stickman-icon halt-icon-color "white" halt-icon-color size)
   
