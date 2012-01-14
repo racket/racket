@@ -7,5 +7,5 @@
 
 @(define (author-email) "neil.toronto@gmail.com")
 
-@title{Embedding Computed Bitmaps in Source Files}
+@title{Embedding Bitmaps in Compiled Files}
 @author{@(author+email "Neil Toronto" (author-email))}
