@@ -1,13 +1,15 @@
 #lang racket/base
 
 (require racket/draw racket/class racket/match racket/math racket/flonum
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "flomap.rkt"
          "deep-flomap.rkt"
          "utils.rkt"
          "../icons/style.rkt")
 
 (provide plt-logo planet-logo
-         plt-flomap planet-flomap)
+         plt-flomap planet-flomap
+         (only-doc-out (all-defined-out)))
 
 (define glass-logo-material
   (deep-flomap-material-value
@@ -99,7 +101,7 @@
   (match-define (flomap _ c w h) fm)
   (fm+ fm (fm* z-amt (make-random-flomap c w h))))
 
-(define (plt-flomap height)
+(defproc (plt-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
   (make-cached-flomap
    [height]
    (define scale (/ height 256))
@@ -243,7 +245,7 @@
            (draw-path-commands dc 0 -17 continents-path-commands))
    scale))
 
-(define (planet-flomap height)
+(defproc (planet-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
   (make-cached-flomap
    [height]
    (define scale (/ height 32))

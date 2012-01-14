@@ -1,33 +1,40 @@
 #lang racket/base
 
-(require racket/promise
-         (prefix-in private- "private/logos.rkt")
+(require racket/class racket/draw racket/promise
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
+         (rename-in "private/logos.rkt"
+                    [plt-logo uncached-plt-logo]
+                    [planet-logo uncached-planet-logo])
          "private/flomap.rkt"
          "compile-time.rkt"
          (for-syntax racket/base
-                     (prefix-in private- "private/logos.rkt")
+                     (rename-in "private/logos.rkt"
+                                [plt-logo uncached-plt-logo]
+                                [planet-logo uncached-planet-logo])
                      "private/flomap.rkt"))
 
-(provide plt-logo planet-logo
-         (rename-out [private-plt-flomap plt-flomap]
-                     [private-planet-flomap planet-flomap]))
+(provide (activate-contract-out
+          plt-logo plt-flomap
+          planet-logo planet-flomap)
+         (only-doc-out (all-from-out "private/logos.rkt"))
+         (only-doc-out (all-defined-out)))
 
 ;; Use a delay to keep from using more memory than necessary (saves 256KB)
-(define standard-plt-logo (delay (compiled-bitmap (private-plt-logo 256))))
+(define standard-plt-logo (delay (compiled-bitmap (uncached-plt-logo 256))))
 
-(define (plt-logo height)
+(defproc (plt-logo [height (and/c rational? (>=/c 0)) 256]) (is-a?/c bitmap%)
   (cond [(height . = . 256)  (force standard-plt-logo)]
         [(height . <= . 256)
          (flomap->bitmap (flomap-resize (bitmap->flomap (force standard-plt-logo)) #f height))]
         [else
-         (private-plt-logo height)]))
+         (uncached-plt-logo height)]))
 
 
-(define standard-planet-logo (delay (compiled-bitmap (private-planet-logo 256))))
+(define standard-planet-logo (delay (compiled-bitmap (uncached-planet-logo 256))))
 
-(define (planet-logo height)
+(defproc (planet-logo [height (and/c rational? (>=/c 0)) 256]) (is-a?/c bitmap%)
   (cond [(height . = . 256)  (force standard-planet-logo)]
         [(height . <= . 256)
          (flomap->bitmap (flomap-resize (bitmap->flomap (force standard-planet-logo)) #f height))]
         [else
-         (private-planet-logo height)]))
+         (uncached-planet-logo height)]))
