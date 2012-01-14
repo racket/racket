@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/draw racket/class racket/math racket/sequence
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
          "../private/utils.rkt"
@@ -8,52 +9,81 @@
          "misc.rkt"
          "style.rkt")
 
-(provide (all-defined-out))
+(provide debugger-bomb-color
+         macro-stepper-hash-color
+         (activate-contract-out
+          check-syntax-icon check-syntax-flomap
+          small-check-syntax-icon small-check-syntax-flomap
+          macro-stepper-icon macro-stepper-flomap
+          small-macro-stepper-icon small-macro-stepper-flomap
+          debugger-icon debugger-flomap
+          small-debugger-icon small-debugger-flomap)
+         (only-doc-out (all-defined-out)))
 
-(define debugger-bomb-color (make-object color% 128 32 32))
-(define macro-stepper-hash-color (make-object color% 30 96 30))
+(defthing debugger-bomb-color (or/c string? (is-a?/c color%)) #:document-value
+  (make-object color% 128 32 32))
 
-(define (check-syntax-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+;; Actual color is too dark after rendering
+;(define macro-stepper-hash-color (make-object color% 30 96 30))
+(defthing macro-stepper-hash-color (or/c string? (is-a?/c color%)) #:document-value
+  (make-object color% 90 192 90))
+
+(defproc (check-syntax-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+                              [material deep-flomap-material-value? (default-icon-material)]
+                              ) flomap?
   (flomap-ht-append
    (left-magnifying-glass-flomap metal-icon-color "chocolate" height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
    (check-flomap syntax-icon-color height material)))
 
-(define (small-check-syntax-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+(defproc (small-check-syntax-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+                                    [material deep-flomap-material-value? (default-icon-material)]
+                                    ) flomap?
   (flomap-pin*
    1 1 5/16 1
    (check-flomap syntax-icon-color height material)
    (magnifying-glass-flomap metal-icon-color "chocolate" (* 3/4 height) material)))
 
-(define (macro-stepper-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+(defproc (macro-stepper-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+                               [material deep-flomap-material-value? (default-icon-material)]
+                               ) flomap?
   (flomap-ht-append
    (text-flomap "#'" (make-object font% (max 1 (min 1024 height)) 'system)
                 macro-stepper-hash-color #t 'auto height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
    (step-flomap syntax-icon-color height material)))
 
-(define (small-macro-stepper-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+(defproc (small-macro-stepper-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+                                     [material deep-flomap-material-value? (default-icon-material)]
+                                     ) flomap?
   (flomap-pin*
    0 0 7/16 0
    (step-flomap syntax-icon-color height material)
    (text-flomap "#'" (make-object font% (max 1 (min 1024 height)) 'system)
                 macro-stepper-hash-color #t 'auto (* 3/4 height) material)))
 
-(define (debugger-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+(defproc (debugger-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+                          [material deep-flomap-material-value? (default-icon-material)]
+                          ) flomap?
   (flomap-ht-append
    (left-bomb-flomap metal-icon-color debugger-bomb-color height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
    (step-flomap run-icon-color height material)))
 
-(define (small-debugger-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
+(defproc (small-debugger-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+                                [material deep-flomap-material-value? (default-icon-material)]
+                                ) flomap?
   (flomap-pin*
    0 0 9/16 0
    (step-flomap run-icon-color height material)
    (left-bomb-flomap metal-icon-color debugger-bomb-color (* 3/4 height) material)))
 
-(define check-syntax-icon (compose flomap->bitmap check-syntax-flomap))
-(define small-check-syntax-icon (compose flomap->bitmap small-check-syntax-flomap))
-(define macro-stepper-icon (compose flomap->bitmap macro-stepper-flomap))
-(define small-macro-stepper-icon (compose flomap->bitmap small-macro-stepper-flomap))
-(define debugger-icon (compose flomap->bitmap debugger-flomap))
-(define small-debugger-icon (compose flomap->bitmap small-debugger-flomap))
+(define-icon-wrappers
+  ([height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
+   [material deep-flomap-material-value? (default-icon-material)])
+  [check-syntax-icon check-syntax-flomap]
+  [small-check-syntax-icon small-check-syntax-flomap]
+  [macro-stepper-icon macro-stepper-flomap]
+  [small-macro-stepper-icon small-macro-stepper-flomap]
+  [debugger-icon debugger-flomap]
+  [small-debugger-icon small-debugger-flomap])
