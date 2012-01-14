@@ -158,7 +158,7 @@
           [dfm  (deep-flomap-icon-style dfm)]
           [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
           [fm  (deep-flomap-render-icon dfm material)])
-     (flomap-cc-superimpose fm (x-flomap "azure" (* 22 scale) metal-material)))))
+     (flomap-cc-superimpose fm (x-flomap light-metal-icon-color (* 22 scale) metal-icon-material)))))
 
 (defproc (stop-signs-flomap [color (or/c string? (is-a?/c color%))]
                             [height (and/c rational? (>=/c 0)) (default-icon-height)]
@@ -177,20 +177,13 @@
    0.25 0.25 0.0
    0.0))
 
-(define magnifying-glass-metal-material
-  (deep-flomap-material-value
-   3.0 0.5 0.0 1.0
-   0.8 0.1 0.2
-   0.2 0.8 0.0
-   0.0))
-
-(defproc (magnifying-glass-flomap [metal-color (or/c string? (is-a?/c color%))]
+(defproc (magnifying-glass-flomap [frame-color (or/c string? (is-a?/c color%))]
                                   [handle-color (or/c string? (is-a?/c color%))]
                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
                                   [material deep-flomap-material-value? (default-icon-material)]
                                   ) flomap?
   (make-cached-flomap
-   [height metal-color handle-color material]
+   [height frame-color handle-color material]
    (define scale (/ height 32))
    (define glass-fm
      (let* ([fm  (draw-icon-flomap
@@ -198,7 +191,7 @@
                           (send dc set-pen handle-color 1 'solid)
                           (send dc set-brush "azure" 'solid)
                           (draw-ellipse/smoothed dc 0 0 18 18)
-                          (send dc set-alpha 0.75)
+                          (send dc set-alpha 0.5)
                           (send dc set-pen "black" 1 'solid)
                           (send dc set-brush "white" 'transparent)
                           (draw-ellipse/smoothed dc 0 0 18 18))
@@ -214,26 +207,23 @@
                           (send dc set-pen "black" 3 'solid)
                           (send dc set-brush "black" 'solid)
                           (draw-ellipse/smoothed dc 1 1 26 26)
-                          (send dc set-pen metal-color 1 'solid)
-                          (send dc set-brush metal-color 'solid)
+                          (send dc set-pen frame-color 1 'solid)
+                          (send dc set-brush frame-color 'solid)
                           (draw-ellipse/smoothed dc 1 1 26 26))
                   scale)]
             [indent-fm  (draw-icon-flomap
                          28 28 (λ (dc)
-                                 (send dc set-pen metal-color 1 'solid)
-                                 (send dc set-brush metal-color 'solid)
+                                 (send dc set-pen frame-color 1 'solid)
+                                 (send dc set-brush frame-color 'solid)
                                  (draw-ellipse/smoothed dc 5 5 18 18))
                          scale)]
             [indent-dfm  (flomap->deep-flomap indent-fm)]
-            [indent-dfm  (deep-flomap-raise indent-dfm (* -3 scale))]
-            ;[indent-dfm  (deep-flomap-smooth-z indent-dfm (* 2 scale))]
+            [indent-dfm  (deep-flomap-raise indent-dfm (* -4 scale))]
             [dfm  (flomap->deep-flomap fm)]
-            ;[dfm  (deep-flomap-icon-style dfm)]
-            [dfm  (deep-flomap-raise dfm (* 4 scale))]
+            [dfm  (deep-flomap-raise dfm (* 12 scale))]
             [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
-            [dfm  (deep-flomap-smooth-z dfm (* 1 scale))]
-            )
-       (deep-flomap-render-icon dfm magnifying-glass-metal-material)))
+            [dfm  (deep-flomap-smooth-z dfm (* 2/3 scale))])
+       (deep-flomap-render-icon dfm metal-icon-material)))
    
    (define handle-fm
      (let* ([fm  (draw-icon-flomap
@@ -253,12 +243,12 @@
                 handle-fm
                 (flomap-pin* 1/2 1/2 1/2 1/2 circle-fm glass-fm))))
 
-(defproc (left-magnifying-glass-flomap [metal-color (or/c string? (is-a?/c color%))]
+(defproc (left-magnifying-glass-flomap [frame-color (or/c string? (is-a?/c color%))]
                                        [handle-color (or/c string? (is-a?/c color%))]
                                        [height (and/c rational? (>=/c 0)) (default-icon-height)]
                                        [material deep-flomap-material-value? (default-icon-material)]
                                        ) flomap?
-  (flomap-flip-horizontal (magnifying-glass-flomap metal-color handle-color height material)))
+  (flomap-flip-horizontal (magnifying-glass-flomap frame-color handle-color height material)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Bomb
@@ -369,7 +359,7 @@
   [stop-signs-icon stop-signs-flomap])
 
 (define-icon-wrappers
-  ([metal-color (or/c string? (is-a?/c color%))]
+  ([frame-color (or/c string? (is-a?/c color%))]
    [handle-color (or/c string? (is-a?/c color%))]
    [height (and/c rational? (>=/c 0)) (default-icon-height)]
    [material deep-flomap-material-value? (default-icon-material)])

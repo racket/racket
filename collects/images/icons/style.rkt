@@ -1,12 +1,80 @@
 #lang racket
 
 (require racket/draw unstable/parameter-group
-         racket/contract unstable/latent-contract/defthing
-         (for-syntax unstable/latent-contract/serialize-syntax)
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt")
 
-(provide (all-defined-out))
+(provide light-metal-icon-color
+         metal-icon-color
+         dark-metal-icon-color
+         syntax-icon-color
+         halt-icon-color
+         run-icon-color
+         plastic-icon-material
+         glass-icon-material
+         metal-icon-material
+         (activate-contract-out
+          default-icon-height
+          toolbar-icon-height
+          default-icon-material)
+         (only-doc-out (all-defined-out)))
+
+(defthing light-metal-icon-color (or/c string? (is-a?/c color%)) #:document-value
+  "azure")
+
+(defthing metal-icon-color (or/c string? (is-a?/c color%)) #:document-value
+  "lightsteelblue")
+
+(defthing dark-metal-icon-color (or/c string? (is-a?/c color%)) #:document-value
+  "steelblue")
+
+(defthing syntax-icon-color (or/c string? (is-a?/c color%)) #:document-value
+  (make-object color% 76 76 255))
+
+(defthing halt-icon-color (or/c string? (is-a?/c color%)) #:document-value
+  (make-object color% 255 32 24))
+
+(defthing run-icon-color (or/c string? (is-a?/c color%)) #:document-value
+  "lawngreen")
+
+(defparam default-icon-height (and/c rational? (>=/c 0)) 24)
+(defparam toolbar-icon-height (and/c rational? (>=/c 0)) 16)
+
+(defthing plastic-icon-material deep-flomap-material-value?
+  (deep-flomap-material-value
+   'cubic-zirconia 1.0 0.0 1.0
+   1.0 0.3 1.0
+   0.8 0.2 0.0
+   0.0))
+
+(defthing glass-icon-material deep-flomap-material-value?
+  (deep-flomap-material-value
+   'cubic-zirconia 1.0 0.75 0.2
+   1.0 0.2 1.0
+   0.2 0.4 0.25
+   0.08))
+
+(defthing metal-icon-material deep-flomap-material-value?
+  (deep-flomap-material-value
+   2.0 2.0 0.0 1.0
+   0.7 0.15 0.0
+   0.2 0.8 0.0
+   0.0))
+
+(defparam default-icon-material deep-flomap-material-value? plastic-icon-material)
+
+;; ===================================================================================================
+;; Unpublished so far
+
+(provide deep-flomap-render-icon
+         deep-flomap-icon-style
+         draw-icon-flomap
+         flomap-render-icon
+         draw-rendered-icon-flomap
+         flomap-render-thin-icon
+         draw-short-rendered-icon-flomap
+         define-icon-wrappers)
 
 (define icon-lighting
   (deep-flomap-lighting-value
@@ -14,33 +82,6 @@
    '(1.0 1.0 1.0)
    '(1.0 1.0 1.0)
    '(1.0 1.0 1.0)))
-
-(define plastic-icon-material
-  (deep-flomap-material-value
-   'cubic-zirconia 1.0 0.0 1.0
-   1.0 0.3 1.0
-   0.8 0.2 0.0
-   0.0))
-
-(define glass-icon-material
-  (deep-flomap-material-value
-   'cubic-zirconia 1.0 0.75 0.15
-   1.0 0.2 1.0
-   0.2 0.4 0.25
-   0.08))
-
-(define metal-icon-color "lightsteelblue")
-(define dark-metal-icon-color "steelblue")
-(define syntax-icon-color (make-object color% 76 76 255))
-(define halt-icon-color (make-object color% 255 32 24))
-(define run-icon-color "lawngreen")
-
-(define default-icon-material (make-parameter plastic-icon-material))
-(define default-icon-height (make-parameter 24))
-(define toolbar-icon-height (make-parameter 16))
-
-;(default-icon-material glass-icon-material)
-;(default-icon-material matte-material)
 
 (define (deep-flomap-render-icon dfm material)
   ;(printf "rendering~n")

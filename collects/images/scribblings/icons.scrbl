@@ -2,19 +2,25 @@
 
 @(require scribble/eval
           unstable/latent-contract/defthing
-          (for-label images/icons/arrow
+          (for-label racket racket/draw
+                     images/icons/arrow
                      images/icons/control
                      images/icons/file
                      images/icons/misc
                      images/icons/stickman
+                     images/icons/tool
+                     images/icons/style
+                     images/logos
                      mrlib/switchable-button
-                     racket
-                     racket/draw)
+                     slideshow/pict)
+          racket/class racket/draw
           images/icons/arrow
           images/icons/control
           images/icons/file
           images/icons/misc
-          images/icons/stickman)
+          images/icons/stickman
+          images/icons/tool
+          images/icons/style)
 
 @(define (author-email) "neil.toronto@gmail.com")
 
@@ -23,56 +29,129 @@
 
 
 @(define icons-eval (make-base-eval))
-@interaction-eval[#:eval icons-eval (require racket/class racket/draw racket/math racket/list
-                                             images/icons/style)]
+@interaction-eval[#:eval icons-eval (require racket/class racket/draw racket/math racket/list)]
 
-@;{
-@section{Introduction (What is an icon, really?)}
-@margin-note*{This introduction describes an ideal, not necessarily the current state of things.}
+@section{What is an icon?}
+@margin-note*{This section describes an ideal that DrRacket and its tools are steadily approaching.}
 
-As a first approximation, an icon is just a small bitmap with an alpha channel.
-But the icons in this collection are not simply loaded from disk.
-They are generated programmatically by drawing on a @racket[dc<%>], 
-Icons can also be rendered , resized, generated programmatically by drawing on a , or composed using @racket[pict] functions.
+As a first approximation, an icon is just a small @racket[bitmap%], usually with an alpha channel.
 
-The @racketmodname[icons] module is intended to make it possible to do all of these things, and to make it easy to get common icons in different colors, heights and styles.
+But an icon also communicates.
+Its shape and color are a visual metaphor for an action or a message.
+Icons should be @bold{easily recognizable}, @bold{distinguishable}, @bold{visually consistent}, and @bold{metaphorically appropriate} for the actions and messages they are used with.
+It can be difficult to meet all four requirements at once (``distinguishable'' and ``visually consistent' are often at odds), but good examples, good abstractions, and an existing icon library help considerably.
 
-An icon communicates. Its shape and color are a visual metaphor for an action or a message. Icons should be easily recognizable, distinguishable, visually consistent, and metaphorically appropriate for the actions and messages they are used with. This is difficult to do well, but good examples, good abstractions, and an existing icon library help considerably.
+@(define (hash-quote) (text-icon "#'" (make-object font% 32 'system)
+                                 macro-stepper-hash-color #t 'auto 16))
+@(define (step) (step-icon syntax-icon-color 16))
+@(define (play) (play-icon syntax-icon-color 16))
+@(define (bar) (bar-icon syntax-icon-color 16))
+@(define (macro-stepper) (macro-stepper-icon 16))
 
-@(define (hash-quote) (hash-quote-flomap (solid-icon-color '(41 128 38)) 16))
-@(define (step) (step-flomap (solid-icon-color "blue") 16 'diffuse))
-@(define (macro-stepper) (ht-append (hash-quote) (step)))
-   
-Example: The Macro Stepper tool composes a new icon @(hash-quote) and an existing icon @(step), resulting in @(macro-stepper) for its toolbar icon.
-The @(hash-quote) icon connotes syntax, and is the color of a syntax-quote as rendered by DrRacket by default.
-The @(step) icon is colored like DrRacket colors identifier syntax by default, and is shaped using metaphors used in debugger toolbars, TV remotes, and music players around the world.
-It is composed of @(go-icon (solid-icon-color "blue") 16 'diffuse) to connote starting and @(bar-icon (solid-icon-color "blue") 16 'diffuse) to connote immediately stopping---a ``step.''
+Example: The Macro Stepper icon is composed by appending a text icon @(hash-quote) and a step icon @(step) to get @(macro-stepper).
+The syntax quote icon @(hash-quote) is the color that DrRacket colors syntax quotes by default.
+The step icon @(step) is colored like DrRacket colors identifier syntax by default, and is shaped using metaphors used in debugger toolbars, TV remotes, and music players around the world.
+It is composed of @(play) to connote starting and @(bar) to connote immediately stopping.
 
-The author of this collection is available to adapt or create SVG icons for DrRacket tools, and charges no more than your immortal soul.
+It would not do to have just @(step) as the Macro Stepper icon: it would be too easily confused with the Debugger icon @(step-icon run-icon-color 16),
+especially for new users and people with certain forms of color-blindness, and thus fail to be distinguishable enough.
 
+As another example, the Check Syntax icon @(check-syntax-icon 16) connotes inspecting and passing. Note that the check mark is also the color of syntax.
+
+@section{About These Icons}
+
+The icons in this collection are designed to be composed to create new ones: they are simple, thematically consistent, and can be constructed in any size and color.
+Further, slideshow's @racket[pict] combiners offer a way to compose them almost arbitrarily.
+For example, a media player application might create a large ``step'' button by superimposing a @racket[record-icon] and a @racket[step-icon]:
 @interaction[#:eval icons-eval
-                    (require slideshow/pict)
-                    (cc-superimpose (bitmap (record-icon "forestgreen" 96 glass-icon-material))
-                                    (bitmap (step-icon "azure" 48 plastic-icon-material)))]
+                    (require slideshow/pict images/icons/control images/icons/style)
+                    (pict->bitmap
+                     (cc-superimpose
+                      (bitmap (record-icon "forestgreen" 96 glass-icon-material))
+                      (bitmap (step-icon light-metal-icon-color 48 metal-icon-material))))]
 
-@section{Icon Parameters}
+All the icons in this collection are first drawn using standard @racket[dc<%>] drawing commands.
+Then, to get lighting effects, they are turned into 3D objects and @link["http://en.wikipedia.org/wiki/Ray_tracing_%28graphics%29"]{ray traced}.
+Many are afterward composed to create new icons; for example, the @racket[stop-signs-icon] @(stop-signs-icon halt-icon-color 16) superimposes three @racket[stop-sign-icon]s, and the @racket[magnifying-glass-icon] @(magnifying-glass-icon metal-icon-color "orange" 16) is composed of three others (frame, glass and handle).
+
+The ray tracer helps keep icons visually consistent with each other and with physical objects in day-to-day life.
+As an example of the latter, the @racket[record-icon], when rendered in clear glass, looks like the clear, round button on a @link["http://en.wikipedia.org/wiki/Wiimote"]{Wii Remote}.
+See the @racket[plt-logo] and @racket[planet-logo] functions for more striking examples.
+
+When the rendering API is stable enough to publish, it will allow anyone who can draw a shape to turn that shape into a visually consistent icon.
+
+
+@section{Icon Style}
+
+@defmodule[images/icons/style]
+@interaction-eval[#:eval icons-eval (require images/icons/style)]
+
+Use these constants and parameters to help keep icon sets visually consistent.
+
+@doc-apply[light-metal-icon-color]
+@doc-apply[metal-icon-color]
+@doc-apply[dark-metal-icon-color]{
+Good colors to use with @racket[metal-icon-material]. See @racket[bomb-icon] and @racket[magnifying-glass-icon] for examples.
+}
+
+@doc-apply[syntax-icon-color]
+@doc-apply[halt-icon-color]
+@doc-apply[run-icon-color]{
+Standard toolbar icon colors.
+
+Use @racket[syntax-icon-color] in icons that connote macro expansion or syntax. Example:
+@interaction[#:eval icons-eval (step-icon syntax-icon-color 32)]
+
+Use @racket[halt-icon-color] in icons that connote stopping or errors. Example:
+@interaction[#:eval icons-eval (stop-icon halt-icon-color 32)]
+
+Use @racket[run-icon-color] in icons that connote executing programs or evaluation. Examples:
+@interaction[#:eval icons-eval
+                    (play-icon run-icon-color 32)
+                    (require images/icons/stickman)
+                    (running-stickman-icon 0.9 run-icon-color "white" run-icon-color 32)]
+
+For new users and for accessibility reasons, do not try to differentiate icons for similar functions only by color.
+}
+
+@doc-apply[default-icon-height]{
+The height of DrRacket's standard icons.
+}
 
 @doc-apply[toolbar-icon-height]{
 The height of DrRacket toolbar icons.
 
-Use @racket[(toolbar-icon-height)] as the @racket[height] argument when loading common icons that will be used in DrRacket toolbars and buttons, or in the toolbars and buttons of DrRacket tools.
+Use @racket[(toolbar-icon-height)] as the @racket[height] argument for common icons that will be used in toolbars, status bars, and buttons.
 
 (When making an icon for DrRacket's main toolbar, try to keep it nearly square so that it will not take up too much horizontal space when the toolbar is docked vertically.
 If you cannot, as with the Macro Stepper, send a thinner icon as the @racket[alternate-bitmap] argument to a @racket[switchable-button%].)
 }
 
-@doc-apply[default-icon-height]{
-The height of standard (e.g. not toolbar) DrRacket icons, used as a default argument through the @racketmodname[icons] module.
+@doc-apply[plastic-icon-material]
+@doc-apply[glass-icon-material]
+@doc-apply[metal-icon-material]{
+Materials for icons.
+
+Plastic is opaque and reflects a little more than glass.
+
+Glass is transparent but frosted, so it scatters refracted light.
+It has the high refractive index of @link["http://en.wikipedia.org/wiki/Cubic_zirconia"]{cubic zirconia}, or fake diamond.
+The ``glassy look'' cannot actually be achieved using glass.
+
+Metal reflects the most, its @link["http://en.wikipedia.org/wiki/Specular_highlight"]{specular highlight} is nearly the same color as the material (in the others, the highlight is white),
+and it diffuses much more ambient light than directional. This is because, while plastic and glass mostly reflect light directly, metal mostly absorbs light and re-emits it.
+
+@examples[#:eval icons-eval
+                 (require images/icons/misc)
+                 (for/list ([material  (list plastic-icon-material
+                                             glass-icon-material
+                                             metal-icon-material)])
+                   (bomb-icon light-metal-icon-color dark-metal-icon-color 32 material))]
 }
 
-@doc-apply[default-icon-style]{
-The style of DrRacket icons, used as a default argument throughout the @racketmodname[icons] module.
-}
+@doc-apply[default-icon-material]{
+The material used for rendering most icons and icon parts.
+There are exceptions; for example, the @racket[floppy-disk-icon] always renders the sliding cover in metal.
 }
 
 @section[#:tag "arrows"]{Arrow Icons}
@@ -146,7 +225,7 @@ The remaining icon @(bar-icon "red" 16), returned by @racket[bar-icon], is used 
 @interaction-eval[#:eval icons-eval (require images/icons/file)]
 
 @doc-apply[floppy-disk-icon]{
-@examples[#:eval icons-eval (floppy-disk-icon "gold" 32 glass-icon-material)]
+@examples[#:eval icons-eval (floppy-disk-icon "crimson" 32 glass-icon-material)]
 }
 
 @doc-apply[save-icon]
@@ -239,7 +318,8 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 
 @doc-apply[magnifying-glass-icon]{
 @examples[#:eval icons-eval
-                 (magnifying-glass-icon "azure" "lightblue" 32 glass-icon-material)]
+                 (magnifying-glass-icon light-metal-icon-color "lightblue" 32
+                                        glass-icon-material)]
 }
 
 @doc-apply[left-magnifying-glass-icon]{
@@ -249,7 +329,7 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 
 @doc-apply[bomb-icon]{
 @examples[#:eval icons-eval
-                 (bomb-icon "azure" "black" 32 glass-icon-material)]
+                 (bomb-icon light-metal-icon-color "black" 32 glass-icon-material)]
 }
 
 @doc-apply[left-bomb-icon]{
@@ -290,4 +370,28 @@ The cycle is modeled after the run cycle of the player's avatar in the Commodore
 
 @section[#:tag "tool"]{Tool Icons}
 
-@section[#:tag "const"]{Icon Constants and Contracts}
+@defmodule[images/icons/tool]
+@interaction-eval[#:eval icons-eval (require images/icons/tool)]
+
+@doc-apply[check-syntax-icon]
+@doc-apply[small-check-syntax-icon]{
+Icons for Check Syntax. The @racket[small-check-syntax-icon] is used when the toolbar is on the side.
+@examples[#:eval icons-eval (list (check-syntax-icon 32) (small-check-syntax-icon 32))]
+}
+
+@doc-apply[macro-stepper-icon]
+@doc-apply[small-macro-stepper-icon]{
+Icons for the Macro Stepper. The @racket[small-macro-stepper-icon] is used when the toolbar is on the side.
+@examples[#:eval icons-eval (list (macro-stepper-icon 32) (small-macro-stepper-icon 32))]
+}
+
+@doc-apply[debugger-icon]
+@doc-apply[small-debugger-icon]{
+Icons for the Debugger. The @racket[small-debugger-icon] is used when the toolbar is on the side.
+@examples[#:eval icons-eval (list (debugger-icon 32) (small-debugger-icon 32))]
+}
+
+@doc-apply[debugger-bomb-color]
+@doc-apply[macro-stepper-hash-color]{
+Constants used within @racketmodname[images/icons/tool].
+}

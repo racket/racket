@@ -43,7 +43,7 @@
             [dfm  (flomap->deep-flomap fm)]
             [dfm  (deep-flomap-icon-style dfm)]
             [dfm  (deep-flomap-scale-z dfm 1/16)])
-       (deep-flomap-render-icon dfm metal-material)))
+       (deep-flomap-render-icon dfm metal-icon-material)))
    
    (define bottom-indent-fm
      (draw-icon-flomap
