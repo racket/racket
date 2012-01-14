@@ -27,8 +27,8 @@
 
 (define (macro-stepper-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-ht-append
-   (text-flomap "#'" (make-object font% 12 'system 'normal 'normal)
-                macro-stepper-hash-color #t #t height material)
+   (text-flomap "#'" (make-object font% (max 1 (min 1024 height)) 'system)
+                macro-stepper-hash-color #t 'auto height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
    (step-flomap syntax-icon-color height material)))
 
@@ -36,8 +36,8 @@
   (flomap-pin*
    0 0 7/16 0
    (step-flomap syntax-icon-color height material)
-   (text-flomap "#'" (make-object font% 12 'system 'normal 'bold)
-                macro-stepper-hash-color #t #t (* 3/4 height) material)))
+   (text-flomap "#'" (make-object font% (max 1 (min 1024 height)) 'system)
+                macro-stepper-hash-color #t 'auto (* 3/4 height) material)))
 
 (define (debugger-flomap [height (toolbar-icon-height)] [material (default-icon-material)])
   (flomap-ht-append

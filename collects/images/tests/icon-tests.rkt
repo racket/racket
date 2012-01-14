@@ -37,7 +37,7 @@
 ;; Other icons, various colors
 
 (define icon-procss
-  (list (list reverse-icon continue-back-icon step-back-icon back-icon pause-icon
+  (list (list rewind-icon continue-back-icon step-back-icon back-icon pause-icon
               stop-icon record-icon play-icon step-icon continue-icon fast-forward-icon)
         (list right-arrow-icon left-arrow-icon up-arrow-icon down-arrow-icon
               right-over-arrow-icon left-over-arrow-icon right-under-arrow-icon left-under-arrow-icon)

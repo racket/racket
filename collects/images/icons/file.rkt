@@ -1,15 +1,25 @@
 #lang racket/base
 
-(require racket/draw racket/class
+(require racket/class racket/draw
+         racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
          "../private/utils.rkt"
          "arrow.rkt"
          "style.rkt")
 
-(provide (all-defined-out))
+(provide (activate-contract-out
+          floppy-disk-icon floppy-disk-flomap
+          save-icon save-flomap
+          load-icon load-flomap
+          small-save-icon small-save-flomap
+          small-load-icon small-load-flomap)
+         (only-doc-out (all-defined-out)))
 
-(define (floppy-disk-flomap color [height (default-icon-height)] [material (default-icon-material)])
+(defproc (floppy-disk-flomap [color (or/c string? (is-a?/c color%))]
+                             [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                             [material deep-flomap-material-value? (default-icon-material)]
+                             ) flomap?
   (make-cached-flomap
    [height color material]
    (define scale (/ height 32))
@@ -96,36 +106,54 @@
           [fm  (flomap-ct-superimpose fm label-fm)])
      fm)))
 
-(define (save-flomap arrow-color color
-                     [height (default-icon-height)]
-                     [material (default-icon-material)])
+(defproc (save-flomap [arrow-color (or/c string? (is-a?/c color%))]
+                      [color (or/c string? (is-a?/c color%))]
+                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [material deep-flomap-material-value? (default-icon-material)]
+                      ) flomap?
   (flomap-hc-append (right-arrow-flomap arrow-color (* 3/4 height) material)
                     (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
                     (floppy-disk-flomap color height material))) 
 
-(define (load-flomap arrow-color color
-                     [height (default-icon-height)]
-                     [material (default-icon-material)])
+(defproc (load-flomap [arrow-color (or/c string? (is-a?/c color%))]
+                      [color (or/c string? (is-a?/c color%))]
+                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [material deep-flomap-material-value? (default-icon-material)]
+                      ) flomap?
   (flomap-hc-append (floppy-disk-flomap color height material)
                     (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
                     (right-arrow-flomap arrow-color (* 3/4 height) material)))
 
-(define (small-save-flomap arrow-color color
-                           [height (default-icon-height)]
-                           [material (default-icon-material)])
+(defproc (small-save-flomap [arrow-color (or/c string? (is-a?/c color%))]
+                            [color (or/c string? (is-a?/c color%))]
+                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                            [material deep-flomap-material-value? (default-icon-material)]
+                            ) flomap?
   (flomap-pin* 0 0 11/16 0
                (floppy-disk-flomap color height material)
                (right-arrow-flomap arrow-color (* 3/4 height) material)))
 
-(define (small-load-flomap arrow-color color
-                           [height (default-icon-height)]
-                           [material (default-icon-material)])
+(defproc (small-load-flomap [arrow-color (or/c string? (is-a?/c color%))]
+                            [color (or/c string? (is-a?/c color%))]
+                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                            [material deep-flomap-material-value? (default-icon-material)]
+                            ) flomap?
   (flomap-pin* 1 1 5/16 1
                (floppy-disk-flomap color height material)
                (right-arrow-flomap arrow-color (* 3/4 height) material)))
 
-(define floppy-disk-icon (compose flomap->bitmap floppy-disk-flomap))
-(define save-icon (compose flomap->bitmap save-flomap))
-(define load-icon (compose flomap->bitmap load-flomap))
-(define small-save-icon (compose flomap->bitmap small-save-flomap))
-(define small-load-icon (compose flomap->bitmap small-load-flomap))
+(define-icon-wrappers
+  ([color (or/c string? (is-a?/c color%))]
+   [height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [material deep-flomap-material-value? (default-icon-material)])
+  [floppy-disk-icon floppy-disk-flomap])
+
+(define-icon-wrappers
+  ([arrow-color (or/c string? (is-a?/c color%))]
+   [color (or/c string? (is-a?/c color%))]
+   [height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [material deep-flomap-material-value? (default-icon-material)])
+  [save-icon save-flomap]
+  [load-icon load-flomap]
+  [small-save-icon small-save-flomap]
+  [small-load-icon small-load-flomap])

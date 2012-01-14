@@ -64,9 +64,7 @@
 (define (get-total-time-spent) total-time-spent)
 
 (define (make-cached-flomap* name proc size . args)
-  (define rendered-size
-    (cond [(size . < . 32)  32]
-          [else  (expt 2 (inexact->exact (ceiling (/ (log size) (log 2)))))]))
+  (define rendered-size (if (size . < . 32) 32 size))
   (define fm (weak-value-hash-ref! flomap-cache (list name rendered-size args)
                         (λ () (apply proc rendered-size args))))
   (flomap-scale fm (/ size rendered-size)))

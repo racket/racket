@@ -7,17 +7,18 @@
          "../private/utils.rkt"
          "style.rkt")
 
-(provide
- (activate-contract-out
-  flat-right-arrow-flomap
-  flat-right-over-arrow-flomap
-  right-arrow-flomap left-arrow-flomap up-arrow-flomap down-arrow-flomap
-  right-over-arrow-flomap left-over-arrow-flomap
-  right-under-arrow-flomap left-under-arrow-flomap
-  right-arrow-icon left-arrow-icon up-arrow-icon down-arrow-icon
-  right-over-arrow-icon left-over-arrow-icon
-  right-under-arrow-icon left-under-arrow-icon)
- (only-doc-out (all-defined-out)))
+(provide (activate-contract-out
+          flat-right-arrow-flomap
+          flat-right-over-arrow-flomap
+          right-arrow-icon right-arrow-flomap
+          left-arrow-icon left-arrow-flomap
+          up-arrow-icon up-arrow-flomap
+          down-arrow-icon down-arrow-flomap
+          right-over-arrow-icon right-over-arrow-flomap
+          left-over-arrow-icon left-over-arrow-flomap
+          right-under-arrow-icon right-under-arrow-flomap
+          left-under-arrow-icon left-under-arrow-flomap)
+         (only-doc-out (all-defined-out)))
 
 (defproc (flat-right-arrow-flomap [color (or/c string? (is-a?/c color%))]
                                   [height (and/c rational? (>=/c 0))]
@@ -105,12 +106,15 @@
                                   ) flomap?
   (flomap-flip-horizontal (right-under-arrow-flomap color height material)))
 
-(define-simple-icon-wrapper left-arrow-icon left-arrow-flomap)
-(define-simple-icon-wrapper right-arrow-icon right-arrow-flomap)
-(define-simple-icon-wrapper up-arrow-icon up-arrow-flomap)
-(define-simple-icon-wrapper down-arrow-icon down-arrow-flomap)
-
-(define-simple-icon-wrapper right-over-arrow-icon right-over-arrow-flomap)
-(define-simple-icon-wrapper left-over-arrow-icon left-over-arrow-flomap)
-(define-simple-icon-wrapper right-under-arrow-icon right-under-arrow-flomap)
-(define-simple-icon-wrapper left-under-arrow-icon left-under-arrow-flomap)
+(define-icon-wrappers
+  ([color (or/c string? (is-a?/c color%))]
+   [height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [material deep-flomap-material-value? (default-icon-material)])
+  [left-arrow-icon left-arrow-flomap]
+  [right-arrow-icon right-arrow-flomap]
+  [up-arrow-icon up-arrow-flomap]
+  [down-arrow-icon down-arrow-flomap]
+  [right-over-arrow-icon right-over-arrow-flomap]
+  [left-over-arrow-icon left-over-arrow-flomap]
+  [right-under-arrow-icon right-under-arrow-flomap]
+  [left-under-arrow-icon left-under-arrow-flomap])
