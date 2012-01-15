@@ -53,15 +53,15 @@
          (struct-out line)
          current-text)
   
-  
   (define STIX? #f)
   
   ;; atomic-rewrite-table : (parameter (listof (list symbol (union string pict))))
   (define atomic-rewrite-table 
     (make-parameter 
-     `((... ,(if STIX?
-                 (basic-text "\u22ef" (default-style))
-                 "..."))
+     `((... ,(λ ()
+               (if STIX?
+                   (basic-text "\u22ef" (default-style))
+                   (basic-text "..." (default-style)))))
        (hole "[]"))))
   
   (define-syntax (with-atomic-rewriter stx)
