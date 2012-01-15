@@ -25,12 +25,13 @@
 
     (inherit call-with-lock*
              add-delayed-call!
+             get-tx-status
+             set-tx-status!
              check-valid-tx-status
              check-statement/tx)
-    (inherit-field tx-status)
 
     (define/override (call-with-lock fsym proc)
-      (call-with-lock* fsym (lambda () (set! saved-tx-status tx-status) (proc)) #f #t))
+      (call-with-lock* fsym (lambda () (set! saved-tx-status (get-tx-status)) (proc)) #f #t))
 
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
@@ -63,8 +64,8 @@
                 [result
                  (or cursor?
                      (step* fsym db stmt #f +inf.0))])
-            (unless (eq? tx-status 'invalid)
-              (set! tx-status (get-tx-status)))
+            (unless (eq? (get-tx-status) 'invalid)
+              (set-tx-status! fsym (read-tx-status)))
             (unless cursor? (send pst after-exec #f))
             (cond [(and (pair? info) (not cursor?))
                    (rows-result info result)]
@@ -223,7 +224,7 @@
 
     ;; http://www.sqlite.org/lang_transaction.html
 
-    (define/private (get-tx-status)
+    (define/private (read-tx-status)
       (not (sqlite3_get_autocommit -db)))
 
     (define/override (start-transaction* fsym isolation)
@@ -252,7 +253,7 @@
                [else
                 (internal-query1 fsym "ROLLBACK TRANSACTION")])
          ;; remove 'invalid status, if necessary
-         (set! tx-status (get-tx-status))))
+         (set-tx-status! fsym (read-tx-status))))
       (void))
 
     ;; name-counter : number
@@ -295,8 +296,8 @@
     ;; Can't figure out how to test...
     (define/private (handle-status who s)
       (when (memv s maybe-rollback-status-list)
-        (when (and saved-tx-status -db (not (get-tx-status))) ;; was in trans, now not
-          (set! tx-status 'invalid)))
+        (when (and saved-tx-status -db (not (read-tx-status))) ;; was in trans, now not
+          (set-tx-status! who 'invalid)))
       (handle-status* who s -db))
 
     ;; ----

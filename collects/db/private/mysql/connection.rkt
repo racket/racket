@@ -26,8 +26,9 @@
              call-with-lock*
              add-delayed-call!
              check-valid-tx-status
+             get-tx-status
+             set-tx-status!
              check-statement/tx)
-    (inherit-field tx-status)
 
     (super-new)
 
@@ -97,15 +98,13 @@
           (eprintf "  << ~s\n" next))
         ;; Update transaction status (see Transactions below)
         (when (ok-packet? next)
-          (set! tx-status
-                (bitwise-bit-set? (ok-packet-server-status next) 0)))
+          (set-tx-status! fsym (bitwise-bit-set? (ok-packet-server-status next) 0)))
         (when (eof-packet? next)
-          (set! tx-status
-                (bitwise-bit-set? (eof-packet-server-status next) 0)))
+          (set-tx-status! fsym (bitwise-bit-set? (eof-packet-server-status next) 0)))
         (when (error-packet? next)
-          (when tx-status
-            (when (member (error-packet-errno next) '(1213 1205))
-              (set! tx-status 'invalid))))
+          (when (member (error-packet-errno next) '(1213 1205))
+            (when (get-tx-status)
+              (set-tx-status! fsym 'invalid))))
         (match next
           [(? handshake-packet?)
            (advance 'handshake)]

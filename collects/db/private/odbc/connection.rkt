@@ -43,9 +43,10 @@
     (inherit call-with-lock
              call-with-lock*
              add-delayed-call!
+             get-tx-status
+             set-tx-status!
              check-valid-tx-status
              check-statement/tx)
-    (inherit-field tx-status)
 
     (define/public (get-db fsym)
       (unless db
@@ -539,7 +540,7 @@
           (handle-status fsym status db)))
       (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_OFF)])
         (handle-status fsym status db)
-        (set! tx-status #t)
+        (set-tx-status! fsym #t)
         (void)))
 
     (define/override (end-transaction* fsym mode _savepoint)
@@ -553,7 +554,7 @@
         (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_ON)])
           (handle-status fsym status db)
           ;; commit/rollback can fail; don't change status until possible error handled
-          (set! tx-status #f)
+          (set-tx-status! fsym #f)
           (void))))
 
     ;; GetTables
@@ -637,8 +638,8 @@
         ;; if the driver does one-statement rollback.
         (let ([db db])
           (when db
-            (when tx-status
-              (set! tx-status 'invalid))))
+            (when (get-tx-status)
+              (set-tx-status! who 'invalid))))
         (raise e))
       ;; Be careful: shouldn't do rollback before we call handle-status*
       ;; just in case rollback destroys statement with diagnostic records.

@@ -34,11 +34,11 @@
     (inherit call-with-lock
              call-with-lock*
              add-delayed-call!
+             get-tx-status
+             set-tx-status!
              check-valid-tx-status
              check-statement/tx
-             transaction-nesting
              tx-state->string)
-    (inherit-field tx-status)
 
     (super-new)
 
@@ -105,10 +105,11 @@
       (let ([r (recv-message fsym)])
         (cond [(ReadyForQuery? r)
                ;; Update transaction status
-               (case (ReadyForQuery-transaction-status r)
-                 ((idle) (set! tx-status #f))
-                 ((transaction) (set! tx-status #t))
-                 ((failed) (set! tx-status 'invalid)))]
+               (set-tx-status! fsym
+                               (case (ReadyForQuery-transaction-status r)
+                                 ((idle) #f)
+                                 ((transaction) #t)
+                                 ((failed) 'invalid)))]
               [(and or-eof? (eof-object? r)) (void)]
               [else (error/comm fsym "expected ready")])))
 

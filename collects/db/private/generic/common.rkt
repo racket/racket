@@ -167,23 +167,28 @@
 
 (define transactions%
   (class locking%
-    (inherit call-with-lock)
-
     #|
     A transaction created via SQL is "unmanaged".
     A transaction created via start-tx, call-with-tx is "managed".
 
-    FIXME: eliminate distinction, if possible.
-      - currently: tx-stack != null means tx-status != #f
-      - would also like: tx-stack = null iff tx-status = #f
+    tx-status : #f, #t, 'invalid
+    Indicates whether in a transaction (managed or unmanaged) and if
+    transaction is valid or invalid.
+
+    tx-stack : (list (cons string boolean) ... (cons #f boolean))
+    Represents the "managed" transaction stack.
+
+    If tx-status = #f, then tx-stack = null (except temporarily,
+    within lock). But it is possible for tx-status != #f and
+    tx-stack = null; that indicates an unmanaged tx.
     |#
 
-    ;; tx-status : #f, #t, 'invalid
-    (field [tx-status #f])
+    (define tx-status #f)
+    (define tx-stack null)
 
-    ;; tx-stack : (list (cons string boolean) ... (cons #f boolean)
-    ;; Represents the "managed" transaction stack.
-    (field [tx-stack null])
+    (define/public (get-tx-status) tx-status)
+    (define/public (set-tx-status! fsym s)
+      (set! tx-status s))
 
     ;; check-valid-tx-status : symbol -> void
     (define/public (check-valid-tx-status fsym)
@@ -192,15 +197,18 @@
 
     ;; ----
 
+    ;; (inherit call-with-lock)
+    (define/override (call-with-lock fsym proc)
+      (super call-with-lock fsym
+             (lambda ()
+               (begin0 (proc)
+                 (when (and (eq? tx-status #f) (not (null? tx-stack)))
+                   (error/internal fsym "managed transaction unexpectedly closed"))))))
+
+    ;; ----
+
     (define/public (transaction-status fsym)
       (call-with-lock fsym (lambda () tx-status)))
-
-    ;; transaction-nesting : -> (U #f 'unmanaged 'top-level 'nested)
-    (define/public (transaction-nesting)
-      (cond [(eq? tx-status #f) #f]
-            [(null? tx-stack) 'unmanaged]
-            [(null? (cdr tx-stack)) 'top-level]
-            [else 'nested]))
 
     (define/public (tx-state->string)
       (string-append (case (transaction-nesting)
@@ -212,6 +220,12 @@
                            (string-append "; savepoints: "
                                           (string-join savepoints ", "))
                            ""))))
+
+    (define/private (transaction-nesting)
+      (cond [(eq? tx-status #f) #f]
+            [(null? tx-stack) 'unmanaged]
+            [(null? (cdr tx-stack)) 'top-level]
+            [else 'nested]))
 
     ;; ----
 
@@ -296,8 +310,8 @@
       if in "managed" top-level transaction (no "managed" savepoints):
        - START not allowed
        - COMMIT, ROLLBACK not allowed (for now!)
-       - SAVEPOINT allowed
-       - RELEASE TO, ROLLBACK TO allowed
+       - SAVEPOINT not allowed (for consistency, for ease of stmt cache)
+       - RELEASE TO, ROLLBACK TO not allowed (for consistency, for ease of stmt cache)
        - implicit-commit not allowed
 
       if in nested "managed" transaction (impl as "managed" savepoint):
@@ -321,15 +335,7 @@
          (void))
         ((unmanaged)
          (void))
-        ((top-level)
-         (case stmt-type
-           ((start)
-            (no! " within transaction"))
-           ((commit rollback
-             implicit-commit)
-            (no! " within managed transaction"))
-           (else (void))))
-        ((nested)
+        ((top-level nested)
          (case stmt-type
            ((start)
             (no! " within transaction"))
@@ -337,7 +343,7 @@
              savepoint prepare-transaction
              release-savepoint rollback-savepoint
              implicit-commit)
-            (no! " in managed transaction"))
+            (no! " within managed transaction"))
            (else (void))))))
 
     (super-new)))
