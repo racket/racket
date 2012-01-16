@@ -262,21 +262,23 @@
 	     'disappeared-use (map (lambda (x) (car (syntax->list x))) dom))]))]))
 
 (define-keywords Pad1Specs '() _init-not-needed
-  [up    DEFAULT #'(lambda (x) x) (function-with-arity 1)]
-  [down  DEFAULT #'(lambda (x) x) (function-with-arity 1)]
-  [left  DEFAULT #'(lambda (x) x) (function-with-arity 1)]
-  [right DEFAULT #'(lambda (x) x) (function-with-arity 1)]
-  ; [space DEFAULT #'(lambda (x) x) (function-with-arity 1)]
-  #;
-  [shift DEFAULT #'(lambda (x) x) (function-with-arity 1)])
+  [up    DEFAULT #'#f (function-with-arity 1)]
+  [down  DEFAULT #'#f (function-with-arity 1)]
+  [left  DEFAULT #'#f (function-with-arity 1)]
+  [right DEFAULT #'#f (function-with-arity 1)]
+  [space DEFAULT #'#f (function-with-arity 1)]
+  [shift DEFAULT #'#f (function-with-arity 1)])
 
 (define-syntax (pad-handler stx)
   (syntax-case stx ()
     [(pad1 clause ...)
      (let* ([args (->args 'pad-one-player stx #'w #'(clause ...) Pad1Specs void)]
+            ; [_ (displayln args)]
             [keys (map (lambda (x) 
-                         (syntax-case x () [(proc> (quote s) _f _d) (symbol->string (syntax-e #'s))]))
-                       args)]
+                         (syntax-case x () 
+                           [(proc> (quote s) _f _d) (symbol->string (syntax-e #'s))]
+                           [else "not present"]))
+                       (filter values args))]
             [doms (map (lambda (x) (car (syntax->list x))) (syntax->list #'(clause ...)))])
        (syntax-property 
         (stepper-syntax-property
@@ -284,15 +286,22 @@
          'stepper-skip-completely #t)
         'disappeared-use doms))]))
 
-;; let ((quasi-object ))
-;;              
-;;              (define-higher-order-primitive the-handler the-handler* (world key-event))
-;;              the-handler
-
 (define (produce-handler keys args)
-  (define quasi-object (make-immutable-hash (map cons keys args)))
+  (define (check k one other)
+    (or (and (string=? k one) (not (member other keys)))
+        (and (string=? k other) (not (member one keys)))))
+  (define quasi-methods
+    (for/fold ((m '())) ((k keys) (a args))
+      (cond
+        [(check k "w"     "up") (list* (cons "w" a) (cons "up" a) m)]
+        [(check k "s"     "down") (list* (cons "s" a) (cons "down" a) m)]
+        [(check k "a"     "left") (list* (cons "a" a) (cons "left" a) m)]
+        [(check k "d"     "right") (list* (cons "d" a) (cons "right" a) m)]
+        [(check k "shift" "rshift") (list* (cons "shift" a) (cons "rshift" a) m)]
+        [else (cons (cons "space" a) m)])))
+  (define quasi-object (make-immutable-hash quasi-methods))
   (define (the-handler* world key-event)
-    ((hash-ref quasi-object key-event (lambda (w) w)) world))
+    ((hash-ref quasi-object key-event (lambda () values)) world))
   the-handler*)
 
 (define (run-simulation f)
