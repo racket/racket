@@ -158,12 +158,49 @@ This is because, while plastic and glass mostly reflect light directly, metal mo
                  (for/list ([material  (list plastic-icon-material
                                              glass-icon-material
                                              metal-icon-material)])
-                   (bomb-icon light-metal-icon-color dark-metal-icon-color 32 material))]
+                   (bomb-icon light-metal-icon-color dark-metal-icon-color 32
+                              material))]
 }
 
 @doc-apply[default-icon-material]{
 The material used for rendering most icons and icon parts.
 There are exceptions; for example, the @racket[floppy-disk-icon] always renders the sliding cover in metal.
+}
+
+@doc-apply[bitmap-render-icon]{
+Makes a 3D object out of @racket[bitmap] and renders it as an icon.
+
+The @racket[z-ratio] argument only makes a difference when @racket[material] is transparent, such as @racket[glass-icon-material].
+It controls what fraction of @racket[bitmap]'s height the icon is raised, which in turn affects the refracted shadow under the icon:
+the higher the @racket[z-ratio], the lower the shadow.
+
+@examples[#:eval icons-eval
+                 (define bitmap
+                   (pict->bitmap (colorize (filled-ellipse 64 64) "tomato")))
+                 (for/list ([z-ratio  (in-range 0 2 1/3)])
+                   (bitmap-render-icon bitmap z-ratio glass-icon-material))]
+
+More complex shapes than ``embossed and rounded'' are possible with the full rendering API, which will be made public in a later release.
+Still, most of the simple icons (such as those in @racketmodname[images/icons/arrow] and @racketmodname[images/icons/control]) can be rendered using only @racket[bitmap-render-icon].
+}
+
+@doc-apply[icon-color->outline-color]{
+For a given icon color, returns the proper outline @racket[color%].
+
+As an example, here is how to duplicate the @racket[record-icon] using @racketmodname[slideshow/pict]:
+@interaction[#:eval icons-eval
+                    (define outline-color (icon-color->outline-color "forestgreen"))
+                    (define brush-pict (colorize (filled-ellipse 62 62) "forestgreen"))
+                    (define pen-pict (linewidth 2 (colorize (ellipse 62 62) outline-color)))
+                    (bitmap-render-icon
+                     (pict->bitmap
+                      (inset (cc-superimpose brush-pict pen-pict) 1))
+                     5/8 glass-icon-material)
+                    
+                    (record-icon "forestgreen" 64 glass-icon-material)]
+
+The outline width is usually @racket[(/ height 32)] (in this case, @racket[2]), but not always.
+(For example, @racket[recycle-icon] is an exception, as are parts of @racket[floppy-disk-icon].)
 }
 
 @;====================================================================================================
