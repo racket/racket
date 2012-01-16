@@ -368,18 +368,10 @@ Returns the icon displayed in DrRacket's lower-right corner when no program is r
 Returns a frame of the icon animated in DrRacket's lower-right corner when a program is running.
 The frame returned is for time @racket[t] of a run cycle with a one-second period.
 
-It is difficult to put a code example in the API documentation that produces an animation.
-However, we might use code similar to the following to sample from the run cycle:
+The following example samples the run cycle at 12 Hz, or every @racket[1/12] second:
 @interaction[#:eval icons-eval
                     (for/list ([t  (in-range 0 1 1/12)])
                       (running-stickman-icon t run-icon-color "white" run-icon-color 32))]
-If instead of putting the icons in a list, we call their @racket[save-file] methods and hand-assemble the files into a GIF, we get something like this:
-
-@centered[@image["scribblings/running-stickman.gif"]]
-
-Here, the run cycle is sampled and played back at 30 Hz.
-The previous example samples the run cycle at 12 Hz, or every @racket[1/12] second.
-DrRacket samples it at 12 Hz and plays it back at 5 Hz at the most.
 
 The stickman's joint angles are defined by continuous periodic functions, so the run cycle can be sampled at any resolution, or at any real-valued time @racket[t].
 The cycle is modeled after the run cycle of the player's avatar in the Commodore 64 game @link["http://en.wikipedia.org/wiki/Impossible_Mission"]{Impossible Mission}.
