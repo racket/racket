@@ -9,3 +9,5 @@
 
 @title{Embedding Bitmaps in Compiled Files}
 @author{@(author+email "Neil Toronto" (author-email))}
+
+@defmodule[images/compile-time]

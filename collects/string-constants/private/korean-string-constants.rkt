@@ -1187,8 +1187,8 @@
  (stepper-language-level-message "한 단계씩 실행은 \"~a\" 언어에서 지원하지 않습니다.")
  (stepper-button-label "한 단계씩 실행")
 
- (stepper-previous "< 이전단계")
- (stepper-next "다음단계 >")
+ (stepper-previous "이전단계")
+ (stepper-next "다음단계")
  (stepper-jump "건너뛰기...") 
  (stepper-jump-to-beginning "처음으로")
  (stepper-jump-to-end "끝으로")

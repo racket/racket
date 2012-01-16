@@ -182,8 +182,7 @@
         (new switchable-button% 
              [parent stepper-button-parent-panel]
              [label (string-constant stepper-button-label)]
-             [bitmap x:foot-img/horizontal]
-             [alternate-bitmap x:foot-img/vertical]
+             [bitmap x:step-img]
              [callback (lambda (dont-care) (send (get-current-tab)
                                                  stepper-button-callback))]))
       

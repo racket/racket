@@ -975,8 +975,10 @@
  (stepper-language-level-message
   "El nivel del lenguaje es \"~a\".  Actualmente el Stepper funciona para los niveles \"~a\" al \"~a\".")
  (stepper-button-label "Paso")
- (stepper-previous-application "|< Aplicación")
- (stepper-previous "< Paso")
+ (stepper-previous-application "Aplicación")
+ (stepper-previous "Paso")
+ (stepper-next "Paso")
+ (stepper-next-application "Aplicación")
  (stepper-jump-to-beginning "Hogar")
  
  (dialog-back "Atrás")

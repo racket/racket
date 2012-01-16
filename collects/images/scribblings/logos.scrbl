@@ -18,19 +18,23 @@
 
 @doc-apply[plt-logo]{
 Returns the PLT logo, rendered in tinted glass and azure metal by the ray tracer that renders icons.
-
 @examples[#:eval logos-eval (plt-logo)]
-
-A 256×256 (default height) rendering is compiled into the @racketmodname[images/logos] module using @racket[compiled-bitmap], meaning that constructing the logo at that size and smaller is cheap.
-In fact, constructing the logo at the default height is essentially free because it does not need to be downscaled.
+The default height is the size used for DrRacket splash screen.
 }
 
 @doc-apply[planet-logo]{
 Returns an unofficial PLaneT logo. This is used as the PLaneT icon when DrRacket downloads PLaneT packages.
-
 @examples[#:eval logos-eval
                  (planet-logo)
                  (planet-logo (default-icon-height))]
+}
 
-As with the @racket[plt-logo], a default-height rendering is compiled into the @racketmodname[images/logos] module for performance reasons.
+@doc-apply[stepper-logo]{
+An algebraic stepper logo.
+@examples[#:eval logos-eval (stepper-logo)]
+}
+
+@doc-apply[macro-stepper-logo]{
+A macro stepper logo.
+@examples[#:eval logos-eval (macro-stepper-logo)]
 }

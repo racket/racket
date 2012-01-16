@@ -1250,8 +1250,8 @@
   "Der Stepper unterstützt die Sprachebene \"~a\" nicht.")
  (stepper-button-label "Stepper")
 
- (stepper-previous "< Schritt")
- (stepper-next "Schritt >")
+ (stepper-previous "Schritt")
+ (stepper-next "Schritt")
  (stepper-jump "Springen...")
  (stepper-jump-to-beginning "an den Anfang")
  (stepper-jump-to-end "ans Ende")

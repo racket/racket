@@ -74,7 +74,24 @@
          draw-rendered-icon-flomap
          flomap-render-thin-icon
          draw-short-rendered-icon-flomap
-         define-icon-wrappers)
+         define-icon-wrappers
+         (activate-contract-out
+          icon-color->outline-color
+          set-icon-pen))
+
+(defproc (set-icon-pen [dc (is-a?/c dc<%>)]
+                       [color (or/c string? (is-a?/c color%))]
+                       [width (>=/c 0)]
+                       [style symbol?]) void?
+  (send dc set-pen (make-object pen% color width style 'projecting 'miter)))
+
+(defproc (icon-color->outline-color [color (or/c string? (is-a?/c color%))]) (is-a?/c color%)
+  (cond [(string? color)  (icon-color->outline-color (send the-color-database find-color color))]
+        [else
+         (define r (send color red))
+         (define g (send color green))
+         (define b (send color blue))
+         (make-object color% (quotient r 2) (quotient g 2) (quotient b 2))]))
 
 (define icon-lighting
   (deep-flomap-lighting-value
@@ -103,7 +120,7 @@
                  (send dc set-scale scale scale)
                  (send dc set-smoothing 'smoothed)
                  (send dc set-origin (* 0.5 scale) (* 0.5 scale))
-                 (send dc set-pen (make-object pen% "black" 1 'solid 'projecting 'miter))
+                 (set-icon-pen dc "black" 10 'solid)
                  (draw-proc dc))))
 
 (define (flomap-render-icon fm material)

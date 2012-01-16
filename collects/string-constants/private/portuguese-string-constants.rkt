@@ -1064,11 +1064,11 @@ please adhere to these guidelines:
  (stepper-language-level-message
   "The language level is set to \"~a\". Currently, the stepper works only for the \"~a\" through the \"~a\" language levels.")
  (stepper-button-label "Step")
- (stepper-previous-application "|< Application")
- (stepper-previous "< Step")
- (stepper-next "Step >")
+ (stepper-previous-application "Application")
+ (stepper-previous "Step")
+ (stepper-next "Step")
  (stepper-jump-to-beginning "Home")
- (stepper-next-application "Application >|")
+ (stepper-next-application "Application")
  
 
  (dialog-back "Back")

@@ -15,9 +15,32 @@
          "gui-util.rkt"
          "../syntax-browser/util.rkt"
          unstable/gui/notify
+         images/compile-time
+         images/gui
+         (for-syntax racket/base
+                     images/icons/arrow images/icons/control images/logos
+                     images/icons/style)
          (only-in mzscheme [#%top-interaction mz-top-interaction]))
 (provide macro-stepper-widget%
          macro-stepper-widget/process-mixin)
+
+;; Compiled-in assets (button icons)
+
+(define navigate-up-icon
+  (compiled-bitmap (up-arrow-icon syntax-icon-color (toolbar-icon-height))))
+(define navigate-to-start-icon
+  (compiled-bitmap (search-backward-icon syntax-icon-color (toolbar-icon-height))))
+(define navigate-previous-icon
+  (compiled-bitmap (step-back-icon syntax-icon-color (toolbar-icon-height))))
+(define navigate-next-icon
+  (compiled-bitmap (step-icon syntax-icon-color (toolbar-icon-height))))
+(define navigate-to-end-icon
+  (compiled-bitmap (search-forward-icon syntax-icon-color (toolbar-icon-height))))
+(define navigate-down-icon
+  (compiled-bitmap (down-arrow-icon syntax-icon-color (toolbar-icon-height))))
+
+(define small-logo (compiled-bitmap (macro-stepper-logo 32)))
+(define large-logo (compiled-bitmap (macro-stepper-logo)))
 
 ;; Macro Stepper
 
@@ -112,9 +135,14 @@
       (new vertical-panel%
            (parent superarea)
            (enabled #f)))
-    (define supernavigator
+    (define top-panel
       (new horizontal-panel%
            (parent area)
+           (horiz-margin 5)
+           (stretchable-height #f)))
+    (define supernavigator
+      (new horizontal-panel%
+           (parent top-panel)
            (stretchable-height #f)
            (alignment '(center center))))
     (define navigator
@@ -130,7 +158,25 @@
            (stretchable-height #f)
            (alignment '(left center))
            (style '(deleted))))
-
+    
+    (define about-dialog
+      (new logo-about-dialog%
+           (label "About the Macro Stepper")
+           (parent frame)
+           (bitmap large-logo)
+           (messages '("The Macro Stepper is formalized and proved correct in\n"
+                       "\n"
+                       "    Ryan Culpepper and Matthias Felleisen\n"
+                       "    Debugging Hygienic Macros\n"
+                       "    Science of Computer Programming, July 2010\n"))))
+    
+    (define logo-canvas
+      (new (class bitmap-canvas%
+             (super-new (parent top-panel) (bitmap small-logo))
+             (define/override (on-event evt)
+               (when (eq? (send evt get-event-type) 'left-up)
+                 (send about-dialog show #t))))))
+    
     (define/i sbview sb:syntax-browser<%>
       (new stepper-syntax-widget% 
            (parent area)
@@ -179,22 +225,22 @@
           (lambda (_) (update/preserve-view)))
 
     (define nav:up
-      (new button% (label "Previous term") (parent navigator)
+      (new button% (label (list navigate-up-icon "Previous term" 'left)) (parent navigator)
            (callback (lambda (b e) (navigate-up)))))
     (define nav:start
-      (new button% (label "<-- Start") (parent navigator)
+      (new button% (label (list navigate-to-start-icon "Start" 'left)) (parent navigator)
            (callback (lambda (b e) (navigate-to-start)))))
     (define nav:previous
-      (new button% (label "<- Step") (parent navigator)
+      (new button% (label (list navigate-previous-icon "Step" 'left)) (parent navigator)
            (callback (lambda (b e) (navigate-previous)))))
     (define nav:next
-      (new button% (label "Step ->") (parent navigator)
+      (new button% (label (list navigate-next-icon "Step" 'right)) (parent navigator)
            (callback (lambda (b e) (navigate-next)))))
     (define nav:end
-      (new button% (label "End -->") (parent navigator)
+      (new button% (label (list navigate-to-end-icon "End" 'right)) (parent navigator)
            (callback (lambda (b e) (navigate-to-end)))))
     (define nav:down
-      (new button% (label "Next term") (parent navigator)
+      (new button% (label (list navigate-down-icon "Next term" 'right)) (parent navigator)
            (callback (lambda (b e) (navigate-down)))))
 
     (define nav:text

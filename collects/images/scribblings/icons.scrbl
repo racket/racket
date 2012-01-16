@@ -31,6 +31,8 @@
 @(define icons-eval (make-base-eval))
 @interaction-eval[#:eval icons-eval (require racket/class racket/draw racket/math racket/list)]
 
+@;====================================================================================================
+
 @section{What is an icon?}
 @margin-note*{This section describes an ideal that DrRacket and its tools are steadily approaching.}
 
@@ -58,6 +60,8 @@ especially for new users and people with certain forms of color-blindness, and t
 
 As another example, the Check Syntax icon @(check-syntax-icon 16) connotes inspecting and passing. Note that the check mark is also the color of syntax.
 
+@;====================================================================================================
+
 @section{About These Icons}
 
 The icons in this collection are designed to be composed to create new ones: they are simple, thematically consistent, and can be constructed in any size and color.
@@ -80,6 +84,11 @@ See the @racket[plt-logo] and @racket[planet-logo] functions for more striking e
 
 When the rendering API is stable enough to publish, it will allow anyone who can draw a shape to turn that shape into a visually consistent icon.
 
+As with any sort of rendering (such as @link["http://en.wikipedia.org/wiki/Scalable_Vector_Graphics"]{SVG} rendering), ray tracing takes time.
+For icons, this usually happens during tool or application start up.
+You can reduce the portion of start-up time taken by rendering to almost nothing by using the @racketmodname[images/compile-time] library to embed bitmaps directly into compiled modules.
+
+@;====================================================================================================
 
 @section{Icon Style}
 
@@ -139,7 +148,8 @@ It has the high refractive index of @link["http://en.wikipedia.org/wiki/Cubic_zi
 The ``glassy look'' cannot actually be achieved using glass.
 
 Metal reflects the most, its @link["http://en.wikipedia.org/wiki/Specular_highlight"]{specular highlight} is nearly the same color as the material (in the others, the highlight is white),
-and it diffuses much more ambient light than directional. This is because, while plastic and glass mostly reflect light directly, metal mostly absorbs light and re-emits it.
+and it diffuses much more ambient light than directional.
+This is because, while plastic and glass mostly reflect light directly, metal mostly absorbs light and re-emits it.
 
 @examples[#:eval icons-eval
                  (require images/icons/misc)
@@ -154,6 +164,8 @@ The material used for rendering most icons and icon parts.
 There are exceptions; for example, the @racket[floppy-disk-icon] always renders the sliding cover in metal.
 }
 
+@;====================================================================================================
+
 @section[#:tag "arrows"]{Arrow Icons}
 
 @defmodule[images/icons/arrow]
@@ -163,6 +175,7 @@ There are exceptions; for example, the @racket[floppy-disk-icon] always renders 
 @doc-apply[left-arrow-icon]
 @doc-apply[up-arrow-icon]
 @doc-apply[down-arrow-icon]{
+Standard directional arrows.
 @examples[#:eval icons-eval
                  (list (right-arrow-icon syntax-icon-color (toolbar-icon-height))
                        (left-arrow-icon run-icon-color)
@@ -174,6 +187,7 @@ There are exceptions; for example, the @racket[floppy-disk-icon] always renders 
 @doc-apply[left-over-arrow-icon]
 @doc-apply[right-under-arrow-icon]
 @doc-apply[left-under-arrow-icon]{
+Standard bent arrows.
 @examples[#:eval icons-eval
                  (list (right-over-arrow-icon metal-icon-color (toolbar-icon-height))
                        (left-over-arrow-icon dark-metal-icon-color)
@@ -181,43 +195,32 @@ There are exceptions; for example, the @racket[floppy-disk-icon] always renders 
                        (left-under-arrow-icon "lightgreen" 44 glass-icon-material))]
 }
 
+@;====================================================================================================
+
 @section[#:tag "control"]{Control Icons}
 
 @defmodule[images/icons/control]
 @interaction-eval[#:eval icons-eval (require images/icons/control)]
 
-@doc-apply[play-icon]
-@doc-apply[back-icon]
-@doc-apply[fast-forward-icon]
-@doc-apply[rewind-icon]
-@doc-apply[bar-icon]
-@doc-apply[stop-icon]
-@doc-apply[record-icon]
-@doc-apply[pause-icon]
-@doc-apply[step-icon]
-@doc-apply[step-back-icon]
-@doc-apply[continue-icon]
-@doc-apply[continue-back-icon]{
-Typical ``playback control'' icons.
-For example, a colorful tape deck:
-@interaction[#:eval icons-eval
-                    (for/list ([make-icon  (list rewind-icon continue-back-icon
-                                                 step-back-icon back-icon
-                                                 pause-icon stop-icon
-                                                 play-icon step-icon
-                                                 continue-icon fast-forward-icon
-                                                 record-icon)]
-                               [color  (list run-icon-color halt-icon-color
-                                             syntax-icon-color metal-icon-color
-                                             dark-metal-icon-color dark-metal-icon-color
-                                             metal-icon-color syntax-icon-color
-                                             halt-icon-color run-icon-color
-                                             "red")]
-                               [material  (in-cycle (list plastic-icon-material
-                                                          glass-icon-material))])
-                      (make-icon color 32 material))]
-The remaining icon @(bar-icon "red" 16), returned by @racket[bar-icon], is used to build the others.
+@doc-apply[bar-icon]{
+@examples[#:eval icons-eval (bar-icon run-icon-color 32)]
+This is not a ``control'' icon @italic{per se}, but is used to make many others.
 }
+@doc-apply[play-icon]{ @examples[#:eval icons-eval (play-icon run-icon-color 32)] }
+@doc-apply[back-icon]{ @examples[#:eval icons-eval (back-icon run-icon-color 32)] }
+@doc-apply[fast-forward-icon]{ @examples[#:eval icons-eval (fast-forward-icon syntax-icon-color 32)] }
+@doc-apply[rewind-icon]{ @examples[#:eval icons-eval (rewind-icon syntax-icon-color 32)] }
+@doc-apply[stop-icon]{ @examples[#:eval icons-eval (stop-icon halt-icon-color 32)] }
+@doc-apply[record-icon]{ @examples[#:eval icons-eval (record-icon "red" 32)] }
+@doc-apply[pause-icon]{ @examples[#:eval icons-eval (pause-icon halt-icon-color 32)] }
+@doc-apply[step-icon]{ @examples[#:eval icons-eval (step-icon run-icon-color 32)] }
+@doc-apply[step-back-icon]{ @examples[#:eval icons-eval (step-back-icon run-icon-color 32)] }
+@doc-apply[continue-forward-icon]{ @examples[#:eval icons-eval (continue-forward-icon run-icon-color 32)] }
+@doc-apply[continue-backward-icon]{ @examples[#:eval icons-eval (continue-backward-icon run-icon-color 32)] }
+@doc-apply[search-forward-icon]{ @examples[#:eval icons-eval (search-forward-icon syntax-icon-color 32)] }
+@doc-apply[search-backward-icon]{ @examples[#:eval icons-eval (search-backward-icon syntax-icon-color 32)] }
+
+@;====================================================================================================
 
 @section[#:tag "file"]{File Icons}
 
@@ -239,6 +242,8 @@ The remaining icon @(bar-icon "red" 16), returned by @racket[bar-icon], is used 
                                           metal-icon-color dark-metal-icon-color)])
                    (make-icon syntax-icon-color color 32))]
 }
+
+@;====================================================================================================
 
 @section[#:tag "misc"]{Miscellaneous Icons}
 
@@ -316,6 +321,16 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
                  (stop-signs-icon halt-icon-color 32 plastic-icon-material)]
 }
 
+@doc-apply[foot-icon]{
+@examples[#:eval icons-eval
+                 (foot-icon "chocolate" 32 glass-icon-material)]
+}
+
+@doc-apply[lambda-icon]{
+@examples[#:eval icons-eval
+                 (lambda-icon light-metal-icon-color 32 metal-icon-material)]
+}
+
 @doc-apply[magnifying-glass-icon]{
 @examples[#:eval icons-eval
                  (magnifying-glass-icon light-metal-icon-color "lightblue" 32
@@ -336,6 +351,8 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 @examples[#:eval icons-eval
                  (left-bomb-icon metal-icon-color dark-metal-icon-color 32)]
 }
+
+@;====================================================================================================
 
 @section[#:tag "stickman"]{Stickman Icons}
 
@@ -367,6 +384,8 @@ DrRacket samples it at 12 Hz and plays it back at 5 Hz at the most.
 The stickman's joint angles are defined by continuous periodic functions, so the run cycle can be sampled at any resolution, or at any real-valued time @racket[t].
 The cycle is modeled after the run cycle of the player's avatar in the Commodore 64 game @link["http://en.wikipedia.org/wiki/Impossible_Mission"]{Impossible Mission}.
 }
+
+@;====================================================================================================
 
 @section[#:tag "tool"]{Tool Icons}
 

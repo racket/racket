@@ -4,6 +4,6 @@
 
 (define drracket-tool-names (list "The Stepper"))
 
-(define drracket-tool-icons (list '("foot-up.png" "icons")))
+(define drracket-tool-icons (list '("stepper-32x32.png" "icons")))
 
 (define scribblings '(("scribblings/stepper.scrbl")))
