@@ -211,7 +211,8 @@
 (define sandbox-make-logger (make-parameter current-logger))
 
 (define (compute-permissions paths+require-perms)
-  (define-values [paths require-perms] (partition path? paths+require-perms))
+  (define-values [paths require-perms]
+    (partition path-string? paths+require-perms))
   (define cpaths (map path->complete-path paths))
   (append (map (lambda (p) `(read ,(path->bytes p))) cpaths)
           ;; when reading a file from "/foo/bar/baz.rkt" racket will try to see
