@@ -313,7 +313,7 @@ a complete path, it is returned as the result. Otherwise,
 @racket[base]. If @racket[base] is not a complete path, the
 @exnraise[exn:fail:contract].
 
-The @racket[path] and @racket[base] arguments can paths for any
+The @racket[path] and @racket[base] arguments can be paths for any
 platform; if they are for different
 platforms, the @exnraise[exn:fail:contract].
 
