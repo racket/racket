@@ -119,7 +119,9 @@
       ;; timeout? = if connection open, then wait longer
       (let* ([c (hash-ref key=>conn key #f)]
              [in-trans? (with-handlers ([exn:fail? (lambda (e) #f)])
-                          (and c (send c transaction-status 'virtual-connection)))])
+                          (and c
+                               (send c connected?)
+                               (send c transaction-status 'virtual-connection)))])
         (cond [(not c) (void)]
               [(and timeout? in-trans?)
                (hash-set! alarms c (fresh-alarm-for key))]
@@ -182,7 +184,7 @@
       (#t '_     (fetch/cursor fsym stmt fetch-size))
       (#t '_     (start-transaction fsym isolation cwt?))
       (#f (void) (end-transaction fsym mode cwt?))
-      (#f #f     (transaction-status fsym))
+      (#t '_     (transaction-status fsym))
       (#t '_     (list-tables fsym schema)))
 
     (define/public (get-base)

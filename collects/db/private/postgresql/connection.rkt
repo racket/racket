@@ -45,22 +45,58 @@
 
     (super-new)
 
-    ;; with-disconnect-on-error
-    (define-syntax-rule (with-disconnect-on-error . body)
-      (with-handlers ([exn:fail? (lambda (e) (disconnect* #f) (raise e))])
-        . body))
-
     ;; ========================================
 
     ;; == Communication
-    ;; (Must be called with lock acquired.)
+    #|
+    During initial setup, okay to send and recv directly, since reference
+    to connection does not escape to user. In particular, no danger of trying
+    to start a new exchange on top of an incomplete failed one.
 
-    ;; raw-recv : -> message
-    (define/private (raw-recv)
-      (with-disconnect-on-error
-       (let ([r (parse-server-message inport)])
-         (dprintf "  << ~s\n" r)
-         r)))
+    After initial setup, communication can only happen within lock, and any
+    error (other than exn:fail:sql) that occurs between sending the message
+    buffer (flush-message-buffer) and receiving the last message (recv-message)
+    must cause the connection to disconnect. Such errors include communication
+    errors and breaks.
+    |#
+
+    ;; message-buffer : reversed list of messages
+    (define message-buffer null)
+
+    ;; fresh-exchange : -> void
+    (define/private (fresh-exchange)
+      (set! message-buffer null))
+
+    ;; buffer-message : message -> void
+    (define/private (buffer-message msg)
+      (dprintf "  >> ~s\n" msg)
+      (set! message-buffer (cons msg message-buffer)))
+
+    ;; flush-message-buffer : -> void
+    (define/private (flush-message-buffer)
+      (for ([msg (in-list (reverse message-buffer))])
+        (write-message msg outport))
+      (set! message-buffer null)
+      (flush-output outport))
+
+    ;; send-message : message -> void
+    (define/private (send-message msg)
+      (buffer-message msg)
+      (flush-message-buffer))
+
+    (define/private (call-with-sync fsym proc)
+      (buffer-message (make-Sync))
+      (with-handlers ([(lambda (e) #t)
+                       (lambda (e)
+                         ;; Anything but exn:fail:sql (raised by recv-message) indicates
+                         ;; a communication error.
+                         ;; FIXME: alternatively, have check-ready-for-query set an ok flag
+                         (unless (exn:fail:sql? e)
+                           (disconnect* #f))
+                         (raise e))])
+        (flush-message-buffer)
+        (begin0 (proc)
+          (check-ready-for-query fsym #f))))
 
     ;; recv-message : symbol -> message
     (define/private (recv-message fsym)
@@ -75,21 +111,11 @@
                (recv-message fsym)]
               [else r])))
 
-    ;; send-message : message -> void
-    (define/private (send-message msg)
-      (buffer-message msg)
-      (flush-message-buffer))
-
-    ;; buffer-message : message -> void
-    (define/private (buffer-message msg)
-      (dprintf "  >> ~s\n" msg)
-      (with-disconnect-on-error
-       (write-message msg outport)))
-
-    ;; flush-message-buffer : -> void
-    (define/private (flush-message-buffer)
-      (with-disconnect-on-error
-       (flush-output outport)))
+    ;; raw-recv : -> message
+    (define/private (raw-recv)
+      (let ([r (parse-server-message inport)])
+        (dprintf "  << ~s\n" r)
+        r))
 
     ;; check-ready-for-query : symbol -> void
     (define/private (check-ready-for-query fsym or-eof?)
@@ -103,6 +129,9 @@
                                  ((failed) 'invalid)))]
               [(and or-eof? (eof-object? r)) (void)]
               [else (error/comm fsym "expected ready")])))
+
+    (define/override (on-break-within-lock)
+      (disconnect* #f))
 
     ;; == Asynchronous messages
 
@@ -128,32 +157,27 @@
 
     ;; == Connection management
 
-    ;; disconnect : [boolean] -> (void)
+    ;; disconnect : -> void
     (define/public (disconnect)
-      (disconnect* #t))
+      (when (connected?)
+        (call-with-lock* 'disconnect
+                         (lambda () (disconnect* #t))
+                         (lambda () (disconnect* #f))
+                         #f)))
 
     ;; disconnect* : boolean -> void
-    (define/private (disconnect* no-lock-held?)
-      (define (go politely?)
-        (dprintf "  ** Disconnecting\n")
-        (let ([outport* outport]
-              [inport* inport])
-          (when outport*
-            (when politely?
-              (send-message (make-Terminate)))
-            (close-output-port outport*)
-            (set! outport #f))
-          (when inport*
-            (close-input-port inport*)
-            (set! inport #f))))
-      ;; If we don't hold the lock, try to acquire it and disconnect politely.
-      ;; Except, if already disconnected, no need to acquire lock.
-      (cond [(and no-lock-held? (connected?))
-             (call-with-lock* 'disconnect
-               (lambda () (go #t))
-               (lambda () (go #f))
-               #f)]
-            [else (go #f)]))
+    (define/private (disconnect* politely?)
+      (dprintf "  ** Disconnecting\n")
+      (let ([outport* outport]
+            [inport* inport])
+        (when outport*
+          (when politely?
+            (send-message (make-Terminate)))
+          (close-output-port outport*)
+          (set! outport #f))
+        (when inport*
+          (close-input-port inport*)
+          (set! inport #f))))
 
     ;; connected? : -> boolean
     (define/override (connected?)
@@ -176,8 +200,7 @@
 
     ;; start-connection-protocol : string string string/#f -> void
     (define/public (start-connection-protocol dbname username password)
-      (with-disconnect-on-error
-       (call-with-lock 'postgresql-connect
+      (call-with-lock 'postgresql-connect
         (lambda ()
           (send-message
            (make-StartupMessage
@@ -185,7 +208,7 @@
                   (cons "database" dbname)
                   (cons "client_encoding" "UTF8")
                   (cons "DateStyle" "ISO, MDY"))))
-          (connect:expect-auth username password)))))
+          (connect:expect-auth username password))))
 
     ;; connect:expect-auth : string/#f -> ConnectionResult
     (define/private (connect:expect-auth username password)
@@ -249,11 +272,12 @@
 
     (define/private (query1 fsym stmt close-on-exec? cursor?)
       ;; if stmt is string, must take no params & results must be binary-readable
+      (fresh-exchange)
       (let* ([delenda (check/invalidate-cache stmt)]
              [portal (query1:enqueue delenda stmt close-on-exec? cursor?)])
-        (send-message (make-Sync))
-        (begin0 (query1:collect fsym delenda stmt portal (string? stmt) close-on-exec? cursor?)
-          (check-ready-for-query fsym #f))))
+        (call-with-sync fsym
+          (lambda ()
+            (query1:collect fsym delenda stmt portal (string? stmt) close-on-exec? cursor?)))))
 
     ;; check-statement : symbol statement -> statement-binding
     ;; Convert to statement-binding; need to prepare to get type information, used to
@@ -402,10 +426,11 @@
                    (lambda ()
                      (cond [(unbox end-box) #f]
                            [else
+                            (fresh-exchange)
                             (buffer-message (make-Execute portal fetch-size))
-                            (send-message (make-Sync))
-                            (let ([rows (query1:data-loop fsym end-box)])
-                              (check-ready-for-query fsym #f)
+                            (let ([rows
+                                   (call-with-sync fsym
+                                     (lambda () (query1:data-loop fsym end-box)))])
                               (when (unbox end-box)
                                 (cursor:close fsym pst portal))
                               rows)])))])
@@ -413,13 +438,13 @@
 
     (define/private (cursor:close fsym pst portal)
       (let ([close-on-exec? (send pst get-close-on-exec?)])
+        (fresh-exchange)
         (buffer-message (make-Close 'portal portal))
         (when close-on-exec?
           (buffer-message (make-Close 'statement (send pst get-handle)))
           (send pst set-handle #f))
-        (send-message (make-Sync))
-        (query1:expect-close-complete fsym close-on-exec?)
-        (check-ready-for-query fsym #f)))
+        (call-with-sync fsym
+          (lambda () (query1:expect-close-complete fsym close-on-exec?)))))
 
     ;; == Prepare
 
@@ -428,10 +453,10 @@
     (define/override (prepare1* fsym stmt close-on-exec? stmt-type)
       ;; name generation within exchange: synchronized
       (let ([name (generate-name)])
+        (fresh-exchange)
         (prepare1:enqueue name stmt)
-        (send-message (make-Sync))
-        (begin0 (prepare1:collect fsym stmt name close-on-exec? stmt-type)
-          (check-ready-for-query fsym #f))))
+        (call-with-sync fsym
+          (lambda () (prepare1:collect fsym stmt name close-on-exec? stmt-type)))))
 
     (define/private (prepare1:enqueue name stmt)
       (buffer-message (make-Parse name stmt null))
@@ -483,12 +508,13 @@
         (let ([name (send pst get-handle)])
           (when (and name outport) ;; outport = connected?
             (send pst set-handle #f)
+            (fresh-exchange)
             (buffer-message (make-Close 'statement name))
-            (buffer-message (make-Sync))
-            (let ([r (recv-message 'free-statement)])
-              (cond [(CloseComplete? r) (void)]
-                    [else (error/comm 'free-statement)])
-              (check-ready-for-query 'free-statement #t)))))
+            (call-with-sync 'free-statement
+             (lambda ()
+               (let ([r (recv-message 'free-statement)])
+                 (cond [(CloseComplete? r) (void)]
+                       [else (error/comm 'free-statement)])))))))
       (if need-lock?
           (call-with-lock* 'free-statement
                            do-free-statement

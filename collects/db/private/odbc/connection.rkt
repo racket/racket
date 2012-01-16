@@ -51,6 +51,9 @@
              check-valid-tx-status
              check-statement/tx)
 
+    (define/override (on-break-within-lock)
+      (disconnect*))
+
     (define/public (get-db fsym)
       (unless db
         (error/not-connected fsym))
@@ -477,22 +480,24 @@
             (vector name type size digits)))))
 
     (define/public (disconnect)
-      (define (go)
-        (start-atomic)
-        (let ([db* db]
-              [env* env])
-          (set! db #f)
-          (set! env #f)
-          (end-atomic)
-          (when db*
-            (let ([statements (hash-map statement-table (lambda (k v) k))])
-              (for ([pst (in-list statements)])
-                (free-statement* 'disconnect pst))
-              (handle-status 'disconnect (SQLDisconnect db*) db*)
-              (handle-status 'disconnect (SQLFreeHandle SQL_HANDLE_DBC db*))
-              (handle-status 'disconnect (SQLFreeHandle SQL_HANDLE_ENV env*))
-              (void)))))
+      (define (go) (disconnect*))
       (call-with-lock* 'disconnect go go #f))
+
+    (define/private (disconnect*)
+      (start-atomic)
+      (let ([db* db]
+            [env* env])
+        (set! db #f)
+        (set! env #f)
+        (end-atomic)
+        (when db*
+          (let ([statements (hash-map statement-table (lambda (k v) k))])
+            (for ([pst (in-list statements)])
+              (free-statement* 'disconnect pst))
+            (handle-status 'disconnect (SQLDisconnect db*) db*)
+            (handle-status 'disconnect (SQLFreeHandle SQL_HANDLE_DBC db*))
+            (handle-status 'disconnect (SQLFreeHandle SQL_HANDLE_ENV env*))
+            (void)))))
 
     (define/public (get-base) this)
 

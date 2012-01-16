@@ -118,9 +118,11 @@
 
     (define/public-final (call-with-lock* who proc hopeless require-connected?)
       (let ([me (thread-dead-evt (current-thread))]
+            [eb? (break-enabled)]
             [result (sync outer-lock lock-holder)])
         (cond [(eq? result outer-lock)
                ;; Got past outer stage
+               (break-enabled #f)
                (let ([proceed?
                       (begin (start-atomic)
                              (let ([proceed? (semaphore-try-wait? inner-lock)])
@@ -133,21 +135,30 @@
                         ;; Acquired lock
                         ;;  - lock-holder = me, and outer-lock is closed again
                         (when (and require-connected? (not (connected?)))
-                          (unlock)
+                          (break-enabled eb?)
+                          (unlock #f)
                           (error/not-connected who))
-                        (with-handlers ([values (lambda (e) (unlock) (raise e))])
-                          (begin0 (proc) (unlock)))]
+                        (with-handlers ([(lambda (e) #t)
+                                         (lambda (e)
+                                           (when (exn:break? e) (on-break-within-lock))
+                                           (unlock #f)
+                                           (raise e))])
+                          (break-enabled eb?)
+                          (begin0 (proc) (unlock #t)))]
                        [else
                         ;; Didn't acquire lock; retry
+                        (break-enabled eb?)
                         (call-with-lock* who proc hopeless require-connected?)]))]
               [(eq? result lock-holder)
                ;; Thread holding lock is dead
                (if hopeless (hopeless) (error/hopeless who))]
+              [(eq? me lock-holder)
+               (error/internal who "attempted to recursively acquire lock")]
               [else
                ;; lock-holder was stale; retry
                (call-with-lock* who proc hopeless require-connected?)])))
 
-    (define/private (unlock)
+    (define/private (unlock run-async-calls?)
       (let ([async-calls (reverse delayed-async-calls)])
         (set! delayed-async-calls null)
         (start-atomic)
@@ -155,13 +166,20 @@
         (semaphore-post inner-lock)
         (semaphore-post outer-sema)
         (end-atomic)
-        (for-each call-with-continuation-barrier async-calls)))
+        (when run-async-calls?
+          (for-each call-with-continuation-barrier async-calls))))
 
     ;; needs overriding
     (define/public (connected?) #f)
 
-    (define/public-final (add-delayed-call! proc)
+    (define/public (add-delayed-call! proc)
       (set! delayed-async-calls (cons proc delayed-async-calls)))
+
+    ;; on-break-within-lock : -> void
+    ;; Called before unlock; makes it easy to disconnect on any break
+    ;; within lock.
+    (define/public (on-break-within-lock)
+      (void))
 
     (super-new)))
 

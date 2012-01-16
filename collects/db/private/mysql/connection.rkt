@@ -35,44 +35,61 @@
 
     (super-new)
 
-    ;; with-disconnect-on-error
-    (define-syntax-rule (with-disconnect-on-error . body)
-      (with-handlers ([exn:fail? (lambda (e) (disconnect* #f) (raise e))])
-        . body))
-
     ;; ========================================
 
     ;; == Communication
-    ;; (Must be called with lock acquired.)
 
+    #|
+    During initial setup, okay to send and recv directly, since reference
+    to connection does not escape to user. In particular, no danger of trying
+    to start a new exchange on top of an incomplete failed one.
+
+    After initial setup, communication can only happen within lock, and any
+    error (other than exn:fail:sql) that occurs between sending the message
+    buffer (flush-message-buffer) and receiving the last message (recv)
+    must cause the connection to disconnect. Such errors include communication
+    errors and breaks.
+    |#
+
+    (define msg-buffer null)
     (define next-msg-num 0)
 
     (define/private (fresh-exchange)
+      (set! msg-buffer null)
       (set! next-msg-num 0))
+
+    ;; buffer-message : message -> void
+    (define/private (buffer-message msg)
+      (dprintf "  >> ~s\n" msg)
+      (set! msg-buffer (cons (cons msg next-msg-num) msg-buffer))
+      (set! next-msg-num (add1 next-msg-num)))
+
+    ;; flush-message-buffer : -> void
+    (define/private (flush-message-buffer)
+      (for ([msg+num (in-list (reverse msg-buffer))])
+        (write-packet outport (car msg+num) (cdr msg+num)))
+      (flush-output outport))
 
     ;; send-message : message -> void
     (define/private (send-message msg)
       (buffer-message msg)
       (flush-message-buffer))
 
-    ;; buffer-message : message -> void
-    (define/private (buffer-message msg)
-      (dprintf "  >> ~s\n" msg)
-      (with-disconnect-on-error
-       (write-packet outport msg next-msg-num)
-       (set! next-msg-num (add1 next-msg-num))))
-
-    ;; flush-message-buffer : -> void
-    (define/private (flush-message-buffer)
-      (with-disconnect-on-error
-       (flush-output outport)))
+    (define/private (call-with-sync fsym proc)
+      (with-handlers ([(lambda (e) #t)
+                       (lambda (e)
+                         ;; Anything but exn:fail:sql (raised by recv-message) indicates
+                         ;; a communication error.
+                         (unless (exn:fail:sql? e)
+                           (disconnect* #f))
+                         (raise e))])
+        (flush-message-buffer)
+        (proc)))
 
     ;; recv : symbol/#f [(list-of symbol)] -> message
     ;; Automatically handles asynchronous messages
     (define/private (recv fsym expectation [field-dvecs #f])
-      (define r
-        (with-disconnect-on-error
-         (recv* fsym expectation field-dvecs)))
+      (define r (recv* fsym expectation field-dvecs))
       (when (error-packet? r)
         (raise-backend-error fsym r))
       r)
@@ -126,36 +143,34 @@
            (err next)])
         next))
 
+    (define/override (on-break-within-lock)
+      (disconnect* #f))
+
     ;; ========================================
 
     ;; Connection management
 
-    ;; disconnect : -> (void)
+    ;; disconnect : -> void
     (define/public (disconnect)
-      (disconnect* #t))
+      (when (connected?)
+        (call-with-lock* 'disconnect
+                         (lambda () (disconnect* #t))
+                         (lambda () (disconnect* #f))
+                         #f)))
 
-    (define/private (disconnect* lock-not-held?)
-      (define (go politely?)
-        (dprintf "  ** Disconnecting\n")
-        (let ([outport* outport]
-              [inport* inport])
-          (when outport
-            (when politely?
-              (fresh-exchange)
-              (send-message (make-command-packet 'quit "")))
-            (close-output-port outport)
-            (set! outport #f))
-          (when inport
-            (close-input-port inport)
-            (set! inport #f))))
-      ;; If we don't hold the lock, try to acquire it and disconnect politely.
-      ;; Except, if already disconnected, no need to acquire lock.
-      (cond [(and lock-not-held? (connected?))
-             (call-with-lock* 'disconnect
-               (lambda () (go #t))
-               (lambda () (go #f))
-               #f)]
-            [else (go #f)]))
+    (define/private (disconnect* politely?)
+      (dprintf "  ** Disconnecting\n")
+      (let ([outport* outport]
+            [inport* inport])
+        (when outport*
+          (when politely?
+            (fresh-exchange)
+            (send-message (make-command-packet 'quit "")))
+          (close-output-port outport*)
+          (set! outport #f))
+        (when inport*
+          (close-input-port inport*)
+          (set! inport #f))))
 
     ;; connected? : -> boolean
     (define/override (connected?)
@@ -176,31 +191,30 @@
 
     ;; start-connection-protocol : string/#f string string/#f -> void
     (define/public (start-connection-protocol dbname username password ssl ssl-context)
-      (with-disconnect-on-error
-        (fresh-exchange)
-        (let ([r (recv 'mysql-connect 'handshake)])
-          (match r
-            [(struct handshake-packet (pver sver tid scramble capabilities charset status auth))
-             (check-required-flags capabilities)
-             (unless (member auth '("mysql_native_password" #f))
-               (uerror 'mysql-connect "unsupported authentication plugin: ~s" auth))
-             (define do-ssl?
-               (and (case ssl ((yes optional) #t) ((no) #f))
-                    (memq 'ssl capabilities)))
-             (when (and (eq? ssl 'yes) (not do-ssl?))
-               (uerror 'mysql-connect "server refused SSL connection"))
-             (define wanted-capabilities (desired-capabilities capabilities do-ssl? dbname))
-             (when do-ssl?
-               (send-message (make-abbrev-client-auth-packet wanted-capabilities))
-               (let-values ([(sin sout)
-                             (ports->ssl-ports inport outport
-                                               #:mode 'connect
-                                               #:context ssl-context
-                                               #:close-original? #t)])
-                 (attach-to-ports sin sout)))
-             (authenticate wanted-capabilities username password dbname
-                           (or auth "mysql_native_password") scramble)]
-            [_ (error/comm 'mysql-connect "during authentication")]))))
+      (fresh-exchange)
+      (let ([r (recv 'mysql-connect 'handshake)])
+        (match r
+          [(struct handshake-packet (pver sver tid scramble capabilities charset status auth))
+           (check-required-flags capabilities)
+           (unless (member auth '("mysql_native_password" #f))
+             (uerror 'mysql-connect "unsupported authentication plugin: ~s" auth))
+           (define do-ssl?
+             (and (case ssl ((yes optional) #t) ((no) #f))
+                  (memq 'ssl capabilities)))
+           (when (and (eq? ssl 'yes) (not do-ssl?))
+             (uerror 'mysql-connect "server refused SSL connection"))
+           (define wanted-capabilities (desired-capabilities capabilities do-ssl? dbname))
+           (when do-ssl?
+             (send-message (make-abbrev-client-auth-packet wanted-capabilities))
+             (let-values ([(sin sout)
+                           (ports->ssl-ports inport outport
+                                             #:mode 'connect
+                                             #:context ssl-context
+                                             #:close-original? #t)])
+               (attach-to-ports sin sout)))
+           (authenticate wanted-capabilities username password dbname
+                         (or auth "mysql_native_password") scramble)]
+          [_ (error/comm 'mysql-connect "during authentication")])))
 
     (define/private (authenticate capabilities username password dbname auth-plugin scramble)
       (let loop ([auth-plugin auth-plugin] [scramble scramble] [first? #t])
@@ -276,7 +290,8 @@
       (let ([wbox (and warnings? (box 0))])
         (fresh-exchange)
         (query1:enqueue stmt cursor?)
-        (begin0 (query1:collect fsym stmt (not (string? stmt)) cursor? wbox)
+        (begin0 (call-with-sync fsym
+                  (lambda () (query1:collect fsym stmt (not (string? stmt)) cursor? wbox)))
           (when (and warnings? (not (zero? (unbox wbox))))
             (fetch-warnings fsym)))))
 
@@ -307,11 +322,11 @@
                     [id (send pst get-handle)]
                     [params (statement-binding-params stmt)]
                     [null-map (map sql-null? params)])
-               (send-message
+               (buffer-message
                 (let ([flags (if cursor? '(cursor/read-only) '())])
                   (make-execute-packet id flags null-map params))))]
             [else ;; string
-             (send-message (make-command-packet 'query stmt))]))
+             (buffer-message (make-command-packet 'query stmt))]))
 
     ;; query1:collect : symbol bool -> QueryResult stream
     (define/private (query1:collect fsym stmt binary? cursor? wbox)
@@ -379,8 +394,9 @@
                     [else
                      (let ([wbox (box 0)])
                        (fresh-exchange)
-                       (send-message (make-fetch-packet (send pst get-handle) fetch-size))
-                       (begin0 (query1:get-rows fsym field-dvecs #t wbox end-box)
+                       (buffer-message (make-fetch-packet (send pst get-handle) fetch-size))
+                       (begin0 (call-with-sync fsym
+                                 (lambda () (query1:get-rows fsym field-dvecs #t wbox end-box)))
                          (when (not (zero? (unbox wbox)))
                            (fetch-warnings fsym))))]))))))
 
@@ -390,22 +406,24 @@
 
     (define/override (prepare1* fsym stmt close-on-exec? stmt-type)
       (fresh-exchange)
-      (send-message (make-command-packet 'statement-prepare stmt))
-      (let ([r (recv fsym 'prep-ok)])
-        (match r
-          [(struct ok-prepared-statement-packet (id fields params))
-           (let ([param-dvecs
-                  (if (zero? params) null (prepare1:get-field-descriptions fsym))]
-                 [field-dvecs
-                  (if (zero? fields) null (prepare1:get-field-descriptions fsym))])
-             (new prepared-statement%
-                  (handle id)
-                  (close-on-exec? close-on-exec?)
-                  (param-typeids (map field-dvec->typeid param-dvecs))
-                  (result-dvecs field-dvecs)
-                  (stmt stmt)
-                  (stmt-type stmt-type)
-                  (owner this)))])))
+      (buffer-message (make-command-packet 'statement-prepare stmt))
+      (call-with-sync fsym
+        (lambda ()
+          (let ([r (recv fsym 'prep-ok)])
+            (match r
+              [(struct ok-prepared-statement-packet (id fields params))
+               (let ([param-dvecs
+                      (if (zero? params) null (prepare1:get-field-descriptions fsym))]
+                     [field-dvecs
+                      (if (zero? fields) null (prepare1:get-field-descriptions fsym))])
+                 (new prepared-statement%
+                      (handle id)
+                      (close-on-exec? close-on-exec?)
+                      (param-typeids (map field-dvec->typeid param-dvecs))
+                      (result-dvecs field-dvecs)
+                      (stmt stmt)
+                      (stmt-type stmt-type)
+                      (owner this)))])))))
 
     (define/private (prepare1:get-field-descriptions fsym)
       (let ([r (recv fsym 'field)])

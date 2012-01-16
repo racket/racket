@@ -397,12 +397,7 @@ Based on protocol documentation here:
          ;; [inp (subport in len)]
          [bs (read-bytes len in)]
          [inp (open-input-bytes bs)]
-         [msg
-          (with-handlers ([exn?
-                           (lambda (e)
-                             (eprintf "packet was: ~s\n" (bytes->list bs))
-                             (raise e))])
-            (parse-packet/1 inp expect len field-dvecs))])
+         [msg (parse-packet/1 inp expect len field-dvecs)])
     (when (port-has-bytes? inp)
       (error/internal 'parse-packet "bytes left over after parsing ~s; bytes were: ~s" 
                       msg (io:read-bytes-to-eof inp)))

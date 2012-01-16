@@ -37,6 +37,9 @@
     (define/override (call-with-lock fsym proc)
       (call-with-lock* fsym (lambda () (set! saved-tx-status (get-tx-status)) (proc)) #f #t))
 
+    (define/override (on-break-within-lock)
+      (disconnect*))
+
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
 
@@ -194,18 +197,20 @@
           pst)))
 
     (define/public (disconnect)
-      (define (go)
-        (start-atomic)
-        (let ([db -db])
-          (set! -db #f)
-          (end-atomic)
-          (when db
-            (let ([statements (hash-map statement-table (lambda (k v) k))])
-              (for ([pst (in-list statements)])
-                (do-free-statement 'disconnect pst))
-              (HANDLE 'disconnect2 (sqlite3_close db))
-              (void)))))
+      (define (go) (disconnect*))
       (call-with-lock* 'disconnect go go #f))
+
+    (define/private (disconnect*)
+      (start-atomic)
+      (let ([db -db])
+        (set! -db #f)
+        (end-atomic)
+        (when db
+          (let ([statements (hash-map statement-table (lambda (k v) k))])
+            (for ([pst (in-list statements)])
+              (do-free-statement 'disconnect pst))
+            (HANDLE 'disconnect (sqlite3_close db))
+            (void)))))
 
     (define/public (get-base) this)
 

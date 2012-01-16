@@ -111,3 +111,5 @@ Misc
       so a statement can be invalidated between cache retrieval and execution
 
 - support logging
+
+- audit: make sure no output within atomic section (in drracket, may thread switch)
