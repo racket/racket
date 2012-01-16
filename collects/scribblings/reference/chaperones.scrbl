@@ -431,7 +431,7 @@ not be used if @racket[vec] is immutable.}
                         [prop-val any] ... ...)
           (and/c box? chaperone?)]{
 
-Like @racket[prox-box], but with support for immutable boxes. The
+Like @racket[impersonate-box], but with support for immutable boxes. The
 @racket[unbox-proc] procedure must produce the same value or a
 chaperone of the original value, and @racket[set-proc] must produce
 the same value or a chaperone of the value that it is given.  The
