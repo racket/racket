@@ -1,11 +1,46 @@
-# these should be writable
+# these should be writable (for the web server)
 cache="/tmp/racket-build-status-cache"
 cachelock="$cache-lock"
+requestfile="/tmp/racket-build-request"
+requeststatusfile="/tmp/racket-build-request-status"
 
 printf 'Content-type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\n'
 
-# cache status reports (avoids excessive work during builds)
+if [[ "$PATH_INFO" = "/request" ]]; then
+  error() { echo "Error: $*"; exit 0; }
+  if [[ -e "$lockfile" ]]; then
+    if [[ -e "$statusfile" ]]; then error "a build is in progress"
+    else error "builds temporarily disabled"; fi
+  fi
+  request_rx='^([^&@]+@racket-lang[.]org)&([^&]+)&([0-9]+)$'
+  if [[ ! "$QUERY_STRING" =~ $request_rx ]]; then error "invalid request"; fi
+  username="${BASH_REMATCH[1]}"
+  branch="${BASH_REMATCH[2]}"
+  cookie="${BASH_REMATCH[3]}"
+  date="$(date +'%Y-%m-%d %H:%M')"
+  prevuser=""
+  if [[ -e "$requestfile" ]]; then
+    prevuser="$(cat "$requestfile" | head -1)"
+    rm -f "$requestfile" || error "could not remove previous request file"
+    rm -f "$requeststatusfile"
+  fi
+  touch "$requestfile" || error "could not create request file"
+  { echo "$username"; echo "$branch"; echo "$date"; echo "$cookie"; } \
+    > "$requestfile"
+  if [[ "x$prevuser" = "x" ]]; then
+    echo "Request created for $username"
+  elif [[ "x$prevuser" = "x$username" ]]; then
+    echo "Request re-created for $username"
+  else
+    echo "Request created for $username, overwriting request for $prevuser"
+  fi
+  exit 0
+fi
 
+###############################################################################
+# status reporting
+
+# cache status reports (avoids excessive work during builds)
 # use a lockfile as a cheap hack to time cache refreshing
 if ! lockfile -r 0 -l 25 -s 0 "$cachelock" >& /dev/null \
    && [[ -e "$cache" ]]; then
@@ -14,14 +49,14 @@ fi
 
 {
 
-files=""
-if [[ -e "$lockfile"        ]]; then L="Y";  else L="N";  fi
-if [[ -e "$statusfile"      ]]; then S="Y";  else S="N";  fi
-if [[ -e "$statusfile_last" ]]; then S1="Y"; else S1="N"; fi
+check_exists() { if [[ -e "$2" ]]; then eval "$1=Y"; else eval "$1=N"; fi; }
+check_exists L  "$lockfile"
+check_exists S  "$statusfile"
+check_exists SL "$statusfile_last"
+check_exists R  "$requestfile"
+check_exists RS "$requeststatusfile"
 
-if [[ "$L$S" = "NY" ]]; then
-  printf 'Last build crashed abnormally.\n'
-elif [[ "$S" = "Y" ]]; then
+if [[ "$L$S" = "YY" ]]; then
   time_for_file() {
     local t="$(($(date +"%s") - $(stat -c "%Z" "$1")))"
     printf "%d:%02d:%02d" "$((t/3600))" "$(((t%3600)/60))" "$((t%60))"
@@ -48,7 +83,26 @@ elif [[ "$S" = "Y" ]]; then
   fi
 else
   printf 'No build is running.\n'
-  if [[ "$S1" = "Y" ]]; then
+  if [[ "$L" = "Y" ]]; then
+    # lockfile exists, but no statusfile
+    printf '(Builds temporarily disabled.)\n'
+  elif [[ "$S" = "Y" ]]; then
+    # statusfile exists, but no lockfile
+    printf '(Last build crashed abnormally: status file not removed.)\n'
+  fi
+  if [[ "$R" = "Y" ]]; then
+    echo ""
+    { read R_user; read R_branch; read R_date; } < "$requestfile"
+    printf 'Pending build request for %s' "$R_user"
+    if [[ "x$R_branch" != "xmaster" ]]; then
+      printf ' (%s branch)' "$R_branch"
+    fi
+    echo " made at $R_date"
+    if [[ "$RS" = "Y" ]]; then awk '{ print "  " $0 }' < "$requeststatusfile"
+    else echo "  The request is fresh, and was not noticed by the system."; fi
+  fi
+  if [[ "$SL" = "Y" ]]; then
+    echo ""
     last="$(cat "$statusfile_last")"
     if [[ "x$last" = "xDone ("*")" ]]; then
       last="${last#Done (}"
@@ -64,10 +118,8 @@ else
       printf 'Last build was unsuccessful (%s)\n' "$last"
     fi
   fi
-  if [[ "$L" = "Y" ]]; then
-    printf '(Builds temporarily disabled)\n'
-  fi
 fi
 
-} > "$cache" 2>&1
+} > "$cache.$$" 2>&1
+mv "$cache.$$" "$cache"
 cat "$cache"
