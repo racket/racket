@@ -103,7 +103,7 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-karmic" "moveto=/proj/racket"
 defbuild "osx64" "x86_64-osx-mac"
 # These builds are courtesy of Mason Loring Bliss <mason at blisses dot org>
 # defbuild "blisses1" "x86_64-linux-debian-lenny"
-# defbuild "blisses2" "x86_64-linux-debian-squeeze"
+defbuild "blisses2" "x86_64-linux-debian-squeeze"
 # Start the main build last
 defbuild "$workmachine" "x86_64-linux-f14" "copytobak=$maindir" "test_gui=yes"
 msets "/"
@@ -1484,7 +1484,7 @@ DO_WINDOWS_BUILD() {
 
   _cd "$PLTHOME"; win_build_step RKT "raco setup" $SETUP_ARGS
 
-  header -s "Windows: Building Cygwin libreries"
+  header -s "Windows: Building Cygwin libraries"
   _mcd "$PLTHOME/src/build"
   _run ../configure --disable-gracket
   _cd "racket/dynsrc"
@@ -1493,7 +1493,7 @@ DO_WINDOWS_BUILD() {
   || exit_error "Errors when running \"make\" for Cygwin"
 
   # Borland is no longer supported:
-  # header -s "Windows: Building Borland libreries"
+  # header -s "Windows: Building Borland libraries"
   # _cd "$PLTHOME/src/racket/dynsrc"
   # _run bcc32 -I"../include" -I"g:/borland/bcc55/include" \
   #        -o"mzdynb.obj" -c "mzdyn.c"
