@@ -6,6 +6,7 @@
                      images/icons/arrow
                      images/icons/control
                      images/icons/file
+                     images/icons/symbol
                      images/icons/misc
                      images/icons/stickman
                      images/icons/tool
@@ -19,6 +20,7 @@
           images/icons/file
           images/icons/misc
           images/icons/stickman
+          images/icons/symbol
           images/icons/tool
           images/icons/style)
 
@@ -227,28 +229,18 @@ This is not a ``control'' icon @italic{per se}, but is used to make many others.
 @defmodule[images/icons/file]
 @interaction-eval[#:eval icons-eval (require images/icons/file)]
 
-@doc-apply[floppy-disk-icon]{
-@examples[#:eval icons-eval (floppy-disk-icon "crimson" 32 glass-icon-material)]
-}
-
-@doc-apply[save-icon]
-@doc-apply[small-save-icon]
-@doc-apply[load-icon]
-@doc-apply[small-load-icon]{
-@examples[#:eval icons-eval
-                 (for/list ([make-icon  (list save-icon small-save-icon
-                                              load-icon small-load-icon)]
-                            [color  (list run-icon-color halt-icon-color
-                                          metal-icon-color dark-metal-icon-color)])
-                   (make-icon syntax-icon-color color 32))]
-}
+@doc-apply[floppy-disk-icon]{ @examples[#:eval icons-eval (floppy-disk-icon "crimson" 32 glass-icon-material)] }
+@doc-apply[save-icon]{ @examples[#:eval icons-eval (save-icon syntax-icon-color run-icon-color 32)] }
+@doc-apply[load-icon]{ @examples[#:eval icons-eval (load-icon syntax-icon-color metal-icon-color 32)] }
+@doc-apply[small-save-icon]{ @examples[#:eval icons-eval (small-save-icon syntax-icon-color halt-icon-color 32)] }
+@doc-apply[small-load-icon]{ @examples[#:eval icons-eval (small-load-icon syntax-icon-color dark-metal-icon-color 32)] }
 
 @;====================================================================================================
 
-@section[#:tag "misc"]{Miscellaneous Icons}
+@section[#:tag "symbol"]{Symbol and Text Icons}
 
-@defmodule[images/icons/misc]
-@interaction-eval[#:eval icons-eval (require images/icons/misc)]
+@defmodule[images/icons/symbol]
+@interaction-eval[#:eval icons-eval (require images/icons/symbol)]
 
 @doc-apply[text-icon]{
 Renders a text string as an icon. For example,
@@ -278,13 +270,12 @@ Note that both icons are @racket[(default-icon-height)] pixels tall.
 
 When @racket[outline] is @racket['auto], the outline drawn around the text is @racket[(/ height 32)] pixels wide.
 
-Because different platforms have slightly different fonts, @racket[text-icon] cannot guarantee the icons it returns have a consistent look or width across all platforms.
+Because different platforms have different fonts, @racket[text-icon] cannot guarantee the icons it returns have a consistent look or width across all platforms, or that the unicode characters will exist.
 }
 
 @doc-apply[recycle-icon]{
 Returns the universal recycling symbol, rendered as an icon.
-Its implementation calls @racket[text-icon] with the string @racket["\u267b"].
-@examples[#:eval icons-eval (recycle-icon "forestgreen" 48)]
+@examples[#:eval icons-eval (recycle-icon (make-object color% 0 153 0) 48)]
 }
 
 @doc-apply[x-icon]{
@@ -296,6 +287,18 @@ Returns an ``x'' icon that is guaranteed to look the same on all platforms.
 @doc-apply[check-icon]{
 @examples[#:eval icons-eval (check-icon "darkgreen" 32)]
 }
+
+@doc-apply[lambda-icon]{
+@examples[#:eval icons-eval
+                 (lambda-icon light-metal-icon-color 32 metal-icon-material)]
+}
+
+@;====================================================================================================
+
+@section[#:tag "misc"]{Miscellaneous Icons}
+
+@defmodule[images/icons/misc]
+@interaction-eval[#:eval icons-eval (require images/icons/misc)]
 
 @doc-apply[regular-polygon-icon]{
 Renders the largest regular polygon with @racket[sides] sides, with the first vertex at angle @racket[start], that can be centered in a @racket[height] × @racket[height] box.
@@ -324,11 +327,6 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 @doc-apply[foot-icon]{
 @examples[#:eval icons-eval
                  (foot-icon "chocolate" 32 glass-icon-material)]
-}
-
-@doc-apply[lambda-icon]{
-@examples[#:eval icons-eval
-                 (lambda-icon light-metal-icon-color 32 metal-icon-material)]
 }
 
 @doc-apply[magnifying-glass-icon]{

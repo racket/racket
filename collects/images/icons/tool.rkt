@@ -6,6 +6,7 @@
          "../private/deep-flomap.rkt"
          "../private/utils.rkt"
          "control.rkt"
+         "symbol.rkt"
          "misc.rkt"
          "style.rkt")
 

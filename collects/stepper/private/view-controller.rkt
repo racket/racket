@@ -31,6 +31,19 @@
 ;; the stored representation of a step
 (define-struct step (text kind posns) #:transparent)
 
+(define (show-about-dialog parent)
+  (define dlg
+    (new logo-about-dialog%
+         [label "About the Stepper"]
+         [parent parent]
+         [bitmap (compiled-bitmap (stepper-logo))]
+         [messages '("The Algebraic Stepper is formalized and proved correct in\n"
+                     "\n"
+                     "    John Clements, Matthew Flatt, Matthias Felleisen\n"
+                     "    Modeling an Algebraic Stepper\n"
+                     "    European Symposium on Programming, 2001\n")]))
+  (send dlg show #t))
+
 (define (go drracket-tab program-expander selection-start selection-end)
   
   ;; get the language-level:
@@ -230,23 +243,12 @@
          [stretchable-width #t]
          [stretchable-height #f]))
   
-  (define about-dialog
-    (new logo-about-dialog%
-         [label "About the Stepper"]
-         [parent s-frame]
-         [bitmap (compiled-bitmap (stepper-logo))]
-         [messages '("The Algebraic Stepper is formalized and proved correct in\n"
-                     "\n"
-                     "    John Clements, Matthew Flatt, Matthias Felleisen\n"
-                     "    Modeling an Algebraic Stepper\n"
-                     "    European Symposium on Programming, 2001\n")]))
-  
   (define logo-canvas
     (new (class bitmap-canvas%
            (super-new [parent top-panel] [bitmap (compiled-bitmap (stepper-logo 32))])
            (define/override (on-event evt)
              (when (eq? (send evt get-event-type) 'left-up)
-               (send about-dialog show #t))))))
+               (show-about-dialog s-frame))))))
   
   (define prev-img (compiled-bitmap (step-back-icon run-icon-color (toolbar-icon-height))))
   (define previous-button (new button%

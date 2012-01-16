@@ -128,7 +128,7 @@
          [_  (error 'apply-path-commands "unknown path command ~e" cmd)])]))
   (void))
 
-(define (draw-path-commands dc x y cmds)
+(define (draw-path-commands dc cmds x y)
   (define p (new dc-path%))
   (apply-path-commands p cmds)
   (define t (send dc get-transformation))
@@ -166,7 +166,7 @@
          [`(M ,ax ,ay ,as ...)  (cons `(m ,(- ax x) ,(- ay y))
                                       (loop ax ay (cons `(M ,@as) (rest cmds))))]
          [`(L ,ax ,ay ,as ...)  (cons `(l ,(- ax x) ,(- ay y))
-                                      (loop ax ay (cons '(L ,@as) (rest cmds))))]
+                                      (loop ax ay (cons `(L ,@as) (rest cmds))))]
          [`(C ,ax1 ,ay1 ,ax2 ,ay2 ,ax ,ay ,as ...)
           (cons `(c ,(- ax1 x) ,(- ay1 y) ,(- ax2 x) ,(- ay2 y) ,(- ax x) ,(- ay y))
                 (loop ax ay (cons `(C ,@as) (rest cmds))))]

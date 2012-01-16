@@ -42,6 +42,19 @@
 (define small-logo (compiled-bitmap (macro-stepper-logo 32)))
 (define large-logo (compiled-bitmap (macro-stepper-logo)))
 
+(define (show-about-dialog parent)
+  (define dlg
+    (new logo-about-dialog%
+         (label "About the Macro Stepper")
+         (parent parent)
+         (bitmap large-logo)
+         (messages '("The Macro Stepper is formalized and proved correct in\n"
+                     "\n"
+                     "    Ryan Culpepper and Matthias Felleisen\n"
+                     "    Debugging Hygienic Macros\n"
+                     "    Science of Computer Programming, July 2010\n"))))
+  (send dlg show #t))
+
 ;; Macro Stepper
 
 ;; macro-stepper-widget%
@@ -159,23 +172,12 @@
            (alignment '(left center))
            (style '(deleted))))
     
-    (define about-dialog
-      (new logo-about-dialog%
-           (label "About the Macro Stepper")
-           (parent frame)
-           (bitmap large-logo)
-           (messages '("The Macro Stepper is formalized and proved correct in\n"
-                       "\n"
-                       "    Ryan Culpepper and Matthias Felleisen\n"
-                       "    Debugging Hygienic Macros\n"
-                       "    Science of Computer Programming, July 2010\n"))))
-    
     (define logo-canvas
       (new (class bitmap-canvas%
              (super-new (parent top-panel) (bitmap small-logo))
              (define/override (on-event evt)
                (when (eq? (send evt get-event-type) 'left-up)
-                 (send about-dialog show #t))))))
+                 (show-about-dialog frame))))))
     
     (define/i sbview sb:syntax-browser<%>
       (new stepper-syntax-widget% 
