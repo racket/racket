@@ -36,7 +36,7 @@
 (define transform-x (transform center-x))
 (define transform-y (transform center-y))
 
-(define (pad-handler x k)
+(define (phandler x k)
   (case (string->symbol k)
     [(up    w)      (- x 0+10i)]
     [(down  s)      (+ x 0+10i)]
@@ -53,7 +53,7 @@
 (define-syntax-rule 
   (run txt clause ...) 
   (begin (set! label (string-append txt label))
-         (big-bang x0 (to-draw render) (on-pad  pad-handler) clause ... )))
+         (big-bang x0 (to-draw render) (on-pad phandler) clause ... )))
 
 (= -10-10i (run ""))
 (= -10-10i (run "press l, " (on-key (key-handler 'key))))
