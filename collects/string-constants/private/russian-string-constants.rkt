@@ -1252,10 +1252,10 @@ please adhere to these guidelines:
  (stepper-language-level-message "Пошаговое выполнение не работает для языка \"~a\".")
  (stepper-button-label "Шаг")
 
- (stepper-previous-application "|< Программа")
- (stepper-previous "< Шаг")
- (stepper-next "Шаг >")
- (stepper-next-application "Программа >|")
+ (stepper-previous-application "Программа")
+ (stepper-previous "Шаг")
+ (stepper-next "Шаг")
+ (stepper-next-application "Программа")
  (stepper-jump "Перейти...") ;; this one is changed.  action?
  (stepper-out-of-steps "Вычисления завершены ранее, чем достигнут искомый шаг.")
  (stepper-no-such-step/title "Шаг не найден")

@@ -69,7 +69,7 @@
                             (send dc draw-rectangle 2.5 i 16 1)))
                   scale)]
             [dfm  (flomap->deep-flomap fm)]
-            [dfm  (deep-flomap-bulge-vertical dfm (* 4 scale))])
+            [dfm  (deep-flomap-bulge-vertical dfm (* 2 scale))])
        (deep-flomap-render-icon dfm matte-material)))
    
    (define top-indent-fm
@@ -84,6 +84,7 @@
    (define case-fm
      (draw-icon-flomap
       32 32 (λ (dc)
+              (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
               (send dc set-brush color 'solid)
               (send dc draw-polygon (list '(0 . 3) '(3 . 0)
                                           '(28 . 0) '(31 . 3)

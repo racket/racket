@@ -1348,8 +1348,8 @@ please adhere to these guidelines:
  (stepper-language-level-message "The stepper does not work for language \"~a\".")
  (stepper-button-label "Step")
 
- (stepper-previous "< Step")
- (stepper-next "Step >")
+ (stepper-previous "Step")
+ (stepper-next "Step")
  (stepper-jump "Jump...")
  (stepper-jump-to-beginning "to beginning")
  (stepper-jump-to-end "to end")

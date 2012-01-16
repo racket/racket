@@ -106,8 +106,9 @@
 
 (define standing-right-hand-point
   (cons+ standing-right-elbow-point
-         (polar->cartesian (+ standing-right-elbow-angle standing-torso-angle standing-right-hand-angle)
-                           lower-arm-length)))
+         (polar->cartesian
+          (+ standing-right-elbow-angle standing-torso-angle standing-right-hand-angle)
+          lower-arm-length)))
 
 (defproc (standing-stickman-flomap [color (or/c string? (is-a?/c color%))]
                                    [arm-color (or/c string? (is-a?/c color%))]
@@ -120,7 +121,8 @@
    (flomap-lt-superimpose
     (draw-short-rendered-icon-flomap 
      26 32 (λ (dc)
-             (send dc set-pen "black" (+ arm-width (* 2 line-width)) 'solid)
+             (send dc set-pen (icon-color->outline-color arm-color)
+                   (+ arm-width (* 2 line-width)) 'solid)
              (send dc draw-lines (list standing-right-shoulder-point
                                        standing-right-elbow-point
                                        standing-right-hand-point))
@@ -132,17 +134,22 @@
      material)
     (draw-short-rendered-icon-flomap 
      26 32 (λ (dc)
-             (send dc set-pen "black" (+ body-width (* 2 line-width)) 'solid)
+             (send dc set-pen (icon-color->outline-color color)
+                   (+ body-width (* 2 line-width)) 'solid)
              (send dc draw-lines (list standing-neck-point standing-hip-point))
-             (send dc set-pen "black" (+ leg-width (* 2 line-width)) 'solid)
+             
+             (send dc set-pen (icon-color->outline-color color)
+                   (+ leg-width (* 2 line-width)) 'solid)
              (send dc draw-lines (list standing-hip-point
                                        standing-left-knee-point
                                        standing-left-foot-point))
              (send dc draw-lines (list standing-hip-point
                                        standing-right-knee-point
                                        standing-right-foot-point))
+             
              (send dc set-pen color body-width 'solid)
              (send dc draw-lines (list standing-neck-point standing-hip-point))
+             
              (send dc set-pen color leg-width 'solid)
              (send dc draw-lines (list standing-hip-point
                                        standing-left-knee-point
@@ -154,7 +161,8 @@
      material)
     (draw-short-rendered-icon-flomap 
      26 32 (λ (dc)
-             (send dc set-pen "black" (+ arm-width (* 2 line-width)) 'solid)
+             (send dc set-pen (icon-color->outline-color arm-color)
+                   (+ arm-width (* 2 line-width)) 'solid)
              (send dc draw-lines (list standing-left-shoulder-point
                                        standing-left-elbow-point
                                        standing-left-hand-point))
@@ -166,7 +174,7 @@
      material)
     (draw-short-rendered-icon-flomap 
      26 32 (λ (dc)
-             (send dc set-pen "black" line-width 'solid)
+             (send dc set-pen (icon-color->outline-color head-color) line-width 'solid)
              (send dc set-brush head-color 'solid)
              (match-define (cons x y) standing-head-point)
              (draw-ellipse/smoothed dc (- x 3.5) (- y 3.5) 8 8))
@@ -262,7 +270,7 @@
    [height t color material]
    (draw-rendered-icon-flomap 
     26 32 (λ (dc)
-            (send dc set-pen "black" line-width 'solid)
+            (send dc set-pen (icon-color->outline-color color) line-width 'solid)
             (send dc set-brush color 'solid)
             (match-define (cons x y) (running-head-point t))
             (draw-ellipse/smoothed dc (- x 3.5) (- y 3.5) 8 8))
@@ -274,9 +282,10 @@
    [height t body? color material]
    (draw-rendered-icon-flomap 
     26 32 (λ (dc)
-            (draw-running-leg dc t "black" (+ leg-width (* 2 line-width)))
+            (draw-running-leg dc t (icon-color->outline-color color) (+ leg-width (* 2 line-width)))
             (when body?
-              (draw-running-body dc t "black" (+ body-width (* 2 line-width)))
+              (draw-running-body dc t (icon-color->outline-color color)
+                                 (+ body-width (* 2 line-width)))
               (draw-running-body dc t color body-width))
             (draw-running-leg dc t color leg-width))
     (/ height 32)
@@ -287,7 +296,7 @@
    [height t color material]
    (draw-rendered-icon-flomap 
     26 32 (λ (dc)
-            (draw-running-arm dc t "black" (+ arm-width (* 2 line-width)))
+            (draw-running-arm dc t (icon-color->outline-color color) (+ arm-width (* 2 line-width)))
             (draw-running-arm dc t color arm-width))
     (/ height 32)
     material)))

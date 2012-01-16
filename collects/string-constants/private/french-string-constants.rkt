@@ -1348,8 +1348,8 @@
   (stepper-language-level-message "Le Pas à Pas n'est pas disponible pour le langage \"~a\".")
   (stepper-button-label "Pas")
   
-  (stepper-previous "< Pas")
-  (stepper-next "Pas >")
+  (stepper-previous "Pas")
+  (stepper-next "Pas")
   (stepper-jump "Sauter...")
   (stepper-jump-to-beginning "au début")
   (stepper-jump-to-end "à la fin")

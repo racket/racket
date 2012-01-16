@@ -7,5 +7,5 @@
 (define stepper-drracket-button
   (list 
    (string-constant stepper-button-label)
-   x:foot-img/horizontal
+   x:step-img
    (λ (drs-frame) (send drs-frame stepper-button-callback))))

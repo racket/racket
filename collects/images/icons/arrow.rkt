@@ -26,6 +26,7 @@
   (let ([color  (->color% color)])
     (draw-icon-flomap
      32 32 (λ (dc)
+             (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
              (send dc set-brush color 'solid)
              (send dc draw-polygon (list '(0 . 9) '(15 . 9) '(14 . 0)
                                          '(31 . 15.5)
@@ -37,6 +38,7 @@
                                        ) flomap?
   (draw-icon-flomap
    32 32 (λ (dc)
+           (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
            (send dc set-brush color 'solid)
            (draw-path-commands
             dc 0 0 '((m 0 15)

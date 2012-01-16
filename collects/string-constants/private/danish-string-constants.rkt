@@ -1125,10 +1125,10 @@ please adhere to these guidelines:
   (stepper-language-level-message
    "Sprogniveauet er sat til \"~a\". Indtil videre virker stepperen kun for sprogniveauerne fra \"~a\" til \"~a\".")
   (stepper-button-label "Step")
-  (stepper-previous-application "|< Funktionskald")
-  (stepper-previous "< Step")
-  (stepper-next "Step >")
-  (stepper-next-application "Funktionskald >|")
+  (stepper-previous-application "Funktionskald")
+  (stepper-previous "Step")
+  (stepper-next "Step")
+  (stepper-next-application "Funktionskald")
   (stepper-jump-to-beginning "Hjem")
   
   (debug-tool-button-name "Debug")

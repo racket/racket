@@ -1252,10 +1252,10 @@ please adhere to these guidelines:
  (stepper-language-level-message "Покрокове виконання не працює для мови \"~a\".")
  (stepper-button-label "Крок")
 
- (stepper-previous-application "|< Програма")
- (stepper-previous "< Крок")
- (stepper-next "Крок >")
- (stepper-next-application "Програма >|")
+ (stepper-previous-application "Програма")
+ (stepper-previous "Крок")
+ (stepper-next "Крок")
+ (stepper-next-application "Програма")
  (stepper-jump "Перейти...") ;; this one is changed.  action?
  (stepper-out-of-steps "Обчислення завершено раніше, ніж досягнуто шуканий крок.")
  (stepper-no-such-step/title "Крок не знайдено")

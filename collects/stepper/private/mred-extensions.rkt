@@ -5,11 +5,12 @@
          (prefix-in f: framework)
          mzlib/pretty
          #;"testing-shared.rkt"
-         "shared.rkt")
+         "shared.rkt"
+         images/compile-time
+         (for-syntax images/icons/control images/icons/style))
 
 (provide
- foot-img/horizontal
- foot-img/vertical
+ step-img
  stepper-canvas%
  stepper-text%
  snip?
@@ -516,14 +517,8 @@
   
   (strip-regular stx))
 
-;; the bitmap to use in a horizontal toolbar:
-(define foot-img/horizontal (make-object bitmap% (build-path (collection-path
-                                                              "icons") "foot.png") 'png/mask))
-
-;; the bitmap to use in a vertical toolbar:
-(define foot-img/vertical (make-object bitmap% (build-path (collection-path
-                                                            "icons") "foot-up.png") 'png/mask))
-
+;; the bitmap to use in a horizontal or vertical toolbar:
+(define step-img (compiled-bitmap (step-icon run-icon-color (toolbar-icon-height))))
 
 ;; testing code
 
