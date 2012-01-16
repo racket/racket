@@ -41,15 +41,6 @@
  launch-many-worlds/proc
  )
 
-(provide
- ;; KeyEvent -> Boolean
-  ;; is the given key-event also a pad-event? 
-  pad-event? 
-  ;; PadEvent PadEvent -> Boolean 
-  ;; are the two pad-events equal? 
-  pad=?
-  )
-
 (provide-primitive
  sexp?  ;; Any -> Boolean 
  )
@@ -171,18 +162,24 @@
 ;                                     
 ;                                     
 
-(provide big-bang     ;; <syntax> : see below 
-         )
+(provide 
+ big-bang     ;; <syntax> : see below 
+ pad-handler  ;; <syntax> : see below 
+ )
 
 (provide-primitives
- make-package ;; World Sexp -> Package
- package?     ;; Any -> Boolean 
- run-movie    ;; [r Positive] [m [Listof Image]] -> true
+ make-package  ;; World Sexp -> Package
+ package?      ;; Any -> Boolean 
+ run-movie     ;; [r Positive] [m [Listof Image]] -> true
  ;; run movie m at rate r images per second 
  mouse-event?  ;; Any -> Boolean : MOUSE-EVTS
  mouse=?       ;; MOUSE-EVTS MOUSE-EVTS -> Boolean 
  key-event?    ;; Any -> Boolean : KEY-EVTS
  key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
+ pad-event?    ;; KeyEvent -> Boolean
+ ;; is the given key-event also a pad-event? 
+ pad=?         ;; PadEvent PadEvent -> Boolean 
+ ;; ---
  ;; IP : a string that points to a machine on the net 
  )
 
@@ -263,6 +260,30 @@
 	       #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
 	       'stepper-skip-completely #t)
 	     'disappeared-use (map (lambda (x) (car (syntax->list x))) dom))]))]))
+
+(define-keywords Pad1Specs '() _init-not-needed
+  [up    DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  [down  DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  [left  DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  [right DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  [space DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  [shift DEFAULT #'(lambda (x) x) (function-with-arity 1)])
+
+(define-syntax (pad-handler stx)
+  (syntax-case stx ()
+    [(pad1 clause ...)
+     (let* ([args (->args 'pad-one-player stx #'w #'(clause ...) Pad1Specs void)]
+            [keys (map (lambda (x) 
+                         (syntax-case x () [(proc> (quote s) _f _d) (symbol->string (syntax-e #'s))]))
+                       args)]
+            [doms (map (lambda (x) (car (syntax->list x))) (syntax->list #'(clause ...)))])
+       (syntax-property 
+        (stepper-syntax-property
+         #`(let ((quasi-object (make-immutable-hash (map cons '#,keys (list #,@args)))))
+             (lambda (world key-event) 
+               ((hash-ref quasi-object key-event) world)))
+         'stepper-skip-completely #t)
+        'disappeared-use doms))]))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
