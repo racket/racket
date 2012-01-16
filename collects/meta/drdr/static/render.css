@@ -252,6 +252,13 @@ div.output p {
   /* border: 1px black solid; */
 }
 
+.branch-refs-heads-release {
+  background: rgb(90%,70%,90%);
+}
+.branch-refs-heads-release:hover {
+  background: rgb(100%,80%,100%);
+}
+
 .file {
   margin: 3px;
   padding: 3px;

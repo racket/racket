@@ -700,6 +700,21 @@
                commit-msg))
      (values author title)]))
 
+(define (log->branches log)
+  (match-define (struct git-push (num author commits)) log)
+  (apply string-append
+         (add-between
+          (remove-duplicates 
+           (for/list ([c (in-list commits)])
+                     (format "branch-~a"
+                             (regexp-replace*
+                              "/"
+                              (if (git-commit*? c)
+                                  (git-commit*-branch c)
+                                  "refs/heads/master")
+                              "-"))))
+          " ")))
+
 (require web-server/servlet-env
          web-server/http
          web-server/dispatch
@@ -758,7 +773,8 @@
                              (define-values (committer title)
                                (log->committer+title log))
                              (define url (log->url log))
-                             `(tr ([class "dir"]
+                             `(tr ([class ,(format "dir ~a"
+                                                   (log->branches log))]
                                    [title ,title])
                                   (td (a ([href ,url]) ,name))
                                   (td ([class "building"] [colspan "6"])
@@ -776,7 +792,8 @@
                                (define mtime 
                                  (file-or-directory-modify-seconds log-pth))
                                
-                               `(tr ([class "dir"]
+                               `(tr ([class ,(format "dir ~a"
+                                                     (log->branches log))]
                                      [title ,title])
                                     (td (a ([href "#"]) ,name))
                                     (td ([class "building"] [colspan "6"])
@@ -800,7 +817,8 @@
                                                    stderr responsible-party changes))
                                     (define abs-dur (- end start))
                                     
-                                    `(tr ([class "dir"]
+                                    `(tr ([class ,(format "dir ~a"
+                                                          (log->branches log))]
                                           [title ,title]
                                           [onclick ,(format "document.location = ~S" url)])
                                          (td (a ([href ,url]) ,name))
