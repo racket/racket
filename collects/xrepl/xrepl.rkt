@@ -1161,7 +1161,7 @@
   (define comment "The following line loads `xrepl' support")
   (define expr  "(require xrepl)")
   (define dexpr "(dynamic-require 'xrepl #f)")
-  (define contents (file->string init-file))
+  (define contents (if (file-exists? init-file) (file->string init-file) ""))
   (read-line) ; discard the newline for further input
   (define (look-for comment-rx expr)
     (let ([m (regexp-match-positions
@@ -1172,7 +1172,18 @@
   (define existing? (look-for (regexp-quote comment) expr))
   (define existing-readline?
     (look-for "load readline support[^\r\n]*" "(require readline/rep)"))
-  (define (yes?) (flush-output) (regexp-match? #rx"^[yY]" (getarg 'line)))
+  (define (yes? question)
+    (define qtext (format "; ~a? " question))
+    (define inp
+      (case (object-name (current-input-port))
+        [(readline-input)
+         (parameterize ([(dynamic-require
+                          (collection-file-path "pread.rkt" "readline")
+                          'current-prompt)
+                         qtext])
+           (read-line))]
+        [else (display qtext) (flush-output) (read-line)]))
+    (and (string? inp) (regexp-match? #px"^[[:space:]]*[yY]" inp)))
   (cond
     [existing?
      (printf "; already installed, nothing to do\n")
@@ -1183,13 +1194,11 @@
                contents)])
        (and m (begin (printf "; found \"~a\", ~a\n"
                              (car m) "looks like xrepl is already installed")
-                     (printf "; should I continue anyway? ")
-                     (not (yes?)))))]
+                     (not (yes? "should I continue anyway")))))]
     [else
      (when existing-readline?
        (printf "; found a `readline' loading line\n")
-       (printf "; xrepl will already do that, ok to remove? ")
-       (if (yes?)
+       (if (yes? "xrepl will already do that, ok to remove")
          (set! contents (string-append
                          (substring contents 0 (car existing-readline?))
                          (substring contents (cdr existing-readline?))))
@@ -1198,8 +1207,7 @@
      (printf "; writing new contents, with an added \"~a\"\n" expr)
      (printf "; (if you want to load it conditionally, edit the file and\n")
      (printf ";  use \"~a\" instead, which is a plain expression)\n" dexpr)
-     (printf "; OK to continue? ")
-     (if (yes?)
+     (if (yes? "OK to continue")
        (begin
          (call-with-output-file* init-file #:exists 'truncate
            (λ (o) (write-string
@@ -1350,6 +1358,7 @@
     (case (object-name (current-input-port))
       [(stdin)
        (if (or (not (terminal-port? (current-input-port)))
+               (eq? 'windows (system-type))
                (regexp-match? #rx"^dumb" (or (getenv "TERM") ""))
                (not RL))
          plain-reader
