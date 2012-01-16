@@ -435,10 +435,13 @@ It is one of the following:
  @tech{KeyEvent} for every keystroke that is also a @tech{PadEvent}. The result
  of the call becomes the current world.
 
- Here is a typical pad-event handler: 
-@racketblock[
+ Here is a typical @tech{PadEvent} handler: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
 ;; ComplexNumber PadEvent -> ComplexNumber 
-(define (pad-handler x k)
+(define (handle-pad-events x k)
   (case (string->symbol k)
     [(up    w)      (- x 0+10i)]
     [(down  s)      (+ x 0+10i)]
@@ -447,7 +450,10 @@ It is one of the following:
     [(| |)          x0]
     [(shift)        (conjugate x)]
     [(rshift)       (stop-with (conjugate x))]))
-]
+
+))
+@;%
+
  }
 
 When a @racket[big-bang] expression specifies an @racket[on-pad] clause,
@@ -455,6 +461,109 @@ all @tech{PadEvent}s are sent to the @racket[on-pad] handler. All other
 key events are discarded, unless an @racket[on-key] and/or an
 @racket[on-release] clause are specified, in which case all remaining
 @tech{KeyEvent}s are sent there. 
+
+To facilitate the definition of @racket[on-pad] handlers, the library
+provides the @racket[pad-handler] form. 
+
+@defform/subs[#:id pad-handler
+              #:literals 
+	      (up down left right space shift)
+              (pad-handler clause ...)
+              ([clause
+		 (up up-expr)
+		 (down down-expr)
+		 (left left-expr)
+		 (right right-expr)
+		 (space space-expr)
+		 (shift shift-expr)])]{
+ Creates a function that deals with @tech{PadEvent}s. Each (optional) clause
+ contributes one function that consumes a @tech{World} and produces a
+ world. The name of the clause determines for which kind of @tech{PadEvent}
+ the function is called. 
+
+ Using the form is entirely optional and not required to use
+ @racket[on-pad]. Indeed, @racket[pad-handler] could be used to define a
+ plain @tech{KeyEvent} handler---if we could guarantee that players never
+ hit keys other than @tech{PadEvent} keys.  
+}
+
+All clauses in a @racket[pad-handler] form are optional: 
+@itemize[
+
+@item{
+@defform[(up up-expr) 
+         #:contracts
+         ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))])]{
+ Creates a handler for @racket["up"] and @racket["w"] events.}
+}
+
+@item{
+@defform[(down down-expr) 
+         #:contracts
+         ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))])]{
+ Creates a handler for @racket["down"] and @racket["s"] events.}
+}
+
+@item{
+@defform[(left left-expr) 
+         #:contracts
+         ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax
+	 @tech{WorldState}))])]{
+ Creates a handler for @racket["left"] and @racket["a"] events.}
+}
+
+@item{
+@defform[(right right-expr) 
+         #:contracts
+         ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax
+	 @tech{WorldState}))])]{
+ Creates a handler for @racket["right"] and @racket["d"] events.}
+}
+
+@item{
+@defform[(space space-expr) 
+         #:contracts
+         ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax
+	 @tech{WorldState}))])]{
+ Creates a handler for space-bar events (@racket[" "]).}
+}
+
+@item{
+@defform[(shift shift-expr) 
+         #:contracts
+         ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax
+	 @tech{WorldState}))])]{
+ Creates a handler for @racket["shift"] and @racket["rshift"] events.}
+}
+
+]
+ If a clause is omitted, @racket[pad-handler] installs a default function
+ that maps the existing world to itself. 
+
+ Here is a @tech{PadEvent} handler defined with @racket[pad-handler]:
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+;; ComplexNumber -> ComplexNumber 
+(define (i-sub1 x) (- x 0+1i))
+
+;; ComplexNumber -> ComplexNumber 
+(define (i-add1 x) (+ x 0+1i))
+
+;; ComplexNumber -> ComplexNumber 
+;; deal with all @tech{PadEvent}s
+(define handler 
+  (pad-handler (left sub1) (right add1)
+               (up i-sub1) (down i-add1)
+               (shift (lambda (w) 0))
+               (space stop-with)))
+
+;; some tests: 
+(check-expect (handler 9 "left") 8)
+(check-expect (handler 8 "up")   8-i)
+))
+@;%
 }
 
 @item{ A @tech{MouseEvent} represents mouse events, e.g., mouse movements
@@ -619,6 +728,7 @@ a short-hand for three lines of code:
 
 Exercise: Add a condition for stopping the flight of the UFO when it
 reaches the bottom. 
+
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "world-example"]{A First Sample World} 
