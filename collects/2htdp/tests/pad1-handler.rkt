@@ -22,5 +22,8 @@
 (tst (= (handler 8 "right") 9))
 (tst (= (handler 8 "up")    8-i))
 (tst (= (handler 8 "down")  8+i))
-(tst (= (handler 7 "shift") 0))
-(tst (equal? (handler 6 "space") (stop-with 6)))
+
+(tst (= (handler 9 "a") 8))
+(tst (= (handler 8 "d") 9))
+(tst (= (handler 8 "w") 8-i))
+(tst (= (handler 8 "s") 8+i))

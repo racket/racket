@@ -266,7 +266,8 @@
   [down  DEFAULT #'(lambda (x) x) (function-with-arity 1)]
   [left  DEFAULT #'(lambda (x) x) (function-with-arity 1)]
   [right DEFAULT #'(lambda (x) x) (function-with-arity 1)]
-  [space DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  ; [space DEFAULT #'(lambda (x) x) (function-with-arity 1)]
+  #;
   [shift DEFAULT #'(lambda (x) x) (function-with-arity 1)])
 
 (define-syntax (pad-handler stx)
@@ -279,11 +280,20 @@
             [doms (map (lambda (x) (car (syntax->list x))) (syntax->list #'(clause ...)))])
        (syntax-property 
         (stepper-syntax-property
-         #`(let ((quasi-object (make-immutable-hash (map cons '#,keys (list #,@args)))))
-             (lambda (world key-event) 
-               ((hash-ref quasi-object key-event) world)))
+         #`(produce-handler '#,keys (list #,@args))
          'stepper-skip-completely #t)
         'disappeared-use doms))]))
+
+;; let ((quasi-object ))
+;;              
+;;              (define-higher-order-primitive the-handler the-handler* (world key-event))
+;;              the-handler
+
+(define (produce-handler keys args)
+  (define quasi-object (make-immutable-hash (map cons keys args)))
+  (define (the-handler* world key-event)
+    ((hash-ref quasi-object key-event (lambda (w) w)) world))
+  the-handler*)
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
