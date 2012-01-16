@@ -706,12 +706,13 @@ git_get() { # inputs: git repository, git branch, path in $maindir
 }
 
 base_status=""
+machine_suffix=""
 write_status() {
-  local message="$*"
+  local message="${*}${machine_suffix}"
   if [[ "$gitbranch" != "master" ]]; then
     message="($gitbranch build) $message"
   fi
-  if [[ "$machine" = "$workmachine" ]]; then
+  if [[ "x$machine_suffix" = "x" ]]; then
     if [[ ! -e "$statusfile" ]]; then
       touch "$statusfile"
       chcon --type=httpd_sys_content_t "$statusfile"
@@ -724,16 +725,12 @@ write_status() {
 }
 
 header() {
-  local suffix=""
-  if [[ "${machine:-$workmachine}" != "$workmachine" ]]; then
-    suffix=" [$machine($platform)]"
-  fi
   local status=""
   case "x$1" in
-    ( "x-s" ) shift; status="${*}${suffix}"; base_status="$*";;
-    ( "x+s" ) shift; status="$base_status, ${*}${suffix}";;
+    ( "x-s" ) shift; status="$*"; base_status="$*";;
+    ( "x+s" ) shift; status="$base_status, $*";;
   esac
-  local message="${*}${suffix}"
+  local message="${*}${machine_suffix}"
   local line="============================================================"
   local message_len=${#message}
   local idx1=$(( ( 77 - $message_len ) / 2 ))
@@ -1025,6 +1022,9 @@ MAIN_BUILD() {
   _run lockfile -r 0 -l 10800 "$lockfile"
   trap cleanup_run_files 0 3 9 15
 
+  # cleanup bg logs early so the status won't show bogus leftovers
+  _rm "$bglogfile-"*
+
   ## --------------------------------------------------------------------------
   header -s "Begin ($(date +'%Y-%m-%d %H:%M'))"
 
@@ -1075,7 +1075,6 @@ MAIN_BUILD() {
   header -s "Dispatching build jobs"
 
   local m
-  _rm "$bglogfile-"*
   if is_yes make_bins; then
     for m in "${machines[@]}"; do DO_COPY_BUILD "$m"; done
   else
@@ -2206,6 +2205,9 @@ if [[ "$1" = "--dispatch" ]]; then
   machine="$1"; go="$2"; shift 2
   init_repo_vars      # set the repository variables according to the env vars
   machineget platform # set the global platform for dependable script pieces
+  if [[ "${machine:-$workmachine}" != "$workmachine" ]]; then
+    machine_suffix=" [$machine($platform)]"
+  fi
   show "Working on $machine($platform)"
   show "Dispatching to $go($*)"
   "$go" "$@"
