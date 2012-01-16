@@ -13,7 +13,8 @@
          images/compile-time
          (for-syntax racket/base images/icons/tool)
          ;; FIXME:
-         drracket/private/syncheck/local-member-names)
+         drracket/private/syncheck/local-member-names
+         drracket/private/eval-helpers)
 
 ;; Capability name: 'macro-stepper:enabled
 
@@ -236,7 +237,7 @@
             (current-module-name-resolver the-module-name-resolver)
 
             (send the-tab set-breakables (current-thread) (current-custodian))
-            ;; (set-directory definitions-text)
+            (set-directory definitions-text)
             (current-load-relative-directory #f)
             (current-error-port error-port)
             (current-output-port output-port)
@@ -335,6 +336,14 @@
                          (loop)]))
                #t)))
           (void))
+
+        ;; set-directory : text -> void
+        ;; sets the current-directory based on the file saved in the definitions-text
+        (define/private (set-directory definitions-text)
+          (define tmp-b (box #f))
+          (define fn (send definitions-text get-filename tmp-b))
+          (define dir (get-init-dir (and (not (unbox tmp-b)) fn)))
+          (current-directory dir))
 
         ;; with-lock/edit-sequence : text (-> void) -> void
         ;; sets and restores some state of the definitions text
