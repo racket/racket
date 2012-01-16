@@ -14,10 +14,12 @@
          plastic-icon-material
          glass-icon-material
          metal-icon-material
+         bitmap-render-icon
          (activate-contract-out
           default-icon-height
           toolbar-icon-height
-          default-icon-material)
+          default-icon-material
+          icon-color->outline-color)
          (only-doc-out (all-defined-out)))
 
 (defthing light-metal-icon-color (or/c string? (is-a?/c color%)) #:document-value
@@ -64,6 +66,23 @@
 
 (defparam default-icon-material deep-flomap-material-value? plastic-icon-material)
 
+(defproc (bitmap-render-icon [bitmap (is-a?/c bitmap%)]
+                             [z-ratio (and rational? (>=/c 0)) 5/8]
+                             [material deep-flomap-material-value? (default-icon-material)]
+                             ) (is-a?/c bitmap%)
+  (let* ([fm  (bitmap->flomap bitmap)]
+         [dfm  (flomap->deep-flomap fm)]
+         [dfm  (deep-flomap-icon-style dfm (* 32 z-ratio))])
+    (flomap->bitmap (deep-flomap-render-icon dfm material))))
+
+(defproc (icon-color->outline-color [color (or/c string? (is-a?/c color%))]) (is-a?/c color%)
+  (cond [(string? color)  (icon-color->outline-color (send the-color-database find-color color))]
+        [else
+         (define r (send color red))
+         (define g (send color green))
+         (define b (send color blue))
+         (make-object color% (quotient r 2) (quotient g 2) (quotient b 2))]))
+
 ;; ===================================================================================================
 ;; Unpublished so far
 
@@ -76,7 +95,6 @@
          draw-short-rendered-icon-flomap
          define-icon-wrappers
          (activate-contract-out
-          icon-color->outline-color
           set-icon-pen))
 
 (defproc (set-icon-pen [dc (is-a?/c dc<%>)]
@@ -84,14 +102,6 @@
                        [width (>=/c 0)]
                        [style symbol?]) void?
   (send dc set-pen (make-object pen% color width style 'projecting 'miter)))
-
-(defproc (icon-color->outline-color [color (or/c string? (is-a?/c color%))]) (is-a?/c color%)
-  (cond [(string? color)  (icon-color->outline-color (send the-color-database find-color color))]
-        [else
-         (define r (send color red))
-         (define g (send color green))
-         (define b (send color blue))
-         (make-object color% (quotient r 2) (quotient g 2) (quotient b 2))]))
 
 (define icon-lighting
   (deep-flomap-lighting-value
@@ -106,11 +116,11 @@
                        [deep-flomap-lighting  icon-lighting])
     (deep-flomap-render dfm)))
 
-(define (deep-flomap-icon-style dfm)
+(define (deep-flomap-icon-style dfm [height 20])
   (define s (/ (deep-flomap-height dfm) 32))
   (let* ([dfm  (deep-flomap-emboss dfm (* s 2) (* s 2))]
          [dfm  (deep-flomap-bulge-round dfm (* s 6))]
-         [dfm  (deep-flomap-raise dfm (* s 20))])
+         [dfm  (deep-flomap-raise dfm (* s height))])
     dfm))
 
 (define (draw-icon-flomap w h draw-proc scale)
@@ -131,23 +141,16 @@
          [fm  (flomap-render-icon fm material)])
     fm))
 
-;; TODO: make one of the following functions unnecessary
-
 (define (flomap-render-thin-icon fm material)
   (define scale (/ (flomap-height fm) 32))
   (define dfm
     (let* ([dfm  (flomap->deep-flomap fm)]
-           [dfm  (deep-flomap-icon-style dfm)]
-           [dfm  (deep-flomap-raise dfm (* -12 scale))])
+           [dfm  (deep-flomap-icon-style dfm 8)])
       dfm))
   (deep-flomap-render-icon dfm material))
 
 (define (draw-short-rendered-icon-flomap w h proc scale material)
-  (let* ([fm  (draw-icon-flomap w h proc scale)]
-         [dfm  (flomap->deep-flomap fm)]
-         [dfm  (deep-flomap-icon-style dfm)]
-         [dfm  (deep-flomap-raise dfm (* -12 (/ (flomap-height fm) 32)))])
-    (deep-flomap-render-icon dfm material)))
+  (flomap-render-thin-icon (draw-icon-flomap w h proc scale) material))
 
 ;; ===================================================================================================
 ;; Syntax for writing icon functions

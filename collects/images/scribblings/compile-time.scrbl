@@ -17,7 +17,7 @@
 
 @defmodule[images/compile-time]
 
-Producing computed bitmaps can take time, especially those computed by the functions in the @racketmodname[images/icons] and @racketmodname[images/logos] collections.
+Producing computed bitmaps can take time.
 To reduce the startup time of programs that use computed bitmaps, use the macros exported by @racketmodname[images/compile-time] to @italic{compile} them: to embed the computed bitmaps in fully expanded, compiled modules.
 
 @margin-note*{This is a form of constant folding, or equivalently a form of @italic{safe} ``3D'' values.}
