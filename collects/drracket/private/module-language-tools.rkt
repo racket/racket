@@ -140,6 +140,8 @@
             [in-module-language? 
              (move-to-new-language)]
             [else
+             (set! hash-lang-language #f)
+             (set! hash-lang-last-location #f)
              (clear-things-out)])))
       
       (define/public (move-to-new-language)
