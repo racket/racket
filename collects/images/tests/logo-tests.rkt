@@ -2,5 +2,7 @@
 
 (require images/logos)
 
-(time (plt-logo 256))
-(time (planet-logo 256))
+(time (plt-logo))
+(time (planet-logo))
+(time (stepper-logo))
+(time (macro-stepper-logo))

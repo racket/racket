@@ -4,6 +4,7 @@
          images/icons/control
          images/icons/arrow
          images/icons/file
+         images/icons/symbol
          images/icons/misc
          images/icons/tool
          images/icons/style
@@ -37,8 +38,9 @@
 ;; Other icons, various colors
 
 (define icon-procss
-  (list (list rewind-icon continue-back-icon step-back-icon back-icon pause-icon
-              stop-icon record-icon play-icon step-icon continue-icon fast-forward-icon)
+  (list (list search-backward-icon rewind-icon continue-backward-icon step-back-icon back-icon
+              pause-icon stop-icon record-icon play-icon step-icon continue-forward-icon
+              fast-forward-icon search-forward-icon)
         (list right-arrow-icon left-arrow-icon up-arrow-icon down-arrow-icon
               right-over-arrow-icon left-over-arrow-icon right-under-arrow-icon left-under-arrow-icon)
         (list floppy-disk-icon
@@ -46,7 +48,8 @@
               (λ (color) (load-icon syntax-icon-color color))
               (λ (color) (small-save-icon syntax-icon-color color))
               (λ (color) (small-load-icon syntax-icon-color color)))
-        (list x-icon check-icon octagon-icon stop-sign-icon stop-signs-icon
+        (list x-icon check-icon recycle-icon lambda-icon)
+        (list octagon-icon stop-sign-icon stop-signs-icon foot-icon
               (λ (color) (magnifying-glass-icon metal-icon-color color))
               (λ (color) (left-magnifying-glass-icon metal-icon-color color))
               (λ (color) (bomb-icon metal-icon-color color))

@@ -5,6 +5,7 @@
          "private/flomap.rkt"
          "private/deep-flomap.rkt"
          "private/utils.rkt"
+         "icons/symbol.rkt"
          "icons/misc.rkt"
          "icons/style.rkt")
 
@@ -81,7 +82,7 @@
 
 (define (draw-lambda dc x y w h)
   (define-values (sx sy) (send dc get-scale))
-  (draw-path-commands dc x y (scale-path-commands lambda-path-commands (/ w 240) (/ h 240)))
+  (draw-path-commands dc (scale-path-commands lambda-path-commands (/ w 240) (/ h 240)) x y)
   (send dc set-scale sx sy))
 
 (define blue-θ-start (* -45 (/ pi 180)))
@@ -246,7 +247,7 @@
    32 32 (λ (dc)
            (send dc set-pen lambda-outline-color 3/8 'solid)
            (send dc set-brush color 'solid)
-           (draw-path-commands dc 0 -17 continents-path-commands))
+           (draw-path-commands dc continents-path-commands 0 -17))
    scale))
 
 (defproc (planet-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
@@ -299,24 +300,29 @@
 (defproc (macro-stepper-logo-flomap [height (and/c rational? (>=/c 0)) 96]) flomap?
   (define outline-color (icon-color->outline-color light-metal-icon-color))
   
-  (define (draw-hash dc)
+  (define (draw-hash-quote dc)
+    ;; vertical lines
     (send dc draw-polygon '((5 . 0) (8 . 0) (6 . 19) (3 . 19)))
-    (send dc draw-polygon '((13 . 0) (16 . 0) (14 . 19) (11 . 19)))
-    (send dc draw-polygon '((1 . 4) (1 . 7) (19 . 7) (19 . 4)))
-    (send dc draw-polygon '((0 . 12) (0 . 15) (18 . 15) (18 . 12))))
+    (send dc draw-polygon '((12 . 0) (15 . 0) (13 . 19) (10 . 19)))
+    ;; horizontal lines
+    (send dc draw-polygon '((1 . 4) (1 . 7) (18 . 7) (18 . 4)))
+    (send dc draw-polygon '((0 . 12) (0 . 15) (17 . 15) (17 . 12)))
+    ;; quote
+    (send dc draw-polygon '((20 . 0) (23 . 0) (22.75 . 6) (20.25 . 6)))
+    )
   
   (flomap-pin*
    1/2 20/32 1/2 1/2
    (foot-flomap (make-object color% 34 42 160) height glass-icon-material)
    (draw-rendered-icon-flomap
     32 32 (λ (dc)
-            (send dc translate 6 6)
+            (send dc translate 5 6)
             (set-icon-pen dc outline-color 2 'solid)
             (send dc set-brush outline-color 'solid)
-            (draw-hash dc)
+            (draw-hash-quote dc)
             (send dc set-pen "black" 1 'transparent)
             (send dc set-brush light-metal-icon-color 'solid)
-            (draw-hash dc))
+            (draw-hash-quote dc))
     (/ (* 3/4 height) 32)
     metal-icon-material)))
 
