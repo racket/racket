@@ -130,9 +130,6 @@
               [(and or-eof? (eof-object? r)) (void)]
               [else (error/comm fsym "expected ready")])))
 
-    (define/override (on-break-within-lock)
-      (disconnect* #f))
-
     ;; == Asynchronous messages
 
     ;; handle-async-message : message -> void
@@ -157,17 +154,9 @@
 
     ;; == Connection management
 
-    ;; disconnect : -> void
-    (define/public (disconnect)
-      (when (connected?)
-        (call-with-lock* 'disconnect
-                         (lambda () (disconnect* #t))
-                         (lambda () (disconnect* #f))
-                         #f)))
-
     ;; disconnect* : boolean -> void
-    (define/private (disconnect* politely?)
-      (dprintf "  ** Disconnecting\n")
+    (define/override (disconnect* politely?)
+      (super disconnect* politely?)
       (let ([outport* outport]
             [inport* inport])
         (when outport*

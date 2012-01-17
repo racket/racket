@@ -77,10 +77,24 @@
 
 ;; ----------------------------------------
 
-;; Connection base class (locking)
+(define debugging%
+  (class object%
+    (super-new)
+
+    (field [DEBUG? #f])
+
+    (define/public (debug debug?)
+      (set! DEBUG? debug?))
+
+    (define/public (dprintf fmt . args)
+      (when DEBUG? (apply fprintf (current-error-port) fmt args)))
+    
+    ))
+
+;; ----------------------------------------
 
 (define locking%
-  (class object%
+  (class debugging%
 
     ;; == Communication locking
 
@@ -185,24 +199,33 @@
 
 ;; ----------------------------------------
 
-(define debugging%
+(define disconnect%
   (class locking%
+    (inherit dprintf
+             call-with-lock*
+             connected?)
     (super-new)
 
-    (field [DEBUG? #f])
+    ;; disconnect : -> void
+    (define/public (disconnect)
+      (when (connected?)
+        (call-with-lock* 'disconnect
+                         (lambda () (disconnect* #t))
+                         (lambda () (disconnect* #f))
+                         #f)))
 
-    (define/public (debug debug?)
-      (set! DEBUG? debug?))
+    (define/public (disconnect* politely?)
+      (dprintf "  ** disconnecting~a\n" (if politely? " politely" ""))
+      (void))
 
-    (define/public (dprintf fmt . args)
-      (when DEBUG? (apply fprintf (current-error-port) fmt args)))
-    
-    ))
+    (define/override (on-break-within-lock)
+      (dprintf "  ** break occurred within lock\n")
+      (disconnect* #f))))
 
 ;; ----------------------------------------
 
 (define transactions%
-  (class debugging%
+  (class disconnect%
     (inherit dprintf)
     (inherit-field DEBUG?)
 

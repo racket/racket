@@ -37,9 +37,6 @@
     (define/override (call-with-lock fsym proc)
       (call-with-lock* fsym (lambda () (set! saved-tx-status (get-tx-status)) (proc)) #f #t))
 
-    (define/override (on-break-within-lock)
-      (disconnect*))
-
     (define/private (get-db fsym)
       (or -db (error/not-connected fsym)))
 
@@ -196,11 +193,8 @@
           (hash-set! statement-table pst #t)
           pst)))
 
-    (define/public (disconnect)
-      (define (go) (disconnect*))
-      (call-with-lock* 'disconnect go go #f))
-
-    (define/private (disconnect*)
+    (define/override (disconnect* _politely?)
+      (super disconnect* _politely?)
       (start-atomic)
       (let ([db -db])
         (set! -db #f)

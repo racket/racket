@@ -143,23 +143,12 @@
            (err next)])
         next))
 
-    (define/override (on-break-within-lock)
-      (disconnect* #f))
-
     ;; ========================================
 
     ;; Connection management
 
-    ;; disconnect : -> void
-    (define/public (disconnect)
-      (when (connected?)
-        (call-with-lock* 'disconnect
-                         (lambda () (disconnect* #t))
-                         (lambda () (disconnect* #f))
-                         #f)))
-
-    (define/private (disconnect* politely?)
-      (dprintf "  ** Disconnecting\n")
+    (define/override (disconnect* politely?)
+      (super disconnect* politely?)
       (let ([outport* outport]
             [inport* inport])
         (when outport*

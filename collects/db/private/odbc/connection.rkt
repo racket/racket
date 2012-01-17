@@ -51,9 +51,6 @@
              check-valid-tx-status
              check-statement/tx)
 
-    (define/override (on-break-within-lock)
-      (disconnect*))
-
     (define/public (get-db fsym)
       (unless db
         (error/not-connected fsym))
@@ -479,11 +476,8 @@
             (handle-status fsym status stmt)
             (vector name type size digits)))))
 
-    (define/public (disconnect)
-      (define (go) (disconnect*))
-      (call-with-lock* 'disconnect go go #f))
-
-    (define/private (disconnect*)
+    (define/override (disconnect* _politely?)
+      (super disconnect* _politely?)
       (start-atomic)
       (let ([db* db]
             [env* env])
