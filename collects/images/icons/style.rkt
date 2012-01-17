@@ -110,11 +110,11 @@
    '(1.0 1.0 1.0)
    '(1.0 1.0 1.0)))
 
-(define (deep-flomap-render-icon dfm material)
+(define (deep-flomap-render-icon dfm material [background-fm #f])
   ;(printf "rendering~n")
   (parameterize/group ([deep-flomap-material  material]
                        [deep-flomap-lighting  icon-lighting])
-    (deep-flomap-render dfm)))
+    (deep-flomap-render dfm background-fm)))
 
 (define (deep-flomap-icon-style dfm [height 20])
   (define s (/ (deep-flomap-height dfm) 32))

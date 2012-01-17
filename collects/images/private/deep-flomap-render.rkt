@@ -13,7 +13,6 @@
 ;; Hacks
 (define specular-blur 1/2)
 (define diffuse-blur 1/2)
-(define ideal-transmission-blur 1)
 (define ambient-transmission-blur-fraction 1/32)
 
 ;; ===================================================================================================
@@ -353,10 +352,6 @@
   (define sin-wall-tilt-θ (sin wall-tilt-θ))
   (match-define (list Irr Irg Irb) (reflected-intensity))
   
-  ;; max coords of the shadow image
-  ;; subtract epsilon to ensure that sx < (w - 1) so that (flfloor sx) < (w - 1) (similarly for sy)
-  (define sx-max (- w 1.00001))
-  (define sy-max (- h 1.00001))
   ;; material properties
   (define η2 (refractive-index))
   (define η1/η2 (/ 1.0 η2))
@@ -416,46 +411,13 @@
           ;; sz = z + dist * tz, so dist = (sz - z) / tz
           (define dist (/ (- 0.0 z) tz))
           (when (and (dist . >= . 0.0) (dist . < . +inf.0))
-            ;; Find the color of the point on the shadow that the ray struck
-            (define sx (max 0.0 (min sx-max (+ x (* dist tx)))))
-            (define sy (max 0.0 (min sy-max (+ y (* dist ty)))))
-            (define floor-sx (floor sx))
-            (define floor-sy (floor sy))
-            (define bx (fl->fx floor-sx))
-            (define by (fl->fx floor-sy))
-            ;; Bilinearly interpolate the four colors nearest the point on the shadow
-            (define 1-αx (- sx floor-sx))
-            (define 1-αy (- sy floor-sy))
-            (define αx (- 1.0 1-αx))
-            (define αy (- 1.0 1-αy))
-            ;; upper-left weighted values
-            (define j1 (fx* 3 (fx+ bx (fx* by w))))
-            (define r1 (unsafe-flvector-ref shadow-vs j1))
-            (define g1 (unsafe-flvector-ref shadow-vs (fx+ j1 1)))
-            (define b1 (unsafe-flvector-ref shadow-vs (fx+ j1 2)))
-            (define-values (sr1 sg1 sb1) (fl3* r1 g1 b1 (* αx αy)))
-            ;; upper-right weighted values
-            (define j2 (fx+ j1 3))
-            (define r2 (unsafe-flvector-ref shadow-vs j2))
-            (define g2 (unsafe-flvector-ref shadow-vs (fx+ j2 1)))
-            (define b2 (unsafe-flvector-ref shadow-vs (fx+ j2 2)))
-            (define-values (sr2 sg2 sb2) (fl3* r2 g2 b2 (* 1-αx αy)))
-            ;; lower-left weighted values
-            (define j3 (fx+ j1 (fx* 3 w)))
-            (define r3 (unsafe-flvector-ref shadow-vs j3))
-            (define g3 (unsafe-flvector-ref shadow-vs (fx+ j3 1)))
-            (define b3 (unsafe-flvector-ref shadow-vs (fx+ j3 2)))
-            (define-values (sr3 sg3 sb3) (fl3* r3 g3 b3 (* αx 1-αy)))
-            ;; lower-right weighted values
-            (define j4 (fx+ j3 3))
-            (define r4 (unsafe-flvector-ref shadow-vs j4))
-            (define g4 (unsafe-flvector-ref shadow-vs (fx+ j4 1)))
-            (define b4 (unsafe-flvector-ref shadow-vs (fx+ j4 2)))
-            (define-values (sr4 sg4 sb4) (fl3* r4 g4 b4 (* 1-αx 1-αy)))
-            ;; final interpolated shadow color
-            (define sr (+ sr1 sr2 sr3 sr4))
-            (define sg (+ sg1 sg2 sg3 sg4))
-            (define sb (+ sb1 sb2 sb3 sb4))
+            ;; Shadow intersection point
+            (define sx (+ x (* dist tx)))
+            (define sy (+ y (* dist ty)))
+            ;; Shadow intersection color
+            (define sr (flomap-bilinear-ref shadow-fm 0 sx sy))
+            (define sg (flomap-bilinear-ref shadow-fm 1 sx sy))
+            (define sb (flomap-bilinear-ref shadow-fm 2 sx sy))
             ;; normalized distance to the surface
             (define norm-dist (/ dist opacity-z))
             ;; intensities of each r g b by the time the light emerges from the surface
@@ -471,9 +433,7 @@
             (unsafe-flvector-set! transmitted-vs (fx+ j 1) g)
             (unsafe-flvector-set! transmitted-vs (fx+ j 2) b))))))
   
-  ;; blur to cut down on sparklies (poor man's supersampling)
-  (values reflected-fm
-          (flomap-blur transmitted-fm ideal-transmission-blur)))
+  (values reflected-fm transmitted-fm))
 
 ;; ===================================================================================================
 ;; Full rendering
