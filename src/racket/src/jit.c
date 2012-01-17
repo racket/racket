@@ -2996,6 +2996,27 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
   int i, cnt;
   GC_CAN_IGNORE jit_insn *ref, *ref2;
 
+  /* Normalize the argument array by making sure that it's at the
+     start of the runstack, and set runstack base to be at the end of
+     the arguments.  Rest arguments to be collected into a list remain
+     in their original location. Note that tail calls modify the
+     runstack below runstack base, which is why all parts of the
+     runteim system that call scheme_apply() with an arrayu of
+     arguments on the runstack must be prepared for that array to
+     change during the call. */
+
+  if (!num_params && !has_rest) {
+    /* No arguments, so simply set runstack base to runstack. If it
+       turns out that arguments are provided, then we'll abort through
+       an arity exception, anyway. */
+#ifdef JIT_RUNSTACK_BASE
+    jit_movr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK);
+#else
+    mz_set_local_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_LOCAL);
+#endif
+    return 1;
+  }
+
   /* If rands == runstack, set runstack base to runstack + rands (and
      don't copy rands), otherwise set base to runstack and copy
      arguments at runstack. Implement the test by optimistically
@@ -3031,8 +3052,10 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
     CHECK_LIMIT();
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(cnt));
     CHECK_RUNSTACK_OVERFLOW();
-    if (has_rest)
+    if (has_rest) {
       --cnt;
+      scheme_stack_safety(jitter, 1, cnt);
+    }
   }
   
   /* Extract arguments to runstack: */
@@ -3115,10 +3138,10 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   } else
     arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 0);
 
-  /* A tail call starts here. Caller must ensure that the
-     stack is big enough, right number of arguments, closure
-     is in R0. If the closure has a rest arg, also ensure
-     argc in R1 and argv in R2. */
+  /* A tail call starts here. Caller must ensure that the stack is big
+     enough, right number of arguments (at start of runstack), closure
+     is in R0. If the closure has a rest arg, also ensure argc in R1
+     and argv in R2. */
   tail_code = jit_get_ip().ptr;
 
   /* 0 params and has_rest => (lambda args E) where args is not in E,
@@ -3134,8 +3157,11 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     
     __START_SHORT_JUMPS__(cnt < 100);
 
+    /* check whether argv == runstack: */
     ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+    /* check whether we have at least one rest arg: */
     ref3 = jit_bgti_p(jit_forward(), JIT_R1, cnt);
+    /* yes and yes: make room for the copy */
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(cnt+1));
     CHECK_RUNSTACK_OVERFLOW();
     for (i = cnt; i--; ) {
@@ -3202,8 +3228,10 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       /* if we get here, the rest argument isn't used */
       GC_CAN_IGNORE jit_insn *ref;
       __START_TINY_JUMPS__(1);
+      /* check whether argv == runstack: */
       ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
       __END_TINY_JUMPS__(1);
+      /* yes, so clear rest args (for space safety): */
       mz_rs_sync();
       JIT_UPDATE_THREAD_RSPTR();
       CHECK_LIMIT();
