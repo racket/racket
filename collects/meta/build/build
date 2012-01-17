@@ -74,7 +74,7 @@ defbuild() {
 # entries, with misc fields set.  Machines and platforms must be unique.  The
 # "D" first entry is for default field values (missing default makes the field
 # required).  Warning: an `eval "foo=\"bar\""' is used to assign values.
-msets "/machines/D" "workdir=/var/tmp" "moveto=" "copytobak=" \
+msets "/machines/D" "platform=" "workdir=/var/tmp" "moveto=" "copytobak=" \
       "configure_args=" "LDFLAGS=" "ext_lib_paths=" "renice=" \
       "more_setup_args=" "test_gui="
 # defbuild "ccs-solaris" "sparc-solaris" "moveto=/proj/racket" \
@@ -2205,9 +2205,11 @@ if [[ "$1" = "--dispatch" ]]; then
   init_repo_vars      # set the repository variables according to the env vars
   machineget platform # set the global platform for dependable script pieces
   if [[ "${machine:-$workmachine}" != "$workmachine" ]]; then
-    machine_suffix=" [$machine($platform)]"
+    if [[ "$platform" = "" ]]; then machine_suffix=" [$machine]"
+    else machine_suffix=" [$machine($platform)]"; fi
   fi
-  show "Working on $machine($platform)"
+  if [[ "$platform" = "" ]]; then show "Working on $machine"
+  else show "Working on $machine($platform)"; fi
   show "Dispatching to $go($*)"
   "$go" "$@"
   show "Done working on $machine($platform)"
