@@ -382,12 +382,19 @@
                          (do-parse #'(rest ...) precedence left #'x))]
                      ;; [1, 2, 3] -> (list 1 2 3)
                      [(#%brackets stuff ...)
-                      (syntax-parse #'(stuff ...) #:literal-sets (cruft)
-                        [(work:honu-expression colon (~seq variable:id honu-<- list:honu-expression (~optional honu-comma)) ...)
+                      (define-literal-set wheres (honu-where))
+                      (syntax-parse #'(stuff ...) #:literal-sets  (cruft wheres)
+                        [(work:honu-expression (~optional (~seq honu-where where:honu-expression))
+                                               colon (~seq variable:id honu-<- list:honu-expression (~optional honu-comma)) ...)
+                         (define filter (if (attribute where)
+                                          #'(#:when where.result)
+                                          #'()))
                          (define comprehension
+                           (with-syntax ([(filter ...) filter])
                              #'(for/list ([variable list.result]
-                                          ...)
-                                          work.result))
+                                          ...
+                                          filter ...)
+                                 work.result)))
                          (if current
                            (error 'parse "a list comprehension cannot follow an expression")
                            (do-parse #'(rest ...) precedence left comprehension))]

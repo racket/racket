@@ -27,6 +27,7 @@
          integer
          cos sin
          random
+         filter
          values
          (racket:rename-out [honu-cond cond]
                      [null empty]

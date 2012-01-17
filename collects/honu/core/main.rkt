@@ -4,6 +4,7 @@
   (begin
     (require (for-meta meta-level
                        racket/base
+                       racket/class
                        "private/macro2.rkt"
                        "private/class.rkt"
                        (prefix-in literal: "private/literals.rkt")
@@ -30,6 +31,7 @@
                                    [define-make-honu-operator operator]
                                    [honu-match match]
                                    [honu-with with]
+                                   [literal:honu-where where]
                                    [honu-var var]
                                    [honu-val val]
                                    [honu-for for]
@@ -73,6 +75,7 @@
                        true false
                        withSyntax
                        mergeSyntax
+                       this
                        #%top
                        #%datum
                        ))))
