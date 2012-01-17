@@ -766,6 +766,11 @@
 #endif
 # define MZ_JIT_USE_MPROTECT
 
+#if defined(__x86_64__)
+/* work around a bug in localtime() in 10.6.8 */
+# define MIN_VALID_DATE_SECONDS -67768122973193999
+#endif
+
 # define FLAGS_ALREADY_SET
 
 #endif
@@ -1025,6 +1030,8 @@
  /* USER_TIME_IS_CLOCK uses the user time for system milliseconds. */
 
  /* TIME_TYPE_IS_UNSIGNED converts time_t values as unsigned. */
+
+ /* MIN_VALID_DATE_SECONDS sets a minimum vald time in seconds. */
 
  /* PROCESS_FUNCTION adds (process ...) and (system ...) functions */
 
