@@ -72,7 +72,8 @@
 (define-syntax (make-cached-flomap stx)
   (syntax-case stx ()
     [(_ (size args ...) expr0 expr ...)
-     (with-syntax ([(name)  (generate-temporaries #'(make-cached-flomap))])
+     ;; for some reason, generate-temporaries doesn't work here
+     (with-syntax ([name  (gensym)])
        (syntax/loc stx
          (make-cached-flomap* 'name (λ (size args ...) expr0 expr ...) size args ...)))]))
 

@@ -193,8 +193,7 @@ As an example, here is how to duplicate the @racket[record-icon] using @racketmo
                     (define brush-pict (colorize (filled-ellipse 62 62) "forestgreen"))
                     (define pen-pict (linewidth 2 (colorize (ellipse 62 62) outline-color)))
                     (bitmap-render-icon
-                     (pict->bitmap
-                      (inset (cc-superimpose brush-pict pen-pict) 1))
+                     (pict->bitmap (inset (cc-superimpose brush-pict pen-pict) 1))
                      5/8 glass-icon-material)
                     
                     (record-icon "forestgreen" 64 glass-icon-material)]
@@ -385,6 +384,12 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 @doc-apply[left-bomb-icon]{
 @examples[#:eval icons-eval
                  (left-bomb-icon metal-icon-color dark-metal-icon-color 32)]
+}
+
+@doc-apply[clock-icon]{
+@examples[#:eval icons-eval
+                 (clock-icon 48)
+                 (clock-icon 48 "lightblue" "darkblue" 3 21)]
 }
 
 @;====================================================================================================
