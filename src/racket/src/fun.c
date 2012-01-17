@@ -8315,6 +8315,12 @@ static int month_offsets[12] = { 0, 31, 59, 90,
                                 243, 273, 304, 334 };
 #endif
 
+#ifdef MIN_VALID_DATE_SECONDS
+# define VALID_TIME_RANGE(x) ((x) >= MIN_VALID_DATE_SECONDS)
+#else
+# define VALID_TIME_RANGE(x) 1
+#endif
+
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 {
   UNBUNDLE_TIME_TYPE lnow;
@@ -8366,7 +8372,8 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
   }
 
   if (scheme_get_time_val(secs, &lnow)
-      && ((UNBUNDLE_TIME_TYPE)(now = (CHECK_TIME_T)lnow)) == lnow) {
+      && (((UNBUNDLE_TIME_TYPE)(now = (CHECK_TIME_T)lnow)) == lnow)
+      && VALID_TIME_RANGE(lnow)) {
     int success;
 
 #ifdef USE_MACTIME
