@@ -2994,7 +2994,7 @@ static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_l
 static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_params)
 {
   int i, cnt;
-  GC_CAN_IGNORE jit_insn *ref;
+  GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* If rands == runstack, set runstack base to runstack + rands (and
      don't copy rands), otherwise set base to runstack and copy
@@ -3007,6 +3007,16 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
 #endif
   __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
   ref = jit_beqr_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+  __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
+
+  /* Since we're going to copy arguments, make sure argument
+     count is right; otherwise, the arity error can use the
+     arguments in the original location. */
+  __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
+  if (!has_rest)
+    ref2 = jit_bnei_i(jit_forward(), JIT_R1, num_params);
+  else
+    ref2 = jit_blti_i(jit_forward(), JIT_R1, (num_params - 1));
   __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
 
 #ifdef JIT_RUNSTACK_BASE
@@ -3034,6 +3044,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
 
   __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
   mz_patch_branch(ref);
+  mz_patch_branch(ref2);
   __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
 
   return cnt;

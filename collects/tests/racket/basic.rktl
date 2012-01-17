@@ -2072,6 +2072,7 @@
       (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
       (hash-set! h1 l 'ok)
       (test 'ok hash-ref h1 l)
+      (err/rt-test (hash-ref h1 'nonesuch (lambda (x) 'bad-proc)) exn:fail:contract:arity?)
       (test #t hash-has-key? h1 l)
       (test #f hash-has-key? h1 (cdr l))
       (when hash-ref!
