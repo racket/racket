@@ -189,11 +189,11 @@ standard library collection directory (see @secref["collects"]).  In
 this case, @racket[program] is the name used to start Racket and
 @racket[related] is @racket["collects"].  The @racket[related-sub]
 argument is used because, on @|AllUnix|, @racket[program-sub] may
-involve to a sequence of soft links; in this case,
+evolve to a sequence of soft links; in this case,
 @racket[related-sub] determines which link in the chain is relevant.
 
 If @racket[related-sub] is not @racket[#f], then when
-@racket[find-executable-path] does not finds a @racket[program-sub]
+@racket[find-executable-path] does not find a @racket[program-sub]
 that is a link to another file path, the search can continue with the
 destination of the link. Further links are inspected until
 @racket[related-sub] is found or the end of the chain of links is
