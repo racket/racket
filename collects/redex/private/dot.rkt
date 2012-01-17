@@ -13,7 +13,7 @@
 (define neato-ipsep-label "neato – ipsep")
 
 ;; these paths are explicitly checked (when find-executable-path
-;; fails) because starting drscheme from the finder (or the doc) 
+;; fails) because starting drracket from the finder (or the dock) 
 ;; under mac os x generally does not get the path right.
 (define dot-paths 
   '("/usr/bin"
@@ -21,17 +21,20 @@
     "/usr/local/bin"
     "/opt/local/bin/"))
 
+(define dot.exe (if (eq? (system-type) 'windows) "dot.exe" "dot"))
+(define neato.exe (if (eq? (system-type) 'windows) "neato.exe" "neato"))
+
 (define (find-dot [neato? #f])
   (cond
-    [(and (find-executable-path "dot")
-          (find-executable-path "neato"))
+    [(and (find-executable-path dot.exe)
+          (find-executable-path neato.exe))
      (if neato?
-         (find-executable-path "neato")
-         (find-executable-path "dot"))]
+         (find-executable-path neato.exe)
+         (find-executable-path dot.exe))]
     [else
-     (ormap (λ (x) (and (file-exists? (build-path x "dot"))
-                        (file-exists? (build-path x "neato"))
-                        (build-path x (if neato? "neato" "dot"))))
+     (ormap (λ (x) (and (file-exists? (build-path x dot.exe))
+                        (file-exists? (build-path x neato.exe))
+                        (build-path x (if neato? neato.exe dot.exe))))
             dot-paths)]))
 
 (define (dot-positioning pb option overlap?)
