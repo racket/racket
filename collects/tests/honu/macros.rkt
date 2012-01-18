@@ -8,11 +8,11 @@ macro testx () {x:expression} {
 
 testx 5 * 2
 
-for z = 1 to testx 5 * 2 do
+for z in 1 to testx 5 * 2 do
   printf("z is ~a\n", z)
 
 macro testfor () {x:expression} {
-  syntax(for z = 1 to x do
+  syntax(for z in 1 to x do
     printf("z is ~a\n" z))
 }
 
