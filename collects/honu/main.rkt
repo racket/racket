@@ -17,9 +17,6 @@
                 ;;"private/function.honu"
                 )
 
-(define (int x)
-  (inexact->exact (round x)))
-
 (racket:provide sqr sqrt sin max
          number? symbol?
          null
@@ -33,7 +30,6 @@
          filter
          append
          values
-         int
          regexp
          (racket:rename-out [honu-cond cond]
                      [null empty]
