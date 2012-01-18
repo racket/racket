@@ -2,6 +2,9 @@
        Version 5.2.1
 ------------------------------
 
+  . The keybindings window is no longer a modal dialog (and its contents
+    will change to reflect where the keyboard focus currently is)
+
   . The initial current-directory for unsaved programs in DrRacket is
     now the user's home directory, instead of whatever the
     current-directory was for the underlying OS process.
@@ -10,9 +13,6 @@
     DrRacket (to better match what Racket does).
 
   . DrRacket no longer shows a stacktrace for syntax errors in the REPL.
-
-  . The keybindings window is no longer a modal dialog (and its contents
-    will change to reflect where the keyboard focus currently is)
 
   . The preference that makes a single "(" keystroke insert "()" (and
     similarly for [ { " and |) now only takes effect in Racket mode,

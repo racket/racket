@@ -12,7 +12,8 @@ v5.2.1
     lambdaJS benchmark by about a factor of 25.
 
   * added support for side-conditions and where clauses to
-    define-relation
+    define-relation, also added support for side-conditions to
+    define-judgment-form
 
   * added the List-machine benchmark (by Appel, Dockins & Leroy)
 
