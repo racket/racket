@@ -61,6 +61,7 @@ if [[ "$L$S" = "YY" ]]; then
     local t="$(($(date +"%s") - $(stat -c "%Z" "$1")))"
     printf "%d:%02d:%02d" "$((t/3600))" "$(((t%3600)/60))" "$((t%60))"
   }
+  printf '{{{LINKTO: %s}}}' "current-$(basename "$buildlogfile")"
   printf 'A build is running (%s)\n' "$(time_for_file "$lockfile")"
   printf 'Status: %s (%s)\n' "$(cat "$statusfile")" \
                              "$(time_for_file "$statusfile")"
@@ -71,6 +72,7 @@ if [[ "$L$S" = "YY" ]]; then
       s="$(grep "^### <<< .* >>>" "$bg" | tail -1 \
            | sed -e 's/([^()]* build) //' \
            | sed -e 's/^### <<< \(.*\) >>>/\1/')"
+      printf '{{{LINKTO: %s}}}' "current-$(basename "$bg")"
       if [[ "x$s" = "x" ]]; then
         printf '  %s: (just starting)\n' "${bg#$bglogfile-}"
       else
@@ -104,6 +106,7 @@ else
   if [[ "$SL" = "Y" ]]; then
     echo ""
     last="$(cat "$statusfile_last")"
+    printf '{{{LINKTO: %s}}}' "current-$(basename "$buildlogfile")"
     if [[ "x$last" = "xDone ("*")" ]]; then
       last="${last#Done (}"
       last="${last%)}"
