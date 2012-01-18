@@ -147,7 +147,10 @@
 			     (if (file-exists? f)
 				 (format template filename-version-part)
 				 (format template "xxxxxxx"))))])
-	 (map copy-dll '("iconv.dll"))
+	 (map copy-dll (list
+                        (if (equal? "win32\\x86_64" (path->string (system-library-subpath #f)))
+                            "libiconv-2.dll"
+                            "iconv.dll")))
 	 (when (or (memq 'racketcgc types)
 		   (memq 'gracketcgc types))
 	   (map copy-dll
