@@ -40,7 +40,7 @@
    (case-lambda
      [() (in-core ".")]
      [(k) @elem{This SRFI's bindings are also available in
-                @racketmodname[scheme/base]@|k|}]))
+                @racketmodname[racket/base]@|k|}]))
 
 @(begin
   (define-syntax-rule (def-mz mz-if)
@@ -76,11 +76,14 @@ distributed as part of Racket's documentation).
 
 @srfi[1]{List Library}
 
-This SRFI works with pairs and lists as in @racketmodname[scheme] and
-@racketmodname[mzscheme], which are immutable, so it does not export
-@racketidfont{set-car!} and @racketidfont{set-cdr!}. The other
-provided bindings that end in @racketidfont{!} are equivalent to the
-corresponding bindings without @racketidfont{!}.
+This SRFI works with pairs and lists as in @racketmodname[racket],
+which are immutable, so it does not export @racketidfont{set-car!} and
+@racketidfont{set-cdr!}. The other provided bindings that end in
+@racketidfont{!} are equivalent to the corresponding bindings without
+@racketidfont{!}. Functions that are documented in the SRFI in bold
+(but not bold italic) correspond to @racketmodname[racket] functions,
+while the others are distinct from same-named @racketmodname[racket]
+functions.
 
 @redirect[1 '(
  (cons #f "cons")
