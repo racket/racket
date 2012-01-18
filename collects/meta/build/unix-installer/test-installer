@@ -316,7 +316,7 @@ exec racket "$0" "$@"
     schemegc2.h, schemex.h, schemexm.h, schexn.h, schgc2obj.h, schthread.h,
     schvers.h, sconfig.h, stypes.h, uconfig.h
     sh> @i{LS lib/r*}
-    buildinfo, collects/, libfit.so*, mzdyn3m.o, starter*
+    buildinfo, collects/, mzdyn3m.o, starter*
     sh> @i{LS share/r* && LS share/r*/doc}
     doc/
     README, @... xrepl/
