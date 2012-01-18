@@ -79,19 +79,20 @@
   (define view #f)
   
   ;; wait for steps to show up on the channel.  When they do, add them to the list.
-  (define (start-listener-thread)
+  (define (start-listener-thread stepper-frame-eventspace)
     (thread
      (lambda ()
        (let loop ()
          (define new-result (async-channel-get view-channel))
          (define new-step (format-result new-result))
-         (queue-callback
-          (lambda ()
-            (set! view-history (append view-history (list new-step)))
-            (set! num-steps-available (length view-history))
-            ;; this is only necessary the first time, but it's cheap:
-            (semaphore-post first-step-sema)
-            (update-status-bar)))
+         (parameterize ([current-eventspace stepper-frame-eventspace])
+           (queue-callback
+            (lambda ()
+              (set! view-history (append view-history (list new-step)))
+              (set! num-steps-available (length view-history))
+              ;; this is only necessary the first time, but it's cheap:
+              (semaphore-post first-step-sema)
+              (update-status-bar))))
          (loop)))))
     
   
@@ -375,7 +376,7 @@
   (send (send s-frame edit-menu:get-redo-item) enable #f)
   
   ;; START THE MODEL
-  (start-listener-thread)
+  (start-listener-thread (send s-frame get-eventspace))
   (model:go
    program-expander-prime 
    ;; what do do with the results:
