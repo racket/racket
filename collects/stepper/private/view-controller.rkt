@@ -375,8 +375,9 @@
   (send (send s-frame edit-menu:get-undo-item) enable #f)
   (send (send s-frame edit-menu:get-redo-item) enable #f)
   
+  (define stepper-frame-eventspace (send s-frame get-eventspace))
   ;; START THE MODEL
-  (start-listener-thread (send s-frame get-eventspace))
+  (start-listener-thread stepper-frame-eventspace)
   (model:go
    program-expander-prime 
    ;; what do do with the results:
@@ -393,8 +394,12 @@
   (thread
    (lambda ()
      (semaphore-wait first-step-sema)
-     (jump-to-beginning)
-     (enable-all-buttons)))
+     (parameterize
+         ([current-eventspace stepper-frame-eventspace])
+       (queue-callback
+        (lambda ()
+          (jump-to-beginning)
+          (enable-all-buttons))))))
   
   s-frame)
 
