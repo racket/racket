@@ -477,7 +477,7 @@
 (define archtocs
   (let ([title   @list{%(listname)s archives}]
         [headers @list{@style-header
-                       @meta[name: 'robots content: "noindex,follow"]
+                       @;meta[name: 'robots content: "noindex,follow"]
                        %(meta)s}])
     (define (content mbox?)
       @list{
@@ -531,7 +531,7 @@
            #:title "%(listname)s %(archive)s archives by %(archtype)s"
            #:part-of 'community
            #:extra-headers @list{@style-header
-                                 @meta[name: 'robots content: "noindex,follow"]
+                                 @;meta[name: 'robots content: "noindex,follow"]
                                  %(encoding)s}]{
      @(define sorted-info
         @ul{@li{@b{Messages sorted by:}
@@ -565,7 +565,7 @@
                 @link[rel: 'made
                       href: '@{mailto:%(email_url)s?Subject=%(subject_url)s&@;
                                In-Reply-To=%(in_reply_to_url)s}]
-                @meta[name: 'robots content: "index,nofollow"]
+                @;meta[name: 'robots content: "index,nofollow"]
                 %(encoding)s
                 %(prev)s
                 %(next)s}]{
