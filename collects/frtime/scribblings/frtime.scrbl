@@ -16,16 +16,16 @@
 
 @author["Greg Cooper"]
 
-The @racketmodname[frtime] language supports declarative construction of
-reactive systems in a syntax very similar to that of Racket.  To
-interact with FrTime, select @onscreen{FrTime} from the @onscreen{Choose Language} menu.
-You can also make FrTime the language for a module:
-
-@racketblock[
-(module <module-name> frtime
-   <module-body>)]
-
 @defmodulelang[frtime]
+
+The @racketmodname[frtime] language supports declarative construction
+of reactive systems in a syntax very similar to that of Racket. It
+extends the @racketmodname[scheme] language (as opposed to
+@racketmodname[racket]).
+
+Within DrRacket, as an alternative to using @racket[@#,hash-lang[]
+@#,racketmodname[frtime]], you can choose @onscreen{FrTime} from the
+@onscreen{Choose Language} menu.
 
 @section{Primitives}
 
