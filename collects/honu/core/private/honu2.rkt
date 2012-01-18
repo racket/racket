@@ -248,6 +248,9 @@
 (define-unary-operator honu-not 0.7 'left not)
 
 (define-binary-operator honu-equal 1 'left equal?)
+(define-binary-operator honu-not-equal 1 'left (lambda (left right)
+                                                 (not (equal? left right))))
+
 
 (begin-for-syntax
   (define (fix-module-name name)

@@ -20,6 +20,7 @@
                                    [honu-function function]
                                    [honu-var var]
                                    [honu-equal =]
+                                   [honu-not-equal !=]
                                    [honu--> %arrow]
                                    [honu-class class]
                                    [honu-require require]

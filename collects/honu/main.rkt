@@ -1,6 +1,6 @@
 #lang honu/private
 
-(require (prefix-in racket: (combine-in racket/base racket/list)))
+(require (prefix-in racket: (combine-in racket/base racket/list racket/file)))
 
 ;; require's and provide's a module
 (define-syntax-rule (provide-module module ...)
@@ -17,6 +17,9 @@
                 ;;"private/function.honu"
                 )
 
+(define (int x)
+  (inexact->exact (round x)))
+
 (racket:provide sqr sqrt sin max
          number? symbol?
          null
@@ -28,11 +31,17 @@
          cos sin
          random
          filter
+         append
          values
+         int
+         regexp
          (racket:rename-out [honu-cond cond]
                      [null empty]
                      [current-inexact-milliseconds currentMilliseconds]
                      [string-length string_length]
+                     [string-append string_append]
+                     [racket:find-files find_files]
                      [racket:empty? empty?]
+                     [regexp-match regexp_match]
                      [racket:first first]
                      [racket:rest rest]))
