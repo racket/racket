@@ -234,7 +234,10 @@
     "numlock"
     "scroll"
     "wheel-up"
-    "wheel-down"))
+    "wheel-down"
+    "wheel-left"
+    "wheel-right"
+    ))
 
 (define-syntax (big-bang stx)
   (define world0 "expects an expression for the initial world and at least one clause")
