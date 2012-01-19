@@ -122,9 +122,9 @@
                   (if binders
                       (begin
                         (base-color #'id polarity boundary-contract? my-coloring-plans client-coloring-plans)
-                        (for ((binder (in-list (module-identifier-mapping-get low-binders #'id))))
+                        (for ((binder (in-list binders)))
                           (base-color binder polarity boundary-contract? my-coloring-plans client-coloring-plans)
-                          (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder))))
+                          (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder (λ () '())))))
                             (ploop rhs polarity))))
                       (call-give-up))))]
            [const

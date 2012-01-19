@@ -373,7 +373,6 @@ trigger runtime errors in check syntax.
                 (list '((10 18) (20 38) (51 64))
                       '((39 48) (68 71))))
 
-
      (build-test "(define-for-syntax (f x) x) (define (f x) x) f (define-syntax (m x) (f x))"
                  '(("(" default-color)
                    ("define-for-syntax" imported)
@@ -901,6 +900,30 @@ trigger runtime errors in check syntax.
                        '((52 58) (93 99))
                        '((100 101) (105 106))))
      
+     (build-test "#lang racket (provide (contract-out [f (->i ((p? any/c)) (_ (p?) p?))])) (define (f a) 1)"
+                 '(("#lang racket (" default-color)
+                   ("provide" imported)
+                   (" (contract-out [" default-color)
+                   ("f" lexically-bound)
+                   (" (" default-color)
+                   ("->i" imported)
+                   (" ((p? " default-color)
+                   ("any/c" imported)
+                   (")) (_ (" default-color)
+                   ("p?" lexically-bound)
+                   (") " default-color)
+                   ("p?" lexically-bound)
+                   ("))])) (" default-color)
+                   ("define" imported)
+                   (" (" default-color)
+                   ("f" lexically-bound)
+                   (" " default-color)
+                   ("a" lexically-bound)
+                   (") 1)" default-color))
+                 (list '((82 83) (37 38))
+                       '((61 63) (65 67))
+                       '((6 12) (14 21) (40 43) (49 54) (74 80))))
+
      (rename-test "(lambda (x) x)"
                   9
                   "x"
