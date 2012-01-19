@@ -396,7 +396,7 @@
                                           filter ...)
                                  work.result)))
                          (if current
-                           (error 'parse "a list comprehension cannot follow an expression")
+                           (values (left current) stream)
                            (do-parse #'(rest ...) precedence left comprehension))]
                         [else
                           (define value (with-syntax ([(data ...)
@@ -418,6 +418,8 @@
                      ;; expression or function application
                      [(#%parens args ...)
                       (if current
+                        ;; FIXME: 9000 is an arbitrary precedence level for
+                        ;; function calls
                         (if (> precedence 9000)
                           (let ()
                             (debug 2 "higher precedence call ~a\n" current)
