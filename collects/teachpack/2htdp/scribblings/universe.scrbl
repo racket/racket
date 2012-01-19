@@ -358,6 +358,8 @@ Second, some keys have multiple-character string representations. Strings
 @item{@racket["scroll"]}
 @item{@racket["wheel-up"]}
 @item{@racket["wheel-down"]}
+@item{@racket["wheel-left"]}
+@item{@racket["wheel-right"]}
 ]
 
 @defproc[(key-event? [x any]) boolean?]{
