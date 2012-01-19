@@ -1299,7 +1299,7 @@ See also the @racketmodname[2htdp/planetcute] library.
   hint. When an image both contains many sub-images and is going to be drawn many times
   (but not scaled or rotated),
   using freeze on the image can substantially improve performance without changing how
-  the image draws.
+  the image draws (assuming it draws only inside its bounding box; see also @secref["nitty-gritty"]).
   
   If @racket[freeze] is passed only the image argument, then it crops the image to its bounding
   box. If it is given three arguments, the two numbers are used as the width and height and
