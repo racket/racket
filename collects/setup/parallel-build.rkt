@@ -198,7 +198,7 @@
           [(cons hd tail)
               (define-values (dir file b) (split-path hd))
               (set! filelist tail)
-              (values hd (list (->bytes hd) (->bytes dir) (->bytes file)))]
+              (values hd (list (->bytes hd) (->bytes dir) (->bytes file) null))]
           [(list) null]))
       (define/public (has-jobs?) (not (null? filelist)))
       (define/public (jobs-cnt) (length filelist))
