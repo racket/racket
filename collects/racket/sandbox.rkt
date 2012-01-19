@@ -210,12 +210,12 @@
 
 (define sandbox-make-logger (make-parameter current-logger))
 
-(define (compute-permissions paths+require-perms)
-  (define-values [paths require-perms]
-    (partition path-string? paths+require-perms))
-  (define cpaths (map path->complete-path paths))
+(define (compute-permissions for-require for-load)
+  ;; `for-require' is a list of module paths and paths that will be `reqiure'd,
+  ;; while `for-load' is a list of path (strings) that will be `load'ed.
+  (define cpaths (map path->complete-path for-load))
   (append (map (lambda (p) `(read ,(path->bytes p))) cpaths)
-          ;; when reading a file from "/foo/bar/baz.rkt" racket will try to see
+          ;; when loading a module from "/foo/bar/baz.rkt" racket will try to see
           ;; if "/foo/bar" exists, so allow these paths too; it might be needed
           ;; to allow 'exists on any parent path, but I'm not sure that this is
           ;; safe in terms of security, so put just the immediate parent dir in
@@ -223,7 +223,7 @@
                         (let ([p (and (file-exists? p) (path-only p))])
                           (and p `(exists ,(path->bytes p)))))
                       cpaths)
-          (module-specs->path-permissions require-perms)))
+          (module-specs->path-permissions for-require)))
 
 ;; computes permissions that are needed for require specs (`read-bytecode' for
 ;; all files and "compiled" subdirs, `exists' for the base-dir)
@@ -253,6 +253,8 @@
     (cond [(and (pair? mod) (eq? 'lib (car mod))) #f]
           [(module-path? mod)
            (simplify-path* (resolve-module-path mod #f))]
+          [(path? mod)
+           (simplify-path* mod)]
           [(not (and (pair? mod) (pair? (cdr mod))))
            ;; don't know what this is, leave as is
            #f]
@@ -660,7 +662,7 @@
    (current-continuation-marks)
    reason))
 
-(define (make-evaluator* who init-hook allow program-maker)
+(define (make-evaluator* who init-hook allow-for-require allow-for-load program-maker)
   (define orig-code-inspector (current-code-inspector))
   (define orig-security-guard (current-security-guard))
   (define orig-cust     (current-custodian))
@@ -891,7 +893,7 @@
        (exists ,(find-system-path 'addon-dir))
        (read ,(find-system-path 'links-file))
        (read ,(find-lib-dir))
-       ,@(compute-permissions allow)
+       ,@(compute-permissions allow-for-require allow-for-load)
        ,@(sandbox-path-permissions))]
     ;; restrict the sandbox context from this point
     [current-security-guard
@@ -960,32 +962,78 @@
     ;; program didn't execute
     (raise r)))
 
+(define (check-and-combine-allows who allow allow-for-require allow-for-load)
+  (define (check-arg-list arg what ok?)
+    (unless (and (list? arg) (andmap ok? arg))
+      (error who "bad ~a: ~e" what arg)))
+  (check-arg-list allow "allows"
+                  (lambda (x) (or (path? x) (module-path? x) (path-string? x))))
+  (check-arg-list allow-for-require "allow-for-requires"
+                  (lambda (x) (or (path? x) (module-path? x))))
+  (check-arg-list allow-for-load "allow-for-loads" path-string?)
+  ;; This split of `allow' is ugly but backward-compatible:
+  (define-values (more-allow-for-load more-allow-for-require)
+    (partition (lambda (p) (or (path? p) 
+                               ;; strings that can be treated as paths:
+                               (not (module-path? p)))) 
+               allow))
+  (values (append allow-for-require
+                  more-allow-for-require)
+          (append allow-for-load
+                  more-allow-for-load)))
+
 (define (make-evaluator lang
-                        #:requires [requires null] #:allow-read [allow null]
+                        #:requires [requires null] 
+                        #:allow-read [allow null]
+                        #:allow-for-require [allow-for-require null]
+                        #:allow-for-load [allow-for-load null]
                         . input-program)
   ;; `input-program' is either a single argument specifying a file/string, or
-  ;; multiple arguments for a sequence of expressions
-  ;; make it possible to use simple paths to files to require
-  (define reqs (if (not (list? requires))
-                 (error 'make-evaluator "bad requires: ~e" requires)
-                 (map (lambda (r)
-                        (if (or (pair? r) (symbol? r))
-                          r
-                          `(file ,(path->string (simplify-path* r)))))
-                      requires)))
+  ;;  multiple arguments for a sequence of expressions
+  (define all-requires
+    (extract-required (or (decode-language lang) lang) 
+                      requires))
+  (unless (and (list? requires) 
+               (andmap (lambda (x) (or (path-string? x) 
+                                       (module-path? x)
+                                       (and (list? x)
+                                            (pair? x)
+                                            (eq? (car x) 'for-syntax)
+                                            (andmap module-path? (cdr x)))))
+                       requires))
+    (error 'make-evaluator "bad requires: ~e" requires))
+  (define-values (all-for-require all-for-load)
+    (check-and-combine-allows 'make-evaluator allow allow-for-require allow-for-load))
+  (define (normalize-require-for-syntax r)
+    (if (or (path? r) (and (string? r) 
+                           (not (module-path? r))))
+        `(file ,(path->string (simplify-path* r)))
+        r))
+  (define (normalize-require-for-allow r)
+    (cond
+     [(and (string? r) (not (module-path? r))) (list (string->path r))]
+     [(and (pair? r) (eq? (car r) 'for-syntax))
+      (cdr r)]
+     [else (list r)]))
   (make-evaluator* 'make-evaluator
                    (init-hook-for-language lang)
-                   (append (extract-required (or (decode-language lang) lang)
-                                             reqs)
-                           (if (and (= 1 (length input-program))
+                   (append (apply append
+                                  (map normalize-require-for-allow all-requires))
+                           all-for-require)
+                   (append (if (and (= 1 (length input-program))
                                     (path? (car input-program)))
-                             (list (car input-program))
-                             '())
-                           allow)
-                   (lambda () (build-program lang reqs input-program))))
+                               (list (car input-program))
+                               '())
+                           all-for-load)
+                   (lambda () (build-program lang 
+                                             (map normalize-require-for-syntax all-requires)
+                                             input-program))))
 
-(define (make-module-evaluator
-         input-program #:allow-read [allow null] #:language [reqlang #f])
+(define (make-module-evaluator input-program 
+                               #:allow-read [allow null] 
+                               #:allow-for-require [allow-for-require null]
+                               #:allow-for-load [allow-for-load null]
+                               #:language [reqlang #f])
   ;; this is for a complete module input program
   (define (make-program)
     (define-values [prog source]
@@ -1005,7 +1053,10 @@
       [_else (error 'make-module-evaluator
                     "expecting a `module' program; got ~.s"
                     (syntax->datum (car prog)))]))
+  (define-values (all-for-require all-for-load)
+    (check-and-combine-allows 'make-module-evaluator allow allow-for-require allow-for-load))
   (make-evaluator* 'make-module-evaluator
                    void
-                   (if (path? input-program) (cons input-program allow) allow)
+                   all-for-require
+                   (if (path? input-program) (cons input-program all-for-load) all-for-load)
                    make-program))

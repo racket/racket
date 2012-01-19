@@ -23,12 +23,19 @@ for the common use case where sandboxes are very limited.
                                             (list/c 'special symbol?)
                                             (cons/c 'begin list?))]
                             [input-program any/c] ...
-                            [#:requires requires (listof (or/c module-path? path?))]
-                            [#:allow-read allow (listof (or/c module-path? path?))])
+                            [#:requires requires 
+                                        (listof (or/c module-path? path-string? 
+                                                      (cons/c 'for-syntax (listof module-path?))))
+                                        null]
+                            [#:allow-for-require allow-for-require (listof (or/c module-path? path?)) null]
+                            [#:allow-for-load allow-for-load (listof path-string?) null]
+                            [#:allow-read allow-read (listof (or/c module-path? path-string?)) null])
             (any/c . -> . any)]
-           [(make-module-evaluator [module-decl (or/c syntax? pair?)]
-                                   [#:language   lang  (or/c #f module-path?)]
-                                   [#:allow-read allow (listof (or/c module-path? path?))])
+           [(make-module-evaluator [module-decl (or/c syntax? pair? path? input-port? string? bytes?)]
+                                   [#:language   lang  (or/c #f module-path?) #f]
+                                   [#:allow-for-require allow-for-require (listof (or/c module-path? path?)) null]
+                                   [#:allow-for-load allow-for-load (listof path-string?) null]
+                                   [#:allow-read allow-read (listof (or/c module-path? path-string?)) null])
             (any/c . -> . any)])]{
 
 The @racket[make-evaluator] function creates an evaluator with a
@@ -39,12 +46,16 @@ works in the context of a given module. The result in either case is a
 function for further evaluation.
 
 The returned evaluator operates in an isolated and limited
-environment.  In particular, filesystem access is restricted.  The
-@racket[allow] argument extends the set of files that are readable by
-the evaluator to include the specified modules and their imports
-(transitively). When @racket[language] is a module path and when
-@racket[requires] is provided, the indicated modules are implicitly
-included in the @racket[allow] list.
+environment. In particular, filesystem access is restricted, which may
+interfere with using modules from the filesystem.  See below for
+information on the @racket[allow-for-require],
+@racket[allow-for-load], and @racket[allow-read] arguments.  When
+@racket[language] is a module path or when @racket[requires] is
+provided, the indicated modules are implicitly included in the
+@racket[allow-for-require] list. (For backward compatibility,
+non-@racket[module-path?] path strings are allowed in
+@racket[requires]; they are implicitly converted to paths before
+addition to @racket[allow-for-require].)
 
 Each @racket[input-program] or @racket[module-decl] argument provides
 a program in one of the following forms:
@@ -157,7 +168,8 @@ module, and all imports are part of the program.  In some cases it is
 useful to restrict the program to be a module using a spcific module
 in its language position --- use the optional @racket[lang] argument
 to specify such a restriction (the default, @racket[#f], means no
-restriction is enforced).
+restriction is enforced). When the program is specified as a path, then
+the path is implicitly added to the @racket[allow-for-load] list.
 
 @racketblock[
 (define base-module-eval2
@@ -167,8 +179,8 @@ restriction is enforced).
                             (define later 5))))
 ]
 
-@racket[make-module-evaluator] can be very convenient for testing
-module files: all you need to do is pass in a path value for the file
+The @racket[make-module-evaluator] function can be convenient for testing
+module files: pass in a path value for the file
 name, and you get back an evaluator in the module's context which you
 can use with your favorite test facility.
 
@@ -192,6 +204,18 @@ Note that these limits apply to the creation of the sandbox
 environment too --- so, for example, if the memory that is required to
 create the sandbox is higher than the limit, then
 @racket[make-evaluator] will fail with a memory limit exception.
+
+The @racket[allow-for-require] and @racket[allow-for-load] arguments
+adjust filesystem permissions to extend the set of files that
+are usable by the evaluator. The @racket[allow-for-require] argument lists
+modules that can be @racket[require]d along with their imports
+(transitively). The @racket[allow-for-load] argument lists files that can
+be @racket[load]ed. (The precise permissions needed for
+@racket[require] versus @racket[load] can differ.)  The
+@racket[allow-read] argument is for backward compatibility, only; each
+@racket[module-path?] element of @racket[allow-read] is effectively
+moved to @racket[allow-for-require], while other elements are moved to
+@racket[all-for-load].
 
 The sandboxed evironment is well isolated, and the evaluator function
 essentially sends it an expression and waits for a result.  This form
