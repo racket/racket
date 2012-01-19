@@ -1770,8 +1770,8 @@ XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_multiple_count();
 XFORM_NONGCING MZ_EXTERN Scheme_Object **scheme_get_multiple_array();
 XFORM_NONGCING MZ_EXTERN void scheme_set_current_thread_ran_some();
 
-MZ_EXTERN void scheme_embedded_load(const char *s, int predefined);
-MZ_EXTERN void scheme_register_embedded_load(const char *s);
+MZ_EXTERN void scheme_embedded_load(intptr_t len, const char *s, int predefined);
+MZ_EXTERN void scheme_register_embedded_load(intptr_t len, const char *s);
 
 /* Set these global hooks (optionally): */
 typedef void (*Scheme_Exit_Proc)(int v);
