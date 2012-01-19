@@ -5108,15 +5108,24 @@ Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env 
   return do_eval_string_all(NULL, str, env, 0, 1);
 }
 
-void scheme_embedded_load(const char *desc, int predefined)
+void scheme_embedded_load(intptr_t len, const char *desc, int predefined)
 {
   Scheme_Object *s, *e, *a[3], *eload;
   eload = scheme_builtin_value("embedded-load");
-  s = scheme_make_utf8_string(desc);
-  e = scheme_make_utf8_string(desc XFORM_OK_PLUS strlen(desc) XFORM_OK_PLUS 1);
-  a[0] = s;
-  a[1] = e;
-  a[2] = scheme_false;
+  if (len < 0) {
+    /* description mode */
+    s = scheme_make_utf8_string(desc);
+    e = scheme_make_utf8_string(desc XFORM_OK_PLUS strlen(desc) XFORM_OK_PLUS 1);
+    a[0] = s;
+    a[1] = e;
+    a[2] = scheme_false;
+  } else {
+    /* content mode */
+    a[0] = scheme_false;
+    a[1] = scheme_false;
+    s = scheme_make_sized_byte_string((char *)desc, len, 0);
+    a[2] = s;
+  }
   if (predefined)
     scheme_starting_up = 1;
   (void)scheme_apply(eload, 3, a);

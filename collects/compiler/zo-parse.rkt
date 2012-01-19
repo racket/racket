@@ -1061,7 +1061,7 @@
   (define rst-start (file-position port))
 
   (file-position port (+ rst-start size*))
-
+ 
   (unless (eof-object? (read-byte port))
     (error 'zo-parse "File too big"))
 

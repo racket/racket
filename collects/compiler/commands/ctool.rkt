@@ -291,18 +291,10 @@
              (when (zero? (modulo pos 20)) (fprintf out "\n    "))
              (unless (eof-object? b) (fprintf out "~a," b) (loop (add1 pos)))))
          (fprintf out "0\n  };\n")
-         (fprintf out "  Scheme_Object *eload = NULL, *a[3] = {NULL, NULL, NULL};\n")
-         (fprintf out "  MZ_GC_DECL_REG(4);\n")
-         (fprintf out "  MZ_GC_VAR_IN_REG(0, eload);\n")
-         (fprintf out "  MZ_GC_ARRAY_VAR_IN_REG(1, a, 3);\n")
-         (fprintf out "  MZ_GC_REG();\n")
-         (fprintf out "  eload = scheme_builtin_value(\"embedded-load\");\n")
-         (fprintf out "  a[0] = scheme_false;\n")
-         (fprintf out "  a[1] = scheme_false;\n")
-         (fprintf out "  a[2] = scheme_make_sized_byte_string((char *)data, ~a, 0);\n"
+         (fprintf out "  scheme_register_embedded_load(~a, (const char *)data);\n"
                   (file-position in))
-         (fprintf out "  scheme_apply(eload, 3, a);\n")
-         (fprintf out "  MZ_GC_UNREG();\n")
+         (fprintf out "  scheme_embedded_load(~a, (const char *)data, 1);\n"
+                  (file-position in))
          (fprintf out "}\n")
          (fprintf out "#ifdef MZ_XFORM\n")
          (fprintf out "XFORM_END_SKIP;\n")

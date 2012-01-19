@@ -25,6 +25,7 @@ static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
 THREAD_LOCAL_DECL(int scheme_current_place_id);
 
+SHARED_OK static intptr_t embedded_load_len;
 SHARED_OK static const char *embedded_load;
 
 #ifdef MZ_USE_PLACES
@@ -176,8 +177,9 @@ int scheme_get_place_id(void)
 #endif
 }
 
-void scheme_register_embedded_load(const char *s)
+void scheme_register_embedded_load(intptr_t len, const char *s)
 {
+  embedded_load_len = len;
   embedded_load = s;
 }
 
@@ -2224,7 +2226,7 @@ static int do_embedded_load()
     p->error_buf = &newbuf;
     
     if (!scheme_setjmp(newbuf)) {
-      scheme_embedded_load(embedded_load, 1);
+      scheme_embedded_load(embedded_load_len, embedded_load, 1);
       rc = 1;
     } else {
       rc = 0;

@@ -298,10 +298,10 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             /* eval from stdin */
             scheme_eval_all_with_prompt(NULL, fa->global_env, 2);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED_REG) {
-            scheme_register_embedded_load(fa->evals_and_loads[i]);
-            scheme_embedded_load(fa->evals_and_loads[i], 1);
+            scheme_register_embedded_load(-1, fa->evals_and_loads[i]);
+            scheme_embedded_load(-1, fa->evals_and_loads[i], 1);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED) {
-            scheme_embedded_load(fa->evals_and_loads[i], 0);
+            scheme_embedded_load(-1, fa->evals_and_loads[i], 0);
           } else {
             Scheme_Object *a[1], *nsreq;
             char *name;
