@@ -19,6 +19,45 @@ source Racket file is newer than the bytecode file and has a different
 SHA-1 hash, or if any imported module is recompiled or has a different
 SHA-1 hash for its compiled form plus dependencies.
 
+The @exec{raco make} command accepts a few flags:
+
+@itemlist[
+
+ @item{@Flag{j} @nonterm{n} --- Compiles argument modules in parallel,
+       using up to @nonterm{n} parallel tasks.}
+
+ @item{@DFlag{disable-inline} --- Disables function inlining while
+      compiling (but does not re-compile files that are already
+      up-to-date). This flag is often useful to simplify generated
+      code before decompiling, and it corresponds to setting
+      @racket[compile-context-preservation-enabled] to @racket[#t].}
+
+ @item{@DFlag{disable-constant} --- Disables inference of definitions
+      within a module as constant (but does not re-compile files that
+      are already up-to-date). The value associated with a
+      non-constant definition is never inlined or constant-propagated,
+      either within its own module or an importing module. This flag
+      corresponds to setting @racket[compile-enforce-module-constants]
+      to @racket[#f].}
+
+ @item{@DFlag{no-deps} --- Compiles a non-module file (i.e., one that
+       is run via @racket[load] instead of @racket[require]). See
+       @secref["zo"] for more information.}
+
+ @item{@Flag{p} @nonterm{file} or @DFlag{prefix} @nonterm{file} ---
+       For use with @DFlag{no-deps}; see @secref["zo"].}
+
+ @item{@Flag{no-prim} --- For use with @DFlag{no-deps}; see
+       @secref["zo"].}
+
+ @item{@Flag{v} --- Verbose mode, which shows which files are
+      compiled.}
+
+ @item{@DFlag{vv} --- Very verbose mode, which implies @Flag{v} and
+       also shows every dependency that is checked.}
+
+]
+
 @; ----------------------------------------------------------------------
 
 @section{Bytecode Files}
@@ -414,15 +453,12 @@ result will not call @racket[proc] with @racket['unlock].)
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "api:parallel-build"]{API for Parallel-Build}
+@section[#:tag "api:parallel-build"]{API for Parallel Builds}
 
 @defmodule[setup/parallel-build]{
 
-The @racketmodname[setup/parallel-build] library provides the parallel compilation to bytecode
+The @racketmodname[setup/parallel-build] library provides the parallel-compilation
 functionality of @exec{raco setup} and @exec{raco make}.}
-
-@; ----------------------------------------------------------------------
-
 
 @defproc[(parallel-compile-files [list-of-files (listof path?)] 
                                  [#:worker-count worker-count non-negative-integer? (processor-count)] 
@@ -436,8 +472,8 @@ functionality of @exec{raco setup} and @exec{raco make}.}
          void?]{
 
 The @racket[parallel-compile] utility function is used by @exec{raco make} to
-compile a list of paths in parallel.  The optional keyword argument
-@racket[#:worker-count] specifies the number of compile workers to spawn during
+compile a list of paths in parallel.  The optional
+@racket[#:worker-count] argument specifies the number of compile workers to spawn during
 parallel compilation.  The callback, @racket[handler], is called with the symbol
 @racket['done] as the @racket[_handler-type] argument for each successfully compiled file, 
 @racket['output] when a
@@ -478,7 +514,7 @@ The @racket[parallel-compile] internal utility function is used by @exec{rack
 setup} to compile collects in parallel.  The @racket[worker-count] argument
 specifies the number of compile workers to spawn during parallel compilation.
 The @racket[setup-fprintf] and @racket[append-error] functions are internal
-callback mechanisms that @exec{rack setup} uses to communicate intermediate
+callback mechanisms that @exec{raco setup} uses to communicate intermediate
 compilation results.  The @racket[collects-tree] argument is a compound
 datastructure containing an in-memory tree representation of the collects
 directory.
@@ -547,6 +583,13 @@ compiled. The same is true of application expressions that affect the
 reader, such as @racket[(read-case-sensitive #t)]. The @Flag{p} or
 @DFlag{prefix} flag for @exec{raco make} takes a file and loads it before
 compiling the source files specified on the command line.
+
+By default, the namespace for compilation is initialized by a
+@racket[require] of @racketmodname[scheme]. If the @DFlag{no-prim}
+flag is specified, the namespace is instead initialized with
+@racket[namespace-require/copy], which allows mutation and
+redefinition of all initial bindings (other than syntactic forms, in
+the case of mutation).
 
 In general, a better solution is to put all code to compile into a
 module and use @exec{raco make} in its default mode.

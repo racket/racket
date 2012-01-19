@@ -12,6 +12,7 @@
 (define disable-inlining (make-parameter #f))
 
 (define disable-deps (make-parameter #f))
+(define disable-const (make-parameter #f))
 (define prefixes (make-parameter null))
 (define assume-primitives (make-parameter #t))
 (define worker-count (make-parameter 1))
@@ -22,8 +23,16 @@
   (command-line
    #:program (short-program+command-name)
    #:once-each
+   [("-j") n "Compile with up to <n> tasks in parallel" 
+    (let ([num (string->number n)])
+      (unless num (raise-user-error (format "~a: bad count for -j: ~s"
+                                            (short-program+command-name) 
+                                            n)))
+      (worker-count num))]
    [("--disable-inline") "Disable procedure inlining during compilation"
     (disable-inlining #t)]
+   [("--disable-constant") "Disable enforcement of module constants"
+    (disable-const #t)]
    [("--no-deps") "Compile immediate files without updating dependencies"
     (disable-deps #t)]
    [("-p" "--prefix") file "Add elaboration-time prefix file for --no-deps"
@@ -32,7 +41,6 @@
     (assume-primitives #f)]
    [("-v") "Verbose mode"
     (verbose #t)]
-   [("-j") wc "Parallel job count" (worker-count (string->number wc))]
    [("--vv") "Very verbose mode"
     (verbose #t)
     (very-verbose #t)]
@@ -74,7 +82,9 @@
             (when (verbose)
               (printf "\"~a\":\n" file))
             (parameterize ([compile-context-preservation-enabled
-                            (disable-inlining)])
+                            (disable-inlining)]
+                           [compile-enforce-module-constants
+                            (not (disable-const))])
               (managed-compile-zo file))
             (let ([dest (append-zo-suffix
                          (let-values ([(base name dir?) (split-path file)])
@@ -85,18 +95,20 @@
                         (if did-one? "output to" "already up-to-date at")
                         dest)))))))]
   ;; Parallel make:
-  [else (parallel-compile-files source-files #:worker-count (worker-count)
+  [else 
+   (parallel-compile-files 
+    source-files
+    #:worker-count (worker-count)
     #:handler (lambda (type work msg out err)
-      (match type
-        ['done (when (verbose) (printf " Made ~a\n" work))]
-        ['output (printf " Output from: ~a\n~a~a" work out err)]
-        [else (printf " Error compiling ~a\n~a\n~a~a" work msg out err)]))
-    #:options
-     (let ([cons-if-true (lambda (bool carv cdrv)
-                           (if bool
-                               (cons carv cdrv)
-                               cdrv))])
-       (cons-if-true 
-         (very-verbose) 
-         'very-verbose
-         (cons-if-true (disable-inlining) 'disable-inlining null))))])
+                (match type
+                  ['done (when (verbose) (printf " Made ~a\n" work))]
+                  ['output (printf " Output from: ~a\n~a~a" work out err)]
+                  [else (printf " Error compiling ~a\n~a\n~a~a" work msg out err)]))
+    #:options (let ([cons-if-true (lambda (bool carv cdrv)
+                                    (if bool
+                                        (cons carv cdrv)
+                                        cdrv))])
+                (cons-if-true 
+                 (very-verbose) 
+                 'very-verbose
+                 (cons-if-true (disable-inlining) 'disable-inlining null))))])
