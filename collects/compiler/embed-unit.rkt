@@ -800,7 +800,10 @@
     (define (do-write-module-bundle outp verbose? modules config? literal-files literal-expressions collects-dest
                                     on-extension program-name compiler expand-namespace 
                                     src-filter get-extra-imports on-decls-done)
-      (let* ([module-paths (map cadr modules)]
+      (let* ([program-name-bytes (if program-name
+                                     (path->bytes program-name)
+                                     #"?")]
+             [module-paths (map cadr modules)]
              [resolve-one-path (lambda (mp)
                                  (let ([f (resolve-module-path mp #f)])
                                    (unless f
@@ -882,7 +885,7 @@
                                                      ;; The program name isn't used. It just helps ensures that
                                                      ;; there's plenty of room in the executable for patching
                                                      ;; the path later when making a distribution.
-                                                     (path->bytes program-name))))
+                                                     program-name-bytes)))
                                            extensions))])
                   (for-each (lambda (pr)
                               (current-module-declare-name (make-resolved-module-path (cadr pr)))
@@ -970,7 +973,7 @@
                                                                                (build-path (path-only (mod-file nc)) p))))))
                                                                ;; As for the extension table, a placeholder to save 
                                                                ;; room likely needed by the distribution-mangler
-                                                               (bytes-append #"................." (path->bytes program-name))))
+                                                               (bytes-append #"................." program-name-bytes)))
                                                             (mod-runtime-paths nc)
                                                             (mod-runtime-module-syms nc)))
                                                      runtimes))])
@@ -1031,7 +1034,7 @@
       (do-write-module-bundle (current-output-port) verbose? modules config? literal-files literal-expressions
                               #f ; collects-dest
                               on-extension
-                              "?" ; program-name 
+                              #f ; program-name 
                               compiler expand-namespace 
                               src-filter get-extra-imports
                               void))
