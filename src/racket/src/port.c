@@ -3201,10 +3201,11 @@ static MZ_INLINE intptr_t get_one_byte(GC_CAN_IGNORE const char *who,
         if (v == SCHEME_SPECIAL) {
           scheme_bad_time_for_special(who, port);
         }
-
-        ip = (Scheme_Input_Port *)port; /* since ignored by GC */
-        if (ip->p.position >= 0)
-          ip->p.position++;
+        if (v != EOF) {
+          ip = (Scheme_Input_Port *)port; /* since `ip is ignored by GC */
+          if (ip->p.position >= 0)
+            ip->p.position++;
+        }
 
         return v;
       }
