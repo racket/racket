@@ -298,6 +298,7 @@ Second, some keys have multiple-character string representations. Strings
 @item{@racket["cancel"]}
 @item{@racket["clear"]}
 @item{@racket["shift"]}
+@item{@racket["rshift"]}
 @item{@racket["control"]}
 @item{@racket["menu"]}
 @item{@racket["pause"]}

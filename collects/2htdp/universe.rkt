@@ -211,6 +211,7 @@
     "cancel"
     "clear"
     "shift"
+    "rshift"
     "control"
     "menu"
     "pause"
