@@ -39,10 +39,13 @@
           (send dc set-pen pen)
           (send dc set-brush brush)
           (send dc set-font font))))
+    
+    (define/override (on-event evt)
+      (show #f))
         
     (inherit stretchable-width stretchable-height
              min-width min-height
-             get-client-size get-dc)
+             get-client-size get-dc show)
     (super-new)
     (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent label small-control-font)])
       (min-width (floor (inexact->exact (+ tw 4))))
