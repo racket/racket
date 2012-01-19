@@ -718,5 +718,26 @@
   (test oc sync/timeout 0 oc))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; eof should not advance port position
+
+(let ()
+  (define (check read-byte)
+    (define-values (i o) (make-pipe))
+    (test 0 file-position i)
+    (write-byte 10 o)
+    (close-output-port o)
+    (test 0 file-position i)
+    (test 10 read-byte i)
+    (test 1 file-position i)
+    (test eof read-byte i)
+    (test 1 file-position i))
+  (check read-byte)
+  (check (lambda (i) 
+           (define c (read-char i))
+           (if (char? c)
+               (char->integer c)
+               c))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
