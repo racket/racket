@@ -24,12 +24,10 @@
 (defthing debugger-bomb-color (or/c string? (is-a?/c color%)) #:document-value
   (make-object color% 128 32 32))
 
-
 ;; Actual color is too dark after rendering
+;(define macro-stepper-hash-color (make-object color% 30 96 30))
 (defthing macro-stepper-hash-color (or/c string? (is-a?/c color%)) #:document-value
-  (make-object color% 60 192 60))
-(defthing small-macro-stepper-hash-color (or/c string? (is-a?/c color%)) #:document-value
-  (make-object color% 128 255 128))
+  (make-object color% 90 192 90))
 
 (defproc (check-syntax-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
                               [material deep-flomap-material-value? (default-icon-material)]
@@ -51,7 +49,8 @@
                                [material deep-flomap-material-value? (default-icon-material)]
                                ) flomap?
   (flomap-ht-append
-   (hash-quote-flomap macro-stepper-hash-color height material)
+   (text-flomap "#'" (make-object font% (max 1 (min 1024 height)) 'system)
+                macro-stepper-hash-color #t 'auto height material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/32 height)))) 0)
    (step-flomap syntax-icon-color height material)))
 
@@ -61,7 +60,8 @@
   (flomap-pin*
    0 0 7/16 0
    (step-flomap syntax-icon-color height material)
-   (hash-quote-flomap small-macro-stepper-hash-color (* 3/4 height) material)))
+   (text-flomap "#'" (make-object font% (max 1 (min 1024 height)) 'system)
+                macro-stepper-hash-color #t 'auto (* 3/4 height) material)))
 
 (defproc (debugger-flomap [height (and/c rational? (>=/c 0)) (toolbar-icon-height)]
                           [material deep-flomap-material-value? (default-icon-material)]

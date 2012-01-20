@@ -72,9 +72,8 @@
                              ) (is-a?/c bitmap%)
   (let* ([fm  (bitmap->flomap bitmap)]
          [dfm  (flomap->deep-flomap fm)]
-         [dfm  (deep-flomap-icon-style dfm (* 32 z-ratio))]
-         [fm  (deep-flomap-render-icon dfm material)])
-    (flomap->bitmap fm)))
+         [dfm  (deep-flomap-icon-style dfm (* 32 z-ratio))])
+    (flomap->bitmap (deep-flomap-render-icon dfm material))))
 
 (defproc (icon-color->outline-color [color (or/c string? (is-a?/c color%))]) (is-a?/c color%)
   (cond [(string? color)  (icon-color->outline-color (send the-color-database find-color color))]
@@ -121,8 +120,7 @@
   (define s (/ (deep-flomap-height dfm) 32))
   (let* ([dfm  (deep-flomap-emboss dfm (* s 2) (* s 2))]
          [dfm  (deep-flomap-bulge-round dfm (* s 6))]
-         [dfm  (deep-flomap-raise dfm (* s height))]
-         [dfm  (deep-flomap-smooth-z dfm 1/3)])
+         [dfm  (deep-flomap-raise dfm (* s height))])
     dfm))
 
 (define (draw-icon-flomap w h draw-proc scale)

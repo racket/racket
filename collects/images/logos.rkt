@@ -298,10 +298,33 @@
    (lambda-flomap light-metal-icon-color (* 5/8 height) metal-icon-material)))
 
 (defproc (macro-stepper-logo-flomap [height (and/c rational? (>=/c 0)) 96]) flomap?
+  (define outline-color (icon-color->outline-color light-metal-icon-color))
+  
+  (define (draw-hash-quote dc)
+    ;; vertical lines
+    (send dc draw-polygon '((5 . 0) (8 . 0) (6 . 19) (3 . 19)))
+    (send dc draw-polygon '((12 . 0) (15 . 0) (13 . 19) (10 . 19)))
+    ;; horizontal lines
+    (send dc draw-polygon '((1 . 4) (1 . 7) (18 . 7) (18 . 4)))
+    (send dc draw-polygon '((0 . 12) (0 . 15) (17 . 15) (17 . 12)))
+    ;; quote
+    (send dc draw-polygon '((20 . 0) (23 . 0) (22.75 . 6) (20.25 . 6)))
+    )
+  
   (flomap-pin*
-   1/2 20/32 15/36 1/2
+   1/2 20/32 1/2 1/2
    (foot-flomap (make-object color% 34 42 160) height glass-icon-material)
-   (hash-quote-flomap light-metal-icon-color (* 1/2 height) metal-icon-material)))
+   (draw-rendered-icon-flomap
+    32 32 (λ (dc)
+            (send dc translate 5 6)
+            (set-icon-pen dc outline-color 2 'solid)
+            (send dc set-brush outline-color 'solid)
+            (draw-hash-quote dc)
+            (send dc set-pen "black" 1 'transparent)
+            (send dc set-brush light-metal-icon-color 'solid)
+            (draw-hash-quote dc))
+    (/ (* 3/4 height) 32)
+    metal-icon-material)))
 
 (define-icon-wrappers
   ([height (and/c rational? (>=/c 0)) 256])

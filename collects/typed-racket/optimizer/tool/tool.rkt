@@ -1,9 +1,7 @@
 #lang racket/base
 
 (require racket/class racket/port racket/list racket/match
-         racket/gui/base racket/unit drracket/tool
-         images/compile-time
-         (for-syntax racket/base images/icons/misc images/icons/style))
+         racket/gui/base racket/unit drracket/tool)
 
 (require "report.rkt" "display.rkt")
 
@@ -13,7 +11,9 @@
 ;; DrRacket tool for reporting missed optimizations in the editor.
 
 (define performance-report-bitmap
-  (compiled-bitmap (stopwatch-icon (toolbar-icon-height))))
+  (make-object
+   bitmap%
+   (collection-file-path "performance-report.png" "icons") 'png/mask))
 
 ;; performance-report-callback : drracket:unit:frame<%> -> void
 (define (performance-report-callback drr-frame)
