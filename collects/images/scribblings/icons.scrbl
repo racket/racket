@@ -393,8 +393,12 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 
 @doc-apply[clock-icon]{
 @examples[#:eval icons-eval
-                 (clock-icon 48)
+                 (clock-icon 96)
                  (clock-icon 48 "lightblue" "darkblue" 3 21)]
+}
+
+@doc-apply[stopwatch-icon]{
+@examples[#:eval icons-eval (stopwatch-icon 96)]
 }
 
 @;====================================================================================================

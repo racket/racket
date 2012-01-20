@@ -53,7 +53,8 @@
               (λ (color) (magnifying-glass-icon metal-icon-color color))
               (λ (color) (left-magnifying-glass-icon metal-icon-color color))
               (λ (color) (bomb-icon metal-icon-color color))
-              (λ (color) (left-bomb-icon metal-icon-color color)))))
+              (λ (color) (left-bomb-icon metal-icon-color color))
+              (λ (color) (stopwatch-icon (default-icon-height) color)))))
 
 (define tool-icon-procs
   (list check-syntax-icon small-check-syntax-icon
