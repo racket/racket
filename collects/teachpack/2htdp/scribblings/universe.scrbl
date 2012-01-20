@@ -300,6 +300,7 @@ Second, some keys have multiple-character string representations. Strings
 @item{@racket["shift"]}
 @item{@racket["rshift"]}
 @item{@racket["control"]}
+@item{@racket["rcontrol"]}
 @item{@racket["menu"]}
 @item{@racket["pause"]}
 @item{@racket["capital"]}
