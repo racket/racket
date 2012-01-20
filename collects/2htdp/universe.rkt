@@ -213,6 +213,7 @@
     "shift"
     "rshift"
     "control"
+    "rcontrol"
     "menu"
     "pause"
     "capital"
