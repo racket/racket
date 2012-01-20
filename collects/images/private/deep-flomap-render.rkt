@@ -69,11 +69,13 @@
 ;; ===================================================================================================
 ;; Pass 1: tracing from a directional light source
 
-(: trace-directional-light (flomap flomap flomap flomap Integer Integer Integer Integer
-                                   -> (values flomap flomap)))
-(define (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max)
+(: trace-directional-light (flomap flomap flomap flomap
+                                   Integer Integer Integer Integer -> (values flomap flomap)))
+(define (trace-directional-light alpha-fm rgb-fm z-fm normal-fm
+                                 x-min x-max y-min y-max)
   (match-define (flomap alpha-vs 1 w h) alpha-fm)
-  (match-define (list rgb-vs z-vs normal-vs) (map flomap-values (list rgb-fm z-fm normal-fm)))
+  (match-define (list rgb-vs z-vs normal-vs)
+    (map flomap-values (list rgb-fm z-fm normal-fm)))
   
   (define z-max (flomap-max-value z-fm))
   (define opacity-z (/ z-max (transmission-density)))
@@ -111,8 +113,12 @@
   (define diffuse-fm (make-flomap 3 w h lz))
   (define diffuse-vs (flomap-values diffuse-fm))
   
-  (define sx-vs (make-flvector (* w h) +nan.0))
-  (define sy-vs (make-flvector (* w h) +nan.0))
+  ;(define sx-vs (make-flvector (* w h) +nan.0))
+  ;(define sy-vs (make-flvector (* w h) +nan.0))
+  (define sx-fm (inline-build-flomap 1 w h (λ (k x y i) (+ (fx->fl x) 0.5))))
+  (define sy-fm (inline-build-flomap 1 w h (λ (k x y i) (+ (fx->fl y) 0.5))))
+  (define sx-vs (flomap-values sx-fm))
+  (define sy-vs (flomap-values sy-fm))
   (define Irgb-vs (make-flvector (* 3 w h)))
   
   (for*: ([int-y : Integer  (in-range y-min y-max)]
@@ -330,9 +336,10 @@
 ;; ===================================================================================================
 ;; Pass 2: tracing from a directional viewer
 
-(: trace-directional-view (flomap flomap flomap flomap flomap Integer Integer Integer Integer
-                                  -> (values flomap flomap)))
-(define (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm x-min x-max y-min y-max)
+(: trace-directional-view (flomap flomap flomap flomap flomap
+                                  Integer Integer Integer Integer -> (values flomap flomap)))
+(define (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm
+                                x-min x-max y-min y-max)
   (define-values (w h) (flomap-size alpha-fm))
   (match-define (list alpha-vs rgb-vs z-vs normal-vs shadow-vs)
     (map flomap-values (list alpha-fm rgb-fm z-fm normal-fm shadow-fm)))
@@ -407,7 +414,10 @@
               (unsafe-flvector-set! reflected-vs (fx+ j 2) b))))
         ;; transmission (refraction)
         (when (Ti . > . 0.0)
-          (define-values (tx ty tz) (transmitted-vector nx ny nz 0.0 0.0 -1.0 1.0 η2))
+          (define snx (unsafe-flvector-ref normal-vs j))
+          (define sny (unsafe-flvector-ref normal-vs (fx+ j 1)))
+          (define snz (unsafe-flvector-ref normal-vs (fx+ j 2)))
+          (define-values (tx ty tz) (transmitted-vector snx sny snz 0.0 0.0 -1.0 1.0 η2))
           ;; sz = z + dist * tz, so dist = (sz - z) / tz
           (define dist (/ (- 0.0 z) tz))
           (when (and (dist . >= . 0.0) (dist . < . +inf.0))
@@ -456,38 +466,43 @@
   (case-lambda
     [(dfm)  (deep-flomap-render dfm #f)]
     [(dfm background-fm)
-     (define-values (w h) (deep-flomap-size dfm))
-     (define argb-fm (flomap-divide-alpha (deep-flomap-argb dfm)))
-     (define alpha-fm (flomap-ref-component argb-fm 0))
-     (define rgb-fm (flomap-drop-components argb-fm 1))
-     (define z-fm (fmmax 0.0 (deep-flomap-z dfm)))
-     (define normal-fm (flomap-gradient-normal z-fm))
-     (define bg-fm (if background-fm (prep-background background-fm w h) #f))
-     (define-values (_1 x-min y-min _2 x-max y-max) (flomap-nonzero-rect alpha-fm))
-     
-     ;; pass 1: trace from the light source
-     (define-values (diffracted-fm raw-shadow-fm)
-       (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max))
-     
-     ;; blur the shadow to simulate internal scatter
-     (define σ (* (min w h) (shadow-blur)))
-     (define shadow-fm
-       (cond [bg-fm
-              ;; two Gaussian blurs by half-σ is equivalent to one Gaussian blur by σ
-              (define half-σ (* (/ 1 (sqrt 2)) σ))
-              (let* ([fm  (flomap-blur raw-shadow-fm half-σ)]
-                     [fm  (fm* fm bg-fm)]
-                     [fm  (flomap-blur fm half-σ)])
-                fm)]
-             [else
-              (flomap-blur raw-shadow-fm σ)]))
-     
-     ;; pass 2: trace from the viewer
-     (define-values (reflected-fm transmitted-fm)
-       (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm x-min x-max y-min y-max))
-     
-     ;; add all the light together, convert to premultiplied-alpha flomap
-     (let* ([fm  (fm+ (fm+ diffracted-fm transmitted-fm) reflected-fm)]
-            [fm  (flomap-append-components alpha-fm fm)]
-            [fm  (flomap-multiply-alpha fm)])
-       fm)]))
+     (let ([dfm  (deep-flomap-inset dfm 1)])
+       (define-values (w h) (deep-flomap-size dfm))
+       (define argb-fm (flomap-divide-alpha (deep-flomap-argb dfm)))
+       (define alpha-fm (flomap-ref-component argb-fm 0))
+       (define rgb-fm (flomap-drop-components argb-fm 1))
+       (define z-fm (fmmax 0.0 (deep-flomap-z dfm)))
+       (define normal-fm (flomap-gradient-normal z-fm))
+       (define bg-fm (if background-fm (prep-background background-fm w h) #f))
+       (define-values (x-min y-min x-max y-max)
+         (let-values ([(_1 x-min y-min _2 x-max y-max) (flomap-nonzero-rect alpha-fm)])
+           (values (max 0 (- x-min 1)) (max 0 (- y-min 1))
+                   (min w (+ x-max 1)) (min h (+ y-max 1)))))
+       
+       ;; pass 1: trace from the light source
+       (define-values (diffracted-fm raw-shadow-fm)
+         (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max))
+       
+       ;; two Gaussian blurs by half of σ^2 is equivalent to one Gaussian blur by σ^2
+       (define σ^2 (sqr (* (min w h) (shadow-blur))))
+       
+       ;; blur the shadow to simulate internal scatter
+       (define shadow-fm
+         (cond [bg-fm
+                (let* ([fm  (flomap-blur raw-shadow-fm (sqrt (* 1/3 σ^2)))]
+                       [fm  (fm* fm bg-fm)]
+                       [fm  (flomap-blur fm (sqrt (* 1/3 σ^2)))])
+                  fm)]
+               [else
+                (flomap-blur raw-shadow-fm (sqrt (* 2/3 σ^2)))]))
+       
+       ;; pass 2: trace from the viewer
+       (define-values (reflected-fm raw-transmitted-fm)
+         (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm x-min x-max y-min y-max))
+       ;; simulate scatter some more
+       (define transmitted-fm (flomap-blur raw-transmitted-fm (sqrt (* 1/3 σ^2))))
+       ;; add all the light together, convert to premultiplied-alpha flomap
+       (let* ([fm  (fm+ (fm+ diffracted-fm transmitted-fm) reflected-fm)]
+              [fm  (flomap-append-components alpha-fm fm)]
+              [fm  (flomap-multiply-alpha fm)])
+         (flomap-inset fm -1)))]))
