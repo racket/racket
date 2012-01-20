@@ -61,7 +61,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (else honu-then)
-      [(_ condition:honu-expression honu-then true:honu-expression else false:honu-expression . rest)
+      [(_ condition:honu-expression (~optional honu-then) true:honu-expression (~optional else) false:honu-expression . rest)
        (values
          #'(%racket (if condition.result true.result false.result))
          #'rest
@@ -413,18 +413,23 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-equal honu-in)
-                       #;
-      [(_ iterator:id honu-equal start:honu-expression honu-to end:honu-expression
+      [(_ (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
-       (values
-           #'(%racket (for/list ([iterator (in-range start.result
-                                                     end.result)])
-                        body.result))
-         #'rest
-         #t)]
-      [(_ iterator:id honu-in stuff:honu-expression
+       (values #'(%racket (for ([iterator stuff.result] ...)
+                            body.result))
+               #'rest
+               #t)])))
+
+(provide honu-fold)
+(define-honu-syntax honu-fold
+  (lambda (code context)
+    (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-equal honu-in)
+      [(_ (~seq init:id honu-equal init-expression:honu-expression (~optional honu-comma)) ...
+          (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
-       (values #'(%racket (for/list ([iterator stuff.result])
+       (values #'(%racket (for/fold ([init init-expression.result] ...)
+                                    ([iterator stuff.result] ...)
                             body.result))
                #'rest
                #t)])))

@@ -36,6 +36,7 @@
                                    [honu-var var]
                                    [honu-val val]
                                    [honu-for for]
+                                   [honu-fold fold]
                                    [honu-to to]
                                    [honu-if if]
                                    [honu-quote quote]

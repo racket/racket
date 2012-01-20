@@ -354,7 +354,7 @@
                   stream)]
          [else
            (define-splicing-syntax-class no-left
-             [pattern (~seq) #:when (not current)])
+             [pattern (~seq) #:when (and (= precedence 0) (not current))])
            (syntax-parse #'(head rest ...) #:literal-sets (cruft)
              [((semicolon more ...) . rest)
               #;

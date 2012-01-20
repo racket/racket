@@ -11,3 +11,19 @@ for x in 1 to 10 do {
 for x in [1, 2, 3] do {
   printf("x ~a\n", x);
 }
+
+for x in 0 to 3,
+    y in 2 to 5 do {
+  printf("x ~a y ~a\n", x, y)
+}
+
+fold x = [],
+     z in 0 to 5 do {
+  z :: x
+}
+
+fold x = [],
+     y = 1,
+     z in 1 to 5 do {
+  values(z :: x, y * z)
+}
