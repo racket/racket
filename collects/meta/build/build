@@ -53,7 +53,7 @@ workmachine="winooski"
 maindir="/home/scheme"
 
 # machines for specific installer creations
-dmgmachine="kauai"
+dmgmachine="weatherwax"
 nsismachine="pitcairn"
 
 # list of environment variables that should be carried over to ssh jobs
@@ -479,17 +479,10 @@ show() {
   if [[ "x$1" = "x-s" ]]; then shift; write_status "$*"; fi
   if [[ "$verbose" = "yes" ]]; then
     echo ""
-    case "$platform" in
-      ( *"-linux"* | "sparc-solaris" | *"-win32" )
-        echo ">>> $*" | fmt -t -w 79
-        ;;
-      ( *"-freebsd" | *"-osx-mac" | *"-darwin" )
-        echo ">>> $*" | fmt -w 79
-        ;;
-      ( * )
-        echo ">>> $*" | fmt
-        ;;
-    esac
+    # It would be nice to use something like
+    #   echo ">>> $*" | fmt -p '>>>' -w 79
+    # but on osx fmt doesn't do that kind of stuff
+    echo ">>> $*"
   fi
 }
 
