@@ -13,7 +13,8 @@
           recycle-icon recycle-flomap
           x-icon x-flomap
           check-icon check-flomap
-          lambda-icon lambda-flomap)
+          lambda-icon lambda-flomap
+          hash-quote-icon hash-quote-flomap)
          (only-doc-out (all-defined-out)))
 
 (define (flat-x-flomap color height)
@@ -238,6 +239,35 @@
     (/ height 32)
     material)))
 
+(defproc (hash-quote-flomap [color (or/c string? (is-a?/c color%))]
+                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                            [material deep-flomap-material-value? (default-icon-material)]) flomap?
+  (make-cached-flomap
+   [height color material]
+   (define (draw-hash-quote dc)
+     ;; vertical lines
+     (send dc draw-polygon '((6 . 0) (11 . 0) (9 . 30) (4 . 30)))
+     (send dc draw-polygon '((17 . 0) (22 . 0) (20 . 30) (15 . 30)))
+     ;; horizontal lines
+     (send dc draw-polygon '((1 . 6.5) (26 . 6.5) (26 . 11.5) (1 . 11.5)))
+     (send dc draw-polygon '((0 . 18.5) (25 . 18.5) (25 . 23.5) (0 . 23.5)))
+     ;; quote
+     (send dc draw-polygon '((30 . 0) (34 . 0) (33 . 9) (30 . 9))))
+   
+   (define outline-color (icon-color->outline-color color))
+   
+   (draw-rendered-icon-flomap
+    36 32 (λ (dc)
+            (send dc translate 0.5 0.5)
+            (set-icon-pen dc outline-color 2 'solid)
+            (send dc set-brush outline-color 'solid)
+            (draw-hash-quote dc)
+            (send dc set-pen "black" 1 'transparent)
+            (send dc set-brush color 'solid)
+            (draw-hash-quote dc))
+    (/ height 32)
+    material)))
+
 ;; ===================================================================================================
 ;; Bitmaps (icons)
 
@@ -257,4 +287,5 @@
   [recycle-icon recycle-flomap]
   [x-icon x-flomap]
   [check-icon check-flomap]
-  [lambda-icon lambda-flomap])
+  [lambda-icon lambda-flomap]
+  [hash-quote-icon hash-quote-flomap])

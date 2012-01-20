@@ -45,8 +45,7 @@ Its shape and color are a visual metaphor for an action or a message.
 Icons should be @bold{easily recognizable}, @bold{distinguishable}, @bold{visually consistent}, and @bold{metaphorically appropriate} for the actions and messages they are used with.
 It can be difficult to meet all four requirements at once (``distinguishable'' and ``visually consistent' are often at odds), but good examples, good abstractions, and an existing icon library help considerably.
 
-@(define (hash-quote) (text-icon "#'" (make-object font% 32 'system)
-                                 macro-stepper-hash-color #t 'auto 16))
+@(define (hash-quote) (hash-quote-icon macro-stepper-hash-color 16))
 @(define (step) (step-icon syntax-icon-color 16))
 @(define (play) (play-icon syntax-icon-color 16))
 @(define (bar) (bar-icon syntax-icon-color 16))
@@ -283,7 +282,7 @@ Renders a text string as an icon. For example,
 @interaction[#:eval icons-eval
                     (text-icon "An Important Point!"
                                (make-object font% 48 'decorative 'normal 'bold #t)
-                               "lightskyblue" #t 2 48)]
+                               "lightskyblue" #t 'auto 48)]
 
 Before rendering, the drawn text is scaled so that it is exactly @racket[height] pixels tall.
 Make sure the font is large enough that scaling does not create blurry and jagged edge artifacts, as in the following example:
@@ -327,6 +326,12 @@ Returns an ``x'' icon that is guaranteed to look the same on all platforms.
 @doc-apply[lambda-icon]{
 @examples[#:eval icons-eval
                  (lambda-icon light-metal-icon-color 32 metal-icon-material)]
+}
+
+@doc-apply[hash-quote-icon]{
+@examples[#:eval icons-eval
+                 (require (only-in images/icons/tool macro-stepper-hash-color))
+                 (hash-quote-icon macro-stepper-hash-color 32)]
 }
 
 @;====================================================================================================
@@ -388,8 +393,12 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 
 @doc-apply[clock-icon]{
 @examples[#:eval icons-eval
-                 (clock-icon 48)
+                 (clock-icon 96)
                  (clock-icon 48 "lightblue" "darkblue" 3 21)]
+}
+
+@doc-apply[stopwatch-icon]{
+@examples[#:eval icons-eval (stopwatch-icon 96)]
 }
 
 @;====================================================================================================

@@ -18,7 +18,8 @@
           left-magnifying-glass-icon  left-magnifying-glass-flomap
           bomb-icon bomb-flomap
           left-bomb-icon left-bomb-flomap
-          clock-icon clock-flomap)
+          clock-icon clock-flomap
+          stopwatch-icon stopwatch-flomap)
          (only-doc-out (all-defined-out)))
 
 (define (flat-regular-polygon-flomap sides start color size)
@@ -266,63 +267,110 @@
                        [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
                        [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
                        [hours (integer-in 0 11) 1]
-                       [minutes (real-in 0 60) 33]) flomap?
+                       [minutes (real-in 0 60) 47]) flomap?
   (make-cached-flomap
    [height face-color hand-color hours minutes]
-  (define R 12)
-  (define hour-θ (* (+ (- hours 3) (/ minutes 60)) (/ (* 2 pi) 12)))
-  (define minute-θ (* (- minutes 15) (/ (* 2 pi) 60)))
-  (define 60-degrees (* 60 (/ (* 2 pi) 180)))
-  (define scale (/ height 32))
-  
-  (define face-fm
-    (draw-icon-flomap
-     32 32 (λ (dc)
-             ;; face
-             (set-icon-pen dc (icon-color->outline-color face-color) 1 'solid)
-             (send dc set-brush face-color 'solid)
-             (draw-ellipse/smoothed dc 0 0 32 32)
-             ;; ticks
+   (define R 13)
+   (define hour-θ (* (+ (- hours 3) (/ minutes 60)) (/ (* 2 pi) 12)))
+   (define minute-θ (* (- minutes 15) (/ (* 2 pi) 60)))
+   (define scale (/ height 32))
+   (define face-fm
+     (flomap-cc-superimpose
+      ;; face and ticks
+      (draw-icon-flomap
+       32 32 (λ (dc)
+               (set-icon-pen dc (icon-color->outline-color (icon-color->outline-color face-color))
+                             1 'solid)
+               (send dc set-brush face-color 'solid)
+               (draw-ellipse/smoothed dc 0 0 32 32)
+               (set-icon-pen dc "black" 1 'solid)
+               (for ([θ  (in-range 0 (* 2 pi) (* 1/30 pi))]
+                     [r  (in-cycle (list 1.5 .5 .5 .5 .5
+                                         1.0 .5 .5 .5 .5
+                                         1.0 .5 .5 .5 .5))]
+                     [t  (in-cycle (list 1.0 .25 .25 .25 .25
+                                         .75 .25 .25 .25 .25
+                                         .75 .25 .25 .25 .25))])
+                 (set-icon-pen dc "black" t 'solid)
+                 (send dc draw-line
+                       (+ 15.5 (* (- R r) (cos θ)))
+                       (+ 15.5 (* (- R r) (sin θ)))
+                       (+ 15.5 (* R (cos θ)))
+                       (+ 15.5 (* R (sin θ))))))
+       scale)
+      (fm* 0.25 (lambda-flomap face-color (* 1/2 height) glass-icon-material))
+      (draw-rendered-icon-flomap
+       32 32 (λ (dc)
+               (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
+               (send dc set-brush hand-color 'solid)
+               ;; minute hand
+               (send dc draw-polygon
+                     (list (cons (+ 15.5 (* R (cos minute-θ)))
+                                 (+ 15.5 (* R (sin minute-θ))))
+                           (cons (+ 15.5 (* 1 (cos (+ minute-θ (* 1/2 pi)))))
+                                 (+ 15.5 (* 1 (sin (+ minute-θ (* 1/2 pi))))))
+                           (cons (+ 15.5 (* 1 (cos (+ minute-θ pi))))
+                                 (+ 15.5 (* 1 (sin (+ minute-θ pi)))))
+                           (cons (+ 15.5 (* 1 (cos (+ minute-θ (* 3/2 pi)))))
+                                 (+ 15.5 (* 1 (sin (+ minute-θ (* 3/2 pi)))))))))
+       scale
+       metal-icon-material)
+      ;; hands
+      (draw-rendered-icon-flomap
+       32 32 (λ (dc)
+               (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
+               (send dc set-brush hand-color 'solid)
+               ;; hour hand
+               (send dc draw-polygon
+                     (list (cons (+ 15.5 (* (- R 5) (cos hour-θ)))
+                                 (+ 15.5 (* (- R 5) (sin hour-θ))))
+                           (cons (+ 15.5 (* 1.25 (cos (+ hour-θ (* 1/2 pi)))))
+                                 (+ 15.5 (* 1.25 (sin (+ hour-θ (* 1/2 pi))))))
+                           (cons (+ 15.5 (* 1.25 (cos (+ hour-θ pi))))
+                                 (+ 15.5 (* 1.25 (sin (+ hour-θ pi)))))
+                           (cons (+ 15.5 (* 1.25 (cos (+ hour-θ (* 3/2 pi)))))
+                                 (+ 15.5 (* 1.25 (sin (+ hour-θ (* 3/2 pi)))))))))
+       scale
+       metal-icon-material)))
+   
+   (define shell-fm
+     (draw-icon-flomap
+      32 32 (λ (dc)
+              (set-icon-pen dc "white" 1 'solid)
+              (send dc set-brush "white" 'solid)
+              (draw-ellipse/smoothed dc 1 1 30 30))
+      scale))
+   
+   (let* ([dfm  (flomap->deep-flomap shell-fm)]
+          [dfm  (deep-flomap-bulge-spheroid dfm (* 6 scale))]
+          [dfm  (deep-flomap-raise dfm (* -2 scale))]
+          [dfm  (deep-flomap-smooth-z dfm (* 1/3 scale))])
+     (flomap-cc-superimpose
+      face-fm
+      (deep-flomap-render-icon dfm clock-shell-material face-fm)))))
+
+(defproc (stopwatch-flomap [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                           [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+                           [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
+                           [hours (integer-in 0 11) 0]
+                           [minutes (real-in 0 60) 47]) flomap?
+  (make-cached-flomap
+   [height face-color hand-color hours minutes]
+   (define clock-fm (clock-flomap (* 30/32 height) face-color hand-color hours minutes))
+   (define buttons-fm
+     (draw-rendered-icon-flomap
+      32 8 (λ (dc)
+             (set-icon-pen dc (make-object color% 128 0 0) 1 'solid)
+             (send dc set-brush (make-object color% 144 0 0) 'solid)
+             (send dc draw-polygon '((2 . 4) (4 . 2) (15.5 . 15.5)))
+             (send dc draw-polygon '((0 . 5) (5 . 0) (6 . 1) (1 . 6)))
              (set-icon-pen dc "black" 1 'solid)
-             (for ([θ  (in-range 0 (* 2 pi) (* 1/6 pi))]
-                   [i  (in-cycle (in-range 0 3))])
-               (define r (if (= i 0) 2 1))
-               (send dc draw-line
-                     (+ 15.5 (* (- R r) (cos θ)))
-                     (+ 15.5 (* (- R r) (sin θ)))
-                     (+ 15.5 (* R (cos θ)))
-                     (+ 15.5 (* R (sin θ)))))
-             (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
-             (send dc set-brush hand-color 'solid)
-             ;; minute hand
-             (send dc draw-polygon
-                   (list (cons (+ 15.5 (* R (cos minute-θ)))
-                               (+ 15.5 (* R (sin minute-θ))))
-                         (cons (+ 15.5 (* 1.5 (cos (+ minute-θ 60-degrees))))
-                               (+ 15.5 (* 1.5 (sin (+ minute-θ 60-degrees)))))
-                         (cons (+ 15.5 (* 1.5 (cos (- minute-θ 60-degrees))))
-                               (+ 15.5 (* 1.5 (sin (- minute-θ 60-degrees)))))))
-             ;; hour hand
-             (send dc draw-polygon
-                   (list (cons (+ 15.5 (* (- R 4) (cos hour-θ)))
-                               (+ 15.5 (* (- R 4) (sin hour-θ))))
-                         (cons (+ 15.5 (* 1.5 (cos (+ hour-θ 60-degrees))))
-                               (+ 15.5 (* 1.5 (sin (+ hour-θ 60-degrees)))))
-                         (cons (+ 15.5 (* 1.5 (cos (- hour-θ 60-degrees))))
-                               (+ 15.5 (* 1.5 (sin (- hour-θ 60-degrees))))))))
-     scale))
-  
-  (define shell-fm
-    (draw-icon-flomap
-     32 32 (λ (dc)
-             (set-icon-pen dc (icon-color->outline-color "white") 1 'solid)
-             (send dc set-brush "white" 'solid)
-             (draw-ellipse/smoothed dc 0 0 32 32))
-     scale))
-  
-  (let* ([dfm  (flomap->deep-flomap shell-fm)]
-         [dfm  (deep-flomap-bulge-spheroid dfm (* 8 scale))])
-    (deep-flomap-render-icon dfm clock-shell-material face-fm))))
+             (send dc set-brush (make-object color% 16 16 16) 'solid)
+             (send dc draw-polygon '((28 . 5) (26 . 3) (15.5 . 15.5)))
+             (send dc draw-polygon '((31 . 5) (26 . 0) (24.5 . 1.5) (29.5 . 6.5))))
+      (/ height 32)
+      metal-icon-material))
+   (flomap-pin* 1/2 0 1/2 -2/32 buttons-fm clock-fm)))
 
 ;; ===================================================================================================
 ;; Bitmaps (icons)
@@ -335,12 +383,14 @@
                                ) (is-a?/c bitmap%)
   (flomap->bitmap (regular-polygon-flomap sides start color height material)))
 
-(defproc (clock-icon [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                     [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
-                     [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
-                     [hours (integer-in 0 11) 1]
-                     [minutes (real-in 0 60) 33]) (is-a?/c bitmap%)
-  (flomap->bitmap (clock-flomap height face-color hand-color hours minutes)))
+(define-icon-wrappers
+  ([height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+   [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
+   [hours (integer-in 0 11) 0]
+   [minutes (real-in 0 60) 47])
+  [clock-icon clock-flomap]
+  [stopwatch-icon stopwatch-flomap])
 
 (define-icon-wrappers
   ([color (or/c string? (is-a?/c color%))]

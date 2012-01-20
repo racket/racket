@@ -30,11 +30,11 @@ Returns an unofficial PLaneT logo. This is used as the PLaneT icon when DrRacket
 }
 
 @doc-apply[stepper-logo]{
-An algebraic stepper logo.
+Returns the algebraic stepper logo.
 @examples[#:eval logos-eval (stepper-logo)]
 }
 
 @doc-apply[macro-stepper-logo]{
-A macro stepper logo.
+Returns the macro stepper logo.
 @examples[#:eval logos-eval (macro-stepper-logo)]
 }

@@ -48,12 +48,13 @@
               (λ (color) (load-icon syntax-icon-color color))
               (λ (color) (small-save-icon syntax-icon-color color))
               (λ (color) (small-load-icon syntax-icon-color color)))
-        (list x-icon check-icon recycle-icon lambda-icon)
+        (list x-icon check-icon recycle-icon lambda-icon hash-quote-icon)
         (list octagon-icon stop-sign-icon stop-signs-icon foot-icon
               (λ (color) (magnifying-glass-icon metal-icon-color color))
               (λ (color) (left-magnifying-glass-icon metal-icon-color color))
               (λ (color) (bomb-icon metal-icon-color color))
-              (λ (color) (left-bomb-icon metal-icon-color color)))))
+              (λ (color) (left-bomb-icon metal-icon-color color))
+              (λ (color) (stopwatch-icon (default-icon-height) color)))))
 
 (define tool-icon-procs
   (list check-syntax-icon small-check-syntax-icon
