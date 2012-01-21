@@ -356,7 +356,9 @@
   (for-each ((%a -> %b) (list %a) -> unspecific)
 	    "Prozedur von vorn nach hinten auf alle Elemente einer Liste anwenden")
   (apply (procedure (list %a) -> %b)
-	 "Prozedur auf Liste ihrer Argumente anwenden")))
+	 "Prozedur auf Liste ihrer Argumente anwenden")
+  (read (-> any)
+	"Externe Repräsentation eines Werts in der REPL einlesen und den zugehörigen Wert liefern")))
 
 (define (make-pair f r)
   (when (and (not (null? r))
