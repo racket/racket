@@ -18,7 +18,7 @@ BGGradient 4040A0 101020
 
 SetCompressor /SOLID "LZMA"
 
-InstallDir "$PROGRAMFILES\${RKTDirName}"
+InstallDir "${RKTProgFiles}\${RKTDirName}"
 !ifndef SimpleInstaller
   InstallDirRegKey HKLM "Software\${RKTRegName}" ""
 !endif

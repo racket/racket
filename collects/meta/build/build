@@ -1811,7 +1811,13 @@ tgz_to_exe() {
     else
       echo "$def RKTDirName \"$distname\""
     fi
-    echo "$def RKTRegName \"$distname-$version\""
+    if [[ "$srcplatform" = "x86_64-win32" ]]; then
+      echo "$def RKTRegName \"${distname}-64-$version\""
+      echo "$def RKTProgFiles \"\$PROGRAMFILES64\""
+    else
+      echo "$def RKTRegName \"$distname-$version\""
+      echo "$def RKTProgFiles \"\$PROGRAMFILES\""
+    fi
     if [[ "$pname" = "mz" ]]; then echo "$def SimpleInstaller"; fi
   } > "racket-defs.nsh" \
     || exit_error "Could not write \"racket-defs.h\""
