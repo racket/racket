@@ -103,10 +103,16 @@
        [_ (make-HeterogenousVector (for/list ([l (syntax-e #'i)])
                                      (generalize (tc-literal l #f))))])]
     [(~var i (3d hash?))
-     (let* ([h (syntax-e #'i)]
-            [ks (hash-map h (lambda (x y) (tc-literal x)))]
-            [vs (hash-map h (lambda (x y) (tc-literal y)))])
-       (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))]
+     (match expected
+       [(Hashtable: k v)
+        (let* ([h (syntax-e #'i)]
+               [ks (hash-map h (lambda (x y) (tc-literal x k)))]
+               [vs (hash-map h (lambda (x y) (tc-literal y v)))])
+          (make-Hashtable (generalize (check-below (apply Un ks)) k) (generalize (check-below (apply Un vs)))))]
+       [_ (let* ([h (syntax-e #'i)]
+                 [ks (hash-map h (lambda (x y) (tc-literal x)))]
+                 [vs (hash-map h (lambda (x y) (tc-literal y)))])
+            (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
     [(a . b) (-pair (tc-literal #'a) (tc-literal #'b))]
     [_ Univ]))
 
