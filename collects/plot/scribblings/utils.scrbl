@@ -6,10 +6,12 @@
 
 @defmodule[plot/utils]
 
+@;====================================================================================================
 @section{Formatting}
 
 @doc-apply[digits-for-range]{
-Given a range, returns the number of decimal places necessary to distinguish numbers in the range. This may return negative numbers for large ranges.
+Given a range, returns the number of decimal places necessary to distinguish numbers in the range.
+This may return negative numbers for large ranges.
 
 @examples[#:eval plot-eval
                  (digits-for-range 0.01 0.02)
@@ -17,7 +19,8 @@ Given a range, returns the number of decimal places necessary to distinguish num
 }
 
 @doc-apply[real->plot-label]{
-Converts a real number to a plot label. Used to format axis tick labels, @(racket point-label)s, and numbers in legend entries.
+Converts a real number to a plot label.
+Used to format axis tick labels, @(racket point-label)s, and numbers in legend entries.
 
 @examples[#:eval plot-eval
                  (let ([d  (digits-for-range 0.01 0.03)])
@@ -27,14 +30,110 @@ Converts a real number to a plot label. Used to format axis tick labels, @(racke
                  (real->plot-label 1000000000.1234 4)]
 }
 
+@doc-apply[ivl->plot-label]{
+Converts an interval to a plot label.
+
+If @racket[i] = @racket[(ivl x-min x-max)], the number of digits used is @racket[(digits-for-range x-min x-max 10 extra-digits)] when both endpoints are @racket[rational?].
+Otherwise, it is unspecified---but will probably remain @racket[15].
+@examples[#:eval plot-eval
+                 (ivl->plot-label (ivl -10.52312 10.99232))
+                 (ivl->plot-label (ivl -inf.0 pi))]
+}
+
 @doc-apply[->plot-label]{
 Converts a Racket value to a label. Used by @(racket discrete-histogram) and @(racket discrete-histogram3d).
 }
 
 @doc-apply[real->string/trunc]{
-Like @(racket real->decimal-string), but removes trailing zeros and a trailing decimal point.
+Like @(racket real->decimal-string), but removes any trailing zeros and any trailing decimal point.
 }
 
+@doc-apply[real->decimal-string*]{
+Like @racket[real->decimal-string], but accepts both a maximum and minimum number of digits.
+@examples[#:eval plot-eval
+                 (real->decimal-string* 1 5 10)
+                 (real->decimal-string* 1.123456 5 10)
+                 (real->decimal-string* 1.123456789123456 5 10)]
+Applying @racket[(real->decimal-string* x min-digits)] yields the same value as @racket[(real->decimal-string x min-digits)].
+}
+
+@doc-apply[integer->superscript]{
+Converts an integer into a string of superscript Unicode characters.
+@examples[#:eval plot-eval
+                 (integer->superscript -1234567890)]
+Systems running some out-of-date versions of Windows XP have difficulty with Unicode superscripts for 4 and up.
+Because @racket[integer->superscript] is used by every number formatting function to format exponents, if you have such a system, PLoT will apparently not format all numbers with exponents correctly (until you update it).
+}
+
+@;{
+@doc-apply[format-tick-labels]{
+}
+}
+
+@;====================================================================================================
+@section{Sampling}
+
+@doc-apply[linear-seq]{
+Returns a list of uniformly spaced real numbers between @(racket start) and @(racket end).
+If @(racket start?) is @(racket #t), the list includes @(racket start).
+If @(racket end?) is @(racket #t), the list includes @(racket end).
+
+This function is used internally to generate sample points.
+
+@examples[#:eval plot-eval
+                 (linear-seq 0 1 5)
+                 (linear-seq 0 1 5 #:start? #f)
+                 (linear-seq 0 1 5 #:end? #f)
+                 (linear-seq 0 1 5 #:start? #f #:end? #f)
+                 (define xs (linear-seq -1 1 11))
+                 (plot (lines (map vector xs (map sqr xs))))]
+}
+
+@doc-apply[linear-seq*]{
+Like @(racket linear-seq), but accepts a list of reals instead of a start and end.
+The @(racket #:start?) and @(racket #:end?) keyword arguments work as in @(racket linear-seq).
+This function does not guarantee that each inner value will be in the returned list.
+
+@examples[#:eval plot-eval
+                 (linear-seq* '(0 1 2) 5)
+                 (linear-seq* '(0 1 2) 6)
+                 (linear-seq* '(0 1 0) 5)]
+}
+
+@doc-apply[nonlinear-seq]{
+Generates a list of reals that, if transformed using @(racket transform), would be uniformly spaced.
+This is used to generate samples for transformed axes.
+@examples[#:eval plot-eval
+                 (linear-seq 1 10 4)
+                 (nonlinear-seq 1 10 4 log-transform)
+                 (parameterize ([plot-x-transform  log-transform])
+                   (plot (area-histogram sqr (nonlinear-seq 1 10 4 log-transform))))]
+}
+
+@;{
+@doc-apply[build-linear-seq]
+@doc-apply[make-function->sampler]
+@doc-apply[make-2d-function->sampler]
+@doc-apply[make-3d-function->sampler]
+@doc-apply[sample-exact->inexact]
+@doc-apply[2d-sample-exact->inexact]
+@doc-apply[3d-sample-exact->inexact]
+}
+
+@defstruct[mapped-function ([f (any/c . -> . any/c)] [fmap ((listof any/c) . -> . (listof any/c))])]{
+Represents a function that maps over lists differently than @(racket (map f xs)).
+
+With some functions, mapping over a list can be done much more quickly if done specially.
+(An example is a piecewise function with many pieces that first must decide which interval its input belongs to. Deciding that for many inputs can be done more efficiently by sorting all the inputs first.)
+Renderer-producing functions that accept a @(racket (real? . -> . real?)) also accept a @(racket mapped-function), and use its @(racket fmap) to sample more efficiently.
+}
+
+@doc-apply[kde]{
+Given samples and a kernel bandwidth, returns a @(racket mapped-function) representing a kernel density estimate, and bounds, outside of which the density estimate is zero.
+Used by @(racket density).
+}
+
+@;====================================================================================================
 @section{Plot Colors and Styles}
 
 @doc-apply[color-seq]{
@@ -133,9 +232,11 @@ Integer brush styles repeat starting at @(racket 7).
                  (map ->brush-style '(4 5 6))]
 }
 
+@;====================================================================================================
 @section{Plot-Specific Math}
 
-@subsection{Real Numbers}
+@;----------------------------------------------------------------------------------------------------
+@subsection{Real Functions}
 
 @doc-apply[degrees->radians]{
 Converts degrees to radians.
@@ -145,45 +246,209 @@ Converts degrees to radians.
 Converts radians to degrees.
 }
 
-@doc-apply[linear-seq]{
-Returns a list of evenly spaced real numbers between @(racket start) and @(racket end).
-If @(racket start?) is @(racket #t), the list includes @(racket start).
-If @(racket end?) is @(racket #t), the list includes @(racket end).
-
-This function is used internally to generate sample points.
-
-@examples[#:eval plot-eval
-                 (linear-seq 0 1 5)
-                 (linear-seq 0 1 5 #:start? #f)
-                 (linear-seq 0 1 5 #:end? #f)
-                 (linear-seq 0 1 5 #:start? #f #:end? #f)]
+@doc-apply[polar->cartesian]{
+Converts 2D polar coordinates to 3D cartesian coordinates.
 }
 
-@doc-apply[linear-seq*]{
-Like @(racket linear-seq), but accepts a list of reals instead of a start and end.
-The @(racket #:start?) and @(racket #:end?) keyword arguments work as in @(racket linear-seq).
-This function does not guarantee that each inner value will be in the returned list.
-
-@examples[#:eval plot-eval
-                 (linear-seq* '(0 1 2) 5)
-                 (linear-seq* '(0 1 2) 6)
-                 (linear-seq* '(0 1 0) 5)]
+@doc-apply[3d-polar->3d-cartesian]{
+Converts 3D polar coordinates to 3D cartesian coordinates.
+See @racket[parametric3d] for an example of use.
 }
 
-@doc-apply[nonlinear-seq]{
-Generates a list of reals that, if transformed using @(racket transform), would be evenly spaced.
-This is used to generate samples for transformed axes.
+@doc-apply[infinite?]{
+Returns @racket[#t] if @racket[x] is either @racket[+inf.0] or @racket[-inf.0].
 @examples[#:eval plot-eval
-                 (linear-seq 1 10 4)
-                 (nonlinear-seq 1 10 4 log-transform)
-                 (parameterize ([plot-x-transform  log-transform])
-                   (plot (area-histogram sqr (nonlinear-seq 1 10 4 log-transform))))]
+                 (map infinite? (list +inf.0 -inf.0 0 'bob))]
 }
 
-@subsection[#:tag "math.vectors"]{Vectors}
+@doc-apply[nan?]{
+Returns @racket[#t] if @racket[x] is @racket[+nan.0].
+@examples[#:eval plot-eval
+                 (map nan? (list +nan.0 +inf.0 0 'bob))]
+}
 
+@doc-apply[ceiling-log/base]{
+Like @racket[(ceiling (/ (log x) (log b)))], but @racket[ceiling-log/base] is not susceptible to floating-point error when given an exact @racket[x].
+@examples[#:eval plot-eval
+                 (ceiling (/ (log 1/1000) (log 10)))
+                 (ceiling-log/base 10 1/1000)]
+Various number-formatting functions use this.
+}
 
-@subsection[#:tag "math.intervals"]{Intervals}
+@doc-apply[floor-log/base]{
+Like @racket[(floor (/ (log x) (log b)))], but @racket[floor-log/base] is not susceptible to floating-point error when given an exact @racket[x].
+@examples[#:eval plot-eval
+                 (floor (/ (log 1000) (log 10)))
+                 (floor-log/base 10 1000)]
+Various number-formatting functions use this.
+}
+
+@doc-apply[maybe-inexact->exact]{
+Returns @racket[#f] if @racket[x] is @racket[#f]; otherwise @racket[(inexact->exact x)].
+Use this to convert interval endpoints, which may be @racket[#f], to exact numbers.
+}
+
+@;----------------------------------------------------------------------------------------------------
+@subsection[#:tag "math.vectors"]{Vector Functions}
+
+@doc-apply[v+]
+@doc-apply[v-]
+@doc-apply[vneg]
+@doc-apply[v*]
+@doc-apply[v/]{
+Vector arithmetic. Equivalent to @racket[vector-map]p-ing arithmetic operators over vectors, but specialized so that 2- and 3-vector operations are much faster.
+@examples[#:eval plot-eval
+                 (v+ #(1 2) #(3 4))
+                 (v- #(1 2) #(3 4))
+                 (vneg #(1 2))
+                 (v* #(1 2 3) 2)
+                 (v/ #(1 2 3) 2)]
+}
+
+@doc-apply[v=]{
+Like @racket[equal?] specialized to numeric vectors, but compares elements using @racket[=].
+@examples[#:eval plot-eval
+                 (equal? #(1 2) #(1 2))
+                 (equal? #(1 2) #(1.0 2.0))
+                 (v= #(1 2) #(1.0 2.0))]
+}
+
+@doc-apply[vcross]{
+Returns the right-hand vector cross product of @racket[v1] and @racket[v2].
+@examples[#:eval plot-eval
+                 (vcross #(1 0 0) #(0 1 0))
+                 (vcross #(0 1 0) #(1 0 0))
+                 (vcross #(0 0 1) #(0 0 1))]
+}
+
+@doc-apply[vcross2]{
+Returns the signed area of the 2D parallelogram with sides @racket[v1] and @racket[v2].
+Equivalent to @racket[(vector-ref (vcross (vector-append v1 #(0)) (vector-append v2 #(0))) 2)] but faster.
+@examples[#:eval plot-eval
+                 (vcross2 #(1 0) #(0 1))
+                 (vcross2 #(0 1) #(1 0))]
+}
+
+@doc-apply[vdot]{
+Returns the dot product of @racket[v1] and @racket[v2].
+}
+
+@doc-apply[vmag^2]{
+Returns the squared magnitude of @racket[v]. Equivalent to @racket[(vdot v v)].
+}
+
+@doc-apply[vmag]{
+Returns the magnitude of @racket[v]. Equivalent to @racket[(sqrt (vmag^2 v))].
+}
+
+@doc-apply[vnormalize]{
+Returns a normal vector in the same direction as @racket[v]. If @racket[v] is a zero vector, returns @racket[v].
+@examples[#:eval plot-eval
+                 (vnormalize #(1 1 0))
+                 (vnormalize #(1 1 1))
+                 (vnormalize #(0 0 0.0))]
+}
+
+@doc-apply[vcenter]{
+Returns the center of the smallest bounding box that contains @racket[vs].
+@examples[#:eval plot-eval
+                 (vcenter '(#(1 1) #(2 2)))]
+}
+
+@doc-apply[vrational?]{
+Returns @racket[#t] if every element of @racket[v] is @racket[rational?].
+@examples[#:eval plot-eval
+                 (vrational? #(1 2))
+                 (vrational? #(+inf.0 2))
+                 (vrational? #(#f 1))]
+}
+
+@;----------------------------------------------------------------------------------------------------
+@subsection[#:tag "math.intervals"]{Intervals and Interval Functions}
+
+@defstruct[ivl ([min real?] [max real?])]{
+Represents a closed interval.
+
+An interval with two real-valued endpoints always contains the endpoints in order:
+@interaction[#:eval plot-eval (ivl 0 1) (ivl 1 0)]
+
+@;{
+If either endpoint is @racket[+nan.0], both are, and the interval represents the empty interval:
+@interaction[#:eval plot-eval (ivl +nan.0 0) (ivl 0 +nan.0)]
+}
+
+An interval can have infinite endpoints:
+@interaction[#:eval plot-eval (ivl -inf.0 0) (ivl 0 +inf.0) (ivl -inf.0 +inf.0)]
+
+Functions that return rectangle renderers, such as @racket[rectangles] and @racket[discrete-histogram3d], accept vectors of @racket[ivl]s as arguments.
+The @racket[ivl] struct type is also provided by @racketmodname[plot] so users of such renderers do not have to require @racketmodname[plot/utils].
+}
+
+@doc-apply[rational-ivl?]{
+Returns @racket[#t] if @racket[i] is an interval and each of its endpoints is @racket[rational?].
+@examples[#:eval plot-eval
+                 (map rational-ivl? (list (ivl -1 1) (ivl -inf.0 2) 'bob))]
+}
+
+@;{
+@doc-apply[empty-ivl]{
+The empty interval.
+}
+
+@defproc[(ivl-meet [i ivl?] ...) ivl?]{
+Returns the intersection of the given intervals.
+@examples[#:eval plot-eval
+                 (ivl-meet)
+                 (ivl-meet (ivl 0 1) (ivl 2 3))
+                 (ivl-meet (ivl 0 2) (ivl 1 3))
+                 (ivl-meet empty-ivl (ivl 0 1))]
+}
+
+@defproc[(ivl-join [i ivl?] ...) ivl?]{
+Returns the smallest interval that contains all the points in the given intervals.
+@examples[#:eval plot-eval
+                 (ivl-join)
+                 (ivl-join (ivl 0 1) (ivl 2 3))
+                 (ivl-join (ivl 0 2) (ivl 1 3))
+                 (ivl-join empty-ivl (ivl 0 1))]
+Think of it as returning an interval union, but with any gaps filled.
+}
+
+@doc-apply[ivl-center]{
+@examples[#:eval plot-eval
+                 (ivl-center (ivl -1 1))
+                 (ivl-center empty-ivl)
+                 (ivl-center (ivl -inf.0 +inf.0))]
+}
+
+@doc-apply[ivl-contains?]{
+@examples[#:eval plot-eval
+                 (ivl-contains? (ivl -1 1) 0)
+                 (ivl-contains? (ivl -1 1) 2)
+                 (ivl-contains? (ivl -inf.0 +inf.0) 0)
+                 (ivl-contains? empty-ivl 0)]
+}
+
+@doc-apply[ivl-empty?]{
+@examples[#:eval plot-eval
+                 (ivl-empty? empty-ivl)
+                 (ivl-empty? (ivl 0 0))]
+}
+
+@doc-apply[ivl-length]{
+@examples[#:eval plot-eval
+                 (ivl-length empty-ivl)
+                 (ivl-length (ivl 0 0))
+                 (ivl-length (ivl -1 1))
+                 (ivl-length (ivl -inf.0 +inf.0))]
+}
+
+@doc-apply[ivl-inexact->exact]
+@doc-apply[ivl-rational?]
+@doc-apply[ivl-singular?]
+@doc-apply[ivl-translate]
+@doc-apply[ivl-zero-length?]
+}
 
 @doc-apply[bounds->intervals]{
 Given a list of points, returns intervals between each pair.
@@ -192,37 +457,78 @@ Use this to construct inputs for @(racket rectangles) and @(racket rectangles3d)
 @examples[#:eval plot-eval (bounds->intervals (linear-seq 0 1 5))]
 }
 
-@subsection[#:tag "math.rectangles"]{Rectangles}
+@;----------------------------------------------------------------------------------------------------
+@;{
+@subsection[#:tag "math.rectangles"]{Rectangles and Rectangle Functions}
 
+@margin-note*{The @racket[rect-meet] and @racket[rect-join] functions define a @link["http://en.wikipedia.org/wiki/Lattice_%28order%29"]{pointed lattice} over rectangles.
+                  This fact may seem esoteric, but it allows PLoT to combine multiple renderers with different rectangular bounds in a way that is intuitive and mathematically sound.}
+@defproc[(rect-meet [i (vectorof ivl?)] ...) (vectorof ivl?)]{
+}
 
+@defproc[(rect-join [i (vectorof ivl?)] ...) (vectorof ivl?)]{
+}
+
+@doc-apply[empty-rect]
+@doc-apply[rect-area]
+@doc-apply[rect-center]
+@doc-apply[rect-contains?]
+@doc-apply[rect-empty?]
+@doc-apply[rect-inexact->exact]
+@doc-apply[rect-known?]
+@doc-apply[rect-rational?]
+@doc-apply[rect-singular?]
+@doc-apply[rect-translate]
+@doc-apply[rect-zero-area?]
+@doc-apply[rational-rect?]
+@doc-apply[bounding-rect]
+}
+
+@;====================================================================================================
+@;{
+@section{Marching Squares and Cubes}
+
+@doc-apply[heights->cube-polys]
+@doc-apply[heights->lines]
+@doc-apply[heights->polys]{
+winding warning
+}
+}
+
+@;====================================================================================================
 @section{Dates and Times}
 
 @doc-apply[datetime->real]{
+Converts various date/time representations into UTC seconds, respecting time zone offsets.
+
+For dates, the value returned is the number of seconds since @italic{a system-dependent UTC epoch}.
+See @racket[date-ticks] for more information.
+
+To plot a time series using dates pulled from an SQL database, simply set the relevant axis ticks (probably @racket[plot-x-ticks]) to @racket[date-ticks], and convert the dates to seconds using @racket[datetime->real] before passing them to @racket[lines].
+To keep time zone offsets from influencing the plot, set them to @racket[0] first.
+
+Does @racket[sql-time?] work?
+
+@racketmodname[db/base]
 }
 
 @defstruct[plot-time ([second (and/c (>=/c 0) (</c 60))]
                       [minute (integer-in 0 59)]
                       [hour (integer-in 0 23)]
                       [day exact-integer?])]{
+A time representation that accounts for days, negative times (using negative days), and fractional seconds.
+
+PLoT (specifically @racket[time-ticks]) uses @racket[plot-time] internally to format times, but because renderer-producing functions require only real values,
+user code should not need it. It is provided just in case.
 }
 
 @doc-apply[plot-time->seconds]
-
-@doc-apply[seconds->plot-time]
-
-
-@section{Sampling}
-
-@defstruct[mapped-function ([f (any/c . -> . any/c)] [fmap ((listof any/c) . -> . (listof any/c))])]{
-Represents a function that maps over lists differently than @(racket (map f xs)).
-
-With some functions, mapping over a list can be done much more quickly if done specially.
-(An example is a piecewise function with many pieces that first must decide which interval its input belongs to. Deciding that for many inputs can be done more efficiently by sorting all the inputs first.)
-Renderer-producing functions that accept a @(racket (real? . -> . real?)) also accept a @(racket mapped-function), and use its @(racket fmap) to sample more efficiently.
-}
-
-@section{Denity Estimation}
-
-@doc-apply[kde]{
-Given samples and a kernel bandwidth, returns a @(racket mapped-function) representing a kernel density estimate, and bounds, outside of which the density estimate is zero. Used by @(racket density).
+@doc-apply[seconds->plot-time]{
+Convert @racket[plot-time]s to real seconds, and vice-versa.
+@examples[#:eval plot-eval
+                 (define (plot-time+ t1 t2)
+                   (seconds->plot-time (+ (plot-time->seconds t1)
+                                          (plot-time->seconds t2))))
+                 (plot-time+ (plot-time 32 0 12 1)
+                             (plot-time 32 0 14 1))]
 }

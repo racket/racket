@@ -21,6 +21,20 @@ To put log ticks on the @italic{x} axis, set the @racket[plot-x-ticks] parameter
                       (plot (function sin 1 100)))]
 See @secref["ticks"] for more details on parameterizing a plot's axis ticks.
 
+@margin-note*{
+To sample nonlinearly, the @italic{inverse} of a transform is applied to linearly sampled points. See @racket[make-axis-transform] and @racket[nonlinear-seq].}
+Renderers cooperate with the current transforms by sampling nonlinearly. For example,
+@interaction[#:eval plot-eval
+                    (parameterize ([plot-x-transform  log-transform])
+                      (plot3d (surface3d + 0.01 1 0.01 1)))]
+Notice that the surface is sampled uniformly in appearance even though the @italic{x}-axis ticks are not spaced uniformly.
+
+Transforms are applied to the primitive shapes that comprise a plot:
+@interaction[#:eval plot-eval
+                    (parameterize ([plot-x-transform  log-transform])
+                      (plot3d (surface3d + 0.01 1 0.01 1 #:samples 3)))]
+Here, the renderer returned by @racket[surface3d] does not have to bend the polygons it draws; @racket[plot3d] does this automatically (by recursive subdivision).
+
 @doc-apply[plot-x-transform]
 @doc-apply[plot-y-transform]
 @doc-apply[plot-z-transform]{
@@ -85,8 +99,6 @@ The @(racket freq) parameter controls the ``shakiness'' of the transform. At hig
                                 [plot-z-transform  (hand-drawn-transform 50)])
                    (plot3d (contour-intervals3d (λ (x y) (- (sqr x) (sqr y)))
                                                 -1 1 -1 1 #:samples 9)))]
-
-The last example shows that the transform is applied to the primitive shapes that comprise the plot (by recursive subdivision).
 }
 
 @doc-apply[axis-transform/c]{
@@ -142,11 +154,14 @@ For example,
 @interaction[#:eval plot-eval
                     (match-let ([(invertible-function f g)
                                  (apply-axis-transform log-transform 1 3)])
-                      (values (list (f 1) (f 2) (f 3))
-                              (list (g 1) (g 2.2618595071429146) (g 3))))]
+                      (define xs '(1 2 3))
+                      (define new-xs (map f xs))
+                      (define old-xs (map g new-xs))
+                      (values new-xs old-xs))]
 
 Technically, @racket[fun] does not need to be truly invertible.
-Given @racket[fun] = @racket[(invertible-function f g)], it is enough for @racket[f] to be a @hyperlink["http://en.wikipedia.org/wiki/Inverse_function#Left_and_right_inverses"]{left inverse} of @racket[g].
+Given @racket[fun] = @racket[(invertible-function f g)], it is enough for @racket[f] to be a @hyperlink["http://en.wikipedia.org/wiki/Inverse_function#Left_and_right_inverses"]{left inverse} of @racket[g];
+that is, always @racket[(f (g x)) = x] but not necessarily @racket[(g (f x)) = x].
 If @racket[f] and @racket[g] had to be strict inverses of each other, there could be no @racket[collapse-transform].
 }
 
@@ -200,12 +215,34 @@ For example, compare plots of the same function renderered using both @racket[co
                                #:legend-anchor 'center)))]
 }
 
+@doc-apply[contour-ticks]{
+Returns the ticks used for contour values.
+This is used internally by renderers returned from @racket[contours], @racket[contour-intervals], @racket[contours3d], @racket[contour-intervals3d], and @racket[isosurfaces3d], but is provided for completeness.
+
+When @racket[levels] is @racket['auto], the returned values do not correspond @italic{exactly} with the values of ticks returned by @racket[z-ticks]: they might be missing the endpoint values. For example,
+@interaction[#:eval plot-eval
+                 (map pre-tick-value 
+                      (filter pre-tick-major? ((plot-z-ticks) 0 1)))
+                 (map pre-tick-value
+                      (contour-ticks (plot-z-ticks) 0 1 'auto #f))]
+}
+
+@doc-apply[plot-d-ticks]{
+The ticks used for default isosurface values in @racket[isosurfaces3d].
+}
+
+@doc-apply[plot-r-ticks]{
+The ticks used for radius lines in @racket[polar-axes].
+}
+
 @defstruct[ticks ([layout ticks-layout/c] [format ticks-format/c])]{
 A @racket[ticks] for a near or far axis consists of a @racket[layout] function, which determines the number of ticks and where they will be placed, and a @racket[format] function, which determines the ticks' labels.
 }
 
 @doc-apply[ticks-default-number]{
-Most tick layout functions (and thus their corresponding @racket[ticks]-constructing functions) have a @racket[#:number] keyword argument with default @racket[(ticks-default-number)]. What the number means depends on the tick layout function. Most use it for the maximum number of major ticks.
+Most tick layout functions (and thus their corresponding @racket[ticks]-constructing functions) have a @racket[#:number] keyword argument with default @racket[(ticks-default-number)].
+What the number means depends on the tick layout function.
+Most use it for an average number of major ticks.
 
 It is unlikely to mean the exact number of major ticks.
 Without adjusting the number of ticks, layout functions usually cannot find uniformly spaced ticks that will have simple labels after formatting.
@@ -260,7 +297,7 @@ Actually, @racket[date-ticks-layout] does not always space ticks @italic{quite} 
 For example, it rounds ticks that are spaced about one month apart or more to the nearest month.
 Generally, @racket[date-ticks-layout] tries to place ticks at minute, hour, day, week, month and year boundaries, as well as common multiples such as 90 days or 6 months.
 
-To avoid displaying overlapping labels, @racket[date-ticks-format] chooses date formats from @racket[formats] for which labels will contain no redundant information.
+To try to avoid displaying overlapping labels, @racket[date-ticks-format] chooses date formats from @racket[formats] for which labels will contain no redundant information.
 
 All the format specifiers given in @racketmodname[srfi/19] (which are derived from Unix's @tt{date} command), except those that represent time zones, are allowed in date format strings.
 }
@@ -284,7 +321,7 @@ Use @racket[datetime->real] to convert @racket[sql-time] or @racket[plot-time] v
 
 Generally, @racket[time-ticks-layout] tries to place ticks at minute, hour and day boundaries, as well as common multiples such as 12 hours or 30 days.
 
-To avoid displaying overlapping labels, @racket[time-ticks-format] chooses a date format from @racket[formats] for which labels will contain no redundant information.
+To try to avoid displaying overlapping labels, @racket[time-ticks-format] chooses a date format from @racket[formats] for which labels will contain no redundant information.
 
 All the time-related format specifiers given in @racketmodname[srfi/19] (which are derived from Unix's @tt{date} command) are allowed in time format strings.
 }
@@ -313,8 +350,6 @@ The @racket[#:formats] keyword argument is a list of three format strings, repre
           @item{@racket["~f"]: replaced by the fractional part, with 2 or more decimal digits}
           @item{@racket["~s"]: replaced by the scale suffix}
           @item{@racket["~~"]: replaced by ``~''}]
-
-Note that the @racket[#:divisors] passed to @racket[linear-ticks-layout] are @racket['(1 2 4 5)]. This allows quarter divisions to be used for tick positions, corresponding to 25/100 denominations such as the US quarter dollar.
 }
 
 @doc-apply[currency-ticks-scales]
@@ -327,7 +362,7 @@ For example, a PLoT user in France would probably begin programs with
              (currency-ticks-formats eu-currency-formats)]
 and use @racket[(currency-ticks #:kind 'EUR)] for local currency or @racket[(currency-ticks #:kind 'JPY)] for Japanese Yen.
 
-Cultural sensitivity notwithstanding, when writing for a local audience, it is generally considered proper to use local currency scales and formats for foreign currencies.
+Cultural sensitivity notwithstanding, when writing for a local audience, it is generally considered proper to use local currency scales and formats for foreign currencies, but use the foreign currency symbol.
 }
 
 @doc-apply[us-currency-scales]{

@@ -93,7 +93,8 @@
 
 (defproc (vector-field3d
           [f (or/c (real? real? real? . -> . (vector/c real? real? real?))
-                   ((vector/c real? real? real?) . -> . (vector/c real? real? real?)))]
+                   ((vector/c real? real? real?)
+                    . -> . (vector/c real? real? real?)))]
           [x-min (or/c rational? #f) #f] [x-max (or/c rational? #f) #f]
           [y-min (or/c rational? #f) #f] [y-max (or/c rational? #f) #f]
           [z-min (or/c rational? #f) #f] [z-max (or/c rational? #f) #f]

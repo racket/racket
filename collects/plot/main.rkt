@@ -35,7 +35,7 @@
 (provide (activate-contract-out points vector-field error-bars))
 
 (require "plot2d/line.rkt")
-(provide (activate-contract-out lines parametric polar function inverse))
+(provide (activate-contract-out lines parametric polar function inverse density))
 
 (require "plot2d/interval.rkt")
 (provide (activate-contract-out
@@ -52,9 +52,6 @@
           x-axis y-axis axes polar-axes
           x-tick-lines y-tick-lines tick-grid
           point-label parametric-label polar-label function-label inverse-label))
-
-(require "plot2d/kde.rkt")
-(provide (activate-contract-out density))
 
 ;; ===================================================================================================
 ;; 3D exports

@@ -5,6 +5,12 @@
 (provide (all-defined-out))
 
 ;; ===================================================================================================
+;; Integers
+
+(defproc (factorial [n exact-nonnegative-integer?]) exact-nonnegative-integer?
+  (if (zero? n) 1 (* n (factorial (sub1 n)))))
+
+;; ===================================================================================================
 ;; Flonums
 
 (defproc (nan? [x any/c]) boolean?

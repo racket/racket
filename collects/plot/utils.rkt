@@ -13,7 +13,8 @@
          "contracted/samplers.rkt"
          "contracted/legend.rkt"
          "contracted/plot-element.rkt"
-         "contracted/date-time.rkt")
+         "contracted/date-time.rkt"
+         "contracted/kde.rkt")
 
 (provide (all-from-out "common/contract.rkt")
          (all-from-out "common/marching-squares.rkt")
@@ -28,4 +29,5 @@
          (all-from-out "contracted/samplers.rkt")
          (all-from-out "contracted/legend.rkt")
          (all-from-out "contracted/plot-element.rkt")
-         (all-from-out "contracted/date-time.rkt"))
+         (all-from-out "contracted/date-time.rkt")
+         (all-from-out "contracted/kde.rkt"))

@@ -18,7 +18,8 @@
          "common/date-time.rkt"
          "common/marching-squares.rkt"
          "common/marching-cubes.rkt"
-         "common/legend.rkt")
+         "common/legend.rkt"
+         "common/kde.rkt")
 
 (provide (only-doc-out
           (combine-out (all-from-out "common/parameters.rkt")
@@ -34,7 +35,8 @@
                        (all-from-out "common/date-time.rkt")
                        (all-from-out "common/marching-squares.rkt")
                        (all-from-out "common/marching-cubes.rkt")
-                       (all-from-out "common/legend.rkt"))))
+                       (all-from-out "common/legend.rkt")
+                       (all-from-out "common/kde.rkt"))))
 
 ;; ===================================================================================================
 ;; 2D exports
@@ -45,8 +47,7 @@
          "plot2d/interval.rkt"
          "plot2d/contour.rkt"
          "plot2d/rectangle.rkt"
-         "plot2d/decoration.rkt"
-         "plot2d/kde.rkt")
+         "plot2d/decoration.rkt")
 
 (provide (only-doc-out
           (combine-out (all-from-out "plot2d/plot.rkt")
@@ -55,8 +56,7 @@
                        (all-from-out "plot2d/interval.rkt")
                        (all-from-out "plot2d/contour.rkt")
                        (all-from-out "plot2d/rectangle.rkt")
-                       (all-from-out "plot2d/decoration.rkt")
-                       (all-from-out "plot2d/kde.rkt"))))
+                       (all-from-out "plot2d/decoration.rkt"))))
 
 ;; ===================================================================================================
 ;; 3D exports

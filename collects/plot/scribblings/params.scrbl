@@ -56,10 +56,28 @@ See @(racket ->pen-color) and @(racket ->brush-color) for details on how PLoT in
 }
 @doc-apply[plot-x-far-label]
 @doc-apply[plot-y-far-label]
-@doc-apply[plot-z-far-label]
+@doc-apply[plot-z-far-label]{
+The tick labels for ``far'' axes. See @racket[plot-x-ticks] for a discussion of near and far axes.
+}
+
+@doc-apply[plot-x-axis?]
+@doc-apply[plot-x-far-axis?]
+@doc-apply[plot-y-axis?]
+@doc-apply[plot-y-far-axis?]
+@doc-apply[plot-z-axis?]
+@doc-apply[plot-z-far-axis?]{
+When any of these is @racket[#f], the corresponding axis is not drawn.
+
+Use these along with @racket[x-axis] and @racket[y-axis] if you want axes that intersect the origin or some other point.
+}
 
 @doc-apply[plot-animating?]{
 When @(racket #t), certain renderers draw simplified plots to speed up drawing. PLoT sets it to @(racket #t), for example, when a user is clicking and dragging a 3D plot to rotate it.
+}
+
+@doc-apply[animated-samples]{
+Given a number of samples, returns the number of samples to use.
+This returns @racket[samples] when @racket[plot-animating?] is @racket[#f].
 }
 
 @doc-apply[plot-decorations?]{
@@ -103,6 +121,8 @@ When @(racket #f), axes, axis labels, ticks, tick labels, and the title are not 
 @doc-apply[vector-field-scale]
 @doc-apply[vector-field-alpha]
 
+@doc-apply[vector-field3d-samples]
+
 @section{Error Bars}
 
 @doc-apply[error-bar-width]
@@ -142,9 +162,17 @@ When @(racket #f), axes, axis labels, ticks, tick labels, and the title are not 
 @doc-apply[discrete-histogram-skip]
 @doc-apply[discrete-histogram-invert?]
 
+@doc-apply[stacked-histogram-alphas]
+@doc-apply[stacked-histogram-colors]
+@doc-apply[stacked-histogram-line-colors]
+@doc-apply[stacked-histogram-line-styles]
+@doc-apply[stacked-histogram-line-widths]
+@doc-apply[stacked-histogram-styles]
+
 @section{Decorations}
 
-These parameters do not control the @italic{typical} appearance of plots. Instead, they control the look of renderers that add specific decorations, such as labeled points.
+These parameters do not control the @italic{typical} appearance of plots.
+Instead, they control the look of renderers that add specific decorations, such as labeled points.
 
 @doc-apply[x-axis-alpha]
 @doc-apply[y-axis-alpha]
@@ -200,7 +228,8 @@ Contour surface renderers use shared contour parameters except for the following
 
 @section{Isosurfaces}
 
-Single isosurfaces (@(racket isosurface3d)) use surface parameters. Nested isosurfaces (@(racket isosurfaces3d)) use the following.
+Single isosurfaces (@(racket isosurface3d)) use surface parameters.
+Nested isosurfaces (@(racket isosurfaces3d)) use the following.
 
 @doc-apply[default-isosurface-colors]
 @doc-apply[default-isosurface-line-colors]
