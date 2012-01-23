@@ -87,7 +87,27 @@ The conversion is equivalent to
   (let ([p (malloc from-type)])
     (ptr-set! p from-type v)
     (ptr-ref p to-type))
+]
+
+Beware of potential pitfalls with @racket[cast]:
+
+@itemlist[
+
+ @item{If @racket[v] is a pointer that refers to memory that is
+       managed by the garbage collector, @racket[from-type] and
+       @racket[to-type] normally should be based on
+       @racket[_gcpointer], not @racket[_pointer]; see also
+       @racket[_gcable].}
+
+ @item{If @racket[v] is a pointer with an offset component (e.g., from
+       @racket[ptr-add]), the offset is folded into the pointer base
+       for the result. Consequently, @racket[cast] generally should
+       not be used on a source pointer that refers to memory that is
+       managed by the garbage collector and that has an offset, unless
+       the memory is specially allocated to allow interior pointers.}
+
 ]}
+
 
 @defproc[(cblock->list [cblock any/c] [type ctype?] [length exact-nonnegative-integer?])
          list?]{
