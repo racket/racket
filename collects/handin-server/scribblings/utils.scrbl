@@ -190,7 +190,7 @@ Every exception or result mismatch during the call to
   and flush it.  (The log port will prefix all lines with a time stamp
   and a connection identifier.)}
 
-@defproc[(timeout-control [msg string?]) void?]{
+@defproc[(timeout-control [msg any?]) void?]{
 
   Controls the timeout for this session.  The timeout is initialized
   by the value of the @racket[session-timeout] configuration entry,
@@ -198,8 +198,8 @@ Every exception or result mismatch during the call to
   @racket[msg] is @racket['reset] the timeout is reset to
   @racket[session-timeout] seconds; if @racket[msg] is a number the
   timeout will be set to that many seconds in the future.  The timeout
-  can be completely disabled by @racket[(timeout-control #f)].  (Note
-  that before the checker is used (after the pre-checker, if
+  can be completely disabled using @racket['disable] or @racket[#f].
+  (Note that before the checker is used (after the pre-checker, if
   specified), the timer will be reset to the @racket['session-timeout]
   value.)}
 

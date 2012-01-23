@@ -235,10 +235,10 @@ code.}
   the description of the @racket[pre-checker] and
   @racket[post-checker] values for what can be done with these, and
   note that the check for valid users is always first.  An example for
-  a sophisticated @racket[post:] block is below---it will first
-  disable timeouts for this session, then it will send a email with a
-  submission receipt, with CC to the TA (assuming a single TA), and
-  pop-up a message telling the student about it:
+  a sophisticated @racket[post:] block is below---it will first set a
+  very long timeout for this session, then it will send an email with
+  a submission receipt, with a CC to the TA (assuming a single TA),
+  and pop-up a message telling the student about it:
 
   @racketblock[
     (require net/sendmail)
@@ -247,7 +247,7 @@ code.}
         (format "hw.rkt: ~a ~a"
                 (file-size "hw.rkt")
                 (file-or-directory-modify-seconds "hw.rkt")))
-      (timeout-control 'disable)
+      (timeout-control 300)
       (log-line "Sending a receipt: ~a" info)
       (send-mail-message
        "course-staff@university.edu"

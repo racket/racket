@@ -600,7 +600,7 @@
       (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
       (case msg
         [(reset) (timeout-control (get-conf 'session-timeout))]
-        [(disable) (set! timeout #f)]
+        [(disable #f) (set! timeout #f)]
         [else (error 'timeout-control "bad argument: ~s" msg)])))
   (current-timeout-control timeout-control)
   (timeout-control 'reset)
