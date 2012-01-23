@@ -31,6 +31,8 @@
                 honu-for-syntax
                 honu-for-template
                 honu-prefix
+                ;; FIXME: in-lines should probably not be here
+                honu-in-lines
                 %racket)
 
 (define-syntax-rule (define-literal+set set literal ...)

@@ -2,4 +2,7 @@
 
 (provide do-lookup)
 (define (do-lookup data slice)
-  (list-ref data slice))
+  (cond
+    [(list? data) (list-ref data slice)]
+    [(vector? data) (vector-ref data slice)]
+    [else (error 'lookup "don't know how to lookup" data)]))

@@ -10,6 +10,7 @@
          (only-in "literals.rkt"
                   honu-then
                   honu-in
+                  honu-in-lines
                   honu-prefix
                   semicolon
                   honu-comma
@@ -61,7 +62,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (else honu-then)
-      [(_ condition:honu-expression (~optional honu-then) true:honu-expression (~optional else) false:honu-expression . rest)
+      [(_ condition:honu-expression honu-then true:honu-expression (~optional else) false:honu-expression . rest)
        (values
          #'(%racket (if condition.result true.result false.result))
          #'rest
@@ -297,8 +298,9 @@
 (define-honu-syntax honu-with-input-from-file
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ (#%parens name:id) something:honu-expression . rest)
-       (define with #'(%racket (with-input-from-file name (lambda () something.result))))
+      [(_ file:honu-expression something:honu-expression . rest)
+       (define with #'(%racket (with-input-from-file file.result
+                                                     (lambda () something.result))))
        (values
          with
          #'rest
@@ -423,13 +425,21 @@
 (provide honu-fold)
 (define-honu-syntax honu-fold
   (lambda (code context)
+    (define-splicing-syntax-class sequence-expression
+                                  #:literals (honu-in honu-in-lines)
+       [pattern (~seq iterator:id honu-in stuff:honu-expression)
+                 #:with variable #'iterator
+                 #:with expression #'stuff.result]
+        [pattern (~seq iterator:id honu-in-lines)
+                 #:with variable #'iterator
+                 #:with expression #'(in-lines)])
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-equal honu-in)
+                       #:literals (honu-equal)
       [(_ (~seq init:id honu-equal init-expression:honu-expression (~optional honu-comma)) ...
-          (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
+          (~seq sequence:sequence-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
        (values #'(%racket (for/fold ([init init-expression.result] ...)
-                                    ([iterator stuff.result] ...)
+                                    ([sequence.variable sequence.expression] ...)
                             body.result))
                #'rest
                #t)])))

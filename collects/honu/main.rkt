@@ -17,7 +17,7 @@
                 ;;"private/function.honu"
                 )
 
-(racket:provide sqr sqrt sin max
+(racket:provide sqr sqrt sin max min
          number? symbol?
          null
          null?
@@ -36,6 +36,7 @@
                      [current-inexact-milliseconds currentMilliseconds]
                      [string-length string_length]
                      [string-append string_append]
+                     [current-command-line-arguments commandLineArguments]
                      [racket:find-files find_files]
                      [racket:empty? empty?]
                      [regexp-match regexp_match]

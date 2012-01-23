@@ -28,7 +28,8 @@
                                    [honu-new new]
                                    [honu-while while]
                                    [honu-macro macro]
-                                   [honu-with-input-from-file with_input_from_file]
+                                   [racket:read-line readLine]
+                                   [honu-with-input-from-file withInputFromFile]
                                    [define-make-honu-operator operator]
                                    [honu-match match]
                                    [honu-with with]
@@ -70,6 +71,7 @@
                                    [literal:honu-comma %comma]
                                    [literal:honu-comma %comma]
                                    [literal:honu-<- <-]
+                                   [literal:honu-in-lines inLines]
                                    [literal:#%brackets #%brackets]
                                    [literal:#%braces #%braces]
                                    [literal:#%parens #%parens])
