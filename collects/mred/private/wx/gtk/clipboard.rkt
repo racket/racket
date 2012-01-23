@@ -178,7 +178,8 @@
               [targets (malloc _GtkTargetEntry (length types))])
           (for/fold ([offset 0]) ([str (in-list types)]
                                   [i (in-naturals)])
-            (let ([t (cast (ptr-add targets i _GtkTargetEntry) _pointer _GtkTargetEntry-pointer)])
+            (let ([t (ptr-add targets i _GtkTargetEntry)])
+              (cpointer-push-tag! t 'GtkTargetEntry)
               (set-GtkTargetEntry-target! t (ptr-add target-strings offset))
               (set-GtkTargetEntry-flags! t 0)
               (set-GtkTargetEntry-info! t i))

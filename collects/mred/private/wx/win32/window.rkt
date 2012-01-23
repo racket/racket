@@ -444,7 +444,7 @@
         (let* ([len (DragQueryFileW hdrop i #f 0)]
                [b (malloc (add1 len) _int16)])
           (DragQueryFileW hdrop i b (add1 len))
-          (let ([s (cast b _pointer _string/utf-16)])
+          (let ([s (cast b _gcpointer _string/utf-16)])
             (queue-window-event this (lambda () (on-drop-file (string->path s)))))))
       (DragFinish hdrop)))
 

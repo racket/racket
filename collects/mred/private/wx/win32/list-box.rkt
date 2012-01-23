@@ -353,7 +353,7 @@
           (let* ([count num-columns]
                  [a (malloc _int count)])
             (SendMessageW/ptr hwnd LVM_GETCOLUMNORDERARRAY count a)
-            (cast a _pointer (_list o _int count)))))
+            (cast a _gcpointer (_list o _int count)))))
 
     (define/public (set-column-label col s)
       (unless single-column?
