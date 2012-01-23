@@ -6,11 +6,6 @@
 
 @title[#:tag "renderer2d"]{2D Renderers}
 
-@defproc[(renderer2d? [value any/c]) boolean?]{
-Returns @racket[#t] if @racket[value] is a 2D @tech{renderer}; that is, if @racket[plot] can plot @racket[value].
-The following functions create such renderers.
-}
-
 @section[#:tag "renderer2d-function-arguments"]{2D Renderer Function Arguments}
 
 Functions that return 2D renderers always have these kinds of arguments:
@@ -191,23 +186,21 @@ Corresponds with @(racket lines).
 Corresponds with @(racket parametric).
 
 @interaction[#:eval plot-eval
-                    (let ()
-                      (define (f1 t) (vector (* 2 (cos (* 4/5 t)))
-                                             (* 2 (sin (* 4/5 t)))))
-                      (define (f2 t) (vector (* 1/2 (cos t))
-                                             (* 1/2 (sin t))))
-                      (plot (parametric-interval f1 f2 (- pi) pi)))]
+                    (define (f1 t) (vector (* 2 (cos (* 4/5 t)))
+                                           (* 2 (sin (* 4/5 t)))))
+                    (define (f2 t) (vector (* 1/2 (cos t))
+                                           (* 1/2 (sin t))))
+                    (plot (parametric-interval f1 f2 (- pi) pi))]
 }
 
 @doc-apply[polar-interval]{
 Corresponds with @(racket polar).
 
 @interaction[#:eval plot-eval
-                    (let ()
-                      (define (f1 θ) (+ 1/2 (* 1/6 (cos (* 5 θ)))))
-                      (define (f2 θ) (+ 1 (* 1/4 (cos (* 10 θ)))))
-                      (plot (list (polar-axes #:number 10)
-                                  (polar-interval f1 f2 #:label "[f1,f2]"))))]
+                    (define (f1 θ) (+ 1/2 (* 1/6 (cos (* 5 θ)))))
+                    (define (f2 θ) (+ 1 (* 1/4 (cos (* 10 θ)))))
+                    (plot (list (polar-axes #:number 10)
+                                (polar-interval f1 f2 #:label "[f1,f2]")))]
 }
 
 @section{2D Contour (Isoline) Renderers}
@@ -219,6 +212,9 @@ A circle of radius @(racket r), for example, is the line of constant value @(rac
                                              -2 2 -2 2 #:label "z"))]
 }
 In this case, @(racket r) = @(racket 1.5).
+
+This function would have been named @racket[contour], except the name was already used by a deprecated function.
+It may be renamed in the future, with @racket[isoline] as an alias.
 
 @doc-apply[contours]{
 Returns a renderer that plots contour lines, or lines of constant value (height).
@@ -256,10 +252,6 @@ For example, the canonical saddle, with its gradient field superimposed:
 
 @section{2D Rectangle Renderers}
 
-@defstruct[ivl ([min real?] [max real?])]{
-Represents a closed interval. Used to give bounds to rectangles in @(racket rectangles), @(racket rectangles3d), and functions derived from them.
-}
-
 @doc-apply[rectangles]{
 Returns a renderer that draws rectangles.
 The rectanges are given as a list of vectors of intervals---each vector defines the bounds of a rectangle. For example,
@@ -271,10 +263,10 @@ The rectanges are given as a list of vectors of intervals---each vector defines 
 Returns a renderer that draws a histogram approximating the area under a curve.
 The @(racket #:samples) argument determines the accuracy of the calculated areas.
 @interaction[#:eval plot-eval
-                    (let ()
-                      (define (f x) (exp (* -1/2 (sqr x))))
-                      (plot (list (area-histogram f (linear-seq -4 4 10))
-                                  (function f -4 4))))]
+                    (require (only-in plot/utils linear-seq))
+                    (define (f x) (exp (* -1/2 (sqr x))))
+                    (plot (list (area-histogram f (linear-seq -4 4 10))
+                                (function f -4 4)))]
 }
 
 @doc-apply[discrete-histogram]{
@@ -290,6 +282,17 @@ To plot histograms side-by-side, pass the appropriate @(racket #:x-min) value to
                                                     #:x-min 8
                                                     #:color 2 #:line-color 2
                                                     #:label "Numbers per number")))]
+}
+
+@doc-apply[stacked-histogram]{
+Returns a renderer that draws a stacked histogram.
+The heights of each bar section are given as a list.
+@examples[#:eval plot-eval
+                 (plot (stacked-histogram (list #(a (1 1 1)) #(b (1.5 3))
+                                                #(c ()) #(d (1/2)))
+                                          #:invert? #t
+                                          #:labels '("Red" #f "Blue"))
+                       #:legend-anchor 'top-right)]
 }
 
 @section{2D Plot Decoration Renderers}

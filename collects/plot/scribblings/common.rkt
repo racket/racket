@@ -4,6 +4,7 @@
          (for-label racket
                     racket/gui/base
                     slideshow/pict
+                    db
                     plot
                     plot/utils)
          plot
@@ -16,6 +17,7 @@
          (for-label (all-from-out racket
                                   racket/gui/base
                                   slideshow/pict
+                                  db
                                   plot
                                   plot/utils))
          (all-from-out plot)

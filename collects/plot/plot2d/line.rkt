@@ -131,3 +131,25 @@
               (inverse-bounds-fun g samples)
               default-ticks-fun
               (inverse-render-proc g samples color width style alpha label)))
+
+;; ===================================================================================================
+;; Kernel density estimation
+
+(defproc (density [xs (listof real?)] [bw-adjust real? 1]
+                  [#:x-min x-min (or/c rational? #f) #f] [#:x-max x-max (or/c rational? #f) #f]
+                  [#:y-min y-min (or/c rational? #f) #f] [#:y-max y-max (or/c rational? #f) #f]
+                  [#:samples samples (and/c exact-integer? (>=/c 2)) (line-samples)]
+                  [#:color color plot-color/c (line-color)]
+                  [#:width width (>=/c 0) (line-width)]
+                  [#:style style plot-pen-style/c (line-style)]
+                  [#:alpha alpha (real-in 0 1) (line-alpha)]
+                  [#:label label (or/c string? #f) #f]
+                  ) renderer2d?
+  (define n (length xs))
+  (define sd (sqrt (- (/ (sum sqr xs) n) (sqr (/ (sum values xs) n)))))
+  (define h (* bw-adjust 1.06 sd (expt n -0.2)))
+  (define-values (f fx-min fx-max) (kde xs h))
+  (let ([x-min  (if x-min x-min fx-min)]
+        [x-max  (if x-max x-max fx-max)])
+    (function f x-min x-max #:y-min y-min #:y-max y-max #:samples samples
+              #:color color #:width width #:style style #:alpha alpha #:label label)))
