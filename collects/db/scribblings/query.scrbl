@@ -9,7 +9,7 @@
 
 @title[#:tag "query-api"]{Queries}
 
-@declare-exporting[db db/base]
+@declare-exporting[db db/base #:use-sources (db/base)]
 
 This library provides a high-level functional query API,
 unlike many other database libraries, which present a stateful,

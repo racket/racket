@@ -10,7 +10,7 @@
 
 @title[#:tag "sql-types"]{SQL Types and Conversions}
 
-@declare-exporting[db db/base]
+@declare-exporting[db db/base #:use-sources (db/base)]
 
 Connections automatically convert query results to appropriate Racket
 types. Likewise, query parameters are accepted as Racket values and

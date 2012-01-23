@@ -61,10 +61,11 @@ file. This library currently supports only cleartext and md5-hashed
 passwords, and it does not send cleartext passwords unless explicitly
 ordered to (see @racket[postgresql-connect]). These correspond to the
 @tt{md5} and @tt{password} authentication methods in the parlance of
-@tt{pg_hba.conf}, respectively. On Linux, @tt{ident} authentication is
-automatically supported for local sockets, but not TCP sockets. The
-@tt{gss}, @tt{sspi}, @tt{krb5}, @tt{pam}, and @tt{ldap} methods are
-not supported.
+@tt{pg_hba.conf}, respectively. On Linux and Mac OS X, @tt{ident}
+authentication is automatically supported for local sockets (as of
+PostgreSQL 9.1, this authentication method has been renamed
+@tt{peer}). The @tt{gss}, @tt{sspi}, @tt{krb5}, @tt{pam}, and
+@tt{ldap} methods are not supported.
 
 
 @section{MySQL Authentication}
