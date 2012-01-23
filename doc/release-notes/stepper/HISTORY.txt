@@ -1,6 +1,11 @@
 Stepper
 -------
 
+Changes for v5.2.1:
+
+Fix occasional race condition bug on startup, lovely new icon work by
+Neil Toronto.
+
 Changes for v5.2:
 
 None.
