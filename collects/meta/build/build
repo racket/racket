@@ -1913,7 +1913,7 @@ do_installers_page_body() { # input: selector-html table-html
     echo "  dnld_update();"
     echo "// --></script>"
     echo "<div style=\"text-align: right; font-size: small;\">"
-    echo "  <a href=\"table.html\">[static table]</a> ***"
+    echo "  <a href=\"table.html\">[static table]</a>"
     echo "</div>"
   } >> "$selector"
   local NAcell="<td><font color=\"#808080\">N/A</font></td>"
