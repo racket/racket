@@ -38,14 +38,14 @@ It might seem like it would turn into something like this:
   (list (repeat (name any_1 any) ..._1 #f)
         (repeat (name any_1 any) ..._2 #f))
 
-but the _1 and _2 are actually not right, since the x_1 name
-will force the two ellipses lengths to be the same. So, this
-must turn into this pattern:
+but the _1 and _2 are actually not as specific as they could be, 
+since the any_1 name will force the two ellipses lengths to be
+the same. So, this must turn into this pattern:
 
   (list (repeat (name any_1 any) ..._1 #f)
         (repeat (name any_1 any) ..._1 #f))
 
-Similarly, if there are superflous names, they are delete. For
+Similarly, if there are superflous names, they are deleted. For
 example, this source pattern:
 
   (any_1 ..._1)
