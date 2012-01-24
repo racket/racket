@@ -148,6 +148,11 @@
           Solaris  = /Solaris/;
       if (p == null) return [];
       else if (l("SunOS")) return [Solaris, Unix];
+      @; Note about Windows 64: seems like the best guess could be done by
+      @; checking that the platform has "Win64" or navigator.userAgent has
+      @; either "Win64" or "WOW64".  But the 32 build might be better for many
+      @; people anyway, so keep things as is for now.  (With the `Win' filter
+      @; which will get the 32 version first and the 64 second.)
       else if (l("Win"))   return [Win];
       else if (l("Mac"))   return [(l("Intel")?MacIntel:MacPPC), Mac, Unix];
       else if (l("Linux")) {
