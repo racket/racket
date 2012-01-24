@@ -4,6 +4,8 @@
          racket/place
          racket/promise
          racket/serialize
+         racket/runtime-path
+         (for-syntax (only-in racket/base quote))
          ffi/unsafe/atomic
          "interfaces.rkt"
          "prepared.rkt")
@@ -14,6 +16,9 @@
   (place-channel-put chan (serialize datum)))
 (define (pchan-get chan)
   (deserialize (place-channel-get chan)))
+
+(define-runtime-module-path-index _place-server
+  'db/private/generic/place-server)
 
 (define connection-server-channel
   (delay/sync
