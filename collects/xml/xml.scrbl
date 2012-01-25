@@ -335,14 +335,14 @@ for elements that have no content.
 When the parameter is set to @racket['always], the abbreviated
 notation is always used. When set of @racket['never], the abbreviated
 notation is never generated.  when set to a list of symbols is
-provided, tags with names in the list are abbreviated.  The default is
-@racket['always].
+provided, tags with names in the list are abbreviated.
 
 The abbreviated form is the preferred XML notation.  However, most
 browsers designed for HTML will only properly render XHTML if the
 document uses a mixture of the two formats. The
 @racket[html-empty-tags] constant contains the W3 consortium's
-recommended list of XHTML tags that should use the shorthand.}
+recommended list of XHTML tags that should use the shorthand. This
+list is the default value of @racket[empty-tag-shorthand].}
 
 @defthing[html-empty-tags (listof symbol?)]{
 

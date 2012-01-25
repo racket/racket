@@ -60,6 +60,7 @@
 (define xml-tests
   (test-suite
    "XML"
+   #:before (λ () (empty-tag-shorthand 'always))
    
    (test-suite
     "Legacy tests"   
