@@ -5,8 +5,8 @@
 ;; ==================== Configuration
 
 ;; The following should define:
-;;   RKTVersion, RKTVersionLong, RKTHumanName,
-;;   RKTDirName, RKTRegName
+;;   RKTVersion, RKTVersionLong, RKTHumanName, RKTShortName,
+;;   RKTStartName, RKTDirName, RKTRegName, RKTProgFiles
 
 !include racket-defs.nsh
 
@@ -36,11 +36,11 @@ InstallDir "${RKTProgFiles}\${RKTDirName}"
 !define MUI_WELCOMEPAGE_TITLE "${RKTHumanName} Setup"
 !define MUI_UNWELCOMEPAGE_TITLE "${RKTHumanName} Uninstall"
 !ifdef SimpleInstaller
-  !define MUI_WELCOMEPAGE_TEXT "This is a simple installer for ${RKTHumanName}.$\r$\n$\r$\nIt will only create the Racket folder.  To uninstall, simply remove the folder.$\r$\n$\r$\n$_CLICK"
+  !define MUI_WELCOMEPAGE_TEXT "This is a simple installer for ${RKTShortName}.$\r$\n$\r$\nIt will only create the Racket folder.  To uninstall, simply remove the folder.$\r$\n$\r$\n$_CLICK"
 !else
-  !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of ${RKTHumanName}.$\r$\n$\r$\nPlease close other Racket applications so the installer can update relevant system files.$\r$\n$\r$\n$_CLICK"
+  !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of ${RKTShortName}.$\r$\n$\r$\nPlease close any running Racket applications so the installer can update the relevant system files.$\r$\n$\r$\n$_CLICK"
 !endif
-!define MUI_UNWELCOMEPAGE_TEXT "This wizard will guide you through the removal of ${RKTHumanName}.$\r$\n$\r$\nBefore starting, make sure no Racket applications are running.$\r$\n$\r$\n$_CLICK"
+!define MUI_UNWELCOMEPAGE_TEXT "This wizard will guide you through the removal of ${RKTShortName}.$\r$\n$\r$\nBefore starting, make sure no Racket applications are running.$\r$\n$\r$\n$_CLICK"
 
 !define MUI_FINISHPAGE_TITLE "${RKTHumanName}"
 !ifdef SimpleInstaller

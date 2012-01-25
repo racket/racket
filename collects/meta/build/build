@@ -1800,7 +1800,9 @@ tgz_to_exe() {
     echo "$def RKTVersion \"$version\""
     # this must be four numbers
     echo "$def RKTVersionLong \"$version1.$version2.$version3.$version4\""
+    # Full name for the package, and a short name for installer texts
     echo "$def RKTHumanName \"$distname v$version ($winplatform)\""
+    echo "$def RKTShortName \"$distname\""
     if [[ "$releasing" != "yes" ]]; then
       echo "$def RKTStartName \"$distname v$version\""
     else
