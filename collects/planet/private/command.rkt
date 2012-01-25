@@ -58,7 +58,7 @@
                             body ...
                             #:handlers
                             (λ (_ . formals) final-expr)
-                            (pimap symbol->string 'formals)
+                            (ensure-list (pimap symbol->string 'formals))
                             (λ (help-string)
                               (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
                               (newline)
@@ -98,13 +98,18 @@
          [extra (build-string (- n l) (λ (n) #\space))])
     (string-append str extra)))
 
+(define (ensure-list x)
+  (if (or (null? x) (pair? x))
+      x
+      (list x)))
+
 ;; pimap : (A -> B) improper-listof A -> improper-listof B 
 (define (pimap f pil)
   (cond
     [(null? pil) '()]
     [(pair? pil) (cons (pimap f (car pil))
                        (pimap f (cdr pil)))]
-    [else (list (f pil))]))
+    [else (f pil)]))
 
 ;; wrap-to-count : string nat -> (listof string)
 ;; breaks str into substrings such that no substring
