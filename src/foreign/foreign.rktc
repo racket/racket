@@ -165,21 +165,23 @@ END_XFORM_SKIP;
 /* Library objects */
 
 @cdefstruct[ffi-lib
-  [handle  "NON_GCBALE_PTR(void)"]
-  [name    "Scheme_Object*"]
-  [objects "Scheme_Hash_Table*"]]
+  [handle    "NON_GCBALE_PTR(void)"]
+  [name      "Scheme_Object*"]
+  [objects   "Scheme_Hash_Table*"]
+  [is_global "int"]]
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 
-/* (ffi-lib filename no-error?) -> ffi-lib */
-@cdefine[ffi-lib 1 2]{
+/* (ffi-lib filename no-error? global?) -> ffi-lib */
+@cdefine[ffi-lib 1 3]{
   char *name;
   Scheme_Object *path, *hashname;
   void *handle;
-  int null_ok = 0;
+  int null_ok = 0, as_global = 0;
   ffi_lib_struct *lib;
   if (!(SCHEME_PATH_STRINGP(argv[0]) || SCHEME_FALSEP(argv[0])))
     scheme_wrong_type(MYNAME, "string-or-false", 0, argc, argv);
+  as_global = ((argc > 2) && SCHEME_TRUEP(argv[2]));
   /* leave the filename as given, the system will look for it */
   /* (`#f' means open the executable) */
   path = SCHEME_FALSEP(argv[0]) ? NULL : TO_PATH(argv[0]);
@@ -196,7 +198,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
       } else
         handle = LoadLibraryW(WIDE_PATH(name));
     }{
-      handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+      handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
     }
     if (handle == NULL && !null_ok) {
       if (argc > 1 && SCHEME_TRUEP(argv[1])) return scheme_false;
@@ -213,7 +215,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
       }
     }
     ht = scheme_make_hash_table(SCHEME_hash_string);
-    @cmake["lib" ffi-lib "handle" "argv[0]" "ht"]
+    @cmake["lib" ffi-lib "handle" "argv[0]" "ht" "!name"]
     scheme_hash_set(opened_libs, hashname, (Scheme_Object*)lib);
     /* no dlclose finalizer - since the hash table always keeps a reference */
     /* maybe add some explicit unload at some point */
@@ -240,7 +242,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 @cdefine[ffi-obj 2]{
   ffi_obj_struct *obj;
   void *dlobj;
-  ffi_lib_struct *lib = NULL;
+  ffi_lib_struct *lib = NULL, *lib2;
   char *dlname;
   if (SCHEME_FFILIBP(argv[1]))
     lib = (ffi_lib_struct*)argv[1];
@@ -292,6 +294,17 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
     }
     }{
     dlobj = dlsym(lib->handle, dlname);
+    if (!dlobj && lib->is_global) {
+      /* Try every handle in the table of opened libraries. */
+      int i;
+      for (i = opened_libs->size; i--; ) {
+        if (opened_libs->vals[i]) {
+          lib2 = (ffi_lib_struct *)opened_libs->vals[i];
+          dlobj = dlsym(lib2->handle, dlname);
+          if (dlobj) break;
+        }
+      }
+    }
     if (!dlobj) {
       const char *err;
       err = dlerror();

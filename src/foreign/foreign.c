@@ -168,6 +168,7 @@ typedef struct ffi_lib_struct {
   NON_GCBALE_PTR(void) handle;
   Scheme_Object* name;
   Scheme_Hash_Table* objects;
+  int is_global;
 } ffi_lib_struct;
 #define SCHEME_FFILIBP(x) (SCHEME_TYPE(x)==ffi_lib_tag)
 #define MYNAME "ffi-lib?"
@@ -199,17 +200,18 @@ END_XFORM_SKIP;
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 
-/* (ffi-lib filename no-error?) -> ffi-lib */
+/* (ffi-lib filename no-error? global?) -> ffi-lib */
 #define MYNAME "ffi-lib"
 static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
 {
   char *name;
   Scheme_Object *path, *hashname;
   void *handle;
-  int null_ok = 0;
+  int null_ok = 0, as_global = 0;
   ffi_lib_struct *lib;
   if (!(SCHEME_PATH_STRINGP(argv[0]) || SCHEME_FALSEP(argv[0])))
     scheme_wrong_type(MYNAME, "string-or-false", 0, argc, argv);
+  as_global = ((argc > 2) && SCHEME_TRUEP(argv[2]));
   /* leave the filename as given, the system will look for it */
   /* (`#f' means open the executable) */
   path = SCHEME_FALSEP(argv[0]) ? NULL : TO_PATH(argv[0]);
@@ -226,7 +228,7 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
     } else
       handle = LoadLibraryW(WIDE_PATH(name));
 #   else /* WINDOWS_DYNAMIC_LOAD undefined */
-    handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+    handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
 #   endif /* WINDOWS_DYNAMIC_LOAD */
     if (handle == NULL && !null_ok) {
       if (argc > 1 && SCHEME_TRUEP(argv[1])) return scheme_false;
@@ -248,6 +250,7 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
     lib->handle = (handle);
     lib->name = (argv[0]);
     lib->objects = (ht);
+    lib->is_global = (!name);
     scheme_hash_set(opened_libs, hashname, (Scheme_Object*)lib);
     /* no dlclose finalizer - since the hash table always keeps a reference */
     /* maybe add some explicit unload at some point */
@@ -309,7 +312,7 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
 {
   ffi_obj_struct *obj;
   void *dlobj;
-  ffi_lib_struct *lib = NULL;
+  ffi_lib_struct *lib = NULL, *lib2;
   char *dlname;
   if (SCHEME_FFILIBP(argv[1]))
     lib = (ffi_lib_struct*)argv[1];
@@ -361,6 +364,17 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
     }
 #   else /* WINDOWS_DYNAMIC_LOAD undefined */
     dlobj = dlsym(lib->handle, dlname);
+    if (!dlobj && lib->is_global) {
+      /* Try every handle in the table of opened libraries. */
+      int i;
+      for (i = opened_libs->size; i--; ) {
+        if (opened_libs->vals[i]) {
+          lib2 = (ffi_lib_struct *)opened_libs->vals[i];
+          dlobj = dlsym(lib2->handle, dlname);
+          if (dlobj) break;
+        }
+      }
+    }
     if (!dlobj) {
       const char *err;
       err = dlerror();
@@ -3430,7 +3444,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("ffi-lib?",
     scheme_make_prim_w_arity(foreign_ffi_lib_p, "ffi-lib?", 1, 1), menv);
   scheme_add_global("ffi-lib",
-    scheme_make_prim_w_arity(foreign_ffi_lib, "ffi-lib", 1, 2), menv);
+    scheme_make_prim_w_arity(foreign_ffi_lib, "ffi-lib", 1, 3), menv);
   scheme_add_global("ffi-lib-name",
     scheme_make_prim_w_arity(foreign_ffi_lib_name, "ffi-lib-name", 1, 1), menv);
   scheme_add_global("ffi-obj?",
@@ -3743,7 +3757,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("ffi-lib?",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib?", 1, 1), menv);
   scheme_add_global("ffi-lib",
-   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib", 1, 2), menv);
+   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib", 1, 3), menv);
   scheme_add_global("ffi-lib-name",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "ffi-lib-name", 1, 1), menv);
   scheme_add_global("ffi-obj?",

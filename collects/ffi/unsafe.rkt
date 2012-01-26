@@ -93,7 +93,8 @@
          ffi-lib? ffi-lib-name)
 (define (get-ffi-lib name [version/s ""]
 		     #:fail [fail #f]
-		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs])
+		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs]
+                     #:global? [global? #f])
   (cond
    [(not name) (ffi-lib name)] ; #f => NULL => open this executable
    [(not (or (string? name) (path? name)))
@@ -123,7 +124,7 @@
 				 (string-append name0 "." lib-suffix v)
 				 (string-append name0 v "." lib-suffix))))
 		       versions)]
-	   [ffi-lib*  (lambda (name) (ffi-lib name #t))])
+	   [ffi-lib*  (lambda (name) (ffi-lib name #t global?))])
       (or ;; try to look in our library paths first
        (and (not absolute?)
 	    (ormap (lambda (dir)
@@ -145,8 +146,8 @@
        (if fail
 	   (fail)
 	   (if (pair? names)
-	       (ffi-lib (car names))
-	       (ffi-lib name0)))))]))
+	       (ffi-lib (car names) #f global?)
+	       (ffi-lib name0 #f global?)))))]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))

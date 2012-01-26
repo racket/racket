@@ -17,7 +17,8 @@ Returns @racket[#t] if @racket[v] is a @deftech{foreign-library value},
 @defproc[(ffi-lib [path (or/c path-string? #f)]
                   [version (or/c string? (listof (or/c string? #f)) #f) #f]
 		  [#:get-lib-dirs get-lib-dirs (-> (listof path?)) get-lib-search-dirs]
-		  [#:fail fail (or/c #f (-> any)) #f])
+		  [#:fail fail (or/c #f (-> any)) #f]
+                  [#:global? global? any/c #f])
          any]{
 
 Returns a @tech{foreign-library value} or the result of @racket[fail]. 
@@ -95,6 +96,15 @@ particular, use @racket[#f] to access C-level functionality exported
 by the run-time system (as described in @|InsideRacket|). The
 @racket[version] argument is ignored when @racket[path] is
 @racket[#f].
+
+If @racket[path] is not @racket[#f], @racket[global?] is true, and the
+operating system supports opening a library in ``global'' mode so that
+the library's symbols are used for resolving references from libraries
+that are loaded later, then global mode is used to open the
+library. Otherwise, the library is opened in ``local'' mode, where the
+library's symbols are not made available for future resolution. This
+local-versus-global choice does not affect whether the library's
+symbols are available via @racket[(ffi-lib #f)].
 
 Due to the way the operating system performs dynamic binding, loaded
 libraries are associated with Racket (or DrRacket) for the duration of
