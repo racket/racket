@@ -10,6 +10,7 @@
          "compile.rkt"
          (prefix-in transformer: "transformer.rkt")
          (prefix-in fixture: "fixture.rkt")
+         "operator.rkt"
          macro-debugger/emit
          racket/pretty
          syntax/stx

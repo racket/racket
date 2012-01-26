@@ -7,6 +7,7 @@
                        racket/class
                        "private/macro2.rkt"
                        "private/class.rkt"
+                       "private/operator.rkt"
                        (prefix-in literal: "private/literals.rkt")
                        (prefix-in syntax-parse: syntax/parse)
                        (prefix-in racket: racket/base)

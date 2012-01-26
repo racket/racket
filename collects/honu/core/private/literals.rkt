@@ -15,17 +15,16 @@
 
 (define-literal honu-return)
 (define-literal semicolon)
-(define-literal honu-+ honu-* honu-/ honu-- honu-|| honu-%
+(define-literal honu-|| honu-%
                 honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
-                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
+                honu->> honu-<< honu->>> 
                 honu-!=
                 honu-equal
                 honu-<-
                 honu-literal
                 honu-then
                 honu-? honu-: honu-comma honu-. #%braces #%brackets #%parens colon
-                honu-and
                 ellipses-comma ellipses-comma* ellipses-repeat
                 honu-in
                 honu-where
