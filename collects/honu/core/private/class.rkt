@@ -2,6 +2,7 @@
 
 (require "syntax.rkt"
          "literals.rkt"
+         (only-in "operator.rkt" honu-equal)
          (only-in "honu2.rkt" honu-declaration separate-ids)
          (for-syntax racket/base
                      "literals.rkt"
@@ -15,8 +16,9 @@
     (syntax-parse method #:literals (define)
       [(define (name args ...) body ...)
        #'(define/public (name args ...) body ...)]))
+  (define-literal-set equals (honu-equal))
   (define-splicing-syntax-class honu-class-thing
-                                #:literals (honu-equal)
+                                #:literal-sets (equals)
     [pattern method:honu-function
              #:with result (replace-with-public (local-binding method.result))]
     [pattern var:honu-declaration

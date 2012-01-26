@@ -144,8 +144,8 @@
 
     ;; v.x = 5
     (define-syntax-class assign #:literal-sets (cruft)
-                                #:literals (honu-assignment)
-      [pattern (_ name:identifier honu-assignment argument:honu-expression . more)
+                                #:literals (honu-equal)
+      [pattern (_ name:identifier honu-equal argument:honu-expression . more)
                #:with result (with-syntax ([left left])
                                #'(%racket
                                    (let ([left* left])
@@ -157,7 +157,7 @@
 
     ;; v.x
     (define-syntax-class plain #:literal-sets (cruft)
-                               #:literals (honu-assignment)
+                               #:literals (honu-equal)
       [pattern (_ name:identifier . more)
        #:with result (with-syntax ([left left])
                        #'(%racket
