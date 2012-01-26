@@ -217,25 +217,32 @@ sense. In that case, you have two options:
  @item{Add the library a new or existing @|PLaneT| package. Libraries
        in a @|PLaneT| package are referenced with a path of the form
        @racket[(planet ....)] path.
-
-       @margin-note{See @other-doc['(lib "planet/planet.scrbl")]
+       @margin-note*{See @other-doc['(lib "planet/planet.scrbl")]
        for more information on @|PLaneT|.}}
 
 ]
 
 The simplest option is to add a new collection. You could add a new
 collection by placing files in the Racket installation or one of the
-directories reported by @racket[(get-collects-search-dirs)]---perhaps
-setting the @envvar{PLTCOLLECTS} environment variable to extend the
-search path---but using @exec{raco link} is usually the best approach.
+directories reported by
+@racket[(get-collects-search-dirs)]. Alternatively, you could add to
+the list of searched directories by setting the @envvar{PLTCOLLECTS}
+environment variable; if you set @envvar{PLTCOLLECTS}, include an
+empty path in by starting the value with a colon (Unix and Mac OS X)
+or semicolon (Windows) so that the original search paths are
+preserved. Finally, instead of using one of the default directories or
+setting @envvar{PLTCOLLECTS}, you can use @exec{raco link}.
 
-The @exec{raco link} command-line tool creates a link from a collection
-name to a directory for the collection's modules. For example, suppose
-you have a directory @filepath{/usr/molly/bakery} that contains the
-@filepath{cake.rkt} module (from the
+The @exec{raco link} command-line tool creates a link from a
+collection name to a directory for the collection's modules. For
+example, suppose you have a directory @filepath{/usr/molly/bakery}
+that contains the @filepath{cake.rkt} module (from the
 @seclink["module-basics"]{beginning} of this section) and other
 related modules. To make the modules available as a @filepath{bakery}
-collection, use
+collection, use @margin-note*{Instead of installing a single
+collection directory, the @DFlag{root} or @Flag{d} flag for @exec{raco
+link} can install a directory that contains collections, much like
+adding to @envvar{PLTCOLLECTS}.}
 
 @commandline{raco link /usr/molly/bakery}
 
