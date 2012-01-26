@@ -105,7 +105,7 @@ as follows:
 Each @racket[_test-expr] is evaluated in order. If it produces
 @racket[#f], the corresponding @racket[_expr]s are ignored, and
 evaluation proceeds to the next @racket[_test-expr]. As soon as a
-@racket[_test-expr] produces a true value, its @racket[_text-expr]s
+@racket[_test-expr] produces a true value, its @racket[_expr]s
 are evaluated to produce the result for the @racket[cond] form, and no
 further @racket[_test-expr]s are evaluated.
 
