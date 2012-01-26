@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "macro2.rkt"
+(require "syntax.rkt"
          "literals.rkt"
          (only-in "honu2.rkt" honu-declaration separate-ids)
          (for-syntax racket/base

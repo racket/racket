@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require (for-syntax "transformer.rkt"
-                     syntax/define
                      syntax/parse
                      syntax/stx
                      racket/syntax
@@ -14,17 +13,10 @@
                      "parse2.rkt"
                      "compile.rkt")
          "literals.rkt"
+         "syntax.rkt"
          #;
          (for-syntax "honu-typed-scheme.rkt")
          syntax/parse)
-
-(provide define-honu-syntax)
-(define-syntax (define-honu-syntax stx)
-  (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
-    (with-syntax ([id id]
-                  [rhs rhs])
-      (syntax/loc stx
-                 (define-syntax id (make-honu-transformer rhs))))))
 
 (define-for-syntax (convert-pattern original-pattern)
   (define-splicing-syntax-class pattern-type

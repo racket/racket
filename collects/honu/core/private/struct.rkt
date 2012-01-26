@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "macro2.rkt"
+(require "syntax.rkt"
          "literals.rkt"
          (for-syntax racket/base
                      "parse2.rkt"

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "macro2.rkt"
+(require "syntax.rkt"
          "operator.rkt"
          "struct.rkt"
          "honu-typed-scheme.rkt"
