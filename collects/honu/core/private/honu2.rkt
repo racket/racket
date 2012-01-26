@@ -12,7 +12,6 @@
                   honu-in
                   honu-in-lines
                   honu-prefix
-                  honu-equal
                   semicolon
                   honu-comma
                   define-literal
@@ -370,6 +369,7 @@
                  #:with variable #'iterator
                  #:with expression #'(in-lines)])
     (syntax-parse code #:literal-sets (cruft)
+                       #:literals (honu-equal)
       [(_ (~seq init:id honu-equal init-expression:honu-expression (~optional honu-comma)) ...
           (~seq sequence:sequence-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)

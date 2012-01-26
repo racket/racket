@@ -384,7 +384,8 @@
                      ;; [1, 2, 3] -> (list 1 2 3)
                      [(#%brackets stuff ...)
                       (define-literal-set wheres (honu-where))
-                      (syntax-parse #'(stuff ...) #:literal-sets  (cruft wheres)
+                      (define-literal-set equals (honu-equal))
+                      (syntax-parse #'(stuff ...) #:literal-sets  (cruft wheres equals)
                         [(work:honu-expression 
                           colon (~seq variable:id honu-equal list:honu-expression (~optional honu-comma)) ...
                           (~seq honu-where where:honu-expression (~optional honu-comma)) ...)

@@ -51,8 +51,8 @@
                   [right right])
       #'(%racket (right left)))))
 
-(provide honu-assignment)
-(define-honu-operator/syntax honu-assignment 0.0001 'left
+(provide honu-equal)
+(define-honu-operator/syntax honu-equal 0.0001 'left
   (lambda (left right)
     (with-syntax ([left left]
                   [right right])
