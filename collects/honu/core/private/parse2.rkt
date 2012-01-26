@@ -320,10 +320,10 @@
                                           (if current
                                             (if binary-transformer
                                               (binary-transformer current stuff)
-                                              (error '#'head "cannot be used as a binary operator"))
+                                              (error 'binary "cannot be used as a binary operator in ~a" #'head))
                                             (if unary-transformer
                                               (unary-transformer stuff)
-                                              (error '#'head "cannot be used as a unary operator"))))
+                                              (error 'unary "cannot be used as a unary operator in ~a" #'head))))
                                         (emit-local-step stuff output #:id #'binary-transformer)
                                         (with-syntax ([out (parse-all output)])
                                           #'(%racket out)))

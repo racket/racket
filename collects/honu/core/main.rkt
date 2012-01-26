@@ -50,7 +50,7 @@
                                    [honu->= >=]
                                    [honu-<= <=]
                                    ;; [honu-equal =]
-                                   ;; [honu-assignment :=]
+                                   [honu-assignment :=]
                                    [honu-map map]
                                    [honu-flow \|]
                                    [honu-dot %dot]
