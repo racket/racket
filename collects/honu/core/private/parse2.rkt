@@ -384,16 +384,17 @@
                      [(#%brackets stuff ...)
                       (define-literal-set wheres (honu-where))
                       (syntax-parse #'(stuff ...) #:literal-sets  (cruft wheres)
-                        [(work:honu-expression (~optional (~seq honu-where where:honu-expression))
-                                               colon (~seq variable:id honu-<- list:honu-expression (~optional honu-comma)) ...)
+                        [(work:honu-expression 
+                          colon (~seq variable:id honu-equal list:honu-expression (~optional honu-comma)) ...
+                          (~seq honu-where where:honu-expression (~optional honu-comma)) ...)
                          (define filter (if (attribute where)
-                                          #'(#:when where.result)
+                                          #'((#:when where.result) ...)
                                           #'()))
                          (define comprehension
-                           (with-syntax ([(filter ...) filter])
+                           (with-syntax ([((filter ...) ...) filter])
                              #'(for/list ([variable list.result]
                                           ...
-                                          filter ...)
+                                          filter ... ...)
                                  work.result)))
                          (if current
                            (values (left current) stream)

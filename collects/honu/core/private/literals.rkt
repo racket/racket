@@ -19,7 +19,8 @@
                 honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
-                honu-!= honu-==
+                honu-!=
+                honu-equal
                 honu-<-
                 honu-literal
                 honu-then
@@ -43,4 +44,4 @@
 
 (define-literal-set cruft (#%parens #%brackets #%braces
                            %racket
-                           semicolon colon honu-comma honu-<-))
+                           semicolon colon honu-comma honu-equal))

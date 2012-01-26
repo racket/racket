@@ -2,7 +2,7 @@
 
 (require "macro2.rkt"
          "literals.rkt"
-         (only-in "honu2.rkt" honu-declaration honu-equal separate-ids)
+         (only-in "honu2.rkt" honu-declaration separate-ids)
          (for-syntax racket/base
                      "literals.rkt"
                      "parse2.rkt"

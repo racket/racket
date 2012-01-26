@@ -12,6 +12,7 @@
                   honu-in
                   honu-in-lines
                   honu-prefix
+                  honu-equal
                   semicolon
                   honu-comma
                   define-literal
@@ -248,7 +249,7 @@
 
 (define-unary-operator honu-not 0.7 'left not)
 
-(define-binary-operator honu-equal 1 'left equal?)
+(define-binary-operator honu-== 1 'left equal?)
 (define-binary-operator honu-not-equal 1 'left (lambda (left right)
                                                  (not (equal? left right))))
 
@@ -379,7 +380,7 @@
   ;; var a, b, c = values(1 + 2, 5, 9)
   (define-splicing-syntax-class honu-declaration
                               #:literal-sets (cruft)
-                              #:literals (honu-equal honu-var)
+                              #:literals (honu-var)
      [pattern (~seq honu-var (~var variables (separate-ids (literal-syntax-class honu-comma)
                                                            (literal-syntax-class honu-equal)))
                     honu-equal one:honu-expression)
@@ -390,7 +391,6 @@
 (define-honu-syntax honu-var
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-equal)
       [(var:honu-declaration . rest)
        (define result #'(%racket (define-values (var.name ...) var.expression)))
        (values result #'rest #t)])))
@@ -414,7 +414,7 @@
 (define-honu-syntax honu-for
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-equal honu-in)
+                       #:literals (honu-in)
       [(_ (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
        (values #'(%racket (for ([iterator stuff.result] ...)
@@ -434,7 +434,6 @@
                  #:with variable #'iterator
                  #:with expression #'(in-lines)])
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-equal)
       [(_ (~seq init:id honu-equal init-expression:honu-expression (~optional honu-comma)) ...
           (~seq sequence:sequence-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
