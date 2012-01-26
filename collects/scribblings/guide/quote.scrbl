@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval "guide-utils.rkt")
 
-@title[#:tag "quote"]{Quoting: @racket[quote] and @racketvalfont{'}}
+@title[#:tag "quote"]{Quoting: @racket[quote] and @racketvalfont{@literal{'}}}
 
 @refalso["quote"]{@racket[quote]}
 
