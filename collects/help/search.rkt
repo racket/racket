@@ -20,13 +20,14 @@
 ;; Useful in cases like schools that use systems that have problems
 ;; running a browser on local files (like NEU).  If you use this, then
 ;; it is a good idea to put the documentation tree somewhere local, to
-;; have better interaction times and not overload the PLT server.
-;; (define doc-url "http://download.racket-lang.org/docs/5.0/html/")
+;; have better interaction times instead of using the PLT server.
 ;; (define (send-main-page #:sub [sub "index.html"]
-;;                         #:fragment [fragment #f] #:query [query #f])
-;;   (define (part pfx x) (if x (list pfx x) '()))
-;;   (send-url (apply string-append doc-url sub
-;;                    (append (part "#" fragment) (part "?" query)))))
+;;                         #:fragment [fragment #f] #:query [query #f]
+;;                         #:notify [notify void])
+;;   (define (part pfx x) (if x (string-append pfx x) ""))
+;;   (send-url (string-append
+;;              "http://download.racket-lang.org/docs/" (version) "/html/"
+;;              sub (part "#" fragment) (part "?" query))))
 
 (define (perform-search str [context #f])
   ;; `context' can be a pre-filter query string to use for a context,
