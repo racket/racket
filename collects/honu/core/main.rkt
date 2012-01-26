@@ -65,6 +65,7 @@
                                    [honu-structure struct]
                                    [honu-syntax syntax]
                                    [honu-equal =]
+                                   [honu-+= +=]
                                    [literal:honu-prefix prefix]
                                    [literal:honu-then then]
                                    [literal:colon %colon]

@@ -325,7 +325,10 @@
                                             (if unary-transformer
                                               (unary-transformer stuff)
                                               (error 'unary "cannot be used as a unary operator in ~a" #'head))))
-                                        (emit-local-step stuff output #:id #'binary-transformer)
+                                        #;
+                                        (debug "Binary transformer ~a\n" binary-transformer)
+                                        #;
+                                        (emit-local-step stuff output #:id binary-transformer)
                                         (with-syntax ([out (parse-all output)])
                                           #'(%racket out)))
 

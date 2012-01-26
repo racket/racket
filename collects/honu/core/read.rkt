@@ -36,7 +36,8 @@
 (define-lex-abbrev string-character (:or (:: #\\ any-char)
                                          (:~ #\")))
 (define-lex-abbrev string (:: #\" (:* string-character) #\"))
-(define-lex-abbrev operator (:or "+" "!=" "=" "==" "*" "/" "-" "^" "||" "|" "&&" "<="
+(define-lex-abbrev operator (:or "+=" "-=" "*=" "/="
+                                 "+" "!=" "=" "==" "*" "/" "-" "^" "||" "|" "&&" "<="
                                  ">=" "<-" "<" ">" "!" "::" ":=" "%"))
 (define-lex-abbrev block-comment (:: "/*"
                                      (complement (:: any-string "*/" any-string))

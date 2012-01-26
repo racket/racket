@@ -6,7 +6,8 @@
                      syntax/parse)
          (only-in "literals.rkt" %racket))
 
-(provide define-honu-operator/syntax)
+(provide (all-defined-out))
+
 (define-syntax (define-honu-operator/syntax stx)
   (syntax-parse stx
     [(_ name precedence associativity binary-function)
@@ -14,15 +15,12 @@
     [(_ name precedence associativity binary-function unary-function)
      #'(define-syntax name (make-honu-operator precedence associativity binary-function unary-function))]))
 
-(provide define-honu-fixture)
 (define-syntax (define-honu-fixture stx)
   (syntax-parse stx
     [(_ name transformer)
      #'(define-syntax name (make-fixture transformer))]))
 
 (define-syntax-rule (define-binary-operator name precedence associativity operator)
-  (begin
-    (provide name)
     (define-honu-operator/syntax name precedence associativity
                                  ;; binary
                                  (lambda (left right)
@@ -32,31 +30,44 @@
                                  ;; unary
                                  (lambda (argument)
                                    (with-syntax ([argument argument])
-                                     #'(%racket (operator argument)))))))
+                                     #'(%racket (operator argument))))))
 
 (define-syntax-rule (define-unary-operator name precedence associativity operator)
-                    (begin
-                      (provide name)
                       (define-honu-operator/syntax name precedence associativity
                                                    #f
                                                    ;; unary
                                                    (lambda (argument)
                                                      (with-syntax ([argument argument])
-                                                       #'(%racket (operator argument)))))))
+                                                       #'(%racket (operator argument))))))
 
-(provide honu-flow)
 (define-honu-operator/syntax honu-flow 0.001 'left
   (lambda (left right)
     (with-syntax ([left left]
                   [right right])
       #'(%racket (right left)))))
 
-(provide honu-equal)
+(begin-for-syntax
+  (define-syntax-rule (mutator change)
+                      (lambda (left right)
+                        (with-syntax ([left left]
+                                      [right (change left right)])
+                          #'(%racket (set! left right))))))
+
+;; Traditional assignment operator
 (define-honu-operator/syntax honu-equal 0.0001 'left
-  (lambda (left right)
-    (with-syntax ([left left]
-                  [right right])
-      #'(%racket (set! left right)))))
+  (mutator (lambda (left right) right)))
+
+(define-syntax-rule (define-honu-operator-= name operation)
+  (define-honu-operator/syntax name 0.0001 'left
+                               (mutator (lambda (left right)
+                                          (with-syntax ([left left] [right right])
+                                            #'(operation left right))))))
+
+;; Operators that mutate the left hand side
+(define-honu-operator-= honu-+= +)
+(define-honu-operator-= honu--= -)
+(define-honu-operator-= honu-*= *)
+(define-honu-operator-= honu-/= /)
 
 (define-binary-operator honu-+ 1 'left +)
 (define-binary-operator honu-- 1 'left -)
