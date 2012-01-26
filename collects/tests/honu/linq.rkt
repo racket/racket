@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require honu/core/private/macro2
+(require honu/core/private/syntax
          honu/core/private/honu-typed-scheme
          honu/core/private/literals
          racket/list

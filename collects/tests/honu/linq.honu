@@ -5,7 +5,7 @@ require "linq.rkt";
 
 class Xml(data){
   Descendants(name){
-    [new Xml(element): element <- find_descendants(data, name)]
+    [new Xml(element): element = find_descendants(data, name)]
   }
 
   Element(name){
@@ -25,7 +25,7 @@ read_xml(){
 }
 
 loadXml(file){
-  with_input_from_file(file){
+  withInputFromFile(file){
     new Xml(read_xml())
   }
 }
