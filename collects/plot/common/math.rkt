@@ -168,27 +168,28 @@
     [xs  (cond [(not (andmap real? xs)) (raise-type-error 'distance "real numbers" xs)]
                [else  (sqrt (sum sqr xs))])]))
 
+(define (exact∘log x)
+  (define y (log x))
+  (cond [(infinite? y)  (- (inexact->exact (log (numerator x)))
+                           (inexact->exact (log (denominator x))))]
+        [else  (inexact->exact y)]))
+
 (defproc (floor-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
-  (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
-                                                                        "exact integer >= 2" 0 b x)]
-        [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
-        [else  (cond [(exact? x)
-                      (let loop ([y 0] [x x])
-                        (cond [(x . >= . b)  (loop (add1 y) (/ x b))]
-                              [(x . < . 1)   (loop (sub1 y) (* x b))]
-                              [else  y]))]
-                     [else  (inexact->exact (floor (/ (log x) (log b))))])]))
+  (cond [(not (and (exact-integer? b) (b . >= . 2)))
+         (raise-type-error 'floor-log/base "exact integer >= 2" 0 b x)]
+        [(not (and (real? x) (x . > . 0)))
+         (raise-type-error 'floor-log/base "real > 0" 1 b x)]
+        [else
+         (define q (inexact->exact x))
+         (define m (floor (/ (exact∘log q) (inexact->exact (log b)))))
+         (let loop ([m m] [p  (expt b m)])
+           (cond [(q . < . p)  (loop (sub1 m) (/ p b))]
+                 [else  (define u (* p b))
+                        (cond [(q . >= . u)  (loop (add1 m) u)]
+                              [else  m])]))]))
 
 (defproc (ceiling-log/base [b (and/c exact-integer? (>=/c 2))] [x (>/c 0)]) exact-integer?
-  (cond [(not (and (exact-integer? b) (b . >= . 2)))  (raise-type-error 'floor-log/base
-                                                                        "exact integer >= 2" 0 b x)]
-        [(not (and (real? x) (x . > . 0)))  (raise-type-error 'floor-log/base "real > 0" 1 b x)]
-        [else  (cond [(exact? x)
-                      (let loop ([y 0] [x x])
-                        (cond [(x . > . 1)         (loop (add1 y) (/ x b))]
-                              [(x . <= . (/ 1 b))  (loop (sub1 y) (* x b))]
-                              [else  y]))]
-                     [else  (inexact->exact (ceiling (/ (log x) (log b))))])]))
+  (- (floor-log/base b (/ (inexact->exact x)))))
 
 (defproc (polar->cartesian [θ real?] [r real?]) (vector/c real? real?)
   (cond [(not (real? θ))  (raise-type-error 'polar->cartesian "real number" 0 θ r)]
