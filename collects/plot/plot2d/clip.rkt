@@ -2,7 +2,8 @@
 
 ;; Small library for clipping points, rectangles, lines and polygons against axial planes.
 
-(require racket/match racket/list)
+(require racket/match racket/list
+         "../common/utils.rkt")
 
 (provide point-in-bounds? clip-line clip-lines clip-polygon)
 
@@ -17,14 +18,18 @@
 ;; Line clipping
 
 (define (clip-line-x start-in-bounds? x x1 y1 x2 y2)
-  (define t (/ (- x x1) (- x2 x1)))
-  (cond [start-in-bounds?  (values x1 y1 x (+ y1 (* t (- y2 y1))))]
-        [else              (values x (+ y1 (* t (- y2 y1))) x2 y2)]))
+  (let-map
+   (x x1 y1 x2 y2) inexact->exact
+   (define t (/ (- x x1) (- x2 x1)))
+   (cond [start-in-bounds?  (values x1 y1 x (+ y1 (* t (- y2 y1))))]
+         [else              (values x (+ y1 (* t (- y2 y1))) x2 y2)])))
 
 (define (clip-line-y start-in-bounds? y x1 y1 x2 y2)
-  (define t (/ (- y y1) (- y2 y1)))
-  (cond [start-in-bounds?  (values x1 y1 (+ x1 (* t (- x2 x1))) y)]
-        [else              (values (+ x1 (* t (- x2 x1))) y x2 y2)]))
+  (let-map
+   (y x1 y1 x2 y2) inexact->exact
+   (define t (/ (- y y1) (- y2 y1)))
+   (cond [start-in-bounds?  (values x1 y1 (+ x1 (* t (- x2 x1))) y)]
+         [else              (values (+ x1 (* t (- x2 x1))) y x2 y2)])))
 
 (define (clip-line-x-min x-min x1 y1 x2 y2)
   (cond [(and (x1 . >= . x-min) (x2 . < . x-min))  (clip-line-x #t x-min x1 y1 x2 y2)]
