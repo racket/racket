@@ -394,7 +394,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (syntax-parse stx
          [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...) . opts)
           (let ([mutable (mutable? #'opts)]
-                [cname (datum->syntax #f (syntax-e #'nm.name))])
+                [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
             (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
                                                   (struct #,@(attribute nm.new-spec) (fs.fld ...)
                                                           #:extra-constructor-name #,cname
