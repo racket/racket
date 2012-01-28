@@ -178,13 +178,16 @@
 
 (define 2pi (* 2 pi))
 
+(define (flmodulo x y)
+  (fl- x (fl* y (flfloor (fl/ x y)))))
+
 (define ((2d-polar->3d-function f) x y z)
   (let ([x  (exact->inexact x)]
         [y  (exact->inexact y)]
         [z  (exact->inexact z)])
     (define-values (θ ρ)
       (cond [(and (fl= x 0.0) (fl= y 0.0))  (values 0.0 0.0)]
-            [else  (values (flmodulo (flatan2 y x) 2pi)
+            [else  (values (flmodulo (atan y x) 2pi)
                            (flatan (fl/ z (fldistance x y))))]))
     (fl- (exact->inexact (f θ ρ)) (fldistance x y z))))
 

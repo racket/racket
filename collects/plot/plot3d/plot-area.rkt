@@ -711,7 +711,7 @@
                    [else  1.0]))
            ;; Specular highlighting: Blinn-Phong model
            (define spec
-             (cond [specular-light?  (fl* 32.0 (flexpt (flabs (vdot normal half-dir)) 20.0))]
+             (cond [specular-light?  (fl* 32.0 (expt (flabs (vdot normal half-dir)) 20.0))]
                    [else  0.0]))
            ;; Blend ambient light with diffuse light, return specular as it is
            ;; As ambient-light -> 1.0, contribution of diffuse -> 0.0

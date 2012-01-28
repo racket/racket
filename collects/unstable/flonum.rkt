@@ -2,26 +2,11 @@
 
 (require racket/unsafe/ops)
 
-(provide flatan2 flmodulo flexpt
-         flonum->bit-field bit-field->flonum
+(provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev
-         -max.0 -min.0 +min.0 +max.0)
-
-(define (flatan2 y x)
-  (cond [(not (flonum? y))  (raise-type-error 'flatan2 "flonum" 0 y x)]
-        [(not (flonum? x))  (raise-type-error 'flatan2 "flonum" 1 y x)]
-        [else  (exact->inexact (atan y x))]))
-
-(define (flmodulo x y)
-  (cond [(not (flonum? x))  (raise-type-error 'flmodulo "flonum" 0 x y)]
-        [(not (flonum? y))  (raise-type-error 'flmodulo "flonum" 1 x y)]
-        [else  (unsafe-fl- x (unsafe-fl* y (unsafe-flfloor (unsafe-fl/ x y))))]))
-
-(define (flexpt b x)
-  (cond [(not (flonum? b))  (raise-type-error 'flexpt "flonum" 0 b x)]
-        [(not (flonum? x))  (raise-type-error 'flexpt "flonum" 1 b x)]
-        [else  (unsafe-flexp (unsafe-fl* x (unsafe-fllog b)))]))
+         -max.0 -min.0 +min.0 +max.0
+         flonums-between)
 
 (define (flonum->bit-field x)
   (cond [(flonum? x)  (integer-bytes->integer (real->floating-point-bytes x 8) #f)]
@@ -67,3 +52,8 @@
 (define -min.0 (flprev 0.0))
 (define +min.0 (flnext 0.0))
 (define +max.0 (flprev +inf.0))
+
+(define (flonums-between x y)
+  (cond [(not (flonum? x))  (raise-type-error 'flonums-between "flonum" 0 x y)]
+        [(not (flonum? y))  (raise-type-error 'flonums-between "flonum" 1 x y)]
+        [else  (- (flonum->ordinal y) (flonum->ordinal x))]))
