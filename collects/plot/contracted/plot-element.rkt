@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract unstable/latent-contract racket/class)
+(require racket/contract unstable/latent-contract unstable/contract racket/class)
 
 (require "../common/contract.rkt"
          "../common/plot-element.rkt"

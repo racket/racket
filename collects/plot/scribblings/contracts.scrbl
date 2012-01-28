@@ -137,14 +137,3 @@ Like @(racket plot-colors/c), but for opacities.
 Like @racket[plot-colors/c], but for strings.
 This is used, for example, to label @racket[stacked-histogram]s.
 }
-
-@section{Convenience Contracts}
-
-@doc-apply[contract/c]{
-Identifies @racket[contract?]s and predicates that can be used as contracts.
-}
-
-@doc-apply[treeof]{
-Identifies trees of values that meet the contract @(racket ct).
-Used by @(racket plot) and @(racket plot3d) to construct the contract for a tree of @(racket renderer2d?) or @(racket renderer3d?).
-}

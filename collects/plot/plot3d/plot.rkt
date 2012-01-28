@@ -3,6 +3,7 @@
 ;; Procedures that plot 3D renderers.
 
 (require racket/draw racket/snip racket/match racket/list racket/class racket/contract
+         unstable/contract
          slideshow/pict
          unstable/parameter-group
          unstable/lazy-require

@@ -6,7 +6,8 @@
                     slideshow/pict
                     db
                     plot
-                    plot/utils)
+                    plot/utils
+                    unstable/contract)
          plot
          plot/utils
          plot/doc
@@ -19,7 +20,8 @@
                                   slideshow/pict
                                   db
                                   plot
-                                  plot/utils))
+                                  plot/utils
+                                  unstable/contract))
          (all-from-out plot)
          (all-from-out plot/doc)
          (all-from-out plot/utils)

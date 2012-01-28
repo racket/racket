@@ -4,26 +4,15 @@
          unstable/latent-contract/defthing)
 
 (provide (except-out (all-defined-out)
-                     treeof
                      maybe-function/c maybe-apply
                      plot-colors/c pen-widths/c plot-pen-styles/c plot-brush-styles/c alphas/c
                      labels/c)
          (activate-contract-out
-          treeof
           maybe-function/c maybe-apply
           plot-colors/c pen-widths/c plot-pen-styles/c plot-brush-styles/c alphas/c
           labels/c)
          (rename-out [natural-number/c nat/c])
          truth/c)
-
-;; ===================================================================================================
-;; Convenience
-
-(defcontract contract/c (or/c contract? (any/c . -> . any/c)))
-
-(defcontract (treeof [elem-contract contract/c])
-  (or/c elem-contract
-        (listof (recursive-contract (treeof elem-contract)))))
 
 ;; ===================================================================================================
 ;; Plot-specific contracts

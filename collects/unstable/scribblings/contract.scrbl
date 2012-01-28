@@ -116,4 +116,22 @@ for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
 
 }
 
+@addition{@author+email["Neil Toronto" "neil.toronto@gmail.com"]}
+
+@defthing[contract/c contract?]{
+Identifies contracts and predicates that can be used as contracts.
+}
+
+@defproc[(treeof [elem-contract contract/c]) contract?]{
+Identifies values that meet the contract @racket[elem-contract], lists of such values, lists of lists, and so on.
+@examples[#:eval the-eval
+                 (define number-tree/c (treeof number?))
+                 (flat-contract? number-tree/c)
+                 (define number-tree? (flat-contract-predicate number-tree/c))
+                 (number-tree? 4)
+                 (number-tree? '(4 5))
+                 (number-tree? '((4 5) 6))
+                 (number-tree? '(4 . 5))]
+}
+
 @(close-eval the-eval)
