@@ -50,7 +50,7 @@ The size information for a pict is computed when the pict is
 created. This strategy supports programs that create new picts though
 arbitrarily complex computations on the size and shape of existing
 picts. The functions @racket[pict-width], @racket[pict-height],
-@racket[pict-descent], and @racket[pict-ascent] extract bounding-box
+@racket[pict-descent], and @racket[pict-ascent] extract bounding box
 information from a pict.
 
 A pict is a convertible datatype through the @racketmodname[file/convertible]
@@ -74,7 +74,7 @@ A @racket[pict] structure is normally not created directly with
 The @racket[draw] field contains the pict's drawing information in an
 internal format. Roughly, the drawing information is a procedure that
 takes a @racket[dc<%>] drawing context and an offset for the pict's
-top-left corner (i.e., it's bounding box's top left corner relative to
+top-left corner (i.e., it's @tech{bounding box}'s top left corner relative to
 the @racket[dc<%>] origin). The state of the @racket[dc<%>] is
 intended to affect the pict's drawing; for example, the pen and brush
 will be set for a suitable default drawing mode, and the
@@ -124,14 +124,21 @@ A @racket[child] structure is normally not created directly with
             pict?])]{
 
 Creates an arbitrary self-rendering pict.  The arguments to the
-rendering procedure will be a device context and top-left location for
+rendering procedure will be a drawing context and top-left location for
 drawing.
+
+The @racket[w] and @racket[h] arguments determine the width and height
+of the resulting pict's @tech{bounding box}.  In the three-argument case, the
+descent is @math{0} and the ascent is @racket[h] for the bounding
+box; in the five-argument case, @racket[a] and @racket[d] are used
+as the bounding box's ascent and descent.
   
 When the rendering procedure is called, the current pen and brush will
 be solid and in the pict's color (and linewidth), and the scale and
-offset of the dc will be set. The text mode will be transparent, but
+offset of the drawing context will be set. The text mode will be transparent, but
 the font and text colors are not guaranteed to be anything in
 particular.}
+
 
 @defproc*[([(blank [size real? 0]) pict?]
            [(blank [w real?] [h real?]) pict?]
@@ -139,10 +146,12 @@ particular.}
            [(blank [w real?] [h real?] [a real?] [d real?]) pict?])]{
 
 Creates a pict that draws nothing. The one-argument case supplies a
-value used for both the width and height. In the one- and two-argument
+value used for both the width and height of the resulting pict's
+@tech{bounding box}. In the one- and two-argument
 case, the ascent and descent are @math{0} for the resulting pict's
 bounding box; in the three-argument case, the height is computed by
 adding the given ascent and descent.}
+
 
 @defproc[(text [content string?]
                [style text-style/c null]
@@ -191,7 +200,7 @@ The given @racket[size] is in pixels, but it is ignored if a
 
 The @racket[angle] is in radians, and positive values rotate
 counter-clockwise. For a non-zero @racket[angle], the resulting
-pict's bounding box covers the rotated text, and the descent is zero
+pict's @tech{bounding box} covers the rotated text, and the descent is zero
 and the ascent is the height.}
 
 
@@ -200,7 +209,8 @@ and the ascent is the height.}
            [(vline [w real?] [h real?] 
                    [#:segment seg-length (or/c #f real?) #f]) pict?])]{
 
-Straight lines, centered within their bounding boxes.}
+Straight lines, centered within their @tech{bounding box}es.}
+
 
 @defproc[(frame [pict pict?]
                 [#:segment seg-length (or/c #f real?) #f]
@@ -270,12 +280,14 @@ If the bitmap cannot be loaded, if the given @racket[bitmap%] object
 is not valid, or if the @racket[bitmap-draft-mode] parameter is set to
 @racket[#t], the result pict draws the word ``bitmap failed''.}
 
+
 @defproc*[([(arrow [size real?] [radians real?]) pict?]
            [(arrowhead [size real?] [radians real?]) pict?])]{
 
 Creates an arrow or arrowhead in the specific direction within a
 @racket[size] by @racket[size] pict. Points on the arrow may extend
-slightly beyond the bounding box.}
+slightly beyond the @tech{bounding box}.}
+
 
 @defproc*[([(pip-line [dx real?] [dy real?] [size real?]) pict?]
            [(pip-arrow-line [dx real?] [dy real?] [size real?]) pict?]
@@ -456,7 +468,7 @@ comparing the last-element bottom-right corners.}
                       [pict pict?])
             pict?])]{
 
-Creates a pict with the same bounding box, ascent, and descent as
+Creates a pict with the same @tech{bounding box}, ascent, and descent as
 @racket[base], but with @racket[pict] placed on top.  The @racket[dx]
 and @racket[dy] arguments specify how far right and down the second
 pict's corner is from the first pict's corner.  Alternately, the
@@ -511,7 +523,7 @@ horizontal or vertical placement of each cell in the column or row.}
 @defproc*[([(scale [pict pict?] [factor real?]) pict?]
            [(scale [pict pict?] [w-factor real?] [h-factor real?]) pict?])]{
 
-Scales a pict drawing, as well as its @tech{bounding-box}. The drawing
+Scales a pict drawing, as well as its @tech{bounding box}. The drawing
 is scaled by adjusting the destination @racket[dc<%>]'s scale while
 drawing the original @racket[pict].}
 
@@ -520,7 +532,7 @@ drawing the original @racket[pict].}
 
 Rotates a pict's drawing by @racket[theta] radians counter-clockwise.
 
-The bounding box of the resulting pict is the box encloses the rotated
+The @tech{bounding box} of the resulting pict is the box encloses the rotated
 corners of @racket[pict] (which inflates the area of the bounding
 box, unless @racket[theta] is a multiple of half of @racket[pi]). The
 ascent and descent lines of the result's bounding box are the
@@ -577,6 +589,7 @@ contexts and cases when semi-transparent drawing works.}
 
 Clips a pict's drawing to its @tech{bounding box}.}
 
+
 @defproc*[([(inset/clip [pict pict?] [amt real?]) pict?]
            [(inset/clip [pict pict?] [h-amt real?] [v-amt real?]) pict?]
            [(inset/clip [pict pict?] [l-amt real?] [t-amt real?] 
@@ -584,6 +597,7 @@ Clips a pict's drawing to its @tech{bounding box}.}
 
 Insets and clips the pict's drawing to its @tech{bounding
 box}. Usually, the inset amounts are negative.}
+
 
 @defform*[[(scale/improve-new-text pict-expr scale-expr)
            (scale/improve-new-text pict-expr x-scale-expr y-scale-expr)]]{
@@ -598,7 +612,7 @@ black-and-white colors.}
 
 @; ------------------------------------------------------------------------
 
-@section{Bounding-Box Adjusters}
+@section{Bounding Box Adjusters}
 
 @defproc*[([(inset [pict pict?] [amt real?]) pict?]
            [(inset [pict pict?] [h-amt real?] [v-amt real?]) pict?]
@@ -617,12 +631,12 @@ Truncates @racket[pict]'s @tech{bounding box} by removing the descent part.}
 @defproc[(lift-above-baseline [pict pict?] [amt real?]) pict?]{
 
 Lifts @racket[pict] relative to its baseline, extending the
-@tech{bounding-box} height if necessary.}
+@tech{bounding box} height if necessary.}
 
 @defproc[(drop-below-ascent [pict pict?] [amt real?]) pict?]{
 
 Drops @racket[pict] relative to its ascent line, extending the
-@tech{bounding-box} height if necessary.}
+@tech{bounding box} height if necessary.}
 
 @defproc[(baseless [pict pict?]) pict?]{
 
@@ -636,10 +650,12 @@ preserving all the drawing of @racket[pict]). The last element, as
 reported by @racket[pict-last] is also set to @racket[(or (pict-last
 sub-pict) sub-pict)].}
 
+
 @defproc[(panorama [pict pict?]) pict?]{
 
-Shifts the given pict's bounding box to enclose the bounding boxes of
+Shifts the given pict's @tech{bounding box} to enclose the bounding boxes of
 all sub-picts (even @racket[launder]ed picts).}
+
 
 @defproc[(use-last [pict pict?] [sub-pict pict-path?]) pict?]{
 
@@ -691,9 +707,10 @@ be within the second element, and so on.}
 Returns @racket[#t] if @racket[v] is a @racket[pict] or a non-empty
 list of @racket[pict]s.}
 
+
 @defproc[(launder [pict pict?]) pict?]{
 
-Creates a pict that has the same drawing and bounding box of
+Creates a pict that has the same drawing and @tech{bounding box} of
 @racket[pict], but which hides all of its sub-picts so that they
 cannot be found with functions like @racket[lt-find]. If @racket[pict]
 has a last-line pict, then the laundered pict has a fresh last-line
@@ -811,7 +828,7 @@ used to roun the balloon's corners. As usual, if it is less than
 @racket[1], then it acts as a ratio of the balloon's width or height.
 
 The result is a balloon, not a pict. The @racket[balloon-pict]
-function extracts a pict whose bounding box does not include the
+function extracts a pict whose @tech{bounding box} does not include the
 spike, but includes the rest of the image, and the
 @racket[balloon-point-x] and @racket[balloon-point-y] functions
 extract the location of the spike point. More typically, the
@@ -847,7 +864,7 @@ to the location specified by either @racket[x] and @racket[y]
 @racket[at-pict] with @racket[find]. The @racket[find] function uses
 its arguments like @racket[lt-find].
 
-The resulting pict has the same bounding box, descent, and ascent as
+The resulting pict has the same @tech{bounding box}, descent, and ascent as
 @racket[base], even if the balloon extends beyond the bounding box.}
 
 
