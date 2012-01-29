@@ -459,8 +459,8 @@ corresponding @racket[template].}
 Equivalent to
 
 @racketblock[
-(lambda (stx)
-  (make-set!-transformer
+(make-set!-transformer
+ (lambda (stx)
    (syntax-case stx (literal-id ...)
      [pattern (syntax-protect (syntax template))] ...)))
 ]}
