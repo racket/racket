@@ -19,6 +19,7 @@
                                    [racket:else else]
                                    [racket:void void]
                                    [honu-function function]
+                                   [honu-function fun]
                                    [honu-var var]
                                    [honu-== ==]
                                    [honu-not-equal !=]

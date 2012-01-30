@@ -4,4 +4,9 @@ function foo(x){
   1 + x * 2
 }
 
+fun foo2(x){
+  foo(x + 2)
+}
+
 foo(5)
+foo2(3)
