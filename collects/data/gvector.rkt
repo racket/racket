@@ -28,6 +28,11 @@
                "")
            index)))
 
+(define (check-nonempty who n)
+  (unless (> n 0)
+    (error who "empty")))
+
+
 (define ((bad-index-error who index))
   (raise-mismatch-error who "index out of range" index))
 
@@ -66,6 +71,16 @@
            (set-gvector-n! gv (sub1 n))
            (vector-copy! v index v (add1 index) n)
            (vector-set! v (sub1 n) #f)])))
+
+(define (gvector-remove-last! gv)
+  (let ([n (gvector-n gv)]
+        [v (gvector-vec gv)])
+    (check-nonempty 'gvector-remove-last! n)
+    (define last-val (vector-ref v (sub1 n)))
+    (set-gvector-n! gv (sub1 n))
+    (vector-set! v (sub1 n) #f)
+    last-val))
+
 
 (define (gvector-count gv)
   (gvector-n gv))
@@ -213,6 +228,8 @@
   (->* (gvector?) () #:rest any/c any)]
  [gvector-remove!
   (-> gvector? exact-nonnegative-integer? any)]
+ [gvector-remove-last!
+  (-> gvector? any)]
  [gvector-count
   (-> gvector? any)]
  [gvector->vector

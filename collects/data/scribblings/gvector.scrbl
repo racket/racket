@@ -83,6 +83,12 @@ down. Takes time proportional to @racket[(- (gvector-count gv)
 index)].
 }
 
+@defproc[(gvector-remove-last! [gv gvector?])
+         any/c]{
+Removes the element at the end and returns it.  Takes constant time.
+}
+
+
 @defproc[(gvector-count [gv gvector?])
          exact-nonnegative-integer?]{
 

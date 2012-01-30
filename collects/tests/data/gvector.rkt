@@ -53,6 +53,25 @@
                (gvector->vector gv))
              '#(2 3))
 
+(test-equal? "gvector-remove-last!"
+             (let ([gv (gvector 1 2 3)])
+               (check-equal? (gvector-remove-last! gv) 3)
+               (check-equal? (gvector-remove-last! gv) 2)
+               (check-equal? (gvector-remove-last! gv) 1)
+               (gvector->vector gv))
+             '#())
+
+(test-equal? "gvector-add and gvector-remove-last!"
+             (let ([gv (gvector)])
+               (gvector-add! gv 'rock)
+               (gvector-add! gv 'paper)
+               (check-equal? (gvector-remove-last! gv) 'paper)
+               (gvector-add! gv 'scissor)
+               (check-equal? (gvector-remove-last! gv) 'scissor)
+               (check-equal? (gvector-remove-last! gv) 'rock)
+               (gvector->vector gv))
+             '#())
+
 (test-equal? "gvector-count"
              (gvector-count (gvector 1 2 3))
              3)
