@@ -110,7 +110,10 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:module-language-tools:add-online-expansion-handler 
-  (-> path-string? symbol? (-> (is-a?/c drracket:unit:definitions-text<%>) any/c any) void?)
+  (-> path-string? symbol? (-> (is-a?/c drracket:unit:definitions-text<%>)
+                               any/c
+                               any)
+      void?)
   (mod-path id local-handler)
   @{Registers a pair of procedures with DrRacket's online expansion machinery. 
     
@@ -121,10 +124,33 @@ all of the names in the tools library, for use defining keybindings
     the fully expanded object to that first procedure. (The procedure is called
     in the same context as the expansion process.) 
     
-    Note that the thread that calls this procedure may be
-    killed at anytime: DrRacket may kill it when the user types in the buffer
+    The contract for that procedure is
+    @racketblock[(-> syntax? path? any/c custodian? 
+                     any)]
+    There are three other arguments.
+    
+    @itemize[
+      @item{
+    The @racket[path?] argument is the path that was the @racket[current-directory]
+    when the code was expanded. This directory should be used as the 
+    @racket[current-directory] when resolving module paths obtained from
+    the syntax object.}
+    
+      @item{
+    The third argument is the source object used in the syntax objects that
+    come from the definitions window in DrRacket. It may be a path (if the file
+    was saved), but it also might not be. Use @racket[equal?] to compare it
+    with the @racket[syntax-source] field of syntax objects to determine if
+    they come from the definitions window.}
+    
+      @item{ Note that the thread that calls this procedure may be
+    killed at any time: DrRacket may kill it when the user types in the buffer
     (in order to start a new expansion), but bizarro code may also create a separate
     thread during expansion that lurks around and then mutates arbitrary things.
+    
+    Some code, however, should be longer running, surviving such custodian
+    shutdowns. To support this, the procedure called in the separate place is
+    supplied with a more powerful custodian that is not shut down. }]
     
     The result of the procedure is expected to be something that can be sent
     across a @racket[place-channel], which is then sent back to the original

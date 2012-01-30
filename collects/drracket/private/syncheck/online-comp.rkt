@@ -11,20 +11,25 @@
 
 (define obj%
   (class (annotations-mixin object%)
-    (init-field src)
+    (init-field src orig-cust)
     (define trace '())
     
     (define-values (remote local) (place-channel))
     (define table (make-hash))
-    (thread
-     (λ () 
-       (with-handlers ((exn:fail? (λ (x) (eprintf "online-comp.rkt: thread failed ~a\n" (exn-message x)))))
-         (let loop ()
-           (define id/name (place-channel-get local))
-           (define id (list-ref id/name 0))
-           (define name (list-ref id/name 1))
-           (define res ((hash-ref table id) name))
-           (place-channel-put local res)))))
+
+    ;; the hope is that changing the custodian like this
+    ;; shouldn't leak these threads, but it does seem to
+    ;; so for now we don't use it
+    (parameterize (#;[current-custodian orig-cust])
+      (thread
+       (λ () 
+         (with-handlers ((exn:fail? (λ (x) (eprintf "online-comp.rkt: thread failed ~a\n" (exn-message x)))))
+           (let loop ()
+             (define id/name (place-channel-get local))
+             (define id (list-ref id/name 0))
+             (define name (list-ref id/name 1))
+             (define res ((hash-ref table id) name))
+             (place-channel-put local res))))))
     
     (define/override (syncheck:find-source-object stx)
       (and (equal? src (syntax-source stx))
@@ -51,7 +56,7 @@
     (define/public (get-trace) (reverse trace))
     (super-new)))
 
-(define (go expanded path the-source)
+(define (go expanded path the-source orig-cust)
   (with-handlers ((exn:fail? (λ (x) 
                                (printf "~a\n" (exn-message x))
                                (printf "---\n")
@@ -62,7 +67,9 @@
                                  (printf "  ~s\n" x))
                                (printf "===\n")
                                (raise x))))
-    (define obj (new obj% [src the-source]))
+    (define obj (new obj%
+                     [src the-source]
+                     [orig-cust orig-cust]))
     (define-values (expanded-expression expansion-completed) 
       (make-traversal (current-namespace)
                       (get-init-dir path)))

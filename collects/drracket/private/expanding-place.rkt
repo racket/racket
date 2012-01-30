@@ -128,7 +128,8 @@
                (list (handler-key handler)
                      ((handler-proc handler) expanded
                                              path
-                                             the-source))))
+                                             the-source
+                                             orig-cust))))
            (log-info "expanding-place.rkt: 11 handlers finished")
            
            (parameterize ([current-custodian orig-cust])
