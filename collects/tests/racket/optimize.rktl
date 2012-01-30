@@ -1893,5 +1893,24 @@
           (f3))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that certain lifting operations
+;;  do not lose track of flonum-ness of a variable:
+
+(let ([e '(let ([f (random)])
+            (define (s t)
+              (cons
+               (lambda () (s (fl+ t 1.0)))
+               (lambda () f)))
+            (s 0.0))]
+      [ns (make-base-namespace)]
+      [o (open-output-bytes)])
+  (parameterize ([current-namespace ns])
+    (namespace-require 'racket/flonum)
+    (write (compile e) o))
+  ;; bytecode validation can catch the relevant mistake:
+  (parameterize ([read-accept-compiled #t])
+    (read (open-input-bytes (get-output-bytes o)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

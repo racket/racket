@@ -1665,9 +1665,9 @@ XFORM_NONGCING static void boxmap_set(mzshort *boxmap, int j, int bit, int delta
   boxmap[delta + ((2 * j) / BITS_PER_MZSHORT)] |= ((mzshort)bit << ((2 * j) & (BITS_PER_MZSHORT - 1)));
 }
 
-XFORM_NONGCING static int boxmap_get(mzshort *boxmap, int j, int bit)
+XFORM_NONGCING static int boxmap_get(mzshort *boxmap, int j, int bit, int delta)
 {
-  if (boxmap[(2 * j) / BITS_PER_MZSHORT] & ((mzshort)bit << ((2 * j) & (BITS_PER_MZSHORT - 1))))
+  if (boxmap[delta + ((2 * j) / BITS_PER_MZSHORT)] & ((mzshort)bit << ((2 * j) & (BITS_PER_MZSHORT - 1))))
     return 1;
   else
     return 0;
@@ -1826,9 +1826,14 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         int cp;
         cp = i;
         if (convert_boxes) {
-          if (boxmap_get(convert_boxes, i, 1))
+          if (boxmap_get(convert_boxes, i, 1, 0))
             cp = -((2 * cp) + 1);
-          else if (boxmap_get(convert_boxes, i, 2))
+          else if (boxmap_get(convert_boxes, i, 2, 0))
+            cp = -((2 * cp) + 2);
+        } else if (expanded_already) {
+          if (boxmap_get(closure_map, data->num_params + i, 1, data->closure_size))
+            cp = -((2 * cp) + 1);
+          else if (boxmap_get(closure_map, data->num_params + i, 2, data->closure_size))
             cp = -((2 * cp) + 2);
         }
         scheme_hash_set(captured, scheme_make_integer(closure_map[i]), scheme_make_integer(cp));
@@ -1872,12 +1877,15 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   if (captured && (captured->count > offset)) {
     /* We need to extend the closure map.  All the info
        is in captured, so just build it from scratch. */
-    int old_pos, j, new_size;
+    int old_pos, j, new_size, need_flags;
     new_size = (captured->count + (has_tl ? 1 : 0));
-    if (cl->flonum_map)
+    if (cl->flonum_map || expanded_already || convert_boxes) {
+      need_flags = new_size;
       new_size += boxmap_size(data->num_params + new_size);
+    } else
+      need_flags = 0;
     closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * new_size);
-    if (cl->flonum_map)
+    if (need_flags)
       memset(closure_map, 0, sizeof(mzshort) * new_size);
     offset = captured->count;
     convert_boxes = NULL;
@@ -1900,6 +1908,8 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
           if (!convert_boxes)
             convert_boxes = allocate_boxmap(offset);
           boxmap_set(convert_boxes, cp, bit, 0);
+          if (need_flags)
+            boxmap_set(closure_map, cp, bit, need_flags);
         }
         closure_map[cp] = old_pos;
       }
