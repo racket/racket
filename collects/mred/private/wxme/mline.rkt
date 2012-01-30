@@ -1069,11 +1069,11 @@ Debugging tools:
 
 ;; ----------------------------------------
 
-(define (update-graphics mline media dc padding-l padding-t)
+(define (update-graphics mline media dc padding-l padding-t max-line-width)
   (define (update-left)
     (and (bit-overlap? (mline-flags mline) CALC-LEFT)
          (not (eq? (mline-left mline) NIL))
-         (update-graphics (mline-left mline) media dc padding-l padding-t)))
+         (update-graphics (mline-left mline) media dc padding-l padding-t max-line-width)))
   (define (update-here)
     (and 
      (bit-overlap? (mline-flags mline) CALC-HERE)
@@ -1144,19 +1144,31 @@ Debugging tools:
                  (set-width mline (- totalwidth padding-l))
                  (unless (= maxscroll (mline-numscrolls mline))
                    (set-scroll-length mline maxscroll))
+                 (define (send-refresh-box w h)
+                   (define x-delta
+                     (case (if max-line-width
+                               (let-boxes ([is-first? #f]
+                                           [para #f])
+                                   (set-box! para (get-paragraph-style mline is-first?))
+                                 (paragraph-alignment para))
+                               'left)
+                       [(left) 0]
+                       [(right) (max 0 (- max-line-width w))]
+                       [else (max 0 (/ (- max-line-width w) 2))]))
+                   (send media refresh-box (+ padding-l x-delta) y w h))
                  (if (= maxh (mline-h mline))
-                     (send media refresh-box padding-l y bigwidth maxh)
+                     (send-refresh-box bigwidth maxh)
                      (begin
                        (set-height mline maxh)
                        (let ([bigwidth (max 1e5 ;; really want viewable width, but > ok
                                             (send media get-s-total-width))]
                              [bigheight (+ maxh (send media get-s-total-height))])
-                         (send media refresh-box padding-l y bigwidth bigheight))))))))
+                         (send-refresh-box bigwidth bigheight))))))))
        #t)))
   (define (update-right)
     (and (bit-overlap? (mline-flags mline) CALC-RIGHT)
          (not (eq? (mline-right mline) NIL))
-         (update-graphics (mline-right mline) media dc padding-l padding-t)))
+         (update-graphics (mline-right mline) media dc padding-l padding-t max-line-width)))
 
   (let ([left? (update-left)]
         [here? (update-here)]

@@ -4783,7 +4783,8 @@
 
           (let ([-changed?
                  (or (mline-update-graphics (unbox line-root-box) this dc
-                                            padding-l padding-t)
+                                            padding-l padding-t
+                                            max-line-width)
                      -changed?)])
 
             (if (and (not -changed?)
