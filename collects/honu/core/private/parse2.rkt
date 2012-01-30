@@ -371,6 +371,7 @@
               (when (not (stx-null? unparsed))
                 (raise-syntax-error 'parse "found unparsed input" unparsed))
               (values (parse-all #'(more ...)) #'rest)]
+             #;
              [(left:no-left function:honu-function . rest)
               (values #'function.result #'rest)]
              [else (syntax-parse #'head

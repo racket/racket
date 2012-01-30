@@ -80,10 +80,10 @@
 (test
   "function call"
   @input{
-  foo(x){
+  function foo(x){
     x * 2
   }
-  foo(5);
+  foo(5)
   }
 
   @output{10

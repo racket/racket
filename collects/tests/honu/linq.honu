@@ -19,18 +19,18 @@ class Xml(data){
   getData(){ data }
 }
 
-read_xml(){
+function read_xml(){
   xml_permissive_xexprs(true)
   xml_xml_to_xexpr(xml_document_element(xml_read_xml()))
 }
 
-loadXml(file){
+function loadXml(file){
   withInputFromFile(file){
     new Xml(read_xml())
   }
 }
 
-starts_with(start, what){
+function starts_with(start, what){
   substring(what, 0, string_length(start)) string_equal start
 }
 

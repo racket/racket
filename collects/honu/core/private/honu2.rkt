@@ -46,7 +46,13 @@
 (define-honu-syntax honu-function
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ (#%parens arg:identifier ...)
+      [(_ name:identifier (#%parens (~seq arg:identifier (~optional honu-comma)) ...)
+          (#%braces code ...) . rest)
+       (values
+         #'(%racket (define (name arg ...) (parse-body code ...)))
+         #'rest
+         #f)]
+      [(_ (#%parens (~seq arg:identifier (~optional honu-comma)) ...)
           (#%braces code ...)
           . rest)
        (values
