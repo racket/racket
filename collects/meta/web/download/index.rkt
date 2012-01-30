@@ -7,7 +7,7 @@
 
 (define docs       (symlink (in-ftp "docs")))
 (define installers (symlink (in-ftp "installers")))
-(define libs       (symlink (in-ftp "libs")))
+(define libs       (symlink (in-ftp "libs/tags") "libs"))
 (define stubs      (symlink "/www/stubs"))
 
 (provide index)
@@ -21,4 +21,5 @@
             @a[href: `(,docs "/recent/html")]{HTML} and in
             @a[href: `(,docs "/recent/pdf")]{PDF}
             (or @a[href: docs]{all versions}).}
-        @li{Binary @a[href: libs]{libraries} mainly for GRacket.}}})
+        @li{Binary @a[href: libs]{libraries} mainly for GRacket
+            (installed during the build process).}}})
