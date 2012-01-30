@@ -1630,7 +1630,21 @@ If the namespace does not, they are colored the unbound color.
             [`(syncheck:add-docs-menu ,text ,start-pos ,end-pos ,key ,the-label ,path ,tag)
              (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path tag)]
             [`(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
-             (define (name-dup? name) (place-channel-put/get name-dup-pc (list name-dup-id name)))
+             (define other-side-dead? #f)
+             (define (name-dup? name) 
+               (cond
+                 [other-side-dead? 
+                  ;; just give up here ...
+                  #f]
+                 [else
+                  (place-channel-put name-dup-pc (list name-dup-id name))
+                  (define res (sync/timeout .5 (handle-evt name-dup-pc list)))
+                  (cond
+                    [(list? res) (car res)]
+                    [else
+                     (printf "other side died\n")
+                     (set! other-side-dead? #t)
+                     #f])]))
              (define to-be-renamed/poss/fixed
                (for/list ([lst (in-list to-be-renamed/poss)])
                  (list defs-text (list-ref lst 1) (list-ref lst 2))))
