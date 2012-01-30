@@ -168,6 +168,8 @@
 SHARED_OK int scheme_startup_use_jit = INIT_JIT_ON;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
+SHARED_OK static int valdiate_compile_result = 0;
+
 /* THREAD LOCAL SHARED */
 THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
 #ifdef USE_STACK_BOUNDARY_VAR
@@ -349,6 +351,13 @@ scheme_init_eval (Scheme_Env *env)
   GLOBAL_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
   GLOBAL_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   GLOBAL_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
+
+  if (getenv("PLT_VALIDATE_COMPILE")) {
+    /* Enables validation of bytecode as it is generated,
+       to double-check that the compiler is producing
+       valid bytecode as it should. */
+    valdiate_compile_result = 1;
+  }
 }
 
 void scheme_init_eval_places()
@@ -3919,7 +3928,7 @@ static void *compile_k(void)
       top->code = o;
       top->prefix = rp;
 
-      if (0) { /* <- change to 1 to check compilation result */
+      if (valdiate_compile_result) {
         scheme_validate_code(NULL, top->code,
                              top->max_let_depth,
                              top->prefix->num_toplevels,
