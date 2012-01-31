@@ -35,7 +35,8 @@
   (test 'kill (lambda () (nested* (kill))))
   (test 'shut (lambda () (nested* (shut)))))
 
-(let ([ev void])
+(let ([ev void]
+      [old-port #f])
   (define (make-evaluator! #:requires [reqs null] . args)
     (set! ev (apply make-evaluator args #:requires reqs)))
   (define (make-base-evaluator! . args)
@@ -43,6 +44,11 @@
   (define (make-base-evaluator/reqs! reqs . args)
     (set! ev (apply make-evaluator 'racket/base #:requires reqs args)))
   (define (make-module-evaluator! #:allow-read [allow null] . args)
+    ;; Close port from old evaluation, if any, to avoid later Windows
+    ;; problems deleting an open file:
+    (when old-port (close-input-port old-port) (set! old-port #f))
+    (when (input-port? (car args)) (set! old-port (car args)))
+    ;; Create and install the evalautor:
     (set! ev (apply make-module-evaluator args #:allow-read allow)))
   (define (run thunk)
     (with-handlers ([void (lambda (e) (list 'exn: e))])
@@ -321,7 +327,7 @@
         ;; reading from collects is allowed
         (list? (directory-list ,racketlib))
         (file-exists? ,list-lib) => #t
-        (input-port? (open-input-file ,list-lib)) => #t
+        (let ([p (open-input-file ,list-lib)]) (begin0 (input-port? p) (close-input-port p))) => #t
         ;; writing is forbidden
         (open-output-file ,list-lib) =err> "`write' access denied"
         ;; reading from other places is forbidden
@@ -414,11 +420,15 @@
         (open-output-file ,(build-path tmp "blah")) =err> "access denied"
         (delete-directory ,(build-path tmp "blah")) =err> "access denied"
         (list? (directory-list ,racketlib))
-        ;; we can read/write/delete list-zo, but we can't load bytecode from
+        ;; we can read/write/delete list-zo, but we can't run bytecode from
         ;; it due to the code inspector
         (copy-file ,list-zo ,test-zo) => (void)
         (copy-file ,test-zo ,list-zo) =err> "access denied"
+        ;; timestamp .zo file (needed under Windows):
+        (file-or-directory-modify-seconds ,test-zo (current-seconds))
+        ;; loading test gets 'list module declaration via ".zo":
         (load/use-compiled ,test-lib) => (void)
+        ;; but the module declaration can't execute due to the inspector:
         (require 'list) =err> "access disallowed by code inspector"
         (delete-file ,test-zo) => (void)
         (delete-file ,test-lib) =err> "`delete' access denied"
