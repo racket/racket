@@ -405,7 +405,7 @@
                      [((a b c . -> . c) c (-lst a) (-lst b)) c]
                      [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
 [filter (-poly (a b) (cl->*
-                      ((make-pred-ty (list a) Univ b)
+                      ((asym-pred a -Boolean (-FS (-filter b 0) -top))
                        (-lst a)
                        . -> .
                        (-lst b))
