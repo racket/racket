@@ -27,17 +27,16 @@
   (test-suite "Log Comparison"
               ;; ugly, but otherwise rackunit spews the entire logs to
               ;; stderr, and they can be quite long
-              (check-true
-               (equal?
-                ;; actual log
-                (with-input-from-string
-                    (string-append "(" (generate-log name dir) ")")
-                  read)
-                ;; expected log
-                (with-input-from-file (build-path dir name)
-                  (lambda () ; from the test file
-                    (read-line) ; skip the #;
-                    (read)))))))
+              (check-equal?
+               ;; actual log
+               (with-input-from-string
+                   (string-append "(" (generate-log name dir) ")")
+                 read)
+               ;; expected log
+               (with-input-from-file (build-path dir name)
+                 (lambda () ; from the test file
+                   (read-line) ; skip the #;
+                   (read))))))
 
 
 (define-runtime-path tests-dir                "./tests")
