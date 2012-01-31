@@ -367,7 +367,8 @@ Creates the file @racket[dest] as a copy of @racket[src], if
 and @racket[exists-ok?] is @racket[#f], the copy fails with
 @exnraise[exn:fail:filesystem:exists?]; otherwise, if @racket[dest]
 exists, its content is replaced with the content of @racket[src]. File
-permissions are transferred from @racket[src] to @racket[dest]. If
+permissions are transferred from @racket[src] to @racket[dest]; on Windows,
+the modification time of @racket[src] is also transferred to @racket[dest]. If
 @racket[src] refers to a link, the target of the link is copied,
 rather than the link itself; if @racket[dest] refers to a link and
 @racket[exists-ok?] is true, the target of the link is updated.}
