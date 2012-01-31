@@ -1175,6 +1175,19 @@ DO_BUILD() { # inputs -- releasing
 
   header -s "Starting build"
 
+  local machine_name="$(uname -n)"
+  if [[ "$machine_name" != *.* ]]; then
+    if [[ "$(uname -o)" = "Cygwin" ]]; then
+      machine_name="$machine_name ($(ipconfig | \
+                      grep "Connection-specific DNS Suffix" | \
+                      sed -e 's/^[^:]*: *//' | \
+                      sort -u | grep "[.]"))"
+    else
+      machine_name="$(hostname -f)"
+    fi
+  fi
+  show "Machine identifies as $machine_name: $(uname -a)"
+
   if [[ "$renice" != "" ]]; then dont_exit _run renice "$renice" "$$"; fi
 
   export PLTHOME="$workdir/$installdir" PATH="$PLTHOME/bin:$PATH"
