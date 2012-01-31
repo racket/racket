@@ -177,11 +177,12 @@
     (for/list ([n 100])
       (cons (make-weak-box (gensym))
             (make-ephemeron (gensym) 10))))
+  (define (num-or a b) (if (number? a) a b))
   (collect-garbage)
   (define n (for/fold ([n 0]) ([p stuff])
               (+ n
-                   (or (weak-box-value (car p) 0) 1)
-                   (or (ephemeron-value (cdr p) 0) 1))))
+                   (num-or (weak-box-value (car p) 0) 1)
+                   (num-or (ephemeron-value (cdr p) 0) 1))))
   (test #t < n 50))
      
 ;; ----------------------------------------
