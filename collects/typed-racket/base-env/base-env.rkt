@@ -34,7 +34,8 @@
 
 ;Section 9.2
 
-[raise (Univ . -> . (Un))]
+[raise (cl->* (Univ . -> . (Un))
+	      (Univ Univ . -> . (Un)))]
 
 [error
  (cl->* (-> Sym (Un))
