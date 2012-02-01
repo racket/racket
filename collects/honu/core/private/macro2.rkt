@@ -22,23 +22,25 @@
   (define-splicing-syntax-class pattern-type
     #:literal-sets (cruft)
     [pattern (~seq name colon class)
-             #:with result #'(~var name class #:attr-name-separator "_")]
-    [pattern x #:with result #'x])
+             #:with (result ...) #'((~var name class #:attr-name-separator "_"))]
+    [pattern (x:pattern-type ...) #:with (result ...) #'((x.result ... ...))]
+    [pattern x #:with (result ...) #'(x)])
   (syntax-parse original-pattern
     [(thing:pattern-type ...)
-     #'(thing.result ...)]))
+     #'(thing.result ... ...)]))
 
 (define-for-syntax (find-pattern-variables original-pattern)
   (define-splicing-syntax-class pattern-type
     #:literal-sets (cruft)
     [pattern (~seq name colon class)
              ;; we know the output of syntactic classes will end with _result
-             #:with result (with-syntax ([name.result (format-id #'name "~a_result" #'name)])
-                             #'(name name.result))]
-    [pattern x #:with result #f])
+             #:with (result ...) (with-syntax ([name.result (format-id #'name "~a_result" #'name)])
+                             #'((name name.result)))]
+    [pattern (x:pattern-type ...) #:with (result ...) #'(x.result ... ...)]
+    [pattern x #:with (result ...) #'()])
   (syntax-parse original-pattern
     [(thing:pattern-type ...)
-     (filter (lambda (x) (syntax-e x)) (syntax->list #'(thing.result ...)))]))
+     (filter (lambda (x) (syntax-e x)) (syntax->list #'(thing.result ... ...)))]))
 
 (begin-for-syntax
 (define-syntax (parse-stuff stx)
@@ -63,7 +65,8 @@
                         (lambda (stx context-name)
                           (define-literal-set local-literals (literal ...))
                           (syntax-parse stx
-                            #:literal-sets (cruft local-literals)
+                            #:literal-sets ([cruft #:at name]
+                                            [local-literals #:at name])
                             [(_ syntax-parse-pattern ... . more)
                              (values
                                ;; if the pattern is x:expression then x_result will

@@ -68,7 +68,7 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (else honu-then)
-      [(_ condition:honu-expression honu-then true:honu-expression (~optional else) false:honu-expression . rest)
+      [(_ (#%parens condition:honu-expression) true:honu-expression (~optional else) false:honu-expression . rest)
        (values
          #'(%racket (if condition.result true.result false.result))
          #'rest

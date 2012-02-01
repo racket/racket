@@ -1,8 +1,8 @@
 #lang honu/core
 
 provide when;
-macro when (then){ condition:expression then body:expression }{
-  syntax(if condition then body else { void() })
+macro when (){ (condition:expression) body:expression }{
+  syntax(if (condition) body else { })
 }
 
 /*

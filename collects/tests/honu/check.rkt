@@ -104,7 +104,7 @@
 (test
   "if"
   @input{
-  if 2 > 1 then
+  if (2 > 1)
     1
   else
     0
