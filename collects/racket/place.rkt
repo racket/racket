@@ -219,6 +219,17 @@
                 (and (not out) outr)
                 (and (not err) errr)))]))
 
+
+(define-for-syntax (modpath->string modpath)
+  (cond 
+    [(equal? modpath #f)
+     (number->string (current-inexact-milliseconds))]
+    [else
+      (define name (resolved-module-path-name modpath))
+      (cond 
+        [(symbol? name) (symbol->string name)]
+        [(path? name) (path->string name)])]))
+
 (define-for-syntax (place-form _in _out _err _start-place-func stx orig-stx)
   (syntax-case stx ()
     [(who ch body1 body ...)
@@ -226,14 +237,19 @@
          ;; when a `place' form is the only thing in a module mody:
          #`(begin #,stx)
          ;; normal case:
-         (begin
+         (let ()
            (unless (syntax-transforming-module-expression?)
              (raise-syntax-error #f "can only be used in a module" stx))
            (unless (identifier? #'ch)
              (raise-syntax-error #f "expected an identifier" stx #'ch))
+           (define func-name-stx 
+             (datum->syntax stx 
+               (string->symbol 
+                 (string-append "place/anon" 
+                                (modpath->string (current-module-declare-name))))))
            (with-syntax ([internal-def-name
                           (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
-                         [func-name (generate-temporary #'place/anon)]
+                         [func-name (generate-temporary func-name-stx)]
                          [in _in]
                          [out _out]
                          [err _err]
