@@ -10,7 +10,7 @@
 (provide *show-optimized-code*
          subtypeof? isoftype?
          mk-unsafe-tbl
-         n-ary->binary
+         n-ary->binary n-ary-comp->binary
          unboxed-gensym reset-unboxed-gensym
          optimize
          print-res
@@ -41,10 +41,31 @@
       (dict-set (dict-set h g u) f u))))
 
 ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
+;; this works on operations that are (A A -> A)
 (define (n-ary->binary op arg1 arg2 rest)
   (for/fold ([o arg1])
       ([e (syntax->list #`(#,arg2 #,@rest))])
     #`(#,op #,o #,e)))
+;; this works on operations that are (A A -> B)
+(define (n-ary-comp->binary op arg1 arg2 rest)
+  ;; First, generate temps to bind the result of each arg2 args ...
+  ;; to avoid computing them multiple times.
+  (define lifted (map (lambda (x) (unboxed-gensym))
+                      (syntax->list #`(#,arg2 #,@rest))))
+  ;; Second, build the list ((op arg1 tmp2) (op tmp2 tmp3) ...)
+  (define tests
+    (let loop ([res  (list #`(#,op #,arg1 #,(car lifted)))]
+               [prev (car lifted)]
+               [l    (cdr lifted)])
+      (cond [(null? l) (reverse res)]
+            [else (loop (cons #`(#,op #,prev #,(car l)) res)
+                        (car l)
+                        (cdr l))])))
+  ;; Finally, build the whole thing.
+  #`(let #,(for/list ([lhs (in-list lifted)]
+                      [rhs (in-list (syntax->list #`(#,arg2 #,@rest)))])
+             #`(#,lhs #,rhs))
+      (and #,@tests)))
 
 ;; to generate temporary symbols in a predictable manner
 ;; these identifiers are unique within a sequence of unboxed operations

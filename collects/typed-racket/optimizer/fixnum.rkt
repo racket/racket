@@ -115,6 +115,14 @@
            #:with opt
            (begin (log-optimization "binary fixnum comp" fixnum-opt-msg this-syntax)
                   #'(op.unsafe n1.opt n2.opt)))
+  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-comps))
+                        n1:fixnum-expr
+                        n2:fixnum-expr
+                        ns:fixnum-expr ...)
+           #:with opt
+           (begin (log-optimization "multi fixnum comp" fixnum-opt-msg this-syntax)
+                  (n-ary-comp->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...))))
+
   (pattern (#%plain-app op:nonzero-fixnum-binary-op
                         n1:fixnum-expr
                         n2:nonzero-fixnum-expr)
