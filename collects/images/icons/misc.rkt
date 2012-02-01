@@ -19,7 +19,9 @@
           bomb-icon bomb-flomap
           left-bomb-icon left-bomb-flomap
           clock-icon clock-flomap
-          stopwatch-icon stopwatch-flomap)
+          stopwatch-icon stopwatch-flomap
+          stethoscope-icon stethoscope-flomap
+          short-stethoscope-icon short-stethoscope-flomap)
          (only-doc-out (all-defined-out)))
 
 (define (flat-regular-polygon-flomap sides start color size)
@@ -253,7 +255,7 @@
                       ) flomap?
   (flomap-flip-horizontal (left-bomb-flomap cap-color bomb-color height material)))
 
-;; ===================================================================================================
+;; ---------------------------------------------------------------------------------------------------
 ;; Clock
 
 (define clock-shell-material
@@ -373,6 +375,117 @@
       metal-icon-material))
    (flomap-pin* 1/2 0 1/2 -2/32 buttons-fm clock-fm)))
 
+;; ---------------------------------------------------------------------------------------------------
+;; Stethoscopes
+
+(define rubber-t-commands
+  '((m 6 13)
+    (c 0 6 3 7.5 9.5 7.5
+       6.5 0 9.5 -1.5 9.5 -7.5)))
+
+(define rubber-hose-commands
+  '((m 15 21.25)
+    (c 0 0 1 3.5 -3 4.5
+       -4 1 -7 -8.5 -10.5 -3.5
+       -3.5 5 4.0182351 8.2793 11 8
+       6.981765 -0.2793 13 -4.5 13 -4.5)))
+
+(define left-metal-commands
+  '((m 6 1.5)
+    (c -4 2 0 5.5 0 11.5)))
+
+(define right-metal-commands
+  '((m 25 1.5)
+    (c 4 2 0 5.5 0 11.5)))
+
+(define rubber-material
+  (deep-flomap-material-value
+   'cubic-zirconia 2.0 0.0 1.0
+   1.5 0.25 1.0
+   0.25 0.5 0.0
+   0.03))
+
+(defproc (stethoscope-flomap [color (or/c string? (is-a?/c color%)) "black"]
+                             [height (and/c rational? (>=/c 0)) (default-icon-height)]) flomap?
+  (define scale (/ height 32))
+  (flomap-ct-superimpose
+   (draw-rendered-icon-flomap
+    32 32 (λ (dc)
+            (send dc set-pen (make-object pen% color 2 'solid 'round 'round))
+            (send dc set-brush "white" 'transparent)
+            (draw-path-commands dc rubber-hose-commands 0 0)
+            (draw-path-commands dc rubber-t-commands 0 0)
+            (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
+            (send dc draw-line 23.5 1 25 1.5)
+            (send dc draw-line 7.5 1 6 1.5))
+    scale
+    rubber-material)
+   (draw-rendered-icon-flomap
+    32 32 (λ (dc)
+            (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
+            (send dc set-brush "white" 'transparent)
+            (draw-path-commands dc left-metal-commands 0 0)
+            (draw-path-commands dc right-metal-commands 0 0)
+            (send dc set-pen (make-object pen% metal-icon-color 2 'solid 'round 'round))
+            (draw-path-commands dc left-metal-commands 0 0)
+            (draw-path-commands dc right-metal-commands 0 0)
+            (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
+            (send dc set-brush metal-icon-color 'solid)
+            (draw-ellipse/smoothed dc 21.25 21.25 11 11)
+            (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
+            (send dc set-brush light-metal-icon-color 'solid)
+            (draw-ellipse/smoothed dc 22.25 22.25 9 9))
+    scale
+    metal-icon-material)))
+
+(define short-rubber-t-commands
+  '((m 3 12.5)
+    (c 0 6 10 6.5 12.5 6.5
+       2.5 0 12.5 -0.5 12.5 -6.5)))
+
+(define short-rubber-hose-commands
+  '((m 15 19.25)
+    (c 0 0 -3 1 -10 1
+       -7 0 -6.5 4.5 6 4
+       12.5 -0.5 14.5 -5 14.5 -5)))
+
+(defproc (short-stethoscope-flomap [color (or/c string? (is-a?/c color%)) "black"]
+                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
+                                   ) flomap?
+  (define scale (/ height 32))
+  (flomap-ct-superimpose
+   (draw-rendered-icon-flomap
+    32 32 (λ (dc)
+            (send dc translate 0 6)
+            (send dc set-pen (make-object pen% color 2 'solid 'round 'round))
+            (send dc set-brush "white" 'transparent)
+            (draw-path-commands dc short-rubber-hose-commands 0 0)
+            (draw-path-commands dc short-rubber-t-commands 0 0)
+            (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
+            (send dc draw-line 4.5 1 3 1.5)
+            (send dc draw-line 26.5 1 28 1.5))
+    scale
+    rubber-material)
+   (draw-rendered-icon-flomap
+    32 32 (λ (dc)
+            (send dc translate 0 6)
+            (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
+            (send dc set-brush "white" 'transparent)
+            (draw-path-commands dc left-metal-commands -3 0)
+            (draw-path-commands dc right-metal-commands 3 0)
+            (send dc set-pen (make-object pen% metal-icon-color 2 'solid 'round 'round))
+            (draw-path-commands dc left-metal-commands -3 0)
+            (draw-path-commands dc right-metal-commands 3 0)
+            (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
+            (send dc set-brush metal-icon-color 'solid)
+            (draw-ellipse/smoothed dc 21.25 15.25 11 11)
+            (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
+            (send dc set-brush light-metal-icon-color 'solid)
+            (draw-ellipse/smoothed dc 22.25 16.25 9 9)
+            )
+    scale
+    metal-icon-material)))
+
 ;; ===================================================================================================
 ;; Bitmaps (icons)
 
@@ -417,3 +530,9 @@
    [material deep-flomap-material-value? (default-icon-material)])
   [bomb-icon bomb-flomap]
   [left-bomb-icon left-bomb-flomap])
+
+(define-icon-wrappers
+  ([color (or/c string? (is-a?/c color%)) "black"]
+   [height (and/c rational? (>=/c 0)) (default-icon-height)])
+  [stethoscope-icon stethoscope-flomap]
+  [short-stethoscope-icon short-stethoscope-flomap])
