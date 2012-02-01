@@ -150,11 +150,11 @@
 
 (define (set-get-one set)
   (unless (set? set) (raise-type-error 'set-some-element "set" 0 set))
-  (car (hash-keys (set-ht set))))
+  (for/first ([e (set-ht set)]) e))
 
 (define (set-get-one/rest set)
   (unless (set? set) (raise-type-error 'set-some-element "set" 0 set))
-  (let ((element (car (hash-keys (set-ht set)))))
+  (let ((element (for/first ([e (set-ht set)]) e)))
     (values element (set-remove set element))))
 
 (define set-union
