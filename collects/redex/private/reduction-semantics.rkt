@@ -41,7 +41,7 @@
                        stx)]
        [x 
         (identifier? #'x)
-        (identifier-prune-lexical-context #'x)]
+        (identifier-prune-lexical-context #'x (list (syntax-e #'x) '#%top))]
        [() (datum->syntax #f '() stx)]
        [_ (datum->syntax (identifier-prune-lexical-context #'whatever '(#%datum))
                          (syntax->datum stx) stx)]))))
