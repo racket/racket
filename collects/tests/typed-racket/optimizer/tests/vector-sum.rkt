@@ -1,9 +1,9 @@
 #;
 (
 TR opt: vector-sum.rkt 41:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- fixnum bounded expr
-TR opt: vector-sum.rkt 41:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum
+TR opt: vector-sum.rkt 41:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum comp
 TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- fixnum bounded expr
-TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum
+TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum comp
 TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
 TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
 TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch

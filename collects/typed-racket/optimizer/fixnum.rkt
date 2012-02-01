@@ -23,18 +23,22 @@
      (dict-set
       (dict-set
        (dict-set
-        (mk-fixnum-tbl (list #'= #'<= #'< #'> #'>= #'min #'max))
+        (mk-fixnum-tbl (list #'min #'max))
         #'bitwise-and #'unsafe-fxand)
        #'fxand #'unsafe-fxand)
       #'bitwise-ior #'unsafe-fxior)
      #'fxior #'unsafe-fxior)
     #'bitwise-xor #'unsafe-fxxor)
    #'fxxor #'unsafe-fxxor))
+
+(define binary-fixnum-comps (mk-fixnum-tbl (list #'= #'<= #'< #'> #'>=)))
+
 (define-syntax-class fixnum-unary-op
   #:commit
   (pattern (~or (~literal bitwise-not) (~literal fxnot))
            #:with unsafe (begin (add-disappeared-use this-syntax)
                                 #'unsafe-fxnot)))
+
 ;; closed on fixnums, but 2nd argument must not be 0
 (define-syntax-class nonzero-fixnum-binary-op
   #:commit
@@ -106,6 +110,11 @@
            #:with opt
            (begin (log-optimization "binary fixnum" fixnum-opt-msg this-syntax)
                   (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...))))
+  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-comps))
+                        n1:fixnum-expr n2:fixnum-expr)
+           #:with opt
+           (begin (log-optimization "binary fixnum comp" fixnum-opt-msg this-syntax)
+                  #'(op.unsafe n1.opt n2.opt)))
   (pattern (#%plain-app op:nonzero-fixnum-binary-op
                         n1:fixnum-expr
                         n2:nonzero-fixnum-expr)
