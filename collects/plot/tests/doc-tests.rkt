@@ -30,8 +30,6 @@
 
 (doc plot/dc)
 (newline)
-(doc treeof)
-(newline)
 (doc plot-background)
 (newline)
 (doc known-point-symbols)

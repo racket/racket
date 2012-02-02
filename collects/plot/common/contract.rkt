@@ -63,7 +63,7 @@
 
 (defcontract point-sym/c (or/c char? string? integer? (apply one-of/c known-point-symbols)))
 
-(defcontract (maybe-function/c [in-contract contract/c] [out-contract contract/c])
+(defcontract (maybe-function/c [in-contract contract?] [out-contract contract?])
   (or/c out-contract (in-contract . -> . out-contract)))
 
 (defproc (maybe-apply [f (maybe-function/c any/c any/c)]
@@ -71,20 +71,20 @@
   (cond [(procedure? f)  (f arg)]
         [else            f]))
 
-(defcontract (plot-colors/c [in-contract contract/c])
+(defcontract (plot-colors/c [in-contract contract?])
   (maybe-function/c in-contract (listof plot-color/c)))
 
-(defcontract (pen-widths/c [in-contract contract/c])
+(defcontract (pen-widths/c [in-contract contract?])
   (maybe-function/c in-contract (listof (>=/c 0))))
 
-(defcontract (plot-pen-styles/c [in-contract contract/c])
+(defcontract (plot-pen-styles/c [in-contract contract?])
   (maybe-function/c in-contract (listof plot-pen-style/c)))
 
-(defcontract (plot-brush-styles/c [in-contract contract/c])
+(defcontract (plot-brush-styles/c [in-contract contract?])
   (maybe-function/c in-contract (listof plot-brush-style/c)))
 
-(defcontract (alphas/c [in-contract contract/c])
+(defcontract (alphas/c [in-contract contract?])
   (maybe-function/c in-contract (listof (real-in 0 1))))
 
-(defcontract (labels/c [in-contract contract/c])
+(defcontract (labels/c [in-contract contract?])
   (maybe-function/c in-contract (listof (or/c string? #f))))
