@@ -48,7 +48,7 @@
      (list* #'rv (syntax->list #'(v ...)))]))
 
 (define ((make-define-case inner) stx)
-  (syntax-case stx (define-values define-syntaxes define-values-for-syntax)
+  (syntax-case stx (define-values define-syntaxes define-values-for-syntax #%require)
     [(define-values (v ...) ve)
      (let-values ([(nve) (inner #'ve)])
        (quasisyntax/loc stx
