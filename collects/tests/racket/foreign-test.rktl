@@ -20,27 +20,51 @@
 (flush-output)
 
 (when (eq? 'windows (system-type))
-  (let* ([concat string-append]
-         [studio  "c:/Program Files/Microsoft Visual Studio 10.0"]
-         [scommon (concat studio "/Common7")]
-         [vc      (concat studio "/VC")])
-    (when (directory-exists? studio)
-      (putenv "PATH"    (concat (getenv "PATH")
-				";" vc "/bin"
-				";" scommon "/IDE"
-				";" scommon "/Tools"
-				";" scommon "/Tools/bin"))
-      (putenv "INCLUDE" (concat ";" vc "/include"
-				";" vc "/atlmfc/include"
-				";" vc "/PlatformSDK/Include"))
-      (putenv "LIB"     (concat ";" vc "/lib"
-				";" vc "/atlmfc/lib"
-				";" vc "/PlatformSDK/lib")))))
+  (define concat string-append)
+  (define 64bit? (= 8 (compiler-sizeof '(* void))))
+  (define (find-dir . dirs)
+    (for/or ([d (in-list dirs)]) (and (directory-exists? d) d)))
+  (define progfiles
+    (find-dir "C:/Program Files (x86)" "C:/Program Files"))
+  (define studio
+    (and progfiles (concat progfiles "/Microsoft Visual Studio 10.0")))
+  (when (and studio (directory-exists? studio))
+    (define (paths-env var . ps)
+      (define val
+        (apply concat (for/list ([p (in-list ps)]
+                                 #:when (and p (directory-exists? p)))
+                        (concat p ";"))))
+      (printf ">>> $~a = ~s\n" var val)
+      (putenv var val))
+    (define (vc p)     (concat studio "/VC/" p))
+    (define (common p) (concat studio "/Common7/" p))
+    (define (winsdk p) (concat progfiles "/Microsoft SDKs/Windows/v7.0A/" p))
+    (paths-env "PATH"
+               (getenv "PATH")
+               (vc (if 64bit? "BIN/amd64" "BIN"))
+               (vc "IDE") (vc "Tools") (vc "Tools/bin")
+               (common "Tools") (common "IDE"))
+    (paths-env "INCLUDE"
+               (vc "INCLUDE") (vc "ATLMFC/INCLUDE") (vc "PlatformSDK/INCLUDE")
+               (winsdk "include"))
+    (paths-env "LIB"
+               (vc (if 64bit? "LIB/amd64" "LIB"))
+               (vc (if 64bit? "ATLMFC/LIB" "ATLMFC/LIB/amd64"))
+               (vc "PlatformSDK/LIB")
+               (winsdk (if 64bit? "Lib/x64" "Lib")))
+    (putenv "LIBPATH" (getenv "LIB"))
+    (define tmp (getenv "TEMP"))
+    (unless (and tmp (directory-exists tmp))
+      (putenv "TEMP" (or (find-dir "C:/Temp" "C:/tmp")
+                         (error "Could not find a temporary directory"))))
+    (when 64bit? (putenv "Platform" "X64"))))
 
 (require dynext/compile dynext/link mzlib/etc)
 (define delete-test-files
   (let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
-        [o  (build-path (current-directory) "foreign-test.o")]
+        [o  (build-path (current-directory)
+                        (if (eq? 'windows (system-type))
+                          "foreign-test.obj" "foreign-test.o"))]
         [so (build-path (current-directory)
                         (bytes->path (bytes-append #"foreign-test"
                                                    (system-type 'so-suffix))))])
@@ -51,7 +75,11 @@
       (link-extension #t (list o) so))
     (lambda ()
       (when (file-exists? o) (delete-file o))
-      (when (file-exists? so) (delete-file so)))))
+      (when (file-exists? so)
+        (with-handlers ([exn:fail:filesystem?
+                         (lambda (e)
+                           (eprintf "warning: could not delete ~e\n" so))])
+          (delete-file so))))))
 
 ;; Test arrays
 (define _c7_list (_array/list _byte 7))
