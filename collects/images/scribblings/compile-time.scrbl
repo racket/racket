@@ -24,14 +24,20 @@ To reduce the startup time of programs that use computed bitmaps, use the macros
 The macros defined here compute bitmaps at expansion time, and expand to the bitmap's @racket[bytes] and a simple wrapper that converts @racket[bytes] to a @racket[bitmap%].
 Thus, fully expanded, compiled modules contain (more or less) literal bitmap values, which do not need to be computed again when the module is @racket[require]d by another.
 
-The literal bitmap values are encoded in @link["http://en.wikipedia.org/wiki/Portable_Network_Graphics"]{PNG} format, so they are compressed in the compiled module.
+The literal bitmap values are encoded in @link["http://en.wikipedia.org/wiki/Portable_Network_Graphics"]{PNG} or @link["http://en.wikipedia.org/wiki/JPEG"]{JPEG} format, so they are compressed in the compiled module.
 
 To get the most from compiled bitmaps during development, it is best to put them in files that are changed infrequently.
 For example, for games, we suggest having a separate module called something like @tt{images.rkt} or @tt{resources.rkt} that @racket[provide]s all the game's images.
 
-@defform[(compiled-bitmap expr)]{
+@defform[(compiled-bitmap expr [quality])]{
 Evaluates @racket[expr] at expansion time, which must return a @racket[bitmap%], and returns to the bitmap at run time.
 Keep in mind that @racket[expr] has access only to expansion-time values, not run-time values.
+
+If @racket[quality] is @racket[100], the bitmap is stored as a PNG.
+If @racket[quality] is between @racket[0] and @racket[99] inclusive, it is stored as a JPEG with quality @racket[quality].
+(See @method[bitmap% save-file].)
+If the bitmap has an alpha channel, its alpha channel is stored as a separate JPEG.
+The default value is @racket[100].
 
 Generally, to use this macro, wrap a @racket[bitmap%]-producing expression with it and move any identifiers it depends on into the expansion phase.
 For example, suppose we are computing a large PLT logo at run time:
@@ -58,8 +64,9 @@ Note that @racketmodname[images/logos] is now required @racket[for-syntax], so t
 has access to the identifier @racket[plt-logo].
 }
 
-@defform[(compiled-bitmap-list expr)]{
+@defform[(compiled-bitmap-list expr [quality])]{
 Like @racket[compiled-bitmap], but it expects @racket[expr] to return a @racket[list] of @racket[bitmap%]s, and it returns the list at run time.
+The @racket[quality] argument works as in @racket[compiled-bitmap], but is applied to all the images in the list.
 
 Use this for animations. For example,
 @codeblock|{#lang racket}|
@@ -73,7 +80,8 @@ Use this for animations. For example,
 (define running-stickman-frames
   (compiled-bitmap-list
    (for/list ([t  (in-range 0 1 (/ 1 num-stickman-frames))])
-     (running-stickman-icon t "red" "white" "red" 32))))
+     (running-stickman-icon t "red" "white" "red" 32))
+   50))
 ]
 This computes
 @interaction[#:eval ctime-eval running-stickman-frames]

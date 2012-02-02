@@ -150,13 +150,14 @@
                 lambda-fm)]
           [fm  (flomap-cc-superimpose
                 (draw-icon-flomap
-                 256 256 (λ (dc)
-                           (send dc set-pen "lightblue" 2 'solid)
-                           (send dc set-brush "white" 'transparent)
-                           (send dc draw-ellipse 7 7 242 242)
-                           (send dc set-pen lambda-outline-color 4 'solid)
-                           (send dc draw-ellipse 2 2 252 252))
-                 scale)
+                 32 32 (λ (dc)
+                         (send dc set-pen lambda-outline-color 1/2 'solid)
+                         (send dc set-brush "white" 'solid)
+                         (draw-ellipse/smoothed dc -0.25 -0.25 32.5 32.5)
+                         (send dc set-pen "lightblue" 1/2 'solid)
+                         (send dc set-brush "white" 'transparent)
+                         (draw-ellipse/smoothed dc 0.5 0.5 31 31))
+                 (/ height 32))
                 fm)])
      fm)))
 
@@ -288,11 +289,12 @@
    (flomap-cc-superimpose
     (draw-icon-flomap
      32 32 (λ (dc)
+             (send dc set-pen lambda-outline-color 1/2 'solid)
+             (send dc set-brush "white" 'solid)
+             (draw-ellipse/smoothed dc -0.25 -0.25 32.5 32.5)
              (send dc set-pen "lightblue" 1/2 'solid)
              (send dc set-brush "white" 'transparent)
-             (send dc draw-ellipse 0.5 0.5 31 31)
-             (send dc set-pen lambda-outline-color 1/2 'solid)
-             (send dc draw-ellipse -0.25 -0.25 32.5 32.5))
+             (draw-ellipse/smoothed dc 0.5 0.5 31 31))
      scale)
     earth-fm
     land-fm)))
@@ -332,10 +334,12 @@
         -28 4 -44 12 -60 32))
    1/8 1/8))
 
+(define racket-r-outline-color (make-object color% 64 16 16))
+
 (define (racket-r-flomap color height)
   (draw-icon-flomap
    32 32 (λ (dc)
-           (set-icon-pen dc lambda-outline-color 3/8 'solid)
+           (set-icon-pen dc racket-r-outline-color 3/8 'solid)
            (send dc set-brush color 'solid)
            (draw-path-commands dc racket-r-commands 0 0))
    (/ height 32)))
@@ -352,9 +356,9 @@
    [height]
    (define scale (/ height 32))
    (define sphere-fm
-     (let* ([indent-fm  (racket-r-flomap lambda-outline-color height)]
+     (let* ([indent-fm  (racket-r-flomap racket-r-outline-color height)]
             [indent-dfm  (flomap->deep-flomap indent-fm)]
-            [indent-dfm  (deep-flomap-raise indent-dfm (* -1.5 scale))]
+            [indent-dfm  (deep-flomap-raise indent-dfm (* -0.75 scale))]
             [indent-dfm  (deep-flomap-smooth-z indent-dfm (* 0.5 scale))]
             [sphere-fm  (draw-icon-flomap
                          32 32 (λ (dc)
@@ -373,14 +377,12 @@
                          scale)]
             [sphere-dfm  (flomap->deep-flomap sphere-fm)]
             [sphere-dfm  (deep-flomap-bulge-spheroid sphere-dfm (* 14 scale))]
-            [sphere-dfm  (deep-flomap-raise sphere-dfm (* 0 scale))]
             [sphere-dfm  (deep-flomap-cc-superimpose 'add sphere-dfm indent-dfm)])
        (deep-flomap-render-icon sphere-dfm glass-logo-material)))
    
    (define r-fm
      (let* ([r-fm  (racket-r-flomap light-metal-icon-color height)]
             [r-dfm  (flomap->deep-flomap r-fm)]
-            ;[r-dfm  (deep-flomap-emboss r-dfm (* 2 scale) (* 8 scale))]
             [r-dfm  (deep-flomap-bulge-round r-dfm (* 48 scale))]
             [r-dfm  (deep-flomap-smooth-z r-dfm (* 1/2 scale))])
        (deep-flomap-render-icon r-dfm metal-material)))
@@ -388,11 +390,12 @@
    (flomap-cc-superimpose
     (draw-icon-flomap
      32 32 (λ (dc)
+             (send dc set-pen racket-r-outline-color 1/2 'solid)
+             (send dc set-brush "white" 'solid)
+             (draw-ellipse/smoothed dc -0.25 -0.25 32.5 32.5)
              (send dc set-pen "lightblue" 1/2 'solid)
              (send dc set-brush "white" 'transparent)
-             (send dc draw-ellipse 0.5 0.5 31 31)
-             (send dc set-pen lambda-outline-color 1/2 'solid)
-             (send dc draw-ellipse -0.25 -0.25 32.5 32.5))
+             (draw-ellipse/smoothed dc 0.5 0.5 31 31))
      scale)
     sphere-fm
     r-fm)))

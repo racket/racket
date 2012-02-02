@@ -53,24 +53,28 @@
 (: flomap-bilinear-ref (flomap Integer Real Real -> Flonum))
 (define (flomap-bilinear-ref fm k x y)
   (match-define (flomap vs c w h) fm)
-  (unless (and (k . >= . 0) (k . < . c))
-    (raise-type-error 'flomap-bilinear-ref (format "nonnegative fixnum < ~e" c) k))
-  (let ([x  (- (exact->inexact x) 0.5)]
-        [y  (- (exact->inexact y) 0.5)])
-    (define floor-x (floor x))
-    (define floor-y (floor y))
-    (define x0 (fl->fx floor-x))
-    (define y0 (fl->fx floor-y))
-    (define x1 (fx+ x0 1))
-    (define y1 (fx+ y0 1))
-    (define v00 (unsafe-flomap-ref vs c w h k x0 y0))
-    (define v10 (unsafe-flomap-ref vs c w h k x1 y0))
-    (define v01 (unsafe-flomap-ref vs c w h k x0 y1))
-    (define v11 (unsafe-flomap-ref vs c w h k x1 y1))
-    (define xα (- x floor-x))
-    (fl-convex-combination (fl-convex-combination v00 v10 xα)
-                           (fl-convex-combination v01 v11 xα)
-                           (- y floor-y))))
+  (cond [(and (k . >= . 0) (k . < . c))
+         (let ([x  (- (exact->inexact x) 0.5)]
+               [y  (- (exact->inexact y) 0.5)])
+           (cond [(and (x . > . -0.5) (x . < . (+ 0.5 (fx->fl w)))
+                       (y . > . -0.5) (y . < . (+ 0.5 (fx->fl h))))
+                  (define floor-x (floor x))
+                  (define floor-y (floor y))
+                  (define x0 (fl->fx floor-x))
+                  (define y0 (fl->fx floor-y))
+                  (define x1 (fx+ x0 1))
+                  (define y1 (fx+ y0 1))
+                  (define v00 (unsafe-flomap-ref vs c w h k x0 y0))
+                  (define v10 (unsafe-flomap-ref vs c w h k x1 y0))
+                  (define v01 (unsafe-flomap-ref vs c w h k x0 y1))
+                  (define v11 (unsafe-flomap-ref vs c w h k x1 y1))
+                  (define xα (- x floor-x))
+                  (fl-convex-combination (fl-convex-combination v00 v10 xα)
+                                         (fl-convex-combination v01 v11 xα)
+                                         (- y floor-y))]
+                 [else  0.0]))]
+        [else
+         (raise-type-error 'flomap-bilinear-ref (format "nonnegative fixnum < ~e" c) 1 fm k x y)]))
 
 ;; ===================================================================================================
 ;; Construction and conversion

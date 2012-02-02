@@ -18,10 +18,13 @@
 (: unsafe-flvector-set! (FlVector Integer Flonum -> Void))
 (define unsafe-flvector-set! flvector-set!)
 
-(define-syntax-rule (fl->fx x)
-  (let ([i  (fl->exact-integer x)])
-    (with-asserts ([i  fixnum?])
-      i)))
+(define-syntax (fl->fx stx)
+  (syntax-case stx ()
+    [(_ x)
+     (syntax/loc stx
+       (let ([i  (fl->exact-integer x)])
+         (with-asserts ([i  fixnum?])
+           i)))]))
 
 (define-syntax-rule (fx->fl i)
   (->fl i))

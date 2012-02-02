@@ -1,15 +1,15 @@
 #lang typed/racket/base
 
-(require racket/flonum
+(require racket/match racket/math racket/flonum
          (except-in racket/fixnum fl->fx fx->fl)
-         racket/match
          "flonum.rkt"
          "flomap-struct.rkt")
 
 (provide flomap-flip-horizontal flomap-flip-vertical flomap-transpose
          flomap-cw-rotate flomap-ccw-rotate
-         invertible-2d-function Flomap-Transform
-         flomap-transform rotate-transform
+         (struct-out invertible-2d-function) Flomap-Transform
+         transform-compose rotate-transform whirl-and-pinch-transform
+         flomap-transform 
          )
 
 (: flomap-flip-horizontal (flomap -> flomap))
@@ -47,6 +47,17 @@
 
 (define-type Flomap-Transform (Integer Integer -> invertible-2d-function))
 
+(: transform-compose (Flomap-Transform Flomap-Transform -> Flomap-Transform))
+(define ((transform-compose t1 t2) w h)
+  (match-define (invertible-2d-function f1 g1) (t1 w h))
+  (match-define (invertible-2d-function f2 g2) (t2 w h))
+  (invertible-2d-function (λ: ([x : Flonum] [y : Flonum])
+                            (let-values ([(x y)  (f2 x y)])
+                              (f1 x y)))
+                          (λ: ([x : Flonum] [y : Flonum])
+                            (let-values ([(x y)  (g1 x y)])
+                              (g2 x y)))))
+
 (: flomap-transform (case-> (flomap Flomap-Transform -> flomap)
                             (flomap Flomap-Transform Real Real Real Real -> flomap)))
 (define flomap-transform
@@ -70,7 +81,7 @@
                   (x-loop (fx+ x 1))]
                  [else
                   (y-loop (fx+ y 1))]))))
-     (flomap-transform fm t (- x-min 0.5) (+ x-max 0.5) (- y-min 0.5) (+ y-max 0.5))]
+     (flomap-transform fm t x-min x-max y-min y-max)]
     [(fm t x-min x-max y-min y-max)
      (let ([x-min  (exact->inexact x-min)]
            [x-max  (exact->inexact x-max)]
@@ -111,3 +122,52 @@
              [y  (- y y-mid)])
          (values (+ x-mid (+ (* x cos-θ) (* y sin-θ)))
                  (+ y-mid (- (* y cos-θ) (* x sin-θ)))))))))
+
+(: flexpt (Flonum Flonum -> Flonum))
+(define (flexpt b x)
+  (exp (* x (fllog b))))
+
+(: whirl-and-pinch-function (Real Real Real Integer Integer
+                                  -> (Flonum Flonum -> (values Flonum Flonum))))
+(define (whirl-and-pinch-function θ pinch radius w h)
+  (let ([θ  (exact->inexact θ)]
+        [pinch  (- (exact->inexact pinch))]
+        [radius  (exact->inexact radius)])
+    (define pinch-exp
+      (cond [(pinch . >= . 0.0)  pinch]
+            [else  (/ pinch (- 1.0 pinch))]))
+    (define x-mid (* 0.5 (fx->fl w)))
+    (define y-mid (* 0.5 (fx->fl h)))
+    (define-values (x-scale y-scale)
+      (cond [(x-mid . < . y-mid)  (values (/ y-mid x-mid) 1.0)]
+            [(x-mid . > . y-mid)  (values 1.0 (/ x-mid y-mid))]
+            [else  (values 1.0 1.0)]))
+    (define fm-radius (* 0.5 (fx->fl (max w h))))
+    (define fm-radius^2 (* radius (sqr fm-radius)))
+    (define x-max (+ 0.5 (fx->fl w)))
+    (define y-max (+ 0.5 (fx->fl h)))
+    (λ: ([x : Flonum] [y : Flonum])
+      (define dx (* (- x x-mid) x-scale))
+      (define dy (* (- y y-mid) y-scale))
+      (define r^2 (+ (sqr dx) (sqr dy)))
+      (cond [(r^2 . < . fm-radius^2)
+             (define r (flsqrt (/ r^2 fm-radius^2)))
+             (define factor (cond [(or (r . = . 0.0) (pinch . = . 0.0))  1.0]
+                                  [else  (flexpt r pinch-exp)]))
+             (define pinched-dx (* dx factor))
+             (define pinched-dy (* dy factor))
+             (define ang (* θ (sqr (- 1.0 r))))
+             (define cos-a (cos ang))
+             (define sin-a (sin ang))
+             (define old-x (+ (/ (- (* pinched-dx cos-a) (* pinched-dy sin-a)) x-scale) x-mid))
+             (define old-y (+ (/ (+ (* pinched-dx sin-a) (* pinched-dy cos-a)) y-scale) y-mid))
+             (values (max -0.5 (min x-max old-x))
+                     (max -0.5 (min y-max old-y)))]
+            [else
+             (values x y)]))))
+
+(: whirl-and-pinch-transform (Real Real Real -> Flomap-Transform))
+(define ((whirl-and-pinch-transform θ pinch radius) w h)
+  (invertible-2d-function
+   (whirl-and-pinch-function (- θ) (- pinch) radius w h)
+   (whirl-and-pinch-function θ pinch radius w h)))

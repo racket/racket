@@ -1,16 +1,18 @@
 #lang typed/racket/base
 
-(require racket/flonum
+(require racket/flonum racket/math racket/match racket/list
          (except-in racket/fixnum fl->fx fx->fl)
-         racket/match racket/list
          "flonum.rkt"
          "flomap-struct.rkt"
          "flomap-pointwise.rkt"
          "flomap-blur.rkt"
-         "flomap-composite.rkt")
+         "flomap-composite.rkt"
+         "flomap-resize.rkt"
+         "flomap-transform.rkt")
 
 (provide flomap-outline flomap-outlined
-         flomap-shadow flomap-shadowed)
+         flomap-shadow flomap-shadowed
+         flomap-whirl-morph)
 
 (: colorize-alpha (flomap (Listof Real) -> flomap))
 (define (colorize-alpha fm color)
@@ -65,3 +67,37 @@
   (case-lambda
     [(fm amt)    (flomap-outlined fm amt #f)]
     [(fm amt c)  (flomap-cc-superimpose (flomap-outline fm amt c) fm)]))
+
+(define blend-start 1/3)
+(define blend-end 2/3)
+
+(: flomap-whirl-morph (flomap flomap -> (Real -> flomap)))
+(define (flomap-whirl-morph fm1 fm2)
+  (define w (max (flomap-width fm1) (flomap-width fm2)))
+  (define h (max (flomap-height fm1) (flomap-height fm2)))
+  (let ([fm1  (flomap-crop fm1 w h 1/2 1/2)]
+        [fm2  (flomap-crop fm2 w h 1/2 1/2)])
+    
+    (define: (whirled-fm1 [t : Real]) : flomap
+      (define t1 (sqr t))
+      (define trans1
+        (transform-compose (whirl-and-pinch-transform (* t1 (* -8 pi)) (* -4 t1) 1)
+                           (rotate-transform (* t1 (* -1 pi)))))
+      (flomap-transform fm1 trans1 0 w 0 h))
+    
+    (define: (whirled-fm2 [t : Real]) : flomap
+      (define t2 (sqr (- 1 t)))
+      (define trans2
+        (transform-compose (rotate-transform (* t2 (* 1 pi)))
+                           (whirl-and-pinch-transform (* t2 (* 8 pi)) (* -4 t2) 1)))
+      (flomap-transform fm2 trans2 0 w 0 h))
+    
+    (λ (t)
+      (cond [(t . <= . 0)  fm1]
+            [(t . >= . 1)  fm2]
+            [else
+             (cond [(t . <= . blend-start)  (whirled-fm1 t)]
+                   [(t . >= . blend-end)    (whirled-fm2 t)]
+                   [else
+                    (define b (/ (- t blend-start) (- blend-end blend-start)))
+                    (fm+ (fm* (- 1 b) (whirled-fm1 t)) (fm* b (whirled-fm2 t)))])]))))
