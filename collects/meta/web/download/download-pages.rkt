@@ -51,8 +51,9 @@
   (define ver (release-version rel))
   (define title @list{v@ver Release Notes})
   @page[#:file (format "v~a.html" ver) #:title title #:part-of 'download]{
-    @h2{Release Announcements for Version @ver}
-    @pre{@release-announcement[rel]}
+    @table[align: 'center]{
+      @tr{@td{@h2{Release Announcements for Version @ver}}}
+      @tr{@td{@pre{@release-announcement[rel]}}}}
   })
 (define release-page
   (let ([t (make-hash)])
