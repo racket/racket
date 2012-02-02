@@ -1238,7 +1238,9 @@
                 (λ (c) (cons (car c) (add1 (cdr c))))))
 
 (define (covered-cases cov)
-  (hash-map (coverage-counts cov) (λ (k v) v)))
+  (sort (hash-map (coverage-counts cov) (λ (k v) v))
+        string<=?
+        #:key car))
 
 (define-struct coverage (relation counts))
 
