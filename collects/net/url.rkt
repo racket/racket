@@ -209,7 +209,7 @@
 (define (get-pure-port/headers url [strings '()] #:redirections [redirections 0])
   (let redirection-loop ([redirections redirections] [url url])
     (define ip
-      (http://getpost-impure-port #t url #f '()))
+      (http://getpost-impure-port #t url #f strings))
     (define status (read-line ip 'return-linefeed))
     (define-values (new-url chunked? headers)
       (let loop ([new-url #f] [chunked? #f] [headers '()])
