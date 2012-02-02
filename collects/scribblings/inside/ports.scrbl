@@ -526,7 +526,6 @@ The functions are as follows.
            [Scheme_Out_Ready_Fun char_ready_fun]
            [Scheme_Close_Output_Fun close_fun]
            [Scheme_Need_Wakeup_Output_Fun need_wakeup_fun]
-           [Scheme_Write_Special_Fun write_special_fun]
            [Scheme_Write_Special_Evt_Fun write_special_evt_fun]
            [Scheme_Write_Special_Fun write_special_fun]
            [int must_close])]{
