@@ -9,11 +9,8 @@
 
 (define-runtime-lib pango-lib 
   [(unix) (ffi-lib "libpango-1.0" '("0" ""))]
-  [(macosx) 
-   (ffi-lib "libintl.8.dylib")
-   (ffi-lib "libpango-1.0.0.dylib")]
-  [(windows) 
-   (ffi-lib "libpango-1.0-0.dll")])
+  [(macosx) (ffi-lib "libpango-1.0.0.dylib")]
+  [(windows) (ffi-lib "libpango-1.0-0.dll")])
 
 (define-runtime-lib pangowin32-lib 
   [(unix) #f]

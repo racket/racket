@@ -13,7 +13,7 @@
    (with-handlers ([exn:fail:filesystem?
                     (lambda (exn) (ffi-lib "libpng"))])
      (ffi-lib "libpng12" '("0" "")))]
-  [(macosx) (ffi-lib "libpng14.14.dylib")]
+  [(macosx) (ffi-lib "libpng15.15.dylib")]
   [(windows) 
    (ffi-lib "zlib1.dll")
    (ffi-lib "libpng14-14.dll")])

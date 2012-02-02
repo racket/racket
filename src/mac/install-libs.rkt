@@ -8,7 +8,8 @@
                                #f)))
 
 (define libs
-  '("libgio-2.0.0"
+  '("libffi.5"
+    "libgio-2.0.0"
     "libgmodule-2.0.0"
     "libgthread-2.0.0"
     "libglib-2.0.0"
@@ -18,7 +19,7 @@
     "libpangocairo-1.0.0"
     "libcairo.2"
     "libpixman-1.0"
-    "libpng14.14"
+    "libpng15.15"
     "libjpeg.62"))
 
 (define (fixup p p-new)

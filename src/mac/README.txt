@@ -1,13 +1,14 @@
 Information on building 3rd-party libraries needed for Mac OS X GRacket.
 
 Get these packages (or newer, if compatible):
- pkg-config-0.23.tar.gz
- libpng-1.4.0.tar.gz 
- pixman-0.21.6.tar.gz
+ pkg-config-0.25.tar.gz  [PowerPC: pkg-config-0.23.tar.gz]
+ libpng-1.5.7.tar.gz 
+ pixman-0.24.2.tar.gz    [PowerPC: pixman-0.21.6.tar.gz]
  cairo-1.10.2.tar.gz
- gettext-0.17.tar.gz
- glib-2.22.4.tar.gz
- pango-1.28.0.tar.gz
+ gettext-0.18.1.1.tar.gz [PowerPC: gettext-0.17.tar.gz]
+ libffi-3.0.10.tar.gz    [PowerPC: skip]
+ glib-2.31.14.tar.gz     [PowerPC: glib-2.22.4.tar.gz]
+ pango-1.29.5.tar.gz     [PowerPC: pango-1.28.0.tar.gz]
  libjpeg62 (maybe in binary form)
 
  PSMTabBarControl, probably from "maccode.googlecode.com",
@@ -21,8 +22,8 @@ Patches:
     buf = cairo_path_head (path);
     if (buf->num_ops > 4)
 	return TRUE;
- glib/glib/gconvert.c:54: change to
-   #if !(defined(__APPLE__) && defined(__LP64__)) && !defined(USE_LIBICONV_GNU) && defined (_LIBICONV_H) 
+ glib/glib/gconvert.c:61: comment out #error near
+   #if defined(USE_LIBICONV_GNU) && !defined (_LIBICONV_H)
  pango/pango/modules.c:573: change to
    // read_modules ();
  pango/modules/basic/basic-atsui.c:60: add
@@ -33,6 +34,14 @@ Patches:
                                 &metrics->underline_position);
   metrics->underline_position = -(metrics->underline_position 
                                   + metrics->underline_thickness);
+ pango/pangocairo-coretextfont.c:150: add
+  metrics->underline_position = -metrics->underline_position;
+  pango_quantize_line_geometry (&metrics->underline_thickness,
+                                &metrics->underline_position);
+  metrics->underline_position = -(metrics->underline_position 
+                                  + metrics->underline_thickness);
+ gettext/gettext-tools/gnulib-lib/stpncpy.c:28: may need to comment out
+     // # define __stpncpy stpncpy
  PSMTabBarControl/PSMTabBarControl.m:216: change to
      // copy _cells because removing a cell
      // can modify the array (which is not allowed)
@@ -45,8 +54,12 @@ Configures (where <dest> is some temporary area):
   pixman: --prefix=<dest>
   Cairo: PATH=<dest>/bin:... --disable-xlib --disable-ft --disable-fc --prefix=<dest>
   gettext: --prefix=<dest>
+  libffi: --prefix=<dest>
   glib: PATH=<dest>/bin:... CFLAGS=-I<dest>/include LDFLAGS=-L<dest>/lib --prefix=<dest>
-  Pango: PATH=<dest>/bin:... --without-x --with-included-modules=yes --with-dynamic-modules=no
+   [PowerPC: after configure, set "allow_undefined_flag" to "" in "libtool";
+             add "-lresolv" to link command for "libgio"]
+  Pango: PATH=<dest>/bin:... --without-x --with-included-modules=yes --with-dynamic-modules=no --prefix=<dest>
+   [PowerPC: same as glib for "libtool"; use PATH for `make', too]
 
  To support 10.4, add
   CC=gcc-4.0 
@@ -56,6 +69,12 @@ Configures (where <dest> is some temporary area):
 
  Note: PATH above ensures that pkg-config binaries are used to find
  things in <dest> rather than some other area, such as /opt/local.
+
+ Be sure to use two-level namespaces for all libraries. While
+ two-level namespaces are the default on Mac OS X, some packages turn
+ on flat namespaces, at least on PowerPC. Use `otol -vh' and look for
+ "TWOLEVEL" in the output to check that a library uses two-level
+ namespaces.
 
 XCode:
  Build PSMTabBarControl. You only need the Framework target, and
@@ -75,6 +94,9 @@ Install:
   just the platform that you're using.
 
 --------------------------------------------------
+# This script isn't right, because the versions are out of date
+# and libffi isn't included, but maybe it clarifies some of
+# the instructions above
 
 DESTDIR=
 WORKDIR=

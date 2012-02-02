@@ -9,7 +9,7 @@
   [(unix) (ffi-lib "libcairo" '("2" ""))]
   [(macosx) 
    (ffi-lib "libpixman-1.0.dylib")
-   (ffi-lib "libpng14.14.dylib")
+   (ffi-lib "libpng15.15.dylib")
    (ffi-lib "libcairo.2.dylib")]
   [(win32) 
    (ffi-lib "zlib1.dll")
