@@ -123,7 +123,7 @@ rename transformer:
 
 @itemlist[
 
- @item{The parser to installs a @racket[free-identifier=?] and
+ @item{The parser installs a @racket[free-identifier=?] and
        @racket[identifier-binding] equivalence between @racket[_id]
        and @racket[_id-stx], as long as @racket[id-stx] does not have
        a true value for the @indexed-racket['not-free-identifier=?]
