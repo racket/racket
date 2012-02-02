@@ -4,7 +4,7 @@
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - scheme/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
-         "check-below.rkt" "tc-funapp.rkt"
+         "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt"
          (types utils convenience union subtype remove-intersect type-table filter-ops)
          (private-in parse-type type-annotation)
          (rep type-rep)
@@ -130,17 +130,18 @@
         ([inst (in-improper-stx inst)])
         (cond [(not inst) ty]
               [(not (or (Poly? ty) (PolyDots? ty)))
-               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]
+               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
+                              (cleanup-type ty))]
               [(and (Poly? ty)
                     (not (= (length (syntax->list inst)) (Poly-n ty))))
                (tc-error/expr #:return (Un)
                               "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                              ty (Poly-n ty) (length (syntax->list inst)))]
+                              (cleanup-type ty) (Poly-n ty) (length (syntax->list inst)))]
               [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
                ;; we can provide 0 arguments for the ... var
                (tc-error/expr #:return (Un)
                               "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                              ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
+                              (cleanup-type ty) (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
               [(PolyDots? ty)
                ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
                ;; use instantiate-poly-dotted, otherwise we do the normal thing.
