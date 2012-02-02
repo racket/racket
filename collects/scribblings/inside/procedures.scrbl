@@ -18,7 +18,7 @@ information.  (The arity information provided to
 @cpp{scheme_make_prim_w_arity} is also used for the Racket
 @racket[arity] procedure.) The procedure implementation is not allowed
 to mutate the input array of arguments; as an exception, the procedure
-can mutate the array if it is the same a the result of
+can mutate the array if it is the same as the result of
 @cpp{scheme_current_argument_stack}. The procedure may mutate the
 arguments themselves when appropriate (e.g., a fill in a vector
 argument).
