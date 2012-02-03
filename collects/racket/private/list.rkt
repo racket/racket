@@ -316,9 +316,10 @@
             ([(arity) (procedure-arity g)]
              [(required-kwds allowed-kwds) (procedure-keywords g)]
              [(composed)
-              ;; FIXME: would be nice to use `procedure-reduce-arity' and
-              ;; `procedure-reduce-keyword-arity' in the places marked below,
-              ;; but they currently add a significant overhead.
+              ;; FIXME: would be nice to use `procedure-rename',
+              ;; `procedure-reduce-arity' and `procedure-reduce-keyword-arity'
+              ;; in the places marked below, but they currently add a
+              ;; significant overhead.
               (if (eq? 1 arity)
                 (lambda (x) (app f (g x)))
                 (case-lambda          ; <--- here
