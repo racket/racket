@@ -104,7 +104,7 @@ check failed.  A test case fails as soon as any check within
 it fails, and no further checks are evaluated once this
 takes place.
 
-Naming our test cases if useful as it helps remind us what
+Naming our test cases is useful as it helps remind us what
 we're testing.  We can give a test case a name with the
 @racket[test-case] form:
 
