@@ -22,10 +22,11 @@
 (when (eq? 'windows (system-type))
   (define concat string-append)
   (define 64bit? (= 8 (compiler-sizeof '(* void))))
-  (define (find-dir . dirs)
-    (for/or ([d (in-list dirs)]) (and (directory-exists? d) d)))
+  (define (find-dir what . dirs)
+    (or (for/or ([d (in-list dirs)]) (and (directory-exists? d) d))
+        (error (format "Could not find a directory: ~a" what))))
   (define progfiles
-    (find-dir "C:/Program Files (x86)" "C:/Program Files"))
+    (find-dir "Program Files" "C:/Program Files (x86)" "C:/Program Files"))
   (define studio
     (and progfiles (concat progfiles "/Microsoft Visual Studio 10.0")))
   (when (and studio (directory-exists? studio))
@@ -54,9 +55,8 @@
                (winsdk (if 64bit? "Lib/x64" "Lib")))
     (putenv "LIBPATH" (getenv "LIB"))
     (define tmp (getenv "TEMP"))
-    (unless (and tmp (directory-exists tmp))
-      (putenv "TEMP" (or (find-dir "C:/Temp" "C:/tmp")
-                         (error "Could not find a temporary directory"))))
+    (unless (and tmp (directory-exists? tmp))
+      (putenv "TEMP" (find-dir "Temporary directory" "C:/Temp" "C:/tmp")))
     (when 64bit? (putenv "Platform" "X64"))))
 
 (require dynext/compile dynext/link mzlib/etc)
