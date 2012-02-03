@@ -128,7 +128,6 @@ ee-main:
 clean:
 	rm -f *.@LTO@ *.d core gracket gracket3m
 	rm -f gc2/*.@LTO@ gc2/xsrc/* gc2/macxsrc/* gc2/*.d gc2/*.dd
-	rm -rf gc2/xform-collects
 
 ICP=@ICP@
 BUILDINFO="$(DESTDIR)$(libpltdir)/buildinfo"
