@@ -229,6 +229,16 @@
 (test-rename #'rename-super #'object%)
 (test-rename #'rename-inner #'object%)
 
+(define (test-abstract object%)
+  (syntax-test #`(class #,object% (abstract . x)))
+  (syntax-test #`(class #,object% (abstract 1)))
+  (syntax-test #`(class #,object% (abstract [x 1])))
+  (syntax-test #`(class #,object% (abstract [x y])))
+  (syntax-test #`(class #,object% (abstract [x 1 2])))
+  (syntax-test #`(class #,object% (abstract [x] [y]))))
+
+(test-abstract #'object%)
+
 (define (class-keyword-test kw)
   (syntax-test kw)
   (syntax-test #`(#,kw (x) 10)))
@@ -254,6 +264,7 @@
 (class-keyword-test #'overment*)
 (class-keyword-test #'augment*)
 (class-keyword-test #'augride*)
+(class-keyword-test #'abstract)
 (class-keyword-test #'define/public)
 (class-keyword-test #'define/private)
 (class-keyword-test #'define/pubment)
@@ -764,6 +775,79 @@
   (err/rt-test (class e% (define/override (foo x) 12)) exn:fail:object?)
   (err/rt-test (class e% (define/augment (foo x) 12)) exn:fail:object?)
   )
+
+;; ------------------------------------------------------------
+;; Test abstract clauses
+
+;; examples taken from the DPC book
+(define bt%
+  (class object%
+    (super-new)
+    (init-field number)
+    (abstract count sum)
+    (define/public (double n)
+      (new node% [number n] [left this] [right this]))))
+
+(define leaf%
+  (class bt%
+    (super-new)
+    (inherit-field number)
+    (define/override (sum) number)
+    (define/override (count) 1)))
+
+(define node%
+  (class bt%
+    (super-new)
+    (init-field left right)
+    (inherit-field number)
+    (define/override (sum) (+ number
+                              (send left sum)
+                              (send right sum)))
+    (define/override (count) (+ 1
+                                (send left count)
+                                (send right count)))))
+
+(err/rt-test (new bt% [number 5]) exn:fail:object?)
+(test 22 'bt (send (send (new leaf% [number 7]) double 8) sum))
+(test 3 'bt (send (send (new leaf% [number 7]) double 8) count))
+
+;; calling abstracts from concrete methods
+(let* ([foo% (class (class object%
+                      (super-new)
+                      (abstract foo)
+                      (define/public (bar)
+                        (add1 (foo)))
+                      (define/public (baz) 15))
+               (super-new)
+               (define/override (foo) 10))]
+       [o (new foo%)])
+      (test 10 'abstract (send o foo))
+      (test 11 'abstract (send o bar))
+      (test 15 'abstract (send o baz)))
+
+;; super calls to an abstract should raise an error
+(let ([foo% (class (class object%
+                     (super-new)
+                     (abstract m))
+              (super-new)
+              (define/override (m) (super m)))])
+      (err/rt-test (send (new foo%) m) exn:fail:object?))
+
+;; failing to implement abstract methods
+(define bad-leaf% (class bt% (inherit-field number)))
+(define bad-leaf2% (class bt% (inherit-field number)
+                     (define/override (sum) number)))
+
+(err/rt-test (new bad-leaf% [number 5]) exn:fail:object?)
+(err/rt-test (new bad-leaf2% [number 10]) exn:fail:object?)
+
+;; cannot define publics over abstracts
+(err/rt-test (class bt% (inherit-field number)
+               (define/public (sum) number))
+             exn:fail:object?)
+(err/rt-test (class bt% (inherit-field number)
+               (define/pubment (sum) number))
+             exn:fail:object?)
 
 ;; ------------------------------------------------------------
 ;; Test send/apply dotted send and method-call forms:
