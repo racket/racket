@@ -309,12 +309,18 @@
 
 
   @defform*[#:id [check-within check-within-id]
-            [(check-within expression expected-expression delta-expression)]]{
+            [(check-within expression expected-expression delta)]]{
 
-   Checks that the first @racket[expression] evaluates to a value within
-   @racket[delta-expression] of the @racket[expected-expression]. If
-   @racket[delta-expression] is not a number, @check-within-elem reports an
-   error.}
+  Checks whether the value of the @racket[expression] expression is
+  structurally equal to the value produced by the
+  @racket[expected-expression] expression; every number in the first
+  expression must be within @racket[delta] of the corresponding number in
+  the second expression.
+
+  It is an error for @racket[expressions] or @racket[expected-expression]
+  to produce a function value.
+
+  If @racket[delta] is not a number, @check-within-elem reports an error.} 
 
 
   @defform*[#:id [check-error check-error-id]
