@@ -243,8 +243,8 @@ interface @racket[(class->interface object%)], and is transparent
 @defform/subs[
 #:literals (inspect init init-field field inherit-field init-rest init-rest
             public pubment public-final override override-final overment augment augride
-            augment-final private inherit inherit/super inherit/inner rename-super
-            rename-inner begin lambda case-lambda let-values letrec-values
+            augment-final private abstract inherit inherit/super inherit/inner
+            rename-super rename-inner begin lambda case-lambda let-values letrec-values
             define-values #%plain-lambda)
 (class* superclass-expr (interface-expr ...)
   class-clause
@@ -267,6 +267,7 @@ interface @racket[(class->interface object%)], and is transparent
   (augride maybe-renamed ...)
   (augment-final maybe-renamed ...)
   (private id ...)
+  (abstract id ...)
   (inherit maybe-renamed ...)
   (inherit/super maybe-renamed ...)
   (inherit/inner maybe-renamed ...)
@@ -451,6 +452,7 @@ a syntax error.
   [(augride maybe-renamed ...) ("clmethoddefs")]
   [(augment-final maybe-renamed ...) ("clmethoddefs")]
   [(private id ...) ("clmethoddefs")]
+  [(abstract id ...) ("clmethoddefs")]
   [(inherit maybe-renamed ...) ("classinherit")]
   [(inherit/super maybe-renamed ...)  ("classinherit")]
   [(inherit/inner maybe-renamed ...) ("classinherit")]
@@ -643,9 +645,9 @@ external names.
 Each @racket[public], @racket[override], @racket[augment],
 @racket[pubment], @racket[overment], @racket[augride],
 @racket[public-final], @racket[override-final],
-@racket[augment-final], and @racket[private] clause in a class
-declares one or more method names. Each method name must have a
-corresponding @racket[_method-definition]. The order of
+@racket[augment-final], and @racket[private]
+clause in a class declares one or more method names. Each method name
+must have a corresponding @racket[_method-definition]. The order of
 @racket[public], @|etc|, clauses and their corresponding definitions
 (among themselves, and with respect to other clauses in the class)
 does not matter.
@@ -712,6 +714,12 @@ using the @racket[inner] form. The only difference between
 @racket[public-final] and @racket[pubment] without a corresponding
 @racket[inner] is that @racket[public-final] prevents the declaration
 of augmenting methods that would be ignored.
+
+A method declared with @racket[abstract] must be declared without
+an implementation. Subclasses may implement abstract methods via the
+@racket[override], @racket[overment], or @racket[override-final]
+forms. Any class that contains or inherits any abstract methods is
+considered abstract and cannot be instantiated.
 
 @defform*[[(super id arg ...)
            (super id arg ... . arg-list-expr)]]{
