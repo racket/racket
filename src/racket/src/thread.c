@@ -6889,7 +6889,8 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
       param = argv[i];
       if (!SCHEME_PARAMETERP(param)
           && !(SCHEME_CHAPERONEP(param) && SCHEME_PARAMETERP(SCHEME_CHAPERONE_VAL(param)))) {
-	scheme_wrong_type("parameterize", "parameter", i, argc, argv);
+        a[0] = param;
+	scheme_wrong_type("parameterize", "parameter", -2, 1, a);
 	return NULL;
       }
       key = argv[i + 1];

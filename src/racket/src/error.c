@@ -1397,12 +1397,18 @@ void scheme_wrong_type(const char *name, const char *expected,
   intptr_t slen;
   int isres = 0;
   GC_CAN_IGNORE char *isress = "argument";
+  GC_CAN_IGNORE char *isgiven = "given";
 
   o = argv[which < 0 ? 0 : which];
   if (argc < 0) {
     argc = -argc;
     isress = "result";
+    isgiven = "received";
     isres = 1;
+  }
+  if (which == -2) {
+    isress = "value";
+    isgiven = "received";
   }
 
   s = scheme_make_provided_string(o, 1, &slen);
@@ -1410,10 +1416,11 @@ void scheme_wrong_type(const char *name, const char *expected,
   if ((which < 0) || (argc == 1))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		     "%s: expect%s %s of type <%s>; "
-		     "given %t",
+		     "%s: %t",
 		     name, 
 		     (which < 0) ? "ed" : "s",
-		     isress, expected, s, slen);
+		     isress, expected, isgiven,
+                     s, slen);
   else {
     char *other;
     intptr_t olen;

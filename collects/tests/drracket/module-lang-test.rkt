@@ -272,7 +272,7 @@
       @t{lambda: bad syntax in: (lambda ())})
 (test @t{#lang racket/base}
       @t{(expt 3 (void))}
-      @rx{expt: expected argument of type <number>; given #<void>})
+      @rx{expt: expected argument of type <number>; given: #<void>})
 (test @t{#lang racket/base}
       @t{1 2 ( 3 4}
       @t{1@"\n"2@"\n". read: expected a `)' to close `('})
@@ -302,7 +302,7 @@
        "(lambda () (expt 3 #f))\n"
        "(lambda () (error-escape-handler old))))\n"
        "10))")
-      ". . expt: expected argument of type <number>; given #f\n15")
+      ". . expt: expected argument of type <number>; given: #f\n15")
 (test @t{#lang racket/base}
       "(write (list (syntax x)))"
       "(.)")
@@ -322,7 +322,7 @@
                    (lambda () (expt 3 #f))
                    (lambda () (semaphore-post s)))))
               '(begin (yield s) (void)))
-      ". . expt: expected argument of type <number>; given #f")
+      ". . expt: expected argument of type <number>; given: #f")
 (test @t{#lang racket/base}
       (format "~s ~s" 
               '(define x 1) 

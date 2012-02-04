@@ -171,7 +171,7 @@
   
   (test-bad/execute-teachpack
    `(module teachpack-tmp mzscheme (car))
-   "car: expects argument of type <pair>; given 1"))
+   "car: expects argument of type <pair>; given: 1"))
 
 (define (get-string-from-file fn)
   (call-with-input-file fn

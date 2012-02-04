@@ -125,7 +125,7 @@ the settings above should match r5rs
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
     
     (test-expression "(list 1)" "'(1)")
-    (test-expression "(car (list))" "{stop-multi.png} {stop-22x22.png} car: expects argument of type <pair>; given '()")
+    (test-expression "(car (list))" "{stop-multi.png} {stop-22x22.png} car: expects argument of type <pair>; given: '()")
     
     (test-expression "(current-command-line-arguments)" "'#()")
     (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
@@ -227,7 +227,7 @@ the settings above should match r5rs
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
     
     (test-expression "(list 1)" "(1)")
-    (test-expression "(car (list))" "{stop-multi.png} {stop-22x22.png} car: expects argument of type <pair>; given ()")
+    (test-expression "(car (list))" "{stop-multi.png} {stop-22x22.png} car: expects argument of type <pair>; given: ()")
     
     (test-expression "(current-command-line-arguments)" "#()")
     (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
@@ -335,7 +335,7 @@ the settings above should match r5rs
     
     (test-expression "(list 1)" "(1)")
     (test-expression "(car (list))"
-                     "{stop-multi.png} {stop-22x22.png} mcar: expects argument of type <mutable-pair>; given ()")
+                     "{stop-multi.png} {stop-22x22.png} mcar: expects argument of type <mutable-pair>; given: ()")
     
     (test-expression "argv" "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: argv")
     (test-expression "(define-syntax app syntax-case)" 
@@ -484,7 +484,7 @@ the settings above should match r5rs
                      "(cons 1 empty)"
                      "(cons 1 empty)")
     (test-expression "(car (list))" 
-                     "car: expects a pair; given empty")
+                     "car: expects a pair; given: empty")
     
     (test-undefined-var "argv")
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -634,7 +634,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given: empty")
     
     (test-undefined-var "argv")
     
@@ -780,7 +780,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given: empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -923,7 +923,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given: empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
@@ -1074,7 +1074,7 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given: empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")

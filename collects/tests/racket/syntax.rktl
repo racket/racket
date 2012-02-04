@@ -968,23 +968,10 @@
 (error-test #'(parameterize ((x . 9)) 8) syntaxe?)
 
 (error-test #'(parameterize ([10 10]) 8))
+(error-test #'(parameterize ([10 10]) 8) (lambda (exn) (not (regexp-match #rx"argument" (exn-message exn)))))
 (error-test #'(parameterize ([(lambda () 10) 10]) 8))
 (error-test #'(parameterize ([(lambda (a) 10) 10]) 8))
 (error-test #'(parameterize ([(lambda (a b) 10) 10]) 8))
-
-#|
-(test #t procedure? (check-parameter-procedure current-directory))
-(test #t procedure? (check-parameter-procedure (case-lambda
-						[() 0]
-						[(x) 0])))
-(test 'exn 'not-param (with-handlers ([void (lambda (x) 'exn)])
-		    (check-parameter-procedure (lambda () 10))))
-(test 'exn 'not-param (with-handlers ([void (lambda (x) 'exn)])
-			(check-parameter-procedure (lambda (x) 10))))
-(test 'exn 'not-param (with-handlers ([void (lambda (x) 'exn)])
-			(check-parameter-procedure (lambda (x y) 10))))
-(arity-test check-parameter-procedure 1 1)
-|#
 
 (test 1 'time (time 1))
 (test -1 'time (time (cons 1 2) -1))

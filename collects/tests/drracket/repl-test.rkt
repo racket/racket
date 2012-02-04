@@ -446,12 +446,12 @@ This produces an ACK message
    ; printer setup test
    (mktest "(expt 3 (void))"
            
-           ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
-            "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: expected argument of type <number>; given #<void>"
-            "expt: expected argument of type <number>; given #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>")
+           ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #<void>"
+            "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #<void>"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: expected argument of type <number>; given: #<void>"
+            "expt: expected argument of type <number>; given: #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #<void>")
            'definitions
            #f
            void
@@ -548,12 +548,12 @@ This produces an ACK message
    (mktest
     "(load \"repl-test-tmp2.rkt\") (define (g) (+ 1 (expt 3 #f))) (f g)"
     
-    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: expected argument of type <number>; given #f")
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: expected argument of type <number>; given: #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: expected argument of type <number>; given: #f")
     'definitions
     #f
     (λ ()
@@ -609,12 +609,12 @@ This produces an ACK message
    (mktest
     "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (expt 3 #f))\n(lambda () (error-escape-handler old))))\n10))"
     
-    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: expected argument of type <number>; given #f\n15"
-     "expt: expected argument of type <number>; given #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15")
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f\n15"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f\n15"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: expected argument of type <number>; given: #f\n15"
+     "expt: expected argument of type <number>; given: #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #f\n15")
     'definitions
     #f
     void
@@ -708,12 +708,12 @@ This produces an ACK message
     ;; comes and messes up the source location for the error.
     "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (expt 3 #f))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
     
-    (#rx"expt: expected argument of type <number>; given #f"
-     #rx"expt: expected argument of type <number>; given #f"
-     #rx"expt: expected argument of type <number>; given #f"
-     #rx"expt: expected argument of type <number>; given #f"
-     #rx"expt: expected argument of type <number>; given #f"
-     #rx"expt: expected argument of type <number>; given #f")
+    (#rx"expt: expected argument of type <number>; given: #f"
+     #rx"expt: expected argument of type <number>; given: #f"
+     #rx"expt: expected argument of type <number>; given: #f"
+     #rx"expt: expected argument of type <number>; given: #f"
+     #rx"expt: expected argument of type <number>; given: #f"
+     #rx"expt: expected argument of type <number>; given: #f")
     'definitions
     #f
     void
