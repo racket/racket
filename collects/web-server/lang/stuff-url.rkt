@@ -44,12 +44,12 @@
   (with-handlers
    ([(lambda (x)
        (and (exn:fail? x)
-            (regexp-match #rx"serialize: expected argument of type <serializable object>; given (.*)"
+            (regexp-match #rx"serialize: expected argument of type <serializable object>; given: (.*)"
                           (exn-message x))))
      (lambda (x)
        (define non
          (second
-          (regexp-match #rx"serialize: expected argument of type <serializable object>; given (.*)"
+          (regexp-match #rx"serialize: expected argument of type <serializable object>; given: (.*)"
                        (exn-message x))))
        (error 'stuff-url 
               "Cannot stuff ~e into a URL because it contains non-serializable pieces. Convert ~a to a serializable struct"
