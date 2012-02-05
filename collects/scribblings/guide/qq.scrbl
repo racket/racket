@@ -158,7 +158,7 @@ The same shorthands can be used in expressions:
 `(1 2 `(,(+ 1 2) ,,(- 5 1)))
 ]
 
-The shorthand for of @racket[unquote-splicing] is @litchar[",@"]:
+The shorthand form of @racket[unquote-splicing] is @litchar[",@"]:
 
 @examples[
 `(1 2 ,@(list (+ 1 2) (- 5 1)))
