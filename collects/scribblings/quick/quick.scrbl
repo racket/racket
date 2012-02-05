@@ -273,8 +273,8 @@ environment of the expression determines the identifier's
 binding. This rule applies to identifiers in a @racket[lambda] body as
 well as anywhere else.
 
-For example, in the following @racket[rgb-series] function the uses
-of @racket[mk] in each @racket[lambda] form to refer to the argument of
+In the following @racket[rgb-series] function, the uses
+of @racket[mk] in each @racket[lambda] form refer to the argument of
 @racket[rgb-series], since that's the binding that is textually in
 scope:
 
