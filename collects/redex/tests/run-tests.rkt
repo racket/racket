@@ -29,7 +29,8 @@
      "stepper-test.rkt"
      "defined-checks-test.rkt"
      "check-syntax-test.rkt"
-     "test-docs-complete.rkt")
+     "test-docs-complete.rkt"
+     "tut-subst-test.rkt")
    (if test-bitmaps? '("bitmap-test.rkt") '())
    (if test-examples?
        '("../examples/cbn-letrec.rkt"
