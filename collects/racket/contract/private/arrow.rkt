@@ -465,17 +465,14 @@ v4 todo:
               [partial-ranges (map (λ (rng) (rng blame)) rngs-proj)]
               [partial-mandatory-kwds (map (λ (kwd) (kwd swapped)) mandatory-kwds-proj)]
               [partial-optional-kwds (map (λ (kwd) (kwd swapped)) optional-kwds-proj)])
+          (define the-args (append partial-doms partial-optional-doms 
+                                   partial-mandatory-kwds partial-optional-kwds
+                                   partial-ranges))
           (λ (val)
             (if has-rest?
                 (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
                 (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame))
-            (define chap/imp-func
-              (apply func
-                     blame
-                     val
-                     (append partial-doms partial-optional-doms 
-                             partial-mandatory-kwds partial-optional-kwds
-                             partial-ranges)))
+            (define chap/imp-func (apply func blame val the-args))
             (if post
                 (wrapper
                  val
