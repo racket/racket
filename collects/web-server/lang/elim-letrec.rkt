@@ -25,7 +25,7 @@
       (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
         (syntax/loc stx
           (begin0 be ...)))]
-     [(set! v ve)
+     [(set! id ve)
       (with-syntax ([ve ((elim-letrec ids) #'ve)])
         (if (bound-identifier-member? #'id ids)
             (syntax/loc stx (#%plain-app set-box! id ve))

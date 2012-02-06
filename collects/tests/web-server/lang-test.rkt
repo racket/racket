@@ -39,8 +39,20 @@
                         (let ([f (let ([m 7]) m)])
                           (+ f initial)))))])
        (check = 8 (test-m00.4 '(dispatch-start start 1)))))
-    
-    
+
+    (test-case
+     "set!"
+     (let-values ([(test-m00.4)
+                   (make-module-eval
+                    (module m00.4 (lib "lang.rkt" "web-server")
+                            (provide start)
+                            (define x 1)
+                            (define (start initial)
+                              (set! x (add1 x))
+                              x)))])
+       (check = 2 (test-m00.4 '(dispatch-start start #f)))
+       (check = 3 (test-m00.4 '(dispatch-start start #f)))))
+        
     (test-case
      "Embedded Definitions"
      (let-values ([(test-m00.4)
@@ -589,6 +601,4 @@
          (module test (lib "lang.rkt" "web-server")
            (define (show-user)
              (define-values (point i) (values #t 1))
-             i)))))))
-   
-   ))
+             i)))))))))
