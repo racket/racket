@@ -46,7 +46,7 @@ normally recognized via its constant address.
 can create new a primitive data type by calling
 @cppi{scheme_make_type}, which returns a fresh @cpp{Scheme_Type}
 value. To create a collectable instance of this type, allocate memory
-for the instance with @cpp{scheme_malloc}. From Racket's
+for the instance with @cpp{scheme_malloc_atomic}. From Racket's
 perspective, the main constraint on the data format of such an
 instance is that the first @cpp{sizeof(Scheme_Object)} bytes must
 correspond to a @cpp{Scheme_Object} record; furthermore, the first
