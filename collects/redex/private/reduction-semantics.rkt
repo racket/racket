@@ -770,10 +770,11 @@
                       "malformed shortcut, expected left-hand side to have three sub-expressions"
                       stx (syntax a))]
                     [(a b c d ...)
-                     (raise-syntax-error orig-name
-                                         "malformed shortcut, expected only two subparts for a shortcut definition, found an extra one"
-                                         stx
-                                         (syntax c))]
+                     (raise-syntax-error 
+                      orig-name
+                      "malformed shortcut, expected only two subparts for a shortcut definition, found an extra one"
+                      stx
+                      (syntax c))]
                     [_ (raise-syntax-error orig-name
                                            "malformed shortcut"
                                            stx shortcut)]))
@@ -1415,7 +1416,10 @@
                       (split-out-contract orig-stx syn-error-name #'rest relation?)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
-           (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
+           (raise-syntax-error syn-error-name
+                               "the extended and extending metafunctions cannot share a name"
+                               orig-stx
+                               prev-metafunction))
          (with-syntax ([(name2 name-predicate) (generate-temporaries (list name name))]
                        [name name])
            (with-syntax ([defs #`(begin
@@ -2779,7 +2783,12 @@
            e1:expr
            e2:expr ...)
      #:declare equiv? (expr/c test-equiv-ctc #:name test-equiv-name)
-     #`(test-->>/procs 'test-->> red e1 (list e2 ...) traverse-reduction-graph #,(attribute cycles-ok?) equiv?.c #,(attribute pred) #,(get-srcloc stx))]))
+     #`(test-->>/procs 'test-->> red e1 (list e2 ...) 
+                       traverse-reduction-graph
+                       #,(attribute cycles-ok?)
+                       equiv?.c
+                       #,(attribute pred)
+                       #,(get-srcloc stx))]))
 
 (define-syntax (test--> stx)
   (syntax-parse stx
@@ -2986,8 +2995,8 @@
 ;; the AND metafunction is defined here to be used
 ;; in define-relation so that ellipses work properly
 ;; across clauses in relations
-(define-language L)
-(define-metafunction L
+(define-language and-L)
+(define-metafunction and-L
   AND : any ... -> any
   [(AND any ...) 
    ,(andmap values (term (any ...)))])
