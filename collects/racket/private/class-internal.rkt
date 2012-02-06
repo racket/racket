@@ -753,6 +753,14 @@
                             (syntax->list (syntax (id ...))))]
                           [(-private . rest)
                            (bad "ill-formed private clause" stx)]
+                          [(-abstract id ...)
+                           (for-each
+                            (lambda (id)
+                              (unless (identifier? id)
+                                (bad "abstract element is not an identifier" id)))
+                            (syntax->list (syntax (id ...))))]
+                          [(-abstract . rest)
+                           (bad "ill-formed abstract clause" stx)]
                           [(form idp ...)
                            (and (identifier? (syntax form))
                                 (ormap (lambda (f) (free-identifier=? (syntax form) f))
@@ -768,8 +776,7 @@
                                                                 -inherit
                                                                 -inherit/super
                                                                 -inherit/inner
-                                                                -inherit-field
-                                                                -abstract)))))
+                                                                -inherit-field)))))
                            (let ([form (syntax-e (syntax form))])
                              (for-each
                               (lambda (idp)
@@ -809,8 +816,6 @@
                            (bad "ill-formed inherit/inner clause" stx)]
                           [(-inherit-field . rest)
                            (bad "ill-formed inherit-field clause" stx)]
-                          [(-abstract . rest)
-                           (bad "ill-formed abstract clause" stx)]
                           [(kw idp ...)
                            (and (identifier? #'kw)
                                 (or (free-identifier=? #'-rename-super #'kw)
