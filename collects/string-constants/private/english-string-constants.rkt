@@ -1055,7 +1055,7 @@ please adhere to these guidelines:
   (add-teachpack-to-list... "Add Teachpack to List...")
   (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
-  (teachpacks-only-in-languages "Teachpacks are only available in these languages: ~a")
+  (teachpacks-only-in-languages "The Teachpack menu is only available in these languages: ~a\n\nIn other languages, use 'require' instead.")
   
   
  ;;; Language dialog
