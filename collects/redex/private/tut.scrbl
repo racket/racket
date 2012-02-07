@@ -22,7 +22,6 @@
                                             slideshow/pict
                                             racket/pretty))
 @(interaction-eval #:eval amb-eval (begin (pretty-print-columns 40) (random-seed 0)))
-@(define-runtime-path tut-subst.rkt (list 'lib "tut-subst.rkt" "redex"))
 
 @(define orig-op (current-output-port))
 @(define orig-ep (current-error-port))
@@ -539,12 +538,14 @@ To define a reduction relation, we also have to define substitution.
 Generally speaking, substitution functions are tricky to get right
 and, since they generally are not shown in papers, we have defined
 a workhorse substitution function in Racket that runs in near linear 
-time; the source code is here, if you'd like to have a look (with
-test cases in the @filepath{test/tut-subst-test.rkt}, relative to
-the directory below):
+time; the source code is included with Redex, if you'd like to have a look;
+evaluate the expression below in the REPL to find the precise path
+on your system (test cases are in @filepath{test/tut-subst-test.rkt}, 
+relative to @filepath{tut-subst.rkt}):
 
-@centered{@filepath{@(path->string tut-subst.rkt)}}
+@centered{@racket[(collection-file-path "tut-subst.rkt" "redex")]}
 
+           
 That file defines the function @racket[subst/proc] that expects four
 arguments: a predicate for determining if an expression is a variable,
 a list of variables to replace, a list of terms to replace them with,
