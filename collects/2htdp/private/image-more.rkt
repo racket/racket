@@ -1260,7 +1260,7 @@
   (syntax-case stx ()
     [(_ arg)
      (let* ([arg (syntax->datum #'arg)]
-            [path
+            [path/lst
              (cond
                [(and (pair? arg)
                      (eq? (car arg) 'planet))
@@ -1282,7 +1282,7 @@
                                            (format "could not find ~s, expected it to be in ~a"
                                                    arg candidate)
                                            stx))
-                     candidate]))]
+                     (cons fn colls)]))]
                [(string? arg)
                 (path->complete-path 
                  arg
@@ -1292,14 +1292,19 @@
                       'bitmap 
                       "expected the argument to specify a local path (via a string) or a module path (e.g. `icons/b-run.png')"
                       stx)])])
-       #`(bitmap/proc #,path))]))
+       #`(bitmap/proc '#,path/lst))]))
 
 (define (bitmap/proc arg)
-  (when (and (path? arg)
-             (not (file-exists? arg)))
-    (error 'bitmap "could not find the file ~a" (path->string arg)))
+  (define pth (if (path? arg)
+                  arg
+                  (apply collection-file-path arg
+                         #:fail
+                         (λ (msg) (error 'bitmap msg)))))
+  (when (and (path? pth)
+             (not (file-exists? pth)))
+    (error 'bitmap "could not find the file ~a" (path->string pth)))
   ;; the rotate does a coercion to a 2htdp/image image
-  (rotate 0 (make-object image-snip% (make-object bitmap% arg 'unknown/alpha))))
+  (rotate 0 (make-object image-snip% (make-object bitmap% pth 'unknown/alpha))))
 
 (define/chk (bitmap/url string)
   ;; the rotate does a coercion to a 2htdp/image image
