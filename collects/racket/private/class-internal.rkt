@@ -1419,7 +1419,11 @@
                                                                                                        augrides)))]
                                           [(pubment-method ...) (map (find-method methods) (map car pubments))]
                                           [(public-final-method ...) (map (find-method methods) (map car public-finals))]
-                                          [(abstract-method ...) (map (find-method methods) (map car abstracts))]
+                                          ;; store a dummy method body that should never be called for abstracts
+                                          [(abstract-method ...) (map (lambda (abs)
+                                                                        #'(lambda (this . rest)
+                                                                            (obj-error 'class "Cannot call abstract method")))
+                                                                      (map car abstracts))]
                                           [mappings mappings]
                                           
                                           [exprs exprs]
@@ -2070,18 +2074,6 @@
                        id
                        (for-class name)))
           (hash-set! method-ht id p)))
-
-      ;; Make sure new abstracts do not conflict with super methods
-      ;; TODO: this check may be redundant
-      #;
-      (unless no-new-methods?
-        (for ([id abstract-names])
-          (when (memq id super-method-ids)
-            (obj-error 'class* "superclass ~e already contains method: ~a~a"
-                       super
-                       id
-                       (for-class name)))
-          (hash-set! method-ht id #t)))
       
       ;; Keep check here for early failure, will add to hashtable later in this function.
       (unless no-new-fields?
@@ -2377,22 +2369,17 @@
                                       new-normal-indices new-abstract-indices)))
                   
                   ;; -- Create method accessors --
-                  (let* ([method-accessors/no-abstracts
-                          (map (lambda (index)
-                                 (let ([dyn-idx (vector-ref dynamic-idxs index)])
-                                   (lambda (obj)
-                                     (vector-ref (vector-ref (class-int-methods (object-ref obj))
-                                                             index)
-                                                 dyn-idx))))
-                               (append new-normal-indices replace-normal-indices refine-normal-indices
-                                       replace-augonly-indices refine-augonly-indices
-                                       replace-final-indices refine-final-indices
-                                       inherit-indices))]
-                         [method-accessors (append method-accessors/no-abstracts
-                                                   (map (lambda (name)
-                                                          (lambda (obj)
-                                                            (error "Cannot call accessor on abstract method")))
-                                                        abstract-names))])
+                  (let ([method-accessors
+                         (map (lambda (index)
+                                (let ([dyn-idx (vector-ref dynamic-idxs index)])
+                                  (lambda (obj)
+                                    (vector-ref (vector-ref (class-int-methods (object-ref obj))
+                                                            index)
+                                                dyn-idx))))
+                              (append new-normal-indices replace-normal-indices refine-normal-indices
+                                      replace-augonly-indices refine-augonly-indices
+                                      replace-final-indices refine-final-indices
+                                      inherit-indices new-abstract-indices))])
                     
                     ;; -- Get new methods and initializers --
                     (let-values ([(new-methods override-methods augride-methods init)
@@ -3947,7 +3934,7 @@ An example
 (define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)
     (raise-type-error 'instantiate "class" class))
-  ;; TODO: make sure this error is the right one to raise
+  ;; make sure the class isn't abstract
   (unless (null? (class-abstract-ids class))
     (obj-error 'instantiate "cannot instantiate abstract class ~a" class))
   ;; Generate correct class by concretizing methods w/interface ctcs
