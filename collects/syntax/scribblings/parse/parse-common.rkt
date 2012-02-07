@@ -19,25 +19,27 @@
          (exn:fail:syntax-exprs exn))
         exn)))
 (define the-eval
-  (parameterize ((sandbox-output 'string)
-                 (sandbox-error-output 'string)
-                 (sandbox-make-code-inspector current-code-inspector)
-                 (sandbox-eval-handlers
-                  (list #f
-                        (lambda (thunk)
-                          (with-handlers ([exn:fail:syntax?
-                                           (lambda (e) (raise (fixup e)))])
-                            (thunk))))))
-    (make-evaluator 'racket/base
-                    #:requires (let ([mods '(syntax/parse
-                                             syntax/parse/debug
-                                             syntax/parse/experimental/splicing
-                                             syntax/parse/experimental/contract
-                                             syntax/parse/experimental/reflect
-                                             syntax/parse/experimental/specialize
-                                             syntax/parse/experimental/eh)])
-                                 `((for-syntax racket/base ,@mods)
-                                   ,@mods)))))
+  (call-with-trusted-sandbox-configuration
+   (lambda ()
+     (parameterize ([sandbox-output 'string]
+                    [sandbox-error-output 'string]
+                    [sandbox-propagate-breaks #f]
+                    [sandbox-eval-handlers
+                     (list #f
+                           (lambda (thunk)
+                             (with-handlers ([exn:fail:syntax?
+                                              (lambda (e) (raise (fixup e)))])
+                               (thunk))))])
+       (make-evaluator 'racket/base
+                       #:requires (let ([mods '(syntax/parse
+                                                syntax/parse/debug
+                                                syntax/parse/experimental/splicing
+                                                syntax/parse/experimental/contract
+                                                syntax/parse/experimental/reflect
+                                                syntax/parse/experimental/specialize
+                                                syntax/parse/experimental/eh)])
+                                    `((for-syntax racket/base ,@mods)
+                                      ,@mods)))))))
 (the-eval '(error-print-source-location #f))
 
 (define-syntax-rule (myexamples e ...)
