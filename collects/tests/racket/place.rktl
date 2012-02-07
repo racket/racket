@@ -5,6 +5,10 @@
 (place-wait (place/base (p1 ch)
   (printf "Hello from place\n")))
 
+(let ()
+  (define-values (in out) (place-channel))
+  (err/rt-test (place-channel-put in (string->uninterned-symbol "invalid"))))
+
 
 (let ([p (place/base (p1 ch)
           (printf "Hello form place 2\n")
