@@ -5,7 +5,8 @@
                     syntax-patterns-fail)
          "kws.rkt")
 (provide syntax-patterns-fail
-         current-failure-handler)
+         current-failure-handler
+         maximal-failures)
 
 #|
 Note: there is a cyclic dependence between residual.rkt and this module,

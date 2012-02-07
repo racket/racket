@@ -267,7 +267,7 @@ Conventions:
                   ;; Update the prompt, if required
                   ;; FIXME: can be optimized away if no cut immediately within variants...
                   (with-maybe-delimit-cut delimit-cut?
-                    (parse:variants x cx relsattrs variants splicing?
+                    (parse:variants x cx relsattrs variants splicing? transparent?
                                     pr es success cp0 commit?))))))))]))
 
 ;; (with-maybe-delimit-cut bool expr)
@@ -281,27 +281,33 @@ Conventions:
 ;; (parse:variants x cx relsattrs variants splicing? pr es success cp0) : expr[Ans]
 (define-syntax (parse:variants stx)
   (syntax-case stx ()
-    [(parse:variants x cx relsattrs () splicing? pr es success cp0 commit?)
+    [(parse:variants x cx relsattrs () splicing? transparent?
+                     pr es success cp0 commit?)
      ;; Special case: no variants
      #'(fail (failure pr es))]
-    [(parse:variants x cx relsattrs (variant ...) splicing? pr es success cp0 commit?)
-     #'(try (parse:variant x cx relsattrs variant splicing? pr es success cp0 commit?) ...)]))
+    [(parse:variants x cx relsattrs (variant ...) splicing? transparent?
+                     pr es success cp0 commit?)
+     #'(try (parse:variant x cx relsattrs variant splicing? transparent?
+                           pr es success cp0 commit?) ...)]))
 
 ;; (parse:variant x cx relsattrs variant splicing? pr es success cp0) : expr[Ans]
 (define-syntax (parse:variant stx)
   (syntax-case stx ()
-    [(parse:variant x cx relsattrs variant #f pr es success cp0 commit?)
+    [(parse:variant x cx relsattrs variant #f _ pr es success cp0 commit?)
      (with-syntax ([#s(variant _ _ pattern (def ...)) #'variant])
        #`(let ()
            def ...
            (parse:S x cx pattern pr es
-                    (variant-success relsattrs variant () success cp0 commit?))))]
-    [(parse:variant x cx relsattrs variant #t pr es success cp0 commit?)
+                    (variant-success relsattrs variant
+                                     ()
+                                     success cp0 commit?))))]
+    [(parse:variant x cx relsattrs variant #t transparent? pr es success cp0 commit?)
      (with-syntax ([#s(variant _ _ pattern (def ...)) #'variant])
        #`(let ()
            def ...
            (parse:H x cx rest-x rest-cx rest-pr pattern pr es
-                    (variant-success relsattrs variant (rest-x rest-cx rest-pr)
+                    (variant-success relsattrs variant
+                                     (rest-x rest-cx (if 'transparent? rest-pr (ps-pop-opaque rest-pr)))
                                      success cp0 commit?))))]))
 
 ;; (variant-success relsattrs variant (also:id ...) success bool) : expr[Ans]
@@ -666,8 +672,11 @@ Conventions:
     [(parse:H x cx rest-x rest-cx rest-pr head pr es k)
      (syntax-case #'head ()
        [#s(hpat:describe _ description transparent? pattern)
-        #`(let ([es (cons (expect:thing description transparent?) es)])
-            (parse:H x cx rest-x rest-cx rest-pr pattern pr es k))]
+        #`(let ([es* (cons (expect:thing description transparent?) es)]
+                [pr (if 'transparent? pr (ps-add-opaque pr))])
+            (parse:H x cx rest-x rest-cx rest-pr pattern pr es*
+                     (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
+                       k)))]
        [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit?)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)

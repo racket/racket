@@ -395,3 +395,67 @@
                 [(_ 1 ... . after-ones:expr)
                  (syntax? #'after-ones)]))
   (void))
+
+(begin
+  ;; from samth 2/4/2012
+  ;; opaque head patterns used to propagate progress *with opaque marker* to tail
+  (test-case "opaque H, ok"
+    (check-equal? (syntax-parse #'(a b)
+                    [((~describe #:opaque "x" (~seq x)) y:id) 'ok])
+                  'ok))
+  (test-case "opaque splicing stxclass, ok"
+    (check-equal? (let ()
+                    (define-splicing-syntax-class foo
+                      #:opaque
+                      #:description "foo"
+                      (pattern (~seq x)))
+                    (syntax-parse #'(a b)
+                      [(f:foo y:id) 'ok]))
+                  'ok))
+
+  (test-case "opaque empty H, ok"
+    (check-equal? (syntax-parse #'(b)
+                    [((~describe #:opaque "x" (~seq)) y:id) 'ok])
+                  'ok))
+  (test-case "opaque empty splicing stxclass, ok"
+    (check-equal? (let ()
+                    (define-splicing-syntax-class foo
+                      #:opaque
+                      #:description "foo"
+                      (pattern (~seq)))
+                    (syntax-parse #'(b)
+                      [(f:foo y:id) 'ok]))
+                  'ok))
+
+  (tcerr "extent of opaque in H pattern"
+    (syntax-parse #'(a b)
+      [((~describe #:opaque "x" (~seq x)) y:nat) (void)])
+    (not #rx"expected x") ;; y:nat was incorrectly considered part of opaque region
+    #rx"expected exact-nonnegative-integer")
+  (tcerr "extent of opaque in splicing stxclass"
+    (let ()
+      (define-splicing-syntax-class foo
+        #:description "foo"
+        #:opaque
+        (pattern (~seq x)))
+      (syntax-parse #'(a b)
+        [(f:foo n:nat) (void)]))
+    (not #rx"expected foo") ;; y:nat was incorrectly considered part of opaque region
+    #rx"expected exact-nonnegative-integer")
+
+  (tcerr "extent of opaque in empty H pattern"
+    (syntax-parse #'(b)
+      [((~describe #:opaque "x" (~seq)) y:nat) (void)])
+    (not #rx"expected x") ;; y:nat was incorrectly considered part of opaque region
+    #rx"expected exact-nonnegative-integer")
+  (tcerr "extent of opaque in empty splicing stxclass"
+    (let ()
+      (define-splicing-syntax-class foo
+        #:description "foo"
+        #:opaque
+        (pattern (~seq)))
+      (syntax-parse #'(b)
+        [(f:foo n:nat) (void)]))
+    (not #rx"expected foo") ;; y:nat was incorrectly considered part of opaque region
+    #rx"expected exact-nonnegative-integer")
+  )

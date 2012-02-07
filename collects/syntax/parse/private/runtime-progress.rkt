@@ -14,6 +14,7 @@
          ps-add-opaque
 
          invert-ps
+         ps-pop-opaque
          ps->stx+index
          ps-context-syntax
          ps-difference
@@ -152,6 +153,14 @@ Interpretation: Inner PS structures are applied first.
 (define (invert-ps ps)
   (reverse (ps-truncate-opaque ps)))
 
+;; ps-pop-opaque : PS -> IPS
+(define (ps-pop-opaque ps)
+  (match ps
+    [(cons (? exact-positive-integer? n) (cons 'opaque ps*))
+     (cons n ps*)]
+    [(cons 'opaque ps*)
+     ps*]
+    [_ (error 'ps-pop-opaque "opaque marker not found: ~e" ps)]))
 
 ;; ==== Failure ====
 
@@ -202,7 +211,7 @@ The *-marked variants can only occur at the top of the stack.
          expect->sexpr)
 
 (define (failureset->sexpr fs)
-  (let ([fs (flatten fs null)])
+  (let ([fs (flatten fs)])
     (case (length fs)
       ((1) (failure->sexpr (car fs)))
       (else `(union ,@(map failure->sexpr fs))))))
