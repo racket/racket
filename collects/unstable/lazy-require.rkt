@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     compiler/cm-accomplice)
          racket/runtime-path
          racket/promise)
 (provide lazy-require)
@@ -28,6 +29,9 @@
        ;; implicit quasiquote, so can use normal module-path syntax
        ;; or escape to compute a the module-path via expression
        #'(begin (define-runtime-module-path-index mpi-var (quasiquote modpath))
+                (define-values ()
+                  (let-syntax ([_ (do-registration (#%variable-reference) (quasiquote modpath))])
+                    (values)))
                 (define (get-sym sym)
                   (parameterize ((current-namespace (namespace-anchor->namespace anchor)))
                     (dynamic-require mpi-var sym)))
@@ -42,3 +46,13 @@
       (lambda (kws kwargs . args)
         (keyword-apply (force fun-p) kws kwargs args)))
      name)))
+
+(begin-for-syntax
+ (define (do-registration vr modpath)
+   (let ([path (resolved-module-path-name
+                (module-path-index-resolve
+                 (module-path-index-join
+                  modpath
+                  (variable-reference->resolved-module-path vr))))])
+     (when (path? path)
+       (register-external-file path)))))
