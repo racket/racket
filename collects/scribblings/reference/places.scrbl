@@ -303,7 +303,7 @@ messages:
  @item{@tech{numbers}, @tech{characters}, @tech{booleans}, and
        @|void-const|;}
 
- @item{@tech{symbols} that are @tech{interned};}
+ @item{@tech{symbols};}
  
  @item{@tech{strings} and @tech{byte strings}, where mutable strings
        and byte strings are automatically replaced by immutable

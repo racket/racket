@@ -1251,23 +1251,30 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
                                                     SCHEME_TYPE(so));
       break;
     case scheme_symbol_type:
-      if (SCHEME_SYM_UNINTERNEDP(so)) {
-        bad_place_message2(so, *fd_accumulators, can_raise_exn);
-        if (invalid_object) *invalid_object = so;
-        return NULL;
-      } else {
-        if (mode == mzPDC_COPY) {
-          new_so = scheme_make_sized_offset_byte_string((char *)so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
-          new_so->type = scheme_serialized_symbol_type;
-        } else if (mode != mzPDC_CHECK) {
-          scheme_log_abort("encountered symbol in bad mode");
-          abort();
+      if (mode == mzPDC_COPY) {
+        new_so = scheme_make_sized_offset_byte_string((char *)so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
+        if (SCHEME_SYM_UNINTERNEDP(so)) {
+          MZ_OPT_HASH_KEY(&((Scheme_Symbol*)new_so)->iso) = 0x1;
+        } else if (SCHEME_SYM_PARALLELP(so)) {
+          MZ_OPT_HASH_KEY(&((Scheme_Symbol*)new_so)->iso) = 0x2;
         }
+        new_so->type = scheme_serialized_symbol_type;
+      } else if (mode != mzPDC_CHECK) {
+        scheme_log_abort("encountered symbol in bad mode");
+        abort();
       }
       break;
     case scheme_serialized_symbol_type:
       if ((mode == mzPDC_UNCOPY) || (mode == mzPDC_DESER))
-        new_so = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
+        if (SCHEME_SYM_UNINTERNEDP(so)) {
+          new_so = scheme_make_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
+        }
+        else if (SCHEME_SYM_PARALLELP(so)) {
+          new_so = scheme_intern_exact_parallel_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
+        }
+        else {
+          new_so = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
+        }
       else if (mode != mzPDC_CLEAN) {
         scheme_log_abort("encountered serialized symbol in bad mode");
         abort();
@@ -2719,7 +2726,16 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
 
   o = places_serialize(uo, &msg_memory, &master_chain, &invalid_object);
   if (!o) {
-    if (invalid_object) bad_place_message(invalid_object);
+    if (invalid_object) {
+      char *s;
+      intptr_t slen;
+      char *s1;
+      intptr_t slen1;
+      s = scheme_make_provided_string(invalid_object, 1, &slen);
+      s1 = scheme_make_provided_string(uo, 1, &slen1);
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT, "place-channel-put: value %t not allowed in a message: %t", 
+		   s, slen, s1, slen1);
+    }
     else bad_place_message(uo);
   }
 
