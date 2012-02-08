@@ -11,6 +11,12 @@
          racket/draw
          scheme/class)
 
+(define pink-code-font
+  (if (and (eq? (system-type) 'macosx)
+           (member "Courier" (get-face-list)))
+      "Courier"
+      'modern))
+
 (require (for-syntax scheme/base))
   
 (provide find-enclosing-loc-wrapper
@@ -477,7 +483,7 @@
           (make-pict-token col col-span (blank))
           (let ([str (apply string (build-list col-span (λ (x) #\space)))])
             (if unquoted?
-                (make-pict-token col col-span (pink-background ((current-text) str 'modern (default-font-size))))
+                (make-pict-token col col-span (pink-background ((current-text) str pink-code-font (default-font-size))))
                 (make-string-token col col-span str (default-style))))))
     
     (define (handle-loc-wrapped lw)
@@ -687,7 +693,7 @@
        (list (make-pict-token col span 
                               (pink-background 
                                ((current-text) (if (string? atom) atom (format "~a" atom))
-                                               'modern
+                                               pink-code-font
                                                (default-font-size)))))]
       [(and (symbol? atom)
             (regexp-match #rx"^([^_^]*)_([^^]*)\\^?(.*)$" (symbol->string atom)))
@@ -745,7 +751,7 @@
 
   (define (basic-text str style) ((current-text) str style (default-font-size)))
   (define (non-terminal str) ((current-text) str (non-terminal-style) (default-font-size)))
-  (define (unksc str) (pink-background ((current-text) str 'modern (default-font-size))))
+  (define (unksc str) (pink-background ((current-text) str pink-code-font (default-font-size))))
   (define non-terminal-style (make-parameter '(italic . roman)))
   (define non-terminal-subscript-style (make-parameter `(subscript . ,(non-terminal-style))))
   (define non-terminal-superscript-style (make-parameter `(superscript . ,(non-terminal-style))))
