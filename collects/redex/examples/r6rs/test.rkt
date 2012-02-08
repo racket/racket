@@ -2,7 +2,8 @@
 
 (require redex/reduction-semantics
          racket/contract
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     setup/path-to-relative))
 
 (define-struct test-suite (name reductions to-mz equal? tests))
 (define-struct test (name input expecteds run-mz? around file line))
@@ -71,22 +72,26 @@
   (syntax-case stx ()
     [(_ name term expected) 
      (with-syntax ([line (syntax-line stx)]
-                   [source (syntax-source stx)])
+                   [source (and (path? (syntax-source stx))
+                                (path->relative-string/library (syntax-source stx)))])
        (syntax (build-test name term (list expected) #t #f line source)))]
     [(_ name term expected mz?) 
      (with-syntax ([line (syntax-line stx)]
-                   [source (syntax-source stx)])
+                   [source (and (path? (syntax-source stx))
+                                (path->relative-string/library (syntax-source stx)))])
        (syntax (build-test name term (list expected) mz? #f line source)))]
     [(_ name term expected mz? around)
      (with-syntax ([line (syntax-line stx)]
-                   [source (syntax-source stx)])
+                   [source (and (path? (syntax-source stx))
+                                (path->relative-string/library (syntax-source stx)))])
        (syntax (build-test name term (list expected) mz? around line source)))]))
 
 (define-syntax (test/anss stx)
   (syntax-case stx ()
     [(_ name term expecteds) 
      (with-syntax ([line (syntax-line stx)]
-                   [source (syntax-source stx)])
+                   [source (and (path? (syntax-source stx))
+                                (path->relative-string/library (syntax-source stx)))])
        (syntax (build-test name term expecteds #t #f line source)))]))
 
 (define (build-test name term expecteds mz? around line source)

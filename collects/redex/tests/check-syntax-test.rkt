@@ -3,7 +3,9 @@
 (require "test-util.rkt"
          drracket/check-syntax
          redex/pict
-         redex/reduction-semantics)
+         redex/reduction-semantics
+         (for-syntax setup/path-to-relative)
+         setup/path-to-relative)
 
 (reset-count)
 
@@ -18,10 +20,13 @@
           #,(syntax-line #'x)
           #,(syntax-column #'x)
           #,(syntax-position #'x))
-         (read-syntax '#,(syntax-source #'x) p))]))
+         (read-syntax '#,(and (path? (syntax-source #'x))
+                              (path->relative-string/library (syntax-source #'x)))
+                      p))]))
 
 (define (source stx)
-  (list (syntax-source stx)
+  (list (and (path? (syntax-source stx))
+             (path->relative-string/library (syntax-source stx)))
         (syntax-line stx)
         (syntax-column stx)))
 

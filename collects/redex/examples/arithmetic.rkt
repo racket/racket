@@ -31,9 +31,9 @@
    (c--> (/ number_1 number_2)
          ,(/ (term number_1) (term number_2))
          "divide")
-   (c-->(sqrt number_1)
-        ,(sqrt (term number_1))
-        "sqrt")
+   (c--> (sqrt number_1)
+         ,(sqrt (term number_1))
+         "sqrt")
    with
    [(--> (in-hole e-ctxt_1 a) (in-hole e-ctxt_1 b))
     (c--> a b)]))

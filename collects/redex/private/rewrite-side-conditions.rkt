@@ -3,6 +3,7 @@
   (require mzlib/list
            "underscore-allowed.rkt")
   (require "term.rkt"
+           setup/path-to-relative
            (for-template
             mzscheme
             "term.rkt"
@@ -88,8 +89,20 @@
                                               name/ellipses)))
                                   pre-vars
                                   names/ellipses))]
-                           [src-loc (parameterize ([print-syntax-width 0])
-                                      (format "~s" #'exp))])
+                           [src-loc 
+                            (let ([stx #'exp])
+                              (define src (syntax-source stx))
+                              (define line (syntax-line stx))
+                              (define col (syntax-column stx))
+                              (format "~a:~a" 
+                                      (if (path? src)
+                                          (path->relative-string/library src)
+                                          "?")
+                                      (if (and line col)
+                                          (format "~a:~a" line col)
+                                          (if line
+                                              (format "~a:?" line)
+                                              (syntax-position stx)))))])
                (values (syntax/loc term
                          (side-condition
                           pre-term

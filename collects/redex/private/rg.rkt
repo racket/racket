@@ -8,6 +8,7 @@
          "struct.rkt"
          "match-a-pattern.rkt"
          (for-syntax racket/base
+                     setup/path-to-relative
                      "rewrite-side-conditions.rkt"
                      "term-fn.rkt"
                      "reduction-semantics.rkt"
@@ -810,7 +811,7 @@
      (with-syntax ([loc (if (and (path? (syntax-source stx))
                                  (syntax-line stx))
                             (format "~a:~a"
-                                    (path->string (syntax-source stx)) 
+                                    (path->relative-string/library (syntax-source stx)) 
                                     (syntax-line stx))
                             #f)])
        #`(λ (msg)

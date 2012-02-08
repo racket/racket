@@ -2,6 +2,7 @@
 
 (require racket/match
          racket/contract
+         setup/path-to-relative
          (for-template racket/base racket/contract))
 
 (define (parse-kw-args formals actuals source form-name)
@@ -36,16 +37,20 @@
              (syntax rest))]
       [else (raise-syntax-error #f "bad keyword argument syntax" source rest)])))
 
+;; note: depents on current-directory (or current-load-relative-directory)
 (define (client-name stx form)
-  (let ([m (syntax-source-module stx)])
-    (cond [(module-path-index? m)
-           (format "~a" (module-path-index-resolve m))]
-          [(or (symbol? m) (path? m))
-           (format "~a" m)]
-          [else (format "~s client" form)])))
+  (define mpi/path/sym (syntax-source-module stx))
+  (define pth/sym (if (module-path-index? mpi/path/sym)
+                      (resolved-module-path-name 
+                       (module-path-index-resolve mpi/path/sym))
+                      mpi/path/sym))
+  (if (path? pth/sym)
+      (path->relative-string/library pth/sym)
+      (format "~s" pth/sym)))
 
 (define (src-loc-stx stx)
-  #`#(#,(syntax-source stx)
+  #`#(#,(and (path? (syntax-source stx))
+             (path->relative-string/library (syntax-source stx)))
       #,(syntax-line stx) 
       #,(syntax-column stx) 
       #,(syntax-position stx)
@@ -56,4 +61,7 @@
               #,(client-name expr form) '#,form
               #,desc #,(src-loc-stx expr)))
 
-(provide (all-defined-out))
+(provide src-loc-stx
+         apply-contract
+         client-name
+         parse-kw-args)

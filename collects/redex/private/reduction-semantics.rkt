@@ -6,7 +6,8 @@
          "fresh.rkt"
          "loc-wrapper.rkt"
          "error.rkt"
-         (for-syntax "cycle-check.rkt")
+         (for-syntax "cycle-check.rkt"
+                     setup/path-to-relative)
          racket/trace
          racket/contract
          racket/list
@@ -973,7 +974,8 @@
           (with-syntax ([(lhs-w/extras (w/extras-names ...) (w/extras-names/ellipses ...))
                          (rw-sc #`(side-condition #,from #,test-case-body-code))]
                         [lhs-source (format "~a:~a:~a"
-                                            (syntax-source from)
+                                            (and (path? (syntax-source from))
+                                                 (path->relative-string/library (syntax-source from)))
                                             (syntax-line from)
                                             (syntax-column from))]
                         [name name]
@@ -1537,7 +1539,8 @@
                              [(clause-src ...)
                               (map (λ (lhs)
                                      (format "~a:~a:~a"
-                                             (syntax-source lhs)
+                                             (and (path? (syntax-source lhs))
+                                                  (path->relative-string/library (syntax-source lhs)))
                                              (syntax-line lhs)
                                              (syntax-column lhs)))
                                    pats)]
@@ -2613,6 +2616,9 @@
                       (hash-map new-ht (λ (x y) y))
                       (compiled-lang-nt-map old-lang))))
 
+(define (union-language lang1 lang2)
+  (void))
+
 ;; find-primary-nt : symbol lang -> symbol or #f
 ;; returns the primary non-terminal for a given nt, or #f if `nt' isn't bound in the language.
 (define (find-primary-nt nt lang)
@@ -2755,7 +2761,8 @@
 
 (define-for-syntax (get-srcloc stx)
   #`(list 
-     '#,(syntax-source stx)
+     '#,(and (path? (syntax-source stx))
+             (path->relative-string/library (syntax-source stx)))
      '#,(syntax-line stx)
      '#,(syntax-column stx)
      '#,(syntax-position stx)))
@@ -2909,9 +2916,7 @@
         [pos (list-ref srcinfo 3)])
     (eprintf "FAILED ~a~a\n"
              (cond
-               [(path? file) 
-                (let-values ([(base name dir) (split-path file)])
-                  (path->string name))]
+               [(string? file) file]
                [else ""])
              (cond
                [(and line column)

@@ -5,7 +5,10 @@
           scribble/eval
           racket/runtime-path
           scriblib/autobib
-          (for-syntax racket/base)
+          (for-syntax racket/base 
+                      setup/path-to-relative 
+                      setup/main-collects)
+          setup/dirs
           "tut-util.rkt"
           (for-label racket/base
                      racket/gui
@@ -42,18 +45,7 @@
 @(define-for-syntax (loc stx)
    (let ([src (syntax-source stx)])
      (if (path? src)
-         (apply
-          build-path
-          (reverse
-           (let loop ([src src]
-                      [i 3])
-             (cond
-               [(zero? i) '()]
-               [else
-                (define-values (base name dir) (split-path src))
-                (if base
-                    (cons name (loop base (- i 1)))
-                    (list name))]))))
+         (path->relative-string/library	src)
          #f)))
 @(define-syntax (interaction/test stx)
    (syntax-case stx ()
@@ -484,20 +476,58 @@ relation for our @racket[amb] language, we first need to define
 the evaluation contexts and values, so we extend the
 language a second time.
 
-@racketblock+eval[#:eval
-                  amb-eval
-                  (define-extended-language Ev L+Γ
-                    (p (e ...))
-                    (P (e ... E e ...))
-                    (E (v E) 
-                       (E e)
-                       (+ v ... E e ...)
-                       (if0 E e e)
-                       (fix E)
-                       hole)
-                    (v (λ (x t) e)
-                       (fix v)
-                       number))]
+
+@; these definitions are just like racketblock+eval, but also
+@; preserve source locations so we can show typesetting
+@; examples in a later section
+@(require syntax/strip-context)
+@(define-syntax (m stx)
+   (syntax-case stx ()
+     [(_ arg)
+      (let ()
+        (define rewritten
+          (let loop ([stx #'arg])
+            (cond
+              [(syntax? stx) #`(datum->syntax #f
+                                              #,(loop (syntax-e stx))
+                                              (vector (convert-to-path 
+                                                       '#,(and (path? (syntax-source stx))
+                                                               (path->main-collects-relative (syntax-source stx))))
+                                                      #,(syntax-line stx)
+                                                      #,(syntax-column stx)
+                                                      #,(syntax-position stx)
+                                                      #,(syntax-span stx)))]
+              [(pair? stx) #`(cons #,(loop (car stx))
+                                   #,(loop (cdr stx)))]
+              [(or (symbol? stx) (null? stx)
+                   (number? stx) (keyword? stx)
+                   (string? stx))
+               #`'#,stx]
+              [else (error 'm "unk ~s" stx)])))
+        #`(let ()
+            (amb-eval #,rewritten)
+            (racketblock arg)))]))
+@(define (convert-to-path src)
+   (cond
+     [(path? src) src]
+     [(not src) src]
+     [else
+      (apply build-path
+             (find-collects-dir) 
+             (map bytes->path (cdr src)))]))
+
+@m[(define-extended-language Ev L+Γ
+     (p (e ...))
+     (P (e ... E e ...))
+     (E (v E) 
+        (E e)
+        (+ v ... E e ...)
+        (if0 E e e)
+        (fix E)
+        hole)
+     (v (λ (x t) e)
+        (fix v)
+        number))]
 
 To give a suitable notion of evaluation for @racket[amb], we define
 @racket[p], a non-terminal for programs. Each program consists of a
@@ -575,35 +605,6 @@ predicate that matches the pattern in the given language (which we can
 supply directly to @racket[subst/proc]).
 
 Using that substitution function, we can now give the reduction relation.
-
-@; these definitions are just like racketblock+eval, but also
-@; preserve source locations so we can show typesetting
-@; examples in a later section
-@(require syntax/strip-context)
-@(define-syntax (m stx)
-   (syntax-case stx ()
-     [(_ arg)
-      (let ()
-        (define rewritten
-          (let loop ([stx #'arg])
-            (cond
-              [(syntax? stx) #`(datum->syntax #f
-                                              #,(loop (syntax-e stx))
-                                              (vector #,(syntax-source stx)
-                                                      #,(syntax-line stx)
-                                                      #,(syntax-column stx)
-                                                      #,(syntax-position stx)
-                                                      #,(syntax-span stx)))]
-              [(pair? stx) #`(cons #,(loop (car stx))
-                                   #,(loop (cdr stx)))]
-              [(or (symbol? stx) (null? stx)
-                   (number? stx) (keyword? stx)
-                   (string? stx))
-               #`'#,stx]
-              [else (error 'm "unk ~s" stx)])))
-        #`(let ()
-            (amb-eval #,rewritten)
-            (racketblock arg)))]))
 
 @m[(define red
      (reduction-relation
@@ -1023,6 +1024,27 @@ The compound rewriter is given a list of @racket[lw] structs that correspond to 
 untypeset sequence for a use of @racket[different], and then can replace them with
 a different set of strings and @racket[lw]s. For more details on the structure of
 @racket[lw] structs and to experiment with them, see @racket[to-lw].
+
+@exercise[]
+
+Redex uses the indentation and newlines in the program source code to
+determine where the line breaks in the printed output goes, instead of
+using a pretty-printer, so as to give Redex programmers fine-grained
+control over how their models typeset.
+
+Exploit this facility so that this expression produces an expression
+with a minimum amount of whitespace within its bounding box.
+(The call to @racket[frame] helps to clarify where the bounding
+box is.)
+
+@racketblock[(frame
+              (vl-append
+               20
+               (language->pict Ev)
+               (reduction-relation->pict red)))]
+
+That is, adjust the whitespace in @racket[Ev] so that it
+fills as much of the width established by rendering @racket[red].
 
 @exercise[]
 

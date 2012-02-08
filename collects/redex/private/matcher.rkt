@@ -4,9 +4,6 @@
 ;;
 ;; -- jay's idea
 ;;
-;; -- when a pattern has no bindings, just use 'and's
-;;    and 'or's to check for the match (no allocation)
-;;
 ;; -- when a list pattern has only a single repeat,
 ;;    don't search for matches, just count
 ;;
@@ -25,15 +22,15 @@
 ;;    we don't return all of the bogus matches that show up
 ;;    by treating the hole as 'any'. 
 ;;
+;;    (this one turns out not to be so great because it
+;;     makes caching less effective)
+;;
 ;; -- combine the left-hand sides of a reduction relation
 ;;    so to avoid re-doing decompositions over and over
 ;;    (maybe....)
 ;;
-;; -- parallelism? but what about the hash-table?
+;; -- parallelism? but what about the hash-table cache?
 ;; 
-;; -- double check the caching code to make sure it makes 
-;;    sense in the current uni-hole world
-
 #|
 
 Note: the patterns described in the documentation are
