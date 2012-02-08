@@ -32,7 +32,8 @@ An example version 2 module:
 @(require (for-label web-server/managers/none))
 @racketmod[
  racket
- (require web-server/managers/none)
+ (require web-server/http
+          web-server/managers/none)
  (provide interface-version manager start)
  
  (define interface-version 'v2)

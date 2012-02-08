@@ -42,6 +42,7 @@ A stateless servlet should @racket[provide] the following exports:
 An example @racket['stateless] servlet module:
 @racketmod[
  web-server
+ (require web-server/http)
  (provide interface-version stuffer start)
  (define interface-version 'stateless)
  (define stuffer
