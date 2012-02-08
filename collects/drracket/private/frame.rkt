@@ -218,18 +218,18 @@
                                   [callback void])
                              enable #f)]
                       [else
-                       (new menu-item%
-                            [parent saved-bug-reports-menu]
-                            [label (string-constant disacard-all-saved-bug-reports)]
-                            [callback (λ (x y) (discard-all-saved-bug-reports))])
-                       (new separator-menu-item% [parent saved-bug-reports-menu])
                        (for ([a-brinfo (in-list this-time)])
                          (new menu-item%
                            [parent saved-bug-reports-menu]
                            [label (brinfo-title a-brinfo)]
                            [callback
                             (λ (x y)
-                              (help-desk:report-bug (brinfo-id a-brinfo) #:frame-mixin basics-mixin))]))]))))])
+                              (help-desk:report-bug (brinfo-id a-brinfo) #:frame-mixin basics-mixin))]))
+                       (new separator-menu-item% [parent saved-bug-reports-menu])
+                       (new menu-item%
+                            [parent saved-bug-reports-menu]
+                            [label (string-constant disacard-all-saved-bug-reports)]
+                            [callback (λ (x y) (discard-all-saved-bug-reports))])]))))])
         (drracket:app:add-language-items-to-help-menu menu))
       
       (define/override (file-menu:new-string) (string-constant new-menu-item))
