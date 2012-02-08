@@ -10,16 +10,17 @@
   (struct ts (a))
   (err/rt-test (place-channel-put in (ts "k")))
 
-  (define us (string->uninterned-symbol "foo"))
-  (define us2 (string->uninterned-symbol "foo"))
-  (place-channel-put in (cons us us))
   (let ()
+    (define us (string->uninterned-symbol "foo"))
+    (define us2 (string->uninterned-symbol "foo"))
+    (place-channel-put in (cons us us))
     (define r (place-channel-get out))
     (test #t equal? (car r) (cdr r))
     (test #f equal? us (car r))
     (test #f equal? us (cdr r))
     (test #f symbol-interned? (car r))
     (test #f symbol-interned? (cdr r))
+
     (place-channel-put in (cons us us2))
     (define r2 (place-channel-get out))
     (test #f symbol-interned? (car r2))
@@ -38,6 +39,7 @@
     (test #t equal? us (cdr r))
     (test #t symbol-unreadable? (car r))
     (test #t symbol-unreadable? (cdr r))
+     
     (place-channel-put in (cons us us2))
     (define r2 (place-channel-get out))
     (test #t symbol-unreadable? (car r2))
