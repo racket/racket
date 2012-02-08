@@ -122,6 +122,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; predicates
+;;
+
+(test (mode? "outline") => #t)
+(test (mode? 'outline) => #t)
+(test (mode? 'oooutlineh) => #f)
+(test (pen-style? 'solid) => #t)
+(test (pen-style? 'solidd) => #f)
+(test (pen-cap? 'round) => #t)
+(test (pen-cap? 'roound) => #f)
+(test (pen-join? 'round) => #t)
+(test (pen-join? 'roound) => #f)
+(test (x-place? 'left) => #t)
+(test (x-place? 'zuo) => #f)
+(test (y-place? 'top) => #t)
+(test (y-place? 'shang) => #f)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; circle vs ellipse
 ;;
 
