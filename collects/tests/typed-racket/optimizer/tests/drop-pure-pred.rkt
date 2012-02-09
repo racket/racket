@@ -1,7 +1,7 @@
 #;
 (
-TR opt: drop-pure-pred.rkt 13:6 (exact-integer? x) -- useless pure code
 TR opt: drop-pure-pred.rkt 15:6 (list 2) -- dead else branch
+TR opt: drop-pure-pred.rkt 13:6 (exact-integer? x) -- useless pure code
 '(1)
 )
 

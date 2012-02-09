@@ -1,7 +1,7 @@
 #;
 (
- TR opt: ternary-equality.rkt 12:0 (= 1 1 1) -- multi fixnum comp
- #t
+TR opt: ternary-equality.rkt 12:0 (= 1 1 1) -- multi fixnum comp
+#t
 )
 
 #lang typed/racket/base

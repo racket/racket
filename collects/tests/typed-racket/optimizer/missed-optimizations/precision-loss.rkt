@@ -1,16 +1,19 @@
 #;
 (
-TR opt: precision-loss.rkt 27:0 (+ (* 3/4 2/3) 2.0) -- binary float
-TR missed opt: precision-loss.rkt 27:0 (+ (* 3/4 2/3) 2.0) -- exact ops inside float expr -- caused by: 27:3 (* 3/4 2/3)
-TR opt: precision-loss.rkt 29:0 (+ 3/4 2.0) -- binary float
-TR opt: precision-loss.rkt 31:0 (+ (- 3/4) 2.0) -- binary float
-TR missed opt: precision-loss.rkt 31:0 (+ (- 3/4) 2.0) -- exact ops inside float expr -- caused by: 31:3 (- 3/4)
-TR opt: precision-loss.rkt 33:0 (+ (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?)) 2.0) -- binary float
-TR missed opt: precision-loss.rkt 39:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- exact ops inside float expr -- caused by: 39:8 (* 3/4 2/3)
-TR missed opt: precision-loss.rkt 39:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 39:11 3/4, 39:15 2/3, 40:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) (2 times)
-TR opt: precision-loss.rkt 40:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) -- pair
-TR missed opt: precision-loss.rkt 40:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- exact ops inside float expr -- caused by: 40:26 (* 3/4 2/3)
-TR missed opt: precision-loss.rkt 40:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- all args float-arg-expr, result not Float -- caused by: 40:29 3/4, 40:33 2/3 (2 times)
+TR opt: precision-loss.rkt 30:0 (+ (* 3/4 2/3) 2.0) -- binary float
+TR missed opt: precision-loss.rkt 30:0 (+ (* 3/4 2/3) 2.0) -- exact ops inside float expr -- caused by: 30:3 (* 3/4 2/3)
+TR opt: precision-loss.rkt 32:0 (+ 3/4 2.0) -- binary float
+TR opt: precision-loss.rkt 34:0 (+ (- 3/4) 2.0) -- binary float
+TR missed opt: precision-loss.rkt 34:0 (+ (- 3/4) 2.0) -- exact ops inside float expr -- caused by: 34:3 (- 3/4)
+TR opt: precision-loss.rkt 36:0 (+ (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?)) 2.0) -- binary float
+TR opt: precision-loss.rkt 43:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) -- pair
+TR opt: precision-loss.rkt 43:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) -- pair
+TR missed opt: precision-loss.rkt 43:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- all args float-arg-expr, result not Float -- caused by: 43:29 3/4, 43:33 2/3 (2 times)
+TR missed opt: precision-loss.rkt 43:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- exact ops inside float expr -- caused by: 43:26 (* 3/4 2/3)
+TR missed opt: precision-loss.rkt 42:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- exact ops inside float expr -- caused by: 42:8 (* 3/4 2/3)
+TR missed opt: precision-loss.rkt 42:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 42:11 3/4, 42:15 2/3, 43:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) (2 times)
+TR missed opt: precision-loss.rkt 43:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- exact ops inside float expr -- caused by: 43:26 (* 3/4 2/3)
+TR missed opt: precision-loss.rkt 43:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- all args float-arg-expr, result not Float -- caused by: 43:29 3/4, 43:33 2/3 (2 times)
 2.5
 2.75
 1.25

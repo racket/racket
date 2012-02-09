@@ -1,7 +1,7 @@
 #;
 (
-TR missed opt: expt.rkt 13:13 (expt (sin 0.25) 1.0) -- unexpected complex type
 TR opt: expt.rkt 13:19 (sin 0.25) -- unary float
+TR missed opt: expt.rkt 13:13 (expt (sin 0.25) 1.0) -- unexpected complex type
 )
 
 #lang typed/racket

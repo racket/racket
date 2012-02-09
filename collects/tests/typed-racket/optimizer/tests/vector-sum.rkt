@@ -1,29 +1,92 @@
 #;
 (
-TR opt: vector-sum.rkt 41:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- fixnum bounded expr
-TR opt: vector-sum.rkt 41:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum comp
-TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- fixnum bounded expr
-TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum comp
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
-TR opt: vector-sum.rkt 39:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 29:0 #%module-begin -- dead else branch
-TR opt: vector-sum.rkt 40:4 (vector-set! v i (sin (exact->inexact i))) -- vector partial bounds checking elimination
-TR opt: vector-sum.rkt 40:21 (sin (exact->inexact i)) -- unary float
-TR opt: vector-sum.rkt 40:26 (exact->inexact i) -- fixnum to float
-TR opt: vector-sum.rkt 41:15 sum -- dead else branch
-TR opt: vector-sum.rkt 41:15 sum -- dead else branch
-TR opt: vector-sum.rkt 43:4 (+ sum (vector-ref v i)) -- binary float
-TR opt: vector-sum.rkt 43:11 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum comp
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 103:4 (vector-set! v i (sin (exact->inexact i))) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum comp
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 103:4 (vector-set! v i (sin (exact->inexact i))) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum comp
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 106:11 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 106:4 (+ sum (vector-ref v i)) -- binary float
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum comp
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 106:11 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 106:4 (+ sum (vector-ref v i)) -- binary float
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum comp
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 103:4 (vector-set! v i (sin (exact->inexact i))) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- binary fixnum comp
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 103:4 (vector-set! v i (sin (exact->inexact i))) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 103:26 (exact->inexact i) -- fixnum to float
+TR opt: vector-sum.rkt 103:21 (sin (exact->inexact i)) -- unary float
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- dead else branch
+TR opt: vector-sum.rkt 102:2 (for: ((i : Nonnegative-Fixnum (in-range l))) (vector-set! v i (sin (exact->inexact i)))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum comp
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 106:11 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 106:4 (+ sum (vector-ref v i)) -- binary float
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- binary fixnum comp
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 106:11 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: vector-sum.rkt 106:4 (+ sum (vector-ref v i)) -- binary float
+TR opt: vector-sum.rkt 104:15 sum -- dead else branch
+TR opt: vector-sum.rkt 104:2 (for/fold: ((sum : Float 0.0)) ((i : Nonnegative-Fixnum (in-range l))) (+ sum (vector-ref v i))) -- fixnum bounded expr
+TR opt: vector-sum.rkt 92:0 #%module-begin -- dead else branch
 )
 
 #lang typed/racket
