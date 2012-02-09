@@ -60,7 +60,8 @@
 ;; in this list that is a prefix of another.
 (define magic-images
   (list #;(magic-img "larval" "PLT-206-larval.png")
-        (magic-img "mars"   "PLT-206-mars.jpg")))
+        (magic-img "mars"   "PLT-206-mars.jpg")
+        (magic-img "plt" "plt-logo-red-shiny.png")))
 
 (define (load-magic-images)
   (set! load-magic-images void) ; run only once
@@ -111,8 +112,8 @@
 
 (when (eb-bday?) (install-eb))
 
-(define weekend-bitmap-spec (collection-file-path "plt-logo-red-shiny.png" "icons"))
-(define normal-bitmap-spec (collection-file-path "plt-logo-red-diffuse.png" "icons"))
+(define weekend-bitmap-spec (collection-file-path "racket-logo-glass-256x256.png" "icons"))
+(define normal-bitmap-spec (collection-file-path "racket-logo-plastic-256x256.png" "icons"))
 (define valentines-days-spec (collection-file-path "heart.png" "icons"))
 
 (define the-bitmap-spec
