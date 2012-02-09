@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/gui/base racket/match racket/port
+(require racket/class racket/gui/base racket/match racket/port racket/list
          unstable/syntax unstable/port racket/sandbox
          typed-racket/optimizer/logging
          (prefix-in tr: typed-racket/typed-reader))
@@ -90,7 +90,7 @@
                          0
                          (missed-opt-log-entry-badness l)))]
       [_ #f])) ; no source location, ignore
-  (filter values (map log-entry->report-entry log)))
+  (filter values (map log-entry->report-entry (remove-duplicates log))))
 
 (define (merge-entries prev l)
   (match* (prev l)

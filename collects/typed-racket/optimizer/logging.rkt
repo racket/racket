@@ -145,25 +145,6 @@
 
 ;;--------------------------------------------------------------------
 
-;; Sort log according to source location. Returns the sorted log.
-(define (sort-log)
-  (sort (remove-duplicates log-so-far)
-        (match-lambda*
-         [(list (log-entry kind-x msg-x stx-x loc-stx-x pos-x)
-                (log-entry kind-y msg-y stx-y loc-stx-y pos-y))
-          (cond [(not (or pos-x pos-y))
-                 ;; neither have location, sort by message
-                 (string<? msg-x msg-y)]
-                [(not pos-y) #f]
-                [(not pos-x) #t]
-                [else
-                 ;; both have location
-                 (cond [(= pos-x pos-y)
-                        ;; same location, sort by message
-                        (string<? msg-x msg-y)]
-                       ;; sort by source location
-                       [else (< pos-x pos-y)])])])))
-
 (define (line+col->string stx)
   (let ([line (syntax-line stx)]
         [col  (syntax-column stx)])
@@ -213,7 +194,7 @@
 (define (print-log)
   (define logger (current-logger))
   (add-missed-opts-to-log)
-  (for ([x (sort-log)])
+  (for ([x (in-list log-so-far)])
     (log-message logger 'debug
                  (format-log-entry x)
                  (cons optimization-log-key x))))
