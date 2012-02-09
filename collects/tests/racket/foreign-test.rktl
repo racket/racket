@@ -226,34 +226,41 @@
       (test 12 array-ref a 1)
       (ptr-set! p _byte 1 17)
       (test 17 array-ref a 1)))
-  (let ([v (for/list ([i 7]) i)])
-    ;; pass array as pointer:
-    ;; FIXME: these tests wrap the result pointer as non-GCable,
-    ;; but _c7_list allocates the argument array as GCable.
-    (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> (_list o _byte 7)) v)
-    (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> _c7_list) v)
-    (let ([r ((ffi 'increment_c_array (_fun _c7_list -> (_array _byte 7))) v)])
-      (test 2 array-ref r 1))
-    ;; Array within struct argument and result:
-    (let* ([ic7i (make-ic7i 13 v 14)]
-           [ic7i-2 ((ffi 'increment_ic7i (_fun _ic7i -> _ic7i)) ic7i)])
-      (test v ptr-ref (cast ic7i _ic7i-pointer _pointer) _c7_list 'abs (ctype-sizeof _int))
-      (test 13 ic7i-i1 ic7i)
-      (test v ic7i-c7 ic7i)
-      (test 14 ic7i-i2 ic7i)
-      (test 14 ic7i-i1 ic7i-2)
-      (test (map add1 v) ic7i-c7 ic7i-2)
-      (test 15 ic7i-i2 ic7i-2)
-      (let ([ic7i-3 ((ffi 'ic7i_cb (_fun _ic7i (_fun _ic7i -> _ic7i) -> _ic7i))
-                     ic7i
-                     (lambda (ic7i-4)
-                       (test 12 ic7i-i1 ic7i-4)
-                       (test (cons 255 (map sub1 (cdr v))) ic7i-c7 ic7i-4)
-                       (test 13 ic7i-i2 ic7i-4)
-                       (make-ic7i 2 (map (lambda (x) (- 252 x)) v) 9)))])
-        (test 3 ic7i-i1 ic7i-3)
-        (test (map add1 (map (lambda (x) (- 252 x)) v)) ic7i-c7 ic7i-3)
-        (test 10 ic7i-i2 ic7i-3))))
+  ;; Disable these tests on Windows/i386 where they fail (and crash the process
+  ;; killing all other tests).  Matthew said: There's no consistent spec for
+  ;; functions that return structures in i386 Windows.  Historically, gcc does
+  ;; it one way, and MSVC another.  I think libffi expects the gcc protocol.
+  ;; Newer versions of gcc may agree with msvc, so this may change in the
+  ;; future.
+  (unless (and (eq? 'windows (system-type)) (= 4 (compiler-sizeof '(* void))))
+    (let ([v (for/list ([i 7]) i)])
+      ;; pass array as pointer:
+      ;; FIXME: these tests wrap the result pointer as non-GCable,
+      ;; but _c7_list allocates the argument array as GCable.
+      (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> (_list o _byte 7)) v)
+      (t (for/list ([i 7]) (add1 i)) 'increment_c_array (_fun _c7_list -> _c7_list) v)
+      (let ([r ((ffi 'increment_c_array (_fun _c7_list -> (_array _byte 7))) v)])
+        (test 2 array-ref r 1))
+      ;; Array within struct argument and result:
+      (let* ([ic7i (make-ic7i 13 v 14)]
+             [ic7i-2 ((ffi 'increment_ic7i (_fun _ic7i -> _ic7i)) ic7i)])
+        (test v ptr-ref (cast ic7i _ic7i-pointer _pointer) _c7_list 'abs (ctype-sizeof _int))
+        (test 13 ic7i-i1 ic7i)
+        (test v ic7i-c7 ic7i)
+        (test 14 ic7i-i2 ic7i)
+        (test 14 ic7i-i1 ic7i-2)
+        (test (map add1 v) ic7i-c7 ic7i-2)
+        (test 15 ic7i-i2 ic7i-2)
+        (let ([ic7i-3 ((ffi 'ic7i_cb (_fun _ic7i (_fun _ic7i -> _ic7i) -> _ic7i))
+                       ic7i
+                       (lambda (ic7i-4)
+                         (test 12 ic7i-i1 ic7i-4)
+                         (test (cons 255 (map sub1 (cdr v))) ic7i-c7 ic7i-4)
+                         (test 13 ic7i-i2 ic7i-4)
+                         (make-ic7i 2 (map (lambda (x) (- 252 x)) v) 9)))])
+          (test 3 ic7i-i1 ic7i-3)
+          (test (map add1 (map (lambda (x) (- 252 x)) v)) ic7i-c7 ic7i-3)
+          (test 10 ic7i-i2 ic7i-3)))))
   ;; Two-dimensional array:
   ;; FIXME: same allocation bug for result as above
   (let ([v (for/list ([j 3]) (for/list ([i 7]) (+ i j)))]
