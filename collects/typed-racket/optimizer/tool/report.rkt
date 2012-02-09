@@ -90,6 +90,8 @@
                          0
                          (missed-opt-log-entry-badness l)))]
       [_ #f])) ; no source location, ignore
+  ;; We remove duplicates that were caused by traversing the same piece
+  ;; of code multiple times in the optimizer.
   (filter values (map log-entry->report-entry (remove-duplicates log))))
 
 (define (merge-entries prev l)
