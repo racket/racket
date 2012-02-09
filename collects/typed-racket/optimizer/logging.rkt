@@ -14,6 +14,12 @@
 
 ;;--------------------------------------------------------------------
 
+(define TR-logging-level 'debug)
+
+;; producing logs can be expensive, don't do it if no-one's listening
+;; to the logs
+(define (anyone-listening?) (log-level? (current-logger) TR-logging-level))
+
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages
 ;; external tools/scripts (like the test harness) can look for it
@@ -32,10 +38,11 @@
 
 
 (define (log-optimization kind msg stx)
-  (let ([new-entry
-         (opt-log-entry kind msg
-                        stx (locate-stx stx) (syntax-position stx))])
-    (set! log-so-far (cons new-entry log-so-far))))
+  (when (anyone-listening?)
+    (let ([new-entry
+           (opt-log-entry kind msg
+                          stx (locate-stx stx) (syntax-position stx))])
+      (set! log-so-far (cons new-entry log-so-far)))))
 
 ;;--------------------------------------------------------------------
 
@@ -95,47 +102,48 @@
 ;; Attempts to merge the incoming missed optimization with existing ones.
 ;; Otherwise, adds the new one to the log.
 (define (log-missed-optimization kind msg stx [irritants '()])
-  (let* (;; for convenience, if a single irritant is given, wrap it in a list
-         ;; implicitly
-         [irritants (if (list? irritants) irritants (list irritants))]
-         [new
-          (missed-opt-log-entry kind msg
-                                stx (locate-stx stx) (syntax-position stx)
-                                irritants '() 1)]
-         ;; check if the new one is the child of an old one
-         ;; for/first is ok, since we can only have one parent in the list
-         ;; (if we had more, one would have to be the parent of the other, so
-         ;; only one would be in the list)
-         [parent (for/first ([m (in-list missed-optimizations-log)]
-                             #:when (parent-of? m new))
-                   m)]
-         ;; do we have children in the list, if so, merge with all of them
-         [children (for/list ([m (in-list missed-optimizations-log)]
-                              #:when (parent-of? new m))
-                     m)])
-    ;; update
-    (set! missed-optimizations-log
-          (cond [parent
-                 ;; we found our parent, merge with it
-                 (if (member (log-entry-stx new)
-                             (missed-opt-log-entry-merged-irritants
-                              parent))
-                     ;; we have been merged in the past, do nothing
-                     missed-optimizations-log
-                     ;; do the actual merge
-                     (cons (combine-missed-optimizations parent new)
-                           (remove parent missed-optimizations-log)))]
-                [(not (null? children))
-                 ;; we found children, merge with them
-                 (let ([new (for/fold ([new new])
-                                ([child children])
-                              (combine-missed-optimizations new child))])
-                   (cons new
-                         (filter (lambda (x) (not (member x children)))
-                                 missed-optimizations-log)))]
-                [else
-                 ;; no related entry, just add the new one
-                 (cons new missed-optimizations-log)]))))
+  (when (anyone-listening?)
+    (let* (;; for convenience, if a single irritant is given, wrap it in a list
+           ;; implicitly
+           [irritants (if (list? irritants) irritants (list irritants))]
+           [new
+            (missed-opt-log-entry kind msg
+                                  stx (locate-stx stx) (syntax-position stx)
+                                  irritants '() 1)]
+           ;; check if the new one is the child of an old one
+           ;; for/first is ok, since we can only have one parent in the list
+           ;; (if we had more, one would have to be the parent of the other, so
+           ;; only one would be in the list)
+           [parent (for/first ([m (in-list missed-optimizations-log)]
+                               #:when (parent-of? m new))
+                     m)]
+           ;; do we have children in the list, if so, merge with all of them
+           [children (for/list ([m (in-list missed-optimizations-log)]
+                                #:when (parent-of? new m))
+                       m)])
+      ;; update
+      (set! missed-optimizations-log
+            (cond [parent
+                   ;; we found our parent, merge with it
+                   (if (member (log-entry-stx new)
+                               (missed-opt-log-entry-merged-irritants
+                                parent))
+                       ;; we have been merged in the past, do nothing
+                       missed-optimizations-log
+                       ;; do the actual merge
+                       (cons (combine-missed-optimizations parent new)
+                             (remove parent missed-optimizations-log)))]
+                  [(not (null? children))
+                   ;; we found children, merge with them
+                   (let ([new (for/fold ([new new])
+                                  ([child children])
+                                (combine-missed-optimizations new child))])
+                     (cons new
+                           (filter (lambda (x) (not (member x children)))
+                                   missed-optimizations-log)))]
+                  [else
+                   ;; no related entry, just add the new one
+                   (cons new missed-optimizations-log)])))))
 
 ;; When we know all missed opts are known and merging has been done, we
 ;; can add them to the regular log.
@@ -195,7 +203,7 @@
   (define logger (current-logger))
   (add-missed-opts-to-log)
   (for ([x (in-list log-so-far)])
-    (log-message logger 'debug
+    (log-message logger TR-logging-level
                  (format-log-entry x)
                  (cons optimization-log-key x))))
 
@@ -213,7 +221,7 @@
 ;; only intercepts TR log messages
 (define (with-intercepted-tr-logging interceptor thunk)
   (with-intercepted-logging
-   #:level 'debug
+   #:level TR-logging-level
    (lambda (l) ;; look only for optimizer messages
      (when (log-message-from-tr-opt? l)
        (interceptor l)))
