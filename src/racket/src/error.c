@@ -447,13 +447,17 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 		es = "Unknown error";
 #else
 # ifdef DOS_FILE_SYSTEM
-	      char mbuf[256];
+	      wchar_t mbuf[256];
+              int len;
 	      if ((type != 'e') && !es) {
-		if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-				  en, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				  mbuf, 255, NULL)) {
+		if ((len = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                                          en, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                                          mbuf, 255, NULL))) {
 		  int i;
-		  es = mbuf;
+                  i = scheme_utf8_encode((const unsigned int *)mbuf, 0, len, NULL, 0, 1);
+                  es = (char *)scheme_malloc_atomic(i + 1);
+                  (void)scheme_utf8_encode((const unsigned int *)mbuf, 0, len, es, 0, 1);
+                  es[i] = 0;
 		  /* Remove newlines: */
 		  for (i = strlen(es) - 1; i > 0; i--) {
 		    if (isspace(es[i]))
