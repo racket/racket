@@ -16,6 +16,11 @@
 
 (define TR-logging-level 'debug)
 
+(define (emit-log-message l)
+  (log-message (current-logger) TR-logging-level
+               (format-log-entry l)
+               (cons optimization-log-key l)))
+
 ;; producing logs can be expensive, don't do it if no-one's listening
 ;; to the logs
 (define (anyone-listening?) (log-level? (current-logger) TR-logging-level))
@@ -26,11 +31,6 @@
 ;; since this is used across phases, can't be a gensym
 (define optimization-log-key 'log-message-coming-from-the-TR-optimizer)
 
-;; we keep track of log entries, to avoid repetitions that would be
-;; caused by traversing the same syntax multiple times (which is not
-;; a problem per se)
-(define log-so-far '())
-
 ;; msg is for consumption by the DrRacket tool
 (struct log-entry (kind msg stx located-stx pos) #:prefab)
 ;; for optimizations only (not missed optimizations, those are below)
@@ -39,10 +39,8 @@
 
 (define (log-optimization kind msg stx)
   (when (anyone-listening?)
-    (let ([new-entry
-           (opt-log-entry kind msg
-                          stx (locate-stx stx) (syntax-position stx))])
-      (set! log-so-far (cons new-entry log-so-far)))))
+    (emit-log-message
+     (opt-log-entry kind msg stx (locate-stx stx) (syntax-position stx)))))
 
 ;;--------------------------------------------------------------------
 
@@ -145,11 +143,6 @@
                    ;; no related entry, just add the new one
                    (cons new missed-optimizations-log)])))))
 
-;; When we know all missed opts are known and merging has been done, we
-;; can add them to the regular log.
-(define (add-missed-opts-to-log)
-  (set! log-so-far (append log-so-far missed-optimizations-log)))
-
 
 ;;--------------------------------------------------------------------
 
@@ -200,15 +193,9 @@
 ;; Once the optimizer is done, we sort the log according to source
 ;; location, then print it.
 (define (print-log)
-  (define logger (current-logger))
-  (add-missed-opts-to-log)
-  (for ([x (in-list log-so-far)])
-    (log-message logger TR-logging-level
-                 (format-log-entry x)
-                 (cons optimization-log-key x))))
+  (for-each emit-log-message missed-optimizations-log))
 
 (define (clear-log)
-  (set! log-so-far '())
   (set! missed-optimizations-log '()))
 
 ;;--------------------------------------------------------------------
