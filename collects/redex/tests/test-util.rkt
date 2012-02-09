@@ -48,10 +48,15 @@
     (with-handlers ([exn:fail? 
                      (λ (exn) 
                        (values (exn-message exn)
-                               (let ([marks (continuation-mark-set->list
-                                             (exn-continuation-marks exn)
-                                             errortrace-key)])
-                                 (if (null? marks) '() (list (cdar marks))))))])
+                               (let ([ans (let ([marks (continuation-mark-set->list
+                                                        (exn-continuation-marks exn)
+                                                        errortrace-key)])
+                                            (if (null? marks) '() (list (cdar marks))))])
+                                 (let loop ([ans ans])
+                                   (cond
+                                     [(pair? ans) (cons (loop (car ans)) (loop (cdr ans)))]
+                                     [(path? ans) (path->relative-string/library ans)]
+                                     [else ans])))))])
       (thunk))))
 
 (define ((exec-error-tests setup exec) path)
