@@ -2722,7 +2722,7 @@ do not represent unquoted expressions or metafunction applications.
 
 @defform[(to-lw arg)]{
 
-This form turns its argument into lw structs that
+This form turns its argument into @racket[lw] structs that
 contain all of the spacing information just as it would appear
 when being used to typeset.
 
@@ -2768,7 +2768,7 @@ lws.
 ]
 
 In general, identifiers are represented with symbols and
-parenthesis are represented with strings and picts can be
+parenthesis are represented with strings and @racket[pict]s can be
 inserted to render arbitrary pictures.
 
 The line, line-span, column, and column-span correspond to
