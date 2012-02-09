@@ -59,11 +59,7 @@
           [else ; different file
            #f]))
   (define log '())
-  (define sandbox
-    (parameterize ([sandbox-make-code-inspector current-code-inspector]
-                   [sandbox-eval-limits         #f])
-      (make-evaluator 'racket/base)))
-  (call-in-sandbox-context sandbox
+  (call-with-trusted-sandbox-configuration
    (lambda ()
      (with-intercepted-tr-logging
       (lambda (l)
