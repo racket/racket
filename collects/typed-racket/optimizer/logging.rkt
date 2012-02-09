@@ -72,7 +72,7 @@
 
 ;; combine reporting of two missed optimizations, increasing badness in the
 ;; process
-(define (combine-missed-optmizations parent child)
+(define (combine-missed-optimizations parent child)
   (missed-opt-log-entry
    (log-entry-kind        parent) ; same as child's
    (log-entry-msg         parent)
@@ -123,13 +123,13 @@
                      ;; we have been merged in the past, do nothing
                      missed-optimizations-log
                      ;; do the actual merge
-                     (cons (combine-missed-optmizations parent new)
+                     (cons (combine-missed-optimizations parent new)
                            (remove parent missed-optimizations-log)))]
                 [(not (null? children))
                  ;; we found children, merge with them
                  (let ([new (for/fold ([new new])
                                 ([child children])
-                              (combine-missed-optmizations new child))])
+                              (combine-missed-optimizations new child))])
                    (cons new
                          (filter (lambda (x) (not (member x children)))
                                  missed-optimizations-log)))]
