@@ -283,6 +283,7 @@ transcript.
 			     (apply f args))])
 		    (printf "~s\n BUT EXPECTED ERROR\n" v)
 		    (record-error (list v 'Error (cons f args))))))])
+      (test #t aok? (procedure-arity f))
       (let loop ([n 0][l '()])
 	(unless (>= n min)
 	  (unless (memq n except)

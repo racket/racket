@@ -40,7 +40,7 @@
                       [else (cons (f (car l1) (car l2)) 
                                   (loop (cdr l1) (cdr l2)))]))
                    (map f l1 l2))]
-              [(f . args) (apply map f args)])])
+              [(f l . args) (apply map f l args)])])
         map))
   
    (define for-each2
@@ -67,7 +67,7 @@
                       [else (begin (f (car l1) (car l2)) 
                                    (loop (cdr l1) (cdr l2)))]))
                    (for-each f l1 l2))]
-              [(f . args) (apply for-each f args)])])
+              [(f l . args) (apply for-each f l args)])])
         for-each))
 
    (define andmap2
@@ -98,7 +98,7 @@
                           [else (and (f (car l1) (car l2)) 
                                      (loop (cdr l1) (cdr l2)))])))
                    (andmap f l1 l2))]
-              [(f . args) (apply andmap f args)])])
+              [(f l . args) (apply andmap f l args)])])
         andmap))
 
    (define ormap2
@@ -129,5 +129,5 @@
                           [else (or (f (car l1) (car l2)) 
                                     (loop (cdr l1) (cdr l2)))])))
                    (ormap f l1 l2))]
-              [(f . args) (apply ormap f args)])])
+              [(f l . args) (apply ormap f l args)])])
         ormap))))

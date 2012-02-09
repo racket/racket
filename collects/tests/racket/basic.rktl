@@ -1414,6 +1414,11 @@
 (test #f list-length '(a b . c))
 (test '() map cadr '())
 
+(arity-test map 2 -1)
+(arity-test for-each 2 -1)
+(arity-test andmap 2 -1)
+(arity-test ormap 2 -1)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; exceptions
 
