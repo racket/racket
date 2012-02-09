@@ -50,7 +50,7 @@
                (winsdk "include"))
     (paths-env "LIB"
                (vc (if 64bit? "LIB/amd64" "LIB"))
-               (vc (if 64bit? "ATLMFC/LIB" "ATLMFC/LIB/amd64"))
+               (vc (if 64bit? "ATLMFC/LIB/amd64" "ATLMFC/LIB"))
                (vc "PlatformSDK/LIB")
                (winsdk (if 64bit? "Lib/x64" "Lib")))
     (putenv "LIBPATH" (getenv "LIB"))
