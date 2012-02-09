@@ -384,7 +384,7 @@
 
 ;; add-wrapper-let : syntax
 ;;                   (listof arg/res) -- sorted version of the arg/res structs, ordered by evaluation order
-;;                   (listof int) -- indicies that give the mapping from the ordered-args to the original order
+;;                   (listof int) -- indices that give the mapping from the ordered-args to the original order
 ;;                   (listof identifier) -- arg-proj-vars, bound to projections with ordinary blame
 ;;                   (listof identifier) -- indy-arg-proj-args, bound to projections with indy blame
 ;;                   (listof identifier) -- wrapper-args, bound to the original, unwrapped values, sorted like original arg/ress
@@ -395,7 +395,7 @@
 ;; also handles adding code to checki to see if usupplied args are present (skipping the contract check, if so)
 ;; WRONG: need to rename the variables in this function from "arg" to "arg/res"
 (define-for-syntax (add-wrapper-let body swapped-blame?
-                                    ordered-args arg-indicies
+                                    ordered-args arg-indices
                                     arg-proj-vars indy-arg-proj-vars 
                                     wrapper-args indy-arg-vars
                                     arg/res-to-indy-var)
@@ -411,7 +411,7 @@
   (for/fold ([body body])
     ([indy-arg-var (in-list indy-arg-vars)]
      [arg (in-list ordered-args)]
-     [arg-index arg-indicies]
+     [arg-index arg-indices]
      [i (in-naturals)])
     (let ([wrapper-arg (vector-ref wrapper-args arg-index)]
           [arg-proj-var (vector-ref arg-proj-vars arg-index)]
@@ -460,7 +460,7 @@
 ;; which should be a function from results to projection-applied versions of the same
 ;; if there are result contracts.
 (define-for-syntax (result-checkers an-istx
-                                    ordered-ress res-indicies
+                                    ordered-ress res-indices
                                     res-proj-vars indy-res-proj-vars
                                     wrapper-ress indy-res-vars
                                     arg/res-to-indy-var)
@@ -471,7 +471,7 @@
           #,(add-wrapper-let 
              (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
              #f
-             ordered-ress res-indicies
+             ordered-ress res-indices
              res-proj-vars indy-res-proj-vars 
              wrapper-ress indy-res-vars
              arg/res-to-indy-var)))]
@@ -496,10 +496,10 @@
                           (if (istx-rst an-istx)
                               (list (istx-rst an-istx))
                               '()))])
-    (let-values ([(ordered-args arg-indicies) (find-ordering args+rst)]
-                 [(ordered-ress res-indicies) (if (istx-ress an-istx)
-                                                  (find-ordering (istx-ress an-istx))
-                                                  (values '() '()))])
+    (let-values ([(ordered-args arg-indices) (find-ordering args+rst)]
+                 [(ordered-ress res-indices) (if (istx-ress an-istx)
+                                                 (find-ordering (istx-ress an-istx))
+                                                 (values '() '()))])
       
       (let ([wrapper-args (list->vector 
                            (append (generate-temporaries (map arg/res-var (istx-args an-istx)))
@@ -509,7 +509,7 @@
             [indy-arg-vars (generate-temporaries (map arg/res-var ordered-args))]
             [arg-proj-vars (list->vector (generate-temporaries (map arg/res-var args+rst)))]
             
-            ;; this list is parallel to arg-proj-vars (so use arg-indicies to find the right ones)
+            ;; this list is parallel to arg-proj-vars (so use arg-indices to find the right ones)
             ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
             ;; argument is not dependened on by anything)
             [indy-arg-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
@@ -524,7 +524,7 @@
             [indy-res-vars (generate-temporaries (map arg/res-var ordered-ress))]
             [res-proj-vars (list->vector (generate-temporaries (map arg/res-var (or (istx-ress an-istx) '()))))]
             
-            ;; this list is parallel to res-proj-vars (so use res-indicies to find the right ones)
+            ;; this list is parallel to res-proj-vars (so use res-indices to find the right ones)
             ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
             ;; result is not dependened on by anything)
             [indy-res-proj-vars (list->vector (map (λ (x) (maybe-generate-temporary
@@ -602,7 +602,7 @@
                             (args/vars->arg-checker
                              (result-checkers
                               an-istx
-                              ordered-ress res-indicies
+                              ordered-ress res-indices
                               res-proj-vars indy-res-proj-vars
                               wrapper-ress indy-res-vars
                               arg/res-to-indy-var)
@@ -611,7 +611,7 @@
                              wrapper-args
                              this-param)))
                           #t
-                          ordered-args arg-indicies
+                          ordered-args arg-indices
                           arg-proj-vars indy-arg-proj-vars 
                           wrapper-args indy-arg-vars
                           arg/res-to-indy-var))])

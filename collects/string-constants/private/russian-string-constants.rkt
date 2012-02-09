@@ -310,7 +310,7 @@ please adhere to these guidelines:
  (plt:hd:refresh-downloading... "Загрузить ~a...")
  (plt:hd:refresh-deleting... "Удалить старую версию ~a...")
  (plt:hd:refresh-installing... "Инсталировать новую версию ~a...")
- (plt:hd:refresh-clearing-indicies "Очистить кешированные индексы")
+ (plt:hd:refresh-clearing-indices "Очистить кешированные индексы")
  (plt:hd:refreshing-manuals-finished "Готово.")
  (plt:hd:about-help-desk "О помощи")
  (plt:hd:help-desk-about-string

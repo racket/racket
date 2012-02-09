@@ -54,7 +54,7 @@
 (remove-hard-link "planet" "docs-test.plt" 1 0)
 
 ;; run raco setup a second time to clear out the
-;; indicies that were added by running docs-test.plt.
+;; indices that were added by running docs-test.plt.
 (define res2
   (parameterize ([current-output-port out]
                  [current-error-port out])
