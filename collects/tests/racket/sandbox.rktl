@@ -166,7 +166,7 @@
    =err> "out of time"
    (when (custodian-memory-accounting-available?)
      (t --top--
-        (parameterize ([sandbox-eval-limits '(2 2)])
+        (parameterize ([sandbox-eval-limits '(20 2)])
           (make-base-evaluator! '(define a (for/list ([i (in-range 10)])
                                              (collect-garbage)
                                              (make-bytes 500000)))))
