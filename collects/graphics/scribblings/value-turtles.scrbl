@@ -67,7 +67,7 @@ new turtles window.}
 @defproc[(merge [turtles1 turtles?] [turtles2 turtles?]) turtles?]{
 
 The @racket[split] and @racket[tprompt] forms provided by
-@racketmodname[graphics/turtles] isn't needed for
+@racketmodname[graphics/turtles] aren't needed for
 @racketmodname[graphics/value-turtles], since the turtles window is a
 value.
     
