@@ -80,7 +80,7 @@
                 [collapsed
                  (collapse-module-path-index source (or here (build-path 'same)))])
            (cond [(and (path? collapsed) here)
-                  #`(quote #,(path->string collapsed))]
+                  #`(quote #,collapsed)]
                  [(path? collapsed)
                   (let-values ([(rel base) (module-path-index-split source)])
                     #`(quote #,rel))]

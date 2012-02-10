@@ -47,21 +47,26 @@
   (lambda (prefix qe fmt . args) real-msg))
 (define failure-prefix-mark (gensym 'failure-prefix))
 
+(define (make-location src line col pos)
+  (string->symbol
+   (format "~a:~a" (or src "(unknown)")
+           (let ([l line] [c col])
+             (cond [(and l c) (format "~a:~a" l c)]
+                   [l l]
+                   [pos => (lambda (p) (format "#~a" p))]
+                   [else "?"])))))
+    
 (define-syntax (test-thunk stx)
   (define (blame e fmt . args)
-    (define loc
-      (string->symbol
-       (format "~a:~a" (or (syntax-source e) "(unknown)")
-               (let ([l (syntax-line e)] [c (syntax-column e)])
-                 (cond [(and l c) (format "~a:~a" l c)]
-                       [l l]
-                       [(syntax-position e) => (lambda (p) (format "#~a" p))]
-                       [else "?"])))))
-    (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
+    (with-syntax ([e e] [fmt fmt] [(arg ...) args] 
+                  [src (syntax-source e)]
+                  [line (syntax-line e)]
+                  [col (syntax-column e)]
+                  [pos (syntax-position e)])
       #'(let* ([form (failure-format)]
                [prefix (continuation-mark-set->list (current-continuation-marks)
                                                     failure-prefix-mark)])
-          (error 'loc "~a" (form prefix 'e fmt arg ...)))))
+          (error (make-location 'src 'line 'col 'pos) "~a" (form prefix 'e fmt arg ...)))))
   (define (test-1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))

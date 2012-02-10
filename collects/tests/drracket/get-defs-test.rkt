@@ -20,10 +20,10 @@
              [expected (list (list name start end) ...)])
          (unless (equal? actual expected)
            (eprintf "Test failure at ~a\nActual: ~s\nExpected: ~s\n"
-                    #,(format "~a:~a:~a"
-                              (syntax-source #'stx)
-                              (syntax-line #'stx)
-                              (syntax-column #'stx))
+                    (format "~a:~a:~a"
+                            '(syntax-source #'stx)
+                            '(syntax-line #'stx)
+                            '(syntax-column #'stx))
                     actual
                     expected)))]))
 

@@ -3,6 +3,7 @@
 
 @(define rackunit-eval (make-base-eval))
 @(interaction-eval #:eval rackunit-eval (require rackunit))
+@(interaction-eval #:eval rackunit-eval (error-print-context-length 0))
 
 @title{Checks}
 
