@@ -237,7 +237,7 @@ source location information) for the original expression, and the
 second element of the pair indicates if the code has been executed.
 This list is snapshot of the current state of the computation.}
 
-@defproc[(get-execute-counts) (list (cons/c syntax? number?))])]{
+@defproc[(get-execute-counts) (list (cons/c syntax? number?))]{
 Returns a list of pairs, one for each instrumented expression.  The
 first element of the pair is a @racket[syntax?] object (usually containing
 source location information) for the original expression, and the
@@ -308,7 +308,8 @@ Compiles @racket[stx] using the compilation handler that was active
 when the @racketmodname[errortrace/errortrace-lib] module was
 executed, but first instruments the code for Errortrace information.
 The code is instrumented only if
-@racketblock[(namespace-module-registry (current-namespace))] 
+@racketblock[(list (namespace-module-registry (current-namespace))
+                   (namespace-base-phase (current-namespace)))]
 is the same as when the
 @racketmodname[errortrace/errortrace-lib] module was executed. This
 procedure is suitable for use as a compilation handler via

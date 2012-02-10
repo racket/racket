@@ -436,7 +436,8 @@
                       
 (define (make-errortrace-compile-handler)
   (let ([orig (current-compile)]
-        [reg (namespace-module-registry (current-namespace))])
+        [reg (namespace-module-registry (current-namespace))]
+        [phase (namespace-base-phase (current-namespace))])
     (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'racket/base)
     (namespace-attach-module (namespace-anchor->namespace orig-namespace) 'errortrace/errortrace-key)
     (lambda (e immediate-eval?)
@@ -444,6 +445,8 @@
        (if (and (instrumenting-enabled)
                 (eq? reg
                      (namespace-module-registry (current-namespace)))
+                (equal? phase
+                        (namespace-base-phase (current-namespace)))
                 (not (compiled-expression? (if (syntax? e)
                                                (syntax-e e)
                                                e))))
