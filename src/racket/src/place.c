@@ -844,8 +844,28 @@ static void *mz_proc_thread_signal_worker(void *data) {
             unused_pid_statuses = next;
           free(unused_status);
           unused_status = next;
-        } else
-          add_child_status(pid, scheme_extract_child_status(status));
+        } else {
+          /* Double-check for pid in unused_pid_statuses, since
+             it may have completed between the pid-specific waitpid and the
+             non-group waitpid: */
+          prev_unused = NULL;
+          for (unused_status = unused_pid_statuses; unused_status; unused_status = unused_status->next_unused) {
+            if (unused_status->pid == pid)
+              break;
+            prev_unused = unused_status;
+          }
+          if (!unused_status) {
+            /* not in unused_pid_statuses: */
+            add_child_status(pid, scheme_extract_child_status(status));
+          } else {
+            if (prev_unused)
+              prev_unused->next_unused = unused_status->next_unused;
+            else
+              unused_pid_statuses = next;
+            free(unused_status);
+            unused_status = NULL;
+          }
+        }
       } else {
         if (is_group) {
           prev_unused = unused_status;
@@ -883,7 +903,7 @@ void scheme_done_with_process_id(int pid, int is_group)
       break;
     }
   }
-      
+
   if (st && (keep_unused || st->done)) {
     /* remove it from normal list: */
     raw_get_child_status(pid, NULL, 0, 1, st->done);
@@ -981,6 +1001,7 @@ static void add_group_signal_fd(void *signal_fd)
     a = (Group_Signal_FD *)malloc(sizeof(Group_Signal_FD) * signal_fd_count);
     memset(a, 0, sizeof(Group_Signal_FD) * signal_fd_count);
     memcpy(a, signal_fds, sizeof(Group_Signal_FD) * count);
+    if (signal_fds) free(signal_fds);
     signal_fds = a;
   }
 
