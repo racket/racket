@@ -406,6 +406,9 @@
                          (cg t t*)))]
           [((HeterogenousVector: ts) (HeterogenousVector: ts*))
            (cset-meet (cgen/list V X Y ts ts*) (cgen/list V X Y ts* ts))]
+          [((HeterogenousVector: ts) (Vector: s))
+           (define ts* (map (λ _ s) ts)) ;; invariant, everything has to match
+           (cset-meet (cgen/list V X Y ts ts*) (cgen/list V X Y ts* ts))]
           [((HeterogenousVector: ts) (Sequence: (list t*)))
            (cset-meet* (for/list ([t (in-list ts)])
                          (cg t t*)))]

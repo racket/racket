@@ -1395,6 +1395,9 @@
            
            (go first second third fourth fifth sixth seventh eighth ninth tenth))
          (-val 1)]
+        
+        [tc-e (vector-append #(1) #(2))
+              (-vec -Integer)]
         )
   (test-suite
    "check-type tests"
