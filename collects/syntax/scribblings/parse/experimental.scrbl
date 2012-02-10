@@ -264,3 +264,95 @@ patterns as @racket[target-stxclass-id] but with the given
 (syntax-parse #'(8 9) [(n:nat>10 ...) 'ok])
 ]
 }
+
+
+@section{Syntax Templates}
+
+@defmodule[syntax/parse/experimental/template]
+
+@(define literal-ellipsis (racket ...))
+
+@defform/subs[#:literals (?? ?@)
+              (template tmpl)
+              ([tmpl pattern-variable-id
+                     atomic-tmpl
+                     (head-tmpl . tmpl)
+                     (head-tmpl ellipsis ...+ . tmpl)
+                     (?? tmpl tmpl)
+                     #(@#,svar[tmpl] ...)
+                     #s(prefab-struct-key @#,svar[tmpl] ...)
+                     #&@#,svar[tmpl]]
+               [head-templ tmpl
+                           (?? tmpl)
+                           (?@ . tmpl)]
+               [ellipsis @#,literal-ellipsis])]{
+
+Constructs a syntax object from a syntax template, like
+@racket[syntax], but provides additional templating forms for dealing
+with optional terms and splicing sequences of terms.
+
+@specsubform[#:literals (??)
+             (?? tmpl alt-tmpl)]{
+
+Produces @racket[tmpl] unless any attribute used in @racket[tmpl] has
+an absent value; in that case, @racket[alt-tmpl] is used instead.
+
+@examples[#:eval the-eval
+(syntax-parse #'(m 1 2 3)
+  [(_ (~optional (~seq #:op op:expr)) arg:expr ...)
+   (template ((?? op +) arg ...))])
+(syntax-parse #'(m #:op max 1 2 3)
+  [(_ (~optional (~seq #:op op:expr)) arg:expr ...)
+   (template ((?? op +) arg ...))])
+]
+}
+
+@specsubform[#:literals (??)
+             (?? tmpl)]{
+
+Produces @racket[tmpl] unless any attribute used in @racket[tmpl] has
+an absent value; in that case, the term is omitted.  Can only occur in
+head position in a template.
+
+@examples[#:eval the-eval
+(syntax-parse #'(m 1)
+  [(_ x:expr (~optional y:expr))
+   (template (m2 x (?? y)))])
+(syntax-parse #'(m 1 2)
+  [(_ x:expr (~optional y:expr))
+   (template (m2 x (?? y)))])
+]
+}
+
+@specsubform[#:literals (?@)
+             (?@ . tmpl)]{
+
+Similar to @racket[unquote-splicing], splices the result of
+@racket[tmpl] (which must be a syntax list) into the surrounding
+template. Can only occur in head position in a template.
+
+@examples[#:eval the-eval
+(syntax-parse #'(m #:a 1 #:b 2 3 4 #:e 5)
+  [(_ (~or pos:expr (~seq kw:keyword kwarg:expr)) ...)
+   (template (m2 (?@ kw kwarg) ... pos ...))])
+]
+
+The @racket[tmpl] must produce proper syntax lists, but it does not
+itself need to be expressed as a proper list. For example, to unpack
+pattern variables that contain syntax lists, use a ``dotted''
+template:
+@examples[#:eval the-eval
+(with-syntax ([x #'(a b c)])
+  (template ((?@ . x) d)))
+(with-syntax ([(x ...) #'((1 2 3) (4 5))])
+  (template ((?@ . x) ...)))
+]
+}
+}
+
+@deftogether[[
+@defidform[??]
+@defidform[?@]
+]]{
+Auxiliary forms used by @racket[template].
+}

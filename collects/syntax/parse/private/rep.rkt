@@ -76,7 +76,10 @@
         (boolean? datum)
         (string? datum)
         (number? datum)
-        (keyword? datum))))
+        (keyword? datum)
+        (bytes? datum)
+        (char? datum)
+        (regexp? datum))))
 
 (define (id-predicate kw)
   (lambda (stx)

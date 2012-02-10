@@ -37,6 +37,7 @@
                                                 syntax/parse/experimental/contract
                                                 syntax/parse/experimental/reflect
                                                 syntax/parse/experimental/specialize
+                                                syntax/parse/experimental/template
                                                 syntax/parse/experimental/eh)])
                                     `((for-syntax racket/base ,@mods)
                                       ,@mods)))))))
@@ -106,6 +107,7 @@
                     syntax/parse/experimental/reflect
                     syntax/parse/experimental/provide
                     syntax/parse/experimental/specialize
+                    syntax/parse/experimental/template
                     syntax/parse/experimental/eh
                     "parse-dummy-bindings.rkt"))
 (provide (for-label (all-from-out racket/base)
@@ -117,5 +119,6 @@
                     (all-from-out syntax/parse/experimental/reflect)
                     (all-from-out syntax/parse/experimental/provide)
                     (all-from-out syntax/parse/experimental/specialize)
+                    (all-from-out syntax/parse/experimental/template)
                     (all-from-out syntax/parse/experimental/eh)
                     (all-from-out "parse-dummy-bindings.rkt")))
