@@ -9,8 +9,12 @@
 
 @defproc[(get-conf [key symbol?]) any/c]{
 
-  Returns a value from the configuration file (useful for reading
-  things like field names, etc.).}
+  Returns a value from the configuration file (useful for reading things
+  like field names, etc.).  Known keys (see @secref{server-setup}) have
+  defaults and some have their values go through a translation (for
+  example, @racket['active-dirs] produces a list of complete paths).
+  Other keys get neither, and an exception is raised if the @racket[key]
+  is not specified.}
 
 @defproc[(unpack-submission [submission bytes?])
          (values (is-a?/c text%) (is-a?/c text%))]{

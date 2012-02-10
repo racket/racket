@@ -46,29 +46,35 @@
                                (and (pair? x) (symbol? (car x))))
                              c))
               (set! raw-config c)
-              (error "malformed configuration file content"))))
+              (raise-user-error
+               'get-conf "malformed configuration file content"))))
         (set! config-cache (make-hasheq)))))
   (hash-ref config-cache key
     (lambda ()
-      (let*-values ([(default translate) (config-default+translate key)]
-                    ;; translate = #f => this is a computed value
-                    [(v) (if translate
-                           (translate (cond [(assq key raw-config) => cadr]
-                                            [else default]))
-                           default)])
-        (hash-set! config-cache key v)
-        v))))
+      (define-values [default translate] (config-default+translate key))
+      (define v
+        (case translate
+          ;; #f => computed value => return untranslated default w/out lookup
+          [(#f) default]
+          ;; #t => user key => return raw value or error
+          [(#t) (cond [(assq key raw-config) => cadr]
+                      [else (raise-user-error
+                             'get-conf "no value for key: ~e" key)])]
+          [else (translate (cond [(assq key raw-config) => cadr]
+                                 [else default]))]))
+      (hash-set! config-cache key v)
+      v)))
 
-(define (id x) x)
-(define (rx s) (if (regexp? s) s (regexp s)))
-(define (path p) (path->complete-path p server-dir))
+(define (id x)         x)
+(define (rx s)         (if (regexp? s) s (regexp s)))
+(define (path p)       (path->complete-path p server-dir))
 (define (path/false p) (and p (path p)))
-(define (path-list l) (map path l))
-(define (maybe-strs l) (and l
-                            (pair? l)
-                            (map string->bytes/utf-8 l)))
+(define (path-list l)  (map path l))
+(define (maybe-strs l) (and l (pair? l) (map string->bytes/utf-8 l)))
 
 (define (config-default+translate which)
+  ;; translate = #f => a computed value (so no lookup or translation)
+  ;;           = #t => an unknown key (raw return value)
   (case which
     [(active-dirs)             (values '()                   path-list    )]
     [(inactive-dirs)           (values '()                   path-list    )]
@@ -105,7 +111,7 @@
      (values (filter (lambda (f) (not (eq? '- (cadr f))))
                      (get-conf 'extra-fields))
              #f)]
-    [else (error 'get-conf "unknown configuration entry: ~s" which)]))
+    [else (values #f #t)]))
 
 ;; This is used below to map names to submission directory paths and back
 ;; returns a (list-of (either (list name path) (list path name)))

@@ -213,16 +213,19 @@ This directory contains the following files and sub-directories:
                     (apply format "~a: ~s" key+val))
                   alist))))]}}]
 
+  In addition, you can add your own keys --- see @racket[get-conf] for
+  details.
+
   Changes to @filepath{config.rktd} are detected, the file will be
-  re-read, and options are reloaded.  A few options are fixed at startup
+  re-read, and options will be reloaded.  A few options are fixed at startup
   time: port numbers and log file specs are fixed as configured at
   startup.  All other options will change the behavior of the running
-  server (but things like @racketid[username-case-sensitive?]  it would
+  server (but for things like @racketid[username-case-sensitive?] it would
   be unwise to do so).  (For safety, options are not reloaded until the
   file parses correctly, but make sure that you don't save a copy that
   has inconsistent options: it is best to create a new configuration
   file and move it over the old one, or use an editor that does so and
-  not save until the new contents is ready.)  This is most useful for
+  avoid saving until the new contents is ready.)  This is most useful for
   closing & opening submissions directories.}
 
 @item{@filepath{users.rktd} (created if not present when a user is added):
