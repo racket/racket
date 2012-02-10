@@ -391,6 +391,10 @@ a @racket[require/typed] form. Here is an example of using
 @racket[file-or-directory-modify-seconds] has some arguments which are optional,
 so we need to use @racket[case->].}
 
+@defform[(require/typed/provide m rt-clause ...)]{
+Similar to @racket[require/typed], but also provides the imported identifiers.
+}
+
 @section{Other Forms}
 
 @defidform[with-handlers]{

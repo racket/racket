@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require typed/private/utils
-         (except-in "deep-flomap-untyped-parameters.rkt"
+(require (except-in "deep-flomap-untyped-parameters.rkt"
                     light-direction light-intensity ambient-intensity reflected-intensity
                     refractive-index ideal-reflectance ideal-transmission transmission-density  
                     specular-reflectance specular-roughness specular-purity       

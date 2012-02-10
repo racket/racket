@@ -150,6 +150,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                   'typechecker:ignore #t)))))]))
   (values (r/t-maker #t) (r/t-maker #f))))
 
+(define-syntax-rule (require/typed/provide lib [nm t] ...)
+  (begin
+    (require/typed lib [nm t] ...)
+    (provide nm ...)))
+
+(define-syntax require-typed-struct/provide
+  (syntax-rules ()
+    [(_ (nm par) . rest)
+     (begin (require-typed-struct (nm par) . rest)
+            (provide (struct-out nm)))]
+    [(_ nm . rest)
+     (begin (require-typed-struct nm . rest)
+            (provide (struct-out nm)))]))
+
+
 (define-syntax (define-predicate stx)
   (syntax-parse stx
     [(_ name:id ty:expr)
