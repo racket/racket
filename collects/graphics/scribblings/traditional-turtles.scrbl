@@ -84,7 +84,7 @@ and one at @math["\u3C0/3"], evaluate
 
 @defform[(tprompt expr ...)]{
 
-Limits the splitting of the turtles. Before@racket[expr] is evaluated,
+Limits the splitting of the turtles. Before @racket[expr] is evaluated,
 the state of the turtles (how many, their positions and headings) is
 ``checkpointed.'' Then @racket[expr] is evaluated, and then the state
 of the turtles is restored, but all drawing that may have occurred
