@@ -180,7 +180,7 @@ A constant that is a good size for the @racket[serp] procedures.}
 @defproc[(serp-nosplit [serp-size real?]) void?]
 )]{
 
-Draws the @as-index{Serpinski triangle} in two different ways, the
+Draws the @as-index{Sierpinski triangle} in two different ways, the
 first using @racket[split] heavily. After running the first one, try
 executing @racket[(draw 10)].}
 
