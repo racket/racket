@@ -27,3 +27,21 @@
 (#rx"expected production" ([not-prod ::=]) (define-language L (x ::= y not-prod z)))
 (#rx"expected non-terminal definition" ([not-def q]) (define-language L not-def))
 (#rx"expected non-terminal definition" ([not-def ()]) (define-language L not-def))
+
+("define-union-language: two sublanguages both contribute the non-terminal: e"
+ ([L1r L1] [L2r L2]) ([L1 L1] [L2 L2])
+ (let ()
+   (define-language L1
+     (e any))
+   (define-language L2
+     (e any))
+   (define-union-language L L1r L2r)))
+
+("define-union-language: two sublanguages both contribute the non-terminal: -e"
+ ([L1r L1] [L2r (- L2)]) ([L1 L1] [L2 L2])
+ (let ()
+   (define-language L1
+     (-e any))
+   (define-language L2
+     (e any))
+   (define-union-language L L1r L2r)))

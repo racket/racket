@@ -405,6 +405,31 @@
         (::= () (number ::=)))
       (test (and (redex-match L ::= '(1 ())) #t) #t)))
   
+  (let ()
+    (define-language L1
+      ((q x) 1 2 3)
+      ((y w) 4 5 6 x)
+      (z 7 8 9))
+    
+    (define-language L2
+      ((x y) 100 101 102)
+      (b 103 x))
+    
+    (define-union-language L L1 (- L2))
+    
+    (test (and (redex-match L x 3) #t) #t)
+    (test (and (redex-match L y 2) #t) #t)
+    (test (redex-match L x 100) #f)
+    (test (and (redex-match L -x 100) #t) #t)
+    (test (and (redex-match L -b 100) #t) #t)
+    (test (redex-match L -b 3) #f))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(require redex/reduction-semantics redex/pict))
+    (eval '(define-language L
+             (s a b c)))
+    (exec-runtime-error-tests "run-err-tests/define-union-language.rktd"))
+  
   (exec-syntax-error-tests "syn-err-tests/language-definition.rktd")
 ;                                                                                             
 ;                                                                                             

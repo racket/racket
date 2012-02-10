@@ -2616,8 +2616,88 @@
                       (hash-map new-ht (λ (x y) y))
                       (compiled-lang-nt-map old-lang))))
 
-(define (union-language lang1 lang2)
-  (void))
+(define-syntax (define-union-language stx)
+  (syntax-case stx ()
+    [(_ name orig-langs ...)
+     (begin
+       (unless (identifier? (syntax name))
+         (raise-syntax-error 'define-extended-language "expected an identifier" stx #'name))
+       (when (null? (syntax->list #'(orig-langs ...)))
+         (raise-syntax-error 'define-union-language "expected at least one additional language" stx))
+       ;; normalized-orig-langs : (listof (list string[prefix] id (listof symbol)[nts] stx[orig clause in union]))
+       (define normalized-orig-langs
+         (for/list ([orig-lang (in-list (syntax->list #'(orig-langs ...)))])
+           (syntax-case orig-lang ()
+             [x (identifier? #'x) (list "" #'x (language-id-nts #'x 'define-union-language) orig-lang)]
+             [(prefix lang)
+              (and (identifier? #'prefix)
+                   (identifier? #'lang))
+              (list (symbol->string (syntax-e #'prefix)) #'lang (language-id-nts #'lang 'define-union-language) orig-lang)]
+             [else (raise-syntax-error 'define-union-language 
+                                       "malformed additional language"
+                                       stx orig-lang)])))
+       
+       ;; ht : sym -o> stx
+       ;; maps each non-terminal (with its prefix) to the 
+       ;; syntax object that it comes from in the original
+       ;; define-union-language declaration
+       (define names-table (make-hash))
+       
+       (for ([normalized-orig-lang (in-list normalized-orig-langs)])
+         (define prefix (list-ref normalized-orig-lang 0))
+         (for ([no-prefix-nt (in-list (list-ref normalized-orig-lang 2))])
+           (define nt (string->symbol (string-append prefix (symbol->string no-prefix-nt))))
+           (let ([prev (hash-ref names-table nt #f)])
+             (when prev
+               (raise-syntax-error 'define-union-language 
+                                   (format "two sublanguages both contribute the non-terminal: ~a" nt)
+                                   #f
+                                   #f
+                                   (list prev
+                                         (list-ref normalized-orig-lang 3))))
+             (hash-set! names-table nt (list-ref normalized-orig-lang 3)))))
+       
+       (with-syntax ([(all-names ...) (sort (hash-map names-table (λ (x y) x)) string<=? #:key symbol->string)]
+                     [((prefix old-lang _1 _2) ...) normalized-orig-langs]
+                     [(define-language-name) (generate-temporaries #'(name))])
+         #'(begin
+             (define define-language-name (union-language (list (list 'prefix old-lang) ...)))
+             (define-syntax name
+               (make-set!-transformer
+                (make-language-id
+                 (λ (stx)
+                   (syntax-case stx (set!)
+                     [(set! x e) (raise-syntax-error 'define-extended-language "cannot set! identifier" stx #'e)]
+                     [(x e (... ...)) #'(define-language-name e (... ...))]
+                     [x 
+                      (identifier? #'x)
+                      #'define-language-name]))
+                 '(all-names ...)))))))]))
+
+(define (union-language old-langs/prefixes)
+  (define new-nt-map
+    (for/list ([old-pr (in-list old-langs/prefixes)])
+      (define prefix (list-ref old-pr 0))
+      (define nt-map (compiled-lang-nt-map (list-ref old-pr 1)))
+      (for/list ([lst (in-list nt-map)])
+        (for/list ([sym (in-list lst)])
+          (string->symbol (string-append prefix (symbol->string sym)))))))
+  
+  (define new-nts
+    (apply
+     append
+     (for/list ([old-lang/prefix (in-list old-langs/prefixes)])
+       (define prefix (list-ref old-lang/prefix 0))
+       (define lang (compiled-lang-lang (list-ref old-lang/prefix 1)))
+       (for/list ([nt (in-list lang)])
+         (make-nt (string->symbol (string-append prefix (symbol->string (nt-name nt))))
+                  (for/list ([rhs (in-list (nt-rhs nt))])
+                    (make-rhs (prefix-nts prefix (rhs-pattern rhs)))))))))
+  
+  (compile-language #f
+                    new-nts
+                    new-nt-map))
+
 
 ;; find-primary-nt : symbol lang -> symbol or #f
 ;; returns the primary non-terminal for a given nt, or #f if `nt' isn't bound in the language.
@@ -2937,6 +3017,7 @@
          
          define-language
          define-extended-language
+         define-union-language
          
          define-metafunction
          define-metafunction/extension

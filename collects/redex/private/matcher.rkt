@@ -257,6 +257,38 @@ See match-a-pattern.rkt for more details
              (unless (memq pat nts)
                (hash-set! ht pat #t)))))])))
 
+;; prefix-nts : string pat -> pat
+(define (prefix-nts prefix pat)
+  (let loop ([pat pat])
+    (match-a-pattern pat
+      [`any pat]
+      [`number pat]
+      [`string pat]
+      [`natural pat]
+      [`integer pat]
+      [`real pat]
+      [`variable pat]
+      [`(variable-except ,s ...) pat]
+      [`(variable-prefix ,s) pat]
+      [`variable-not-otherwise-mentioned pat]
+      [`hole pat]
+      [`(nt ,id) `(nt ,(string->symbol (string-append prefix (symbol->string id))))]
+      [`(name ,name ,pat) `(name , name ,(loop pat))]
+      [`(mismatch-name ,name ,pat) `(mismatch-name ,name ,(loop pat))]
+      [`(in-hole ,p1 ,p2) `(in-hole ,(loop p1) ,(loop p2))]
+      [`(hide-hole ,p) `(hide-hole ,(loop p))]
+      [`(side-condition ,p ,g ,e) `(side-condition ,(loop p) ,g ,e)]
+      [`(cross ,s) pat]
+      [`(list ,sub-pats ...)
+       `(list ,@(for/list ([sub-pat (in-list sub-pats)])
+                  (match sub-pat
+                    [`(repeat ,pat ,name ,mismatch)
+                     `(repeat ,(loop pat) ,name ,mismatch)]
+                    [else
+                     (loop sub-pat)])))]
+      [(? (compose not pair?)) 
+       pat])))
+
 ; build-has-hole-or-hide-hole-ht : (listof nt) -> hash[symbol -o> boolean]
 ; produces a map of nonterminal -> whether that nonterminal could produce a hole
 (define (build-has-hole-or-hide-hole-ht lang)
@@ -1967,4 +1999,5 @@ See match-a-pattern.rkt for more details
          rewrite-ellipses
          build-compatible-context-language
          caching-enabled?
-         check-redudancy)
+         check-redudancy
+         prefix-nts)

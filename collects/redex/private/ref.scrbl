@@ -615,7 +615,7 @@ A @racket[non-terminal-def] comprises one or more non-terminal names
 (considered aliases) followed by one or more productions.
 
 For example, the following defines @deftech{@racket[lc-lang]} as the
-grammar of the lambda calculus:
+grammar of the λ-calculus:
 
 @racketblock[
   (define-language lc-lang
@@ -624,7 +624,7 @@ grammar of the lambda calculus:
        v)
     (c (v ... c e ...)
        hole)
-    (v (lambda (x ...) e))
+    (v (λ (x ...) e))
     (x variable-not-otherwise-mentioned))
 ]
 
@@ -652,7 +652,7 @@ extended non-terminals. For example, this language:
     (v ....     (code:comment "extend the previous `v' non-terminal")
        +
        number)
-    (x (variable-except lambda +)))
+    (x (variable-except λ +)))
 ]
 
 extends lc-lang with two new alternatives for the @racket[v]
@@ -676,6 +676,37 @@ defined together, extending any one of those non-terminals
 extends all of them.
 }
 
+@defform/subs[(define-union-language L base/prefix-lang ...)
+              ([base/prefix-lang lang-id
+                                 (prefix lang-id)])]{
+  Constructs a language that is the union of all of the
+  languages listed in the @racket[base/prefix-lang].
+  
+  If a language has a prefix, then all of the non-terminals
+  from that language have the corresponding prefix in 
+  the union language. The prefix helps avoid collisions
+  between the constituent language's non-terminals
+  (which is illegal).
+  
+  For example, with two these two languages:
+  @racketblock[(define-language UT
+                 (e (e e)
+                    (λ (x) e)
+                    x))
+               
+               (define-language WT
+                 (e (e e)
+                    (λ (x t) e)
+                    x)
+                 (t (→ t t)
+                    num))]
+  then this declaration:
+  @racketblock[(define-union-language B (ut. UT) (wt. WT))]
+  will create a language named @racket[B] containing the non-terminals
+  @racket[ut.e], @racket[wt.e], and @racket[wt.t] consisting
+  of the productions listed in the original languages.
+}
+                                                                                
 @defproc[(language-nts [lang compiled-lang?]) (listof symbol?)]{
 
 Returns the list of non-terminals (as symbols) that are
@@ -737,7 +768,7 @@ For example, the expression
 @racketblock[
   (reduction-relation
    lc-lang
-   (--> (in-hole c_1 ((lambda (variable_i ...) e_body) v_i ...))
+   (--> (in-hole c_1 ((λ (variable_i ...) e_body) v_i ...))
         (in-hole c_1 ,(foldl lc-subst 
                              (term e_body) 
                              (term (v_i ...)) 
@@ -816,7 +847,7 @@ For example, this expression
 @racketblock[
   (reduction-relation
    lc-num-lang
-   (==> ((lambda (variable_i ...) e_body) v_i ...)
+   (==> ((λ (variable_i ...) e_body) v_i ...)
         ,(foldl lc-subst 
                 (term e_body) 
                 (term (v_i ...)) 
@@ -829,7 +860,7 @@ For example, this expression
     (==> a b)])
 ]
   
-defines reductions for the lambda calculus with numbers,
+defines reductions for the λ-calculus with numbers,
 where the @tt{==>} shortcut is defined by reducing in the context
 @tt{c}.
 
@@ -1016,7 +1047,7 @@ an expression in the lc-lang above:
       [(free-vars (e_1 e_2 ...))
        (∪ (free-vars e_1) (free-vars e_2) ...)]
       [(free-vars x) (x)]
-      [(free-vars (lambda (x ...) e))
+      [(free-vars (λ (x ...) e))
        (- (free-vars e) (x ...))])
 ]
 
@@ -1025,7 +1056,7 @@ The first argument to define-metafunction is the grammar
 each variation of expressions (e in lc-lang). The free variables of an
 application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
-itself, and the free variables of a lambda expression are
+itself, and the free variables of a λ expression are
 the free variables of the body, minus the bound parameters.
 
 Here are the helper metafunctions used above.
@@ -1807,7 +1838,7 @@ exploring reduction sequences.
                  [#:pred pred
                          (or/c (-> sexp any)
                                (-> sexp term-node? any))
-                         (lambda (x) #t)]
+                         (λ (x) #t)]
                  [#:pp pp
                        (or/c (any -> string)
                              (any output-port number (is-a?/c text%) -> void))
@@ -1816,11 +1847,11 @@ exploring reduction sequences.
                   (listof 
                    (cons/c string? 
                            (and/c (listof (or/c string? (is-a?/c color%)))
-                                  (lambda (x) (<= 0 (length x) 6)))))
+                                  (λ (x) (<= 0 (length x) 6)))))
                   '()]
                  [#:racket-colors? racket-colors? boolean? #t]
                  [#:scheme-colors? scheme-colors? boolean? racket-colors?]
-                 [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
+                 [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
                  [#:x-spacing x-spacing number? 15]
                  [#:y-spacing y-spacing number? 15]
                  [#:layout layout (-> (listof term-node?) void) void]
@@ -1926,7 +1957,7 @@ inserted into the editor by this library have a
                     [#:pred pred
                             (or/c (-> sexp any)
                                   (-> sexp term-node? any))
-                            (lambda (x) #t)]
+                            (λ (x) #t)]
                     [#:pp pp
                           (or/c (any -> string)
                                 (any output-port number (is-a?/c text%) -> void))
@@ -1935,9 +1966,9 @@ inserted into the editor by this library have a
                               (listof 
                                (cons/c string?
                                        (and/c (listof (or/c string? (is-a?/c color%)))
-                                              (lambda (x) (<= 0 (length x) 6)))))
+                                              (λ (x) (<= 0 (length x) 6)))))
                               '()]
-                    [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
+                    [#:filter term-filter (-> any/c (or/c #f string?) any/c) (λ (x y) #t)]
                     [#:layout layout (-> (listof term-node?) void) void]
                     [#:x-spacing x-spacing number? 15]
                     [#:y-spacing y-spacing number? 15]

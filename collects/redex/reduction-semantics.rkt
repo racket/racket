@@ -22,6 +22,7 @@
          
          define-language
          define-extended-language
+         define-union-language
          plug
          compiled-lang?
          term

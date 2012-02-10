@@ -483,6 +483,8 @@
   (do-language->pict 'language->pict lang nts))
 
 (define (do-language->pict what lang specd-non-terminals)
+  (unless (compiled-lang-pict-builder lang)
+    (error what "cannot render the result of define-union-language"))
   (let ([all-non-terminals (hash-map (compiled-lang-ht lang) (λ (x y) x))])
     (when specd-non-terminals
       (check-non-terminals what specd-non-terminals lang))
