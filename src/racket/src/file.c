@@ -192,7 +192,6 @@ static Scheme_Object *absolute_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *complete_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv);
 static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[]);
-static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_drive(int argc, Scheme_Object *argv[]);
@@ -455,7 +454,7 @@ void scheme_init_file(Scheme_Env *env)
 						      1, 1), 
 			     env);
   scheme_add_global_constant("simplify-path",
-			     scheme_make_prim_w_arity(simplify_path,
+			     scheme_make_prim_w_arity(scheme_simplify_path,
 						      "simplify-path",
 						      1, 2), 
 			     env);
@@ -4672,7 +4671,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     return path;
 }
 
-static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_simplify_path(int argc, Scheme_Object *argv[])
 {
   char *s;
   int len, use_fs, kind;
@@ -5093,9 +5092,15 @@ static Scheme_Object *explode_path(Scheme_Object *p)
 
 Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir)
 {
-  Scheme_Object *de, *oe;
+  Scheme_Object *de, *be, *oe;
 
-  de = explode_path(dir);
+  if (SCHEME_PAIRP(dir)) {
+    be = explode_path(SCHEME_CAR(dir));
+    de = explode_path(SCHEME_CDR(dir));
+  } else {
+    be = explode_path(dir);
+    de = be;
+  }
   oe = explode_path(obj);
 
   while (SCHEME_PAIRP(de)
@@ -5104,11 +5109,19 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
       return obj;
     de = SCHEME_CDR(de);
     oe = SCHEME_CDR(oe);
+    be = SCHEME_CDR(be);
   }
 
   if (SCHEME_NULLP(de)) {
     Scheme_Object *a[2];
-   
+
+    while (SCHEME_PAIRP(be)
+           && SCHEME_PAIRP(oe)
+           && scheme_equal(SCHEME_CAR(be), SCHEME_CAR(oe))) {
+      oe = SCHEME_CDR(oe);
+      be = SCHEME_CDR(be);
+    }
+
     if (SCHEME_NULLP(oe)) {
       a[0] = same_symbol;
       obj = scheme_build_path(1, a);
@@ -5122,6 +5135,13 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
       a[1] = SCHEME_CAR(oe);
       obj = scheme_build_path(2, a);
       oe = SCHEME_CDR(oe);
+    }
+
+    while (!SCHEME_NULLP(be)) {
+      a[0] = up_symbol;
+      a[1] = obj;
+      obj = scheme_build_path(2, a);
+      be = SCHEME_CDR(be);
     }
   }
 

@@ -2282,7 +2282,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  
 	  dir = scheme_get_param(scheme_current_config(),
 				 MZCONFIG_WRITE_DIRECTORY);
-	  if (SCHEME_PATHP(dir))
+	  if (SCHEME_TRUEP(dir))
 	    obj = scheme_extract_relative_to(obj, dir);
           
 	  print_compact(pp, CPT_PATH);
@@ -2301,7 +2301,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
         dir = scheme_get_param(scheme_current_config(),
                                MZCONFIG_WRITE_DIRECTORY);
-        if (SCHEME_PATHP(dir))
+        if (SCHEME_TRUEP(dir))
           obj = scheme_extract_relative_to(obj, dir);
 
         print_utf8_string(pp, "#^", 0, 2);

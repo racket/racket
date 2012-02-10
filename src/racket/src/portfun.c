@@ -4562,10 +4562,8 @@ current_load_use_compiled(int argc, Scheme_Object *argv[])
 			     2, NULL, NULL, 0);
 }
 
-static Scheme_Object *abs_directory_p(const char *name, int argc, Scheme_Object **argv)
+static Scheme_Object *abs_directory_p(const char *name, Scheme_Object *d)
 {
-  Scheme_Object *d = argv[0];
-
   if (!SCHEME_FALSEP(d)) {
     char *expanded;
     Scheme_Object *ed;
@@ -4597,7 +4595,7 @@ static Scheme_Object *abs_directory_p(const char *name, int argc, Scheme_Object 
 
 static Scheme_Object *lr_abs_directory_p(int argc, Scheme_Object **argv)
 {
-  return abs_directory_p("current-load-relative-directory", argc, argv);
+  return abs_directory_p("current-load-relative-directory", argv[0]);
 }
 
 static Scheme_Object *
@@ -4611,7 +4609,20 @@ current_load_directory(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *wr_abs_directory_p(int argc, Scheme_Object **argv)
 {
-  return abs_directory_p("current-write-relative-directory", argc, argv);
+  if (SCHEME_PAIRP(argv[0])) {
+    Scheme_Object *a, *d, *r;
+    a = abs_directory_p("current-write-relative-directory", SCHEME_CAR(argv[0]));
+    d = abs_directory_p("current-write-relative-directory", SCHEME_CDR(argv[0]));
+    r = scheme_extract_relative_to(a, d);
+    if (SAME_OBJ(a, r)) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+		       "%s: path: %V does not extend path: %V",
+                       "current-write-relative-directory",
+                       a, d);
+    }
+    return scheme_make_pair(a, d);
+  } else
+    return abs_directory_p("current-write-relative-directory", argv[0]);
 }
 
 static Scheme_Object *

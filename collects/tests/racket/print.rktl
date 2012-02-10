@@ -211,4 +211,40 @@
     (test "Σ" in-string write 'Σ)
     (test "a\\\xA0b" in-string write (string->symbol "a\xA0b"))))
 
+;; ----------------------------------------
+
+(let ([p (build-path (current-directory) "something")])
+  ;; path value in compiled code => path appears in .zo format:
+  (let ([o (open-output-string)])
+    (write (compile p) o)
+    (test #t regexp-match? (regexp-quote (path->bytes (current-directory))) (get-output-string o)))
+  ;; `current-write-relative-directory' set => path not in .zo format: 
+  (let ([o (open-output-string)])
+    (parameterize ([current-write-relative-directory (current-directory)])
+      (write (compile p) o)
+    (test #f regexp-match? (regexp-quote (path->bytes (current-directory))) (get-output-string o))))
+  ;; try all possible supers that have at least two path elements:
+  (let loop ([super (current-directory)])
+    (let ([super (let-values ([(base name dir?) (split-path super)])
+                   (if (eq? base 'root)
+                       #f
+                       base))])
+      (when (and super
+                 ((length (explode-path super)) . >= . 2))
+        ;; `current-write-relative-directory' set => super can be in .zo format: 
+        (let ([o (open-output-string)])
+          (parameterize ([current-write-relative-directory (current-directory)])
+            (write (compile (build-path super "other")) o)
+            (test #t regexp-match? (regexp-quote (path->bytes super)) (get-output-string o))))
+        (let ([o (open-output-string)])
+          (parameterize ([current-write-relative-directory (cons (current-directory)
+                                                                 super)])
+            (write (compile (build-path super "other")) o)
+            (test #f regexp-match? (regexp-quote (path->bytes super)) (get-output-string o))))
+        (loop super)))))
+
+
+
+;; ----------------------------------------
+
 (report-errs)

@@ -1,3 +1,7 @@
+Version 5.2.1.5
+Changed current-write-relative-directory to support a pair
+ of paths: relative-to and base
+
 Version 5.2.1.4
 Changed ffi-lib to open libraries in local mode by default
 

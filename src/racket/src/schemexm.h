@@ -531,6 +531,7 @@
 #define scheme_build_path (scheme_extension_table->scheme_build_path)
 #define scheme_path_to_directory_path (scheme_extension_table->scheme_path_to_directory_path)
 #define scheme_path_to_complete_path (scheme_extension_table->scheme_path_to_complete_path)
+#define scheme_simplify_path (scheme_extension_table->scheme_simplify_path)
 #define scheme_make_path (scheme_extension_table->scheme_make_path)
 #define scheme_make_sized_path (scheme_extension_table->scheme_make_sized_path)
 #define scheme_make_sized_offset_path (scheme_extension_table->scheme_make_sized_offset_path)

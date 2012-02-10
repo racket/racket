@@ -3,6 +3,7 @@
          syntax/modresolve
          syntax/modread
          setup/main-collects
+         setup/dirs
 	 unstable/file
          racket/file
          racket/list
@@ -374,10 +375,22 @@
                                                 (exn-message ex))
                            (raise ex))])
           (parameterize ([current-write-relative-directory
-                          (let-values ([(base name dir?) (split-path path)])
-                            (if (eq? base 'relative)
-                              (current-directory)
-                              (path->complete-path base (current-directory))))])
+                          (let* ([dir
+                                  (let-values ([(base name dir?) (split-path path)])
+                                    (if (eq? base 'relative)
+                                        (current-directory)
+                                        (path->complete-path base (current-directory))))]
+                                 [collects-dir (find-collects-dir)]
+                                 [e-dir (explode-path dir)]
+                                 [e-collects-dir (explode-path collects-dir)])
+                            (if (and ((length e-dir) . > . (length e-collects-dir))
+                                     (for/and ([a (in-list e-dir)]
+                                               [b (in-list e-collects-dir)])
+                                       (equal? a b)))
+                                ;; `dir' extends `collects-dir':
+                                (cons dir collects-dir)
+                                ;; `dir' doesn't extend `collects-dir':
+                                dir))])
             (let ([b (open-output-bytes)])
               ;; Write bytecode into string
               (write code b)

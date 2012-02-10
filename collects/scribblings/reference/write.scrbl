@@ -251,16 +251,27 @@ object within @litchar{#<syntax}...@litchar{>} (after the
 
 
 @defparam*[current-write-relative-directory path 
-                                            (or/c (and/c path-string? complete-path?) #f)
-                                            (or/c (and/c path? complete-path?) #f)]{
+                                            (or/c (and/c path-string? complete-path?) 
+                                                  (cons/c (and/c path-string? complete-path?)
+                                                          (and/c path-string? complete-path?))
+                                                  #f)
+                                            (or/c (and/c path? complete-path?) 
+                                                  (cons/c (and/c path? complete-path?) 
+                                                          (and/c path? complete-path?))
+                                                  #f)]{
 
 A parameter that is used when writing compiled code (see @secref["print-compiled"]) that contains
 pathname literals, including source-location pathnames for procedure
-names. When not @racket[#f], paths that syntactically extend the
-parameter's value are converted to relative paths; when the resulting
+names. When the parameter's value is a @racket[_path], paths that syntactically extend @racket[_path]
+are converted to relative paths; when the resulting
 compiled code is read, relative paths are converted back to complete
 paths using the @racket[current-load-relative-directory] parameter (if
-it is not @racket[#f]; otherwise, the path is left relative).}
+it is not @racket[#f]; otherwise, the path is left relative).
+When the parameter's value is @racket[(cons _rel-to-path _base-path)], then
+paths that syntactically extend @racket[_base-path] are converted as relative to @racket[_rel-to-path];
+the @racket[_rel-to-path] must extend @racket[_base-path], in which case @racket['up]
+path elements (in the sense of @racket[build-path]) may be used to make a path relative
+to @racket[_rel-to-path].}
 
 
 

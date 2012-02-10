@@ -1325,6 +1325,9 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                     a[0] = params->read_relative_path;
                     a[1] = str;
                     str = scheme_build_path(2, a);
+                    a[0] = str;
+                    a[1] = scheme_false;
+                    str = scheme_simplify_path(2, a);
                   }
                 }
 
