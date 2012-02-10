@@ -2,8 +2,6 @@
 
 (require "../private/matcher.rkt"
          (for-syntax syntax/parse setup/path-to-relative)
-         errortrace/errortrace-lib
-         errortrace/errortrace-key
          setup/path-to-relative
          racket/runtime-path)
 (provide test test-syn-err tests reset-count
@@ -44,7 +42,8 @@
                                (map source-location (exn:fail:syntax-exprs exn))))])
       (thunk))))
 (define (runtime-error-test-setup thunk)
-  (parameterize ([current-compile (make-errortrace-compile-handler)])
+  (define errortrace-key (dynamic-require 'errortrace/errortrace-key 'errortrace-key))
+  (parameterize ([current-compile ((dynamic-require 'errortrace/errortrace-lib 'make-errortrace-compile-handler))])
     (with-handlers ([exn:fail? 
                      (λ (exn) 
                        (values (exn-message exn)
