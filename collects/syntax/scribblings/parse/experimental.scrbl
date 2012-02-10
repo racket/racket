@@ -278,6 +278,7 @@ patterns as @racket[target-stxclass-id] but with the given
                      atomic-tmpl
                      (head-tmpl . tmpl)
                      (head-tmpl ellipsis ...+ . tmpl)
+                     (metafunction-id . tmpl)
                      (?? tmpl tmpl)
                      #(@#,svar[tmpl] ...)
                      #s(prefab-struct-key @#,svar[tmpl] ...)
@@ -348,6 +349,13 @@ template:
   (template ((?@ . x) ...)))
 ]
 }
+
+@specsubform[(metafunction-id . tmpl)]{
+
+Applies the template metafunction named @racket[metafunction-id] to
+the result of the template (including @racket[metafunction-id]
+itself). See @racket[define-template-metafunction] for examples.
+}
 }
 
 @deftogether[[
@@ -355,4 +363,28 @@ template:
 @defidform[?@]
 ]]{
 Auxiliary forms used by @racket[template].
+}
+
+@defform*[[(define-template-metafunction metafunction-id expr)
+           (define-template-metafunction (metafunction-id . formals) body ...+)]]{
+
+Defines @racket[metafunction-id] as a @deftech{template metafunction}. A
+metafunction application in a @racket[template] expression (but not a
+@racket[syntax] expression) is evaluated by applying the metafunction
+to the result of processing the ``argument'' part of the template.
+
+@examples[#:eval the-eval
+(define-template-metafunction (join stx)
+  (syntax-parse stx
+    [(join a:id b:id ...)
+     (datum->syntax #'a
+                    (string->symbol
+                     (apply string-append
+                            (map symbol->string
+                                 (syntax->datum #'(a b ...)))))
+                    stx)]))
+(template (join a b c))
+(with-syntax ([(x ...) #'(a b c)])
+  (template ((x (join tmp- x)) ...)))
+]
 }

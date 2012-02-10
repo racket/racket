@@ -19,7 +19,7 @@
 ;; Common pattern variable definitions
 ;; (avoids having to have 'with-syntax' in every test case)
 
-(define/with-syntax uu #'ABC)
+(define/with-syntax uu #'abc)
 (define/with-syntax (aa ...) #'(a b c))
 (define/with-syntax (xx ...) #'(x y z))
 (define/with-syntax (nn ...) #'(1 2 3))
@@ -30,7 +30,7 @@
 
 ;; ----------------------------------------
 
-(tc (template uu) 'ABC)
+(tc (template uu) 'abc)
 
 ;; FIXME: add other atoms when supported
 ;; FIXME: add other compound stx when supported
@@ -39,7 +39,7 @@
 (tc (template 5) '5)
 (tc (template (1 2 #f #t "hey")) '(1 2 #f #t "hey"))
 (tc (template (1 . b)) '(1 . b))
-(tc (template (1 . uu)) '(1 . ABC))
+(tc (template (1 . uu)) '(1 . abc))
 
 (tc (template #(aa ... done))
     '#(a b c done))
@@ -48,6 +48,8 @@
 
 (tc (template (aa ...))
     '(a b c))
+(tc (template ((uu aa) ...))
+    '((abc a) (abc b) (abc c)))
 (tc (template ((aa aa) ...))
     '((a a) (b b) (c c)))
 (tc (template (start (aa ok) ... done))
@@ -101,3 +103,25 @@
       [(a:id ... (~optional s:str) n:nat ...)
        (template (a ... n ... (?@ . (?? (string: s) ()))))])
     '(a b c 1 2 3 string: "hello!"))
+
+;; ----------------------------------------
+
+
+(define-template-metafunction (join stx)
+  (syntax-parse stx
+    [(join a:id b:id ...)
+     (datum->syntax #'a
+                    (string->symbol
+                     (apply string-append
+                            (map symbol->string
+                                 (syntax->datum #'(a b ...)))))
+                    stx)]))
+
+(tc (template (join a b c))
+    'abc)
+(tc (template ((xx (join tmp- xx)) ...))
+    '((x tmp-x) (y tmp-y) (z tmp-z)))
+(tc (template ((xx (join uu - xx)) ...))
+    '((x abc-x) (y abc-y) (z abc-z)))
+(tc (template ((xx (join aa xx)) ...))
+    '((x ax) (y by) (z cz)))
