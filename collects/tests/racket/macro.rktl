@@ -681,5 +681,23 @@
         [else #f]))
 
 ;; ----------------------------------------
+;; Check that `syntax-local-bind-syntaxes' and others 
+;; in module for-syntax top level don't crash due to
+;; the lack of a mark:
+
+(for ([e (list
+          '(syntax-local-bind-syntaxes
+            '()
+            #'(syntax-local-make-delta-introducer #'dummy)
+            (syntax-local-make-definition-context))
+          '(let-values ([(x y) (syntax-local-expand-expression #'1)])
+             (eval y)))])
+  (err/rt-test (eval `(module m racket/base
+                        (require (for-syntax racket/base))
+                        (begin-for-syntax
+                         ,e)))
+               exn:fail?))
+
+;; ----------------------------------------
 
 (report-errs)

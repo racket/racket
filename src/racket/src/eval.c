@@ -333,7 +333,7 @@ scheme_init_eval (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("expand",                                  expand,                                1, 1, env);
   GLOBAL_PRIM_W_ARITY("expand-syntax",                           expand_stx,                            1, 1, env);
   GLOBAL_PRIM_W_ARITY("local-expand",                            local_expand,                          3, 4, env);
-  GLOBAL_PRIM_W_ARITY("syntax-local-expand-expression",          local_expand_expr,                     1, 1, env);
+  GLOBAL_PRIM_W_ARITY2("syntax-local-expand-expression",         local_expand_expr,                     1, 1, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-bind-syntaxes",              local_eval,                            3, 3, env);
   GLOBAL_PRIM_W_ARITY("local-expand/capture-lifts",              local_expand_catch_lifts,              3, 5, env);
   GLOBAL_PRIM_W_ARITY("local-transformer-expand",                local_transformer_expand,              3, 4, env);
@@ -4859,7 +4859,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
     xl = scheme_check_immediate_macro(l, env, drec, 0, 0, &gval, NULL, NULL);
 
-    if (SAME_OBJ(xl, l)) {
+    if (SAME_OBJ(xl, l) && !for_expr) {
       SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, xl);
       SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, orig_l);
       return orig_l;
@@ -4901,7 +4901,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     SCHEME_PTR1_VAL(exp_expr) = l;
     SCHEME_PTR2_VAL(exp_expr) = orig_env;
     exp_expr = scheme_datum_to_syntax(exp_expr, l, scheme_false, 0, 0);
-    exp_expr = scheme_add_remove_mark(exp_expr, local_mark);
+    if (local_mark)
+      exp_expr = scheme_add_remove_mark(exp_expr, local_mark);
   }
 
   if (local_mark) {
@@ -4921,6 +4922,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     return l;
   }
 }
+
 
 static Scheme_Object *
 local_expand(int argc, Scheme_Object **argv)
@@ -5268,8 +5270,9 @@ local_eval(int argc, Scheme_Object **argv)
   scheme_add_local_syntax(cnt, stx_env);
 
   /* Mark names */
-  names = scheme_named_map_1(NULL, scheme_add_remove_mark, names,
-			     scheme_current_thread->current_local_mark);
+  if (scheme_current_thread->current_local_mark)
+    names = scheme_named_map_1(NULL, scheme_add_remove_mark, names,
+                               scheme_current_thread->current_local_mark);
 
   SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer,names);
 
@@ -5294,7 +5297,8 @@ local_eval(int argc, Scheme_Object **argv)
     rec.comp_flags = get_comp_flags(NULL);
     
     /* Evaluate and bind syntaxes */
-    expr = scheme_add_remove_mark(expr, scheme_current_thread->current_local_mark);
+    if (scheme_current_thread->current_local_mark)
+      expr = scheme_add_remove_mark(expr, scheme_current_thread->current_local_mark);
 
     scheme_prepare_exp_env(stx_env->genv);
     scheme_prepare_compile_env(stx_env->genv->exp_env);
