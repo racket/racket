@@ -171,13 +171,13 @@ As the name says...}
   Draws a fractal that came up on an exam given at Rice in 1997 or so.
 }
 
-@defthing[serp-size real?]{
+@defthing[sierp-size real?]{
  
-A constant that is a good size for the @racket[serp] procedures.}
+A constant that is a good size for the @racket[sierp] procedures.}
 
 @deftogether[(
-@defproc[(serp [serp-size real?]) void?]
-@defproc[(serp-nosplit [serp-size real?]) void?]
+@defproc[(sierp [sierp-size real?]) void?]
+@defproc[(sierp-nosplit [sierp-size real?]) void?]
 )]{
 
 Draws the @as-index{Serpinski triangle} in two different ways, the
