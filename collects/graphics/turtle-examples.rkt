@@ -3,7 +3,7 @@
 (require graphics/turtles)
 
 (provide regular-poly regular-polys radial-turtles spaced-turtles
-         spokes spyro-gyra neato graphics-bexam serp-size serp serp-nosplit
+         spokes spyro-gyra neato graphics-bexam sierp-size sierp sierp-nosplit
          koch-size koch-split koch-draw lorenz lorenz1 peano-size
          peano-position-turtle peano fern-size fern1 fern2 gapped-lines)
 
@@ -91,9 +91,9 @@
          (turn/radians (/ pi 2)))
   (gb square-size))
 
-(define serp-size 120)
+(define sierp-size 120)
 
-(define (serp distance)
+(define (sierp distance)
   (define sqrt3 (sqrt 3))
   (define -2pi/3 (- 0 (/ (* 2 pi) 3)))
   (define pi/6 (/ pi 6))
@@ -128,7 +128,7 @@
   (turn/radians pi)
   (engine distance))
 
-(define (serp-nosplit distance)
+(define (sierp-nosplit distance)
   (define sqrt3 (sqrt 3))
   (define -2pi/3 (- 0 (/ (* 2 pi) 3)))
   (define pi/6 (/ pi 6))
