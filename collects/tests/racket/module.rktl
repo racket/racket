@@ -632,6 +632,13 @@
   (provide f)
   (define (f) (s 1 2)))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check printing of an error message:
+
+(err/rt-test (eval '(module bad-module racket/base
+                      (require (for-meta -1 (only-in racket cons) (only-in r5rs cons)))))
+             (lambda (exn) (regexp-match? #rx"phase -1" (exn-message exn))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

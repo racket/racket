@@ -6083,7 +6083,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
         phase_expl = " for syntax";
       else {
         char buf[32];
-        sprintf(buf, " for phase %" PRIxPTR, SCHEME_INT_VAL(phase));
+        sprintf(buf, " for phase %" PRIdPTR, SCHEME_INT_VAL(phase));
         phase_expl = scheme_strdup(buf);
       }
 
@@ -8456,7 +8456,7 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
               if (SCHEME_FALSEP(phase)) {
                 phase_expl = " for-label";
               } else {
-                sprintf(buf, " for phase %" PRIxPTR, SCHEME_INT_VAL(phase));
+                sprintf(buf, " for phase %" PRIdPTR, SCHEME_INT_VAL(phase));
                 phase_expl = scheme_strdup(buf);
               }
             } else
