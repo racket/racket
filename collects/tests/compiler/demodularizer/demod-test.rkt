@@ -16,13 +16,16 @@
   (define-values (modular-output modular-error)
     (capture-output (find-executable-path "racket") filename))
   
+  (define demod-filename 
+    (let-values ([(base filename dir?) (split-path filename)])
+      (path->string
+       (build-path
+        (find-system-path 'temp-dir)
+        (path-add-suffix filename #"_merged.zo")))))
+  
   ; demodularize
   (parameterize ([current-input-port (open-input-string "")])
-    (system* (find-executable-path "raco") "demod" filename))
-  
-  (define demod-filename 
-    (path->string
-     (path-add-suffix filename #"_merged.zo")))
+    (system* (find-executable-path "raco") "demod" "-o" demod-filename filename))
   
   ; run whole program
   (define-values (whole-output whole-error)

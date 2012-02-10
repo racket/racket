@@ -50,9 +50,10 @@ Here's the idea:
          "replace-modidx.rkt"
          compiler/decompile
          compiler/zo-marshal
-         racket/set)
+         racket/set
+         raco/command-name)
 
-(define (main file-to-batch)
+(define (main file-to-batch output-file)
   (define-values (base name dir?) (split-path file-to-batch))
   (when (or (eq? base #f) dir?)
     (error 'batch "Cannot run on directory"))
@@ -62,7 +63,9 @@ Here's the idea:
   (log-info "Compiling module")
   (void (system* (find-executable-path "raco") "make" file-to-batch)) 
   
-  (define merged-zo-path (path-add-suffix file-to-batch #"_merged.zo"))
+  (define merged-zo-path 
+    (or output-file
+        (path-add-suffix file-to-batch #"_merged.zo")))
   
   ;; Transformations
   (define path-cache (make-hash))
@@ -105,9 +108,14 @@ Here's the idea:
        (zo-marshal-to batch-mod (current-output-port)))
      #:exists 'replace)))
 
-(command-line #:program "batch" 
-              #:multi
-              [("-e" "--exclude-modules") mod
-                                          "Exclude a module from being batched"
-                                          (current-excluded-modules (set-add (current-excluded-modules) mod))]
-              #:args (filename) (main filename))
+
+(let ()
+  (define output-file (make-parameter #f))
+  (command-line #:program (short-program+command-name)
+                #:multi
+                [("-e" "--exclude-modules") path "Exclude <path> from flattening"
+                 (current-excluded-modules (set-add (current-excluded-modules) path))]
+                [("-o") dest-filename "Write output as <dest-filename>"
+                 (output-file (string->path dest-filename))]
+                #:args (filename) 
+                (main filename (output-file))))
