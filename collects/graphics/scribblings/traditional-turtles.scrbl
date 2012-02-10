@@ -84,7 +84,7 @@ and one at @math["\u3C0/3"], evaluate
 
 @defform[(tprompt expr ...)]{
 
-Limits the splitting of the turtles. Before@racket[expr] is evaluated,
+Limits the splitting of the turtles. Before @racket[expr] is evaluated,
 the state of the turtles (how many, their positions and headings) is
 ``checkpointed.'' Then @racket[expr] is evaluated, and then the state
 of the turtles is restored, but all drawing that may have occurred
@@ -180,7 +180,7 @@ A constant that is a good size for the @racket[serp] procedures.}
 @defproc[(serp-nosplit [serp-size real?]) void?]
 )]{
 
-Draws the @as-index{Serpinski triangle} in two different ways, the
+Draws the @as-index{Sierpinski triangle} in two different ways, the
 first using @racket[split] heavily. After running the first one, try
 executing @racket[(draw 10)].}
 
