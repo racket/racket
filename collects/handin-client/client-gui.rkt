@@ -201,7 +201,7 @@
            [label (case mode
                     [(submit)   button-label/h]
                     [(retrieve) button-label/r]
-                    [else (string-append " " button-label/h " ")])] ; can change
+                    [else (string-append "  " button-label/h "  ")])] ; can change
            [parent button-panel]
            [style '(border)]
            [callback
@@ -722,7 +722,9 @@
          [stream (make-object editor-stream-in% base)])
     (read-editor-version stream base #t)
     (read-editor-global-header stream)
-    (send defs read-from-file stream)
+    (send* defs (begin-edit-sequence #f)
+                (erase) (read-from-file stream)
+                (end-edit-sequence))
     (read-editor-global-footer stream)))
 
 (define tool@
