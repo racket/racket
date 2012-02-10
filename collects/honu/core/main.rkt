@@ -30,6 +30,7 @@
                                    [honu-new new]
                                    [honu-while while]
                                    [honu-macro macro]
+                                   [honu-pattern pattern]
                                    [racket:read-line readLine]
                                    [honu-with-input-from-file withInputFromFile]
                                    [define-make-honu-operator operator]
@@ -87,6 +88,7 @@
                        this
                        #%top
                        #%datum
+                       (... ...)
                        ))))
 
 (require "private/honu-typed-scheme.rkt")

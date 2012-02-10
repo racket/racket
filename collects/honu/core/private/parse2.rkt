@@ -154,7 +154,7 @@
   (debug 2 "Comma? ~a ~a\n" what is)
   is)
 
-(define (do-parse stx parse-more)
+(define (do-parse-rest stx parse-more)
   (syntax-parse stx
     [(_ stuff ...)
      (define-values (parsed unparsed)
@@ -171,13 +171,26 @@
          #'output
          #'(begin output (parse-more unparsed-out ...))))]))
 
+(define (do-parse-rest/local stx)
+  (define name (gensym 'local-parser))
+  (define local-parser (with-syntax ([name name])
+                         #'(define-syntax (name stx)
+                           (do-parse-rest stx #'name))))
+  (with-syntax ([local local-parser]
+                [parsed (do-parse-rest stx name)])
+    #'(begin local parsed)))
+
+(define-syntax (do-parse-rest-macro stx)
+  (with-syntax ([stx stx])
+    #'(do-parse-rest stx #'do-parse-rest-macro)))
+
 (provide honu-body)
 (define-syntax-class honu-body
   #:literal-sets (cruft)
   [pattern (#%braces code ...)
            #:with result #'(let ()
                              (define-syntax (parse-more stx)
-                               (do-parse stx #'parse-more))
+                               (do-parse-rest stx #'parse-more))
                              (parse-more code ...))])
 
 (provide honu-function)
@@ -234,6 +247,7 @@
                          (datum->syntax #'head (syntax->list #'(head rest ...))
                                         #'head #'head))
                        #f)])
+          #;
           (emit-remark parsed)
           #;
           (emit-local-step stream parsed #:id #'do-macro)
@@ -243,13 +257,25 @@
             #;
             (do-parse #'(parsed ... rest ...)
                       precedence left current)
+            (define re-parse 
+              (with-syntax ([(x ...) #'parsed])
+                (do-parse-rest/local #'(nothing x ...))))
+            (debug "Reparsed ~a\n" (pretty-format (syntax->datum re-parse)))
+            #;
             (define re-parse (let-values ([(re-parse re-unparse)
                                            (parse #'parsed)])
                                (with-syntax ([(re-parse* ...) re-parse]
                                              [(re-unparse* ...) re-unparse])
                                  (datum->syntax re-parse
-                                                (syntax->list #'(re-parse* ... re-unparse* ...))
+                                                (syntax->list
+                                                  #'(%racket
+                                                      (begin (re-parse* ...)
+                                                             (let ()
+                                                               (define-syntax (parse-more stx)
+                                                                 (do-parse-rest stx #'parse-more))
+                                                               (parse-more re-unparse* ...)))))
                                                 re-parse re-parse))))
+            (debug "Reparsed output ~a\n" (pretty-format (syntax->datum re-parse)))
             (if terminate?
               (values (left re-parse)
                       #'rest)
@@ -270,6 +296,7 @@
        (values (left final) #'())]
       ;; dont reparse pure racket code
       [(%racket racket)
+       (debug "Native racket expression ~a\n" #'racket)
        (if current
          (values (left current) stream)
          (values (left stream) #'()))
@@ -293,10 +320,14 @@
                    precedence left
                    #'racket))]
       [(head rest ...)
+       (debug "Not a special expression..\n")
        (cond
          [(honu-macro? #'head)
+          (debug "Macro ~a\n" #'head)
           (do-macro #'head #'(rest ...) precedence left current stream)]
+         #;
          [(parsed-syntax? #'head)
+          (debug "Parsed syntax ~a\n" #'head)
           (do-parse #'(rest ...) precedence left #'head)]
          [(honu-fixture? #'head)
           (debug 2 "Fixture ~a\n" #'head)
@@ -354,6 +385,7 @@
                       (left final)))]
          
          [(stopper? #'head)
+          (debug "Parse a stopper ~a\n" #'head)
           (values (left final)
                   stream)]
          [else
@@ -374,9 +406,12 @@
              #;
              [(left:no-left function:honu-function . rest)
               (values #'function.result #'rest)]
-             [else (syntax-parse #'head
+             [else 
+               (debug "Parse a single thing ~a\n" #'head)
+               (syntax-parse #'head
                      #:literal-sets (cruft)
                      [(%racket x)
+                      (debug 2 "Native racket expression ~a\n" #'x)
                       (if current
                         (values (left current) stream)
                         (do-parse #'(rest ...) precedence left #'head))]
@@ -424,6 +459,7 @@
                         (do-parse #'(rest ...) precedence left #'body.result))] 
                      ;; expression or function application
                      [(#%parens args ...)
+                      (debug "Maybe function call with ~a\n" #'(args ...))
                       (if current
                         ;; FIXME: 9000 is an arbitrary precedence level for
                         ;; function calls
@@ -440,6 +476,7 @@
                             (define call (with-syntax ([current current]
                                                        [(parsed-args ...)
                                                         (parse-comma-expression #'(args ...)) ])
+                                           (debug "Parsed args ~a\n" #'(parsed-args ...))
                                            #'(current parsed-args ...)))
                             (do-parse #'(rest ...) precedence left call)))
                         (let ()

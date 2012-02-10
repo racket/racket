@@ -6,9 +6,12 @@
 (provide debug)
 
 (define-for-syntax (filename path)
-  (define-values (base name dir?)
-                 (split-path (build-path path)))
-  name)
+  (if path
+    (let ()
+      (define-values (base name dir?)
+                     (split-path (build-path path)))
+      name)
+    "no source"))
 
 (define (colorize string color)
   (define colors (hash 'none "0"
