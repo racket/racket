@@ -41,6 +41,7 @@
 (define-user32 GetDCEx (_wfun _HWND _HRGN _DWORD -> _HDC))
 (define DCX_WINDOW           #x00000001)
 (define DCX_CACHE            #x00000002)
+(define DCX_INTERSECTRGN     #x00000080)
 
 (define EP_EDITTEXT 1)
 (define ETS_NORMAL 1)
@@ -205,7 +206,14 @@
          (if control-border-theme
              (let* ([r (GetWindowRect canvas-hwnd)]
                     [res (default w msg wParam lParam)]
-                    [hdc (GetDCEx canvas-hwnd #f (bitwise-ior DCX_CACHE DCX_WINDOW))]
+		    [hrgn (if (= wParam 1) ;; check is needed for Win7
+			      #f
+			      (cast wParam _intptr _HRGN))]
+                    [hdc (GetDCEx canvas-hwnd hrgn
+                                  (bitwise-ior DCX_CACHE DCX_WINDOW
+				               (if hrgn
+						   DCX_INTERSECTRGN
+						   0)))]
                     [wr (make-RECT 0 0
                                    (- (RECT-right r) (RECT-left r))
                                    (- (RECT-bottom r) (RECT-top r)))])
