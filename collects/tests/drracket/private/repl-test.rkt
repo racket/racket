@@ -13,9 +13,11 @@ This produces an ACK message
 
 |#
 
-(require "private/drracket-test-util.rkt"
+(require "drracket-test-util.rkt"
          mred
          framework)
+
+(provide/contract [run-test (-> (listof (or/c 'raw 'debug 'debug/profile 'misc)) any)])
 
 (define-struct loc (line col offset))
 ;; loc = (make-loc number number number)
@@ -832,12 +834,12 @@ This produces an ACK message
            void)
    
    (mktest "(new snip%)"
-           ("{unknown snip: #(struct:object:snip% ...)}\n"
-            "{unknown snip: #(struct:object:snip% ...)}\n"
-            "{unknown snip: #(struct:object:snip% ...)}\n"
-            "{unknown snip: #(struct:object:snip% ...)}\n"
-            "{unknown snip: #(struct:object:snip% ...)}\n"
-            "{unknown snip: #(struct:object:snip% ...)}\n")
+           ("{unknown snip: (object:snip% ...)}\n"
+            "{unknown snip: (object:snip% ...)}\n"
+            "{unknown snip: (object:snip% ...)}\n"
+            "{unknown snip: (object:snip% ...)}\n"
+            "{unknown snip: (object:snip% ...)}\n"
+            "{unknown snip: (object:snip% ...)}\n")
            'interactions
            #f 
            void
@@ -1092,7 +1094,7 @@ This produces an ACK message
   (when (file-exists? tmp-load-filename) (delete-file tmp-load-filename))
   (when (file-exists? tmp-load3-filename) (delete-file tmp-load3-filename)))
 
-(define (run-test)
+(define (run-test which-tests)
     
   (define drscheme-frame (wait-for-drscheme-frame))
   
@@ -1297,8 +1299,7 @@ This produces an ACK message
                        (fprintf (current-error-port)
                                 "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
                                 short-filename
-                                program load-answer received-load)
-                       (semaphore-wait (make-semaphore 0))))))])
+                                program load-answer received-load)))))])
           (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
           (when (file-exists? tmp-load3-filename)
             (delete-file tmp-load3-filename))
@@ -1322,35 +1323,14 @@ This produces an ACK message
         (printf "tests finished: all ~a tests passed\n" tests)
         (fprintf (current-error-port) "tests finished: ~a failed out of ~a total\n" failures tests)))
   
-  (define (run-test-in-language-level language-cust)
-    (let ([level (list #rx"Pretty Big")])
-      (printf "running tests: ~a\n" language-cust)
-      (case language-cust
-        [(raw)
-         (begin
-           (set-language-level! level #f)
-           (test:set-radio-box-item! "No debugging or profiling")
-           (let ([f (test:get-active-top-level-window)])
-             (test:button-push "OK")
-             (wait-for-new-frame f)))]
-        [(debug)
-         (set-language-level! level)]
-        [(debug/profile)
-         (begin
-           (set-language-level! level #f)
-           (test:set-radio-box-item! "Debugging and profiling")
-           (let ([f (test:get-active-top-level-window)])
-             (test:button-push "OK")
-             (wait-for-new-frame f)))])
-         
-      
-      (random-seed-test)
-      
-      (test:new-window definitions-canvas)
-      (clear-definitions drscheme-frame)
-      (do-execute drscheme-frame)
-      (let/ec escape 
-        (for-each (run-single-test (get-int-pos) escape language-cust) test-data))))
+  (define (run-main-tests language-cust)
+    (random-seed-test)
+    
+    (test:new-window definitions-canvas)
+    (clear-definitions drscheme-frame)
+    (do-execute drscheme-frame)
+    (let/ec escape 
+      (for-each (run-single-test (get-int-pos) escape language-cust) test-data)))
   
   (define kill-menu-item "Force the Program to Quit")
   
@@ -1484,13 +1464,31 @@ This produces an ACK message
   ;; they are both run here because debug uses the automatic-compilation 
   ;; stuff and debug/profile does not (so they use different instantiations
   ;; of the stacktrace module.
-  (run-test-in-language-level 'raw)
-  (run-test-in-language-level 'debug)
-  (run-test-in-language-level 'debug/profile)
   
-  (kill-tests)
-  (callcc-test)
-  (top-interaction-test)
+  (define level (list #rx"Pretty Big"))
+  (when (memq 'raw which-tests)
+    (set-language-level! level #f)
+    (test:set-radio-box-item! "No debugging or profiling")
+    (let ([f (test:get-active-top-level-window)])
+      (test:button-push "OK")
+      (wait-for-new-frame f))
+    (run-main-tests 'raw))
+  (when (memq 'debug which-tests)
+    (set-language-level! level)
+    (run-main-tests 'debug))
+  (when (memq 'debug/profile which-tests)
+    (set-language-level! level #f)
+    (test:set-radio-box-item! "Debugging and profiling")
+    (let ([f (test:get-active-top-level-window)])
+      (test:button-push "OK")
+      (wait-for-new-frame f))
+    (run-main-tests 'debug/profile))
+  (when (memq 'misc which-tests)
+    (set-language-level! level #t)
+    (kill-tests)
+    (callcc-test)
+    (top-interaction-test))
+  
   (final-report))
 
 (define (insert-in-definitions/newlines drs str)
@@ -1531,5 +1529,3 @@ This produces an ACK message
    (λ (val)
       (cleanup-tmp-files)
       (eh val))))
-
-(fire-up-drscheme-and-run-tests run-test)
