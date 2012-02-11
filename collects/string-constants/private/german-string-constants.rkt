@@ -955,7 +955,7 @@
   (add-teachpack-to-list... "Teachpack zu Liste hinzufügen...")
   (teachpack-already-installed "Ein Teachpack names '~a' ist schon installiert. Überschreiben?")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
-  (teachpacks-only-in-languages "Die Teachpacks sind nur in diesen Sprachen verfügbar: ~a")
+  (teachpacks-only-in-languages "Die Teachpacks sind nur in diesen Sprachen verfügbar: ~a}\n\nIn anderen Sprachen ist `require' vorgesehen.")
 
  ;;; Language dialog
  (introduction-to-language-dialog
