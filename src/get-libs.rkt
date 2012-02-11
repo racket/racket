@@ -121,7 +121,9 @@
   (define-values [package dest-dir]
     (let-values ([(args) (vector->list (current-command-line-arguments))])
       (let-values
-          ([(package) (if (null? args) (error 'get-libs) (car args))])
+          ([(package) (if (null? args)
+			  (error 'get-libs "missing \'package\' command-line argument")
+			  (car args))])
         (let-values ([(dd) 
                       (if (null? (cdr args)) (current-directory) (cadr args))])
           (values (string->symbol package) dd)))))
