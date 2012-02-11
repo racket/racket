@@ -2555,7 +2555,7 @@ static Scheme_Object *
 set_transformer_proc(int argc, Scheme_Object *argv[])
 {
   if (!scheme_is_set_transformer(argv[0]))
-    scheme_wrong_type("set!-transformer-procedure", "set!-transformer", 1, argc, argv);
+    scheme_wrong_type("set!-transformer-procedure", "set!-transformer", 0, argc, argv);
 
   return scheme_set_transformer_proc(argv[0]);
 }
