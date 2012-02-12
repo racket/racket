@@ -366,7 +366,7 @@
 ;; in : Type
 ;; out : Type
 (def-type Param ([in Type/c] [out Type/c])
-  [#:key 'parameter]
+  [#:key 'procedure]
   [#:frees (λ (f) (combine-frees (list (f out) (flip-variances (f in)))))])
 
 ;; key : Type
