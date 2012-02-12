@@ -71,6 +71,11 @@ execute through a call to @racket[touch], however.
       (list (+ 3 4) (touch f)))
 ]}
 
+@defproc[(futures-enabled?) boolean?]{
+  Returns whether futures are enabled in the current 
+  Racket build.
+}
+
 @defproc[(current-future) (or/c #f future?)]{
 
   Returns the descriptor of the future whose thunk execution is the
@@ -90,26 +95,26 @@ execute through a call to @racket[touch], however.
 }
 
 @defproc[(would-be-future [thunk (-> any)]) future?]{
-  Returns a special future which is bound to the runtime thread 
-  and logs all potentially blocking primitive invocations made during its lifetime. 
-  With a standard future, certain circumstances might prevent 
-  all primitive invocations that would have caused blocking behavior to 
-  be logged.  @racket[would-be-future] guarantees that all blocks will be 
-  shown.
+  Returns a future that never runs in parallel, but that consistently
+  logs all potentially ``unsafe'' operations during the execution of
+  the future's thunk (i.e., operations that interfere with parallel
+  execution).
+
+  With a normal future, certain circumstances might prevent the logging
+  of unsafe operations. For example, when executed with debug-level logging,
   
   @racketblock[
     (touch (future (lambda () 
-                      (printf "hello1") 
-                      (printf "hello2") 
-                      (printf "hello3"))))] 
+                     (printf "hello1") 
+                     (printf "hello2") 
+                     (printf "hello3"))))] 
 
-  The preceding code, when executed with logging output enabled, 
-  may log three messages for blocks (one for each @racket[printf] 
-  invocation).  However, if the @racket[touch] occurs before a worker 
-  OS-level thread has started executing the future, the thunk will 
-  be executed in the same manner as any ordinary thunk and no blocks 
-  will be logged.  Replacing @racket[future] with @racket[would-be-future] 
-  ensures the logging of all three. 
+  might log three messages, one for each @racket[printf] 
+  invocation.  However, if the @racket[touch] is performed before the future
+  has a chance to start running in parallel, the future thunk evaluates
+  in the same manner as any ordinary thunk, and no unsafe operations
+  are logged.  Replacing @racket[future] with @racket[would-be-future] 
+  ensures the logging of all three calls to @racket[printf]. 
 }
 
 @defproc[(processor-count) exact-positive-integer?]{

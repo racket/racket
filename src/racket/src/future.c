@@ -37,6 +37,15 @@ Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[])
     return scheme_false;
 }
 
+static Scheme_Object *futures_enabled(int argc, Scheme_Object *argv[])
+{
+#ifdef MZ_USE_FUTURES 
+  return scheme_true;
+#else 
+  return scheme_false;
+#endif
+}
+
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -244,6 +253,7 @@ void scheme_init_futures(Scheme_Env *newenv)
   FUTURE_PRIM_W_ARITY("fsemaphore-try-wait?", scheme_fsemaphore_try_wait, 1, 1, newenv);
   FUTURE_PRIM_W_ARITY("fsemaphore-count", scheme_fsemaphore_count, 1, 1, newenv);
   FUTURE_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -288,6 +298,7 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
 static void futures_init(void);
 static void init_future_thread(struct Scheme_Future_State *fs, int i);
+static Scheme_Future_Thread_State *alloc_future_thread_state();
 static void requeue_future(struct future_t *future, struct Scheme_Future_State *fs);
 static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
                                   void *func,
@@ -522,6 +533,7 @@ void scheme_init_futures(Scheme_Env *newenv)
   scheme_add_global_constant("fsemaphore-try-wait?", p, newenv);  
 
   GLOBAL_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
+  GLOBAL_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -558,7 +570,7 @@ void futures_init(void)
   fs->thread_pool_size = pool_size;
 
   /* Create a 'dummy' FTS for the RT thread */
-  rt_fts = (Scheme_Future_Thread_State*)malloc(sizeof(Scheme_Future_Thread_State)); 
+  rt_fts = alloc_future_thread_state();
   rt_fts->is_runtime_thread = 1;
   rt_fts->gen0_size = 1;
   scheme_future_thread_state = rt_fts;
@@ -590,7 +602,7 @@ void futures_init(void)
   syms[FEVENT_HANDLE_RTCALL] = sym;
 
   sym = scheme_intern_symbol("future-event");
-  stype = scheme_lookup_prefab_type(sym, 4);
+  stype = scheme_lookup_prefab_type(sym, 5);
   fs->fevent_prefab = stype;
 
   init_fevent(&fs->runtime_fevents);
@@ -611,8 +623,7 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   /* Create the worker thread pool.  These threads will
      'queue up' and wait for futures to become available. */
 
-  fts = (Scheme_Future_Thread_State *)malloc(sizeof(Scheme_Future_Thread_State));
-  memset(fts, 0, sizeof(Scheme_Future_Thread_State));
+  fts = alloc_future_thread_state();
   fts->id = i;
 
   fts->gen0_size = 1;
@@ -629,7 +640,6 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   skeleton = MALLOC_ONE_TAGGED(Scheme_Thread);
   skeleton->so.type = scheme_thread_type;
 
-  scheme_register_static(&fts->thread, sizeof(Scheme_Thread*));
   fts->thread = skeleton;
 
   {
@@ -657,6 +667,17 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   scheme_register_static(params.current_thread_ptr, sizeof(void*));
 
   fs->pool_threads[i] = fts;
+}
+
+static Scheme_Future_Thread_State *alloc_future_thread_state()
+{
+  Scheme_Future_Thread_State *fts;
+
+  fts = (Scheme_Future_Thread_State *)malloc(sizeof(Scheme_Future_Thread_State));
+  memset(fts, 0, sizeof(Scheme_Future_Thread_State));
+  scheme_register_static(&fts->thread, sizeof(Scheme_Thread*));  
+
+  return fts;
 }
 
 void scheme_end_futures_per_place()
@@ -997,6 +1018,11 @@ static void log_future_event(Scheme_Future_State *fs,
   ((Scheme_Structure *)data)->slots[2] = v;
   v = scheme_make_double(timestamp);
   ((Scheme_Structure *)data)->slots[3] = v;
+  if (what == FEVENT_HANDLE_RTCALL) {
+    v = scheme_intern_symbol(extra_str);
+    ((Scheme_Structure *)data)->slots[4] = v;
+  } else 
+    ((Scheme_Structure *)data)->slots[4] = scheme_false;
   
   scheme_log_w_data(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
                     data,                 
@@ -1896,8 +1922,21 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 /* can be called in future thread */
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
-
   if (fts->is_runtime_thread) {
+    future_t *ft;
+    if (fts->thread 
+        && (ft = fts->thread->current_ft) 
+        && ft->in_tracing_mode) { 
+      Scheme_Future_State *fs = scheme_future_state;
+      log_future_event( fs,
+                        "future %d, process %d: %s: %s; time: %f",
+                        "touch",
+                        -1, 
+                        FEVENT_RTCALL_TOUCH, 
+                        get_future_timestamp(),
+                        ft->id);
+    }
+      
     return general_touch(argc, argv);
   } else {
     if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_future_type)) {

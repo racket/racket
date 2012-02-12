@@ -12,4 +12,5 @@
           fsemaphore-post 
           fsemaphore-wait 
           fsemaphore-try-wait?
-          would-be-future)
+          would-be-future
+          futures-enabled?)
