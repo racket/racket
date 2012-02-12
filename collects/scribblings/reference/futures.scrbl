@@ -188,7 +188,7 @@ a data value that is an instance of a @racket[future-event]
 @tech{prefab} structure:
 
 @racketblock[
-(define-struct future-event (future-id proc-id action time)
+(define-struct future-event (future-id proc-id action time unsafe-op-name)
   #:prefab)
 ]
 
@@ -264,7 +264,12 @@ with @racket['result], @racket['abort], or @racket['suspend], and
 In process 0, some event pairs can be nested within other event pairs:
 @racket['sync], @racket['block], or @racket['touch] with
 @racket['result] or @racket['abort], and @racket['touch-pause] with
-@racket['touch-resume].}
+@racket['touch-resume].
+
+An @racket[block] in process 0 is generated when an unsafe operation 
+is handled.  This type of event will contain a symbol in the 
+@racket[unsafe-op-name] field that is the name of the operation.  In all 
+other cases, this field contains @racket[#f].}
 
 @; ----------------------------------------------------------------------
 
