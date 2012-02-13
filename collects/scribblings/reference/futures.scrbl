@@ -72,8 +72,8 @@ execute through a call to @racket[touch], however.
 ]}
 
 @defproc[(futures-enabled?) boolean?]{
-  Returns whether futures are enabled in the current 
-  Racket build.
+  Returns whether parallel support for futures is enabled 
+  in the current Racket configuration.
 }
 
 @defproc[(current-future) (or/c #f future?)]{
