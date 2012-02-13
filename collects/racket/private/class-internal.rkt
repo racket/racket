@@ -3941,7 +3941,10 @@ An example
     (raise-type-error 'instantiate "class" class))
   ;; make sure the class isn't abstract
   (unless (null? (class-abstract-ids class))
-    (obj-error 'instantiate "cannot instantiate abstract class ~a" class))
+    (obj-error 'instantiate
+               "cannot instantiate class ~a with abstract methods ~a"
+               class
+               (class-abstract-ids class)))
   ;; Generate correct class by concretizing methods w/interface ctcs
   (let* ([class (fetch-concrete-class class blame)]
          [o ((class-make-object class))])
