@@ -188,7 +188,13 @@ With automatic scrollbars, the programmer specifies the desired
  virtual size of the canvas, and the scrollbars are automatically
  handled to allow the user to scroll around the virtual area. The
  scrollbars are not automatically hidden if they are unneeded; see
-@method[canvas% show-scrollbars].
+@method[canvas% show-scrollbars]. 
+
+The coordinates for mouse
+events (passed to @method[canvas<%> on-event]) are not adjusted to
+account for the position of the scrollbar; 
+use the @method[canvas% get-view-start] method to find suitable
+offsets.
 
 See also
 @method[canvas% init-manual-scrollbars] for information about manual scrollbars. The horizontal and vertical
