@@ -56,6 +56,12 @@ static int _coldir_offset = 19; /* Skip permanent tag */
 # define XFORM_OK_PLUS +
 #endif
 
+#ifdef OS_X
+# include <mach-o/getsect.h>
+# include <mach-o/dyld.h>
+# include <fcntl.h>
+#endif
+
 #ifdef DOS_FILE_SYSTEM
 # include <Windows.h>
 
@@ -85,6 +91,22 @@ END_XFORM_SKIP;
 # endif
 #endif
 
+#ifdef OS_X
+static long get_segment_offset()
+{
+# ifdef __x86_64__
+  const struct segment_command_64 *seg;
+# else
+  const struct segment_command *seg;
+#endif
+  seg = getsegbyname("__PLTSCHEME");
+  if (seg)
+    return seg->fileoff;
+  else
+    return 0;
+}
+#endif
+
 #ifndef DONT_PARSE_COMMAND_LINE
 static int is_number_arg(const char *s)
 {
@@ -108,10 +130,30 @@ static int is_number_arg(const char *s)
   return 1;
 }
 
+#ifdef OS_X
+char *add_to_str(const char *addr, long amt)
+{
+  long addr_v;
+  char buf[32];
+  addr_v = atoi(addr) + amt;
+  sprintf(buf, "%ld", addr_v);
+  return strdup(buf);
+}
+#endif
+
 static char *make_embedded_load(const char *start, const char *end)
 {
   char *s;
   int slen, elen;
+
+#ifdef OS_X
+  {
+    long fileoff;
+    fileoff = get_segment_offset();
+    start = add_to_str(start, fileoff);
+    end = add_to_str(end, fileoff);
+  }
+#endif
 
   slen = strlen(start);
   elen = strlen(end);
@@ -638,7 +680,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     }
   }
 #endif
-  
+
   /* If scheme_cmdline_exe_hack is changed, then we extract built-in
      arguments. */
   if (scheme_cmdline_exe_hack[0] != '[') {
@@ -648,6 +690,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     GC_CAN_IGNORE unsigned char *orig_p;
     char **argv2;
 
+    p = NULL;
 #ifdef DOS_FILE_SYSTEM
     if ((scheme_cmdline_exe_hack[0] == '?')
 	|| (scheme_cmdline_exe_hack[0] == '*')) {
@@ -723,8 +766,33 @@ static int run_from_cmd_line(int argc, char *_argv[],
 		+ 4);
 	}
       }
-    } else
+    }
 #endif
+#ifdef OS_X
+    if (scheme_cmdline_exe_hack[0] == '?') {
+      long fileoff, cmdoff, cmdlen;
+      int fd;
+      fileoff = get_segment_offset();
+
+      p = (unsigned char *)scheme_cmdline_exe_hack + 4;
+      cmdoff = (p[0]
+                + (((long)p[1]) << 8)
+                + (((long)p[2]) << 16)
+                + (((long)p[3]) << 24));
+      cmdlen = (p[4]
+                + (((long)p[5]) << 8)
+                + (((long)p[6]) << 16)
+                + (((long)p[7]) << 24));
+      p = malloc(cmdlen);
+      
+      fd = open(_dyld_get_image_name(0), O_RDONLY);
+      lseek(fd, fileoff + cmdoff, 0);
+      read(fd, p, cmdlen);
+      close(fd);
+    }
+#endif
+     
+    if (!p)
       p = (unsigned char *)scheme_cmdline_exe_hack + 1;
 
     /* Command line is encoded as a sequence of pascal-style strings;

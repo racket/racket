@@ -71,6 +71,10 @@ attaches information to the executable based on the auxilliary file's
 suffix; see @racket[extract-aux-from-path] for a list of recognized
 suffixes and meanings.
 
+The @Flag{l} or @DFlag{launcher} flag creates a @tech{launcher}
+instead of a stand-alone executable. See @secref["launcher"] for more
+information on launchers. The @DFlag{lib} has no effect in that case.
+
 @; ----------------------------------------------------------------------
 
 @include-section["exe-api.scrbl"]

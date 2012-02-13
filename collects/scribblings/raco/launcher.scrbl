@@ -10,14 +10,19 @@
 
 @title[#:tag "launcher"]{Installation-Specific Launchers}
 
+A @deftech{launcher} is similar to a stand-alone executable, but a
+launcher is usually smaller and can be created more quickly, because
+it depends permanently on the local Racket installation and the
+program's sources. In the case of Unix, a launcher is simply a shell
+script that runs @exec{racket} or @exec{gracket}. Launchers
+@emph{cannot} be packaged into a distribution using @exec{raco
+distribute}. The @exec{raco exe} command creates a launcher when the
+@Flag{l} or @DFlag{launcher} flag is specified.
+
 @defmodule[launcher/launcher]
 
 The @racketmodname[launcher/launcher] library provides functions for
-creating @defterm{launchers}, which are similar to stand-alone
-executables, but sometimes smaller because they depend permanently on
-the local Racket installation. In the case of Unix, in particular,
-a launcher is simply a shell script. The @exec{raco exe} command provides no
-direct support for creating launchers.
+creating @tech{launchers}.
 
 @section{Creating Launchers}
 
@@ -44,8 +49,8 @@ the following additional associations apply to launchers:
 @itemize[
 
  @item{@racket['independent?] (Windows) --- a boolean; @racket[#t]
-       creates an old-style launcher that is independent of the
-       MzRacket or GRacket binary, like @exec{setup-plt.exe}. No other
+       creates an old-style launcher that work with any
+       Racket or GRacket binary, like @exec{setup-plt.exe}. No other
        @racket[aux] associations are used for an old-style launcher.}
 
  @item{@racket['exe-name] (Mac OS X, @racket['script-3m] or

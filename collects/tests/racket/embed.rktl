@@ -6,6 +6,7 @@
 (require compiler/embed
          mzlib/file
 	 mzlib/process
+         launcher
          compiler/distribute)
 
 (define (mk-dest-bin mred?)
@@ -67,12 +68,9 @@
     (test expect with-input-from-file (build-path (find-system-path 'temp-dir) "stdout") 
 	  (lambda () (read-string 5000)))))
 
-(define try-exe 
-  (case-lambda
-   [(exe expect mred?)
-    (try-exe exe expect mred? void)]
-   [(exe expect mred? dist-hook . collects)
-    (try-one-exe exe expect mred?)
+(define (try-exe exe expect mred? [dist-hook void] #:dist? [dist? #t] . collects)
+  (try-one-exe exe expect mred?)
+  (when dist?
     ;; Build a distirbution directory, and try that, too:
     (printf " ... from distribution ...\n")
     (when (directory-exists? dist-dir)
@@ -84,7 +82,7 @@
                                  dist-mred-exe
                                  dist-mz-exe))
                  expect mred?)
-    (delete-directory/files dist-dir)]))
+    (delete-directory/files dist-dir)))
 
 (define (base-compile e)
   (parameterize ([current-namespace (make-base-namespace)])
@@ -108,6 +106,13 @@
      #f
      `(,(flags "l") ,(string-append "tests/racket/" filename)))
     (try-exe dest expect mred?)
+
+    ;; As a launcher:
+    (prepare dest filename)
+    ((if mred? make-gracket-launcher make-racket-launcher)
+     (list "-l" (string-append "tests/racket/" filename))
+     dest)
+    (try-exe dest expect mred? #:dist? #f)
 
     ;; Try explicit prefix:
     (printf ">>>explicit prefix\n")
@@ -250,15 +255,37 @@
      `("-l" "tests/racket/embed-me5.rkt"))
     (try-exe mr-dest "This is 5: #<class:button%>\n" #t)))
 
-;; Try the mzc interface:
+;; Try the raco interface:
 (require setup/dirs
 	 mzlib/file)
 (define mzc (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
                                                    "mzc.exe"
                                                    "mzc")))
+(define raco (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
+                                                    "raco.exe"
+                                                    "raco")))
 
 (define (mzc-tests mred?)
   (parameterize ([current-directory (find-system-path 'temp-dir)])
+
+    ;; raco exe
+    (system* raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me1.rkt")))
+    (try-exe (mk-dest mred?) "This is 1\n" mred?)
+
+    ;;raco exe --launcher
+    (system* raco
+             "exe"
+             "--launcher"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me1.rkt")))
+    (try-exe (mk-dest mred?) "This is 1\n" mred? #:dist? #f)
+
+    ;; the rest use mzc...
 
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")

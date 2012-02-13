@@ -19,7 +19,10 @@
                          (listof string?))
                         ((listof (cons/c symbol? any/c))
                          any/c
-                         symbol?)
+                         symbol?
+                         (or/c #f
+                               path-string?
+                               (listof path-string?)))
                         void?)]
                   [create-embedding-executable
                    (->* (path-string?)

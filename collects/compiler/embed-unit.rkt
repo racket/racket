@@ -1048,7 +1048,8 @@
                     cmdline
                     [aux null]
                     [launcher? #f]
-                    [variant (system-type 'gc)])
+                    [variant (system-type 'gc)]
+                    [collects-path #f])
         (create-embedding-executable dest
                                      #:mred? mred?
                                      #:verbose? verbose?
@@ -1058,7 +1059,8 @@
                                      #:cmdline cmdline
                                      #:aux aux
                                      #:launcher? launcher?
-                                     #:variant variant)))
+                                     #:variant variant
+                                     #:collects-path collects-path)))
     
     ;; Use `write-module-bundle', but figure out how to put it into an executable
     (define (create-embedding-executable dest
@@ -1096,7 +1098,7 @@
                                    (or (not m)
                                        (not (cdr m))))))
       (define long-cmdline? (or (eq? (system-type) 'windows)
-                                (and use-starter-info? mred? (eq? 'macosx (system-type)))
+                                (eq? (system-type) 'macosx)
                                 unix-starter?))
       (define relative? (let ([m (assq 'relative? aux)])
                           (and m (cdr m))))
@@ -1227,19 +1229,40 @@
 						  (relativize dir dest-exe values)
 						  dir)
 					      "")))
-				  full-cmdline))))])
+				  full-cmdline))))]
+                  [write-cmdline
+                   (lambda (full-cmdline out)
+                     (for-each
+                      (lambda (s)
+                        (fprintf out "~a~a~c"
+                                 (integer->integer-bytes 
+                                  (add1 (bytes-length (string->bytes/utf-8 s)) )
+                                  4 #t #f)
+                                 s
+                                 #\000))
+                      full-cmdline)
+                     (display "\0\0\0\0" out))])
               (let-values ([(start decl-end end cmdline-end)
                             (if (and (eq? (system-type) 'macosx)
                                      (not unix-starter?))
                                 ;; For Mach-O, we know how to add a proper segment
                                 (let ([s (open-output-bytes)])
                                   (define decl-len (write-module s))
-                                  (let ([s (get-output-bytes s)])
-                                    (let ([start (add-plt-segment dest-exe s)])
-                                      (values start
-                                              (+ start decl-len)
-                                              (+ start (bytes-length s))
-					      #f))))
+                                  (let* ([s (get-output-bytes s)]
+                                         [cl (let ([o (open-output-bytes)])
+                                               ;; position is relative to __PLTSCHEME:
+                                               (write-cmdline (make-full-cmdline 0 decl-len (bytes-length s)) o)
+                                               (get-output-bytes o))])
+                                    (let ([start (add-plt-segment 
+                                                  dest-exe 
+                                                  (bytes-append
+                                                   s
+                                                   cl))])
+                                      (let ([start 0]) ; i.e., relative to __PLTSCHEME
+                                        (values start
+                                                (+ start decl-len)
+                                                (+ start (bytes-length s))
+                                                (+ start (bytes-length s) (bytes-length cl)))))))
                                 ;; Unix starter: Maybe ELF, in which case we 
                                 ;; can add a proper section
                                 (let-values ([(s e dl p)
@@ -1336,7 +1359,8 @@
                                                 (lambda () (find-cmdline 
                                                             "instance-check"
                                                             #"yes, please check for another"))))]
-                             [out (open-output-file dest-exe #:exists 'update)])
+                             [out (open-output-file dest-exe #:exists 'update)]
+                             [cmdline-done? cmdline-end])
                          (dynamic-wind
                           void
                           (lambda ()
@@ -1345,28 +1369,22 @@
                               (write-bytes #"no," out))
                             (if long-cmdline?
                                 ;; write cmdline at end:
-                                (file-position out end)
+                                (unless cmdline-done?
+                                  (file-position out end))
                                 (begin
                                   ;; write (short) cmdline in the normal position:
                                   (file-position out cmdpos)
                                   (display "!" out)))
-                            (for-each
-                             (lambda (s)
-                               (fprintf out "~a~a~c"
-                                        (integer->integer-bytes 
-                                         (add1 (bytes-length (string->bytes/utf-8 s)) )
-                                         4 #t #f)
-                                        s
-                                        #\000))
-                             full-cmdline)
-                            (display "\0\0\0\0" out)
+                            (unless cmdline-done?
+                              (write-cmdline full-cmdline out))
                             (when long-cmdline?
                               ;; cmdline written at the end;
                               ;; now put forwarding information at the normal cmdline pos
-                              (let ([new-end (file-position out)])
+                              (let ([new-end (or cmdline-end
+                                                 (file-position out))])
                                 (file-position out cmdpos)
                                 (fprintf out "~a...~a~a"
-                                         (if keep-exe? "*" "?")
+                                         (if (and keep-exe? (eq? 'windows (system-type))) "*" "?")
                                          (integer->integer-bytes end 4 #t #f)
                                          (integer->integer-bytes (- new-end end) 4 #t #f)))))
                           (lambda ()

@@ -379,8 +379,12 @@
   (if (not (and (let ([m (assq 'independent? aux)])
                   (and m (cdr m)))))
     ;; Normal launcher:
-    (make-embedding-executable
-     dest (eq? kind 'mred) #f null null null flags aux #t variant)
+    (make-embedding-executable dest (eq? kind 'mred) 
+                               #f null null null flags aux #t variant
+                               (if (let ([a (assq 'relative? aux)])
+                                     (and a (cdr a)))
+                                   #f
+                                   (find-collects-dir)))
     ;; Independent launcher (needed for Setup PLT):
     (begin
       (install-template dest kind "mzstart.exe" "mrstart.exe")
@@ -465,7 +469,11 @@
                                  flags
                                  aux
                                  #t
-                                 variant)))
+                                 variant
+                                 (if (let ([a (assq 'relative? aux)])
+                                       (and a (cdr a)))
+                                     #f
+                                     (find-collects-dir)))))
 
 (define (make-macos-launcher kind variant flags dest aux)
   (install-template dest kind "GoMr" "GoMr")

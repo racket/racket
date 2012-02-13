@@ -286,8 +286,8 @@ is initialized to an empty list and
 @racket[use-collection-link-paths] is set to false to disable the
 use of @tech[#:doc reference-doc]{collection links files}.
 
-If the @racket[#:launcher?] argument is @racket[#t], then no
-@racket[module]s should be null, @racket[literal-files] should be
+If the @racket[#:launcher?] argument is @racket[#t], then
+@racket[lid-list] should be null, @racket[literal-files] should be
 null, @racket[literal-sexp] should be @racket[#f], and the platform
 should be Windows or Mac OS X. The embedding executable is created in
 such a way that @racket[(find-system-path 'exec-file)] produces the
@@ -355,7 +355,11 @@ have been applied as needed to refer to the existing file).}
                                [cmdline (listof string?)]
                                [aux (listof (cons/c symbol? any/c)) null]
                                [launcher? any/c #f]
-                               [variant (one-of/c 'cgc '3m) (system-type 'gc)])
+                               [variant (one-of/c 'cgc '3m) (system-type 'gc)]
+                               [collects-path (or/c #f
+                                                    path-string? 
+                                                    (listof path-string?))
+                                              #f])
          void?]{
 
 Old (keywordless) interface to @racket[create-embedding-executable].}
