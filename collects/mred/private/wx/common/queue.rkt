@@ -383,17 +383,30 @@
 (define make-new-eventspace
   (let ([make-eventspace
          (lambda ()
-           (letrec ([pause (make-semaphore)]
-                    [es
-                     (make-eventspace*
-                      (thread
-                       (lambda ()
-                         (sync pause)
-                         (thread-cell-set! handler-thread-of es)
-                         (current-eventspace es)
-                         (yield (make-semaphore)))))])
-             (semaphore-post pause)
-             es))])
+           (define pause (make-semaphore))
+           (define break-paramz (current-break-parameterization))
+           (define es
+             (make-eventspace*
+              (parameterize-break 
+               #f ; disable breaks until we're in the yield loop
+               (thread
+                (lambda ()
+                  (sync pause) ; wait until `es' has a value
+                  (thread-cell-set! handler-thread-of es)
+                  (current-eventspace es)
+                  (let loop ()
+                    (call-with-continuation-prompt
+                     (lambda ()
+                       ;; re-enable breaks (if they are supposed to be enabled):
+                       (call-with-break-parameterization
+                        break-paramz
+                        (lambda () 
+                          ;; yield; any abort (including a break exception)
+                          ;; will get caught and the loop will yield again
+                          (yield (make-semaphore))))))
+                    (loop)))))))
+           (semaphore-post pause) ; `es' has a value
+           es)])
     make-eventspace))
 
 (define (queue-event eventspace thunk [level 'med])

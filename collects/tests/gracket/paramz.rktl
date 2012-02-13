@@ -105,4 +105,23 @@
 (try-use-es (lambda () (queue-callback void)))
 (try-use-es (lambda () (send tmr start 100 #t)))
 
+;; ----------------------------------------
+;;  Check that breaking an eventspace thread doesn't kill it:
+
+(let ()
+  (define evtsp (make-eventspace))
+  (define evtth (eventspace-handler-thread evtsp))
+  
+  (sleep 0.1)
+  (break-thread evtth)
+
+  (define done (make-semaphore))
+  (parameterize ((current-eventspace evtsp))
+    (queue-callback (lambda () (semaphore-post done))))
+
+  (unless (sync/timeout 3 done)
+    (error "broken thread is really broken")))
+
+;; ----------------------------------------
+
 (report-errs)
