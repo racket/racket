@@ -1090,7 +1090,7 @@ the settings above should match r5rs
 
 
 (define (prepare-for-test-expression)
-  (let ([drs (wait-for-drscheme-frame)])
+  (let ([drs (wait-for-drracket-frame)])
     (clear-definitions drs)
     (set-language #t)
     (sleep 1) ;; this shouldn't be neccessary....
@@ -1143,7 +1143,7 @@ the settings above should match r5rs
                   ""))
 
 (define (check-top-of-repl)
-  (let ([drs (wait-for-drscheme-frame)])
+  (let ([drs (wait-for-drracket-frame)])
     (set-language #t)
     (with-handlers ([exn:fail? void])
       (fw:test:menu-select "Testing" "Disable tests"))
@@ -1221,7 +1221,7 @@ the settings above should match r5rs
 
 (define (generic-output list? quasi-quote? has-sharing? has-print-printing?)
   (let* ([plain-print-style (if has-print-printing? "print" "write")]
-         [drs (wait-for-drscheme-frame)]
+         [drs (wait-for-drracket-frame)]
          [expression "(define x (list 2))\n(list x x)"]
          [set-output-choice
           (lambda (option show-sharing pretty?)
@@ -1309,7 +1309,7 @@ the settings above should match r5rs
    "WARNING: Interactions window is out of sync with the definitions window\\."))
 
 (define (test-error-after-definition)
-  (let* ([drs (wait-for-drscheme-frame)]
+  (let* ([drs (wait-for-drracket-frame)]
          [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))])
     (clear-definitions drs)
     (type-in-definitions drs "(define y 0) (define (f x) (/ x y)) (f 2)")
@@ -1336,7 +1336,7 @@ the settings above should match r5rs
 ;; types an expression in the definitions window, executes it and tests the output
 ;; types an expression in the REPL and tests the output from the REPL.
 (define (test-expression expression defs-expected [repl-expected defs-expected])
-  (let* ([drs (wait-for-drscheme-frame)]
+  (let* ([drs (wait-for-drracket-frame)]
          [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))]
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
          [handle-insertion
@@ -1457,4 +1457,4 @@ the settings above should match r5rs
   (go advanced)
   )
 
-(fire-up-drscheme-and-run-tests run-test)
+(fire-up-drracket-and-run-tests run-test)

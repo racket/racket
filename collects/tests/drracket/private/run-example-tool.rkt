@@ -55,9 +55,9 @@
           [((COMPILER : compiler^)) compiler@ COMPILER-OPTION DYNEXT-FILE DYNEXT-COMPILE DYNEXT-LINK]
           [() setup@ LAUNCHER OPTIONS COMPILER-OPTION COMPILER DYNEXT-FILE])))))
   
-  (fire-up-drscheme-and-run-tests
+  (fire-up-drracket-and-run-tests
    (λ () 
-     (define drs (wait-for-drscheme-frame))
+     (define drs (wait-for-drracket-frame))
      (queue-callback/res (λ () (send (send drs get-definitions-canvas) focus)))
      (for ([x (in-string "egg\r1\r2\r3")])  
        ;; need #\r to actually get newlines in the editor

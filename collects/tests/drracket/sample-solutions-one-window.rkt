@@ -38,7 +38,7 @@
            [language (section->language section)]
            [errors-ok? (car toc-entry)]
            [teachpacks (cadr toc-entry)])
-      (let* ([drs-frame (wait-for-drscheme-frame)]
+      (let* ([drs-frame (wait-for-drracket-frame)]
              [definitions-text (send drs-frame get-definitions-text)]
              [interactions-text (send drs-frame get-interactions-text)])
         
@@ -115,7 +115,7 @@
                                       "Evaluation Terminated"))))])
               (poll-until wait-for-kill-window)
               (fw:test:button-push "OK")
-              (wait-for-drscheme-frame #f)
+              (wait-for-drracket-frame #f)
               (printf "killed\n"))))
         
         (check-for-red-text filename drs-frame)

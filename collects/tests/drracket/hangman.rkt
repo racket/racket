@@ -3,9 +3,9 @@
          racket/class
          racket/gui/base)
 
-(fire-up-drscheme-and-run-tests 
+(fire-up-drracket-and-run-tests 
  (λ ()
-   (define drs (wait-for-drscheme-frame))
+   (define drs (wait-for-drracket-frame))
    (define defs (send drs get-definitions-text))
    (define rep (send drs get-interactions-text))
    (set-language-level! (list #rx"How to Design Programs" #rx"Beginning Student$"))

@@ -372,7 +372,7 @@
   ;; executes each of the steps in DrRacket and raises
   ;; an exception if something doesn't match up.
   (define (check-steps program steps)
-    (let* ([drs-frame (wait-for-drscheme-frame)]
+    (let* ([drs-frame (wait-for-drracket-frame)]
            [defs-text (send drs-frame get-definitions-text)])
       (let loop ([last-results #f]
                  [steps steps])
@@ -483,7 +483,7 @@
   
   ;; step-and-extract-program : program-spec -> (listof step)
   (define (step-and-extract-program program)
-    (let ([drs-frame (wait-for-drscheme-frame)])
+    (let ([drs-frame (wait-for-drracket-frame)])
       (clear-definitions drs-frame)
       (set-definitions-to-program drs-frame program)
       (let* ([stepper-frame (start-stepper drs-frame)]

@@ -214,7 +214,7 @@
     (common-signatures-DMdA)))
 
 (define (prepare-for-test-expression)
-  (let ([drs (wait-for-drscheme-frame)])
+  (let ([drs (wait-for-drracket-frame)])
     (clear-definitions drs)
     (set-language #t)
     (sleep 1) ;; this shouldn't be neccessary....
@@ -353,7 +353,7 @@
 			 #:signature-violations-expected (signature-violations-expected '())
 			 #:repl-check-failures-expected (repl-check-failures-expected '())
 			 #:repl-signature-violations-expected (repl-signature-violations-expected '()))
-  (let* ([drs (wait-for-drscheme-frame)]
+  (let* ([drs (wait-for-drracket-frame)]
          [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))]
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
          [handle-definition-insertion
@@ -460,7 +460,7 @@
 		    (append check-failures-expected repl-check-failures-expected))))
 
 (define (test-disabling-tests)
-  (define drs (wait-for-drscheme-frame))
+  (define drs (wait-for-drracket-frame))
   
   (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")]) 
     (prepare-for-test-expression)
@@ -495,4 +495,4 @@
   (go DMdA-advanced)
   (go test-disabling-tests))
 
-(fire-up-drscheme-and-run-tests run-test)
+(fire-up-drracket-and-run-tests run-test)

@@ -1096,7 +1096,7 @@ This produces an ACK message
 
 (define (run-test which-tests)
     
-  (define drscheme-frame (wait-for-drscheme-frame))
+  (define drscheme-frame (wait-for-drracket-frame))
   
   (define interactions-text (queue-callback/res (λ () (send drscheme-frame get-interactions-text))))
   (define interactions-canvas (queue-callback/res (λ () (send drscheme-frame get-interactions-canvas))))
@@ -1160,7 +1160,7 @@ This produces an ACK message
       ; load contents of test-file into the REPL, recording
       ; the start and end positions of the text
       
-      (wait-for-drscheme-frame)
+      (wait-for-drracket-frame)
       
       (cond
         [(string? program)
@@ -1458,7 +1458,7 @@ This produces an ACK message
   
   (when (file-exists? tmp-load-filename)
     (delete-file tmp-load-filename))
-  (save-drscheme-window-as tmp-load-filename)
+  (save-drracket-window-as tmp-load-filename)
   
   ;; the debug and debug/profile tests should not differ in their output
   ;; they are both run here because debug uses the automatic-compilation 

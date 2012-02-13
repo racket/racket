@@ -5,9 +5,9 @@
          framework)
 
 (define (main)
-  (fire-up-drscheme-and-run-tests
+  (fire-up-drracket-and-run-tests
    (λ ()
-     (let ([drs (wait-for-drscheme-frame)])
+     (let ([drs (wait-for-drracket-frame)])
        (set-module-language!)
        (do-execute drs)
        (queue-callback/res

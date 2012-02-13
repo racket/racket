@@ -12,9 +12,9 @@
                      (error who "Deleting files is not allowed")))
                  void
                  void)])
-  (fire-up-drscheme-and-run-tests 
+  (fire-up-drracket-and-run-tests 
    (λ ()
-     (define drs-frame1 (wait-for-drscheme-frame))
+     (define drs-frame1 (wait-for-drracket-frame))
      (sync (system-idle-evt))
      
      (test:menu-select "File" "New Tab")

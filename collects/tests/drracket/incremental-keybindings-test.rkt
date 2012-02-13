@@ -10,9 +10,9 @@ to DrRacket and then tries out the keystrokes.
          framework/test
          racket/class)
 
-(fire-up-drscheme-and-run-tests 
+(fire-up-drracket-and-run-tests 
  (λ ()
-   (define drs-frame (wait-for-drscheme-frame))
+   (define drs-frame (wait-for-drracket-frame))
    (use-get/put-dialog 
     (λ ()
       (test:menu-select "Edit" "Keybindings" "Add User-defined Keybindings..."))

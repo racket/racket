@@ -41,9 +41,9 @@
       (printf "cpu time: ~a real time: ~a gc time: ~a\n"
               n n n))))
 
-(fire-up-drscheme-and-run-tests 
+(fire-up-drracket-and-run-tests 
  (λ ()
-   (let ([drs-frame (wait-for-drscheme-frame)])
+   (let ([drs-frame (wait-for-drracket-frame)])
      
      ;; initial startup memory use
      (wait-and-print)

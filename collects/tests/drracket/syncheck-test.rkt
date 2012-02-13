@@ -1039,9 +1039,9 @@ trigger runtime errors in check syntax.
                   
   
   (define (main)
-    (fire-up-drscheme-and-run-tests
+    (fire-up-drracket-and-run-tests
      (λ ()
-       (let ([drs (wait-for-drscheme-frame)])
+       (let ([drs (wait-for-drracket-frame)])
          ;(set-language-level! (list "Pretty Big"))
          (begin
            (set-language-level! (list "Pretty Big") #f)
@@ -1081,7 +1081,7 @@ trigger runtime errors in check syntax.
   
   (define ((run-one-test save-dir) test)
     (set! total-tests-run (+ total-tests-run 1))
-    (let* ([drs (wait-for-drscheme-frame)]
+    (let* ([drs (wait-for-drracket-frame)]
            [defs (queue-callback/res (λ () (send drs get-definitions-text)))])
       (clear-definitions drs)
       (cond

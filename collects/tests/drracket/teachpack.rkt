@@ -252,10 +252,10 @@
       [else #f])))
 
 (define (run-test)
-  (set! drs-frame (wait-for-drscheme-frame))
+  (set! drs-frame (wait-for-drracket-frame))
   (set! interactions-text (send drs-frame get-interactions-text))
   ;(good-tests)
   ;(bad-tests)
   (test-built-in-teachpacks))
 
-(fire-up-drscheme-and-run-tests run-test)
+(fire-up-drracket-and-run-tests run-test)

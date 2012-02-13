@@ -149,7 +149,7 @@
 (define definitions-text 'not-yet-definitions-text)
 
 (define (run-test)
-  (set! drs (wait-for-drscheme-frame))
+  (set! drs (wait-for-drracket-frame))
   (set! interactions-text  (send drs get-interactions-text))
   (set! definitions-text (send drs get-definitions-text))
   (init-temp-files)

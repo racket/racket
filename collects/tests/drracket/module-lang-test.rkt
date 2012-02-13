@@ -378,4 +378,4 @@
      ;; test to make sure that we don't get "exception raised by error display handler"
      #rx"module-lang-test-syn-error.rkt:[0-9]+:[0-9]+: lambda: bad syntax in: \\(lambda\\)")
 
-(fire-up-drscheme-and-run-tests run-test)
+(fire-up-drracket-and-run-tests run-test)

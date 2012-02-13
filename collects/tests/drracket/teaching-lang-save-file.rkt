@@ -7,9 +7,9 @@
 
 (require tests/drracket/private/drracket-test-util)
 
-(fire-up-drscheme-and-run-tests
+(fire-up-drracket-and-run-tests
  (λ ()
-   (let* ([drr-frame (wait-for-drscheme-frame)]
+   (let* ([drr-frame (wait-for-drracket-frame)]
           [fn (make-temporary-file "save-teaching-lang-test~a")])
      (test:menu-select "File" "New Tab")
      

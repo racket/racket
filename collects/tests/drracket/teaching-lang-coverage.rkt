@@ -80,9 +80,9 @@
 (define (find-uncovered-text string/style-desc)
   (map car (filter is-uncovered? string/style-desc)))
 
-(fire-up-drscheme-and-run-tests
+(fire-up-drracket-and-run-tests
  (λ ()
-   (let* ([drr-frame (wait-for-drscheme-frame)]
+   (let* ([drr-frame (wait-for-drracket-frame)]
           [definitions-text (send drr-frame get-definitions-text)]
           [interactions-text (send drr-frame get-interactions-text)])
        
