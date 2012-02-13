@@ -1,0 +1,100 @@
+--- pango-1.29.5-orig/modules/basic/basic-coretext.c	2011-08-15 19:11:08.000000000 -0600
++++ pango-1.29.5/modules/basic/basic-coretext.c	2012-02-13 10:09:51.000000000 -0700
+@@ -58,6 +58,8 @@
+ {
+   PangoRectangle logical_rect;
+ 
++   if (!glyph) { glyph = PANGO_GET_UNKNOWN_GLYPH(glyph); }
++
+   glyphs->glyphs[i].glyph = glyph;
+ 
+   glyphs->glyphs[i].geometry.x_offset = 0;
+@@ -87,15 +89,15 @@
+   CFArrayRef runs;
+   CTRunRef run;
+   CTRunStatus run_status;
+-  CFIndex i, glyph_count;
++  CFIndex i, glyph_count, num_runs, run_index, run_offset, run_glyph_count;
+   const CGGlyph *cgglyphs;
+ 
+   CFTypeRef keys[] = {
+-      (CFTypeRef) kCTFontAttributeName
++    (CFTypeRef) kCTFontAttributeName
+   };
+ 
+   CFTypeRef values[] = {
+-      pango_core_text_font_get_ctfont (cfont)
++    pango_core_text_font_get_ctfont (cfont)
+   };
+ 
+   attributes = CFDictionaryCreate (kCFAllocatorDefault,
+@@ -120,13 +122,20 @@
+ 
+   runs = CTLineGetGlyphRuns (line);
+ 
+-  /* Since Pango divides things into runs already, we assume there is
+-   * only a single run in this line.
++  /* Since Pango divides things into runs already, we might assume there is
++   * only a single run in this line. However, unknown glyphs lead to
++   * separate runs.
+    */
+-  run = CFArrayGetValueAtIndex (runs, 0);
+-  run_status = CTRunGetStatus (run);
+-  glyph_count = CTRunGetGlyphCount (run);
+-  cgglyphs = CTRunGetGlyphsPtr (run);
++  num_runs = CFArrayGetCount (runs);
++  glyph_count = 0;
++  for (i = 0; i < num_runs; i++) {
++    run = CFArrayGetValueAtIndex (runs, i);
++    glyph_count += CTRunGetGlyphCount (run);
++  }
++  
++  run_offset = 0;
++  run_index = 0;
++  run_glyph_count = 0;
+ 
+   p = text;
+   pango_glyph_string_set_size (glyphs, glyph_count);
+@@ -135,10 +144,18 @@
+ 
+   for (i = 0; i < glyph_count; i++)
+     {
+-      CFIndex real_i, prev_i;
++      CFIndex real_i, prev_i, run_real_i;
+       gunichar wc;
+       gunichar mirrored_ch;
+ 
++      if (i - run_offset >= run_glyph_count) {
++        run_offset = i;
++        run = CFArrayGetValueAtIndex (runs, run_index++);
++        run_glyph_count = CTRunGetGlyphCount (run);
++        run_status = CTRunGetStatus (run);
++        cgglyphs = CTRunGetGlyphsPtr (run);
++      }
++
+       wc = g_utf8_get_char (p);
+ 
+       if (analysis->level % 2)
+@@ -147,11 +164,13 @@
+ 
+       if (run_status & kCTRunStatusRightToLeft)
+         {
++          run_real_i = run_glyph_count - (i - run_offset) - 1;
+           real_i = glyph_count - i - 1;
+           prev_i = real_i + 1;
+         }
+       else
+         {
++          run_real_i = i - run_offset;
+           real_i = i;
+           prev_i = real_i - 1;
+         }
+@@ -171,7 +190,7 @@
+ 
+           if (result != PANGO_COVERAGE_NONE)
+             {
+-              set_glyph (font, glyphs, real_i, p - text, cgglyphs[real_i]);
++              set_glyph (font, glyphs, real_i, p - text, cgglyphs[run_real_i]);
+ 
+               if (g_unichar_type (wc) == G_UNICODE_NON_SPACING_MARK)
+                 {

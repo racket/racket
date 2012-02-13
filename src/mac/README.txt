@@ -28,6 +28,8 @@ Patches:
    // read_modules ();
  pango/modules/basic/basic-atsui.c:60: add
    if (!glyph) { glyph = PANGO_GET_UNKNOWN_GLYPH(glyph); }
+ pango/modules/basic/basic-coretext.c:
+   apply "coretext.patch"
  pango/pangocairo-atsuifont.c:141: add
   metrics->underline_position = -metrics->underline_position;
   pango_quantize_line_geometry (&metrics->underline_thickness,
