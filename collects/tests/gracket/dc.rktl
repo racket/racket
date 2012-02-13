@@ -491,6 +491,14 @@
 
   (void))
 
+;; ----------------------------------------
+
+(let ()
+  (define bm (make-screen-bitmap 100 100))
+  (define dc (make-object bitmap-dc% bm))
+  (define-values (aw ah aa ad) (send dc get-text-extent "x " #f #t))
+  (define-values (bw bh ba bd) (send dc get-text-extent "x ⇒ y" #f #t))
+  (test #t 'no-missing-glyph-truncation (bw . > . aw)))
 
 ;; ----------------------------------------
 
