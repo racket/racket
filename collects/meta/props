@@ -1439,6 +1439,9 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/randomly-click.rkt" drdr:command-line #f
+"collects/tests/drracket/repl-test-debug.rkt" drdr:timeout 300
+"collects/tests/drracket/repl-test-debugprofile.rkt" drdr:timeout 300
+"collects/tests/drracket/repl-test-raw.rkt" drdr:timeout 300
 "collects/tests/drracket/repl-test.rkt" drdr:command-line (gracket *) drdr:timeout 600
 "collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/snip/collapsed.rkt" drdr:command-line (racket "-l" "racket/gui/base" "-t" *)
