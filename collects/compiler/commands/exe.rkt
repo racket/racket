@@ -10,6 +10,7 @@
 
 (define gui (make-parameter #f))
 (define 3m (make-parameter #t))
+(define launcher (make-parameter #f))
 
 (define exe-output (make-parameter #f))
 (define exe-embedded-flags (make-parameter '("-U" "--")))
@@ -26,6 +27,8 @@
     (exe-output file)]
    [("--gui") "Generate GUI executable"
     (gui #t)]
+   [("-l" "--launcher") "Generate a launcher"
+    (launcher #t)]
    [("--collects-path") path "Set <path> as main collects for executable"
     (exe-embedded-collects-path path)]
    [("--collects-dest") dir "Write collection code to <dir>"
@@ -70,27 +73,38 @@
                  (extract-base-filename/ss source-file
                                            (string->symbol (short-program+command-name))))
              (gui))])
-  (mzc:create-embedding-executable
-   dest
-   #:mred? (gui)
-   #:variant (if (3m) '3m 'cgc)
-   #:verbose? (very-verbose)
-   #:modules (cons `(#%mzc: (file ,source-file))
-                   (map (lambda (l) `(#t (lib ,l)))
-                        (exe-embedded-libraries)))
-   #:configure-via-first-module? #t
-   #:literal-expression
-   (parameterize ([current-namespace (make-base-namespace)])
-     (compile
-      `(namespace-require
-        '',(string->symbol
-            (format "#%mzc:~a"
-                    (let-values ([(base name dir?)
-                                  (split-path source-file)])
-                      (path->bytes (path-replace-suffix name #""))))))))
-   #:cmdline (exe-embedded-flags)
-   #:collects-path (exe-embedded-collects-path)
-   #:collects-dest (exe-embedded-collects-dest)
-   #:aux (exe-aux))
+  (cond
+   [(launcher)
+    (parameterize ([current-launcher-variant (if (3m) '3m 'cgc)])
+      ((if (gui) 
+           make-gracket-launcher 
+           make-racket-launcher)
+       (append (list "-t" (path->string (path->complete-path source-file)))
+               (exe-embedded-flags))
+       dest
+       (exe-aux)))]
+   [else
+    (mzc:create-embedding-executable
+     dest
+     #:mred? (gui)
+     #:variant (if (3m) '3m 'cgc)
+     #:verbose? (very-verbose)
+     #:modules (cons `(#%mzc: (file ,source-file))
+                     (map (lambda (l) `(#t (lib ,l)))
+                          (exe-embedded-libraries)))
+     #:configure-via-first-module? #t
+     #:literal-expression
+     (parameterize ([current-namespace (make-base-namespace)])
+       (compile
+        `(namespace-require
+          '',(string->symbol
+              (format "#%mzc:~a"
+                      (let-values ([(base name dir?)
+                                    (split-path source-file)])
+                        (path->bytes (path-replace-suffix name #""))))))))
+     #:cmdline (exe-embedded-flags)
+     #:collects-path (exe-embedded-collects-path)
+     #:collects-dest (exe-embedded-collects-dest)
+     #:aux (exe-aux))])
   (when (verbose)
     (printf " [output to \"~a\"]\n" dest)))
