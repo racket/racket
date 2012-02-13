@@ -236,7 +236,7 @@
 	   [win-gcc? (append
 		      (if unix?
 			  null
-			  (list (wrap-xxxxxxx dllfile (wrap-3m "libmzsch~a~~a.dll"))
+			  (list (wrap-xxxxxxx dllfile (wrap-3m "libracket~a~~a.dll"))
 				(wrap-xxxxxxx dllfile (drop-3m "libmzgc~a.dll"))))
 		      (list
 		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))		       
@@ -249,7 +249,7 @@
 	   [win-borland? (map file (if (current-use-mzdyn)
                                      (list "mzdynb.obj")
                                      null))]
-	   [else (list (wrap-xxxxxxx file (wrap-3m "libmzsch~a~~a.lib"))
+	   [else (list (wrap-xxxxxxx file (wrap-3m "libracket~a~~a.lib"))
 		       (wrap-xxxxxxx file (drop-3m "libmzgc~a.lib"))
 		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))
 		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.obj"))))])))
