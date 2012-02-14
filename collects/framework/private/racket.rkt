@@ -142,16 +142,22 @@
         (set-box/f! spaceb a)
         (set-box/f! lspaceb 0)
         (set-box/f! rspaceb 0)))
-    (super-instantiate ())
+    (super-new)
     (inherit set-snipclass)
-    (set-snipclass lib-snip-class)))
+    (set-snipclass 2lib-snip-class)))
 
 (define sexp-snipclass% (make-sexp-snipclass% sexp-snip%))
 
 ;; old snips (from old versions of drracket) use this snipclass
-(define lib-snip-class (make-object sexp-snipclass%))
-(send lib-snip-class set-classname (format "~s" '((lib "collapsed-snipclass.ss" "framework")
+(define 2lib-snip-class (make-object sexp-snipclass%))
+(send 2lib-snip-class set-classname (format "~s" '((lib "collapsed-snipclass.ss" "framework")
                                                   (lib "collapsed-snipclass-wxme.ss" "framework"))))
+(send 2lib-snip-class set-version 0)
+(send (get-the-snip-class-list) add 2lib-snip-class)
+
+;; old snips (from old versions of drracket) use this snipclass
+(define lib-snip-class (make-object sexp-snipclass%))
+(send lib-snip-class set-classname (format "~s" '(lib "collapsed-snipclass.ss" "framework")))
 (send lib-snip-class set-version 0)
 (send (get-the-snip-class-list) add lib-snip-class)
 
