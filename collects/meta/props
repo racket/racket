@@ -1435,17 +1435,19 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/leaky-frame.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/tests/drracket/module-lang-test.rkt" drdr:command-line (racket "-j" "-e" "(void (putenv \"PLTDRDRTEST\" \"yes\"))" "-t" *) drdr:timeout 300
+"collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket "-j" "-e" "(void" "(putenv" "\"PLTDRDRTEST\"" "\"yes\"))" "-t" *) drdr:timeout 300
 "collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/randomly-click.rkt" drdr:command-line #f
-"collects/tests/drracket/repl-test-debug.rkt" drdr:timeout 300
-"collects/tests/drracket/repl-test-debugprofile.rkt" drdr:timeout 300
-"collects/tests/drracket/repl-test-raw.rkt" drdr:timeout 300
+"collects/tests/drracket/repl-test-debug.rkt" drdr:command-line (gracket *) drdr:timeout 300
+"collects/tests/drracket/repl-test-debugprofile.rkt" drdr:command-line (gracket *) drdr:timeout 300
+"collects/tests/drracket/repl-test-misc.rkt" drdr:command-line (gracket *)
+"collects/tests/drracket/repl-test-raw.rkt" drdr:command-line (gracket *) drdr:timeout 300
 "collects/tests/drracket/repl-test.rkt" drdr:command-line (gracket *) drdr:timeout 600
 "collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/snip/collapsed.rkt" drdr:command-line (racket "-l" "racket/gui/base" "-t" *)
 "collects/tests/drracket/snip/run-all.rkt" drdr:timeout 400
+"collects/tests/drracket/snips.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/stepper-test.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
