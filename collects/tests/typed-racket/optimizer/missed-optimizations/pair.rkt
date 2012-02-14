@@ -9,10 +9,10 @@ TR opt: pair.rkt 62:5 (cdr (list 1 2 3)) -- pair
 TR opt: pair.rkt 63:0 (cdr (cdr (cdr (list 1 2 3)))) -- pair
 TR opt: pair.rkt 63:5 (cdr (cdr (list 1 2 3))) -- pair
 TR opt: pair.rkt 63:10 (cdr (list 1 2 3)) -- pair
+TR missed opt: pair.rkt 64:16 (cdr (cdr (cdr (cdr (list 1 2 3))))) -- car/cdr on a potentially empty list -- caused by: 64:21 (cdr (cdr (cdr (list 1 2 3))))
 TR opt: pair.rkt 64:21 (cdr (cdr (cdr (list 1 2 3)))) -- pair
 TR opt: pair.rkt 64:26 (cdr (cdr (list 1 2 3))) -- pair
 TR opt: pair.rkt 64:31 (cdr (list 1 2 3)) -- pair
-TR missed opt: pair.rkt 64:16 (cdr (cdr (cdr (cdr (list 1 2 3))))) -- car/cdr on a potentially empty list -- caused by: 64:21 (cdr (cdr (cdr (list 1 2 3))))
 TR missed opt: pair.rkt 67:0 (mcar (ann (mlist 1) (MListof Byte))) -- car/cdr on a potentially empty list -- caused by: 67:0 (mcar (ann (mlist 1) (MListof Byte)))
 TR opt: pair.rkt 68:0 (mcar (mlist 1 2 3)) -- pair
 TR missed opt: pair.rkt 69:0 (mcdr (ann (mlist 1) (MListof Byte))) -- car/cdr on a potentially empty list -- caused by: 69:0 (mcdr (ann (mlist 1) (MListof Byte)))

@@ -20,9 +20,9 @@ TR opt: fixnum-bounded-expr.rkt 96:8 (+ (+ 34 231) 23) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 96:0 (fx+ -4 (+ (+ 34 231) 23)) -- fixnum fx+
 TR opt: fixnum-bounded-expr.rkt 97:5 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 97:17 (+ 301 302) -- fixnum bounded expr
+TR missed opt: fixnum-bounded-expr.rkt 97:0 (fx+ (+ 300 301) (+ 301 302)) -- out of fixnum range
 TR opt: fixnum-bounded-expr.rkt 97:5 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 97:17 (+ 301 302) -- fixnum bounded expr
-TR missed opt: fixnum-bounded-expr.rkt 97:0 (fx+ (+ 300 301) (+ 301 302)) -- out of fixnum range
 TR opt: fixnum-bounded-expr.rkt 99:5 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 99:17 (+ 301 302) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 99:0 (fx- (+ 300 301) (+ 301 302)) -- fixnum fx-

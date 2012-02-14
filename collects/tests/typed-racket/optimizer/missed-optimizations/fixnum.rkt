@@ -7,16 +7,16 @@ TR missed opt: fixnum.rkt 40:0 (fx* (ann x Index) (ann y Index)) -- out of fixnu
 TR missed opt: fixnum.rkt 41:0 (abs (ann -3 Fixnum)) -- out of fixnum range
 TR opt: fixnum.rkt 42:3 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum.rkt 42:15 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum.rkt 42:3 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 42:15 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum.rkt 42:3 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 42:15 (+ 301 302) -- fixnum bounded expr
 TR missed opt: fixnum.rkt 42:0 (+ (+ 300 301) (+ 301 302)) -- out of fixnum range
-TR opt: fixnum.rkt 43:5 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 43:17 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum.rkt 42:3 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 42:15 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum.rkt 42:3 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 42:15 (+ 301 302) -- fixnum bounded expr
 TR opt: fixnum.rkt 43:5 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum.rkt 43:17 (+ 301 302) -- fixnum bounded expr
 TR missed opt: fixnum.rkt 43:0 (fx+ (+ 300 301) (+ 301 302)) -- out of fixnum range
+TR opt: fixnum.rkt 43:5 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 43:17 (+ 301 302) -- fixnum bounded expr
 TR missed opt: fixnum.rkt 44:0 (fxquotient -4 -5) -- out of fixnum range
 468
 234

@@ -1,9 +1,23 @@
 #;
 (
-TR missed opt: nested-same-kind.rkt 20:0 (* 2.0 (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 20:19 4 (2 times)
-TR missed opt: nested-same-kind.rkt 21:0 (* 1.0 (* 2.0 (* 3.0 (ann 4 Integer)))) -- all args float-arg-expr, result not Float -- caused by: 21:26 4 (3 times)
-TR missed opt: nested-same-kind.rkt 22:0 (* 2.0 (* 3.0 (ann 4 Integer) (ann 5 Integer))) -- all args float-arg-expr, result not Float -- caused by: 22:19 4, 22:35 5 (2 times)
-TR missed opt: nested-same-kind.rkt 23:0 (* (* 3.0 (ann 4 Integer)) (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 23:15 4, 23:39 4 (3 times)
+TR missed opt: nested-same-kind.rkt 34:7 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 34:19 4
+TR missed opt: nested-same-kind.rkt 34:0 (* 2.0 (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 34:7 (* 3.0 (ann 4 Integer))
+TR missed opt: nested-same-kind.rkt 34:7 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 34:19 4
+TR missed opt: nested-same-kind.rkt 35:14 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 35:26 4
+TR missed opt: nested-same-kind.rkt 35:7 (* 2.0 (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 35:14 (* 3.0 (ann 4 Integer))
+TR missed opt: nested-same-kind.rkt 35:14 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 35:26 4
+TR missed opt: nested-same-kind.rkt 35:0 (* 1.0 (* 2.0 (* 3.0 (ann 4 Integer)))) -- all args float-arg-expr, result not Float -- caused by: 35:7 (* 2.0 (* 3.0 (ann 4 Integer)))
+TR missed opt: nested-same-kind.rkt 35:14 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 35:26 4
+TR missed opt: nested-same-kind.rkt 35:7 (* 2.0 (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 35:14 (* 3.0 (ann 4 Integer))
+TR missed opt: nested-same-kind.rkt 35:14 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 35:26 4
+TR missed opt: nested-same-kind.rkt 36:7 (* 3.0 (ann 4 Integer) (ann 5 Integer)) -- all args float-arg-expr, result not Float -- caused by: 36:19 4, 36:35 5
+TR missed opt: nested-same-kind.rkt 36:0 (* 2.0 (* 3.0 (ann 4 Integer) (ann 5 Integer))) -- all args float-arg-expr, result not Float -- caused by: 36:7 (* 3.0 (ann 4 Integer) (ann 5 Integer))
+TR missed opt: nested-same-kind.rkt 36:7 (* 3.0 (ann 4 Integer) (ann 5 Integer)) -- all args float-arg-expr, result not Float -- caused by: 36:19 4, 36:35 5
+TR missed opt: nested-same-kind.rkt 37:3 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 37:15 4
+TR missed opt: nested-same-kind.rkt 37:27 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 37:39 4
+TR missed opt: nested-same-kind.rkt 37:0 (* (* 3.0 (ann 4 Integer)) (* 3.0 (ann 4 Integer))) -- all args float-arg-expr, result not Float -- caused by: 37:3 (* 3.0 (ann 4 Integer)), 37:27 (* 3.0 (ann 4 Integer))
+TR missed opt: nested-same-kind.rkt 37:3 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 37:15 4
+TR missed opt: nested-same-kind.rkt 37:27 (* 3.0 (ann 4 Integer)) -- all args float-arg-expr, result not Float -- caused by: 37:39 4
 24.0
 24.0
 120.0

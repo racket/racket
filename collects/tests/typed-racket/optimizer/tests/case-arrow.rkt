@@ -1,7 +1,27 @@
 #;
 (
-TR missed opt: case-arrow.rkt 21:2 (+ min (/ (* (- max min) x) p)) -- exact ops inside float expr -- caused by: 21:15 (- max min) (3 times)
-TR missed opt: case-arrow.rkt 21:2 (+ min (/ (* (- max min) x) p)) -- all args float-arg-expr, result not Float -- caused by: 21:5 min, 21:18 max, 21:22 min, 21:27 x, 21:30 p (4 times)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 41:15 (- max min), 41:27 x
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- exact ops inside float expr -- caused by: 41:15 (- max min)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:9 (/ (* (- max min) x) p) -- all args float-arg-expr, result not Float -- caused by: 41:12 (* (- max min) x), 41:30 p
+TR missed opt: case-arrow.rkt 41:9 (/ (* (- max min) x) p) -- exact ops inside float expr -- caused by: 41:12 (* (- max min) x)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 41:15 (- max min), 41:27 x
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- exact ops inside float expr -- caused by: 41:15 (- max min)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:2 (+ min (/ (* (- max min) x) p)) -- all args float-arg-expr, result not Float -- caused by: 41:5 min, 41:9 (/ (* (- max min) x) p)
+TR missed opt: case-arrow.rkt 41:2 (+ min (/ (* (- max min) x) p)) -- exact ops inside float expr -- caused by: 41:9 (/ (* (- max min) x) p)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 41:15 (- max min), 41:27 x
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- exact ops inside float expr -- caused by: 41:15 (- max min)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:9 (/ (* (- max min) x) p) -- all args float-arg-expr, result not Float -- caused by: 41:12 (* (- max min) x), 41:30 p
+TR missed opt: case-arrow.rkt 41:9 (/ (* (- max min) x) p) -- exact ops inside float expr -- caused by: 41:12 (* (- max min) x)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- all args float-arg-expr, result not Float -- caused by: 41:15 (- max min), 41:27 x
+TR missed opt: case-arrow.rkt 41:12 (* (- max min) x) -- exact ops inside float expr -- caused by: 41:15 (- max min)
+TR missed opt: case-arrow.rkt 41:15 (- max min) -- all args float-arg-expr, result not Float -- caused by: 41:18 max, 41:22 min
 )
 #lang typed/racket
 

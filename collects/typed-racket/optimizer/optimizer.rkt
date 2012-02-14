@@ -82,18 +82,17 @@
            #:with opt #'other))
 
 (define (optimize-top stx)
-  (clear-log) ; Reset log. We don't want to accumulate after each top-level expression.
-  (begin0
-      (parameterize ([optimize (syntax-parser
-                                 [e:expr
-                                  #:when (and (not (syntax-property #'e 'typechecker:ignore))
-                                              (not (syntax-property #'e 'typechecker:ignore-some))
-                                              (not (syntax-property #'e 'typechecker:with-handlers)))
-                                  #:with e*:opt-expr #'e
-                                  #'e*.opt]
-                                 [e:expr #'e])])
-        (let ((result ((optimize) stx)))
-          (when *show-optimized-code*
-            (pretty-print (syntax->datum result)))
-          result))
-    (print-log))) ; Now that we have the full log for this top-level expression, print it in order.
+  (parameterize
+      ([optimize
+        (syntax-parser
+          [e:expr
+           #:when (and (not (syntax-property #'e 'typechecker:ignore))
+                       (not (syntax-property #'e 'typechecker:ignore-some))
+                       (not (syntax-property #'e 'typechecker:with-handlers)))
+           #:with e*:opt-expr #'e
+           #'e*.opt]
+          [e:expr #'e])])
+    (let ((result ((optimize) stx)))
+      (when *show-optimized-code*
+        (pretty-print (syntax->datum result)))
+      result)))
