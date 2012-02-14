@@ -6,4 +6,5 @@
 (load-relative "syntax-tests.rktl")
 (load-in-sandbox "version.rktl")
 (load-in-sandbox "foreign-test.rktl")
+(load-in-sandbox "cstruct.rktl")
 (load-in-sandbox "uni-norm.rktl")

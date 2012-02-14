@@ -1,3 +1,6 @@
+Version 5.2.1.6
+Added prop:cpointer
+
 Version 5.2.1.5
 Added racket/future to re-exports of racket
 Changed current-write-relative-directory to support a pair

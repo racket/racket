@@ -335,6 +335,7 @@ scheme_make_cptr
 scheme_make_offset_cptr
 scheme_make_external_cptr
 scheme_make_offset_external_cptr
+scheme_is_cpointer
 scheme_get_proc_name
 scheme_utf8_decode
 scheme_utf8_decode_as_prefix

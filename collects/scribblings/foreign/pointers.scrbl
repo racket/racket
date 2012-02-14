@@ -7,9 +7,9 @@
 
 Returns @racket[#t] if @racket[v] is a C pointer or a value that can
 be used as a pointer: @racket[#f] (used as a @cpp{NULL} pointer), byte
-strings (used as memory blocks), or some additional internal objects
-(@racket[ffi-obj]s and callbacks, see @secref["foreign:c-only"]).
-Returns @racket[#f] for other values.}
+strings (used as memory blocks), or a structure instance with the
+@racket[prop:cpointer] @tech[#:doc reference.scrbl]{structure type
+property}.  Returns @racket[#f] for other values.}
 
 @defproc[(ptr-equal? [cptr1 cpointer?] [cptr2 cpointer?]) boolean?]{
 
@@ -373,3 +373,22 @@ offset is immediately added to the pointer. Thus, this function cannot
 be used with @racket[ptr-add] to create a substring of a Racket byte
 string, because the offset pointer would be to the middle of a
 collectable object (which is not allowed).}
+
+@; ----------------------------------------------------------------------
+
+@section{Pointer Structure Property}
+
+@defthing[prop:cpointer struct-type-property?]{
+
+A @tech[#:doc reference.scrbl]{structure type property} that causes
+instances of a structure type to work as C pointer values. The
+property value must be either an exact non-negative integer indicating
+an immutable field in the structure (which must, in turn, be
+initialized to a C pointer value), a procedure that takes the
+structure instance and returns a C pointer value, or a C pointer
+value.
+
+The @racket[prop:cpointer] property allows a structure instance to be
+used transparently as a C pointer value, or it allows a C pointer
+value to be transparently wrapped by a structure that may have
+additional values or properties.}

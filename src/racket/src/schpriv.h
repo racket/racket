@@ -413,6 +413,7 @@ extern Scheme_Object *scheme_default_prompt_tag;
 THREAD_LOCAL_DECL(extern Scheme_Object *scheme_system_idle_channel);
 
 extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
+extern Scheme_Object *scheme_cpointer_property;
 
 extern Scheme_Object *scheme_equal_property;
 extern Scheme_Object *scheme_impersonator_of_property;

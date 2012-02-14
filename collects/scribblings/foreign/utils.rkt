@@ -16,6 +16,7 @@
 (provide cpp
          InsideRacket InsideRacket-doc
          guide.scrbl
+         reference.scrbl
          ->>
          (all-from-out scribble/manual)
          (for-label (all-from-out racket/base
@@ -31,6 +32,9 @@
 
 (define guide.scrbl
   '(lib "scribblings/guide/guide.scrbl"))
+
+(define reference.scrbl
+  '(lib "scribblings/reference/reference.scrbl"))
 
 (define-syntax ->>
   (make-element-id-transformer

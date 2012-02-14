@@ -624,6 +624,8 @@ MZ_EXTERN Scheme_Object *scheme_make_offset_cptr(void *cptr, intptr_t offset, Sc
 MZ_EXTERN Scheme_Object *scheme_make_external_cptr(void *cptr, Scheme_Object *typetag);
 MZ_EXTERN Scheme_Object *scheme_make_offset_external_cptr(void *cptr, intptr_t offset, Scheme_Object *typetag);
 
+MZ_EXTERN int scheme_is_cpointer(Scheme_Object *cp);
+
 MZ_EXTERN const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error);
 
 /*========================================================================*/

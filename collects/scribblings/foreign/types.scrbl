@@ -844,19 +844,19 @@ the allocated space, so it is inefficient. Use @racket[define-cstruct]
 below for a more efficient approach.}
 
 
-@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...) alignment)
+@defform/subs[(define-cstruct id/sup ([field-id type-expr] ...) property ...)
               [(id/sup _id
                        (_id super-id))
-               (alignment code:blank
-                          (code:line #:alignment alignment-expr))]]{
+               (property (code:line #:alignment alignment-expr)
+                         (code:line #:property prop-expr val-expr))]]{
 
 Defines a new C struct type, but unlike @racket[_list-struct], the
 resulting type deals with C structs in binary form, rather than
 marshaling them to Racket values.  The syntax is similar to
 @racket[define-struct], providing accessor functions for raw struct
-values (which are pointer objects).  The new type uses pointer tags to
-guarantee that only proper struct objects are used.  The @racket[_id]
-must start with @litchar{_}.
+values (which are pointer objects); the @racket[_id]
+must start with @litchar{_}, and at most one @racket[#:alignment]
+can be supplied.
 
 The resulting bindings are as follows:
 
@@ -867,6 +867,10 @@ The resulting bindings are as follows:
  @item{@racket[_id]@racketidfont{-pointer}: a pointer type that should
   be used when a pointer to values of this struct are used.}
 
+ @item{@racket[_id]@racketidfont{-pointer/null}: like
+  @racket[_id]@racketidfont{-pointer}, but allowing NULL pointers (as
+  represented on the Racket side by @racket[#f]).}
+
  @item{@racketvarfont{id}@racketidfont{?}: a predicate for the new type.}
 
  @item{@racketvarfont{id}@racketidfont{-tag}: the tag object that is
@@ -875,10 +879,10 @@ The resulting bindings are as follows:
   symbol and other symbols, such as the @racketvarfont{super-id} symbol.}
 
  @item{@racketidfont{make-}@racketvarfont{id} : a constructor, which expects
-  an argument for each type.}
+  an argument for each field.}
 
  @item{@racketvarfont{id}@racketidfont{-}@racket[field-id] : an accessor
-  function for each @racket[field-id]; if the field has a cstruct type, then
+  function for each @racket[field-id]; if the field has a C struct type, then
   the result of the accessor is a pointer to the field within the
   enclosing structure, rather than a  copy of the field.}
 
@@ -886,12 +890,20 @@ The resulting bindings are as follows:
   : a mutator function for each @racket[field-id].}
 
  @item{@racketvarfont{id}: structure-type information compatible with
-  @racket[struct-out] or @racket[match] (but not @racket[define-struct]);
+  @racket[struct-out] or @racket[match] (but not @racket[struct] or 
+  @racket[define-struct]);
   currently, this information is correct only when no @racket[super-id]
   is specified.}
 
-@item{@racketvarfont{id}->list : a function that converts a struct into
- a list of values.}
+ @item{@racketvarfont{id}@racketidfont{->list},
+  @racketidfont{list->}@racketvarfont{id} : a function that converts a
+  struct into a list of field values and vice versa.}
+
+ @item{@racketvarfont{id}@racketidfont{->list*},
+  @racketidfont{list*->}@racketvarfont{id} : like
+  @racketvarfont{id}@racketidfont{->list},
+  @racketidfont{list->}@racketvarfont{id}, but fields that are structs
+  are recursively unpacked to lists or packed from lists.}
 
 ]
 
@@ -906,14 +918,22 @@ should not be used when a pointer is expected, since it will cause the
 struct to be copied rather than use the pointer value, leading to
 memory corruption.
 
-If the first field is itself a cstruct type, its tag will be used in
+Instances of the new type are not normally Racket structure instances.
+However, if at least one @racket[#:property] modifier is specified,
+then struct creation and coercions from @racket[_id] variants wrap a
+non-NULL C pointer representation in a Racket structure that has the
+specified properties. The wrapper Racket structure also has a
+@racket[prop:cpointer] property, so that wrapped C pointers can be
+treated the same as unwrapped C pointers.
+
+If the first field is itself a C struct type, its tag will be used in
 addition to the new tag.  This feature supports common cases of object
 inheritance, where a sub-struct is made by having a first field that
 is its super-struct.  Instances of the sub-struct can be considered as
 instances of the super-struct, since they share the same initial
-layout.  Using the tag of an initial cstruct field means that the same
+layout.  Using the tag of an initial C struct field means that the same
 behavior is implemented in Racket; for example, accessors and mutators
-of the super-cstruct can be used with the new sub-cstruct.  See the
+of the super-struct can be used with the new sub-struct.  See the
 example below.
 
 Providing a @racket[super-id] is shorthand for using an initial field
@@ -929,7 +949,7 @@ arguments for each of @racketidfont{_}@racket[super-id]'s fields, in
 addition for the new fields.  This adjustment of the constructor is,
 again, in analogy to using a supertype with @racket[define-struct].
 
-Note that structs are allocated as atomic blocks, which means that the
+Structs are allocated as atomic blocks, which means that the
 garbage collector ignores their content.  Thus, struct fields can hold
 only non-pointer values, pointers to memory outside the GC's control,
 and otherwise-reachable pointers to immobile GC-managed values (such

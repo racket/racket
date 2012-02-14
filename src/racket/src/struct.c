@@ -31,6 +31,7 @@ READ_ONLY Scheme_Object *scheme_make_arity_at_least;
 READ_ONLY Scheme_Object *scheme_source_property;
 READ_ONLY Scheme_Object *scheme_input_port_property;
 READ_ONLY Scheme_Object *scheme_output_port_property;
+READ_ONLY Scheme_Object *scheme_cpointer_property;
 READ_ONLY Scheme_Object *scheme_equal_property;
 READ_ONLY Scheme_Object *scheme_no_arity_property;
 READ_ONLY Scheme_Object *scheme_impersonator_of_property;
@@ -96,6 +97,7 @@ static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *arg
 static Scheme_Object *check_print_attribute_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -417,6 +419,16 @@ scheme_init_struct (Scheme_Env *env)
     
     scheme_add_global_constant("prop:input-port", scheme_input_port_property, env);
     scheme_add_global_constant("prop:output-port", scheme_output_port_property, env);
+  }
+
+  {
+    REGISTER_SO(scheme_cpointer_property);
+
+    guard = scheme_make_prim_w_arity(check_cpointer_property_value_ok,
+				     "guard-for-prop:cpointer",
+				     2, 2);
+    scheme_cpointer_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("cpointer"),
+                                                                        guard);
   }
 
   {
@@ -1331,26 +1343,27 @@ static int extract_accessor_offset(Scheme_Object *acc)
     return 0;
 }
 
-static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[])
-/* This is the guard for prop:evt */
+typedef int (*Check_Val_Proc)(Scheme_Object *);
+
+static Scheme_Object *check_indirect_property_value_ok(const char *name, Check_Val_Proc ck, int proc_ok,
+                                                       const char *complain,
+                                                       int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v, *l, *acc;
   int pos, num_islots;
 
   v = argv[0];
-
-  if (scheme_is_evt(v))
+  
+  if (ck(v))
     return v;
 
-  if (scheme_check_proc_arity(NULL, 1, 0, 1, &v))
+  if (proc_ok && scheme_check_proc_arity(NULL, 1, 0, 1, &v))
     return v;
   
   if (!((SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0))
 	|| (SCHEME_BIGNUMP(v) && SCHEME_BIGPOS(v))))
-    scheme_arg_mismatch("guard-for-prop:evt",
-			"property value is not a evt, procedure (arity 1), or exact non-negative integer: ",
-			v);
-
+    scheme_arg_mismatch(name, complain, v);
+  
   l = argv[1];
   l = SCHEME_CDR(l);
   num_islots = SCHEME_INT_VAL(SCHEME_CAR(l));
@@ -1367,7 +1380,7 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
     pos = SCHEME_INT_VAL(v);
 
   if (pos >= num_islots) {
-    scheme_arg_mismatch("guard-for-prop:evt",
+    scheme_arg_mismatch(name,
 			"field index >= initialized-field count for structure type: ",
 			v);
   }
@@ -1378,7 +1391,7 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
   }
 
   if (!SCHEME_PAIRP(l)) {
-    scheme_arg_mismatch("guard-for-prop:evt",
+    scheme_arg_mismatch(name,
 			"field index not declared immutable: ",
 			v);
   }
@@ -1387,6 +1400,15 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
   v = scheme_make_integer(pos);
 
   return v;
+}
+
+static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[])
+/* This is the guard for prop:evt */
+{
+  return check_indirect_property_value_ok("guard-for-prop:evt", 
+                                          scheme_is_evt, 1,
+                                          "property value is not a evt, procedure (arity 1), or exact non-negative integer: ",
+                                          argc, argv);
 }
 
 static Scheme_Object *return_wrapped(void *data, int argc, Scheme_Object *argv[])
@@ -1468,61 +1490,6 @@ static int is_evt_struct(Scheme_Object *o)
 /*                            port structs                                */
 /*========================================================================*/
 
-typedef int (*Check_Val_Proc)(Scheme_Object *);
-
-static Scheme_Object *check_indirect_property_value_ok(const char *name, Check_Val_Proc ck, const char *complain,
-                                                       int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *v, *l, *acc;
-  int pos, num_islots;
-
-  v = argv[0];
-  
-  if (ck(v))
-    return v;
-
-  if (!((SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0))
-	|| (SCHEME_BIGNUMP(v) && SCHEME_BIGPOS(v))))
-    scheme_arg_mismatch(name, complain, v);
-  
-  l = argv[1];
-  l = SCHEME_CDR(l);
-  num_islots = SCHEME_INT_VAL(SCHEME_CAR(l));
-  l = SCHEME_CDR(l);
-  l = SCHEME_CDR(l);
-  acc = SCHEME_CAR(l);
-  l = SCHEME_CDR(l);
-  l = SCHEME_CDR(l);
-  l = SCHEME_CAR(l);
-
-  if (SCHEME_BIGNUMP(v))
-    pos = num_islots; /* too big */
-  else
-    pos = SCHEME_INT_VAL(v);
-
-  if (pos >= num_islots) {
-    scheme_arg_mismatch(name,
-			"field index >= initialized-field count for structure type: ",
-			v);
-  }
-
-  for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    if (SCHEME_INT_VAL(SCHEME_CAR(l)) == pos)
-      break;
-  }
-
-  if (!SCHEME_PAIRP(l)) {
-    scheme_arg_mismatch(name,
-			"field index not declared immutable: ",
-			v);
-  }
-
-  pos += extract_accessor_offset(acc);
-  v = scheme_make_integer(pos);
-
-  return v;
-}
-
 static int is_input_port(Scheme_Object *v) {  return SCHEME_INPUT_PORTP(v); }
 static int is_output_port(Scheme_Object *v) {  return SCHEME_OUTPUT_PORTP(v); }
 
@@ -1530,7 +1497,7 @@ static Scheme_Object *check_port_property_value_ok(const char *name, int input, 
 /* This is the guard for prop:input-port and prop:output-port */
 {
   return check_indirect_property_value_ok(name, 
-                                          input ? is_input_port : is_output_port, 
+                                          input ? is_input_port : is_output_port, 0,
                                           (input
                                            ? "property value is not an input port or exact non-negative integer: "
                                            : "property value is not an output port or exact non-negative integer: "),
@@ -1545,6 +1512,18 @@ static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_port_property_value_ok("guard-for-prop:output-port", 0, argc, argv);
+}
+
+/*========================================================================*/
+/*                          cpointer property                             */
+/*========================================================================*/
+
+static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  return check_indirect_property_value_ok("guard-for-prop:cpointer", 
+                                          scheme_is_cpointer, 1,
+                                          "property value is not a cpointer, procedure (arity 1), or exact non-negative integer: ",
+                                          argc, argv);
 }
 
 /*========================================================================*/
@@ -1712,7 +1691,7 @@ Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_indirect_property_value_ok("guard-for-prop:rename-transformer", 
-                                          is_stx_id, 
+                                          is_stx_id, 0,
                                           "property value is not an identifier or exact non-negative integer, optionaly boxed: ",
                                           argc, argv);
 }
@@ -1773,7 +1752,7 @@ Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o)
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_indirect_property_value_ok("guard-for-prop:set!-transformer", 
-                                          is_proc_1_or_2, 
+                                          is_proc_1_or_2, 0,
                                           "property value is not an procedure (arity 1 or 2) or exact non-negative integer: ",
                                           argc, argv);
 }
