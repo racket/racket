@@ -1,4 +1,5 @@
 Version 5.2.1.5
+Added racket/future to re-exports of racket
 Changed current-write-relative-directory to support a pair
  of paths: relative-to and base
 
