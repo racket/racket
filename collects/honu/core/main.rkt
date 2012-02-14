@@ -76,6 +76,7 @@
                                    [literal:semicolon %semicolon]
                                    [literal:honu-comma %comma]
                                    [literal:honu-comma %comma]
+                                   [literal:honu-$ $]
                                    [literal:honu-<- <-]
                                    [literal:honu-in-lines inLines]
                                    [literal:#%brackets #%brackets]

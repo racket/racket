@@ -31,6 +31,7 @@
                 honu-for-syntax
                 honu-for-template
                 honu-prefix
+                honu-$
                 ;; FIXME: in-lines should probably not be here
                 honu-in-lines
                 %racket)

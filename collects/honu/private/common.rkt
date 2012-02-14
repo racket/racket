@@ -5,6 +5,7 @@
          (for-syntax syntax/parse
                      racket/base
                      honu/core/private/literals
+                     honu/core/private/compile
                      honu/core/private/parse2))
 
 (provide sqr)
@@ -22,8 +23,10 @@
       [(_ (~seq clause:honu-expression colon body:honu-expression (~optional honu-comma)) ...
           . rest)
        (values
-         #'(%racket (cond
-                      [clause.result body.result]
-                      ...))
+         (with-syntax ([(clause.result ...) (map honu->racket (syntax->list #'(clause.result ...)))]
+                       [(body.result ...) (map honu->racket (syntax->list #'(body.result ...)))])
+           #'(%racket (cond
+                        [clause.result body.result]
+                        ...)))
          #'rest
          #t)])))

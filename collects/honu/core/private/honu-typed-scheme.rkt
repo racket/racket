@@ -475,7 +475,10 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      ;; if parsed is #f then we don't want to expand to anything that will print
      ;; so use an empty form, begin, `parsed' could be #f becuase there was no expression
      ;; in the input such as parsing just ";".
-     (with-syntax ([parsed (if (not parsed) #'(begin) (honu->racket parsed))]
+     (with-syntax ([parsed (if (not parsed) #'(begin)
+                             parsed
+                             #;
+                             (honu->racket parsed))]
                    [(unparsed ...) unparsed])
        (debug "Final parsed syntax\n~a\n" (pretty-format (syntax->datum #'parsed)))
        (if (null? (syntax->datum #'(unparsed ...)))

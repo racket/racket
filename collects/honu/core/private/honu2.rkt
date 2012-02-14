@@ -333,7 +333,9 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
       [(var:honu-declaration . rest)
-       (define result #'(%racket (define-values (var.name ...) var.expression)))
+       (define result 
+         (with-syntax ([var.expression (honu->racket #'var.expression)])
+           #'(%racket (define-values (var.name ...) var.expression))))
        (values result #'rest #t)])))
 
 (provide (rename-out [honu-with-syntax withSyntax]))

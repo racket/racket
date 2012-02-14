@@ -8,6 +8,7 @@
                      "literals.rkt"
                      "parse2.rkt"
                      "debug.rkt"
+                     "compile.rkt"
                      racket/base)
          (for-meta 2 syntax/parse
                      racket/base
@@ -15,6 +16,7 @@
                      "compile.rkt")
          "literals.rkt"
          "syntax.rkt"
+         (for-meta -1 "literals.rkt" "compile.rkt" "parse2.rkt" "parse-helper.rkt")
          #;
          (for-syntax "honu-typed-scheme.rkt")
          syntax/parse)
@@ -155,14 +157,29 @@
 ;; Do any honu-specific expansion here
 (define-honu-syntax honu-syntax
   (lambda (code context)
+    (define (compress-dollars stx)
+      (define-literal-set local-literals (honu-$))
+      (syntax-parse stx #:literal-sets (local-literals)
+        [(honu-$ x ... honu-$ rest ...)
+         (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
+           #'((repeat$ x ...) rest* ...))]
+        [(x rest ...)
+         (with-syntax ([x* (compress-dollars #'x)]
+                       [(rest* ...) (compress-dollars #'(rest ...))])
+           #'(x* rest* ...))]
+        [x #'x]))
     (syntax-parse code #:literal-sets (cruft)
       [(_ (#%parens stuff ...) . rest)
        (define context (stx-car #'(stuff ...)))
+       (define compressed (compress-dollars #'(stuff ...)))
        (values
          (with-syntax ([stuff* (datum->syntax context
-                                              (syntax->list #'(stuff ...))
+                                              (syntax->list compressed)
                                               context context)])
-           #'(%racket #'stuff*))
+           ;; (debug "Stuff is ~a\n" (syntax->datum #'stuff*))
+           ;; (debug "Stuff syntaxed is ~a\n" (syntax->datum #'#'stuff*))
+           (with-syntax ([(out ...) #'stuff*])
+             #'(%racket #'(%racket (unexpand-honu-syntax (do-parse-rest-macro out ...))))))
          #; #'(%racket-expression (parse-stuff stuff ...))
          #'rest
          #f)])))
@@ -179,17 +196,7 @@
 (provide honu-pattern)
 (define-honu-syntax honu-pattern
   (lambda (code context)
-    (define (bind-to-results pattern)
-      (with-syntax ([((pattern-variable.name pattern-variable.result) ...)
-                    (find-pattern-variables pattern)])
-        (with-syntax ([(each ...)
-                       (for/list ([name (syntax->list #'(pattern-variable.name ...))]
-                                  [result (syntax->list #'(pattern-variable.result ...))])
-                         (with-syntax ([name name]
-                                       [result result])
-                           #'(#:with result result)))])
-          #'(each ...))))
-    (define (generate-pattern name literals original-pattern)
+    (define (generate-pattern name literals original-pattern maybe-out)
       (define variables (find-pattern-variables original-pattern))
       (define use (generate-temporaries variables))
       (define mapping (make-hash))
@@ -206,8 +213,10 @@
                     [(literal ...) literals]
                     [(new-pattern ...) (convert-pattern original-pattern mapping)]
                     [((withs ...) ...) withs]
-                    #;
-                    [((bindings ...) ...) (bind-to-results original-pattern)])
+                    [(result-with ...) (if maybe-out
+                                         (with-syntax ([(out ...) maybe-out])
+                                           #'(#:with result (syntax out ...)))
+                                         #'())])
         #'(%racket (begin-for-syntax
                      (define-literal-set local-literals (literal ...))
                      (define-splicing-syntax-class name
@@ -215,12 +224,15 @@
                                        [local-literals #:at name])
                        [pattern (~seq new-pattern ...)
                                 withs ... ...
-                                ; bindings ... ...
+                                result-with ...
                                 ])))))
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens literal ...)
           (#%braces pattern ...)
+          (~optional (#%braces out ...))
           . rest)
-       (values (generate-pattern #'name #'(literal ...) #'(pattern ...))
+       (values (generate-pattern #'name #'(literal ...)
+                                 #'(pattern ...)
+                                 (attribute out))
                #'rest
                #f)])))
