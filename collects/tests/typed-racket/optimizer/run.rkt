@@ -1,5 +1,5 @@
 #lang racket
-(require racket/runtime-path
+(require racket/runtime-path compiler/compiler
          rackunit rackunit/text-ui
          typed-racket/optimizer/logging)
 
@@ -7,19 +7,21 @@
          test-opt test-missed-optimization test-file?
          generate-log tests-dir missed-optimizations-dir)
 
+(define comp (compile-zos #f #:module? #t))
+
 (define (generate-log name dir)
   ;; some tests require other tests, so some fiddling is required
+  (define f (build-path dir name))
   (with-output-to-string
     (lambda ()
       (with-tr-logging-to-port
        (current-output-port)
        (lambda ()
-         (parameterize
-             ([current-namespace (make-base-empty-namespace)]
-              [current-load-relative-directory dir])
-           (dynamic-require
-            (build-path (current-load-relative-directory) name)
-            #f)))))))
+         (comp (list f) 'auto)))
+      (parameterize
+          ([current-namespace (make-base-empty-namespace)]
+           [current-load-relative-directory dir])
+        (dynamic-require f #f)))))
 
 ;; we log optimizations and compare to an expected log to make sure that all
 ;; the optimizations we expected did indeed happen
