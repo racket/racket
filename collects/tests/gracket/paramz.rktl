@@ -109,7 +109,9 @@
 ;;  Check that breaking an eventspace thread doesn't kill it:
 
 (let ()
-  (define evtsp (make-eventspace))
+  (define o (open-output-bytes))
+  (define evtsp (parameterize ([current-error-port o])
+                  (make-eventspace)))
   (define evtth (eventspace-handler-thread evtsp))
   
   (sleep 0.1)
