@@ -373,7 +373,7 @@
                                         #;
                                         (emit-local-step stuff output #:id binary-transformer)
                                         (with-syntax ([out (parse-all output)])
-                                          #'(%racket out)))
+                                          #'out))
 
                                     #f)])
               (do-parse unparsed precedence left parsed))
@@ -441,10 +441,13 @@
                           colon (~seq variable:id honu-equal list:honu-expression (~optional honu-comma)) ...
                           (~seq honu-where where:honu-expression (~optional honu-comma)) ...)
                          (define filter (if (attribute where)
-                                          #'((#:when where.result) ...)
+                                          (with-syntax ([(where.result ...) (map honu->racket (syntax->list #'(where.result ...)))])
+                                            #'((#:when where.result) ...))
                                           #'()))
                          (define comprehension
-                           (with-syntax ([((filter ...) ...) filter])
+                           (with-syntax ([((filter ...) ...) filter]
+                                         [(list.result ...) (map honu->racket (syntax->list #'(list.result ...)))]
+                                         [work.result (honu->racket #'work.result)])
                              #'(for/list ([variable list.result]
                                           ...
                                           filter ... ...)

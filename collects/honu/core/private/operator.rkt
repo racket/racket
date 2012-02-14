@@ -3,6 +3,7 @@
 (require (for-syntax racket/base
                      "transformer.rkt"
                      "fixture.rkt"
+                     "compile.rkt"
                      syntax/parse)
          (only-in "literals.rkt" %racket))
 
@@ -24,12 +25,12 @@
     (define-honu-operator/syntax name precedence associativity
                                  ;; binary
                                  (lambda (left right)
-                                   (with-syntax ([left left]
-                                                 [right right])
+                                   (with-syntax ([left (honu->racket left)]
+                                                 [right (honu->racket right)])
                                      #'(%racket (operator left right))))
                                  ;; unary
                                  (lambda (argument)
-                                   (with-syntax ([argument argument])
+                                   (with-syntax ([argument (honu->racket argument)])
                                      #'(%racket (operator argument))))))
 
 (define-syntax-rule (define-unary-operator name precedence associativity operator)
@@ -37,20 +38,20 @@
                                                    #f
                                                    ;; unary
                                                    (lambda (argument)
-                                                     (with-syntax ([argument argument])
+                                                     (with-syntax ([argument (honu->racket argument)])
                                                        #'(%racket (operator argument))))))
 
 (define-honu-operator/syntax honu-flow 0.001 'left
   (lambda (left right)
-    (with-syntax ([left left]
-                  [right right])
+    (with-syntax ([left (honu->racket left)]
+                  [right (honu->racket right)])
       #'(%racket (right left)))))
 
 (begin-for-syntax
   (define-syntax-rule (mutator change)
                       (lambda (left right)
-                        (with-syntax ([left left]
-                                      [right (change left right)])
+                        (with-syntax ([left (honu->racket left)]
+                                      [right (change left (honu->racket right))])
                           #'(%racket (set! left right))))))
 
 ;; Traditional assignment operator

@@ -61,8 +61,6 @@
          #'rest
          #f)])))
 
-
-
 (provide honu-if)
 (define-honu-syntax honu-if
   (lambda (code context)
@@ -70,7 +68,10 @@
                        #:literals (else honu-then)
       [(_ (#%parens condition:honu-expression) true:honu-expression (~optional else) false:honu-expression . rest)
        (values
-         #'(%racket (if condition.result true.result false.result))
+         (with-syntax ([condition.result (honu->racket #'condition.result)]
+                       [true.result (honu->racket #'true.result)]
+                       [false.result (honu->racket #'false.result)])
+           #'(%racket (if condition.result true.result false.result)))
          #'rest
          #f)])))
 
