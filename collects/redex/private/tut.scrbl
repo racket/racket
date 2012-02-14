@@ -96,7 +96,7 @@ for ambiguous choice@~cite[amb1 amb2].
 
 The model includes a standard evaluation reduction relation and a type system.
 Along the way, the tutorial demonstrates Redex's support for unit testing,
-random testing, typesetting, metafunctions, reduction relations
+random testing, typesetting, metafunctions, reduction relations,
 and judgment forms. It also includes a number of exercises to use
 as jumping off points to explore Redex in more depth, and each of the
 functions and syntactic forms used in the examples are linked to more
@@ -117,17 +117,7 @@ Those lines tell DrRacket that we're writing a program
 in the @racketmodname[racket] language and we're going
 to be using the @racketmodname[redex] DSL.
 
-The @racket[define-language] form gives a name to
-a grammar. In this case, @racket[L] is the Racket-level
-name referring to the grammar containing the non-terminal
-@racket[e], with six productions (application, abstraction,
-variables, @racket[amb] expressions, numbers, and addition
-expressions), the non-terminal @racket[t] with two productions,
-and the non-terminal @racket[x] that uses the pattern
-keyword @racket[variable-not-otherwise-mentioned]. This 
-special pattern matches all symbols except those used
-as literals in the grammar (in this case: @racket[λ],
-@racket[amb], @racket[+], and @racket[→]).
+Next, enter the following definition.
 
 @racketblock+eval[#:eval amb-eval
                          (define-language L
@@ -142,10 +132,30 @@ as literals in the grammar (in this case: @racket[λ],
                            (t (→ t t) num)
                            (x variable-not-otherwise-mentioned))]
 
+
+The @racket[define-language] form gives a name to
+a grammar. In this case, @racket[L] is the Racket-level
+name referring to the grammar containing the non-terminal
+@racket[e], with six productions (application, abstraction,
+variables, @racket[amb] expressions, numbers, and addition
+expressions), the non-terminal @racket[t] with two productions,
+and the non-terminal @racket[x] that uses the pattern
+keyword @racket[variable-not-otherwise-mentioned]. This 
+special pattern matches all symbols except those used
+as literals in the grammar (in this case: @racket[λ],
+@racket[amb], @racket[+], and @racket[→]).
+
 Once we have defined the grammar, we can ask Redex if 
 specific terms match the grammar. This expression checks
 to see if the @racket[e] non-terminal (from @racket[L])
 matches the object-language expression @racket[(λ (x) x)].
+
+To do this, first click the @onscreen{Run} button in DrRacket's
+toolbar and then enter the following expression after the prompt
+For the remainder of this tutorial, expressions prefixed with a
+@tt{>} are intended to be run in the interactions window (lower pane), 
+and expressions without the @tt{>} prefix belong in the definitions 
+window (the upper pane).
 
 @interaction/test[(redex-match 
                    L
@@ -156,12 +166,12 @@ matches the object-language expression @racket[(λ (x) x)].
 In general, a @racket[redex-match] expression first names a language,
 then a pattern, and then its third position is an arbitrary Racket expression.
 In this case, we use @racket[term] to construct an Redex object-level expression.
-The @racket[term] operator is much like Racket's @racket[quasiquote]
+The @racket[term] operator is much like Lisp's @racket[quasiquote]
 (typically written @tt{`}).
 
 This term does not match @racket[e]
 (since @racket[e] insists the function parameters come with types), 
-so Redex responds with @racket[#f], Racket's false.
+so Redex responds with @racket[#f], false.
 
 When an expression does match, as with this one:
 
@@ -172,8 +182,9 @@ When an expression does match, as with this one:
                           (+ 1 2))))
                   (list/c match?)]
 
-Redex responds with bindings for all of the pattern variables,
-just @racket[e] in this case, matching the entire expression.
+Redex responds with bindings for all of the pattern variables.
+In this case, there is just one, @racket[e],
+and it matches the entire expression.
 
 We can also use matching to extract sub-pieces. For example, we can
 pull out the function and argument position of an application expression
@@ -190,8 +201,8 @@ As you probably noticed, @racket[redex-match] returns a list of
 matches, not just a single match. The previous matches each only
 matched a single way, so the corresponding lists only have a single
 element. But a pattern may be ambiguous, e.g., the following pattern
-which matches any non-empty sequence of expressions, but binding different
-elements of the sequence differently in each match:
+which matches any non-empty sequence of expressions, but binds different
+elements of the sequence in different ways:
 
 @interaction/test[(redex-match 
                    L
@@ -269,8 +280,8 @@ In the extended language, we can give all of the
 typing rules for our language. Ignoring the 
 @racket[#:mode] specification for a moment, the beginning
 of this use of @racket[define-judgment-form] 
-says that the judgments begin defined all have the
-shape @racket[(types Γ e t)]. 
+has a contract declaration indicating that the judgments all have
+the shape @racket[(types Γ e t)]. 
 
 @racketblock+eval[#:eval 
                   amb-eval
@@ -289,10 +300,11 @@ shape @racket[(types Γ e t)].
                      (types Γ (λ (x t_1) e) (→ t_1 t_2))]
                     
                     [(types Γ e (→ (→ t_1 t_2) (→ t_1 t_2)))
-                     -------------------------
+                     ---------------------------------------
                      (types Γ (fix e) (→ t_1 t_2))]
                     
-                    [(types (x : t Γ) x t)]
+                    [---------------------
+                     (types (x : t Γ) x t)]
                     
                     [(types Γ x_1 t_1)
                      (side-condition (different x_1 x_2))
@@ -328,7 +340,7 @@ rules for all of the other forms in the language.
 
 Most of the rules use use @racket[types], or give base types to atomic
 expressions, but the fourth rule is worth a special look. It says that
-if some variable typechecks in some environment, then it also type
+if a variable typechecks in some environment, then it also type
 checks in an extended environment, provided that the environment extension
 does not use the variable in question. 
 
@@ -345,7 +357,7 @@ thought of as inputs, and the type position is to be thought of as an output.
 Redex then checks that spec, making sure that, given a particular @racket[Γ] and 
 @racket[e], it can compute a @racket[t] or, perhaps, multiple @racket[t]s (if
 the patterns are ambiguous, or if multiple rules apply to a given pair of
-@racket[Γ] and @racket[e].
+@racket[Γ] and @racket[e]).
 
 @amb-try[(test-equal (judgment-holds (types (x : num ·) y t_1) t_1)
                      (term ()))
@@ -406,7 +418,13 @@ is an instance of some judgment-form that should have concrete
 terms for the @racket[I] positions in the mode spec, and patterns
 in the positions labelled @racket[O]. Then, the second position
 in @racket[judgment-holds] is an expression that can use the
-pattern variables inside those @racket[O] positions. For example,
+pattern variables inside those @racket[O] positions. The result
+of @racket[judgment-holds] will be a list of terms, one for
+each way that the pattern variables in the @racket[O] positions
+can be filled when evaluating @racket[judgment-holds]'s second
+position.
+
+For example,
 if we wanted to extract only the range position of the type
 of some function, we could write this:
 
@@ -416,6 +434,19 @@ of some function, we could write this:
                           (→ t_1 t_2))
                    t_2)
                   (list/c (list/c '→ 'num 'num))]
+
+The result of this expression is a singleton list containing the
+function type that maps numbers to numbers. The reason you see
+two open parentheses is that Redex exploits Racket's s-expressions
+to reflect Redex terms as Racket values. Here's another way
+to write the same value
+
+@interaction[(list (term (→ num num)))]
+
+Racket's printer does not know that it should use @racket[term] for the
+inner lists and @racket[list] (or @racket[quote]) for the
+outer list, so it just uses the @racket[quote] notation for all
+of them.
 
 We can combine @racket[judgment-holds] with Redex's unit test support 
 to build a small test suite:
@@ -437,6 +468,9 @@ to build a small test suite:
                      (list (term (→ num num))))]
 
 Redex is silent when tests pass and gives the source location for the failures, as above.
+The @racket[test-equal] form accepts two expressions, evaluates them,
+and checks to see if they are @racket[equal?] (structural equality). 
+
 To see a summary of the tests run so far, call @racket[test-results].
 
 @interaction[#:eval amb-eval (test-results)]
@@ -454,7 +488,7 @@ The typing rule for @racket[amb] is overly restrictive. In general,
 it would be better to have a rule like this one:
 
 @racketblock[[(types Γ e t) ...
-              --------------------
+              -----------------------
               (types Γ (amb e ...) t)]]
 
 but Redex does not support this rule because the mode specification is 
@@ -558,9 +592,10 @@ for summation.
 This lifts the Racket function @racket[+] to Redex, giving it the name
 @racket[Σ]. The unquote (comma) in the definition of the metafunction
 escapes into Racket, using @racket[apply] and @racket[+] to sum
-up the sequence of numbers that were passed to @racket[Σ]. The 
+up the sequence of numbers that were passed to @racket[Σ]. As we've
+noted before, the
 @racket[term] operator is like Racket's @racket[quasiquote] operator, but
-is also sensitive to Redex pattern variables. In this case,
+it is also sensitive to Redex pattern variables. In this case,
 @racket[(term (number ...))] produces a list of numbers, extracting
 the arguments from the call to @racket[Σ].
 
@@ -568,15 +603,17 @@ To define a reduction relation, we also have to define substitution.
 Generally speaking, substitution functions are tricky to get right
 and, since they generally are not shown in papers, we have defined
 a workhorse substitution function in Racket that runs in near linear 
-time; the source code is included with Redex, if you'd like to have a look;
+time. The source code is included with Redex, if you'd like to have a look;
 evaluate the expression below in the REPL to find the precise path
-on your system (test cases are in @filepath{test/tut-subst-test.rkt}, 
-relative to @filepath{tut-subst.rkt}):
+on your system:
 
 @centered{@racket[(collection-file-path "tut-subst.rkt" "redex")]}
 
-           
-That file defines the function @racket[subst/proc] that expects four
+(Test cases are in @filepath{test/tut-subst-test.rkt}, 
+relative to @filepath{tut-subst.rkt}.)
+
+That file contains the definition of the function @racket[subst/proc], 
+which expects four
 arguments: a predicate for determining if an expression is a variable,
 a list of variables to replace, a list of terms to replace them with,
 and a term to do the replacement inside (the function has a hard-wired
@@ -809,7 +846,10 @@ shape. Use this definition of @racket[subst].
 @racketblock[(define-metafunction Ev
                subst : (x v) ... e -> e
                [(subst (x v) ... e) 
-                ,(subst/proc x? (list (term (x ...))) (list (term (v ...))) (term e))])]
+                ,(subst/proc x?
+                             (list (term (x ...)))
+                             (list (term (v ...)))
+                             (term e))])]
 
 Also, adjust the typing rules (and do not forget that an ellipsis can be named, 
 as discussed in exercise @exref["named-ellipses"]).
@@ -818,7 +858,7 @@ as discussed in exercise @exref["named-ellipses"]).
 
 Random testing is a cheap and easy way to find counter-examples to false
 claims. Unsurprisingly, it is hard to pin down exactly which false claims
-that random testing can provide counter-examples to. Hanford @citet[Hanford]
+that random testing can provide counter-examples to. @citet[Hanford]
 put it best (calling his random test case generator a syntax machine):
 ``[a]lthough as a writer of test cases, the syntax machine is certainly 
 unintelligent, it is also uninhibited. It can test a [language] processor with many 
@@ -907,7 +947,7 @@ case), and then pass them to the given function, attempting to elicit @racket[#f
 
 In this case, since the domain of @racket[red] is @racket[p], the random generator
 produces sequences of @racket[e] expressions, which are reflected
-into Redex as lists, and so we can simply try to see if progress holds
+into Redex as lists, and so we simply try to see if progress holds
 for each element of the list, using @racket[andmap].
 
 Still no test failures, but installing the same coverage testing boilerplate around 
@@ -926,13 +966,12 @@ better coverage of the reduction system.
 
 @exercise[]
 
-Remove one of the productions from @racket[E] and find an expression
-in the revised system that causes @racket[progress?] to return @racket[#f].
+Remove one of the productions from @racket[E] (except @racket[hole]) 
+and find an expression in the revised system that causes 
+@racket[progress?] to return @racket[#f].
 
-See if @racket[redex-check] can also falsify progress (it should be able to 
-easily do so if you remove any of the productions except @racket[hole]; removing
-@racket[hole] will result in a ill-formed reduction system and lead to runtime
-errors).
+See if @racket[redex-check] can also falsify progress for the same
+system.
 
 @exercise[]
 
@@ -991,8 +1030,8 @@ then we can use the pict primitives to combine typeset fragments into a larger w
                      (reduction-relation->pict red))
                     3/2)]
 
-Generally speaking, Redex has good default ways to typeset most aspects of one of its
-definitions, except in the case where the relation escapes to Racket. In that case,
+Generally speaking, Redex has reasonable default ways to typeset its
+definitions, except when they escapes to Racket. In that case,
 it typsets the code in a fixed-width font and makes the background pink to call our
 attention to it. While it is possible to use @racket[with-unquote-rewriter] to 
 tell Redex how to typset those regions, often it is easier to define a metafunction
