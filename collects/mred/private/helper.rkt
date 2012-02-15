@@ -1,7 +1,7 @@
 (module helper mzscheme
   (require mzlib/class
            (prefix wx: "kernel.rkt")
-           (prefix wx: racket/snip)
+           (prefix wx: racket/snip/private/style)
            "lock.rkt")
 
   (provide (protect (struct child-info (x-min y-min x-margin y-margin x-stretch y-stretch))

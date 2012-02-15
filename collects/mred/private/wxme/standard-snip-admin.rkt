@@ -1,7 +1,8 @@
 #lang scheme/base
 (require scheme/class
          "../syntax.rkt"
-         racket/snip
+         racket/snip/private/snip
+         racket/snip/private/snip-admin
          (only-in "cycle.rkt"
                   popup-menu%)
          (prefix-in wx: "wx.rkt"))

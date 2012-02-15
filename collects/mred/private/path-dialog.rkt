@@ -1,7 +1,7 @@
 (module path-dialog mzscheme
   (require mzlib/class mzlib/list mzlib/string mzlib/file
            (prefix wx: "kernel.rkt")
-           (prefix wx: racket/snip)
+	   (prefix wx: racket/snip/private/style)
            racket/snip/private/prefs
            "helper.rkt" "mrtop.rkt" "mritem.rkt" "mrpanel.rkt"
            "mrtextfield.rkt" "messagebox.rkt" "mrmenu.rkt"

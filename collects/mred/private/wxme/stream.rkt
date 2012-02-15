@@ -3,7 +3,7 @@
          "../syntax.rkt"
          "private.rkt"
          racket/snip/private/private
-         racket/snip
+         racket/snip/private/snip
          "editor-data.rkt"
          (only-in "cycle.rkt"
                   set-editor-stream-in%!

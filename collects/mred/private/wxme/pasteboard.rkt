@@ -9,8 +9,9 @@
          "editor.rkt"
          "editor-data.rkt"
          "undo.rkt"
-         racket/snip
+         racket/snip/private/snip
          racket/snip/private/snip-flags
+         racket/snip/private/style
          "standard-snip-admin.rkt"
          "keymap.rkt"
          (only-in "cycle.rkt"

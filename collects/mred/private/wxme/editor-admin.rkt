@@ -1,7 +1,6 @@
 #lang scheme/base
 (require scheme/class
          "../syntax.rkt"
-         racket/snip
          "private.rkt"
          racket/snip/private/private
          (only-in "cycle.rkt" popup-menu%))

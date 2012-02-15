@@ -2,7 +2,7 @@
 (require scheme/class
          "../syntax.rkt"
          "const.rkt"
-         racket/snip
+         racket/snip/private/snip
          racket/snip/private/snip-flags
          "private.rkt"
          racket/snip/private/private)

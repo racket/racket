@@ -6,7 +6,7 @@
          racket/snip/private/snip-flags
          "private.rkt"
          racket/snip/private/private
-         racket/snip
+         racket/snip/private/snip
          (only-in "cycle.rkt"
                   editor-stream-in% editor-stream-out%
                   extended-text% extended-pasteboard% extended-editor-snip% 

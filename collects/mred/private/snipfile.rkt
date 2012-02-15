@@ -3,7 +3,7 @@
            racket/port
            syntax/moddep
            (prefix-in wx: "kernel.rkt")
-           (prefix-in wx: racket/snip)
+	   (prefix-in wx: racket/snip/private/snip)
            "check.rkt"
            "editor.rkt")
 

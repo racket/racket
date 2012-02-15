@@ -5,7 +5,7 @@
          racket/port
          "../syntax.rkt"
          "private.rkt"
-         racket/snip
+         racket/snip/private/snip
          racket/snip/private/private
          racket/snip/private/style
          racket/snip/private/snip-flags

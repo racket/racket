@@ -3,7 +3,7 @@
            mzlib/class100
            (prefix-in wx: "kernel.rkt")
            (prefix-in wx: "wxme/text.rkt")
-           (prefix-in wx: racket/snip)
+           (prefix-in wx: racket/snip/private/snip)
            (prefix-in wx: "wxme/editor-canvas.rkt")
            "lock.rkt"
            "const.rkt"

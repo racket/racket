@@ -2,7 +2,7 @@
 (require "../../syntax.rkt"
          racket/class
          racket/draw
-         racket/draw/private/bitmap
+         (only-in racket/draw/private/bitmap quartz-bitmap%)
          ffi/unsafe
          ffi/unsafe/objc
          "utils.rkt"

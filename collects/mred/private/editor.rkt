@@ -5,7 +5,7 @@
            mzlib/list
            mzlib/file
            (prefix wx: "kernel.rkt")
-           (prefix wx: racket/snip)
+           (prefix wx: racket/snip/private/style)
            (prefix wx: "wxme/keymap.rkt")
            (prefix wx: "wxme/editor.rkt")
            (prefix wx: "wxme/text.rkt")

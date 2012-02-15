@@ -2,7 +2,7 @@
 (require scheme/class
          "private.rkt"
          racket/snip/private/private
-         racket/snip
+         racket/snip/private/snip
          racket/snip/private/snip-flags)
 
 (provide change-record%

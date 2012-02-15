@@ -4,7 +4,8 @@
          "private.rkt"
          racket/snip/private/private
          "const.rkt"
-         racket/snip
+         racket/snip/private/snip
+         racket/snip/private/snip-admin
          racket/snip/private/snip-flags
          "standard-snip-admin.rkt"
          "editor.rkt"

@@ -1,7 +1,7 @@
 #lang racket/base
   (require racket/class
            (prefix-in wx: "kernel.rkt")
-           (prefix-in wx: racket/snip)
+	   (prefix-in wx: racket/snip/private/style)
            "lock.rkt"
            "const.rkt"
            "check.rkt"

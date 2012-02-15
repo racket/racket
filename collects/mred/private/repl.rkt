@@ -2,7 +2,7 @@
   (require mzlib/class
            mzlib/class100
            (prefix wx: "kernel.rkt")
-           (prefix wx: racket/snip)
+	   (prefix wx: racket/snip/private/style)
            "editor.rkt"
            "app.rkt"
            "mrtop.rkt"
