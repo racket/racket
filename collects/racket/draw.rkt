@@ -1,5 +1,8 @@
 #lang racket/base
-(require "draw/private/color.rkt"
+(require racket/class
+         racket/contract/base
+         "draw/contracts.rkt"
+	 "draw/private/color.rkt"
          "draw/private/point.rkt"
          "draw/private/font.rkt"
          "draw/private/font-dir.rkt"
@@ -18,31 +21,37 @@
          "draw/private/gl-config.rkt"
          "draw/private/gl-context.rkt")
 
-(provide color%
-         color-database<%> the-color-database
-         point%
-         font% font-list% the-font-list make-font
+(provide color-database<%>
+	 the-color-database
+         font-list% the-font-list make-font
          font-name-directory<%> the-font-name-directory
-         pen% pen-list% the-pen-list
-         brush% brush-list% the-brush-list
-         linear-gradient%
-         radial-gradient%
-         region%
-         dc-path%
+	 the-pen-list
+         the-brush-list
          dc<%>
-         bitmap-dc%
          record-dc% recorded-datum->procedure
-         post-script-dc%
-         pdf-dc%
          ps-setup% current-ps-setup
-         svg-dc%
          get-face-list
          get-family-builtin-face
-         gl-config%
          gl-context<%>
-
-         bitmap%
          make-bitmap
          make-platform-bitmap
          read-bitmap
          make-monochrome-bitmap)
+
+(provide/contract [color%            color%/c]
+                  [point%            point%/c]
+                  [font%             font%/c]
+                  [pen%              pen%/c]
+                  [pen-list%         pen-list%/c]
+                  [brush%            brush%/c]
+                  [brush-list%       brush-list%/c]
+                  [bitmap-dc%        bitmap-dc%/c]
+                  [post-script-dc%   post-script-dc%/c]
+                  [pdf-dc%           pdf-dc%/c]
+                  [svg-dc%           svg-dc%/c]
+                  [linear-gradient%  linear-gradient%/c]
+                  [radial-gradient%  radial-gradient%/c]
+                  [region%           region%/c]
+                  [dc-path%          dc-path%/c]
+                  [gl-config%        gl-config%/c]
+                  [bitmap%           bitmap%/c])
