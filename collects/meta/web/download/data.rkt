@@ -66,9 +66,8 @@
      "http://russell.cs.bilgi.edu.tr/racket-installers/"
      "Onur Gungor"
      "onurgu@cs.bilgi.edu.tr"]
-    #; ; Unreliable, timeouts very frequently
     ["Belgium (Infogroep, Vrije Universiteit Brussel)"
-     "ftp://infogroep.be/pub/racket/installers/"
+     "http://racket.infogroep.be/"
      "Infogroep"
      "research@infogroep.be"]
     #;
