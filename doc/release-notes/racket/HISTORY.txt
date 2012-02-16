@@ -1,5 +1,6 @@
 Version 5.2.1.6
 Added prop:cpointer
+Fixed handle-evt to disallow a handle-evt
 
 Version 5.2.1.5
 Added racket/future to re-exports of racket
