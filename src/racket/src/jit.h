@@ -805,7 +805,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define mz_pop_threadlocal() /* empty */
 #  ifdef THREAD_LOCAL_USES_JIT_V2
 #   define _mz_install_threadlocal(reg) jit_movr_p(JIT_V2, reg)
-#   define mz_repush_threadlocal(in) /* empty */
+#   define mz_repush_threadlocal() /* empty */
 #  else
 #   define _mz_install_threadlocal(reg) mz_set_local_p(reg, JIT_LOCAL4)
 #   define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
