@@ -632,6 +632,15 @@
 (syntax-test #'(delay . 1))
 (syntax-test #'(delay 1 . 2))
 
+(let ([p (delay/sync 12)]
+      [v #f])
+  (thread (lambda () (set! v (force p))))
+  (sync (system-idle-evt))
+  (test 12 force p)
+  (test 12 values v)
+  (test (void) sync p)
+  (test (list (void)) sync (wrap-evt p list)))
+
 (test '(list 3 4) 'quasiquote `(list ,(+ 1 2) 4))
 (test '(list a (quote a)) 'quasiquote (let ((name 'a)) `(list ,name ',name)))
 (test '(a 3 4 5 6 b) 'quasiquote `(a ,(+ 1 2) ,@(map abs '(4 -5 6)) b))

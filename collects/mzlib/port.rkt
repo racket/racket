@@ -437,7 +437,7 @@
    (lambda (s)
      (let ([r (peek-bytes-avail!* s delta #f orig-in)])
        (set! delta (+ delta (if (number? r) r 1)))
-       (if (eq? r 0) (handle-evt orig-in (lambda (v) 0)) r)))
+       (if (eq? r 0) (wrap-evt orig-in (lambda (v) 0)) r)))
    (lambda (s skip default)
      (peek-bytes-avail!* s (+ delta skip) #f orig-in))
    void

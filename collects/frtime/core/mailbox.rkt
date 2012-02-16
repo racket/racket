@@ -11,8 +11,8 @@
 (define (new-mailbox)
   (define control-ch (make-channel))
   (define (thread-recv-evt)
-    (handle-evt (thread-receive-evt)
-                (lambda (e) (thread-receive))))
+    (wrap-evt (thread-receive-evt)
+              (lambda (e) (thread-receive))))
   ; Try to match one message
   (define (try-to-match req msg)
     (match req

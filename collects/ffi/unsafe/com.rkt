@@ -1640,7 +1640,7 @@
                                (lambda ()
                                  (thread-resume (com-event-executor-t self)
                                                 (current-thread))
-                                 (handle-evt 
+                                 (wrap-evt 
                                   (com-event-executor-ch self)
                                   (lambda (v)
                                     (lambda ()

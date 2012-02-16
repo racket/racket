@@ -3130,8 +3130,8 @@ static Scheme_Object *wrap_evt(const char *who, int wrap, int argc, Scheme_Objec
 {
   Wrapped_Evt *ww;
 
-  if (!scheme_is_evt(argv[0]) || (wrap && handle_evt_p(0, argv)))
-    scheme_wrong_type(who, wrap ? "non-handle evt" : "evt", 0, argc, argv);
+  if (!scheme_is_evt(argv[0]) || handle_evt_p(0, argv))
+    scheme_wrong_type(who, "non-handle evt", 0, argc, argv);
   scheme_check_proc_arity(who, 1, 1, argc, argv);
 
   ww = MALLOC_ONE_TAGGED(Wrapped_Evt);

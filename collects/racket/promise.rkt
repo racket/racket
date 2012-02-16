@@ -72,7 +72,7 @@
   #:property prop:evt
   (lambda (p)
     (let ([v (pref p)])
-      (handle-evt (if (syncinfo? v) (syncinfo-done-evt v) always-evt) void))))
+      (wrap-evt (if (syncinfo? v) (syncinfo-done-evt v) always-evt) void))))
 
 (provide (rename-out [delay/sync* delay/sync]))
 (define (delay/sync thunk)
@@ -95,8 +95,8 @@
   #:property prop:evt
   (lambda (p)
     (let ([v (pref p)])
-      (handle-evt (if (running? v) (running-thread-thread v) always-evt)
-                  void))))
+      (wrap-evt (if (running? v) (running-thread-thread v) always-evt)
+                void))))
 
 (provide (rename-out [delay/thread* delay/thread]))
 (define (delay/thread thunk group)

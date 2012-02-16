@@ -270,6 +270,35 @@
 			     (lambda (x) 78)))
 
 ;; ----------------------------------------
+;; handle evt
+
+(test 10 sync (handle-evt always-evt (lambda (x) 10)))
+(test 11 sync (handle-evt (wrap-evt always-evt (lambda (x) 10)) add1))
+(test-values '(1 2) (lambda () (sync (handle-evt always-evt (lambda (x) (values 1 2))))))
+;; check tail call via loop:
+(test 'ok sync (let loop ([n 1000000])
+                 (if (zero? n)
+                     (handle-evt always-evt (lambda (x) 'ok))
+                     (sync
+                      (handle-evt always-evt (lambda (x) (loop (sub1 n))))))))
+
+;; cannot wrap a `handle-evt' returns with a wrap or another handle:
+(err/rt-test (handle-evt (handle-evt always-evt void) void))
+(err/rt-test (wrap-evt (handle-evt always-evt void) void))
+(err/rt-test (handle-evt (choice-evt (handle-evt always-evt void) void)))
+
+;; can handle a wrap evt:
+(test #t evt? (handle-evt (wrap-evt always-evt void) void))
+(test #t evt? (handle-evt (choice-evt (wrap-evt always-evt void)
+                                      (wrap-evt never-evt void))
+                          void))
+
+(test #t handle-evt? (handle-evt always-evt void))
+(test #t handle-evt? (choice-evt (wrap-evt always-evt void) (handle-evt always-evt void)))
+(test #f handle-evt? (wrap-evt always-evt void))
+(test #f handle-evt? (choice-evt (wrap-evt always-evt void) (wrap-evt always-evt void)))
+
+;; ----------------------------------------
 ;; Nack waitables
 
 (arity-test nack-guard-evt 1 1)
