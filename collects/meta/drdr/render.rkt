@@ -616,6 +616,8 @@
                                    
                                    @h1{How many files are "tested" concurrently?}
                                    @p{One per core, or @,(number->string (number-of-cpus)).}
+
+                                   @p{However, all @code{gracket} files are serialized so that one runs at a time. This is because GUI programs may be sensitive to screen-specific state such as window focus and there is only one screen available to all GUI programs. Historicallly, the @code{gracket} difference was essential before the GUI code was ported to Racket; but currently that is irrelevant. Therefore, you should not mark things as using @code{gracket} unless you anticipate they will actually cause such conflicts; nor should you mark anything as using @code{gracket} if it just has a different kind of race.}
                                    
                                    @h1{How long may a file run?}
                                    @p{The execution timeout is @,(number->string (current-subprocess-timeout-seconds)) seconds by default, but the @code{@,PROP:timeout} property is used if @code{string->number} returns a number on it.}
