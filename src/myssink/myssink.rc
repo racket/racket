@@ -40,7 +40,7 @@ END
 
 3 TEXTINCLUDE DISCARDABLE 
 BEGIN
-    "1 TYPELIB ""testobject.tlb""\r\n"
+    "1 TYPELIB ""myssink.tlb""\r\n"
     "\0"
 END
 
@@ -71,12 +71,12 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "testobject Module\0"
+            VALUE "FileDescription", "myssink Module\0"
             VALUE "FileVersion", "1, 0, 0, 1\0"
-            VALUE "InternalName", "testobject\0"
+            VALUE "InternalName", "myssink\0"
             VALUE "LegalCopyright", "Copyright 1999\0"
-            VALUE "OriginalFilename", "testobject.DLL\0"
-            VALUE "ProductName", "testobject Module\0"
+            VALUE "OriginalFilename", "myssink.DLL\0"
+            VALUE "ProductName", "myssink Module\0"
             VALUE "ProductVersion", "1, 0, 0, 1\0"
             VALUE "OLESelfRegister", "\0"
         END
@@ -92,18 +92,10 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Bitmap
-//
-
-IDB_TESTCONTROL         BITMAP  DISCARDABLE     "testcont.bmp"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // REGISTRY
 //
 
-IDR_TESTCONTROL         REGISTRY DISCARDABLE    "TestControl.rgs"
+IDR_SINK                REGISTRY DISCARDABLE    "Sink.rgs"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -112,7 +104,7 @@ IDR_TESTCONTROL         REGISTRY DISCARDABLE    "TestControl.rgs"
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_PROJNAME            "testobject"
+    IDS_PROJNAME            "myssink"
 END
 
 #endif    // English (U.S.) resources
@@ -125,8 +117,9 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-1 TYPELIB "testobject.tlb"
+1 TYPELIB "myssink.tlb"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "myssink.manifest" 

@@ -1,6 +1,8 @@
 Version 5.2.1.6
 Added prop:cpointer
 Fixed handle-evt to disallow a handle-evt
+mysterx: removed ActiveX support plus com-add-ref and 
+ com-ref-count
 
 Version 5.2.1.5
 Added racket/future to re-exports of racket

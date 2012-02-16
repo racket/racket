@@ -4,6 +4,7 @@
 	 ffi/winapi
          ffi/unsafe/atomic
          racket/date
+         racket/runtime-path
          (for-syntax racket/base)
          "private/win32.rkt")
 
@@ -117,24 +118,13 @@
 ;; ----------------------------------------
 ;; Manual memory management and strings
 
-(define (utf-16-length s)
-  (for/fold ([len 0]) ([c (in-string s)])
-    (+ len
-       (if ((char->integer c) . > . #xFFFF)
-           2
-           1))))
-
 (define _system-string/utf-16
   (make-ctype _pointer
 	      (lambda (s)
 		(and s                     
-		     (let ([v (malloc _gcpointer)])
-		       (ptr-set! v _string/utf-16 s)
-		       (let ([p (ptr-ref v _gcpointer)])
-			 (let ([len (utf-16-length s)])
-			   (let ([c (SysAllocStringLen p len)])
-                             (register-cleanup! (lambda () (SysFreeString c)))
-			     c))))))
+                     (let ([c (string->pointer s)])
+                       (register-cleanup! (lambda () (SysFreeString c)))
+                       c)))
 	      (lambda (p) (cast p _pointer _string/utf-16))))
 
 (define current-cleanup (make-parameter #f))
@@ -326,14 +316,14 @@
 ;; ITypeInfo
 
 (define-com-interface (_ITypeInfo _IUnknown)
-  ([GetTypeAttr (_hmfun (p : (_ptr o _TYPEATTR-pointer))
+  ([GetTypeAttr (_hmfun (p : (_ptr o _TYPEATTR-pointer/null))
                         -> GetTypeAttr p)
                 #:release-with-method ReleaseTypeAttr]
    [GetTypeComp _fpointer]
-   [GetFuncDesc (_hmfun _UINT (p : (_ptr o _FUNCDESC-pointer))
+   [GetFuncDesc (_hmfun _UINT (p : (_ptr o _FUNCDESC-pointer/null))
                         -> GetFuncDesc p)
                 #:release-with-method ReleaseFuncDesc]
-   [GetVarDesc (_hmfun _UINT (p : (_ptr o _VARDESC-pointer))
+   [GetVarDesc (_hmfun _UINT (p : (_ptr o _VARDESC-pointer/null))
                        -> GetVarDesc p)
                #:release-with-method ReleaseVarDesc]
    [GetNames (_hmfun _MEMBERID (s : (_ptr o _pointer)) ; string
@@ -387,12 +377,12 @@
 
 (define-com-interface (_ITypeLib _IUnknown)
   ([GetTypeInfoCount/tl (_mfun -> _UINT)]
-   [GetTypeInfo/tl (_hmfun _UINT (p : (_ptr o _ITypeInfo-pointer))
+   [GetTypeInfo/tl (_hmfun _UINT (p : (_ptr o _ITypeInfo-pointer/null))
                            -> GetTypeInfo p)
                    #:release-with-function Release]
    [GetTypeInfoType (_hmfun _UINT (p : (_ptr o _TYPEKIND))
                             -> GetTypeInfoType p)]
-   [GetTypeInfoOfGuid (_hmfun _REFGUID (p : (_ptr o _ITypeInfo-pointer))
+   [GetTypeInfoOfGuid (_hmfun _REFGUID (p : (_ptr o _ITypeInfo-pointer/null))
                               -> GetTypeInfoOfGuid p)
                       #:release-with-function Release]
    [GetLibAttr _fpointer]
@@ -408,7 +398,7 @@
 (define IID_IProvideClassInfo (string->iid "{B196B283-BAB4-101A-B69C-00AA00341D07}"))
 
 (define-com-interface (_IProvideClassInfo _IUnknown)
-  ([GetClassInfo (_hmfun (p : (_ptr o _ITypeInfo-pointer))
+  ([GetClassInfo (_hmfun (p : (_ptr o _ITypeInfo-pointer/null))
                          -> GetClassInfo p)
                  #:release-with-function Release]))
 
@@ -436,9 +426,21 @@
 (define-com-interface (_IConnectionPointContainer _IUnknown)
   ([EnumConnectionPoints _fpointer]
    [FindConnectionPoint (_hmfun _REFIID
-                                (p : (_ptr o _IConnectionPoint-pointer))
+                                (p : (_ptr o _IConnectionPoint-pointer/null))
                                 -> FindConnectionPoint p)
                         #:release-with-function Release]))
+
+;; ----------------------------------------
+;; IClassFactory
+
+(define IID_IClassFactory (string->iid "{00000001-0000-0000-C000-000000000046}"))
+
+(define-com-interface (_IClassFactory _IUnknown)
+  ([CreateInstance/factory (_hmfun _IUnknown-pointer/null _REFIID
+				   (p : (_ptr o _ISink-pointer/null))
+				   -> CreateInstance p)]
+   [LockServer _fpointer]))
+
 
 ;; ----------------------------------------
 ;; COM object creation
@@ -452,7 +454,7 @@
                            [hr _HRESULT]))
 
 (define-ole CoCreateInstance (_hfun _REFCLSID _pointer _DWORD _REFIID
-                                    (p : (_ptr o _IUnknown-pointer))
+                                    (p : (_ptr o _IUnknown-pointer/null))
                                     -> CoCreateInstance p)
   #:wrap (allocator Release))
 
@@ -640,7 +642,7 @@
 
 (define (com-object-get-unknown obj)
   (or (com-object-unknown obj)
-      (error 'com-object-get-unknown "COM object has been released" obj)))
+      (error 'com-object-get-unknown "COM object has been released: ~e" obj)))
 
 (define (com-object-get-dispatch obj)
   (or (com-object-dispatch obj)
@@ -1548,7 +1550,7 @@
                                      (cadr t)
                                      inv-kind
                                      args))
-           ;; from this point, don't exacpe/return without running cleanups
+           ;; from this point, don't escape/return without running cleanups
            (define method-result
              (if (= inv-kind INVOKE_PROPERTYPUT)
                  #f
@@ -1573,11 +1575,13 @@
              (define desc (EXCEPINFO-bstrDescription exn-info))
              (windows-error
               (if has-error-code?
-                  (format "COM object exception, error code 0x~x~a~a"
+                  (format "COM object exception during ~s, error code 0x~x~a~a"
+			  name
                           (EXCEPINFO-wCode exn-info)
                           (if desc "\nDescription: " "")
                           (or desc ""))
-                  (format "COM object exception~a~a"
+                  (format "COM object exception during ~s~a~a"
+			  name
                           (if desc "\nDescription: " "")
                           (or desc "")))
               (EXCEPINFO-scode exn-info))]
@@ -1658,6 +1662,8 @@
 ;; ----------------------------------------
 ;; COM event handlers
 
+(define-runtime-path myssink-dll '(so "myssink.dll"))
+
 (define CLSID_Sink
   ;; "myssink.dll":
   (string->clsid "{DA064DCD-0881-11D3-B5CA-0060089002FF}"))
@@ -1722,12 +1728,21 @@
         (define connection-point (FindConnectionPoint connection-point-container
                                                       (TYPEATTR-guid type-attr)))
         (ReleaseTypeAttr type-info type-attr)
+        ;; emulate CoCreateInstance on athe myssink DLL, which avoids the
+        ;; need for registration:
+        (define myssink-lib (ffi-lib myssink-dll))
+        (define myssink-DllGetClassObject 
+          (get-ffi-obj 'DllGetClassObject myssink-lib 
+                       (_hfun _GUID-pointer _GUID-pointer 
+                              (u : (_ptr o _IClassFactory-pointer/null))
+                              -> DllGetClassObject u)))
+        (define sink-factory
+          (myssink-DllGetClassObject CLSID_Sink IID_IClassFactory))
         (define sink-unknown
-          (CoCreateInstance CLSID_Sink #f 
-                            (bitwise-ior CLSCTX_LOCAL_SERVER CLSCTX_INPROC_SERVER)
-                            IID_IUnknown))
+	  ;; This primitive method doesn't AddRef the object, 
+	  ;; so don't Release it:
+          (CreateInstance/factory sink-factory #f CLSID_Sink))
         (define sink (QueryInterface sink-unknown IID_ISink _ISink-pointer))
-        (Release sink-unknown)
         (set_myssink_table sink myssink-table)
         (define cookie (Advise connection-point sink))
         (set-com-object-connection-point! obj connection-point)

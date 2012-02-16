@@ -34,7 +34,8 @@
 
   The optional argument @racket[where] indicates a for running the
   instance, and may be @racket['local], @racket['remote], or a string
-  indicating a machine name.  See @secref["remote"] for more
+  indicating a machine name.  See @secref[#:doc '(lib
+  "scribblings/foreign/foreign.scrbl") "remote"] for more
   information.}
 
 @deftogether[(
@@ -164,15 +165,3 @@ Like @racket[cocreate-instance-from-coclass], but using a ProgID.}
 
   Returns @racket[#t] if the argument is a COM object, @racket[#f]
   otherwise.}
-
-@defproc[(com-add-ref [obj com-object?]) void?]{
- 
-  Increments the reference count for @racket[obj].
-  This procedure should only be called when system-level 
-  errors occur due to a mismanaged COM object.  Ordinarily,
-  MysterX handles all COM reference-counting automatically.}
-
-@defproc[(com-ref-count [obj com-object?]) exact-nonnegative-integer?]{
-
-  Returns a number indicating the current reference count
-  for a COM object.}

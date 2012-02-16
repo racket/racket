@@ -110,12 +110,15 @@
   (test #t (com-get-property ie "Visible"))
   (test (void) (com-set-property! ie "Visible" #f))
   (test #f (com-get-property ie "Container"))
-  (test (void) (com-invoke ie "Navigate" (format "file://~a"
-                                                 (build-path (find-doc-dir) "index.html"))))
+
+  ;; For IE 7 (or 8?), this needs to be a web page; opening
+  ;; a local document disconnects the object for some reason:
+  (test (void) (com-invoke ie "Navigate" "http://racket-lang.org"))
+  (sleep 3) ; give the document time to load
 
   (define doc (com-get-property ie "Document"))
   (test #t (com-object? doc))
-  (test "Racket Documentation" (com-get-property ie "Document" "title"))
+  (test "Racket" (com-get-property ie "Document" "title"))
   (test (void) (com-set-property! ie "Document" "title" "The Racket Documentation"))
   (test "The Racket Documentation" (com-get-property ie "Document" "title"))
   (test '(-> () string) (com-get-property-type doc "title"))

@@ -657,10 +657,10 @@ plt-extras :+= (package: "plot")
 plt-extras :+= (- (package: "mzcom" #:src? #t)
                   (cond (not win) => (src: "")))
 
-;; -------------------- mysterx
-plt-extras :+= (- (+ (package: "mysterx" #:src? #t)
-                     (src: "worksp/libmysterx/")
-                     (dll: "myspage" "myssink"))
+;; -------------------- com & mysterx
+plt-extras :+= (- (+ (dll: "myssink")
+                     (src: "myssink/" "worksp/myssink/")
+                     (package: "mysterx"))
                   (cond (not win) => (src: "")))
 
 ;; -------------------- temporary tool for converting old files

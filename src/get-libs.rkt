@@ -116,7 +116,13 @@
        [win32/i386
         ["sqlite3.dll" 570947]]
        [win32/x86_64
-        ["sqlite3.dll" 617472]]]))
+        ["sqlite3.dll" 617472]]]
+     ;; COM libraries
+     '[com
+       [win32/i386
+        ["myssink.dll" 92672]]
+       [win32/x86_64
+        ["myssink.dll" 108032]]]))
   
   (define-values [package dest-dir]
     (let-values ([(args) (vector->list (current-command-line-arguments))])

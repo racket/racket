@@ -1,9 +1,0 @@
-; testobject.def : Declares the module parameters.
-
-LIBRARY      "testobject.DLL"
-
-EXPORTS
-	DllCanUnloadNow     PRIVATE
-	DllGetClassObject   PRIVATE
-	DllRegisterServer   PRIVATE
-	DllUnregisterServer PRIVATE

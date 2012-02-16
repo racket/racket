@@ -1488,13 +1488,13 @@ DO_WINDOWS_BUILD() {
   win_build_step RKT "get-libs (core)" ../src/get-libs.rkt core
   win_build_step RKT "get-libs (gui)" ../src/get-libs.rkt gui
   win_build_step RKT "get-libs (db)" ../src/get-libs.rkt db
+  win_build_step RKT "get-libs (com)" ../src/get-libs.rkt com
 
   header -s "Windows: Building libraries"
   _cd "$PLTHOME"
   win_build_step RKT "compiler" -N raco -l- raco setup -Dl compiler
 
   win_build_step VSNET3M "mzcom"
-  win_build_step VSNET3M "libmysterx"
 
   _cd "$PLTHOME"; win_build_step RKT "raco setup" $SETUP_ARGS
 

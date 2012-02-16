@@ -23,6 +23,8 @@ if errorlevel 1 exit /B 1
 if errorlevel 1 exit /B 1
 ..\..\racket -cu ..\get-libs.rkt db  ..\..\lib
 if errorlevel 1 exit /B 1
+..\..\racket -cu ..\get-libs.rkt com  ..\..\lib
+if errorlevel 1 exit /B 1
 
 cd mzstart
 devenv mzstart.sln /Build "Release|%BUILDMODE%"
@@ -35,14 +37,6 @@ cd ..
 cd mzcom
 devenv mzcom.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
-cd ..\libmysterx
-devenv libmysterx.sln /Build "Release|%BUILDMODE%"
-if errorlevel 1 exit /B 1
-cd ..
-
-cd libmysterx
-..\..\..\racket -cu xform.rkt
-if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
@@ -52,9 +46,6 @@ cd ..
 
 cd mzcom
 devenv mzcom.sln /Build "3m|%BUILDMODE%"
-if errorlevel 1 exit /B 1
-cd ..\libmysterx
-devenv libmysterx.sln /Build "3m|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..
 

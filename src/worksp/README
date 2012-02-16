@@ -8,14 +8,18 @@ This directory contains
     automatically when using the "configure" script;
 
   - scripts for building 3m variants of Racket and GRacket using Visual
-    Studio command-line tools; and
+    Studio command-line tools;
 
-  - solution files and project files for building MzCOM and MysterX with
+  - solution files and project files for building MzCOM with
     Microsoft Visual Studio 2008 (not Express, which doesn't support ATL
-    and MFC).
+    and MFC);
+
+  - solution files and project files for building "myssink.dll" with
+    Microsoft Visual Studio 2008, although the DLL is normally
+    downloaded along with other pre-built DLLs.
 
 Visual Studio Express is available for free from Microsoft; it can be
-used to build Racket and GRacket, but not MzCOM and MysterX.
+used to build Racket and GRacket, but not MzCOM.
 
 Racket and GRacket also compile with Cygwin gcc (a free compiler from
 GNU and Cygnus Solutions), but the result is a Unix-style installation,
@@ -45,12 +49,12 @@ If you're using MSVC 2008 (not Express), and if `devenv.exe' is in your
 path, then you can just run
     racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
-including the MzCOM and MysterX steps.
+including the MzCOM steps.
 
 If your MSVC environment is configured for 64-bit builds (e.g., by
 running "vcvarsall.bat" with "x64), then a 64-bit build is created.
 
-The CGC variants of Racket, GRacket, MzCOM, and MysterX can be built via
+The CGC variants of Racket, GRacket, and MzCOM can be built via
 Visual Studio projects.  The 3m variants are built by a Racket script
 that runs the MSVC command-line tools.  (See "CGC versus 3m" in
 racket\src\README if you don't know about the two variants.)
@@ -167,8 +171,8 @@ re-run `raco setup', where "raco.exe" was created the first time.
 Versioning
 ----------
 
-[If you're going to build MzCOM and/or MysterX, do that before running
- the version-changing script.  See instructions below.]
+[If you're going to build MzCOM, do that before running the
+ version-changing script.  See instructions below.]
 
 The obnoxious "xxxxxxx" in the DLL names is a placeholder for a version
 number.  Embedding a version number in a DLL name appears to be the
@@ -190,16 +194,13 @@ and it will re-launch Racket a couple of times.  Every ".exe", ".dll",
 ".lib", ".def", ".exp", and ".pdb" file within the "racket" tree is
 updated to replace "xxxxxxxx" with a specific version number.
 
---------------------------
-Building MzCOM and MysterX
---------------------------
-
-Beware that MzCOM and MysterX do not build with Express versions of
-Visual Studio.  Otherwise, building MzCOMCGC and MysterXCGC is similar
-to building RacketCGC.  Building the 3m variants is a little different.
-
+--------------
 Building MzCOM
 --------------
+
+Beware that MzCOM does not build with Express versions of Visual
+Studio.  Otherwise, building MzCOMCGC is similar to building
+RacketCGC.  Building the 3m variant is a little different.
 
 To build MzCOMCGC, make the MzCOM solution in
     racket\src\worksp\mzcom - makes racket\MzCOMCGC.exe
@@ -218,30 +219,6 @@ After building MzCOMCGC, you can build the 3m variant by
   3. Build (in Visual Studio).
 
 The result is racket\MzCOM.exe.
-
-Building MysterX
-----------------
-
-To build MysterXCGC, make the MysterX solution in
-    racket\src\worksp\libmysterx - makes racket\lib\myssink.dll,
-           racket\lib\myspage.dll, and mxmain.dll in
-           collects\mysterx\private\compiled\native\win32\i386
-
-Use the "Release" configuration.
-
-After building MysterXCGC, you can build the 3m variant by
-
-  1. Change directories to racket\src\worksp\libmysterx and run
-
-       ..\..\..\racketcgc.exe -cu xform.rkt
-
-  2. Switch to the "3m" configuration in the libmysterx solution (in
-     Visual Studio).
-
-  3. Build (in Visual Studio).
-
-The result is mxmain.dll (no 3m suffix) in
-    collects\mysterx\private\compiled\native\win32\i386\3m
 
 ------------
 Finding DLLs

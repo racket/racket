@@ -38,11 +38,14 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
 				Name="VCMIDLTool"
 				WarningLevel="3"
 				GenerateStublessProxies="true"
 				TypeLibraryName="$(ProjectName).tlb"
-				OutputDirectory="..\..\..\mysterx\myssink"
+				OutputDirectory="..\..\myssink"
 				HeaderFileName="$(ProjectName).h"
 				EnableErrorChecks="2"
 			/>
@@ -75,14 +78,14 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies=""
-				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
+				OutputFile="..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
+				AdditionalLibraryDirectories="..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT.lib;LIBCMTD.lib"
-				ModuleDefinitionFile="..\..\..\mysterx\myssink\$(ProjectName).def"
+				ModuleDefinitionFile="..\..\myssink\$(ProjectName).def"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\..\lib\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -131,12 +134,15 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
 				Name="VCMIDLTool"
 				WarningLevel="3"
 				TargetEnvironment="3"
 				GenerateStublessProxies="true"
 				TypeLibraryName="$(ProjectName).tlb"
-				OutputDirectory="..\..\..\mysterx\myssink"
+				OutputDirectory="..\..\myssink"
 				HeaderFileName="$(ProjectName).h"
 				EnableErrorChecks="2"
 			/>
@@ -169,14 +175,14 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies=""
-				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
+				OutputFile="..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
+				AdditionalLibraryDirectories="..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT.lib;LIBCMTD.lib"
-				ModuleDefinitionFile="..\..\..\mysterx\myssink\$(ProjectName).def"
+				ModuleDefinitionFile="..\..\myssink\$(ProjectName).def"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\..\lib\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\lib\$(ProjectName).pdb"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -225,11 +231,14 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
 				Name="VCMIDLTool"
 				WarningLevel="3"
 				GenerateStublessProxies="true"
 				TypeLibraryName="$(ProjectName).tlb"
-				OutputDirectory="..\..\..\mysterx\myssink"
+				OutputDirectory="..\..\myssink"
 				HeaderFileName="$(ProjectName).h"
 				EnableErrorChecks="2"
 			/>
@@ -267,12 +276,12 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies=""
-				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
+				OutputFile="..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
+				AdditionalLibraryDirectories="..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames=""
-				ModuleDefinitionFile="..\..\..\mysterx\myssink\$(ProjectName).def"
+				ModuleDefinitionFile="..\..\myssink\$(ProjectName).def"
 				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -324,12 +333,15 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
 				Name="VCMIDLTool"
 				WarningLevel="3"
 				TargetEnvironment="3"
 				GenerateStublessProxies="true"
 				TypeLibraryName="$(ProjectName).tlb"
-				OutputDirectory="..\..\..\mysterx\myssink"
+				OutputDirectory="..\..\myssink"
 				HeaderFileName="$(ProjectName).h"
 				EnableErrorChecks="2"
 			/>
@@ -366,12 +378,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies=""
-				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
+				OutputFile="..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
+				AdditionalLibraryDirectories="..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames=""
-				ModuleDefinitionFile="..\..\..\mysterx\myssink\$(ProjectName).def"
+				ModuleDefinitionFile="..\..\myssink\$(ProjectName).def"
 				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -412,11 +424,11 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm"
 			>
 			<File
-				RelativePath="..\..\..\mysterx\myssink\myssink.cxx"
+				RelativePath="..\..\myssink\myssink.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\mysterx\myssink\sink.cxx"
+				RelativePath="..\..\myssink\sink.cxx"
 				>
 			</File>
 		</Filter>
@@ -430,7 +442,7 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
 			<File
-				RelativePath="..\..\..\mysterx\myssink\myssink.idl"
+				RelativePath="..\..\myssink\myssink.idl"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -468,7 +480,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\..\mysterx\myssink\myssink.rc"
+				RelativePath="..\..\myssink\myssink.rc"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"

@@ -311,7 +311,7 @@
 (define (string->guid s [stay-put? #f])
   (define guid 
     (if stay-put?
-        (cast (malloc _GUID 'atomic-interior) _pointer _GUID-pointer)
+        (cast (malloc _GUID 'atomic-interior) _pointer (_gcable _GUID-pointer))
         (make-GUID 0 0 0 (list 0 0 0 0 0 0 0 0))))
   (IIDFromString s guid)
   guid)
@@ -333,3 +333,17 @@
 
 (define-oleaut SysFreeString (_wfun _pointer -> _void))
 (define-oleaut SysAllocStringLen (_wfun _pointer _uint -> _pointer))
+
+(define (utf-16-length s)
+  (for/fold ([len 0]) ([c (in-string s)])
+    (+ len
+       (if ((char->integer c) . > . #xFFFF)
+           2
+           1))))
+
+(define (string->pointer s)
+  (let ([v (malloc _gcpointer)])
+    (ptr-set! v _string/utf-16 s)
+    (let ([p (ptr-ref v _gcpointer)])
+      (let ([len (utf-16-length s)])
+        (SysAllocStringLen p len)))))

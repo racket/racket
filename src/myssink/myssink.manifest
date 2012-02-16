@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" 
+  manifestVersion="1.0">
+
+<assemblyIdentity
+   type="win32"
+   name="myssink"
+   version="1.0.0.0" />
+
+<file name="myssink.dll">
+
+<comClass
+    clsid="{DA064DCD-0881-11D3-B5CA-0060089002FF}"
+    threadingModel="Apartment" />
+
+
+<typelib tlbid="{DA064DC0-0881-11D3-B5CA-0060089002FF}"
+       version="1.0" helpdir=""/>
+
+</file>
+
+<comInterfaceExternalProxyStub 
+    name="ISink" 
+    iid="{DA064DCC-0881-11D3-B5CA-0060089002FF}"
+    proxyStubClsid32="{00020424-0000-0000-C000-000000000046}"
+    baseInterface="{00000000-0000-0000-C000-000000000046}"
+    tlbid="{DA064DC0-0881-11D3-B5CA-0060089002FF}" />
+
+</assembly>

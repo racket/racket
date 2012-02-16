@@ -1130,10 +1130,7 @@ path/s is either such a string or a list of them.
 "collects/mrlib/text-string-style-desc.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mysterx" responsible (mflatt)
 "collects/mysterx/main.rkt" drdr:command-line (mzc *)
-"collects/mysterx/mxdemo.rkt" drdr:command-line (mzc *)
 "collects/mysterx/mysterx.rkt" drdr:command-line (mzc *)
-"collects/mysterx/private/mxmain.rkt" drdr:command-line (mzc *)
-"collects/mysterx/private/prims.rkt" drdr:command-line (mzc *)
 "collects/mzcom" responsible (mflatt)
 "collects/mzlib/contract.rkt" responsible (robby)
 "collects/mzlib/foreign.rkt" responsible (eli)
@@ -1542,8 +1539,6 @@ path/s is either such a string or a list of them.
 "collects/tests/macro-debugger/tests/collects.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/match" responsible (samth)
 "collects/tests/mysterx" responsible (mflatt)
-"collects/tests/mysterx/dhtmltests.rktl" drdr:command-line #f
-"collects/tests/mysterx/mystests.rktl" drdr:command-line #f
 "collects/tests/mzcom" responsible (mflatt)
 "collects/tests/mzcom/test.rktl" drdr:command-line #f
 "collects/tests/net" responsible (jay eli mflatt robby)
