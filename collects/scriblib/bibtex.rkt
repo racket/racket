@@ -142,9 +142,13 @@
     (define bibtex-db (path->bibdb bib-pth))
     (define-cite autobib-cite autobib-citet generate-bibliography-id)
     (define ((make-citer citer) f . r)
-      (apply citer (map (curry generate-bib bibtex-db) 
-                        (append-map (curry regexp-split #rx" +")
-                                    (cons f r)))))
+      (apply citer 
+             (filter-map 
+              (λ (key)
+                 (and (not (string=? "\n" key))
+                      (generate-bib bibtex-db key)))                     
+              (append-map (curry regexp-split #rx" +")
+                          (cons f r)))))
     (define ~cite-id (make-citer autobib-cite))
     (define citet-id (make-citer autobib-citet))))
 
