@@ -36,6 +36,43 @@ Returns the built-in default face mapping for a particular font
 See @racket[font%] for information about @racket[family].}
 
 
+@defproc[(make-platform-bitmap [width exact-positive-integer?]
+                               [height exact-positive-integer?])
+         (is-a?/c bitmap%)]{
+  Creates a bitmap that draws in a way that is the same as drawing to a
+  @racket[canvas%]'s @racket[dc<%>] (in its default configuration)
+  under Mac OS X and Windows, and creates a bitmap that draws the way 
+  the result of @racket[make-bitmap] draws under Unix.
+  
+  In general, @racket[make-platform-bitmap] produces better looking
+  bitmaps on more platforms than 
+  @racket[make-bitmap], @racket[make-screen-bitmap], or creating
+  a @racket[bitmap%] object directly. 
+  Also, unlike @racket[make-screen-bitmap],
+  @racket[make-platform-bitmap]'s implementation does not
+  depend on @racketmodname[racket/gui/base], making it
+  available in more contexts.
+  Accordingly, in the absence
+  of other constraints, @racket[make-platform-bitmap]
+  should be used in preference to other ways of creating bitmaps.
+    
+  That said, there are two drawbacks to @racket[make-platform-bitmap].
+  First, it will use more constrained resources than
+  @racket[make-bitmap] does, especially under Windows. One possible
+  approach to dealing with this problem for long-lived bitmaps
+  is to draw into the result of a @racket[make-platform-bitmap]
+  and then copy the contents of the drawing into the result
+  of a @racket[make-bitmap]. This preserves the better quality
+  drawing, but holds onto the constrained resources only during
+  the drawing process.  
+  
+  The other drawback is that @racket[make-platform-bitmap] does not
+  create bitmaps with an alpha channel under Windows 
+  (instead, the bitmaps have a white, solid background). 
+  If you need bitmaps with alpha channels, use @racket[make-bitmap]
+  instead.
+}
+                 
 @defproc[(make-bitmap [width exact-positive-integer?]
                       [height exact-positive-integer?]
                       [alpha? any/c #t])
@@ -43,7 +80,10 @@ See @racket[font%] for information about @racket[family].}
 
 Returns @racket[(make-object bitmap% width height #f alpha?)], but
 this procedure is preferred because it defaults @racket[alpha?] in a
-more useful way.}
+more useful way.
+
+See also @racket[make-platform-bitmap].
+}
 
 
 @defproc[(make-font [#:size size (integer-in 1 1024) 12]

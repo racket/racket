@@ -5,11 +5,11 @@
          racket/draw/unsafe/cairo
          racket/draw/private/local
          racket/draw/unsafe/bstr
+         racket/draw/private/bitmap
          "utils.rkt"
          "types.rkt"
          "const.rkt"
          "cg.rkt"
-         "bitmap.rkt"
          "../../lock.rkt"
          (only-in '#%foreign ffi-callback))
 

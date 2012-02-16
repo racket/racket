@@ -8,7 +8,6 @@
          racket/draw/private/gl-context
          "types.rkt"
          "utils.rkt"
-         "bitmap.rkt"
          "window.rkt"
          "../../lock.rkt"
          "../common/queue.rkt"

@@ -2,6 +2,7 @@
 (require "../../syntax.rkt"
          racket/class
          racket/draw
+         racket/draw/private/bitmap
          ffi/unsafe
          ffi/unsafe/objc
          "utils.rkt"
@@ -12,7 +13,6 @@
          "filedialog.rkt"
          "colordialog.rkt"
          "dc.rkt"
-         "bitmap.rkt"
          "printer-dc.rkt"
          "menu-bar.rkt"
          "agl.rkt"

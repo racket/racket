@@ -11,11 +11,7 @@
          racket/draw
          scheme/class)
 
-(define pink-code-font
-  (if (and (eq? (system-type) 'macosx)
-           (member "Courier" (get-face-list)))
-      "Courier"
-      'modern))
+(define pink-code-font 'modern)
 
 (require (for-syntax scheme/base))
   

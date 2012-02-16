@@ -7,7 +7,8 @@
          "font-syms.rkt"
          "font-dir.rkt"
          "local.rkt"
-         "xp.rkt")
+         "xp.rkt"
+         "lock.rkt")
 
 (provide font%
          font-list% the-font-list
@@ -38,9 +39,6 @@
 (define font-descs (make-weak-hash))
 (define ps-font-descs (make-weak-hash))
 (define keys (make-weak-hash))
-
-(define-syntax-rule (atomically e)
-  (begin (start-atomic) (begin0 e (end-atomic))))
 
 (define substitute-fonts? (memq (system-type) '(macosx windows)))
 (define substitute-mapping (make-hasheq))

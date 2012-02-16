@@ -5,13 +5,13 @@
          racket/draw
          racket/draw/private/gl-context
          racket/draw/private/color
+         racket/draw/private/bitmap
          "pool.rkt"
          "utils.rkt"
          "const.rkt"
          "types.rkt"
          "window.rkt"
          "dc.rkt"
-         "bitmap.rkt"
          "cg.rkt"
          "queue.rkt"
          "item.rkt"

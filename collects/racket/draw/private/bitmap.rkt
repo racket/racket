@@ -14,13 +14,18 @@
          "../bmp.rkt"
          "../gif.rkt"
          "local.rkt"
-         "color.rkt")
+         "color.rkt"
+         "lock.rkt")
 
 (provide bitmap%
          make-bitmap
+         make-platform-bitmap
          read-bitmap
          make-monochrome-bitmap
-         (protect-out make-alternate-bitmap-kind))
+         (protect-out make-alternate-bitmap-kind
+                      build-cairo-surface
+                      quartz-bitmap%
+                      win32-no-hwnd-bitmap%))
 
 ;; FIXME: there must be some way to abstract over all many of the
 ;; ARGB/RGBA/BGRA iterations.
@@ -850,3 +855,77 @@
   (if bits
       (make-object bitmap% bits w h)
       (make-object bitmap% w h #t)))
+
+(define/top (make-platform-bitmap [exact-positive-integer? w]
+                                  [exact-positive-integer? h])
+  (case (system-type)
+    [(macosx) (make-object quartz-bitmap% w h)]
+    [(windows) (make-object win32-no-hwnd-bitmap% w h)]
+    [(unix) (make-bitmap w h)]))
+
+(define-local-member-name build-cairo-surface)
+(define win32-no-hwnd-bitmap%
+  (class bitmap%
+    (init w h)
+    (super-make-object (make-alternate-bitmap-kind w h))
+    
+    (define s (build-cairo-surface w h))
+    ;; erase the bitmap
+    (let ([cr (cairo_create s)])
+      (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
+      (cairo_paint cr)
+      (cairo_destroy cr))
+    
+    (define/public (build-cairo-surface w h) 
+      (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h))
+    
+    (define/override (ok?) #t)
+    (define/override (is-color?) #t)
+    (define/override (has-alpha-channel?) #f)
+    
+    (define/override (get-cairo-surface) s)
+    
+    (define/override (release-bitmap-storage)
+      (atomically
+       (cairo_surface_destroy s)
+       (set! s #f)))))
+
+(define quartz-bitmap%
+  (class bitmap%
+    (init w h [with-alpha? #t])
+    (super-make-object (make-alternate-bitmap-kind w h))
+    
+    (define s
+      (let ([s (cairo_quartz_surface_create (if with-alpha?
+                                                CAIRO_FORMAT_ARGB32
+                                                CAIRO_FORMAT_RGB24)
+                                            w
+                                            h)])
+        ;; initialize bitmap to empty - needed?
+        (let ([cr (cairo_create s)])
+          (cairo_set_operator cr (if with-alpha?
+                                     CAIRO_OPERATOR_CLEAR
+                                     CAIRO_OPERATOR_SOURCE))
+          (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
+          (cairo_paint cr)
+          (cairo_destroy cr))
+        s))
+    
+    (define/override (ok?) (and s #t))
+    
+    (define/override (is-color?) #t)
+    
+    (define has-alpha? with-alpha?)
+    (define/override (has-alpha-channel?) has-alpha?)
+    
+    (define/override (get-cairo-surface) s)
+    (define/override (get-cairo-alpha-surface) 
+      (if has-alpha?
+          s
+          (super get-cairo-alpha-surface)))
+    
+    (define/override (release-bitmap-storage)
+      (atomically
+       (when s
+         (cairo_surface_destroy s)
+         (set! s #f))))))

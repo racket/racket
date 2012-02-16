@@ -16,14 +16,14 @@
                                            (send dc set-bitmap #f))
                                           bm)))]
 @interaction-eval[#:eval draw-eval (define (line-bitmap mode)
-                                      (let* ([bm (make-bitmap 30 4)]
+                                     (let* ([bm (make-platform-bitmap 30 4)]
                                             [dc (make-object bitmap-dc% bm)])
-                                        (send dc set-smoothing mode)
-                                        (send dc draw-line 0 2 30 2)
+                                       (send dc set-smoothing mode)
+                                       (send dc draw-line 0 2 30 2)
                                        (send dc set-bitmap #f)
-                                       bm))]
+                                       (copy-bitmap bm)))]
 @interaction-eval[#:eval draw-eval (define (path-bitmap zee join brush?)
-                                     (let* ([bm (make-bitmap 40 40)]
+                                     (let* ([bm (make-platform-bitmap 40 40)]
                                             [dc (new bitmap-dc% [bitmap bm])])
                                        (send dc set-smoothing 'aligned)
                                        (send dc set-pen (new pen% [width 5] [join join]))
@@ -32,7 +32,7 @@
                                            (send dc set-brush "white" 'transparent))
                                        (send dc draw-path zee 5 5)
                                        (send dc set-bitmap #f)
-                                       bm))]
+                                       (copy-bitmap bm)))]
 
 @(define-syntax-rule (define-linked-method name interface)
    (define-syntax name 
@@ -98,12 +98,12 @@ in a GUI window.}
 @section{Lines and Simple Shapes}
 
 To draw into a bitmap, first create the bitmap with
-@racket[make-bitmap], and then create a @racket[bitmap-dc%] that draws
+@racket[make-platform-bitmap], and then create a @racket[bitmap-dc%] that draws
 into the new bitmap:
 
 @racketblock+eval[
 #:eval draw-eval
-(define target (make-bitmap 30 30)) (code:comment "A 30x30 bitmap")
+(define target (make-platform-bitmap 30 30)) (code:comment "A 30x30 bitmap")
 (define dc (new bitmap-dc% [bitmap target]))
 ]
 
@@ -234,7 +234,7 @@ The @racket[set-pen] and @racket[set-brush] methods of a @tech{DC}
   (send dc set-pen red-pen) 
   (send dc draw-arc 37 37 75 75 (* 5/4 pi) (* 7/4 pi)))
 
-(define target (make-bitmap 150 150))
+(define target (make-platform-bitmap 150 150))
 (define dc (new bitmap-dc% [bitmap target]))
 
 (draw-face dc)
@@ -477,7 +477,7 @@ At this point we can't resist showing an extended example using
   (send dc set-brush blue-brush)
   (send dc draw-path right-logo-path))
 
-(define racket-logo (make-bitmap 170 170))
+(define racket-logo (make-platform-bitmap 170 170))
 (define dc (new bitmap-dc% [bitmap racket-logo]))
 
 (send dc set-smoothing 'smoothed)
@@ -501,7 +501,7 @@ draw and a location for the top-left of the drawn text:
 
 @racketblock+eval[
 #:eval draw-eval
-(define text-target (make-bitmap 100 30))
+(define text-target (make-platform-bitmap 100 30))
 (define dc (new bitmap-dc% [bitmap text-target]))
 (send dc set-brush "white" 'transparent)
 
@@ -559,7 +559,7 @@ transferred, and the background is left alone:
 
 @racketblock+eval[
 #:eval draw-eval
-(define new-target (make-bitmap 100 30))
+(define new-target (make-platform-bitmap 100 30))
 (define dc (new bitmap-dc% [bitmap new-target]))
 (send dc set-pen "black" 1 'transparent)
 (send dc set-brush "pink" 'solid)
@@ -573,7 +573,7 @@ transferred, and the background is left alone:
 The information about which pixels of a bitmap are drawn (as opposed
 to ``nothing'') is the bitmap's @deftech{alpha channel}. Not all
 @tech{DC}s keep an alpha channel, but bitmaps created with
-@racket[make-bitmap] keep an alpha channel by default. Bitmaps loaded
+@racket[make-platform-bitmap] keep an alpha channel by default. Bitmaps loaded
 with @racket[read-bitmap] preserve transparency in the image file
 through the bitmap's alpha channel.
 
@@ -638,12 +638,15 @@ viewed as a convenience alternative to clipping repeated calls of
 @; ------------------------------------------------------------
 @section{Portability}
 
-Drawing effects are not completely portable across platforms or across
-types of DC. For example. drawing to a bitmap produced by
-@racket[make-bitmap] may produce slightly different results than
-drawing to one produced by @racketmodname[racket/gui]'s
-@racket[make-screen-bitmap], but drawing to a bitmap from
-@racket[make-screen-bitmap] should be the same as drawing to an
-onscreen @racket[canvas%]. Fonts and text, especially, can vary across
+Drawing effects are not completely portable across platforms, across
+different classes that implement @racket[dc<%>], or different
+kinds of bitmaps. Fonts and text, especially, can vary across
 platforms and types of @tech{DC}, but so can the precise set of pixels
 touched by drawing a line.
+
+For example, drawing to a bitmap produced by
+@racket[make-platform-bitmap] may produce slightly different results than
+drawing to one produced by 
+@racket[make-bitmap]. Drawing to a bitmap from
+@racket[make-screen-bitmap], however, should be the same as drawing to an
+onscreen @racket[canvas%]. 

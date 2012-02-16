@@ -253,7 +253,10 @@ Creates a bitmap that draws in a way that is the same as drawing to a
 canvas in its default configuration.
 
 A normal @racket[bitmap%] draws in a more platform-independent way and
-may use fewer constrained resources, particularly on Windows.}
+may use fewer constrained resources, particularly on Windows.
+
+See also @racket[make-platform-bitmap].
+}
 
 
 @defproc[(play-sound [filename path-string?]

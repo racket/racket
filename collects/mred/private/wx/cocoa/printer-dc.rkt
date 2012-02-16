@@ -13,7 +13,6 @@
          "../../lock.rkt"
          "dc.rkt"
          "frame.rkt"
-         "bitmap.rkt"
          "cg.rkt"
          "utils.rkt"
          "types.rkt")

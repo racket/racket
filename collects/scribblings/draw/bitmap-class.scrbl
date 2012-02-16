@@ -5,7 +5,7 @@
 
 A @racket[bitmap%] object is a pixel-based image, either
  monochrome, color, or color with an alpha channel. See also
- @racket[make-screen-bitmap] and @xmethod[canvas% make-bitmap].
+ @racket[make-platform-bitmap].
 
 A bitmap is convertible to @racket['png-bytes] through the
 @racketmodname[file/convertible] protocol.
@@ -29,11 +29,15 @@ A bitmap is convertible to @racket['png-bytes] through the
                         [width exact-positive-integer?]
                         [height exact-positive-integer?]))]{
 
-The @racket[make-bitmap], @racket[make-monochrome-bitmap], and
- @racket[read-bitmap] functions are preferred over using
- @racket[make-object] with @racket[bitmap%], because the functions are
- less overloaded and they enable alpha channels by default.
+The function @racket[make-platform-bitmap] is preferred over
+using @racket[bitmap%] directly.
 
+The @racket[make-bitmap], @racket[make-monochrome-bitmap], and
+ @racket[read-bitmap] functions are closer to @racket[bitmap%], but
+ they are also preferred over using @racket[make-object] 
+ with @racket[bitmap%] directly, because the functions are
+ less overloaded and they enable alpha channels by default.
+ 
 When @racket[width] and @racket[height] are provided: Creates a new
  bitmap. If @racket[monochrome?] is true, the bitmap is monochrome; if
  @racket[monochrome?] is @racket[#f] and @racket[alpha?] is true, the
@@ -160,8 +164,8 @@ Returns @racket[#f] if the bitmap is monochrome, @racket[#t] otherwise.
            boolean?]{
 
 Loads a bitmap from a file format that read from @racket[in], unless
- the bitmap was produced by @racket[make-screen-bitmap] or 
- @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
+ the bitmap was produced by @racket[make-screen-bitmap], @racket[make-platform-bitmap],
+ or @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
  If the bitmap is in use by a
  @racket[bitmap-dc%] object or a control, the image data is not
  loaded. The bitmap changes its size and depth to match that of 

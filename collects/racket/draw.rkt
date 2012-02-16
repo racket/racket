@@ -41,5 +41,6 @@
 
          bitmap%
          make-bitmap
+         make-platform-bitmap
          read-bitmap
          make-monochrome-bitmap)

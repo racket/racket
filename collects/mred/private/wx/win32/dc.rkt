@@ -23,46 +23,33 @@
 
 (define-gdi32 SelectClipRgn (_wfun _pointer _pointer -> _int))
 
-(define win32-bitmap%
-  (class bitmap%
-    (init w h hwnd [gl-config #f])
-    (super-make-object (make-alternate-bitmap-kind w h))
+(define hwnd-param (make-parameter #f))
 
-    (define s
-      (let ([s
-             (if (not hwnd)
-                 (cairo_win32_surface_create_with_dib CAIRO_FORMAT_RGB24 w h)
-                 (atomically
-                  (let ([hdc (GetDC hwnd)])
-                    (begin0
-                     (cairo_win32_surface_create_with_ddb hdc
-                                                          CAIRO_FORMAT_RGB24 w h)
-                     (ReleaseDC hwnd hdc)))))])
-        ;; initialize bitmap to white:
-        (let ([cr (cairo_create s)])
-          (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
-          (cairo_paint cr)
-          (cairo_destroy cr))
-        s))
+(define win32-bitmap%
+  (class win32-no-hwnd-bitmap%
+    (init w h hwnd [gl-config #f])
+    (inherit get-cairo-surface)
+    (parameterize ([hwnd-param hwnd])
+      (super-new [w w] [h h]))
+    
+    (define/override (build-cairo-surface w h) 
+      (define hwnd (hwnd-param))
+      (if hwnd
+          (atomically
+           (let ([hdc (GetDC hwnd)])
+             (begin0
+               (cairo_win32_surface_create_with_ddb hdc
+                                                    CAIRO_FORMAT_RGB24 w h)
+               (ReleaseDC hwnd hdc))))
+          (super build-cairo-surface)))
     
     (define gl (and gl-config
-                    (let ([hdc (cairo_win32_surface_get_dc s)])
+                    (let ([hdc (cairo_win32_surface_get_dc (get-cairo-surface))])
                       (set-cpointer-tag! hdc 'HDC)
                       (create-gl-context hdc 
                                          gl-config
                                          #t))))
-    (define/override (get-bitmap-gl-context) gl)
-
-    (define/override (ok?) #t)
-    (define/override (is-color?) #t)
-    (define/override (has-alpha-channel?) #f)
-
-    (define/override (get-cairo-surface) s)
-
-    (define/override (release-bitmap-storage)
-      (atomically
-       (cairo_surface_destroy s)
-       (set! s #f)))))
+    (define/override (get-bitmap-gl-context) gl)))
 
 (define dc%
   (class backing-dc%

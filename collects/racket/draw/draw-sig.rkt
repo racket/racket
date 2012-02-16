@@ -18,6 +18,7 @@ gl-config%
 gl-context<%>
 linear-gradient%
 make-bitmap
+make-platform-bitmap
 make-monochrome-bitmap
 pdf-dc%
 pen%
