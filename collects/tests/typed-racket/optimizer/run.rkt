@@ -21,7 +21,9 @@
       (parameterize
           ([current-namespace (make-base-empty-namespace)]
            [current-load-relative-directory dir])
-        (dynamic-require f #f)))))
+        (dynamic-require f #f))
+      ;; clean up compiled files in prevision of the next testing run
+      (delete-directory/files (build-path dir "compiled")))))
 
 ;; we log optimizations and compare to an expected log to make sure that all
 ;; the optimizations we expected did indeed happen
