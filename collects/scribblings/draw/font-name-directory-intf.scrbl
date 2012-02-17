@@ -31,15 +31,16 @@ For a family without a face string, the corresponding font ID has a
  @racket[printer-dc%]).
 
 Currently, on all platforms, a face string is interpreted as a
- @hyperlink["http://www.pango.org"]{Pango} font description. A
- description can be a family name such as @racket["Helvetica"], a face
- name such as @racket["Helvetica Bold"], or a list of comma-separated
- families followed by space-separated font options such as
- @racket["Helvetica,Arial bold italic"]. Any size in a font
+ @hyperlink["http://www.pango.org"]{Pango} font description when it
+ contains a comma, otherwise it is treated as a family name. A
+ face can thus be just a family name such as @racket["Helvetica"], a family
+ followed by a comma and font modifiers as in @racket["Helvetica, Bold"], or a sequence of comma-separated
+ familie names followed by space-separated font options as an
+ @racket["Helvetica, Arial, bold italic"]. Any size in a font
  description is overridden by a given @racket[font%]'s size. Any
  (slant) style or weight options in a font description are overridden
- by a non-@racket['normal] value for a given @racket[font%]'s style
- or weight, respectively.
+ by a non-@racket['normal] value for a given @racket[font%]'s style or
+ weight, respectively.
 
 @defmethod[(find-family-default-font-id [family (one-of/c 'default 'decorative 'roman 'script 
                                                           'swiss 'modern 'symbol 'system)])

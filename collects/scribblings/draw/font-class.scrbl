@@ -31,7 +31,7 @@ A @defterm{font} is an object which determines the appearance of text,
  @margin-note{The terminology ``family'' and ``face'' is mangled
               relative to its usual meaning. A @racket[font%] ``face''
               is really used more like a font family in the usual
-              terminology, or more generally as a face-description
+              terminology or more generally as a face-description
               string that is combined with other @racket[font%]
               attributes to arrive at a face. A @racket[font%]
               ``family'' is a kind of abstract font family that is

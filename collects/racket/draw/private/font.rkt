@@ -133,17 +133,24 @@
           (and desc
                (install! desc)
                desc))
-        (let* ([desc (pango_font_description_from_string (if ps?
-                                                             (send the-font-name-directory
-                                                                   get-post-script-name
-                                                                   id
-                                                                   weight
-                                                                   style)
-                                                             (send the-font-name-directory
-                                                                   get-screen-name
-                                                                   id
-                                                                   weight
-                                                                   style)))])
+        (let* ([desc-str (if ps?
+                             (send the-font-name-directory
+                                   get-post-script-name
+                                   id
+                                   weight
+                                   style)
+                             (send the-font-name-directory
+                                   get-screen-name
+                                   id
+                                   weight
+                                   style))]
+               [desc (if (regexp-match #rx"," desc-str)
+                         ;; comma -> a font description
+                         (pango_font_description_from_string desc-str)
+                         ;; no comma -> a font family
+                         (let ([desc (pango_font_description_new)])
+                           (pango_font_description_set_family desc desc-str)
+                           desc))])
           (unless (eq? style 'normal)
             (pango_font_description_set_style desc (case style
                                                      [(normal) PANGO_STYLE_NORMAL]
@@ -304,7 +311,7 @@
           (for/list ([face (in-list (pango_font_family_list_faces fam))])
             (string-append
              (pango_font_family_get_name fam)
-             " "
+             ", "
              (pango_font_face_get_face_name face))))))
    string<?))
 

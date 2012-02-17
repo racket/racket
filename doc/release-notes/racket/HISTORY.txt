@@ -3,6 +3,8 @@ Added prop:cpointer
 Fixed handle-evt to disallow a handle-evt
 mysterx: removed ActiveX support plus com-add-ref and 
  com-ref-count
+racket/draw: treat a face as a Pango font description
+ only when it contains a comma
 
 Version 5.2.1.5
 Added racket/future to re-exports of racket
@@ -39,6 +41,7 @@ net/mime: allow any subtype in input; made exception structs a
  subtype of exn:fail
 compiler/zo-structs: added inline-variant
 racket/stream: added stream constructor
+racket/draw: treat a face as a Pango font description
 
 Version 5.2, November 2011
 Generalized begin-with-syntax to allow phase-N definitions,

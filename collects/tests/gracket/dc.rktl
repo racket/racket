@@ -502,4 +502,9 @@
 
 ;; ----------------------------------------
 
+(test #f 'no-commas (ormap (lambda (s) (regexp-match? #rx"," s)) (get-face-list)))
+(test #t 'all-commas (andmap (lambda (s) (regexp-match? #rx"," s)) (get-face-list #:all-variants? #t)))
+
+;; ----------------------------------------
+
 (report-errs)
