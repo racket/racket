@@ -74,7 +74,7 @@ racket/base
 (require ffi/unsafe
          ffi/unsafe/define)
 
-(define-ffi-definer define-curses "libcurses")
+(define-ffi-definer define-curses (ffi-lib "libcurses"))
 ]
 
 This @racket[define-ffi-definer] declaration introduces a
