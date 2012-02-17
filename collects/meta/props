@@ -1453,6 +1453,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (gracket *) drdr:timeout 240
 "collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/tests/eli-tester.rkt" responsible (eli)
 "collects/tests/errortrace/alert.rkt" responsible (eli)
 "collects/tests/framework" responsible (robby)
 "collects/tests/framework/canvas.rkt" drdr:command-line (mzc "-k" *)
@@ -1525,6 +1526,7 @@ path/s is either such a string or a list of them.
 "collects/tests/htdp-lang/intm-intml.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/intmlam-adv.rktl" drdr:command-line #f
 "collects/tests/html" responsible (jay)
+"collects/tests/info.rkt" responsible (eli)
 "collects/tests/jpr" responsible (mflatt)
 "collects/tests/jpr/balle-grav-frot.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/dessine-arbre.ss" drdr:command-line (mzc "-k" *)
@@ -1926,7 +1928,7 @@ path/s is either such a string or a list of them.
 "collects/tests/rackunit/standalone-check-test.rkt" drdr:command-line #f
 "collects/tests/rackunit/standalone-test-case-test.rkt" drdr:command-line #f
 "collects/tests/rackunit/standalone.rkt" drdr:command-line (racket "-qjt" *)
-"collects/tests/run-automated-tests.rkt" drdr:command-line (mzc "-k" *) drdr:timeout 600
+"collects/tests/run-automated-tests.rkt" responsible (eli) drdr:command-line (mzc "-k" *) drdr:timeout 600
 "collects/tests/scribble" responsible (eli)
 "collects/tests/slatex" responsible (jay sstrickl)
 "collects/tests/srfi" responsible (noel chongkai jay)
