@@ -1132,6 +1132,7 @@ path/s is either such a string or a list of them.
 "collects/mysterx/main.rkt" drdr:command-line (mzc *)
 "collects/mysterx/mysterx.rkt" drdr:command-line (mzc *)
 "collects/mzcom" responsible (mflatt)
+"collects/mzlib" responsible (mflatt)
 "collects/mzlib/contract.rkt" responsible (robby)
 "collects/mzlib/foreign.rkt" responsible (eli)
 "collects/mzlib/kw.rkt" responsible (eli)
