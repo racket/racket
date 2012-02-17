@@ -51,10 +51,11 @@
      (dynamic-wind
          start-atomic
          (lambda ()
-           (apply proc args)
-           (let ([v (get-arg args)])
-             (let ([ds (hash-ref allocated v null)])
-               (hash-set! allocated v (cons d ds)))))
+	   (begin0
+	    (apply proc args)
+	    (let ([v (get-arg args)])
+	      (let ([ds (hash-ref allocated v null)])
+		(hash-set! allocated v (cons d ds))))))
          end-atomic))
    proc))
 
