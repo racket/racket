@@ -20,6 +20,8 @@
       (test '(4 5 6) tri->list tv2)
       (test '(4 5 6) tri->list* tv2)
       (test '(7 8 9) tri->list* (list*->tri '(7 8 9)))
+      (test #f cast #f _tri-pointer/null _pointer)
+      (test #f cast #f _pointer _tri-pointer/null)
       (test #t tri? tv)
       (test #f tri? 'tv)
       (test #f tri? (cast 1 _intptr _pointer))
@@ -40,6 +42,8 @@
       (test #f tri? 'tv)
       (test #f tri? (cast 1 _intptr _pointer))
       (q-more qv)
+      (test #f cast #f _quad-pointer/null _pointer)
+      (test #f cast #f _pointer _quad-pointer/null)
 
       (define-cstruct _quint ([pre _quad]
                               [r _float]))

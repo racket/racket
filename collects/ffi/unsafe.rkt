@@ -1105,7 +1105,10 @@
           (if (cpointer? p)
             (and p (if (cpointer-has-tag? p t) p (error* p)))
             (error* p))))
-      (make-ctype (or ptr-type _pointer)
+      (make-ctype (cond
+                   [(and nullable? ptr-type) (_or-null ptr-type)]
+                   [ptr-type]
+                   [else _pointer])
         ;; bad hack: `if's outside the lambda for efficiency
         (if nullable?
           (if scheme->c
