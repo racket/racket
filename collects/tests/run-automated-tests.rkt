@@ -3,7 +3,7 @@
 ;; To include a test, add an appropriate entry in `tests' below.
 ;; Notes:
 ;; - Each test is run in its own namespace, but there is very little
-;;   additional sandboxing.  (There is a timeout of 10 minutes.)
+;;   additional sandboxing.  (There is a timeout of 15 minutes.)
 ;; - Specifically, the I/O ports are not diverted -- so please keep
 ;;   output to a minimum, preferably nothing if there are no errors.
 ;; - Tests are only running in racket (*not* gracket), but note that
@@ -52,7 +52,7 @@
 
 (define (test path
               #:load? [load? #f] #:handler? [handler? #t]
-              #:timeout [timeout 10] ; in minutes
+              #:timeout [timeout 15] ; in minutes
               #:additional-modules [additional-modules '()])
   (define gloabl-state (current-preserved-thread-cell-values))
   (define stderr (current-error-port))
