@@ -95,6 +95,19 @@ LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
     return NULL;
 }
 
+int IsFlag(LPCTSTR cmd, LPCTSTR flag)
+{
+  while (*flag) {
+    if (toupper(*cmd) != toupper(*flag))
+      return 0;
+    cmd++;
+    flag++;
+  }
+  if (!*cmd || (*cmd == ' '))
+    return 1;
+  return 0;
+}
+
 #define DLL_RELATIVE_PATH L"lib"
 #include "../racket/delayed.inc"
 
@@ -124,25 +137,54 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
   _Module.dwThreadID = GetCurrentThreadId();
   TCHAR szTokens[] = _T("-/");
 
-  int nRet = 0;
+  int nRet = 0, verbose = 0;
   BOOL bRun = TRUE;
   LPCTSTR lpszToken = FindOneOf(lpCmdLine, szTokens);
   while (lpszToken != NULL)
     {
-      if (lstrcmpi(lpszToken, _T("UnregServer"))==0)
+      if (IsFlag(lpszToken, _T("UnregServer")))
         {
-	  _Module.UpdateRegistryFromResource(IDR_MZCOM, FALSE);
-          nRet = _Module.UnregisterServer(TRUE);
+	  if (!nRet) {
+	    _Module.UpdateRegistryFromResource(IDR_MZCOM, FALSE);
+	    nRet = _Module.UnregisterServer(TRUE);
+	    bRun = FALSE;
+	  }
+        }
+      else if (IsFlag(lpszToken, _T("RegServer")))
+        {
+	  if (!nRet) {
+	    _Module.UpdateRegistryFromResource(IDR_MZCOM, TRUE);
+	    nRet = _Module.RegisterServer(TRUE);
+	    bRun = FALSE;
+	  }
+        }
+      else if (IsFlag(lpszToken, _T("v")))
+	{
+	  verbose = 1;
+	}
+      else if (IsFlag(lpszToken, _T("?")))
+        {
+	  MessageBox(NULL,
+		     _T("/RegServer - register\n"
+			"/UnregServer - unregister\n"
+			"/Embedding - ignored\n"
+			"/v - report failures\n"
+			"/? - show this help"),
+		     _T("Help"),
+		     MB_OK);
+	  bRun = FALSE;
+        }
+      else if (IsFlag(lpszToken, _T("Embedding")))
+	{
+	  /* ??? */
+	}
+      else
+	{
+          if (verbose)
+            MessageBox(NULL, lpszToken, _T("Unknown Flag"), MB_OK);
 	  bRun = FALSE;
 	  break;
-        }
-      if (lstrcmpi(lpszToken, _T("RegServer"))==0)
-        {
-	  _Module.UpdateRegistryFromResource(IDR_MZCOM, TRUE);
-	  nRet = _Module.RegisterServer(TRUE);
-	  bRun = FALSE;
-	  break;
-        }
+	}
       lpszToken = FindOneOf(lpszToken, szTokens);
     }
   
@@ -172,6 +214,19 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
         _Module.RevokeClassObjects();
 	Sleep(dwPause); //wait for any threads to finish
     }
+
+  if (verbose && (nRet != 0)) {
+    wchar_t *res;
+    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER
+		   | FORMAT_MESSAGE_FROM_SYSTEM,
+		   NULL,
+		   nRet,
+		   0,
+		   (wchar_t *)&res,
+		   0,
+		   0);
+    MessageBoxW(NULL, res, L"Registration Failed", MB_OK);
+  }
 
     _Module.Term();
     CoUninitialize();
