@@ -10,6 +10,7 @@
 # Windows linking and debugging
 /*.pdb
 /*.ilk
+/*.suo
 /GRacket.exe.manifest
 /Racket.exe.manifest
 
