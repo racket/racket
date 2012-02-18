@@ -976,7 +976,7 @@ path/s is either such a string or a list of them.
 "collects/lang/plt-pretty-big.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/lang/private/imageeq.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/launcher" responsible (mflatt)
-"collects/lazy" responsible (eli)
+"collects/lazy" responsible (eli stchang)
 "collects/macro-debugger" responsible (ryanc)
 "collects/macro-debugger/model/trace-raw.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/macro-debugger/stepper.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1455,6 +1455,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/eli-tester.rkt" responsible (eli)
 "collects/tests/errortrace/alert.rkt" responsible (eli)
+"collects/tests/file" responsible (eli mflatt)
 "collects/tests/framework" responsible (robby)
 "collects/tests/framework/canvas.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/debug.rkt" drdr:command-line (mzc "-k" *)
@@ -1536,6 +1537,7 @@ path/s is either such a string or a list of them.
 "collects/tests/jpr/monte-carlo.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/streams.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/valrose.ss" drdr:command-line (mzc "-k" *)
+"collects/tests/lazy" responsible (eli stchang)
 "collects/tests/macro-debugger" responsible (ryanc)
 "collects/tests/macro-debugger/all-tests.rkt" drdr:command-line (racket * "--text")
 "collects/tests/macro-debugger/gui-tests.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1582,6 +1584,7 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
 "collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
+"collects/tests/profile" responsible (eli)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
 "collects/tests/racket/all.rktl" drdr:command-line #f
