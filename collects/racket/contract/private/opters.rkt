@@ -382,14 +382,17 @@
                    (check-procedure val #f dom-len 0 '() '() #| keywords |# blame)
                    (chaperone-procedure
                     val
-                    (λ (dom-arg ...)
-                      (values 
-                       (case-lambda
-                         [(rng-arg ...)
-                          (values next-rng ...)]
-                         [args 
-                          (bad-number-of-results blame val rng-len args)])
-                       next-dom ...))))))
+                    (case-lambda
+                      [(dom-arg ...)
+                       (values 
+                        (case-lambda
+                          [(rng-arg ...)
+                           (values next-rng ...)]
+                          [args 
+                           (bad-number-of-results blame val rng-len args)])
+                        next-dom ...)]
+                      [args
+                       (bad-number-of-arguments blame val args dom-len)])))))
        (append lifts-doms lifts-rngs)
        (append superlifts-doms superlifts-rngs)
        (append partials-doms partials-rngs)
@@ -439,8 +442,10 @@
                    (check-procedure val #f dom-len 0 '() '() #|keywords|# blame)
                    (chaperone-procedure
                     val
-                    (λ (dom-arg ...)
-                      (values next-dom ...))))))
+                    (case-lambda
+                      [(dom-arg ...)  (values next-dom ...)]
+                      [args 
+                       (bad-number-of-arguments blame val args dom-len)])))))
        lifts-doms
        superlifts-doms
        partials-doms
@@ -477,3 +482,10 @@
                (values next lift superlift partial flat _ stronger-ribs chaperone?)
                (opt/unknown opt/i opt/info stx))))]))
 
+
+(define (bad-number-of-arguments blame val args dom-len)
+  (define num-values (length args))
+  (raise-blame-error (blame-swap blame) val 
+                     "expected ~a argument~a, got ~a argument~a"
+                     dom-len (if (= dom-len 1) "" "s")
+                     num-values (if (= num-values 1) "" "s")))

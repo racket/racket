@@ -363,7 +363,7 @@ v4 todo:
 
 ;; should we pass both the basic-lambda and the kwd-lambda?
 (define (arity-checking-wrapper val blame basic-lambda kwd-lambda min-method-arity max-method-arity min-arity max-arity req-kwd opt-kwd)
-  ;; should not build this unless we are in the 'else' case (and maybe not at all
+  ;; should not build this unless we are in the 'else' case (and maybe not at all)
   (cond
     [(matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
      (if (and (null? req-kwd) (null? opt-kwd)) 
@@ -438,7 +438,13 @@ v4 todo:
 ;; func : the wrapper function maker. It accepts a procedure for
 ;;        checking the first-order properties and the contracts
 ;;        and it produces a wrapper-making function.
-(define-struct base-> (pre post doms/c optional-doms/c dom-rest/c mandatory-kwds/c mandatory-kwds optional-kwds/c optional-kwds rngs/c rng-any? mtd? func))
+(define-struct base-> (pre post
+                       doms/c optional-doms/c dom-rest/c
+                       mandatory-kwds/c mandatory-kwds
+                       optional-kwds/c optional-kwds
+                       rngs/c rng-any?
+                       mtd?
+                       func))
 
 (define ((->-proj wrapper) ctc) 
   (let* ([doms-proj (map contract-projection
@@ -560,8 +566,6 @@ v4 todo:
                              ; Delegate to check-ctc-val
                              ((contract-struct-exercise c) v new-fuel)))])
        (andmap gen-if-fun (base->-doms/c ctc) args))))
-
-
 
 (define-struct (chaperone-> base->) ()
   #:property prop:chaperone-contract
@@ -751,10 +755,6 @@ v4 todo:
                  ;; the -> in the original input to this guy
                  (list (car (syntax-e stx)))
                  '()))))))
-  
-(define-syntax (-> stx) 
-  #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx)))
-
 
 
 ;                     
@@ -2000,9 +2000,15 @@ v4 todo:
      (λ (x) (send o m x)))))
 
 
-(define predicate/c-private->ctc 
-  (let ([predicate/c (-> any/c boolean?)])
-    predicate/c))
+(define predicate/c-private->ctc
+  (let-syntax ([m (λ (stx)
+                    ;; we don't use -> directly here to avoid a circularity, since
+                    ;; (-> any/c boolean?) expands into the identifier -predicate/c
+                    (syntax-case stx ()
+                      [(_ arg)
+                       #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main #'arg))]))])
+    (let ([predicate/c (m (-> any/c boolean?))])
+      predicate/c)))
 
 (struct predicate/c ()
   #:property prop:chaperone-contract
@@ -2020,3 +2026,16 @@ v4 todo:
    #:stronger (λ (this that) (contract-struct-stronger? predicate/c-private->ctc that))))
 
 (define -predicate/c (predicate/c))
+
+(define-syntax (-> stx) 
+  (syntax-case stx (any any/c boolean?)
+    [(_ any/c ... any)
+     ;; special case the (-> any/c ... any) contracts to be first-order checks only
+     (with-syntax ([dom-len (- (length (syntax->list stx)) 2)]
+                   [name (syntax->datum stx)])
+       #'(flat-named-contract 'name (λ (x) (and (procedure? x) (procedure-arity-includes? x dom-len #t)))))]
+    [(_ any/c boolean?)
+     ;; special case (-> any/c boolean?) to use predicate/c
+     #'-predicate/c]
+    [_
+     #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx))]))

@@ -1132,6 +1132,18 @@
    '((contract (integer? . -> . any) (lambda (x) #f) 'pos 'neg) #t))
 
   (test/spec-passed
+   'contract-arrow-all-anys1 
+   '((contract (-> any) (lambda () #f) 'pos 'neg)))
+
+  (test/pos-blame
+   'contract-arrow-all-anys2
+   '((contract (-> any) (lambda (x) #f) 'pos 'neg)))
+
+  (test/spec-passed
+   'contract-arrow-all-anys3
+   '((contract (-> any) (lambda ([x #f]) #f) 'pos 'neg)))
+
+  (test/spec-passed
    'contract-arrow-all-kwds
    '(contract (-> #:a string? string?) 
               (make-keyword-procedure void)
@@ -9572,6 +9584,8 @@ so that propagation occurs.
   (test-flat-contract '(or/c (flat-contract integer?) char?) #\a #t)
   (test-flat-contract '(or/c (flat-contract integer?) char?) 1 #t)
   
+  (ctest #t flat-contract? (-> any/c any/c any))
+
   (ctest #t flat-contract? (and/c))
   (ctest #t flat-contract? (and/c number? integer?))
   (ctest #t flat-contract? (and/c (flat-contract number?)
