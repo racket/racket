@@ -6273,6 +6273,32 @@
           m
           5))
   
+  (test/spec-passed/result
+   'object-contract/arrow-special-case1
+   '(send (contract (object-contract
+		     [m (-> any/c boolean?)])
+		    (new (class object%
+				(define/public (m x) #t)
+				(super-new)))
+		    'pos
+		    'neg)
+	  m 1)
+   #t)
+
+  (test/spec-passed/result
+   'object-contract/arrow-special-case2
+   '(send (contract (object-contract
+		     [m (-> any/c any)])
+		    (new (class object%
+				(define/public (m x) #t)
+				(super-new)))
+		    'pos
+		    'neg)
+	  m 1)
+   #t)
+
+
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; test error message has right format

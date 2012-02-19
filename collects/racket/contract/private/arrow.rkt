@@ -2030,12 +2030,14 @@ v4 todo:
 (define-syntax (-> stx) 
   (syntax-case stx (any any/c boolean?)
     [(_ any/c ... any)
+     (not (syntax-parameter-value #'making-a-method))
      ;; special case the (-> any/c ... any) contracts to be first-order checks only
      (with-syntax ([dom-len (- (length (syntax->list stx)) 2)]
                    [name (syntax->datum stx)])
        #'(flat-named-contract 'name (λ (x) (and (procedure? x) (procedure-arity-includes? x dom-len #t)))))]
     [(_ any/c boolean?)
      ;; special case (-> any/c boolean?) to use predicate/c
+     (not (syntax-parameter-value #'making-a-method))
      #'-predicate/c]
     [_
      #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx))]))
