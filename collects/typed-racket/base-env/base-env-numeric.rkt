@@ -572,6 +572,15 @@
        (-NegInt . -> . -NegFlonum)
        (-NonPosInt . -> . -NonPosFlonum)
        (-Int . -> . -Flonum))))
+  (define fl->fx-type
+    (lambda ()
+      (from-cases
+       (-FlonumZero . -> . -Zero)
+       (-PosFlonum . -> . -PosFixnum)
+       (-NegFlonum . -> . -NegFixnum)
+       (-NonNegFlonum . -> . -NonNegFixnum)
+       (-NonPosFlonum . -> . -NonPosFixnum)
+       (-Flonum . -> . -Fixnum))))
   (define make-flrectangular-type (lambda () (-Flonum -Flonum . -> . -FloatComplex)))
   (define flreal-part-type (lambda () (-FloatComplex . -> . -Flonum)))
   (define flimag-part-type (lambda () (-FloatComplex . -> . -Flonum)))
@@ -1870,6 +1879,8 @@
 [flexp (flexp-type)]
 [flsqrt (flsqrt-type)]
 [->fl (fx->fl-type)]
+[fx->fl (fx->fl-type)]
+[fl->fx (fl->fx-type)]
 [make-flrectangular (make-flrectangular-type)]
 [flreal-part (flreal-part-type)]
 [flimag-part (flimag-part-type)]
@@ -1907,6 +1918,7 @@
 ;
 [unsafe-flsqrt (flsqrt-type)]
 [unsafe-fx->fl (fx->fl-type)]
+[unsafe-fl->fx (fl->fx-type)]
 [unsafe-make-flrectangular (make-flrectangular-type)]
 [unsafe-flreal-part (flreal-part-type)]
 [unsafe-flimag-part (flimag-part-type)]
