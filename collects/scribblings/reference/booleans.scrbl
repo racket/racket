@@ -232,12 +232,13 @@ non-@racket[#f] value when applied to the structure.
 
 @defproc[(symbol=? [a symbol?] [b symbol?]) boolean?]{
 
-Returns @racket[(equal? a b)].}
+Returns @racket[(equal? a b)] (if @racket[a] and @racket[b] are symbols).}
 
 @defproc[(boolean=? [a boolean?] [b boolean?]) boolean?]{
 
-Returns @racket[(equal? a b)].}
+Returns @racket[(equal? a b)] (if @racket[a] and @racket[b] are booleans).}
 
 @defproc[(false? [v any/c]) boolean?]{
 
 Returns @racket[(not v)].}
+
