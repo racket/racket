@@ -257,6 +257,9 @@ Returns @racket[(not v)].}
 @defform[(nor expr ...)]{
   Same as @racket[(not (or expr ...))].
 
+  In the two argument case, returns @racket[#t] if neither of the
+  arguments is a true value.
+  
   @examples[#:eval 
             bool-eval
             (nor #f #t)
