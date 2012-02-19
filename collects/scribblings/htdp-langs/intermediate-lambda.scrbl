@@ -95,6 +95,8 @@ level as they did in the @secref["intermediate"] level.
 
 @(define-forms/normal define)
 
+@(beginner-abbr-forms quote quasiquote unquote unquote-splicing)
+
 @(prim-forms ("intermediate-lam")
              define 
              lambda
