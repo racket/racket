@@ -365,14 +365,22 @@
       (or (null? xs)
           (let loop ([x (car xs)] [xs (cdr xs)])
             (if (null? xs) x (and (! x) (loop (car xs) (cdr xs))))))))
-  (defsubst (~and x ...) (hidden-~ (and (hidden-! x) ...)) ~and *and)
+  (define-syntax !and
+    (syntax-rules ()
+      [(_) (and)]
+      [(_ x ... y) (and (hidden-! x) ... y)]))
+  (defsubst (~and x ...) (hidden-~ (!and x ...)) ~and *and)
 
   (define* (*or . xs)
     (let ([xs (!list xs)])
       (and (pair? xs)
            (let loop ([x (car xs)] [xs (cdr xs)])
              (if (null? xs) x (or (! x) (loop (car xs) (cdr xs))))))))
-  (defsubst (~or x ...) (hidden-~ (or (hidden-! x) ...)) ~or *or)
+  (define-syntax !or
+    (syntax-rules ()
+      [(_) (or)]
+      [(_ x ... y) (or (hidden-! x) ... y)]))
+  (defsubst (~or x ...) (hidden-~ (!or x ...)) ~or *or)
 
   ;; --------------------------------------------------------------------------
   ;; Special forms that are still special forms since they use ~begin
