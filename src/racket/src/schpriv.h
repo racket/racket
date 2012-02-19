@@ -2956,7 +2956,7 @@ typedef struct Scheme_Module_Registry {
 struct Scheme_Env {
   Scheme_Object so; /* scheme_namespace_type */
 
-  char disallow_unbound, rename_set_ready;
+  signed char disallow_unbound, rename_set_ready;
 
   struct Scheme_Module *module; /* NULL => top-level */
 

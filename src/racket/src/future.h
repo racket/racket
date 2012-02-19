@@ -184,7 +184,7 @@ typedef struct future_t {
   void *retval_p; /* use only with conservative GC */
   MZ_MARK_STACK_TYPE retval_m;
   int retval_i;
-  char no_retval;
+  signed char no_retval;
   char retval_is_rs_plus_two; /* => special result handling for on-demand JIT */
 
   Scheme_Object **multiple_array;
