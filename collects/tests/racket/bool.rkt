@@ -18,3 +18,22 @@
 (check-false (false? #t))
 (check-false (false? "11"))
 
+(for ([x (in-list '(#f #t))])
+  (for ([y (in-list '(#f #t))])
+    (for ([z (in-list '(#f #t))])
+      (check-equal? (implies x y z)
+                    (or (not x) (or (not y) z))))))
+(check-equal? (implies #f (car 'x)) #t)
+
+
+(check-equal? (nand #f #f) #t)
+(check-equal? (nand #f #t) #t)
+(check-equal? (nand #t #f) #t)
+(check-equal? (nand #t #t) #f)
+(check-equal? (nand #f (car 'x)) #t)
+
+(check-equal? (nor #f #f) #t)
+(check-equal? (nor #t #f) #f)
+(check-equal? (nor #f #t) #f)
+(check-equal? (nor #t #t) #f)
+(check-equal? (nor #t (car 'x)) #f)

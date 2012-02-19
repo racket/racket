@@ -22,7 +22,7 @@
 
 @mzlib[#:mode title etc]
 
-The @racketmodname[mzlib/etc] library re-exports the following
+The @racketmodname[mzlib/etc] library re-exports the following from
 @racketmodname[scheme/base] and other libraries:
 
 @racketblock[
@@ -35,6 +35,8 @@ The @racketmodname[mzlib/etc] library re-exports the following
   compose
   local
   symbol=?
+  nand 
+  nor
 ]
 
 @defform[(begin-lifted expr ...+)]

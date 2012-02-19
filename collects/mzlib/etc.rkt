@@ -162,14 +162,6 @@
           [(t a ...) (raise-syntax-error #f "invalid clause" stx s)]))
       (syntax->list (syntax (something ...))))]))
 
-(define-syntax (nor stx)
-  (syntax-case stx ()
-    [(_ expr ...) (syntax/loc stx (not (or expr ...)))]))
-
-(define-syntax (nand stx)
-  (syntax-case stx ()
-    [(_ expr ...) (syntax/loc stx (not (and expr ...)))]))
-
 (define-syntax (let+ stx)
   (syntax-case stx ()
     [(_ [clause ...] body1 body ...)

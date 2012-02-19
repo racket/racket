@@ -1,8 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 (provide true false false?
          boolean=?
-         symbol=?)
+         symbol=?
+         implies nand nor)
+(require (for-syntax racket/base))
 
 (define true #t)
 (define false #f)
@@ -19,3 +21,17 @@
     (raise-type-error 'symbol=? "symbol" (if (symbol? x) 1 0) x y))
   (eq? x y))
 
+(define-syntax (implies stx)
+  (syntax-case stx ()
+    [(implies x y)
+     (syntax/loc stx (if x y #t))]
+    [(implies x y z w ...)
+     (syntax/loc stx (if x (implies y z w ...) #t))]))
+
+(define-syntax (nor stx)
+  (syntax-case stx ()
+    [(_ expr ...) (syntax/loc stx (not (or expr ...)))]))
+
+(define-syntax (nand stx)
+  (syntax-case stx ()
+    [(_ expr ...) (syntax/loc stx (not (and expr ...)))]))

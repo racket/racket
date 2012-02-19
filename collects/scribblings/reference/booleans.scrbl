@@ -1,6 +1,9 @@
 #lang scribble/doc
 @(require "mz.rkt")
 
+@(define bool-eval (make-base-eval))
+@(bool-eval '(require racket/bool))
+
 @title[#:tag "booleans"]{Booleans and Equality}
 
 True and false @deftech{booleans} are represented by the values
@@ -242,3 +245,37 @@ Returns @racket[(equal? a b)] (if @racket[a] and @racket[b] are booleans).}
 
 Returns @racket[(not v)].}
 
+@defform[(nand expr ...)]{
+  Same as @racket[(not (and expr ...))].
+
+  @examples[#:eval 
+            bool-eval
+            (nand #f #t)
+            (nand #f (error 'ack "we don't get here"))]
+}
+
+@defform[(nor expr ...)]{
+  Same as @racket[(not (or expr ...))].
+
+  @examples[#:eval 
+            bool-eval
+            (nor #f #t)
+            (nor #t (error 'ack "we don't get here"))]
+
+          
+}
+
+@defform[(implies expr expr expr ...)]{
+  Checks to be sure that the first
+  expression implies the second, implies
+  the third, etc.
+  
+  @examples[#:eval 
+            bool-eval
+            (implies #f #t)
+            (implies #f #f)
+            (implies #f #f #t)
+            (implies #t #f)
+            (implies #f (error 'ack "we don't get here"))]
+                                       
+}
