@@ -768,11 +768,6 @@
 #endif
 # define MZ_JIT_USE_MPROTECT
 
-#if defined(__x86_64__)
-/* work around a bug in localtime() in 10.6.8 */
-# define MIN_VALID_DATE_SECONDS -67768040609715600
-#endif
-
 # define FLAGS_ALREADY_SET
 
 #endif

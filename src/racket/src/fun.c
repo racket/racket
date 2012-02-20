@@ -8320,10 +8320,44 @@ static int month_offsets[12] = { 0, 31, 59, 90,
                                 243, 273, 304, 334 };
 #endif
 
-#ifdef MIN_VALID_DATE_SECONDS
-# define VALID_TIME_RANGE(x) ((x) >= MIN_VALID_DATE_SECONDS)
+#if (defined(OS_X) || defined(XONX)) && defined(__x86_64__)
+/* work around a bug in localtime() in 10.6.8 */
+# include <sys/param.h>
+# include <sys/sysctl.h>
+static int VALID_TIME_RANGE(UNBUNDLE_TIME_TYPE lnow)
+{
+  /* Fits in 32 bits? */
+  int ilnow = (int)lnow;
+  if (lnow == (UNBUNDLE_TIME_TYPE)ilnow)
+    return 1;
+
+  /* 10.7 or later? */
+  {
+    int a[2];
+    size_t len;
+    char *vers;
+
+    a[0] = CTL_KERN;
+    a[1] = KERN_OSRELEASE;
+    sysctl(a, 2, NULL, &len, NULL, 0);
+    vers = (char *)scheme_malloc_atomic(len * sizeof(char));
+    sysctl(a, 2, vers, &len, NULL, 0);
+
+    if ((vers[0] == '1') && (vers[1] == '0') && (vers[2] == '.')) {
+      /* localtime() in 10.7.x (= 10.x at the kernel layer) doesn't seem
+         to work right with negative numbers that don't fit into 32 bits */
+      return 0;
+    }
+  }
+
+  return 1;
+}
 #else
-# define VALID_TIME_RANGE(x) 1
+# ifdef MIN_VALID_DATE_SECONDS
+#  define VALID_TIME_RANGE(x) ((x) >= MIN_VALID_DATE_SECONDS)
+# else
+#  define VALID_TIME_RANGE(x) 1
+# endif
 #endif
 
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
