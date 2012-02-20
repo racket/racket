@@ -27,6 +27,11 @@
     @p{See the "brief", PLT-oriented @intro{introduction to git}.}}))
 (define home-file @plain[#:file "home-text.html" home-text])
 
+(define robots.txt
+  @plain{User-agent: *
+         @(add-newlines (for/list ([d '(plt libs testing play)])
+                          @list{Disallow: /@|d|/}))})
+
 (define gitweb-config
   @plain[#:file "gitweb_config.perl"]{
     our $projectroot = "repos";
