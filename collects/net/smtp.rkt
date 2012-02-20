@@ -96,11 +96,11 @@
 
     (when auth-user
       (log "auth\n")
-      (fprintf w "AUTH PLAIN ~a"
-               ;; Encoding adds CRLF
+      (fprintf w "AUTH PLAIN ~a\r\n"
                (base64-encode
                 (string->bytes/latin-1
-                 (format "~a\0~a\0~a" auth-user auth-user auth-passwd))))
+                 (format "~a\0~a\0~a" auth-user auth-user auth-passwd))
+                #""))
       (check-reply r 235 w))
 
     (log "from\n")
