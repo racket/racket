@@ -197,7 +197,7 @@ flags:
 
  @itemize[
 
-  @item{@FlagFirst{i} or @DFlagFirst{repl} : Runs interactive read-eval-print
+  @item{@FlagFirst{i} or @DFlagFirst{repl} : Runs an interactive read-eval-print
         loop, using either @racket[read-eval-print-loop] (Racket) or
         @racket[graphical-read-eval-print-loop] (GRacket) after showing
         @racket[(banner)] and loading @racket[(find-system-path
@@ -242,7 +242,9 @@ flags:
 
   @item{@FlagFirst{I} @nonterm{path} : Sets @racket[(lib
         @#,nontermstr{path})] as the path to @racket[require] to initialize
-        the namespace, unless namespace initialization is disabled.}
+        the namespace, unless namespace initialization is disabled. Using
+        this flag can effectively set the language for the read-eval-print
+        loop and other top-level evaluation.}
 
   @item{@FlagFirst{X} @nonterm{dir} or @DFlagFirst{collects}
         @nonterm{dir} : Sets @nonterm{dir} as the path to the main
