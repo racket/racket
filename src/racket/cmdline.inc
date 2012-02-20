@@ -1437,7 +1437,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # ifdef CMDLINE_STDIO_FLAG
 	 "  -z, --text-repl : Use text `read-eval-print-loop' for -i\n"
 # endif
-         "  -I <path> : Set <init-lib> to <path>\n"
+         "  -I <path> : Set <init-lib> to <path> (sets language)\n"
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> (or \"\" disables all)\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
