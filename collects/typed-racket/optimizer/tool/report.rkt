@@ -115,7 +115,9 @@
 ;; optimization, and the child must be an irritant of the parent, or be a
 ;; merged irritant of the parent
 (define (parent-of? parent child)
-  (and (equal? (log-entry-kind parent)
+  (and (missed-opt-log-entry? parent) ; only applicable for missed opts
+       (missed-opt-log-entry? child)
+       (equal? (log-entry-kind parent)
                (log-entry-kind child))
        (member (log-entry-stx child)
                (append (missed-opt-log-entry-irritants parent)
@@ -145,16 +147,16 @@
 
 ;; log-entry (listof log-entry) -> log-entry
 ;; add a new missed opt to the list, maybe replacing its parent / children
-(define (maybe-merge-with-parent new missed-optimizations-log)
+(define (maybe-merge-with-parent new log-so-far)
   ;; check if the new one is the child of an old one
   ;; for/first is ok, since we can only have one parent in the list
   ;; (if we had more, one would have to be the parent of the other, so
   ;; only one would be in the list)
-  (define parent (for/first ([m (in-list missed-optimizations-log)]
+  (define parent (for/first ([m (in-list log-so-far)]
                              #:when (parent-of? m new))
                    m))
   ;; do we have children in the list, if so, merge with all of them
-  (define children (for/list ([m (in-list missed-optimizations-log)]
+  (define children (for/list ([m (in-list log-so-far)]
                               #:when (parent-of? new m))
                      m))
   (cond [parent
@@ -163,10 +165,10 @@
                      (missed-opt-log-entry-merged-irritants
                       parent))
              ;; we have been merged in the past, do nothing
-             missed-optimizations-log
+             log-so-far
              ;; do the actual merge
              (cons (combine-missed-optimizations parent new)
-                   (remove parent missed-optimizations-log)))]
+                   (remove parent log-so-far)))]
         [(not (null? children))
          ;; we found children, merge with them
          (let ([new (for/fold ([new new])
@@ -174,10 +176,10 @@
                       (combine-missed-optimizations new child))])
            (cons new
                  (filter (lambda (x) (not (member x children)))
-                         missed-optimizations-log)))]
+                         log-so-far)))]
         [else
          ;; no related entry, just add the new one
-         (cons new missed-optimizations-log)]))
+         (cons new log-so-far)]))
 
 ;;--------------------------------------------------------------------
 
