@@ -1398,6 +1398,8 @@
         
         [tc-e (vector-append #(1) #(2))
               (-vec -Integer)]
+	[tc-e/t (ann #() (Vectorof Integer))
+                (-vec -Integer)]
         )
   (test-suite
    "check-type tests"

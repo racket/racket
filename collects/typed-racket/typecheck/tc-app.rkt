@@ -153,7 +153,8 @@
 
 (define (type->list t)
   (match t
-    [(Pair: (Value: (? keyword? k)) b) (cons k (type->list b))]
+    [(Pair: (Value: (? keyword? k)) b)
+     (cons k (type->list b))]
     [(Value: '()) null]
     [_ (int-err "bad value in type->list: ~a" t)]))
 

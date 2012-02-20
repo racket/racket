@@ -23,98 +23,99 @@
 (export tc-expr^)
 
 ;; return the type of a literal value
-;; scheme-value -> type
+;; scheme-value [type] -> type
 (define (tc-literal v-stx [expected #f])
-  (define-syntax-class exp
-    (pattern i
-             #:fail-unless expected #f
-             #:attr datum (syntax-e #'i)
-             #:fail-unless (subtype (-val (attribute datum)) expected) #f))
-  (syntax-parse v-stx
-    [i:exp expected]
-    [i:boolean (-val (syntax-e #'i))]
-    [i:identifier (-val (syntax-e #'i))]
-
-    ;; Numbers
-    [0 -Zero]
-    [1 -One]
-    [(~var i (3d (conjoin byte? positive?))) -PosByte]
-    [(~var i (3d byte?)) -Byte]
-    [(~var i (3d (conjoin portable-index? positive?))) -PosIndex]
-    [(~var i (3d (conjoin portable-fixnum? positive?))) -PosFixnum]
-    [(~var i (3d (conjoin portable-fixnum? negative?))) -NegFixnum]
-    [(~var i (3d exact-positive-integer?)) -PosInt]
-    [(~var i (3d (conjoin exact-integer? negative?))) -NegInt]
-    [(~var i (3d (conjoin number? exact? rational? positive?))) -PosRat]
-    [(~var i (3d (conjoin number? exact? rational? negative?))) -NegRat]
-    [(~var i (3d (lambda (x) (eq? x 0.0)))) -FlonumPosZero]
-    [(~var i (3d (lambda (x) (eq? x -0.0)))) -FlonumNegZero]
-    [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
-    [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
-    [(~var i (3d flonum?)) -Flonum] ; for nan
-    [(~var i (3d (lambda (x) (eq? x 0.0f0)))) -SingleFlonumPosZero]
-    [(~var i (3d (lambda (x) (eq? x -0.0f0)))) -SingleFlonumNegZero]
-    [(~var i (3d (conjoin single-flonum? positive?))) -PosSingleFlonum]
-    [(~var i (3d (conjoin single-flonum? negative?))) -NegSingleFlonum]
-    [(~var i (3d single-flonum?)) -SingleFlonum] ; for nan
-    [(~var i (3d inexact-real?)) -InexactReal] ; catch-all, just in case
-    [(~var i (3d real?)) -Real] ; catch-all, just in case
-    ;; a complex number can't have a float imaginary part and an exact real part
-    [(~var i (3d (conjoin number? exact?)))
-     -ExactNumber]
-    [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
-                                                   (flonum? (real-part x)))))))
-     -FloatComplex]
-    [(~var i (3d (conjoin number? (lambda (x) (and (single-flonum? (imag-part x))
-                                                   (single-flonum? (real-part x)))))))
-     -InexactComplex]
-    [(~var i (3d number?)) -Number] ; otherwise, Number
-
-    [i:str -String]
-    [i:char -Char]
-    [i:keyword (-val (syntax-e #'i))]
-    [i:bytes -Bytes]
-    [i:byte-pregexp -Byte-PRegexp]
-    [i:byte-regexp -Byte-Regexp]
-    [i:pregexp -PRegexp]
-    [i:regexp  -Regexp]
-    [(i ...)
-     (match expected
-       [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
-        (-Tuple
-         (for/list ([l (in-list (syntax->list #'(i ...)))])
-           (tc-literal l elem-ty)))]
-       ;; errors are handled elsewhere
-       [_ (-Tuple
-           (for/list ([l (in-list (syntax->list #'(i ...)))])
-             (tc-literal l #f)))])]
-    [(~var i (3d vector?))
-     (match expected
-       [(Vector: t)
-        (make-Vector (apply Un
-                            (for/list ([l (in-vector (syntax-e #'i))])
-                              (tc-literal l t))))]
-       [(HeterogenousVector: ts)
-        (make-HeterogenousVector
-         (for/list ([l (in-vector (syntax-e #'i))]
-                    [t (in-list ts)])
-           (tc-literal l t)))]
-       ;; errors are handled elsewhere
-       [_ (make-HeterogenousVector (for/list ([l (syntax-e #'i)])
-                                     (generalize (tc-literal l #f))))])]
-    [(~var i (3d hash?))
-     (match expected
-       [(Hashtable: k v)
-        (let* ([h (syntax-e #'i)]
-               [ks (hash-map h (lambda (x y) (tc-literal x k)))]
-               [vs (hash-map h (lambda (x y) (tc-literal y v)))])
-          (make-Hashtable (generalize (check-below (apply Un ks)) k) (generalize (check-below (apply Un vs)))))]
-       [_ (let* ([h (syntax-e #'i)]
-                 [ks (hash-map h (lambda (x y) (tc-literal x)))]
-                 [vs (hash-map h (lambda (x y) (tc-literal y)))])
-            (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
-    [(a . b) (-pair (tc-literal #'a) (tc-literal #'b))]
-    [_ Univ]))
+  (define r
+    (syntax-parse v-stx
+      [i:boolean (-val (syntax-e #'i))]
+      [i:identifier (-val (syntax-e #'i))]
+      
+      ;; Numbers
+      [0 -Zero]
+      [1 -One]
+      [(~var i (3d (conjoin byte? positive?))) -PosByte]
+      [(~var i (3d byte?)) -Byte]
+      [(~var i (3d (conjoin portable-index? positive?))) -PosIndex]
+      [(~var i (3d (conjoin portable-fixnum? positive?))) -PosFixnum]
+      [(~var i (3d (conjoin portable-fixnum? negative?))) -NegFixnum]
+      [(~var i (3d exact-positive-integer?)) -PosInt]
+      [(~var i (3d (conjoin exact-integer? negative?))) -NegInt]
+      [(~var i (3d (conjoin number? exact? rational? positive?))) -PosRat]
+      [(~var i (3d (conjoin number? exact? rational? negative?))) -NegRat]
+      [(~var i (3d (lambda (x) (eq? x 0.0)))) -FlonumPosZero]
+      [(~var i (3d (lambda (x) (eq? x -0.0)))) -FlonumNegZero]
+      [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
+      [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
+      [(~var i (3d flonum?)) -Flonum] ; for nan
+      [(~var i (3d (lambda (x) (eq? x 0.0f0)))) -SingleFlonumPosZero]
+      [(~var i (3d (lambda (x) (eq? x -0.0f0)))) -SingleFlonumNegZero]
+      [(~var i (3d (conjoin single-flonum? positive?))) -PosSingleFlonum]
+      [(~var i (3d (conjoin single-flonum? negative?))) -NegSingleFlonum]
+      [(~var i (3d single-flonum?)) -SingleFlonum] ; for nan
+      [(~var i (3d inexact-real?)) -InexactReal] ; catch-all, just in case
+      [(~var i (3d real?)) -Real] ; catch-all, just in case
+      ;; a complex number can't have a float imaginary part and an exact real part
+      [(~var i (3d (conjoin number? exact?)))
+       -ExactNumber]
+      [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
+                                                     (flonum? (real-part x)))))))
+       -FloatComplex]
+      [(~var i (3d (conjoin number? (lambda (x) (and (single-flonum? (imag-part x))
+                                                     (single-flonum? (real-part x)))))))
+       -InexactComplex]
+      [(~var i (3d number?)) -Number] ; otherwise, Number
+      
+      [i:str -String]
+      [i:char -Char]
+      [i:keyword (-val (syntax-e #'i))]
+      [i:bytes -Bytes]
+      [i:byte-pregexp -Byte-PRegexp]
+      [i:byte-regexp -Byte-Regexp]
+      [i:pregexp -PRegexp]
+      [i:regexp  -Regexp]
+      [(~and i ()) (-val '())]
+      [(i . r)
+       (match (and expected (restrict expected (-pair Univ Univ) 'orig))
+         [(Pair: a-ty d-ty)
+          (-pair
+           (tc-literal #'i a-ty)
+           (tc-literal #'r d-ty))]
+         [(Union: '())
+          (tc-error/expr "expected ~a, but got" expected #:return expected)]
+         ;; errors are handled elsewhere
+         [t 
+          (-pair (tc-literal #'i) (tc-literal #'r))])]
+      [(~var i (3d vector?))
+       (match (and expected (restrict expected (-vec Univ) 'orig))
+         [(Vector: t)
+          (make-Vector (apply Un
+                              t ;; so that this isn't (Un) when we get no elems
+                              (for/list ([l (in-vector (syntax-e #'i))])
+                                (tc-literal l t))))]
+         [(HeterogenousVector: ts)
+          (make-HeterogenousVector
+           (for/list ([l (in-vector (syntax-e #'i))]
+                      [t (in-list ts)])
+             (tc-literal l t)))]
+         ;; errors are handled elsewhere
+         [_ (make-HeterogenousVector (for/list ([l (syntax-e #'i)])
+                                       (generalize (tc-literal l #f))))])]
+      [(~var i (3d hash?))
+       (match expected
+         [(Hashtable: k v)
+          (let* ([h (syntax-e #'i)]
+                 [ks (hash-map h (lambda (x y) (tc-literal x k)))]
+                 [vs (hash-map h (lambda (x y) (tc-literal y v)))])
+            (make-Hashtable (generalize (check-below (apply Un ks)) k) (generalize (check-below (apply Un vs)))))]
+         [_ (let* ([h (syntax-e #'i)]
+                   [ks (hash-map h (lambda (x y) (tc-literal x)))]
+                   [vs (hash-map h (lambda (x y) (tc-literal y)))])
+              (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
+      [_ Univ]))
+  
+  (if expected
+      (check-below r expected)
+      r))
 
 
 ;; do-inst : syntax type -> type
