@@ -174,7 +174,7 @@
             (make-root 'vector
                        (λ () 
                           (vector-ref v i))
-                       (λ (ne) (vector-set! v ne)))))
+                       (λ (ne) (vector-set! v i ne)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Environments of closures
