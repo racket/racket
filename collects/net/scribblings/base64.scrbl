@@ -8,11 +8,12 @@ utilities for Base 64 (MIME-standard) encoding and decoding.}
 
 @section[#:tag "base64-procs"]{Functions}
 
-@defproc[(base64-encode [bstr bytes?]) bytes?]{
+@defproc[(base64-encode [bstr bytes?] [newline-bstr bytes? #"\r\n"]) bytes?]{
 
 Consumes a byte string and returns its Base 64 encoding as a new byte
 string.  The returned string is broken into 72-byte lines separated by
-CRLF combinations, and always ends with a CRLF combination unless the
+@racket[newline-bstr], which defaults to a CRLF combination, and the
+result always ends with a @racket[newline-bstr] unless the
 input is empty.}
 
 
