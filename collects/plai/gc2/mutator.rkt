@@ -182,12 +182,14 @@
            (let ([closure 
                   (closure-code
                    #,(length (syntax->list #'(free-id ...)))
-                   (lambda (free-id ... id ...) 
-                     (syntax-parameterize ([mutator-env-roots 
-                                            (list #'id ...
-                                                  #'free-id ...)]
-                                           [mutator-tail-call? #t])
-                                          (->address body))))])
+                   (let ([closure
+                          (lambda (free-id ... id ...) 
+                            (syntax-parameterize ([mutator-env-roots 
+                                                   (list #'id ...
+                                                         #'free-id ...)]
+                                                  [mutator-tail-call? #t])
+                                                 (->address body)))])
+                     closure))])
              #,(if (syntax-parameter-value #'mutator-tail-call?)
                    (syntax/loc stx
                      (#%app collector:closure closure (vector free-id ...)))
@@ -279,7 +281,10 @@
               result-addr]
              [(location? result-addr)
               (printf "Value at location ~a:\n" result-addr)
-              (gc->scheme result-addr)])])))]))
+              (gc->scheme result-addr)]
+             [(prim? result-addr)
+              (printf "Primitive:\n")
+              (prim-proc result-addr)])])))]))
 
 ; Module Begin
 (define-for-syntax (allocator-setup-internal stx)
@@ -388,49 +393,17 @@
      (raise-syntax-error #f "expected list of identifiers to import" stx)]
     [_ (raise-syntax-error #f "expected open parenthesis before import-primitive")]))
 
-; User Functions
-(define (mutator-lift f) 
-  (lambda args
-    (let ([result (apply f (map collector:deref args))])
-      (if (void? result)
-          (void)
-          (collector:alloc-flat result)))))
-(define-syntax (provide/lift stx)
+(define-syntax (provide-flat-prims/lift stx)
   (syntax-case stx ()
     [(_ id ...)
      (andmap identifier? (syntax->list #'(id ...)))
-     (with-syntax ([(lifted-id ...) (generate-temporaries #'(id ...))])
+     (with-syntax ([(id2 ...) (generate-temporaries #'(id ...))])
        #'(begin
-           (define-syntax lifted-id
-             (make-set!-transformer
-              (lambda (stx)
-                (syntax-case stx (set!)
-                  ;; Redirect mutation of x to y
-                  [(set! x v)
-                   (raise-syntax-error 'id "Cannot mutate primitive functions")]
-                  [(x (... ...))
-                   #'(mutator-app x (... ...))]
-                  [x (identifier? #'x)
-                     ;; XXX Make a macro to unify this and mutator-lambda
-                     (with-syntax 
-                      ([(env-id (... ...)) (syntax-parameter-value #'mutator-env-roots)])
-                      (if (syntax-parameter-value #'mutator-tail-call?)
-                          (syntax/loc stx
-                                      (#%app collector:closure
-                                             (closure-code 0 (mutator-lift id))
-                                             (vector)))
-                          (syntax/loc stx
-                                      (with-continuation-mark 
-                                       gc-roots-key 
-                                       (list (make-env-root env-id) (... ...))
-                                       (#%app collector:closure
-                                              (closure-code 0 (mutator-lift id))
-                                              (vector))))))]))))
-           ...
-           (provide (rename-out [lifted-id id]
-                                ...))))]))
+           (provide (rename-out [id2 id] ...))
+           (define id2 (make-prim id)) ...))]))
 
-(provide/lift 
+(define-struct prim (proc))
+(provide-flat-prims/lift
  symbol? boolean? number? symbol=?
  add1 sub1 zero? + - * / even? odd? = < > <= >=)
 
@@ -497,16 +470,16 @@
     [(_ arg) #'(#%app print-only-errors (#%datum . arg))]))
 
 ; Implementation Functions
-(define (deref-proc proc-or-loc)
-  (define (deref proc/loc)
+(define (deref-proc proc/loc)
+  (define v
     (cond
-     [(procedure? proc/loc) proc/loc]
-     [(location? proc/loc) (collector:closure-code-ptr proc/loc)]
-     [else (error 'deref "expected <location?> or <procedure?>; received ~a" proc/loc)]))
-  (define v 
-    (with-handlers ([exn? (lambda (x) 
-                            (error 'procedure-application "expected procedure, given something else"))])
-      (deref proc-or-loc)))
+      [(procedure? proc/loc) proc/loc]
+      [(location? proc/loc) (collector:closure-code-ptr proc/loc)]
+      [(prim? proc/loc)
+       (λ args
+         (collector:alloc-flat (apply (prim-proc proc/loc) (map collector:deref args))))]
+      [else 
+       (error 'procedure-application "expected procedure, given something else")]))
   (cond
    [(procedure? v)
     v]
@@ -515,7 +488,7 @@
       (apply (closure-code-proc v) 
              (append 
               (for/list ([i (in-range (closure-code-env-count v))])
-                        (collector:closure-env-ref proc-or-loc i))
+                        (collector:closure-env-ref proc/loc i))
               args)))]
    [else
     (error 'procedure-application "expected procedure, given ~e" v)]))
