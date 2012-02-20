@@ -60,6 +60,9 @@
          [(list (Pair: a b) (Pair: a* b*))
           (and (overlap a a*)
                (overlap b b*))]
+         ;; lots of things are sequences
+         [(list (Sequence: _) _) #t]
+         [(list _ (Sequence: _)) #t]
          [(or (list (Pair: _ _) _)
               (list _ (Pair: _ _)))
           #f]
