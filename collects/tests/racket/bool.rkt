@@ -20,9 +20,8 @@
 
 (for ([x (in-list '(#f #t))])
   (for ([y (in-list '(#f #t))])
-    (for ([z (in-list '(#f #t))])
-      (check-equal? (implies x y z)
-                    (or (not x) (or (not y) z))))))
+    (check-equal? (implies x y)
+                  (or (not x) y))))
 (check-equal? (implies #f (car 'x)) #t)
 
 
@@ -37,3 +36,8 @@
 (check-equal? (nor #f #t) #f)
 (check-equal? (nor #t #t) #f)
 (check-equal? (nor #t (car 'x)) #f)
+
+(check-equal? (xor 11 22) #f)
+(check-equal? (xor 11 #f) 11)
+(check-equal? (xor #f 22) 22)
+(check-equal? (xor #f #f) #f)

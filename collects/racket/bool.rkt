@@ -3,7 +3,7 @@
 (provide true false false?
          boolean=?
          symbol=?
-         implies nand nor)
+         implies nand nor xor)
 (require (for-syntax racket/base))
 
 (define true #t)
@@ -24,9 +24,7 @@
 (define-syntax (implies stx)
   (syntax-case stx ()
     [(implies x y)
-     (syntax/loc stx (if x y #t))]
-    [(implies x y z w ...)
-     (syntax/loc stx (if x (implies y z w ...) #t))]))
+     (syntax/loc stx (if x y #t))]))
 
 (define-syntax (nor stx)
   (syntax-case stx ()
@@ -35,3 +33,10 @@
 (define-syntax (nand stx)
   (syntax-case stx ()
     [(_ expr ...) (syntax/loc stx (not (and expr ...)))]))
+
+(define (xor a b)
+  (if a
+      (if b
+          #f
+          a)
+      b))

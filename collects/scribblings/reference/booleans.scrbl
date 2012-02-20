@@ -268,17 +268,33 @@ Returns @racket[(not v)].}
           
 }
 
-@defform[(implies expr expr expr ...)]{
+@defform[(implies expr1 expr2)]{
   Checks to be sure that the first
-  expression implies the second, implies
-  the third, etc.
+  expression implies the second.
+  
+  Same as @racket[(if expr1 expr2 #f)].
   
   @examples[#:eval 
             bool-eval
             (implies #f #t)
             (implies #f #f)
-            (implies #f #f #t)
             (implies #t #f)
             (implies #f (error 'ack "we don't get here"))]
                                        
+}
+
+@defproc[(xor [b1 any/c] [b2 any/c]) any]{
+  Returns the exclusive or of @racket[b1] and @racket[b2].
+                              
+  If exactly one of @racket[b1] and @racket[b2] is
+  not @racket[#f], then return it. Otherwise, returns
+  @racket[#f].
+  
+  @examples[#:eval
+            bool-eval
+            (xor 11 #f)
+            (xor #f 22)
+            (xor 11 22)
+            (xor #f #f)]
+                                          
 }
