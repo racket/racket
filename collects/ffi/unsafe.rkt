@@ -973,7 +973,7 @@
 
 ;; (_array <type> <len> ...+)
 (provide _array
-         array? array-ptr
+         array? array-length array-ptr
          (protect-out array-ref array-set!))
 
 (define _array
@@ -985,11 +985,11 @@
    [(t n . ns)
     (_array (apply _array t ns) n)]))
 
-(define-struct array (ptr type len))
+(define-struct array (ptr type length))
 (define array-ref
   (case-lambda
    [(a i) 
-    (let ([len (array-len a)])
+    (let ([len (array-length a)])
       (if (< -1 i len)
           (ptr-ref (array-ptr a) (array-type a) i)
           (raise-mismatch-error 'array-ref "index out of bounds: " i)))]
@@ -1001,7 +1001,7 @@
 (define array-set!
   (case-lambda
    [(a i v)
-    (let ([len (array-len a)])
+    (let ([len (array-length a)])
       (if (< -1 i len)
           (ptr-set! (array-ptr a) (array-type a) i v)
           (raise-mismatch-error 'array-ref "index out of bounds: " i)))]

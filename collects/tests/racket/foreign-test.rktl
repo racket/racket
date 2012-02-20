@@ -223,6 +223,7 @@
     (test (for/list ([i 7]) (+ i 10)) cast p _pointer (_list o _byte 7))
     (t (for/list ([i 7]) (+ i 11)) 'increment_c_array (_fun _pointer -> (_list o _byte 7)) p)
     (let ([a (ptr-ref p (_array _byte 7))])
+      (test 7 array-length a)
       (test 12 array-ref a 1)
       (ptr-set! p _byte 1 17)
       (test 17 array-ref a 1)))

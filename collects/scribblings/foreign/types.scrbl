@@ -1137,6 +1137,13 @@ sub-array).}
 Extracts the pointer for an array's storage.}
 
 
+@defproc[(array-length [a array?]) exact-nonnegative-integer?]{
+
+Extracts the length of an array. For a multidimensional array, the
+result is still a single number; extract an element to get
+a sub-array to get the length of the next dimension, and so on.}
+
+
 @defproc[(_array/list [type ctype?] [count exact-nonnegative-integer?] ...+)
          ctype?]{
 
