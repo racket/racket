@@ -249,14 +249,14 @@
                              #:heap-values [heap-values (list 0 1 -1 'x 'y #f #t '())]
                              #:iterations [iterations 200]
                              #:program-size [program-size 10]
-                             #:heap-size [heap-size 200])
+                             #:heap-size [heap-size 200]
+                             #:gc2? [gc2? #f])
   (call-with-output-file filename
     (λ (port)
       (cond
         [collector
-         (fprintf port "#lang plai/mutator\n")
-         (fprintf port "~s\n" `(allocator-setup ,collector ,heap-size))
-         (fprintf port "~s\n" `(import-primitives symbol=?))]
+         (fprintf port "#lang plai/~amutator\n" (if gc2? "gc2/" ""))
+         (fprintf port "~s\n" `(allocator-setup ,collector ,heap-size))]
         [else
          (fprintf port "#lang scheme\n")
          (for-each

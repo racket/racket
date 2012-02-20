@@ -11,7 +11,8 @@
         exact-positive-integer?
         #:heap-values (cons/c heap-value? (listof heap-value?))
         #:program-size exact-positive-integer?
-        #:heap-size exact-positive-integer?)
+        #:heap-size exact-positive-integer?
+        #:gc2? boolean?)
        void?)]
  [find-heap-values
   (-> (or/c path-string? input-port?)
