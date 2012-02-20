@@ -8,14 +8,24 @@ A collector for use in testing the random mutator generator.
 
 (print-only-errors #t)
 
+;; find-free-space : loc number -> loc or #f
+;; start must be a valid pointer 
+;; (not to the middle of an object)
 (define (find-free-space start size)
   (cond
-    [(= start (heap-size))
-     #f]
-    [(n-free-blocks? start size)
-     start]
+    [(= start (heap-size)) #f]
     [else
-     (find-free-space (+ start 1) size)]))
+     (case (heap-ref start)
+       [(free)
+        (if (n-free-blocks? start size)
+            start
+            (find-free-space (+ start 1) size))]
+       [(flat) (find-free-space (+ start 2) size)]
+       [(pair) (find-free-space (+ start 3) size)]
+       [(closure)
+        (find-free-space (+ start 3 (heap-ref (+ start 2))) size)]
+       [else
+        (error 'find-free-space "ack ~s" start)])]))
 
 (define (n-free-blocks? start size)
   (cond
@@ -49,10 +59,13 @@ A collector for use in testing the random mutator generator.
       0)
 (test (with-heap #(pair free free)
                  (find-free-space 0 1))
-      1)
+      #f)
 (test (with-heap #(pair free free)
                  (find-free-space 0 2))
-      1)
+      #f)
+(test (with-heap #(flat free free free)
+                 (find-free-space 0 2))
+      2)
 (test (with-heap #(pair free free)
                  (find-free-space 0 3))
       #f)
