@@ -61,7 +61,7 @@
     (base64-decode-stream (open-input-bytes src) s)
     (get-output-bytes s)))
 
-(define (base64-encode src)
+(define (base64-encode src [linesep #"\r\n"])
   (let ([s (open-output-bytes)])
-    (base64-encode-stream (open-input-bytes src) s (bytes 13 10))
+    (base64-encode-stream (open-input-bytes src) s linesep)
     (get-output-bytes s)))
