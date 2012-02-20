@@ -25,8 +25,13 @@
 ;; return the type of a literal value
 ;; scheme-value [type] -> type
 (define (tc-literal v-stx [expected #f])
+  (define-syntax-class exp
+    (pattern (~and i (~or :number :str :bytes))
+             #:fail-unless expected #f
+             #:fail-unless (subtype (-val (syntax-e #'i)) expected) #f))
   (define r
     (syntax-parse v-stx
+      [i:exp expected]
       [i:boolean (-val (syntax-e #'i))]
       [i:identifier (-val (syntax-e #'i))]
       
