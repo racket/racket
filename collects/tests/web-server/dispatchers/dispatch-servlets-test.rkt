@@ -75,7 +75,11 @@
     (test-add-two-numbers mkd "add-compat0.rkt"
                           (build-path example-servlets "add-compat0.rkt"))
     (test-add-two-numbers mkd "add-formlets.rkt - send/formlet"
-                          (build-path example-servlets "add-formlets.rkt"))
+                          (build-path example-servlets "add-formlets0.rkt"))
+    (test-add-two-numbers mkd "add-formlets.rkt - send/formlet, get"
+                          (build-path example-servlets "add-formlets1.rkt"))
+    (test-add-two-numbers mkd "add-formlets.rkt - send/formlet, post"
+                          (build-path example-servlets "add-formlets2.rkt"))
     (test-add-two-numbers mkd "add-page.rkt"
                           (build-path example-servlets "add-page.rkt"))
     (test-equal? "count.rkt - state"

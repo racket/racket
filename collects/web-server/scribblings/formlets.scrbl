@@ -502,17 +502,22 @@ a list of elements of the sequence.
 A few utilities are provided for using @tech{formlet}s in Web applications.
 
 @defproc[(send/formlet [f (formlet/c any/c ...)]
+                       [#:method method
+                                 (or/c "GET" "POST" "get" "post")
+                                 "POST"]
                        [#:wrap wrapper
                                (xexpr/c . -> . xexpr/c)
                                (lambda (form-xexpr)
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])
          (values any/c ...)]{
+
   Uses @racket[send/suspend] and @racket[response/xexpr] to send
-  @racket[f]'s rendering (wrapped in a FORM tag whose action is the
-  continuation URL (wrapped again by @racket[wrapper])) to the client.
-  When the form is submitted, the request is passed to the processing
-  stage of @racket[f].
+  @racket[f]'s rendering (wrapped in a FORM tag with method
+  @racket[method] whose action is the continuation URL (wrapped again
+  by @racket[wrapper])) to the client.  When the form is submitted,
+  the request is passed to the processing stage of @racket[f].
+
 }
 
 @defproc[(embed-formlet [embed/url ((request? . -> . any) . -> . string?)]
