@@ -66,12 +66,10 @@
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (else honu-then)
-      [(_ (#%parens condition:honu-expression) true:honu-expression (~optional else) false:honu-expression . rest)
+      [(_ (#%parens condition:honu-expression) true:honu-expression
+          (~optional else) false:honu-expression . rest)
        (values
-         (with-syntax ([condition.result (honu->racket #'condition.result)]
-                       [true.result (honu->racket #'true.result)]
-                       [false.result (honu->racket #'false.result)])
-           #'(%racket (if condition.result true.result false.result)))
+         (racket-syntax (if condition.result true.result false.result))
          #'rest
          #f)])))
 
@@ -233,9 +231,9 @@
   (lambda (code context)
     (syntax-parse code
       [(_ name:id ...)
-       (values #'(%racket (provide name ...))
-               #'()
-               #f)])))
+       (define out (parsed-syntax #'(provide name ...)))
+       (debug "Provide properties ~a\n" (syntax-property-symbol-keys out))
+       (values out #'() #f)])))
 
 (provide honu-with-input-from-file)
 (define-honu-syntax honu-with-input-from-file
@@ -336,7 +334,8 @@
       [(var:honu-declaration . rest)
        (define result 
          (with-syntax ([var.expression (honu->racket #'var.expression)])
-           #'(%racket (define-values (var.name ...) var.expression))))
+           ;; wrap the expression in a let so that we can insert new `define-syntax'es
+           (racket-syntax (define-values (var.name ...) (let () var.expression)))))
        (values result #'rest #t)])))
 
 (provide (rename-out [honu-with-syntax withSyntax]))
@@ -361,8 +360,10 @@
                        #:literals (honu-in)
       [(_ (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
-       (values #'(%racket (for ([iterator stuff.result] ...)
-                            body.result))
+       (values (with-syntax ([(stuff.result ...) (map honu->racket (syntax->list #'(stuff.result ...)))]
+                             [body.result (honu->racket #'body.result)])
+                 #'(%racket (for ([iterator stuff.result] ...)
+                              body.result)))
                #'rest
                #t)])))
 

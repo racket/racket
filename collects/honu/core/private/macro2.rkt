@@ -12,10 +12,12 @@
                      racket/base)
          (for-meta 2 syntax/parse
                      racket/base
+                     macro-debugger/emit
                      "parse2.rkt"
                      "compile.rkt")
          "literals.rkt"
          "syntax.rkt"
+         "debug.rkt"
          (for-meta -1 "literals.rkt" "compile.rkt" "parse2.rkt" "parse-helper.rkt")
          #;
          (for-syntax "honu-typed-scheme.rkt")
@@ -106,6 +108,9 @@
 (define-syntax (parse-stuff stx)
   (syntax-parse stx
     [(_ stuff ...)
+     (emit-remark "Parse stuff ~a\n" #'(stuff ...))
+     (parse-all #'(stuff ...))
+     #;
      (honu->racket (parse-all #'(stuff ...)))])))
 
 (provide honu-macro)
@@ -132,7 +137,8 @@
                             (with-syntax ([name name]
                                           [name.result (format-id name "~a_result" name)])
                               #'(name name.result)))])
-             #'(%racket (define-honu-syntax name
+             (racket-syntax 
+               (define-honu-syntax name
                           (lambda (stx context-name)
                             (define-literal-set local-literals (literal ...))
                             (syntax-parse stx
@@ -162,11 +168,14 @@
       (syntax-parse stx #:literal-sets (local-literals)
         [(honu-$ x ... honu-$ rest ...)
          (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
-           #'((repeat$ x ...) rest* ...))]
+           (datum->syntax stx (syntax->list #'((repeat$ x ...) rest* ...))
+                          stx stx))]
         [(x rest ...)
          (with-syntax ([x* (compress-dollars #'x)]
                        [(rest* ...) (compress-dollars #'(rest ...))])
-           #'(x* rest* ...))]
+           (datum->syntax stx
+                          (syntax->list #'(x* rest* ...))
+                          stx stx))]
         [x #'x]))
     (syntax-parse code #:literal-sets (cruft)
       [(_ (#%parens stuff ...) . rest)
@@ -179,7 +188,7 @@
            ;; (debug "Stuff is ~a\n" (syntax->datum #'stuff*))
            ;; (debug "Stuff syntaxed is ~a\n" (syntax->datum #'#'stuff*))
            (with-syntax ([(out ...) #'stuff*])
-             #'(%racket #'(%racket (unexpand-honu-syntax (do-parse-rest-macro out ...))))))
+             (racket-syntax #'stuff*)))
          #; #'(%racket-expression (parse-stuff stuff ...))
          #'rest
          #f)])))
@@ -188,9 +197,18 @@
 ;; #'(a b) + #'(c d) = #'(a b c d)
 (provide mergeSyntax)
 (define (mergeSyntax syntax1 syntax2)
+  (debug "Merge syntax ~a with ~a\n" (syntax->datum syntax1) (syntax->datum syntax2))
   (with-syntax ([(syntax1* ...) syntax1]
                 [(syntax2* ...) syntax2])
-    #'(syntax1* ... syntax2* ...)))
+          #'(syntax1* ... syntax2* ...))
+  #;
+  (syntax-parse syntax1
+    [(r1 (unexpand something1))
+     (syntax-parse syntax2
+       [(r2 (unexpand2 something2))
+        (with-syntax ([(syntax1* ...) #'something1]
+                      [(syntax2* ...) #'something2])
+          #'(%racket (unexpand (syntax1* ... syntax2* ...))))])]))
 
 ;; creates a new syntax/parse pattern
 (provide honu-pattern)

@@ -27,11 +27,11 @@
                                  (lambda (left right)
                                    (with-syntax ([left (honu->racket left)]
                                                  [right (honu->racket right)])
-                                     #'(%racket (operator left right))))
+                                     (racket-syntax (operator (let () left) (let () right)))))
                                  ;; unary
                                  (lambda (argument)
                                    (with-syntax ([argument (honu->racket argument)])
-                                     #'(%racket (operator argument))))))
+                                     (racket-syntax (operator (let () argument)))))))
 
 (define-syntax-rule (define-unary-operator name precedence associativity operator)
                       (define-honu-operator/syntax name precedence associativity
@@ -39,7 +39,7 @@
                                                    ;; unary
                                                    (lambda (argument)
                                                      (with-syntax ([argument (honu->racket argument)])
-                                                       #'(%racket (operator argument))))))
+                                                       (racket-syntax (operator argument))))))
 
 (define-honu-operator/syntax honu-flow 0.001 'left
   (lambda (left right)
