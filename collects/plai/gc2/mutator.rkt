@@ -168,7 +168,7 @@
   (syntax-case stx ()
     [(_ (id ...) body)
      (let ([env-roots (syntax-parameter-value #'mutator-env-roots)])
-       (with-syntax ([(free-id ...) (find-referenced-locals env-roots stx)]
+       (with-syntax ([(free-id ...) (map syntax-local-introduce (find-referenced-locals env-roots stx))]
                      [(env-id ...) env-roots]
                      [closure (or (syntax-parameter-value #'mutator-name)
                                   (syntax-local-name)
