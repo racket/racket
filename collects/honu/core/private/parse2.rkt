@@ -204,10 +204,12 @@
 (define-syntax-class honu-body
   #:literal-sets (cruft)
   [pattern (#%braces code ...)
-           #:with result #'(let ()
+           #:with result (racket-syntax (let ()
                              (define-syntax (parse-more stx)
-                               (do-parse-rest stx #'parse-more))
-                             (parse-more code ...))])
+                               (syntax-case stx ()
+                                 [(_ stuff (... ...))
+                                  (do-parse-rest #'(stuff (... ...)) #'parse-more)]))
+                             (parse-more code ...)))])
 
 (provide honu-function)
 (define-splicing-syntax-class honu-function #:literal-sets (cruft)
@@ -215,8 +217,8 @@
            #:with result
            (with-syntax ([(parsed-arguments ...)
                           (parse-arguments #'(args ...))])
-             #'(define (function parsed-arguments ...)
-                 body.result))])
+             (racket-syntax (define (function parsed-arguments ...)
+                              body.result)))])
 
 ;; E = macro
 ;;   | E operator E
@@ -495,7 +497,7 @@
                             (define call (with-syntax ([current (left current)]
                                                        [(parsed-args ...)
                                                         (parse-comma-expression #'(args ...)) ])
-                                           #'(current parsed-args ...)))
+                                           #'(current (let () parsed-args) ...)))
                             (do-parse #'(rest ...) 9000 (lambda (x) x) call))
                           (let ()
                             (debug 2 "function call ~a\n" left)
@@ -503,7 +505,7 @@
                                                        [(parsed-args ...)
                                                         (parse-comma-expression #'(args ...)) ])
                                            (debug "Parsed args ~a\n" #'(parsed-args ...))
-                                           #'(current parsed-args ...)))
+                                           #'(current (let () parsed-args) ...)))
                             (do-parse #'(rest ...) precedence left call)))
                         (let ()
                           (debug "inner expression ~a\n" #'(args ...))

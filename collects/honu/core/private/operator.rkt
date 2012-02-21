@@ -4,8 +4,7 @@
                      "transformer.rkt"
                      "fixture.rkt"
                      "compile.rkt"
-                     syntax/parse)
-         (only-in "literals.rkt" %racket))
+                     syntax/parse))
 
 (provide (all-defined-out))
 
@@ -45,14 +44,14 @@
   (lambda (left right)
     (with-syntax ([left (honu->racket left)]
                   [right (honu->racket right)])
-      #'(%racket (right left)))))
+      (racket-syntax (right left)))))
 
 (begin-for-syntax
   (define-syntax-rule (mutator change)
                       (lambda (left right)
                         (with-syntax ([left (honu->racket left)]
                                       [right (change left (honu->racket right))])
-                          #'(%racket (set! left right))))))
+                          (racket-syntax (set! left right))))))
 
 ;; Traditional assignment operator
 (define-honu-operator/syntax honu-equal 0.0001 'left
