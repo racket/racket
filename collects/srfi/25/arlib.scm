@@ -85,7 +85,7 @@
 			      (array-ref b ks)))))))))
 
 ;;; (shape-for-each shp proc [index-object])
-;;; passes each index in shape to proc in row-major orderd, using
+;;; passes each index in shape to proc in row-major ordered, using
 ;;; index-object if provided.
 
 (define (shape-for-each shp proc . o)

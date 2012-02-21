@@ -901,7 +901,7 @@ typedef struct {
 #endif
 
 /* Like setjmp & longjmp, but you can jmp to a deeper stack position */
-/* Intialize a Scheme_Jumpup_Buf record before using it */
+/* Initialize a Scheme_Jumpup_Buf record before using it */
 typedef struct Scheme_Jumpup_Buf {
   void *stack_from, *stack_copy;
   intptr_t stack_size, stack_max_size;

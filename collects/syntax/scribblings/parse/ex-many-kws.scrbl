@@ -133,5 +133,5 @@ Note that there are other constraints that we have not represented in
 the pattern. For example, @racket[#:prefab] is also incompatible with
 both @racket[#:guard] and @racket[#:property]. Repetition constraints
 cannot express arbitrary incompatibility relations. The best way to
-handle such contraints is with a side condition using
+handle such constraints is with a side condition using
 @racket[#:fail-when].

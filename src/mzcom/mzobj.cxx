@@ -230,7 +230,7 @@ static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
 
       case WAIT_OBJECT_0 + 1:
 
-        // reset semaphore signalled
+        // reset semaphore signaled
 
         setupSchemeEnv(scheme_basic_env());
         ReleaseSemaphore(resetDoneSem,1,NULL);

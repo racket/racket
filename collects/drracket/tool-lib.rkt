@@ -1562,7 +1562,7 @@ all of the names in the tools library, for use defining keybindings
     
     The @racket[init-code] argument is an s-expression representing
     the code for a module. This module is expected to provide
-    the identifer @racket[init-code], bound to a procedure of no
+    the identifier @racket[init-code], bound to a procedure of no
     arguments. That module is required and the @racket[init-code]
     procedure is executed to initialize language-specific
     settings before the code in @racket[program-filename] runs.

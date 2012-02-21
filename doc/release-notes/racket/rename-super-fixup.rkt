@@ -7,7 +7,7 @@
 ;; The script is not particularly clever: it assumes that an S-exp of
 ;; the form `(rename [<id> <id>] ...)' is a use in `class', unless it
 ;; appears immediately a `unit/sig' S-exp. Furthermore, uses of the
-;; first identifer in the rename pair are converted to use `super'
+;; first identifier in the rename pair are converted to use `super'
 ;; only if that identifier's name starts with `super-'.
 
 ;; Provide files to convert on the command line:

@@ -18,7 +18,7 @@ pluggable through the manager interface.
 @defmodule[web-server/managers/manager]{
 
 This module defines the manager interface. It is required by
-the users and implementers of managers.
+the users and implementors of managers.
 
 @defstruct[manager ([create-instance ((-> void) . -> . number?)]
                     [adjust-timeout! (number? number? . -> . void)]

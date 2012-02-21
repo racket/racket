@@ -573,7 +573,7 @@
     [id (identifier? #'id) (list #'id)]
     [() null]
     [(x . y) (append (flatten-identifiers #'x) (flatten-identifiers #'y))]
-    [else (error 'flatten-identifers "neither syntax list nor identifier: ~s"
+    [else (error 'flatten-identifiers "neither syntax list nor identifier: ~s"
                  (if (syntax? stx)
                      (syntax->datum stx)
                      stx))]))

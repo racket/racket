@@ -113,7 +113,7 @@
       [else
        (tc-error "no type information on variable ~a" (syntax-e stx))])))
 
-;; Listof[identifer] #:default Type -> Listof[Type]
+;; Listof[identifier] #:default Type -> Listof[Type]
 (define (get-types stxs #:default [default #f])
   (map (lambda (e) (get-type e #:default default)) stxs))
 

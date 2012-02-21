@@ -267,7 +267,7 @@ XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
    - A wrap-elem <hash-table> is a chain-specific cache; it maps
          identifiers to #t, and 0 to a deeper part of the chain; a
          resolution for an identifier can safely skip to the deeper
-         part if the identifer does not have a mapping; this skips
+         part if the identifier does not have a mapping; this skips
          simple lexical renames (not ribs) and marks, only, and it's
          inserted into a chain heuristically
 

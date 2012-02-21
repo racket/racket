@@ -378,7 +378,7 @@ code.}
 
 @defform[(!eval expr)]{
 
-  Evaluate an arbitrary expession in the submission context.  This is
+  Evaluate an arbitrary expression in the submission context.  This is
   a simple shorthand for @racket[((submission-eval) `expr)].}
 
 @defproc*[([(!all-covered) void?]

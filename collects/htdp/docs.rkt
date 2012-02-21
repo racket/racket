@@ -16,8 +16,8 @@
 (define-primitive end-annotation? end-annotation?/proc)
 (define-primitive write-file write-file/proc)
 
-;; mk-annotation : 
-;;  (str number[str-lenght] -> bool) -> (any-value -> bool)
+;; mk-annotation :
+;;  (str number[str-length] -> bool) -> (any-value -> bool)
 (define (mk-annotation test)
   (lambda (val)
     (and (symbol? val) 

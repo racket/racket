@@ -705,7 +705,7 @@ void scheme_init_port_places(void)
 
 #if defined(FILES_HAVE_FDS)
 # ifndef USE_OSKIT_CONSOLE
-  /* Set up a pipe for signalling external events: */
+  /* Set up a pipe for signaling external events: */
   {
     int fds[2];
     if (!pipe(fds)) {

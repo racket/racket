@@ -48,7 +48,7 @@
     ;; problems deleting an open file:
     (when old-port (close-input-port old-port) (set! old-port #f))
     (when (input-port? (car args)) (set! old-port (car args)))
-    ;; Create and install the evalautor:
+    ;; Create and install the evaluator:
     (set! ev (apply make-module-evaluator args #:allow-read allow)))
   (define (run thunk)
     (with-handlers ([void (lambda (e) (list 'exn: e))])

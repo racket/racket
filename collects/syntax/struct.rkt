@@ -30,7 +30,7 @@
 	[(_ bad . rest)
 	   (raise-syntax-error
 	    #f
-	    "expected an identifer or parenthesized sequence of two identifiers"
+	    "expected an identifier or parenthesized sequence of two identifiers"
 	    orig-stx
 	    #'bad)]))
 

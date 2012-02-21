@@ -1403,7 +1403,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
                  not-yet-closed functions.  If no one uses the result
                  via linfo, then the code was dead and it will get
                  GCed. */
-              clv->value = NULL; /* inidicates that there's nothing more to do with the expr */
+              clv->value = NULL; /* indicates that there's nothing more to do with the expr */
             } else {
               lift = resolve_closure_compilation(clv->value, val_linfo, 1, 1, 2, NULL);
               /* need to resolve one more time for the body of the lifted function */

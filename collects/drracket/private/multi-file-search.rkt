@@ -407,7 +407,7 @@
     (define searcher #f)
     
     ;; initialized to a regexp if the user wants to filter filenames,
-    ;; during the ok-button-callback, so errors can be signalled.
+    ;; during the ok-button-callback, so errors can be signaled.
     (define filter #f)
     
     ;; title for message box that signals error messages

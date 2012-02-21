@@ -185,7 +185,7 @@ The @at-reader-ref will read Racket identifiers, so it does not terminate identi
 }|
 will complain that the identifier @racket[place!</title></head>] is
 undefined. You can subvert this by explicitly delimiting the
-identifer:
+identifier:
 @verbatim[#:indent 2]|{
   <head><title>Fastest @thing in the @|place|!</title></head>
 }|

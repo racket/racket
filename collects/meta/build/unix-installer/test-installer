@@ -20,7 +20,7 @@ exec racket "$0" "$@"
   (define path (or (find-executable-path name)
                    (err "no `~a' executable found" name)))
   (λ args (unless (apply system* path args)
-            (err "`~a' signalled an error" name))))
+            (err "`~a' signaled an error" name))))
 
 (define expect-exe (exe "expect"))
 (define sync-exe   (exe "sync"))

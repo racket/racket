@@ -364,6 +364,6 @@ Modifying Racket
 ----------------
 
 If you modify Racket and change any primitive syntax or the collection
-of built-in identifers, be sure to turn off USE_COMPILED_STARTUP in
+of built-in identifiers, be sure to turn off USE_COMPILED_STARTUP in
 "schminc.h".  Otherwise, Racket won't start.  See "schminc.h" for
 details.

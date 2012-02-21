@@ -71,7 +71,7 @@
 
     (define -identifier=-choices (identifier=-choices))
     (define -choice
-      (new choice% (label "identifer=?") (parent -control-panel)
+      (new choice% (label "identifier=?") (parent -control-panel)
            (choices (map car -identifier=-choices))
            (callback 
             (lambda (c e)

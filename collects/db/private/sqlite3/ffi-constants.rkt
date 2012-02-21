@@ -21,7 +21,7 @@
 (define SQLITE_EMPTY       16   ) ; Database is empty */
 (define SQLITE_SCHEMA      17   ) ; The database schema changed */
 (define SQLITE_TOOBIG      18   ) ; Too much data for one row of a table */
-(define SQLITE_CONSTRAINT  19   ) ; Abort due to contraint violation */
+(define SQLITE_CONSTRAINT  19   ) ; Abort due to constraint violation */
 (define SQLITE_MISMATCH    20   ) ; Data type mismatch */
 (define SQLITE_MISUSE      21   ) ; Library used incorrectly */
 (define SQLITE_NOLFS       22   ) ; Uses OS features not supported on host */

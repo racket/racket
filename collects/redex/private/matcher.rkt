@@ -65,7 +65,7 @@ See match-a-pattern.rkt for more details
 
 ;; bindings = (make-bindings (listof rib))
 ;; rib = (make-bind sym sexp)
-;; if a rib has a pair, the first element of the pair should be treated as a prefix on the identifer
+;; if a rib has a pair, the first element of the pair should be treated as a prefix on the identifier
 ;; NOTE: the bindings may contain mismatch-ribs temporarily, but they are all removed
 ;;       by merge-multiples/remove, a helper function called from match-pattern
 (define-values (make-bindings bindings-table bindings? empty-bindings)

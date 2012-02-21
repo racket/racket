@@ -126,7 +126,7 @@ First, a few @racket[match] patterns are available to avoid specify all the deta
 @defform[(call n a ...)]{ A @racket[match] expander for call events to the labeled function @racket[n] with arguments @racket[a]. }
 @defform[(ret n a ...)]{ A @racket[match] expander for return events to the labeled function @racket[n] with return values @racket[a]. }
 
-@defform[(with-monitor contract-expr re-pat)]{ Defines a monitored contract where the structural portion of the contract is the @racket[contract-expr] (which may included embedded @racket[label] expressions) and where the temporal portion of the contract is the regular expression given by @racket[re-pat]. (Note: @racket[re-pat] is not a Racket expression that evaluates to a regular expression. It is a literal regular expession.)  An optional @racket[#:concurrent] may be added between the contract and the regular expression to ensure that the machine is safe against race-conditions.}
+@defform[(with-monitor contract-expr re-pat)]{ Defines a monitored contract where the structural portion of the contract is the @racket[contract-expr] (which may included embedded @racket[label] expressions) and where the temporal portion of the contract is the regular expression given by @racket[re-pat]. (Note: @racket[re-pat] is not a Racket expression that evaluates to a regular expression. It is a literal regular expression.)  An optional @racket[#:concurrent] may be added between the contract and the regular expression to ensure that the machine is safe against race-conditions.}
 
 @defform[(label id contract-expr)]{ Labels a portion of a structural contract inside of @racket[with-monitor] with the label @racket[id]. }
 

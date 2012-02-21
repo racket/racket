@@ -2452,7 +2452,7 @@ Since gc7.0alpha4
    needed with the old implementation.  This included many (mostly no-op)
    versions of GC_is_fresh.
  - Don't use atomic_ops in gc_locks.h unless we need threads.
- - Fixed USE_MARK_BITS, which is once againthe default without PARALLEL_MARK.
+ - Fixed USE_MARK_BITS, which is once again the default without PARALLEL_MARK.
  - Removed Solaris GC_INIT hack.  It's a workaround for a long dead bug,
    and it seemed to be wrong anyway.
  - Changed win32_threads.c to require preprocessor-based interception

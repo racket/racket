@@ -773,7 +773,7 @@ Matches a sequence of one element, which must be a term matching
 
 An @deftech{@EHpattern} (abbreviated @svar[EH-pattern]) is pattern
 that describes some number of terms, like a @tech{@Hpattern}, but also
-places contraints on the number of times it occurs in a
+places constraints on the number of times it occurs in a
 repetition. They are useful for matching, for example, keyword
 arguments where the keywords may come in any order. Multiple
 alternatives are grouped together via @ref[~or eh].

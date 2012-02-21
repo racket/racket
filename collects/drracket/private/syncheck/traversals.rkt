@@ -864,15 +864,15 @@
     ;; trim-require-prefix : syntax -> syntax
     (define (trim-require-prefix require-spec)
       (syntax-case* require-spec (only prefix all-except prefix-all-except rename just-meta) symbolic-compare?
-        [(only module-name identifer ...)
+        [(only module-name identifier ...)
          (syntax module-name)]
-        [(prefix identifier module-name) 
+        [(prefix identifier module-name)
          (syntax module-name)]
-        [(all-except module-name identifer ...)
+        [(all-except module-name identifier ...)
          (syntax module-name)]
-        [(prefix-all-except module-name identifer ...)
+        [(prefix-all-except module-name identifier ...)
          (syntax module-name)]
-        [(rename module-name local-identifer exported-identifer)
+        [(rename module-name local-identifier exported-identifier)
          (syntax module-name)]
         [_ require-spec]))
     

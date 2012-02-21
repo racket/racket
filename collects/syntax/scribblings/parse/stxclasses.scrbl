@@ -298,7 +298,7 @@ object or a syntax list of the appropriate @tech{ellipsis
 depth}. Syntax-valued attributes can be used within @racket[syntax],
 @racket[quasisyntax], etc as part of a syntax template. If a
 non-syntax-valued attribute is used in a syntax template, a runtime
-error is signalled.
+error is signaled.
 
 @myexamples[
 (syntax-parse #'((a 1) (b 2) (c 3))

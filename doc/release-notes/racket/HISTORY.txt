@@ -604,7 +604,7 @@ Strings and Unicode:
  Changed char-lower-case? and char-upper-case?
  Added string-upcase, string-downcase, string-titlecase,
   string-foldcase, and char-foldcase
- In case-insenstive mode, symbols are case-folded instead
+ In case-insensitive mode, symbols are case-folded instead
   of downcased (which is usually the same thing)
 Reader:
  Added #reader and readtables

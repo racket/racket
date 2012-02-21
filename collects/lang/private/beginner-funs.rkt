@@ -473,7 +473,7 @@
     ("Misc"
       (identity (any -> any)
 	"Returns the argument unchanged.")
-      ((beginner-error error) (any ... -> void) "signals an error, combining the given values into an error message.\n\nIf any of the values' printed representations is too long, it is truncated and ``...'' is put into the string. If the first value is a symbol, it is treated specially; it is suffixed with a colon and a space (the intention is that the symbol is the name of the function signalling the error).")
+      ((beginner-error error) (any ... -> void) "signals an error, combining the given values into an error message.\n\nIf any of the values' printed representations is too long, it is truncated and ``...'' is put into the string. If the first value is a symbol, it is treated specially; it is suffixed with a colon and a space (the intention is that the symbol is the name of the function signaling the error).")
       ((beginner-struct? struct?) (any -> boolean)
        "Determines whether some value is a structure.")
       ((beginner-equal? equal?) (any any -> boolean)

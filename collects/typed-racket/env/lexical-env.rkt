@@ -38,7 +38,7 @@
   (with-lexical-env (replace-props (extend/values is ts (lexical-env)) ps) . b))
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
-;; identifer -> Type
+;; identifier -> Type
 (define (lookup-type/lexical i [env (lexical-env)] #:fail [fail #f])
   (lookup env i (λ (i) (lookup-type i (λ () ((or fail lookup-fail) i))))))
 

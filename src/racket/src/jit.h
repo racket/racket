@@ -529,7 +529,7 @@ static void *top4;
    mostly improves code size, rather than speed. Functions that cause
    the register to be de-sync'd are marked as such. Functions that can
    accommodate a de-sync'd register on entry are marked as such. All
-   other fuctions can assume a sync'd regsiter and ensure a sync'd
+   other functions can assume a sync'd regsiter and ensure a sync'd
    register. Note that branches and calls normally require a sync'd
    register. */
 

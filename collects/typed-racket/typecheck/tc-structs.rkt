@@ -144,7 +144,7 @@
 
 ;; generate names, and register the approriate types give field types and structure type
 ;; optionally wrap things
-;; identifier Type Listof[identifer] Listof[Type] Listof[Type] #:wrapper (Type -> Type) #:maker identifier
+;; identifier Type Listof[identifier] Listof[Type] Listof[Type] #:wrapper (Type -> Type) #:maker identifier
 (define/cond-contract (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters?
                                              #:wrapper [wrapper values]
                                              #:struct-info [si #f]

@@ -117,7 +117,7 @@ error message to describe the expression the contract is applied to.
 The @racket[context] argument is used, when necessary, to infer the
 macro name for the negative blame party and the contract error
 message. The @racket[context] should be either an identifier or a
-syntax pair with an identifer in operator position; in either case,
+syntax pair with an identifier in operator position; in either case,
 that identifier is taken as the macro ultimately requesting the
 contract wrapping.
 

@@ -2,7 +2,7 @@
 
 ;; This test is similar to unholy-terror.
 ;; Recent changes to the numeric tower makes this generate a ridiculous amount
-;; of inference contraints.
+;; of inference constraints.
 ;; Changes to the inference engine breaks inference on this test, but unlike
 ;; unholy terror, this one fails quite fast, so it's not as bad.
 ;; Reverting these changes would make inference work again, given enough time

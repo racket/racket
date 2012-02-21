@@ -4368,7 +4368,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
   }
 
   /* Fast check; avoids split operations, if possible.
-     Also responsible for determing whether there's a
+     Also responsible for determining whether there's a
      redundant or missing trailing slash in the case that
      the path is just a root. */
   {

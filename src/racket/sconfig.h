@@ -1315,7 +1315,7 @@
     SunOS/Solaris, and HP/UX by explicit pre-checking the form of the 
     number and looking for values that are obviously +inf.0 or -inf.0 */
 
- /* POW_HANDLES_INF_CORRECTLY inidicates that thw pow() library procedure
+ /* POW_HANDLES_INF_CORRECTLY indicates that thw pow() library procedure
     handles +/-inf.0 correctly. Otherwise, code in inserted to specifically
     check for infinite arguments. */
     
