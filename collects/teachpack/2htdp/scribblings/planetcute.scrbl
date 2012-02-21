@@ -72,11 +72,23 @@ of how to use them.
                  (define req (string->symbol (format "2htdp/planetcute/~a" (name->filename img))))
                  #`@defthing[#,img image?]{  @(bitmap #,req) })))]))
 
-@(define-runtime-path PlanetCuteShadowTest.png "PlanetCuteShadowTest.png")
+@(begin
+   (define-runtime-path PlanetCuteShadow1.png "PlanetCuteShadow1.png")
+   (define-runtime-path PlanetCuteShadow2.png "PlanetCuteShadow2.png")
+   (define-runtime-path PlanetCuteShadow2b.png "PlanetCuteShadow2b.png")
+   (define-runtime-path PlanetCuteShadow3.png "PlanetCuteShadow3.png"))
 
 @defthings[Characters]{}
 @defthings[Blocks]{}
 @defthings[Items]{}
 @defthings[Ramps]{}
 @defthings[Buildings]{}
-@defthings[Shadows]{@(make-object bitmap% PlanetCuteShadowTest.png)}
+@defthings[Shadows]{The shadow images are intended to be
+                    overlaid on the other blocks when they
+                    appear in certain configurations, as
+                    detailed here.
+                    
+                    @(read-bitmap PlanetCuteShadow1.png) 
+                    @(read-bitmap PlanetCuteShadow2.png)
+                    @(read-bitmap PlanetCuteShadow2b.png)
+                    @(read-bitmap PlanetCuteShadow3.png) }
