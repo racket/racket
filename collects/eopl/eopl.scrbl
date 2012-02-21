@@ -37,14 +37,14 @@
 
 The @italic{Essentials of Programming Languages} language in DrRacket
 provides a subset of functions and syntactic forms of
-@racketmodname[mzscheme]---mostly the ones that correspond to
+@racketmodname[racket]---mostly the ones that correspond to
 @racket[r5rs] forms. See below for a complete list. The
 language is intended for use with the textbook @cite["EoPL"].
 
 @defmodulelang[eopl #:use-sources (eopl/eopl)]
 
 The following bindings are re-@racket[provide]d from
-@racketmodname[mzscheme]:
+@racketmodname[racket]:
 
 @reprovide[
            make-parameter
