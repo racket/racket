@@ -18,7 +18,7 @@
      (syntax/loc stx
        (begin
          (begin-for-syntax
-           (hash-table-put! sllgen-def 'name (quote-syntax def)))
+           (hash-set! sllgen-def 'name (quote-syntax def)))
          (define name (quote def))))]
     [(_ . rest)
      (syntax/loc stx (define . rest))]))
@@ -141,7 +141,12 @@
          empty           ;; for constructor-based printing
          trace untrace   ;; debugging
          require module  ;; we allow full use of modules
+         only-in 
+	 prefix-in
          provide         ;; in case someone wants to use a module
+	 all-defined-out
+         all-from-out    ;; surely some subforms are missing
+	 rename-out
          make-parameter
          parameterize
          print-struct)
@@ -149,7 +154,7 @@
 (require mzlib/transcr)
 
 (provide unquote unquote-splicing
-         quote quasiquote if
+         quote quasiquote if when unless
          lambda letrec define-syntax delay let let* let-syntax letrec-syntax
          and or cond case do
          begin set!
