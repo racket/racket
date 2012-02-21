@@ -65,8 +65,8 @@
    (string-append
     ;; maybe full path info: path, line, col, name
     "( in: (([^ :]+):([^ :]+):([^ :]+): )?([^ ]+))?"
-    ;; module info, useless to us (at least for now)
-    " in module: [^ ]+")
+    ;; maybe module info, useless to us (at least for now)
+    "( in module: [^ ]+)?")
    " size: ([^ ]+) threshold: ([^ ]+)"
    "$"))
 
@@ -85,6 +85,7 @@
             ,what ,name ,path ,line ,col ,pos ,span
                   ,only-name
             ,where ,where-loc ,where-path ,where-line ,where-col ,where-name
+            ,maybe-module-info
             ,size ,threshold)
      (inlining-event kind
                      (string->symbol (or name only-name))
