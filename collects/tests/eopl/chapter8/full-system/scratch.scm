@@ -1,0 +1,47 @@
+(error-in-defn-of-module:
+  curry1
+  expected-type:
+  (struct:proc-iface
+    m2
+    (struct:simple-iface
+      ((struct:opaque-type-decl t)
+       (struct:val-decl
+         d
+         (struct:proc-type (struct:named-type t) (struct:named-type t)))))
+    (struct:simple-iface
+      ((struct:transparent-type-decl t (struct:qualified-type m2 t))
+       (struct:val-decl z (struct:named-type t))
+       (struct:val-decl
+         s
+         (struct:proc-type (struct:named-type t) (struct:named-type t)))
+       (struct:val-decl
+         d
+         (struct:proc-type (struct:named-type t) (struct:named-type t))))))
+  actual-type:
+  (struct:proc-iface
+    m2
+    (struct:simple-iface
+      ((struct:transparent-type-decl t (struct:qualified-type ints-1 t))
+       (struct:val-decl
+         d
+         (struct:proc-type (struct:named-type t) (struct:named-type t)))))
+    (struct:simple-iface
+      ((struct:transparent-type-decl t (struct:qualified-type ints-1 t))
+       (struct:val-decl z (struct:named-type t))
+       (struct:val-decl
+         s
+         (struct:proc-type (struct:named-type t) (struct:named-type t)))
+       (struct:val-decl
+         d
+         (struct:proc-type
+           (struct:named-type t)
+           (struct:named-type t)))))))
+
+(define foo
+  (lambda (x y)
+    (cond
+      ((eqv? x y) x)
+      ((and (pair? x) (pair? y)
+         (= (length x) (length y))
+       (map foo x y))
+      (else '**))))
