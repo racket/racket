@@ -202,7 +202,7 @@ environment (that is, at phase level 1), optionally extended with
      (begin
        (printf "at compile time produces ~s\n"
                (syntax-local-eval #'expr))
-       #'(printf "at run time produes ~s\n"
+       #'(printf "at run time produces ~s\n"
                  expr))]))
 (show-me (+ 2 5))
 (define-for-syntax fruit 'apple)

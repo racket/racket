@@ -328,7 +328,7 @@ For communication among @tech{places}, the new byte string is allocated in the
 
 @defproc[(string-utf-8-length [str string?]
                               [start exact-nonnegative-integer? 0]
-                              [end exact-nonnegative-integer? (string-lenght str)])
+                              [end exact-nonnegative-integer? (string-length str)])
          exact-nonnegative-integer?]{
  Returns the length in bytes of the UTF-8 encoding of @racket[str]'s
  substring from @racket[start] to @racket[end], but without actually
@@ -458,7 +458,7 @@ Certain encoding combinations are always available:
    Windows) is effectively replaced with @racket[(char->integer #\?)].}
 
  @item{@racket[(bytes-open-converter "platform-UTF-16" "platform-UTF-8")]
-   --- converts UTF-16 (bytes orderd by the current platform's
+   --- converts UTF-16 (bytes ordered by the current platform's
    endianness) to UTF-8 on @|AllUnix|. On Windows, the input can
    include UTF-16 code units that are unpaired surrogates, and the
    corresponding output includes an encoding of each surrogate in a

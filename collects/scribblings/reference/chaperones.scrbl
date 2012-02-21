@@ -38,7 +38,7 @@ arbitrary procedure through impersonators on the operation's
 argument---assuming that the operation is available to the creator of
 the impersonator:
 
-@operations[@t{a structure-field accesor}
+@operations[@t{a structure-field accessor}
             @t{a structure-field mutator}
             @t{a structure type property accessor}
             @t{application of a procedure}

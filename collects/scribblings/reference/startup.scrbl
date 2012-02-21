@@ -44,7 +44,7 @@ On start-up, the top-level environment contains no bindings---not even
 that start with @racketidfont{#%} are defined, but they are not meant
 for direct use, and the set of such modules can change.  For example,
 the @indexed-racket['#%kernel] module is eventually used to bootstrap
-the implemetation of @racketmodname[racket/base].
+the implementation of @racketmodname[racket/base].
 
 The first action of Racket or GRacket is to initialize
 @racket[current-library-collection-paths] to the result of

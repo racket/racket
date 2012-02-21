@@ -1168,7 +1168,7 @@ produces @racket[#f], no name is printed.  Otherwise, it is also formatted as by
 @racket[display].
 
 If specified, @racket[source-location-expr] indicates the source location
-reported by contract violations.  The expession must produce a @racket[srcloc]
+reported by contract violations.  The expression must produce a @racket[srcloc]
 structure, @tech{syntax object}, @racket[#f], or a list or vector in the format
 accepted by the third argument to @racket[datum->syntax].
 
@@ -1294,7 +1294,7 @@ modules. First, one module defines a function, and then that
 module is required by another. So, far the function itself
 has to go from the original, providing module to the
 requiring module. Now, imagine that the providing module
-invokes the function, suppying it an argument. At this
+invokes the function, supplying it an argument. At this
 point, the flow of values reverses. The argument is
 traveling back from the requiring module to the providing
 module! And finally, when the function produces a result,
@@ -1836,7 +1836,7 @@ are below):
                  or not this module exports anything matching the contract)
                  can be blamed for violating the contract. This comes into play
                  for @racket[->i] contracts, since the contract itself has
-                 acceess to values under contract via the dependency. 
+                 access to values under contract via the dependency.
                  }
          ]
 

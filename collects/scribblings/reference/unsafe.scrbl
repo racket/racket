@@ -17,7 +17,7 @@
 
 @defmodule[racket/unsafe/ops]
 
-All fuctions and forms provided by @racketmodname[racket/base] and
+All functions and forms provided by @racketmodname[racket/base] and
 @racketmodname[racket] check their arguments to ensure that the
 arguments conform to contracts and other constraints. For example,
 @racket[vector-ref] checks its arguments to ensure that the first
@@ -307,6 +307,6 @@ Unsafe field access and update for an instance of a structure
 type, where the @schemeidfont{struct*} variants can be
 faster but do not work on @tech{impersonators}.
 The index @racket[k] must be between @racket[0] (inclusive) and
-the number of fields in the struture (exclusive). In the case of
+the number of fields in the structure (exclusive). In the case of
 @racket[unsafe-struct-set!], the field must be mutable.}
 

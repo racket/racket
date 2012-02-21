@@ -153,7 +153,7 @@ syntactic restrictions:
 
 ]
 
-These contraints are checked syntactically by the following type
+These constraints are checked syntactically by the following type
 system. A type [@math{n}, @math{m}] corresponds to an expression that
 matches between @math{n} and @math{m} characters. In the rule for
 @litchar{(}@nonterm{Regexp}@litchar{)}, @math{N} means the number such
