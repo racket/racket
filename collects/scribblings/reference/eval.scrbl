@@ -207,7 +207,7 @@ calls the @tech{extension-load handler} in tail position.}
 
 @defproc[(load-relative-extension [file path-string?]) any]{
 
-Like @racket[load-exension], but resolves @racket[file] using
+Like @racket[load-extension], but resolves @racket[file] using
 @racket[current-load-relative-directory] like @racket[load-relative].}
 
 

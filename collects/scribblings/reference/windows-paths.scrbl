@@ -230,7 +230,7 @@ in Racket strings. Thus, the path @litchar{\\?\REL\..\\..}  as
 a string must be written @racket["\\\\?\\REL\\..\\\\.."].
 
 A path that ends with a directory separator syntactically refers to a
-directory.  In addition, a path syntactcially refers to a directory if
+directory.  In addition, a path syntactically refers to a directory if
 its last element is a same-directory or up-directory indicator (not
 quoted by a @litchar{\\?\} form), or if it refers to a root.
 
@@ -262,7 +262,7 @@ included in the result.
 For @racket[(build-path _base-path _sub-path ...)], trailing spaces
 and periods are removed from the last element of @racket[_base-path]
 and all but the last @racket[_sub-path] (unless the element consists of
-only spaces and peroids), except for those that start with
+only spaces and periods), except for those that start with
 @litchar{\\?\}. If @racket[_base-path] starts @litchar{\\?\},
 then after each non-@litchar{\\?\REL\} and
 non-@litchar{\\?\RED\} @racket[_sub-path] is added, all

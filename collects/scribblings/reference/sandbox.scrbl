@@ -165,7 +165,7 @@ top-level namespace:
 The @racket[make-module-evaluator] function is essentially a
 restriction of @racket[make-evaluator], where the program must be a
 module, and all imports are part of the program.  In some cases it is
-useful to restrict the program to be a module using a spcific module
+useful to restrict the program to be a module using a specific module
 in its language position --- use the optional @racket[lang] argument
 to specify such a restriction (the default, @racket[#f], means no
 restriction is enforced). When the program is specified as a path, then
@@ -217,7 +217,7 @@ be @racket[load]ed. (The precise permissions needed for
 moved to @racket[allow-for-require], while other elements are moved to
 @racket[all-for-load].
 
-The sandboxed evironment is well isolated, and the evaluator function
+The sandboxed environment is well isolated, and the evaluator function
 essentially sends it an expression and waits for a result.  This form
 of communication makes it impossible to have nested (or concurrent)
 calls to a single evaluator.  Usually this is not a problem, but in
@@ -227,7 +227,7 @@ sandboxed code, for example:
 (let ([e (make-evaluator 'racket/base)])
   (e (,e 1)))
 ]
-An error will be signalled in such cases.
+An error will be signaled in such cases.
 
 Evaluation can also be instrumented to track coverage information when
 @racket[sandbox-coverage-enabled] is set. Exceptions (both syntax and
@@ -387,7 +387,7 @@ which creates an empty port.  The following other values are allowed:
 
 A parameter that determines the initial @racket[current-output-port]
 setting for a newly created evaluator. It defaults to @racket[#f],
-which creates a port that discrds all data.  The following other
+which creates a port that discards all data.  The following other
 values are allowed:
 
 @itemize[
@@ -553,7 +553,7 @@ The default value is null, but when an evaluator is created, it is
 augmented by @racket['read-bytecode] permissions that make it possible
 to use collection libraries (including
 @racket[sandbox-override-collection-paths]). See
-@racket[make-evalautor] for more information.}
+@racket[make-evaluator] for more information.}
 
 
 @defparam[sandbox-network-guard proc
@@ -563,7 +563,7 @@ to use collection libraries (including
            (or/c 'server 'client)
            . -> . any)]{
 
-A parameter that specifieds a procedure to be used (as is) by the
+A parameter that specifies a procedure to be used (as is) by the
 default @racket[sandbox-security-guard].  The default forbids all
 network connection.}
 

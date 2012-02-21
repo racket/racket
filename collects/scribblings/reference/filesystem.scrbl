@@ -942,7 +942,7 @@ The preference file should contain a list of symbol--value lists
 written with the default parameter settings.  Keys
 starting with @racket[racket:], @racket[mzscheme:], @racket[mred:],
 and @racket[plt:] in any letter case are reserved for use by Racket
-implementers. If the preference file does not contain a list
+implementors. If the preference file does not contain a list
 of symbol--value lists, an error is logged via @racket[log-error]
 and @racket[failure-thunk] is called.
 

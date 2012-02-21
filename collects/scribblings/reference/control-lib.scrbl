@@ -144,7 +144,7 @@ The @racket[reset] and @racket[prompt] forms are interchangeable.}
 
 @deftogether[(
 @defform[(reset-at prompt-tag-expr expr ...+)]
-@defform[(shift-at prompt-tag-expr identifer expr ...+)]
+@defform[(shift-at prompt-tag-expr identifier expr ...+)]
 )]{
 
 Like @racket[reset] and @racket[shift], but using the specified prompt

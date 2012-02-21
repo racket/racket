@@ -380,7 +380,7 @@ Instances of a structure type with the @racket[prop:input-port] or
 of being a port. If the structure type has more than one of
 @racket[prop:evt], @racket[prop:input-port], and
 @racket[prop:output-port], then the @racket[prop:evt] value (if any)
-takes precedence for determing the instance's behavior as an event,
+takes precedence for determining the instance's behavior as an event,
 and the @racket[prop:input-port] property takes precedence over
 @racket[prop:output-port] for synchronization.
 

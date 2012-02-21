@@ -137,7 +137,7 @@ Most @tech{continuations} expect a particular number of result
 2))] accepts any number of result @tech{values}, because it ignores
 the result(s).
 
-In general, the specification of a syntactic form inidicates the
+In general, the specification of a syntactic form indicates the
 number of @tech{values} that it produces and the number that it
 expects from each of its sub-expression. In addition, some procedures
 (notably @racket[values]) produce multiple @tech{values}, and some

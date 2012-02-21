@@ -131,8 +131,8 @@
             |  Sm                 Symbol, math                                    #ucat
             |  So                 Symbol, other                                   #ucat
             |  S                  Union of _Sc_, _Sk_, _Sm_, and _So_             #ucat
-            |  Zl                 Seaprator, line                                 #ucat
-            |  Zp                 Seaparator, paragraph                           #ucat
+            |  Zl                 Separator, line                                 #ucat
+            |  Zp                 Separator, paragraph                            #ucat
             |  Zs                 Separator, space                                #ucat
             |  Z                  Union of _Zl_, _Zp_, and _Zs_                   #ucat
             |  Cc                 Other, control                                  #ucat

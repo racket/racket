@@ -182,7 +182,7 @@ earlier mappings.
 (dict-set* #hash((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
 (dict-set* '() 'a "apple" 'b "beer")
 (dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
-(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "balistic")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "ballistic")
 ]}
 
 @defproc[(dict-has-key? [dict dict?] [key any/c])

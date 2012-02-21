@@ -104,7 +104,7 @@ performed more efficiently, and terminates when the vector is full or
 the requested number of iterations have been performed, whichever
 comes first.  If the provided @racket[length-expr] evaluates to a
 length longer than the number of iterations then the remaining slots
-of the vector are intialized to the default argument of
+of the vector are initialized to the default argument of
 @racket[make-vector].}
 
 @deftogether[(
