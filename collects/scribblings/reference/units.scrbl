@@ -590,7 +590,7 @@ propagates imports and exports; the difference is that the connection
 between @racket[import] and the right-hand side of the link clause is
 based on the names of elements in signatures, rather than the names of
 the signatures. That is, a @racket[tagged-sig-spec] on the right-hand
-side of the link clause need not apppear as a @racket[tagged-sig-spec]
+side of the link clause need not appear as a @racket[tagged-sig-spec]
 in the @racket[import] clause, but each of the bindings implied by the
 linking @racket[tagged-sig-spec] must be implied by some
 @racket[tagged-sig-spec] in the @racket[import] clause. Similarly,
@@ -808,7 +808,7 @@ binding of the corresponding signature.
 If @racket[unit-identifier] is not bound to static unit information,
 then the @exnraise[exn:fail:syntax]. In that case, the given
 @racket[err-syntax] argument is used as the source of the error, where
-@racket[unit-identifer] is used as the detail source location.}
+@racket[unit-identifier] is used as the detail source location.}
 
 
 @defproc[(signature-members [sig-identifier identifier?]

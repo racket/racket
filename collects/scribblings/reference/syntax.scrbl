@@ -1207,7 +1207,7 @@ In other words, the previous method requires only a single unique name.}
 
 Specifies multiple files to be required from a hierarchy of
 directories or collections. The set of required module paths is computed
-as the cartesian product of the @racket[subs] groups, where each
+as the Cartesian product of the @racket[subs] groups, where each
 @racket[sub-path] is combined with other @racket[sub-path]s in order
 using a @litchar{/} separator. A @racket[sub-path] as a @racket[subs]
 is equivalent to @racket[(sub-path)]. All @racket[sub-path]s in a given

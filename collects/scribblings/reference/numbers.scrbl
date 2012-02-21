@@ -557,7 +557,7 @@ Returns the natural logarithm of @racket[z].  The result is normally
 
 
 @; ------------------------------------------------------------------------
-@subsection{Trignometric Functions}
+@subsection{Trigonometric Functions}
 
 @defproc[(sin [z number?]) number?]{
 

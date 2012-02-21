@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "eopl.rkt") ; provides `provide'
-(provide (all-from "eopl.rkt"))
+(provide (all-from-out "eopl.rkt"))

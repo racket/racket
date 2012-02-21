@@ -315,7 +315,7 @@ In more detail, patterns match as follows:
 
  @item{@racket[(#,(racketidfont "app") _expr _pat)] --- applies
        @racket[_expr] to the value to be matched; the result of the
-       application is matched againt @racket[_pat].
+       application is matched against @racket[_pat].
 
        @examples[
        #:eval match-eval

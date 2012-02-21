@@ -184,7 +184,7 @@ mode but with a @litchar{'} prefix; the pair's content is printed with
 @racket[cdr] is not @tech{quotable}, then pair prints with either
 @litchar{cons} (when the @racket[cdr] is not a pair), @litchar{list}
 (when the pair is a list), or @litchar{list*} (otherwise) after the
-openining @litchar{(}, any @litchar{.} that would otherwise be printed
+opening @litchar{(}, any @litchar{.} that would otherwise be printed
 is suppressed, and the pair content is printed at @tech{quoting depth}
 @racket[0]. In all cases, when @racket[print-as-expression] is
 @racket[#t] for @racket[print] mode, then the value of

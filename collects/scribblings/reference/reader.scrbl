@@ -208,7 +208,7 @@ case-sensitive mode.
 @section-index["numbers" "parsing"]
 
 A sequence that does not start with a delimiter is parsed as a @tech{number}
-when it matches the following grammar case-insenstively for
+when it matches the following grammar case-insensitively for
 @nonterm{number@sub{10}} (decimal), where @metavar{n} is a
 meta-meta-variable in the grammar. The resulting number is @tech{interned} in 
 @racket[read-syntax] mode.
@@ -349,7 +349,7 @@ elements are themselves in @racket[read-syntax] mode, so that the
 result is a list or pair of syntax objects that is itself wrapped as a
 syntax object. If the reader constructs nested pairs because the input
 included a single delimited @litchar{.}, then only the innermost pair
-and outtermost pair are wrapped as syntax objects. Whether wrapping a
+and outermost pair are wrapped as syntax objects. Whether wrapping a
 pair or list, if the pair or list was formed with @litchar{[} and
 @litchar{]}, then a @indexed-racket['paren-shape] property is attached
 to the result with the value @racket[#\[]; if the list or pair was
@@ -458,7 +458,7 @@ Within a string sequence, the following escape sequences are
 
 ]
 
-If the reader encounteres any other use of a backslash in a string
+If the reader encounters any other use of a backslash in a string
 constant, the @exnraise[exn:fail:read].
 
 @guideintro["bytestrings"]{the syntax of byte strings}
@@ -499,7 +499,7 @@ encountered before a terminating line, the @exnraise[exn:fail:read].
 
 @section[#:tag "parse-quote"]{Reading Quotes}
 
-When the reader enounters @as-index{@litchar{'}}, it recursively
+When the reader encounters @as-index{@litchar{'}}, it recursively
 reads one datum and forms a new list containing the @tech{symbol}
 @racket['quote] and the following datum. This convention is mainly
 useful for reading Racket code, where @racket['s] can be used as a

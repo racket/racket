@@ -5,7 +5,7 @@
 
 @note-lib[racket/cmdline]
 
-@defform/subs[#:literals (multi once-each once-any final jelp-labels args 
+@defform/subs[#:literals (multi once-each once-any final args 
                           help-labels =>)
               (command-line optional-name-expr optional-argv-expr 
                             flag-clause ... 
@@ -149,7 +149,7 @@ that are not parsed as flags:
 
 @itemize[
 
- @item{Supplying no finish clause is the same as suppling
+ @item{Supplying no finish clause is the same as supplying
  @racket[#:args () (void)].}
 
  @item{For an @racket[#:args] finish clause, identifiers in
