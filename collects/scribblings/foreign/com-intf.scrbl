@@ -202,7 +202,7 @@ message, but @racket[hresult] and its human-readable interpretation
 
 Here's an example using the Standard Component Categories Manager to
 enumerate installed COM classes that are in the different
-systemd-defined categories. The example illustrates instantiating a
+system-defined categories. The example illustrates instantiating a
 COM class by @tech{CLSID}, describing COM interfaces with
 @racket[define-com-interface], and using allocation specifications to
 ensure that resources are reclaimed even if an error is encountered or

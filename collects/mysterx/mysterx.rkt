@@ -65,9 +65,12 @@
          com-register-event-handler
          com-unregister-event-handler)
 
+(define (coclass->clsid* who coclass)
+  (or (coclass->clsid coclass)
+      (error who "coclass not found: ~e" coclass)))
 
 (define (cocreate-instance-from-coclass coclass [where 'local])
-  (com-create-instance (coclass->clsid coclass) where))
+  (com-create-instance (coclass->clsid* 'cocreate-instance-from-coclass coclass) where))
 
 (define (cci/coclass coclass [where 'local])
   (cocreate-instance-from-coclass coclass where))
@@ -79,7 +82,7 @@
   (cocreate-instance-from-progid progid where))
 
 (define (get-active-object-from-coclass coclass)
-  (com-get-active-object (coclass->clsid coclass)))
+  (com-get-active-object (coclass->clsid* 'get-active-object-from-coclass coclass)))
 (define (gao/coclass coclass)
   (get-active-object-from-coclass coclass))
 
@@ -90,7 +93,7 @@
   (clsid->progid (com-object-clsid obj)))
 
 (define (set-coclass! obj coclass)
-  (com-object-set-clsid! obj (coclass->clsid coclass)))
+  (com-object-set-clsid! obj (coclass->clsid* 'set-coclass! coclass)))
 
 (define (set-coclass-from-progid! obj progid)
   (com-object-set-clsid! obj (progid->clsid progid)))
