@@ -28,6 +28,12 @@ structures.
  This function converts a @racket[configuration-table] to an S-expression.
 }
 
+@index{Web Server configuration table}
+The configuration table format is:
+
+@index{port} @index{max-waiting} @index{initial-connection-timeout}
+@index{default-host-table} @index{virtual-host-table}
+
 @racketblock[
 `((port ,integer?)
   (max-waiting ,exact-integer?)
@@ -39,6 +45,19 @@ structures.
    ...))]
 
 where a @racket[host-table-sexpr] is:
+
+@index{host-table} @index{default-indices} @index{log-format}
+@index{messages} @index{servlet-message}
+@index{authentication-message} @index{servlets-refreshed}
+@index{passwords-refreshed} @index{file-not-found-message}
+@index{protocol-message} @index{collect-garbage} @index{timeouts}
+@index{default-servlet-timeout} @index{password-connection-timeout}
+@index{servlet-connection-timeout}
+@index{file-per-byte-connection-timeout}
+@index{file-base-connection-timeout} @index{paths}
+@index{configuration-root} @index{host-root} @index{log-file-path}
+@index{file-root} @index{servlet-root} @index{mime-types}
+@index{password-authentication}
 
 @racketblock[
 `(host-table
