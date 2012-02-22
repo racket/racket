@@ -3,9 +3,11 @@
 
 @defclass/title[bitmap% object% ()]{
 
-A @racket[bitmap%] object is a pixel-based image, either
- monochrome, color, or color with an alpha channel. See also
- @racket[make-platform-bitmap].
+A @racket[bitmap%] object is a pixel-based image, either monochrome,
+ color, or color with an alpha channel. See also @racket[make-bitmap],
+ @racket[make-platform-bitmap], @racket[make-screen-bitmap] (from
+ @racketmodname[racket/gui/base]), @xmethod[canvas% make-bitmap] (from
+ @racketmodname[racket/gui/base]), and @secref["Portability"].
 
 A bitmap is convertible to @racket['png-bytes] through the
 @racketmodname[file/convertible] protocol.
@@ -29,22 +31,18 @@ A bitmap is convertible to @racket['png-bytes] through the
                         [width exact-positive-integer?]
                         [height exact-positive-integer?]))]{
 
-The function @racket[make-platform-bitmap] is preferred over
-using @racket[bitmap%] directly.
-
 The @racket[make-bitmap], @racket[make-monochrome-bitmap], and
- @racket[read-bitmap] functions are closer to @racket[bitmap%], but
+ @racket[read-bitmap] functions create @racket[bitmap%] instances, but
  they are also preferred over using @racket[make-object] 
  with @racket[bitmap%] directly, because the functions are
  less overloaded and they enable alpha channels by default.
+ See also @secref["Portability"].
  
 When @racket[width] and @racket[height] are provided: Creates a new
  bitmap. If @racket[monochrome?] is true, the bitmap is monochrome; if
  @racket[monochrome?] is @racket[#f] and @racket[alpha?] is true, the
  bitmap has an alpha channel; otherwise, the bitmap is color without
- an alpha channel.
-
-The initial content of the bitmap is ``empty'': all white, and with
+ an alpha channel. The initial content of the bitmap is ``empty'': all white, and with
  zero alpha in the case of a bitmap with an alpha channel.
 
 When @racket[in] is provided: Creates a bitmap from a file format,
@@ -164,7 +162,7 @@ Returns @racket[#f] if the bitmap is monochrome, @racket[#t] otherwise.
            boolean?]{
 
 Loads a bitmap from a file format that read from @racket[in], unless
- the bitmap was produced by @racket[make-screen-bitmap], @racket[make-platform-bitmap],
+ the bitmap was produced by @racket[make-platform-bitmap], @racket[make-screen-bitmap],
  or @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
  If the bitmap is in use by a
  @racket[bitmap-dc%] object or a control, the image data is not

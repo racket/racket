@@ -16,14 +16,14 @@
                                            (send dc set-bitmap #f))
                                           bm)))]
 @interaction-eval[#:eval draw-eval (define (line-bitmap mode)
-                                     (let* ([bm (make-platform-bitmap 30 4)]
+                                     (let* ([bm (make-bitmap 30 4)]
                                             [dc (make-object bitmap-dc% bm)])
                                        (send dc set-smoothing mode)
                                        (send dc draw-line 0 2 30 2)
                                        (send dc set-bitmap #f)
                                        (copy-bitmap bm)))]
 @interaction-eval[#:eval draw-eval (define (path-bitmap zee join brush?)
-                                     (let* ([bm (make-platform-bitmap 40 40)]
+                                     (let* ([bm (make-bitmap 40 40)]
                                             [dc (new bitmap-dc% [bitmap bm])])
                                        (send dc set-smoothing 'aligned)
                                        (send dc set-pen (new pen% [width 5] [join join]))
@@ -98,12 +98,12 @@ in a GUI window.}
 @section{Lines and Simple Shapes}
 
 To draw into a bitmap, first create the bitmap with
-@racket[make-platform-bitmap], and then create a @racket[bitmap-dc%] that draws
+@racket[make-bitmap], and then create a @racket[bitmap-dc%] that draws
 into the new bitmap:
 
 @racketblock+eval[
 #:eval draw-eval
-(define target (make-platform-bitmap 30 30)) (code:comment "A 30x30 bitmap")
+(define target (make-bitmap 30 30)) (code:comment "A 30x30 bitmap")
 (define dc (new bitmap-dc% [bitmap target]))
 ]
 
@@ -234,7 +234,7 @@ The @racket[set-pen] and @racket[set-brush] methods of a @tech{DC}
   (send dc set-pen red-pen) 
   (send dc draw-arc 37 37 75 75 (* 5/4 pi) (* 7/4 pi)))
 
-(define target (make-platform-bitmap 150 150))
+(define target (make-bitmap 150 150))
 (define dc (new bitmap-dc% [bitmap target]))
 
 (draw-face dc)
@@ -477,7 +477,7 @@ At this point we can't resist showing an extended example using
   (send dc set-brush blue-brush)
   (send dc draw-path right-logo-path))
 
-(define racket-logo (make-platform-bitmap 170 170))
+(define racket-logo (make-bitmap 170 170))
 (define dc (new bitmap-dc% [bitmap racket-logo]))
 
 (send dc set-smoothing 'smoothed)
@@ -501,7 +501,7 @@ draw and a location for the top-left of the drawn text:
 
 @racketblock+eval[
 #:eval draw-eval
-(define text-target (make-platform-bitmap 100 30))
+(define text-target (make-bitmap 100 30))
 (define dc (new bitmap-dc% [bitmap text-target]))
 (send dc set-brush "white" 'transparent)
 
@@ -559,7 +559,7 @@ transferred, and the background is left alone:
 
 @racketblock+eval[
 #:eval draw-eval
-(define new-target (make-platform-bitmap 100 30))
+(define new-target (make-bitmap 100 30))
 (define dc (new bitmap-dc% [bitmap new-target]))
 (send dc set-pen "black" 1 'transparent)
 (send dc set-brush "pink" 'solid)
@@ -573,7 +573,7 @@ transferred, and the background is left alone:
 The information about which pixels of a bitmap are drawn (as opposed
 to ``nothing'') is the bitmap's @deftech{alpha channel}. Not all
 @tech{DC}s keep an alpha channel, but bitmaps created with
-@racket[make-platform-bitmap] keep an alpha channel by default. Bitmaps loaded
+@racket[make-bitmap] keep an alpha channel by default. Bitmaps loaded
 with @racket[read-bitmap] preserve transparency in the image file
 through the bitmap's alpha channel.
 
@@ -636,7 +636,7 @@ viewed as a convenience alternative to clipping repeated calls of
 
 
 @; ------------------------------------------------------------
-@section{Portability}
+@section[#:tag "Portability"]{Portability and Bitmap Variants}
 
 Drawing effects are not completely portable across platforms, across
 different classes that implement @racket[dc<%>], or different
@@ -644,9 +644,46 @@ kinds of bitmaps. Fonts and text, especially, can vary across
 platforms and types of @tech{DC}, but so can the precise set of pixels
 touched by drawing a line.
 
-For example, drawing to a bitmap produced by
-@racket[make-platform-bitmap] may produce slightly different results than
-drawing to one produced by 
-@racket[make-bitmap]. Drawing to a bitmap from
-@racket[make-screen-bitmap], however, should be the same as drawing to an
-onscreen @racket[canvas%]. 
+Different kinds of bitmaps can produce different results:
+
+@itemlist[
+
+ @item{Drawing to a bitmap produced by @racket[make-bitmap] (or
+       instantiated from @racket[bitmap%]) draws in the most
+       consistent way across platforms.}
+
+ @item{Drawing to a bitmap produced by @racket[make-platform-bitmap]
+       uses platform-specific drawing operations as much as possible.
+       On Windows, however, a bitmap produced by
+       @racket[make-platform-bitmap] has no alpha channel, and it uses
+       more constrained resources than one produced by
+       @racket[make-bitmap] (due to a system-wide, per-process GDI limit).
+
+       As an example of platform-specific difference, text is smoothed
+       by default with sub-pixel anti-aliasing on Mac OS X, while text
+       smoothing in a @racket[make-bitmap] result uses only grays.
+       Line or curve drawing may touch different pixels than in a
+       bitmap produced by @racket[make-bitmap], and bitmap scaling may
+       differ.
+
+       A possible approach to dealing with the GDI limit under Windows
+       is to draw into the result of a @racket[make-platform-bitmap]
+       and then copy the contents of the drawing into the result of a
+       @racket[make-bitmap]. This approach preserves the drawing
+       results of @racket[make-platform-bitmap], but it retains
+       constrained resources only during the drawing process.}
+
+ @item{Drawing to a bitmap produced by @racket[make-screen-bitmap]
+       from @racketmodname[racket/gui/base] or by @xmethod[canvas%
+       make-bitmap] uses the same platform-specific drawing operations
+       as drawing into a @racket[canvas%] instance. A bitmap produced
+       by @racket[make-screen-bitmap] is the same as one produced by
+       @racket[make-platform-bitmap] on Windows or Mac OS X, but it may
+       be sensitive to the X11 server on Unix.
+
+       Use @racket[make-screen-bitmap] when drawing to a bitmap as an
+       offscreen buffer before transferring an image to the screen, or
+       when consistency with screen drawing is needed for some other
+       reason.}
+
+]

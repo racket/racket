@@ -269,7 +269,8 @@ See also
            (is-a/c? bitmap%)]{
 
 Creates a bitmap that draws in a way that is the same as drawing to the
-canvas. See also @racket[make-screen-bitmap].}
+canvas. See also @racket[make-screen-bitmap]
+and @secref[#:doc '(lib "scribblings/draw/draw.scrbl") "Portability"].}
 
 
 @defmethod[#:mode override 

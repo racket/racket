@@ -227,7 +227,7 @@ Creates a bitmap that supports both normal @racket[dc<%>] drawing an
 OpenGL drawing through a context returned by @xmethod[dc<%> get-gl-context].
 
 For @racket[dc<%>] drawing, an OpenGL-supporting bitmap draws like a
-bitmap frmo @racket[make-screen-bitmap] on some platforms, while it
+bitmap from @racket[make-screen-bitmap] on some platforms, while it
 draws like a bitmap instantiated directly from @racket[bitmap%] on
 other platforms.}
 
@@ -252,10 +252,7 @@ environment of the result namespace.}
 Creates a bitmap that draws in a way that is the same as drawing to a
 canvas in its default configuration.
 
-A normal @racket[bitmap%] draws in a more platform-independent way and
-may use fewer constrained resources, particularly on Windows.
-
-See also @racket[make-platform-bitmap].
+See also @secref[#:doc '(lib "scribblings/draw/draw.scrbl") "Portability"].
 }
 
 
