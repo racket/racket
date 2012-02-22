@@ -38,7 +38,7 @@
       (min (real real ... -> real)
         "Determines the smallest number.")       
       (quotient (integer integer -> integer)
-        "Divides the first integer (exact or inexact) into the second; try (quotient 3 4) and (quotient 4 3).")
+        "Divides the second integer---also called divisor---into the first---known as  dividend---to obtain the quotient; try (quotient 3 4) and (quotient 4 3).")
       (remainder (integer integer -> integer)
         "Determines the remainder of dividing the first by the second integer (exact or inexact).")
       (modulo (integer integer -> integer)
