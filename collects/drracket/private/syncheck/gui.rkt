@@ -224,16 +224,28 @@ If the namespace does not, they are colored the unbound color.
     ;; filename : path
     (define-struct def-link (id filename) #:inspector (make-inspector))
     
-    (define tacked-var-brush (send the-brush-list find-or-create-brush "BLUE" 'solid))
-    (define var-pen (send the-pen-list find-or-create-pen "BLUE" 1 'solid))
+    (define (get-tacked-var-brush white-on-black?)
+      (if white-on-black?
+          (send the-brush-list find-or-create-brush "LightSteelBlue" 'solid)
+          (send the-brush-list find-or-create-brush "BLUE" 'solid)))
+    (define (get-var-pen white-on-black?)
+      (if white-on-black?
+          (send the-pen-list find-or-create-pen "LightSteelBlue" 1 'solid)
+          (send the-pen-list find-or-create-pen "BLUE" 1 'solid)))
     
     (define templ-color (send the-color-database find-color "purple"))
-    (define templ-pen (send the-pen-list find-or-create-pen templ-color 1 'solid))
-    (define tacked-templ-brush (send the-brush-list find-or-create-brush templ-color 'solid))
+    (define (get-templ-pen white-on-black?)
+      (if white-on-black?
+          (send the-pen-list find-or-create-pen "orchid" 1 'solid)
+          (send the-pen-list find-or-create-pen templ-color 1 'solid)))
+    (define (get-tacked-templ-brush white-on-black?) 
+      (if white-on-black?
+          (send the-brush-list find-or-create-brush "orchid" 'solid)
+          (send the-brush-list find-or-create-brush templ-color 'solid)))
     
-    (define tail-pen (send the-pen-list find-or-create-pen "orchid" 1 'solid))
-    (define tacked-tail-brush (send the-brush-list find-or-create-brush "orchid" 'solid))
-    (define untacked-brush (send the-brush-list find-or-create-brush "WHITE" 'solid))
+    (define (get-tail-pen white-on-black?) (send the-pen-list find-or-create-pen "orchid" 1 'solid))
+    (define (get-tacked-tail-brush white-on-black?) (send the-brush-list find-or-create-brush "orchid" 'solid))
+    (define (get-untacked-brush white-on-black?) (send the-brush-list find-or-create-brush "WHITE" 'solid))
         
     ;; clearing-text-mixin : (mixin text%)
     ;; overrides methods that make sure the arrows go away appropriately.
@@ -832,7 +844,8 @@ If the namespace does not, they are colored the unbound color.
                       [old-font  (send dc get-font)]
                       [old-text-foreground (send dc get-text-foreground)]
                       [old-text-mode (send dc get-text-mode)]
-                      [old-alpha (send dc get-alpha)])
+                      [old-alpha (send dc get-alpha)]
+                      [white-on-black? (preferences:get 'framework:white-on-black?)]) 
                   (send dc set-font
                         (send the-font-list find-or-create-font
                               (send old-font get-point-size)
@@ -847,13 +860,13 @@ If the namespace does not, they are colored the unbound color.
                                       (cond
                                        [(var-arrow? arrow)
                                         (if (var-arrow-actual? arrow)
-                                            (begin (send dc set-pen var-pen)
-                                                   (send dc set-brush tacked-var-brush))
-                                            (begin (send dc set-pen templ-pen)
-                                                   (send dc set-brush tacked-templ-brush)))]
+                                            (begin (send dc set-pen (get-var-pen white-on-black?))
+                                                   (send dc set-brush (get-tacked-var-brush white-on-black?)))
+                                            (begin (send dc set-pen (get-templ-pen white-on-black?))
+                                                   (send dc set-brush (get-tacked-templ-brush white-on-black?))))]
                                        [(tail-arrow? arrow)
-                                        (send dc set-pen tail-pen)
-                                        (send dc set-brush tacked-tail-brush)])
+                                        (send dc set-pen (get-tail-pen white-on-black?))
+                                        (send dc set-brush (get-tacked-tail-brush white-on-black?))])
                                       (draw-arrow2 arrow))))
                   (when (and cursor-pos
                              cursor-text)
@@ -863,16 +876,16 @@ If the namespace does not, they are colored the unbound color.
                       (for ([ele (in-list (interval-map-ref arrow-record cursor-pos null))])
                         (cond [(var-arrow? ele)
                                (if (var-arrow-actual? ele)
-                                   (begin (send dc set-pen var-pen)
-                                          (send dc set-brush untacked-brush))
-                                   (begin (send dc set-pen templ-pen)
-                                          (send dc set-brush untacked-brush)))
+                                   (begin (send dc set-pen (get-var-pen white-on-black?))
+                                          (send dc set-brush (get-untacked-brush white-on-black?)))
+                                   (begin (send dc set-pen (get-templ-pen white-on-black?))
+                                          (send dc set-brush (get-untacked-brush white-on-black?))))
                                (draw-arrow2 ele)]
                               [(tail-arrow? ele)
                                (set! tail-arrows (cons ele tail-arrows))])))
                     
-                    (send dc set-pen tail-pen)
-                    (send dc set-brush untacked-brush)
+                    (send dc set-pen (get-tail-pen white-on-black?))
+                    (send dc set-brush (get-untacked-brush white-on-black?))
                     (for-each-tail-arrows draw-arrow2 tail-arrows))
                   (send dc set-brush old-brush)
                   (send dc set-pen old-pen)
