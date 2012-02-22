@@ -2646,9 +2646,6 @@ void scheme_optimize_info_enforce_const(Optimize_Info *, int enforce_const);
 void scheme_optimize_info_set_context(Optimize_Info *, Scheme_Object *ctx);
 void scheme_optimize_info_never_inline(Optimize_Info *);
 
-Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
-Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);
-
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags);
 
 int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_mode);

@@ -1911,6 +1911,20 @@
   (parameterize ([read-accept-compiled #t])
     (read (open-input-bytes (get-output-bytes o)))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check compilation of an example that triggers
+;; shifting of a closure's coordinates during
+;; optimization without reoptimization:
+
+(let ([ns (make-base-namespace)])
+  (parameterize ([current-namespace ns])
+    (namespace-require 'racket/unsafe/ops)
+    (compile '(lambda (a)
+                (unsafe-fl- a
+                            (lambda ()
+                              (set! a 'v)))))))
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

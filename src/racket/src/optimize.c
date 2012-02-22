@@ -109,6 +109,9 @@ static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent);
 static Scheme_Object *estimate_closure_size(Scheme_Object *e);
 static Scheme_Object *no_potential_size(Scheme_Object *value);
 
+static Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
+static Scheme_Object *optimize_shift(Scheme_Object *obj, int delta, int after_depth);
+
 #define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
                                      || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
 
@@ -843,7 +846,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
       val = app2->rand;
 
     if (nested_count)
-      val = scheme_optimize_shift(val, nested_count, 0);
+      val = optimize_shift(val, nested_count, 0);
     lv->value = val;
 
     flag = closure_argument_flags(data, i);
@@ -1070,10 +1073,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         } else
           sub_info = info;
 
-	/* If scheme_optimize_clone succeeds, inlining succeeds. */
-        le = scheme_optimize_clone(single_use, data->code, sub_info,
-                                   offset + (outside_nested ? nested_count : 0),
-                                   data->num_params);
+	/* If optimize_clone succeeds, inlining succeeds. */
+        le = optimize_clone(single_use, data->code, sub_info,
+                            offset + (outside_nested ? nested_count : 0),
+                            data->num_params);
 
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
@@ -1330,7 +1333,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
           && scheme_is_compiled_procedure(clv->value, 1, 1)) {
 
         reset_rator(app, scheme_false);
-        app = scheme_optimize_shift(app, 1, 0);
+        app = optimize_shift(app, 1, 0);
         reset_rator(app, scheme_make_local(scheme_local_type, 0, 0));
 
         clv->body = app;
@@ -1352,7 +1355,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
     }
 
     reset_rator(app, scheme_false);
-    app = scheme_optimize_shift(app, head->count, 0);
+    app = optimize_shift(app, head->count, 0);
     reset_rator(app, rator);
 
     if (clv)
@@ -1732,7 +1735,7 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
           } else
             ((Scheme_App_Rec *)_app)->args[i + 1] = scheme_false;
 
-          _app = scheme_optimize_shift(_app, delta, 0);
+          _app = optimize_shift(_app, delta, 0);
         }
 
         if (count == 1)
@@ -2415,10 +2418,10 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
        If we can shift-clone it, then it will be back in the right
        coordinates. */
 
-    cloned = scheme_optimize_clone(1, e, info, 0, 0);
+    cloned = optimize_clone(1, e, info, 0, 0);
     if (cloned) {
       if (SAME_TYPE(SCHEME_TYPE(f_is_proc), scheme_compiled_unclosed_procedure_type))
-        f_cloned = scheme_optimize_clone(1, f_is_proc, info, 0, 0);
+        f_cloned = optimize_clone(1, f_is_proc, info, 0, 0);
       else {
         /* Otherwise, no clone is needed; in the case of a lexical
            variable, we already reversed it. */
@@ -2789,10 +2792,10 @@ set_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int c
   var = naya->var;
   val = naya->val;
 
-  val = scheme_optimize_clone(dup_ok, val, info, delta, closure_depth);
+  val = optimize_clone(dup_ok, val, info, delta, closure_depth);
   if (!val) return NULL;
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_local_type)) {
-    var = scheme_optimize_clone(dup_ok, var, info, delta, closure_depth);
+    var = optimize_clone(dup_ok, var, info, delta, closure_depth);
     if (!var) return NULL;
   }
 
@@ -2807,10 +2810,10 @@ static Scheme_Object *set_shift(Scheme_Object *data, int delta, int after_depth)
   Scheme_Set_Bang *sb = (Scheme_Set_Bang *)data;
   Scheme_Object *e;
 
-  e = scheme_optimize_shift(sb->var, delta, after_depth);
+  e = optimize_shift(sb->var, delta, after_depth);
   sb->var = e;
 
-  e = scheme_optimize_shift(sb->val, delta, after_depth);
+  e = optimize_shift(sb->val, delta, after_depth);
   sb->val = e;
 
   return (Scheme_Object *)sb;
@@ -2842,10 +2845,10 @@ ref_shift(Scheme_Object *data, int delta, int after_depth)
 {
   Scheme_Object *v;
 
-  v = scheme_optimize_shift(SCHEME_PTR1_VAL(data), delta, after_depth);
+  v = optimize_shift(SCHEME_PTR1_VAL(data), delta, after_depth);
   SCHEME_PTR1_VAL(data) = v;
 
-  v = scheme_optimize_shift(SCHEME_PTR2_VAL(data), delta, after_depth);
+  v = optimize_shift(SCHEME_PTR2_VAL(data), delta, after_depth);
   SCHEME_PTR2_VAL(data) = v;
 
   return data;
@@ -2858,11 +2861,11 @@ ref_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int c
   Scheme_Object *a, *b;
 
   a = SCHEME_PTR1_VAL(data);
-  a = scheme_optimize_clone(dup_ok, a, info, delta, closure_depth);
+  a = optimize_clone(dup_ok, a, info, delta, closure_depth);
   if (!a) return NULL;
 
   b = SCHEME_PTR2_VAL(data);
-  b = scheme_optimize_clone(dup_ok, a, info, delta, closure_depth);
+  b = optimize_clone(dup_ok, a, info, delta, closure_depth);
   if (!b) return NULL;
 
   naya = scheme_alloc_object();
@@ -2895,10 +2898,10 @@ apply_values_shift(Scheme_Object *data, int delta, int after_depth)
 {
   Scheme_Object *e;
 
-  e = scheme_optimize_shift(SCHEME_PTR1_VAL(data), delta, after_depth);
+  e = optimize_shift(SCHEME_PTR1_VAL(data), delta, after_depth);
   SCHEME_PTR1_VAL(data) = e;
 
-  e = scheme_optimize_shift(SCHEME_PTR2_VAL(data), delta, after_depth);
+  e = optimize_shift(SCHEME_PTR2_VAL(data), delta, after_depth);
   SCHEME_PTR2_VAL(data) = e;
 
   return data;
@@ -2912,9 +2915,9 @@ apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int del
   f = SCHEME_PTR1_VAL(data);
   e = SCHEME_PTR2_VAL(data);
 
-  f = scheme_optimize_clone(dup_ok, f, info, delta, closure_depth);
+  f = optimize_clone(dup_ok, f, info, delta, closure_depth);
   if (!f) return NULL;
-  e = scheme_optimize_clone(dup_ok, e, info, delta, closure_depth);
+  e = optimize_clone(dup_ok, e, info, delta, closure_depth);
   if (!e) return NULL;
 
   data = scheme_alloc_object();
@@ -2995,7 +2998,7 @@ case_lambda_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delt
 
   for (i = 0; i < seq->count; i++) {
     le = seq->array[i];
-    le = scheme_optimize_clone(dup_ok, le, info, delta, closure_depth);
+    le = optimize_clone(dup_ok, le, info, delta, closure_depth);
     if (!le) return NULL;
     seq2->array[i] = le;
   }
@@ -3012,7 +3015,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
 
   for (i = 0; i < seq->count; i++) {
     le = seq->array[i];
-    le = scheme_optimize_shift(le, delta, after_depth);
+    le = optimize_shift(le, delta, after_depth);
     seq->array[i] = le;
   }
 
@@ -3323,7 +3326,7 @@ static Scheme_Object *make_clones(Scheme_Compiled_Let_Value *retry_start,
   while (1) {
     value = clv->value;
     if (IS_COMPILED_PROC(value)) {
-      clone = scheme_optimize_clone(1, value, body_info, 0, 0);
+      clone = optimize_clone(1, value, body_info, 0, 0);
       if (clone) {
         pr = scheme_make_raw_pair(scheme_make_raw_pair(value, clone), NULL);
       } else
@@ -3578,7 +3581,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
             value = clv->body; /* = P */
             if (lh->count)
-              value = scheme_optimize_shift(value, lh->count, head->count);
+              value = optimize_shift(value, lh->count, head->count);
             if (value) {
               clv->body = value;
 
@@ -4269,7 +4272,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
 
     if (value) {
-      value = scheme_optimize_clone(1, value, rhs_info, 0, 0);
+      value = optimize_clone(1, value, rhs_info, 0, 0);
 
       if (value) {
         sub_info = optimize_info_add_frame(info, post_bind ? 0 : extract_depth, 0, 0);
@@ -4465,7 +4468,7 @@ static Scheme_Object *clone_closure_compilation(int dup_ok, Scheme_Object *_data
 
   data = (Scheme_Closure_Data *)_data;
 
-  body = scheme_optimize_clone(dup_ok, data->code, info, delta, closure_depth + data->num_params);
+  body = optimize_clone(dup_ok, data->code, info, delta, closure_depth + data->num_params);
   if (!body) return NULL;
 
   data2 = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
@@ -4499,9 +4502,29 @@ static Scheme_Object *shift_closure_compilation(Scheme_Object *_data, int delta,
 {
   Scheme_Object *expr;
   Scheme_Closure_Data *data = (Scheme_Closure_Data *)_data;
+  Closure_Info *cl;
+  int i, sz;
+  mzshort *naya;
 
-  expr = scheme_optimize_shift(data->code, delta, after_depth + data->num_params);
+  after_depth += data->num_params;
+
+  expr = optimize_shift(data->code, delta, after_depth);
   data->code = expr;
+
+  /* In case the result is not going to be re-optimized, we need
+     to update base_closure_map. */
+
+  sz = data->closure_size;
+  cl = (Closure_Info *)data->closure_map;
+  naya = MALLOC_N_ATOMIC(mzshort, sz);
+
+  for (i = 0; i < sz; i++) {
+    naya[i] = cl->base_closure_map[i];
+    if (naya[i] >= after_depth)
+      naya[i] += delta;
+  }
+
+  cl->base_closure_map = naya;
 
   return _data;
 }
@@ -4579,7 +4602,7 @@ static Scheme_Object *is_cross_module_inline_candidiate(Scheme_Object *e, Optimi
 {
   if (IS_COMPILED_PROC(e)) {
     if (size_override || (compiled_proc_body_size(e, 1) < CROSS_MODULE_INLINE_SIZE))
-      return scheme_optimize_clone(0, e, info, 0, 0);
+      return optimize_clone(0, e, info, 0, 0);
   }
 
   return NULL;
@@ -4743,7 +4766,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             if (sproc) {
               e2 = scheme_make_noninline_proc(e);
             } else if (IS_COMPILED_PROC(e)) {
-	      e2 = scheme_optimize_clone(1, e, info, 0, 0);
+	      e2 = optimize_clone(1, e, info, 0, 0);
               if (e2) {
                 Scheme_Object *pr;
                 pr = scheme_make_raw_pair(scheme_make_raw_pair(e2, e), NULL);
@@ -5067,7 +5090,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
                && single_valued_noncm_expression(o->expr, 5))
               || ((o->vclock != info->vclock)
                   && movable_expression(o->expr, info, o->delta, o->cross_lambda, 0, 5))) {
-            val = scheme_optimize_clone(1, o->expr, info, o->delta, 0);
+            val = optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               info->size -= 1;
               o->used = 1;
@@ -5190,7 +5213,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   }
 }
 
-Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *info, int delta, int closure_depth)
+Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *info, int delta, int closure_depth)
 /* Past closure_depth, need to reverse optimize to unoptimized with respect to info;
    delta is the amount to skip in info to get to the frame that bound the code.
    If dup_ok is 1, then the old copy will be dropped, so it's ok to "duplicate"
@@ -5218,11 +5241,11 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
       app2->iso.so.type = scheme_application2_type;
 
-      expr = scheme_optimize_clone(dup_ok, app->rator, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, app->rator, info, delta, closure_depth);
       if (!expr) return NULL;
       app2->rator = expr;
 
-      expr = scheme_optimize_clone(dup_ok, app->rand, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, app->rand, info, delta, closure_depth);
       if (!expr) return NULL;
       app2->rand = expr;
 
@@ -5236,7 +5259,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       app2 = scheme_malloc_application(app->num_args + 1);
 
       for (i = app->num_args + 1; i--; ) {
-	expr = scheme_optimize_clone(dup_ok, app->args[i], info, delta, closure_depth);
+	expr = optimize_clone(dup_ok, app->args[i], info, delta, closure_depth);
 	if (!expr) return NULL;
 	app2->args[i] = expr;
       }
@@ -5250,15 +5273,15 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       app2 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
       app2->iso.so.type = scheme_application3_type;
 
-      expr = scheme_optimize_clone(dup_ok, app->rator, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, app->rator, info, delta, closure_depth);
       if (!expr) return NULL;
       app2->rator = expr;
 
-      expr = scheme_optimize_clone(dup_ok, app->rand1, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, app->rand1, info, delta, closure_depth);
       if (!expr) return NULL;
       app2->rand1 = expr;
 
-      expr = scheme_optimize_clone(dup_ok, app->rand2, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, app->rand2, info, delta, closure_depth);
       if (!expr) return NULL;
       app2->rand2 = expr;
 
@@ -5294,7 +5317,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
 	lv2->position = lv->position;
 	lv2->flags = flags;
 
-	expr = scheme_optimize_clone(dup_ok, lv->value, info, delta,
+	expr = optimize_clone(dup_ok, lv->value, info, delta,
                                      closure_depth + (post_bind ? 0 : head->count));
 	if (!expr) return NULL;
 	lv2->value = expr;
@@ -5312,7 +5335,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       else
 	head2->body = body;
 
-      expr = scheme_optimize_clone(dup_ok, body, info, delta, closure_depth + head->count);
+      expr = optimize_clone(dup_ok, body, info, delta, closure_depth + head->count);
       if (!expr) return NULL;
 
       if (prev)
@@ -5334,7 +5357,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       seq2->count = seq->count;
 
       for (i = seq->count; i--; ) {
-	expr = scheme_optimize_clone(dup_ok, seq->array[i], info, delta, closure_depth);
+	expr = optimize_clone(dup_ok, seq->array[i], info, delta, closure_depth);
 	if (!expr) return NULL;
 	seq2->array[i] = expr;
       }
@@ -5348,15 +5371,15 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       b2 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
       b2->so.type = scheme_branch_type;
 
-      expr = scheme_optimize_clone(dup_ok, b->test, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, b->test, info, delta, closure_depth);
       if (!expr) return NULL;
       b2->test = expr;
 
-      expr = scheme_optimize_clone(dup_ok, b->tbranch, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, b->tbranch, info, delta, closure_depth);
       if (!expr) return NULL;
       b2->tbranch = expr;
 
-      expr = scheme_optimize_clone(dup_ok, b->fbranch, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, b->fbranch, info, delta, closure_depth);
       if (!expr) return NULL;
       b2->fbranch = expr;
 
@@ -5369,15 +5392,15 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       wcm2 = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
       wcm2->so.type = scheme_with_cont_mark_type;
 
-      expr = scheme_optimize_clone(dup_ok, wcm->key, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, wcm->key, info, delta, closure_depth);
       if (!expr) return NULL;
       wcm2->key = expr;
 
-      expr = scheme_optimize_clone(dup_ok, wcm->val, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, wcm->val, info, delta, closure_depth);
       if (!expr) return NULL;
       wcm2->val = expr;
 
-      expr = scheme_optimize_clone(dup_ok, wcm->body, info, delta, closure_depth);
+      expr = optimize_clone(dup_ok, wcm->body, info, delta, closure_depth);
       if (!expr) return NULL;
       wcm2->body = expr;
 
@@ -5415,7 +5438,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
   return NULL;
 }
 
-Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_depth)
+Scheme_Object *optimize_shift(Scheme_Object *expr, int delta, int after_depth)
 /* Shift lexical addresses deeper by delta if already deeper than after_depth;
    can mutate. */
 {
@@ -5441,7 +5464,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
       int i;
 
       for (i = app->num_args + 1; i--; ) {
-	expr = scheme_optimize_shift(app->args[i], delta, after_depth);
+	expr = optimize_shift(app->args[i], delta, after_depth);
 	app->args[i] = expr;
       }
 
@@ -5451,10 +5474,10 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
 
-      expr = scheme_optimize_shift(app->rator, delta, after_depth);
+      expr = optimize_shift(app->rator, delta, after_depth);
       app->rator = expr;
 
-      expr = scheme_optimize_shift(app->rand, delta, after_depth);
+      expr = optimize_shift(app->rand, delta, after_depth);
       app->rand = expr;
 
       return (Scheme_Object *)app;
@@ -5463,13 +5486,13 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
 
-      expr = scheme_optimize_shift(app->rator, delta, after_depth);
+      expr = optimize_shift(app->rator, delta, after_depth);
       app->rator = expr;
 
-      expr = scheme_optimize_shift(app->rand1, delta, after_depth);
+      expr = optimize_shift(app->rand1, delta, after_depth);
       app->rand1 = expr;
 
-      expr = scheme_optimize_shift(app->rand2, delta, after_depth);
+      expr = optimize_shift(app->rand2, delta, after_depth);
       app->rand2 = expr;
 
       return (Scheme_Object *)app;
@@ -5487,12 +5510,12 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
       for (i = head->num_clauses; i--; ) {
 	lv = (Scheme_Compiled_Let_Value *)body;
 
-	expr = scheme_optimize_shift(lv->value, delta, after_depth + (post_bind ? 0 : head->count));
+	expr = optimize_shift(lv->value, delta, after_depth + (post_bind ? 0 : head->count));
 	lv->value = expr;
 
         body = lv->body;
       }
-      expr = scheme_optimize_shift(body, delta, after_depth + head->count);
+      expr = optimize_shift(body, delta, after_depth + head->count);
 
       if (head->num_clauses)
 	lv->body = expr;
@@ -5509,7 +5532,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
       int i;
 
       for (i = seq->count; i--; ) {
-	expr = scheme_optimize_shift(seq->array[i], delta, after_depth);
+	expr = optimize_shift(seq->array[i], delta, after_depth);
 	seq->array[i] = expr;
       }
 
@@ -5519,13 +5542,13 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
     {
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
 
-      expr = scheme_optimize_shift(b->test, delta, after_depth);
+      expr = optimize_shift(b->test, delta, after_depth);
       b->test = expr;
 
-      expr = scheme_optimize_shift(b->tbranch, delta, after_depth);
+      expr = optimize_shift(b->tbranch, delta, after_depth);
       b->tbranch = expr;
 
-      expr = scheme_optimize_shift(b->fbranch, delta, after_depth);
+      expr = optimize_shift(b->fbranch, delta, after_depth);
       b->fbranch = expr;
 
       return (Scheme_Object *)b;
@@ -5534,13 +5557,13 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
     {
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
 
-      expr = scheme_optimize_shift(wcm->key, delta, after_depth);
+      expr = optimize_shift(wcm->key, delta, after_depth);
       wcm->key = expr;
 
-      expr = scheme_optimize_shift(wcm->val, delta, after_depth);
+      expr = optimize_shift(wcm->val, delta, after_depth);
       wcm->val = expr;
 
-      expr = scheme_optimize_shift(wcm->body, delta, after_depth);
+      expr = optimize_shift(wcm->body, delta, after_depth);
       wcm->body = expr;
 
       return (Scheme_Object *)wcm;
@@ -5564,7 +5587,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
   case scheme_begin_for_syntax_type:
   case scheme_require_form_type:
   case scheme_module_type:
-    scheme_signal_error("scheme_optimize_shift: no shift available for %d", SCHEME_TYPE(expr));
+    scheme_signal_error("optimize_shift: no shift available for %d", SCHEME_TYPE(expr));
     return NULL;
   default:
     return expr;
