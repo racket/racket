@@ -124,6 +124,14 @@ Polling a URL can result in one of four options:
 ;; single verification function will be needed.  But for that it will
 ;; need to mimic HEAD requests too.
 
+(define-syntax-rule (with-handlers+timeout name body ...)
+  (let ([cust (make-custodian)] [ch (make-channel)])
+    (parameterize ([current-custodian cust])
+      (thread (λ () (channel-put ch (with-handlers ([exn:fail? exn-message])
+                                      body ...)))))
+    (begin0 (or (sync/timeout 20 ch) (format "~a connection timeout" name))
+      (custodian-shutdown-all cust))))
+
 (define (verify-http url)
   (define (check-contents inp)
     (define status (read-line inp))
@@ -143,7 +151,7 @@ Polling a URL can result in one of four options:
                (begin (eprintf "WARNING: no `content-length' for ~a" url)
                       #t))]))
   (define r
-    (with-handlers ([exn:fail? exn-message])
+    (with-handlers+timeout 'http
       (call/input-url (string->url url) head-impure-port check-contents)))
   (if (string? r)
     (begin (eprintf "WARNING: failure getting http info for ~a (~a)\n" url r)
@@ -156,13 +164,10 @@ Polling a URL can result in one of four options:
            (cdr (or (regexp-match #rx"^ftp://([^/:]+)(?::([0-9]+))?(/.*)$" url)
                     (error 'verify-ftp "bad ftp url: ~a" url)))))
   (define port (or port? 21))
-  (define ch (make-channel))
-  (thread (λ ()
-            (with-handlers ([exn:fail? exn-message])
-              (define c
-                (ftp-establish-connection host port "anonymous" "anonymous@"))
-              (begin0 (ftp-directory-list c path) (ftp-close-connection c)))))
-  (define r (or (sync/timeout 30 ch) "timeout"))
+  (define r
+    (with-handlers+timeout 'ftp
+      (define c (ftp-establish-connection host port "anonymous" "anonymous@"))
+      (begin0 (ftp-directory-list c path) (ftp-close-connection c))))
   (cond [(not (and (list? r) (= 1 (length r)) (list? (car r))))
          (eprintf "WARNING: failure getting ftp info for ~a~a\n"
                   url (if (string? r) (format " (~a)" r) ""))
