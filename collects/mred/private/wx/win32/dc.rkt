@@ -41,7 +41,7 @@
                (cairo_win32_surface_create_with_ddb hdc
                                                     CAIRO_FORMAT_RGB24 w h)
                (ReleaseDC hwnd hdc))))
-          (super build-cairo-surface)))
+          (super build-cairo-surface w h)))
     
     (define gl (and gl-config
                     (let ([hdc (cairo_win32_surface_get_dc (get-cairo-surface))])
