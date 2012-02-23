@@ -471,7 +471,7 @@
       (define (convert-pict/bytes p format default)
         (case format
           [(png-bytes)
-           (let* ([bm (make-platform-bitmap
+           (let* ([bm (make-bitmap
                        (max 1 (inexact->exact (ceiling (pict-width p))))
                        (max 1 (inexact->exact (ceiling (pict-height p)))))]
                   [dc (make-object bitmap-dc% bm)])
