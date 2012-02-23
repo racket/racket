@@ -5,7 +5,7 @@
   (lambda (x)
     (f x)))
 
-(define plus (app add1))
+(define plus (app (λ (x) (add1 x))))
 
 (plus 23)
 (plus 5)

@@ -10,4 +10,4 @@
 
 (define x 'gc-garbage)
 
-(test/value=? (map add1 lst) '(3 -9))
+(test/value=? (map (λ (x) (add1 x)) lst) '(3 -9))

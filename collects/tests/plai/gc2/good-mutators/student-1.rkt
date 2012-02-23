@@ -119,7 +119,7 @@
 (set! tail head)
 (printf "res ~a\n" lst)
 (printf "res ~a\n" (length '(hello goodbye)))
-(printf "res ~a\n" (map sub1 lst))
+(printf "res ~a\n" (map (λ (x) (sub1 x)) lst))
 
 (printf "(fact-help 15 1): ~a\n" (fact-help 15 1))
 (printf "(fact 9): ~a\n" (fact 9))
@@ -127,5 +127,5 @@
 (printf "(append lst lst): ~a\n" (append lst lst))
 
 (printf "(map-add 5 lst): ~a\n" (map-add 5 lst))
-(printf "(filter even? (map sub1 lst)): ~a\n" (filter even? (map sub1 lst)))
+(printf "(filter even? (map sub1 lst)): ~a\n" (filter (λ (x) (even? x)) (map (λ (x) (sub1 x)) lst)))
 (printf "(length lst): ~a\n" (length lst))
