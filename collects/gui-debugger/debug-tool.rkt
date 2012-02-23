@@ -10,6 +10,7 @@
            "marks.rkt"
            mrlib/switchable-button
            mrlib/bitmap-label
+           mrlib/close-icon
            "annotator.rkt"
            "load-sandbox.rkt"
            framework
@@ -1325,6 +1326,10 @@
                                 (stretchable-height #f)
                                 (alignment '(center center))
                                 (style '(border))))
+            ;; add a close button to the debug panel
+            (new close-icon%
+                 [parent debug-panel]
+                 [callback (λ () (hide-debug))])
             ;; hide the debug panel and stack view initially
             (send debug-parent-panel change-children (lambda (l) null))
             (send debug-grandparent-panel change-children (lambda (l) (remq stack-view-panel l)))
