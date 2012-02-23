@@ -318,6 +318,9 @@ messages:
        where a mutable vector is automatically replaced by an
        immutable vector;}
 
+ @item{@tech{hash tables} where mutable hash tables are automatically
+       replaced by immutable variants;}
+
  @item{@tech{place channels}, where a @tech{place descriptor} is
        automatically replaced by a plain place channel;}
 

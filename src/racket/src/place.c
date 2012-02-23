@@ -1677,6 +1677,9 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   /* lifted variables for xform*/
   Scheme_Object *pair;
   Scheme_Object *vec;
+  Scheme_Object *nht;
+  Scheme_Object *hti;
+  Scheme_Object *htk;
   intptr_t i;
   intptr_t size;
   Scheme_Structure *st;
@@ -1685,15 +1688,17 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   Scheme_Struct_Type *ptype;
   int local_slots;
 
-#define DEEP_DO_CDR 1
-#define DEEP_DO_FIN_PAIR 2
-#define DEEP_VEC1 3
-#define DEEP_ST1 4   
-#define DEEP_ST2 5      
-#define DEEP_SST1 6
-#define DEEP_SST2 7      
-#define DEEP_RETURN 8
-#define DEEP_DONE 9 
+#define DEEP_DO_CDR       1
+#define DEEP_DO_FIN_PAIR  2
+#define DEEP_VEC1         3
+#define DEEP_ST1          4   
+#define DEEP_ST2          5
+#define DEEP_SST1         6
+#define DEEP_SST2         7      
+#define DEEP_HT1          8
+#define DEEP_HT2          9      
+#define DEEP_RETURN      10
+#define DEEP_DONE        11
 #define RETURN do { goto DEEP_RETURN_L; } while(0);
 #define ABORT do { goto DEEP_DONE_L; } while(0);
 #define IFS_PUSH(x) inf_push(&inf_stack, x, &inf_stack_depth, &inf_max_depth, gcable)
@@ -1989,6 +1994,102 @@ DEEP_SST2_L:
         RETURN;
       }
       break;
+    case scheme_hash_table_type:  
+    case scheme_hash_tree_type:  
+      /* if ((mode == mzPDC_COPY) || (mode == mzPDC_UNCOPY)) { */
+      if (set_mode) {
+        if (scheme_true == scheme_hash_eq_p(1, &so)) {
+          nht = scheme_make_immutable_hasheq(0, NULL);
+        }
+        else if ( scheme_true == scheme_hash_eqv_p(1, &so)) {
+          nht = scheme_make_immutable_hasheqv(0, NULL);
+        }
+        else if ( scheme_true == scheme_hash_equal_p(1, &so)) {
+          nht = scheme_make_immutable_hash(0, NULL);
+        }
+      }
+      else
+        nht = so;
+
+      /* handle cycles: */
+      scheme_hash_set(*ht, so, nht);
+      hti = scheme_hash_table_iterate_start(1,&so);
+      i = 0;
+      
+      IFS_PUSH(nht);
+      IFS_PUSH(so);
+      IFS_PUSH(hti);
+      
+      if (SCHEME_INTP(hti)) {
+        Scheme_Object *a[2];
+        a[0] = so;
+        a[1] = hti;
+        SET_R0(scheme_hash_table_iterate_key(2, a));
+        GOTO_NEXT_CONT(DEEP_DO, DEEP_HT1);
+      }
+      else {
+        goto DEEP_HT3;
+      }
+
+DEEP_HT1_L:
+      /* hash table loop*/
+      hti  = IFS_GET(0);
+      so   = IFS_GET(1);
+      nht  = IFS_GET(2);
+      IFS_PUSH(GET_R0());
+
+      {
+        Scheme_Object *a[2];                                                                                  
+        a[0] = so;                                                                                            
+        a[1] = hti;                                                                                           
+        SET_R0(scheme_hash_table_iterate_value(2, a));                                                                 
+        GOTO_NEXT_CONT(DEEP_DO, DEEP_HT2);
+      }
+
+DEEP_HT2_L:
+      htk  = IFS_POP;
+      hti  = IFS_GET(0);
+      so   = IFS_GET(1);
+      nht  = IFS_GET(2);
+
+      if (set_mode) {
+        Scheme_Object *a[3];                                                                                  
+        a[0] = nht;                                                                                            
+        a[1] = htk;                                                                                           
+        a[2] = GET_R0();                                                                                           
+        nht = scheme_hash_table_put(3, a);
+        IFS_SET(2, nht);
+      }
+      {
+        Scheme_Object *a[3];                                                                                  
+        a[0] = so;                                                                                            
+        a[1] = hti;                                                                                            
+        hti = scheme_hash_table_iterate_next(2, a);
+      }
+
+      if (SCHEME_INTP(hti)) {
+        Scheme_Object *a[2];
+        IFS_SET(0, hti);
+        a[0] = so;
+        a[1] = hti;
+        SET_R0(scheme_hash_table_iterate_key(2, a));
+        GOTO_NEXT_CONT(DEEP_DO, DEEP_HT1);
+      }
+      else {
+        goto DEEP_HT3;
+      }
+
+DEEP_HT3:
+      hti  = IFS_POP;
+      so   = IFS_POP;
+      nht  = IFS_POP;
+
+      if (set_mode) {
+        new_so = nht;
+      }
+      RETURN;
+      break;
+
     default:
       if (delayed_errno)
         scheme_warning("Error serializing place message: %e", delayed_errno);
@@ -2011,6 +2112,8 @@ DEEP_RETURN_L:
       case DEEP_ST2:         goto DEEP_ST2_L;
       case DEEP_SST1:        goto DEEP_SST1_L;
       case DEEP_SST2:        goto DEEP_SST2_L;
+      case DEEP_HT1:         goto DEEP_HT1_L;
+      case DEEP_HT2:         goto DEEP_HT2_L;
       case DEEP_RETURN:      goto DEEP_RETURN_L;
       case DEEP_DONE:        goto DEEP_DONE_L;
       default:
@@ -2028,6 +2131,10 @@ DEEP_DONE_L:
 #undef DEEP_VEC1
 #undef DEEP_ST1
 #undef DEEP_ST2
+#undef DEEP_SST1
+#undef DEEP_SST2
+#undef DEEP_HT1
+#undef DEEP_TT2
 #undef DEEP_RETURN
 #undef DEEP_DONE
 #undef RETURNS

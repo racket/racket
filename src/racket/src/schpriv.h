@@ -429,6 +429,22 @@ extern Scheme_Object *scheme_reduced_procedure_struct;
 #define scheme_fixed_key    scheme_default_prompt_tag
 
 /*========================================================================*/
+/*                    hash functions                                      */
+/*========================================================================*/
+
+Scheme_Object *scheme_make_immutable_hash(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_make_immutable_hasheq(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_make_immutable_hasheqv(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_eqv_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_equal_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_put(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
+
+/*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/
 
