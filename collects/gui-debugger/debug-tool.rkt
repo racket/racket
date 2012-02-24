@@ -17,7 +17,14 @@
            string-constants
            lang/debugger-language-interface
            images/compile-time
-           (for-syntax images/icons/tool))
+           (for-syntax racket/class
+                       racket/draw
+                       images/icons/arrow
+                       images/icons/control
+                       images/icons/style
+                       images/icons/symbol
+                       images/icons/tool
+                       slideshow/pict))
   
   (provide tool@)
   
@@ -1083,30 +1090,34 @@
             (send (get-frame) hide-debug))
           
           (super-new)))
-      
+
+      ;; define icons for the tool and debug panel
       (define debug-bitmap (compiled-bitmap (debugger-icon)))
       (define small-debug-bitmap (compiled-bitmap (small-debugger-icon)))
-      
-      (define make-pause-label
-        (bitmap-label-maker
-         "Pause"
-         (build-path (collection-path "gui-debugger" "icons") "pause.png")))
-      (define make-resume-label 
-        (bitmap-label-maker
-         "Go"
-         (build-path (collection-path "gui-debugger" "icons") "resume.png")))
-      (define make-step-label
-        (bitmap-label-maker
-         "Step"
-         (build-path (collection-path "gui-debugger" "icons") "step.png")))
-      (define make-over-label
-        (bitmap-label-maker
-         "Over"
-         (build-path (collection-path "gui-debugger" "icons") "step-over2.png")))
-      (define make-out-label
-        (bitmap-label-maker
-         "Out"
-         (build-path (collection-path "gui-debugger" "icons") "step-out2.png")))
+      (define over-bitmap
+        (compiled-bitmap
+          (pict->bitmap
+            (cc-superimpose (bitmap (text-icon "()"
+                                               (make-object font%)
+                                               syntax-icon-color))
+                            (bitmap (right-over-arrow-icon run-icon-color))))))
+      (define out-bitmap
+        (compiled-bitmap
+          (pict->bitmap
+            (hc-append
+              -8
+              (bitmap (text-icon "()" (make-object font%) syntax-icon-color))
+              (bitmap (right-arrow-icon run-icon-color 19))))))
+
+      (define pause-bitmap (compiled-bitmap (pause-icon run-icon-color)))
+      (define resume-bitmap (compiled-bitmap (play-icon run-icon-color)))
+      (define step-bitmap (compiled-bitmap (step-icon run-icon-color)))
+
+      (define make-pause-label (bitmap-label-maker "Pause" pause-bitmap))
+      (define make-resume-label (bitmap-label-maker "Go" resume-bitmap))
+      (define make-step-label (bitmap-label-maker "Step" step-bitmap))
+      (define make-over-label (bitmap-label-maker "Over" over-bitmap))
+      (define make-out-label (bitmap-label-maker "Out" out-bitmap))
       
       (define (debug-unit-frame-mixin super%)
         (class super%
