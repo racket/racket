@@ -115,7 +115,7 @@
              [path-d (or main-path-d alt-path-d)]
              [file (if alt-path-d alt-file main-file)]
              [path (if alt-path-d alt-path main-path)]
-             [try-alt? (and (not alt-path-d) (not main-path-d))]
+             [try-alt? (and alt-file (not alt-path-d) (not main-path-d))]
              [get-so (lambda (file)
                        (build-path
                         base sub-path "native"
