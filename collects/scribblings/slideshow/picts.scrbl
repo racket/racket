@@ -1120,3 +1120,43 @@ frame's drawing area.}
 A parameter used to refine text measurements to better match an
 expected scaling of the image. The @racket[scale/improve-new-text]
 form sets this parameter while also scaling the resulting pict.}
+
+@section{Convertion to @racket[pict?]s}
+
+This section describes a protocol for values to be
+able to convert themselves to @racket[pict?]s. The 
+protocol is used by DrRacket's REPL to render values
+that it prints out.
+
+@defthing[prop:convertible struct-type-property?]{
+
+A property whose value should be a procedure matching the
+contract @racket[(-> any/c pict?)]. The
+procedure is called when a structure with the property is passed to
+@racket[convert]; the argument to the procedure is the
+structure, and the procedure's result should be a pict.
+}
+
+@defthing[prop:convertible? struct-type-property?]{
+A property whose value should be a predicate procedure
+(i.e., matching the contract @racket[predicate/c]).
+
+If this property is not set, then it is assumed to be
+the function @racket[(λ (x) #t)]. 
+
+If this property is set, then this procedure is called
+by @racket[convertible?] to determine if this particular
+value is convertible (thereby supporting situations
+where some instances of a given struct are convertible
+to picts, but others are not).
+}
+
+@defproc[(convertible? [v any/c]) boolean?]{
+Returns @racket[#t] if @racket[v] supports the conversion protocol
+(by being a struct with the @racket[prop:convertible] property)
+and @racket[#f] otherwise.
+}
+
+@defproc[(convert [v convertible?]) pict?]{
+  Requests a data conversion from @racket[v] to a @racket[pict?].
+}

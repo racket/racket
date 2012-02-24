@@ -3,7 +3,8 @@
   (require racket/draw
            racket/class
            racket/list
-           file/convertible)
+           (prefix-in file: file/convertible)
+           "convertible.rkt")
 
   (require "common-sig.rkt")
 
@@ -22,8 +23,9 @@
 			   panbox     ; panorama box, computed on demand
                            last)      ; a descendent for the bottom-right
         #:mutable
-        #:property prop:convertible (lambda (v mode default)
-                                      (convert-pict v mode default)))
+        #:property prop:convertible (λ (v) v)
+        #:property file:prop:convertible (lambda (v mode default)
+                                           (convert-pict v mode default)))
       (define-struct child (pict dx dy sx sy syx sxy))
       (define-struct bbox (x1 y1 x2 y2 ay dy))
 

@@ -1,14 +1,14 @@
-
-(module mrpict mzscheme
+#lang racket/base
   (require mzlib/unit
-           mzlib/contract
-           mzlib/class
+           racket/contract
+           racket/class
            racket/draw)
 
   (require racket/draw/draw-sig
            racket/draw/draw-unit
            "private/mrpict-sig.rkt"
            "private/common-sig.rkt"
+           "private/convertible.rkt"
            "mrpict-sig.rkt"
            "mrpict-unit.rkt")
 
@@ -32,7 +32,7 @@
    make-pict-drawer)
   
   (define family/c
-    (symbols 'base 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system))
+    (or/c 'base 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system))
 
   (define text-style/c
     (flat-rec-contract
@@ -46,10 +46,15 @@
                    text-style/c))))
   
   (provide/contract
-   [text (opt-> (string?)
-                (text-style/c 
-                 (and/c (between/c 1 255) integer?)
-                 number?)
-                pict?)])
+   [text (->* (string?)
+              (text-style/c 
+               (and/c (between/c 1 255) integer?)
+               number?)
+              pict?)])
   
-  (provide text-style/c))
+  (provide text-style/c)
+
+  (provide convert convertible?)
+  (provide/contract
+   [prop:convertible (struct-type-property/c (-> convertible? pict?))])
+  

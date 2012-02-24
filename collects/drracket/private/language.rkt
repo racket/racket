@@ -25,7 +25,7 @@
          mrlib/syntax-browser
          compiler/distribute
          compiler/bundle-dist
-         file/convertible
+         (prefix-in file: file/convertible)
          "rep.rkt")
   
   (import [prefix drracket:debug: drracket:debug^]
@@ -370,6 +370,9 @@
                   (real? x)
                   (not (integer? x))))])
       (define convert-table (make-hasheq))
+      (define pict:convertible?
+        (with-handlers ((exn:fail? (λ (exn) (λ (val) #f))))
+          (dynamic-require 'texpict/mrpict 'convertible?)))
       (parameterize ([pretty-print-pre-print-hook (λ (val port) (void))]
                      [pretty-print-post-print-hook (λ (val port) (void))]
                      [pretty-print-exact-as-decimal #f]
@@ -393,11 +396,16 @@
                           (cond
                             [(not (port-writes-special? port)) (oh value display? port)]
                             [(is-a? value snip%) 1]
+                            [(pict:convertible? value) 1]
                             [(use-number-snip? value) 1]
                             [(syntax? value) 1]
                             [(to-snip-value? value) 1]
-                            [(and (convertible? value)
-                                  (convert value 'png-bytes #f))
+                            [(hash-ref convert-table value #f) 
+                             ;; this handler can be called multiple times per value
+                             ;; avoid building the png bytes more than once
+                             1]
+                            [(and (file:convertible? value)
+                                  (file:convert value 'png-bytes #f))
                              =>
                              (λ (converted)
                                (hash-set! convert-table value converted)
@@ -420,6 +428,8 @@
                                [else
                                 (write-special value port)
                                 1])]
+                            [(pict:convertible? value)
+                             (write-special (mk-pict-snip value))]
                             [(use-number-snip? value)
                              (write-special
                               (case (simple-settings-fraction-style settings)
@@ -453,6 +463,45 @@
                       (and (memq (simple-settings-printing-style settings) '(write print))
                            (simple-settings-show-sharing settings))])
         (thunk))))
+  
+  (define pict-snip%
+    (class snip%
+      (init-field w h d a bm)
+      (define/override (get-extent dc x y [wb #f] [hb #f] [descent #f] [space #f] [lspace #f] [rspace #f])
+        (set-box/f lspace 0)
+        (set-box/f rspace 0)
+        (set-box/f wb w)
+        (set-box/f hb h)
+        (set-box/f descent d)
+        (set-box/f space a))
+      (define/override (draw dc x y left top right bottom dx dy draw-caret)
+        (send dc draw-bitmap bm x y))
+      (define/override (copy) (new pict-snip% [w w] [h h] [d d] [a a] [bm bm]))
+      (super-new)))
+  
+  (define (mk-pict-snip convertible)
+    (define-syntax-rule 
+      (dyn name args ...)
+      ((dynamic-require 'texpict/mrpict 'name) args ...))
+    (define pict (dyn convert convertible))
+    (define w (dyn pict-width pict))
+    (define h (dyn pict-height pict))
+    (define a (dyn pict-ascent pict))
+    (define d (dyn pict-descent pict))
+    ;; this would be better if it could use a record-dc% 
+    ;; instead of a bitmap; for now we use a screen-bitmap
+    ;; as a stop-gap measure (note that this wont' have an
+    ;; alpha channel under windows so that means that when we
+    ;; are in white-on-black mode, it will have a white background
+    ;; (which is ugly, but maybe preferable to black on black, I guess))
+    (define bm (make-screen-bitmap (inexact->exact (ceiling w))
+                                   (inexact->exact (ceiling h))))
+    (define bdc (make-object bitmap-dc% bm))
+    (dyn draw-pict pict bdc 0 0)
+    (send bdc set-bitmap #f)
+    (new pict-snip% [w w] [h h] [d d] [a a] [bm bm]))
+    
+  (define (set-box/f b v) (when (box? b) (set-box! b v)))
   
   ;; drscheme-inspector : inspector
   (define drscheme-inspector (current-inspector))

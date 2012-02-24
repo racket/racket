@@ -1,7 +1,6 @@
 #lang scheme/unit
 
-  (require mzlib/class
-           mzlib/etc)
+  (require racket/class)
 
   (require racket/draw/draw-sig
            racket/gui/dynamic)
@@ -16,7 +15,7 @@
           texpict-common-setup^)
 
       (define show-pict
-        (opt-lambda (p [w #f] [h #f])
+        (λ (p [w #f] [h #f])
           (define the-pict p)
           (define pict-drawer (make-pict-drawer the-pict))
           (define no-redraw? #f)
