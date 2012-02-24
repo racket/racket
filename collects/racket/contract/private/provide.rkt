@@ -745,10 +745,10 @@
        (define (add-struct-clause-to-struct-id-mapping a parent flds/stx)
          (define flds (syntax->list flds/stx))
          (when (and (identifier? a)
-                    (struct-info? (syntax-local-value a))
+                    (struct-info? (syntax-local-value a (λ () #f)))
                     (or (not parent)
                         (and (identifier? parent)
-                             (struct-info? (syntax-local-value parent))))
+                             (struct-info? (syntax-local-value parent (λ () #f)))))
                     flds
                     (andmap identifier? flds))
            (free-identifier-mapping-put! 
