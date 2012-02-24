@@ -321,19 +321,20 @@
                                                #f
                                                (car (car pp)))))]
                 
-                [struct-info (a:lookup-struct-info struct-name-position provide-stx)]
-                [constructor-id (list-ref struct-info 1)]
-                [predicate-id (list-ref struct-info 2)]
-                [selector-ids (reverse (list-ref struct-info 3))]
+                [the-struct-info (a:lookup-struct-info struct-name-position provide-stx)]
+                [constructor-id (list-ref the-struct-info 1)]
+                [predicate-id (list-ref the-struct-info 2)]
+                [selector-ids (reverse (list-ref the-struct-info 3))]
                 [type-is-only-constructor? (free-identifier=? constructor-id struct-name)]
                 [type-is-constructor? #t] ; I think there's no way to detect when the struct-name binding isn't a constructor
+                [chaperone-constructor-id (and constructor-id (car (generate-temporaries (list constructor-id))))]
                 [is-id-ok?
                  (λ (id i)
                    (if (or (not parent-struct-count)
                            (parent-struct-count . <= . i))
                        id
                        #t))]
-                [mutator-ids (reverse (list-ref struct-info 4))] ;; (listof (union #f identifier))
+                [mutator-ids (reverse (list-ref the-struct-info 4))] ;; (listof (union #f identifier))
                 [field-contract-ids (map (λ (field-name field-contract) 
                                            (if (a:known-good-contract? field-contract)
                                                field-contract
@@ -483,11 +484,11 @@
                          [(constructor-code constructor-new-name)
                           (code-for-one-id/new-name
                            stx
-                           constructor-id struct-name
+                           chaperone-constructor-id struct-name
                            (build-constructor-contract stx
                                                        field-contract-ids 
                                                        predicate-id)
-                           #f
+                           constructor-id
                            #t
                            (not type-is-only-constructor?))]
                          
@@ -550,14 +551,20 @@
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
-                               [(selector-ids ...) selector-ids])
-                   (syntax/loc stx
+                               [(selector-ids ...) selector-ids]
+                               [(constructor-args ...) (generate-temporaries selector-ids)])
+                   (quasisyntax/loc stx
                      (begin
                        struct-code
                        field-contract-id-definitions ...
                        selector-codes ...
                        mutator-codes ...
                        predicate-code
+                       (define (#,chaperone-constructor-id constructor-args ...)
+                         (chaperone-struct (#,constructor-id constructor-args ...)
+                                           struct-info
+                                           (λ (struct-type skipped?) 
+                                             (values -struct:struct-name skipped?))))
                        constructor-code
                        
                        ;; expanding out the body of the `make-pc-struct-type' function
@@ -695,8 +702,7 @@
                          [ex-id ex-id]
                          [ctrct (syntax-property ctrct 'inferred-name ex-id)]
                          [external-name (or user-rename-id id)]
-                         [reflect-external-name (or user-rename-id ex-id)]
-                         [where-stx stx])
+                         [reflect-external-name (or user-rename-id ex-id)])
              (with-syntax ([extra-test 
                             (syntax-case #'ctrct (->)
                               [(-> dom ... arg)
@@ -807,6 +813,28 @@
                         stx)]))
 
 (define (make-pc-struct-type struct-name struct:struct-name . ctcs)
+  (chaperone-struct-type
+   struct:struct-name
+   (λ (a b c d e f g h) (values a b c d e f g h))
+   (λ (x) x)
+   (λ args
+     (let ([vals (let loop ([args args])
+                   (cond
+                     [(null? args) null]
+                     [(null? (cdr args)) null]
+                     [else (cons (car args) (loop (cdr args)))]))])
+       (apply values
+              (map (λ (ctc val)
+                     (contract ctc
+                               val
+                               'not-enough-info-for-blame
+                               'not-enough-info-for-blame
+                               '#f
+                               (build-source-location #f)))
+                   ctcs
+                   vals)))))
+  
+  #;
   (let-values ([(struct:struct-name _make _pred _get _set)
                 (make-struct-type struct-name
                                   struct:struct-name
@@ -833,4 +861,4 @@
                                                               (build-source-location #f)))
                                                   ctcs
                                                   vals)))))])
-    struct:struct-name))
+    (values struct:struct-name _make)))

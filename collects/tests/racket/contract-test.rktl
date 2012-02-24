@@ -11712,6 +11712,24 @@ so that propagation occurs.
       (eval '(require 'provide/contract37-n)))
    "provide/contract37-n")
   
+  (test/spec-passed/result
+   'provide/contract38
+   '(begin 
+      (eval
+        '(module provide/contract38-a racket
+           (define-struct s () #:transparent)
+	   (provide/contract [struct s ()])))
+
+      (eval
+        '(module provide/contract38-b racket
+           (require 'provide/contract38-a)
+	   (define a-struct (make-s))
+	   (define-values (type _) (struct-info a-struct))
+	   (provide the-answer)
+	   (define the-answer (eq? type struct:s))))
+
+      (dynamic-require ''provide/contract38-b 'the-answer))
+   #t)
   
   (contract-error-test
    'contract-error-test8
