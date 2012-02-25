@@ -724,21 +724,65 @@ Note that the capability must be registered separately, via
 
 }
 
-@defmethod[(register-toolbar-button [tb (is-a?/c switchable-button%)]) void?]{
-Registers the toolbar button @racket[tb]. This is required
+@defmethod[(register-toolbar-button
+            [tb (is-a?/c switchable-button%)]
+            [#:number num (or/c #f real?) #f])
+           void?]{
+Registers the toolbar button @racket[tb]. 
+
+The @racket[num] argument controls the ordering of @racket[tb]
+with respect to other toolbar buttons. If it is
+@racket[#f], then a number one smaller than the currently
+smallest number is used.
+
+The buttons are sorted by their numbers, from left to right
+in horizontal mode and from top to bottom in vertical mode.
+If buttons are in sub-panels they cannot, in general, be
+sorted entirely by number without changing the panel 
+structure, but when a sub-panel appears as a sibling of
+some toolbar buttons, the sorting routine looks for the smallest
+number appearing in a button in the sub-panel, and uses that
+number when sorting the panel that appears with the buttons.
+
+A number of buttons already come with numbers:
+the @onscreen{Stop} button's number is @racket[101], 
+the @onscreen{Run} button's number is @racket[100],
+the @onscreen{Scribble PDF} button's number is @racket[99],
+the @onscreen{Scribble HTML} button's number is @racket[98],
+the @onscreen{Macro Stepper} button's number is @racket[70],
+the @onscreen{Debug} button's number is @racket[60],
+the @onscreen{Stepper} button's number is @racket[59], and
+the @onscreen{Check Syntax} button's number is @racket[50].
+
+All three are children of the panel returned by
+@method[drracket:unit:frame% get-button-panel].
+
+Registration is required
 so that the toolbar buttons properly switch orientation when 
-the toolbar's position is moved.
+the toolbar's position is moved and the ordering via the
+@racket[number] argument is preserved. 
+See also @method[drracket:unit:frame<%> sort-toolbar-buttons-panel].
 }
 
-@defmethod[(register-toolbar-buttons [tbs (listof (is-a?/c switchable-button%))]) void?]{
-Simultaneously registers the toolbar buttons @racket[tbs]. This is required
-so that the toolbar buttons properly switch orientation when 
-the toolbar's position is moved.
+@defmethod[(register-toolbar-buttons 
+            [tbs (listof (is-a?/c switchable-button%))]
+            [#:numbers nums (listof (or/c real? #f)) (make-list (length tbs) #f)])
+           void?]{
+Simultaneously registers the toolbar buttons @racket[tbs].
+                                             
+See also @method[drracket:unit:frame<%> register-toolbar-button].
+
 }
 
 @defmethod[(unregister-toolbar-button [tb (is-a?/c switchable-button%)]) void?]{
 Unregisters the toolbar button @racket[tb]. Use this method to ensure
 that the button is not referenced by this frame and thus can be gc'd.
+}
+
+@defmethod[(sort-toolbar-buttons-panel) void?]{
+  Sorts the children of @method[drracket:unit:frame% get-button-panel], 
+  according to the @racket[number] argument passed to
+  @method[drracket:unit:frame<%> register-toolbar-button].
 }
 
 }

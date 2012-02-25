@@ -1,4 +1,11 @@
 ------------------------------
+       Version 5.2.2
+------------------------------
+
+  . DrRacket's toolbar buttons now have numbers associated with them
+    to control what order they appear in.
+
+------------------------------
        Version 5.2.1
 ------------------------------
 

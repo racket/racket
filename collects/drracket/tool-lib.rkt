@@ -87,18 +87,22 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:module-language-tools:add-opt-out-toolbar-button
-  (-> (-> (is-a?/c top-level-window<%>)
-          (is-a?/c area-container<%>) 
-          (is-a?/c switchable-button%))
-      symbol?
-      void?)
-  (make-button id)
+  (->* ((-> (is-a?/c top-level-window<%>)
+            (is-a?/c area-container<%>) 
+            (is-a?/c switchable-button%))
+        symbol?)
+       (#:number (or/c real? #f))
+       void?)
+  ((make-button id) ((number #f)))
   @{Call this function to add another button to DrRacket's toolbar. When buttons are added this way,
     DrRacket monitors the @tt{#lang} line at the top of the file; when it changes DrRacket queries
     the language to see if this button should be included.
     These buttons are ``opt out'', meaning that if the language doesn't explicitly ask to not
     have this button (or all such buttons), the button will appear.
     
+    The @racket[number] argument is the same as the @racket[number] argument
+    to @method[drracket:unit:frame<%> register-toolbar-button].
+
     @language-info-def[drracket:opt-out-toolbar-buttons]{
       See @racket[read-language] for more details on how a language can opt out.
       DrRacket will invoke the @tt{get-info} proc from @racket[read-language] with

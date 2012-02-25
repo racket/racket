@@ -19,7 +19,7 @@
 
 (define original-error-display-handler (error-display-handler))
 
-(define (make-render-button label bmp mode suffix)
+(define (make-render-button label bmp mode suffix number)
   (list 
    label
    bmp
@@ -54,15 +54,16 @@
                                  (system (format "open \"~a\"" (path->string (path-replace-suffix fn suffix)))))])))]) 
           (send drs-frame execute-callback))]
        [else
-        (message-box "Scribble" "Cannot render buffer without filename")]))))
+        (message-box "Scribble" "Cannot render buffer without filename")]))
+   number))
 
 (define drracket-buttons
   (let ([html-button
-         (make-render-button "Scribble HTML" html.png "--html" #".html")]
+         (make-render-button "Scribble HTML" html.png "--html" #".html" 99)]
         [pdf-button
          ;; only available on OSX currently
          ;; when we have a general way of opening pdfs, can use that
-         (make-render-button "Scribble PDF" pdf.png "--pdf" #".pdf")])
+         (make-render-button "Scribble PDF" pdf.png "--pdf" #".pdf" 98)])
     (case (system-type)
       [(macosx) (list html-button pdf-button)]
       [else (list html-button)])))

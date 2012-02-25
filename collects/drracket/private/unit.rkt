@@ -1886,12 +1886,11 @@ module browser threading seems wrong.
               (when (or (is-a? obj vertical-panel%)
                         (is-a? obj horizontal-panel%))
                 (unless (equal? (send obj get-orientation) (not vertical?))
-                  (send obj set-orientation (not vertical?))
-                  ;; have to be careful to avoid reversing the list when the orientation is already proper
-                  (send obj change-children reverse)))
+                  (send obj set-orientation (not vertical?))))
               (for-each loop (send obj get-children))))
+          (sort-toolbar-buttons-panel)
           
-          (orient)
+          (set-toolbar-label-visibilities/check-registered)
           
           (send top-outer-panel stretchable-height vertical?)
           (send top-outer-panel stretchable-width (not vertical?))
@@ -1918,31 +1917,102 @@ module browser threading seems wrong.
               (send name-panel set-alignment 'left 'center))
           (end-container-sequence)))
       
-      (define toolbar-buttons '())
-      (define/public (register-toolbar-button b)
-        (set! toolbar-buttons (cons b toolbar-buttons))
-        (orient))
+      ;; this table uses object identity on buttons(!)
+      (define toolbar-buttons (make-hasheq))
+      (define smallest #f)
       
-      (define/public (register-toolbar-buttons bs)
-        (set! toolbar-buttons (append bs toolbar-buttons))
-        (orient))
+      (define/public (register-toolbar-button b #:number [number/f #f])
+        (add-to-toolbar-buttons 'register-toolbar-button b number/f)
+        (set-toolbar-label-visibilities/check-registered)
+        (sort-toolbar-buttons-panel))
+      
+      (define/public (register-toolbar-buttons bs #:numbers [numbers/fs (make-list (length bs) #f)])
+        (for ([b (in-list bs)]
+              [n (in-list numbers/fs)]) 
+          (add-to-toolbar-buttons 'register-toolbar-buttons b n))
+        (set-toolbar-label-visibilities/check-registered)
+        
+        ;; sort panel contents
+        (define panels '())
+        (for ([tb (in-list bs)])
+          (define parent (send tb get-parent))
+          (unless (memq parent panels)
+            (set! panels (cons parent panels))))
+        (for ([panel (in-list panels)])
+          (sort-toolbar-buttons-panel)))
+      
+      (define/private (add-to-toolbar-buttons who button number/f)
+        (define number (or number/f (if smallest (- smallest 1) 100)))
+        (define prev (hash-ref toolbar-buttons button #f))
+        (when (and prev (not (= prev number)))
+          (error who "cannot add toolbar button ~s with number ~a; already added with ~a"
+                 (send button get-label)
+                 number
+                 prev))
+        (when (or (not smallest) (< number smallest))
+          (set! smallest number))
+        (hash-set! toolbar-buttons button number))
+      
+      (define/private (in-toolbar-list? b) (hash-ref toolbar-buttons b #f))
       
       (define/public (unregister-toolbar-button b)
-        (set! toolbar-buttons (remq b toolbar-buttons))
+        (hash-remove! toolbar-buttons b)
+        (set! smallest
+              (if (zero? (hash-count toolbar-buttons))
+                  #f
+                  (apply min (hash-map toolbar-buttons (λ (x y) y)))))
         (void))
       
-      (define/private (orient)
+      (define/public (sort-toolbar-buttons-panel)
+        (define bp (get-button-panel))
+        (when (is-a? bp panel%)
+          (let sort-loop ([panel bp])
+            (define min #f)
+            (send panel change-children
+                  (λ (l)
+                    (define sub-panel-nums (make-hash))
+                    (for ([x (in-list l)])
+                      (when (is-a? x area-container<%>)
+                        (hash-set! sub-panel-nums x (sort-loop x))))
+                    (define (key i)
+                      (or (let loop ([item i])
+                            (cond
+                              [(is-a? item area-container<%>)
+                               (hash-ref sub-panel-nums item)]
+                              [else
+                               (hash-ref toolbar-buttons item #f)]))
+                          -5000))
+                    (define (min/f a b)
+                      (cond
+                        [(and a b) (min a b)]
+                        [else (or a b)]))
+                    (define cmp
+                      (cond
+                        [(is-a? panel vertical-pane%) >=]
+                        [(is-a? panel horizontal-pane%) <=]
+                        [else
+                         (if (send panel get-orientation) ;; horizontal is #t
+                             <=
+                             >=)]))
+                    (define ans (sort l cmp #:key key))
+                    (set! min (if (null? ans)
+                                  #f
+                                  (key (car ans))))
+                    ans))
+            min)
+          (void)))
+
+      (define/private (set-toolbar-label-visibilities/check-registered)
         (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
-          (for-each
-           (λ (obj) (send obj set-label-visible (not vertical?)))
-           toolbar-buttons))
+          (for ([(button number) (in-hash toolbar-buttons)])
+            (send button set-label-visible (not vertical?))))
         
         (let loop ([obj button-panel])
           (cond
             [(is-a? obj area-container<%>)
              (for-each loop (send obj get-children))]
             [(is-a? obj switchable-button%)
-             (unless (memq obj toolbar-buttons)
+             (unless (in-toolbar-list? obj)
                (error 'register-toolbar-button 
                       "found a switchable-button% that is not registered, label ~s"
                       (send obj get-label)))]
@@ -4293,7 +4363,7 @@ module browser threading seems wrong.
                  [callback (λ (x) (execute-callback))]
                  [bitmap execute-bitmap]
                  [label (string-constant execute-button-label)]))
-      (register-toolbar-button execute-button)
+      (register-toolbar-button execute-button #:number 100)
       
       (set! break-button
             (new switchable-button%
@@ -4301,7 +4371,7 @@ module browser threading seems wrong.
                  [callback (λ (x) (send current-tab break-callback))]
                  [bitmap break-bitmap]
                  [label (string-constant break-button-label)]))
-      (register-toolbar-button break-button)
+      (register-toolbar-button break-button #:number 101)
       
       (send button-panel stretchable-height #f)
       (send button-panel stretchable-width #f) 

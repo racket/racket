@@ -186,7 +186,7 @@
              [callback (lambda (dont-care) (send (get-current-tab)
                                                  stepper-button-callback))]))
       
-      (register-toolbar-button stepper-button)
+      (register-toolbar-button stepper-button #:number 59)
       
       (define (stepper-button-show)
         (unless (send stepper-button is-shown?)

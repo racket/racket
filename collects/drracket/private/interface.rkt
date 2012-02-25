@@ -54,6 +54,7 @@ remain the same for tools that use them.
     register-toolbar-button
     register-toolbar-buttons
     unregister-toolbar-button
+    sort-toolbar-buttons-panel
     get-tabs))
 
 (define unit:definitions-text<%> 

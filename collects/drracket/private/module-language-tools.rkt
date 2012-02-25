@@ -21,35 +21,42 @@
           [prefix drracket: drracket:interface^])
   (export drracket:module-language-tools^)
 
-  (define-struct opt-out-toolbar-button (make-button id) #:transparent)
+  (define-struct opt-out-toolbar-button (make-button id number) #:transparent)
   (define opt-out-toolbar-buttons '())
   
-  (define (add-opt-out-toolbar-button make-button id) 
+  (define (add-opt-out-toolbar-button make-button id #:number [number #f]) 
     (set! opt-out-toolbar-buttons
-          (cons (make-opt-out-toolbar-button make-button id)
+          (cons (make-opt-out-toolbar-button make-button id number)
                 opt-out-toolbar-buttons)))
+    
+  (define-local-member-name
+    set-lang-toolbar-buttons
+    get-lang-toolbar-buttons)
     
   (define tab-mixin
     (mixin (drracket:unit:tab<%>) (drracket:module-language-tools:tab<%>)
       (inherit get-frame)
       (define toolbar-buttons '())
       (define/public (get-lang-toolbar-buttons) toolbar-buttons)
-      (define/public (set-lang-toolbar-buttons bs)
+      (define/public (set-lang-toolbar-buttons bs ns)
         (for-each
          (λ (old-button) (send (get-frame) remove-toolbar-button old-button))
          toolbar-buttons)
         (set! toolbar-buttons bs)
-        (send (get-frame) register-toolbar-buttons toolbar-buttons)
+        (send (get-frame) register-toolbar-buttons toolbar-buttons #:numbers ns)
         (send (get-frame) when-initialized
               (λ ()
                 (send (send (get-frame) get-toolbar-button-panel) change-children
-                      (λ (l) toolbar-buttons)))))
+                      (λ (l) toolbar-buttons))))
+        (send (get-frame) sort-toolbar-buttons-panel))
       (super-new)))
   
   (define frame-mixin
     (mixin (drracket:unit:frame<%>) (drracket:module-language-tools:frame<%>)
-      (inherit unregister-toolbar-button get-definitions-text)
-  
+      (inherit unregister-toolbar-button 
+               get-definitions-text
+               sort-toolbar-buttons-panel)
+      
       (define toolbar-button-panel #f)
       (define/public (when-initialized thunk) 
         (cond
@@ -65,20 +72,19 @@
       (define/public (get-toolbar-button-panel) toolbar-button-panel)
       (define/public (remove-toolbar-button button)
         (send toolbar-button-panel change-children (λ (l) (remq button l)))
-        (unregister-toolbar-button button))
+        (unregister-toolbar-button button)
+        (sort-toolbar-buttons-panel))
       (define/augment (on-tab-change old-tab new-tab)
         (inner (void) on-tab-change old-tab new-tab)
         (when toolbar-button-panel
           (send toolbar-button-panel change-children
-                (λ (l) (send new-tab get-lang-toolbar-buttons)))))
+                (λ (l) (send new-tab get-lang-toolbar-buttons)))
+          (sort-toolbar-buttons-panel)))
       (super-new)
       (inherit get-button-panel)
       (set! toolbar-button-panel (new horizontal-panel% 
                                       [parent (get-button-panel)]
                                       [stretchable-width #f]))
-      ;; move button panel to the front of the list
-      (send (get-button-panel) change-children 
-            (λ (l) (cons toolbar-button-panel (remq toolbar-button-panel l))))
       (after-initialized)
       (set! after-initialized void)
       
@@ -184,9 +190,13 @@
                           'drracket/private/module-language-tools))
               (when info-result
                 (register-new-buttons
-                 (ctc-on-info-proc-result (or/c #f (listof (list/c string?
-                                                                   (is-a?/c bitmap%)
-                                                                   (-> (is-a?/c drracket:unit:frame<%>) any))))
+                 (ctc-on-info-proc-result (or/c #f (listof (or/c (list/c string?
+                                                                         (is-a?/c bitmap%)
+                                                                         (-> (is-a?/c drracket:unit:frame<%>) any))
+                                                                 (list/c string?
+                                                                         (is-a?/c bitmap%)
+                                                                         (-> (is-a?/c drracket:unit:frame<%>) any)
+                                                                         (or/c real? #f)))))
                                           (or (info-proc 'drracket:toolbar-buttons #f)
                                               (info-proc 'drscheme:toolbar-buttons #f)))
                  (ctc-on-info-proc-result (or/c #f (listof symbol?))
@@ -196,6 +206,15 @@
       (inherit get-tab)
       
       (define/private (register-new-buttons buttons opt-out-ids)
+        ;; cleaned-up-buttons : (listof (list/c string? (is-a?/c bitmap%) (-> (is-a?/c drracket:unit:frame<%>) any) (or/c real? #f)))
+        (define cleaned-up-buttons
+          (cond
+            [(not buttons) '()]
+            [else
+             (for/list ([button (in-list buttons)])
+               (if (= 3 (length button))
+                   (append button (list #f))
+                   button))]))
         (let* ([tab (get-tab)]
                [frame (send tab get-frame)])
           (send frame when-initialized
@@ -203,7 +222,7 @@
                   (send frame begin-container-sequence)
                   
                   ;; avoid any time with both sets of buttons in the panel so the window doesn't get too wide
-                  (send (send frame get-toolbar-button-panel) change-children (λ (x) '()))
+                  (send (send frame get-toolbar-button-panel) change-children (λ (prev) '()))
                   
                   (let ([directly-specified-buttons
                          (map (λ (button-spec)
@@ -214,25 +233,27 @@
                                      [callback
                                       (lambda (button)
                                         ((list-ref button-spec 2) frame))]))
-                              (or buttons '()))]
-                        [opt-out-buttons
+                              cleaned-up-buttons)]
+                        [directly-specified-button-numbers (map (λ (button-spec) (list-ref button-spec 3)) 
+                                                                cleaned-up-buttons)]
+                        [opt-out-buttons+numbers
                          (if (eq? opt-out-ids #f)
                              '()
                              (map
                               (λ (opt-out-toolbar-button)
-                                ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
-                                 frame
-                                 (send frame get-toolbar-button-panel)))
+                                (list ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
+                                       frame
+                                       (send frame get-toolbar-button-panel))
+                                      (opt-out-toolbar-button-number opt-out-toolbar-button)))
                               (filter (λ (opt-out-toolbar-button)
                                         (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
                                                      opt-out-ids)))
                                       opt-out-toolbar-buttons)))])
                     (send tab set-lang-toolbar-buttons
-                          (sort
-                           (append directly-specified-buttons
-                                   opt-out-buttons)
-                           string<=?
-                           #:key (λ (x) (send x get-label)))))
+                          (append directly-specified-buttons
+                                  (map (λ (x) (list-ref x 0)) opt-out-buttons+numbers))
+                          (append directly-specified-button-numbers
+                                  (map (λ (x) (list-ref x 1)) opt-out-buttons+numbers))))
                   (send frame end-container-sequence)))))
       
       (inherit get-text)
@@ -247,7 +268,7 @@
 
       ;; removes language-specific customizations
       (define/private (clear-things-out)
-        (send (get-tab) set-lang-toolbar-buttons '()))
+        (send (get-tab) set-lang-toolbar-buttons '() '()))
       
       (define/augment (after-set-next-settings settings)
         (update-in-module-language?

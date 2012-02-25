@@ -1382,7 +1382,7 @@
       		      [alignment '(center center)]))
                (callback (λ (button) (debug-callback)))))
         (inherit register-toolbar-button)
-        (register-toolbar-button debug-button)
+        (register-toolbar-button debug-button #:number 60)
 
         (define/augment (enable-evaluation)
           (send debug-button enable #t)

@@ -106,7 +106,7 @@
                                                 (get-definitions-text)))]
                                    [parent (get-button-panel)]
                                    [bitmap reverse-content-bitmap])])
-                         (register-toolbar-button btn)
+                         (register-toolbar-button btn #:number 11)
                          (send (get-button-panel) change-children
                                (λ (l)
                                  (cons btn (remq btn l)))))))

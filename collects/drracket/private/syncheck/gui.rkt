@@ -181,7 +181,8 @@ If the namespace does not, they are colored the unbound color.
               (alternate-bitmap syncheck-small-bitmap)
               (parent parent)
               (callback (λ (button) (send frame syncheck:button-callback)))))
-       'drracket:syncheck)
+       'drracket:syncheck
+       #:number 50)
       (drracket:unit:add-to-program-editor-mixin clearing-text-mixin))
     (define (phase2) (void))
     
@@ -1544,15 +1545,17 @@ If the namespace does not, they are colored the unbound color.
         
         (define/private (update-button-visibility/tab tab)
           (update-button-visibility/settings (send (send tab get-defs) get-next-settings)))
+        (inherit sort-toolbar-buttons-panel)
         (define/public (update-button-visibility/settings settings)
           (let* ([lang (drracket:language-configuration:language-settings-language settings)]
                  [visible? (and (not (is-a? lang drracket:module-language:module-language<%>))
                                 (send lang capability-value 'drscheme:check-syntax-button))])
-            (send check-syntax-button-parent-panel change-children
+            (send (get-button-panel) change-children
                   (λ (l)
                     (if visible?
-                        (list check-syntax-button)
-                        '())))))
+                        (cons check-syntax-button (remq check-syntax-button l))
+                        (remq check-syntax-button l))))
+            (sort-toolbar-buttons-panel)))
         
         ;; set-syncheck-running-mode : (or/c (box boolean?) 'button #f) -> boolean
         ;; records how a particular check syntax is being played out in the editor right now.
@@ -2037,25 +2040,16 @@ If the namespace does not, they are colored the unbound color.
                 
         (super-new)
         
-        (define check-syntax-button-parent-panel 
-          (new horizontal-panel%
-               [parent (get-button-panel)]
-               [stretchable-width #f]
-               [stretchable-height #f]))
         (define check-syntax-button
           (new switchable-button%
-               (label (string-constant check-syntax))
-               (bitmap syncheck-bitmap)
-               (alternate-bitmap syncheck-small-bitmap)
-               (parent check-syntax-button-parent-panel)
-               (callback (λ (button) (syncheck:button-callback)))))
+               [label (string-constant check-syntax)]
+               [bitmap syncheck-bitmap]
+               [alternate-bitmap syncheck-small-bitmap]
+               [parent (get-button-panel)]
+               [callback (λ (button) (syncheck:button-callback))]))
         (inherit register-toolbar-button)
-        (register-toolbar-button check-syntax-button)
+        (register-toolbar-button check-syntax-button #:number 50)
         (define/public (syncheck:get-button) check-syntax-button)
-        (send (get-button-panel) change-children
-              (λ (l)
-                (cons check-syntax-button-parent-panel
-                      (remove check-syntax-button-parent-panel l))))
         (update-button-visibility/tab (get-current-tab))))
     
     (define report-error-style (make-object style-delta% 'change-style 'italic))

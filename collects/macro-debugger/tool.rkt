@@ -102,7 +102,8 @@
                (alternate-bitmap small-macro-debugger-bitmap)
                (parent parent)
                (callback (lambda (button) (send frame run-macro-stepper)))))
-       'macro-stepper)
+       'macro-stepper
+       #:number 70)
       (drracket:language:register-capability
        'macro-stepper:enabled
        boolean?
@@ -138,7 +139,7 @@
                (parent macro-debug-panel)
                (callback (lambda (button) (run-macro-stepper)))))
         (inherit register-toolbar-button)
-        (register-toolbar-button macro-debug-button)
+        (register-toolbar-button macro-debug-button #:number 70)
 
         (define/augment (enable-evaluation)
           (send macro-debug-button enable #t)
