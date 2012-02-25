@@ -14,11 +14,16 @@
 
 (provide dc-path%
          (protect-out do-path
-                      set-text-to-path!))
+                      set-text-to-path!
+                      
+                      get-closed-points
+                      get-open-points
+                      set-closed+open-points))
 
 (define-local-member-name
   get-closed-points
   get-open-points
+  set-closed+open-points
   do-path)
 
 (define 2pi (* 2.0 pi))
@@ -52,8 +57,33 @@
     (define/public (get-closed-points) (flatten-closed!) closed-points)
     (define/public (get-open-points) (flatten-open!) open-points)
 
+    (define/public (set-closed+open-points c o)
+      (define (ok-points? l)
+        (let loop ([l l])
+          (cond
+           [(null? l) #t]
+           [(pair? l)
+            (let ([p (car l)])
+              (if (pair? p)
+                  (and (real? (car p))
+                       (real? (cdr p))
+                       (loop (cdr l)))
+                  (and (vector? p)
+                       (= (vector-length p) 4)
+                       (real? (vector-ref p 0))
+                       (real? (vector-ref p 1))
+                       (real? (vector-ref p 2))
+                       (real? (vector-ref p 3))
+                       (pair? (cdr l))
+                       (pair? (cadr l))
+                       (loop (cdr l)))))])))
+      (unless (and (andmap ok-points? c) (ok-points? o))
+        (error "invalid path points"))
+      (set! closed-points c)
+      (set! open-points o))
+
     (define/private (do-points cr l align-x align-y)
-      (let loop ([l l][first? #t])
+      (let loop ([l l] [first? #t])
         (cond
          [(null? l) (void)]
          [else

@@ -37,6 +37,7 @@ interface, and procedure bindings defined in this manual.}
 @include-section["post-script-dc-class.scrbl"]
 @include-section["ps-setup-class.scrbl"]
 @include-section["radial-gradient-class.scrbl"]
+@include-section["record-dc-class.scrbl"]
 @include-section["region-class.scrbl"]
 @include-section["svg-dc-class.scrbl"]
 @include-section["draw-funcs.scrbl"]

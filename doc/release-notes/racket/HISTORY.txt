@@ -5,6 +5,7 @@ mysterx: removed ActiveX support plus com-add-ref and
  com-ref-count
 racket/draw: treat a face as a Pango font description
  only when it contains a comma
+racket/draw: add record-dc%
 
 Version 5.2.1.5
 Added racket/future to re-exports of racket

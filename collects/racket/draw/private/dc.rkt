@@ -575,17 +575,17 @@
       (let ([o pen])
         (send p adjust-lock 1)
         (set! pen p)
-        (send o adjust-lock -1)))
+        (send o adjust-lock -1))
+      (reset-align!))
 
     (define/public (set-pen . args)
       (case-args
        args
-       [([pen% p]) (do-set-pen! p) (reset-align!)]
+       [([pen% p]) (do-set-pen! p)]
        [([(make-alts string? color%) col]
          [pen-width? width]
          [pen-style-symbol? style])
-        (do-set-pen! (send the-pen-list find-or-create-pen col width style))
-        (reset-align!)]
+        (do-set-pen! (send the-pen-list find-or-create-pen col width style))]
        (method-name 'dc<%> 'set-pen)))
 
     (define/public (get-pen) pen)

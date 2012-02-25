@@ -19,7 +19,7 @@ Drawing to a @racket[bitmap-dc%] with a color bitmap is guaranteed to
 
 @defconstructor[([bitmap (or/c (is-a?/c bitmap%) #f)])]{
 
-Creates a new memory DC. If @racket[bitmap] is not @racket[#f], it is
+Creates a new bitmap DC. If @racket[bitmap] is not @racket[#f], it is
  installed into the DC so that drawing commands on the DC draw to
  @racket[bitmap]. Otherwise, no bitmap is installed into the DC and
  @method[bitmap-dc% set-bitmap] must be called before any other method

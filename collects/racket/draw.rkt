@@ -11,6 +11,7 @@
          "draw/private/dc-path.rkt"
          "draw/private/dc-intf.rkt"
          "draw/private/bitmap-dc.rkt"
+         "draw/private/record-dc.rkt"
          "draw/private/post-script-dc.rkt"
          "draw/private/ps-setup.rkt"
          "draw/private/svg-dc.rkt"
@@ -30,6 +31,7 @@
          dc-path%
          dc<%>
          bitmap-dc%
+         record-dc% recorded-datum->procedure
          post-script-dc%
          pdf-dc%
          ps-setup% current-ps-setup

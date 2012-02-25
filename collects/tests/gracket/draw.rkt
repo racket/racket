@@ -220,6 +220,9 @@
        [clock-clip? #f]
        [do-clock #f]
        [use-bitmap? #f]
+       [platform-bitmap? #f]
+       [use-record? #f]
+       [serialize-record? #f]
        [use-bad? #f]
        [depth-one? #f]
        [cyan? #f]
@@ -285,7 +288,11 @@
 		       [bm (if use-bitmap?
 			       (if use-bad?
 				   (make-object bitmap% "no such file")
-				   (make-object bitmap% (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT) depth-one?))
+                                   (let ([w (ceiling (* xscale DRAW-WIDTH))]
+                                         [h (ceiling (* yscale DRAW-HEIGHT))])
+                                     (if platform-bitmap?
+                                         (make-platform-bitmap w h)
+                                         (make-object bitmap% w h depth-one?))))
 			       #f)]
 		       [draw-series
 			(lambda (dc pens pent penx size x y flevel last?)
@@ -996,7 +1003,17 @@
 				(send dc draw-rectangle 187 310 20 20)
 				(send dc set-pen p)))
 			      
-			    (when (and last? (not (or kind (eq? dc can-dc)))
+                            (when (and last? use-record?)
+                              (if serialize-record?
+                                  (let ()
+                                    (define-values (i o) (make-pipe))
+                                    (pretty-print (send dc get-recorded-datum))
+                                    (write (send dc get-recorded-datum) o)
+                                    ((recorded-datum->procedure (read i)) can-dc))
+                                  ((send dc get-recorded-procedure) can-dc)))
+
+			    (when (and last? 
+                                       (not (or kind (eq? dc can-dc)))
 				       (send mem-dc get-bitmap))
 			      (send can-dc draw-bitmap (send mem-dc get-bitmap) 0 0 'opaque)))
 			  
@@ -1031,11 +1048,13 @@
                                                     [as-eps (not page?)]
                                                     [use-paper-bbox page?]))])])
 				  (and (send dc ok?) dc))
-				(if (and use-bitmap?)
-				    (begin
-				      (send mem-dc set-bitmap bm)
-				      mem-dc)
-				    (get-dc)))])
+                                (if use-record?
+                                    (make-object record-dc% (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
+                                    (if (and use-bitmap?)
+                                        (begin
+                                          (send mem-dc set-bitmap bm)
+                                          mem-dc)
+                                        (get-dc))))])
 		    (when dc
                       (send dc start-doc "Draw Test")
 		      (send dc start-page)
@@ -1205,7 +1224,7 @@
 			(unless (cond
 				 [kind #t]
 				 [use-bad? #t]
-				 [use-bitmap? (and (= w (* xscale DRAW-WIDTH)) (= h (* yscale DRAW-HEIGHT)))]
+				 [use-bitmap? (and (= w (ceiling (* xscale DRAW-WIDTH))) (= h (ceiling (* yscale DRAW-HEIGHT))))]
 				 [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
 			  (show-error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
                                       (if use-bitmap?
@@ -1230,13 +1249,15 @@
 	    (super-new [parent parent][style '(hscroll vscroll)])
 	    (init-auto-scrollbars (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT) 0 0))
 	  vp)])
-    (make-object radio-box% #f '("Canvas" "Pixmap" "Bitmap" "Bad") hp0
+    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Record" "Serialize" "Bad") hp0
 		 (lambda (self event)
 		   (set! use-bitmap? (< 0 (send self get-selection)))
 		   (set! depth-one? (< 1 (send self get-selection)))
-		   (set! use-bad? (< 2 (send self get-selection)))
-		   (send canvas refresh))
-		 '(horizontal))
+		   (set! platform-bitmap? (= 3 (send self get-selection)))
+		   (set! use-record? (<= 4 (send self get-selection) 5))
+		   (set! serialize-record? (= 5 (send self get-selection)))
+		   (set! use-bad? (< 5 (send self get-selection)))
+		   (send canvas refresh)))
     (make-object button% "PS" hp
 		 (lambda (self event)
 		   (send canvas on-paint 'ps)))

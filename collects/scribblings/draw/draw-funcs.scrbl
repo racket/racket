@@ -107,6 +107,11 @@ defaults @racket[kind] and @racket[complain-on-failure?] in a more
 useful way.}
 
 
+@defproc[(recorded-datum->procedure [datum any/c]) ((is-a?/c dc<%>) . -> . void?)]{
+
+Converts a value from @xmethod[record-dc% get-recorded-datum] to a drawing procedure.}
+
+
 @defthing[the-brush-list (is-a?/c brush-list%)]{
 
 See @racket[brush-list%].
