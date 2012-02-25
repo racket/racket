@@ -107,7 +107,8 @@
         (force lazy-interval-map-init)
         (send/i controller selection-manager<%> set-selected-syntax
                 (interval-map-ref mapping position #f)))
-      (send text set-clickregion start-position end-position the-callback))
+      (send text set-clickregion start-position end-position the-callback)
+      (send text set-clickregion start-position end-position the-callback 'right-down))
 
     ;; refresh : -> void
     ;; Clears all highlighting and reapplies all non-foreground styles.

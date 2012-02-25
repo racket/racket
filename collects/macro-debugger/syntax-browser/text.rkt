@@ -353,13 +353,27 @@ Like clickbacks, but:
              find-position)
 
     (super-new)
-    (define clickbacks (get-region-mapping 'clickregion))
+
+    ;; Two mappings: one for left clicks, another for right
+    ;; mouse-downs.  Rationale: macro stepper wants to handle left
+    ;; clicks normally, but wants to insert behavior (ie, change
+    ;; focus) before normal processing of right-down (ie, editor
+    ;; passes to keymap, opens popup menu).
+    (define clickbacks (get-region-mapping 'click-region))
+    (define right-clickbacks (get-region-mapping 'right-click-region))
     (define tracking #f)
 
-    (define/public (set-clickregion start end callback)
-      (if callback
-          (interval-map-set! clickbacks start end callback)
-          (interval-map-remove! clickbacks start end)))
+    (define/public (set-clickregion start end callback [region 'click])
+      (let ([mapping
+             (case region
+               ((click) clickbacks)
+               ((right-down) right-clickbacks)
+               (else (error 'set-clickregion
+                            "bad region symbol: expected 'click or 'right-down, got ~e"
+                            region)))])
+        (if callback
+            (interval-map-set! mapping start end callback)
+            (interval-map-remove! mapping start end))))
 
     (define/private (get-event-position ev)
       (define-values (x y)
@@ -370,6 +384,7 @@ Like clickbacks, but:
       (define pos (find-position x y #f on-it?))
       (and (unbox on-it?) pos))
 
+    ;; on-default-event called if keymap does not handle event
     (define/override (on-default-event ev)
       (define admin (get-admin))
       (when admin
@@ -387,6 +402,16 @@ Like clickbacks, but:
                  (cb pos)))
              (send admin update-cursor)))))
       (super on-default-event ev))
+
+    ;; on-local-event called before keymap consulted
+    (define/override (on-local-event ev)
+      (case (send ev get-event-type)
+        ((right-down)
+         (when (get-admin)
+           (define pos (get-event-position ev))
+           (let ([cb (and pos (interval-map-ref right-clickbacks pos #f))])
+             (when cb (cb pos))))))
+      (super on-local-event ev))
 
     (define/override (adjust-cursor ev)
       (define pos (get-event-position ev))
