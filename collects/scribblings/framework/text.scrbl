@@ -360,7 +360,12 @@
     found last time that a search happened.
   }
 
-  @defmethod[(set-replace-start [pos (or/c false/c number?)]) void?]{
+  @defmethod[(get-replace-search-hit) (or/c number? #f)]{
+    Returns the position of the nearest search hit that comes after the
+    position set by the @method[text:searching<%> set-replace-start] method.
+  }
+
+  @defmethod[(set-replace-start [pos (or/c number? #f)]) void?]{
     Sets the position where replacement next occurs. This is equivalent to
     calling @method[text:searching<%> set-searching-state] with a new
     @racket[replace-start] argument, but the other arguments the same as the

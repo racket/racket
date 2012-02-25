@@ -861,6 +861,8 @@
 
 (define searching<%> 
   (interface (editor:keymap<%> basic<%>)
+    set-replace-start
+    get-replace-search-hit
     set-searching-state
     set-search-anchor
     get-search-bubbles
