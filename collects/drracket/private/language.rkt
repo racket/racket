@@ -464,9 +464,11 @@
                            (simple-settings-show-sharing settings))])
         (thunk))))
   
+  ;; this snip is created on the user's space,
+  ;; but its callbacks are invoked on DrRacket's.
   (define pict-snip%
     (class snip%
-      (init-field w h d a bm)
+      (init-field w h d a recorded-datum)
       (define/override (get-extent dc x y [wb #f] [hb #f] [descent #f] [space #f] [lspace #f] [rspace #f])
         (set-box/f lspace 0)
         (set-box/f rspace 0)
@@ -474,9 +476,23 @@
         (set-box/f hb h)
         (set-box/f descent d)
         (set-box/f space a))
+      (define proc #f)
       (define/override (draw dc x y left top right bottom dx dy draw-caret)
-        (send dc draw-bitmap bm x y))
-      (define/override (copy) (new pict-snip% [w w] [h h] [d d] [a a] [bm bm]))
+        (unless proc
+          (set! proc (with-handlers ((exn:fail? (λ (x) 
+                                                  (λ (dc)
+                                                    (define clr (send dc get-text-foreground))
+                                                    (send dc set-text-foreground "red")
+                                                    (send dc draw-text (exn-message x) 0 0)
+                                                    (send dc set-text-foreground clr)))))
+                       (recorded-datum->procedure recorded-datum)))
+          (set! recorded-datum #f))
+        (define-values (ox oy) (send dc get-origin))
+        (send dc set-origin (+ dx x) (+ dy y))
+        (proc dc)
+        (send dc set-origin ox oy))
+      (define/override (copy) (new pict-snip% [w w] [h h] [d d] [a a] 
+                                   [recorded-datum recorded-datum]))
       (super-new)))
   
   (define (mk-pict-snip convertible)
@@ -488,18 +504,10 @@
     (define h (dyn pict-height pict))
     (define a (dyn pict-ascent pict))
     (define d (dyn pict-descent pict))
-    ;; this would be better if it could use a record-dc% 
-    ;; instead of a bitmap; for now we use a screen-bitmap
-    ;; as a stop-gap measure (note that this wont' have an
-    ;; alpha channel under windows so that means that when we
-    ;; are in white-on-black mode, it will have a white background
-    ;; (which is ugly, but maybe preferable to black on black, I guess))
-    (define bm (make-screen-bitmap (inexact->exact (ceiling w))
-                                   (inexact->exact (ceiling h))))
-    (define bdc (make-object bitmap-dc% bm))
-    (dyn draw-pict pict bdc 0 0)
-    (send bdc set-bitmap #f)
-    (new pict-snip% [w w] [h h] [d d] [a a] [bm bm]))
+    (define rdc (new record-dc%))
+    (dyn draw-pict pict rdc 0 0)
+    (define recorded-datum (send rdc get-recorded-datum))
+    (new pict-snip% [w w] [h h] [d d] [a a] [recorded-datum recorded-datum]))
     
   (define (set-box/f b v) (when (box? b) (set-box! b v)))
   
