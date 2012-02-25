@@ -378,7 +378,23 @@
   (err/rt-test (argmax (lambda (x) x) (list +i)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
   (err/rt-test (argmax (lambda (x) x) (list)) (check-regs #rx"argmax" #rx"non-empty list")))
 
+;; ---------- range ----------
 
+(let ()
+  (test '(0 1 2 3) range 4)
+  (test '() range 0)
+  (test '(0 1 2 3 4 5 6 7) range 8)
+  (test '() range 3 2)
+  (test '(3) range 3 2 -1)
+  (test '(3 4 5 6 7 8) range 3 9)
+  (test '(3 5 7) range 3 9 2)
+  (test '(3 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5) range 3 9 0.5)
+  (test '(9 7 5) range 9 3 -2)
+  (test '(0 1 2 3 4 5 6 7 8 9) range 10)
+  (test '(10 11 12 13 14 15 16 17 18 19) range 10 20)
+  (test '(20 22 24 26 28 30 32 34 36 38) range 20 40 2)
+  (test '(20 19 18 17 16 15 14 13 12 11) range 20 10 -1)
+  (test '(10 11.5 13.0 14.5) range 10 15 1.5))
 
 ;; ---------- check no collisions with srfi/1 ----------
 (test (void)

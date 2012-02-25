@@ -1012,6 +1012,22 @@ the result of @racket[proc]. Signals an error on an empty list.
 (argmax car '((3 pears) (3 oranges)))
 ]}
 
+@defproc*[([(range [end real?]) list?]
+           [(range [start real?] [end real?] [step real? 1]) list?])]{
+  Returns a list of numbers starting at @racket[start] and whose successive
+  elements are computed by adding @racket[step] to their predecessor until
+  @racket[end] (excluded) is reached.
+  If no starting point is provided, @racket[0] is used. If no @racket[step]
+  argument is provided, @racket[1] is used.
+@mz-examples[#:eval list-eval
+(range 10)
+(range 10 20)
+(range 20 40 2)
+(range 20 10 -1)
+(range 10 15 1.5)
+]}
+
+
 @close-eval[list-eval]
 
 @; ----------------------------------------

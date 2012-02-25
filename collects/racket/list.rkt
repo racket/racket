@@ -31,7 +31,8 @@
          ;; convenience
          append-map
          filter-not
-         shuffle)
+         shuffle
+         range)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -362,3 +363,14 @@
 
 (define (argmin f xs) (mk-min < 'argmin f xs))
 (define (argmax f xs) (mk-min > 'argmax f xs))
+
+;; similar to in-range, but returns a list
+(define range
+  (case-lambda
+    [(end)       (range 0     end 1)]
+    [(start end) (range start end 1)]
+    [(start end step)
+     (unless (real? start) (raise-type-error 'range "real-number" start))
+     (unless (real? end)   (raise-type-error 'range "real-number" end))
+     (unless (real? step)  (raise-type-error 'range "real-number" step))
+     (for/list ([i (in-range start end step)]) i)]))
