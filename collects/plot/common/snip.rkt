@@ -3,10 +3,18 @@
 (require racket/gui/base racket/class racket/list unstable/parameter-group
          "math.rkt"
          "parameters.rkt"
-         "plot-device.rkt")
+         "plot-device.rkt"
+         "worker-thread.rkt")
 
 (provide plot-snip%)
 
+;; delay between update timer ticks
+(define update-delay 16)  ; about 60 fps (just over)
+
+;; update timer cancels itself if no useful work has been done in this amount of time
+(define useful-work-timeout 1000)
+
+;; message disappears after this long
 (define message-timeout 2000)
 
 (define plot-snip%
@@ -30,7 +38,10 @@
     
     (define/public (refresh)
       ;(printf "~a: refresh~n" (current-milliseconds))
-      (set-bitmap (get-bitmap)))
+      (define s-admin (get-admin))
+      (when s-admin
+        (define bm (get-bitmap))
+        (send s-admin needs-update this 0 0 (send bm get-width) (send bm get-height))))
     
     (define message #f)
     (define message-timer (make-object timer% (λ () (stop-message))))
@@ -133,6 +144,64 @@
         ;; Just in case (we don't want these events anyway):
         [(right-up middle-up)  (send editor on-local-event evt)]
         ))
+    
+    (define rth #f)
+    (define update-timer #f)
+    (define update? #t)
+    ;; timestamp of the last known time a timer tick did useful work
+    (define last-useful-work-time #f)
+    
+    (define/public (stop-update-thread)
+      (when rth
+        (worker-thread-kill rth)
+        (set! rth #f))
+      (when update-timer
+        (send update-timer stop)
+        (set! update-timer #f))
+      (set! last-useful-work-time #f))
+    
+    (define/public (update-thread-running?)
+      (and rth #t))
+    
+    (define/public (start-update-thread make-render-thread make-draw-command poll-worker-thread
+                                        animating?)
+      (stop-update-thread)
+      (set! rth (make-render-thread))
+      (set! update-timer
+            (make-object timer%
+              (update-tick make-render-thread make-draw-command poll-worker-thread animating?)
+              update-delay)))
+    
+    (define/public (set-update up)
+      (set! update? up))
+    
+    (define ((update-tick make-render-thread make-draw-command poll-worker-thread animating?))
+      (cond [animating?
+             (define can-update?
+               (cond [(worker-thread-working? rth)
+                      ;; rendering is useful work (otherwise, animating would stutter if rendering a
+                      ;; plot takes too long)
+                      (set! last-useful-work-time (current-milliseconds))
+                      (poll-worker-thread rth)]
+                     [else  #t]))
+             ;; can-update? is #t if the worker thread is ready for another command
+             (when (and update? can-update?)
+               (set! update? #f)
+               (set! last-useful-work-time (current-milliseconds))
+               (worker-thread-put rth (make-draw-command animating?)))
+             ;; if it's been too long since useful work was done, switch to drawing the final plot
+             (when (and last-useful-work-time
+                        ((- (current-milliseconds) last-useful-work-time) . > . useful-work-timeout))
+               (stop-update-thread)
+               (start-update-thread make-render-thread make-draw-command poll-worker-thread #f))
+             ;; keep any messages up
+             (reset-message-timeout)]
+            [else
+             (cond [(worker-thread-working? rth)
+                    (when (poll-worker-thread rth)
+                      (stop-update-thread))]
+                   [else
+                    (worker-thread-put rth (make-draw-command animating?))])]))
     
     (define cross-cursor (make-object cursor% 'cross))
     (define/override (adjust-cursor dc x y editorx editory evt) cross-cursor)

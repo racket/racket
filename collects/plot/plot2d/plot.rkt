@@ -162,10 +162,11 @@
     (define renderer-list (get-renderer-list renderer-tree))
     (define bounds-rect (get-bounds-rect renderer-list x-min x-max y-min y-max))
     
-    (define (make-plot bounds-rect)
+    (define (make-bm anim? bounds-rect width height)
       (define area #f)
       (define bm
-        (parameterize/group ([plot-parameters  saved-plot-parameters])
+        (parameterize/group ([plot-parameters  saved-plot-parameters]
+                             [plot-animating?  (if anim? #t (plot-animating?))])
           ((if (plot-animating?) draw-bitmap draw-bitmap/supersampling)
            (λ (dc)
              (define-values (x-ticks x-far-ticks y-ticks y-far-ticks)
@@ -200,11 +201,12 @@
       
       (values bm (send area get-area-bounds-rect) area-bounds->plot-bounds))
     
-    (define-values (bm area-bounds-rect area-bounds->plot-bounds) (make-plot bounds-rect))
+    (define-values (bm area-bounds-rect area-bounds->plot-bounds)
+      (make-bm #f bounds-rect width height))
     
     (make-2d-plot-snip
      bm saved-plot-parameters
-     make-plot bounds-rect area-bounds-rect area-bounds->plot-bounds)))
+     make-bm bounds-rect area-bounds-rect area-bounds->plot-bounds width height)))
 
 ;; Plot to a frame
 (defproc (plot-frame [renderer-tree (treeof (or/c renderer2d? nonrenderer?))]

@@ -193,7 +193,7 @@
     (define render-list-hash (make-hash))
     (define legend-entries-hash (make-hash))
     
-    (define (make-bm anim? angle altitude)
+    (define (make-bm anim? angle altitude width height)
       (parameterize/group ([plot-parameters  saved-plot-parameters]
                            [plot-animating?  (if anim? #t (plot-animating?))]
                            [plot3d-angle     angle]
@@ -229,8 +229,8 @@
          width height)))
     
     (make-3d-plot-snip
-     (make-bm #f angle altitude) saved-plot-parameters
-     make-bm angle altitude)))
+     (make-bm #f angle altitude width height) saved-plot-parameters
+     make-bm angle altitude width height)))
 
 ;; Plot to a frame
 (defproc (plot3d-frame [renderer-tree (treeof (or/c renderer3d? nonrenderer?))]

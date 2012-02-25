@@ -6,7 +6,8 @@
          worker-thread-put worker-thread-try-put
          worker-thread-get worker-thread-try-get
          worker-thread-wait
-         worker-thread-send)
+         worker-thread-send
+         worker-thread-kill)
 
 (struct worker-thread (state message-channel result-channel thread) #:mutable #:transparent)
 (struct values-result (value-list) #:transparent)
@@ -75,3 +76,7 @@
   (worker-thread-wait r)
   (worker-thread-put r msg)
   (worker-thread-get r))
+
+(define (worker-thread-kill r)
+  (match-define (worker-thread state msg-ch res-ch th) r)
+  (kill-thread th))

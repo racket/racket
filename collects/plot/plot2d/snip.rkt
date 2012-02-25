@@ -6,24 +6,29 @@
          "../common/math.rkt"
          "../common/format.rkt"
          "../common/ticks.rkt"
+         "../common/worker-thread.rkt"
          "../common/parameters.rkt")
 
 (provide 2d-plot-snip% make-2d-plot-snip)
 
-(define zoom-delay 16)  ; about 60 fps (just over)
+(define update-delay 16)
 (define show-zoom-message? #t)
+
+(struct draw-command (animating? plot-bounds-rect width height) #:transparent)
 
 (define 2d-plot-snip%
   (class plot-snip%
-    (init bm saved-plot-parameters)
-    (init-field make-plot plot-bounds-rect area-bounds-rect area-bounds->plot-bounds)
+    (init init-bm saved-plot-parameters)
+    (init-field make-bm plot-bounds-rect area-bounds-rect area-bounds->plot-bounds width height)
     
     (inherit set-bitmap get-bitmap
              get-saved-plot-parameters
-             refresh set-message reset-message-timeout
+             refresh
+             stop-message set-message reset-message-timeout
+             update-thread-running? set-update
              get-left-down-here?)
     
-    (super-make-object bm saved-plot-parameters)
+    (super-make-object init-bm saved-plot-parameters)
     
     (define (set-message-center)
       (match-define (vector x-mid y-mid) (rect-center area-bounds-rect))
@@ -34,7 +39,7 @@
     (define/override (copy)
       (make-object this%
         (get-bitmap) (get-saved-plot-parameters)
-        make-plot plot-bounds-rect area-bounds-rect area-bounds->plot-bounds))
+        make-bm plot-bounds-rect area-bounds-rect area-bounds->plot-bounds width height))
     
     (define left-click-x 0)
     (define left-click-y 0)
@@ -57,23 +62,11 @@
                            (λ ()
                              (set! zoom-timer #f)
                              (refresh))
-                           zoom-delay #t))))
+                           update-delay #t))))
     
     (define (set-click-message)
       (when show-zoom-message?
         (set-message "Click and drag to zoom\n Click to unzoom once")))
-    
-    (define (update-plot new-plot-bounds-rect)
-      (with-handlers ([(λ (e) #t)  (λ (e)
-                                     (refresh)
-                                     (make-object timer% (λ () (raise e)) 1))])
-        (define-values (new-bm new-area-bounds-rect new-area-bounds->plot-bounds)
-          (make-plot new-plot-bounds-rect))
-        (set! plot-bounds-rect new-plot-bounds-rect)
-        (set! area-bounds-rect new-area-bounds-rect)
-        (set! area-bounds->plot-bounds new-area-bounds->plot-bounds)
-        (set-bitmap new-bm)
-        (set-message-center)))
     
     (define (zoom-or-unzoom)
       (cond [dragging?
@@ -83,13 +76,38 @@
                     #;(printf "~a: new-plot-bounds-rect = ~v~n"
                               (current-milliseconds) new-rect)
                     (set! plot-bounds-rects (cons plot-bounds-rect plot-bounds-rects))
-                    (update-plot new-rect)]
-                   [else  (refresh)])]
+                    (set! plot-bounds-rect new-rect)
+                    (update-plot)]
+                   [else
+                    (refresh)])]
             [(not (empty? plot-bounds-rects))
-             (define new-rect (first plot-bounds-rects))
+             (set! plot-bounds-rect (first plot-bounds-rects))
              (set! plot-bounds-rects (rest plot-bounds-rects))
              (set! show-zoom-message? #f)
-             (update-plot new-rect)]))
+             (update-plot)]))
+    
+    (define (start-update-thread animating?)
+      (send this start-update-thread
+            (λ () (make-worker-thread
+                   (match-lambda
+                     [(draw-command animating? plot-bounds-rect width height)
+                      (make-bm animating? plot-bounds-rect width height)])))
+            (λ (animating?) (draw-command animating? plot-bounds-rect width height))
+            (λ (rth)
+              (define-values (new-bm new-area-bounds-rect new-area-bounds->plot-bounds)
+                (worker-thread-try-get rth (λ () (values #f #f #f))))
+              (cond [(is-a? new-bm bitmap%)
+                     (set! area-bounds-rect new-area-bounds-rect)
+                     (set! area-bounds->plot-bounds new-area-bounds->plot-bounds)
+                     (set-bitmap new-bm)
+                     (set-message-center)
+                     #t]
+                    [else  #f]))
+            animating?))
+    
+    (define (update-plot)
+      (start-update-thread #f)
+      (set-update #t))
     
     (define/override (on-event dc x y editorx editory evt)
       (define evt-type (send evt get-event-type))
@@ -178,10 +196,21 @@
       (when dragging?
         (parameterize/group ([plot-parameters  (get-saved-plot-parameters)])
           (draw-selection dc x y (get-new-area-bounds-rect)))))
+    
+    (define/override (resize w h)
+      (when (not (and (= w width) (= h height)))
+        (set! width w)
+        (set! height h)
+        (stop-message)
+        (when (not (update-thread-running?))
+          (start-update-thread #t))
+        (set-update #t))
+      #f)
     ))
 
-(define (make-2d-plot-snip bm saved-plot-parameters
-                           make-plot plot-bounds-rect area-bounds-rect area-bounds->plot-bounds)
+(define (make-2d-plot-snip
+         init-bm saved-plot-parameters
+         make-bm plot-bounds-rect area-bounds-rect area-bounds->plot-bounds width height)
   (make-object 2d-plot-snip%
-    bm saved-plot-parameters
-    make-plot plot-bounds-rect area-bounds-rect area-bounds->plot-bounds))
+    init-bm saved-plot-parameters
+    make-bm plot-bounds-rect area-bounds-rect area-bounds->plot-bounds width height))
