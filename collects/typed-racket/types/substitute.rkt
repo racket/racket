@@ -33,7 +33,7 @@
 ;; substitute : Type Name Type -> Type
 (define/cond-contract (substitute image name target #:Un [Un (get-union-maker)])
   ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
-  (define (sb t) (substitute image name t))
+  (define (sb t) (substitute image name t #:Un Un))
   (if (hash-ref (free-vars* target) name #f)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
