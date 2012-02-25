@@ -10453,6 +10453,11 @@ so that propagation occurs.
   (ctest #t contract-first-order-passes? (listof integer?) (list 1))
   (ctest #f contract-first-order-passes? (listof integer?) #f)
 
+  (ctest #f contract-first-order-passes? (list/c #f #f #t) (list))
+  (ctest #t contract-first-order-passes? (list/c #f 'x #t) (list #f 'x #t))
+  (ctest #f contract-first-order-passes? (list/c (-> number? number?)) (list (λ (x y) x)))
+  (ctest #t contract-first-order-passes? (list/c (-> number? number?)) (list (λ (x) x)))
+
   (ctest #t contract-first-order-passes? (non-empty-listof integer?) (list 1))
   (ctest #f contract-first-order-passes? (non-empty-listof integer?) (list))
 

@@ -698,7 +698,7 @@
        (= (length x) (length (generic-list/c-args c)))
        (for/and ([arg/c (in-list (generic-list/c-args c))]
                  [v (in-list x)])
-         (arg/c v))))
+         ((contract-first-order arg/c) v))))
 
 (struct generic-list/c (args))
 
