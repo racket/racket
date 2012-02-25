@@ -138,7 +138,7 @@ Here, the top surface is first in the list, but the bottom surface is drawn firs
 
 @section{Plotting to Files}
 
-Any plot can be rendered to PNG, PDF, PS and SVG files using @(racket plot->file) and @(racket plot3d->file), to include in papers and other published media.
+Any plot can be rendered to PNG, PDF, PS and SVG files using @(racket plot-file) and @(racket plot3d-file), to include in papers and other published media.
 
 @section{Colors and Styles}
 
