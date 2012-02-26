@@ -197,9 +197,9 @@ A @tech{path} value that is the @tech{cleanse}d version of
 
 Like @racket[open-output-file], but producing two values: an input
 port and an output port. The two ports are connected in that they
-share the underlying file device. This procedure is intended for use
+share the underlying file descriptor. This procedure is intended for use
 with special devices that can be opened by only one process, such as
-@filepath{COM1} in Windows. For regular files, sharing the device can be
+@filepath{COM1} in Windows. For regular files, sharing the file descriptor can be
 confusing. For example, using one port does not automatically flush
 the other port's buffer, and reading or writing in one port moves the
 file position (if any) for the other port. For regular files, use

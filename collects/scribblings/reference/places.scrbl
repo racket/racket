@@ -303,11 +303,15 @@ messages:
  @item{@tech{numbers}, @tech{characters}, @tech{booleans}, and
        @|void-const|;}
 
- @item{@tech{symbols};}
+ @item{@tech{symbols}, where the @racket[eq?]ness of @tech{uninterned}
+       symbols is preserved within a single message, but not across
+       messages;}
  
  @item{@tech{strings} and @tech{byte strings}, where mutable strings
        and byte strings are automatically replaced by immutable
        variants;}
+
+ @item{@tech{paths} (for any platform);}
 
  @item{@tech{pairs}, @tech{lists}, @tech{vectors}, and immutable
        @tech{prefab} structures containing message-allowed values,
@@ -317,12 +321,13 @@ messages:
  @item{@tech{place channels}, where a @tech{place descriptor} is
        automatically replaced by a plain place channel;}
 
- @item{foreign pointers such as @racket[_cpointers] and 
-       cstructs;}
+ @item{@tech{file-stream ports} and @tech{TCP ports}, where the
+       underlying representation (such as a file descriptor, socket,
+       or handle) is duplicated and attached to a fresh port in the
+       receiving place;}
 
- @item{file ports and tcp ports, the underlying 
-       file descriptor is dupped and a new port is created with the 
-       dupped file descriptor in the destination place; and}
+ @item{@tech[#:doc '(lib "scribblings/foreign/foreign.scrbl")]{C
+       pointers} as created or accessed via @racketmodname[ffi/unsafe]; and}
 
  @item{values produced by @racket[shared-flvector],
        @racket[make-shared-flvector], @racket[shared-fxvector],

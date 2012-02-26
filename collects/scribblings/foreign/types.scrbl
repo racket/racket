@@ -296,7 +296,7 @@ value of @cpp{NULL} is translated to a Racket @racket[eof] value.}
 
 @defthing[_pointer ctype?]{
 
-Corresponds to Racket ``C pointer'' objects.  These pointers can have
+Corresponds to Racket @deftech{C pointer} values.  These pointers can have
 an arbitrary Racket object attached as a type tag.  The tag is ignored
 by built-in functionality; it is intended to be used by interfaces.
 See @secref["foreign:tagged-pointers"] for creating pointer types that
@@ -316,7 +316,7 @@ refer to the same address.}
 
 @defthing[_gcpointer ctype?]{
 
-Like @racket[_pointer], but for a value that can refer to memory
+Like @racket[_pointer], but for a C pointer value that can refer to memory
 managed by the garbage collector.
 
 Although a @racket[_gcpointer] can reference to memory that is not
