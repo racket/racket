@@ -26,7 +26,7 @@
 (define icon-pen (send the-pen-list find-or-create-pen "SALMON" 1 'solid))
 (define icon-brush (send the-brush-list find-or-create-brush "SALMON" 'solid))
 (define blank-pen (send the-pen-list find-or-create-pen "BLACK" 1 'transparent))
-(define w-pen (send the-pen-list find-or-create-pen "white" 1 'solid))
+(define w-pen (send the-pen-list find-or-create-pen "white" 2 'solid))
 (define b-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
 
 (define show-turtle-icons? #t)
@@ -186,11 +186,13 @@
 (define line
   (lambda (a b c d)
     (set! lines-in-drawing (cons (make-draw-line a b c d) lines-in-drawing))
-    (inner-line a b c d)))
+    (inner-line a b c d)
+    (update-icon)))
 (define do-wipe-line
   (lambda (a b c d)
     (set! lines-in-drawing (cons (make-wipe-line a b c d) lines-in-drawing))
-    (inner-wipe-line a b c d)))
+    (inner-wipe-line a b c d)
+    (update-icon)))
 
 (define clear-window (lambda () (inner-clear-window)))
 (define save-turtle-bitmap (lambda (x y) (inner-save-turtle-bitmap x y)))
@@ -217,9 +219,13 @@
   (set! lines-in-drawing null)
   (clear-window))
 
+(define (update-icon)
+  (send turtles:window refresh))
+
 (define (home)
   (set! turtles-cache empty-cache)
-  (set! turtles-state (list clear-turtle)))
+  (set! turtles-state (list clear-turtle))
+  (update-icon))
 
 ;; cache elements:
 (define-struct c-forward (distance))
@@ -318,11 +324,13 @@
 
 (define move
   (lambda (n)
-    (set! turtles-cache (combine (make-c-forward n) turtles-cache))))
+    (set! turtles-cache (combine (make-c-forward n) turtles-cache))
+    (update-icon)))
 
 (define turn/radians
   (lambda (d)
-    (set! turtles-cache (combine (make-c-turn d) turtles-cache))))
+    (set! turtles-cache (combine (make-c-turn d) turtles-cache))
+    (update-icon)))
 
 (define turn
   (lambda (c)
@@ -330,7 +338,8 @@
 
 (define move-offset
   (lambda (x y)
-    (set! turtles-cache (combine (make-c-offset x y) turtles-cache))))
+    (set! turtles-cache (combine (make-c-offset x y) turtles-cache))
+    (update-icon)))
 
 (define erase/draw-offset
   (lambda (doit)
@@ -355,7 +364,8 @@
       (set! turtles-state
             (make-tree (list (make-cached turtles-state turtles-cache)
                              (make-cached t c))))
-      (set! turtles-cache empty-cache))))
+      (set! turtles-cache empty-cache)
+      (update-icon))))
 
 (define split*fn
   (lambda (es)
@@ -369,7 +379,8 @@
                   (set! turtles-cache c))
                 es)
       (set! turtles-cache empty-cache)
-      (set! turtles-state (make-tree l)))))
+      (set! turtles-state (make-tree l))
+      (update-icon))))
 
 
 (define tpromptfn
@@ -384,7 +395,8 @@
             (thunk))
           (lambda ()
             (set! turtles-cache save-turtles-cache)
-            (set! turtles-state save-turtles-state))))))
+            (set! turtles-state save-turtles-state)
+            (update-icon))))))
 
 
 (define-struct drawing-line (x1 y1 x2 y2))
