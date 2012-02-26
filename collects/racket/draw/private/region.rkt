@@ -37,7 +37,9 @@
     ;; A null path list corresponds to an empty region.
     (define paths null)
     (define/public (get-paths) paths)
-    (define/public (set-paths! p) (set! paths p))
+    (define/public (set-paths! p)
+      (set! paths p)
+      (set! empty-known? #f))
 
     (define locked 0)
     (define/public (lock-region delta) (set! locked (+ locked delta)))

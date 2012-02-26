@@ -31,6 +31,16 @@
   set-recording-limit
   record-unconvert)
 
+(struct dc-state (;; values from the target dc:
+                  region 
+                  alpha
+                  transformation 
+                  ;; virtual vaules for the target dc:
+                  scale-x scale-y 
+                  origin-x origin-y
+                  rotation
+                  initial-matrix))
+
 (define black (send the-color-database find-color "black"))
 
 (define (clone-point p)
@@ -164,34 +174,75 @@
   (for/list ([i (in-list s)]) (list (car i) (unconvert-color (cdr i)))))
 
 (define (region-maker r)
-  (if (send r internal-get-dc)
-      (let ([paths (send r get-paths)])
-        (lambda (dc)
-          (let ([new-r (make-object region% dc)])
-            (send new-r set-paths! paths)
-            new-r)))
-      (let ([new-r (make-object region%)])
-        (send new-r union r)
-        (lambda (dc) new-r))))
+  (if r
+      (if (send r internal-get-dc)
+          (let ([paths (send r get-paths)])
+            (lambda (dc state)
+              (let ([new-r (make-object region% dc)])
+                (send new-r set-paths! (transform-region-paths paths (dc-state-transformation state)))
+                new-r)))
+          (let ([new-r (make-object region%)])
+            (send new-r union r)
+            (lambda (dc state) new-r)))
+      (lambda (dc state) #f)))
+
+(define (transform-region-paths paths t)
+  (if (equal? t '#(1.0 0.0 0.0 1.0 0.0 0.0))
+      paths
+      ;; the paths in `path's have points that were transformed
+      ;; by the recording dc's transformation, but we need to prefix
+      ;; that with the transformation of the record action's target dc
+      (map (lambda (p)
+             (define old-p (car p))
+             (define new-p (new dc-path%))
+             (send new-p append old-p)
+             (send new-p transform t)
+             (cons new-p (cdr p)))
+           paths)))
 
 (define (convert-region r)
   (and r
        (cons (and (send r internal-get-dc) #t)
-             (map convert-path (send r get-paths)))))
+             (map (lambda (s) (cons (convert-path (car s)) (cdr s)))
+                  (send r get-paths)))))
 
 (define (unconvert-region l)
   (if l
       (let ()
-        (define paths (map unconvert-path (cdr l)))
+        (define paths (map (lambda (p) (cons (unconvert-path (car p)) (cdr p)))
+                           (cdr l)))
         (if (car l)
-            (lambda (dc)
+            (lambda (dc state)
               (let ([new-r (make-object region% (and (car l) dc))])
-                (send new-r set-paths! paths)
+                (send new-r set-paths! (transform-region-paths paths (dc-state-transformation state)))
                 new-r))
             (let ([new-r (make-object region%)])
               (send new-r set-paths! paths)
-              (lambda (dc) new-r))))
-      (lambda (dc) #f)))
+              (lambda (dc state) new-r))))
+      (lambda (dc state) #f)))
+
+(define (combine-regions dc r1 r2)
+  (cond
+   [(not r1) r2]
+   [(not r2) r1]
+   [else 
+    (define dc1 (send r1 internal-get-dc))
+    (cond
+     [(eq? (not dc1)
+           (not (send r2 internal-get-dc)))
+      ;; regions have same dc-ness:
+      (define r (make-object region% dc1))
+      (send r union r1)
+      (send r intersect r2)
+      r]
+     [(not dc1)
+      (combine-regions dc r2 r1)]
+     [else
+      ;; r1 has dc, r2 doesn't; convert r2 to dc-attached region:
+      (define r (make-object region% dc))
+      (define paths (send r2 get-paths))
+      (send r set-paths! (transform-region-paths paths (send dc get-initial-matrix)))
+      (combine-regions dc r1 r)])]))
 
 (define (clone-path p)
   (let ([new-p (make-object dc-path%)])
@@ -252,6 +303,14 @@
 
 (define (unconvert-font l)
   (apply make-object font% l))
+
+(define (install-transform dc state)
+  (send dc set-transformation (vector (dc-state-transformation state) 0 0 1 1 0))
+  (send dc transform (dc-state-initial-matrix state))
+  (send dc translate (dc-state-origin-x state) (dc-state-origin-y state))
+  (send dc scale (dc-state-scale-x state) (dc-state-scale-y state))
+  (send dc rotate (dc-state-rotation state))
+  state)
 
 (define (record-dc-mixin %)
   (class %
@@ -380,10 +439,8 @@
            (if serialize?
                (for/list ([convert (in-list (reverse converts))])
                  (convert))
-               (let ([procs (reverse procs)])
-                 (lambda (dc)
-                   (for ([proc (in-list procs)])
-                     (proc dc)))))))
+               ((if (applies-to-default?) generate-drawer generate-drawer/restore)
+                (reverse procs)))))
 
     (define/public (reset-recording)
       (start-atomic)
@@ -406,16 +463,10 @@
                    [(a) (get-alpha)]
                    [(cr) (get-clipping-region)]
                    [(to-default?) (applies-to-default?)])
-        (when to-default?
-          (unless (and (zero? ox) (zero? oy)) (set-origin ox oy))
-          (unless (and (= 1 sx) (= 1 sy)) (set-scale sx sy))
-          (unless (zero? r) (set-rotation r))
-          (unless (equal? m '#(1.0 0.0 0.0 1.0 0.0 0.0)) (set-initial-matrix m)))
-        (unless to-default?
-          (unless (equal? m '#(1.0 0.0 0.0 1.0 0.0 0.0)) (transform m))
-          (unless (zero? r) (rotate r))
-          (unless (and (= 1 sx) (= 1 sy)) (scale sx sy))
-          (unless (and (zero? ox) (zero? oy)) (translate (- sx) (- sy))))
+        (unless (and (zero? ox) (zero? oy)) (set-origin ox oy))
+        (unless (and (= 1 sx) (= 1 sy)) (set-scale sx sy))
+        (unless (zero? r) (set-rotation r))
+        (unless (equal? m '#(1.0 0.0 0.0 1.0 0.0 0.0)) (set-initial-matrix m))
         (do-set-pen! p)
         (do-set-brush! b)
         (set-font f)
@@ -448,37 +499,78 @@
       (super erase)
       (reset-recording))
 
+    ;; For the compsable part of the DC, we writ things out the long way.
+    ;; For everythign else, we use `define/record'.
+
     (define/override (set-clipping-region r)
       (super set-clipping-region r)
       (when (continue-recording?)
-        (let ([make-r (if r
-                          (region-maker r)
-                          (lambda (dc) #f))])
-          (record (lambda (dc) (send dc set-clipping-region (make-r dc)))
+        (let ([make-r (region-maker r)])
+          (record (lambda (dc state) 
+                    (send dc set-clipping-region (combine-regions dc
+                                                                  (dc-state-region state)
+                                                                  (make-r dc state)))
+                    state)
                   (lambda () (list 'set-clipping-region (convert-region r)))))))
+
+    (define/override (set-alpha a)
+      (super set-alpha a)
+      (record (lambda (dc state)
+                (send dc set-alpha (* a (dc-state-alpha state)))
+                state)
+              (lambda () `(set-alpha ,a))))
+
+    (define/override (set-scale sx sy)
+      (super set-scale sx sy)
+      (record (lambda (dc state)
+                (install-transform dc (struct-copy dc-state state [scale-x sx] [scale-y sy])))
+              (lambda () `(set-scale ,sx ,sy))))
+    (define/override (set-origin ox oy)
+      (super set-origin ox oy)
+      (record (lambda (dc state)
+                (install-transform dc (struct-copy dc-state state [origin-x ox] [origin-y oy])))
+              (lambda () `(set-origin ,ox ,oy))))
+    (define/override (set-rotation r)
+      (super set-rotation r)
+      (record (lambda (dc state)
+                (install-transform dc (struct-copy dc-state state [rotation r])))
+              (lambda () `(set-rotation ,r))))
+    (define/override (set-initial-matrix mi)
+      (super set-initial-matrix mi)
+      (let ([mi (vector->immutable-vector mi)])
+        (record (lambda (dc state)
+                  (install-transform dc (struct-copy dc-state state [initial-matrix mi])))
+                (lambda () `(set-initial-matrix ,mi)))))
 
     (generate-record-unconvert
      ([(set-clipping-region) (lambda (r) 
                                (define make-r (unconvert-region r))
-                               (lambda (dc)
-                                 (send dc set-clipping-region (make-r dc))))])
+                               (lambda (dc state)
+                                 (send dc set-clipping-region (combine-regions dc
+                                                                               (dc-state-region state)
+                                                                               (make-r dc state)))
+                                 state))]
+      [(set-alpha) (lambda (a)
+                     (lambda (dc state)
+                       (send dc set-alpha (* a (dc-state-alpha state)))
+                       state))]
+      [(set-scale) (lambda (sx sy)
+                     (lambda (dc state)
+                       (install-transform dc (struct-copy dc-state state [scale-x sx] [scale-y sy]))))]
+      [(set-origin) (lambda (ox oy)
+                      (lambda (dc state)
+                        (install-transform dc (struct-copy dc-state state [origin-x ox] [origin-y oy]))))]
+      [(set-rotation) (lambda (r)
+                        (lambda (dc state)
+                          (install-transform dc (struct-copy dc-state state [rotation r]))))]
+      [(set-initial-matrix) (lambda (mi)
+                              (lambda (dc state)
+                                (install-transform dc (struct-copy dc-state state [initial-matrix mi]))))])
      ;; remaining clauses are generated:
-
-     (define/record (set-scale sx sy))
-     
-     (define/record (set-origin sx sy))
-     
-     (define/record (set-rotation r))
 
      (define/record (transform [mi vector->immutable-vector]))
 
-     (define/record (set-initial-matrix [mi vector->immutable-vector]))
-
-     (define/record (set-transformation [mi vector->immutable-vector]))
-
      (define/record (set-smoothing s))
-
-     (define/record (set-alpha n))
 
      (define/record (set-font [f values convert-font unconvert-font]))
 
@@ -576,7 +668,21 @@
     (reset-recording)))
 
 (define (recorded-datum->procedure d)
-  (define procs (send (new record-dc%) record-unconvert d))
+  (generate-drawer/restore (send (new record-dc%) record-unconvert d)))
+
+(define (generate-drawer procs)
+  (lambda (dc)
+    (define cr (send dc get-clipping-region))
+    (define a (send dc get-alpha))
+    (define t (send dc get-initial-matrix))
+    (for/fold ([state (dc-state cr a t 1.0 1.0 0.0 0.0 0.0 '#(1.0 0.0 0.0 1.0 0.0 0.0))]) ([proc (in-list procs)])
+      (if (procedure-arity-includes? proc 2)
+          (proc dc state)
+          (begin
+            (proc dc)
+            state)))))
+
+(define (generate-drawer/restore procs)
   (lambda (dc)
     (unless (dc . is-a? . dc<%>)
       (raise-type-error 'recorded-datum->procedure "dc<%> object" dc))
@@ -593,8 +699,9 @@
     (define a (send dc get-alpha))
     (define cr (send dc get-clipping-region))
     
-    (for ([proc (in-list procs)])
-      (proc dc))
+    (send dc translate 0 0) ; forces all transformation into the initial matrix
+    
+    ((generate-drawer procs) dc)
     
     ;; Restore the state:
     (send dc set-origin ox oy)
