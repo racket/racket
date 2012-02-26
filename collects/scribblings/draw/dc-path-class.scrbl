@@ -173,17 +173,15 @@ Extends the path's @tech{open sub-path} with a sequences of lines to
            void?]{
 
 After closing the @tech{open sub-path}, if any, starts a new
- @tech{open sub-path} with the given initial point.
+ @tech{open sub-path} with the given initial point.}
 
-}
 
 @defmethod[(open?)
            boolean?]{
 
 Returns @racket[#t] if the path has an @tech{open sub-path},
-@racket[#f] otherwise.
+@racket[#f] otherwise.}
 
-}
 
 @defmethod[(rectangle [x real?]
                       [y real?]
@@ -196,16 +194,14 @@ Closes the @tech{open sub-path}, if any, and adds a closed path that
  @racket[y])} and whose dimensions are @racket[width] by
  @racket[height]. (This convenience method is implemented in terms of
  @method[dc-path% close], @method[dc-path% move-to], and
- @method[dc-path% line-to].)
+ @method[dc-path% line-to].)}
 
-}
 
 @defmethod[(reset)
            void?]{
 
-Removes all sub-paths of the path.
+Removes all sub-paths of the path.}
 
-}
 
 @defmethod[(reverse)
            void?]{
@@ -215,18 +211,16 @@ Reverses the order of all points in all sub-paths. If the path has an
  and extensions to the @tech{open sub-path} build on this new ending
  point. Reversing a @tech{closed sub-path} affects how it combines
  with other sub-paths when determining the content of a path in
- @racket['winding] mode.
+ @racket['winding] mode.}
 
-}
 
 @defmethod[(rotate [radians real?])
            void?]{
 
 Adjusts all points within the path (including all sub-paths), rotating
  them @racket[radians] counter-clockwise around @math{(0, 0)}. Future
- additions to the path are not rotated by this call.
+ additions to the path are not rotated by this call.}
 
-}
 
 @defmethod[(rounded-rectangle [x real?]
                               [y real?]
@@ -248,9 +242,8 @@ If @racket[radius] is positive, the value is used as the radius of the
  rectangle.
 
 If @racket[radius] is less than @racket[-0.5] or more than half of
- @racket[width] or @racket[height], @|MismatchExn|.
+ @racket[width] or @racket[height], @|MismatchExn|.}
 
-}
 
 @defmethod[(scale [x real?]
                   [y real?])
@@ -260,9 +253,8 @@ If @racket[radius] is less than @racket[-0.5] or more than half of
  (including all sub-paths), multiplying each x-coordinate by
  @racket[x] and each y-coordinate by @racket[y]. Scaling by a negative
  number flips the path over the corresponding axis. Future additions
- to the path are not scaled by this call.
+ to the path are not scaled by this call.}
 
-}
 
 @defmethod[(text-outline [font (is-a?/c font%)]
                          [str string?]
@@ -275,9 +267,18 @@ Closes the @tech{open sub-path}, if any, and adds a @tech{closed
  sub-path} to outline @racket[str] using @racket[font]. The
  top left of the text is positioned at @racket[x] and @racket[y]. The
  @racket[combine?] argument enables kerning and character combinations
- as for @xmethod[dc<%> draw-text].
+ as for @xmethod[dc<%> draw-text].}
 
-}
+
+@defmethod[(transform [m (vector/c real? real? real? real? real? real?)])
+           void?]{
+
+Adjusts all points within the path (including all sub-paths) by
+applying the transformation represented by @racket[m].
+
+See @method[dc<%> get-initial-matrix] for information on the matrix as
+ represented by a vector @racket[m].}
+
 
 @defmethod[(translate [x real?]
                       [y real?])
@@ -285,7 +286,4 @@ Closes the @tech{open sub-path}, if any, and adds a @tech{closed
 
 Adjusts all points within the path (including all sub-paths), shifting
  then @racket[x] to the right and @racket[y] down.  Future additions
- to the path are not translated by this call.
-
-}}
-
+ to the path are not translated by this call.}}
