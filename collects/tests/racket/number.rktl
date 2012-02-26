@@ -2839,7 +2839,7 @@
     (not (= (floor (root (expt 10 (- n 1)) n))
             (floor (root (- (expt 10 n) 1) n)))))
   
-  (test 240 length (filter n-digit-has-nth-root? (build-list 5000 (lambda (x) (+ x 1))))))
+  (test #t list? (filter n-digit-has-nth-root? (build-list 5000 (lambda (x) (+ x 1))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
