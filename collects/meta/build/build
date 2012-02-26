@@ -1570,7 +1570,8 @@ COPY_AND_BUILD_BINARY_DIRS() {
 
   local m
   for m in "${machines[@]}"; do
-    machine="$m" machineget mplatform=platform
+    machine="$m"
+    machineget mplatform=platform
     mplatformname="$(name_of_platform "$mplatform")"
     html_file_row "$mplatform" "Binaries for $mplatformname"
     {
