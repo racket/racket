@@ -35,9 +35,18 @@ magic bytes indicating a @tech{WXME}-format stream (see
 Takes an input port whose stream starts with @tech{WXME}-format data
 and returns an input port that produces a text form of the WXME
 content, like the result of opening a WXME file in DrRacket and saving
-it as text.
+it as text. 
 
-If @racket[close?] is true, then closing the result port close the
+Unlike @racket[wxme-port->port], this function may take liberties
+with the snips in a way that would render a valid program invalid.
+For example, if the wxme stream @racket[in] contains
+a bitmap image, then there may not be a reasonable text-only version
+of it and thus @racket[wxme-port->port] might turn what would have been
+a valid Racket program into text that is a syntax error,
+Nevertheless, the result may still be useful for human readers or 
+approximate program-processing tools that run only in a GUI-less context.
+
+If @racket[close?] is true, then closing the result port closes the
 original port.
 
 See @secref["snipclassmapping"] for information about the kinds of
@@ -174,7 +183,12 @@ stream. This method reads the data and returns either bytes to be
 returned as part of the decoded stream or any other kind of value to
 be returned as a ``special'' value from the decoded stream. The result
 value can optionally be an object that implements
-@racket[readable<%>].}
+@racket[readable<%>].
+
+The @racket[text-only?] argument is @racket[#f] when 
+@racket[wxme-port->text-port] was called and @racket[#t]
+when @racket[wxme-port->port] was called.
+}
 
 }
 
