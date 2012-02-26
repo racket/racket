@@ -26,7 +26,8 @@
          compiler/distribute
          compiler/bundle-dist
          (prefix-in file: file/convertible)
-         "rep.rkt")
+         "rep.rkt"
+         (prefix-in pict-snip: "pict-snip.rkt"))
   
   (import [prefix drracket:debug: drracket:debug^]
           [prefix drracket:tools: drracket:tools^]
@@ -464,36 +465,6 @@
                            (simple-settings-show-sharing settings))])
         (thunk))))
   
-  ;; this snip is created on the user's space,
-  ;; but its callbacks are invoked on DrRacket's.
-  (define pict-snip%
-    (class snip%
-      (init-field w h d a recorded-datum)
-      (define/override (get-extent dc x y [wb #f] [hb #f] [descent #f] [space #f] [lspace #f] [rspace #f])
-        (set-box/f lspace 0)
-        (set-box/f rspace 0)
-        (set-box/f wb w)
-        (set-box/f hb h)
-        (set-box/f descent d)
-        (set-box/f space a))
-      (define proc #f)
-      (define/override (draw dc x y left top right bottom dx dy draw-caret)
-        (unless proc
-          (set! proc (with-handlers ((exn:fail? (λ (x) 
-                                                  (λ (dc)
-                                                    (define clr (send dc get-text-foreground))
-                                                    (send dc set-text-foreground "red")
-                                                    (send dc draw-text (exn-message x) 0 0)
-                                                    (send dc set-text-foreground clr)))))
-                       (recorded-datum->procedure recorded-datum)))
-          (set! recorded-datum #f))
-        (define-values (ox oy) (send dc get-origin))
-        (send dc set-origin (+ dx x) (+ dy y))
-        (proc dc)
-        (send dc set-origin ox oy))
-      (define/override (copy) (new pict-snip% [w w] [h h] [d d] [a a] 
-                                   [recorded-datum recorded-datum]))
-      (super-new)))
   
   (define (mk-pict-snip convertible)
     (define-syntax-rule 
@@ -507,10 +478,8 @@
     (define rdc (new record-dc%))
     (dyn draw-pict pict rdc 0 0)
     (define recorded-datum (send rdc get-recorded-datum))
-    (new pict-snip% [w w] [h h] [d d] [a a] [recorded-datum recorded-datum]))
+    (new pict-snip:pict-snip% [w w] [h h] [d d] [a a] [recorded-datum recorded-datum]))
     
-  (define (set-box/f b v) (when (box? b) (set-box! b v)))
-  
   ;; drscheme-inspector : inspector
   (define drscheme-inspector (current-inspector))
   
