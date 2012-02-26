@@ -6,7 +6,7 @@
          wxme
          (prefix-in r: racket/base))
 
-(provide pict-snip% snip-class)
+(provide pict-snip% snip-class reader)
 
 ;; this snip is created on the user's space,
 ;; but its callbacks are invoked on DrRacket's.
@@ -61,15 +61,15 @@
 (send (get-the-snip-class-list) add snip-class)
 
 (define reader
-  (class* object% (snip-reader<%>)
-    (define/public (read-header version stream) (void))
-    (define/public (read-snip text-only? version stream)
-      (define bytes (send stream read-raw-bytes 'pict-snip))
-      (if text-only?
-          #"#<pict-snip>"
-          (or (parse-pict-snip-from-bytes bytes) 
-              (error 'pict-snip.rkt "could not read pict-snip from stream"))))
-    (super-new)))
+  (new (class* object% (snip-reader<%>)
+         (define/public (read-header version stream) (void))
+         (define/public (read-snip text-only? version stream)
+           (define bytes (send stream read-raw-bytes 'pict-snip))
+           (if text-only?
+               #"#<pict-snip>"
+               (or (parse-pict-snip-from-bytes bytes) 
+                   (error 'pict-snip.rkt "could not read pict-snip from stream"))))
+         (super-new))))
 
 ;; parse-pict-snip-from-bytes : bytes -> (or/c (is-a?/c pict-snip%) #f)
 (define (parse-pict-snip-from-bytes bytes)
