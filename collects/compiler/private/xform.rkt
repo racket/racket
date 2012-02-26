@@ -886,9 +886,6 @@
                __error __errno_location __toupper __tolower
                __attribute__ __mode__ ; not really functions in gcc
                __iob_func ; VC 8
-               scheme_get_milliseconds scheme_get_process_milliseconds
-               scheme_rational_to_double scheme_bignum_to_double
-               scheme_rational_to_float scheme_bignum_to_float
                |GetStdHandle| |__CFStringMakeConstantString|
                _vswprintf_c
                
