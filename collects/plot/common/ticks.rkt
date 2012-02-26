@@ -700,7 +700,7 @@
              [(m . = . 1)  (filter pre-tick-major? ts)]
              [else  (list (collapse-equiv-ticks (filter pre-tick-major? ts) near-format-string))])))))
 
-(defproc (pre-tick-inexact->exact [t tick?]) tick?
+(defproc (pre-tick-inexact->exact [t pre-tick?]) pre-tick?
   (match-define (pre-tick x major?) t)
   (pre-tick (inexact->exact x) major?))
 
