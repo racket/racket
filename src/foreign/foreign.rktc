@@ -2075,47 +2075,145 @@ typedef void(*VoidFun)();
 #ifdef MZ_USE_PLACES
 
 typedef struct FFI_Orig_Place_Call {
+  int needs_queue;
   ffi_cif *cif;
-  VoidFun proc;
-  void *p;
+  void *c_func;
+  intptr_t cfoff;
+  int nargs;
+  ForeignAny *ivals;
   void **avalues;
-  mzrt_sema *sema;
-  struct FFI_Orig_Place_Call *next;
+  intptr_t *offsets;
+  void *p;
+  void **signal_handle;
+  struct FFI_Orig_Place_Call *next, *prev;
 } FFI_Orig_Place_Call;
 
 static mzrt_mutex *orig_place_mutex;
-static FFI_Orig_Place_Call *orig_place_calls;
+static FFI_Orig_Place_Call *orig_place_calls, *orig_place_calls_tail;
 static void *orig_place_signal_handle;
 
-void ffi_call_in_orig_place(ffi_cif *cif, VoidFun proc, void *p, void **avalues)
-  XFORM_SKIP_PROC
+static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
+                                   int nargs, GC_CAN_IGNORE ForeignAny *ivals, void **avalues,
+                                   intptr_t *offsets, void *p)
+/* This function can trigger a GC, but it won't escape --- unless
+   the called function goes back to Racket and raises an exception,
+   and raising an exception in a callback creates all sorts of
+   other problems, anyway. No other Racket threads will run in the
+   place, so it's ok for the arguments to have stack addresses. */
 {
-  if (scheme_current_place_id == 0) {
-    ffi_call(cif, proc, p, avalues);
-  } else {
-    FFI_Orig_Place_Call *todo;
+  FFI_Orig_Place_Call *todo;
+  void *sh;
+  int ready;
 
-    todo = (FFI_Orig_Place_Call *)malloc(sizeof(FFI_Orig_Place_Call));
+  todo = (FFI_Orig_Place_Call *)malloc(sizeof(FFI_Orig_Place_Call));
+  sh = scheme_get_signal_handle();
+  todo->signal_handle = sh;
+  todo->needs_queue = 1;
+
+  /* It would be simplest to just block the current place while the
+     original place handles the call. Unfortunately, something like a
+     master GC might be required between now and when the call is
+     handled. So, we have to block in an atomic-like way to minimize
+     GCs while we wait, but still wake up on an external signal. */
+
+  GC_check_master_gc_request();
+  /* If a GC is needed from here on, a signal will be posted
+     to the current place */
+  
+  while (1) {
     todo->cif = cif;
-    todo->proc = proc;
-    todo->p = p;
+    todo->c_func = c_func;
+    todo->cfoff = cfoff;
+    todo->nargs = nargs;
+    todo->ivals = ivals;
     todo->avalues = avalues;
-    mzrt_sema_create(&todo->sema, 0);
+    todo->offsets = offsets;
+    todo->p = p;
 
     mzrt_mutex_lock(orig_place_mutex);
-    todo->next = orig_place_calls;
-    orig_place_calls = todo;
+    if (todo->needs_queue) {
+      todo->next = orig_place_calls;
+      todo->prev = NULL;
+      if (orig_place_calls) 
+        orig_place_calls->prev = todo;
+      else 
+        orig_place_calls_tail = todo;
+      orig_place_calls = todo;
+      ready = 0;
+    } else {
+      ready = !todo->signal_handle;
+    }
     mzrt_mutex_unlock(orig_place_mutex);    
 
-    scheme_signal_received_at(orig_place_signal_handle);
-
-    mzrt_sema_wait(todo->sema);
+    if (!ready) {
+      /* Tell original-place thread that there's work: */
+      scheme_signal_received_at(orig_place_signal_handle);
+      /* Wait for notificiation or a master-GC request: */
+      scheme_wait_until_signal_received();
+    }
     
-    mzrt_sema_destroy(todo->sema);
-    free(todo);
+    mzrt_mutex_lock(orig_place_mutex);
+    if (!todo->signal_handle) {
+      /* Done */
+      mzrt_mutex_unlock(orig_place_mutex);
+      free(todo);
+      break;
+    } else {
+      /* Pause to allow actions such as a master GC.... */
+      if (todo->needs_queue) {
+        /* Remove from queue while we might GC: */
+        if (todo->prev)
+          todo->prev->next = todo->next;
+        else
+          orig_place_calls = todo->next;
+        if (todo->next)
+          todo->next->prev = todo->prev;
+        else
+          orig_place_calls_tail = todo->prev;
+      } else {
+        /* The call is being handled, so it's too late
+           to remove it from the queue! */
+      }
+      mzrt_mutex_unlock(orig_place_mutex);
+
+      /* Here's the atomic pause: */
+      GC_check_master_gc_request(); 
+      scheme_start_atomic();
+      scheme_thread_block(0.0);
+      scheme_end_atomic_no_swap();
+    }
   }
 }
 #endif
+
+static void finish_ffi_call(ffi_cif *cif, void *c_func, intptr_t cfoff,
+                            int nargs, GC_CAN_IGNORE ForeignAny *ivals, void **avalues,
+                            intptr_t *offsets, void *p)
+/* Complete an FFI call in non-GC mode, so that arguments won't move around: */
+  XFORM_SKIP_PROC
+{
+  int i;
+  for (i=0; i<nargs; i++) {
+    if ((avalues[i] == NULL) && !offsets[i]) /* if this was a non-pointer... */
+      avalues[i] = &(ivals[i]); /* ... set the avalues pointer */
+    else if ((ivals[i].x_fixnum != FOREIGN_struct)
+             && (ivals[i].x_fixnum != FOREIGN_union)) { /* if *not* a struct... */
+      /* ... set the ivals pointer (pointer type doesn't matter) and avalues */
+      ivals[i].x_pointer = avalues[i];
+      avalues[i] = &(ivals[i]);
+    } else if (offsets[i]) {
+      /* struct argument has an offset */
+      avalues[i] = (char *)avalues[i] + offsets[i];
+    }
+    /* Otherwise it was a struct pointer, and avalues[i] is already fine. */
+    /* Add offset, if any: */
+    if (offsets[i] != 0) {
+      ivals[i].x_pointer = (char *)ivals[i].x_pointer + offsets[i];
+    }
+  }
+  /* Finally, call the function */
+  ffi_call(cif, (VoidFun)W_OFFSET(c_func, cfoff), p, avalues);
+}
 
 Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
 /* data := {name, c-function, itypes, otype, cif} */
@@ -2148,19 +2246,23 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
    * that cannot move.  Because of all this, the *only* array that should not
    * be ignored by the GC is avalues.)
    */
-  GC_CAN_IGNORE ForeignAny *ivals, oval;
+  ForeignAny *ivals;
   void **avalues, *p, *newp;
-  GC_CAN_IGNORE ForeignAny stack_ivals[MAX_QUICK_ARGS];
+  GC_CAN_IGNORE ForeignAny stack_ivals[MAX_QUICK_ARGS], oval;
   void *stack_avalues[MAX_QUICK_ARGS];
   intptr_t stack_offsets[MAX_QUICK_ARGS];
   int i;
   intptr_t basetype, offset, *offsets;
-  if (nargs <= MAX_QUICK_ARGS) {
+#ifdef MZ_USE_PLACES
+  if (orig_place && (scheme_current_place_id == 0))
+    orig_place = 0;
+#endif
+  if ((nargs <= MAX_QUICK_ARGS)) {
     ivals   = stack_ivals;
     avalues = stack_avalues;
     offsets = stack_offsets;
   } else {
-    ivals   = malloc(nargs * sizeof(ForeignAny));
+    ivals   = scheme_malloc_atomic_allow_interior(nargs * sizeof(ForeignAny));
     avalues = scheme_malloc(nargs * sizeof(void*));
     offsets = scheme_malloc_atomic(nargs * sizeof(intptr_t));
   }
@@ -2191,35 +2293,19 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     p = &oval;
     newp = NULL;
   }
-  /* We finished with all possible mallocs, clear up the avalues and offsets
-   * mess */
-  for (i=0; i<nargs; i++) {
-    if ((avalues[i] == NULL) && !offsets[i]) /* if this was a non-pointer... */
-      avalues[i] = &(ivals[i]); /* ... set the avalues pointer */
-    else if ((ivals[i].x_fixnum != FOREIGN_struct)
-             && (ivals[i].x_fixnum != FOREIGN_union)) { /* if *not* a struct... */
-      /* ... set the ivals pointer (pointer type doesn't matter) and avalues */
-      ivals[i].x_pointer = avalues[i];
-      avalues[i] = &(ivals[i]);
-    } else if (offsets[i]) {
-      /* struct argument has an offset */
-      avalues[i] = (char *)avalues[i] + offsets[i];
-    }
-    /* Otherwise it was a struct pointer, and avalues[i] is already fine. */
-    /* Add offset, if any: */
-    if (offsets[i] != 0) {
-      ivals[i].x_pointer = (char *)ivals[i].x_pointer + offsets[i];
-    }
-  }
-  /* Finally, call the function */
+
 #ifdef MZ_USE_PLACES
-  if (orig_place) {
-    ffi_call_in_orig_place(cif, (VoidFun)W_OFFSET(c_func, cfoff), p, avalues);
-  } else
+  if (orig_place)
+    ffi_call_in_orig_place(cif, c_func, cfoff,
+                           nargs, ivals, avalues,
+                           offsets, p);
+  else
 #endif
-    ffi_call(cif, (VoidFun)W_OFFSET(c_func, cfoff), p, avalues);
+    finish_ffi_call(cif, c_func, cfoff,
+                    nargs, ivals, avalues, 
+                    offsets, p);
+
   if (save_errno != 0) save_errno_values(save_errno);
-  if (ivals != stack_ivals) free(ivals);
   ivals = NULL; /* no need now to hold on to this */
   for (i=0; i<nargs; i++) { avalues[i] = NULL; } /* no need for these refs */
   avalues = NULL;
@@ -2464,18 +2550,33 @@ void scheme_check_foreign_work(void)
 
 #ifdef MZ_USE_PLACES
   if ((scheme_current_place_id == 0) && orig_place_mutex) {
-    FFI_Orig_Place_Call *todo, *next;
+    FFI_Orig_Place_Call *todo;
+    void *sh;
 
-    mzrt_mutex_lock(orig_place_mutex);
-    todo = orig_place_calls;
-    orig_place_calls = NULL;
-    mzrt_mutex_unlock(orig_place_mutex);
+    while (1) {
+      mzrt_mutex_lock(orig_place_mutex);
+      todo = orig_place_calls_tail;
+      if (todo) {
+        orig_place_calls_tail = todo->prev;
+        if (todo->prev)
+          todo->prev->next = NULL;
+        else
+          orig_place_calls = NULL;
+        todo->needs_queue = 0;
+      } 
+      mzrt_mutex_unlock(orig_place_mutex);
 
-    while (todo) {
-      ffi_call(todo->cif, todo->proc, todo->p, todo->avalues);      
-      next = todo->next;
-      mzrt_sema_post(todo->sema);
-      todo = next;
+      if (todo) {
+        finish_ffi_call(todo->cif, todo->c_func, todo->cfoff,
+                        todo->nargs, todo->ivals, todo->avalues,
+                        todo->offsets, todo->p);
+        mzrt_mutex_lock(orig_place_mutex);
+        sh = todo->signal_handle;
+        todo->signal_handle = NULL; /* indicates "done" */
+        scheme_signal_received_at(sh);
+        mzrt_mutex_unlock(orig_place_mutex);
+      } else
+        break;
     }
   }
 #endif

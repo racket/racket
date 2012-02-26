@@ -676,6 +676,7 @@
 #define scheme_signal_received (scheme_extension_table->scheme_signal_received)
 #define scheme_signal_received_at (scheme_extension_table->scheme_signal_received_at)
 #define scheme_get_signal_handle (scheme_extension_table->scheme_get_signal_handle)
+#define scheme_wait_until_signal_received (scheme_extension_table->scheme_wait_until_signal_received)
 #define scheme_char_strlen (scheme_extension_table->scheme_char_strlen)
 #define scheme_stx_extract_marks (scheme_extension_table->scheme_stx_extract_marks)
 #define scheme_get_place_id (scheme_extension_table->scheme_get_place_id)

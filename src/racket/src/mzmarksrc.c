@@ -1477,6 +1477,7 @@ place_val {
   gcMARK2(pr->channel, gc);
   gcMARK2(pr->mref, gc);
   gcMARK2(pr->pumper_threads, gc);
+  gcMARK2(pr->place_obj, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));

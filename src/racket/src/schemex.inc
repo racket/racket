@@ -676,6 +676,7 @@
   scheme_extension_table->scheme_signal_received = scheme_signal_received;
   scheme_extension_table->scheme_signal_received_at = scheme_signal_received_at;
   scheme_extension_table->scheme_get_signal_handle = scheme_get_signal_handle;
+  scheme_extension_table->scheme_wait_until_signal_received = scheme_wait_until_signal_received;
   scheme_extension_table->scheme_char_strlen = scheme_char_strlen;
   scheme_extension_table->scheme_stx_extract_marks = scheme_stx_extract_marks;
   scheme_extension_table->scheme_get_place_id = scheme_get_place_id;

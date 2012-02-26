@@ -1807,6 +1807,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/etc.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/expand.rktl" drdr:command-line #f
 "collects/tests/racket/fact.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ffi-orig-place.rkt" drdr:command-line (racket "-tm" *)
 "collects/tests/racket/file.rktl" drdr:command-line #f
 "collects/tests/racket/filelib.rktl" drdr:command-line #f drdr:timeout 360
 "collects/tests/racket/fixnum.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360

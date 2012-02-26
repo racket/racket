@@ -1160,6 +1160,7 @@ MZ_EXTERN const char *scheme_system_library_subpath();
 MZ_EXTERN void scheme_signal_received(void);
 MZ_EXTERN void scheme_signal_received_at(void *);
 MZ_EXTERN void *scheme_get_signal_handle();
+MZ_EXTERN void scheme_wait_until_signal_received(void);
 
 MZ_EXTERN intptr_t scheme_char_strlen(const mzchar *s);
 

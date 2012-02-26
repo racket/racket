@@ -9564,6 +9564,21 @@ void scheme_notify_sleep_progress()
 /******************** Main sleep function  *****************/
 /* The simple select() stuff is buried in Windows complexity. */
 
+static void clear_signal()
+  XFORM_SKIP_PROC
+{
+#if defined(FILES_HAVE_FDS)
+  /* Clear external event flag */
+  if (external_event_fd) {
+    int rc;
+    char buf[10];
+    do {
+      rc = read(external_event_fd, buf, 10);
+    } while ((rc == -1) && errno == EINTR);
+  }
+#endif
+}
+
 static void default_sleep(float v, void *fds)
 #ifdef OS_X
   XFORM_SKIP_PROC
@@ -9816,16 +9831,7 @@ static void default_sleep(float v, void *fds)
 #endif
   }
 
-#if defined(FILES_HAVE_FDS)
-  /* Clear external event flag */
-  if (external_event_fd) {
-    int rc;
-    char buf[10];
-    do {
-      rc = read(external_event_fd, buf, 10);
-    } while ((rc == -1) && errno == EINTR);
-  }
-#endif
+  clear_signal();
 }
 
 void scheme_signal_received_at(void *h)
@@ -9864,6 +9870,39 @@ void scheme_signal_received(void)
   XFORM_SKIP_PROC
 {
   scheme_signal_received_at(scheme_get_signal_handle());
+}
+
+void scheme_wait_until_signal_received(void)
+  XFORM_SKIP_PROC
+{
+#if defined(FILES_HAVE_FDS)
+  int r;
+# ifdef HAVE_POLL_SYSCALL
+  GC_CAN_IGNORE struct pollfd pfd[1];
+  pfd[0].fd = external_event_fd;
+  pfd[0].events = POLLIN;
+  do {
+    r = poll(pfd, 1, -1);
+  } while ((r == -1) && (errno == EINTR));
+# else
+  DECL_FDSET(readfds, 1);
+  
+  INIT_DECL_RD_FDSET(readfds);
+  
+  MZ_FD_ZERO(readfds);
+  MZ_FD_SET(external_event_fd, readfds);
+  
+  do {
+    r = select(external_event_fd + 1, readfds, NULL, NULL, NULL);
+  } while ((r == -1) && (errno == EINTR));
+# endif
+#else
+# if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
+  WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
+# endif
+#endif
+  
+  clear_signal();
 }
 
 int scheme_get_external_event_fd(void)

@@ -943,6 +943,7 @@ const char *(*scheme_system_library_subpath)();
 void (*scheme_signal_received)(void);
 void (*scheme_signal_received_at)(void *);
 void *(*scheme_get_signal_handle)();
+void (*scheme_wait_until_signal_received)(void);
 intptr_t (*scheme_char_strlen)(const mzchar *s);
 Scheme_Object *(*scheme_stx_extract_marks)(Scheme_Object *stx);
 int (*scheme_get_place_id)(void);

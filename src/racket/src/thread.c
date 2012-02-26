@@ -4727,7 +4727,7 @@ void scheme_thread_block(float sleep_time)
   /* Check for major GC request from master GC */
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   if (!do_atomic)
-    GC_check_master_gc_request(); 
+    GC_check_master_gc_request();
 #endif
 
   /* Propagate memory-use information and check for custodian-based
