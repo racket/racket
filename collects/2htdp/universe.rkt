@@ -8,6 +8,9 @@
 #| TODO: 
    -- run callbacks in user eventspace
    -- make timer fire just once; restart after on-tick callback finishes
+          [on-tick tick-handler tick-producer tick-limit]
+          tick-producer: World -> PositiveNumber 
+          allow the time span to be a function of the world state 
    -- take out counting; replace by 0.25 delay
 
    -- make window resizable :: why
