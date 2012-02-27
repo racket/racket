@@ -1455,6 +1455,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (gracket *) drdr:timeout 240
 "collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/eli-tester.rkt" responsible (eli)
+"collects/tests/eopl" responsible (dvanhorn)
 "collects/tests/errortrace/alert.rkt" responsible (eli)
 "collects/tests/file" responsible (eli mflatt)
 "collects/tests/framework" responsible (robby)
