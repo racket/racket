@@ -119,6 +119,16 @@ The result of this function can change if a garbage collection
 determines that a log receiver is no longer accessible (and therefore
 that any event information it receives will never become accessible).}
 
+
+@defproc[(log-max-level [logger logger?])
+         (or/c #f 'fatal 'error 'warning 'info 'debug)]{
+
+Similar to @racket[log-level?], but reports the maximum level of logging for
+which @racket[log-level?] on @racket[logger] returns @racket[#t]. The
+result is @racket[#f] if @racket[log-level?] with @racket[logger]
+currently returns @racket[#f] for all levels.}
+
+
 @deftogether[(
 @defform[(log-fatal string-expr)]
 @defform[(log-error string-expr)]

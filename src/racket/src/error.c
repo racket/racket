@@ -109,6 +109,7 @@ static Scheme_Object *default_yield_handler(int, Scheme_Object *[]);
 
 static Scheme_Object *log_message(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_level_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *log_max_level(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_logger(int argc, Scheme_Object *argv[]);
 static Scheme_Object *logger_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_logger(int argc, Scheme_Object *argv[]);
@@ -634,6 +635,7 @@ void scheme_init_error(Scheme_Env *env)
   /* logging */
   GLOBAL_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
   GLOBAL_NONCM_PRIM("log-level?",        log_level_p,     2, 2, env);
+  GLOBAL_NONCM_PRIM("log-max-level",     log_max_level,   1, 1, env);
   GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 2, env);
   GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, 2, env);
 
@@ -3126,6 +3128,35 @@ log_level_p(int argc, Scheme_Object *argv[])
     update_want_level(logger);
 
   return ((logger->want_level >= level) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+log_max_level(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *logger;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_type("log-max-level", "logger", 0, argc, argv);
+  logger = (Scheme_Logger *)argv[0];
+
+  if (logger->local_timestamp < *logger->timestamp)
+    update_want_level(logger);
+
+  switch (logger->want_level) {
+  case 0:
+    return scheme_false;
+  case SCHEME_LOG_FATAL:
+    return fatal_symbol;
+  case SCHEME_LOG_ERROR:
+    return error_symbol;
+  case SCHEME_LOG_WARNING:
+    return warning_symbol;
+  case SCHEME_LOG_INFO:
+    return info_symbol;
+  default:
+  case SCHEME_LOG_DEBUG:
+    return debug_symbol;
+  }
 }
 
 static Scheme_Object *
