@@ -27,9 +27,6 @@
   (-> syntax? (or/c false/c (listof sattr?)) boolean?
       #:context (or/c false/c syntax?)
       rhs?)]
- [optimize-rhs
-  (-> rhs? any/c
-      (or/c #f (list/c rhs? syntax?)))]
  [parse-pattern+sides
   (-> syntax? syntax?
       #:splicing? boolean?
@@ -196,63 +193,6 @@
   (define-values (decls defs) (get-decls+defs chunks strict?))
   (values rest description transparent? attributes auto-nested? colon-notation?
           decls defs (options commit? delimit-cut?)))
-
-;; ----
-
-#|
-A syntax class is integrable if
-  - only positional params without defaults
-  - no attributes
-  - description is a string constant
-  - one variant: (~fail #:when/unless cond) ... no message
-  - and thus no txlifted definitions, no convention definitions, etc
-  - don't care about commit?, delimit-cut?, transparent?
-    because other restrictions make them irrelevant
-|#
-
-;; optimize-rhs : RHS stxlist -> (list RHS stx)/#f
-;; Returns #f to indicate cannot integrate.
-(define (optimize-rhs rhs0 params)
-  (define (check-stx-string x)
-    (syntax-case x (quote)
-      [(quote str) (string? (syntax-e #'str)) #'str]
-      [_ #f]))
-  (define (stx-false? x)
-    (syntax-case x (quote)
-      [(quote #f) #t]
-      [_ #f]))
-  (match rhs0
-    [(rhs _o '() _trans? (? check-stx-string description) (list variant0) '() _opts '#f)
-     (match variant0
-       [(variant _o '() pattern0 '())
-        (match pattern0
-          [(pat:action '() (action:fail '() cond-stx msg-stx) (pat:any '()))
-           (cond [(stx-false? msg-stx)
-                  ;; Yes!
-                  (with-syntax ([(predicate) (generate-temporaries #'(predicate))]
-                                [(param ...) params]
-                                [fail-condition cond-stx])
-                    (let* ([predicate-def
-                            #'(define (predicate x param ...)
-                                (syntax-parameterize ((this-syntax
-                                                       (make-rename-transformer
-                                                        (quote-syntax x))))
-                                  (#%expression (not fail-condition))))]
-                           [integrate* (make integrate #'predicate
-                                             (check-stx-string description))]
-                           [pattern*
-                            (create-pat:action
-                             (create-action:fail #'(not (predicate this-syntax param ...)) #'#f)
-                             (create-pat:any))]
-                           [variant*
-                            (variant _o '() pattern* '())])
-                      (list
-                       (make rhs _o '() _trans? description (list variant*) '() _opts integrate*)
-                       predicate-def)))]
-                 [else #f])]
-          [_ #f])]
-       [_ #f])]
-    [_ #f]))
 
 ;; ----
 

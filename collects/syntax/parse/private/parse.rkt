@@ -24,6 +24,7 @@
 
 (provide define-syntax-class
          define-splicing-syntax-class
+         define-integrable-syntax-class
          syntax-parse
          syntax-parser
          define/syntax-parse
@@ -39,52 +40,44 @@
         (let-values ([(name formals arity)
                       (let ([p (check-stxclass-header #'header stx)])
                         (values (car p) (cadr p) (caddr p)))])
-          (let* ([the-rhs (parse-rhs #'rhss #f splicing? #:context stx)]
-                 [opt-rhs+def
-                  (and (andmap identifier? (syntax->list formals))
-                       (optimize-rhs the-rhs (syntax->list formals)))]
-                 [the-rhs (if opt-rhs+def (car opt-rhs+def) the-rhs)])
+          (let ([the-rhs (parse-rhs #'rhss #f splicing? #:context stx)])
             (with-syntax ([name name]
                           [formals formals]
                           [parser (generate-temporary (format-symbol "parse-~a" name))]
                           [arity arity]
                           [attrs (rhs-attrs the-rhs)]
-                          [(opt-def ...)
-                           (if opt-rhs+def
-                               (list (cadr opt-rhs+def))
-                               '())]
-                          [options (rhs-options the-rhs)]
-                          [integrate-expr
-                           (syntax-case (rhs-integrate the-rhs) ()
-                             [#s(integrate predicate description)
-                                #'(integrate (quote-syntax predicate)
-                                             'description)]
-                             [#f
-                              #''#f])])
+                          [options (rhs-options the-rhs)])
               #`(begin (define-syntax name
                          (stxclass 'name 'arity
                                    'attrs
                                    (quote-syntax parser)
                                    '#,splicing?
                                    options
-                                   integrate-expr))
-                       opt-def ...
+                                   #f))
                        (define-values (parser)
-                         ;; If opt-rhs, do not reparse:
-                         ;; need to keep same generated predicate name
-                         #,(if opt-rhs+def
-                               (begin
-                                 #`(parser/rhs/parsed
-                                    name formals attrs #,the-rhs
-                                    #,(and (rhs-description the-rhs) #t)
-                                    #,splicing? #,stx))
-                               #`(parser/rhs
-                                  name formals attrs rhss #,splicing? #,stx))))))))])))
+                         (parser/rhs name formals attrs rhss #,splicing? #,stx)))))))])))
 
 (define-syntax define-syntax-class
   (lambda (stx) (tx:define-*-syntax-class stx #f)))
 (define-syntax define-splicing-syntax-class
   (lambda (stx) (tx:define-*-syntax-class stx #t)))
+
+(define-syntax (define-integrable-syntax-class stx)
+  (syntax-case stx (quote)
+    [(_ name (quote description) predicate)
+     (with-syntax ([parser (generate-temporary (format-symbol "parse-~a" (syntax-e #'name)))]
+                   [no-arity no-arity])
+       #'(begin (define-syntax name
+                  (stxclass 'name no-arity '()
+                            (quote-syntax parser)
+                            #f
+                            '#s(options #t #t)
+                            (integrate (quote-syntax predicate) 'description)))
+                (define (parser x cx pr es fh0 cp0 success)
+                  (if (predicate x)
+                      (success fh0 cp0)
+                      (let ([es (cons (expect:thing 'description #t) es)])
+                        (fh0 (failure pr es)))))))]))
 
 (define-syntax (parser/rhs stx)
   (syntax-case stx ()
@@ -813,6 +806,30 @@ Conventions:
 ;; In k: attrs(EH-pattern, S-pattern) are bound.
 (define-syntax (parse:dots stx)
   (syntax-case stx ()
+    ;; == Specialized cases
+    ;; -- (x ... . ())
+    [(parse:dots x cx (#s(ehpat (attr0)
+                                #s(pat:var _attrs name #f _ () _ _)
+                                #f))
+                 #s(pat:datum () ()) pr es k)
+     #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es void #f)])
+         (case status
+           ((ok) (let-attributes ([attr0 result]) k))
+           (else (fail result))))]
+    ;; -- (x:sc ... . ()) where sc is an integrable stxclass like id or expr
+    [(parse:dots x cx (#s(ehpat (attr0)
+                                #s(pat:integrated _attrs _name _argu pred? desc)
+                                #f))
+                 #s(pat:datum () ()) pr es k)
+     #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es pred? desc)])
+         (case status
+           ((ok) (let-attributes ([attr0 result]) k))
+           (else (fail result))))]
+    ;; -- (x:sc ... . ()) where sc is a stxclass with commit
+    ;; Since head pattern does commit, no need to thread fail-handler, cut-prompt through.
+    ;; Microbenchmark suggests this isn't a useful specialization
+    ;; (probably try-or-pair/null-check already does the useful part)
+    ;; == General case
     [(parse:dots x cx (#s(ehpat head-attrs head head-repc) ...) tail pr es k)
      (let ()
        (define repcs (wash-list wash #'(head-repc ...)))

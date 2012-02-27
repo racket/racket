@@ -16,6 +16,7 @@
   [syntax/parse/private/parse-aux
    (id:define-syntax-class
     id:define-splicing-syntax-class
+    id:define-integrable-syntax-class
     id:syntax-parse
     id:syntax-parser
     id:define/syntax-parse
@@ -29,6 +30,7 @@
 
 (provide define-syntax-class
          define-splicing-syntax-class
+         define-integrable-syntax-class
          syntax-parse
          syntax-parser
          define/syntax-parse
@@ -46,6 +48,7 @@
 
 (define-syntaxes (define-syntax-class
                   define-splicing-syntax-class
+                  define-integrable-syntax-class
                   syntax-parse
                   syntax-parser
                   define/syntax-parse
@@ -60,6 +63,7 @@
     (values 
      (tx id:define-syntax-class)
      (tx id:define-splicing-syntax-class)
+     (tx id:define-integrable-syntax-class)
      (tx id:syntax-parse)
      (tx id:syntax-parser)
      (tx id:define/syntax-parse)

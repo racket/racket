@@ -192,3 +192,37 @@
 (lazy-require
  ["runtime-report.rkt"
   (syntax-patterns-fail)])
+
+;; == predicates and parsers
+
+(provide keyword-stx?
+         expr-stx?
+         predicate-ellipsis-parser)
+
+(define (keyword-stx? x)
+  (and (syntax? x) (keyword? (syntax-e x))))
+
+(define (expr-stx? x)
+  (not (keyword-stx? x)))
+
+;; Specialized ellipsis parser
+;; returns (values 'ok attr-values) or (values 'fail failure)
+
+(define (predicate-ellipsis-parser x cx pr es pred? desc)
+  (let ([elems (stx->list x)])
+    (if (and elems (andmap pred? elems))
+        (values 'ok elems)
+        (let loop ([x x] [cx cx] [i 0])
+          (cond [(syntax? x)
+                 (loop (syntax-e x) x i)]
+                [(pair? x)
+                 (if (pred? (car x))
+                     (loop (cdr x) cx (add1 i))
+                     (let* ([pr (ps-add-cdr pr i)]
+                            [pr (ps-add-car pr)]
+                            [es (cons (expect:thing desc #t) es)])
+                       (values 'fail (failure pr es))))]
+                [else ;; not null, because stx->list failed
+                 (let ([pr (ps-add-cdr pr i)]
+                       [es (cons (expect:atom '()) es)])
+                   (values 'fail (failure pr es)))])))))

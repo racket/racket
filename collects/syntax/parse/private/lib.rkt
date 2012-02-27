@@ -1,6 +1,7 @@
 #lang racket/base
 (require "sc.rkt"
          "keywords.rkt"
+         syntax/parse/private/residual ;; keep abs.
          (for-syntax racket/base))
 
 (provide identifier
@@ -23,17 +24,9 @@
 
 ;; == Integrable syntax classes ==
 
-(define-syntax-class identifier
-  #:description (quote "identifier")
-  (pattern (~fail #:unless (identifier? this-syntax))))
-
-(define-syntax-class keyword
-  #:description (quote "keyword")
-  (pattern (~fail #:unless (keyword? (syntax-e this-syntax)))))
-
-(define-syntax-class expr
-  #:description (quote "expression")
-  (pattern (~fail #:when (keyword? (syntax-e this-syntax)))))
+(define-integrable-syntax-class identifier (quote "identifier") identifier?)
+(define-integrable-syntax-class expr (quote "expression") expr-stx?)
+(define-integrable-syntax-class keyword (quote "keyword") keyword-stx?)
 
 ;; == Normal syntax classes ==
 
