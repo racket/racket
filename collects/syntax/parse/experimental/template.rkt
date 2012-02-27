@@ -327,7 +327,18 @@ integers and integer vectors.
             v]
            [(template-metafunction? v)
             v]
-           [else #f])))
+           [else
+            ;; id is a literal; check that for all x s.t. id = x.y, x is not a pattern variable
+            (for ([pfx (in-list (dotted-prefixes id))])
+              (when (syntax-pattern-variable? (syntax-local-value pfx (lambda () #f)))
+                (wrong-syntax id "undefined nested attribute of attribute `~a'" (syntax-e pfx))))
+            #f])))
+
+ (define (dotted-prefixes id)
+   (let* ([id-string (symbol->string (syntax-e id))]
+          [dot-locations (map car (regexp-match-positions* #rx"\\.[^.]" id-string))])
+     (for/list ([loc (in-list dot-locations)])
+       (datum->syntax id (string->symbol (substring id-string 0 loc))))))
 
  (define (index-hash->vector hash [f values])
    (let ([vec (make-vector (hash-count hash))])
