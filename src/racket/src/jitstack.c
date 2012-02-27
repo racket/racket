@@ -70,6 +70,14 @@ typedef void *(*Get_Stack_Proc)();
 
 #define CACHE_STACK_MIN_TRIGGER 128
 
+/* Normally, caching of a native trace on the stack ensures that
+   `current-continuation-marks' is effectively constant-time. 
+   It's possible to have a deep stack section with no recognizable anchors
+   for caching, however, in which case `current-continuation-marks'
+   can become O(n); avoid that pathological case by limiting the
+   number of non-anchor frames in a row that we're willing to traverse. */
+#define UNKNOWN_FRAME_LIMIT 64
+
 #define USE_STACK_CHECK 0
 
 #if USE_STACK_CHECK
@@ -134,6 +142,7 @@ Scheme_Object *scheme_native_stack_trace(void)
   int use_unw = 0;
   int shift_cache_to_next = 0;
   int added_list_elem;
+  int unsuccess = 0;
 
   if (!sjc.get_stack_pointer_code)
     return NULL;
@@ -180,7 +189,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 #endif
   }
 
-  while (1) {
+  while (unsuccess < UNKNOWN_FRAME_LIMIT) {
 #ifdef MZ_USE_DWARF_LIBUNWIND
     if (use_unw) {
       q = (void *)unw_get_ip(&c);
@@ -270,8 +279,13 @@ Scheme_Object *scheme_native_stack_trace(void)
         shift_cache_to_next = 0;
       }
       added_list_elem = 1;
-    } else 
+    } else
       added_list_elem = 0;
+
+    if (!name)
+      unsuccess++;
+    else
+      unsuccess = 0;
 
     /* Cache the result halfway up the stack, if possible. Only cache
        on frames where the previous frame had a return address with a
@@ -300,6 +314,8 @@ Scheme_Object *scheme_native_stack_trace(void)
         shift_cache_to_next = 1;
 
       halfway = stack_end;
+
+      unsuccess = -100000; /* if we got halfway, no need to bail out later */
     }
 
     prev_had_name = !!name;
