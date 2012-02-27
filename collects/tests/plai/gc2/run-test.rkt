@@ -48,15 +48,15 @@
  #<<END
 (good lst '(1 2 3) '(1 2 3) "at line 6")
 (good (length (quote (hello goodbye))) 2 2 "at line 13")
-(good (heap-loc head) 69 69 "at line 18")
-(bad (heap-loc head) 69 54 "at line 19")
+(good (heap-loc head) 63 63 "at line 18")
+(bad (heap-loc head) 63 48 "at line 19")
 
 END
  
   (capture-output (test-mutator (build-path here "other-mutators" "begin.rkt")))
  =>
  #<<END
-Value at location 8:
+Value at location 3:
 #t
 
 END
