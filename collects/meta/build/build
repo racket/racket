@@ -370,6 +370,8 @@ if [[ "$XAUTHORITY" = "" ]]; then export XAUTHORITY="$HOME/.Xauthority"; fi
 ###############################################################################
 ### Utilities
 
+NL=$'\n'
+
 no_exit_on_error="no"
 exit_error() {
   echo ""
@@ -908,6 +910,7 @@ version_init() { # input: plthome
 # ($htmloutput is usually $index in the current directory)
 html_begin() { # inputs: title [output-name]
   local htmltitle="$1"; shift
+  saved_htmloutput="$htmloutput$NL$saved_htmloutput"
   htmloutput="$index"
   if [[ "$1" != "" ]]; then htmloutput="$1"; shift; fi
   if [[ "$htmloutput" != /* ]]; then htmloutput="$(pwd)/$htmloutput"; fi
@@ -919,6 +922,8 @@ html_begin() { # inputs: title [output-name]
 }
 html_end() {
   show "Finished \"$(pwd)/$htmloutput\""
+  htmloutput="${saved_htmloutput%%$NL*}"
+  saved_htmloutput="${saved_htmloutput#*$NL}"
 }
 html_table_begin() { # inputs: [rules-attr]
   local rules="rows"
@@ -1389,7 +1394,6 @@ EOF
   done
   local vars="$(comm -13 "$tmpdir/E1" "$tmpdir/E2")"
   rm "$tmpdir/E1" "$tmpdir/E2"
-  local NL=$'\n'
   while [[ "$vars" = *"$NL"* ]]; do
     grab_one_batch_var "${vars%%${NL}*}"
     vars="${vars#*${NL}}"
