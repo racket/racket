@@ -904,17 +904,21 @@ This produces an ACK message
 
    (mktest "(require texpict/utils)(disk 3)"
 
-           ("{image}"
-            "{image}"
-            "{image}"
-            "{image}"
-            "{image}"
-            "{image}")
+           ("{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}")
            'interactions
            #f
            void
            void)
    
+   ;; this test is kind of hokey in our current, module-based world
+   ;; we get images instead of snips because the image conversion code
+   ;; is in a library that's shared with the user, whereas the pict
+   ;; library isn't (I believe)
    (mktest (to-strings
             '(require texpict/utils)
             '(let ()
@@ -940,12 +944,12 @@ This produces an ACK message
             '(require texpict/utils)
             '(disk 3))
            
-           ("{image}"
-            "{image}"
-            "{image}"
-            "{image}"
-            "{image}"
-            "{image}")
+           ("{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}"
+            "{pict-snip}")
            'interactions
            #f
            void

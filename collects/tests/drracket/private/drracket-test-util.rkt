@@ -562,6 +562,12 @@
                                           (send snip get-text 0 (send snip get-count))
                                           (send snip get-fraction-view))
                                   strings))]
+                     [;; this test is an approximation of
+                      ;; (is-a? snip pict-snip%) from drracket/private/pict-snip%
+                      (let ([sc (send snip get-snipclass)])
+                        (and sc (regexp-match #rx"pict-snip.rkt" (send sc get-classname))))
+                      (loop (send snip previous)
+                            (cons "{pict-snip}" strings))]
                      
                      [else
                       (loop (send snip previous)
