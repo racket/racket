@@ -2676,12 +2676,14 @@
 
 (define (union-language old-langs/prefixes)
   (define new-nt-map
-    (for/list ([old-pr (in-list old-langs/prefixes)])
-      (define prefix (list-ref old-pr 0))
-      (define nt-map (compiled-lang-nt-map (list-ref old-pr 1)))
-      (for/list ([lst (in-list nt-map)])
-        (for/list ([sym (in-list lst)])
-          (string->symbol (string-append prefix (symbol->string sym)))))))
+    (apply
+     append
+     (for/list ([old-pr (in-list old-langs/prefixes)])
+       (define prefix (list-ref old-pr 0))
+       (define nt-map (compiled-lang-nt-map (list-ref old-pr 1)))
+       (for/list ([lst (in-list nt-map)])
+         (for/list ([sym (in-list lst)])
+           (string->symbol (string-append prefix (symbol->string sym))))))))
   
   (define new-nts
     (apply
