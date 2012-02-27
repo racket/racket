@@ -1605,6 +1605,8 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
 
     __START_TINY_JUMPS__(1);
     mz_patch_branch(ref);
+    if (for_struct && unsafe && can_chaperone) 
+      (void)mz_beqi_t(reffail, JIT_R0, scheme_proc_chaperone_type, JIT_R2);
     if (!unsafe) {
       if (!int_ready)
         (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
