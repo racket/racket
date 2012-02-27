@@ -1,7 +1,6 @@
 (module run mzscheme
   (require (only scheme/runtime-path define-runtime-path)
            racket/port
-           unstable/port
            mzlib/kw)
   (define input-map
     `(
@@ -110,7 +109,7 @@
                      (if moments?
                          (apply string-append ; like sumcol, but with floats
                                 (map (lambda (x) (string-append (number->string (exact->inexact x)) "\n"))
-                                     (read-all)))
+                                     (port->list)))
                          (read-bytes 10000))))])
           (with-output-to-file f
             (lambda ()

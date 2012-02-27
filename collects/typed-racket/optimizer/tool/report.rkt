@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/class racket/gui/base racket/match racket/port racket/list
-         unstable/syntax unstable/port racket/sandbox
+         unstable/syntax racket/sandbox
          typed-racket/optimizer/logging
          (prefix-in tr: typed-racket/typed-reader))
 

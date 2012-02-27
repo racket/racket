@@ -94,7 +94,6 @@ Keep documentation and tests up to date.
 @include-section["markparam.scrbl"]
 @include-section["match.scrbl"]
 @include-section["parameter-group.scrbl"]
-@include-section["port.scrbl"]
 @include-section["pretty.scrbl"]
 @include-section["sequence.scrbl"]
 @include-section["string.scrbl"]
