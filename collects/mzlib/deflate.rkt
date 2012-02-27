@@ -469,7 +469,8 @@
         (longest_match-loop)))
     (define (*++scan)
       (set! scanpos (add1 scanpos))
-      (bytes-ref window-vec scanpos))
+      (and (scanpos . < . window_size) ; the original C code can read past the end of the buffer
+           (bytes-ref window-vec scanpos)))
     (define (*++match)
       (set! matchpos (add1 matchpos))
       (bytes-ref window-vec matchpos))
@@ -479,7 +480,7 @@
                  (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
                  (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
                  (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
-                   (< scanpos strendpos))
+                 (< scanpos strendpos))
         (match-eight)))
 
     (define (longest_match-loop)

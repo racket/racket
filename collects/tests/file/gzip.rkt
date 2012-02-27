@@ -31,7 +31,15 @@
   (define (rand-bytes)
     (list->bytes (for/list ([j (in-range (random 1000))]) (random 256))))
   (test-big-file)
-  (for ([i (in-range 100)]) (id* (rand-bytes))))
+  (for ([i (in-range 100)]) (id* (rand-bytes)))
+  (regression-test))
+
+(define (regression-test)
+  ;; check for an out-of-range buffer access:
+  (call-with-input-file* 
+   (collection-file-path "deflate-me.dat" "tests/file")
+   (lambda (in)
+     (gzip-through-ports in (open-output-bytes) "defalte-me.dat" (current-seconds)))))
 
 (provide tests)
 (define (tests) (test do (run-tests)))
