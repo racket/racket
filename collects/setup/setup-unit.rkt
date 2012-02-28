@@ -30,7 +30,8 @@
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
          "collects.rkt"
-         "link.rkt")
+         "link.rkt"
+         "private/preferred-order.rkt")
 (define-namespace-anchor anchor)
 
 ;; read info files using whatever namespace, .zo-use, and compilation
@@ -449,8 +450,9 @@
   (define (sort-collections ccs)
     (sort ccs string<? #:key cc-name))
 
-  (define (sort-collections-tree ccs)
-    (sort ccs string<? #:key (lambda (x) (cc-name (first x)))))
+  (define (sort-collections-for-compilation ccs)
+    (sort ccs collection-bytes-comparison 
+          #:key (λ (x) (path->bytes (first (cc-collection (first x)))))))
 
   (define top-level-plt-collects
     (if no-specific-collections?
@@ -761,19 +763,16 @@
     (setup-printf #f "--- compiling collections ---")
     (match (parallel-workers)
       [(? (lambda (x) (x . > . 1)))
-        (compile-cc (collection->cc (list (string->path "racket"))) 0)
-        (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
-        (with-specified-mode
-         (lambda ()
-          (let ([cct (move-to 'beginning (list "compiler" "raco" "racket" "images")
-                              (move-to 'end (list "drracket" "drscheme")
-                                       (sort-collections-tree
-                                        (collection-tree-map top-level-plt-collects))))])
-            (iterate-cct (lambda (cc)
-              (let ([dir (cc-path cc)]
-                    [info (cc-info cc)])
-                  (clean-cc dir info))) cct)
-            (parallel-compile (parallel-workers) setup-fprintf handle-error cct))
+       (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
+       (with-specified-mode
+        (lambda ()
+          (define cct (sort-collections-for-compilation 
+                       (collection-tree-map top-level-plt-collects)))
+          (iterate-cct (lambda (cc)
+                         (let ([dir (cc-path cc)]
+                               [info (cc-info cc)])
+                           (clean-cc dir info))) cct)
+          (parallel-compile (parallel-workers) setup-fprintf handle-error cct)
           (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
             (compile-cc cc gcs))))]
       [else
