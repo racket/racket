@@ -96,7 +96,7 @@
     (else (false
            (make-exn:invalid-xexpr
             (format (string-append
-                     "Expected a string, symbol, number, comment, "
+                     "Expected a string, symbol, valid numeric entity, comment, "
                      "processing instruction, or list, given ~s")
                     x)
             (current-continuation-marks)
