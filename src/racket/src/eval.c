@@ -1482,6 +1482,10 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
   Scheme_Prompt *prompt, *barrier_prompt;
   int common_depth;
 
+  /* Since scheme_escape_continuation_ok() may allocate... */
+  if (rands == p->tail_buffer)
+    make_tail_buffer_safe();
+
   c = (Scheme_Cont *)obj;
   
   if (can_ec
@@ -1492,9 +1496,6 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
   if (num_rands != 1) {
     GC_CAN_IGNORE Scheme_Object **vals;
     int i;
-
-    if (rands == p->tail_buffer)
-      make_tail_buffer_safe();
 
     vals = MALLOC_N(Scheme_Object *, num_rands);
     for (i = num_rands; i--; ) {
