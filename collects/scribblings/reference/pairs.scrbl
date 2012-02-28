@@ -1014,6 +1014,7 @@ the result of @racket[proc]. Signals an error on an empty list.
 
 @defproc*[([(range [end real?]) list?]
            [(range [start real?] [end real?] [step real? 1]) list?])]{
+  Similar to @racket[in-range], but returns lists.
   Returns a list of numbers starting at @racket[start] and whose successive
   elements are computed by adding @racket[step] to their predecessor until
   @racket[end] (excluded) is reached.

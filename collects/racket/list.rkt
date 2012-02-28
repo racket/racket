@@ -367,10 +367,6 @@
 ;; similar to in-range, but returns a list
 (define range
   (case-lambda
-    [(end)       (range 0     end 1)]
-    [(start end) (range start end 1)]
-    [(start end step)
-     (unless (real? start) (raise-type-error 'range "real-number" start))
-     (unless (real? end)   (raise-type-error 'range "real-number" end))
-     (unless (real? step)  (raise-type-error 'range "real-number" step))
-     (for/list ([i (in-range start end step)]) i)]))
+    [(end)            (for/list ([i (in-range end)])            i)]
+    [(start end)      (for/list ([i (in-range start end)])      i)]
+    [(start end step) (for/list ([i (in-range start end step)]) i)]))
