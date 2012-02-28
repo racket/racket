@@ -145,16 +145,21 @@
            (syntax/loc stx
              (let*-values ([(tmp ...) 
                             (syntax-parameterize ([mutator-env-roots 
-                                                   (list* #'previous-tmp ...
-                                                          (syntax-parameter-value #'mutator-env-roots))]
+                                                   (append
+                                                    (find-referenced-locals
+                                                     (list #'previous-tmp ...)
+                                                     #'expr)
+                                                    (syntax-parameter-value #'mutator-env-roots))]
                                                   [mutator-tail-call? #f])
                                                  expr)]
                            ...)
                (let-values ([(id ...) (values tmp ...)]
                             ...)
                  (syntax-parameterize ([mutator-env-roots 
-                                        (list* #'id ... ...
-                                               (syntax-parameter-value #'mutator-env-roots))])
+                                        (append (find-referenced-locals
+                                                 (list #'id ... ...)
+                                                 #'body-expr)
+                                                (syntax-parameter-value #'mutator-env-roots))])
                                       (->address body-expr))))))))]
     [(_ ([(id ...) expr]
          ...)
@@ -181,8 +186,11 @@
          (quasisyntax/loc stx
            (let ([closure (lambda (id ...) 
                             (syntax-parameterize ([mutator-env-roots 
-                                                   (list #'id ...
-                                                         #'free-id ...)]
+                                                   (append
+                                                    (find-referenced-locals
+                                                     (list #'id ...)
+                                                     #'body)
+                                                    (list #'free-id ...))]
                                                   [mutator-tail-call? #t])
                                                  (->address body)))])
              (add-closure-env! closure (list (make-env-root free-id) ...))
