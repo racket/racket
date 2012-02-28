@@ -752,15 +752,12 @@
   (define (make-zo-step)
     (define (partition-cct name cct)
       (partition (lambda (x) (not (string=? (cc-name (car x)) name))) cct))
-    (define (move-to-begining names cct)
-      (let loop ([names (reverse (if (list? names) names (list names)))]
-                 [cct cct])
-        (match names
-          [(list) cct]
-          [(cons name names)
-            (loop names
-                  (call-with-values (lambda () (define-values (a b) (partition-cct name cct)) (values b a)) append))])))
-    (define (move-to-end name cct) (call-with-values (lambda () (partition-cct name cct)) append))
+    (define (move-to where names cct)
+      (for/fold ([cct cct]) ([name (in-list (reverse names))])
+        (let-values ([(diff same) (partition-cct name cct)])
+          (case where
+            ((beginning) (append same diff))
+            ((end) (append diff same))))))
     (setup-printf #f "--- compiling collections ---")
     (match (parallel-workers)
       [(? (lambda (x) (x . > . 1)))
@@ -768,10 +765,10 @@
         (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
         (with-specified-mode
          (lambda ()
-          (let ([cct (move-to-begining (list "compiler" "raco" "racket") 
-                                       (move-to-end "drscheme" 
-                                                    (sort-collections-tree 
-                                                     (collection-tree-map top-level-plt-collects))))])
+          (let ([cct (move-to 'beginning (list "compiler" "raco" "racket" "images")
+                              (move-to 'end (list "drracket" "drscheme")
+                                       (sort-collections-tree
+                                        (collection-tree-map top-level-plt-collects))))])
             (iterate-cct (lambda (cc)
               (let ([dir (cc-path cc)]
                     [info (cc-info cc)])
