@@ -1520,8 +1520,9 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     MZ_RUNSTACK = old_runstack;
     return scheme_compose_continuation(c, num_rands, value);
   } else {
-    /* Aborting (Racket-style) continuation. */
+    /* Aborting (Scheme-style) continuation. */
     int orig_cac = scheme_continuation_application_count;
+    Scheme_Overflow *thread_end_oflow;
 
     scheme_about_to_move_C_stack();
 
@@ -1550,6 +1551,9 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
     c->common_dw_depth = common_depth;
       
+    /* in case we need it (since no allocation allowed later): */
+    thread_end_oflow = scheme_get_thread_end_overflow();
+        
     if (num_rands == 1)
       c->value = value;
     else {
@@ -1557,6 +1561,8 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
       vals = scheme_values(num_rands, (Scheme_Object **)value);
       c->value = vals;
     }
+
+    /* !! No allocation or GCs allowed from here to the longjmp() !! */
 
     c->common_dw = common;
     c->common_next_meta = p->next_meta;
@@ -1578,9 +1584,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         /* Prompt is pseudo-prompt at thread beginning.
            We're effectively composing the continuation,
            so use its prompt stack start. */
-        Scheme_Overflow *oflow;
-        oflow = scheme_get_thread_end_overflow();
-        c->resume_to = oflow;
+        c->resume_to = thread_end_oflow;
         p->stack_start = c->prompt_stack_start;
       }
       scheme_longjmpup(&c->buf);

@@ -1993,6 +1993,17 @@
         (sync (thread (lambda () (k 6))))
         (void)))
 
+(test (void)
+      'capture-in-transferred-thread/values
+      (let ([k (call-with-continuation-prompt
+                (lambda ()
+                  (let/ec esc
+                    (define-values (a b) (call/cc esc))
+                    (+ a b)
+                    (call/cc values))))])
+        (sync (thread (lambda () (k 6 7))))
+        (void)))
+
 (let ()
   (define sema (make-semaphore 1))
   (define l null)
