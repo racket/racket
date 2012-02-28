@@ -549,6 +549,8 @@ exec racket -qu "$0" ${1+"$@"}
       sboyer
       scheme
       scheme2
+      scheme-i
+      scheme-c
       sort1
       tak
       takl
@@ -558,7 +560,9 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define extra-benchmarks
     '(kanren
-      psyntax))
+      psyntax
+      scheme-i2
+      scheme-c2))
 
   (define (run-benchmark impl bm)
     (let ([i (ormap (lambda (i)
