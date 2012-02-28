@@ -9,6 +9,8 @@
                      "parse2.rkt"
                      "debug.rkt"
                      "compile.rkt"
+                     "util.rkt"
+                     (prefix-in syntax: syntax/parse/private/residual-ct)
                      racket/base)
          (for-meta 2 syntax/parse
                      racket/base
@@ -28,7 +30,7 @@
     #:literal-sets (cruft)
     [pattern (~seq name colon class)
              #:with (result ...)
-             (with-syntax ([new-name (hash-ref new-names (syntax-e #'name))])
+             (with-syntax ([new-name (pattern-variable-name (hash-ref new-names (syntax-e #'name)))])
                #'((~var new-name class #:attr-name-separator "_")))]
     [pattern (x:pattern-type ...) #:with (result ...) #'((x.result ... ...))]
     [pattern x #:with (result ...) #'(x)])
@@ -36,13 +38,22 @@
     [(thing:pattern-type ...)
      #'(thing.result ... ...)]))
 
+(begin-for-syntax
+  (struct pattern-variable [name depth class] #:transparent)
+
+  ;; makes a syntax object with the right number of nested ellipses patterns
+  (define (pattern-variable->syntax variable)
+    (for/fold ([out (pattern-variable-name variable)])
+              ([depth (pattern-variable-depth variable)])
+      (with-syntax ([out out])
+        #'(out (... ...))))))
+
 ;; reverse the syntax so that ellipses appear in front of the s-expr
 ;; then search for ellipses nodes and s-exprs of the form class:id %colon name:id
 ;; the output should match the ellipses depth, so for example
 ;;   ... foo %colon bar
 ;; output would be
 ;;   ((bar ...) (foo_result ...)
-#;
 (define-for-syntax (find-pattern-variables original-pattern)
   (define (reverse-syntax input)
     (syntax-parse input
@@ -54,6 +65,12 @@
   (define (merge set1 set2)
     (debug "Merge ~a with ~a\n" set1 set2)
     (set-union set1 set2))
+  (define (wrap-ellipses stuff)
+    (for/set ([variable stuff])
+      (pattern-variable (pattern-variable-name variable)
+                        (add1 (pattern-variable-depth variable))
+                        (pattern-variable-class variable))))
+  #;
   (define (wrap-ellipses stuff)
     (for/set ([name+result stuff])
       (syntax-case name+result ()
@@ -68,7 +85,7 @@
       [pattern (~seq class:id colon name:id)
                #:attr result
                (with-syntax ([name.result (format-id #'name "~a_result" #'name)])
-                             (set #'(name name.result)))]
+                             (set (pattern-variable #'name 0 #'class)))]
       [pattern (~seq ellipses thing:maybe rest ...)
                #:attr result
                (merge (wrap-ellipses (attribute thing.result))
@@ -89,6 +106,7 @@
   (debug "Found variables ~a\n" variables)
   (for/list ([x variables]) x))
 
+#;
 (define-for-syntax (find-pattern-variables original-pattern)
   (define-splicing-syntax-class pattern-type
     #:literal-sets (cruft)
@@ -128,15 +146,25 @@
            ;; only need a 1-to-1 mapping here
            (define mapping (make-hash))
            (for ([variable pattern-variables])
-             (debug "Update mapping for ~a\n" (syntax-e variable))
-             (hash-set! mapping (syntax-e variable) variable)) 
+             (debug "Update mapping for ~a\n" (pattern-variable-name variable))
+             (hash-set! mapping (syntax-e (pattern-variable-name variable))
+                        variable)) 
+           (debug "Create pattern\n")
            (with-syntax ([(syntax-parse-pattern ...)
                           (convert-pattern #'(pattern ...) mapping)]
                          [((pattern-variable.name pattern-variable.result) ...)
                           (for/list ([name pattern-variables])
-                            (with-syntax ([name name]
-                                          [name.result (format-id name "~a_result" name)])
+                            (debug "Create new pattern variable from ~a\n" name)
+                            (with-syntax ([name (pattern-variable->syntax name)]
+                                          [name.result (pattern-variable->syntax
+                                                         (pattern-variable (format-id (pattern-variable-name name)
+                                                                                      "~a_result"
+                                                                                      (pattern-variable-name name))
+                                                                           (pattern-variable-depth name)
+                                                                           (pattern-variable-class name)
+                                                                           ))])
                               #'(name name.result)))])
+             (debug "Done with syntax\n")
              (racket-syntax 
                (define-honu-syntax name
                           (lambda (stx context-name)
@@ -220,30 +248,88 @@
       (define mapping (make-hash))
       (for ([old variables]
             [new use])
-        (hash-set! mapping (syntax-e old) new))
+        (debug "Update mapping ~a to ~a\n" (syntax-e (pattern-variable-name old)) new)
+        (hash-set! mapping
+                   (syntax-e (pattern-variable-name old))
+                   (pattern-variable new
+                                     (pattern-variable-depth old)
+                                     (pattern-variable-class old))))
+
+      ;; variable is the original pattern variable, like 'foo'
+      ;; and new-name is the new generated name, 'temp1'
+      ;; we want to bind all the attributes from temp1 to foo, so if temp1 has
+      ;;   temp1_a
+      ;;   temp1_b ...
+      ;;
+      ;; we want to bind
+      ;;   foo_a temp_a
+      ;;   (foo_b ...) (temp_b ...)
+      (define (bind-attributes variable new-name)
+        (debug "Syntax class of ~a is ~a at ~a\n" (pattern-variable-class variable)
+               (syntax-local-value (pattern-variable-class variable) (lambda () #f))
+               (syntax-local-phase-level))
+        (define attributes
+          (let ([syntax-class (syntax-local-value (pattern-variable-class variable))])
+            (for/list ([attribute (syntax:stxclass-attrs syntax-class)])
+              (pattern-variable (syntax:attr-name attribute)
+                                (+ (pattern-variable-depth variable)
+                                   (syntax:attr-depth attribute))
+                                #f))))
+        (for/set ([attribute attributes])
+          (with-syntax ([bind-attribute
+                          (let ([name (pattern-variable-name attribute)])
+                            (pattern-variable->syntax
+                              (pattern-variable (format-id (pattern-variable-name variable) "~a_~a"
+                                                           (syntax-e (pattern-variable-name variable))
+                                                           name)
+                                                (pattern-variable-depth attribute)
+                                                (pattern-variable-class attribute))))]
+                        [new-attribute (pattern-variable->syntax
+                                         (pattern-variable
+                                           (format-id new-name "~a_~a" new-name (pattern-variable-name attribute))
+                                           (pattern-variable-depth attribute)
+                                           #f))])
+            #'(#:with bind-attribute #'new-attribute))))
+
       (define withs
-        (for/list ([old variables]
+        (for/union ([old variables]
                    [new use])
-          (with-syntax ([old old]
-                        [new.result (format-id new "~a_result" new)])
-            #'(#:with old #'new.result))))
+          (with-syntax ([old-syntax (pattern-variable->syntax old)]
+                        [new.result (pattern-variable->syntax
+                                      (pattern-variable (format-id new "~a_result" new)
+                                                        (pattern-variable-depth old)
+                                                        (pattern-variable-class old)))])
+            (set-union (set #'(#:with old-syntax #'new.result))
+                       (bind-attributes old new)))))
+      (debug "With bindings ~a\n" withs)
       (with-syntax ([name name]
                     [(literal ...) literals]
                     [(new-pattern ...) (convert-pattern original-pattern mapping)]
-                    [((withs ...) ...) withs]
+                    [((withs ...) ...) (set->list withs)]
                     [(result-with ...) (if maybe-out
                                          (with-syntax ([(out ...) maybe-out])
                                            #'(#:with result (syntax out ...)))
-                                         #'())])
-        #'(%racket (begin-for-syntax
+                                         #'(#:with result #'()))])
+        #'(%racket (begin
+                     ;; define at phase1 so we can use it
+                     (begin-for-syntax
+                       (define-literal-set local-literals (literal ...))
+                       (define-splicing-syntax-class name
+                                                     #:literal-sets ([cruft #:at name]
+                                                                     [local-literals #:at name])
+                                                     [pattern (~seq new-pattern ...)
+                                                              withs ... ...
+                                                              result-with ...
+                                                              ]))
+                     ;; and define at phase 0 so we can inspect it
                      (define-literal-set local-literals (literal ...))
                      (define-splicing-syntax-class name
-                       #:literal-sets ([cruft #:at name]
-                                       [local-literals #:at name])
-                       [pattern (~seq new-pattern ...)
-                                withs ... ...
-                                result-with ...
-                                ])))))
+                                                     #:literal-sets ([cruft #:at name]
+                                                                     [local-literals #:at name])
+                                                     [pattern (~seq new-pattern ...)
+                                                              withs ... ...
+                                                              result-with ...
+                                                              ])))))
     (syntax-parse code #:literal-sets (cruft)
       [(_ name (#%parens literal ...)
           (#%braces pattern ...)

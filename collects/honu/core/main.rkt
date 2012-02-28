@@ -15,6 +15,7 @@
                        "private/honu2.rkt"))
     (provide (for-meta meta-level 
                        (rename-out [parse:honu-expression expression]
+                                   [parse:honu-expression-list expression_list]
                                    [parse:honu-identifier identifier]
                                    [racket:else else]
                                    [racket:void void]

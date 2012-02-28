@@ -2,7 +2,7 @@
 
 var => = 0
 
-pattern match_pattern (){ [element:expression] } { [element] }
+pattern match_pattern (){ [element:expression_list]} { [element_each_result ...]}
 
 pattern match_clause (| =>){ | pattern:match_pattern => out:expression , }
 
@@ -14,18 +14,16 @@ macro mymatch(with){
     cond
      $ clause_pattern == thing: clause_out, $ ...
      else: -2
-
-    /*
-    if (clause_pattern == thing){
-      clause_out
-    } else {
-      -2
-    }
-    */)
+  )
 }
 
 mymatch [1] with
 | [1] => 5,
 | [2] => 6,
+
+mymatch [1, 2, 3] with
+| [4] => 12,
+| [1, 2] => 7,
+| [1, 2, 3] => 8,
 
 // mymatch [1] with | [2] => 5

@@ -5,7 +5,9 @@
          racket/match
          syntax/parse
          syntax/parse/experimental/reflect
+         racket/set
          (for-syntax racket/base
+                     racket/set
                      syntax/parse
                      "debug.rkt"
                      )
@@ -134,3 +136,10 @@
       #:literal-sets ([set #:at literal])
       [pattern literal])
     (reify-syntax-class class)))
+
+(define-syntax (for/union stx)
+  (syntax-case stx ()
+    [(_ clauses . body)
+     #'(for/fold/derived stx ([accum-set (set)])
+                         clauses
+                         (set-union accum-set (let () . body)))]))

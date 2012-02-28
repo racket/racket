@@ -8,6 +8,7 @@
          "literals.rkt"
          "debug.rkt"
          "compile.rkt"
+         racket/list
          (prefix-in transformer: "transformer.rkt")
          (prefix-in fixture: "fixture.rkt")
          "operator.rkt"
@@ -159,7 +160,7 @@
                       #;
                       (honu->racket parsed)
                       #'(void)))
-     (debug "Output ~a\n" output)
+     (debug "Output ~a\n" (syntax->datum output))
      (with-syntax ([output output]
                    [(unparsed-out ...) unparsed]
                    [parse-more parse-more])
@@ -572,14 +573,26 @@
   #:description "expression"
   (lambda (stx fail)
     (debug "honu expression syntax class\n")
-    (define-values (parsed unparsed)
-                   (parse stx))
-    (debug "parsed ~a\n" (if parsed (syntax->datum parsed) parsed))
-    (list (parsed-things stx unparsed)
-          (parsed-syntax parsed)
-          #;
-          (with-syntax ([parsed parsed])
-            #'(%racket parsed)))))
+    (if (stx-null? stx)
+      (fail)
+      (let ()
+        (define-values (parsed unparsed)
+                       (parse stx))
+        (debug "parsed ~a\n" (if parsed (syntax->datum parsed) parsed))
+        (list (parsed-things stx unparsed)
+              (parsed-syntax parsed)
+              #;
+              (with-syntax ([parsed parsed])
+                #'(%racket parsed)))))))
+
+(provide honu-expression-list)
+(define-splicing-syntax-class (honu-expression-list)
+  #:literal-sets (cruft)
+  [pattern (~seq (~seq each:honu-expression (~optional honu-comma)) ...)
+           #:with (each_result ...)
+           (with-syntax ([(each ...) (add-between (syntax->list #'(each.result ...)) #'honu-comma)])
+             #'(each ...))
+           ])
 
 (provide honu-identifier)
 (define-splicing-syntax-class honu-identifier
