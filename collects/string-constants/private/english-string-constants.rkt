@@ -587,7 +587,7 @@ please adhere to these guidelines:
   (undock "Undock")
   
  ;;; multi-file-search
- (mfs-multi-file-search-menu-item "Search in Files...")
+ (mfs-multi-file-search-menu-item "Search in &Files...")
  (mfs-string-match/graphics "String match (handles files with graphics)")
  (mfs-regexp-match/no-graphics "Regular Expression (only raw text files)")
  (mfs-searching... "Searching...")
