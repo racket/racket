@@ -22,7 +22,7 @@
          itemize
          aux-elem
          code-inset)
-(provide/contract [filebox ((or/c core:element? string?) pre-flow? . -> . block?)])
+(provide/contract [filebox (((or/c core:element? string?)) () #:rest (listof pre-flow?) . ->* . block?)])
 
 (define styling-f/c
   (() () #:rest (listof pre-content?) . ->* . element?))
