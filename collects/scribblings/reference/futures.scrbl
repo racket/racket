@@ -183,16 +183,16 @@ Racket futures use logging (see @secref["logging"]) extensively to
 report information about how futures are evaluated. Logging output is
 useful for debugging the performance of programs that use futures.
 
+Though textual log output can be viewed directly, it is much  
+easier to use the graphical profiler tool provided by 
+@racketmodname[racket/future/visualizer].  
+
 In addition to its string message, each event logged for a future has
 a data value that is an instance of a @racket[future-event]
 @tech{prefab} structure:
 
 @racketblock[
-(define-struct future-event (future-id
-                             proc-id
-                             action
-                             time
-                             unsafe-op-name)
+(define-struct future-event (future-id proc-id action time unsafe-op-name target-fid)
   #:prefab)
 ]
 
@@ -281,7 +281,13 @@ In process 0, some event pairs can be nested within other event pairs:
 An @racket[block] in process 0 is generated when an unsafe operation 
 is handled.  This type of event will contain a symbol in the 
 @racket[unsafe-op-name] field that is the name of the operation.  In all 
-other cases, this field contains @racket[#f].}
+other cases, this field contains @racket[#f].
+
+The @racket[target-fid] field contains an exact integer value in certain 
+cases where the @racket[action] occurs in one future but is being 
+performed on another (e.g. @racket['create] or @racket['touch]).  In such 
+cases, the integer value is the identifier of the future on which the action 
+is being performed.  In all other cases, this field contains @racket[#f].
 
 @; ----------------------------------------------------------------------
 

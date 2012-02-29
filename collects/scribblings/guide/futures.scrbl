@@ -1,6 +1,11 @@
 #lang scribble/doc
-@(require scribble/manual "guide-utils.rkt"
+@(require scribble/manual scribble/eval "guide-utils.rkt"
           (for-label racket/flonum racket/future))
+
+@(define future-eval (make-base-eval))
+@(interaction-eval #:eval future-eval (require racket/future 
+                                               racket/future/private/visualizer-drawing 
+                                               racket/future/private/visualizer-data))
 
 @title[#:tag "effective-futures"]{Parallelism with Futures}
 
@@ -56,9 +61,12 @@ l2)] becomes available about the same time that it is demanded by
 @racket[(touch f)].
 
 Futures run in parallel as long as they can do so safely, but the
-notion of ``safe'' for parallelism is inherently tied to the system
-implementation. The distinction between ``safe'' and ``unsafe''
+notion of ``future safe'' is inherently tied to the
+implementation. The distinction between ``future safe'' and ``future unsafe''
 operations may be far from apparent at the level of a Racket program.
+The remainder of this section works through an example to illustrate
+this distinction and to show how to use the future visualizer
+can help shed light on it.
 
 Consider the following core of a Mandelbrot-set computation:
 
@@ -72,10 +80,10 @@ Consider the following core of a Mandelbrot-set computation:
           (let ([zrq (* zr zr)]
                 [ziq (* zi zi)])
             (cond
-              [(> (+ zrq ziq) 4.0) i]
+              [(> (+ zrq ziq) 4) i]
               [else (loop (add1 i)
                           (+ (- zrq ziq) cr)
-                          (+ (* 2.0 zr zi) ci))]))))))
+                          (+ (* 2 zr zi) ci))]))))))
 ]
 
 The expressions @racket[(mandelbrot 10000000 62 500 1000)] and
@@ -97,34 +105,331 @@ Unfortunately, attempting to run the two computations in parallel with
          (touch f)))
 ]
 
-One problem is that the @racket[*] and @racket[/] operations in the
-first two lines of @racket[mandelbrot] involve a mixture of exact and
-inexact real numbers. Such mixtures typically trigger a slow path in
-execution, and the general slow path is not safe for
-parallelism. Consequently, the future created in this example is
-almost immediately suspended, and it cannot resume until
-@racket[touch] is called.
+To see why, use the @racketmodname[racket/future/visualizer], like this:
 
-Changing the first two lines of @racket[mandelbrot] addresses that
-first the problem:
+@racketblock[ 
+  (require racket/future/visualizer) 
+  (start-performance-tracking!) 
+  
+  (let ([f (future (lambda () (mandelbrot 10000000 62 501 1000)))])
+   (list (mandelbrot 10000000 62 500 1000)
+         (touch f)))
+  
+  (show-visualizer)] 
+ 
+This opens a window showing a graphical view of a trace of the computation.
+The upper-left portion of the window contains an execution timeline:
+
+@(interaction-eval 
+  #:eval future-eval 
+  (define bad-log 
+    (list (indexed-fevent 0 '#s(future-event #f 0 create 1334778390997.936 #f 1))
+          (indexed-fevent 1 '#s(future-event 1 1 start-work 1334778390998.137 #f #f))
+          (indexed-fevent 2 '#s(future-event 1 1 sync 1334778390998.145 #f #f))
+          (indexed-fevent 3 '#s(future-event 1 0 sync 1334778391001.616 [allocate memory] #f))
+          (indexed-fevent 4 '#s(future-event 1 0 result 1334778391001.629 #f #f))
+          (indexed-fevent 5 '#s(future-event 1 1 result 1334778391001.643 #f #f))
+          (indexed-fevent 6 '#s(future-event 1 1 block 1334778391001.653 #f #f))
+          (indexed-fevent 7 '#s(future-event 1 1 suspend 1334778391001.658 #f #f))
+          (indexed-fevent 8 '#s(future-event 1 1 end-work 1334778391001.658 #f #f))
+          (indexed-fevent 9 '#s(future-event 1 0 block 1334778392134.226 > #f))
+          (indexed-fevent 10 '#s(future-event 1 0 result 1334778392134.241 #f #f))
+          (indexed-fevent 11 '#s(future-event 1 1 start-work 1334778392134.254 #f #f))
+          (indexed-fevent 12 '#s(future-event 1 1 sync 1334778392134.339 #f #f))
+          (indexed-fevent 13 '#s(future-event 1 0 sync 1334778392134.375 [allocate memory] #f))
+          (indexed-fevent 14 '#s(future-event 1 0 result 1334778392134.38 #f #f))
+          (indexed-fevent 15 '#s(future-event 1 1 result 1334778392134.387 #f #f))
+          (indexed-fevent 16 '#s(future-event 1 1 block 1334778392134.39 #f #f))
+          (indexed-fevent 17 '#s(future-event 1 1 suspend 1334778392134.391 #f #f))
+          (indexed-fevent 18 '#s(future-event 1 1 end-work 1334778392134.391 #f #f))
+          (indexed-fevent 19 '#s(future-event 1 0 touch-pause 1334778392134.432 #f #f))
+          (indexed-fevent 20 '#s(future-event 1 0 touch-resume 1334778392134.433 #f #f))
+          (indexed-fevent 21 '#s(future-event 1 0 block 1334778392134.533 * #f))
+          (indexed-fevent 22 '#s(future-event 1 0 result 1334778392134.537 #f #f))
+          (indexed-fevent 23 '#s(future-event 1 2 start-work 1334778392134.568 #f #f))
+          (indexed-fevent 24 '#s(future-event 1 2 sync 1334778392134.57 #f #f))
+          (indexed-fevent 25 '#s(future-event 1 0 touch-pause 1334778392134.587 #f #f))
+          (indexed-fevent 26 '#s(future-event 1 0 touch-resume 1334778392134.587 #f #f))
+          (indexed-fevent 27 '#s(future-event 1 0 block 1334778392134.6 [allocate memory] #f))
+          (indexed-fevent 28 '#s(future-event 1 0 result 1334778392134.604 #f #f))
+          (indexed-fevent 29 '#s(future-event 1 2 result 1334778392134.627 #f #f))
+          (indexed-fevent 30 '#s(future-event 1 2 block 1334778392134.629 #f #f))
+          (indexed-fevent 31 '#s(future-event 1 2 suspend 1334778392134.632 #f #f))
+          (indexed-fevent 32 '#s(future-event 1 2 end-work 1334778392134.633 #f #f))
+          (indexed-fevent 33 '#s(future-event 1 0 touch-pause 1334778392134.64 #f #f))
+          (indexed-fevent 34 '#s(future-event 1 0 touch-resume 1334778392134.64 #f #f))
+          (indexed-fevent 35 '#s(future-event 1 0 block 1334778392134.663 > #f))
+          (indexed-fevent 36 '#s(future-event 1 0 result 1334778392134.666 #f #f))
+          (indexed-fevent 37 '#s(future-event 1 1 start-work 1334778392134.673 #f #f))
+          (indexed-fevent 38 '#s(future-event 1 1 block 1334778392134.676 #f #f))
+          (indexed-fevent 39 '#s(future-event 1 1 suspend 1334778392134.677 #f #f))
+          (indexed-fevent 40 '#s(future-event 1 1 end-work 1334778392134.677 #f #f))
+          (indexed-fevent 41 '#s(future-event 1 0 touch-pause 1334778392134.704 #f #f))
+          (indexed-fevent 42 '#s(future-event 1 0 touch-resume 1334778392134.704 #f #f))
+          (indexed-fevent 43 '#s(future-event 1 0 block 1334778392134.727 * #f))
+          (indexed-fevent 44 '#s(future-event 1 0 result 1334778392134.73 #f #f))
+          (indexed-fevent 45 '#s(future-event 1 2 start-work 1334778392134.737 #f #f))
+          (indexed-fevent 46 '#s(future-event 1 2 block 1334778392134.739 #f #f))
+          (indexed-fevent 47 '#s(future-event 1 2 suspend 1334778392134.74 #f #f))
+          (indexed-fevent 48 '#s(future-event 1 2 end-work 1334778392134.741 #f #f))
+          (indexed-fevent 49 '#s(future-event 1 0 touch-pause 1334778392134.767 #f #f))
+          (indexed-fevent 50 '#s(future-event 1 0 touch-resume 1334778392134.767 #f #f))
+          (indexed-fevent 51 '#s(future-event 1 0 block 1334778392134.79 > #f))
+          (indexed-fevent 52 '#s(future-event 1 0 result 1334778392134.793 #f #f))
+          (indexed-fevent 53 '#s(future-event 1 1 start-work 1334778392134.799 #f #f))
+          (indexed-fevent 54 '#s(future-event 1 1 block 1334778392134.801 #f #f))
+          (indexed-fevent 55 '#s(future-event 1 1 suspend 1334778392134.802 #f #f))
+          (indexed-fevent 56 '#s(future-event 1 1 end-work 1334778392134.803 #f #f))
+          (indexed-fevent 57 '#s(future-event 1 0 touch-pause 1334778392134.832 #f #f))
+          (indexed-fevent 58 '#s(future-event 1 0 touch-resume 1334778392134.832 #f #f))
+          (indexed-fevent 59 '#s(future-event 1 0 block 1334778392134.854 * #f))
+          (indexed-fevent 60 '#s(future-event 1 0 result 1334778392134.858 #f #f))
+          (indexed-fevent 61 '#s(future-event 1 2 start-work 1334778392134.864 #f #f))
+          (indexed-fevent 62 '#s(future-event 1 2 block 1334778392134.876 #f #f))
+          (indexed-fevent 63 '#s(future-event 1 2 suspend 1334778392134.877 #f #f))
+          (indexed-fevent 64 '#s(future-event 1 2 end-work 1334778392134.882 #f #f))
+          (indexed-fevent 65 '#s(future-event 1 0 touch-pause 1334778392134.918 #f #f))
+          (indexed-fevent 66 '#s(future-event 1 0 touch-resume 1334778392134.918 #f #f))
+          (indexed-fevent 67 '#s(future-event 1 0 block 1334778392134.94 > #f))
+          (indexed-fevent 68 '#s(future-event 1 0 result 1334778392134.943 #f #f))
+          (indexed-fevent 69 '#s(future-event 1 1 start-work 1334778392134.949 #f #f))
+          (indexed-fevent 70 '#s(future-event 1 1 block 1334778392134.952 #f #f))
+          (indexed-fevent 71 '#s(future-event 1 1 suspend 1334778392134.953 #f #f))
+          (indexed-fevent 72 '#s(future-event 1 1 end-work 1334778392134.96 #f #f))
+          (indexed-fevent 73 '#s(future-event 1 0 touch-pause 1334778392134.991 #f #f))
+          (indexed-fevent 74 '#s(future-event 1 0 touch-resume 1334778392134.991 #f #f))
+          (indexed-fevent 75 '#s(future-event 1 0 block 1334778392135.013 * #f))
+          (indexed-fevent 76 '#s(future-event 1 0 result 1334778392135.016 #f #f))
+          (indexed-fevent 77 '#s(future-event 1 2 start-work 1334778392135.027 #f #f))
+          (indexed-fevent 78 '#s(future-event 1 2 block 1334778392135.033 #f #f))
+          (indexed-fevent 79 '#s(future-event 1 2 suspend 1334778392135.034 #f #f))
+          (indexed-fevent 80 '#s(future-event 1 2 end-work 1334778392135.04 #f #f))
+          (indexed-fevent 81 '#s(future-event 1 0 touch-pause 1334778392135.075 #f #f))
+          (indexed-fevent 82 '#s(future-event 1 0 touch-resume 1334778392135.075 #f #f))
+          (indexed-fevent 83 '#s(future-event 1 0 block 1334778392135.098 > #f))
+          (indexed-fevent 84 '#s(future-event 1 0 result 1334778392135.101 #f #f))
+          (indexed-fevent 85 '#s(future-event 1 1 start-work 1334778392135.107 #f #f))
+          (indexed-fevent 86 '#s(future-event 1 1 block 1334778392135.117 #f #f))
+          (indexed-fevent 87 '#s(future-event 1 1 suspend 1334778392135.118 #f #f))
+          (indexed-fevent 88 '#s(future-event 1 1 end-work 1334778392135.123 #f #f))
+          (indexed-fevent 89 '#s(future-event 1 0 touch-pause 1334778392135.159 #f #f))
+          (indexed-fevent 90 '#s(future-event 1 0 touch-resume 1334778392135.159 #f #f))
+          (indexed-fevent 91 '#s(future-event 1 0 block 1334778392135.181 * #f))
+          (indexed-fevent 92 '#s(future-event 1 0 result 1334778392135.184 #f #f))
+          (indexed-fevent 93 '#s(future-event 1 2 start-work 1334778392135.19 #f #f))
+          (indexed-fevent 94 '#s(future-event 1 2 block 1334778392135.191 #f #f))
+          (indexed-fevent 95 '#s(future-event 1 2 suspend 1334778392135.192 #f #f))
+          (indexed-fevent 96 '#s(future-event 1 2 end-work 1334778392135.192 #f #f))
+          (indexed-fevent 97 '#s(future-event 1 0 touch-pause 1334778392135.221 #f #f))
+          (indexed-fevent 98 '#s(future-event 1 0 touch-resume 1334778392135.221 #f #f))
+          (indexed-fevent 99 '#s(future-event 1 0 block 1334778392135.243 > #f))
+          )))
+                   
+@interaction-eval-show[
+    #:eval future-eval 
+    (build-timeline-bmp-from-log bad-log 
+                                 #:max-width 600 
+                                 #:max-height 300)
+]
+
+Each horizontal row represents an OS-level thread, and the colored 
+dots represent important events in the execution of the program (they are 
+color-coded to distinguish one event type from another).  The upper-left blue 
+dot in the timeline represents the future's creation.  The future 
+executes for a brief period (represented by a green bar in the second line) on thread 
+1, and then pauses to allow the runtime thread to perform a future-unsafe operation.
+
+In the Racket implementation, future-unsafe operations fall into one of two categories. 
+A @deftech{blocking} operation halts the evaluation of the future, and will not allow 
+it to continue until it is touched.  After the operation completes within @racket[touch], 
+the remainder of the future's work will be evaluated sequentially by the runtime 
+thread.  A @deftech{synchronized} operation also halts the future, but the runtime thread 
+may perform the operation at any time and, once completed, the future may continue 
+running in parallel.  Memory allocation and JIT compilation are two common examples 
+of synchronized operations.
+
+In the timeline, we see an orange dot just to the right of the green bar on thread 1 -- 
+this dot represents a synchronized operation (memory allocation).  The first orange 
+dot on thread 0 shows that the runtime thread performed the allocation shortly after 
+the future paused.  A short time later, the future halts on a blocking operation 
+(the first red dot) and must wait until the @racket[touch] for it to be evaluated 
+(slightly after the 1049ms mark).
+
+When you move your mouse over an event, the visualizer shows you 
+detailed information about the event and draws arrows
+connecting all of the events in the corresponding future.
+This image shows those connections for our future.
+
+@interaction-eval-show[
+     #:eval future-eval 
+     (build-timeline-bmp-with-overlay bad-log 
+                                      6 
+                                      #:max-width 600 
+                                      #:max-height 300)
+]
+
+The dotted orange line connects the first event in the future to
+the future that created it, and the purple lines connect adjacent
+events within the future. 
+
+The reason that we see no parallelism is that the @racket[<] and @racket[*] operations 
+in the lower portion of the loop in @racket[mandelbrot] involve a mixture of 
+floating-point and fixed (integer) values.  Such mixtures typically trigger a slow 
+path in execution, and the general slow path will usually be blocking.
+
+Changing constants to be floating-points numbers in @racket[mandelbrot] addresses that 
+first problem: 
 
 @racketblock[
 (define (mandelbrot iterations x y n)
-  (let ([ci (- (/ (* 2.0 (->fl y)) (->fl n)) 1.0)]
-        [cr (- (/ (* 2.0 (->fl x)) (->fl n)) 1.5)])
-    ....))
+  (let ([ci (- (/ (* 2.0 y) n) 1.0)]
+        [cr (- (/ (* 2.0 x) n) 1.5)])
+    (let loop ([i 0] [zr 0.0] [zi 0.0])
+      (if (> i iterations)
+          i
+          (let ([zrq (* zr zr)]
+                [ziq (* zi zi)])
+            (cond
+              [(> (+ zrq ziq) 4.0) i]
+              [else (loop (add1 i)
+                          (+ (- zrq ziq) cr)
+                          (+ (* 2.0 zr zi) ci))]))))))
 ]
 
-With that change, @racket[mandelbrot] computations can run in
-parallel. Nevertheless, performance still does not improve. The
-problem is that most every arithmetic operation in this example
-produces an inexact number whose storage must be allocated. Especially
-frequent allocation triggers communication between parallel tasks that
-defeats any performance improvement.
+With that change, @racket[mandelbrot] computations can run in 
+parallel.  Nevertheless, we still see a special type of 
+slow-path operation limiting our parallelism (orange dots):
+
+@interaction-eval[
+    #:eval future-eval            
+    (define better-log 
+      (list (indexed-fevent 0 '#s(future-event #f 0 create 1334779296782.22 #f 2))
+            (indexed-fevent 1 '#s(future-event 2 2 start-work 1334779296782.265 #f #f))
+            (indexed-fevent 2 '#s(future-event 2 2 sync 1334779296782.378 #f #f))
+            (indexed-fevent 3 '#s(future-event 2 0 sync 1334779296795.582 [allocate memory] #f))
+            (indexed-fevent 4 '#s(future-event 2 0 result 1334779296795.587 #f #f))
+            (indexed-fevent 5 '#s(future-event 2 2 result 1334779296795.6 #f #f))
+            (indexed-fevent 6 '#s(future-event 2 2 sync 1334779296795.689 #f #f))
+            (indexed-fevent 7 '#s(future-event 2 0 sync 1334779296795.807 [allocate memory] #f))
+            (indexed-fevent 8 '#s(future-event 2 0 result 1334779296795.812 #f #f))
+            (indexed-fevent 9 '#s(future-event 2 2 result 1334779296795.818 #f #f))
+            (indexed-fevent 10 '#s(future-event 2 2 sync 1334779296795.827 #f #f))
+            (indexed-fevent 11 '#s(future-event 2 0 sync 1334779296806.627 [allocate memory] #f))
+            (indexed-fevent 12 '#s(future-event 2 0 result 1334779296806.635 #f #f))
+            (indexed-fevent 13 '#s(future-event 2 2 result 1334779296806.646 #f #f))
+            (indexed-fevent 14 '#s(future-event 2 2 sync 1334779296806.879 #f #f))
+            (indexed-fevent 15 '#s(future-event 2 0 sync 1334779296806.994 [allocate memory] #f))
+            (indexed-fevent 16 '#s(future-event 2 0 result 1334779296806.999 #f #f))
+            (indexed-fevent 17 '#s(future-event 2 2 result 1334779296807.007 #f #f))
+            (indexed-fevent 18 '#s(future-event 2 2 sync 1334779296807.023 #f #f))
+            (indexed-fevent 19 '#s(future-event 2 0 sync 1334779296814.198 [allocate memory] #f))
+            (indexed-fevent 20 '#s(future-event 2 0 result 1334779296814.206 #f #f))
+            (indexed-fevent 21 '#s(future-event 2 2 result 1334779296814.221 #f #f))
+            (indexed-fevent 22 '#s(future-event 2 2 sync 1334779296814.29 #f #f))
+            (indexed-fevent 23 '#s(future-event 2 0 sync 1334779296820.796 [allocate memory] #f))
+            (indexed-fevent 24 '#s(future-event 2 0 result 1334779296820.81 #f #f))
+            (indexed-fevent 25 '#s(future-event 2 2 result 1334779296820.835 #f #f))
+            (indexed-fevent 26 '#s(future-event 2 2 sync 1334779296821.089 #f #f))
+            (indexed-fevent 27 '#s(future-event 2 0 sync 1334779296825.217 [allocate memory] #f))
+            (indexed-fevent 28 '#s(future-event 2 0 result 1334779296825.226 #f #f))
+            (indexed-fevent 29 '#s(future-event 2 2 result 1334779296825.242 #f #f))
+            (indexed-fevent 30 '#s(future-event 2 2 sync 1334779296825.305 #f #f))
+            (indexed-fevent 31 '#s(future-event 2 0 sync 1334779296832.541 [allocate memory] #f))
+            (indexed-fevent 32 '#s(future-event 2 0 result 1334779296832.549 #f #f))
+            (indexed-fevent 33 '#s(future-event 2 2 result 1334779296832.562 #f #f))
+            (indexed-fevent 34 '#s(future-event 2 2 sync 1334779296832.667 #f #f))
+            (indexed-fevent 35 '#s(future-event 2 0 sync 1334779296836.269 [allocate memory] #f))
+            (indexed-fevent 36 '#s(future-event 2 0 result 1334779296836.278 #f #f))
+            (indexed-fevent 37 '#s(future-event 2 2 result 1334779296836.326 #f #f))
+            (indexed-fevent 38 '#s(future-event 2 2 sync 1334779296836.396 #f #f))
+            (indexed-fevent 39 '#s(future-event 2 0 sync 1334779296843.481 [allocate memory] #f))
+            (indexed-fevent 40 '#s(future-event 2 0 result 1334779296843.49 #f #f))
+            (indexed-fevent 41 '#s(future-event 2 2 result 1334779296843.501 #f #f))
+            (indexed-fevent 42 '#s(future-event 2 2 sync 1334779296843.807 #f #f))
+            (indexed-fevent 43 '#s(future-event 2 0 sync 1334779296847.291 [allocate memory] #f))
+            (indexed-fevent 44 '#s(future-event 2 0 result 1334779296847.3 #f #f))
+            (indexed-fevent 45 '#s(future-event 2 2 result 1334779296847.312 #f #f))
+            (indexed-fevent 46 '#s(future-event 2 2 sync 1334779296847.375 #f #f))
+            (indexed-fevent 47 '#s(future-event 2 0 sync 1334779296854.487 [allocate memory] #f))
+            (indexed-fevent 48 '#s(future-event 2 0 result 1334779296854.495 #f #f))
+            (indexed-fevent 49 '#s(future-event 2 2 result 1334779296854.507 #f #f))
+            (indexed-fevent 50 '#s(future-event 2 2 sync 1334779296854.656 #f #f))
+            (indexed-fevent 51 '#s(future-event 2 0 sync 1334779296857.374 [allocate memory] #f))
+            (indexed-fevent 52 '#s(future-event 2 0 result 1334779296857.383 #f #f))
+            (indexed-fevent 53 '#s(future-event 2 2 result 1334779296857.421 #f #f))
+            (indexed-fevent 54 '#s(future-event 2 2 sync 1334779296857.488 #f #f))
+            (indexed-fevent 55 '#s(future-event 2 0 sync 1334779296869.919 [allocate memory] #f))
+            (indexed-fevent 56 '#s(future-event 2 0 result 1334779296869.947 #f #f))
+            (indexed-fevent 57 '#s(future-event 2 2 result 1334779296869.981 #f #f))
+            (indexed-fevent 58 '#s(future-event 2 2 sync 1334779296870.32 #f #f))
+            (indexed-fevent 59 '#s(future-event 2 0 sync 1334779296879.438 [allocate memory] #f))
+            (indexed-fevent 60 '#s(future-event 2 0 result 1334779296879.446 #f #f))
+            (indexed-fevent 61 '#s(future-event 2 2 result 1334779296879.463 #f #f))
+            (indexed-fevent 62 '#s(future-event 2 2 sync 1334779296879.526 #f #f))
+            (indexed-fevent 63 '#s(future-event 2 0 sync 1334779296882.928 [allocate memory] #f))
+            (indexed-fevent 64 '#s(future-event 2 0 result 1334779296882.935 #f #f))
+            (indexed-fevent 65 '#s(future-event 2 2 result 1334779296882.944 #f #f))
+            (indexed-fevent 66 '#s(future-event 2 2 sync 1334779296883.311 #f #f))
+            (indexed-fevent 67 '#s(future-event 2 0 sync 1334779296890.471 [allocate memory] #f))
+            (indexed-fevent 68 '#s(future-event 2 0 result 1334779296890.479 #f #f))
+            (indexed-fevent 69 '#s(future-event 2 2 result 1334779296890.517 #f #f))
+            (indexed-fevent 70 '#s(future-event 2 2 sync 1334779296890.581 #f #f))
+            (indexed-fevent 71 '#s(future-event 2 0 sync 1334779296894.362 [allocate memory] #f))
+            (indexed-fevent 72 '#s(future-event 2 0 result 1334779296894.369 #f #f))
+            (indexed-fevent 73 '#s(future-event 2 2 result 1334779296894.382 #f #f))
+            (indexed-fevent 74 '#s(future-event 2 2 sync 1334779296894.769 #f #f))
+            (indexed-fevent 75 '#s(future-event 2 0 sync 1334779296901.501 [allocate memory] #f))
+            (indexed-fevent 76 '#s(future-event 2 0 result 1334779296901.51 #f #f))
+            (indexed-fevent 77 '#s(future-event 2 2 result 1334779296901.556 #f #f))
+            (indexed-fevent 78 '#s(future-event 2 2 sync 1334779296901.62 #f #f))
+            (indexed-fevent 79 '#s(future-event 2 0 sync 1334779296905.428 [allocate memory] #f))
+            (indexed-fevent 80 '#s(future-event 2 0 result 1334779296905.434 #f #f))
+            (indexed-fevent 81 '#s(future-event 2 2 result 1334779296905.447 #f #f))
+            (indexed-fevent 82 '#s(future-event 2 2 sync 1334779296905.743 #f #f))
+            (indexed-fevent 83 '#s(future-event 2 0 sync 1334779296912.538 [allocate memory] #f))
+            (indexed-fevent 84 '#s(future-event 2 0 result 1334779296912.547 #f #f))
+            (indexed-fevent 85 '#s(future-event 2 2 result 1334779296912.564 #f #f))
+            (indexed-fevent 86 '#s(future-event 2 2 sync 1334779296912.625 #f #f))
+            (indexed-fevent 87 '#s(future-event 2 0 sync 1334779296916.094 [allocate memory] #f))
+            (indexed-fevent 88 '#s(future-event 2 0 result 1334779296916.1 #f #f))
+            (indexed-fevent 89 '#s(future-event 2 2 result 1334779296916.108 #f #f))
+            (indexed-fevent 90 '#s(future-event 2 2 sync 1334779296916.243 #f #f))
+            (indexed-fevent 91 '#s(future-event 2 0 sync 1334779296927.233 [allocate memory] #f))
+            (indexed-fevent 92 '#s(future-event 2 0 result 1334779296927.242 #f #f))
+            (indexed-fevent 93 '#s(future-event 2 2 result 1334779296927.262 #f #f))
+            (indexed-fevent 94 '#s(future-event 2 2 sync 1334779296927.59 #f #f))
+            (indexed-fevent 95 '#s(future-event 2 0 sync 1334779296934.603 [allocate memory] #f))
+            (indexed-fevent 96 '#s(future-event 2 0 result 1334779296934.612 #f #f))
+            (indexed-fevent 97 '#s(future-event 2 2 result 1334779296934.655 #f #f))
+            (indexed-fevent 98 '#s(future-event 2 2 sync 1334779296934.72 #f #f))
+            (indexed-fevent 99 '#s(future-event 2 0 sync 1334779296938.773 [allocate memory] #f))
+            ))
+]
+
+@interaction-eval-show[
+    #:eval future-eval 
+    (build-timeline-bmp-from-log better-log #:max-width 600 #:max-height 300)
+]
+
+The problem is that most every arithmetic operation in this example 
+produces an inexact number whose storage must be allocated.  While some allocation 
+can safely be performed exclusively without the aid of the runtime thread, especially 
+frequent allocation requires synchronized operations which defeat any performance 
+improvement.
 
 By using @tech{flonum}-specific operations (see
-@secref["fixnums+flonums"]), we can re-write @racket[mandelbot] to use
+@secref["fixnums+flonums"]), we can re-write @racket[mandelbrot] to use
 much less allocation:
+
+@interaction-eval[
+    #:eval future-eval 
+    (define good-log 
+      (list (indexed-fevent 0 '#s(future-event #f 0 create 1334778395768.733 #f 3))
+            (indexed-fevent 1 '#s(future-event 3 2 start-work 1334778395768.771 #f #f))
+            (indexed-fevent 2 '#s(future-event 3 2 complete 1334778395864.648 #f #f))
+            (indexed-fevent 3 '#s(future-event 3 2 end-work 1334778395864.652 #f #f))
+            ))
+]
 
 @racketblock[
 (define (mandelbrot iterations x y n)
@@ -145,42 +450,23 @@ much less allocation:
 This conversion can speed @racket[mandelbrot] by a factor of 8, even
 in sequential mode, but avoiding allocation also allows
 @racket[mandelbrot] to run usefully faster in parallel.
+Executing this program yields the following in the visualizer: 
+
+@interaction-eval-show[
+    #:eval future-eval 
+    (build-timeline-bmp-from-log good-log 
+                                 #:max-width 600 
+                                 #:max-height 300)
+]
+
+Notice that only one green bar is shown here because one of the 
+mandelbrot computations is not being evaluated by a future (on 
+the runtime thread).
 
 As a general guideline, any operation that is inlined by the
 @tech{JIT} compiler runs safely in parallel, while other operations
 that are not inlined (including all operations if the JIT compiler is
-disabled) are considered unsafe. The @exec{mzc} decompiler tool
+disabled) are considered unsafe. The @exec{raco decompile} tool
 annotates operations that can be inlined by the compiler (see
 @secref[#:doc '(lib "scribblings/raco/raco.scrbl") "decompile"]), so the
 decompiler can be used to help predict parallel performance.
-
-To more directly report what is happening in a program that uses
-@racket[future] and @racket[touch], operations are logged when they
-suspend a computation or synchronize with the main computation.  For
-example, running the original @racket[mandelbrot] in a future produces
-the following output in the @racket['debug] log level:
-
-@margin-note{To see @racket['debug] logging output on stderr, set the
-@envvar{PLTSTDERR} environment variable to @tt{debug} or start
-@exec{racket} with @Flag{W} @tt{debug}.}
-
-@verbatim[#:indent 2]|{
-  future 1, process 1: BLOCKING on process 0; time: ....
-  ....
-  future 1, process 0: HANDLING: *; time: ....
-}|
-
-The messages indicate which internal future-running task became
-blocked on an unsafe operation, the time it blocked (in terms of
-@racket[current-inexact-miliseconds]), and the operation that caused
-the computation it to block.
-
-The first revision to @racket[mandelbrot] avoids suspending at
-@racket[*], but produces many log entries of the form
-
-@verbatim[#:indent 2]|{
-  future 1, process 0: synchronizing: [allocate memory]; time: ....
-}|
-
-The @tt{[allocate memory]} part of the message indicates that
-synchronization was needed for memory allocation.

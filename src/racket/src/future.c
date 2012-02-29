@@ -39,7 +39,7 @@ Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *futures_enabled(int argc, Scheme_Object *argv[])
 {
-#ifdef MZ_USE_FUTURES 
+#ifdef MZ_USE_FUTURESRACKET  
   return scheme_true;
 #else 
   return scheme_false;
@@ -312,6 +312,7 @@ static int capture_future_continuation(struct Scheme_Future_State *fs, future_t 
 #define FUTURE_RUNSTACK_SIZE 2000
 
 #define FEVENT_BUFFER_SIZE    512
+#define NO_FUTURE_ID -1
 
 enum {
   FEVENT_CREATE,
@@ -589,6 +590,7 @@ void futures_init(void)
   rt_fts->is_runtime_thread = 1;
   rt_fts->gen0_size = 1;
   scheme_future_thread_state = rt_fts;
+  rt_fts->thread = scheme_current_thread;
 
   REGISTER_SO(fs->future_queue);
   REGISTER_SO(fs->future_queue_end);
@@ -617,7 +619,7 @@ void futures_init(void)
   syms[FEVENT_HANDLE_RTCALL] = sym;
 
   sym = scheme_intern_symbol("future-event");
-  stype = scheme_lookup_prefab_type(sym, 5);
+  stype = scheme_lookup_prefab_type(sym, 6);
   fs->fevent_prefab = stype;
 
   init_fevent(&fs->runtime_fevents);
@@ -968,8 +970,8 @@ static void free_fevent(Fevent_Buffer *b)
   }
 }
 
-static void record_fevent(int what, int fid) XFORM_SKIP_PROC
-/* call with the lock or in the runtime thread */
+static void record_fevent_with_data(int what, int fid, int data) 
+  XFORM_SKIP_PROC 
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   Fevent_Buffer *b;
@@ -985,12 +987,19 @@ static void record_fevent(int what, int fid) XFORM_SKIP_PROC
   b->a[b->pos].timestamp = get_future_timestamp();
   b->a[b->pos].what = what;
   b->a[b->pos].fid = fid;
+  b->a[b->pos].data = data;
 
   b->pos++;
   if (b->pos == FEVENT_BUFFER_SIZE) {
     b->overflow = 1;
     b->pos = 0;
   }
+}
+
+static void record_fevent(int what, int fid) XFORM_SKIP_PROC
+/* call with the lock or in the runtime thread */
+{
+  record_fevent_with_data(what, fid, 0);  
 }
 
 static void init_traversal(Fevent_Buffer *b)
@@ -1010,18 +1019,19 @@ static void end_traversal(Fevent_Buffer *b)
   b->pos = 0;
 }
 
-static void log_future_event(Scheme_Future_State *fs,
-                             const char *msg_str,
-                             const char *extra_str,
-                             int which,
-                             int what,
-                             double timestamp,
-                             int fid)
+static void log_future_event_with_data(Scheme_Future_State *fs, 
+                                         const char *msg_str, 
+                                         const char *extra_str, 
+                                         int which, 
+                                         int what, 
+                                         double timestamp, 
+                                         int fid, 
+                                         int user_data) 
 {
   Scheme_Object *data, *v;
 
   data = scheme_make_blank_prefab_struct_instance(fs->fevent_prefab);
-  if (what == FEVENT_MISSING)
+  if (what == FEVENT_MISSING || fid == NO_FUTURE_ID)
     ((Scheme_Structure *)data)->slots[0] = scheme_false;
   else
     ((Scheme_Structure *)data)->slots[0] = scheme_make_integer(fid);
@@ -1034,11 +1044,14 @@ static void log_future_event(Scheme_Future_State *fs,
   ((Scheme_Structure *)data)->slots[2] = v;
   v = scheme_make_double(timestamp);
   ((Scheme_Structure *)data)->slots[3] = v;
-  if (what == FEVENT_HANDLE_RTCALL) {
+  if (what == FEVENT_HANDLE_RTCALL || what == FEVENT_HANDLE_RTCALL_ATOMIC) {
     v = scheme_intern_symbol(extra_str);
     ((Scheme_Structure *)data)->slots[4] = v;
   } else 
     ((Scheme_Structure *)data)->slots[4] = scheme_false;
+
+  /* User data (target fid for creates, alloc amount for allocation */
+  ((Scheme_Structure *)data)->slots[5] = scheme_make_integer(user_data);
   
   scheme_log_w_data(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
                     data,                 
@@ -1048,6 +1061,25 @@ static void log_future_event(Scheme_Future_State *fs,
                     fevent_long_strs[what],
                     extra_str,
                     timestamp);
+
+}
+
+static void log_future_event(Scheme_Future_State *fs,
+                             const char *msg_str,
+                             const char *extra_str,
+                             int which,
+                             int what,
+                             double timestamp,
+                             int fid)
+{
+  log_future_event_with_data(fs, 
+                               msg_str, 
+                               extra_str, 
+                               which, 
+                               what, 
+                               timestamp, 
+                               fid, 
+                               0);
 }
 
 static void log_overflow_event(Scheme_Future_State *fs, int which, double timestamp)
@@ -1135,13 +1167,14 @@ static void flush_future_logs(Scheme_Future_State *fs)
       if (!min_b)
         break;
 
-      log_future_event(fs,
+      log_future_event_with_data(fs,
                        "future %d, process %d: %s%s; time: %f",
                        "",
                        min_which, 
                        min_b->a[min_b->i].what, 
                        min_b->a[min_b->i].timestamp, 
-                       min_b->a[min_b->i].fid);
+                       min_b->a[min_b->i].fid, 
+                       min_b->a[min_b->i].data);
 
       --min_b->count;
       min_b->i++;
@@ -1176,7 +1209,7 @@ void scheme_wrong_contract_from_ft(const char *who, const char *expected_type, i
     scheme_wrong_contract(who, expected_type, what, argc, argv);
 
 
-static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue)
+static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue, future_t *cur_ft)
 /* Called in runtime thread --- as atomic on behalf of a future thread
    if `lambda' is known to be a thunk */ 
 {
@@ -1225,7 +1258,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue)
   mzrt_mutex_lock(fs->future_mutex);
   futureid = ++fs->next_futureid;
   ft->id = futureid;
-  record_fevent(FEVENT_CREATE, futureid);
+  record_fevent_with_data(FEVENT_CREATE, (cur_ft ? cur_ft->id : NO_FUTURE_ID), futureid);
   if (enqueue) { 
     if (ft->status != PENDING_OVERSIZE)
       enqueue_future(fs, ft);
@@ -1244,18 +1277,24 @@ int scheme_can_apply_native_in_future(Scheme_Object *proc)
   return (((Scheme_Native_Closure *)proc)->code->max_let_depth < FUTURE_RUNSTACK_SIZE * sizeof(void*));
 }
 
-static Scheme_Object *do_make_future(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_make_future(int argc, Scheme_Object *argv[], future_t *cur_ft)
 {
+  Scheme_Future_State *fs;
   scheme_check_proc_arity("future", 0, 0, argc, argv);
-  return make_future(argv[0], 1);
+  
+  fs = scheme_future_state;
+  flush_future_logs(fs);
+
+  return make_future(argv[0], 1, cur_ft);
 }
 
 Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   XFORM_SKIP_PROC /* can be called from future thread */
 {
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
-  if (fts->is_runtime_thread)
-    return do_make_future(argc, argv);
+  if (fts->is_runtime_thread) {
+    return do_make_future(argc, argv, (scheme_current_thread ? scheme_current_thread->current_ft : NULL));
+  }
   else {
     Scheme_Object *proc = argv[0];
 #ifdef MZ_PRECISE_GC
@@ -1267,6 +1306,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
       future_t *ft;
       ft = MALLOC_ONE_TAGGED(future_t);
       if (ft) {
+        future_t *cur_ft = scheme_current_thread->current_ft;
         Scheme_Future_State *fs = scheme_future_state;
 
         ft->so.type = scheme_future_type;
@@ -1276,7 +1316,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
 
         mzrt_mutex_lock(fs->future_mutex);
         ft->id = ++fs->next_futureid;
-        record_fevent(FEVENT_CREATE, ft->id);
+        record_fevent_with_data(FEVENT_CREATE, (cur_ft ? cur_ft->id : NO_FUTURE_ID), ft->id);
         enqueue_future(fs, ft);
         mzrt_mutex_unlock(fs->future_mutex);
 
@@ -1301,9 +1341,11 @@ static Scheme_Object *would_be_future(int argc, Scheme_Object *argv[])
   /* Called in runtime thread */
 {
   future_t *ft;
+  Scheme_Future_Thread_State *fts;
   scheme_check_proc_arity("would-be-future", 0, 0, argc, argv);
-  
-  ft = (future_t*)make_future(argv[0], 0); 
+  fts = scheme_future_thread_state;  
+
+  ft = (future_t*)make_future(argv[0], 0, (fts->thread ? fts->thread->current_ft : NULL));
   ft->in_tracing_mode = 1;
   ft->fts = scheme_future_thread_state;
 
@@ -1779,10 +1821,14 @@ static Scheme_Object *shallower_apply_future_lw_k(void)
 static int future_in_runtime(Scheme_Future_State *fs, future_t * volatile ft, int what)
 {
   mz_jmp_buf newbuf, * volatile savebuf;
-  Scheme_Thread *p = scheme_current_thread;  
+  Scheme_Thread *p = scheme_current_thread;
   Scheme_Object * volatile retval;
   future_t * volatile old_ft;
   int done;
+
+  //FUTURE_ASSERT((!scheme_future_thread_state && !p->current_ft) || scheme_future_thread_state);
+  //FUTURE_ASSERT(scheme_future_thread_state->thread == p);
+  //FUTURE_ASSERT(scheme_future_thread_state->thread->current_ft == p->current_ft);
 
   old_ft = p->current_ft;
   p->current_ft = ft;
@@ -1990,17 +2036,20 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   if (fts->is_runtime_thread) {
     future_t *ft;
+    future_t *targ_ft;
     if (fts->thread 
         && (ft = fts->thread->current_ft) 
         && ft->in_tracing_mode) { 
+      targ_ft = (future_t*)argv[0];
       Scheme_Future_State *fs = scheme_future_state;
-      log_future_event( fs,
-                        "future %d, process %d: %s: %s; time: %f",
-                        "touch",
-                        -1, 
-                        FEVENT_RTCALL_TOUCH, 
-                        get_future_timestamp(),
-                        ft->id);
+      log_future_event_with_data( fs,
+                                    "future %d, process %d: %s: %s; time: %f",
+                                    "touch",
+                                    -1, 
+                                    FEVENT_RTCALL_TOUCH, 
+                                    get_future_timestamp(),
+                                    ft->id, 
+                                    targ_ft->id);
     }
       
     return general_touch(argc, argv);
@@ -2658,6 +2707,8 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   runtime thread so we can log all of its primitive applications). */ 
 {
   future_t *future;
+  future_t *targ_future;
+  Scheme_Object **prim_argv;
   Scheme_Future_State *fs = scheme_future_state;
   void *storage[4];
   int insist_to_suspend, prefer_to_suspend, fid;
@@ -2836,6 +2887,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
     scheme_future_longjmp(*scheme_current_thread->error_buf, 1);
   } else {
     FUTURE_ASSERT(future->status == RUNNING);
+    record_fevent(FEVENT_START_WORK, fid);
   }
 }
 
@@ -3270,14 +3322,25 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
 
     flush_future_logs(fs);
    
-    /* use log_future_event so we can include `str' in the message: */
-    log_future_event(fs,
-                     "future %d, process %d: %s: %s; time: %f",
-                     src,
-                     -1, 
-                     (future->rt_prim_is_atomic ? FEVENT_HANDLE_RTCALL_ATOMIC : FEVENT_HANDLE_RTCALL),
-                     get_future_timestamp(),
-                     future->id);
+    /* use lg_future_event so we can include `str' in the message: */
+    if (future->prim_protocol == SIG_ALLOC) {
+      log_future_event_with_data(fs, 
+                                  "future %d, process %d: %s: %s; time: %f", 
+                                  src, 
+                                  -1, 
+                                  (future->rt_prim_is_atomic ? FEVENT_HANDLE_RTCALL_ATOMIC : FEVENT_HANDLE_RTCALL), 
+                                  get_future_timestamp(), 
+                                  future->id, 
+                                  future->arg_i0);
+    } else {
+      log_future_event(fs,
+                      "future %d, process %d: %s: %s; time: %f",
+                      src,
+                      -1, 
+                      (future->rt_prim_is_atomic ? FEVENT_HANDLE_RTCALL_ATOMIC : FEVENT_HANDLE_RTCALL),
+                      get_future_timestamp(),
+                      future->id);
+    }
   }
 
   if (((future->source_type == FSRC_RATOR)
@@ -3336,7 +3399,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
       {
         Scheme_Object *s = future->arg_s1; 
         future->arg_s1 = NULL;
-        s = make_future(s, 1);
+        s = make_future(s, 1, future);
         future->retval_s = s;
         break;
       }
