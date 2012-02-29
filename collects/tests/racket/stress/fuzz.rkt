@@ -46,8 +46,12 @@
   (random-seed global-seed)
   (let loop ()
     (cond [file (run file seed0)]
-          [dir (for ([p (in-directory dir)]
-                     #:when (regexp-match #rx"\\.zo" p))
-                 (run p seed0))]
+          [dir 
+	   (define files (sort (for/list ([f (in-directory dir)]
+					  #:when (regexp-match #rx"\\.zo" f))
+			         f)
+			       #:key path->string
+			       string<?))
+	   (for ([p files]) (run p seed0))]
           [else (printf "Nothing to do.\n")])
     (when forever? (loop))))
