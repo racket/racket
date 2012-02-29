@@ -19,8 +19,8 @@ and the @tt{examples} subdirectory in the @tt{redex} collection.
 
 @table-of-contents[]
 
-@include-section["private/tut.scrbl"]
-@include-section["private/ref.scrbl"]
+@include-section["scribblings/tut.scrbl"]
+@include-section["scribblings/ref.scrbl"]
 
 @index-section[]
 
