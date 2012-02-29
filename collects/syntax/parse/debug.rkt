@@ -40,7 +40,7 @@
                        [(depth ...) (map attr-depth attrs)])
            #'(let ([fh (lambda (fs) fs)])
                (app-argu parser x x (ps-empty x x) null fh fh
-                         (lambda (fh cp . attr-values)
+                         (lambda (fh . attr-values)
                            (map vector '(name ...) '(depth ...) attr-values))
                          argu)))))]))
 

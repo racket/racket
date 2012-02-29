@@ -74,7 +74,7 @@
                   (make-keyword-procedure
                    (lambda (kws2 kwargs2 x cx pr es fh cp success . rest2)
                      (let-values ([(kws kwargs) (merge2 kws1 kws2 kwargs1 kwargs2)])
-                       (keyword-apply kws kwargs x cx pr es fh cp success
+                       (keyword-apply parser kws kwargs x cx pr es fh cp success
                                       (append rest1 rest2)))))]
                  [ctor
                   (cond [(reified-syntax-class? r)

@@ -75,7 +75,7 @@
                             (integrate (quote-syntax predicate) 'description)))
                 (define (parser x cx pr es fh0 cp0 success)
                   (if (predicate x)
-                      (success fh0 cp0)
+                      (success fh0)
                       (let ([es (cons (expect:thing 'description #t) es)])
                         (fh0 (failure pr es)))))))]))
 
@@ -178,6 +178,8 @@ Parsing protocol:
 x is term to parse, usually syntax but can be pair, empty in cdr patterns
 cx is most recent syntax object:
   if x must be coerced to syntax, use cx as lexctx and src
+
+success-proc : fail-handler <???> attr-value ... -> Ans
 
 Usually sub-patterns processed in tail position,
 but *can* do non-tail calls for:
@@ -329,7 +331,7 @@ Conventions:
             (reorder-iattrs (wash-sattrs #'relsattrs)
                             (wash-iattrs #'iattrs))])
        (with-syntax ([(#s(attr name _ _) ...) reliattrs])
-         #'(success fail-handler cut-prompt also ... (attribute name) ...)))]))
+         #'(success fail-handler also ... (attribute name) ...)))]))
 
 ;; ----
 
@@ -426,11 +428,10 @@ Conventions:
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
               #'(app-argu parser x cx pr es fail-handler cut-prompt
-                          (lambda (fh cp av ...)
+                          (lambda (fh av ...)
                             (let-attributes (name-attr ...)
                               (let-attributes* ((nested-a ...) (av ...))
-                                (with ([fail-handler fh]
-                                       [cut-prompt cp])
+                                (with ([fail-handler fh])
                                   k))))
                           argu)
               ;; The commit protocol
@@ -439,7 +440,7 @@ Conventions:
                               (with ([fail-handler (lambda (fs) (values fs (let ([av #f]) av) ...))])
                                 (with ([cut-prompt fail-handler])
                                   (app-argu parser x cx pr es fail-handler cut-prompt
-                                            (lambda (fh cp av ...) (values #f av ...))
+                                            (lambda (fh av ...) (values #f av ...))
                                             argu)))])
                   (if fs
                       (fail fs)
@@ -454,11 +455,10 @@ Conventions:
           (with-syntax ([arity (arguments->arity (syntax->datum #'argu))])
             #'(let ([parser (reflect-parser obj 'arity 'attr-decls #f)])
                 (app-argu parser x cx pr es fail-handler cut-prompt
-                          (lambda (fh cp . result)
+                          (lambda (fh . result)
                             (let-attributes (name-attr ...)
                               (let/unpack ((nested-a ...) result)
-                                (with ([fail-handler fh]
-                                       [cut-prompt cp])
+                                (with ([fail-handler fh])
                                   k))))
                           argu))))]
        [#s(pat:datum attrs datum)
@@ -484,10 +484,9 @@ Conventions:
        [#s(pat:or (a ...) (subpattern ...))
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (fh cp id ...)
+                   (lambda (fh id ...)
                      (let-attributes ([a id] ...)
-                       (with ([fail-handler fh]
-                              [cut-prompt cp])
+                       (with ([fail-handler fh])
                          k)))])
               (try (parse:S x cx subpattern pr es
                             (disjunct subpattern success () (id ...)))
@@ -583,7 +582,7 @@ Conventions:
          #`(let ([alt-sub-id (attribute sub-id)] ...)
              (let ([id #f] ...)
                (let ([sub-id alt-sub-id] ...)
-                 (success fail-handler cut-prompt pre ... id ...))))))]))
+                 (success fail-handler pre ... id ...))))))]))
 
 ;; (disjunct/sides clauses success (pre:expr ...) (id:id ...)) : expr[Ans]
 (define-syntax (disjunct/sides stx)
@@ -594,7 +593,7 @@ Conventions:
          #`(let ([alt-sub-id (attribute sub-id)] ...)
              (let ([id #f] ...)
                (let ([sub-id alt-sub-id] ...)
-                 (success fail-handler cut-prompt pre ... id ...))))))]))
+                 (success fail-handler pre ... id ...))))))]))
 
 ;; (parse:A x cx A-pattern pr es k) : expr[Ans]
 ;; In k: attrs(A-pattern) are bound.
@@ -680,11 +679,10 @@ Conventions:
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
               #`(app-argu parser x cx pr es fail-handler cut-prompt
-                          (lambda (fh cp rest-x rest-cx rest-pr av ...)
+                          (lambda (fh rest-x rest-cx rest-pr av ...)
                             (let-attributes (name-attr ...)
                               (let-attributes* ((nested-a ...) (av ...))
-                                (with ([fail-handler fh]
-                                       [cut-prompt cp])
+                                (with ([fail-handler fh])
                                   k))))
                           argu)
               ;; The commit protocol
@@ -693,7 +691,7 @@ Conventions:
                               (with ([fail-handler (lambda (fs) (values fs #f #f #f (let ([av #f]) av) ...))])
                                 (with ([cut-prompt fail-handler])
                                   (app-argu parser x cx pr es fail-handler cut-prompt
-                                            (lambda (fh cp rest-x rest-cx rest-pr av ...)
+                                            (lambda (fh rest-x rest-cx rest-pr av ...)
                                               (values #f rest-x rest-cx rest-pr av ...))
                                             argu)))])
                   (if fs
@@ -710,12 +708,11 @@ Conventions:
           (with-syntax ([arity (arguments->arity (syntax->datum #'argu))])
             #'(let ([parser (reflect-parser obj 'arity 'attr-decls #t)])
                 (app-argu parser x cx pr es fail-handler cut-prompt
-                          (lambda (fh cp rest-x rest-cx rest-pr . result)
+                          (lambda (fh rest-x rest-cx rest-pr . result)
                             (let-attributes (name-attr ...)
                               (let/unpack ((nested-a ...) result)
-                                 (with ([fail-handler fh]
-                                       [cut-prompt cp])
-                                  k))))
+                                 (with ([fail-handler fh])
+                                   k))))
                           argu))))]
        [#s(hpat:and (a ...) head single)
         #`(let ([cx0 cx])
@@ -725,10 +722,9 @@ Conventions:
        [#s(hpat:or (a ...) (subpattern ...))
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (fh cp rest-x rest-cx rest-pr id ...)
+                   (lambda (fh rest-x rest-cx rest-pr id ...)
                      (let-attributes ([a id] ...)
-                       (with ([fail-handler fh]
-                              [cut-prompt cp])
+                       (with ([fail-handler fh])
                          k)))])
               (try (parse:H x cx rest-x rest-cx rest-pr subpattern pr es
                             (disjunct subpattern success
@@ -743,14 +739,12 @@ Conventions:
        [#s(hpat:optional (a ...) pattern defaults)
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (fh cp rest-x rest-cx rest-pr id ...)
+                   (lambda (fh rest-x rest-cx rest-pr id ...)
                      (let-attributes ([a id] ...)
-                       (with ([fail-handler fh]
-                              [cut-prompt cp])
+                       (with ([fail-handler fh])
                          k)))])
               (try (parse:H x cx rest-x rest-cx rest-pr pattern pr es 
-                            (success fail-handler cut-prompt
-                                     rest-x rest-cx rest-pr (attribute id) ...))
+                            (success fail-handler rest-x rest-cx rest-pr (attribute id) ...))
                    (let ([rest-x x]
                          [rest-cx cx]
                          [rest-pr pr])
@@ -858,12 +852,11 @@ Conventions:
                       (equal? (syntax->datum #'tail) '#s(pat:datum () ()))])
          (define/with-syntax alt-map #'((id . alt-id) ...))
          (define/with-syntax loop-k
-           #'(dots-loop dx* dcx* loop-pr* fail-handler cut-prompt rel-rep ... alt-id ...))
+           #'(dots-loop dx* dcx* loop-pr* fail-handler rel-rep ... alt-id ...))
          #`(let ()
              ;; dots-loop : stx progress rel-rep ... alt-id ... -> Ans
-             (define (dots-loop dx dcx loop-pr fh cp rel-rep ... alt-id ...)
-               (with ([fail-handler fh]
-                      [cut-prompt cp])
+             (define (dots-loop dx dcx loop-pr fh rel-rep ... alt-id ...)
+               (with ([fail-handler fh])
                  (try-or-pair/null-check tail-pattern-is-null? dx dcx loop-pr es
                    (try (parse:EH dx dcx loop-pr head-repc dx* dcx* loop-pr* alt-map head-rep
                                   head es loop-k)
@@ -877,7 +870,7 @@ Conventions:
                             (parse:S dx dcx tail loop-pr es k))]))))
              (let ([rel-rep 0] ...
                    [alt-id (rep:initial-value attr-repc)] ...)
-               (dots-loop x cx pr fail-handler cut-prompt rel-rep ... alt-id ...)))))]))
+               (dots-loop x cx pr fail-handler rel-rep ... alt-id ...)))))]))
 
 ;; (try-or-pair/null-check bool x cx es pr pair-alt maybe-null-alt)
 (define-syntax try-or-pair/null-check
