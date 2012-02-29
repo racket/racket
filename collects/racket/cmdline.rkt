@@ -470,7 +470,8 @@
                           (let ([s (if (= 1 (length flags))
                                      (format "the ~a option can only be specified once" (car flags))
                                      (format "only one instance of one option from ~a is allowed" flags))])
-                            (if orig-multi
+                            (if (and orig-multi
+                                     (not (equal? flag orig-multi)))
                               (format "~a; note that ~s is shorthand for ~s, in contrast to ~s"
                                       s
                                       orig-multi
