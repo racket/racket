@@ -1118,6 +1118,12 @@
    'contract-arrow4
    '((contract (integer? . -> . integer?) (lambda (x) #f) 'pos 'neg) 1))
 
+  (test/neg-blame
+   'contract-arrow-arity1
+   '((contract (-> number? number? number?)
+               (λ (x . r) x)
+              'pos 'neg) 
+    1))
 
   (test/spec-passed
    'contract-arrow-any1

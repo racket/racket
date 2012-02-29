@@ -390,7 +390,7 @@ v4 todo:
            (λ (kwds kwd-args . args)
              (define args-len (length args))
              (unless (valid-number-of-args? args)
-               (raise-blame-error blame val
+               (raise-blame-error (blame-swap blame) val
                                   "received ~a argument~a, expected ~a"
                                   args-len (if (= args-len 1) "" "s") arity-string))
              
@@ -398,12 +398,12 @@ v4 todo:
              ;; (since the keyword lists are sorted)
              (for ([req-kwd (in-list req-kwd)])
                (unless (memq req-kwd kwds)
-                 (raise-blame-error blame val
+                 (raise-blame-error (blame-swap blame) val
                                     "expected keyword argument ~a"
                                     req-kwd)))
              (for ([k (in-list kwds)])
                (unless (memq k all-kwds)
-                 (raise-blame-error blame val
+                 (raise-blame-error (blame-swap blame) val
                                     "received unexpected keyword argument ~a"
                                     k)))
              (keyword-apply kwd-lambda kwds kwd-args args))))
@@ -412,7 +412,7 @@ v4 todo:
            (λ args
              (unless (valid-number-of-args? args)
                (define args-len (length args))
-               (raise-blame-error blame val
+               (raise-blame-error (blame-swap blame) val
                                   "received ~a argument~a, expected ~a"
                                   args-len (if (= args-len 1) "" "s") arity-string))
              (apply basic-lambda args))
