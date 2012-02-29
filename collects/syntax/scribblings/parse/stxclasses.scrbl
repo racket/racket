@@ -171,8 +171,7 @@ specifying side conditions. The grammar for pattern directives
 follows:
 
 @racketgrammar[pattern-directive
-               (code:line #:declare pattern-id syntax-class-id)
-               (code:line #:declare pattern-id (syntax-class-id arg ...))
+               (code:line #:declare pattern-id stxclass maybe-role)
                (code:line #:with syntax-pattern expr)
                (code:line #:attr attr-arity-decl expr)
                (code:line #:fail-when condition-expr message-expr)
@@ -180,18 +179,20 @@ follows:
                (code:line #:when condition-expr)
                (code:line #:do [def-or-expr ...])]
 
-@specsubform[(code:line #:declare pvar-id syntax-class-id)]
-@specsubform[(code:line #:declare pvar-id (syntax-class-id arg ...))]{
+@specsubform/subs[(code:line #:declare pvar-id stxclass maybe-role)
+                  ([stxclass syntax-class-id
+                             (syntax-class-id arg ...)]
+                   [maybe-role (code:line)
+                               (code:line #:role role-expr)])]{
 
-The first form is equivalent to using the
-@svar[pvar-id:syntax-class-id] form in the pattern (but it is illegal
-to use both for the same pattern variable).
-
-The second form allows the use of parameterized syntax classes, which
-cannot be expressed using the ``colon'' notation. The @racket[arg]s
-are evaluated outside the scope of any of the attribute bindings from
-pattern that the @racket[#:declare] directive applies to. Keyword
-arguments are supported, using the same syntax as in @racket[#%app].
+Associates @racket[pvar-id] with a syntax class and possibly a role,
+equivalent to replacing each occurrence of @racket[pvar-id] in the
+pattern with @racket[(~var pvar-id stxclass maybe-role)].
+The second form of @racket[stxclass] allows the use of parameterized
+syntax classes, which cannot be expressed using the ``colon''
+notation. The @racket[arg]s are evaluated in the scope where the
+@racket[pvar-id] occurs in the pattern. Keyword arguments are
+supported, using the same syntax as in @racket[#%app].
 }
 
 @specsubform[(code:line #:with syntax-pattern stx-expr)]{

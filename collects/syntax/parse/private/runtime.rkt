@@ -211,8 +211,8 @@ residual.rkt.
                                            (length (syntax->list #'(parg ...)))
                                            (syntax->datum #'(kw ...)))])
          (with-syntax ([parser (stxclass-parser sc)])
-           #'(lambda (x cx pr es fh cp success)
-               (app-argu parser x cx pr es fh cp success argu)))))]))
+           #'(lambda (x cx pr es fh cp rl success)
+               (app-argu parser x cx pr es fh cp rl success argu)))))]))
 
 (define-syntax (app-argu stx)
   (syntax-case stx ()

@@ -34,7 +34,7 @@
            description)
          (define parser
            (let ([permute (mk-permute '(a.name ...))])
-             (lambda (x cx pr es fh _cp success param ...)
+             (lambda (x cx pr es fh _cp rl success param ...)
                (let ([stx (datum->syntax cx x cx)])
                  (let ([result
                         (let/ec escape
@@ -50,7 +50,7 @@
                      ((error)
                       (let ([es
                              (list* (expect:message (cadr result))
-                                    (expect:thing (get-description param ...) #f)
+                                    (expect:thing (get-description param ...) #f rl)
                                     es)])
                         (fh (failure pr es))))))))))
          (define-syntax name

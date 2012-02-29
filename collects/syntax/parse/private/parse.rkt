@@ -73,10 +73,10 @@
                             #f
                             '#s(options #t #t)
                             (integrate (quote-syntax predicate) 'description)))
-                (define (parser x cx pr es fh0 cp0 success)
+                (define (parser x cx pr es fh0 cp0 rl success)
                   (if (predicate x)
                       (success fh0)
-                      (let ([es (cons (expect:thing 'description #t) es)])
+                      (let ([es (cons (expect:thing 'description #t rl) es)])
                         (fh0 (failure pr es)))))))]))
 
 (define-syntax (parser/rhs stx)
@@ -163,39 +163,43 @@
 ;; ============================================================
 
 #|
-Parsing protocol:
+Parsing protocols:
 
-(parse:* <*> * progress-var expectstack-var success-expr) : Ans
+(parse:<X> <X-args> pr es success-expr) : Ans
 
-*-stxclass-parser
-  : stxish stx progress expectstack fail-handler cut-prompt success-proc arg ... -> Ans
+  <S-args> : x cx
+  <H-args> : x cx rest-x rest-cx rest-pr
+  <EH-args> : x cx ???
+  <A-args> : x cx
 
-<S> : x cx
-<H> : x cx rest-x rest-cx rest-pr
-<EH> : x cx ???
-<A> : x cx
+  x is term to parse, usually syntax but can be pair/null (stx-list?) in cdr patterns
+  cx is most recent syntax object: if x must be coerced to syntax, use cx as lexctx and src
+  pr, es are progress and expectstack, respectively
+  rest-x, rest-cx, rest-pr are variable names to bind in context of success-expr
 
-x is term to parse, usually syntax but can be pair, empty in cdr patterns
-cx is most recent syntax object:
-  if x must be coerced to syntax, use cx as lexctx and src
+(stxclass-parser x cx pr es fail-handler cut-prompt role success-proc arg ...) : Ans
 
-success-proc : fail-handler <???> attr-value ... -> Ans
+  success-proc:
+    for stxclass, is (fail-handler attr-value ... -> Ans)
+    for splicing-stxclass, is (fail-handler rest-x rest-cx rest-pr attr-value -> Ans)
+  fail-handler, cut-prompt : failure -> Ans
 
-Usually sub-patterns processed in tail position,
-but *can* do non-tail calls for:
+Fail-handler is normally represented with stxparam 'fail-handler', but must be
+threaded through stxclass calls (in through stxclass-parser, out through
+success-proc) to support backtracking. Cut-prompt is never changed within
+stxclass or within alternative, so no threading needed.
+
+Usually sub-patterns processed in tail position, but *can* do non-tail calls for:
   - ~commit
   - var of stxclass with ~commit
-(Also safe to keep normal tail-call protocol.)
+It is also safe to keep normal tail-call protocol and just adjust fail-handler.
 There is no real benefit to specializing ~commit, since it does not involve
 creating a success closure.
 
-|#
-
-#|
-Optimizations
+Some optimizations:
   - commit protocol for stxclasses (but not ~commit, no point)
-  - avoid choice point in (EH ... . ()) by eager pair check
-  - integrable stxclasses (identifier, keyword, expr)
+  - avoid continue-vs-end choice point in (EH ... . ()) by eager pair check
+  - integrable stxclasses, specialize ellipses of integrable stxclasses
 |#
 
 ;; ----
@@ -237,7 +241,7 @@ Conventions:
   - success : var (bound to success procedure)
   - k : expr
   - rest-x, rest-cx, rest-pr : id (to be bound)
-  - fh, cp : id (var)
+  - fh, cp, rl : id (var)
 |#
 
 ;; (parse:rhs rhs relsattrs (arg:id ...) get-description:id splicing?)
@@ -248,14 +252,15 @@ Conventions:
     [(parse:rhs #s(rhs _ _ transparent? _ variants (def ...)
                        #s(options commit? delimit-cut?) _integrate)
                 relsattrs formals splicing? description)
-     #'(lambda (x cx pr es fh0 cp0 success . formals)
+     #'(lambda (x cx pr es fh0 cp0 rl success . formals)
          def ...
          (#%expression
-          (with ([this-syntax x])
+          (with ([this-syntax x]
+                 [this-role rl])
             (syntax-parameterize ((this-context-syntax
                                    (syntax-rules ()
                                      [(tbs) (ps-context-syntax pr)])))
-              (let ([es (cons (expect:thing description 'transparent?) es)]
+              (let ([es (cons (expect:thing description 'transparent? rl) es)]
                     [pr (if 'transparent? pr (ps-add-opaque pr))])
                 (with ([fail-handler fh0]
                        [cut-prompt cp0])
@@ -416,10 +421,10 @@ Conventions:
             k)]
        [#s(pat:any _attrs)
         #'k]
-       [#s(pat:var _attrs name #f _ () _ _)
+       [#s(pat:var _attrs name #f _ () _ _ _)
         #'(let-attributes ([#s(attr name 0 #t) (datum->syntax cx x cx)])
             k)]
-       [#s(pat:var _attrs name parser argu (nested-a ...) attr-count commit?)
+       [#s(pat:var _attrs name parser argu (nested-a ...) attr-count commit? role)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)
@@ -427,7 +432,7 @@ Conventions:
                            #'())])
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
-              #'(app-argu parser x cx pr es fail-handler cut-prompt
+              #'(app-argu parser x cx pr es fail-handler cut-prompt role
                           (lambda (fh av ...)
                             (let-attributes (name-attr ...)
                               (let-attributes* ((nested-a ...) (av ...))
@@ -439,7 +444,7 @@ Conventions:
               #'(let-values ([(fs av ...)
                               (with ([fail-handler (lambda (fs) (values fs (let ([av #f]) av) ...))])
                                 (with ([cut-prompt fail-handler])
-                                  (app-argu parser x cx pr es fail-handler cut-prompt
+                                  (app-argu parser x cx pr es fail-handler cut-prompt role
                                             (lambda (fh av ...) (values #f av ...))
                                             argu)))])
                   (if fs
@@ -454,7 +459,7 @@ Conventions:
                            #'())])
           (with-syntax ([arity (arguments->arity (syntax->datum #'argu))])
             #'(let ([parser (reflect-parser obj 'arity 'attr-decls #f)])
-                (app-argu parser x cx pr es fail-handler cut-prompt
+                (app-argu parser x cx pr es fail-handler cut-prompt #f
                           (lambda (fh . result)
                             (let-attributes (name-attr ...)
                               (let/unpack ((nested-a ...) result)
@@ -543,8 +548,8 @@ Conventions:
                       [pr (ps-add-unpstruct pr)])
                   (parse:S datum scx subpattern pr es k))
                 (fail (failure pr es))))]
-       [#s(pat:describe attrs description transparent? pattern)
-        #`(let ([es (cons (expect:thing description transparent?) es)]
+       [#s(pat:describe attrs pattern description transparent? role)
+        #`(let ([es (cons (expect:thing description transparent? role) es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:S x cx pattern pr es k))]
        [#s(pat:delimit attrs pattern)
@@ -562,7 +567,7 @@ Conventions:
        [#s(pat:post attrs pattern)
         #`(let ([pr (ps-add-post pr)])
             (parse:S x cx pattern pr es k))]
-       [#s(pat:integrated _attrs name predicate description)
+       [#s(pat:integrated _attrs name predicate description role)
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
                            #'([#s(attr name 0 #t) x*])
@@ -570,7 +575,7 @@ Conventions:
           #'(let ([x* (datum->syntax cx x cx)])
               (if (predicate x*)
                   (let-attributes (name-attr ...) k)
-                  (let ([es (cons (expect:thing 'description #t) es)])
+                  (let ([es (cons (expect:thing 'description #t role) es)])
                     (fail (failure pr es))))))])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
@@ -663,13 +668,13 @@ Conventions:
   (syntax-case stx ()
     [(parse:H x cx rest-x rest-cx rest-pr head pr es k)
      (syntax-case #'head ()
-       [#s(hpat:describe _ description transparent? pattern)
-        #`(let ([es* (cons (expect:thing description transparent?) es)]
+       [#s(hpat:describe _ pattern description transparent? role)
+        #`(let ([es* (cons (expect:thing description transparent? role) es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:H x cx rest-x rest-cx rest-pr pattern pr es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
                        k)))]
-       [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit?)
+       [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit? role)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)
@@ -678,7 +683,7 @@ Conventions:
                            #'())])
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
-              #`(app-argu parser x cx pr es fail-handler cut-prompt
+              #`(app-argu parser x cx pr es fail-handler cut-prompt role
                           (lambda (fh rest-x rest-cx rest-pr av ...)
                             (let-attributes (name-attr ...)
                               (let-attributes* ((nested-a ...) (av ...))
@@ -690,7 +695,7 @@ Conventions:
               #'(let-values ([(fs rest-x rest-cx rest-pr av ...)
                               (with ([fail-handler (lambda (fs) (values fs #f #f #f (let ([av #f]) av) ...))])
                                 (with ([cut-prompt fail-handler])
-                                  (app-argu parser x cx pr es fail-handler cut-prompt
+                                  (app-argu parser x cx pr es fail-handler cut-prompt role
                                             (lambda (fh rest-x rest-cx rest-pr av ...)
                                               (values #f rest-x rest-cx rest-pr av ...))
                                             argu)))])
@@ -707,7 +712,7 @@ Conventions:
                            #'())])
           (with-syntax ([arity (arguments->arity (syntax->datum #'argu))])
             #'(let ([parser (reflect-parser obj 'arity 'attr-decls #t)])
-                (app-argu parser x cx pr es fail-handler cut-prompt
+                (app-argu parser x cx pr es fail-handler cut-prompt #f
                           (lambda (fh rest-x rest-cx rest-pr . result)
                             (let-attributes (name-attr ...)
                               (let/unpack ((nested-a ...) result)
@@ -803,19 +808,19 @@ Conventions:
     ;; == Specialized cases
     ;; -- (x ... . ())
     [(parse:dots x cx (#s(ehpat (attr0)
-                                #s(pat:var _attrs name #f _ () _ _)
+                                #s(pat:var _attrs name #f _ () _ _ _)
                                 #f))
                  #s(pat:datum () ()) pr es k)
-     #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es void #f)])
+     #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es void #f #f)])
          (case status
            ((ok) (let-attributes ([attr0 result]) k))
            (else (fail result))))]
     ;; -- (x:sc ... . ()) where sc is an integrable stxclass like id or expr
     [(parse:dots x cx (#s(ehpat (attr0)
-                                #s(pat:integrated _attrs _name pred? desc)
+                                #s(pat:integrated _attrs _name pred? desc role)
                                 #f))
                  #s(pat:datum () ()) pr es k)
-     #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es pred? desc)])
+     #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es pred? desc role)])
          (case status
            ((ok) (let-attributes ([attr0 result]) k))
            (else (fail result))))]

@@ -37,3 +37,4 @@
 (define-keyword ~post)
 (define-keyword ~eh-var)
 (define-keyword ~peek)
+(define-keyword ~peek-not)

@@ -38,8 +38,8 @@ means specifically @tech{@Spattern}.
                  pvar-id:syntax-class-id
                  literal-id
                  (@#,ref[~var s-] id)
-                 (@#,ref[~var s+] id syntax-class-id)
-                 (@#,ref[~var s+] id (syntax-class-id arg ...))
+                 (@#,ref[~var s+] id syntax-class-id maybe-role)
+                 (@#,ref[~var s+] id (syntax-class-id arg ...) maybe-role)
                  (~literal literal-id)
                  atomic-datum
                  (~datum datum)
@@ -54,7 +54,7 @@ means specifically @tech{@Spattern}.
                  #s(prefab-struct-key (unsyntax @svar[pattern-part]) ...)
                  #&@#,svar[S-pattern]
                  (~rest S-pattern)
-                 (@#,ref[~describe s] maybe-opaque expr S-pattern)
+                 (@#,ref[~describe s] maybe-opaque maybe-role expr S-pattern)
                  (@#,ref[~commit s] S-pattern)
                  (@#,ref[~delimit-cut s] S-pattern)
                  A-pattern]
@@ -67,13 +67,14 @@ means specifically @tech{@Spattern}.
                  (~rest L-pattern)]
                 [H-pattern
                  pvar-id:splicing-syntax-class-id
-                 (@#,ref[~var h] id splicing-syntax-class-id)
-                 (@#,ref[~var h] id (splicing-syntax-class-id arg ...))
+                 (@#,ref[~var h] id splicing-syntax-class-id maybe-role)
+                 (@#,ref[~var h] id (splicing-syntax-class-id arg ...) 
+                                 maybe-role)
                  (~seq . L-pattern)
                  (@#,ref[~and h] proper-H/A-pattern ...+)
                  (@#,ref[~or h] H-pattern ...+)
                  (@#,ref[~optional h] H-pattern maybe-optional-option)
-                 (@#,ref[~describe h] maybe-opaque expr H-pattern)
+                 (@#,ref[~describe h] maybe-opaque maybe-role expr H-pattern)
                  (@#,ref[~commit h] H-pattern)
                  (@#,ref[~delimit-cut h] H-pattern)
                  (~peek H-pattern)
@@ -255,9 +256,12 @@ like an @tech{annotated pattern variable} with the implicit syntax
 class inserted.
 }
 
-@specsubform/subs[(@#,def[~var s+] pvar-id syntax-class-use)
+@specsubform/subs[(@#,def[~var s+] pvar-id syntax-class-use maybe-role)
                   ([syntax-class-use syntax-class-id
-                                     (syntax-class-id arg ...)])]{
+                                     (syntax-class-id arg ...)]
+                   [maybe-role (code:line)
+                               (code:line #:role role-expr)])
+                  #:contracts ([role-expr (or/c string? #f)])]{
 
 An @deftech{annotated pattern variable}. The pattern matches only
 terms accepted by @svar[syntax-class-id] (parameterized by the
@@ -270,6 +274,9 @@ class. The names of the nested attributes are formed by prefixing
 character) to the name of the syntax class's attribute.
 
 If @svar[pvar-id] is @racket[_], no attributes are bound.
+
+If @racket[role-expr] is given and evaluates to a string, it is
+combined with the syntax class's description in error messages.
 
 @myexamples[
 (syntax-parse #'a
@@ -286,6 +293,8 @@ If @svar[pvar-id] is @racket[_], no attributes are bound.
 (syntax-parse #'(1 2 3 4 5)
   [((~var small (nat-less-than 4)) ... large:nat ...)
    (list #'(small ...) #'(large ...))])
+(syntax-parse #'(m a b 3)
+  [(_ (~var x id #:role "variable") ...) 'ok])
 ]
 }
 
@@ -537,15 +546,35 @@ above).
 
 @specsubform/subs[(@#,def[~describe s] maybe-opaque expr S-pattern)
                   ([maybe-opaque (code:line)
-                                 (code:line #:opaque)])
-                  #:contracts ([expr (or/c string? #f)])]{
+                                 (code:line #:opaque)]
+                   [maybe-role (code:line)
+                               (code:line #:role role-expr)])
+                  #:contracts ([expr (or/c string? #f)]
+                               [role-expr (or/c string? #f)])]{
 
 The @racket[~describe] pattern form annotates a pattern with a
 description, a string expression that is evaluated in the scope of all
 prior attribute bindings. If parsing the inner pattern fails, then the
-description is used to synthesize the error message.
+description is used to synthesize the error message. A
+@racket[~describe] pattern does not influence backtracking.
 
-A @racket[~describe] pattern has no effect on backtracking.
+If @racket[#:opaque] is given, failure information from within
+@racket[S-pattern] is discarded and the error is reported solely in
+terms of the description given.
+
+If @racket[role-expr] is given and produces a string, its value is
+combined with the description in error messages.
+
+@myexamples[
+(syntax-parse #'(m 1)
+  [(_ (~describe "id pair" (x:id y:id))) 'ok])
+(syntax-parse #'(m (a 2))
+  [(_ (~describe "id pair" (x:id y:id))) 'ok])
+(syntax-parse #'(m (a 2))
+  [(_ (~describe #:opaque "id pair" (x:id y:id))) 'ok])
+(syntax-parse #'(m 1)
+  [(_ (~describe #:role "formals" "id pair" (x y))) 'ok])
+]
 }
 
 @specsubform[(@#,def[~commit s] S-pattern)]{
@@ -605,9 +634,12 @@ Equivalent to @racket[(~var pvar-id splicing-syntax-class-id)].
 
 }
 
-@specsubform/subs[(@#,def[~var h] pvar-id splicing-syntax-class-use)
+@specsubform/subs[(@#,def[~var h] pvar-id splicing-syntax-class-use maybe-role)
                   ([splicing-syntax-class-use splicing-syntax-class-id
-                                              (splicing-syntax-class-id arg ...)])]{
+                                              (splicing-syntax-class-id arg ...)]
+                   [maybe-role (code:line)
+                               (code:line #:role role-expr)])
+                  #:contracts ([role-expr (or/c string? #f)])]{
 
 Pattern variable annotated with a @tech{splicing syntax
 class}. Similar to a normal @tech{annotated pattern variable}, except
@@ -754,9 +786,9 @@ outside of the @racket[~peek-not]-pattern.
   (pattern (~seq x (~peek-not _))))
 
 (syntax-parse #'(a b c)
-  [((~or f:final o:other) ...)
+  [((~or f:final other) ...)
    (printf "finals are ~s\n" (syntax->datum #'(f.x ...)))
-   (printf "others are ~s\n" (syntax->datum #'(o ...)))])
+   (printf "others are ~s\n" (syntax->datum #'(other ...)))])
 ]
 }
 
@@ -891,13 +923,13 @@ forms based on keywords. Consider the following expression:
   [(define-syntaxes (x:id ...) e) 'define-syntaxes]
   [e 'expression])]
 
-Given the ill-formed term @racket[(define-values a 123)], the
-expression tries the first clause, fails to match @racket[a] against
-the pattern @racket[(x:id ...)], and then backtracks to the second
-clause and ultimately the third clause, producing the value
-@racket['expression]. But the term is not an expression; it is an
-ill-formed use of @racket[define-values]. The proper way to write the
-@racket[syntax-parse] expression follows:
+Given the ill-formed term @racket[(define-values a 123)],
+@racket[syntax-parse] tries the first clause, fails to match
+@racket[a] against the pattern @racket[(x:id ...)], and then
+backtracks to the second clause and ultimately the third clause,
+producing the value @racket['expression]. But the term is not an
+expression; it is an ill-formed use of @racket[define-values]. The
+proper way to write the @racket[syntax-parse] expression follows:
 
 @interaction[#:eval the-eval
 (syntax-parse #'(define-values a 123)

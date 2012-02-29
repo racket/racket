@@ -120,9 +120,9 @@ the @racket[_phase] argument defaults to
 
 Defines @deftech{conventions} that supply default syntax classes for
 pattern variables. A pattern variable that has no explicit syntax
-class is checked against each @racket[id-pattern], and the first one
+class is checked against each @racket[name-pattern], and the first one
 that matches determines the syntax class for the pattern. If no
-@racket[id-pattern] matches, then the pattern variable has no syntax
+@racket[name-pattern] matches, then the pattern variable has no syntax
 class.
 
 @myexamples[

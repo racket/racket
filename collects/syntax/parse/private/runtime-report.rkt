@@ -9,6 +9,12 @@
          maximal-failures)
 
 #|
+TODO: given (expect:thing D _ R) and (expect:thing D _ #f),
+  simplify to (expect:thing D _ #f)
+  thus, "expected D" rather than "expected D or D for R" (?)
+|#
+
+#|
 Note: there is a cyclic dependence between residual.rkt and this module,
 broken by a lazy-require of this module into residual.rkt
 |#
@@ -81,6 +87,7 @@ complicated.
                     (report/expects (list frame-expect) frame-stx)]))])))
 
 ;; report/expects : (listof Expect) syntax -> Report
+;; FIXME: partition by role first?
 (define (report/expects expects frame-stx)
   (report (join-sep (for/list ([expect expects])
                       (prose-for-expect expect))
@@ -90,8 +97,10 @@ complicated.
 ;; prose-for-expect : Expect -> string
 (define (prose-for-expect e)
   (match e
-    [(expect:thing description transparent?)
-     (format "expected ~a" description)]
+    [(expect:thing description transparent? role)
+     (if role
+         (format "expected ~a for ~a" description role)
+         (format "expected ~a" description))]
     [(expect:atom atom)
      (format "expected the literal ~a~s~a"
              (if (symbol? atom) "symbol `" "")
@@ -157,10 +166,11 @@ complicated.
     (let loop ([es es])
       (match es
         ['() '()]
-        [(cons (expect:thing description '#f) rest-es)
+        [(cons (expect:thing description '#f role) rest-es)
          ;; Tricky! If multiple opaque frames, multiple "returns",
          ;; but innermost one called first, so jumps past the rest.
-         (return (cons (car es) (loop rest-es)))]
+         ;; Also, flip opaque to transparent for sake of equality.
+         (return (cons (expect:thing description #t role) (loop rest-es)))]
         [(cons expect rest-es)
          (cons expect (loop rest-es))]))))
 

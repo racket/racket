@@ -260,7 +260,7 @@
   (match entry
     [(struct den:lit (_i _e _ip _lp))
      (values entry null)]
-    [(struct den:magic-class (name class argu))
+    [(struct den:magic-class (name class argu role))
      (values entry null)]
     [(struct den:class (name class argu))
      ;; FIXME: integrable syntax classes?
@@ -555,7 +555,7 @@
          (let* ([iattrs (id-pattern-attrs (eh-alternative-attrs alt) prefix)]
                 [attr-count (length iattrs)])
            (list (make ehpat (repc-adjust-attrs iattrs (eh-alternative-repc alt))
-                       (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f)
+                       (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
                        (eh-alternative-repc alt))
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
@@ -609,59 +609,33 @@
   (match entry
     [(struct den:lit (internal literal input-phase lit-phase))
      (create-pat:literal literal input-phase lit-phase)]
-    [(struct den:magic-class (name class argu))
+    [(struct den:magic-class (name class argu role))
      (let* ([pos-count (length (arguments-pargs argu))]
             [kws (arguments-kws argu)]
-            [sc (get-stxclass/check-arity class class pos-count kws)]
-            [splicing? (stxclass-splicing? sc)]
-            [attrs (stxclass-attrs sc)]
-            [parser (stxclass-parser sc)]
-            [commit? (stxclass-commit? sc)]
-            [delimit-cut? (stxclass-delimit-cut? sc)])
-       (check-no-delimit-cut-in-not id delimit-cut?)
-       (if splicing?
-           (begin
-             (unless allow-head?
-               (wrong-syntax id "splicing syntax class not allowed here"))
-             (parse-pat:id/h id parser argu attrs commit?))
-           (parse-pat:id/s id parser argu attrs commit?)))]
+            [sc (get-stxclass/check-arity class class pos-count kws)])
+       (parse-pat:var* id allow-head? id sc argu "." role #f))]
     [(struct den:class (_n _c _a))
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
     [(struct den:parser (parser attrs splicing? commit? delimit-cut?))
-     (begin
-       (check-no-delimit-cut-in-not id delimit-cut?)
-       (if splicing?
-           (begin
-             (unless allow-head?
-               (wrong-syntax id "splicing syntax class not allowed here"))
-             (parse-pat:id/h id parser no-arguments attrs commit?))
-           (parse-pat:id/s id parser no-arguments attrs commit?)))]
+     (check-no-delimit-cut-in-not id delimit-cut?)
+     (cond [splicing?
+            (unless allow-head?
+              (wrong-syntax id "splicing syntax class not allowed here"))
+            (parse-pat:id/h id parser no-arguments attrs commit? "." #f)]
+           [else
+            (parse-pat:id/s id parser no-arguments attrs commit? "." #f)])]
     [(struct den:delayed (parser class))
      (let ([sc (get-stxclass class)])
-       (check-no-delimit-cut-in-not id (stxclass-delimit-cut? sc))
-       (cond [(stxclass/s? sc)
-              (parse-pat:id/s id
-                              parser
-                              no-arguments
-                              (stxclass-attrs sc)
-                              (stxclass-commit? sc))]
-             [(stxclass/h? sc)
-              (unless allow-head?
-                (wrong-syntax id "splicing syntax class not allowed here"))
-              (parse-pat:id/h id
-                              parser
-                              no-arguments
-                              (stxclass-attrs sc)
-                              (stxclass-commit? sc))]))]
+       (parse-pat:var* id allow-head? id sc no-arguments "." #f parser))]
     ['#f
      (unless (safe-name? id)
        (wrong-syntax id "expected identifier not starting with ~~ character"))
      (let-values ([(name sc) (split-id/get-stxclass id decls)])
        (if sc
-           (parse-pat:var* id allow-head? name sc no-arguments)
-           (create-pat:var name #f no-arguments null #f #t)))]))
+           (parse-pat:var* id allow-head? name sc no-arguments "." #f #f)
+           (create-pat:var name #f no-arguments null #f #t #f)))]))
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
@@ -672,10 +646,10 @@
        #'name]
       [_
        (wrong-syntax stx "bad ~~var form")]))
-  (define-values (scname sc+args-stx argu pfx)
+  (define-values (scname sc+args-stx argu pfx role)
     (syntax-case stx (~var)
       [(~var _name)
-       (values #f #f null #f)]
+       (values #f #f null #f #f)]
       [(~var _name sc/sc+args . rest)
        (let-values ([(sc argu)
                      (let ([p (check-stxclass-application #'sc/sc+args stx)])
@@ -686,7 +660,8 @@
                                       #:context stx))
          (define sep
            (options-select-value chunks '#:attr-name-separator #:default #f))
-         (values sc #'sc/sc+args argu (if sep (syntax-e sep) ".")))]
+         (define role (options-select-value chunks '#:role #:default #'#f))
+         (values sc #'sc/sc+args argu (if sep (syntax-e sep) ".") role))]
       [_
        (wrong-syntax stx "bad ~~var form")]))
   (cond [(and (epsilon? name0) (not scname))
@@ -697,46 +672,51 @@
          (let ([sc (get-stxclass/check-arity scname sc+args-stx
                                              (length (arguments-pargs argu))
                                              (arguments-kws argu))])
-           (parse-pat:var* stx allow-head? name0 sc argu pfx))]
+           (parse-pat:var* stx allow-head? name0 sc argu pfx role #f))]
         [else ;; Just proper name
-         (create-pat:var name0 #f (arguments null null null) null #f #t)]))
+         (create-pat:var name0 #f (arguments null null null) null #f #t #f)]))
 
-(define (parse-pat:var* stx allow-head? name sc argu [pfx "."])
+(define (parse-pat:var* stx allow-head? name sc argu pfx role parser*)
+  ;; if parser* not #f, overrides sc parser
   (check-no-delimit-cut-in-not stx (stxclass-delimit-cut? sc))
-  (cond [(stxclass/s? sc)
-         (if (and (stxclass-integrate sc) (equal? argu no-arguments))
-             (parse-pat:id/s/integrate name (stxclass-integrate sc))
-             (parse-pat:id/s name
-                             (stxclass-parser sc)
-                             argu
-                             (stxclass-attrs sc)
-                             (stxclass-commit? sc)
-                             pfx))]
+  (cond [(and (stxclass/s? sc)
+              (stxclass-integrate sc)
+              (equal? argu no-arguments))
+         (parse-pat:id/s/integrate name (stxclass-integrate sc) role)]
+        [(stxclass/s? sc)
+         (parse-pat:id/s name
+                         (or parser* (stxclass-parser sc))
+                         argu
+                         (stxclass-attrs sc)
+                         (stxclass-commit? sc)
+                         pfx
+                         role)]
         [(stxclass/h? sc)
          (unless allow-head?
            (wrong-syntax stx "splicing syntax class not allowed here"))
          (parse-pat:id/h name
-                         (stxclass-parser sc)
+                         (or parser* (stxclass-parser sc))
                          argu
                          (stxclass-attrs sc)
                          (stxclass-commit? sc)
-                         pfx)]))
+                         pfx
+                         role)]))
 
-(define (parse-pat:id/s name parser argu attrs commit? [pfx "."])
+(define (parse-pat:id/s name parser argu attrs commit? pfx role)
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (create-pat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit?))
+  (create-pat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
 
-(define (parse-pat:id/s/integrate name integrate)
+(define (parse-pat:id/s/integrate name integrate role)
   (define bind (name->bind name))
-  (create-pat:integrated bind
-                         (integrate-predicate integrate)
-                         (integrate-description integrate)))
+  (let ([predicate (integrate-predicate integrate)]
+        [description (integrate-description integrate)])
+    (create-pat:integrated bind predicate description role)))
 
-(define (parse-pat:id/h name parser argu attrs commit? [pfx "."])
+(define (parse-pat:id/h name parser argu attrs commit? pfx role)
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (create-hpat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit?))
+  (create-hpat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
 
 (define (name->prefix id pfx)
   (cond [(wildcard? id) #f]
@@ -810,12 +790,13 @@
                                           #:no-duplicates? #t
                                           #:context stx)])
        (define transparent? (not (assq '#:opaque chunks)))
+       (define role (options-select-value chunks '#:role #:default #'#f))
        (syntax-case rest ()
          [(description pattern)
           (let ([p (parse-*-pattern #'pattern decls allow-head? #f)])
             (if (head-pattern? p)
-                (create-hpat:describe #'description transparent? p)
-                (create-pat:describe #'description transparent? p)))]))]))
+                (create-hpat:describe p #'description transparent? role)
+                (create-pat:describe p #'description transparent? role)))]))]))
 
 (define (parse-pat:delimit stx decls allow-head?)
   (syntax-case stx ()
@@ -1155,6 +1136,9 @@
     [(cons (list '#:declare declare-stx _ _) rest)
      (wrong-syntax declare-stx
                    "#:declare can only follow pattern or #:with clause")]
+    [(cons (list '#:role role-stx _) rest)
+     (wrong-syntax role-stx
+                   "#:role can only follow immediately after #:declare clause")]
     [(cons (list '#:fail-when fw-stx when-condition expr) rest)
      (cons (make clause:fail when-condition expr)
            (parse-pattern-sides rest decls))]
@@ -1182,23 +1166,30 @@
 ;; grab-decls : (listof chunk) DeclEnv
 ;;           -> (values DeclEnv (listof chunk))
 (define (grab-decls chunks decls0)
-  (define (add-decl stx decls)
-    (syntax-case stx ()
-      [(#:declare name sc)
-       (identifier? #'sc)
-       (add-decl* decls #'name #'sc (parse-argu null))]
-      [(#:declare name (sc expr ...))
-       (identifier? #'sc)
-       (add-decl* decls #'name #'sc (parse-argu (syntax->list #'(expr ...))))]
-      [(#:declare name bad-sc)
-       (wrong-syntax #'bad-sc
-                     "expected syntax class name (possibly with parameters)")]))
-  (define (add-decl* decls id sc-name argu)
-    (declenv-put-stxclass decls id sc-name argu))
+  (define (add-decl stx role-stx decls)
+    (let ([role
+           (and role-stx
+                (syntax-case role-stx ()
+                  [(#:role role) #'role]))])
+      (syntax-case stx ()
+        [(#:declare name sc)
+         (identifier? #'sc)
+         (add-decl* decls #'name #'sc (parse-argu null) role)]
+        [(#:declare name (sc expr ...))
+         (identifier? #'sc)
+         (add-decl* decls #'name #'sc (parse-argu (syntax->list #'(expr ...))) role)]
+        [(#:declare name bad-sc)
+         (wrong-syntax #'bad-sc
+                       "expected syntax class name (possibly with parameters)")])))
+  (define (add-decl* decls id sc-name argu role)
+    (declenv-put-stxclass decls id sc-name argu role))
   (define (loop chunks decls)
     (match chunks
+      [(cons (cons '#:declare decl-stx)
+             (cons (cons '#:role role-stx) rest))
+       (loop rest (add-decl decl-stx role-stx decls))]
       [(cons (cons '#:declare decl-stx) rest)
-       (loop rest (add-decl decl-stx decls))]
+       (loop rest (add-decl decl-stx #f decls))]
       [_ (values decls chunks)]))
   (loop chunks decls0))
 
@@ -1515,6 +1506,7 @@
 ;; pattern-directive-table
 (define pattern-directive-table
   (list (list '#:declare check-identifier check-expression)
+        (list '#:role check-expression) ;; attached to preceding #:declare
         (list '#:fail-when check-expression check-expression)
         (list '#:fail-unless check-expression check-expression)
         (list '#:when check-expression)
@@ -1529,7 +1521,8 @@
 
 ;; describe-option-table
 (define describe-option-table
-  (list (list '#:opaque)))
+  (list (list '#:opaque)
+        (list '#:role check-expression)))
 
 ;; eh-optional-directive-table
 (define eh-optional-directive-table
@@ -1552,4 +1545,5 @@
 
 ;; var-pattern-directive-table
 (define var-pattern-directive-table
-  (list (list '#:attr-name-separator check-stx-string)))
+  (list (list '#:attr-name-separator check-stx-string)
+        (list '#:role check-expression)))

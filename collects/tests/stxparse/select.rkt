@@ -108,3 +108,34 @@
 (terx (1 a 2 b)
       ((~or (~once x:id #:name "identifier") n:nat) ...)
       #rx"too many occurrences of identifier")
+
+;; Roles
+
+(terx 1
+      (~var x id #:role "var")
+      #rx"expected identifier for var")
+(terx 1
+      (~describe #:opaque #:role "R" "D" (_))
+      #rx"expected D for R")
+(terx 1
+      (~describe #:role "R" "D" (_))
+      #rx"expected D for R")
+
+(test-case "#:describe #:role"
+  (check-exn #rx"expected identifier for var"
+             (lambda ()
+               (syntax-parse #'1
+                 [x
+                  #:declare x id #:role "var"
+                  'ok]))))
+
+(test-case "role coalescing"
+  (check-exn #rx"^m: expected identifier for thing$" ;; not repeated
+             (lambda ()
+               (syntax-parse #'(m 0 b)
+                 [(_ x y:nat)
+                  #:declare x id #:role "thing"
+                  'a]
+                 [(_ x y:id)
+                  #:declare x id #:role "thing"
+                  'b]))))

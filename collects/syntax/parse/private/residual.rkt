@@ -48,6 +48,7 @@
 (provide (all-from-out "runtime-progress.rkt")
 
          this-syntax
+         this-role
          this-context-syntax
          attribute
          attribute-binding
@@ -67,6 +68,10 @@
 ;; this-syntax
 ;; Bound to syntax being matched inside of syntax class
 (define-syntax-parameter this-syntax
+  (lambda (stx)
+    (raise-syntax-error #f "used out of context: not within a syntax class" stx)))
+
+(define-syntax-parameter this-role
   (lambda (stx)
     (raise-syntax-error #f "used out of context: not within a syntax class" stx)))
 
@@ -198,7 +203,7 @@
 
 (provide predicate-ellipsis-parser)
 
-(define (predicate-ellipsis-parser x cx pr es pred? desc)
+(define (predicate-ellipsis-parser x cx pr es pred? desc rl)
   (let ([elems (stx->list x)])
     (if (and elems (andmap pred? elems))
         (values 'ok elems)
@@ -210,9 +215,13 @@
                      (loop (cdr x) cx (add1 i))
                      (let* ([pr (ps-add-cdr pr i)]
                             [pr (ps-add-car pr)]
-                            [es (cons (expect:thing desc #t) es)])
+                            [es (cons (expect:thing desc #t rl) es)])
                        (values 'fail (failure pr es))))]
                 [else ;; not null, because stx->list failed
                  (let ([pr (ps-add-cdr pr i)]
-                       [es (cons (expect:atom '()) es)])
+                       #|
+                       ;; Don't extend es! That way we don't get spurious "expected ()"
+                       ;; that *should* have been cancelled out by ineffable pair failures.
+                       [es (cons (expect:atom '()) es)]
+                       |#)
                    (values 'fail (failure pr es)))])))))

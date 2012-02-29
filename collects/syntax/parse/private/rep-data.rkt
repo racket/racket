@@ -72,11 +72,22 @@ DeclEnv =
 DeclEntry =
   (den:lit id id ct-phase ct-phase)
   (den:class id id Arguments)
-  (den:magic-class id id Arguments)
+  (den:magic-class id id Arguments stx)
   (den:parser id (listof SAttr) bool bool bool)
   (den:delayed id id)
 
 Arguments is defined in rep-patterns.rkt
+
+A DeclEnv is built up in stages:
+  1) syntax-parse (or define-syntax-class) directives
+     #:literals -> den:lit
+     #:local-conventions -> den:class
+     #:conventions -> den:delayed
+     #:literal-sets -> den:lit
+  2) pattern directives
+     #:declare -> den:magic-class
+  3) create-aux-def creates aux parser defs
+     den:class -> den:parser or den:delayed
 
 == Scoping ==
 
@@ -91,7 +102,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 
 (define-struct den:lit (internal external input-phase lit-phase))
 (define-struct den:class (name class argu))
-(define-struct den:magic-class (name class argu))
+(define-struct den:magic-class (name class argu role))
 (define-struct den:parser (parser attrs splicing? commit? delimit-cut?))
 ;; and from residual.rkt: (define-struct den:delayed (parser class))
 
@@ -117,7 +128,7 @@ expressions are duplicated, and may be evaluated in different scopes.
     (match val
       [(struct den:lit (_i _e _ip _lp))
        (wrong-syntax id "identifier previously declared as literal")]
-      [(struct den:magic-class (name _c _a))
+      [(struct den:magic-class (name _c _a _r))
        (if (and blame-declare? stxclass-name)
            (wrong-syntax name
                          "identifier previously declared with syntax class ~a"
@@ -135,11 +146,11 @@ expressions are duplicated, and may be evaluated in different scopes.
        (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 
-(define (declenv-put-stxclass env id stxclass-name argu)
+(define (declenv-put-stxclass env id stxclass-name argu [role #f])
   (declenv-check-unbound env id)
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (make den:magic-class id stxclass-name argu))
+                       (make den:magic-class id stxclass-name argu role))
    (declenv-conventions env)))
 
 ;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a
@@ -212,7 +223,7 @@ expressions are duplicated, and may be evaluated in different scopes.
  [declenv-lookup
   (-> DeclEnv/c identifier? any)]
  [declenv-put-stxclass
-  (-> DeclEnv/c identifier? identifier? arguments?
+  (-> DeclEnv/c identifier? identifier? arguments? (or/c syntax? #f)
       DeclEnv/c)]
  [declenv-domain-difference
   (-> DeclEnv/c (listof identifier?)

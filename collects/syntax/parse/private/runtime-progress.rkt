@@ -181,7 +181,7 @@ Interpretation: Inner PS structures are applied first.
 An ExpectStack is (listof Expect)
 
 An Expect is one of
-  - (make-expect:thing string boolean)
+  - (make-expect:thing string boolean string/#f)
   * (make-expect:message string)
   * (make-expect:atom atom)
   * (make-expect:literal identifier)
@@ -189,7 +189,7 @@ An Expect is one of
 
 The *-marked variants can only occur at the top of the stack.
 |#
-(define-struct expect:thing (description transparent?) #:prefab)
+(define-struct expect:thing (description transparent? role) #:prefab)
 (define-struct expect:message (message) #:prefab)
 (define-struct expect:atom (atom) #:prefab)
 (define-struct expect:literal (literal) #:prefab)

@@ -22,7 +22,7 @@ A Base is (listof IAttr)
 #|
 A SinglePattern is one of
   (pat:any Base)
-  (pat:var Base id id Arguments (listof IAttr) nat/#f bool)
+  (pat:var Base id id Arguments (listof IAttr) nat/#f bool stx)
   (pat:literal Base identifier ct-phase ct-phase)
   (pat:datum Base datum)
   (pat:action Base ActionPattern SinglePattern)
@@ -35,12 +35,12 @@ A SinglePattern is one of
   (pat:vector Base SinglePattern)
   (pat:box Base SinglePattern)
   (pat:pstruct Base key SinglePattern)
-  (pat:describe Base stx boolean SinglePattern)
+  (pat:describe Base SinglePattern stx boolean stx)
   (pat:delimit Base SinglePattern)
   (pat:commit Base SinglePattern)
   (pat:reflect Base stx Arguments (listof SAttr) id (listof IAttr))
   (pat:post Base SinglePattern)
-  (pat:integrated Base id/#f id string)
+  (pat:integrated Base id/#f id string stx)
 
 A ListPattern is a subtype of SinglePattern; one of
   (pat:datum Base '())
@@ -51,7 +51,7 @@ A ListPattern is a subtype of SinglePattern; one of
 |#
 
 (define-struct pat:any (attrs) #:prefab)
-(define-struct pat:var (attrs name parser argu nested-attrs attr-count commit?) #:prefab)
+(define-struct pat:var (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
 (define-struct pat:literal (attrs id input-phase lit-phase) #:prefab)
 (define-struct pat:datum (attrs datum) #:prefab)
 (define-struct pat:action (attrs action inner) #:prefab)
@@ -64,12 +64,12 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:vector (attrs pattern) #:prefab)
 (define-struct pat:box (attrs pattern) #:prefab)
 (define-struct pat:pstruct (attrs key pattern) #:prefab)
-(define-struct pat:describe (attrs description transparent? pattern) #:prefab)
+(define-struct pat:describe (attrs pattern description transparent? role) #:prefab)
 (define-struct pat:delimit (attrs pattern) #:prefab)
 (define-struct pat:commit (attrs pattern) #:prefab)
 (define-struct pat:reflect (attrs obj argu attr-decls name nested-attrs) #:prefab)
 (define-struct pat:post (attrs pattern) #:prefab)
-(define-struct pat:integrated (attrs name predicate description) #:prefab)
+(define-struct pat:integrated (attrs name predicate description role) #:prefab)
 
 #|
 A ActionPattern is one of
@@ -94,13 +94,13 @@ action:and is desugared below in create-* procedures
 
 #|
 A HeadPattern is one of 
-  (hpat:var Base id id Arguments (listof IAttr) nat/#f bool)
+  (hpat:var Base id id Arguments (listof IAttr) nat/#f bool stx)
   (hpat:seq Base ListPattern)
   (hpat:action Base ActionPattern HeadPattern)
   (hpat:and Base HeadPattern SinglePattern)
   (hpat:or Base (listof HeadPattern))
   (hpat:optional Base HeadPattern (listof clause:attr))
-  (hpat:describe Base stx/#f boolean HeadPattern)
+  (hpat:describe Base HeadPattern stx/#f boolean stx)
   (hpat:delimit Base HeadPattern)
   (hpat:commit Base HeadPattern)
   (hpat:reflect Base stx Arguments (listof SAttr) id (listof IAttr))
@@ -109,13 +109,13 @@ A HeadPattern is one of
   (hpat:peek-not Base HeadPattern)
 |#
 
-(define-struct hpat:var (attrs name parser argu nested-attrs attr-count commit?) #:prefab)
+(define-struct hpat:var (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:action (attrs action inner) #:prefab)
 (define-struct hpat:and (attrs head single) #:prefab)
 (define-struct hpat:or (attrs patterns) #:prefab)
 (define-struct hpat:optional (attrs inner defaults) #:prefab)
-(define-struct hpat:describe (attrs description transparent? pattern) #:prefab)
+(define-struct hpat:describe (attrs pattern description transparent? role) #:prefab)
 (define-struct hpat:delimit (attrs pattern) #:prefab)
 (define-struct hpat:commit (attrs pattern) #:prefab)
 (define-struct hpat:reflect (attrs obj argu attr-decls name nested-attrs) #:prefab)
@@ -239,10 +239,10 @@ A SideClause is one of
 (define (create-pat:any)
   (make pat:any null))
 
-(define (create-pat:var name parser argu nested-attrs attr-count commit?)
+(define (create-pat:var name parser argu nested-attrs attr-count commit? role)
   (let ([attrs
          (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make pat:var attrs name parser argu nested-attrs attr-count commit?)))
+    (make pat:var attrs name parser argu nested-attrs attr-count commit? role)))
 
 (define (create-pat:reflect obj argu attr-decls name nested-attrs)
   (let ([attrs
@@ -279,8 +279,8 @@ A SideClause is one of
 (define (create-pat:pstruct key pattern)
   (make pat:pstruct (pattern-attrs pattern) key pattern))
 
-(define (create-pat:describe description transparent? p)
-  (make pat:describe (pattern-attrs p) description transparent? p))
+(define (create-pat:describe p description transparent? role)
+  (make pat:describe (pattern-attrs p) p description transparent? role))
 
 (define (create-pat:and patterns)
   (let ([attrs (append-iattrs (map pattern-attrs patterns))])
@@ -306,9 +306,9 @@ A SideClause is one of
 (define (create-pat:post pattern)
   (make pat:post (pattern-attrs pattern) pattern))
 
-(define (create-pat:integrated name predicate description)
+(define (create-pat:integrated name predicate description role)
   (let ([attrs (if name (list (make attr name 0 #t)) null)])
-    (make pat:integrated attrs name predicate description)))
+    (make pat:integrated attrs name predicate description role)))
 
 ;; ----
 
@@ -336,10 +336,10 @@ A SideClause is one of
 
 ;; ----
 
-(define (create-hpat:var name parser argu nested-attrs attr-count commit?)
+(define (create-hpat:var name parser argu nested-attrs attr-count commit? role)
   (let ([attrs
          (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make hpat:var attrs name parser argu nested-attrs attr-count commit?)))
+    (make hpat:var attrs name parser argu nested-attrs attr-count commit? role)))
 
 (define (create-hpat:reflect obj argu attr-decls name nested-attrs)
   (let ([attrs
@@ -357,8 +357,8 @@ A SideClause is one of
          (let ([attrs (append-iattrs (map pattern-attrs (list g hp)))])
            (make hpat:action attrs g hp))]))
 
-(define (create-hpat:describe description transparent? p)
-  (make hpat:describe (pattern-attrs p) description transparent? p))
+(define (create-hpat:describe p description transparent? role)
+  (make hpat:describe (pattern-attrs p) p description transparent? role))
 
 (define (create-hpat:and hp sp)
   (make hpat:and (append-iattrs (map pattern-attrs (list hp sp))) hp sp))
