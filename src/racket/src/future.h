@@ -45,7 +45,7 @@ typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 
 typedef struct Fevent {
   double timestamp;
-  int what, fid;
+  int what, fid, data;
 } Fevent;
 
 typedef struct Fevent_Buffer {

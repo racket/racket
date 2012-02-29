@@ -15,7 +15,7 @@ We should also test deep continuations.
 |# 
 
 ;Tests specific to would-be-future 
-(define-struct future-event (future-id process-id what time prim-name) 
+(define-struct future-event (future-id process-id what time prim-name target-fid) 
     #:prefab)
 
 (define (get-events-of-type type log) 
