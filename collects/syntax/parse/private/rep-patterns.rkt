@@ -40,7 +40,7 @@ A SinglePattern is one of
   (pat:commit Base SinglePattern)
   (pat:reflect Base stx Arguments (listof SAttr) id (listof IAttr))
   (pat:post Base SinglePattern)
-  (pat:integrated Base id/#f Arguments id string)
+  (pat:integrated Base id/#f id string)
 
 A ListPattern is a subtype of SinglePattern; one of
   (pat:datum Base '())
@@ -69,7 +69,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:commit (attrs pattern) #:prefab)
 (define-struct pat:reflect (attrs obj argu attr-decls name nested-attrs) #:prefab)
 (define-struct pat:post (attrs pattern) #:prefab)
-(define-struct pat:integrated (attrs name argu predicate description) #:prefab)
+(define-struct pat:integrated (attrs name predicate description) #:prefab)
 
 #|
 A ActionPattern is one of
@@ -306,9 +306,9 @@ A SideClause is one of
 (define (create-pat:post pattern)
   (make pat:post (pattern-attrs pattern) pattern))
 
-(define (create-pat:integrated name argu predicate description)
+(define (create-pat:integrated name predicate description)
   (let ([attrs (if name (list (make attr name 0 #t)) null)])
-    (make pat:integrated attrs name argu predicate description)))
+    (make pat:integrated attrs name predicate description)))
 
 ;; ----
 

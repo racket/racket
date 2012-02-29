@@ -563,13 +563,13 @@ Conventions:
        [#s(pat:post attrs pattern)
         #`(let ([pr (ps-add-post pr)])
             (parse:S x cx pattern pr es k))]
-       [#s(pat:integrated _attrs name argu predicate description)
+       [#s(pat:integrated _attrs name predicate description)
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
                            #'([#s(attr name 0 #t) x*])
                            #'())])
           #'(let ([x* (datum->syntax cx x cx)])
-              (if (app-argu predicate x* argu)
+              (if (predicate x*)
                   (let-attributes (name-attr ...) k)
                   (let ([es (cons (expect:thing 'description #t) es)])
                     (fail (failure pr es))))))])]))
@@ -818,7 +818,7 @@ Conventions:
            (else (fail result))))]
     ;; -- (x:sc ... . ()) where sc is an integrable stxclass like id or expr
     [(parse:dots x cx (#s(ehpat (attr0)
-                                #s(pat:integrated _attrs _name _argu pred? desc)
+                                #s(pat:integrated _attrs _name pred? desc)
                                 #f))
                  #s(pat:datum () ()) pr es k)
      #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es pred? desc)])

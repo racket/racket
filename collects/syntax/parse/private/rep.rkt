@@ -704,8 +704,8 @@
 (define (parse-pat:var* stx allow-head? name sc argu [pfx "."])
   (check-no-delimit-cut-in-not stx (stxclass-delimit-cut? sc))
   (cond [(stxclass/s? sc)
-         (if (and (stxclass-integrate sc) (null? (arguments-kws argu)))
-             (parse-pat:id/s/integrate name (stxclass-integrate sc) argu)
+         (if (and (stxclass-integrate sc) (equal? argu no-arguments))
+             (parse-pat:id/s/integrate name (stxclass-integrate sc))
              (parse-pat:id/s name
                              (stxclass-parser sc)
                              argu
@@ -727,9 +727,9 @@
   (define bind (name->bind name))
   (create-pat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit?))
 
-(define (parse-pat:id/s/integrate name integrate argu)
+(define (parse-pat:id/s/integrate name integrate)
   (define bind (name->bind name))
-  (create-pat:integrated bind argu
+  (create-pat:integrated bind
                          (integrate-predicate integrate)
                          (integrate-description integrate)))
 
