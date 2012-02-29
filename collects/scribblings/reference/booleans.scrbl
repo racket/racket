@@ -280,12 +280,12 @@ Returns @racket[(not v)].}
             (implies #f #f)
             (implies #t #f)
             (implies #f (error 'ack "we don't get here"))]
-                                       
+
 }
 
 @defproc[(xor [b1 any/c] [b2 any/c]) any]{
   Returns the exclusive or of @racket[b1] and @racket[b2].
-                              
+
   If exactly one of @racket[b1] and @racket[b2] is
   not @racket[#f], then return it. Otherwise, returns
   @racket[#f].
@@ -296,5 +296,5 @@ Returns @racket[(not v)].}
             (xor #f 22)
             (xor 11 22)
             (xor #f #f)]
-                                          
+
 }

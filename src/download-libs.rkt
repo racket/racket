@@ -8,7 +8,6 @@
 (define url-base (string-append "http://" url-host url-path))
 (define architecture #f) ;; set in `do-download'
 
-
 (define (delete-path path)
   (cond [(directory-exists? path)
          (parameterize ([current-directory path])
@@ -61,7 +60,6 @@
                       "size of ~a is ~a; doesn't match expected size ~a"
                       file sz size)))
 
-
 (define (unpack-tgz tgz)
   (printf " unpacking...") (flush-output)
   (define-values [p pout pin perr]
@@ -76,7 +74,6 @@
         [else (eprintf "\n")
               (raise-user-error 'get-libs "don't know how to install file: ~a"
                                 file)]))
-
 
 (define (do-download needed really-needed arch)
   (set! architecture arch)

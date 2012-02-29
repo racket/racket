@@ -973,9 +973,3 @@ from m2 take foo"
 
 
   )
-
-  
-  
-    
-
-  

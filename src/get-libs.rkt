@@ -1,16 +1,16 @@
-;; This program avoids is written in #%kernel and
+;; This program is written in #%kernel and
 ;; dynamic-requires the real downloading,
 ;; because it is loaded without using bytecode.
 (module get-libs '#%kernel
   (#%require '#%paramz (for-syntax '#%kernel))
   (#%provide all-files+sizes)
-  
+
   (define-values (all-files+sizes)
     ;; alist mapping package to
     ;;   alist mapping architecture to
     ;;    a list of entries, each has filename and size
     ;;    and optionally a path that it would install to and the installed size
-    (list 
+    (list
      ;; Core Libraries
      '[core
        [win32/i386
@@ -22,7 +22,7 @@
         ["libeay32.dll" 1503232]
         ["ssleay32.dll" 309760]]]
      ;; GUI Libraries
-     [list 
+     [list
       'gui
       '[i386-macosx
         ["libcairo.2.dylib" 802620]
@@ -69,7 +69,7 @@
         ["libgthread-2.0.0.dylib" 25068]
         ["libpng15.15.dylib" 570228]
         ["PSMTabBarControl.tgz" 96039 "PSMTabBarControl.framework" 229501]]
-      (append 
+      (append
        '[win32/i386
          ["libjpeg-7.dll" 233192]
          ["libcairo-2.dll" 921369]
@@ -123,27 +123,27 @@
         ["myssink.dll" 92672]]
        [win32/x86_64
         ["myssink.dll" 108032]]]))
-  
+
   (define-values [package dest-dir]
     (let-values ([(args) (vector->list (current-command-line-arguments))])
       (let-values
           ([(package) (if (null? args)
-			  (error 'get-libs "missing \'package\' command-line argument")
-			  (car args))])
-        (let-values ([(dd) 
+                          (error 'get-libs "missing \'package\' command-line argument")
+                          (car args))])
+        (let-values ([(dd)
                       (if (null? (cdr args)) (current-directory) (cadr args))])
           (values (string->symbol package) dd)))))
-  
+
   (define-values (unixize)
     (lambda (p)
       (let-values ([(base name dir?) (split-path p)])
         (if (path? base)
             (string-append (unixize base) "/" (path->string name))
             (path->string name)))))
-  
+
   (define-values (architecture)
     (string->symbol (unixize (system-library-subpath #f))))
-  
+
   (define-values (needed-files+sizes)
     (lambda ()
       (define-values (l) (assq package all-files+sizes))
@@ -156,30 +156,29 @@
       (if arch
           (cdr arch)
           '())))
-  
+
   (define-values (directory-size)
     (lambda (dir)
       (define-values (loop)
         (lambda (l)
-	  (if (null? l) 
-	      0
-	      (+ (path-size (build-path dir (car l))) (loop (cdr l))))))
+          (if (null? l)
+              0
+              (+ (path-size (build-path dir (car l))) (loop (cdr l))))))
       (loop (directory-list dir))))
-  
+
   (define-values (path-size)
     (lambda (path)
       (if (file-exists? path) (file-size path)
-          (if (directory-exists? path) 
+          (if (directory-exists? path)
               (directory-size path)
               0))))
-  
+
   (define-values (got-path?) ; approximate, using size
     (case-lambda [(path size unpacked-path unpacked-size)
                   (got-path? unpacked-path unpacked-size)]
                  [(path size)
                   (equal? size (path-size path))]))
-  
-  
+
   ;; not provided by #%kernel
   (define-values (filter)
     (lambda (f l)
@@ -188,9 +187,9 @@
           (if (f (car l))
               (cons (car l) (filter f (cdr l)))
               (filter f (cdr l))))))
-  
+
   (define-syntaxes (here-dir)
-    (λ (stx) 
+    (λ (stx)
       (define-values (base name dir?) (split-path (syntax-source stx)))
       (datum->syntax (quote-syntax 'here) base)))
 
@@ -204,7 +203,7 @@
            current-directory dest-dir)
           (let-values ()
             (define-values (needed) (needed-files+sizes))
-            (define-values (really-needed) 
+            (define-values (really-needed)
               (filter (λ (n) (not (apply got-path? n))) needed))
             (printf (if (null? needed)
                         ">> No ~a libraries to download for ~a\n"
@@ -212,7 +211,7 @@
                     package architecture)
             (if (null? needed)
                 (void)
-                (if (null? really-needed)                
+                (if (null? really-needed)
                     (printf ">> All files present, no downloads needed.\n")
                     ((dynamic-require (build-path here-dir "download-libs.rkt") 'do-download)
                      needed really-needed architecture))))))))

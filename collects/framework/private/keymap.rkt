@@ -1474,4 +1474,3 @@
       (if (< start-pos click-pos)
           (f click-pos eol start-pos click-pos)
           (f click-pos eol click-pos end-pos))))
-  

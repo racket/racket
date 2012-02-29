@@ -57,4 +57,3 @@
   (provide convert convertible?)
   (provide/contract
    [prop:convertible (struct-type-property/c (-> convertible? pict?))])
-  

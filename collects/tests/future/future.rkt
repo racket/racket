@@ -755,14 +755,4 @@ We should also test deep continuations.
 (run-tests future)
 (run-tests would-be-future)
 
-
-  
-  ;; ----------------------------------------
-  
-
-        
-        
-        
-        
-        
-        
+;; ----------------------------------------
