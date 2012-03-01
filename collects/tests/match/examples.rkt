@@ -696,6 +696,8 @@
          (match-let ([(list x y) (list 1 2)] [(list y z) '(2 3)])
             (list x y z)))
 
+   (comp 'yes (match/values (values 1 2) [(x y) 0 'yes] [(_ _) 'no]))
+
    (comp 'yes
          (with-handlers ([exn:fail? (lambda _ 'yes)]
                          [values (lambda _ 'no)])
