@@ -2348,14 +2348,41 @@ static void place_set_result(Scheme_Object *result)
   mzrt_mutex_unlock(place_object->lock);
 }
 
+static void terminate_current_place()
+{
+  intptr_t place_obj_die;
+  intptr_t refcount;
+  Scheme_Place_Object *place_obj;
+  
+  place_obj = place_object;
+
+  mzrt_mutex_lock(place_obj->lock);
+  
+  place_obj_die = place_obj->die;
+  place_obj->refcount--;
+  refcount = place_obj->refcount;
+  
+  mzrt_mutex_unlock(place_obj->lock);
+  
+  if (!refcount)
+    destroy_place_object_locks(place_obj);
+  
+  place_object = NULL;
+  
+  /*printf("Leavin place: proc thread id%u\n", ptid);*/
+
+  /* Beware that the destroy operation might trigger a GC to cooperate
+     with the master GC: */
+  scheme_place_instance_destroy(place_obj_die);
+}
+
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
 {
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting via (exit)", scheme_current_place_id);
 
   place_set_result(argv[0]);
 
-  /*printf("Leavin place: proc thread id%u\n", ptid);*/
-  scheme_place_instance_destroy(0);
+  terminate_current_place();
 
   mz_proc_thread_exit(NULL);
 
@@ -2504,26 +2531,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
 
-  {
-    intptr_t place_obj_die;
-    intptr_t refcount;
-
-    mzrt_mutex_lock(place_obj->lock);
-
-    place_obj_die = place_obj->die;
-    place_obj->refcount--;
-    refcount = place_obj->refcount;
-
-    mzrt_mutex_unlock(place_obj->lock);
-
-    if(!refcount) {
-      destroy_place_object_locks(place_obj);
-      place_object = NULL;
-    }
-
-    /*printf("Leavin place: proc thread id%u\n", ptid);*/
-    scheme_place_instance_destroy(place_obj_die);
-  }
+  terminate_current_place();
 
   return NULL;
 }
