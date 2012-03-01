@@ -1,7 +1,8 @@
 (module teachhelp mzscheme
   (require "firstorder.rkt"
            "rewrite-error-message.rkt"
-           stepper/private/shared)
+           stepper/private/shared
+           (for-template (prefix r: racket/base)))
 
   (require-for-syntax stepper/private/shared)
 
@@ -18,19 +19,11 @@
 	    (with-syntax ([tmp-id tmp-id])
 	      (syntax/loc stx (set! tmp-id expr)))]
 	   [(id . args)
-	    (datum->syntax-object
-	     check-proc
-	     (cons (stepper-syntax-property
-		    (datum->syntax-object
-		     check-proc
-		     (list check-proc 
-			   (list 'quote (syntax id))
-			   tmp-id))
-		    'stepper-skipto
-                    (append skipto/cdr
-                            skipto/third))
-		   (syntax args))
-	     stx)]
+            (datum->syntax-object
+             stx
+             (cons '#%app stx)
+             stx
+             stx)]
 	   [id
             (stepper-syntax-property
              (datum->syntax-object
