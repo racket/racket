@@ -1,12 +1,21 @@
-
-(load-relative "loadtest.rktl")
-
-(Section 'openssl)
-
+#lang racket
 (require openssl/mzssl)
 
 (define pem (build-path (collection-path "openssl")
 			"test.pem"))
+
+(define errs? #f)
+(define (test expect f . args)
+  (printf "~s ~s => " f args)
+  (define v (apply f args))
+  (printf "~s\n" v)
+  (unless (equal? expect v)
+    (printf "BUT EXPECTED ~s\n" expect)
+    (set! errs? #t)))
+
+(define-syntax-rule (err/rt-test e exn?)
+  (test 'ok values (with-handlers ([exn? (lambda (x) 'ok)])
+                     e)))
 
 (define (test-ssl limit buffer? close?)
   ;; Test SSL communication using a limited pipe.
@@ -29,8 +38,8 @@
 		    (flush-output w))
 		  (test "hello" read-string 5 r)
 		  (test eof read-string 5 r)
-		  (close-input-port r)
-		  (close-output-port w)))))
+                  (close-input-port r)
+                  (close-output-port w)))))
     (define t2
       (thread (lambda ()
 		(define ctx (ssl-make-server-context 'sslv2-or-v3))
@@ -47,7 +56,7 @@
 		  (close-output-port w)))))
     (thread-wait t1)
     (thread-wait t2)
-    ;; Check that ports were closed not:
+    ;; Check that ports were closed or not:
     (if close?
 	(begin
 	  (err/rt-test (read-byte r1) exn:fail?)
@@ -70,5 +79,7 @@
 (test-ssl 100 #t #f)
 (test-ssl 100 #f #f)
 
-
-(report-errs)
+(newline)
+(when errs?
+  (error "There were test failures"))
+(printf "All tests passed.\n")

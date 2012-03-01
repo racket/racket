@@ -315,6 +315,7 @@
      (define e (if (positive? v)
                    0
                    (SSL_get_error ssl v)))
+     (define unknown "(unknown error)")
      (define estr
        (cond
         [(= e SSL_ERROR_SSL)
@@ -322,9 +323,9 @@
         [(= e SSL_ERROR_SYSCALL)
          (define v (ERR_get_error))
          (if (zero? v)
-             (get-error-message v)
-             #f)]
-        [else #f]))
+             unknown
+             (get-error-message v))]
+        [else unknown]))
      (values v e estr)))
 
   (define-syntax-rule (save-errors e ssl)
@@ -649,7 +650,7 @@
 			      [else
                                (set! must-read-len #f)
 			       ((mzssl-error mzssl) 'read-bytes 
-                                "SSL read failed ~a ~a"
+                                "SSL read failed ~a"
                                 estr)]))))))]
 		[top-read
 		 (lambda (buffer)
@@ -879,28 +880,31 @@
 		     ;; issue shutdown (i.e., EOF on read end)
 		     (when (mzssl-shutdown-on-close? mzssl)
 		       (let loop ([cnt 0])
-			 (let ([out-blocked? (flush-ssl mzssl #f)])
+			 (let ()
+                           (flush-ssl mzssl #f)
 			   (let-values ([(n err estr) (save-errors (SSL_shutdown (mzssl-ssl mzssl))
                                                                    (mzssl-ssl mzssl))])
-			     (unless (= n 1)
-			       (let ()
-				 (cond
-				  [(= err SSL_ERROR_WANT_READ)
-				   (pump-input-once mzssl (if out-blocked? (mzssl-o mzssl) #t))
-				   (loop cnt)]
-				  [(= err SSL_ERROR_WANT_WRITE)
-				   (pump-output-once mzssl #t #f)
-				   (loop cnt)]
-				  [else
-				   (if (= n 0)
-				       ;; When 0 is returned, the SSL object doesn't correctly
-				       ;; report what it wants (e.g., a write). Send everything
-				       ;; out that we have and try again, up to 10 times.
-				       (unless (cnt . >= . 10)
-					 (loop (add1 cnt)))
-				       ((mzssl-error mzssl) 'read-bytes 
+                             
+                             (if (= n 1)
+                                 (flush-ssl mzssl #f)
+                                 (cond
+                                  [(= err SSL_ERROR_WANT_READ)
+                                   (let ([out-blocked? (pump-output mzssl)])
+                                     (pump-input-once mzssl (if out-blocked? (mzssl-o mzssl) #t)))
+                                   (loop cnt)]
+                                  [(= err SSL_ERROR_WANT_WRITE)
+                                   (pump-output-once mzssl #t #f)
+                                   (loop cnt)]
+                                  [else
+                                   (if (= n 0)
+                                       ;; When 0 is returned, the SSL object doesn't correctly
+                                       ;; report what it wants (e.g., a write). Send everything
+                                       ;; out that we have and try again, up to 10 times.
+                                       (unless (cnt . >= . 10)
+                                         (loop (add1 cnt)))
+                                       ((mzssl-error mzssl) 'read-bytes 
                                         "SSL shutdown failed ~a"
-                                        estr))])))))))
+                                        estr))]))))))
 		     (set-mzssl-w-closed?! mzssl #t)
 		     (mzssl-release mzssl)
 		     #f]))]
