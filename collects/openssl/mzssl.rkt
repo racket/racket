@@ -499,8 +499,7 @@
        ;; read proc:
        (letrec ([do-read
 		 (lambda (buffer)
-		   (let ([out-blocked? (pump-output mzssl)]
-			 [len (or must-read-len (min (bytes-length xfer-buffer)
+		   (let ([len (or must-read-len (min (bytes-length xfer-buffer)
 						     (bytes-length buffer)))])
 		     (let ([n (SSL_read (mzssl-ssl mzssl) xfer-buffer len)])
 		       (if (n . >= . 1)
@@ -528,7 +527,7 @@
                                  (set! must-read-len len))
 			       (let ([n (pump-input-once mzssl #f)])
 				 (if (eq? n 0)
-				     (begin
+				     (let ([out-blocked? (pump-output mzssl)])
                                        (when enforce-retry?
                                          (set-mzssl-must-read! mzssl (make-semaphore)))
 				       (wrap-evt (choice-evt
