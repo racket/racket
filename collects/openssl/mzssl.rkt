@@ -312,9 +312,9 @@
     ;; so that this library is thread-safe (at the level of Racket threads)
     (atomically
      (define v (thunk))
-     (define e (if (negative? v)
-                   (SSL_get_error ssl v)
-                   0))
+     (define e (if (positive? v)
+                   0
+                   (SSL_get_error ssl v)))
      (define estr
        (cond
         [(= e SSL_ERROR_SSL)
@@ -649,7 +649,7 @@
 			      [else
                                (set! must-read-len #f)
 			       ((mzssl-error mzssl) 'read-bytes 
-                                "SSL read failed ~a"
+                                "SSL read failed ~a ~a"
                                 estr)]))))))]
 		[top-read
 		 (lambda (buffer)
