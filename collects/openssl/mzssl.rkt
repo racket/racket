@@ -37,19 +37,14 @@
 	   ssl-load-verify-root-certificates!
 	   ssl-load-suggested-certificate-authorities!
 
-     ssl-set-verify!
-           
-     ;sets the ssl server to try an verify certificates
-     ;it does not require verification though.
-     ssl-try-verify!
+           ssl-set-verify!
+           ssl-try-verify!
 
-     ;call on an ssl port, this will return true if the peer
-     ;presented a valid certificate and was verified
-     ssl-peer-verified?
-     ssl-peer-subject-name
-     ssl-peer-issuer-name
+           ssl-peer-verified?
+           ssl-peer-subject-name
+           ssl-peer-issuer-name
 
-     ports->ssl-ports
+           ports->ssl-ports
 
 	   ssl-listen
 	   ssl-close
@@ -138,6 +133,11 @@
   (define-ssl SSL_shutdown (_fun _SSL* -> _int))
   (define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
   (define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*))
+  (define-ssl SSL_set_verify (_fun _SSL* _int _pointer -> _void))
+  (define-ssl SSL_set_session_id_context (_fun _SSL* _bytes _int -> _int))
+  (define-ssl SSL_renegotiate (_fun _SSL* -> _int))
+  (define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
+  (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
   
   (define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*))
   (define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*))
@@ -187,6 +187,26 @@
   ;; to #t to obey the manpage and retry without doing other things, which
   ;; has an implicitation for clients as noted at the top of this file.
   (define enforce-retry? #f)
+
+  ;; Needed for `renegotiate':
+  (define-cstruct _ssl_struct ([version _int]
+                               [type _int]
+                               [method _pointer]
+                               [rbio _pointer]
+                               [wbio _pointer]
+                               [bbio _pointer]
+                               [rwstate _int]
+                               [in_handshake _int]
+                               [handshake_func _fpointer]
+                               [server _int]
+                               [new_session _int]
+                               [quiet_shutdown _int]
+                               [shutdown _int]
+                               [state _int]
+                               ;; ...
+                               ))
+
+  (define SSL_ST_ACCEPT #x2000)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Error handling
@@ -332,16 +352,18 @@
 	  (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
 	  ctx)))
 
-  (define (get-context/listener who ssl-context-or-listener)
+  (define (get-context/listener who ssl-context-or-listener [fail? #t])
     (cond
      [(ssl-context? ssl-context-or-listener)
       (ssl-context-ctx ssl-context-or-listener)]
      [(ssl-listener? ssl-context-or-listener)
       (ssl-context-ctx (ssl-listener-mzctx ssl-context-or-listener))]
      [else
-      (raise-type-error who
-			"SSL context or listener"
-			ssl-context-or-listener)]))
+      (if fail?
+          (raise-type-error who
+                            "SSL context or listener"
+                            ssl-context-or-listener)
+          #f)]))
 
   (define (ssl-load-... who load-it ssl-context-or-listener pathname)
     (let ([ctx (get-context/listener 'ssl-load-certificate-chain!
@@ -390,31 +412,80 @@
         (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
      ssl-context-or-listener pathname))
 
-  (define (ssl-set-verify! ssl-context-or-listener on?)
-    (let ([ctx (get-context/listener 'ssl-set-verify!
-				     ssl-context-or-listener)])
-      (SSL_CTX_set_verify ctx
-			  (if on?
-			      (bitwise-ior SSL_VERIFY_PEER 
-					   SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
-			      SSL_VERIFY_NONE)
-			  #f)))
-   
-  (define (ssl-try-verify! ssl-context-or-listener on?)
-    (let ([ctx (get-context/listener 'ssl-set-verify!
-				     ssl-context-or-listener)])
-      
-      ;required by openssl. This is more for when calling i2d_SSL_SESSION/d2i_SSL_SESSION
-      ;for instance if we were saving sessions in a database etc... We aren't using that
-      ;so a generic session name should be fine.
-      (let ([bytes #"racket"])
-        (SSL_CTX_set_session_id_context ctx bytes (bytes-length bytes)))
-      
-      (SSL_CTX_set_verify ctx
-                          (if on?
-                              SSL_VERIFY_PEER
-                              SSL_VERIFY_NONE)
-                          #f)))
+  (define (ssl-try-verify! ssl-context-or-listener-or-port on?)
+    (do-ssl-set-verify! ssl-context-or-listener-or-port on?
+                        'ssl-try-verify!
+                        SSL_VERIFY_PEER))
+
+  (define (ssl-set-verify! ssl-context-or-listener-or-port on?)
+    (do-ssl-set-verify! ssl-context-or-listener-or-port on?
+                        'ssl-set-verify!
+                        (bitwise-ior SSL_VERIFY_PEER
+                                     SSL_VERIFY_FAIL_IF_NO_PEER_CERT)))
+
+  (define (do-ssl-set-verify! ssl-context-or-listener-or-port on? who mode)
+    (cond
+     [(get-context/listener who
+                            ssl-context-or-listener-or-port
+                            #f)
+      => (lambda (ctx)
+           ;; required by openssl. This is more for when calling i2d_SSL_SESSION/d2i_SSL_SESSION
+           ;; for instance if we were saving sessions in a database etc... We aren't using that
+           ;; so a generic session name should be fine.
+           (let ([bytes #"racket"])
+             (SSL_CTX_set_session_id_context ctx bytes (bytes-length bytes)))
+           
+           (SSL_CTX_set_verify ctx
+                               (if on?
+                                   mode
+                                   SSL_VERIFY_NONE)
+                               #f))]
+     [else
+      (let-values ([(mzssl input?) (lookup who "SSL context, listener, or port"
+                                           ssl-context-or-listener-or-port)])
+        (SSL_set_verify (mzssl-ssl mzssl)
+                        (if on?
+                            mode
+                            SSL_VERIFY_NONE)
+                        #f)
+        (let ([bytes #"racket"])
+          (SSL_set_session_id_context (mzssl-ssl mzssl) bytes (bytes-length bytes)))
+        (when on? (renegotiate who mzssl)))]))
+
+  (define (renegotiate who mzssl)
+    (define (check-err thunk) 
+      (let loop ()
+        (define v (thunk))
+        (when (negative? v)
+          (define err (SSL_get_error (mzssl-ssl mzssl) v))
+          (cond
+           [(= err SSL_ERROR_WANT_READ)
+            (let ([n (pump-input-once mzssl #f)])
+              (if (eq? n 0)
+                  (let ([out-blocked? (pump-output mzssl)])
+                    (sync (mzssl-i mzssl) 
+                          (if out-blocked?
+                              (mzssl-o mzssl) 
+                              never-evt))
+                    (loop))
+                  (loop)))]
+           [(= err SSL_ERROR_WANT_WRITE)
+            (if (pump-output-once mzssl #f #f)
+                (loop)
+                (begin
+                  (sync (mzssl-o mzssl))
+                  (loop)))]
+           [else
+            (error who "failed: ~a" (get-error-message (ERR_get_error)))]))))
+    (check-err (lambda () (SSL_renegotiate (mzssl-ssl mzssl))))
+    (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl))))
+    ;; Really demanding a negotiation from the server side
+    ;; requires a hacky little dance:
+    (when (positive? (ssl_struct-server
+                      (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)))
+      (set-ssl_struct-state! (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)
+                             SSL_ST_ACCEPT)
+      (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl))))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL ports
@@ -686,7 +757,7 @@
                                      (set! must-write-len len))
 				   (let ([n (pump-input-once mzssl #f)])
 				     (if (eq? n 0)
-					 (begin
+					 (let ([out-blocked? (pump-output mzssl)])
                                            (when enforce-retry?
                                              (set-mzssl-must-write! mzssl (make-semaphore)))
 					   (wrap-evt (choice-evt
@@ -701,10 +772,13 @@
                                      (set! must-write-len len))
 				   (if (pump-output-once mzssl #f #f)
 				       (do-write len non-block? enable-break?)
-				       (begin
-                                         (when enforce-retry?
-                                           (set-mzssl-must-write! mzssl (make-semaphore)))
-					 (wrap-evt (mzssl-o mzssl) (lambda (x) #f))))]
+                                       (let ([n (pump-input-once mzssl #f)])
+                                         (if (positive? n)
+                                             (do-write len non-block? enable-break?)
+                                             (begin
+                                               (when enforce-retry?
+                                                 (set-mzssl-must-write! mzssl (make-semaphore)))
+                                               (wrap-evt (mzssl-o mzssl) (lambda (x) #f))))))]
 				  [else
 				   (set! must-write-len #f)
 				   ((mzssl-error mzssl) 'write-bytes 

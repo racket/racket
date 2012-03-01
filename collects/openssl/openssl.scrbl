@@ -321,19 +321,6 @@ You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
 such a test configuration obviously provides no security.}
 
-@defproc[(ssl-set-verify!
-	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				      ssl-listener?))
-	  (verify? boolean?))
-         void?]{
-
-Enables or disables verification of a connection peer's certificates.
-By default, verification is disabled.
-
-Enabling verification also requires, at a minimum, designating trusted
-certificate authorities with
-@racket[ssl-load-verify-root-certificates!].}
-
 @defproc[(ssl-load-verify-root-certificates!
 	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
 				      ssl-listener?))
@@ -350,7 +337,7 @@ such a test configuration obviously provides no security.}
 
 @defproc[(ssl-load-suggested-certificate-authorities!
 	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
-				      ssl-listener?))
+				     ssl-listener?))
 	  (pathname path-string?))
           void?]{
 
@@ -370,6 +357,33 @@ collection for testing purposes where the peer identifies itself using
 @; ----------------------------------------------------------------------
 @section[#:tag "peer-verif"]{Peer Verification}
 
+@defproc[(ssl-set-verify! [clp (or/c ssl-client-context? ssl-server-context?
+                                     ssl-listener?
+                                     ssl-port?)] 
+                          [on? any/c]) void]{
+
+Requires certificate verification on the peer SSL connection when
+@racket[on?] is @racket[#t]. If @racket[clp] is an SSL port, then the
+connection is immediately renegotiated, and an exception is raised
+immediately if certificate verification fails. If @racket[clp] is a
+context or listener, certification verification happens on each
+subsequent connection using the context or listener.
+
+Enabling verification also requires, at a minimum, designating trusted
+certificate authorities with
+@racket[ssl-load-verify-root-certificates!].}
+
+
+@defproc[(ssl-try-verify! [clp (or/c ssl-client-context? ssl-server-context?
+                                     ssl-listener?
+                                     ssl-port?)] 
+                          [on? any/c]) void]{
+
+Like @racket[ssl-set-verify!], but when peer certificate verification fails,
+then connection continues to work. Use @racket[ssl-peer-verified?] to determine
+whether verification succeeded.}
+
+
 @defproc[(ssl-peer-verified? [p ssl-port?]) boolean?]{
 
 Returns @racket[#t] if the peer of SSL port @racket[p] has presented a
@@ -381,6 +395,7 @@ If @racket[ssl-peer-verified?] would return @racket[#t] for
 @racket[p], the result is a byte string for the subject field of
 the certificate presented by the SSL port's peer, otherwise the result
 is @racket[#f].}
+
 
 @defproc[(ssl-peer-issuer-name [p ssl-port?]) (or/c bytes? #f)]{
 
