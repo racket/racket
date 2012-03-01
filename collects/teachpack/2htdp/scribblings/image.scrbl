@@ -17,27 +17,41 @@
 @(interaction-eval #:eval img-eval (require 2htdp/image))
 @(interaction-eval #:eval img-eval (require lang/posn))
 
-@(interaction-eval
-  #:eval
-  img-eval
-  (let ([ce (current-eval)])
-    (define (adjust-image i)
-      (if (image? i)
-          (overlay/xy i 
-                      0 0
-                      (rectangle 
-                       (+ (image-width i) 1)
-                       (+ (image-height i) 1)
-                       'solid
-                       (color 0 0 0 0)))
-          i))
-    (current-eval
-     (λ (exp)
-       (adjust-image (ce exp))))))
+@(img-eval '(define extra-margin (make-parameter 0)))
+
+@(img-eval
+  `(let ([ce (current-eval)])
+     (define (adjust-image exp i)
+       (if (image? i)
+           (let ([em (extra-margin)])
+             (overlay/xy i 
+                         (- em) (- em)
+                         (rectangle 
+                          (+ (image-width i) 1 em em)
+                          (+ (image-height i) 1 em em)
+                          'solid
+                          (color 255 0 0 0))))
+           i))
+     (current-eval
+      (λ (exp)
+        (adjust-image exp (ce exp))))))
 
 @(define-syntax-rule 
    (image-examples exp ...)
    (examples #:eval img-eval exp ...))
+
+@(define-syntax-rule 
+   (image-interaction exp ...)
+   (interaction #:eval img-eval exp ...))
+
+@(define-syntax-rule
+   (image-interaction/margin num exp)
+   (begin
+     (racketinput exp)
+     (img-eval '(extra-margin num))
+     (interaction-eval-show #:eval img-eval exp)
+     (img-eval '(extra-margin 0))))
+     
 
 @teachpack["image"]{Images}
 
@@ -1636,12 +1650,12 @@ Specifically, the upper and left-hand lines around the square are within
 the bounding box, but the lower and right-hand lines are just outside.
 
 This kind of rectangle is useful when putting rectangles next to each other
-and avoiding extra thick lines on the interior. For example, imagine
+and avoiding extra thick lines on the interior. For example, consider
 building a grid like this:
 
-@image-examples[(let* ([s (rectangle 20 20 "outline" "black")]
-                       [r (beside s s s s s s)])
-                  (above r r r r r r))]
+@image-interaction[(let* ([s (rectangle 20 20 "outline" "black")]
+                          [r (beside s s s s s s)])
+                     (above r r r r r r))]
 
 The reason interior lines in this grid are the same thickness as the lines around the edge
 is because the rectangles overlap with each other. 
@@ -1660,31 +1674,49 @@ that is not possible. Instead, the same pixels are lit up as with the 2 pixel wi
 with only 1/2 of the intensity of the color. So a 1 pixel wide black @racket[pen] object draws
 a 2 pixel wide outline, but in gray.
 
+@image-interaction/margin[2
+                          (rectangle
+                           20 20 "outline" 
+                           (make-pen "black" 1 "solid" "round" "round"))]
+
 When combining pens and cropping, we can make a rectangle that has a line that is one pixel
-wide, but where the line is drawn entirely within the rectangle
+wide, but where the line is drawn entirely within the rectangle. This rectangle has a two-pixel wide
+black pen, but we can crop out the outer portion of the pen.
 
-@image-examples[(crop
-                 0 0 20 20
-                 (rectangle
-                  20 20 "outline" 
-                  (make-pen "black" 2 "solid" "round" "round")))]
+@image-interaction[(crop
+                    0 0 20 20
+                    (rectangle
+                     20 20 "outline" 
+                     (make-pen "black" 2 "solid" "round" "round")))]
 
-and we can use that to build a grid now too, but this grid has doubled lines on the
+Using that we can build a grid now too, but this grid has doubled lines on the
 interior.
 
-@image-examples[(let* ([s (crop
-                           0 0 20 20
-                           (rectangle
-                            20 20 "outline" 
-                            (make-pen "black" 2 "solid" "round" "round")))]
-                       [r (beside s s s s s s)])
-                  (above r r r r r r))]
+@image-interaction[(let* ([s (crop
+                              0 0 20 20
+                              (rectangle
+                               20 20 "outline" 
+                               (make-pen "black" 2 "solid" "round" "round")))]
+                          [r (beside s s s s s s)])
+                     (above r r r r r r))]
 
 While this kind of rectangle is not useful for building grids, it 
 is important to be able to build rectangles whose drawing does not
 exceed its bounding box. Specifically, this kind of drawing is used
 by @racket[frame] and @racket[empty-scene] so that the extra drawn pixels
 are not lost if the image is later clipped to its bounding box.
+
+When using @racket[image->color-list] with outline shapes, the results
+can be surprising for the same reasons. For example, a
+2x2 black, outline rectangle consists of nine black pixels, as discussed above,
+but since @racket[image->color-list] only returns the pixels that are 
+within the bounding box, we see only three black pixels and one white one.
+
+@image-interaction[(image->color-list
+                    (rectangle 2 2 "outline" "black"))]
+
+The black pixels are (most of) the upper and left edge of the outline shape,
+and the one white pixel is the pixel in the middle of the shape.
 
 @;-----------------------------------------------------------------------------
 @section{Exporting Images to Disk}
