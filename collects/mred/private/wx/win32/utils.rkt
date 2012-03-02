@@ -65,6 +65,12 @@
 (define-kernel32 GetLastError (_wfun -> _DWORD))
 
 (define (failed who)
+  ;; There's a race condition between this use of GetLastError()
+  ;;  and other Racket threads that may have run since
+  ;;  the call in this thread that we're reporting as failed.
+  ;;  In the rare case that we lose a race, though, it just
+  ;;  means a bad report for an error that shouldn't have happened
+  ;;; anyway.
   (error who "call failed (~s)"
          (GetLastError)))
 

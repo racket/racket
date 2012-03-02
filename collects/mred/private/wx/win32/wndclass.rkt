@@ -243,7 +243,7 @@
                             (cpointer-push-tag! p 'HBRUSH)
                             p))
 
-(define-kernel32 GetModuleFileNameW (_wfun _pointer _pointer _DWORD -> _DWORD))
+(define-kernel32 GetModuleFileNameW (_wfun #:save-errno 'windows _pointer _pointer _DWORD -> _DWORD))
 (define ERROR_INSUFFICIENT_BUFFER 122)
 (define-shell32 ExtractIconW (_wfun _HINSTANCE _string/utf-16 _UINT -> (r : _HICON)
                                     -> (or r (failed 'ExtractIconW))))
@@ -255,7 +255,7 @@
 	     (let ([r (GetModuleFileNameW #f p size)])
 	       (cond
 		[(and (or (zero? r) (= r size))
-		      (= (GetLastError) ERROR_INSUFFICIENT_BUFFER))
+		      (= (saved-errno) ERROR_INSUFFICIENT_BUFFER))
 		 (loop (* size 2))]
 		[(zero? r) (failed 'GetModuleFileNameW)]
 		[else (cast p _gcpointer _string/utf-16)]))))])
