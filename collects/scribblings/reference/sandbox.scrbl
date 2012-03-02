@@ -128,8 +128,10 @@ argument:
 
        In this case, a new namespace is created using
        @racket[sandbox-namespace-specs], which by default creates a
-       new namespace using @racket[make-base-namespace] or
-       @racket[make-gui-namespace] (depending on @racket[gui?]).
+       new namespace using @racket[sandbox-make-namespace] (which, in
+       turn, uses @racket[make-base-namespace] or
+       @racket[make-gui-namespace] depending on
+       @racket[sandbox-gui-available] and @racket[gui-available?]).
 
        In the new namespace, @racket[language] is evaluated as an
        expression to further initialize the namespace.}
@@ -188,7 +190,8 @@ In all cases, the evaluator operates in an isolated and limited
 environment:
 @itemize[
 
- @item{It uses a new custodian and namespace. When @racket[gui?] is
+ @item{It uses a new custodian and namespace. When 
+       @racket[gui-available?] and @racket[sandbox-gui-available] produce
        true, it is also runs in its own eventspace.}
 
  @item{The evaluator works under the @racket[sandbox-security-guard],
@@ -463,9 +466,7 @@ that creates the namespace, and the rest are module paths for modules
 to be attached to the created namespace using
 @racket[namespace-attach-module].
 
-The default is @racket[(list make-base-namespace)] if @racket[gui?] is
-@racket[#f], @racket[(list make-gui-namespace)] if @racket[gui?] is
-@racket[#t].
+The default is @racket[(list sandbox-make-namespace)].
 
 The module paths are needed for sharing module instantiations between
 the sandbox and the caller.  For example, sandbox code that returns
@@ -484,8 +485,26 @@ of code can be helpful:
    `(,(car specs)
      ,@(cdr specs)
      lang/posn
-     ,@(if gui? '(mrlib/cache-image-snip) '()))))
+     ,@(if (gui-available?) '(mrlib/cache-image-snip) '()))))
 ]}
+
+
+@defproc[(sandbox-make-namespace) namespace?]{
+
+Calls @racket[make-gui-namespace] when @racket[(sandbox-gui-available)]
+produces true, @racket[make-base-namespace] otherwise.}
+
+
+@defboolparam[sandbox-gui-available avail?]{
+
+Determines whether the @racketmodname[racket/gui] module can be used
+when a sandbox evaluator is created. If @racket[gui-available?]
+produces @racket[#f] during the creation of a sandbox evaluator, this
+parameter is forced to @racket[#f] during initialization of the
+sandbox. The default value of the parameter is @racket[#t].
+
+Various aspects of the library change when the GUI library is
+available, such as using a new eventspace for each evaluator.}
 
 
 @defparam[sandbox-override-collection-paths paths (listof path-string?)]{
@@ -922,12 +941,13 @@ your own permissions, for example,
 
 @defthing[gui? boolean?]{
 
-True if the @racketmodname[racket/gui] module can be used, @racket[#f]
-otherwise; see @racket[gui-available?].
+For backward compatibility, only: the result of @racket[gui-available?]
+at the time that @racketmodname[racket/sandbox] was instantiated.
 
-Various aspects of the @racketmodname[racket/sandbox] library change
-when the GUI library is available, such as using a new eventspace for
-each evaluator.}
+The value of @racket[gui?] is no longer used by
+@racketmodname[racket/sandbox] itself. Instead,
+@racket[gui-available?]  and @racket[sandbox-gui-available] are
+checked at the time that a sandbox evaluator is created.}
 
 
 @defproc[(call-with-limits [secs (or/c exact-nonnegative-integer? #f)]

@@ -10,6 +10,7 @@
          setup/dirs)
 
 (provide gui?
+         sandbox-gui-available
          sandbox-init-hook
          sandbox-reader
          sandbox-input
@@ -23,6 +24,7 @@
          sandbox-security-guard
          sandbox-network-guard
          sandbox-exit-handler
+         sandbox-make-namespace
          sandbox-make-inspector
          sandbox-make-code-inspector
          sandbox-make-logger
@@ -53,12 +55,16 @@
          exn:fail:resource?
          exn:fail:resource-resource)
 
+; for backward compatibility; maybe it should be removed:
 (define gui? (gui-available?))
+
+;; When this parameter is #t, it is adjusted when creating a sandbox:
+(define sandbox-gui-available (make-parameter #t (lambda (v) (and v #t))))
 
 (define-syntax mz/mr ; use a value for plain racket, or pull a gui binding
   (syntax-rules ()
     [(mz/mr mzval mrsym)
-     (if gui? (gui-dynamic-require 'mrsym) mzval)]))
+     (if (sandbox-gui-available) (gui-dynamic-require 'mrsym) mzval)]))
 
 ;; Configuration ------------------------------------------------------------
 
@@ -85,8 +91,11 @@
                  [sandbox-eval-handlers       '(#f #f)])
     (thunk)))
 
+(define (sandbox-make-namespace)
+  ((mz/mr make-base-namespace make-gui-namespace)))
+
 (define sandbox-namespace-specs
-  (make-parameter `(,(mz/mr make-base-namespace make-gui-namespace)
+  (make-parameter `(,sandbox-make-namespace
                     #| no modules here by default |#)))
 
 (define (default-sandbox-reader source)
@@ -613,15 +622,7 @@
     (uncovered! (list (get) get)))
   (when (namespace? ns) (current-namespace ns)))
 
-(define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
-(define make-eventspace    (mz/mr void make-eventspace))
-(define run-in-bg          (mz/mr thread queue-callback))
 (define null-input         (open-input-bytes #""))
-(define bg-run->thread
-  (if gui?
-    (lambda (ignored)
-      ((mz/mr void eventspace-handler-thread) (current-eventspace)))
-    values))
 
 ;; special message values for the evaluator procedure, also inside the user
 ;; context they're used for function applications.
@@ -879,6 +880,8 @@
      memory-cust))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
+    [sandbox-gui-available (and (sandbox-gui-available)
+                                (gui-available?))]
     [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
     ;; paths
@@ -944,17 +947,24 @@
     [current-command-line-arguments '#()]
     ;; Finally, create the namespace in the restricted environment (in
     ;; particular, it must be created under the new code inspector)
-    [current-namespace (make-evaluation-namespace)]
+    [current-namespace (make-evaluation-namespace)])
+   (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
+   (parameterize*
     ;; Note the above definition of `current-eventspace': in Racket, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which
     ;; evaluates the program in `run-in-bg') -- so this parameterization
     ;; must be nested in the above (which is what paramaterize* does), or
     ;; it will not use the new namespace.
-    [current-eventspace (parameterize-break #f (make-eventspace))])
-   (define t (bg-run->thread (run-in-bg user-process)))
-   (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
-   (set! user-thread t))
+    ([current-eventspace (parameterize-break #f ((mz/mr void make-eventspace)))])
+    (define run-in-bg (mz/mr thread queue-callback))
+    (define bg-run->thread (if (sandbox-gui-available)
+                               (lambda (ignored)
+                                 ((mz/mr void eventspace-handler-thread) (current-eventspace)))
+                               values))
+    (define t (bg-run->thread (run-in-bg user-process)))
+    (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
+    (set! user-thread t)))
   (define r (get-user-result))
   (if (eq? r 'ok)
     ;; initial program executed ok, so return an evaluator
