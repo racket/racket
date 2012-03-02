@@ -897,10 +897,12 @@
                                    (loop cnt)]
                                   [else
                                    (if (= n 0)
-                                       ;; When 0 is returned, the SSL object doesn't correctly
-                                       ;; report what it wants (e.g., a write). Send everything
-                                       ;; out that we have and try again, up to 10 times.
-                                       (unless (cnt . >= . 10)
+                                       ;; When 0 is returned, a shutdown depends on
+                                       ;; input from the peer. If we've already tried twice,
+                                       ;; wait for some input and try again.
+                                       (begin
+                                         (when (cnt . >= . 2)
+                                           (pump-input-once mzssl #t))
                                          (loop (add1 cnt)))
                                        ((mzssl-error mzssl) 'read-bytes 
                                         "SSL shutdown failed ~a"
