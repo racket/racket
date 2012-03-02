@@ -2,6 +2,7 @@
 (require scheme/contract)
 
 (require "private/reduction-semantics.rkt"
+         "private/judgment-form.rkt"
          "private/matcher.rkt"
          "private/term.rkt"
          "private/rg.rkt"

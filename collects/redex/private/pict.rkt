@@ -9,6 +9,7 @@
          texpict/utils
          
          "reduction-semantics.rkt"
+         "judgment-form.rkt"
          "struct.rkt"
          "loc-wrapper.rkt"
          "matcher.rkt"
