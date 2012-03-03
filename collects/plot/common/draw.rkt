@@ -306,6 +306,15 @@
       (define new-top (round (+ top (- y-min param-y-min))))
       (define new-bottom (round (- bottom (- (sub1 y-max) param-y-max))))
       
+      ;; Not enough space?
+      (define area-x-min (+ x-min new-left))
+      (define area-x-max (- x-max new-right))
+      (define area-y-min (+ y-min new-top))
+      (define area-y-max (- y-max new-bottom))
+      (when (or (area-x-min . > . area-x-max)
+                (area-y-min . > . area-y-max))
+        (return init-left init-right init-top init-bottom))
+      
       ;; Early out: if the margins haven't changed much, another iteration won't change them more
       ;; (hopefully)
       (when (and (= left new-left) (= right new-right)

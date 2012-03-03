@@ -18,12 +18,10 @@
     ))
 
 (define (make-snip-frame snip width height label)
-  (define (make-snip w h)
-    (send snip resize w h)
-    snip)
+  (define (make-snip w h) snip)
   
   (define frame
-    (new snip-frame% [label label] [width (+ 10 width)] [height (+ 10 height)]))
+    (new snip-frame% [label label] [width (+ 20 width)] [height (+ 20 height)]))
   
   (new snip-canvas%
        [parent frame]
