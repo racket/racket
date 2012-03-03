@@ -5,8 +5,9 @@
          term-fn?
          term-fn-get-id
          (struct-out term-id)
+         
          (struct-out judgment-form)
-         judgment-form-id?
+         
          (struct-out defined-term)
          defined-term-id?
          defined-check
@@ -18,18 +19,16 @@
 
 (define-struct term-id (id depth))
 
-(define ((transformer-predicate p?) stx)
+(define (transformer-predicate p? stx)
   (and (identifier? stx)
        (cond [(syntax-local-value stx (λ () #f)) => p?]
              [else #f])))
 
-(define-struct judgment-form (name mode proc lang lws))
-(define judgment-form-id? 
-  (transformer-predicate judgment-form?))
+(define-struct judgment-form (name mode proc mk-proc lang lws))
 
 (define-struct defined-term (value))
-(define defined-term-id?
-  (transformer-predicate defined-term?))
+(define (defined-term-id? stx)
+  (transformer-predicate defined-term? stx))
 
 (define (defined-check id desc #:external [external id])
   (if (eq? (identifier-binding id) 'lexical)

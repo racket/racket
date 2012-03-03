@@ -1122,20 +1122,20 @@ and @racket[#f] otherwise.
 @defform/subs[#:literals (I O where where/hidden side-condition side-condition/hidden etc.)
              (define-judgment-form language
                option ...
-               rule ...)
+               rule rule ...)
              ([option mode-spec
                       contract-spec]
               [mode-spec (code:line #:mode (form-id pos-use ...))]
               [contract-spec (code:line #:contract (form-id @#,ttpattern ...))]
               [pos-use I
                        O]
-              [rule [conclusion 
-                     premise 
-                     ...]
-                    [premise
+              [rule [premise
                      ...
                      dashes
-                     conclusion]]
+                     conclusion]
+                    [conclusion 
+                     premise 
+                     ...]]
               [conclusion (form-id pat/term ...)]
               [premise (code:line (judgment-form-id pat/term ...) maybe-ellipsis)
                        (where @#,ttpattern @#,tttterm)
@@ -1166,13 +1166,16 @@ For example, the following defines addition on natural numbers:
 @interaction[
 #:eval redex-eval
        (define-language nats
-         (n z (s n)))
+         (n ::= z (s n)))
        (define-judgment-form nats
          #:mode (sum I I O)
          #:contract (sum n n n)
-         [(sum z n n)]
-         [(sum (s n_1) n_2 (s n_3))
-          (sum n_1 n_2 n_3)])]
+         [-----------
+          (sum z n n)]
+         
+         [(sum n_1 n_2 n_3)
+          -------------------------
+          (sum (s n_1) n_2 (s n_3))])]
 
 The @racket[judgment-holds] form checks whether a relation holds for any 
 assignment of pattern variables in output positions.
@@ -1197,9 +1200,12 @@ to compute all pairs with a given sum.
        (define-judgment-form nats
          #:mode (sumr O O I)
          #:contract (sumr n n n)
-         [(sumr z n n)]
-         [(sumr (s n_1) n_2 (s n_3))
-          (sumr n_1 n_2 n_3)])
+         [------------
+          (sumr z n n)]
+         
+         [(sumr n_1 n_2 n_3)
+          --------------------------
+          (sumr (s n_1) n_2 (s n_3))])
        (judgment-holds (sumr n_1 n_2 (s (s z))) (n_1 n_2))]
 
 A rule's @racket[where] and @racket[where/hidden] premises behave as in 
@@ -1209,9 +1215,12 @@ A rule's @racket[where] and @racket[where/hidden] premises behave as in
        (define-judgment-form nats
          #:mode (le I I)
          #:contract (le n n)
-         [(le z n)]
-         [(le (s n_1) (s n_2))
-          (le n_1 n_2)])
+         [--------
+          (le z n)]
+         
+         [(le n_1 n_2)
+          --------------------
+          (le (s n_1) (s n_2))])
        (define-metafunction nats
          pred : n -> n or #f
          [(pred z) #f]
@@ -1219,9 +1228,10 @@ A rule's @racket[where] and @racket[where/hidden] premises behave as in
        (define-judgment-form nats
          #:mode (gt I I)
          #:contract (gt n n)
-         [(gt n_1 n_2)
-          (where n_3 (pred n_1))
-          (le n_2 n_3)])
+         [(where n_3 (pred n_1))
+          (le n_2 n_3)
+          ----------------------
+          (gt n_1 n_2)])
        (judgment-holds (gt (s (s z)) (s z)))
        (judgment-holds (gt (s z) (s z)))]
 
@@ -1239,14 +1249,20 @@ one.
        (define-judgment-form nats
          #:mode (even I)
          #:contract (even n)
-         [(even z)]
-         [(even (s (s n)))
-          (even n)])
+         
+         [--------
+          (even z)]
+         
+         [(even n)
+          ----------------
+          (even (s (s n)))])
+       
        (define-judgment-form nats
          #:mode (all-even I)
          #:contract (all-even (n ...))
-         [(all-even (n ...))
-          (even n) ...])
+         [(even n) ...
+          ------------------
+          (all-even (n ...))])
        (judgment-holds (all-even (z (s (s z)) z)))
        (judgment-holds (all-even (z (s (s z)) (s z))))]
 
@@ -1264,12 +1280,17 @@ non-termination. For example, consider the following definitions:
        (define-judgment-form vertices
          #:mode (path I I)
          #:contract (path v v)
-         [(path v v)]
-         [(path v_1 v_2)
-          (path v_2 v_1)]
-         [(path v_1 v_3)
-          (edge v_1 v_2)
-          (path v_2 v_3)])]
+         [----------
+          (path v v)]
+         
+         [(path v_2 v_1)
+          --------------
+          (path v_1 v_2)]
+         
+         [(edge v_1 v_2)
+          (path v_2 v_3)
+          --------------
+          (path v_1 v_3)])]
 Due to the second @racket[path] rule, the follow query fails to terminate:
 @racketinput[(judgment-holds (path a c))]
 
@@ -1284,7 +1305,18 @@ The @(examples-link "" #t "examples") directory demonstrates three use cases:
       defines an SOS-style semantics in a way that supports mechanized typesetting.}
 @item{@(examples-link "define-judgment-form/multi-val.rkt" #f "multi-val.rkt") ---
       defines a judgment form that serves as a multi-valued metafunction.}]}
+
+@defform[(define-extended-judgment-form language judgment-form-id
+           option ...
+           rule ...)]{
+ Defines a new judgment form that extends @racket[judgment-form-id] 
+ with additional rules. The @racket[option]s and @racket[rule]s
+ are as in @racket[define-judgment-form].
  
+ The mode specification in this judgment form and the original
+ must be the same.
+}
+                             
 @defform*/subs[((judgment-holds judgment)
                 (judgment-holds judgment @#,tttterm))
                ([judgment (judgment-form-id pat/term ...)])]{

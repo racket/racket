@@ -4,6 +4,8 @@ v5.2.2
 
   * added define-union-language
 
+  * added define-extended-judgment-form
+
 v5.2.1
 
   * rewrote the internals of the pattern matcher to be more consistent

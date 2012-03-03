@@ -260,7 +260,7 @@
   (syntax-case judgment ()
     [(form-name pat ...)
      (judgment-form-id? #'form-name)
-     (let ([expected (length (judgment-form-mode (syntax-local-value #'form-name)))]
+     (let ([expected (length (judgment-form-mode (lookup-judgment-form-id #'form-name)))]
            [actual (length (syntax->list #'(pat ...)))])
        (unless (= actual expected)
          (raise-syntax-error 
@@ -463,7 +463,7 @@
                              (loop (cdr stuffs)
                                    label
                                    computed-label
-                                   (let*-values ([(mode) (judgment-form-mode (syntax-local-value #'form-name))]
+                                   (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
                                                  [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
                                      (cons (to-lw/proc #'(form-name . pieces))
                                            (for/fold ([binds scs/withs]) ([out outs])
@@ -1588,12 +1588,15 @@
                                        [(null? anss)
                                         (continue)]
                                        [(not (= 1 (hash-count ht)))
-                                        (redex-error name "~a matched ~s ~a different ways and returned different results" 
+                                        (redex-error name "~a matched ~s ~a returned different results" 
                                                      (if (< num 0)
                                                          "a clause from an extended metafunction"
                                                          (format "clause #~a (counting from 0)" num))
                                                      `(,name ,@exp)
-                                                     (length mtchs))]
+                                                     (if (= 1 (length mtchs))
+                                                         "but"
+                                                         (format "~a different ways and "
+                                                                 (length mtchs))))]
                                        [else
                                         (let ([ans (car anss)])
                                           (unless (ormap (λ (codom-compiled-pattern)

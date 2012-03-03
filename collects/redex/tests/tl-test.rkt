@@ -1031,7 +1031,7 @@
     (test (with-handlers ([exn:fail:redex? exn-message])
             (term (f (s (s z))))
             "")
-          #rx"different ways and returned different results"))
+          #rx"returned different results"))
   
   (parameterize ([current-namespace (make-base-namespace)])
     (eval '(require redex/reduction-semantics))
@@ -2253,6 +2253,53 @@
         [(different any_a any_b) #t])
       (test (judgment-holds (R 1 2)) #t)
       (test (judgment-holds (R 1 1)) #f))
+    
+    (let ()
+      (define-judgment-form empty-language
+        #:mode (J I O)
+        [(J any_2 any_3)
+         -----------------
+         (J (any_2) any_3)]
+        [---------------------
+         (J variable variable)])
+      
+      
+      (define-extended-judgment-form empty-language J 
+        #:mode (J2 I O)
+        
+        [------------------
+         (J2 number number)]
+        
+        [(J2 any_1 any_3)
+         ------------------------
+         (J2 (any_1 any_2) any_3)])
+      
+      (test (judgment-holds (J (x) any) any) '(x))
+      (test (judgment-holds (J2 (1 y) any) any) '(1))
+      (test (judgment-holds (J2 (x y) any) any) '(x))
+      (test (judgment-holds (J2 ((((x) z) y)) any) any) '(x))
+      (test (judgment-holds (J2 ((((11) z) y)) any) any) '(11)))
+    
+    (let ()
+      
+      (define-language L1
+        (n 1 2 3))
+      
+      (define-extended-language L2 L1
+        (n .... 4 5 6))
+      
+      (define-judgment-form L1
+        #:mode (J1 I O)
+        [-----------
+         (J1 n_1 n_1)])
+      
+      (define-extended-judgment-form L2 J1 
+        #:mode (J2 I O))
+      
+      (test (judgment-holds (J1 1 any) any) '(1))
+      (test (judgment-holds (J2 1 any) any) '(1))
+      (test (judgment-holds (J2 4 any) any) '(4)))
+
     
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(require errortrace))

@@ -32,6 +32,7 @@
          define-metafunction/extension
          define-relation
          define-judgment-form
+         define-extended-judgment-form
          judgment-holds
          in-domain?
          caching-enabled?
