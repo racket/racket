@@ -84,7 +84,7 @@ Use @(racket plot-bitmap) to create a @(racket bitmap%).
 
 Use @(racket plot-frame) to create a @(racket frame%) regardless of the value of @(racket plot-new-window?). The frame is initially hidden.
 
-Use @(racket plot-snip) to create an @(racket image-snip%) regardless of the value of @(racket plot-new-window?).
+Use @(racket plot-snip) to create an interactive @(racket image-snip%) regardless of the value of @(racket plot-new-window?).
 }
 
 @doc-apply[plot/dc]{
