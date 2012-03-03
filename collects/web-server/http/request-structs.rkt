@@ -22,7 +22,7 @@
     [(list-rest (and h (struct header (af av))) hs)
      (if (bytes=? af f)
          h
-         (headers-assq f hs))]))       
+         (headers-assq f hs))]))
 (provide/contract
  [headers-assq (bytes? (listof header?) . -> . (or/c false/c header?))]
  [headers-assq* (bytes? (listof header?) . -> . (or/c false/c header?))]
@@ -43,8 +43,15 @@
      (if (equal? ti i)
          b
          (bindings-assq ti bs))]))
+
+(define (bindings-assq-all ti bs)
+  (for/list ([b (in-list bs)]
+             #:when (and (binding? b) (equal? ti (binding-id b))))
+    b))
+
 (provide/contract
  [bindings-assq (bytes? (listof binding?) . -> . (or/c false/c binding?))]
+ [bindings-assq-all (bytes? (listof binding?) . -> . (listof binding?))]
  [struct binding ([id bytes?])]
  [struct (binding:form binding) ([id bytes?]
                                  [value bytes?])]
@@ -64,7 +71,7 @@
 (provide/contract
  [request-bindings/raw (request? . -> . (listof binding?))]
  [struct request ([method bytes?]
-                  [uri url?] 
+                  [uri url?]
                   [headers/raw (listof header?)]
                   [bindings/raw-promise (promise/c (listof binding?))]
                   [post-data/raw (or/c false/c bytes?)]
