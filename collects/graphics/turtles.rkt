@@ -220,7 +220,8 @@
   (clear-window))
 
 (define (update-icon)
-  (send turtles:window refresh))
+  (when turtles:window
+    (send turtles:window refresh)))
 
 (define (home)
   (set! turtles-cache empty-cache)

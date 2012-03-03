@@ -5,6 +5,9 @@
 
 @defmodule[graphics/turtles]
 
+To use any of the turtle drawing functions, you first need to
+initialize the turtles by calling @racket[(turtles #t)].
+
 @defproc*[([(turtles [on? any/c]) void?]
            [(turtles) void?])]{
 
@@ -126,7 +129,8 @@ The fern functions below demonstrate more advanced use of
 @defmodule[graphics/turtle-examples]
 
 The @racketmodname[graphics/turtle-examples] library's source is meant
-to be read, but it also exports the following examples.
+to be read, but it also exports the following examples. To display these
+examples, first initialize the turtle window with @racket[(turtles #t)].
 
 @defproc[(regular-poly [sides exact-nonnegative-integer?] [radius real?])
          void?]{
