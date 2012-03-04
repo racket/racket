@@ -1,8 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fx->fl fl->fx)
-         racket/match racket/math
+(require racket/match racket/math
          "flonum.rkt"
          "flomap.rkt")
 
@@ -201,7 +199,7 @@
 (: deep-flomap-trim (deep-flomap -> deep-flomap))
 (define (deep-flomap-trim dfm)
   (define-values (w h) (deep-flomap-size dfm))
-  (define-values (_k-min x-min y-min _k-max x-max y-max)
+  (define-values (x-min y-min x-max y-max)
     (flomap-nonzero-rect (deep-flomap-alpha dfm)))
   (deep-flomap-inset dfm (- x-min) (- y-min) (- x-max w) (- y-max h)))
 
@@ -273,16 +271,18 @@
   (define z1-vs (flomap-values z1-fm))
   (define z2-vs (flomap-values z2-fm))
   
-  (define-syntax-rule (get-argbz-pixel argb-vs z-vs dx dy w h x y)
+  (: get-argbz-pixel (FlVector FlVector Integer Integer Integer Integer Integer Integer
+                               -> (values Flonum Flonum Flonum Flonum Flonum)))
+  (define (get-argbz-pixel argb-vs z-vs dx dy w h x y)
     (let ([x  (fx- x dx)] [y  (fx- y dy)])
       (cond [(and (x . fx>= . 0) (x . fx< . w) (y . fx>= . 0) (y . fx< . h))
              (define i (fx+ x (fx* y w)))
              (define j (fx* 4 i))
-             (values (unsafe-flvector-ref argb-vs j)
-                     (unsafe-flvector-ref argb-vs (fx+ j 1))
-                     (unsafe-flvector-ref argb-vs (fx+ j 2))
-                     (unsafe-flvector-ref argb-vs (fx+ j 3))
-                     (unsafe-flvector-ref z-vs i))]
+             (values (flvector-ref argb-vs j)
+                     (flvector-ref argb-vs (fx+ j 1))
+                     (flvector-ref argb-vs (fx+ j 2))
+                     (flvector-ref argb-vs (fx+ j 3))
+                     (flvector-ref z-vs i))]
             [else
              (values 0.0 0.0 0.0 0.0 0.0)])))
   
@@ -297,13 +297,13 @@
                
                (define i (fx+ x (fx* y w)))
                (define j (fx* 4 i))
-               (unsafe-flvector-set! argb-vs j (fl-alpha-blend a1 a2 a2))
-               (unsafe-flvector-set! argb-vs (fx+ j 1) (fl-alpha-blend r1 r2 a2))
-               (unsafe-flvector-set! argb-vs (fx+ j 2) (fl-alpha-blend g1 g2 a2))
-               (unsafe-flvector-set! argb-vs (fx+ j 3) (fl-alpha-blend b1 b2 a2))
-               (unsafe-flvector-set! z-vs i (case z-mode
-                                              [(replace)  (fl-alpha-blend z1 z2 a2)]
-                                              [else       (+ z1 z2)]))
+               (flvector-set! argb-vs j (fl-alpha-blend a1 a2 a2))
+               (flvector-set! argb-vs (fx+ j 1) (fl-alpha-blend r1 r2 a2))
+               (flvector-set! argb-vs (fx+ j 2) (fl-alpha-blend g1 g2 a2))
+               (flvector-set! argb-vs (fx+ j 3) (fl-alpha-blend b1 b2 a2))
+               (flvector-set! z-vs i (case z-mode
+                                       [(replace)  (fl-alpha-blend z1 z2 a2)]
+                                       [else       (+ z1 z2)]))
                (x-loop (fx+ x 1))]
               [else
                (y-loop (fx+ y 1))]))))
@@ -322,16 +322,20 @@
   (match-define (flomap z1-vs 1 z1-w z1-h) z1-fm)
   (match-define (flomap z2-vs 1 z2-w z2-h) z2-fm)
   
-  (define-syntax-rule (get-alpha-pixel vs dx dy w h x y)
+  (: get-alpha-pixel (FlVector Integer Integer Integer Integer Integer Integer
+                               -> Flonum))
+  (define (get-alpha-pixel vs dx dy w h x y)
     (let ([x  (fx- x dx)] [y  (fx- y dy)])
       (cond [(and (x . fx>= . 0) (x . fx< . w) (y . fx>= . 0) (y . fx< . h))
-             (unsafe-flvector-ref vs (fx* 4 (fx+ x (fx* y w))))]
+             (flvector-ref vs (fx* 4 (fx+ x (fx* y w))))]
             [else  0.0])))
   
-  (define-syntax-rule (get-z-pixel vs dx dy w h x y)
+  (: get-z-pixel (FlVector Integer Integer Integer Integer Integer Integer
+                           -> Flonum))
+  (define (get-z-pixel vs dx dy w h x y)
     (let ([x  (fx- x dx)] [y  (fx- y dy)])
       (cond [(and (x . fx>= . 0) (x . fx< . w) (y . fx>= . 0) (y . fx< . h))
-             (unsafe-flvector-ref vs (fx+ x (fx* y w)))]
+             (flvector-ref vs (fx+ x (fx* y w)))]
             [else  0.0])))
   
   (define z1-max -inf.0)
@@ -369,18 +373,21 @@
   (define u2-vs (flomap-values u2-fm))
   (define v2-vs (flomap-values v2-fm))
   
-  (define-syntax-rule (get-argbzuv-pixel argb-vs z-vs u-vs v-vs dx dy w h x y)
+  (: get-argbzuv-pixel (FlVector FlVector FlVector FlVector
+                                 Integer Integer Integer Integer Integer Integer
+                                 -> (values Flonum Flonum Flonum Flonum Flonum Flonum Flonum)))
+  (define (get-argbzuv-pixel argb-vs z-vs u-vs v-vs dx dy w h x y)
     (let ([x  (fx- x dx)] [y  (fx- y dy)])
       (cond [(and (x . fx>= . 0) (x . fx< . w) (y . fx>= . 0) (y . fx< . h))
              (define i (fx+ x (fx* y w)))
              (define j (fx* 4 i))
-             (values (unsafe-flvector-ref argb-vs j)
-                     (unsafe-flvector-ref argb-vs (fx+ j 1))
-                     (unsafe-flvector-ref argb-vs (fx+ j 2))
-                     (unsafe-flvector-ref argb-vs (fx+ j 3))
-                     (unsafe-flvector-ref z-vs i)
-                     (unsafe-flvector-ref u-vs i)
-                     (unsafe-flvector-ref v-vs i))]
+             (values (flvector-ref argb-vs j)
+                     (flvector-ref argb-vs (fx+ j 1))
+                     (flvector-ref argb-vs (fx+ j 2))
+                     (flvector-ref argb-vs (fx+ j 3))
+                     (flvector-ref z-vs i)
+                     (flvector-ref u-vs i)
+                     (flvector-ref v-vs i))]
             [else
              (values 0.0 0.0 0.0 0.0 0.0 0.0 0.0)])))
   
@@ -409,11 +416,11 @@
                
                (define i (fx+ x (fx* y w)))
                (define j (fx* 4 i))
-               (unsafe-flvector-set! argb-vs j (fl-convex-combination a1 a2 α))
-               (unsafe-flvector-set! argb-vs (fx+ j 1) (fl-convex-combination r1 r2 α))
-               (unsafe-flvector-set! argb-vs (fx+ j 2) (fl-convex-combination g1 g2 α))
-               (unsafe-flvector-set! argb-vs (fx+ j 3) (fl-convex-combination b1 b2 α))
-               (unsafe-flvector-set! z-vs i (fl-convex-combination z1 z2 α))
+               (flvector-set! argb-vs j (fl-convex-combination a1 a2 α))
+               (flvector-set! argb-vs (fx+ j 1) (fl-convex-combination r1 r2 α))
+               (flvector-set! argb-vs (fx+ j 2) (fl-convex-combination g1 g2 α))
+               (flvector-set! argb-vs (fx+ j 3) (fl-convex-combination b1 b2 α))
+               (flvector-set! z-vs i (fl-convex-combination z1 z2 α))
                (x-loop (fx+ x 1))]
               [else
                (y-loop (fx+ y 1))]))))

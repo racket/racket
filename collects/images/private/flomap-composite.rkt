@@ -1,8 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match
+(require racket/match
          "flonum.rkt"
          "flomap-struct.rkt")
 
@@ -33,14 +31,16 @@
        (define w (fxmax (fx+ dx1 w1) (fx+ dx2 w2)))
        (define h (fxmax (fx+ dy1 h1) (fx+ dy2 h2)))
        
-       (define-syntax-rule (get-argb-pixel argb-vs dx dy w h x y)
+       (: get-argb-pixel (FlVector Integer Integer Integer Integer Integer Integer
+                                   -> (values Flonum Flonum Flonum Flonum)))
+       (define (get-argb-pixel argb-vs dx dy w h x y)
          (let ([x  (fx- x dx)] [y  (fx- y dy)])
            (cond [(and (x . fx>= . 0) (x . fx< . w) (y . fx>= . 0) (y . fx< . h))
                   (define i (coords->index 4 w 0 x y))
-                  (values (unsafe-flvector-ref argb-vs i)
-                          (unsafe-flvector-ref argb-vs (fx+ i 1))
-                          (unsafe-flvector-ref argb-vs (fx+ i 2))
-                          (unsafe-flvector-ref argb-vs (fx+ i 3)))]
+                  (values (flvector-ref argb-vs i)
+                          (flvector-ref argb-vs (fx+ i 1))
+                          (flvector-ref argb-vs (fx+ i 2))
+                          (flvector-ref argb-vs (fx+ i 3)))]
                  [else  (values 0.0 0.0 0.0 0.0)])))
        
        (define argb-vs (make-flvector (* 4 w h)))
@@ -52,10 +52,10 @@
                 (define-values (a1 r1 g1 b1) (get-argb-pixel argb1-vs dx1 dy1 w1 h1 x y))
                 (define-values (a2 r2 g2 b2) (get-argb-pixel argb2-vs dx2 dy2 w2 h2 x y))
                 (define i (coords->index 4 w 0 x y))
-                (unsafe-flvector-set! argb-vs i (fl-alpha-blend a1 a2 a2))
-                (unsafe-flvector-set! argb-vs (fx+ i 1) (fl-alpha-blend r1 r2 a2))
-                (unsafe-flvector-set! argb-vs (fx+ i 2) (fl-alpha-blend g1 g2 a2))
-                (unsafe-flvector-set! argb-vs (fx+ i 3) (fl-alpha-blend b1 b2 a2))
+                (flvector-set! argb-vs i (fl-alpha-blend a1 a2 a2))
+                (flvector-set! argb-vs (fx+ i 1) (fl-alpha-blend r1 r2 a2))
+                (flvector-set! argb-vs (fx+ i 2) (fl-alpha-blend g1 g2 a2))
+                (flvector-set! argb-vs (fx+ i 3) (fl-alpha-blend b1 b2 a2))
                 (x-loop (fx+ x 1))]
                [else  (y-loop (fx+ y 1))]))))
        (flomap argb-vs 4 w h))]))

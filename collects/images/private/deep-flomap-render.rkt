@@ -1,8 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match racket/math
+(require racket/match racket/math
          "flonum.rkt"
          "flomap.rkt"
          "deep-flomap-struct.rkt"
@@ -124,21 +122,21 @@
   (for*: ([int-y : Integer  (in-range y-min y-max)]
           [int-x : Integer  (in-range x-min x-max)])
     (define i (fx+ int-x (fx* int-y w)))
-    (define a (unsafe-flvector-ref alpha-vs i))
+    (define a (flvector-ref alpha-vs i))
     (when (a . > . 0.0)
       (define j (fx* 3 i))
       ;; altitude and surface normal
-      (define z (unsafe-flvector-ref z-vs i))
-      (define nx (unsafe-flvector-ref normal-vs j))
-      (define ny (unsafe-flvector-ref normal-vs (fx+ j 1)))
-      (define nz (unsafe-flvector-ref normal-vs (fx+ j 2)))
+      (define z (flvector-ref z-vs i))
+      (define nx (flvector-ref normal-vs j))
+      (define ny (flvector-ref normal-vs (fx+ j 1)))
+      (define nz (flvector-ref normal-vs (fx+ j 2)))
       ;; cosine of angle between light and surface normal
       (define n-dot-l (fl3dot nx ny nz lx ly lz))
       ;; intensity of incident light (Lambert's cosine law)
       (define-values (Ilr Ilg Ilb) (fl3* lr lg lb n-dot-l))
-      (unsafe-flvector-set! intensity-vs j Ilr)
-      (unsafe-flvector-set! intensity-vs (fx+ j 1) Ilg)
-      (unsafe-flvector-set! intensity-vs (fx+ j 2) Ilb)
+      (flvector-set! intensity-vs j Ilr)
+      (flvector-set! intensity-vs (fx+ j 1) Ilg)
+      (flvector-set! intensity-vs (fx+ j 2) Ilb)
       ;; diffraction intensity due to specular, diffuse and ambient reflection
       (cond
         [(n-dot-l . > . 0.0)  ; does the microfacet face the light?
@@ -158,17 +156,17 @@
               (define F (- 1.0 (transmission-intensity n-dot-l 1.0 η2)))
               (* Rs F (/ D n-dot-l) (/ G n-dot-v))]
              [else  0.0]))
-         (unsafe-flvector-set! specular-vs i Is)
+         (flvector-set! specular-vs i Is)
          
          (let*-values ([(Idr Idg Idb)  (fl3* Ilr Ilg Ilb Rd)]
                        [(Idr Idg Idb)  (fl3+ Idr Idg Idb Rar Rag Rab)])
-           (unsafe-flvector-set! diffuse-vs j Idr)
-           (unsafe-flvector-set! diffuse-vs (fx+ j 1) Idg)
-           (unsafe-flvector-set! diffuse-vs (fx+ j 2) Idb))]
+           (flvector-set! diffuse-vs j Idr)
+           (flvector-set! diffuse-vs (fx+ j 1) Idg)
+           (flvector-set! diffuse-vs (fx+ j 2) Idb))]
         [else
-         (unsafe-flvector-set! diffuse-vs j Rar)
-         (unsafe-flvector-set! diffuse-vs (fx+ j 1) Rag)
-         (unsafe-flvector-set! diffuse-vs (fx+ j 2) Rab)])
+         (flvector-set! diffuse-vs j Rar)
+         (flvector-set! diffuse-vs (fx+ j 1) Rag)
+         (flvector-set! diffuse-vs (fx+ j 2) Rab)])
       
       (when (and (Ti . > . 0.0) (n-dot-l . > . 0.0))
         ;; ideal transmission vector
@@ -186,18 +184,18 @@
           ;; normalized distance to the surface
           (define norm-dist (/ dist opacity-z))
           ;; intensity of the light that strikes the surface
-          (define r (unsafe-flvector-ref rgb-vs j))
-          (define g (unsafe-flvector-ref rgb-vs (fx+ j 1)))
-          (define b (unsafe-flvector-ref rgb-vs (fx+ j 2)))
+          (define r (flvector-ref rgb-vs j))
+          (define g (flvector-ref rgb-vs (fx+ j 1)))
+          (define b (flvector-ref rgb-vs (fx+ j 2)))
           (define-values (Ir Ig Ib)
             (values (* T Ilr (absorb-intensity r norm-dist))
                     (* T Ilg (absorb-intensity g norm-dist))
                     (* T Ilb (absorb-intensity b norm-dist))))
-          (unsafe-flvector-set! sx-vs i sx)
-          (unsafe-flvector-set! sy-vs i sy)
-          (unsafe-flvector-set! Irgb-vs j Ir)
-          (unsafe-flvector-set! Irgb-vs (fx+ j 1) Ig)
-          (unsafe-flvector-set! Irgb-vs (fx+ j 2) Ib)))))
+          (flvector-set! sx-vs i sx)
+          (flvector-set! sy-vs i sy)
+          (flvector-set! Irgb-vs j Ir)
+          (flvector-set! Irgb-vs (fx+ j 1) Ig)
+          (flvector-set! Irgb-vs (fx+ j 2) Ib)))))
   
   (define diffracted-fm (fm+ (fm* (flomap-blur diffuse-fm diffuse-blur)
                                   rgb-fm)
@@ -212,21 +210,21 @@
     (for*: ([int-y : Integer  (in-range y-min y-max)]
             [int-x : Integer  (in-range x-min x-max)])
       (define i (fx+ int-x (fx* int-y w)))
-      (define a (unsafe-flvector-ref alpha-vs i))
+      (define a (flvector-ref alpha-vs i))
       (when (a . > . 0.0)
-        (define z (unsafe-flvector-ref z-vs i))
+        (define z (flvector-ref z-vs i))
         (define j (fx* 3 i))
-        (define r (unsafe-flvector-ref rgb-vs j))
-        (define g (unsafe-flvector-ref rgb-vs (fx+ j 1)))
-        (define b (unsafe-flvector-ref rgb-vs (fx+ j 2)))
+        (define r (flvector-ref rgb-vs j))
+        (define g (flvector-ref rgb-vs (fx+ j 1)))
+        (define b (flvector-ref rgb-vs (fx+ j 2)))
         (define norm-dist (/ z opacity-z))
         (define-values (Ir Ig Ib)
           (values (* Tar (absorb-intensity r norm-dist))
                   (* Tag (absorb-intensity g norm-dist))
                   (* Tab (absorb-intensity b norm-dist))))
-        (unsafe-flvector-set! ambient-shadow-vs j Ir)
-        (unsafe-flvector-set! ambient-shadow-vs (fx+ j 1) Ig)
-        (unsafe-flvector-set! ambient-shadow-vs (fx+ j 2) Ib))))
+        (flvector-set! ambient-shadow-vs j Ir)
+        (flvector-set! ambient-shadow-vs (fx+ j 1) Ig)
+        (flvector-set! ambient-shadow-vs (fx+ j 2) Ib))))
   
   ;; cast approximate shadow volumes
   (define shadow-fm (flomap-blur ambient-shadow-fm (* ambient-transmission-blur-fraction (min w h))))
@@ -241,16 +239,16 @@
       (define i01 (fx+ i00 1))
       (define i10 (fx+ i00 w))
       (define i11 (fx+ i10 1))
-      (define sx00 (unsafe-flvector-ref sx-vs i00))
-      (define sx01 (unsafe-flvector-ref sx-vs i01))
-      (define sx10 (unsafe-flvector-ref sx-vs i10))
-      (define sx11 (unsafe-flvector-ref sx-vs i11))
+      (define sx00 (flvector-ref sx-vs i00))
+      (define sx01 (flvector-ref sx-vs i01))
+      (define sx10 (flvector-ref sx-vs i10))
+      (define sx11 (flvector-ref sx-vs i11))
       (when (and (flrational? sx00) (flrational? sx01)
                  (flrational? sx10) (flrational? sx11))
-        (define sy00 (unsafe-flvector-ref sy-vs i00))
-        (define sy01 (unsafe-flvector-ref sy-vs i01))
-        (define sy10 (unsafe-flvector-ref sy-vs i10))
-        (define sy11 (unsafe-flvector-ref sy-vs i11))
+        (define sy00 (flvector-ref sy-vs i00))
+        (define sy01 (flvector-ref sy-vs i01))
+        (define sy10 (flvector-ref sy-vs i10))
+        (define sy11 (flvector-ref sy-vs i11))
         (define sx-min (min sx00 sx01 sx10 sx11))
         (define sy-min (min sy00 sy01 sy10 sy11))
         (define sx-max (max sx00 sx01 sx10 sx11))
@@ -274,24 +272,24 @@
           (define j01 (fx* 3 i01))
           (define j10 (fx* 3 i10))
           (define j11 (fx* 3 i11))
-          (define r (* 0.25 (+ (unsafe-flvector-ref Irgb-vs j00)
-                               (unsafe-flvector-ref Irgb-vs j01)
-                               (unsafe-flvector-ref Irgb-vs j10)
-                               (unsafe-flvector-ref Irgb-vs j11))))
-          (define g (* 0.25 (+ (unsafe-flvector-ref Irgb-vs (fx+ j00 1))
-                               (unsafe-flvector-ref Irgb-vs (fx+ j01 1))
-                               (unsafe-flvector-ref Irgb-vs (fx+ j10 1))
-                               (unsafe-flvector-ref Irgb-vs (fx+ j11 1)))))
-          (define b (* 0.25 (+ (unsafe-flvector-ref Irgb-vs (fx+ j00 2))
-                               (unsafe-flvector-ref Irgb-vs (fx+ j01 2))
-                               (unsafe-flvector-ref Irgb-vs (fx+ j10 2))
-                               (unsafe-flvector-ref Irgb-vs (fx+ j11 2)))))
+          (define r (* 0.25 (+ (flvector-ref Irgb-vs j00)
+                               (flvector-ref Irgb-vs j01)
+                               (flvector-ref Irgb-vs j10)
+                               (flvector-ref Irgb-vs j11))))
+          (define g (* 0.25 (+ (flvector-ref Irgb-vs (fx+ j00 1))
+                               (flvector-ref Irgb-vs (fx+ j01 1))
+                               (flvector-ref Irgb-vs (fx+ j10 1))
+                               (flvector-ref Irgb-vs (fx+ j11 1)))))
+          (define b (* 0.25 (+ (flvector-ref Irgb-vs (fx+ j00 2))
+                               (flvector-ref Irgb-vs (fx+ j01 2))
+                               (flvector-ref Irgb-vs (fx+ j10 2))
+                               (flvector-ref Irgb-vs (fx+ j11 2)))))
           ;; precalculate the Gaussian kernel for the x direction
           (for ([dx  (in-range x-size)])
             (define x (fx+ dx x-min))
             (define d (/ (- (+ 0.5 (fx->fl x)) sx-mid) sx-stddev))
             (define kx (exp (* -0.5 (* d d))))
-            (unsafe-flvector-set! kxs dx kx))
+            (flvector-set! kxs dx kx))
           ;; precalculate the Gaussian kernel for the y direction
           ;; this shouldn't help because it's used only once per y iteration, but it reduces allocs
           ;; within the loop (unsafe-flexp has no bytecode op yet, so its args and return are boxed)
@@ -299,13 +297,13 @@
             (define y (fx+ dy y-min))
             (define d (/ (- (+ 0.5 (fx->fl y)) sy-mid) sy-stddev))
             (define ky (exp (* -0.5 (* d d))))
-            (unsafe-flvector-set! kys dy ky))
+            (flvector-set! kys dy ky))
           ;; normalization constant for a 2D Gaussian kernel
           (define c (* 2.0 pi sx-stddev sy-stddev))
           ;; cast the approximate shadow volume
           (let y-loop ([dy 0])
             (when (dy . fx< . y-size)
-              (define ky (unsafe-flvector-ref kys dy))
+              (define ky (flvector-ref kys dy))
               (cond [(ky . > . 0.1)
                      (define a (/ ky c))
                      (define Ir (* r a))
@@ -314,16 +312,16 @@
                      (define i (fx* 3 (fx+ x-min (fx* (fx+ dy y-min) w))))
                      (let x-loop ([dx 0] [i i])
                        (cond [(dx . fx< . x-size)
-                              (define kx (unsafe-flvector-ref kxs dx))
+                              (define kx (flvector-ref kxs dx))
                               (when (kx . > . 0.1)
-                                (unsafe-flvector-set!
-                                 shadow-vs i (+ (* Ir kx) (unsafe-flvector-ref shadow-vs i)))
+                                (flvector-set!
+                                 shadow-vs i (+ (* Ir kx) (flvector-ref shadow-vs i)))
                                 (define i1 (fx+ i 1))
-                                (unsafe-flvector-set!
-                                 shadow-vs i1 (+ (* Ig kx) (unsafe-flvector-ref shadow-vs i1)))
+                                (flvector-set!
+                                 shadow-vs i1 (+ (* Ig kx) (flvector-ref shadow-vs i1)))
                                 (define i2 (fx+ i 2))
-                                (unsafe-flvector-set!
-                                 shadow-vs i2 (+ (* Ib kx) (unsafe-flvector-ref shadow-vs i2))))
+                                (flvector-set!
+                                 shadow-vs i2 (+ (* Ib kx) (flvector-ref shadow-vs i2))))
                               (x-loop (fx+ 1 dx) (fx+ 3 i))]
                              [else
                               (y-loop (fx+ 1 dy))]))]
@@ -374,13 +372,13 @@
     (for*: ([int-y : Integer  (in-range y-min y-max)]
             [int-x : Integer  (in-range x-min x-max)])
       (define i (fx+ int-x (fx* int-y w)))
-      (define a (unsafe-flvector-ref alpha-vs i))
+      (define a (flvector-ref alpha-vs i))
       (when (a . > . 0.0)
         (define j (fx* 3 i))
         ;; surface normal
-        (define nx (unsafe-flvector-ref normal-vs j))
-        (define ny (unsafe-flvector-ref normal-vs (fx+ j 1)))
-        (define nz (unsafe-flvector-ref normal-vs (fx+ j 2)))
+        (define nx (flvector-ref normal-vs j))
+        (define ny (flvector-ref normal-vs (fx+ j 1)))
+        (define nz (flvector-ref normal-vs (fx+ j 2)))
         ;; cosine of angle between viewer and surface normal
         ;; with gradient inferred from z flomap, this is always > 0.0
         (define cos-i nz)
@@ -391,7 +389,7 @@
         ;; surface coordinates
         (define x (+ 0.5 (fx->fl int-x)))
         (define y (+ 0.5 (fx->fl int-y)))
-        (define z (unsafe-flvector-ref z-vs i))
+        (define z (flvector-ref z-vs i))
         ;; reflection
         (when (and (Ri . > . 0.0)
                    (int-x . fx> . 0) (int-x . fx< . w-1)
@@ -409,14 +407,14 @@
             (define cdist (fl3dist sx sy sz x-mid y-mid 0.0))
             (define v (flsigmoid (* 0.25 (- (* 4.5 z-size) cdist))))
             (let-values ([(r g b) (fl3* Irr Irg Irb (* R v))])
-              (unsafe-flvector-set! reflected-vs j r)
-              (unsafe-flvector-set! reflected-vs (fx+ j 1) g)
-              (unsafe-flvector-set! reflected-vs (fx+ j 2) b))))
+              (flvector-set! reflected-vs j r)
+              (flvector-set! reflected-vs (fx+ j 1) g)
+              (flvector-set! reflected-vs (fx+ j 2) b))))
         ;; transmission (refraction)
         (when (Ti . > . 0.0)
-          (define snx (unsafe-flvector-ref normal-vs j))
-          (define sny (unsafe-flvector-ref normal-vs (fx+ j 1)))
-          (define snz (unsafe-flvector-ref normal-vs (fx+ j 2)))
+          (define snx (flvector-ref normal-vs j))
+          (define sny (flvector-ref normal-vs (fx+ j 1)))
+          (define snz (flvector-ref normal-vs (fx+ j 2)))
           (define-values (tx ty tz) (transmitted-vector snx sny snz 0.0 0.0 -1.0 1.0 η2))
           ;; sz = z + dist * tz, so dist = (sz - z) / tz
           (define dist (/ (- 0.0 z) tz))
@@ -433,15 +431,15 @@
             ;; intensities of each r g b by the time the light emerges from the surface
             (define-values (r g b)
               ;; colors represent absorption rates
-              (let ([r  (unsafe-flvector-ref rgb-vs j)]
-                    [g  (unsafe-flvector-ref rgb-vs (fx+ j 1))]
-                    [b  (unsafe-flvector-ref rgb-vs (fx+ j 2))])
+              (let ([r  (flvector-ref rgb-vs j)]
+                    [g  (flvector-ref rgb-vs (fx+ j 1))]
+                    [b  (flvector-ref rgb-vs (fx+ j 2))])
                 (values (* T sr (absorb-intensity r norm-dist))
                         (* T sg (absorb-intensity g norm-dist))
                         (* T sb (absorb-intensity b norm-dist)))))
-            (unsafe-flvector-set! transmitted-vs j r)
-            (unsafe-flvector-set! transmitted-vs (fx+ j 1) g)
-            (unsafe-flvector-set! transmitted-vs (fx+ j 2) b))))))
+            (flvector-set! transmitted-vs j r)
+            (flvector-set! transmitted-vs (fx+ j 1) g)
+            (flvector-set! transmitted-vs (fx+ j 2) b))))))
   
   (values reflected-fm transmitted-fm))
 
@@ -475,7 +473,7 @@
        (define normal-fm (flomap-gradient-normal z-fm))
        (define bg-fm (if background-fm (prep-background background-fm w h) #f))
        (define-values (x-min y-min x-max y-max)
-         (let-values ([(_1 x-min y-min _2 x-max y-max) (flomap-nonzero-rect alpha-fm)])
+         (let-values ([(x-min y-min x-max y-max) (flomap-nonzero-rect alpha-fm)])
            (values (max 0 (- x-min 1)) (max 0 (- y-min 1))
                    (min w (+ x-max 1)) (min h (+ y-max 1)))))
        

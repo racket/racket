@@ -1,22 +1,29 @@
 #lang typed/racket/base
 
 (require (for-syntax typed/racket/base)
-         racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
+         (rename-in racket/flonum
+                    [flvector-ref old:flvector-ref]
+                    [flvector-set! old:flvector-set!])
+         (except-in racket/fixnum fl->fx fx->fl)  ; these two functions are untyped
          racket/math
-         (except-in racket/unsafe/ops unsafe-flvector-ref unsafe-flvector-set!)
-         (prefix-in old- (only-in racket/unsafe/ops unsafe-flvector-ref unsafe-flvector-set!))
-         )
+         (only-in racket/unsafe/ops unsafe-flvector-set! unsafe-fx+))
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (except-out (all-from-out racket/flonum
+                                   racket/fixnum)
+                     old:flvector-ref
+                     old:flvector-set!))
 
 (define-predicate nonnegative-fixnum? Nonnegative-Fixnum)
 
-(: unsafe-flvector-ref (FlVector Integer -> Flonum))
-(define unsafe-flvector-ref flvector-ref)
+;; This looks stupid, but it avoids an optimization TR does that is actually a pessimization, by
+;; keeping it from recognizing flvector-ref
+(: flvector-ref (FlVector Integer -> Flonum))
+(define flvector-ref old:flvector-ref)
 
-(: unsafe-flvector-set! (FlVector Integer Flonum -> Void))
-(define unsafe-flvector-set! flvector-set!)
+;; Ditto above
+(: flvector-set! (FlVector Integer Flonum -> Void))
+(define flvector-set! old:flvector-set!)
 
 (define-syntax (fl->fx stx)
   (syntax-case stx ()
@@ -42,9 +49,10 @@
   (+ sca (* dca (- 1.0 sa))))
 
 (define-syntax-rule (flgaussian x s)
-  (let: ([x/s : Flonum  (fl/ x s)])
+  (let*: ([sigma : Flonum  s]
+          [x/s : Flonum  (fl/ x sigma)])
     (/ (exp (* -0.5 (* x/s x/s)))
-       (fl* (sqrt (* 2.0 pi)) s))))
+       (* (sqrt (* 2.0 pi)) sigma))))
 
 (define-syntax-rule (flsigmoid x)
   (/ 1.0 (+ 1.0 (exp (fl- 0.0 x)))))
@@ -54,7 +62,7 @@
     (with-asserts ([n  nonnegative-fixnum?])
       (let: ([vs : FlVector  (make-flvector n)])
         (let: loop : FlVector ([i : Nonnegative-Fixnum  0])
-          (cond [(i . fx< . n)  (old-unsafe-flvector-set! vs i (f i))
+          (cond [(i . fx< . n)  (unsafe-flvector-set! vs i (f i))
                                 (loop (unsafe-fx+ i 1))]
                 [else  vs]))))))
 

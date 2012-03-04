@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match
+(require racket/match
+         (only-in racket/unsafe/ops unsafe-flvector-ref)
          "flonum.rkt"
          "flomap-struct.rkt")
 
@@ -76,11 +75,11 @@
   (match-define (flomap dy-vs 1 _w _h) dy-fm)
   (define normal-vs (make-flvector (* 3 w h)))
   (for ([i  (in-range (* w h))])
-    (define dx (unsafe-flvector-ref dx-vs i))
-    (define dy (unsafe-flvector-ref dy-vs i))
+    (define dx (flvector-ref dx-vs i))
+    (define dy (flvector-ref dy-vs i))
     (define-values (nx ny nz) (fl3normalize (- dx) (- dy) 2.0))
     (define j (fx* 3 i))
-    (unsafe-flvector-set! normal-vs j nx)
-    (unsafe-flvector-set! normal-vs (fx+ j 1) ny)
-    (unsafe-flvector-set! normal-vs (fx+ j 2) nz))
+    (flvector-set! normal-vs j nx)
+    (flvector-set! normal-vs (fx+ j 1) ny)
+    (flvector-set! normal-vs (fx+ j 2) nz))
   (flomap normal-vs 3 w h))

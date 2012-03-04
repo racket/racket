@@ -1,86 +1,83 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match racket/math
+(require racket/match racket/math
          "flonum.rkt"
          "flomap-struct.rkt"
          "flomap-stats.rkt")
 
 (provide flomap-lift flomap-lift2 inline-flomap-lift inline-flomap-lift2
-         fmneg fmabs fmsqr fmsin fmcos fmtan fmlog fmexp fmsqrt fmasin fmacos fmatan
-         fmround fmfloor fmceiling fmtruncate fmzero
-         fm+ fm- fm* fm/ fmmin fmmax
+         fmsqrt fm+ fm- fm* fm/ fmmin fmmax
          flomap-normalize flomap-multiply-alpha flomap-divide-alpha)
 
 ;; ===================================================================================================
 ;; Unary
 
+;(: inline-flomap-lift ((Flonum -> Flonum) -> (flomap -> flomap)))
 (define-syntax-rule (inline-flomap-lift f)
   (λ: ([fm : flomap])
     (match-define (flomap vs c w h) fm)
-    (flomap (inline-build-flvector (* c w h) (λ (i) (f (unsafe-flvector-ref vs i))))
+    (flomap (inline-build-flvector (* c w h) (λ (i) (f (flvector-ref vs i))))
             c w h)))
 
 (: flomap-lift ((Flonum -> Real) -> (flomap -> flomap)))
 (define (flomap-lift op)
   (inline-flomap-lift (λ (x) (exact->inexact (op x)))))
 
-(define fmneg (inline-flomap-lift -))
-(define fmabs (inline-flomap-lift abs))
-(define fmsqr (inline-flomap-lift sqr))
-(define fmsin (inline-flomap-lift sin))
-(define fmcos (inline-flomap-lift cos))
-(define fmtan (inline-flomap-lift tan))
-(define fmlog (inline-flomap-lift fllog))
-(define fmexp (inline-flomap-lift exp))
 (define fmsqrt (inline-flomap-lift flsqrt))
-(define fmasin (inline-flomap-lift asin))
-(define fmacos (inline-flomap-lift acos))
-(define fmatan (inline-flomap-lift atan))
-(define fmround (inline-flomap-lift round))
-(define fmfloor (inline-flomap-lift floor))
-(define fmceiling (inline-flomap-lift ceiling))
-(define fmtruncate (inline-flomap-lift truncate))
-(define fmzero (inline-flomap-lift (λ (x) (if (x . = . 0.0) 1.0 0.0))))
 
 ;; ===================================================================================================
 ;; Binary
 
+(: raise-two-reals-error (Symbol Real Real -> flomap))
+(define (raise-two-reals-error name r1 r2)
+  (error name "expected at least one flomap argument; given ~e and ~e" r1 r2))
+
+(: raise-size-error (Symbol Integer Integer Integer Integer -> flomap))
+(define (raise-size-error name w h w2 h2)
+  (error name "expected same-size flomaps; given sizes ~e×~e and ~e×~e" w h w2 h2))
+
+(: raise-component-error (Symbol Integer Integer -> flomap))
+(define (raise-component-error name c1 c2)
+  (error name (string-append "expected flomaps with the same number of components, "
+                             "or a flomap with 1 component and any same-size flomap; "
+                             "given flomaps with ~e and ~e components")
+         c1 c2))
+
+#;
+(: inline-flomap-lift2* (Symbol (Flonum Flonum -> Flonum)
+                                -> (flomap flomap -> flomap)))
+(define-syntax-rule (inline-flomap-lift2* name f)
+  (λ: ([fm1 : flomap] [fm2 : flomap])
+    (match-define (flomap vs1 c1 w h) fm1)
+    (match-define (flomap vs2 c2 w2 h2) fm2)
+    (cond
+      [(not (and (= w w2) (= h h2)))  (raise-size-error name w h w2 h2)]
+      [(= c1 c2)  (flomap (inline-build-flvector (* c1 w h)
+                                                 (λ (i) (f (flvector-ref vs1 i)
+                                                           (flvector-ref vs2 i))))
+                          c1 w h)]
+      [(= c1 1)  (inline-build-flomap
+                  c2 w h
+                  (λ (k x y i) (f (flvector-ref vs1 (coords->index 1 w 0 x y))
+                                  (flvector-ref vs2 i))))]
+      [(= c2 1)  (inline-build-flomap
+                  c1 w h
+                  (λ (k x y i) (f (flvector-ref vs1 i)
+                                  (flvector-ref vs2 (coords->index 1 w 0 x y)))))]
+      [else  (raise-component-error name c1 c2)])))
+
+#;
+(: inline-flomap-lift2 (Symbol (Flonum Flonum -> Flonum)
+                               -> ((U Real flomap) (U Real flomap) -> flomap)))
 (define-syntax-rule (inline-flomap-lift2 name f)
-  (let: ()
-    (λ: ([fm1 : (U Real flomap)] [fm2 : (U Real flomap)])
-      (cond
-        [(and (real? fm1) (real? fm2))
-         (error name "expected at least one flomap argument; given ~e and ~e" fm1 fm2)]
-        [(real? fm1)  (let ([fm1  (exact->inexact fm1)])
-                        ((inline-flomap-lift (λ (v) (f fm1 v))) fm2))]
-        [(real? fm2)  (let ([fm2  (exact->inexact fm2)])
-                        ((inline-flomap-lift (λ (v) (f v fm2))) fm1))]
-        [else
-         (match-define (flomap vs1 c1 w h) fm1)
-         (match-define (flomap vs2 c2 w2 h2) fm2)
-         (cond
-           [(not (and (= w w2) (= h h2)))
-            (error name "expected same-size flomaps; given sizes ~e×~e and ~e×~e" w h w2 h2)]
-           [(= c1 c2)  (define n (* c1 w h))
-                       (define res-vs (make-flvector n))
-                       (flomap (inline-build-flvector n (λ (i) (f (unsafe-flvector-ref vs1 i)
-                                                                  (unsafe-flvector-ref vs2 i))))
-                               c1 w h)]
-           [(= c1 1)  (inline-build-flomap
-                       c2 w h
-                       (λ (k x y i) (f (unsafe-flvector-ref vs1 (coords->index 1 w 0 x y))
-                                       (unsafe-flvector-ref vs2 i))))]
-           [(= c2 1)  (inline-build-flomap
-                       c1 w h
-                       (λ (k x y i) (f (unsafe-flvector-ref vs1 i)
-                                       (unsafe-flvector-ref vs2 (coords->index 1 w 0 x y)))))]
-           [else
-            (error name (string-append "expected flomaps with the same number of components, "
-                                       "or a flomap with 1 component and any same-size flomap; "
-                                       "given flomaps with ~e and ~e components")
-                   c1 c2)])]))))
+  (λ: ([fm1 : (U Real flomap)] [fm2 : (U Real flomap)])
+    (cond
+      [(and (real? fm1) (real? fm2))  (raise-two-reals-error name fm1 fm2)]
+      [(real? fm1)  (let ([fm1  (exact->inexact fm1)])
+                      ((inline-flomap-lift (λ (v) (f fm1 v))) fm2))]
+      [(real? fm2)  (let ([fm2  (exact->inexact fm2)])
+                      ((inline-flomap-lift (λ (v) (f v fm2))) fm1))]
+      [else  ((inline-flomap-lift2* name f) fm1 fm2)])))
 
 (: flomap-lift2 (Symbol (Flonum Flonum -> Real) -> ((U Real flomap) (U Real flomap) -> flomap)))
 (define (flomap-lift2 name f)
@@ -102,7 +99,7 @@
     fm))
 
 (define fmdiv/zero
-  (inline-flomap-lift2 'fmdiv/zero (λ (x y) (if (y . = . 0.0) 0.0 (/ x y)))))
+  (inline-flomap-lift2* 'fmdiv/zero (λ (x y) (if (y . = . 0.0) 0.0 (/ x y)))))
 
 (: flomap-divide-alpha (flomap -> flomap))
 (define (flomap-divide-alpha fm)

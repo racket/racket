@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
-(require racket/match racket/math racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
+(require racket/match racket/math
+         (only-in racket/unsafe/ops unsafe-flvector-ref)
          "flonum.rkt"
          "flomap-struct.rkt")
 

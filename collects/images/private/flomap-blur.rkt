@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match racket/math
+(require racket/match racket/math
+         (only-in racket/unsafe/ops unsafe-flvector-ref)
          "flonum.rkt"
          "flomap-struct.rkt")
 
@@ -76,11 +75,11 @@
   (define sum
     (let: loop : Flonum ([i : Fixnum  0] [sum : Flonum  0.0])
       (cond [(i . fx< . n)  (define v (flgaussian (fx->fl (fx+ i mn)) σ))
-                            (unsafe-flvector-set! ys i v)
+                            (flvector-set! ys i v)
                             (loop (fx+ i 1) (+ sum v))]
             [else  sum])))
   (let: loop : FlVector ([i : Integer  0])
-    (cond [(i . fx< . n)  (unsafe-flvector-set! ys i (/ (unsafe-flvector-ref ys i) sum))
+    (cond [(i . fx< . n)  (flvector-set! ys i (/ (flvector-ref ys i) sum))
                           (loop (fx+ i 1))]
           [else  ys])))
 
@@ -103,11 +102,11 @@
                  (cond [(k . fx< . c)
                         (define j00 (coords->index c w+1 k x y))
                         (define j01 (fx+ j00 c*w+1))
-                        (unsafe-flvector-set! new-vs (fx+ j01 c)
-                                              (- (+ (unsafe-flvector-ref vs i)
-                                                    (unsafe-flvector-ref new-vs j01)
-                                                    (unsafe-flvector-ref new-vs (fx+ j00 c)))
-                                                 (unsafe-flvector-ref new-vs j00)))
+                        (flvector-set! new-vs (fx+ j01 c)
+                                       (- (+ (flvector-ref vs i)
+                                             (flvector-ref new-vs j01)
+                                             (flvector-ref new-vs (fx+ j00 c)))
+                                          (flvector-ref new-vs j00)))
                         (k-loop (fx+ k 1) (fx+ i 1))]
                        [else  (x-loop (fx+ x 1) i)]))]
               [else  (y-loop (fx+ y 1) i)]))))
@@ -126,8 +125,8 @@
                  (cond [(k . fx< . c)
                         (define j0 (coords->index c w+1 k x y))
                         (define j1 (fx+ j0 c))
-                        (unsafe-flvector-set! new-vs j1 (+ (unsafe-flvector-ref vs i)
-                                                           (unsafe-flvector-ref new-vs j0)))
+                        (flvector-set! new-vs j1 (+ (flvector-ref vs i)
+                                                    (flvector-ref new-vs j0)))
                         (k-loop (fx+ k 1) (fx+ i 1))]
                        [else  (x-loop (fx+ x 1) i)]))]
               [else  (y-loop (fx+ y 1) i)]))))
@@ -147,8 +146,8 @@
                  (cond [(k . fx< . c)
                         (define j0 (coords->index c w k x y))
                         (define j1 (fx+ j0 cw))
-                        (unsafe-flvector-set! new-vs j1 (+ (unsafe-flvector-ref vs j0)
-                                                           (unsafe-flvector-ref new-vs j0)))
+                        (flvector-set! new-vs j1 (+ (flvector-ref vs j0)
+                                                    (flvector-ref new-vs j0)))
                         (k-loop (fx+ k 1))]
                        [else  (x-loop (fx+ x 1))]))]
               [else  (y-loop (fx+ y 1))]))))
@@ -164,10 +163,10 @@
   (define x2 (fxmax 0 (fxmin x-end w-1)))
   (define y1 (fxmax 0 (fxmin y-start h-1)))
   (define y2 (fxmax 0 (fxmin y-end h-1)))
-  (- (+ (unsafe-flvector-ref vs (coords->index c w k x1 y1))
-        (unsafe-flvector-ref vs (coords->index c w k x2 y2)))
-     (+ (unsafe-flvector-ref vs (coords->index c w k x1 y2))
-        (unsafe-flvector-ref vs (coords->index c w k x2 y1)))))
+  (- (+ (flvector-ref vs (coords->index c w k x1 y1))
+        (flvector-ref vs (coords->index c w k x2 y2)))
+     (+ (flvector-ref vs (coords->index c w k x1 y2))
+        (flvector-ref vs (coords->index c w k x2 y1)))))
 
 (: raw-flomap-integral-x-sum (FlVector Integer Integer
                                        Integer Integer Integer Integer -> Flonum))
@@ -175,8 +174,8 @@
   (define w-1 (fx- w 1))
   (define x1 (fxmax 0 (fxmin x-start w-1)))
   (define x2 (fxmax 0 (fxmin x-end w-1)))
-  (- (unsafe-flvector-ref vs (coords->index c w k x2 y))
-     (unsafe-flvector-ref vs (coords->index c w k x1 y))))
+  (- (flvector-ref vs (coords->index c w k x2 y))
+     (flvector-ref vs (coords->index c w k x1 y))))
 
 (: raw-flomap-integral-y-sum (FlVector Integer Integer Integer
                                        Integer Integer Integer Integer -> Flonum))
@@ -184,8 +183,8 @@
   (define h-1 (fx- h 1))
   (define y1 (fxmax 0 (fxmin y-start h-1)))
   (define y2 (fxmax 0 (fxmin y-end h-1)))
-  (- (unsafe-flvector-ref vs (coords->index c w k x y2))
-     (unsafe-flvector-ref vs (coords->index c w k x y1))))
+  (- (flvector-ref vs (coords->index c w k x y2))
+     (flvector-ref vs (coords->index c w k x y1))))
 
 ;; ===================================================================================================
 ;; Box blur

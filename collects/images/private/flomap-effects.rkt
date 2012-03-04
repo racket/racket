@@ -1,7 +1,6 @@
 #lang typed/racket/base
 
-(require racket/flonum racket/math racket/match racket/list
-         (except-in racket/fixnum fl->fx fx->fl)
+(require racket/math racket/match racket/list
          "flonum.rkt"
          "flomap-struct.rkt"
          "flomap-pointwise.rkt"

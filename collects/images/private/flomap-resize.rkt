@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match racket/math
+(require racket/match racket/math
+         (only-in racket/unsafe/ops unsafe-fx+)
          "flonum.rkt"
          "flomap-struct.rkt"
          "flomap-stats.rkt"
@@ -44,17 +43,17 @@
                              (when (k . fx< . c)
                                (define src-i (coords->index c src-w k src-x src-y))
                                (define dst-i (coords->index c dst-w k dst-x dst-y))
-                               (unsafe-flvector-set! dst-vs dst-i (unsafe-flvector-ref src-vs src-i))
-                               (k-loop (fx+ k 1)))))
-                         (x-loop (fx+ dst-x 1)))))
-                   (y-loop (fx+ dst-y 1))))
+                               (flvector-set! dst-vs dst-i (flvector-ref src-vs src-i))
+                               (k-loop (unsafe-fx+ k 1)))))
+                         (x-loop (unsafe-fx+ dst-x 1)))))
+                   (y-loop (unsafe-fx+ dst-y 1))))
                (flomap dst-vs c dst-w dst-h)])])]))
 
 (: flomap-trim (flomap -> flomap))
 (define (flomap-trim fm)
   (match-define (flomap _ c w h) fm)
   (cond [(c . = . 0)  (make-flomap 0 0 0)]
-        [else  (define-values (_k-min x-min y-min _k-max x-max y-max)
+        [else  (define-values (x-min y-min x-max y-max)
                  (flomap-nonzero-rect (flomap-ref-component fm 0)))
                (flomap-inset fm (- x-min) (- y-min) (- x-max w) (- y-max h))]))
 
@@ -196,9 +195,9 @@
      (cond [(or (x0 . fx< . 0) (x0 . fx>= . w)) 0.0]
            [else
             (define i0 (coords->index c w k x0 y))
-            (define v0 (unsafe-flvector-ref vs i0))
+            (define v0 (flvector-ref vs i0))
             (define v1 (cond [(x0 . fx= . w-1)  0.0]
-                             [else  (unsafe-flvector-ref vs (fx+ i0 c))]))
+                             [else  (flvector-ref vs (unsafe-fx+ i0 c))]))
             (fl-convex-combination v0 v1 (- scaled-x floor-scaled-x))]))))
 
 (: flomap-scale*-y/linear (flomap Nonnegative-Flonum Exact-Nonnegative-Integer -> flomap))
@@ -215,7 +214,7 @@
      (cond [(or (y0 . fx< . 0) (y0 . fx>= . h))  0.0]
            [else
             (define i0 (coords->index c w k x y0))
-            (define v0 (unsafe-flvector-ref vs i0))
+            (define v0 (flvector-ref vs i0))
             (define v1 (cond [(y0 . fx= . h-1)  0.0]
-                             [else  (unsafe-flvector-ref vs (fx+ i0 cw))]))
+                             [else  (flvector-ref vs (unsafe-fx+ i0 cw))]))
             (fl-convex-combination v0 v1 (- scaled-y floor-scaled-y))]))))

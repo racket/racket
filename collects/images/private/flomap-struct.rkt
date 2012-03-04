@@ -1,9 +1,9 @@
 #lang typed/racket/base
 
-(require racket/flonum
-         (except-in racket/fixnum fl->fx fx->fl)
-         racket/match
-         (except-in racket/unsafe/ops unsafe-flvector-ref unsafe-flvector-set!)
+(require racket/match
+         (only-in racket/unsafe/ops
+                  unsafe-flvector-ref unsafe-flvector-set!
+                  unsafe-fx+)
          "flonum.rkt")
 
 (provide flomap flomap? flomap-values flomap-components flomap-width flomap-height
@@ -86,6 +86,11 @@
     [(c w h)    (flomap (make-flvector (* c w h)) c w h)]
     [(c w h v)  (flomap (make-flvector (* c w h) (exact->inexact v)) c w h)]))
 
+#;
+(: inline-build-flomap (Integer Integer Integer
+                                (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum
+                                                    Nonnegative-Fixnum -> Flonum)
+                                -> flomap))
 (define-syntax-rule (inline-build-flomap components width height f)
   (let: ([c : Integer  components]
          [w : Integer  width]
