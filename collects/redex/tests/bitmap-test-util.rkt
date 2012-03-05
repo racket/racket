@@ -39,13 +39,15 @@
                       raw-bitmap-filename)]
          [old-bitmap (if (file-exists? bitmap-filename)
                          (read-bitmap bitmap-filename)
-                         (let* ([bm (make-screen-bitmap 100 20)]
+                         (let* ([bm (make-bitmap 100 20)]
                                 [bdc (make-object bitmap-dc% bm)])
                            (send bdc clear)
                            (send bdc draw-text "does not exist" 0 0)
                            (send bdc set-bitmap #f)
                            bm))]
-         [new-bitmap (make-screen-bitmap
+         [new-bitmap ((if (eq? (system-type) 'unix)
+                          make-bitmap
+                          make-screen-bitmap)
                        (ceiling (inexact->exact (pict-width pict))) 
                        (ceiling (inexact->exact (pict-height pict))))]
          [bdc (make-object bitmap-dc% new-bitmap)])
