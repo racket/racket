@@ -1006,6 +1006,8 @@ MZ_EXTERN int scheme_is_module_path(Scheme_Object *);
 
 MZ_EXTERN Scheme_Object *scheme_datum_to_kernel_stx(Scheme_Object *e);
 
+MZ_EXTERN int scheme_module_is_declared(Scheme_Object *name, int try_load);
+
 /*========================================================================*/
 /*                                symbols                                 */
 /*========================================================================*/

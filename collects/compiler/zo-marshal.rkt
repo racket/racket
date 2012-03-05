@@ -25,6 +25,119 @@
   (get-output-bytes bs))
 
 (define (zo-marshal-to top outp) 
+  (if (and (mod? (compilation-top-code top))
+           (or (pair? (mod-pre-submodules (compilation-top-code top)))
+               (pair? (mod-post-submodules (compilation-top-code top)))))
+      ;; module directory and submodules:
+      (zo-marshal-modules-to top outp)
+      ;; single module or other:
+      (zo-marshal-top-to top outp)))
+
+(define (zo-marshal-modules-to top outp)
+  ;; Write the compiled form header
+  (write-bytes #"#~" outp)
+  ;; Write the version:
+  (define version-bs (string->bytes/latin-1 (version)))
+  (write-bytes (bytes (bytes-length version-bs)) outp)
+  (write-bytes version-bs outp)
+
+  (write-byte (char->integer #\D) outp)
+
+  (struct mod-bytes (code-bstr name-bstr offset))
+  ;; bytestring encodings of the modules and module names
+  ;; --- in the order that they must be written:
+  (define pre-mod-bytess
+    (reverse
+     (let loop ([m (compilation-top-code top)] [pre-accum null])
+       (define (encode-module-name name)
+         (if (symbol? name)
+             #""
+             (apply bytes-append
+                    (for/list ([sym (in-list (cdr name))])
+                      (define b (string->bytes/utf-8 (symbol->string sym)))
+                      (define len (bytes-length b))
+                      (bytes-append (if (len . < . 255)
+                                        (bytes len)
+                                        (bytes-append
+                                         (bytes 255)
+                                         (integer->integer-bytes len 4 #f #f)))
+                                    b)))))
+       (define accum
+         (let iloop ([accum pre-accum] [subm (mod-pre-submodules m)])
+           (if (null? subm)
+               accum
+               (iloop (loop (car subm) accum) (cdr subm)))))
+       (define o (open-output-bytes))
+       (zo-marshal-top-to (struct-copy compilation-top top 
+                                       [code (struct-copy mod m 
+                                                          [pre-submodules null]
+                                                          [post-submodules null])])
+                          o)
+       (define new-accum
+         (cons (mod-bytes (get-output-bytes o)
+                          (encode-module-name (mod-name m))
+                          0)
+               accum))
+       (let iloop ([accum new-accum] [subm (mod-post-submodules m)])
+         (if (null? subm)
+             accum
+             (iloop (loop (car subm) accum) (cdr subm)))))))
+  (write-bytes (int->bytes (length pre-mod-bytess)) outp)
+  ;; Size of btree:
+  (define btree-size 
+    (+ 8
+       (string-length (version))
+       (apply + (for/list ([mb (in-list pre-mod-bytess)])
+                  (+ (bytes-length (mod-bytes-name-bstr mb))
+                     20)))))
+  ;; Add offsets to mod-bytess:
+  (define mod-bytess (let loop ([offset btree-size] [mod-bytess pre-mod-bytess])
+                       (if (null? mod-bytess)
+                           null
+                           (let ([mb (car mod-bytess)])
+                             (cons (mod-bytes (mod-bytes-code-bstr mb)
+                                              (mod-bytes-name-bstr mb)
+                                              offset)
+                                   (loop (+ offset 
+                                            (bytes-length (mod-bytes-code-bstr mb)))
+                                         (cdr mod-bytess)))))))
+  ;; Sort by name for btree order:
+  (define sorted-mod-bytess 
+    (list->vector (sort mod-bytess bytes<? #:key mod-bytes-name-bstr)))
+  (define right-offsets (make-vector (vector-length sorted-mod-bytess) 0))
+  ;; Write out btree or compute offsets:
+  (define (write-btree write-bytes)
+    (let loop ([lo 0] [hi (vector-length sorted-mod-bytess)] [pos 0])
+      (define mid (quotient (+ lo hi) 2))
+      (define mb (vector-ref sorted-mod-bytess mid))
+      (define name-len (bytes-length (mod-bytes-name-bstr mb)))
+      (write-bytes (int->bytes name-len) outp)
+      (write-bytes (mod-bytes-name-bstr mb) outp)
+      (write-bytes (int->bytes (mod-bytes-offset mb)) outp)
+      (write-bytes (int->bytes (bytes-length (mod-bytes-code-bstr mb))) outp)
+      (define left-pos (+ pos name-len 20))
+      (write-bytes (int->bytes (if (= lo mid)
+                                   0
+                                   left-pos))
+                   outp)
+      (write-bytes (int->bytes (if (= (add1 mid) hi)
+                                   0
+                                   (vector-ref right-offsets mid)))
+                   outp)
+      (define right-pos (if (= lo mid)
+                            left-pos
+                            (loop lo mid left-pos)))
+      (vector-set! right-offsets mid right-pos)
+      (if (= (add1 mid) hi)
+          right-pos
+          (loop (add1 mid) hi right-pos))))
+  (write-btree void) ; to fill `right-offsets'
+  (write-btree write-bytes) ; to actually write the btree
+  ;; write modules:
+  (for ([mb (in-list mod-bytess)])
+    (write-bytes (mod-bytes-code-bstr mb) outp)))
+
+(define (zo-marshal-top-to top outp) 
   
   ; XXX: wraps were encoded in traverse, now needs to be handled when writing
   (define wrapped (make-hash))
@@ -126,6 +239,8 @@
   (define version-bs (string->bytes/latin-1 (version)))
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
+
+  (write-byte (char->integer #\T) outp)
 
   ; Write empty hash code
   (write-bytes (make-bytes 20 0) outp)
@@ -821,9 +936,14 @@
        [else (error 'out-anything "~s" (current-type-trace))])))))
 
 (define (out-module mod-form out)
+  (out-marshaled module-type-num
+                 (convert-module mod-form)
+                 out))
+
+(define (convert-module mod-form)
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info internal-context))
+                       max-let-depth dummy lang-info internal-context pre-submodules post-submodules))
      (let* ([lookup-req (lambda (phase)
                           (let ([a (assq phase requires)])
                             (if a
@@ -917,12 +1037,13 @@
             [l (cons internal-context l)] ; module->namespace syntax
             [l (list* #f #f l)] ; obsolete `functional?' info
             [l (cons lang-info l)] ; lang-info
+            [l (cons (map convert-module post-submodules) l)]
+            [l (cons (map convert-module pre-submodules) l)]
             [l (cons self-modidx l)]
             [l (cons srcname l)]
-            [l (cons name l)])
-       (out-marshaled module-type-num
-                      l
-                      out))]))
+            [l (cons (if (pair? name) (car name) name) l)]
+            [l (cons (if (pair? name) (cdr name) null) l)])
+       l)]))
 
 (define (lookup-encoded-wrapped w out)
   (hash-ref! (out-encoded-wraps out) w

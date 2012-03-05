@@ -395,6 +395,7 @@ extern Scheme_Object *scheme_date;
 extern Scheme_Object *scheme_liberal_def_ctx_type;
 
 extern Scheme_Object *scheme_module_stx;
+extern Scheme_Object *scheme_modulestar_stx;
 extern Scheme_Object *scheme_begin_stx;
 extern Scheme_Object *scheme_module_begin_stx;
 extern Scheme_Object *scheme_define_values_stx;
@@ -1163,7 +1164,7 @@ typedef struct {
 } Scheme_Branch_Rec;
 
 typedef struct {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* keyex used to disable module table */
   mzshort max_let_depth;
   Scheme_Object *code;
   struct Resolve_Prefix *prefix; /* NULL => a wrapper for a JITted module in `code' */
@@ -2258,6 +2259,7 @@ typedef struct Scheme_Compile_Expand_Info
 
 #define COMP_ALLOW_SET_UNDEFINED 0x1
 #define COMP_CAN_INLINE 0x2
+#define COMP_ENFORCE_CONSTS 0x4
 
 typedef Scheme_Compile_Expand_Info Scheme_Compile_Info;
 typedef Scheme_Compile_Expand_Info Scheme_Expand_Info;
@@ -2770,6 +2772,7 @@ int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 #define SCHEME_CAPTURE_LIFTED 512
 #define SCHEME_INTDEF_SHADOW 1024
 #define SCHEME_POST_BIND_FRAME 2048
+#define SCHEME_NESTED_MODULE_FRAME 4096
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1
@@ -2811,6 +2814,7 @@ Scheme_Object *scheme_make_branch(Scheme_Object *test,
 				  Scheme_Object *fbranch);
 
 int scheme_is_toplevel(Scheme_Comp_Env *env);
+int scheme_is_nested_module(Scheme_Comp_Env *env);
 Scheme_Comp_Env *scheme_extend_as_toplevel(Scheme_Comp_Env *env);
 
 Scheme_Comp_Env *scheme_no_defines(Scheme_Comp_Env *env);
@@ -2974,6 +2978,7 @@ struct Scheme_Env {
   struct Scheme_Module *module; /* NULL => top-level */
 
   Scheme_Module_Registry *module_registry;
+  Scheme_Module_Registry *module_pre_registry; /* for expanding submodules */
   Scheme_Object *insp; /* instantiation-time inspector, for granting
 			  protected access */
 
@@ -3069,6 +3074,7 @@ typedef struct Scheme_Module
   Scheme_Object *hints; /* set by expansion; moved to properties */
   Scheme_Object *ii_src; /* set by compile, temporary */
   Comp_Prefix *comp_prefix; /* set by body compile, temporary */
+  void **super_bxs_info; /* set by expansion; temporary */
 
   int max_let_depth;
   Resolve_Prefix *prefix;
@@ -3078,6 +3084,10 @@ typedef struct Scheme_Module
   Scheme_Env *primitive;
 
   Scheme_Object *rn_stx;
+
+  Scheme_Object *submodule_path; /* path to this module relative to enclosing top-level module */
+  Scheme_Object *pre_submodules, *post_submodules; /* list of modules (when compiled or loaded as a group) */
+  Scheme_Object *submodule_ancestry; /* se by compile/expand, temporary */
 } Scheme_Module;
 
 typedef struct Scheme_Module_Phase_Exports
@@ -3248,6 +3258,9 @@ void scheme_prepare_compile_env(Scheme_Env *env);
 
 Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env);
 void scheme_prep_namespace_rename(Scheme_Env *menv);
+
+Scheme_Object *scheme_string_to_submodule_path(char *_s, intptr_t len);
+char *scheme_submodule_path_to_string(Scheme_Object *p, intptr_t *_len);
 
 /*========================================================================*/
 /*                         errors and exceptions                          */

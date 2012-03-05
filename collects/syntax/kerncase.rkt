@@ -22,7 +22,7 @@
                                             with-continuation-mark
                                             if #%plain-app #%expression
                                             define-values define-syntaxes begin-for-syntax
-                                            module 
+                                            module module*
                                             #%plain-module-begin 
                                             #%require #%provide 
                                             #%variable-reference)))))
@@ -85,7 +85,7 @@
                 #%top
                 #%datum
                 #%variable-reference
-                module #%provide #%require))))
+                module module* #%provide #%require))))
 
   (provide kernel-syntax-case
            kernel-syntax-case*

@@ -21,6 +21,42 @@
      (define s 10)
      (provide t (protect-out s))))
 
+(define ex-mod3
+  '(module m racket/base
+     (module* a racket/base
+       (provide a)
+       (define a 1)
+       (module* a+ racket/base
+         (define a+ 1.1)))
+     (module* b racket/base
+       (require (submod "." ".." a))
+       (provide b)
+       (define b (+ a 1)))))
+
+(define ex-mod4
+  '(module m racket/base
+     (module a racket/base
+       (provide a)
+       (define a 1)
+       (module a+ racket/base
+         (define a+ 1.1)))
+     (module b racket/base
+       (require (submod "." ".." a))
+       (provide b)
+       (define b (+ a 1)))))
+
+(define ex-mod5
+  '(module m racket/base
+     (module a racket/base
+       (provide a)
+       (define a 1)
+       (module* a+ racket/base
+         (define a+ 1.1)))
+     (module* b racket/base
+       (require (submod "." ".." a))
+       (provide b)
+       (define b (+ a 1)))))
+
 (define (check ex-mod)
   (let ([c (parameterize ([current-namespace (make-base-namespace)])
              (compile ex-mod))])
@@ -36,5 +72,4 @@
             (unless (equal? (to-string p) (to-string p2))
               (error 'zo "failed on example: ~e" ex-mod))))))))
 
-(check ex-mod1)
-(check ex-mod2)
+(for-each check (list ex-mod1 ex-mod2 ex-mod3 ex-mod4 ex-mod5))

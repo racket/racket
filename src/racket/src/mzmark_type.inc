@@ -2161,6 +2161,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
+  gcMARK2(e->module_pre_registry, gc);
   gcMARK2(e->insp, gc);
 
   gcMARK2(e->rename_set, gc);
@@ -2202,6 +2203,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(e->module, gc);
   gcFIXUP2(e->module_registry, gc);
+  gcFIXUP2(e->module_pre_registry, gc);
   gcFIXUP2(e->insp, gc);
 
   gcFIXUP2(e->rename_set, gc);
@@ -2532,12 +2534,18 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(m->hints, gc);
   gcMARK2(m->ii_src, gc);
+  gcMARK2(m->super_bxs_info, gc);
 
   gcMARK2(m->comp_prefix, gc);
   gcMARK2(m->prefix, gc);
   gcMARK2(m->dummy, gc);
 
   gcMARK2(m->rn_stx, gc);
+
+  gcMARK2(m->submodule_path, gc);
+  gcMARK2(m->pre_submodules, gc);
+  gcMARK2(m->post_submodules, gc);
+  gcMARK2(m->submodule_ancestry, gc);
 
   gcMARK2(m->primitive, gc);
   return
@@ -2572,12 +2580,18 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(m->hints, gc);
   gcFIXUP2(m->ii_src, gc);
+  gcFIXUP2(m->super_bxs_info, gc);
 
   gcFIXUP2(m->comp_prefix, gc);
   gcFIXUP2(m->prefix, gc);
   gcFIXUP2(m->dummy, gc);
 
   gcFIXUP2(m->rn_stx, gc);
+
+  gcFIXUP2(m->submodule_path, gc);
+  gcFIXUP2(m->pre_submodules, gc);
+  gcFIXUP2(m->post_submodules, gc);
+  gcFIXUP2(m->submodule_ancestry, gc);
 
   gcFIXUP2(m->primitive, gc);
   return

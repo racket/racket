@@ -384,13 +384,29 @@ Like @racket[dynamic-require], but in a @tech{phase} that is @math{1}
 more than the namespace's @tech{base phase}.}
 
 
+@defproc[(module-declared?
+          [mod (or/c module-path? path? resolved-module-path?)]
+          [load? any/c #f])
+         boolean?]{
+
+Returns @racket[#t] if the module indicated by @racket[mod] is
+declared (but not necessarily @tech{instantiate}d or @tech{visit}ed)
+in the current namespace, @racket[#f] otherwise.
+
+If @racket[load?] is @racket[#t] and @racket[mod] is not a
+@tech{resolved module path}, the module is loaded in the process of
+resolving @racket[mod]  (as for @racket[dynamic-require]
+and other functions).}
+
+
 @defproc[(module->language-info
           [mod (or/c module-path? path? resolved-module-path?)]
           [load? any/c #f])
          (or/c #f (vector/c module-path? symbol? any/c))]{
 
 Returns information intended to reflect the ``language'' of the
-implementation of @racket[mod]. If @racket[load?] is @racket[#f], the
+implementation of @racket[mod]. If @racket[mod] is a 
+@tech{resolved module path} or @racket[load?] is @racket[#f], the
 module named by @racket[mod] must be declared (but not necessarily
 @tech{instantiate}d or @tech{visit}ed) in the current namespace;
 otherwise, @racket[mod] may be loaded (as for @racket[dynamic-require]

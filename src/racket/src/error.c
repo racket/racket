@@ -126,6 +126,8 @@ static void update_want_level(Scheme_Logger *logger);
 
 static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *argv[]);
 
+static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout);
+
 static char *init_buf(intptr_t *len, intptr_t *blen);
 void scheme_set_logging(int syslog_level, int stderr_level)
 {
@@ -211,6 +213,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %q = truncated-to-256 string
   %Q = truncated-to-256 Scheme string
   %V = scheme_value
+  %@ = list of scheme_value to write splice
   %D = scheme value to display
   %_ = skip pointer
   %- = skip int
@@ -288,6 +291,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	break;
       case 'S':
       case 'V':
+      case '@':
       case 'D':
       case 'T':
       case 'Q':
@@ -500,6 +504,13 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    Scheme_Object *o;
 	    o = (Scheme_Object *)ptrs[pp++];
 	    t = scheme_make_provided_string(o, 1, &tlen);
+	  }
+	  break;
+	case '@':
+	  {
+	    Scheme_Object *o;
+	    o = (Scheme_Object *)ptrs[pp++];
+	    t = make_provided_list(o, 1, &tlen);
 	  }
 	  break;
 	case 'D':
@@ -2069,6 +2080,50 @@ char *scheme_make_provided_string(Scheme_Object *o, int count, intptr_t *lenout)
     len /= count;
 
   return error_write_to_string_w_max(o, len, lenout);
+}
+
+static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout)
+{
+  intptr_t len, cnt, i, onelen, total, sz;
+  char *s, *accum, *naya;
+
+  cnt = scheme_proper_list_length(o);
+  if (cnt < 0)
+    return scheme_make_provided_string(o, count, lenout);
+
+  if (!cnt) {
+    *lenout = 0;
+    return "";
+  }
+
+  len = scheme_get_print_width();
+
+  if (count)
+    len /= count;
+
+  total = 0;
+  sz = 64;
+  accum = (char *)scheme_malloc_atomic(sz);
+  
+  for (i = 0; i < cnt; i++) {
+    s = scheme_write_to_string_w_max(SCHEME_CAR(o), &onelen, len / cnt);
+    if (total + onelen + 1 >= sz) {
+      sz = (2 * sz) + onelen + 1;
+      naya = (char *)scheme_malloc_atomic(sz);
+      memcpy(naya, accum, total);
+      accum = naya;
+    }
+    memcpy(accum + total, s, onelen);
+    accum[total + onelen] = ' ';
+    total += onelen + 1;
+    o = SCHEME_CDR(o);
+  }
+
+  total -= 1;
+  accum[total] = 0;
+  *lenout = total;
+
+  return accum;
 }
 
 static Scheme_Object *do_error(int for_user, int argc, Scheme_Object *argv[])

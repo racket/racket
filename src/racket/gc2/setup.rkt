@@ -97,13 +97,13 @@
 
 (let ([mk-cm make-compilation-manager-load/use-compiled-handler]
       [old-namespace (current-namespace)])
-  (current-namespace (make-empty-namespace))
-  (namespace-attach-module old-namespace ''#%builtin)
-  (use-compiled-file-paths (list "compiled"))
-  (current-load/use-compiled (mk-cm))
-  (namespace-require 'scheme/base))
-
-(dynamic-require 'xform/xform-mod (void))
+  (parameterize ([current-namespace (make-empty-namespace)])
+    (namespace-attach-module old-namespace ''#%builtin)
+    (parameterize ([use-compiled-file-paths (list "compiled")])
+      (parameterize ([current-load/use-compiled (mk-cm)])
+        (namespace-require 'scheme/base)
+        
+        (dynamic-require 'xform/xform-mod (void))))))
 
 (with-output-to-file "xform-collects/version.rkt"
   (lambda () (write (version))))

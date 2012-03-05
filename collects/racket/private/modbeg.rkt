@@ -62,7 +62,7 @@
                                                  with-continuation-mark
                                                  if #%app #%expression
                                                  define-values define-syntaxes begin-for-syntax
-                                                 module 
+                                                 module module*
                                                  #%module-begin 
                                                  #%require #%provide 
                                                  #%variable-reference))))])
@@ -99,7 +99,7 @@
                                                          (syntax->list
                                                           (quote-syntax 
                                                            (define-values define-syntaxes begin-for-syntax
-                                                             module 
+                                                             module module*
                                                              #%module-begin 
                                                              #%require #%provide))))
                                                   #f

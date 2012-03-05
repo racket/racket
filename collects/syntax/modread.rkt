@@ -3,7 +3,7 @@
   
   (provide with-module-reading-parameterization)
   (provide/contract
-   [check-module-form ((or/c syntax? eof-object?) symbol? (or/c string? path? false/c) . -> . any)])
+   [check-module-form ((or/c syntax? eof-object?) (or/c symbol? list?) (or/c string? path? false/c) . -> . any)])
 
   (define (with-module-reading-parameterization thunk)
     (parameterize ([read-case-sensitive #t]

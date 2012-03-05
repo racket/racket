@@ -11,19 +11,25 @@
 
 Returns a ``simplified'' module path by combining
 @racket[module-path-v] with @racket[rel-to-module-path-v], where the
-latter must have the form @racket['(lib ....)] or a symbol,
-@racket['(file <string>)], @racket['(planet ....)], a @techlink[#:doc
-refman]{path}, or a thunk to generate one of those.
+latter must have one of the following forms: a @racket['(lib ....)] or
+symbol module path; a @racket['(file ....)] module path; a
+@racket['(planet ....)] module path; a @techlink[#:doc refman]{path};
+a @racket['(submod _base _symbol)] module path or @racket['(submod
+_path _symbol ...)] list; or a thunk to generate one of those.
 
 The result can be a path if @racket[module-path-v] contains a path
 element that is needed for the result, or if
 @racket[rel-to-module-path-v] is a non-string path that is needed for
-the result; otherwise, the result is a module path in the sense of
+the result. Similarly, the result can be @racket[submod] wrapping a
+path.  Otherwise, the result is a module path in the sense of
 @racket[module-path?].
 
 When the result is a @racket['lib] or @racket['planet] module path, it
 is normalized so that equivalent module paths are represented by
-@racket[equal?] results.}
+@racket[equal?] results. When the result is a @racket['submod] module
+path, it contains only symbols after the base module path, and the
+base is normalized in the case of a @racket['lib] or @racket['planet]
+base.}
 
 @defproc[(collapse-module-path-index [module-path-index module-path-index?]
                                      [rel-to-module-path-v any/c])

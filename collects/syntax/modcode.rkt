@@ -1,5 +1,6 @@
 #lang racket/base
   (require racket/contract/base
+           racket/list
            "modread.rkt")
 
   (provide moddep-current-open-input-file
@@ -10,7 +11,9 @@
 
   (provide/contract
    [get-module-code (->* (path?)
-                         (#:sub-path 
+                         (#:submodule-path
+                          (listof symbol?)
+                          #:sub-path 
                           (and/c path-string? relative-path?)
                           (and/c path-string? relative-path?)
                           #:compile (-> any/c any)
@@ -76,6 +79,7 @@
   (define-struct (exn:get-module-code exn:fail) (path))
 
   (define (get-module-code path
+                           #:submodule-path [submodule-path '()]
                            #:sub-path [sub-path0 "compiled"]
                            #:compile [compile0 compile]
                            #:extension-handler [ext-handler0 #f]
@@ -133,6 +137,21 @@
                                            (current-directory))])
                            (t)))]
              [prefer (choose path zo so)])
+        (define (extract-submodule m [sm-path submodule-path])
+          (cond
+           [(null? sm-path) m]
+           [else 
+            (extract-submodule
+             (or (for/or ([c (in-list (append (module-compiled-submodules m #t)
+                                              (module-compiled-submodules m #f)))])
+                   (and (eq? (last (module-compiled-name c)) (car sm-path))
+                        c))
+                 (raise
+                  (make-exn:get-module-code
+                   (format "get-module-code: cannot find submodule: ~e" submodule-path)
+                   (current-continuation-marks)
+                   #f)))
+             (cdr sm-path))]))
         (cond
           ;; Use .zo, if it's new enough
           [(or (eq? prefer 'zo)
@@ -147,13 +166,15 @@
                              alt-zo
                              zo))])
              (notify zo)
-             (read-one path zo #f read-syntax))]
-          ;; Maybe there's an .so? Use it only if we don't prefer source.
-          [(or (eq? prefer 'so)
-               (and (not prefer)
-                    (or (date>=? so path-d)
-                        (and try-alt?
-                             (date>=? alt-so path-d)))))
+             (extract-submodule (read-one path zo #f read-syntax)))]
+          ;; Maybe there's an .so? Use it only if we don't prefer source
+          ;; and only if there's no submodule path.
+          [(and (null? submodule-path)
+                (or (eq? prefer 'so)
+                    (and (not prefer)
+                         (or (date>=? so path-d)
+                             (and try-alt?
+                                  (date>=? alt-so path-d))))))
            (let ([so (if (date>=? so path-d)
                          so
                          (if (and try-alt?
@@ -172,7 +193,7 @@
           [(or (eq? prefer 'src)
                path-d)
            (notify path)
-           (with-dir (lambda () (compiler (read-one orig-path path #t read-src-syntax))))]
+           (extract-submodule (with-dir (lambda () (compiler (read-one orig-path path #t read-src-syntax)))))]
           ;; Report a not-there error
           [else (raise (make-exn:get-module-code
                         (format "get-module-code: no such file: ~e" orig-path)

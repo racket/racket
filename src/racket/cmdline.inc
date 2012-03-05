@@ -345,7 +345,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED) {
             scheme_embedded_load(-1, fa->evals_and_loads[i], 0);
           } else {
-            Scheme_Object *a[1], *nsreq;
+            Scheme_Object *a[2], *nsreq, *mpi;
             char *name;
             nsreq = scheme_builtin_value("namespace-require");
             if (fa->eval_kind[i] == mzcmd_REQUIRE_LIB) {
@@ -363,9 +363,25 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
                                   a[0],
                                   fa->evals_and_loads[i]);
             }
+            /* Use a module path index so that multiple resolutions are no unduly
+               sensitive to changes in the current directory or other configurations: */
+            mpi = scheme_make_modidx(a[0], scheme_false, scheme_false);
             if (!did_config)
-              configure_environment(a[0]);
+              configure_environment(mpi);
+            /* Run the module: */
+            a[0] = mpi;
             scheme_apply(nsreq, 1, a);
+            /* If there's a `main' submodule, run it: */
+            a[0] = scheme_make_modidx(scheme_make_pair(scheme_intern_symbol("submod"),
+                                                       scheme_make_pair(scheme_make_utf8_string("."),
+                                                                        scheme_make_pair(scheme_intern_symbol("main"),
+                                                                                         scheme_null))),
+                                      mpi,
+                                      scheme_false);
+            if (scheme_module_is_declared(a[0], 1)) {
+              a[1] = scheme_false;
+              scheme_apply(scheme_builtin_value("dynamic-require"), 2, a);
+            }
           }
         } else {
 	  exit_val = 1;

@@ -818,6 +818,7 @@ Scheme_Object *(*scheme_dynamic_require)(int argc, Scheme_Object *argv[]);
 Scheme_Object *(*scheme_namespace_require)(Scheme_Object *);
 int (*scheme_is_module_path)(Scheme_Object *);
 Scheme_Object *(*scheme_datum_to_kernel_stx)(Scheme_Object *e);
+int (*scheme_module_is_declared)(Scheme_Object *name, int try_load);
 /*========================================================================*/
 /*                                symbols                                 */
 /*========================================================================*/

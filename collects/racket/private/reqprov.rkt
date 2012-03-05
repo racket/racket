@@ -7,7 +7,7 @@
                          "../provide-transform.rkt"
                          "struct-info.rkt"))
   
-  (#%provide lib file planet
+  (#%provide lib file planet submod
              for-syntax for-template for-label for-meta
              require
              only-in rename-in prefix-in except-in combine-in only-meta-in
@@ -27,17 +27,18 @@
      [else (filter pred (cdr l))]))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; lib
+  ;; lib, file, planet, submod
   
   (define-for-syntax (xlate-path stx)
     (if (pair? (syntax-e stx))
         (let ([kw
                ;; symbolic-identifier=? identifiers are not necessarily free-identifier=?
-               (syntax-case stx (lib planet file quote)
+               (syntax-case stx (lib planet file submod quote)
                  [(quote . _) 'quote]
                  [(lib . _) 'lib]
                  [(planet . _) 'planet]
-                 [(file . _) 'file])]
+                 [(file . _) 'file]
+                 [(submod . _) 'submod])]
               [d (syntax->datum stx)])
           (if (eq? (car d) kw)
               stx
@@ -55,7 +56,7 @@
        "ill-formed module path"
        stx)))
 
-  (define-syntaxes (lib file planet)
+  (define-syntaxes (lib file planet submod)
     (let ([t (lambda (stx)
                (check-lib-form stx)
                (let* ([mod-path (syntax->datum stx)]
@@ -93,7 +94,7 @@
                                                 "misuse of module-path constructor (not within, e.g., `require' or `provide')"
                                                 stx)))])
                (mk))])
-        (values t2 t2 t2))))
+        (values t2 t2 t2 t2))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; for-syntax, for-template, for-label
@@ -241,7 +242,7 @@
                                          (module-path? (syntax-e p))))]))]
              [transform-simple
               (lambda (in base-mode)
-                (syntax-case in (lib file planet prefix-in except-in quote)
+                (syntax-case in (lib file planet submod prefix-in except-in quote)
                   ;; Detect simple cases first:
                   [_ 
                    (string? (syntax-e in))
@@ -267,6 +268,9 @@
                    (check-lib-form in)
                    (list (mode-wrap base-mode (xlate-path in)))]
                   [(planet . s)
+                   (check-lib-form in)
+                   (list (mode-wrap base-mode (xlate-path in)))]
+                  [(submod . s)
                    (check-lib-form in)
                    (list (mode-wrap base-mode (xlate-path in)))]
                   [(prefix-in pfx path)

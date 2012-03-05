@@ -193,14 +193,17 @@ the binding (according to @racket[free-identifier=?]) matters.}
             #%plain-app #%top #%variable-reference)
 [top-level-form general-top-level-form
                 (#%expression expr)
-                (module id name-id
+                (module id module-path
                   (#%plain-module-begin
                    module-level-form ...))
                 (begin top-level-form ...)
                 (begin-for-syntax top-level-form ...)]
 [module-level-form general-top-level-form
                    (#%provide raw-provide-spec ...)
-                   (begin-for-syntax module-level-form ...)]
+                   (begin-for-syntax module-level-form ...)
+                   (module id module-path module-level-form ...)
+                   (module* id module-path module-level-form ...)
+                   (module* id #f module-level-form ...)]
 [general-top-level-form expr
                         (define-values (id ...) expr)
                         (define-syntaxes (id ...) expr)

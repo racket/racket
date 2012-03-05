@@ -1,37 +1,39 @@
-;; Defines a language to be used by info.rkt files
+;; Defines a language to be used by info.rkt files.
+;; This module cannot use #lang, because reading
+;; an "info.rkt" file tries to load this module, and a reader
+;; guard disallows anything but `setup/infotab'.
+(module infotab racket/base 
+  (require (for-syntax racket/base))
 
-#lang scheme/base
-(require (for-syntax scheme/base))
-
-(define-syntax info-module-begin
-  (lambda (stx)
-    (syntax-case stx ()
-      [(mod-beg defn ...)
-       (let ([names (let loop ([defns (syntax->list (syntax (defn ...)))]
-                               [r '()])
-                      (if (null? defns)
-                        (reverse r)
-                        (loop (cdr defns)
-                              (syntax-case (car defns) (define)
-                                [(define var val)
-                                 (cons (syntax var) r)]
-                                ;; In case it gets expanded:
-                                [(define-values (var) val)
-                                 (cons (syntax var) r)]
-                                [(require lib) r] ; ignore these (see below)
-                                [_else (raise-syntax-error
-                                        'infotab-module
-                                        "not a well-formed definition"
-                                        stx (car defns))]))))])
-         (let ([dup (check-duplicate-identifier names)])
-           (when dup
-             (raise-syntax-error 'infotab-module "duplicate definition" stx dup)))
-         (with-syntax ([(name ...) names])
-           (syntax
-             (#%plain-module-begin
-              defn ...
-              (define #%info-lookup
-                (case-lambda
+  (define-syntax info-module-begin
+    (lambda (stx)
+      (syntax-case stx ()
+        [(mod-beg defn ...)
+         (let ([names (let loop ([defns (syntax->list (syntax (defn ...)))]
+                                 [r '()])
+                        (if (null? defns)
+                            (reverse r)
+                            (loop (cdr defns)
+                                  (syntax-case (car defns) (define)
+                                    [(define var val)
+                                     (cons (syntax var) r)]
+                                    ;; In case it gets expanded:
+                                    [(define-values (var) val)
+                                     (cons (syntax var) r)]
+                                    [(require lib) r] ; ignore these (see below)
+                                    [_else (raise-syntax-error
+                                            'infotab-module
+                                            "not a well-formed definition"
+                                            stx (car defns))]))))])
+           (let ([dup (check-duplicate-identifier names)])
+             (when dup
+               (raise-syntax-error 'infotab-module "duplicate definition" stx dup)))
+           (with-syntax ([(name ...) names])
+             (syntax
+              (#%plain-module-begin
+               defn ...
+               (define #%info-lookup
+                 (case-lambda
                   [(n) (#%info-lookup n (lambda () (error 'info.rkt "no info for ~a" n)))]
                   [(n fail)
                    (unless (and (procedure? fail)
@@ -44,25 +46,25 @@
                      [(name) name]
                      ...
                      [else (fail)])]))
-              (define (#%info-domain) '(name ...))
-              (provide #%info-lookup #%info-domain)))))])))
+               (define (#%info-domain) '(name ...))
+               (provide #%info-lookup #%info-domain)))))])))
 
-(define-syntax (limited-require stx)
-  (syntax-case stx ()
-    [(_ lib) (member (syntax->datum #'lib)
-                     '((lib "string-constant.ss" "string-constants")
-                       (lib "string-constants/string-constant.ss")
-                       string-constants/string-constant
-                       string-constants))
-     (syntax/loc stx (require lib))]))
+  (define-syntax (limited-require stx)
+    (syntax-case stx ()
+      [(_ lib) (member (syntax->datum #'lib)
+                       '((lib "string-constant.ss" "string-constants")
+                         (lib "string-constants/string-constant.ss")
+                         string-constants/string-constant
+                         string-constants))
+       (syntax/loc stx (require lib))]))
 
-(provide (rename-out [info-module-begin #%module-begin])
-         #%app #%datum #%top
-         define quote
-         list cons car cdr quasiquote unquote unquote-splicing
-         list* append reverse
-         string-append
-         path->string build-path collection-path
-         system-library-subpath
-         (rename-out [limited-require require])
-         lib)
+  (provide (rename-out [info-module-begin #%module-begin])
+           #%app #%datum #%top
+           define quote
+           list cons car cdr quasiquote unquote unquote-splicing
+           list* append reverse
+           string-append
+           path->string build-path collection-path
+           system-library-subpath
+           (rename-out [limited-require require])
+           lib))

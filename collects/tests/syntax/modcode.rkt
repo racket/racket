@@ -31,21 +31,38 @@
        (call-with-output-file*
         file.sfx
         (lambda (o)
-          (write '(module file racket/base 10)
+          (write '(module file racket/base 
+                    10
+                    (module inner racket/base 11))
                  o))))
      (when zo?
        (call-with-output-file* 
         file.zo
         (lambda (o)
           (write (parameterize ([current-namespace ns])
-                   (compile '(module file racket/base 12)))
+                   (compile '(module file racket/base 
+                               12
+                               (module inner racket/base 13))))
                  o))))
-     (get-module-code file.sfx
-                      #:choose (lambda (src zo so)
-                                 (test src? file-exists? src)
-                                 (test zo? file-exists? zo)
-                                 (test so? file-exists? so)
-                                 #f))
+     (define (check-name name code)
+       (test name module-compiled-name code))
+     (check-name
+      'file
+      (get-module-code file.sfx
+                       #:choose (lambda (src zo so)
+                                  (test src? file-exists? src)
+                                  (test zo? file-exists? zo)
+                                  (test so? file-exists? so)
+                                  #f)))
+     (check-name
+      'inner
+      (get-module-code file.sfx
+                       #:submodule-path '(inner)
+                       #:choose (lambda (src zo so)
+                                  (test src? file-exists? src)
+                                  (test zo? file-exists? zo)
+                                  (test so? file-exists? so)
+                                  #f)))
      (void))
    (lambda ()
      (when src? (delete-file file.sfx))

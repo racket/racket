@@ -1,3 +1,10 @@
+Version 5.2.900.1
+Add submodules, including `module*'
+Change resolver protocol so that declaration notify is always issued
+Change load/use-compiled handler to work with submodules
+compiler/zo-struct: added pre-submodules and post-submodules field to
+ mod, changed name field to allow a list of symbols
+
 Version 5.2.1.7
 racket/sandbox: added sandbox-gui-enabled and sandbox-make-namespace;
  deprecated gui?, which is no long used internally; changed the default

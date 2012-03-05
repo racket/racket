@@ -615,6 +615,32 @@ If a module is @tech{instantiate}d in any @tech{phase}s before it is
 re-declared, each re-declaration of the module is immediately
 @tech{instantiate}d in the same @tech{phase}s.
 
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "submodules"]{Submodules}
+
+A @racket[module] or @racket[module*] form within a top-level
+@racket[module] form declares a @deftech{submodule}. A submodule is
+accessed relative to its enclosing module, usually with a
+@racket[submod] path. Submodules can be nested to any depth.
+
+Although a submodule is lexically nested within a module, it cannot
+necessarily access the bindings of its enclosing module directly.
+More specifically, a submodule declared with @racket[module] cannot
+@racket[require] from its enclosing module, but the enclosing module
+can @racket[require] the submodule. In contrast, a submodule declared
+with @racket[module*] conceptually follows its enclosing module, so
+can @racket[require] from its enclosing module, but the enclosing
+module cannot @racket[require] the submodule. Unless a submodule
+imports from its enclosing module or vice-versa, then @tech{visits} or
+@tech{instantiations} of the two modules are independent, and thier
+implementations may even be loaded from bytecode at different times.
+
+When a submodule declaration has the form @racket[(module* _name #f
+....)], then all of the bindings of the enclosing module's bodies are
+visible in the submodule's body, and the submodule implicitly imports
+the enclosing module. The submodule can @racket[provide] any bindings
+that it inherits from its enclosing module.
+
 @;------------------------------------------------------------------------
 @section[#:tag "mark-model"]{Continuation Frames and Marks}
 

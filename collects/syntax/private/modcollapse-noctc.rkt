@@ -14,7 +14,10 @@ Use syntax/modcollapse instead.
 
 (define (collapse-module-path s relto-mp)
   ;; relto-mp should be a path, '(lib relative-path collection) or symbol,
-  ;;   or '(file path) or a thunk that produces one of those
+  ;;   '(planet ...), '(file path), '(submod <relto-mp> symbol ...),
+  ;;   or a thunk that produces one of those
+
+  (define relto-submod '())
   
   ;; Used for 'lib paths, so it's always Unix-style
   (define (attach-to-relative-path-string elements relto)
@@ -61,6 +64,13 @@ Use syntax/modcollapse instead.
       (if (regexp-match #rx"[.]ss$" (path->bytes name))
           (path-replace-suffix p #".rkt")
           p)))
+
+  (define (flatten-relto-mp!)
+    (when (procedure? relto-mp) (set! relto-mp (relto-mp)))
+    (when (and (pair? relto-mp) (eq? 'submod (car relto-mp)))
+      (set! relto-submod (cddr relto-mp))
+      (set! relto-mp (cadr relto-mp)))
+    (when (symbol? relto-mp) (set! relto-mp `(lib ,(symbol->string relto-mp)))))
   
   (define (combine-relative-elements elements)
     
@@ -79,8 +89,7 @@ Use syntax/modcollapse instead.
              (map (lambda (i) (if (bytes? i) (bytes->path i) i))
                   elements)))
     
-    (when (procedure? relto-mp) (set! relto-mp (relto-mp)))
-    (when (symbol? relto-mp) (set! relto-mp `(lib ,(symbol->string relto-mp))))
+    (flatten-relto-mp!)
     (cond
       [(or (path? relto-mp) (and (string? relto-mp) (ormap path? elements)))
        (path-ss->rkt
@@ -262,34 +271,58 @@ Use syntax/modcollapse instead.
                (if (eq? e e2)
                    s
                    (list* (car s) e2 (cddr s))))))]))
-  
-  (cond [(string? s)
-         ;; Parse Unix-style relative path string
-         (combine-relative-elements (explode-relpath-string s))]
-        [(symbol? s)
-         ;; Convert to `lib' form:
-         (normalize-lib `(lib ,(symbol->string s)))]
-        [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
-         #f]
-        [(or (path? s) (eq? (car s) 'file))
-         (let ([p (if (path? s) s (cadr s))])
-           (if (absolute-path? p)
-               (let ([p2 (if (path? p)
-                             (path-ss->rkt p)
-                             (ss->rkt p))])
-                 (cond
-                  [(eq? p p2) s]
-                  [(path? s) p2]
-                  [else `(file ,p2)]))
-               (let loop ([p p] [elements null])
-                 (let-values ([(base name dir?) (split-path p)])
-                   (cond [(eq? base 'relative)
-                          (combine-relative-elements (cons name elements))]
-                         [else (loop base (cons name elements))])))))]
-        [(eq? (car s) 'lib) (normalize-lib s)]
-        [(eq? (car s) 'planet) (normalize-planet s)]
-        [(eq? (car s) 'quote) s]
-        [else #f]))
+
+  (define (normalize-submod sm)
+    ;; Get rid of all ".."s:
+    (if (member ".." sm)
+        (let ([subpath (let loop ([accum null] [l (cddr sm)])
+                         (cond
+                          [(null? l) (reverse accum)]
+                          [(equal? (car l) "..")
+                           (if (null? accum)
+                               (error 'collapse-module-path "too many \"..\"s in path: ~e"
+                                      sm)
+                               (loop (cdr accum) (cdr l)))]
+                          [else (loop (cons (car l) accum) (cdr l))]))])
+          (if (null? subpath)
+              (cadr sm)
+              `(submod ,(cadr sm) ,@subpath)))
+        sm))
+
+  (let normalize-recur ([s s])
+    (cond [(string? s)
+           ;; Parse Unix-style relative path string
+           (combine-relative-elements (explode-relpath-string s))]
+          [(symbol? s)
+           ;; Convert to `lib' form:
+           (normalize-lib `(lib ,(symbol->string s)))]
+          [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
+           #f]
+          [(or (path? s) (eq? (car s) 'file))
+           (let ([p (if (path? s) s (cadr s))])
+             (if (absolute-path? p)
+                 (let ([p2 (if (path? p)
+                               (path-ss->rkt p)
+                               (ss->rkt p))])
+                   (cond
+                    [(eq? p p2) s]
+                    [(path? s) p2]
+                    [else `(file ,p2)]))
+                 (let loop ([p p] [elements null])
+                   (let-values ([(base name dir?) (split-path p)])
+                     (cond [(eq? base 'relative)
+                            (combine-relative-elements (cons name elements))]
+                           [else (loop base (cons name elements))])))))]
+          [(eq? (car s) 'lib) (normalize-lib s)]
+          [(eq? (car s) 'planet) (normalize-planet s)]
+          [(eq? (car s) 'quote) s]
+          [(eq? (car s) 'submod) 
+           (if (equal? (cadr s) ".")
+               (begin
+                 (flatten-relto-mp!)
+                 (normalize-submod `(submod ,relto-mp ,@relto-submod ,@(cddr s))))
+               (normalize-submod `(submod ,(normalize-recur (cadr s)) ,@relto-submod ,@(cddr s))))]
+          [else #f])))
 
 (define (collapse-module-path-index mpi relto-mp)
   (define (force-relto relto-mp)

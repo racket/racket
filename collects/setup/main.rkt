@@ -121,7 +121,7 @@
 					   (if skip-zo?
 					       orig-load
 					       (lambda (path modname)
-						 (if (regexp-match #rx#"[.]zo$" (path->bytes path))
+						 (if (regexp-match? #rx#"[.]zo$" (path->bytes path))
 						     ;; It's a .zo:
                                                      (begin0
                                                       (orig-load path modname)

@@ -2212,6 +2212,11 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   Resolve_Info *rslv;
   int i, cnt;
 
+  if (!m->comp_prefix) {
+    /* already resolved */
+    return (Scheme_Object *)m;
+  }
+
   rp = scheme_resolve_prefix(0, m->comp_prefix, 1);
   m->comp_prefix = NULL;
 
@@ -2245,6 +2250,21 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   m->prefix = rp;
 
   /* Exp-time body was resolved during compilation */
+
+  {
+    /* resolve submodules */
+    int k;
+    Scheme_Object *p;
+    for (k = 0; k < 2; k++) {
+      p = (k ? m->post_submodules : m->pre_submodules);
+      if (p) {
+        while (!SCHEME_NULLP(p)) {
+          scheme_resolve_expr(SCHEME_CAR(p), old_rslv);
+          p = SCHEME_CDR(p);
+        }
+      }
+    }
+  }
 
   return data;
 }

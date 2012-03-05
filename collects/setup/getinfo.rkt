@@ -41,7 +41,8 @@
   (define (contents)
     (parameterize ([current-reader-guard
                     (lambda (x)
-                      (if (eq? x 'setup/infotab/lang/reader)
+                      (if (or (eq? x 'setup/infotab/lang/reader)
+                              (equal? x '(submod setup/infotab reader)))
                         x
                         (err "has illegal #lang or #reader")))])
       (with-input-from-file file

@@ -11,6 +11,7 @@
 (load-relative "procs.rktl")
 (load-relative "stx.rktl")
 (load-relative "module.rktl")
+(load-relative "submodule.rktl")
 (load-relative "number.rktl")
 (load-relative "unsafe.rktl")
 (load-relative "object.rktl")

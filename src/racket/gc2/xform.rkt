@@ -52,7 +52,8 @@
     (let-values ([(base name dir?)
                   (split-path
                    (resolved-module-path-name
-                    (module-path-index-resolve (syntax-source-module (quote-syntax here)))))])
+                    (module-path-index-resolve 
+                     (syntax-source-module (quote-syntax here)))))])
       (build-path base rel-dir)))
 
   (if (string=? "--setup"

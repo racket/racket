@@ -4,6 +4,7 @@
            scheme/file
            scheme/port
            scheme/promise
+           racket/list
            syntax/moddep
            syntax/modcollapse
            xml/plist
@@ -283,19 +284,24 @@
       (format "#%embedded:~a:" (gensym)))
     
     (define (normalize filename)
-      (let ([f (simplify-path (cleanse-path filename))])
-        ;; Use normal-case-path on just the base part, to avoid
-        ;; changing the filename case (which should match the
-        ;; module-name case within the file):
-        (let-values ([(base name dir?) (split-path f)])
-          (if (path? base)
-              (build-path (normal-case-path base) name)
-              f))))
+      (if (pair? filename)
+          `(submod ,(normalize (cadr filename)) ,@(cddr filename))
+          (let ([f (simplify-path (cleanse-path filename))])
+            ;; Use normal-case-path on just the base part, to avoid
+            ;; changing the filename case (which should match the
+            ;; module-name case within the file):
+            (let-values ([(base name dir?) (split-path f)])
+              (if (path? base)
+                  (build-path (normal-case-path base) name)
+                  f)))))
     
     (define (is-lib-path? a)
       (or (and (pair? a)
                (eq? 'lib (car a)))
-          (symbol? a)))
+          (symbol? a)
+          (and (pair? a)
+               (eq? 'submod (car a))
+               (is-lib-path? (cadr a)))))
 
     (define (symbol-to-lib-form l)
       (if (symbol? l)
@@ -335,6 +341,7 @@
     ;; Loads module code, using .zo if there, compiling from .scm if not
     (define (get-code filename module-path codes prefixes verbose? collects-dest on-extension 
                       compiler expand-namespace get-extra-imports working)
+      ;; filename can have the form `(submod ,filename ,sym ...)
       (let ([a (assoc filename (unbox codes))])
         (cond
          [a
@@ -357,18 +364,28 @@
          [else
           ;; First use of the module. Get code and then get code for imports.
           (when verbose?
-            (fprintf (current-error-port) "Getting ~s\n" filename))
-          (let* ([actual-filename filename] ; `set!'ed below to adjust file suffix
-                 [name (let-values ([(base name dir?) (split-path filename)])
+            (fprintf (current-error-port) "Getting ~s as ~s\n" module-path filename))
+          (let* ([submod-path (if (pair? filename)
+                                  (cddr filename)
+                                  null)]
+                 [just-filename (if (pair? filename)
+                                    (cadr filename)
+                                    filename)]
+                 [actual-filename just-filename] ; `set!'ed below to adjust file suffix
+                 [name (let-values ([(base name dir?) (split-path just-filename)])
                          (path->string (path-replace-suffix name #"")))]
-                 [prefix (let ([a (assoc filename prefixes)])
+                 [prefix (let ([a (assoc just-filename prefixes)])
                            (if a
                                (cdr a)
                                (generate-prefix)))]
                  [full-name (string->symbol
-                             (format "~a~a" prefix name))])
+                             (format "~a~a~a" prefix name
+                                     (if (null? submod-path)
+                                         ""
+                                         submod-path)))])
             (hash-set! working filename full-name)
-            (let ([code (get-module-code filename
+            (let ([code (get-module-code just-filename
+                                         #:submodule-path submod-path
                                          "compiled"
                                          compiler
                                          (if on-extension
@@ -397,8 +414,7 @@
                   (fprintf (current-error-port) " using extension: ~s\n" (extension-path code)))
                 (set-box! codes
                           (cons (make-mod filename module-path code 
-                                          name prefix (string->symbol
-                                                       (format "~a~a" prefix name))
+                                          name prefix full-name
                                           null null null
                                           actual-filename)
                                 (unbox codes)))]
@@ -433,7 +449,16 @@
                                                         (and (pair? p)
                                                              (eq? (car p) 'module)
                                                              (cadr p)))
-                                                      runtime-paths))])
+                                                      runtime-paths))]
+                           [code (module-compiled-submodules
+                                  (module-compiled-submodules
+                                   (if (symbol? (module-compiled-name code))
+                                       code
+                                       (module-compiled-name code (last (module-compiled-name code))))
+                                   #f
+                                   null)
+                                  #t
+                                  null)])
                       (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                             all-file-imports)]
                             [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))

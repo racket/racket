@@ -833,10 +833,12 @@ static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size)
   if (base) {
     env->modchain = base->modchain;
     env->module_registry = base->module_registry;
+    env->module_pre_registry = base->module_pre_registry;
     env->label_env = base->label_env;
   } else {
     env->modchain = NULL;
     env->module_registry = NULL;
+    env->module_pre_registry = NULL;
     env->label_env = NULL;
   }
 
@@ -847,8 +849,16 @@ Scheme_Env *
 scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree)
 {
   Scheme_Env *menv;
+  Scheme_Module_Registry *reg;
 
   menv = make_env(env, 7);
+
+  if (new_exp_module_tree && !menv->module_pre_registry) {
+    /* pre_registry is for declarations to be used by submodules */
+    reg = MALLOC_ONE_TAGGED(Scheme_Module_Registry);
+    reg->so.type = scheme_module_registry_type;
+    menv->module_pre_registry = reg;
+  }
 
   menv->module = m;
 
@@ -889,6 +899,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
+    eenv->module_pre_registry = env->module_pre_registry;
     eenv->insp = env->insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[1];
@@ -930,6 +941,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
 
     eenv->module = env->module;
     eenv->module_registry = env->module_registry;
+    eenv->module_pre_registry = env->module_pre_registry;
     eenv->insp = env->insp;
 
     modchain = SCHEME_VEC_ELS(env->modchain)[2];
@@ -970,6 +982,7 @@ void scheme_prepare_label_env(Scheme_Env *env)
 
     lenv->module = env->module;
     lenv->module_registry = env->module_registry;
+    lenv->module_pre_registry = env->module_pre_registry;
     lenv->insp = env->insp;
 
     modchain = scheme_make_vector(5, scheme_false);    
@@ -1002,6 +1015,7 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
 
   menv2->module = menv->module;
   menv2->module_registry = ns->module_registry;
+  menv2->module_pre_registry = ns->module_pre_registry;
   menv2->insp = menv->insp;
 
   menv2->instance_env = menv2;

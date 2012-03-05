@@ -7055,7 +7055,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
               if (SCHEME_VECTORP(a)) {
                 if (SCHEME_VEC_SIZE(a) != 2) return_NULL;
                 bdg = SCHEME_VEC_ELS(a)[1];
-                if (!SCHEME_SYMBOLP(bdg)) return_NULL;
+                if (!SCHEME_SYMBOLP(bdg) && !SCHEME_VOIDP(bdg)) return_NULL;
                 a = SCHEME_VEC_ELS(a)[0];
               }
 

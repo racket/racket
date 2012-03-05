@@ -4210,31 +4210,14 @@ static Scheme_Object *read_compact_svector(CPort *port, int l)
   return o;
 }
 
-static Scheme_Object *read_compact_escape(CPort *port) 
+  
+static Scheme_Object *read_escape_from_string(char *s, intptr_t len,
+                                              Scheme_Object *rel_to,
+                                              Scheme_Hash_Table **ht)
 {
-#if defined(MZ_PRECISE_GC)
-# define ESC_BLK_BUF_SIZE 32
-  char buffer[ESC_BLK_BUF_SIZE];
-#endif
-  int len;
   Scheme_Object *ep;
-  char *s;
   ReadParams params;
-  
-  len = read_compact_number(port);
-  
-  RANGE_CHECK_GETS((unsigned)len);
-  
-#if defined(MZ_PRECISE_GC)
-  s = read_compact_chars(port, buffer, ESC_BLK_BUF_SIZE, len);
-  if (s != buffer)
-    len = -len; /* no alloc in sized_byte_string_input_port */
-#else
-  s = (char *)port->start + port->pos;
-  port->pos += len;
-  len = -len; /* no alloc in sized_byte_string_input_port */
-#endif
-  
+
   ep = scheme_make_sized_byte_string_input_port(s, len);
   
   params.can_read_compiled = 1;
@@ -4252,9 +4235,35 @@ static Scheme_Object *read_compact_escape(CPort *port)
   params.skip_zo_vers_check = 0;
   params.table = NULL;
 
-  params.read_relative_path = port->relto;
+  params.read_relative_path = rel_to;
 
-  return read_inner(ep, NULL, port->ht, scheme_null, &params, 0);
+  return read_inner(ep, NULL, ht, scheme_null, &params, 0);
+}
+
+static Scheme_Object *read_compact_escape(CPort *port) 
+{
+#if defined(MZ_PRECISE_GC)
+# define ESC_BLK_BUF_SIZE 32
+  char buffer[ESC_BLK_BUF_SIZE];
+#endif
+  int len;
+  char *s;
+  
+  len = read_compact_number(port);
+  
+  RANGE_CHECK_GETS((unsigned)len);
+  
+#if defined(MZ_PRECISE_GC)
+  s = read_compact_chars(port, buffer, ESC_BLK_BUF_SIZE, len);
+  if (s != buffer)
+    len = -len; /* no alloc in sized_byte_string_input_port */
+#else
+  s = (char *)port->start + port->pos;
+  port->pos += len;
+  len = -len; /* no alloc in sized_byte_string_input_port */
+#endif
+
+  return read_escape_from_string(s, len, port->relto, port->ht);
 }
 
 static Scheme_Object *read_compact(CPort *port, int use_stack);
@@ -4949,6 +4958,124 @@ static intptr_t read_simple_number_from_port(Scheme_Object *port)
           + (d << 24));
 }
 
+char *scheme_submodule_path_to_string(Scheme_Object *p, intptr_t *_len)
+{
+  Scheme_Object *pr;
+  intptr_t len = 0, l;
+  unsigned char *s;
+
+  for (pr = p; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
+    l = SCHEME_SYM_LEN(SCHEME_CAR(pr));
+    if (l < 255)
+      len += l + 1;
+    else
+      len += l + 1 + 4;
+  }
+  *_len = len;
+
+  s = scheme_malloc_atomic(len + 1);
+  s[len] = 0;
+  
+  len = 0;
+  for (pr = p; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
+    l = SCHEME_SYM_LEN(SCHEME_CAR(pr));
+    if (l < 255) {
+      s[len++] = l;
+    } else {
+      s[len++] = 255;
+      s[len++] = (l & 0xFF);
+      s[len++] = ((l >> 8) & 0xFF);
+      s[len++] = ((l >> 16) & 0xFF);
+      s[len++] = ((l >> 24) & 0xFF);
+    }
+    memcpy(s + len, SCHEME_SYM_VAL(SCHEME_CAR(pr)), l);
+    len += l;
+  }
+
+  return (char *)s;
+}
+
+Scheme_Object *scheme_string_to_submodule_path(char *_s, intptr_t len)
+{
+  unsigned char *s = (unsigned char *)_s;
+  char *e, buffer[32];
+  intptr_t pos = 0, l;
+  Scheme_Object *first = NULL, *last = NULL, *pr;
+
+  while (pos < len) {
+    l = s[pos++];
+    if ((l == 255) && ((len - pos) > 4)) {
+      l = (s[pos] | (s[pos+1] << 8) | (s[pos+2] << 16) | (s[pos+3] << 24));
+      pos += 4;
+    }
+    if (l > len - pos)
+      l = len - pos;
+    if (l < 32)
+      e = buffer;
+    else
+      e = scheme_malloc_atomic(l + 1);
+    memcpy(e, s + pos, l);
+    e[l] = 0;
+    pos += l;
+
+    pr = scheme_make_pair(scheme_intern_exact_symbol(e, l), scheme_null);
+    if (last)
+      SCHEME_CDR(last) = pr;
+    else
+      first = pr;
+    last = pr;
+  }
+
+  return first ? first : scheme_null;
+}
+
+static void read_module_directory(Scheme_Object *port, Scheme_Hash_Table *ht, int depth)
+{
+  char *s;
+  Scheme_Object *v, *p;
+  int len, left, right;
+  intptr_t got;
+
+  if (depth > 32)
+    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                    "read (compiled): multi-module directory tree is imbalanced");
+  
+  len = read_simple_number_from_port(port);
+  s = scheme_malloc_atomic(len + 1);
+  got = scheme_get_bytes(port, len, s, 0);
+  if (got != len)
+    v = NULL;
+  else {
+    s[len] = 0;
+    v = scheme_string_to_submodule_path(s, len);
+    for (p = v; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
+      if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) {
+        v = NULL;
+        break;
+      }
+    }
+    if (v && scheme_hash_get(ht, v))
+      v = NULL;
+  }
+
+  if (!v)
+    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                    "read (compiled): directory module name read failed");
+
+  scheme_hash_set(ht, v, scheme_null);
+
+  (void)read_simple_number_from_port(port); /* offset */
+  (void)read_simple_number_from_port(port); /* length */
+
+  left = read_simple_number_from_port(port);
+  right = read_simple_number_from_port(port);
+
+  if (left)
+    read_module_directory(port, ht, depth+1);
+  if (right)
+    read_module_directory(port, ht, depth+1);
+}
+
 /* "#~" has been read */
 static Scheme_Object *read_compiled(Scheme_Object *port,
 				    Scheme_Object *stxsrc,
@@ -4956,230 +5083,311 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 				    Scheme_Hash_Table **ht,
 				    ReadParams *params)
 {
+  Scheme_Hash_Table *directory = NULL;
   Scheme_Object *result;
-  intptr_t size, shared_size, got, offset = 0;
+  intptr_t size, shared_size, got, offset = 0, directory_count = 0;
   CPort *rp;
   intptr_t symtabsize;
   Scheme_Object **symtab;
   intptr_t *so;
   Scheme_Load_Delay *delay_info;
   Scheme_Hash_Table **local_ht;
-  int all_short;
+  int all_short, mode;
   int perma_cache = use_perma_cache;
   Scheme_Object *dir;
   Scheme_Config *config;
   char hash_code[20];
 	  
-  /* Allow delays? */
-  if (params->delay_load_info) {
-    delay_info = MALLOC_ONE_RT(Scheme_Load_Delay);
-    SET_REQUIRED_TAG(delay_info->type = scheme_rt_delay_load_info);
-    delay_info->path = params->delay_load_info;
-  } else
-    delay_info = NULL;
-
-  /* Check version: */
-  size = scheme_get_byte(port);
-  {
-    char buf[64];
-
-    if (size < 0) size = 0;
-    if (size > 63) size = 63;
-
-    got = scheme_get_bytes(port, size, buf, 0);
-    buf[got] = 0;
-
-    if (!params->skip_zo_vers_check)
-      if (strcmp(buf, MZSCHEME_VERSION))
-        scheme_read_err(port, stxsrc, line, col, pos, got, 0, NULL,
-                        "read (compiled): code compiled for version %s, not %s",
-                        (buf[0] ? buf : "???"), MZSCHEME_VERSION);
-  }
-  offset += size + 1;
-
-  /* Module hash code */
-  got = scheme_get_bytes(port, 20, hash_code, 0);
-  offset += 20;
-
-  symtabsize = read_simple_number_from_port(port);
-  offset += 4;
-  
-  /* Load table mapping symtab indices to stream positions: */
-
-  all_short = scheme_get_byte(port);
-  if (symtabsize < 0)
-    so = NULL;
-  else
-    so = (intptr_t *)scheme_malloc_fail_ok(scheme_malloc_atomic, 
-                                           scheme_check_overflow(symtabsize, sizeof(intptr_t), 0));
-  if (!so)
-    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): could not allocate symbol table of size %" PRIdPTR,
-		    symtabsize);
-  if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
-      != ((all_short ? 2 : 4) * (symtabsize - 1)))
-    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
-		    got, (all_short ? 2 : 4) * (symtabsize - 1));
-  offset += got;
-
-  {
-    /* This loop runs top to bottom, since sizeof(long) may be larger
-       than the decoded integers (but it's never shorter) */
-    intptr_t j, v;
-    unsigned char *so_c = (unsigned char *)so;
-    for (j = symtabsize - 1; j--; ) {
-      if (all_short) {
-        v = so_c[j * 2]
-          + (so_c[j * 2 + 1] << 8);
-      } else {
-        v = so_c[j * 4]
-          + (so_c[j * 4 + 1] << 8)
-          + (so_c[j * 4 + 2] << 16)
-          + (so_c[j * 4 + 3] << 24);
-      }
-      so[j] = v;
-    }
-  }
-
-  /* Continue reading content */
-
-  shared_size = read_simple_number_from_port(port);
-  size = read_simple_number_from_port(port);
-
-  if (shared_size >= size) {
-    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
-		    shared_size, size);
-  }
-
-  offset += 8;
-
-  rp = MALLOC_ONE_RT(CPort);
-  SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
-  {
-    unsigned char *st;
-    st = (unsigned char *)scheme_malloc_fail_ok(scheme_malloc_atomic, size + 1);
-    rp->start = st;
-  }
-  rp->pos = 0;
-  {
-    intptr_t base;
-    scheme_tell_all(port, NULL, NULL, &base);
-    rp->base = base;
-  }
-  rp->orig_port = port;
-  rp->size = size;
-  if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
-    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad count: %ld != %ld"
-                    ", started at %ld)",
-		    got, size, rp->base);
-
-  local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
-
-  symtab = MALLOC_N(Scheme_Object *, symtabsize);
-  rp->symtab_size = symtabsize;
-  rp->ht = local_ht;
-  rp->symtab = symtab;
-
-  config = scheme_current_config();
-
-  dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
-  rp->relto = dir;
-
-  rp->magic_sym = params->magic_sym;
-  rp->magic_val = params->magic_val;
-
-  rp->shared_offsets = so;
-  rp->delay_info = delay_info;
-
-  if (!delay_info) {
-    /* Read shared parts: */
-    intptr_t j, len;
-    Scheme_Object *v;
-    len = symtabsize;
-    for (j = 1; j < len; j++) {
-      if (!symtab[j]) {
-        v = read_compact(rp, 0);
-        symtab[j] = v;
-      } else {
-        if (j+1 < len)
-          rp->pos = so[j];
-        else
-          rp->pos = shared_size;
-      }
-    }
-  } else {
-    scheme_reserve_file_descriptor();
-    rp->pos = shared_size; /* skip shared part */
-    delay_info->file_offset = offset + 2 + 1; /* +2 is for #~; +1 is ???? */
-    delay_info->size = shared_size;
-    delay_info->symtab_size = rp->symtab_size;
-    delay_info->symtab = rp->symtab;
-    delay_info->shared_offsets = rp->shared_offsets;
-    delay_info->relto = rp->relto;
-
-    if (perma_cache) {
-      unsigned char *cache;
-      cache = (unsigned char *)scheme_malloc_atomic(shared_size);
-      memcpy(cache, rp->start, shared_size);
-      delay_info->cached = cache;
-      delay_info->cached_port = port;
-      delay_info->perma_cache = 1;
-    }
-  }
-
-  /* Read main body: */
-  result = read_marshalled(scheme_compilation_top_type, rp);
-
-  if (delay_info)
-    if (delay_info->ut)
-      delay_info->ut->rp = NULL; /* clean up */
-
-  if (*local_ht) {
-    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (unexpected graph structure)");
-    return NULL;
-  }
-
-  if (SAME_TYPE(SCHEME_TYPE(result), scheme_compilation_top_type)) {
-    Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)result;
-
-    scheme_validate_code(rp, top->code,
-			 top->max_let_depth,
-			 top->prefix->num_toplevels,
-			 top->prefix->num_stxes,
-			 top->prefix->num_lifts,
-                         NULL,
-                         0);
-    /* If no exception, the resulting code is ok. */
-
-    /* Install module hash code, if any. This code is used to register
-       the module in scheme_module_execute(), and it's used to
-       find a registered module in the default load handler. */
+  while (1) {
+    /* Check version: */
+    size = scheme_get_byte(port);
     {
-      int i;
-      for (i = 0; i < 20; i++) {
-        if (hash_code[i]) break;
-      }
+      char buf[64];
+      
+      if (size < 0) size = 0;
+      if (size > 63) size = 63;
+      
+      got = scheme_get_bytes(port, size, buf, 0);
+      buf[got] = 0;
+      
+      if (!params->skip_zo_vers_check)
+        if (strcmp(buf, MZSCHEME_VERSION))
+          scheme_read_err(port, stxsrc, line, col, pos, got, 0, NULL,
+                          "read (compiled): code compiled for version %s, not %s",
+                          (buf[0] ? buf : "???"), MZSCHEME_VERSION);
+    }
+    offset += size + 1;
+    
+    mode = scheme_get_byte(port);
+    if (mode == 'D') {
+      /* a module with submodules, starting with a directory */
+      if (directory)
+        scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                        "read (compiled): found multi-module directory after directory");
+      (void)read_simple_number_from_port(port); /* count */
+      directory = scheme_make_hash_table_equal();
+      read_module_directory(port, directory, 0);
+    } else if (mode == 'T') {
+      /* single module or other top-level form */
+      
+      /* Allow delays? */
+      if (params->delay_load_info) {
+        delay_info = MALLOC_ONE_RT(Scheme_Load_Delay);
+        SET_REQUIRED_TAG(delay_info->type = scheme_rt_delay_load_info);
+        delay_info->path = params->delay_load_info;
+      } else
+        delay_info = NULL;
 
-      if (i < 20) {
-        Scheme_Module *m;
-        m = scheme_extract_compiled_module(result);
-        if (m) {
-          Scheme_Object *hc;
-          hc = scheme_make_sized_byte_string(hash_code, 20, 1);
-          hc = scheme_make_pair(hc, dir);
+      /* Module hash code */
+      got = scheme_get_bytes(port, 20, hash_code, 0);
+      offset += 20;
 
-          m->code_key = hc;
+      symtabsize = read_simple_number_from_port(port);
+      offset += 4;
+  
+      /* Load table mapping symtab indices to stream positions: */
+
+      all_short = scheme_get_byte(port);
+      if (symtabsize < 0)
+        so = NULL;
+      else
+        so = (intptr_t *)scheme_malloc_fail_ok(scheme_malloc_atomic, 
+                                               scheme_check_overflow(symtabsize, sizeof(intptr_t), 0));
+      if (!so)
+        scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                        "read (compiled): could not allocate symbol table of size %" PRIdPTR,
+                        symtabsize);
+      if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
+          != ((all_short ? 2 : 4) * (symtabsize - 1)))
+        scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                        "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
+                        got, (all_short ? 2 : 4) * (symtabsize - 1));
+      offset += got;
+
+      {
+        /* This loop runs top to bottom, since sizeof(long) may be larger
+           than the decoded integers (but it's never shorter) */
+        intptr_t j, v;
+        unsigned char *so_c = (unsigned char *)so;
+        for (j = symtabsize - 1; j--; ) {
+          if (all_short) {
+            v = so_c[j * 2]
+              + (so_c[j * 2 + 1] << 8);
+          } else {
+            v = so_c[j * 4]
+              + (so_c[j * 4 + 1] << 8)
+              + (so_c[j * 4 + 2] << 16)
+              + (so_c[j * 4 + 3] << 24);
+          }
+          so[j] = v;
         }
       }
-    }
-  } else
-    scheme_ill_formed_code(rp);
 
-  return result;
+      /* Continue reading content */
+
+      shared_size = read_simple_number_from_port(port);
+      size = read_simple_number_from_port(port);
+
+      if (shared_size >= size) {
+        scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                        "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
+                        shared_size, size);
+      }
+
+      offset += 8;
+
+      rp = MALLOC_ONE_RT(CPort);
+      SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
+      {
+        unsigned char *st;
+        st = (unsigned char *)scheme_malloc_fail_ok(scheme_malloc_atomic, size + 1);
+        rp->start = st;
+      }
+      rp->pos = 0;
+      {
+        intptr_t base;
+        scheme_tell_all(port, NULL, NULL, &base);
+        rp->base = base;
+      }
+      rp->orig_port = port;
+      rp->size = size;
+      if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
+        scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                        "read (compiled): ill-formed code (bad count: %ld != %ld"
+                        ", started at %ld)",
+                        got, size, rp->base);
+
+      local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
+
+      symtab = MALLOC_N(Scheme_Object *, symtabsize);
+      rp->symtab_size = symtabsize;
+      rp->ht = local_ht;
+      rp->symtab = symtab;
+
+      config = scheme_current_config();
+
+      dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
+      rp->relto = dir;
+
+      rp->magic_sym = params->magic_sym;
+      rp->magic_val = params->magic_val;
+
+      rp->shared_offsets = so;
+      rp->delay_info = delay_info;
+
+      if (!delay_info) {
+        /* Read shared parts: */
+        intptr_t j, len;
+        Scheme_Object *v;
+        len = symtabsize;
+        for (j = 1; j < len; j++) {
+          if (!symtab[j]) {
+            v = read_compact(rp, 0);
+            symtab[j] = v;
+          } else {
+            if (j+1 < len)
+              rp->pos = so[j];
+            else
+              rp->pos = shared_size;
+          }
+        }
+      } else {
+        scheme_reserve_file_descriptor();
+        rp->pos = shared_size; /* skip shared part */
+        delay_info->file_offset = offset + 2 + 1; /* +2 is for #~; +1 is ???? */
+        delay_info->size = shared_size;
+        delay_info->symtab_size = rp->symtab_size;
+        delay_info->symtab = rp->symtab;
+        delay_info->shared_offsets = rp->shared_offsets;
+        delay_info->relto = rp->relto;
+
+        if (perma_cache) {
+          unsigned char *cache;
+          cache = (unsigned char *)scheme_malloc_atomic(shared_size);
+          memcpy(cache, rp->start, shared_size);
+          delay_info->cached = cache;
+          delay_info->cached_port = port;
+          delay_info->perma_cache = 1;
+        }
+      }
+
+      /* Read main body: */
+      result = read_marshalled(scheme_compilation_top_type, rp);
+
+      if (delay_info)
+        if (delay_info->ut)
+          delay_info->ut->rp = NULL; /* clean up */
+
+      if (*local_ht) {
+        scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                        "read (compiled): ill-formed code (unexpected graph structure)");
+        return NULL;
+      }
+
+      if (SAME_TYPE(SCHEME_TYPE(result), scheme_compilation_top_type)) {
+        Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)result;
+
+        scheme_validate_code(rp, top->code,
+                             top->max_let_depth,
+                             top->prefix->num_toplevels,
+                             top->prefix->num_stxes,
+                             top->prefix->num_lifts,
+                             NULL,
+                             0);
+        /* If no exception, the resulting code is ok. */
+
+        /* Install module hash code, if any. This code is used to register
+           the module in scheme_module_execute(), and it's used to
+           find a registered module in the default load handler. */
+        {
+          int i;
+          for (i = 0; i < 20; i++) {
+            if (hash_code[i]) break;
+          }
+
+          if (i < 20) {
+            Scheme_Module *m;
+            m = scheme_extract_compiled_module(result);
+            if (m) {
+              Scheme_Object *hc;
+              hc = scheme_make_sized_byte_string(hash_code, 20, 1);
+              hc = scheme_make_pair(hc, dir);
+
+              m->code_key = hc;
+            }
+          }
+        }
+      } else
+        scheme_ill_formed_code(rp);
+    
+      if (directory) {
+        Scheme_Module *m, *m2;
+        Scheme_Object *v;
+        m = scheme_extract_compiled_module(result);
+        if (m) {
+          v = scheme_hash_get(directory, m->submodule_path);
+          if (v && (SCHEME_NULLP(v) || SCHEME_PAIRP(v))) {
+            directory_count++;
+            v = scheme_reverse(v);
+            m->pre_submodules = v;
+            scheme_hash_set(directory, m->submodule_path, result);
+            if (!SCHEME_NULLP(m->submodule_path)) {
+              /* find parent: */
+              v = scheme_reverse(m->submodule_path);
+              v = scheme_reverse(SCHEME_CDR(v));
+              result = scheme_hash_get(directory, v);
+              if (!result)
+                scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                                "read (compiled): no parent module found in multi-module stream");
+              if (SCHEME_NULLP(result) || SCHEME_PAIRP(result)) {
+                /* this is a pre-submodule */
+                result = scheme_make_pair((Scheme_Object *)m, result);
+                scheme_hash_set(directory, v, result);
+              } else {
+                /* this is a post-submodule */
+                m2 = scheme_extract_compiled_module(result);
+                v = m2->post_submodules ? m2->post_submodules : scheme_null;
+                v = scheme_make_pair((Scheme_Object *)m, v);
+                m2->post_submodules = v;
+              }
+            }
+            if (directory->count == directory_count) {
+              /* need to reverse post-submodule lists in all modules: */
+              int i;
+              for (i = 0; i < directory->size; i++) {
+                if (directory->vals[i]) {
+                  m = scheme_extract_compiled_module(directory->vals[i]);
+                  if (m->post_submodules) {
+                    v = scheme_reverse(m->post_submodules);
+                    m->post_submodules = v;
+                  }
+                }
+              }
+
+              /* return the root module: */
+              return scheme_hash_get(directory, scheme_null);
+            }
+            /* otherwise, keep reading modules */
+          } else
+            scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                            "read (compiled): found unrecognized or duplicate module after multi-module directory: %V",
+                            m->submodule_path);
+        } else
+          scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                          "read (compiled): found non-module code after multi-module directory");
+      } else
+        return result;
+    } else {
+      scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                      "read (compiled): found bad mode");
+    }
+    
+    
+    if ((scheme_get_byte(port) != '#')
+        || (scheme_get_byte(port) != '~'))
+      scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                      "read (compiled): no `#~' for next module in multi-module stream");
+  }
 }
 
 
@@ -5823,7 +6031,8 @@ static Scheme_Object *no_val_thunk(void *d, int argc, Scheme_Object **argv)
   return (Scheme_Object *)d;
 }
 
-static Scheme_Object *do_reader(Scheme_Object *modpath_stx,
+static Scheme_Object *do_reader(Scheme_Object *try_modpath,
+                                Scheme_Object *modpath_stx,
                                 Scheme_Object *port,
                                 Scheme_Object *stxsrc, intptr_t line, intptr_t col, intptr_t pos,
                                 int get_info,
@@ -5840,8 +6049,20 @@ static Scheme_Object *do_reader(Scheme_Object *modpath_stx,
 
   proc = scheme_get_param(scheme_current_config(), MZCONFIG_READER_GUARD);
 
-  a[0] = modpath;
-  modpath = scheme_apply(proc, 1, a);
+  if (try_modpath) {
+    a[0] = try_modpath;
+    try_modpath = scheme_apply(proc, 1, a);
+    
+    if (scheme_module_is_declared(try_modpath, 1))
+      modpath = try_modpath;
+    else
+      try_modpath = NULL;
+  } 
+
+  if (!try_modpath) {
+    a[0] = modpath;
+    modpath = scheme_apply(proc, 1, a);
+  }
   
   a[0] = modpath;
   if (get_info)
@@ -5913,7 +6134,7 @@ static Scheme_Object *read_reader(Scheme_Object *port,
     return NULL;
   }
 
-  return do_reader(modpath, port, stxsrc, line, col, pos, 0, ht, indentation, params);
+  return do_reader(NULL, modpath, port, stxsrc, line, col, pos, 0, ht, indentation, params);
 }
 
 /* "#lang " has been read */
@@ -5928,7 +6149,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
   GC_CAN_IGNORE char *sfx;
   char *buf, *naya;
   int ch = 0;
-  Scheme_Object *modpath;
+  Scheme_Object *modpath, *subm_modpath;
   intptr_t name_line = -1, name_col = -1, name_pos = -1;
 
   size = 32;
@@ -6003,6 +6224,9 @@ static Scheme_Object *read_lang(Scheme_Object *port,
     memcpy(naya, buf, len * sizeof(char));
     buf = naya;
   }
+  buf[len] = 0;
+  subm_modpath = scheme_intern_symbol(buf);
+
   sfx = "/lang/reader";
   while (*sfx) {
     buf[len++] = *(sfx++);
@@ -6018,7 +6242,12 @@ static Scheme_Object *read_lang(Scheme_Object *port,
                                        stxsrc, STX_SRCTAG);
   }
 
-  return do_reader(modpath, port, stxsrc, line, col, pos, get_info, ht, indentation, params);
+  subm_modpath = scheme_make_pair(scheme_intern_symbol("submod"),
+                                  scheme_make_pair(subm_modpath,
+                                                   scheme_make_pair(scheme_intern_symbol("reader"),
+                                                                    scheme_null)));
+
+  return do_reader(subm_modpath, modpath, port, stxsrc, line, col, pos, get_info, ht, indentation, params);
 }
 
 Scheme_Object *scheme_read_language(Scheme_Object *port, int nonlang_ok)

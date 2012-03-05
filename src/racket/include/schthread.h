@@ -150,6 +150,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Meta_Continuation *available_prompt_mc_;
   struct Scheme_Object *cached_beg_stx_;
   struct Scheme_Object *cached_mod_stx_;
+  struct Scheme_Object *cached_modstar_stx_;
   struct Scheme_Object *cached_mod_beg_stx_;
   struct Scheme_Object *cached_dv_stx_;
   struct Scheme_Object *cached_ds_stx_;
@@ -503,6 +504,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define available_prompt_mc XOA (scheme_get_thread_local_variables()->available_prompt_mc_)
 #define cached_beg_stx XOA (scheme_get_thread_local_variables()->cached_beg_stx_)
 #define cached_mod_stx XOA (scheme_get_thread_local_variables()->cached_mod_stx_)
+#define cached_modstar_stx XOA (scheme_get_thread_local_variables()->cached_modstar_stx_)
 #define cached_mod_beg_stx XOA (scheme_get_thread_local_variables()->cached_mod_beg_stx_)
 #define cached_dv_stx XOA (scheme_get_thread_local_variables()->cached_dv_stx_)
 #define cached_ds_stx XOA (scheme_get_thread_local_variables()->cached_ds_stx_)

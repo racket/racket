@@ -154,7 +154,7 @@ structures that are produced by @racket[zo-parse] and consumed by
  be used for cross-module inlining of the function.}
 
 @defstruct+[(mod form)
-            ([name symbol?]
+            ([name (or/c symbol? (listof symbol?))]
              [srcname symbol?]
              [self-modidx module-path-index?]
              [prefix prefix?]
@@ -173,7 +173,8 @@ structures that are produced by @racket[zo-parse] and consumed by
              [max-let-depth exact-nonnegative-integer?]
              [dummy toplevel?]
              [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
-             [internal-context (or/c #f #t stx?)])]{
+             [internal-context (or/c #f #t stx?)]
+             [submodules (listof mod?)])]{
   Represents a @racket[module] declaration.
 
   The @racket[provides] and @racket[requires] lists are each an

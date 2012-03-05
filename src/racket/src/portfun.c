@@ -4173,6 +4173,48 @@ static Scheme_Object *set_port_next_location(int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
+static intptr_t get_number(Scheme_Object *port, intptr_t pos)
+{
+  unsigned char buffer[4];
+  intptr_t got, orig;
+
+  orig = scheme_set_file_position(port, -1);
+  scheme_set_file_position(port, pos);
+
+  got = scheme_get_byte_string("default-load-handler",
+                               port,
+                               (char *)buffer, 0, 4,
+                               0, 0, scheme_make_integer(0));
+
+  (void)scheme_set_file_position(port, orig);
+
+  if (got != 4)
+    return 0;
+
+  return (buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24));
+}
+
+static char *get_bytes(Scheme_Object *port, intptr_t pos, intptr_t len)
+{
+  char *s;
+  intptr_t got, orig;
+
+  s = scheme_malloc_atomic(len + 1);
+  s[len] = 0;
+
+  orig = scheme_set_file_position(port, -1);
+  scheme_set_file_position(port, pos);
+
+  got = scheme_get_byte_string("default-load-handler",
+                               port,
+                               (char *)s, 0, len,
+                               0, 0, scheme_make_integer(0));
+
+  (void)scheme_set_file_position(port, orig);
+  
+  return s;
+}
+
 typedef struct {
   MZTAG_IF_REQUIRED
   Scheme_Config *config;
@@ -4196,18 +4238,102 @@ static Scheme_Object *do_load_handler(void *data)
   Scheme_Object *port = lhd->port;
   Scheme_Thread *p = lhd->p;
   Scheme_Config *config = lhd->config;
-  Scheme_Object *last_val = scheme_void, *obj, **save_array = NULL;
+  Scheme_Object *last_val = scheme_void, *obj, **save_array = NULL, *modname;
   Scheme_Env *genv;
-  int save_count = 0, got_one = 0, as_module, check_module_name = 0;
+  int save_count = 0, got_one = 0, as_module, check_module_name = 0, skip_no_more_check = 0;
+
+  modname = lhd->expected_module;
+
+  if (SCHEME_TRUEP(modname)) {
+    /* Look for a module directory: */
+    intptr_t got;
+    int vers_size, dir_header_size;
+#   define DIR_HEADER_SIZE (3 + 20 + 16)
+    char buffer[DIR_HEADER_SIZE];
+
+    vers_size = strlen(MZSCHEME_VERSION);
+    dir_header_size = 4 + vers_size;
+    if (dir_header_size >= DIR_HEADER_SIZE) 
+      scheme_signal_error("internal error: buffer size mismatch");
+    got = scheme_get_byte_string("default-load-handler",
+                                 port,
+                                 buffer, 0, dir_header_size,
+                                 0, 1, scheme_make_integer(0));
+
+    if ((got == dir_header_size)
+        && (buffer[0] == '#')
+        && (buffer[1] == '~')
+        && (buffer[2] == vers_size)
+        && (!scheme_strncmp(buffer + 3, MZSCHEME_VERSION, vers_size))
+        && (buffer[3 + vers_size] == 'D')) {    
+      /* File starts with a directory. The directory is a balanced binary search tree,
+         where each node has the shape 
+           <name-len> <name-bytes> <mod-pos> <mod-len> <left-pos> <right-pos>
+         and a 0 position for <left-pos> or <right-pos> means no child. */
+      char *find_name, *s;
+      intptr_t namelen, i, name_size, pos, offset = 0, rellen;
+
+      if (SCHEME_PAIRP(modname))
+        find_name = scheme_submodule_path_to_string(SCHEME_CDR(modname), &namelen);
+      else {
+        find_name = "";
+        namelen = 0;
+      }
+
+      pos = dir_header_size + 4 /* skip total-module count */;
+      
+      while (pos) {
+        name_size = get_number(port, pos);
+        s = get_bytes(port, pos + 4, name_size);
+        if ((name_size == namelen) && !strncmp(find_name, s,name_size)) {
+          /* found it */
+          offset = get_number(port, pos + 4 + name_size);
+          break;
+        }
+        /* try left or right? */
+        rellen = namelen;
+        for (i = 0; (i < rellen) && (i < name_size); i++) {
+          if (find_name[i] != s[i]) {
+            rellen = 0;
+            break;
+          }
+        }
+        if (rellen < name_size)
+          pos = get_number(port, pos + 12 + name_size);
+        else
+          pos = get_number(port, pos + 16 + name_size);
+      }
+
+      if (offset) {
+        scheme_set_file_position(port, offset);
+        if (!SCHEME_SYMBOLP(modname))
+          modname = SCHEME_CAR(SCHEME_CDR(modname));
+        skip_no_more_check = 1;
+      } else if (SCHEME_PAIRP(modname)) {
+        /* don't complain if a submodule isn't found */
+        return scheme_void;
+      }
+    }
+  } 
+
+  if (SCHEME_PAIRP(modname)) {
+    modname = SCHEME_CAR(modname);
+
+    if (SCHEME_FALSEP(modname)) {
+      /* caller says the main module is already loaded, 
+         so don't reload for submodules */
+      return scheme_void;
+    }
+  }
 
   if (scheme_module_code_cache) {
     intptr_t got;
     int vers_size, hash_header_size;
-#   define HASH_HEADER_SIZE (3 + 20 + 16)
+#   define HASH_HEADER_SIZE (4 + 20 + 16)
     char buffer[HASH_HEADER_SIZE];
 
     vers_size = strlen(MZSCHEME_VERSION);
-    hash_header_size = 3 + vers_size + 20;
+    hash_header_size = 4 + vers_size + 20;
     if (hash_header_size >= HASH_HEADER_SIZE) 
       scheme_signal_error("internal error: buffer size mismatch");
     got = scheme_get_byte_string("default-load-handler",
@@ -4220,14 +4346,15 @@ static Scheme_Object *do_load_handler(void *data)
         && (buffer[0] == '#')
         && (buffer[1] == '~')
         && (buffer[2] == vers_size)
-        && (!scheme_strncmp(buffer + 3, MZSCHEME_VERSION, vers_size))) {
+        && (!scheme_strncmp(buffer + 3, MZSCHEME_VERSION, vers_size))
+        && (buffer[3 + vers_size] == 'T')) {
       int i;
       for (i = 0; i < 20; i++) {
-        if (buffer[3 + vers_size + i])
+        if (buffer[4 + vers_size + i])
           break;
       }
       if (i < 20) {
-        obj = scheme_make_sized_byte_string(buffer + 3 + vers_size, 20, 1);
+        obj = scheme_make_sized_byte_string(buffer + 4 + vers_size, 20, 1);
       }
     }
 
@@ -4242,7 +4369,7 @@ static Scheme_Object *do_load_handler(void *data)
         Scheme_Compilation_Top *top;
 
         top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
-        top->so.type = scheme_compilation_top_type;
+        top->iso.so.type = scheme_compilation_top_type;
         top->code = obj;
         top->prefix = NULL; /* indicates a wrapper */
 
@@ -4265,8 +4392,8 @@ static Scheme_Object *do_load_handler(void *data)
     genv = scheme_get_env(config);
     as_module = 0;
 
-    if (SCHEME_SYMBOLP(lhd->expected_module)) {
-      /* Must be of the form `(module <expectedname> ...)',possibly compiled. */
+    if (SCHEME_SYMBOLP(modname)) {
+      /* Must be of the form `(module <somename> ...)',possibly compiled. */
       /* Also, file should have no more expressions. */
       Scheme_Object *a, *d, *other = NULL;
       Scheme_Module *m;
@@ -4276,7 +4403,7 @@ static Scheme_Object *do_load_handler(void *data)
       m = scheme_extract_compiled_module(SCHEME_STX_VAL(d));
       if (m) {
         if (check_module_name) {
-          if (!scheme_resolved_module_path_value_matches(m->modname, lhd->expected_module)) {
+          if (!scheme_resolved_module_path_value_matches(m->modname, modname)) {
             other = m->modname;
             d = NULL;
           }
@@ -4296,7 +4423,7 @@ static Scheme_Object *do_load_handler(void *data)
 	      a = SCHEME_STX_CAR(d);
 	      other = SCHEME_STX_VAL(a);
               if (check_module_name) {
-                if (!SAME_OBJ(other, lhd->expected_module))
+                if (!SAME_OBJ(other, modname))
                   d = NULL;
               }
 	    }
@@ -4331,7 +4458,7 @@ static Scheme_Object *do_load_handler(void *data)
           ip = scheme_input_port_record(port);
           scheme_raise_exn(MZEXN_FAIL,
                            "default-load-handler: expected a `module' declaration for `%S', found: %T in: %V",
-                           lhd->expected_module,
+                           modname,
                            err_msg,
                            ip->name);
         }
@@ -4340,17 +4467,19 @@ static Scheme_Object *do_load_handler(void *data)
       }
 
       /* Check no more expressions: */
-      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
-      if (!SCHEME_EOFP(d)) {
-        Scheme_Input_Port *ip;
-        ip = scheme_input_port_record(port);
-	scheme_raise_exn(MZEXN_FAIL,
-			 "default-load-handler: expected only a `module' declaration for `%S',"
-                         " but found an extra expression in: %V",
-			 lhd->expected_module,
-			 ip->name);
+      if (!skip_no_more_check) {
+        d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+        if (!SCHEME_EOFP(d)) {
+          Scheme_Input_Port *ip;
+          ip = scheme_input_port_record(port);
+          scheme_raise_exn(MZEXN_FAIL,
+                           "default-load-handler: expected only a `module' declaration for `%S',"
+                           " but found an extra expression in: %V",
+                           modname,
+                           ip->name);
 
-	return NULL;
+          return NULL;
+        }
       }
 
       if (!m) {
@@ -4388,16 +4517,16 @@ static Scheme_Object *do_load_handler(void *data)
 	p->values_buffer = NULL;
     }
 
-    if (SCHEME_SYMBOLP(lhd->expected_module))
+    if (SCHEME_SYMBOLP(modname))
       break;
   }
 
-  if (SCHEME_SYMBOLP(lhd->expected_module) && !got_one) {
+  if (SCHEME_SYMBOLP(modname) && !got_one) {
     Scheme_Input_Port *ip;
     ip = scheme_input_port_record(port);
     scheme_raise_exn(MZEXN_FAIL,
 		     "default-load-handler: expected a `module' declaration for `%S', but found end-of-file in: %V",
-		     lhd->expected_module,
+		     modname,
 		     ip->name);
 
     return NULL;
@@ -4409,6 +4538,16 @@ static Scheme_Object *do_load_handler(void *data)
   }
 
   return last_val;
+}
+
+static int nonempty_symbol_list(Scheme_Object *p)
+{
+  if (!SCHEME_PAIRP(p)) return 0;
+  while (SCHEME_PAIRP(p)) {
+    if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) return 0;
+    p = SCHEME_CDR(p);
+  }
+  return SCHEME_NULLP(p);
 }
 
 static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
@@ -4423,8 +4562,15 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_type("default-load-handler", SCHEME_PATH_STRING_STR, 0, argc, argv);
   expected_module = argv[1];
-  if (!SCHEME_FALSEP(expected_module) && !SCHEME_SYMBOLP(expected_module))
-    scheme_wrong_type("default-load-handler", "symbol or #f", 1, argc, argv);
+  if (!SCHEME_FALSEP(expected_module) 
+      && !SCHEME_SYMBOLP(expected_module)
+      && (!SCHEME_PAIRP(expected_module)
+          || (!SCHEME_FALSEP(SCHEME_CAR(expected_module))
+              && !SCHEME_SYMBOLP(SCHEME_CAR(expected_module)))
+          || !nonempty_symbol_list(SCHEME_CDR(expected_module))))
+    scheme_wrong_type("default-load-handler", 
+                      "#f, symbol, list (length 2 or more) of symbol or #f followed by symbols", 
+                      1, argc, argv);
 
   port = scheme_do_open_input_file("default-load-handler", 0, 1, argv, 0, NULL, NULL);
 

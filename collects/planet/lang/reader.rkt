@@ -9,7 +9,8 @@
 (define (str->spec str)
   (let ([str (bytes->string/latin-1 str)])
     (if (module-path? `(planet ,(string->symbol str)))
-        `(planet ,(string->symbol (string-append str "/lang/reader")))
+        (vector `(submod (planet ,(string->symbol str)) reader)
+                `(planet ,(string->symbol (string-append str "/lang/reader"))))
         #f)))
 
 (define-values (planet-read planet-read-syntax real-planet-get-info)

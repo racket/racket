@@ -116,6 +116,7 @@ THREAD_LOCAL_DECL(static Scheme_Dynamic_Wind *available_prompt_dw);
 THREAD_LOCAL_DECL(static Scheme_Meta_Continuation *available_prompt_mc);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_beg_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_modstar_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
@@ -626,6 +627,7 @@ scheme_init_fun_places()
 {
   REGISTER_SO(cached_beg_stx);
   REGISTER_SO(cached_mod_stx);
+  REGISTER_SO(cached_modstar_stx);
   REGISTER_SO(cached_mod_beg_stx);
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
@@ -1632,10 +1634,11 @@ cert_with_specials(Scheme_Object *code,
         name = scheme_stx_taint_disarm(code, NULL);
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  Scheme_Object *beg_stx, *mod_stx, *mod_beg_stx, *dv_stx, *ds_stx, *bfs_stx;
+	  Scheme_Object *beg_stx, *mod_stx, *modstar_stx, *mod_beg_stx, *dv_stx, *ds_stx, *bfs_stx;
 
 	  if (!phase) {
             mod_stx = scheme_module_stx;
+            modstar_stx = scheme_modulestar_stx;
 	    beg_stx = scheme_begin_stx;
 	    mod_beg_stx = scheme_module_begin_stx;
 	    dv_stx = scheme_define_values_stx;
@@ -1644,6 +1647,7 @@ cert_with_specials(Scheme_Object *code,
 	  } else if (phase == cached_stx_phase) {
 	    beg_stx = cached_beg_stx;
 	    mod_stx = cached_mod_stx;
+	    modstar_stx = cached_modstar_stx;
 	    mod_beg_stx = cached_mod_beg_stx;
 	    dv_stx = cached_dv_stx;
 	    ds_stx = cached_ds_stx;
@@ -1655,6 +1659,8 @@ cert_with_specials(Scheme_Object *code,
 					     sr, 0, 0);
 	    mod_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_stx), scheme_false, 
 					     sr, 0, 0);
+	    modstar_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_modulestar_stx), scheme_false, 
+                                                sr, 0, 0);
 	    mod_beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_begin_stx), scheme_false, 
                                                  sr, 0, 0);
 	    dv_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_values_stx), scheme_false, 
@@ -1665,6 +1671,7 @@ cert_with_specials(Scheme_Object *code,
                                              sr, 0, 0);
 	    cached_beg_stx = beg_stx;
 	    cached_mod_stx = mod_stx;
+	    cached_modstar_stx = modstar_stx;
 	    cached_mod_beg_stx = mod_beg_stx;
 	    cached_dv_stx = dv_stx;
 	    cached_ds_stx = ds_stx;
@@ -1674,6 +1681,7 @@ cert_with_specials(Scheme_Object *code,
 
 	  if (scheme_stx_module_eq(beg_stx, name, phase)
               || scheme_stx_module_eq(mod_stx, name, phase)
+              || scheme_stx_module_eq(modstar_stx, name, phase)
               || scheme_stx_module_eq(mod_beg_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
@@ -1711,7 +1719,7 @@ cert_with_specials(Scheme_Object *code,
     if (SCHEME_PAIRP(code))
       return v;
 
-    return scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
+    return scheme_datum_to_syntax(v, code, code, 0, 1);
   } else if (SCHEME_STX_NULLP(code))
     return code;
 

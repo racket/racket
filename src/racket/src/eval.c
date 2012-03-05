@@ -3811,6 +3811,8 @@ static void *compile_k(void)
     insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
     enforce_consts = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
     comp_flags = get_comp_flags(config);
+    if (enforce_consts)
+      comp_flags |= COMP_ENFORCE_CONSTS;
   }
 
   while (1) {
@@ -3928,7 +3930,7 @@ static void *compile_k(void)
       rp = scheme_remap_prefix(rp, ri);
 
       top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
-      top->so.type = scheme_compilation_top_type;
+      top->iso.so.type = scheme_compilation_top_type;
       top->max_let_depth = max_let_depth;
       top->code = o;
       top->prefix = rp;

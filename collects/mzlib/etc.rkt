@@ -245,7 +245,8 @@
                   (if (module-path-index? mpi)
                     (module-path-index-resolve mpi)
                     mpi))])
-    (let ([name (resolved-module-path-name srcmod)])
+    (let* ([name (resolved-module-path-name srcmod)]
+           [name (if (pair? name) (car name) name)])
       (and (path? name)
            (let-values ([(base name dir?) (split-path name)])
              (and (path? base)

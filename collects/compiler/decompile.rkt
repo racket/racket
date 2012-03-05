@@ -1,8 +1,9 @@
-#lang scheme/base
+#lang racket/base
 (require compiler/zo-parse
          syntax/modcollapse
-         scheme/port
-         scheme/match
+         racket/port
+         racket/match
+         racket/list
          racket/set)
 
 (provide decompile)
@@ -162,15 +163,17 @@
    [(symbol? modidx) modidx]
    [else (collapse-module-path-index modidx (current-directory))]))
 
-(define (decompile-module mod-form stack stx-ht)
+(define (decompile-module mod-form orig-stack stx-ht name)
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info internal-context))
+                       max-let-depth dummy lang-info internal-context pre-submodules post-submodules))
      (let-values ([(globs defns) (decompile-prefix prefix stx-ht)]
-                  [(stack) (append '(#%modvars) stack)]
+                  [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
-       `(module ,name ....
+       `(,name ,(if (symbol? name) name (last name)) .... ,internal-context
           ,@defns
+          ,@(for/list ([submod (in-list pre-submodules)])
+              (decompile-module submod orig-stack stx-ht 'module))
           ,@(for/list ([b (in-list syntax-bodies)])
               (let loop ([n (sub1 (car b))])
                 (if (zero? n)
@@ -180,13 +183,15 @@
                     (list 'begin-for-syntax (loop (sub1 n))))))
           ,@(map (lambda (form)
                    (decompile-form form globs stack closed stx-ht))
-                 body)))]
+                 body)
+          ,@(for/list ([submod (in-list post-submodules)])
+              (decompile-module submod orig-stack stx-ht 'module*))))]
     [else (error 'decompile-module "huh?: ~e" mod-form)]))
 
 (define (decompile-form form globs stack closed stx-ht)
   (match form
     [(? mod?)
-     (decompile-module form stack stx-ht)]
+     (decompile-module form stack stx-ht 'module)]
     [(struct def-values (ids rhs))
      `(define-values ,(map (lambda (tl)
                              (match tl

@@ -4656,6 +4656,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
   Comp_Prefix *prev_cp;
 
+  if (!m->comp_prefix) {
+    /* already resolved */
+    return (Scheme_Object *)m;
+  }
+
   old_context = info->context;
   info->context = (Scheme_Object *)m;
 
@@ -5020,6 +5025,21 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   info->cp = prev_cp;
 
   /* Exp-time body was optimized during compilation */
+
+  {
+    /* optimize submodules */
+    int k;
+    Scheme_Object *p;
+    for (k = 0; k < 2; k++) {
+      p = (k ? m->post_submodules : m->pre_submodules);
+      if (p) {
+        while (!SCHEME_NULLP(p)) {
+          scheme_optimize_expr(SCHEME_CAR(p), info, 0);
+          p = SCHEME_CDR(p);
+        }
+      }
+    }
+  }
 
   return data;
 }

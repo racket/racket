@@ -11,23 +11,36 @@
 
 (define (test-rmp expect path rel-to)
   (test expect resolve-module-path path rel-to)
-  (let ([pi-rel-to (if (path? rel-to) 
+  (unless (and (pair? path) (eq? 'submod (car path)))
+    (test `(submod ,expect a b) resolve-module-path `(submod ,path a b) rel-to)
+    (test `(submod ,expect a b) resolve-module-path `(submod ,path a c ".." b) rel-to)
+    (when rel-to
+      (test expect collapse-module-path path (if (procedure? rel-to)
+                                                 (lambda () `(submod ,(rel-to) a b))
+                                                 `(submod ,rel-to a b)))))
+  (let ([pi-rel-to (if (or (path? rel-to) 
+                           (and (pair? rel-to)
+                                (eq? (car rel-to) 'submod)
+                                (path? (cadr rel-to))))
 		       rel-to 
 		       (build-path (current-directory) "self"))])
     (test expect resolve-module-path-index 
 	  (module-path-index-join path (module-path-index-join #f #f))
 	  pi-rel-to)
-    (test expect resolve-module-path-index 
-	  (module-path-index-join path 
-				  (module-path-index-join
-				   "other.ss"
-				   (module-path-index-join #f #f)))
-	  pi-rel-to)))
+    (unless (and (pair? path)
+                 (eq? (car path) 'submod)
+                 (equal? (cadr path) "."))
+      (test expect resolve-module-path-index 
+            (module-path-index-join path 
+                                    (module-path-index-join
+                                     "other.ss"
+                                     (module-path-index-join #f #f)))
+            pi-rel-to))))
 
 (test-rmp (build-path (current-directory) "apple.rkt") "apple.ss" #f)
 (test-rmp (build-path (current-directory) "apple.rkt") "apple.rkt" #f)
 (test-rmp (build-path (current-directory) "apple.rkt") "apple.rkt" (build-path (current-directory) "x.rkt"))
-(test-rmp (build-path (current-directory) "apple.rkt") "apple.rkt" current-directory)
+(test-rmp (build-path (current-directory) "apple.rkt") "apple.rkt" (lambda () (build-path (current-directory) "x.rkt")))
 (test-rmp (build-path (current-directory) 'up "apple.rkt") "../apple.rkt" #f)
 (test-rmp (build-path (current-directory) 'up 'up "apple.rkt") "../../apple.rkt" #f)
 (test-rmp (build-path (current-directory) 'same "apple.rkt") "./apple.rkt" #f)
@@ -53,6 +66,9 @@
   (test-rmp (build-path (current-directory) "x.rkt") `(file ,(path->string (build-path (current-directory) "x.ss"))) #f)
   (test-rmp (build-path (current-directory) "x.rkt") (build-path (current-directory) "x.ss") #f)
   (test-rmp (build-path (current-directory) "x.rkt") (build-path "x.ss") #f)
+  (test-rmp `(submod ,(build-path mzlib "y.rkt") n) '(submod "y.rkt" n) `(submod ,(build-path mzlib "x.rkt") q z))
+  (test-rmp `(submod ,(build-path mzlib "x.rkt") q) '(submod "." "..") `(submod ,(build-path mzlib "x.rkt") q z))
+  (test-rmp (build-path mzlib "x.rkt") '(submod "." ".." "..") `(submod ,(build-path mzlib "x.rkt") q z))
   (void))
 
 (err/rt-test (resolve-module-path "apple.ss" 'no))
@@ -71,15 +87,23 @@
 
 (define (test-cmp expect path rel-to)
   (test expect collapse-module-path path rel-to)
+  (unless (and (pair? path) (eq? 'submod (car path)))
+    (test `(submod ,expect a b) collapse-module-path `(submod ,path a b) rel-to)
+    (test `(submod ,expect a b) collapse-module-path `(submod ,path a c ".." b) rel-to)
+    (unless (symbol? rel-to)
+      (test expect collapse-module-path path (if (procedure? rel-to)
+                                                 (lambda () `(submod ,(rel-to) a b))
+                                                 `(submod ,rel-to a b)))))
   (test expect collapse-module-path-index 
 	(module-path-index-join path (module-path-index-join #f #f))
 	rel-to)
-  (test expect collapse-module-path-index 
-	(module-path-index-join path 
-				(module-path-index-join
-				 "other.ss"
-				 (module-path-index-join #f #f)))
-	rel-to))
+  (unless (and (pair? path) (eq? 'submod (car path)) (equal? (cadr path) "."))
+    (test expect collapse-module-path-index 
+          (module-path-index-join path 
+                                  (module-path-index-join
+                                   "other.ss"
+                                   (module-path-index-join #f #f)))
+          rel-to)))
 
 (test-cmp '(lib "nonesuch/x.rkt") "x.rkt" '(lib "y.ss" "nonesuch"))
 (test-cmp '(lib "nonesuch/x.rkt") "x.ss" '(lib "y.ss" "nonesuch"))
@@ -233,6 +257,12 @@
 (test-cmp (build-path 'same "x.rkt") "x.rkt" (build-path 'same))
 (test-cmp (build-path 'same "x.rkt") "x.ss" (build-path 'same))
 (test-cmp (build-path 'same "x.scm") "x.scm" (build-path 'same))
+
+(test-cmp '(submod 'a x y) '(submod "." x y) ''a)
+(test-cmp '(submod 'a q z x y) '(submod "." x y) '(submod 'a q z))
+(test-cmp '(submod 'a q y) '(submod "." ".." y) '(submod 'a q z))
+(test-cmp ''a '(submod "." ".." "..") '(submod 'a q z))
+(test-cmp `(submod ,(build-path 'same) x y) '(submod "." x y) (build-path 'same))
 
 (test '(lib "bar/foo.rkt")
       collapse-module-path-index 

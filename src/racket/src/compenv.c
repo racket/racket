@@ -535,6 +535,11 @@ int scheme_is_toplevel(Scheme_Comp_Env *env)
   return !env->next || (env->flags & SCHEME_TOPLEVEL_FRAME);
 }
 
+int scheme_is_nested_module(Scheme_Comp_Env *env)
+{
+  return (env->flags & SCHEME_NESTED_MODULE_FRAME);
+}
+
 int scheme_is_module_env(Scheme_Comp_Env *env)
 {
   return !!(env->flags & SCHEME_MODULE_BEGIN_FRAME); /* name is backwards compared to symbol! */
