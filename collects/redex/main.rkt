@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "reduction-semantics.rkt"
          "gui.rkt"
          "pict.rkt")

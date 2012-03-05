@@ -1,9 +1,9 @@
-#lang scheme/base
-(require scheme/gui/base
-         scheme/contract
+#lang racket/base
+(require racket/gui/base
+         racket/contract
          mrlib/graph
-         scheme/pretty
-         scheme/class
+         racket/pretty
+         racket/class
          framework
          "size-snip.rkt")
 
@@ -101,7 +101,7 @@
     ((pretty-print-parameters)
      (λ ()
        (parameterize ([pretty-print-columns columns])
-         (pretty-print sexp (open-output-text-editor text)))))
+         (pretty-write sexp (open-output-text-editor text)))))
     (for-each 
      (λ (p) (send text highlight-range (car p) (cdr p) (send the-color-database find-color "NavajoWhite")))
      to-color)
@@ -160,7 +160,7 @@
                            (flush-output port)
                            (set! to-color (cons (cons (car start) position) to-color))
                            (set! start (cdr start))))])
-         (pretty-print sexp counting-port))))
+         (pretty-write sexp counting-port))))
     to-color))
 
 ;; does a map-like operation, but if the list is dotted, flattens the results into an actual list.

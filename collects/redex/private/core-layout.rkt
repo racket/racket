@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "loc-wrapper.rkt"
          "matcher.rkt"
@@ -7,14 +7,14 @@
          texpict/utils
          texpict/mrpict
         
-         scheme/match
+         racket/match
          racket/draw
-         scheme/class)
+         racket/class
+         
+         (for-syntax racket/base))
 
 (define pink-code-font 'modern)
 
-(require (for-syntax scheme/base))
-  
 (provide find-enclosing-loc-wrapper
          render-lw
          lw->pict

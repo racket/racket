@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base 
+(require (for-syntax racket/base 
                      "term-fn.rkt"
                      syntax/boundmap
                      syntax/parse

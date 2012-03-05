@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/contract)
+#lang racket/base
+(require racket/contract)
 
 (require "private/reduction-semantics.rkt"
          "private/judgment-form.rkt"

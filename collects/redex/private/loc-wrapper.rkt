@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract
-         (for-syntax scheme/base)
+(require racket/contract
+         (for-syntax racket/base)
          (for-syntax "loc-wrapper-ct.rkt")
          "loc-wrapper-rt.rkt")
 

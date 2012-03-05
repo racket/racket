@@ -1,7 +1,10 @@
-#lang scheme/gui
+#lang racket/base
 (require framework
          slideshow/pict
          racket/runtime-path
+         racket/gui/base
+         (for-syntax racket/base)
+         racket/class
          "../pict.rkt"
          "../reduction-semantics.rkt")
 

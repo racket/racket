@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/gui/base
-         scheme/class
+#lang racket/base
+(require racket/gui/base
+         racket/class
          framework
-         scheme/pretty
+         racket/pretty
          "matcher.rkt")
 
 (provide reflowing-snip<%>
@@ -32,7 +32,7 @@
                  [pretty-print-print-hook default-pretty-printer-print-hook])
     ((pretty-print-parameters)
      (λ ()
-       (pretty-print v port)))))
+       (pretty-write v port)))))
 
 (define (default-pretty-printer-size-hook val display? op)
   (cond

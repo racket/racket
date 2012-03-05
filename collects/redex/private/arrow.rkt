@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
 (require texpict/mrpict
          racket/draw
-         scheme/class
-         scheme/contract)
+         racket/class
+         racket/contract)
 
 (provide/contract
  [make-arrow-pict
   (-> string?
-      (symbols 'curvy 'straight 'straight-double 'map)
+      (or/c 'curvy 'straight 'straight-double 'map)
       symbol?
       number?
       (-> pict?))])

@@ -1,10 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../private/core-layout.rkt"
          "../private/loc-wrapper.rkt"
          "lw-test-util.rkt"
-         "test-util.rkt"
-         mzlib/struct)
+         "test-util.rkt")
 
 (require texpict/mrpict mred/mred mzlib/class)
 (dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
@@ -30,7 +29,7 @@
       [(pair? x) (cons (loop (car x))
                        (loop (cdr x)))]
       [(pict-token? x)
-       (copy-struct pict-token x [pict-token-pict 'pict])]
+       (struct-copy pict-token x [pict 'pict])]
       [else x])))
 
 (test (replace-pict-tokens

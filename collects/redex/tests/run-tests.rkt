@@ -1,9 +1,10 @@
+#lang racket/base
+
 ;; require this file to run all of the test suites for redex.
 
-#lang racket/base
-(require scheme/runtime-path
-         scheme/cmdline
-         scheme/match
+(require racket/runtime-path
+         racket/cmdline
+         racket/match
          "test-util.rkt")
 
 (define test-bitmaps? #t)

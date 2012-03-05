@@ -1,3 +1,5 @@
+#lang racket/base
+
 #|
 
 tests the color setting ability during a reduction sequence.
@@ -8,10 +10,10 @@ In the other window, you expect to see the currently unreducted terms in green a
 
 |#
 
-#lang scheme/gui
-
 (require "../reduction-semantics.rkt"
-         "../gui.rkt")
+         "../gui.rkt"
+         racket/gui/base
+         racket/class)
 
 (reduction-steps-cutoff 1)
 

@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
 (require framework
+         racket/class
          "test-util.rkt"
          "../reduction-semantics.rkt"
          "../private/stepper.rkt"

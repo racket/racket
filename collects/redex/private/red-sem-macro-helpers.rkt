@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (provide extract-names)
 
-(require scheme/match)
+(require racket/match)
 
 (define (extract-names stx)
   (let ([dup-names

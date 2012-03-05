@@ -1,5 +1,5 @@
-#lang scheme/base
-(require (for-template scheme/base)
+#lang racket/base
+(require (for-template racket/base)
          (for-template "loc-wrapper-rt.rkt")
          "term-fn.rkt")
 (provide to-lw/proc to-lw/uq/proc)

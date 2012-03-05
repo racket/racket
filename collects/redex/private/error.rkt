@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (define-struct (exn:fail:redex exn:fail) ())
 (define (redex-error name fmt . args)
   (define suffix (apply format fmt args))
