@@ -247,17 +247,25 @@
       
 (define (read-module v)
   (match v
-    [`(,name ,srcname ,self-modidx ,lang-info ,functional? ,et-functional?
-             ,rename ,max-let-depth ,dummy
-             ,prefix ,num-phases
-             ,provide-phase-count . ,rest)
+    [`(,submod-path 
+       ,name ,srcname ,self-modidx 
+       ,pre-submods ,post-submods
+       ,lang-info ,functional? ,et-functional?
+       ,rename ,max-let-depth ,dummy
+       ,prefix ,num-phases
+       ,provide-phase-count . ,rest)
      (let*-values ([(phase-data rest-module) (split-phase-data rest provide-phase-count)]
                    [(bodies rest-module) (values (take rest-module num-phases)
                                                  (drop rest-module num-phases))])
        (match rest-module
          [`(,requires ,syntax-requires ,template-requires ,label-requires
                       ,more-requires-count . ,more-requires)
-          (make-mod name srcname self-modidx
+          (make-mod (if (null? submod-path)
+                        name 
+                        (if (symbol? name)
+                            (cons name submod-path)
+                            (cons (car name) submod-path)))
+                    srcname self-modidx
                     prefix
                     ;; provides:
                     (for/list ([l (in-list phase-data)])
@@ -325,7 +333,9 @@
                     max-let-depth
                     dummy
                     lang-info
-                    rename)]))]))
+                    rename
+                    (map read-module pre-submods)
+                    (map read-module post-submods))]))]))
 (define (read-module-wrap v)
   v)
 
@@ -1029,14 +1039,100 @@
             (set-cport-pos! cp save-pos)))
         (placeholder-get ph))))
 
-;; path -> bytes
-;; implementes read.c:read_compiled
-(define (zo-parse [port (current-input-port)])
+(define (read-prefix port)
   ;; skip the "#~"
   (unless (equal? #"#~" (read-bytes 2 port))
     (error 'zo-parse "not a bytecode stream"))
 
   (define version (read-bytes (min 63 (read-byte port)) port))
+
+  (read-char port))
+
+;; path -> bytes
+;; implementes read.c:read_compiled
+(define (zo-parse [port (current-input-port)])
+  (define init-pos (file-position port))
+
+  (define mode (read-prefix port))
+
+  (case mode
+    [(#\T) (zo-parse-top port)]
+    [(#\D)
+     (struct mod-info (name start len))
+     (define mod-infos
+       (sort
+        (for/list ([i (in-range (read-simple-number port))])
+          (define size (read-simple-number port))
+          (define name (read-bytes size port))
+          (define start (read-simple-number port))
+          (define len (read-simple-number port))
+          (define left (read-simple-number port))
+          (define right (read-simple-number port))
+          (define name-p (open-input-bytes name))
+          (mod-info (let loop ()
+                      (define c (read-byte name-p))
+                      (if (eof-object? c)
+                          null
+                          (cons (string->symbol
+                                 (bytes->string/utf-8 (read-bytes (if (= c 255)
+                                                                      (read-simple-number port)
+                                                                      c)
+                                                                  name-p)))
+                                (loop))))
+                    start
+                    len))
+        <
+        #:key mod-info-start))
+     (define tops
+       (for/list ([mod-info (in-list mod-infos)])
+         (define pos (file-position port))
+         (unless (= (- pos init-pos) (mod-info-start mod-info))
+           (error 'zo-parse 
+                  "next module expected at ~a, currently at ~a"
+                  (+ init-pos (mod-info-start mod-info)) pos))
+         (unless (eq? (read-prefix port) #\T)
+           (error 'zo-parse "expected a module"))
+         (define top (zo-parse-top port #f))
+         (define m (compilation-top-code top))
+         (unless (mod? m)
+           (error 'zo-parse "expected a module"))
+         (unless (equal? (mod-info-name mod-info)
+                         (if (symbol? (mod-name m))
+                             '()
+                             (cdr (mod-name m))))
+           (error 'zo-parse "module name mismatch"))
+         top))
+     (define avail (for/hash ([mod-info (in-list mod-infos)]
+                              [top (in-list tops)])
+                     (values (mod-info-name mod-info) top)))
+     (unless (hash-ref avail '() #f)
+       (error 'zo-parse "no root module in directory"))
+     (define-values (pre-subs post-subs seen)
+       (for/fold ([pre-subs (hash)] [post-subs (hash)] [seen (hash)]) ([mod-info (in-list mod-infos)])
+         (if (null? (mod-info-name mod-info))
+             (values pre-subs post-subs (hash-set seen '() #t))
+             (let ()
+               (define name (mod-info-name mod-info))
+               (define prefix (take name (sub1 (length name))))
+               (unless (hash-ref avail prefix #f)
+                 (error 'zo-parse "no parent module for ~s" name))
+               (define (add subs)
+                 (hash-set subs prefix (cons name (hash-ref subs prefix '()))))
+               (define new-seen (hash-set seen name #t))
+               (if (hash-ref seen prefix #f)
+                   (values pre-subs (add post-subs) new-seen)
+                   (values (add pre-subs) post-subs new-seen))))))
+     (define (get-all prefix)
+       (struct-copy mod 
+                    (compilation-top-code (hash-ref avail prefix))
+                    [pre-submodules (map get-all (reverse (hash-ref pre-subs prefix '())))]
+                    [post-submodules (map get-all (reverse (hash-ref post-subs prefix '())))]))
+     (struct-copy compilation-top (hash-ref avail '())
+                  [code (get-all '())])]
+    [else
+     (error 'zo-parse "bad file format specifier")]))
+
+(define (zo-parse-top [port (current-input-port)] [check-end? #t])
 
   ;; Skip module hash code
   (read-bytes 20 port)
@@ -1062,8 +1158,9 @@
 
   (file-position port (+ rst-start size*))
  
-  (unless (eof-object? (read-byte port))
-    (error 'zo-parse "File too big"))
+  (when check-end?
+    (unless (eof-object? (read-byte port))
+      (error 'zo-parse "File too big")))
 
   (define nr (make-not-ready))
   (define symtab
