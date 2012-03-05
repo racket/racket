@@ -5,14 +5,14 @@
 (require racket/runtime-path
          racket/cmdline
          racket/match
-         "test-util.rkt")
+         "test-util.rkt"
+         "bitmap-test-util.rkt")
 
-(define test-bitmaps? #t)
 (define test-examples? #f)
 
 (command-line
  #:once-each
- [("--no-bitmaps") "executes bitmap-test.rkt" (set! test-bitmaps? #f)]
+ [("--no-bitmap-gui") "skips the GUI for bitmap-test.rkt" (show-bitmap-test-gui? #f)]
  [("--examples") "executes the tests in the examples directory" (set! test-examples? #t)])
 
 (define test-files
@@ -31,8 +31,8 @@
      "defined-checks-test.rkt"
      "check-syntax-test.rkt"
      "test-docs-complete.rkt"
-     "tut-subst-test.rkt")
-   (if test-bitmaps? '("bitmap-test.rkt") '())
+     "tut-subst-test.rkt"
+     "bitmap-test.rkt")
    (if test-examples?
        '("../examples/cbn-letrec.rkt"
          "../examples/stlc.rkt"
@@ -64,7 +64,7 @@
                    [(? string?) 
                     (values test-file #f values)])])
      (flush)
-     (printf "testing ~a\n" file)
+     (printf "running ~a\n" file)
      (flush)
      (action (dynamic-require (build-path here file) provided))
      (flush)))

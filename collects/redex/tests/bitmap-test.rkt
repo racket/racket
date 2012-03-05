@@ -14,15 +14,15 @@
   (v number (λ (x) e))
   ((x y) variable-not-otherwise-mentioned))
 
-(test (render-language lang) "language.png")
+(btest (render-language lang) "language.png")
 
-(test (render-language lang #:nts '(e v)) "language-nox.png")
+(btest (render-language lang #:nts '(e v)) "language-nox.png")
 
 (define-extended-language lang++ lang
   (e .... number (+ e e))
   (v .... number))
 
-(test (render-language lang++) "extended-language.png")
+(btest (render-language lang++) "extended-language.png")
 
 (define red
   (reduction-relation
@@ -30,40 +30,40 @@
    (--> ((λ (x) e) v) (S x v e))))
 
 ;; tests: reduction-relation
-(test (render-reduction-relation red)
-      "reduction-relation.png")
+(btest (render-reduction-relation red)
+       "reduction-relation.png")
 
-(test (render-reduction-relation 
-       (extend-reduction-relation red lang (--> 1 2)))
-      "extended-reduction-relation.png")
+(btest (render-reduction-relation 
+        (extend-reduction-relation red lang (--> 1 2)))
+       "extended-reduction-relation.png")
 
-(test (render-reduction-relation
-       (with-unquote-rewriter
-        (let ([once? #f])
-          (λ (l)
-            (if once?
-                l
-                (begin0
-                  (struct-copy lw
-                               l
-                               [e "a: any"]
-                               [unq? #f])
-                  (set! once? #t)))))
-        (reduction-relation
-         lang
-         (--> (a any) 1 "a" (computed-name (format "a: ~a" (term any))))
-         (--> (b any) 2 "b" (computed-name (format "b: ~a" (term any))))
-         (--> (c any) 3 (computed-name (format "c: ~a" (term any)))))))
-      "reduction-relation-with-computed-labels.png")
+(btest (render-reduction-relation
+        (with-unquote-rewriter
+         (let ([once? #f])
+           (λ (l)
+             (if once?
+                 l
+                 (begin0
+                   (struct-copy lw
+                                l
+                                [e "a: any"]
+                                [unq? #f])
+                   (set! once? #t)))))
+         (reduction-relation
+          lang
+          (--> (a any) 1 "a" (computed-name (format "a: ~a" (term any))))
+          (--> (b any) 2 "b" (computed-name (format "b: ~a" (term any))))
+          (--> (c any) 3 (computed-name (format "c: ~a" (term any)))))))
+       "reduction-relation-with-computed-labels.png")
 
 (let ([R (reduction-relation
           lang
           (--> 1 1 "a")
           (--> 2 2 "b" (computed-name "a"))
           (--> 3 3 (computed-name "c")))])
-  (test (parameterize ([render-reduction-relation-rules (remq 'b (reduction-relation->rule-names R))])
-          (render-reduction-relation R))
-        "reduction-relation-with-computed-labels-and-hiding.png"))
+  (btest (parameterize ([render-reduction-relation-rules (remq 'b (reduction-relation->rule-names R))])
+           (render-reduction-relation R))
+         "reduction-relation-with-computed-labels-and-hiding.png"))
 
 ;; this test should fail because it gets the order wrong
 ;; for the where/side-conditions
@@ -77,27 +77,27 @@
         (where any_z any_x)
         (side-condition (= (term number_d) 5)))))
 
-(test (render-reduction-relation red2)
-      "red2.png")
+(btest (render-reduction-relation red2)
+       "red2.png")
 
 (let ()
   (define-judgment-form lang
     #:mode (id I O)
     [(id e e)])
-  (test (render-reduction-relation
-         (reduction-relation
-          lang
-          (--> e_1
-               q
-               (where (name q e_2) e_1)
-               (judgment-holds (id e_2 (name r e_3))))))
-        "red-with-where-name.png"))
-        
+  (btest (render-reduction-relation
+          (reduction-relation
+           lang
+           (--> e_1
+                q
+                (where (name q e_2) e_1)
+                (judgment-holds (id e_2 (name r e_3))))))
+         "red-with-where-name.png"))
+
 (define-metafunction lang
   [(S x v e) e])
 
-(test (render-metafunction S)
-      "metafunction.png")
+(btest (render-metafunction S)
+       "metafunction.png")
 
 (let ()
   (define-metafunction lang
@@ -108,8 +108,8 @@
   (define-judgment-form lang
     #:mode (J I O)
     [(J e e)])
-  (test (render-metafunction f)
-        "metafunction-judgment-holds.png"))
+  (btest (render-metafunction f)
+         "metafunction-judgment-holds.png"))
 
 (define-metafunction lang
   [(T x y)
@@ -123,14 +123,14 @@
 ;; in this test, the metafunction has 2 clauses 
 ;; with a side-condition on the first clause
 ;; and a 'where' in the second clause
-(test (render-metafunction T) "metafunction-T.png")
+(btest (render-metafunction T) "metafunction-T.png")
 
 ;; in this test, the `x' is italic and the 'z' is sf, since 'x' is in the grammar, and 'z' is not.
-(test (render-lw 
-       lang 
-       (to-lw ((λ (x) (x x))
-               (λ (z) (z z)))))
-      "lw.png")
+(btest (render-lw 
+        lang 
+        (to-lw ((λ (x) (x x))
+                (λ (z) (z z)))))
+       "lw.png")
 
 (define-metafunction lang
   [(TL 1) (a
@@ -140,11 +140,11 @@
   [(TL 2) (a
            ,(term-let ((x (term 1)))
                       (term x)) beside
-           below)])
+                      below)])
 
 ;; this tests that term-let is sucked away properly
 ;; when the metafunction is rendered
-(test (render-metafunction TL) "metafunction-TL.png")
+(btest (render-metafunction TL) "metafunction-TL.png")
 
 (define-metafunction lang
   [(Name (name x-arg arg)) 
@@ -155,12 +155,12 @@
 ;; this tests that the three variable bindings
 ;; (x-arg, x-term-let, and x-where) 
 ;; all show up in the output.
-(test (render-metafunction Name) "metafunction-Name.png")
+(btest (render-metafunction Name) "metafunction-Name.png")
 
 ;; same as previous, but with vertical organization of the bindings
-(test (parameterize ([metafunction-pict-style 'up-down/vertical-side-conditions])
-        (render-metafunction Name))
-      "metafunction-Name-vertical.png")
+(btest (parameterize ([metafunction-pict-style 'up-down/vertical-side-conditions])
+         (render-metafunction Name))
+       "metafunction-Name-vertical.png")
 
 ;; makes sure that there is no overlap inside or across metafunction calls  
 ;; or when there are unquotes involved
@@ -179,7 +179,7 @@
     ,@(term (multi-arg with-unquote))
     ,@(term (multi-arg with-unquote)))])
 
-(test (render-metafunction multi-arg) "metafunction-multi-arg.png")
+(btest (render-metafunction multi-arg) "metafunction-multi-arg.png")
 
 ;; makes sure that the LHS and RHS of metafunctions are appropriately
 ;; rewritten
@@ -205,13 +205,13 @@
         (list-ref lws 4)
         "}"))
 
-(test (with-compound-rewriter 'subst subst-rw
-        (render-metafunction subst))
-      "metafunction-subst.png")
+(btest (with-compound-rewriter 'subst subst-rw
+                               (render-metafunction subst))
+       "metafunction-subst.png")
 
 
 ;; make sure two metafunctions simultaneously rewritten line up properly
-(test (render-metafunctions S T TL) "metafunctions-multiple.png")
+(btest (render-metafunctions S T TL) "metafunctions-multiple.png")
 
 ;; make sure that the ellipses don't have commas before them.
 (define-metafunction lang
@@ -223,13 +223,13 @@
    (where (x_3 ...) (rdups x_2 ...))]
   [(rdups) ()])
 
-(test (render-metafunction rdups) "rdups-delimited.png")
+(btest (render-metafunction rdups) "rdups-delimited.png")
 (parameterize ([delimit-ellipsis-arguments? #f])
-  (test (render-metafunction rdups) "rdups-undelimited.png"))
+  (btest (render-metafunction rdups) "rdups-undelimited.png"))
 
 ;; Non-terminal superscripts
-(test (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))
-      "superscripts.png")
+(btest (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))
+       "superscripts.png")
 
 ;; `variable-not-in' in `where' RHS rendered as `fresh'
 (define-metafunction lang
@@ -238,13 +238,13 @@
    (where x ,(variable-not-in 'y 'x))
    (where (x_1 x_2) ,(variables-not-in 'z '(x1 x2)))
    (where x_3 (variables-not-in 'z '(x1 x2)))])
-(test (render-metafunction f) "var-not-in.png")
+(btest (render-metafunction f) "var-not-in.png")
 (let ([variable-not-in list])
   (define-metafunction lang
     [(g 1) 
      x
      (where x ,(variable-not-in 'y 'x))])
-  (test (render-metafunction g) "var-not-in-rebound.png"))
+  (btest (render-metafunction g) "var-not-in-rebound.png"))
 
 ;; hidden `where' and `side-condition' clauses
 (define-metafunction lang
@@ -252,36 +252,36 @@
    2
    (where/hidden number 7)
    (side-condition/hidden (= 1 2))])
-(test (render-metafunction mf-hidden) "mf-hidden.png")
-(test (render-reduction-relation
-       (reduction-relation
-        lang
-        (--> 1
-             2
-             (where/hidden number 7)
-             (side-condition/hidden (= 1 2)))))
-      "rr-hidden.png")
+(btest (render-metafunction mf-hidden) "mf-hidden.png")
+(btest (render-reduction-relation
+        (reduction-relation
+         lang
+         (--> 1
+              2
+              (where/hidden number 7)
+              (side-condition/hidden (= 1 2)))))
+       "rr-hidden.png")
 
 ;; holes
 (let ()
   (define-language L
     (n (hole x) ; a "named hole" at one time
        hole))
-  (test (render-language L) "holes.png"))
+  (btest (render-language L) "holes.png"))
 
 (let ()
   ;; the 'has no lambdas' relation (useful because it has a case with no premises)
   (define-relation lang
     [(r e_1 e_2) (r e_1) (r e_2)]
     [(r x)])
-  (test (render-relation r) "relation.png"))
+  (btest (render-relation r) "relation.png"))
 
 (let ()
   ;; a relation with a `name' pattern in its conclusion
   (define-relation lang
     [(r (name e (λ (x) x)))
      (r x)])
-  (test (render-relation r) "relation-with-name.png"))    
+  (btest (render-relation r) "relation-with-name.png"))    
 
 ;; judgment form
 (let ()
@@ -319,22 +319,22 @@
      (lt2 n) ...
      (sum z z z)])
   
-  (test (vc-append 
-         10
-         (render-judgment-form sum)
+  (btest (vc-append 
+          10
+          (render-judgment-form sum)
+          
+          (with-compound-rewriter
+           'sum
+           (λ (lws) (list "" (list-ref lws 2) " + " (list-ref lws 3) " = " (list-ref lws 4)))
+           (render-judgment-form sum))
+          
+          (render-judgment-form mfw)
+          
+          (render-judgment-form nps)
+          
+          (render-judgment-form uses-ellipses))
          
-         (with-compound-rewriter
-          'sum
-          (λ (lws) (list "" (list-ref lws 2) " + " (list-ref lws 3) " = " (list-ref lws 4)))
-          (render-judgment-form sum))
-         
-         (render-judgment-form mfw)
-         
-         (render-judgment-form nps)
-         
-         (render-judgment-form uses-ellipses))
-        
-        "judgment-form-examples.png"))
+         "judgment-form-examples.png"))
 
 (let ()
   (define-language STLC
@@ -375,12 +375,12 @@
   (define (rewrite-lookup lws)
     (list "" (list-ref lws 2) "(" (list-ref lws 3) ")"))
   
-  (test (with-compound-rewriters
-         (['typeof rewrite-typeof]
-          ['extend rewrite-extend]
-          ['lookup rewrite-lookup])
-         (render-judgment-form typeof))
-        "stlc.png"))  
+  (btest (with-compound-rewriters
+          (['typeof rewrite-typeof]
+           ['extend rewrite-extend]
+           ['lookup rewrite-lookup])
+          (render-judgment-form typeof))
+         "stlc.png"))  
 
 (printf "bitmap-test.rkt: ")
 (done)

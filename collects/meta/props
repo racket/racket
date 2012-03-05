@@ -1231,8 +1231,8 @@ path/s is either such a string or a list of them.
 "collects/redex/private/size-snip.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/private/stepper.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/private/traces.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/redex/scribblings/tut.scrbl" drdr:timeout 300
 "collects/redex/redex.scrbl" drdr:timeout 300
+"collects/redex/scribblings/tut.scrbl" drdr:timeout 300
 "collects/redex/tests/bitmap-test-util.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/redex/tests/bitmap-test.rkt" drdr:command-line (mzc "-k" *)
 "collects/redex/tests/check-syntax-test.rkt" drdr:command-line (mzc *)
@@ -1245,7 +1245,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/matcher-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/pict-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/rg-test.rkt" drdr:command-line (mzc *)
-"collects/redex/tests/run-tests.rkt" drdr:command-line (gracket-text * "--examples" "--no-bitmaps") drdr:timeout 360
+"collects/redex/tests/run-tests.rkt" drdr:command-line (racket * "--examples" "--no-bitmap-gui") drdr:timeout 360
 "collects/redex/tests/stepper-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/tl-test.rkt" drdr:command-line (mzc *)

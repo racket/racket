@@ -9,17 +9,19 @@
          "../pict.rkt"
          "../reduction-semantics.rkt")
 
-(provide test done)
+(provide btest done show-bitmap-test-gui?)
+
+(define show-bitmap-test-gui? (make-parameter #t))
 
 (define tests 0)
-(define failed '())
+(define failed-tests 0)
+(define failed-panels '())
 (define (done)
-  (printf "~a tests" tests)
-  (if (null? failed)
-      (printf ", all passed\n")
-      (printf ", ~a failed\n" (length failed))))
+  (if (zero? failed-tests)
+      (printf "bitmap-test.rkt: ~a tests, all passed\n" tests)
+      (eprintf "bitmap-test.rkt: ~a tests, ~a failed\n" tests failed-tests)))
 
-(define-syntax (test stx)
+(define-syntax (btest stx)
   (syntax-case stx ()
     [(_ test-exp bitmap-filename)
      #`(test/proc
@@ -51,8 +53,10 @@
     (draw-pict pict bdc 0 0)
     (send bdc set-bitmap #f)
     (unless (bitmaps-same? old-bitmap new-bitmap)
-      (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap)])
-        (set! failed (append failed (list failed-panel)))))))
+      (set! failed-tests (+ failed-tests 1))
+      (when (show-bitmap-test-gui?)
+        (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap)])
+          (set! failed-panels (append failed-panels (list failed-panel))))))))
 
 (define (set-fonts/call thunk)
   (case (system-type)
@@ -62,8 +66,8 @@
               (let loop ([s s])
                 (cond
                   [(pair? s) (cons (loop (car s)) (loop (cdr s)))]
-                  [(eq? s 'roman) (verify-face " DejaVu Serif")]
-                  [(eq? s 'swiss) (verify-face " DejaVu Sans")]
+                  [(eq? s 'roman) (verify-face "DejaVu Serif")]
+                  [(eq? s 'swiss) (verify-face "DejaVu Sans")]
                   [else s])))])
        (parameterize ([label-style (rewrite-style (label-style))]
                       [literal-style (rewrite-style (literal-style))]
@@ -150,38 +154,56 @@
               [parent hp]
               [callback
                (λ (x y)
-                 (set! current-index (modulo (- current-index 1) (length failed)))
+                 (set! current-index (modulo (- current-index 1) (length failed-panels)))
                  (update-gui))]))
        (define next (new button% 
                          [label "Next"] 
                          [parent hp]
                          [callback
                           (λ (x y)
-                            (set! current-index (modulo (+ current-index 1) (length failed)))
+                            (set! current-index (modulo (+ current-index 1) (length failed-panels)))
                             (update-gui))]))
        (define (update-gui) 
-         (send sp active-child (list-ref failed current-index)))
+         (send sp active-child (list-ref failed-panels current-index)))
        (set! test-result-single-panel sp)
        (send f show #t)
        sp)]))
 
 (define (make-failed-panel line-number filename old-bitmap new-bitmap)
-  (define diff-bitmap (delay (compute-diffs old-bitmap new-bitmap)))
+  (define diff-bitmap 'unk)
   (define f (new vertical-panel% [parent (get-test-result-single-panel)]))
   (define msg (new message% [label (format "line ~a" line-number)] [parent f]))
   (define hp (new horizontal-panel% [parent f]))
   (define vp1 (new vertical-panel% [parent hp]))
   (define vp2 (new vertical-panel% [parent hp]))
+  (define computing-label "Computing diff ...")
+  (define computing-msg (new message% [label computing-label] [parent f]))
   (define chk (new check-box% 
                    [label "Show diff"]
                    [parent f]
                    [callback
                     (λ (_1 _2)
+                      (define (update-check)
+                        (cond
+                          [(send chk get-value)
+                           (send right-hand set-label (force diff-bitmap))]
+                          [else
+                           (send right-hand set-label new-bitmap)]))
                       (cond
-                        [(send chk get-value)
-                         (send right-hand set-label (force diff-bitmap))]
+                        [(eq? diff-bitmap 'unk)
+                         (send chk enable #f)
+                         (send computing-msg set-label computing-label)
+                         (thread
+                          (λ ()
+                            (set! diff-bitmap (compute-diffs old-bitmap new-bitmap))
+                            (queue-callback
+                             (λ ()
+                               (send computing-msg set-label "")
+                               (send chk enable #t)
+                               (update-check)))))]
                         [else
-                         (send right-hand set-label new-bitmap)]))]))
+                         (update-check)]))]))
+  (send computing-msg set-label "")
   (define btn (new button%
                    [parent f]
                    [label "Save"]
