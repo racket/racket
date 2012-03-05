@@ -1,14 +1,14 @@
 #lang honu
 
-foo(x){
+function foo(x){
     x + 1
 }
 
-bar(x){
+function bar(x){
     x * 2
 }
 
-buz(z){
+function buz(z){
     z - 4
 }
 

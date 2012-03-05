@@ -5,6 +5,7 @@
          (for-syntax racket/base
                      "parse2.rkt"
                      "literals.rkt"
+                     "compile.rkt"
                      syntax/parse
                      unstable/syntax))
 
@@ -37,7 +38,7 @@
                         (make-accessors #'name (syntax->list #'(fields.name ...)))]
                        [(fields.name/mutator ...)
                         (make-mutators #'name (syntax->list #'(fields.name ...)))])
-           #'(%racket (struct name (fields.name ...)
+           (racket-syntax (struct name (fields.name ...)
                               #:transparent
                               #:mutable
                               #:property honu-struct-mutable

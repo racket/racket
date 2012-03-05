@@ -220,6 +220,9 @@
              (racket-syntax (define (function parsed-arguments ...)
                               body.result)))])
 
+(define (definition? code)
+  #f)
+
 ;; E = macro
 ;;   | E operator E
 ;;   | [...]
@@ -299,6 +302,7 @@
                                                 re-parse re-parse))))
             #;
             (debug "Reparsed output ~a\n" (pretty-format (syntax->datum re-parse)))
+            (define terminate (definition? re-parse))
             (if terminate?
               (values (left re-parse)
                       #'rest)
@@ -375,13 +379,14 @@
             (let-values ([(parsed unparsed)
                           (do-parse #'(rest ...) new-precedence
                                       (lambda (stuff)
+                                        (define right (parse-all stuff))
                                         (define output
                                           (if current
                                             (if binary-transformer
-                                              (binary-transformer current stuff)
+                                              (binary-transformer current right)
                                               (error 'binary "cannot be used as a binary operator in ~a" #'head))
                                             (if unary-transformer
-                                              (unary-transformer stuff)
+                                              (unary-transformer right)
                                               (error 'unary "cannot be used as a unary operator in ~a" #'head))))
                                         #;
                                         (debug "Binary transformer ~a\n" binary-transformer)

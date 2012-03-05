@@ -42,8 +42,8 @@
 
 (define-honu-operator/syntax honu-flow 0.001 'left
   (lambda (left right)
-    (with-syntax ([left (honu->racket left)]
-                  [right (honu->racket right)])
+    (with-syntax ([left left]
+                  [right right])
       (racket-syntax (right left)))))
 
 (begin-for-syntax

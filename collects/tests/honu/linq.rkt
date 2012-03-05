@@ -8,6 +8,7 @@
          (for-syntax racket/base
                      honu/core/private/literals
                      honu/core/private/parse2
+                     honu/core/private/compile
                      syntax/parse))
 
 (define-literal+set linq-literals
@@ -36,9 +37,9 @@
                                 #'(sort store.result string<?
                                         #:key (lambda (name) order-by.result))
                                 #'store.result)])
-           #'(%racket (for/list ([name order]
-                                 guard ...)
-                      select.result))))
+           (racket-syntax (for/list ([name order]
+                                     guard ...)
+                            select.result))))
        (values out #'rest #f)])))
           
 #|
