@@ -5,6 +5,7 @@
          racket/gui/base
          (for-syntax racket/base)
          racket/class
+         racket/promise
          "../pict.rkt"
          "../reduction-semantics.rkt")
 
@@ -35,24 +36,23 @@
           (build-path bmps-dir
                       raw-bitmap-filename)]
          [old-bitmap (if (file-exists? bitmap-filename)
-                         (make-object bitmap% bitmap-filename)
-                         (let* ([bm (make-object bitmap% 100 20)]
+                         (read-bitmap bitmap-filename)
+                         (let* ([bm (make-screen-bitmap 100 20)]
                                 [bdc (make-object bitmap-dc% bm)])
                            (send bdc clear)
                            (send bdc draw-text "does not exist" 0 0)
                            (send bdc set-bitmap #f)
                            bm))]
-         [new-bitmap (make-object bitmap% 
+         [new-bitmap (make-screen-bitmap
                        (ceiling (inexact->exact (pict-width pict))) 
                        (ceiling (inexact->exact (pict-height pict))))]
          [bdc (make-object bitmap-dc% new-bitmap)])
     (send bdc clear)
     (draw-pict pict bdc 0 0)
     (send bdc set-bitmap #f)
-    (let ([diff-bitmap (compute-diffs old-bitmap new-bitmap)])
-      (when diff-bitmap
-        (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap diff-bitmap)])
-          (set! failed (append failed (list failed-panel))))))))
+    (unless (bitmaps-same? old-bitmap new-bitmap)
+      (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap)])
+        (set! failed (append failed (list failed-panel)))))))
 
 (define (set-fonts/call thunk)
   (case (system-type)
@@ -80,49 +80,57 @@
   (unless (member face (get-face-list))
     (error 'verify-face "unknown face: ~s" face))
   face)
-  
+
+(define (bitmaps-same? old-bitmap new-bitmap)
+  (let ([w (send old-bitmap get-width)]
+        [h (send old-bitmap get-height)])
+    (and (= w (send new-bitmap get-width))
+         (= h (send new-bitmap get-height))
+         (let ([bytes1 (make-bytes (* w h 4))]
+               [bytes2 (make-bytes (* w h 4))])
+           (send old-bitmap get-argb-pixels 0 0 w h bytes1)
+           (send new-bitmap get-argb-pixels 0 0 w h bytes2)
+           (equal? bytes1 bytes2)))))
+
 (define (compute-diffs old-bitmap new-bitmap)
-  (let* ([w (max (send old-bitmap get-width)
-                 (send new-bitmap get-width))]
-         [h (max (send old-bitmap get-height)
-                 (send new-bitmap get-height))]
-         [diff-bitmap (make-object bitmap% w h)]
-         [new (make-object bitmap-dc% new-bitmap)]
-         [old (make-object bitmap-dc% old-bitmap)]
-         [diff (make-object bitmap-dc% diff-bitmap)]
-         [new-c (make-object color%)]
-         [old-c (make-object color%)]
-         [any-different? #f])
-    (let loop ([x 0])
-      (unless (= x w)
-        (let loop ([y 0])
-          (unless (= y h)
-            (cond
-              [(and (< x (send new-bitmap get-width))
-                    (< y (send new-bitmap get-height))
-                    (< x (send old-bitmap get-width))
-                    (< y (send old-bitmap get-height)))
-               (send new get-pixel x y new-c)
-               (send old get-pixel x y old-c)
-               (cond
-                 [(and (= (send new-c red) (send old-c red))
-                       (= (send new-c green) (send old-c green))
-                       (= (send new-c blue) (send old-c blue)))
-                  (send diff set-pixel x y new-c)]
-                 [else
-                  (set! any-different? #t)
-                  (send new-c set 255 0 0)
-                  (send diff set-pixel x y new-c)])]
-              [else 
-               (set! any-different? #t)
-               (send new-c set 255 0 0)
-               (send diff set-pixel x y new-c)])
-            (loop (+ y 1))))
-        (loop (+ x 1))))
-    (send diff set-bitmap #f)
-    (send old set-bitmap #f)
-    (send new set-bitmap #f)
-    (and any-different? diff-bitmap)))
+   (let* ([w (max (send old-bitmap get-width)
+                  (send new-bitmap get-width))]
+          [h (max (send old-bitmap get-height)
+                  (send new-bitmap get-height))]
+          [diff-bitmap (make-bitmap w h)] ;; this bitmap holds the diff only, that we compute via set-pixel, not drawing
+          [new (make-object bitmap-dc% new-bitmap)]
+          [old (make-object bitmap-dc% old-bitmap)]
+          [diff (make-object bitmap-dc% diff-bitmap)]
+          [new-c (make-object color%)]
+          [old-c (make-object color%)])
+     (let loop ([x 0])
+       (unless (= x w)
+         (let loop ([y 0])
+           (unless (= y h)
+             (cond
+               [(and (< x (send new-bitmap get-width))
+                     (< y (send new-bitmap get-height))
+                     (< x (send old-bitmap get-width))
+                     (< y (send old-bitmap get-height)))
+                (send new get-pixel x y new-c)
+                (send old get-pixel x y old-c)
+                (cond
+                  [(and (= (send new-c red) (send old-c red))
+                        (= (send new-c green) (send old-c green))
+                        (= (send new-c blue) (send old-c blue)))
+                   (send diff set-pixel x y new-c)]
+                  [else
+                   (send new-c set 255 0 0)
+                   (send diff set-pixel x y new-c)])]
+               [else 
+                (send new-c set 255 0 0)
+                (send diff set-pixel x y new-c)])
+             (loop (+ y 1))))
+         (loop (+ x 1))))
+     (send diff set-bitmap #f)
+     (send old set-bitmap #f)
+     (send new set-bitmap #f)
+     diff-bitmap))
 
 (define test-result-single-panel #f)
 (define (get-test-result-single-panel)
@@ -135,7 +143,7 @@
        (define lined (new vertical-panel% [parent f] [style '(border)]))
        (define sp (new panel:single% [parent lined]))
        (define current-index 0)
-       (define hp (new horizontal-panel% [parent f]))
+       (define hp (new horizontal-panel% [parent f] [alignment '(center center)]))
        (define prev 
          (new button% 
               [label "Prev"] 
@@ -157,7 +165,8 @@
        (send f show #t)
        sp)]))
 
-(define (make-failed-panel line-number filename old-bitmap new-bitmap diff-bitmap)
+(define (make-failed-panel line-number filename old-bitmap new-bitmap)
+  (define diff-bitmap (delay (compute-diffs old-bitmap new-bitmap)))
   (define f (new vertical-panel% [parent (get-test-result-single-panel)]))
   (define msg (new message% [label (format "line ~a" line-number)] [parent f]))
   (define hp (new horizontal-panel% [parent f]))
@@ -170,7 +179,7 @@
                     (λ (_1 _2)
                       (cond
                         [(send chk get-value)
-                         (send right-hand set-label diff-bitmap)]
+                         (send right-hand set-label (force diff-bitmap))]
                         [else
                          (send right-hand set-label new-bitmap)]))]))
   (define btn (new button%
@@ -182,11 +191,11 @@
   (define left-label (new message% [parent vp1] [label "Old"]))
   (define left-hand (new message%
                          [parent vp1]
-                         [label diff-bitmap]))
+                         [label old-bitmap]))
   (define right-label (new message% [parent vp2] [label "New"]))
   (define right-hand (new message%
                           [parent vp2]
-                          [label diff-bitmap]))
+                          [label new-bitmap]))
   (send left-hand set-label old-bitmap)
   (send right-hand set-label new-bitmap)
   f)

@@ -1,6 +1,7 @@
-#lang scheme
+#lang racket
 (require "bitmap-test-util.rkt"
-         "../main.rkt")
+         "../main.rkt"
+         slideshow/pict)
 
 ;; tests: 
 ;;  - language,
@@ -293,14 +294,6 @@
     [(sum (s n_1) n_2 (s n_3))
      (sum n_1 n_2 n_3)])
   
-  (test (render-judgment-form sum) "judgment-form-not-rewritten.png")
-  
-  (test (with-compound-rewriter
-         'sum
-         (λ (lws) (list "" (list-ref lws 2) " + " (list-ref lws 3) " = " (list-ref lws 4)))
-         (render-judgment-form sum))
-        "judgment-form-rewritten.png")
-  
   (define-judgment-form nats
     #:mode (mfw I O)
     [(mfw n_1 n_2)
@@ -309,15 +302,11 @@
   (define-metafunction nats
     [(f n) n])
   
-  (test (render-judgment-form mfw) "judgment-form-metafunction-where.png")
-  
   (define-judgment-form nats
     #:mode (nps I O)
     [(nps (name a (s n_1)) n_2)
      (nps z (name n_1 (s (s n_1))))
      (where (name b n_2) z)])
-  
-  (test (render-judgment-form nps) "judgment-form-name-patterns.png")
   
   (define-judgment-form nats
     #:mode (lt2 I)
@@ -330,7 +319,22 @@
      (lt2 n) ...
      (sum z z z)])
   
-  (test (render-judgment-form uses-ellipses) "judgment-form-ellipsis.png"))
+  (test (vc-append 
+         10
+         (render-judgment-form sum)
+         
+         (with-compound-rewriter
+          'sum
+          (λ (lws) (list "" (list-ref lws 2) " + " (list-ref lws 3) " = " (list-ref lws 4)))
+          (render-judgment-form sum))
+         
+         (render-judgment-form mfw)
+         
+         (render-judgment-form nps)
+         
+         (render-judgment-form uses-ellipses))
+        
+        "judgment-form-examples.png"))
 
 (let ()
   (define-language STLC
