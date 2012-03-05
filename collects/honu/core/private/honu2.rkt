@@ -68,7 +68,7 @@
       [(_ (#%parens condition:honu-expression) true:honu-expression
           (~optional else) false:honu-expression . rest)
        (values
-         (racket-syntax (if (let () condition.result) (let () true.result) (let () false.result)))
+         (racket-syntax (if condition.result true.result false.result))
          #'rest
          #f)])))
 
@@ -228,11 +228,11 @@
 (provide honu-provide)
 (define-honu-syntax honu-provide
   (lambda (code context)
-    (syntax-parse code
-      [(_ name:id ...)
-       (define out (parsed-syntax #'(provide name ...)))
+    (syntax-parse code #:literal-sets (cruft)
+      [(_ name:id ... (~optional semicolon) . rest)
+       (define out (racket-syntax (provide name ...)))
        (debug "Provide properties ~a\n" (syntax-property-symbol-keys out))
-       (values out #'() #f)])))
+       (values out #'() #'rest)])))
 
 (provide honu-with-input-from-file)
 (define-honu-syntax honu-with-input-from-file
@@ -288,7 +288,7 @@
     (syntax-parse rest #:literal-sets (cruft)
       [(_ name:identifier (#%parens argument:honu-expression/comma) . more)
        (with-syntax ([left left])
-         (values #'(send/apply left name (list argument.result ...))
+         (values (racket-syntax (send/apply left name (list argument.result ...)))
                  #'more))])))
 
 (begin-for-syntax
@@ -359,10 +359,8 @@
                        #:literals (honu-in)
       [(_ (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
           honu-do body:honu-expression . rest)
-       (values (with-syntax ([(stuff.result ...) (map honu->racket (syntax->list #'(stuff.result ...)))]
-                             [body.result (honu->racket #'body.result)])
-                 (racket-syntax (for ([iterator stuff.result] ...)
-                              body.result)))
+       (values (racket-syntax (for ([iterator stuff.result] ...)
+                                body.result))
                #'rest
                #t)])))
 

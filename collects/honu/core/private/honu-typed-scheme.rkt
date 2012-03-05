@@ -476,14 +476,20 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      ;; so use an empty form, begin, `parsed' could be #f becuase there was no expression
      ;; in the input such as parsing just ";".
      (with-syntax ([parsed (if (not parsed) #'(begin)
-                             parsed
+                             (remove-repeats parsed)
                              #;
                              (honu->racket parsed))]
                    [(unparsed ...) unparsed])
        (debug "Final parsed syntax\n~a\n" (pretty-format (syntax->datum #'parsed)))
        (if (null? (syntax->datum #'(unparsed ...)))
-         #'parsed
-         #'(begin parsed (honu-unparsed-begin unparsed ...))))]))
+         (if (parsed-syntax? #'parsed)
+           #'parsed
+           (with-syntax ([(out ...) #'parsed])
+             #'(honu-unparsed-begin out ...)))
+         (if (parsed-syntax? #'parsed)
+           #'(begin parsed (honu-unparsed-begin unparsed ...))
+           (with-syntax ([(out ...) #'parsed])
+             #'(honu-unparsed-begin out ... unparsed ...)))))]))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()

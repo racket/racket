@@ -41,6 +41,25 @@
 
 (define-syntax repeat$ (lambda (stx) (raise-syntax-error 'repeat$ "dont use this")))
 
+(define (remove-repeats input)
+  (debug 2 "Remove repeats from ~a\n" (syntax->datum input))
+  (debug 2 "Properties ~a\n" (syntax-property-symbol-keys input))
+  (define-literal-set locals (repeat$))
+  (syntax-parse input #:literal-sets ([locals #:at input])
+    [(out ... ((~literal repeat$) stuff ...) rest ...)
+     (debug 2 " Found a repeat\n")
+     (with-syntax ([(out* ...) (map remove-repeats (syntax->list #'(out ...)))]
+                   [(rest* ...) (map remove-repeats (syntax->list #'(rest ...)))])
+       (remove-repeats (datum->syntax input
+                                      (syntax->list #'(out* ... stuff ... rest* ...))
+                                      input input)))]
+    [(normal ...) (with-syntax ([(normal* ...) (map remove-repeats (syntax->list #'(normal ...)))])
+                    (datum->syntax input
+                                   (syntax->list #'(normal* ...))
+                                   input input))]
+    [x #'x]
+    [else (raise-syntax-error 'repeats "unhandled case" input)]))
+
 (define-syntax (unexpand-honu-syntax stx)
   (define (remove-repeats input)
     (debug 2 "Remove repeats from ~a\n" (syntax->datum input))
@@ -67,7 +86,8 @@
        (debug "Expand honu syntax at phase ~a\n" (syntax-local-phase-level))
        #;
        (debug " Is ~a expanded ~a\n" (syntax->datum #'expr) (syntax->datum #'#'expr))
-       (emit-remark "Unexpand honu syntax" #'expr)
+       (emit-remark (format "Unexpand honu syntax at phase ~a" (syntax-local-phase-level))
+                    #'expr)
        #;
        (syntax-case #'expr ()
          [(_ what) (debug "Properties on ~a are ~a\n" #'what (syntax-property-symbol-keys #'what))])
@@ -93,4 +113,21 @@
   (syntax-case stx ()
     [(_ form)
      #'(parsed-syntax #'form)]))
+
+(begin-for-syntax
+  (provide compress-dollars)
+  (define (compress-dollars stx)
+    (define-literal-set local-literals (honu-$ repeat$))
+    (syntax-parse stx #:literal-sets (local-literals)
+      [(honu-$ x ... honu-$ rest ...)
+       (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
+         (datum->syntax stx (syntax->list #'((repeat$ x ...) rest* ...))
+                        stx stx))]
+      [(x rest ...)
+       (with-syntax ([x* (compress-dollars #'x)]
+                     [(rest* ...) (compress-dollars #'(rest ...))])
+         (datum->syntax stx
+                        (syntax->list #'(x* rest* ...))
+                        stx stx))]
+      [x #'x])))
 

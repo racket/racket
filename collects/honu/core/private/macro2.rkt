@@ -6,17 +6,18 @@
                      racket/set
                      racket/syntax
                      "literals.rkt"
-                     "parse2.rkt"
+                     (prefix-in phase1: "parse2.rkt")
                      "debug.rkt"
-                     "compile.rkt"
+                     (prefix-in phase1: "compile.rkt")
                      "util.rkt"
                      (prefix-in syntax: syntax/parse/private/residual-ct)
                      racket/base)
          (for-meta 2 syntax/parse
                      racket/base
                      macro-debugger/emit
-                     "parse2.rkt"
-                     "compile.rkt")
+                     (prefix-in phase2: "parse2.rkt")
+                     (prefix-in phase2: "compile.rkt"))
+         (prefix-in phase0: "compile.rkt")
          "literals.rkt"
          "syntax.rkt"
          "debug.rkt"
@@ -127,7 +128,7 @@
   (syntax-parse stx
     [(_ stuff ...)
      (emit-remark "Parse stuff ~a\n" #'(stuff ...))
-     (parse-all #'(stuff ...))
+     (phase2:parse-all #'(stuff ...))
      #;
      (honu->racket (parse-all #'(stuff ...)))])))
 
@@ -165,7 +166,7 @@
                                                                            ))])
                               #'(name name.result)))])
              (debug "Done with syntax\n")
-             (racket-syntax 
+             (phase1:racket-syntax 
                (define-honu-syntax name
                           (lambda (stx context-name)
                             (define-literal-set local-literals (literal ...))
@@ -187,28 +188,32 @@
          #'rest
          #t)])))
 
+;; FIXME: we shouldn't need this definition here
+(define-syntax (as-honu-syntax stx)
+  (syntax-parse stx
+    [(_ form)
+     (define compressed (phase0:compress-dollars #'form))
+     (with-syntax ([stuff* (datum->syntax #'form (syntax->list compressed)
+                                          #'form #'form)])
+       (syntax #'stuff*))]))
+
+(begin-for-syntax
+  (define-syntax (as-honu-syntax stx)
+    (syntax-parse stx
+      [(_ form)
+       (define compressed (phase1:compress-dollars #'form))
+       (with-syntax ([stuff* (datum->syntax #'form (syntax->list compressed)
+                                            #'form #'form)])
+         (syntax #'stuff*))])))
+
 (provide honu-syntax)
 ;; Do any honu-specific expansion here
 (define-honu-syntax honu-syntax
   (lambda (code context)
-    (define (compress-dollars stx)
-      (define-literal-set local-literals (honu-$))
-      (syntax-parse stx #:literal-sets (local-literals)
-        [(honu-$ x ... honu-$ rest ...)
-         (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
-           (datum->syntax stx (syntax->list #'((repeat$ x ...) rest* ...))
-                          stx stx))]
-        [(x rest ...)
-         (with-syntax ([x* (compress-dollars #'x)]
-                       [(rest* ...) (compress-dollars #'(rest ...))])
-           (datum->syntax stx
-                          (syntax->list #'(x* rest* ...))
-                          stx stx))]
-        [x #'x]))
     (syntax-parse code #:literal-sets (cruft)
       [(_ (#%parens stuff ...) . rest)
        (define context (stx-car #'(stuff ...)))
-       (define compressed (compress-dollars #'(stuff ...)))
+       (define compressed (phase0:compress-dollars #'(stuff ...)))
        (values
          (with-syntax ([stuff* (datum->syntax context
                                               (syntax->list compressed)
@@ -216,7 +221,7 @@
            ;; (debug "Stuff is ~a\n" (syntax->datum #'stuff*))
            ;; (debug "Stuff syntaxed is ~a\n" (syntax->datum #'#'stuff*))
            (with-syntax ([(out ...) #'stuff*])
-             (racket-syntax #'stuff*)))
+             (phase1:racket-syntax #'stuff*)))
          #; #'(%racket-expression (parse-stuff stuff ...))
          #'rest
          #f)])))
@@ -308,9 +313,9 @@
                     [((withs ...) ...) (set->list withs)]
                     [(result-with ...) (if maybe-out
                                          (with-syntax ([(out ...) maybe-out])
-                                           #'(#:with result (syntax out ...)))
+                                           #'(#:with result (as-honu-syntax out ...)))
                                          #'(#:with result #'()))])
-        #'(%racket (begin
+        (phase1:racket-syntax (begin
                      ;; define at phase1 so we can use it
                      (begin-for-syntax
                        (define-literal-set local-literals (literal ...))

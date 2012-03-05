@@ -20,4 +20,5 @@ implemented in Racket---or in a macro-extended variant of Racket.
 @;------------------------------------------------------------------------
 @include-section["pattern-macros.scrbl"]
 @include-section["proc-macros.scrbl"]
+@include-section["phases.scrbl"]
 

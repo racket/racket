@@ -24,13 +24,13 @@
     (define-honu-operator/syntax name precedence associativity
                                  ;; binary
                                  (lambda (left right)
-                                   (with-syntax ([left (honu->racket left)]
-                                                 [right (honu->racket right)])
-                                     (racket-syntax (operator (let () left) (let () right)))))
+                                   (with-syntax ([left left]
+                                                 [right right])
+                                     (racket-syntax (operator left right))))
                                  ;; unary
                                  (lambda (argument)
                                    (with-syntax ([argument (honu->racket argument)])
-                                     (racket-syntax (operator (let () argument)))))))
+                                     (racket-syntax (operator argument))))))
 
 (define-syntax-rule (define-unary-operator name precedence associativity operator)
                       (define-honu-operator/syntax name precedence associativity

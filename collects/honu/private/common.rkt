@@ -3,6 +3,7 @@
 (require honu/core/private/syntax
          honu/core/private/literals
          (for-syntax syntax/parse
+                     honu/core/private/debug
                      racket/base
                      honu/core/private/literals
                      honu/core/private/compile
@@ -23,10 +24,8 @@
       [(_ (~seq clause:honu-expression colon body:honu-expression (~optional honu-comma)) ...
           . rest)
        (values
-         (with-syntax ([(clause.result ...) (map honu->racket (syntax->list #'(clause.result ...)))]
-                       [(body.result ...) (map honu->racket (syntax->list #'(body.result ...)))])
-           #'(%racket (cond
-                        [clause.result body.result]
-                        ...)))
+         (racket-syntax (cond
+                          [clause.result body.result]
+                          ...))
          #'rest
          #t)])))
