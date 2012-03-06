@@ -43,7 +43,8 @@
     (printf "~s\n" res)
     (let ([ok? (equal? expect res)])
       (unless ok?
-        (printf "  BUT EXPECTED ~s\n" expect))
+        (printf "  BUT EXPECTED ~s\n" expect)
+        (eprintf "ERROR\n"))
       ok?)))
 
 (define (echo ch) (place-channel-put ch (place-channel-get ch)))

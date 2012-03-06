@@ -418,3 +418,4 @@ argument instead.
 
 @include-section["futures.scrbl"]
 @include-section["places.scrbl"]
+@include-section["distributed.scrbl"]

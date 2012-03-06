@@ -18,3 +18,4 @@ support for parallelism to improve performance.
 @include-section["thread-local.scrbl"]
 @include-section["futures.scrbl"]
 @include-section["places.scrbl"]
+@include-section["distributed.scrbl"]
