@@ -9,11 +9,16 @@
 @defmodule[scriblib/autobib]
 
 
-@defform[(define-cite ~cite-id citet-id generate-bibliography-id)]{
+@defform[(define-cite ~cite-id citet-id generate-bibliography-id [#:disambiguate disambiguator])]{
 
 Binds @racket[~cite-id], @racket[citet-id], and
-@racket[generate-bibliography-id], which share state to accumulate and
-render citations.
+@racket[generate-bibliography-id], which share state to accumulate and render
+citations. If two citations' references would render the same but are
+different, the optionally provided disambiguation function is used to add an
+extra element after the date. The default disambiguator will add "a", "b", etc
+until "z". Anything more ambiguous will throw an error. It has the contract
+
+@racketblock[(-> exact-nonnegative-integer? element?)]
 
 The function bound to @racket[~cite-id] produces a citation referring
 to one or more bibliography entries with a preceding non-breaking
