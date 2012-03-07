@@ -37,6 +37,9 @@
 ;; render the use of a citation.
 (define (add-cite group bib-entry which with-specific? disambiguation)
   (let ([key (auto-bib-key bib-entry)])
+    (when disambiguation
+      (for ([bib disambiguation])
+        (hash-set! (bib-group-ht group) (auto-bib-key bib) bib)))
     (hash-set! (bib-group-ht group) key bib-entry)
     (make-delayed-element
      (lambda (renderer part ri)
@@ -54,15 +57,15 @@
                                   ))) ;; should be a list of bib-entries with same author/date
                     (define disambiguation*
                       (add-between (for/list ([bib (in-list disambiguation)])
+                                     (define key (auto-bib-key bib))
                                      (define maybe-disambiguation
-                                       (resolve-get part ri `(autobib-disambiguation ,(auto-bib-key bib))))
+                                       (resolve-get part ri `(autobib-disambiguation key)))
                                      (case maybe-disambiguation
                                        [(unambiguous) #f]
-                                       [else maybe-disambiguation]))
+                                       [else (make-link-element #f (list maybe-disambiguation) `(autobib ,key))]))
                                    ","))
                     (cond [(not (car disambiguation*)) '()] ;; the bib was unambiguous
-                          [else
-                           (list (make-link-element #f (list disambiguation*) `(autobib ,(auto-bib-key bib-entry))))])]
+                          [else disambiguation*])]
                    [else '()])))
      (lambda () "(???)")
      (lambda () "(???)"))))
