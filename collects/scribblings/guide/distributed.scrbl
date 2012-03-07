@@ -5,6 +5,7 @@
           scriblib/figure
           racket/port
           racket/contract
+          racket/runtime-path
           (for-label racket/place/distributed))
 
 @(define (codeblockfromfile filename)
@@ -12,6 +13,9 @@
      filename
      (lambda (i)
        (codeblock (port->string i)))))
+
+@(define-runtime-path master-path "../../racket/place/distributed/examples/named/master.rkt")
+@(define-runtime-path tuple-path "../../racket/place/distributed/examples/named/tuple.rkt")
 
 @title[#:tag "distributed-places"]{Distributed Places}
 
@@ -26,7 +30,7 @@ The example code can also be found in
 @filepath{racket/distributed/examples/named/master.rkt}.
 
 @figure["named-example-master" "examples/named/master.rkt"]{
-@codeblockfromfile["../../racket/place/distributed/examples/named/master.rkt"]}
+@codeblockfromfile[(path->string master-path)]}
 
 The @racket[spawn-remote-racket-vm] primitive connects to
 @tt{"localhost"} and starts a racloud node there that listens on port
@@ -49,7 +53,7 @@ suitiable for invocation by @racket[supervise-named-place-thunk-at].
 
 
 @figure["named-example" "examples/named/tuple.rkt"]{
-@codeblockfromfile["../../racket/place/distributed/examples/named/tuple.rkt"]}
+@codeblockfromfile[(path->string tuple-path)]}
 
 
 

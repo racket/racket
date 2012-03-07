@@ -1861,8 +1861,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/pathlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/pconvert.rktl" drdr:command-line #f
 "collects/tests/racket/place" responsible (tewk)
-"collects/tests/racket/place/distributed/distributed.rkt" drdr:command-line (racket "-tm" *)
-"collects/tests/racket/place/distributed/restarter.rkt" drdr:command-line (racket "-tm" *)
 "collects/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
 "collects/tests/racket/place-chan-rand.rkt" responsible (tewk) drdr:random #t
 "collects/tests/racket/place-channel-fd.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
