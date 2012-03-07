@@ -634,6 +634,82 @@ filling or drawing with stipples. Conversely, stippled drawing can be
 viewed as a convenience alternative to clipping repeated calls of
 @racket[draw-bitmap].
 
+Combining regions with @racket[pen%] objects that have gradients, however,
+is more than just a convenience, as it allows us to draw shapes in combinations
+we could not otherwise draw. To illustrate, here is some code that draws
+text with its reflection below it.
+
+@racketblock+eval[
+#:eval draw-eval
+(code:comment "First compute the size of the text we're going to draw,")
+(code:comment "using a small bitmap that we never draw into.")
+(define bdc (new bitmap-dc% [bitmap (make-bitmap 1 1)]))
+(define str "Racketeers, ho!")
+(define the-font (send the-font-list find-or-create-font 
+                       24 'swiss 'normal 'bold))
+(define-values (tw th)
+  (let-values ([(tw th _1 _2)
+                (send dc get-text-extent str the-font)])
+    (values (inexact->exact (ceiling tw))
+            (inexact->exact (ceiling th)))))
+
+(code:comment "Now we can create a correctly sized bitmap to")
+(code:comment "actually draw into and enable smoothing.")
+(send bdc set-bitmap (make-bitmap tw (* th 2)))
+(send bdc set-smoothing 'smoothed)
+
+(code:comment "next, build a path that contains the outline of the text")
+(define upper-path (new dc-path%))
+(send upper-path text-outline the-font str 0 0)
+
+(code:comment "next, build a path that contains the mirror image")
+(code:comment "outline of the text")
+(define lower-path (new dc-path%))
+(send lower-path text-outline the-font str 0 0)
+(send lower-path transform (vector 1 0 0 -1 0 0))
+(send lower-path translate 0 (* 2 th))
+
+(code:comment "This helper accepts a path, sets the clipping region")
+(code:comment "of bdc to be the path (but in region form), and then")
+(code:comment "draws a big rectangle over the whole bitmap.")
+(code:comment "The brush will be set differently before each call to")
+(code:comment "draw-path, in order to draw the text and then to draw")
+(code:comment "the shadow.")
+(define (draw-path path)
+  (define rgn (new region%))
+  (send rgn set-path path)
+  (send bdc set-clipping-region rgn)
+  (send bdc set-pen "white" 1 'transparent)
+  (send bdc draw-rectangle 0 0 tw (* th 2))
+  (send bdc set-clipping-region #f))
+
+(code:comment "Now we just draw the upper-path with a solid brush")
+(send bdc set-brush "black" 'solid)
+(draw-path upper-path)
+
+(code:comment "To draw the shadow, we set up a brush that has a")
+(code:comment "linear gradient over the portion of the bitmap")
+(code:comment "where the shadow goes")
+(define stops
+  (list (list 0 (make-object color% 0 0 0 0.4))
+        (list 1 (make-object color% 0 0 0 0.0))))
+(send bdc set-brush 
+      (new brush% 
+           [gradient 
+            (new linear-gradient% 
+                 [x0 0]
+                 [y0 th]
+                 [x1 0]
+                 [y1 (* th 2)]
+                 [stops stops])]))
+(draw-path lower-path)                 
+]
+
+And now the bitmap in @racket[bdc] has ``Racketeers, ho!'' with
+a mirrored version below it.
+
+@centered{@interaction-eval-show[#:eval draw-eval (copy-bitmap (send bdc get-bitmap))]}
+
 
 @; ------------------------------------------------------------
 @section[#:tag "Portability"]{Portability and Bitmap Variants}
