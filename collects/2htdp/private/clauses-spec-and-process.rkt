@@ -101,11 +101,18 @@
          (syntax-case stx ()
            [(kw . E) (kwd-in? #'kw) (begin (->rec? #'kw #'E) (cons #'kw stx))]
            [(kw . E)
-            (let ([kw (syntax-e #'kw)])
-              (if (member kw (map syntax-e kwds))
-                  (raise-syntax-error tag (format "the ~a clause appears twice" kw) stx)
-                  (raise-syntax-error tag (format "~a clauses are not allowed when using ~a" kw tag)
-                                      stx)))]
+	    (let* ([stx2 #'kw]
+		   [kw (syntax-e stx2)]
+		   [kw-appears-as-symbol
+		     (member kw (map syntax-e kwds))
+		     #;
+		     (for/or ((n kwds))
+		       (symbol=? kw (syntax-e n)))])
+              (if kw-appears-as-symbol
+                  (raise-syntax-error
+		    tag (format "the ~a keyword seems to have been used as a variable" kw) stx2)
+                  (raise-syntax-error
+		    tag (format "~a clauses are not allowed within ~a" kw tag) stx)))]
            [_ (raise-syntax-error tag "expected a clause, but found something else" stx)]))
        stx:list))
 

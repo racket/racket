@@ -1,4 +1,4 @@
-#lang scheme/load
+#lang racket/load
 
 ;; purpose: when on-tick or on-xxx has been redefined, 
 ;; --- raise more specific error message
@@ -6,8 +6,8 @@
 
 (error-print-source-location #f)
 
-(define legal "big-bang: ~a clauses are not allowed when using big-bang")
-(define double "big-bang: the on-tick clause appears twice")
+(define legal "big-bang: ~a clauses are not allowed within big-bang")
+(define double "big-bang: the on-tick keyword seems to have been used as a variable")
 (define atleast "big-bang: expects a [to-draw handler] clause, missing")
 
 ;; is the mandatort to-draw clause specified 
