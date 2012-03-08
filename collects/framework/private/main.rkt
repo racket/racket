@@ -248,7 +248,7 @@
                letrec-values
                with-syntax
                with-continuation-mark
-               module
+               module module*
                match match-let match-let* match-letrec
                let/cc let/ec letcc catch
                let-syntax letrec-syntax fluid-let-syntax letrec-syntaxes+values
