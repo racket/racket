@@ -374,7 +374,9 @@
              (λ () (with-stack-checkpoint 
                     (begin
                       (*do-module-specified-configuration)
-                      (namespace-require modspec))))))
+                      (namespace-require modspec)
+                      (when (module-declared? `(submod ,modspec main) #t)
+                        (dynamic-require `(submod ,modspec main) #f)))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
         (define (*do-module-specified-configuration)
