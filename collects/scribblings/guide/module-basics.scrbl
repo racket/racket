@@ -52,8 +52,8 @@ racket
 The relative reference @racket["cake.rkt"] in the import
 @racket[(require "cake.rkt")] works if the @filepath{cake.rkt} and
 @filepath{random-cake.rkt} modules are in the same
-directory. (Unix-style relative paths are used for relative module
-references on all platforms, much like relative URLs in HTML pages.)
+directory. Unix-style relative paths are used for relative module
+references on all platforms, much like relative URLs in HTML pages.
 
 @; ----------------------------------------
 @section[#:tag "module-org"]{Organizing Modules}

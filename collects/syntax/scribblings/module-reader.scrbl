@@ -334,7 +334,8 @@ reading of the module language.}
 @defproc[(make-meta-reader [self-sym symbol?]
                            [path-desc-str string?]
                            [#:read-spec read-spec (input-port? . -> . any/c) (lambda (in) ....)]
-                           [module-path-parser (any/c . -> . (or/c module-path? #f))]
+                           [module-path-parser (any/c . -> . (or/c module-path? #f 
+                                                                   (vectorof module-path?)))]
                            [convert-read (procedure? . -> . procedure?)]
                            [convert-read-syntax (procedure? . -> . procedure?)]
                            [convert-get-info  (procedure? . -> . procedure?)])
@@ -367,6 +368,8 @@ description of the expected language form in the error message.
 
 The result of @racket[read-spec] is converted to a module path using
 @racket[module-path-parser]. If @racket[module-path-parser] produces
+a vector of module paths, they are tried in order using 
+@racket[module-declared?]. If @racket[module-path-parser] produces
 @racket[#f], a reader exception is raised in the same way as when
 @racket[read-spec] produces a @racket[#f]. The @racketmodname[planet]
 languages supply a @racket[module-path-parser] that converts a byte

@@ -26,13 +26,15 @@ The longhand form of a module declaration, which works in a
 where the @racket[_name-id] is a name for the module,
 @racket[_initial-module-path] is an initial import, and each
 @racket[_decl] is an import, export, definition, or expression.  In
-the case of a file, @racket[_name-id] must match the name of the
-containing file, minus its directory path or file extension.
+the case of a file, @racket[_name-id] normally matches the name of the
+containing file, minus its directory path or file extension, but
+@racket[_name-id] is ignored when the module is @racket[require]d
+through its file's path.
 
 The @racket[_initial-module-path] is needed because even the
 @racket[require] form must be imported for further use in the module
 body. In other words, the @racket[_initial-module-path] import
-bootstraps the syntax available in the body. The most commonly used
+bootstraps the syntax that is available in the body. The most commonly used
 @racket[_initial-module-path] is @racketmodname[racket], which supplies most
 of the bindings described in this guide, including @racket[require],
 @racket[define], and @racket[provide]. Another commonly used
@@ -119,6 +121,108 @@ Unless otherwise specified, a module that is documented as a
 @racket[module] in the same way as @racketmodfont{#lang}
 @racketmodname[racket]. The documented language name can be used
 directly with @racket[module] or @racket[require], too.
+
+@; ----------------------------------------------------------------------
+@section[#:tag "submodules"]{Submodules}
+
+A @racket[module] form can be nested within a module, in which case
+the nested @racket[module] form declares a
+@deftech{submodule}. Submodules can be referenced directly by the
+enclosing module using a quoted name. The following example prints
+@racket["Tony"] by importing @racket[tiger] from the @racket[zoo]
+submodule:
+
+@racketmod[
+  #:file "park.rkt"
+  racket
+
+  (module zoo racket
+    (provide tiger)
+    (define tiger "Tony"))
+
+  (require 'zoo)
+
+  tiger
+]
+
+Running a module does not necessarily run its submodules. In the above
+example, running @filepath{park.rkt} runs its submodule @racket[zoo]
+only because the @filepath{park.rkt} module @racket[require]s the
+@racket[zoo] submodule. Otherwise, a module and each of its submodules can be run
+independently. Furthermore, if @filepath{park.rkt} is compiled to a
+bytecode file (via @exec{raco make}), then the code for
+@filepath{park.rkt} or the code for @racket[zoo] can be loaded independently.
+
+A @racket[module*] form is similar to a nested @racket[module] form,
+but @racket[module*] inverts the possibilities for reference between
+the submodule and enclosing module:
+
+@itemlist[
+
+ @item{A submodule declared with @racket[module] can be
+       @racket[require]d by its enclosing module, but the submodule
+       cannot @racket[require] the enclosing module or lexically
+       reference the enclosing module's bindings.}
+
+ @item{A submodule declared with @racket[module*] can @racket[require]
+       its enclosing module, but the enclosing module cannot
+       @racket[require] the submodule. In addition, a @racket[module*]
+       form can specify @racket[#f] as its
+       @racket[_initial-module-path], in which case the submodule sees
+       all of the enclosing module's bindings---including bindings
+       that are not exported via @racket[provide].}
+
+]
+
+As an example of @racket[module*], the following variant of
+@filepath{cake.rkt} includes a @racket[main] submodule that calls
+@racket[print-cake]:
+
+@racketmod[
+#:file "cake.rkt"
+racket
+
+(provide print-cake)
+
+(define (print-cake n)
+  (show "   ~a   " n #\.)
+  (show " .-~a-. " n #\|)
+  (show " | ~a | " n #\space)
+  (show "---~a---" n #\-))
+
+(define (show fmt n ch)
+  (printf fmt (make-string n ch))
+  (newline))
+
+(module* main #f
+  (print-cake 10))
+]
+
+Running a module does not run its @racket[module*]-defined submodules,
+since the enclosing module cannot directly reference
+@racket[module*]-defined submodules. Nevertheless, running the above
+module via @exec{racket} or DrRacket prints a cake with 10 candles,
+because the @racket[main] submodule} is a special case.
+
+When a module is provided as a program name to the @exec{racket}
+executable or run directly within DrRacket, if the module has a
+@as-index{@racket[main] submodule}, the @racket[main] submodule is run after its
+enclosing module. Declaring a @racket[main] submodule is often a
+useful describe tests or other extra actions to be performed when a
+module is run directly instead of @racket[required] as a library
+within a larger program.
+
+A @racket[main] submodule does not have to be declared with
+@racket[module*]. If the @racket[main] module does not need to use
+bindings from its enclosing module, it can be declared with
+@racket[module]. A @racket[main] submodule typically uses the
+bindings of its enclosing module, however, so @racket[main] is usually
+declared with @racket[module*].
+
+Submodules can be nested within submodules, and a submodule can be
+referenced directly by a module other than its enclosing module by
+using a @racket[submod] path as described in the
+@seclink["module-paths"]{next section}.
 
 @; ----------------------------------------------------------------------
 

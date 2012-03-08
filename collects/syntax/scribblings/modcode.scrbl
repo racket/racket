@@ -6,6 +6,7 @@
 @defmodule[syntax/modcode]
 
 @defproc[(get-module-code [path path?]
+                          [#:submodule-path submodule-path (listof symbol?) '()]
                           [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
@@ -24,7 +25,9 @@
          any]{
 
 Returns a compiled expression for the declaration of the module
-specified by @racket[path].
+specified by @racket[path] and @racket[submodule-path], where
+@racket[submodule-path] is empty for a root module or a list for a
+submodule.
 
 The @racket[compiled-subdir] argument defaults to @racket["compiled"];
 it specifies the sub-directory to search for a compiled version of the

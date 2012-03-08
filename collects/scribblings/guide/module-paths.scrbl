@@ -207,3 +207,47 @@ and it should @italic{not} be used when a plain, portable
 
 The automatic @filepath{.ss} and @filepath{.rkt} conversions apply as
 with other forms.}
+
+@; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@specsubform/subs[#:literals (submod)
+                  (submod base element ...+)
+                  ([base module-path
+                         "."]
+                   [element id
+                            ".."])]{
+
+Refers to a submodule of @racket[base]. The sequence of
+@racket[element]s within @racket[submod] specify a path of submodule
+names to reach the final submodule. 
+
+@examples[
+  (module zoo racket
+    (module monkey-house racket
+      (provide monkey)
+      (define monkey "Curious George")))
+  (require (submod 'zoo monkey-house))
+  monkey
+]
+
+Using @racket["."] as @racket[base] within @racket[submod] stands for the
+enclosing module. When a path of the form @racket[(#,(racket quote)
+id)] refers to a submodule, it is equivalent to @racket[(submod "."
+id)].
+
+Using @racket[".."] as an @racket[element] cancels one submodule step, effectively
+referring to the enclosing module. For example, @racket[(submod "." "..")]
+refers to the enclosing module of the submodule in which the path
+appears.
+
+@examples[
+  (module zoo racket
+    (module monkey-house racket
+      (provide monkey)
+      (define monkey "Curious George"))
+    (module crocodile-house racket
+      (require (submod "." ".." monkey-house))
+      (provide dinner)
+      (define dinner monkey)))
+  (require (submod 'zoo crocodile-house))
+  dinner
+]}
