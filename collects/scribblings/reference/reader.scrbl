@@ -837,8 +837,13 @@ of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @litchar{/} characters terminated by
 @racketlink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
-@litchar{#lang }@nonterm{name} is equivalent to
-@litchar{#reader }@nonterm{name}@litchar{/lang/reader}. Note
+@litchar{#lang }@nonterm{name} is equivalent to either
+@litchar{#reader (submod }@nonterm{name}@litchar{ reader)} or
+@litchar{#reader }@nonterm{name}@litchar{/lang/reader}, where the
+former is tried first guarded by a @racket[module-declared?] 
+check (but after filtering by
+@racket[current-reader-guard], so both are passed to the
+value of @racket[current-reader-guard] if the latter is used). Note
 that the terminating whitespace (if any) is not consumed before the
 external reading procedure is called.
 

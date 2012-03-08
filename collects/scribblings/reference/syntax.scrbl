@@ -1039,13 +1039,16 @@ multiple symbolic names.}
                                (#,(racketidfont "prefix-all-except") prefix-id 
                                                                      raw-module-path id ...)
                                (#,(racketidfont "rename") raw-module-path local-id exported-id)]
-               [raw-module-path (#,(racketidfont "quote") id)
-                                rel-string
-                                (#,(racketidfont "lib") rel-string ...)
-                                id
-                                (#,(racketidfont "file") string)
-                                (#,(racketidfont "planet") rel-string
-                                                           (user-string pkg-string vers ...))])]{
+               [raw-module-path (#,(racketidfont "submod") raw-root-module-path id ...+)
+                                (#,(racketidfont "submod") "." id ...+)]
+               [raw-root-module-path (#,(racketidfont "quote") id)
+                                    rel-string
+                                    (#,(racketidfont "lib") rel-string ...)
+                                    id
+                                    (#,(racketidfont "file") string)
+                                    (#,(racketidfont "planet") rel-string
+                                                               (user-string pkg-string vers ...))
+                                    literal-path])]{
 
 The primitive import form, to which @racket[require] expands. A
 @racket[raw-require-spec] is similar to a @racket[_require-spec] in a
@@ -1063,7 +1066,14 @@ identifiers in reverse order compared to @racket[rename-in].
 For most @racket[raw-require-spec]s, the lexical context of the
 @racket[raw-require-spec] determines the context of introduced
 identifiers. The exception is the @racketidfont{rename} sub-form,
-where the lexical context of the @racket[local-id] is preserved.}
+where the lexical context of the @racket[local-id] is preserved.
+
+A @racket[literal-path] as a @racket[raw-root-module-path] corresponds
+to a path in the sense of @racket[path?]. Since path values are never
+produced by @racket[read-syntax], they appear only in programmatically
+constructed expressions. They also appear naturally as arguments to
+functions such as @racket[namespace-require], with otherwise take a
+quoted @racket[raw-module-spec].}
 
 
 @defform/subs[(#%provide raw-provide-spec ...)

@@ -76,18 +76,37 @@ and its lexical context is not enriched before it is passed to the
 @tech{evaluation handler}.}
 
 
-@defparam[current-load proc (path? (or/c symbol? #f) . -> . any)]{
+@defparam[current-load proc (path? (or/c #f
+                                         symbol?
+                                         (cons/c (or/c #f symbol?)
+                                                 (non-empty-listof symbol?)))
+                                   . -> . 
+                                   any)]{
 
 A parameter that determines the current @deftech{load handler} to load
 top-level forms from a file. The @tech{load handler} is called by
 @racket[load], @racket[load-relative], @racket[load/cd], and the
 default @tech{compiled-load handler}.
 
-A load handler takes two arguments: a path (see
-@secref["pathutils"]) and an expected module name. The expected
-module name is a symbol when the call is to load a module declaration
-in response to a @racket[require] (in which case the file should
-contain a module declaration), or @racket[#f] for any other load.
+A load handler takes two arguments: a path (see @secref["pathutils"])
+and an expected module name. The expected module name is a symbol or a
+list when the call is to load a module declaration in response to a
+@racket[require] (in which case the file should contain a module
+declaration), or @racket[#f] for any other load.
+
+When loading a module from a stream that starts with a compiled module
+that contains submodules, the load handler should load only the
+requested module, where a symbol as the load handler's indicates the
+root module and a list indicates a submodule whose path relative to
+the root module is given by the @racket[cdr] of the list. The list
+starts with @racket[#f] when a submodule should be loaded @emph{only}
+if it can be loaded independently (i.e., from compiled form---never
+from source); if the submodule cannot be loaded independently, the
+load handler should return without loading from a file. When the
+expected module name is a list that starts with a symbol, the root
+module and any other submodules can be loaded from the given file,
+which might be from source, and the load handler still should not
+complain if the expected submodule is not found.
  
 The default load handler reads forms from the file in
 @racket[read-syntax] mode with line-counting enabled for the file
@@ -211,7 +230,11 @@ Like @racket[load-extension], but resolves @racket[file] using
 @racket[current-load-relative-directory] like @racket[load-relative].}
 
 
-@defparam[current-load/use-compiled proc (path? (or/c symbol? #f) . -> . any)]{
+@defparam[current-load/use-compiled proc (path? (or/c #f
+                                                      symbol?
+                                                      (cons/c (or/c #f symbol?)
+                                                              (non-empty-listof symbol?)))
+                                                . -> . any)]{
 
 A parameter that determines the current @deftech{compiled-load
 handler} to load from a file that may have a compiled form. The

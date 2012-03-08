@@ -639,6 +639,24 @@
                       (require (for-meta -1 (only-in racket cons) (only-in r5rs cons)))))
              (lambda (exn) (regexp-match? #rx"phase -1" (exn-message exn))))
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check renames and lifts:
+
+(module post-ex-rename-example-1 racket/base
+  (require (for-syntax racket/base))
+  (provide go)
+  (define-syntax (go stx)
+    (syntax-local-lift-module-end-declaration
+     #'(define-stuff))
+    #'(define-syntax (define-stuff stx)
+        #'(define x #f))))
+
+(module post-ex-rename-example-2 racket/base
+  (require 'post-ex-rename-example-1)
+  (go))
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

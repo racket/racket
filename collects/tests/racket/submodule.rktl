@@ -45,6 +45,27 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module subm-example-9 racket/base
+  (define x '(1))
+  (provide x)
+  (module* a #f
+    (require racket/list)
+    (define z (last x))
+    (provide z)
+    (define-syntax-rule (as-last) last)
+    (provide as-last)))
+
+(test '(1) dynamic-require ''subm-example-9 'x)
+(test 1 dynamic-require '(submod 'subm-example-9 a) 'z)
+
+(module subm-example-use-9 racket/base
+  (require (submod 'subm-example-9 a))
+  (define x ((as-last) '(1 2 3)))
+  (provide x))
+(test 3 dynamic-require ''subm-example-use-9 'x)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (let ([o (open-output-bytes)])
   (write (compile '(module subm-example-0 racket/base
                      (define x 1)
@@ -259,6 +280,37 @@
      (provide z))))
 
 (test '8 dynamic-require '(submod 'subm-example-7 a) 'z)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module subm-example-11 racket/base
+  (require (for-syntax racket/base))
+  (define (listify x) (list x))
+
+  (define-syntax (add-submodule stx)
+    (with-syntax (#;[(define-b-module) (generate-temporaries '(define-b))])
+      (syntax-local-lift-module-end-declaration
+       #'(module* a #f
+           (provide a)
+           (define a (listify 'a))))
+      (syntax-local-lift-module-end-declaration
+       #'(define-b-module))
+      #'(define-syntax (define-b-module stx)
+          #'(module* b #f
+              (define b 'b)
+              (provide b)))))
+  (add-submodule)
+  (provide add-submodule))
+
+(test '(a) dynamic-require '(submod 'subm-example-11 a) 'a)
+(test 'b dynamic-require '(submod 'subm-example-11 b) 'b)
+
+(module subm-example-12 racket/base
+  (require 'subm-example-11)
+  (add-submodule))
+
+(test '(a) dynamic-require '(submod 'subm-example-12 a) 'a)
+(test 'b dynamic-require '(submod 'subm-example-12 b) 'b)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

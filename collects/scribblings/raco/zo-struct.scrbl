@@ -174,7 +174,8 @@ structures that are produced by @racket[zo-parse] and consumed by
              [dummy toplevel?]
              [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
              [internal-context (or/c #f #t stx?)]
-             [submodules (listof mod?)])]{
+             [pre-submodules (listof mod?)]
+             [post-submodules (listof mod?)])]{
   Represents a @racket[module] declaration.
 
   The @racket[provides] and @racket[requires] lists are each an

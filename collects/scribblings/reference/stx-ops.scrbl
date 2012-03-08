@@ -81,12 +81,12 @@ opposed to @tech{syntax object}s inserted by macros.}
 
 
 @defproc[(syntax-source-module [stx syntax?] [source? any/c #f])
-         (or/c module-path-index? symbol? path? #f)]{
+         (or/c module-path-index? symbol? path? resolved-module-path? #f)]{
 
 Returns an indication of the module whose source contains
 @racket[stx], or @racket[#f] if @racket[stx] has no source module.  If
 @racket[source?] is @racket[#f], then result is a module path index or
-symbol (see @secref["modpathidx"]); if @racket[source?] is true, the
+symbol (see @secref["modpathidx"]) or a @tech{resolved module path}; if @racket[source?] is true, the
 result is a path or symbol corresponding to the loaded module's
 source in the sense of @racket[current-module-declare-source].}
 

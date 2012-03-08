@@ -1,5 +1,5 @@
 Version 5.2.900.1
-Add submodules, including `module*'
+Add submodules, including module*, module-compiled-submodules
 Change resolver protocol so that declaration notify is always issued
 Change load/use-compiled handler to work with submodules
 compiler/zo-struct: added pre-submodules and post-submodules field to

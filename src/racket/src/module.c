@@ -5989,8 +5989,8 @@ static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec, int jit)
 static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
 {
   Scheme_Module *m = (Scheme_Module *)data;
-  Scheme_Object *l1, **naya = NULL;
-  int j, i;
+  Scheme_Object *l1, *l2, *pre_submods, *post_submods, *sm, **naya = NULL;
+  int j, i, submod_changed;
   Resolve_Prefix *rp;
   
   rp = scheme_prefix_eval_clone(m->prefix);
@@ -6013,8 +6013,33 @@ static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
     }
   }
 
+  pre_submods = m->pre_submodules;
+  post_submods = m->post_submodules;
+  submod_changed = 0;
+
+  for (j = 0; j < 2; j++) {
+    l1 = (j ? post_submods : pre_submods);
+    if (l1 && !SCHEME_NULLP(l1)) {
+      l2 = scheme_null;
+      while (!SCHEME_NULLP(l1)) {
+        sm = do_module_clone(SCHEME_CAR(l1), jit);
+        if (!SAME_OBJ(sm, SCHEME_CAR(l1)))
+          submod_changed = 1;
+        l2 = scheme_make_pair(sm, l2);
+        l1 = SCHEME_CDR(l1);
+      }
+      if (submod_changed) {
+        l2 = scheme_reverse(l2);
+        if (j)
+          post_submods = l2;
+        else
+          pre_submods = l2;
+      }
+    }
+  }
+
   if (!naya) {
-    if (SAME_OBJ(rp, m->prefix))
+    if (SAME_OBJ(rp, m->prefix) && !submod_changed)
       return data;
     naya = m->bodies;
   }
@@ -6023,6 +6048,9 @@ static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
   memcpy(m, data, sizeof(Scheme_Module));
   m->bodies = naya;
   m->prefix = rp;
+
+  m->pre_submodules = pre_submods;
+  m->post_submodules = post_submods;
 
   return (Scheme_Object *)m;
 }
@@ -6837,6 +6865,18 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
   }
 }
 
+Scheme_Object *reverse_and_add_rename(Scheme_Object *fm, Scheme_Object *post_ex_rn)
+{
+  Scheme_Object *l2 = scheme_null;
+
+  while (!SCHEME_NULLP(fm)) {
+    l2 = scheme_make_pair(scheme_add_rename(SCHEME_CAR(fm), post_ex_rn),
+                          l2);
+    fm = SCHEME_CDR(fm);
+  }
+  return l2;
+}
+
 static Scheme_Object *stx_sym(Scheme_Object *name, Scheme_Object *_genv)
 {
   return scheme_tl_id_sym((Scheme_Env *)_genv, name, NULL, 2, NULL, NULL);
@@ -7302,11 +7342,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       Resolve_Info *ri;
       Scheme_Object *o;
       int max_let_depth;
+      int use_jit;
 
       /* Since we optimize & resolve the module here, it won't need to
          be optimized and resolved later. The resolve pass
          sets m->comp_prefix to NULL, which is how optimize & resolve
          know to avoid re-optimizing and re-resolving. */
+
+      o = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
+      use_jit = SCHEME_TRUEP(o);
 
       oi = scheme_optimize_info_create(env->prefix);
       scheme_optimize_info_enforce_const(oi, rec[drec].comp_flags & COMP_ENFORCE_CONSTS);
@@ -7322,6 +7366,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       max_let_depth = scheme_resolve_info_max_let_depth(ri);
       o = scheme_sfs(o, NULL, max_let_depth);
 
+      if (use_jit)
+        o = scheme_jit_expr(o);
+      else
+        o = scheme_eval_clone(o);
+      
       (void)do_module_execute(o, env->genv, 0, 1, root_module_name);
     }
 
@@ -7663,7 +7712,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             e = scheme_reverse(e);
             if (expand_ends) {
               fm = scheme_frame_get_end_statement_lifts(xenv);
-              fm = scheme_reverse(fm);
+              fm = reverse_and_add_rename(fm, post_ex_rn);
               if (!SCHEME_NULLP(e))
                 fm = scheme_append(fm, e);
               maybe_has_lifts = 0;
@@ -8057,7 +8106,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       e = scheme_reverse(e);
       if (expand_ends) {
         fm = scheme_frame_get_end_statement_lifts(xenv);
-        fm = scheme_reverse(fm);
+        fm = reverse_and_add_rename(fm, post_ex_rn);
         if (!SCHEME_NULLP(e))
           fm = scheme_append(fm, e);
         maybe_has_lifts = 0;
@@ -10216,6 +10265,11 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
        leads to generated local names). */
     context_marks = scheme_stx_extract_marks(mark_src);
     has_context = !SCHEME_NULLP(context_marks);
+    if (!has_context) {
+      if (SCHEME_TRUEP(scheme_stx_moduleless_env(mark_src))) {
+        has_context = 1;
+      }
+    }
     if (has_context) {
       if (all_simple)
 	*all_simple = 0;
