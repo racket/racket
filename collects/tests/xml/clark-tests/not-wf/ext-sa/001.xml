@@ -1,4 +1,0 @@
-<!DOCTYPE doc [
-<!ENTITY e SYSTEM "001.ent">
-]>
-<doc>&e;</doc>

@@ -1,4 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc (doc|#PCDATA)*>
-]>
-<doc></doc>

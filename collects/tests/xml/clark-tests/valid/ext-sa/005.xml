@@ -1,6 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc (e*)>
-<!ELEMENT e EMPTY>
-<!ENTITY e SYSTEM "005.ent">
-]>
-<doc>&e;</doc>

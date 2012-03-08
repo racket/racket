@@ -1,4 +1,0 @@
-<!DOCTYPE doc [
-<!ENTITY e SYSTEM "nul">
-]>
-<doc a="&e;"></doc>

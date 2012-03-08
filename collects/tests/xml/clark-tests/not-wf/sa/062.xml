@@ -1,4 +1,0 @@
-<!DOCTYPE doc [
-<!ENTITY foo"some text">
-]>
-<doc></doc>

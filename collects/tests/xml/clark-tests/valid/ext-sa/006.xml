@@ -1,6 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc (#PCDATA|e)*>
-<!ELEMENT e EMPTY>
-<!ENTITY e SYSTEM "006.ent">
-]>
-<doc>&e;</doc>

@@ -1,3 +1,0 @@
-<!ELEMENT doc EMPTY>
-<!ENTITY % e SYSTEM "003-2.ent">
-<!ATTLIST doc a1 CDATA %e; "v1">

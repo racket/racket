@@ -70,8 +70,17 @@
    (valid-dir->test-suite (build-path d "valid"))))
 
 (define-runtime-path
+  clark-tests-zip
+  "xmltest.zip")
+(define-runtime-path
+  clark-tests-target
+  ".")
+(define-runtime-path
   clark-tests-dir
-  (list 'lib "xml/clark-tests" "tests"))
+  (list 'lib "xml/xmltest" "tests"))
+
+(require racket/system)
+(system* (find-executable-path "unzip") clark-tests-zip "-d" clark-tests-target)
 
 (define clark-tests
   (directory->test-suite 

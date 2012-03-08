@@ -1,5 +1,0 @@
-<!DOCTYPE doc [
-<!ENTITY % e SYSTEM "011.ent">
-%e;
-]>
-<doc></doc>

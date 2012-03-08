@@ -1,5 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc (#PCDATA | foo*)* >
-<!ELEMENT foo EMPTY>
-]>
-<doc></doc>

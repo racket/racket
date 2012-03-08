@@ -1,5 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc (#PCDATA)>
-<!ENTITY e PUBLIC "a not very interesting file" "011.ent">
-]>
-<doc>&e;</doc>

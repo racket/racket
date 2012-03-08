@@ -1,6 +1,0 @@
-<!DOCTYPE doc [
-<!ENTITY e "&#38;">
-]>
-<doc>
-&e;#38;
-</doc>

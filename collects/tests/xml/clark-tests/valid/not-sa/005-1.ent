@@ -1,3 +1,0 @@
-<!ELEMENT doc EMPTY>
-<!ENTITY % e SYSTEM "005-2.ent">
-%e;

@@ -1,4 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc ANY>
-]>
-<doc><!-- -á --></doc>

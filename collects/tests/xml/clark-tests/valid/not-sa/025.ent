@@ -1,5 +1,0 @@
-<!ELEMENT doc EMPTY>
-<!ENTITY % e "x">
-<!ENTITY % e "y">
-<!ENTITY % v "'%e;'">
-<!ATTLIST doc a1 CDATA %v;>

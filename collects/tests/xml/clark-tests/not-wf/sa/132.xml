@@ -1,4 +1,0 @@
-<!DOCTYPE doc [
-<!ELEMENT doc (a, (b, c), (d, (e, f) | g))?>
-]>
-<doc></doc>
