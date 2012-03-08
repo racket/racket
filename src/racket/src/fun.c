@@ -7086,6 +7086,8 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
 
       name = SCHEME_CAR(name);
       name = SCHEME_PTR_VAL(name);
+      if (SCHEME_PAIRP(name))
+        name = scheme_make_pair(scheme_intern_symbol("submod"), name);
       loc = scheme_make_location(name, scheme_false, 
                                  scheme_false, scheme_false, scheme_false);
 

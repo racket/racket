@@ -365,7 +365,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             }
             /* Use a module path index so that multiple resolutions are no unduly
                sensitive to changes in the current directory or other configurations: */
-            mpi = scheme_make_modidx(a[0], scheme_false, scheme_false);
+            mpi = scheme_make_modidx(a[0], scheme_make_false(), scheme_make_false());
             if (!did_config)
               configure_environment(mpi);
             /* Run the module: */
@@ -377,9 +377,9 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
                                                                         scheme_make_pair(scheme_intern_symbol("main"),
                                                                                          scheme_null))),
                                       mpi,
-                                      scheme_false);
+                                      scheme_make_false());
             if (scheme_module_is_declared(a[0], 1)) {
-              a[1] = scheme_false;
+              a[1] = scheme_make_false();
               scheme_apply(scheme_builtin_value("dynamic-require"), 2, a);
             }
           }

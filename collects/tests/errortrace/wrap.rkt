@@ -17,7 +17,7 @@
           (get-output-string o)))))
   (unless (regexp-match? (regexp-quote (format "~s" (syntax->datum err-stx)))
                          out-str)
-    (error 'test "not in context for: ~s" (syntax->datum expr))))
+    (error 'test "not in context for: ~s got: ~s" (syntax->datum expr) out-str)))
 
 (provide wrap-tests)
 (define (wrap-tests)
@@ -25,4 +25,7 @@
   (try err-stx)
   (try #`(syntax-case 'a ()
            (_ #,err-stx)))
+  (try #`(begin (module m racket/base (module n racket/base #,err-stx)) (require (submod 'm n))))
+  (try #`(begin (module m racket/base (module* n racket/base #,err-stx)) (require (submod 'm n))))
+  (try #`(begin (module m racket/base (module* n #f #,err-stx)) (require (submod 'm n))))
   (void))

@@ -396,23 +396,9 @@
                          (add1 phase)))]
 
          [(module name init-import mb)
-          (syntax-case (disarm #'mb) ()
-            [(__plain-module-begin body ...)
-             ;; Just wrap body expressions
-             (let ([bodys (syntax->list (syntax (body ...)))])
-               (let ([bodyl (map (lambda (b)
-                                   (annotate-top b 0))
-                                 bodys)]
-                     [mb #'mb])
-                 (rearm
-                  expr
-                  (rebuild
-                   disarmed-expr
-                   (list (cons
-                          mb
-                          (rearm
-                           mb
-                           (rebuild mb (map cons bodys bodyl)))))))))])]
+          (annotate-module expr disarmed-expr)]
+         [(module* name init-import mb)
+          (annotate-module expr disarmed-expr)]
          
          [(#%expression e)
           (rearm expr #`(#%expression #,(annotate (syntax e) phase)))]
@@ -578,6 +564,27 @@
                  (syntax->datum expr))])
        expr
        phase)))
+
+  (define (annotate-module expr disarmed-expr)
+    (syntax-case disarmed-expr ()
+      [(mod name init-import mb)
+       (syntax-case (disarm #'mb) ()
+         [(__plain-module-begin body ...)
+          ;; Just wrap body expressions
+          (let ([bodys (syntax->list (syntax (body ...)))])
+            (let ([bodyl (map (lambda (b)
+                                (annotate-top b 0))
+                              bodys)]
+                  [mb #'mb])
+              (rearm
+               expr
+               (rebuild
+                disarmed-expr
+                (list (cons
+                       mb
+                       (rearm
+                        mb
+                        (rebuild mb (map cons bodys bodyl)))))))))])]))
   
   (define annotate (make-annotate #f #f))
   (define annotate-top (make-annotate #t #f))

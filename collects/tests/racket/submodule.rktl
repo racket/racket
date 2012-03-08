@@ -222,6 +222,13 @@
 
 (eval 
  (expand
+  (expand '(module sub3.5-m racket
+             (begin-for-syntax
+              (module* n #f (define x 8.5) (provide x)))))))
+(test 8.5 dynamic-require '(submod 'sub3.5-m n) 'x)
+
+(eval 
+ (expand
   (expand '(module sub3-m racket/base
              (module* n #f (define x 8) (provide x))))))
 (test 8 dynamic-require '(submod 'sub3-m n) 'x)

@@ -6120,6 +6120,201 @@ static Scheme_Object *strip_lexical_context(Scheme_Object *stx)
   return v;
 }
 
+static Scheme_Object *do_annotate_submodules_k(void);
+
+Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
+{
+  Scheme_Object *a, *d, *v;
+  int changed = 0;
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+    p->ku.k.p1 = (void *)fm;
+    return scheme_handle_stack_overflow(do_annotate_submodules_k);
+  }
+#endif
+
+  if (!SCHEME_STX_PAIRP(fm))
+    return fm;
+
+  a = SCHEME_STX_CAR(fm);
+  if (SCHEME_STX_PAIRP(a)) {
+    v = SCHEME_STX_CAR(a);
+    if (SCHEME_STX_SYMBOLP(v)) {
+      if (scheme_stx_module_eq3(scheme_module_stx, v, 
+                                scheme_make_integer(0), scheme_make_integer(phase), 
+                                NULL)
+          || scheme_stx_module_eq3(scheme_modulestar_stx, v, 
+                                   scheme_make_integer(0), scheme_make_integer(phase), 
+                                   NULL)) {
+        /* found a submodule */
+        a = scheme_stx_property(a, scheme_intern_symbol("submodule"), a);
+        changed = 1;
+      } else if (scheme_stx_module_eq3(scheme_begin_for_syntax_stx, v, 
+                                       scheme_make_integer(0), scheme_make_integer(phase), 
+                                       NULL)) {
+        /* found `begin-for-syntax' */
+        v = do_annotate_submodules(a, phase+1);
+        if (!SAME_OBJ(v, a)) {
+          changed = 1;
+          a = v;
+        }
+      }
+    }
+  }
+
+  v = SCHEME_STX_CDR(fm);
+  d = do_annotate_submodules(v, phase);
+
+  if (!changed && SAME_OBJ(v, d))
+    return fm;
+   
+  v = scheme_make_pair(a, d);
+  if (SCHEME_STXP(fm))
+    v = scheme_datum_to_syntax(v, fm, fm, 0, 2);
+
+  return v;
+}
+
+static Scheme_Object *do_annotate_submodules_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *fm = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return do_annotate_submodules(fm, p->ku.k.i1);
+}
+
+static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
+{
+  Scheme_Object *fm = orig_fm;
+
+  if (!SCHEME_STX_PAIRP(fm))
+    return orig_fm;
+  fm = SCHEME_STX_CAR(fm);
+  if (!SCHEME_STX_SYMBOLP(fm))
+    return orig_fm;
+
+  if (scheme_stx_module_eq(scheme_module_begin_stx, fm, 0)) {
+    /* It's a `#%plain-module-begin' form */
+    return do_annotate_submodules(orig_fm, 0);
+  }
+
+  return orig_fm;
+}
+
+static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Object *a, Scheme_Object *d, 
+                                               Scheme_Object *old_midx, Scheme_Object *new_midx)
+{
+  if (!a) a = SCHEME_STX_CAR(orig);
+  if (!d) d = SCHEME_STX_CDR(orig);
+
+  a = scheme_make_pair(a, d);
+
+  if (SCHEME_PAIRP(orig))
+    return a;
+
+  orig = scheme_stx_phase_shift(orig, NULL, old_midx, new_midx, NULL, NULL);
+  return scheme_datum_to_syntax(a, orig, orig, 0, 2);
+}
+
+static Scheme_Object *phase_shift_skip_submodules_k(void);
+
+static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, 
+                                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                                  int phase)
+{
+  Scheme_Object *v0, *v1, *v2, *v3, *v4, *naya;
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+    p->ku.k.p1 = (void *)fm;
+    p->ku.k.p2 = (void *)old_midx;
+    p->ku.k.p3 = (void *)new_midx;
+    p->ku.k.i1 = phase;
+    return scheme_handle_stack_overflow(phase_shift_skip_submodules_k);
+  }
+#endif
+
+  if (phase == -1) {
+    /* at top: */
+    v0 = SCHEME_STX_CDR(fm);
+    v1 = SCHEME_STX_CDR(v0);
+    v2 = SCHEME_STX_CDR(v1);
+    v3 = SCHEME_STX_CAR(v2);
+    v4 = SCHEME_STX_CDR(v3);
+
+    naya = phase_shift_skip_submodules(v4, old_midx, new_midx, 0);
+    if (SAME_OBJ(naya, v4)) {
+      return scheme_stx_phase_shift(fm, NULL, old_midx, new_midx, NULL, NULL);
+    } else {
+      v3 = rebuild_with_phase_shift(v3, NULL, naya, old_midx, new_midx);
+      v2 = rebuild_with_phase_shift(v2, v3, NULL, old_midx, new_midx);
+      v1 = rebuild_with_phase_shift(v1, NULL, v2, old_midx, new_midx);
+      v0 = rebuild_with_phase_shift(v0, NULL, v1, old_midx, new_midx);
+      return rebuild_with_phase_shift(fm, NULL, v0, old_midx, new_midx);
+    }
+  } else if (SCHEME_STX_NULLP(fm)) {
+    return fm;
+  } else {
+    v1 = SCHEME_STX_CAR(fm);
+    
+    if (SCHEME_STX_PAIRP(v1)) {
+      v2 = SCHEME_STX_CAR(v1);
+      if (SCHEME_STX_SYMBOLP(v2)) {
+        if (scheme_stx_module_eq3(scheme_module_stx, v2, 
+                                  scheme_make_integer(0), scheme_make_integer(phase),
+                                  NULL)
+            || scheme_stx_module_eq3(scheme_modulestar_stx, v2, 
+                                     scheme_make_integer(0), scheme_make_integer(phase),
+                                     NULL)) {
+          /* found a submodule */
+          v2 = SCHEME_STX_CDR(fm);
+          naya = phase_shift_skip_submodules(v2, old_midx, new_midx, phase);
+          return rebuild_with_phase_shift(fm, v1, naya, old_midx, new_midx);
+        } else if (scheme_stx_module_eq3(scheme_begin_for_syntax_stx, v2, 
+                                         scheme_make_integer(0), scheme_make_integer(phase),
+                                         NULL)) {
+          /* found `begin-for-syntax': */
+          naya = phase_shift_skip_submodules(v1, old_midx, new_midx, phase+1);
+          v2 = SCHEME_STX_CDR(fm);
+          v3 = phase_shift_skip_submodules(v2, old_midx, new_midx, phase+1);
+          if (SAME_OBJ(naya, v1) && SAME_OBJ(v2, v3))
+            return fm;
+          else
+            return rebuild_with_phase_shift(fm, naya, v3, old_midx, new_midx);
+        }
+      }
+    }
+
+    v3 = SCHEME_STX_CDR(fm);
+    v4 = phase_shift_skip_submodules(v3, old_midx, new_midx, phase);
+    if (SAME_OBJ(v3, v4))
+      return fm;
+    else
+      return rebuild_with_phase_shift(fm, v1, v4, old_midx, new_midx);
+  }
+}
+
+static Scheme_Object *phase_shift_skip_submodules_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *fm = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object *old_midx = (Scheme_Object *)p->ku.k.p2;
+  Scheme_Object *new_midx = (Scheme_Object *)p->ku.k.p3;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+
+  return phase_shift_skip_submodules(fm, old_midx, new_midx, p->ku.k.i1);
+}
+
 static Scheme_Env *find_env(Scheme_Env *env, intptr_t ph)
 {
   intptr_t j;
@@ -6415,6 +6610,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (SCHEME_STX_PAIRP(fm) && SCHEME_STX_NULLP(SCHEME_STX_CDR(fm))) {
     /* Perhaps expandable... */
     fm = SCHEME_STX_CAR(fm);
+
+    /* If the body is `#%plain-module-begin' and if any form is a
+       `module' form (i.e., already with the `module' binding, then
+       attach the original form as a property to the `module' form, so
+       that re-expansion can use it instead of dropping all lexical
+       context: */
+    fm = annotate_existing_submodules(fm);
   } else {
     fm = scheme_make_pair(scheme_datum_to_syntax(module_begin_symbol, form, mb_ctx, 0, 2), 
 			  fm);
@@ -6545,11 +6747,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     }
 
     /* for future expansion, shift away from self_modidx: */
-    fm = scheme_stx_phase_shift(fm, NULL, self_modidx, empty_self_modidx, NULL, NULL);
-
-    /* Remember this syntax as-is for re-expansion: */
-    if (!SCHEME_NULLP(submodule_ancestry))
-      fm = scheme_stx_property(fm, scheme_intern_symbol("submodule"), fm);
+    if (m->pre_submodules) /* non-NULL => some submodules, even if it's '() */
+      fm = phase_shift_skip_submodules(fm, self_modidx, empty_self_modidx, -1);
+    else
+      fm = scheme_stx_phase_shift(fm, NULL, self_modidx, empty_self_modidx, NULL, NULL);
 
     /* make self_modidx like the empty modidx */
     ((Scheme_Modidx *)self_modidx)->resolved = empty_self_modname;
@@ -8496,6 +8697,9 @@ static Scheme_Object *expand_submodules(Scheme_Compile_Expand_Info *rec, int dre
       l = scheme_make_pair(SCHEME_CAR(mods), l);
       env->genv->module->pre_submodules = l;
     }
+  } else if (!SCHEME_NULLP(mods)) {
+    /* setting pre_submodules to '() indicates that there were submodules during expansion */
+    env->genv->module->pre_submodules = scheme_null;
   }
 
   return mods;
