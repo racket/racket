@@ -36,7 +36,7 @@
     (define highlights  '())
     (define color-table #f)
 
-    (define (highlight-entry l)
+    (define/private (highlight-entry l)
       (match l
         [(report-entry subs start end badness)
          (let ([color (if (= badness 0)
@@ -53,10 +53,15 @@
         (apply max (cons 0 (map report-entry-badness report))))
       (unless (= max-badness 0) ; no missed opts, color table code would error
         (set! color-table (make-color-table max-badness)))
-      (define new-highlights (map highlight-entry report))
-      (set! highlights (append new-highlights highlights)))
+      (define new-highlights 
+        (let loop ([report report])
+          (cond
+            [(null? report) highlights]
+            [else (cons (highlight-entry (car report))
+                        (loop (cdr reports)))])))
+      (set! highlights new-highlights))
 
-    (define (clear-highlights)
+    (define/private (clear-highlights)
       (for ([h (in-list highlights)])
         (match h
           [`(,start ,end . ,rest )
