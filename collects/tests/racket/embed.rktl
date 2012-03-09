@@ -223,7 +223,7 @@
   (one-mz-test "embed-me2.rkt" "This is 1\nThis is 2: #t\n" #t)
   (one-mz-test "embed-me13.rkt" "This is 14\n" #f)
   (one-mz-test "embed-me14.rkt" "This is 14\n" #f)
-  (one-mz-test "embed-me15.rkt" "This is 15\n" #f)
+  (one-mz-test "embed-me15.rkt" "This is 15.\n" #f)
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
@@ -276,6 +276,14 @@
 	     (if mred? "--gui" "--")
 	     (path->string (build-path (collection-path "tests" "racket") "embed-me1.rkt")))
     (try-exe (mk-dest mred?) "This is 1\n" mred?)
+
+    ;; raco exe on a module with a `main' submodule
+    (system* raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me16.rkt")))
+    (try-exe (mk-dest mred?) "This is 16.\n" mred?)
 
     ;;raco exe --launcher
     (system* raco
