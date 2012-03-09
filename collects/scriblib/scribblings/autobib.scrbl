@@ -9,16 +9,30 @@
 @defmodule[scriblib/autobib]
 
 
-@defform[(define-cite ~cite-id citet-id generate-bibliography-id [#:disambiguate disambiguator])]{
+@defform[(define-cite ~cite-id citet-id generate-bibliography-id
+                      [#:disambiguate disambiguator]
+                      [#:render-date-bib render-date]
+                      [#:render-date-cite render-date]
+                      [#:date<? date-compare]
+                      [#:date=? date-compare])]{
 
 Binds @racket[~cite-id], @racket[citet-id], and
 @racket[generate-bibliography-id], which share state to accumulate and render
-citations. If two citations' references would render the same but are
+citations. If two citations' references would render the same (as judged by equal authors and dates are @racket[date=?]) but are
 different, the optionally provided disambiguation function is used to add an
 extra element after the date. The default disambiguator will add "a", "b", etc
 until "z". Anything more ambiguous will throw an error. It has the contract
 
 @racketblock[(-> exact-nonnegative-integer? element?)]
+
+Dates in citations and dates in the bibliography may be rendered differently,
+as specified by the optionally given @racket[render-date] functions, which have the contract
+
+@racketblock[(-> date? element?)]
+
+The dates of citations are stored as @racket[date] values, and the granularity in which they are compared and rendered are, by default, by year. The comparison functions have contract
+
+@racketblock[(-> date? date? boolean?)]
 
 The function bound to @racket[~cite-id] produces a citation referring
 to one or more bibliography entries with a preceding non-breaking
@@ -59,7 +73,7 @@ Returns @racket[#t] if @racket[v] is a value produced by
                    [#:author author any/c #f]
                    [#:is-book? is-book? any/c #f]
                    [#:location location any/c #f]
-                   [#:date date any/c #f]
+                   [#:date date (or/c #f date? exact-nonnegative-integer? string?) #f]
                    [#:url url string? #f])
          bib?]{
 
@@ -69,6 +83,9 @@ elements, except that @racket[#f] means that the information is not
 supplied. Functions like @racket[proceedings-location],
 @racket[author-name], and @racket[authors] help produce elements in a
 standard format.
+
+Dates are internally represented as @racket[date] values, so a @racket[date]
+may be given, or a number or string that represent the year.
 
 An element produced by a function like @racket[author-name] tracks
 first, last names, and name suffixes separately, so that names can be
