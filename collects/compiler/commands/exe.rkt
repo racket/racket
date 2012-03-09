@@ -89,19 +89,23 @@
      #:mred? (gui)
      #:variant (if (3m) '3m 'cgc)
      #:verbose? (very-verbose)
-     #:modules (cons `(#%mzc: (file ,source-file))
+     #:modules (cons `(#%mzc: (file ,source-file) (main))
                      (map (lambda (l) `(#t (lib ,l)))
                           (exe-embedded-libraries)))
      #:configure-via-first-module? #t
      #:literal-expression
      (parameterize ([current-namespace (make-base-namespace)])
+       (define mod-sym (string->symbol
+                        (format "#%mzc:~a"
+                                (let-values ([(base name dir?)
+                                              (split-path source-file)])
+                                  (path->bytes (path-replace-suffix name #""))))))
+       (define main-sym (string->symbol (format "~a(main)" mod-sym)))
        (compile
-        `(namespace-require
-          '',(string->symbol
-              (format "#%mzc:~a"
-                      (let-values ([(base name dir?)
-                                    (split-path source-file)])
-                        (path->bytes (path-replace-suffix name #""))))))))
+        `(begin
+           (namespace-require '',mod-sym)
+           (when (module-declared? '',main-sym)
+             (dynamic-require '',main-sym #f)))))
      #:cmdline (exe-embedded-flags)
      #:collects-path (exe-embedded-collects-path)
      #:collects-dest (exe-embedded-collects-dest)

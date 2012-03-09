@@ -43,9 +43,11 @@ parameter is true.
 
 @defproc[(create-embedding-executable [dest path-string?]
                                [#:modules mod-list 
-                                          (listof (list/c (or/c symbol? #t #f)
-                                                          (or/c path? module-path?)))
-                                          null]
+                                         (listof (or/c (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                               (or/c module-path? path?))
+                                                       (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                               (or/c module-path? path?)
+                                                               (listof symbol?))))]
                                [#:configure-via-first-module? config-via-first? 
                                                               any/c 
                                                               #f]
@@ -140,17 +142,21 @@ evaluates an expression or loads a file will be executed after the
 embedded code is loaded.
 
 Each element of the @racket[#:modules] argument @racket[mod-list] is a
-two-item list, where the first item is a prefix for the module name,
-and the second item is a module path datum (that's in the format
-understood by the default module name resolver). The prefix can be a
-symbol, @racket[#f] to indicate no prefix, or @racket[#t] to indicate
-an auto-generated prefix. For example,
+two- or three-item list, where the first item is a prefix for the
+module name, and the second item is a module path datum (that's in the
+format understood by the default module name resolver), and the third
+is a list of submodule names to be included if they are available. The
+prefix can be a symbol, @racket[#f] to indicate no prefix, or
+@racket[#t] to indicate an auto-generated prefix. For example,
 
 @racketblock['((#f "m.rkt"))]
 
 embeds the module @racket[m] from the file @filepath{m.rkt}, without
 prefixing the name of the module; the @racket[literal-sexpr] argument
-to go with the above might be @racket['(require m)].
+to go with the above might be @racket['(require m)]. When submodules
+are available and included, the submodule is given a name by
+symbol-appending the @racket[write] form of submodule path to the
+enclosing module's name.
 
 Modules are normally compiled before they are embedded into the target
 executable; see also @racket[#:compiler] and @racket[#:src-filter]
@@ -348,8 +354,11 @@ have been applied as needed to refer to the existing file).}
 @defproc[(make-embedding-executable [dest path-string?]
                                [mred? any/c]
                                [verbose? any/c]
-                               [mod-list (listof (list/c (or/c symbol? (one-of/c #t #f)) 
-                                                         module-path?))]
+                               [mod-list (listof (or/c (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                               (or/c module-path? path?))
+                                                       (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                               (or/c module-path? path?)
+                                                               (listof symbol?))))]
                                [literal-files (listof path-string?)]
                                [literal-sexp any/c]
                                [cmdline (listof string?)]
@@ -366,8 +375,11 @@ Old (keywordless) interface to @racket[create-embedding-executable].}
 
 
 @defproc[(write-module-bundle [verbose? any/c]
-                              [mod-list (listof (list/c (or/c symbol? (one-of/c #t #f)) 
-                                                        module-path?))]
+                               [mod-list (listof (or/c (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                               (or/c module-path? path?))
+                                                       (list/c (or/c symbol? (one-of/c #t #f)) 
+                                                               (or/c module-path? path?)
+                                                               (listof symbol?))))]
                               [literal-files (listof path-string?)]
                               [literal-sexp any/c])
          void?]{

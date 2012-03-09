@@ -339,7 +339,7 @@
     (define-struct extension (path))
     
     ;; Loads module code, using .zo if there, compiling from .scm if not
-    (define (get-code filename module-path codes prefixes verbose? collects-dest on-extension 
+    (define (get-code filename module-path ready-code use-submods codes prefixes verbose? collects-dest on-extension 
                       compiler expand-namespace get-extra-imports working)
       ;; filename can have the form `(submod ,filename ,sym ...)
       (let ([a (assoc filename (unbox codes))])
@@ -384,30 +384,31 @@
                                          ""
                                          submod-path)))])
             (hash-set! working filename full-name)
-            (let ([code (get-module-code just-filename
-                                         #:submodule-path submod-path
-                                         "compiled"
-                                         compiler
-                                         (if on-extension
-                                             (lambda (f l?)
-                                               (on-extension f l?)
-                                               #f)
-                                             (lambda (file _loader?)
-                                               (if _loader?
-                                                   (error 'create-embedding-executable
-                                                          "cannot use a _loader extension: ~e"
-                                                          file)
-                                                   (make-extension file))))
-                                         #:choose
-                                         ;; Prefer extensions, if we're handling them:
-                                         (lambda (src zo so)
-                                           (set! actual-filename src) ; remember convert source name
-                                           (if on-extension
-                                               #f
-                                               (if (and (file-exists? so)
-                                                        ((file-date so) . >= . (file-date zo)))
-                                                   'so
-                                                   #f))))])
+            (let ([code (or ready-code
+                            (get-module-code just-filename
+                                             #:submodule-path submod-path
+                                             "compiled"
+                                             compiler
+                                             (if on-extension
+                                                 (lambda (f l?)
+                                                   (on-extension f l?)
+                                                   #f)
+                                                 (lambda (file _loader?)
+                                                   (if _loader?
+                                                       (error 'create-embedding-executable
+                                                              "cannot use a _loader extension: ~e"
+                                                              file)
+                                                       (make-extension file))))
+                                             #:choose
+                                             ;; Prefer extensions, if we're handling them:
+                                             (lambda (src zo so)
+                                               (set! actual-filename src) ; remember convert source name
+                                               (if on-extension
+                                                   #f
+                                                   (if (and (file-exists? so)
+                                                            ((file-date so) . >= . (file-date zo)))
+                                                       'so
+                                                       #f)))))])
               (cond
                [(extension? code)
                 (when verbose?
@@ -450,15 +451,23 @@
                                                              (eq? (car p) 'module)
                                                              (cadr p)))
                                                       runtime-paths))]
-                           [code (module-compiled-submodules
-                                  (module-compiled-submodules
-                                   (if (symbol? (module-compiled-name code))
-                                       code
-                                       (module-compiled-name code (last (module-compiled-name code))))
-                                   #f
-                                   null)
-                                  #t
-                                  null)])
+                           [renamed-code (if (symbol? (module-compiled-name code))
+                                             code
+                                             (module-compiled-name code (last (module-compiled-name code))))]
+                           [extract-submods (lambda (l)
+                                              (if (null? use-submods)
+                                                  null
+                                                  (for/list ([m l]
+                                                             #:when (member (cadr (module-compiled-name m)) use-submods)) 
+                                                    m)))]
+                           [pre-submods (extract-submods (module-compiled-submodules renamed-code #t))]
+                           [post-submods (extract-submods (module-compiled-submodules renamed-code #f))]
+                           [code (module-compiled-submodules (module-compiled-submodules
+                                                              renamed-code
+                                                              #f
+                                                              null)
+                                                             #t
+                                                             null)])
                       (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                             all-file-imports)]
                             [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
@@ -470,19 +479,27 @@
                                               ;; getting runtime-module-path symbols below
                                               ;; relies on extra-runtime-paths being first:
                                               (append extra-runtime-paths extra-paths))])
+                        (define (get-one-code sub-filename sub-path ready-code)
+                          (get-code sub-filename sub-path ready-code null
+                                    codes
+                                    prefixes
+                                    verbose?
+                                    collects-dest
+                                    on-extension
+                                    compiler
+                                    expand-namespace
+                                    get-extra-imports
+                                    working))
+                        (define (get-one-submodule-code m)
+                          (define name (cadr (module-compiled-name m)))
+                          (define mpi (module-path-index-join `(submod "." ,name) #f))
+                          (get-one-code (resolve-module-path-index mpi filename)
+                                        (collapse-module-path-index mpi filename)
+                                        m))
+                        ;; Add code for pre submodules:
+                        (for-each get-one-submodule-code pre-submods)
                         ;; Get code for imports:
-                        (for-each (lambda (sub-filename sub-path)
-                                    (get-code sub-filename
-                                              sub-path
-                                              codes
-                                              prefixes
-                                              verbose?
-                                              collects-dest
-                                              on-extension
-                                              compiler
-                                              expand-namespace
-                                              get-extra-imports
-                                              working))
+                        (for-each (lambda (sf sp) (get-one-code sf sp #f))
                                   (append sub-files extra-files)
                                   (append sub-paths normalized-extra-paths))
                         (when verbose?
@@ -513,18 +530,27 @@
                                                              (mod-full-name m)
                                                              ;; must have been a cycle...
                                                              (hash-ref working sub-filename))))]
-                                   [mappings (map (lambda (sub-i sub-filename sub-path)
-                                                   (and (not (and collects-dest
-                                                                  (is-lib-path? sub-path)))
-                                                        (let-values ([(path base) (module-path-index-split sub-i)])
-                                                          (and base ; can be #f if path isn't relative
-                                                               (begin
-                                                                 ;; Assert: base should refer to this module:
-                                                                 (let-values ([(path2 base2) (module-path-index-split base)])
-                                                                   (when (or path2 base2)
-                                                                     (error 'embed "unexpected nested module path index")))
-                                                                 (cons path (lookup-full-name sub-filename)))))))
-                                                  all-file-imports sub-files sub-paths)])
+                                   [mappings (append
+                                              (map (lambda (sub-i sub-filename sub-path)
+                                                     (and (not (and collects-dest
+                                                                    (is-lib-path? sub-path)))
+                                                          (let-values ([(path base) (module-path-index-split sub-i)])
+                                                            (and base ; can be #f if path isn't relative
+                                                                 (begin
+                                                                   ;; Assert: base should refer to this module:
+                                                                   (let-values ([(path2 base2) (module-path-index-split base)])
+                                                                     (when (or path2 base2)
+                                                                       (error 'embed "unexpected nested module path index")))
+                                                                   (cons path (lookup-full-name sub-filename)))))))
+                                                   all-file-imports sub-files sub-paths)
+                                              (map (lambda (m)
+                                                     (define name (cadr (module-compiled-name m)))
+                                                     (cons `(submod "." ,name)
+                                                           (lookup-full-name 
+                                                            (collapse-module-path-index 
+                                                             (module-path-index-join `(submod "." ,name) #f)
+                                                             filename))))
+                                                   (append pre-submods post-submods)))])
                               ;; Record the module
                               (set-box! codes
                                         (cons (make-mod filename module-path code 
@@ -545,7 +571,9 @@
                                                            [else
                                                             (cons #f (loop (cdr runtime-paths) extra-files))]))
                                                         actual-filename)
-                                              (unbox codes)))))))))]
+                                              (unbox codes)))
+                              ;; Add code for post submodules:
+                              (for-each get-one-submodule-code post-submods)))))))]
                [else
                 (set-box! codes
                           (cons (make-mod filename module-path code 
@@ -829,6 +857,7 @@
                                      (path->bytes program-name)
                                      #"?")]
              [module-paths (map cadr modules)]
+             [use-submoduless (map (lambda (m) (if (pair? (cddr m)) (caddr m) '())) modules)]
              [resolve-one-path (lambda (mp)
                                  (let ([f (resolve-module-path mp #f)])
                                    (unless f
@@ -853,14 +882,14 @@
              ;; As we descend the module tree, we append to the front after
              ;; loading imports, so the list in the right order.
              [codes (box null)]
-             [get-code-at (lambda (f mp)
-                            (get-code f mp codes prefix-mapping verbose? collects-dest
-                                           on-extension compiler expand-namespace
-                                           get-extra-imports
-                                           (make-hash)))]
+             [get-code-at (lambda (f mp submods)
+                            (get-code f mp #f submods codes prefix-mapping verbose? collects-dest
+                                      on-extension compiler expand-namespace
+                                      get-extra-imports
+                                      (make-hash)))]
              [__
               ;; Load all code:
-              (for-each get-code-at files collapsed-mps)]
+              (for-each get-code-at files collapsed-mps use-submoduless)]
              [config-infos (if config?
                                (let ([a (assoc (car files) (unbox codes))])
                                  (let ([info (module-compiled-language-info (mod-code a))])
@@ -874,7 +903,8 @@
           (for ([config-info (in-list config-infos)])
             (let ([mp (vector-ref config-info 0)])
               (get-code-at (resolve-one-path mp)
-                           (collapse-one mp)))))
+                           (collapse-one mp)
+                           null))))
         ;; Drop elements of `codes' that just record copied libs:
         (set-box! codes (filter mod-code (unbox codes)))
         ;; Bind `module' to get started:
