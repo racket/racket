@@ -35,7 +35,8 @@ module.
 
 The @racket[compile-proc] argument defaults to @racket[compile]. This
 procedure is used to compile module source if an already-compiled
-version is not available.
+version is not available. If @racket[submodule-path] is not @racket['()],
+then @racket[compile-proc] must return a compiled module form.
 
 The @racket[ext-proc] argument defaults to @racket[#f]. If it is not
 @racket[#f], it must be a procedure of two arguments that is called

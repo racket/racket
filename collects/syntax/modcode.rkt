@@ -193,7 +193,13 @@
           [(or (eq? prefer 'src)
                path-d)
            (notify path)
-           (extract-submodule (with-dir (lambda () (compiler (read-one orig-path path #t read-src-syntax)))))]
+           (define (compile-one)
+             (with-dir (lambda () (compiler (read-one orig-path path #t read-src-syntax)))))
+           (if (null? submodule-path)
+               ;; allow any result:
+               (compile-one)
+               ;; expect a compiled-module result:
+               (extract-submodule (compile-one)))]
           ;; Report a not-there error
           [else (raise (make-exn:get-module-code
                         (format "get-module-code: no such file: ~e" orig-path)
