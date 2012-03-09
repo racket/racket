@@ -20,7 +20,6 @@
                   busy-retry-delay)
 
     (define -db db)
-    (define statement-table (make-hasheq))
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
 
     (inherit call-with-lock*
@@ -190,21 +189,25 @@
                          (stmt-type stmt-type)
                          (stmt sql)
                          (owner this))])
-          (hash-set! statement-table pst #t)
           pst)))
 
     (define/override (disconnect* _politely?)
       (super disconnect* _politely?)
-      (start-atomic)
-      (let ([db -db])
-        (set! -db #f)
-        (end-atomic)
-        (when db
-          (let ([statements (hash-map statement-table (lambda (k v) k))])
-            (for ([pst (in-list statements)])
-              (do-free-statement 'disconnect pst))
-            (HANDLE 'disconnect (sqlite3_close db))
-            (void)))))
+      (call-as-atomic
+       (lambda ()
+         (let ([db -db])
+           (set! -db #f)
+           (when db
+             ;; Free all of connection's prepared statements. This will leave
+             ;; pst objects with dangling foreign objects, so don't try to free
+             ;; them again---check that -db is not-#f.
+             (let loop ()
+               (let ([stmt (sqlite3_next_stmt db #f)])
+                 (when stmt
+                   (HANDLE 'disconnect (sqlite3_finalize stmt))
+                   (loop))))
+             (HANDLE 'disconnect (sqlite3_close db))
+             (void))))))
 
     (define/public (get-base) this)
 
@@ -215,14 +218,13 @@
           (go)))
 
     (define/private (do-free-statement fsym pst)
-      (start-atomic)
-      (let ([stmt (send pst get-handle)])
-        (send pst set-handle #f)
-        (end-atomic)
-        (hash-remove! statement-table pst)
-        (when stmt
-          (HANDLE fsym (sqlite3_finalize stmt))
-          (void))))
+      (call-as-atomic
+       (lambda ()
+         (let ([stmt (send pst get-handle)])
+           (send pst set-handle #f)
+           (when (and stmt -db)
+             (HANDLE fsym (sqlite3_finalize stmt)))
+           (void)))))
 
     ;; Internal query
 

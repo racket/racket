@@ -88,7 +88,6 @@
 
     (define/public (dprintf fmt . args)
       (when DEBUG? (apply fprintf (current-error-port) fmt args)))
-    
     ))
 
 ;; ----------------------------------------
@@ -422,23 +421,21 @@
              dprintf)
     (super-new)
 
+    (field [max-cache-size 50])
+
     ;; Statement Cache
     ;; updated by prepare; potentially invalidated by query (via check/invalidate-cache)
 
     (define pst-cache '#hash())
 
     (define/public (get-cached-statement stmt)
-      (cond [(use-cache?)
-             (let ([cached-pst (hash-ref pst-cache stmt #f)])
-               (cond [cached-pst
-                      (dprintf "  ** using cached statement\n")
-                      cached-pst]
-                     [else
-                      (dprintf "  ** statement not in cache\n")
-                      #f]))]
-            [else
-             (dprintf "  ** not using statement cache\n")
-             #f]))
+      (let ([cached-pst (hash-ref pst-cache stmt #f)])
+        (cond [cached-pst
+               (dprintf "  ** using cached statement\n")
+               cached-pst]
+              [else
+               (dprintf "  ** statement not in cache\n")
+               #f])))
 
     (define/public (safe-statement-type? stmt-type)
       (memq stmt-type '(select insert update delete with)))
@@ -456,25 +453,35 @@
         ((never) #f)
         ((in-transaction) (eq? (get-tx-status) #t))))
 
-    ;; check/invalidate-cache : statement/pst/symbol/#f -> hash/#f
+    ;; check/invalidate-cache : statement/pst -> hash/#f
     ;; Returns old cache on invalidation, or #f if stmt is safe.
+    ;; May also return part of old cache (excluding pst) when cache gets too big.
     (define/public (check/invalidate-cache x)
       #|
       Sufficient to check on every query execution whether statement type is safe
       (ie, SELECT, INSERT, etc). All statements sent as strings are considered
       unsafe, because they're usually transactional SQL.
       |#
+      (define (invalidate! except)
+        (dprintf "  ** invalidating statement cache~a\n" (if except " (too big)" ""))
+        (let ([cache pst-cache])
+          (set! pst-cache '#hash())
+          (cond [except
+                 (cache-statement! except)
+                 (hash-remove cache (send except get-stmt))]
+                [else
+                 cache])))
       (cond [(statement-binding? x)
              (check/invalidate-cache (statement-binding-pst x))]
             [(prepared-statement? x)
-             (check/invalidate-cache (send x get-stmt-type))]
-            [else
-             (cond [(safe-statement-type? x)
-                    #f]
-                   [else
-                    (dprintf "  ** invalidating statement cache\n")
-                    (begin0 pst-cache
-                      (set! pst-cache '#hash()))])]))
+             (let ([stmt-type (send x get-stmt-type)])
+               (cond [(safe-statement-type? stmt-type)
+                      (if (< (hash-count pst-cache) max-cache-size)
+                          #f
+                          (invalidate! x))]
+                     [else
+                      (invalidate! #f)]))]
+            [else (invalidate! #f)]))
 
     ;; Prepare
 
@@ -485,14 +492,16 @@
           (prepare1 fsym stmt close-on-exec?))))
 
     (define/public (prepare1 fsym stmt close-on-exec?)
-      (cond [close-on-exec?
+      (cond [(and close-on-exec? (use-cache?))
              (or (get-cached-statement stmt)
                  (let* ([stmt-type (classify-stmt stmt)]
                         [safe? (safe-statement-type? stmt-type)]
                         [pst (prepare1* fsym stmt (if safe? #f close-on-exec?) stmt-type)])
                    (when safe? (cache-statement! pst))
                    pst))]
-            [else (prepare1* fsym stmt #f (classify-stmt stmt))]))
+            [else
+             (dprintf "  ** not using statement cache\n")
+             (prepare1* fsym stmt close-on-exec? (classify-stmt stmt))]))
 
     (define/public (prepare1* fsym stmt close-on-exec?)
       (error/internal 'prepare1* "not implemented"))
