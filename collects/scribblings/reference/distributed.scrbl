@@ -679,16 +679,10 @@ Returns the path to the ssh binary on the local system in string form.
 @defproc[(racket-path) path?]{
 Returns the path to the currently executing racket binary on the local system.
 }
-@examples[ #:eval evaler
-(racket-path)
-]
 
-@defproc[(distributed-places-path) string?]{
-Returns the path to the distributed-places module on the local system.
-}
-@examples[ #:eval evaler
-(distributed-places-path)
-]
+@;{@examples[ #:eval evaler
+(racket-path)
+]}
 
 @defform[(get-current-module-path)]{
 Returns the path to the current module.

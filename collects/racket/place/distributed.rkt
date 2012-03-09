@@ -12,7 +12,6 @@
 
 (provide ssh-bin-path
          racket-path
-         distributed-places-path
          distributed-launch-path
          get-current-module-path
 
@@ -126,9 +125,6 @@
 (define (racket-path)
   (parameterize ([current-directory (find-system-path 'orig-dir)])
     (find-executable-path (find-system-path 'exec-file) #f)))
-
-; returns the path to the distributed.rkt file on the current machine.
-(define (distributed-places-path) (get-current-module-path))
 
 ; find ssh-binary
 (define (ssh-bin-path)
