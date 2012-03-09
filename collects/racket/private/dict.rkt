@@ -535,7 +535,7 @@
 
 (struct custom-hash (table make-box)
   #:property prop:dict
-  (define-methods dict
+  (methods dict
     (define dict-ref custom-hash-ref)
     (define dict-set! custom-hash-set!)
     (define dict-remove! custom-hash-remove!)
@@ -555,7 +555,7 @@
 
 (struct immutable-custom-hash custom-hash ()
   #:property prop:dict
-  (define-methods dict
+  (methods dict
     (define dict-ref custom-hash-ref)
     (define dict-set custom-hash-set)
     (define dict-remove custom-hash-remove)

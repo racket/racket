@@ -152,13 +152,13 @@
 (require racket/stxparam)
 (define-syntax-parameter define/generic 
   (lambda (stx)
-    (raise-syntax-error 'define/generic "only allowed inside define-methods" stx)))
+    (raise-syntax-error 'define/generic "only allowed inside methods" stx)))
 (provide define/generic)
 
 ;; utility for specification of methods for a group of generic functions
 ;; (could make this do all the checks instead of a guard for the property)
-(provide define-methods)
-(define-syntax (define-methods stx)
+(provide methods)
+(define-syntax (methods stx)
   (syntax-case stx (=>)
     [(_ generics . mthds)
      (identifier? #'generics)

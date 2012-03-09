@@ -63,7 +63,7 @@ context of @racket[name].
 
 }
 
-@defform[(define-methods name definition ...)
+@defform[(methods name definition ...)
          #:contracts
          ([name identifier?])]{
 
@@ -89,11 +89,11 @@ Allows @racket[define/generic] to appear in @racket[definition ...].
          ([local-name identifier?]
           [method-name identifier?])]{
 
-When used inside @racket[define-methods], binds @racket[local-name] to
+When used inside @racket[methods], binds @racket[local-name] to
 the generic for @racket[method-name]. This is useful for method
 specializations to use the generic methods on other values.
 
-Syntactically an error when used outside @racket[define-methods].
+Syntactically an error when used outside @racket[methods].
 
 }
 
@@ -115,7 +115,7 @@ Syntactically an error when used outside @racket[define-methods].
 
 (define-struct num (v)
   #:property prop:printable
-  (define-methods printable
+  (methods printable
     (define/generic super-print gen-print)
     (define (gen-print n [port (current-output-port)])
       (fprintf port "Num: ~a" (num-v n)))
@@ -127,7 +127,7 @@ Syntactically an error when used outside @racket[define-methods].
          
 (define-struct bool (v)
   #:property prop:printable
-  (define-methods printable
+  (methods printable
     (define/generic super-print gen-print)
     (define (gen-print b [port (current-output-port)])
       (fprintf port "Bool: ~a" 

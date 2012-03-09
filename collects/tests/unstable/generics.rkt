@@ -18,7 +18,7 @@
     
     (define-struct ex ()
       #:property prop:lots
-      (define-methods lots
+      (methods lots
         (define (f #:foo foo lots zog [def #t])
           1)))]
    (test
@@ -32,7 +32,7 @@
     
     (define-struct ex ()
       #:property prop:lots
-      (define-methods lots
+      (methods lots
         (define (f #:foo foo lots zog #:def [def #t])
           1)))]
    (test
@@ -46,7 +46,7 @@
     
     (define-struct ex ()
       #:property prop:lots
-      (define-methods lots
+      (methods lots
         (define/generic gen:f f)
         (define (f lots idx val)
           (if (zero? idx)
@@ -63,7 +63,7 @@
     
     (define-struct alist ([l #:mutable])
       #:property prop:table
-      (define-methods table
+      (methods table
         (define (get table idx [default #f])
           (cond [(massq idx (alist-l table)) => mcdr]
                 [else default]))
@@ -114,7 +114,7 @@
          
          (define-struct num (v)
            #:property prop:printable
-           (define-methods printable
+           (methods printable
              (define/generic super-print gen-print)
              (define (gen-print n [port (current-output-port)])
                (fprintf port "Num: ~a" (num-v n)))
@@ -125,7 +125,7 @@
          
          (define-struct bool (v)
            #:property prop:printable
-           (define-methods printable
+           (methods printable
              (define/generic super-print gen-print)
              (define (gen-print b [port (current-output-port)])
                (fprintf port "Bool ~a" (if (bool-v b) "Yes" "No")))
