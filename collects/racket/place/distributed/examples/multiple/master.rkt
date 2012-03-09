@@ -23,7 +23,7 @@
 
 
 (define (main)
-  (define bank-vm (spawn-vm-supervise-place-thunk-at "localhost" #:listen-port 6344 bank-path 'make-bank))
+  (define bank-vm (spawn-vm-supervise-dynamic-place-at "localhost" #:listen-port 6344 bank-path 'make-bank))
   (define bank-place (send bank-vm get-first-place))
   (master-event-loop
     (spawn-place-worker-at 6341 "ONE")

@@ -3,6 +3,7 @@
          racket/match
          racket/tcp
          racket/place
+         racket/place/private/th-place
          racket/class
          racket/trait
          racket/udp
@@ -21,7 +22,12 @@
          spawn-vm-supervise-place-thunk-at
          spawn-vm-supervise-dynamic-place-at/2
          spawn-vm-supervise-place-thunk-at/2
+         supervise-named-dynamic-place-at
          supervise-named-place-thunk-at
+         supervise-place-thunk-at
+         supervise-dynamic-place-at
+         supervise-thread-at
+
          supervise-process-at
          every-seconds
          after-seconds
@@ -32,8 +38,6 @@
          spawn-remote-racket-vm
          node-send-exit
          node-get-first-place
-         supervise-place-thunk-at
-         supervise-dynamic-place-at
          dplace-put
          dplace-get
 
@@ -43,8 +47,6 @@
          ll-channel-put
          write-flush
          log-message
-
-         ;;
          start-spawned-node-router
 
          ;;Coercion Routines
@@ -155,7 +157,6 @@
 
 
 (define (write-flush msg [p (current-output-port)])
-  ;(printf "WRITING ~v\n" msg)
   (write msg p)
   (flush-output p))
 
@@ -359,8 +360,6 @@
           (wrap-evt
             (if (dchannel? pch) (dchannel-ch pch) pch)
             (lambda (e)
-        ;      (printf "MSG ~v\n" e)
-        ;      (flush-output)
               (match e
                 [(dcgm 8 #;(== DCGM-TYPE-LOG-TO-PARENT) _ _ (list severity msg))
                   (send node log-from-child #:severity severity msg)]
@@ -438,7 +437,6 @@
                 [else
                   (sconn-write-flush src-channel (dcgm DCGM-TYPE-INTER-DCHANNEL ch-id ch-id
                                                        (format "ERROR: name not found ~a" name)))])]
-
              [else
               (define np (new place%
                              [place-exec place-exec]
@@ -459,10 +457,11 @@
             (define pch (sconn-lookup-subchannel src-channel ch-id))
             (cond
               [(place-channel? pch)
-                ;(printf "SOCKET to PLACE CHANNEL ~a\n" msg)
                 (place-channel-put pch msg)]
               [(is-a? pch connection%)
-               (send pch forward msg)])]
+               (send pch forward msg)]
+              [(th-place-channel? pch)
+               (th-place-channel-put pch msg)])]
           [(dcgm 6 #;(== DCGM-TYPE-SPAWN-REMOTE-PROCESS) src (list node-name node-port mod-path funcname) ch1)
            (define vm
              (new remote-node%
@@ -528,7 +527,6 @@
                      (sconn-get-forward-event x forward-mesg)]
                     [(or (place-channel? x) (place? x))
                      (wrap-evt x (lambda (e)
-                                     ;(printf "VECTOR PLACE MESSAGE ~a\n" e)
                                      (forward-mesg e x)))])
                   n))
               nes)]
@@ -626,7 +624,6 @@
             (tcp-connect rname (->number rport)))))
 
       (define (ensure-connected)
-        ;(printf "Waiting on connecting to ~a ~a\n" host port)
         (when connecting
           (match (channel-get ch)
             [(list _in _out)
@@ -648,7 +645,6 @@
       (define/public (get-forward-event forwarder)
         (when (equal? out #f) (ensure-connected))
         (wrap-evt in (lambda (e)
-                       ;(printf "VECTOR SOCKET MESSAGE ~a\n" e)
                        (forwarder (read in) this))))
 
       (define/public (read-message)
@@ -661,7 +657,6 @@
       (when (and host port background-connect)
         (set! connecting #t)
         (set! ch (make-channel))
-        ;(printf "Delay connecting to ~a ~a\n" host port)
         (thread
           (lambda ()
             (channel-put
@@ -728,7 +723,6 @@
             (define pch (sconn-lookup-subchannel sc ch-id))
             (cond
               [(place-channel? pch)
-                ;(printf "SOCKET to PLACE CHANNEL ~a\n" msg)
                 (place-channel-put pch msg)]
               [(is-a? pch connection%)
                (send pch forward msg)])]
@@ -736,7 +730,6 @@
             (define parent (send this get-router))
             (cond
               [parent
-                ;(printf "Sent to Parent ~a ~a \n" severity msg)
                 (send parent log-from-child #:severity severity msg)]
               [else (print-log-message severity msg)])]
 
@@ -998,20 +991,33 @@
           [(list 'dynamic-place place-path place-func)
             (dynamic-place (->path place-path) place-func)]
           [(list 'place place-path place-func)
-            ((dynamic-require (->path place-path) place-func))]))
+            ((dynamic-require (->path place-path) place-func))]
+          [(list 'thread place-path place-func)
+           (define-values (ch1 ch2) (th-place-channel))
+           (define th 
+             (thread
+               (lambda ()
+                 ((dynamic-require (->path place-path) place-func) ch1))))
+           (th-place th ch2 null)]))
 
       (sconn-add-subchannel sc ch-id pd)
       (set! psb (new place-socket-bridge% [pch pd] [sch sc] [id ch-id] [node node]))
       (define/public (get-channel) pd)
       (define/public (stop)
         (cond
-          [pd
+          [(place? pd)
             (place-kill pd)
             (set! pd #f)]
+          [(th-place? pd)
+           (th-place-kill pd)]
           [else (void)])) ;send place not running message
 
       (define/public (register es)
-        (let* ([es (if pd (cons (wrap-evt (place-dead-evt pd) on-place-dead) es) es)]
+        (let* ([es (if pd (cons (wrap-evt 
+                                  (cond 
+                                    [(place? pd) (place-dead-evt pd)]
+                                    [(th-place? pd) (th-place-dead-evt pd)]) on-place-dead)
+                                es) es)]
                [es (if psb (send psb register es) es)])
           es))
       (super-new)
@@ -1155,7 +1161,6 @@
     (define (remote-spawn)
       (define sp (new socket-connection% [host rname] [port rport]))
       (define msg (list my-id node-name node-cnt curr-conf-idx next-node-id rname rcnt conf))
-      ;(printf "Sending ~v\n" msg)
       (sconn-write-flush sp msg)
       (for ([i (in-range rcnt)])
         (vector-set! cv (+ next-node-id i) sp))
@@ -1212,7 +1217,6 @@
   )
 
 (define (supervise-named-place-thunk-at vm name place-path place-func
-                            #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:initial-message [initial-message #f]
                             #:restart-on-exit [restart-on-exit #f])
     (send vm launch-place
@@ -1220,6 +1224,16 @@
         ;#:initial-message initial-message
         #:restart-on-exit restart-on-exit
         ))
+
+(define (supervise-named-dynamic-place-at vm name place-path place-func
+                            #:initial-message [initial-message #f]
+                            #:restart-on-exit [restart-on-exit #f])
+    (send vm launch-place
+        (list 'dynamic-place (->string place-path) place-func (->string name))
+        ;#:initial-message initial-message
+        #:restart-on-exit restart-on-exit
+        ))
+
 (define (spawn-vm-supervise-dynamic-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
@@ -1296,9 +1310,9 @@
 
   (values vm dp))
 
-(define (master-event-loop #:listen-port [listen-port DEFAULT-ROUTER-PORT] . event-containers)
+(define (master-event-loop #:node [_nc #f] #:listen-port [listen-port DEFAULT-ROUTER-PORT] . event-containers)
   (define listener (tcp-listen listen-port 4 #t))
-  (define nc (new node% [listen-port listener]))
+  (define nc (or _nc (new node% [listen-port listener])))
   (for ([ec event-containers])
     (send nc add-sub-ec ec)
     (send ec backlink nc))
@@ -1319,6 +1333,9 @@
 
 (define (supervise-place-thunk-at remote-vm place-path place-func)
   (send remote-vm launch-place (list 'place (->string place-path) place-func)))
+
+(define (supervise-thread-at remote-vm place-path place-func)
+  (send remote-vm launch-place (list 'thread (->string place-path) place-func)))
 
 (define-syntax-rule (every-seconds _seconds _body ...)
   (new respawn-and-fire% [seconds _seconds] [thunk (lambda () _body ...)]))

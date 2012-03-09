@@ -2,6 +2,7 @@
 (require (for-syntax racket/base)
          (for-syntax syntax/stx)
          racket/place
+         racket/place/private/th-place
          racket/match
          racket/class
          racket/stxparam
@@ -20,11 +21,13 @@
 (define (dplace/place-channel-get dest)
   (cond
     [(place-channel? dest) (place-channel-get dest)]
+    [(th-place-channel? dest) (th-place-channel-get dest)]
     [else (send dest get-msg)]))
 
 (define (dplace/place-channel-put dest msg)
   (cond
     [(place-channel? dest) (place-channel-put dest msg)]
+    [(th-place-channel? dest) (th-place-channel-put dest msg)]
     [else (send dest put-msg msg)]))
 
 
@@ -105,7 +108,7 @@
                              (with-syntax ([fname-symbol #'(quote fname)]
                                            [(send-line (... ...))
                                              (cond
-                                               [(is-id? 'define-rpc #'define-type) #'((place-channel-put send-dest result))]
+                                               [(is-id? 'define-rpc #'define-type) #'((dplace/place-channel-put send-dest result))]
                                                [(is-id? 'define-cast #'define-type) #'()]
                                                [else (raise "Bad define in define-remote-server")])])
                                #'[receive-line
@@ -114,13 +117,13 @@
                                        body (... ...)))
                                    send-line (... ...)
                                    (loop)]))]))])
-        #`(place ch
+        #`(lambda (ch)
             (let ()
               states2 (... ...)
               (let loop ()
-                (define msg (place-channel-get ch))
+                (define msg (dplace/place-channel-get ch))
                 (define (log-to-parent-real msg #:severity [severity 'info])
-                  (place-channel-put ch (log-message severity msg)))
+                  (dplace/place-channel-put ch (log-message severity msg)))
                 (syntax-parameterize ([log-to-parent (make-rename-transformer #'log-to-parent-real)])
                     (match msg
                       cases (... ...)
@@ -133,7 +136,7 @@
           (require racket/place
                    racket/match)
           #,@trans-rpcs
-          (define/provide (mkname) #,trans-place)
+          (define/provide mkname #,trans-place)
           (void)))
       ;(pretty-print (syntax->datum x))
       x))]))

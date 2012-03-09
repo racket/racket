@@ -7,6 +7,7 @@
          racket/fixnum
          racket/flonum
          racket/vector
+         racket/place/private/th-place
          mzlib/private/streams
 
          (for-syntax racket/base
@@ -15,7 +16,7 @@
 (provide dynamic-place
          dynamic-place*
          place-sleep
-         place-wait 
+         place-wait
          place-kill
          place-break
          place-channel
@@ -29,102 +30,13 @@
          place
          place*
          (rename-out [pl-place-enabled? place-enabled?])
-         place-dead-evt)
+         place-dead-evt
+         )
 
-(define-struct TH-place (th ch cust) 
-  #:property prop:evt (lambda (x) (TH-place-channel-in (TH-place-ch x))))
 
 (define (place-channel-put/get ch msg)
   (place-channel-put ch msg)
   (place-channel-get ch))
-
-(define (make-th-async-channel)
-  (define ch (make-channel))
-  (values 
-    (thread 
-      (lambda ()
-        (let loop ()
-          (let ([v (thread-receive)])
-            (channel-put ch v)
-            (loop)))))
-    ch))
-  
-(define (th-dynamic-place mod funcname)
-  (unless (or (path-string? mod) (resolved-module-path? mod))
-    (raise-type-error 'place "resolved-module-path? or path-string?" 0 mod funcname))
-  (unless (symbol? funcname)
-    (raise-type-error 'place "symbol?" 1 mod funcname))
-  (define-values (pch cch) (th-place-channel))
-  (define cust (make-custodian-from-main))
-  (define th (thread 
-              (lambda ()
-                (with-continuation-mark
-                    parameterization-key
-                    orig-paramz
-                  (parameterize ([current-namespace (make-base-namespace)]
-                                 [current-custodian cust])
-                    ((dynamic-require mod funcname) cch))))))
-  (TH-place th pch cust))
-
-(define (th-place-sleep n) (sleep n))
-(define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
-(define (th-place-kill pl) (custodian-shutdown-all (TH-place-cust pl)))
-(define (th-place-break pl) (break-thread (TH-place-th pl)))
-(define (th-place-dead-evt pl) (thread-dead-evt (TH-place-th pl)))
-(define (th-place-channel)
-  (define-values (as ar) (make-th-async-channel))
-  (define-values (bs br) (make-th-async-channel))
-  (define pch (TH-place-channel ar bs))
-  (define cch (TH-place-channel br as))
-  (values pch cch))
- 
-(define (deep-copy x)
-  (define (dcw o)
-    (cond 
-      [(ormap (lambda (x) (x o)) (list number? char? boolean? null? void? string? symbol? TH-place-channel?)) o]
-      [(cond
-        [(path? o) (path->bytes o)]
-        [(bytes? o) (if (pl-place-shared? o) o (bytes-copy o))]
-        [(fxvector? o) (if (pl-place-shared? o) o (fxvector-copy o))]
-        [(flvector? o) (if (pl-place-shared? o) o (flvector-copy o))]
-        [else #f])
-        => values]
-      [(TH-place? o) (dcw (TH-place-ch o))]
-      [(pair? o) (cons (dcw (car o)) (dcw (cdr o)))]
-      [(vector? o) (vector-map! dcw (vector-copy o))]
-      [(struct? o)
-        (define key (prefab-struct-key o))
-        (when (not key)
-          (error "Must be a prefab struct"))
-        (apply make-prefab-struct 
-               key 
-               (map dcw (cdr (vector->list (struct->vector o)))))]
-      [else (raise-mismatch-error 'place-channel-put "cannot transmit a message containing value: " o)]))
-
-  (dcw x))
-
-
-(define (th-place-channel-put pl msg)
-  (define th  
-    (cond
-      [(TH-place? pl) (TH-place-channel-out (TH-place-ch pl))]
-      [(TH-place-channel? pl) (TH-place-channel-out pl)]
-      [else (raise-type-error 'place-channel-put "expect a place? or place-channel?" pl)]))
-  (void (thread-send th (deep-copy msg) #f)))
-
-(define (th-place-channel-get pl)
-  (channel-get
-    (cond
-      [(TH-place? pl) (TH-place-channel-in (TH-place-ch pl))]
-      [(TH-place-channel? pl) (TH-place-channel-in pl)]
-      [else (raise-type-error 'place-channel-get "expect a place? or place-channel?" pl)])))
-
-(define (th-place-channel? pl)
-  (or (TH-place? pl)
-      (TH-place-channel? pl)))
-
-(define (th-place-message-allowed? pl)
-  #t)
 
 (define-syntax-rule (define-pl x p t) (define x (if (pl-place-enabled?) p t)))
 
@@ -136,7 +48,7 @@
 (define-pl place-channel-put  pl-place-channel-put  th-place-channel-put)
 (define-pl place-channel-get  pl-place-channel-get  th-place-channel-get)
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
-(define-pl place?             pl-place?             TH-place?)
+(define-pl place?             pl-place?             th-place?)
 (define-pl place-message-allowed? pl-place-message-allowed? th-place-message-allowed?)
 (define-pl place-dead-evt     pl-place-dead-evt     th-place-dead-evt)
 
@@ -148,7 +60,7 @@
     [else (void)]))
 
 (define (dynamic-place module-path function)
-  (start-place 'dynamic-place module-path function 
+  (start-place 'dynamic-place module-path function
                #f (current-output-port) (current-error-port)))
 
 (define (dynamic-place* module-path
@@ -160,8 +72,8 @@
 
 (define (start-place who module-path function in out err)
   (define-values (p i o e) (start-place* who
-                                         module-path 
-                                         function 
+                                         module-path
+                                         function
                                          in
                                          out
                                          err))
@@ -169,7 +81,7 @@
   p)
 
 (define (start-place* who module-path function in out err)
-  ;; Duplicate checks in that are in the primitive `pl-dynamic-place', 
+  ;; Duplicate checks in that are in the primitive `pl-dynamic-place',
   ;; unfortunately, but we want these checks before we start making
   ;; stream-pumping threads, etc.
   (unless (or (module-path? module-path) (path? module-path))
@@ -201,7 +113,7 @@
                           (if-stream-out who err)))
 
       (pump-place p pin pout perr in out err)
-      (values p 
+      (values p
               (and (not in) pin)
               (and (not out) pout)
               (and (not err) perr))]
@@ -221,12 +133,12 @@
 
 
 (define-for-syntax (modpath->string modpath)
-  (cond 
+  (cond
     [(equal? modpath #f)
      (number->string (current-inexact-milliseconds))]
     [else
       (define name (resolved-module-path-name modpath))
-      (cond 
+      (cond
         [(symbol? name) (symbol->string name)]
         [(path? name) (path->string name)])]))
 
@@ -242,10 +154,10 @@
              (raise-syntax-error #f "can only be used in a module" stx))
            (unless (identifier? #'ch)
              (raise-syntax-error #f "expected an identifier" stx #'ch))
-           (define func-name-stx 
-             (datum->syntax stx 
-               (string->symbol 
-                 (string-append "place/anon" 
+           (define func-name-stx
+             (datum->syntax stx
+               (string->symbol
+                 (string-append "place/anon"
                                 (modpath->string (current-module-declare-name))))))
            (with-syntax ([internal-def-name
                           (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
