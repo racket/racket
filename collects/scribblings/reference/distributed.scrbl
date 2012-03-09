@@ -322,10 +322,11 @@ a @racket[(send parent process-died this)] call.
 }
 }
 
-@examples[ #:eval evaler
+@;{@examples[ #:eval evaler
 (new spawned-process% [cmdline-list
   (list (ssh-bin-path) "localhost" (racket-path) "-tm" distributed-launch-path "spawn" (->string 6340))])
 ]
+}
 
 @defclass[place-socket-bridge% object% (event-container<%>)
   (defmethod (get-sc-id) exact-positive-integer?) ]{
