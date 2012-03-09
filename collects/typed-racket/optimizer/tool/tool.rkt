@@ -58,7 +58,7 @@
           (cond
             [(null? report) highlights]
             [else (cons (highlight-entry (car report))
-                        (loop (cdr reports)))])))
+                        (loop (cdr report)))])))
       (set! highlights new-highlights))
 
     (define/private (clear-highlights)
