@@ -375,7 +375,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             a[0] = scheme_make_modidx(scheme_make_pair(scheme_intern_symbol("submod"),
                                                        scheme_make_pair(scheme_make_utf8_string("."),
                                                                         scheme_make_pair(scheme_intern_symbol("main"),
-                                                                                         scheme_null))),
+                                                                                         scheme_make_null()))),
                                       mpi,
                                       scheme_make_false());
             if (scheme_module_is_declared(a[0], 1)) {
