@@ -26,4 +26,5 @@ a typical Racket installation.
 @include-section["decompile.scrbl"]
 @include-section["demod.scrbl"]
 @include-section["ctool.scrbl"]
+@include-section["test.scrbl"]
 @include-section["command.scrbl"]

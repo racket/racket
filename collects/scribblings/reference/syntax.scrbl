@@ -11,6 +11,7 @@
                      racket/package
                      racket/splicing
                      racket/runtime-path
+                     racket/submodule
                      racket/performance-hint))
 
 @(define require-eval (make-base-eval))
@@ -313,11 +314,31 @@ The @racket[#%module-begin] form of @racketmodname[racket/base] wraps
 every top-level expression to print non-@|void-const| results using
 @racket[current-print].}
 
-
 @defform[(#%plain-module-begin form ...)]{
 
 Legal only in a @tech{module begin context}, and handled by the
 @racket[module] and @racket[module*] forms.}
+
+
+@;------------------------------------------------------------------------
+@subsection[#:tag "submodule"]{Submodule helpers: @racket[module**]}
+
+@note-lib-only[racket/submodule]
+
+@defform*[((module** id module-path form ...)
+           (module** id #f form ...))]{
+
+Like @racket[module*], but multiple occurrences of @racket[module**]
+defining the same @tech{submodule} will be spliced together into a
+single module at the end of the enclosing module. Each occurrence must
+use the same form for the initial bindings of the submodule. }
+
+@defform[(when-testing form ...)]{
+
+ An abbreviation of @racket[(module** test #f form ...)]; useful for
+ embedding tests while spreading them throughout your
+ modules. Cooperates with @exec{raco test}.
+}
 
 @;------------------------------------------------------------------------
 @section[#:tag '("require" "provide")]{Importing and Exporting: @racket[require] and @racket[provide]}

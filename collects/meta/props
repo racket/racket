@@ -604,6 +604,7 @@ path/s is either such a string or a list of them.
 "collects/compiler/commands/exe.rkt" drdr:command-line #f
 "collects/compiler/commands/make.rkt" drdr:command-line (mzc *)
 "collects/compiler/commands/pack.rkt" drdr:command-line #f
+"collects/compiler/commands/test.rkt" responsible (jay)
 "collects/compiler/demodularizer" responsible (jay)
 "collects/compiler/demodularizer/batch.rkt" drdr:command-line #f
 "collects/compiler/demodularizer/prims.rkt" drdr:command-line #f
@@ -1178,6 +1179,7 @@ path/s is either such a string or a list of them.
 "collects/racket/match" responsible (samth)
 "collects/racket/match.rkt" responsible (samth)
 "collects/racket/place" responsible (tewk)
+"collects/racket/submodule.rkt" responsible (jay)
 "collects/racklog" responsible (jay)
 "collects/rackunit" responsible (jay noel ryanc)
 "collects/rackunit/gui.rkt" responsible (ryanc) drdr:command-line (gracket-text "-t" *)
