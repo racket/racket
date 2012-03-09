@@ -1026,7 +1026,7 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
       }
 
       if (!SCHEME_VECTORP(px->redirects)
-          || !(SCHEME_VEC_ELS(px->redirects)[0]))
+          || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0]))
         arg = px->prev;
       else {
         ht = (Scheme_Hash_Tree *)SCHEME_VEC_ELS(px->redirects)[0];
@@ -1918,7 +1918,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
       Scheme_Object *a[2], *red, *orig;
 
       if (!SCHEME_VECTORP(px->redirects)
-          || !(SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i])) {
+          || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i])) {
         o = px->prev;
       } else {
 #ifdef DO_STACK_CHECK
@@ -1975,7 +1975,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
       if (SCHEME_VECTORP(px->redirects)) {
         half = (SCHEME_VEC_SIZE(px->redirects) - PRE_REDIRECTS) >> 1;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + half + i];
-        if (red) {
+        if (SCHEME_TRUEP(red)) {
           a[0] = o;
           a[1] = v;
           v = _scheme_apply(red, 2, a);
@@ -5144,7 +5144,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 
   if (SCHEME_STRUCTP(val)) {
     stype = ((Scheme_Structure *)val)->stype;
-    redirects = scheme_make_vector(PRE_REDIRECTS + 2 * stype->num_slots, NULL);
+    redirects = scheme_make_vector(PRE_REDIRECTS + 2 * stype->num_slots, scheme_false);
   } else {
     stype = NULL;
     redirects = NULL;
@@ -5232,7 +5232,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                          kind,
                          a[0],
                          argv[0]);
-      if (SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field])
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field]))
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "%s: given %s is for the same field as a previous %s argument: %V",
                          name,
