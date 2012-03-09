@@ -6079,7 +6079,7 @@ static Scheme_Object *strip_lexical_context_k()
 
 static Scheme_Object *strip_lexical_context(Scheme_Object *stx)
 {
-  Scheme_Object *v;
+  Scheme_Object *v = NULL;
 
 #ifdef DO_STACK_CHECK
 # include "mzstkchk.h"

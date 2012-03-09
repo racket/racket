@@ -4197,7 +4197,7 @@ static intptr_t get_number(Scheme_Object *port, intptr_t pos)
 static char *get_bytes(Scheme_Object *port, intptr_t pos, intptr_t len)
 {
   char *s;
-  intptr_t got, orig;
+  intptr_t orig;
 
   s = scheme_malloc_atomic(len + 1);
   s[len] = 0;
@@ -4205,10 +4205,10 @@ static char *get_bytes(Scheme_Object *port, intptr_t pos, intptr_t len)
   orig = scheme_set_file_position(port, -1);
   scheme_set_file_position(port, pos);
 
-  got = scheme_get_byte_string("default-load-handler",
-                               port,
-                               (char *)s, 0, len,
-                               0, 0, scheme_make_integer(0));
+  scheme_get_byte_string("default-load-handler",
+                         port,
+                         (char *)s, 0, len,
+                         0, 0, scheme_make_integer(0));
 
   (void)scheme_set_file_position(port, orig);
   
