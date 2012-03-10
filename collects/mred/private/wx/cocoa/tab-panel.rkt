@@ -149,6 +149,12 @@
 
   (public [append* append])
   (define (append* lbl)
+    (atomically
+     (set! callbacks-ok? #f)
+     (do-append lbl)
+     (set! callbacks-ok? #t)))
+
+  (define (do-append lbl)
     (let ([item (as-objc-allocation
                  (tell (tell NSTabViewItem alloc) initWithIdentifier: #f))])
       (tellv item setLabel: #:type _NSString (label->plain-label lbl))
@@ -160,16 +166,22 @@
              context: #:type _pointer content-cocoa)))
 
   (define/public (delete i)
-    (let ([item-cocoa (list-ref item-cocoas i)])
-      (tellv tabv-cocoa removeTabViewItem: item-cocoa)
-      (set! item-cocoas (remq item-cocoa item-cocoas))))
+    (atomically
+     (set! callbacks-ok? #f)
+     (let ([item-cocoa (list-ref item-cocoas i)])
+       (tellv tabv-cocoa removeTabViewItem: item-cocoa)
+       (set! item-cocoas (remq item-cocoa item-cocoas)))
+     (set! callbacks-ok? #t)))
 
   (define/public (set choices)
-    (for ([item-cocoa (in-list item-cocoas)])
-      (tellv tabv-cocoa removeTabViewItem: item-cocoa))
-    (set! item-cocoas null)
-    (for ([lbl (in-list choices)])
-      (append* lbl)))
+    (atomically
+     (set! callbacks-ok? #f)
+     (for ([item-cocoa (in-list item-cocoas)])
+       (tellv tabv-cocoa removeTabViewItem: item-cocoa))
+     (set! item-cocoas null)
+     (for ([lbl (in-list choices)])
+       (do-append lbl))
+     (set! callbacks-ok? #t)))
 
   (define callback void)
   (define/public (set-callback cb) (set! callback cb))

@@ -127,6 +127,12 @@
 
     (public [append* append])
     (define (append* lbl)
+      (atomically
+       (set! callback-ok? #f)
+       (do-append lbl)
+       (set! callback-ok? #t)))
+
+    (define/private (do-append lbl)
       (let ([page
              (let ([bin-gtk (gtk_hbox_new #f 0)]
                    [label-gtk (gtk_label_new_with_mnemonic lbl)])
@@ -139,7 +145,7 @@
           (g_object_ref empty-bin-gtk)
           (gtk_notebook_remove_page gtk 0))))
 
-    (define/public (delete i)
+    (define/private (do-delete i)
       (let ([page (list-ref pages i)])
         (when (ptr-equal? current-bin-gtk (page-bin-gtk page))
           (let ([cnt (length pages)])
@@ -155,11 +161,20 @@
         (gtk_notebook_remove_page gtk i)
         (set! pages (remq page pages))))
 
+    (define/public (delete i)
+      (atomically
+       (set! callback-ok? #f)
+       (do-delete i)
+       (set! callback-ok? #t)))
+
     (define/public (set choices)
-      (for ([page (in-list pages)])
-        (delete 0))
-      (for ([lbl (in-list choices)])
-        (append* lbl)))
+      (atomically
+       (set! callback-ok? #f)
+       (for ([page (in-list pages)])
+         (do-delete 0))
+       (for ([lbl (in-list choices)])
+         (append* lbl))
+       (set! callback-ok? #t)))
 
     (define/public (set-label i str)
       (gtk_label_set_text_with_mnemonic (page-label-gtk (list-ref pages i)) 
