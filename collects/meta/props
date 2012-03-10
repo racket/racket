@@ -1142,6 +1142,7 @@ path/s is either such a string or a list of them.
 "collects/mzlib/plt-match.rkt" responsible (samth)
 "collects/mzlib/private/shared-body.rkt" drdr:command-line #f
 "collects/mzlib/shared.rkt" responsible (robby)
+"collects/mzlib/traceld.rkt" drdr:command-line #f
 "collects/mzscheme" responsible (mflatt)
 "collects/mzscheme/examples/cfile.rkt" drdr:command-line #f
 "collects/mzscheme/examples/curses-demo.rkt" drdr:command-line #f
