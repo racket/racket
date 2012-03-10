@@ -1179,7 +1179,7 @@ path/s is either such a string or a list of them.
 "collects/racket/match" responsible (samth)
 "collects/racket/match.rkt" responsible (samth)
 "collects/racket/place" responsible (tewk)
-"collects/racket/submodule.rkt" responsible (jay)
+"collects/racket/slice.rkt" responsible (jay)
 "collects/racklog" responsible (jay)
 "collects/rackunit" responsible (jay noel ryanc)
 "collects/rackunit/gui.rkt" responsible (ryanc) drdr:command-line (gracket-text "-t" *)
@@ -1903,6 +1903,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/structlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stx.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/slice.rkt" responsible (jay)
 "collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *) drdr:random #t
 "collects/tests/racket/sync.rktl" drdr:command-line #f
 "collects/tests/racket/syntax-tests.rktl" drdr:command-line (racket "-f" *)

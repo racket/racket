@@ -11,7 +11,7 @@
                      racket/package
                      racket/splicing
                      racket/runtime-path
-                     racket/submodule
+                     racket/slice
                      racket/performance-hint))
 
 @(define require-eval (make-base-eval))
@@ -321,24 +321,22 @@ Legal only in a @tech{module begin context}, and handled by the
 
 
 @;------------------------------------------------------------------------
-@subsection[#:tag "submodule"]{Submodule helpers: @racket[module**]}
+@subsection[#:tag "slice"]{Slices: @racket[slice]}
 
-@note-lib-only[racket/submodule]
+@note-lib-only[racket/slice]
 
-@defform*[((module** id module-path form ...)
-           (module** id #f form ...))]{
+@defform[(slice id form ...)]{
 
-Like @racket[module*], but multiple occurrences of @racket[module**]
-defining the same @tech{submodule} will be spliced together into a
-single module at the end of the enclosing module. Each occurrence must
-use the same form for the initial bindings of the submodule. }
+Declares a @tech{slice} of a @tech{submodule} named @racket[id].
 
-@defform[(when-testing form ...)]{
-
- An abbreviation of @racket[(module** test #f form ...)]; useful for
- embedding tests while spreading them throughout your
- modules. Cooperates with @exec{raco test}.
-}
+A @deftech{slice} is a piece of a @tech{submodule}. Each slice of a
+submodule is combined to form the entire submodule at
+the end of the enclosing module. If there is only one slice, then
+@racket[(slice id form ...)] is equivalent to @racket[(module* id #f
+form ...)]. It is an error for a submodule to be defined using
+@racket[slice] @emph{and} @racket[module] or @racket[module*]. That
+is, if a submodule is made of slices, then it must be
+made @emph{only} of slices. }
 
 @;------------------------------------------------------------------------
 @section[#:tag '("require" "provide")]{Importing and Exporting: @racket[require] and @racket[provide]}
