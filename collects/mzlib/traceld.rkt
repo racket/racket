@@ -7,9 +7,13 @@
   (let ([mk-chain
          (lambda (load)
            (lambda (filename expected-module)
-             (fprintf ep
-                      "~aloading ~a at ~a\n" 
-                      tab filename (current-process-milliseconds))
+             (define name
+               (if (pair? expected-module)
+                   (format "~a ~s" filename `(submod "." ,@(cdr expected-module)))
+                   filename))
+             (fprintf ep 
+                      "~aloading ~a at ~a\n"
+                      tab name (current-process-milliseconds))
              (begin0
               (let ([s tab])
                 (dynamic-wind
@@ -19,7 +23,7 @@
                     (lambda () (set! tab s))))
               (fprintf ep
                        "~adone ~a at ~a\n"
-                       tab filename (current-process-milliseconds)))))])
+                       tab name (current-process-milliseconds)))))])
     (current-load (mk-chain load))
     (current-load-extension (mk-chain load-extension))))
 
