@@ -1924,6 +1924,11 @@
                             (lambda ()
                               (set! a 'v)))))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check compilation of an n-ary `/' that isn't
+;; constant folded due to a divide-by-zero:
+
+(err/rt-test (call/cc (lambda (k) (/ 1 2 0))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1903,9 +1903,10 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
 
   __START_SHORT_JUMPS__(c < 100);
 
-  if (trigger_arg > c) {
-    /* we don't expect this to happen, since constant-folding would
-       have collapsed it */
+  if (trigger_arg >= c) {
+    /* we don't expect this to happen, since constant-folding normally
+       would have collapsed it --- but a division by zero, for example,
+       might block constant folding */
     trigger_arg = 0;
   }
 
