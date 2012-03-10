@@ -55,7 +55,7 @@
                                   (test so? file-exists? so)
                                   #f)))
      (check-name
-      'inner
+      '(file inner)
       (get-module-code file.sfx
                        #:submodule-path '(inner)
                        #:choose (lambda (src zo so)
