@@ -6375,7 +6375,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Comp_Env *benv;
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
-  int saw_mb, check_mb = 0, skip_strip;
+  int saw_mb, check_mb = 0, skip_strip = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
 
