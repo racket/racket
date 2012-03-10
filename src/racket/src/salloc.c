@@ -2258,7 +2258,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 		    && !strcmp(SCHEME_SYM_VAL(p[1]), "objects"));
 
     for (i = 0; i < maxpos; i++) {
-      void *tn = scheme_get_type_name(i);
+      void *tn = scheme_get_type_name_or_null(i);
       if (tn && !strcmp(tn, s)) {
 	if (just_objects)
 	  obj_type = i;
@@ -2451,7 +2451,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
     for (i = 0; i < maxpos; i++) {
       void *tn;
-      tn = scheme_get_type_name(i);
+      tn = scheme_get_type_name_or_null(i);
       if (tn && !strcmp(tn, s)) {
 	trace_for_tag = i;
 	flags |= GC_DUMP_SHOW_TRACE;
@@ -2513,7 +2513,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
         limit = (char *)t->jmpup_buf.stack_copy + t->jmpup_buf.stack_size;
       }
       GC_dump_variable_stack(var_stack, delta, limit, NULL,
-                             scheme_get_type_name,
+                             scheme_get_type_name_or_null,
                              GC_get_xtagged_name,
                              print_tagged_value);
     } else {
@@ -2535,7 +2535,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
 # ifdef MZ_PRECISE_GC
   GC_dump_with_traces(flags, 
-		      scheme_get_type_name,
+		      scheme_get_type_name_or_null,
 		      GC_get_xtagged_name,
 		      for_each_found,
 		      trace_for_tag,

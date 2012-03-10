@@ -1899,23 +1899,20 @@ static void free_backtrace(mpage *page)
                &page->backtrace_page_src);
 }
 
-static void *bt_source;
-static int bt_type;
-
-static void set_backtrace_source(void *source, int type)
+static void set_backtrace_source(NewGC *gc, void *source, int type)
 {
-  bt_source = source;
-  bt_type = type;
+  gc->bt_source = source;
+  gc->bt_type = type;
 }
 
-static void record_backtrace(mpage *page, void *ptr)
+static void record_backtrace(NewGC *gc, mpage *page, void *ptr)
 /* ptr is after objhead */
 {
   uintptr_t delta;
 
   delta = PPTR(ptr) - PPTR(page->addr);
-  page->backtrace[delta - 1] = bt_source;
-  ((intptr_t *)page->backtrace)[delta] = bt_type;
+  page->backtrace[delta - 1] = gc->bt_source;
+  ((intptr_t *)page->backtrace)[delta] = gc->bt_type;
 }
 
 static void copy_backtrace_source(mpage *to_page, void *to_ptr,
@@ -1935,6 +1932,11 @@ static void *get_backtrace(mpage *page, void *ptr)
 /* ptr is after objhead */
 {
   uintptr_t delta;
+
+  if (!page->backtrace) {
+    /* This shouldn't happen, but fail more gracefully if it does. */
+    return NULL;
+  }
 
   if (page->size_class) {
     if (page->size_class > 1)
@@ -1958,12 +1960,12 @@ static void *get_backtrace(mpage *page, void *ptr)
 # define backtrace_new_page(gc, page) /* */
 # define backtrace_new_page_if_needed(gc, page) /* */
 # define free_backtrace(page) /* */
-# define set_backtrace_source(ptr, type) /* */
-# define record_backtrace(page, ptr) /* */
+# define set_backtrace_source(gc, ptr, type) /* */
+# define record_backtrace(gc, page, ptr) /* */
 # define copy_backtrace_source(to_page, to_ptr, from_page, from_ptr) /* */
 #endif
 
-#define two_arg_no_op(a, b) /* */
+#define three_arg_no_op(a, b, c) /* */
 
 /*****************************************************************************/
 /* Routines dealing with various runtime execution stacks                    */
@@ -2009,7 +2011,7 @@ static inline void *get_stack_base(NewGC *gc) {
 
 #define GC_X_variable_stack GC_mark2_variable_stack
 #define gcX2(a, gc) gcMARK2(*a, gc)
-#define X_source(stk, p) set_backtrace_source((stk ? stk : p), BT_STACK)
+#define X_source(stk, p) set_backtrace_source(gc, (stk ? stk : p), BT_STACK)
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX2
@@ -2054,7 +2056,7 @@ void GC_fixup_variable_stack(void **var_stack,
         void **start = (void**)roots->roots[j]; \
         void **end = (void**)roots->roots[j+1]; \
         while(start < end) {                    \
-          set_bt_src(start, BT_ROOT);           \
+          set_bt_src(gc, start, BT_ROOT);       \
           gcMUCK(*start++);                     \
         }                                       \
       }                                         \
@@ -2068,7 +2070,7 @@ inline static void mark_roots(NewGC *gc)
 
 inline static void repair_roots(NewGC *gc)
 {
-  traverse_roots(gcFIXUP, two_arg_no_op);
+  traverse_roots(gcFIXUP, three_arg_no_op);
 }
 
 #include "immobile_boxes.c"
@@ -2089,16 +2091,16 @@ inline static void mark_finalizer_structs(NewGC *gc)
   Fnl *fnl;
 
   for(fnl = GC_resolve2(gc->finalizers, gc); fnl; fnl = GC_resolve2(fnl->next, gc)) { 
-    set_backtrace_source(fnl, BT_FINALIZER);
+    set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc); 
-    set_backtrace_source(&gc->finalizers, BT_ROOT);
+    set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
     gcMARK2(fnl, gc);
   }
-  for(fnl = gc->run_queue; fnl; fnl = fnl->next) {
-    set_backtrace_source(fnl, BT_FINALIZER);
+  for(fnl = GC_resolve2(gc->run_queue, gc); fnl; fnl = GC_resolve2(fnl->next, gc)) {
+    set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
     gcMARK2(fnl->p, gc);
-    set_backtrace_source(&gc->run_queue, BT_ROOT);
+    set_backtrace_source(gc, &gc->run_queue, BT_ROOT);
     gcMARK2(fnl, gc);
   }
 }  
@@ -2135,7 +2137,7 @@ inline static void check_finalizers(NewGC *gc, int level)
       GCDEBUG((DEBUGOUTF, 
                "CFNL: Level %i finalizer %p on %p queued for finalization.\n",
                work->eager_level, work, work->p));
-      set_backtrace_source(work, BT_FINALIZER);
+      set_backtrace_source(gc, work, BT_FINALIZER);
       gcMARK2(work->p, gc);
       if(prev) prev->next = next;
       if(!prev) gc->finalizers = next;
@@ -3049,7 +3051,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         promote_marked_gen0_big_page(gc, page);
 
       page->marked_on = 1;
-      record_backtrace(page, BIG_PAGE_TO_OBJECT(page));
+      record_backtrace(gc, page, BIG_PAGE_TO_OBJECT(page));
       GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
       /* Finally, we want to add this to our mark queue, so we can 
          propagate its pointers */
@@ -3065,7 +3067,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       page->marked_on = 1;
       p = OBJHEAD_TO_OBJPTR(info);
       backtrace_new_page_if_needed(gc, page);
-      record_backtrace(page, p);
+      record_backtrace(gc, page, p);
       push_ptr(gc, p);
     }
   } 
@@ -3092,7 +3094,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         page->marked_on = 1;
         page->previous_size = PREFIX_SIZE;
         page->live_size += ohead->size;
-        record_backtrace(page, p);
+        record_backtrace(gc, page, p);
         push_ptr(gc, p);
       } 
       else {
@@ -3181,7 +3183,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
            and into the mark queue */
         void *newp = OBJHEAD_TO_OBJPTR(newplace);
         /* record why we marked this one (if enabled) */
-        record_backtrace(work, newp);
+        record_backtrace(gc, work, newp);
         /* set forwarding pointer */
         GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", p, newp, work));
         *(void**)p = newp;
@@ -3227,7 +3229,7 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
     end = PPTR(info) + info->size;
   }
 
-  set_backtrace_source(start, alloc_type);
+  set_backtrace_source(gc, start, alloc_type);
 
   switch(alloc_type) {
     case PAGE_TAGGED: 
@@ -3577,6 +3579,12 @@ int GC_is_tagged(void *p)
   NewGC *gc = GC_get_GC();
   mpage *page;
   page = pagemap_find_page(gc->page_maps, p);
+#ifdef MZ_USE_PLACES
+  if (!page && MASTERGC) {
+    /* Is it safe to access the master GC page map? I think so... */
+    page = pagemap_find_page(MASTERGC->page_maps, p);
+  }
+#endif
   return page && (page->page_type == PAGE_TAGGED);
 }
 

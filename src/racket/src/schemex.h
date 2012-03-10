@@ -189,6 +189,7 @@ Scheme_Object *(*scheme_dynamic_wind)(void (*pre)(void *),
 /*========================================================================*/
 Scheme_Type (*scheme_make_type)(const char *name);
 char *(*scheme_get_type_name)(Scheme_Type type);
+char *(*scheme_get_type_name_or_null)(Scheme_Type type);
 /*========================================================================*/
 /*                              constants                                 */
 /*========================================================================*/

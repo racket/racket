@@ -93,7 +93,12 @@ static void print_traced_objects(int path_length_limit,
 				 GC_get_xtagged_name_proc get_xtagged_name,
 				 GC_print_tagged_value_proc print_tagged_value)
 {
-  int i;
+  int i, j, k, dp = 0, counter, each;
+# define DITTO_BUFFER_SIZE 16
+  void *ditto[DITTO_BUFFER_SIZE];
+
+  memset(ditto, 0, sizeof(void*) * DITTO_BUFFER_SIZE);
+
   GC_instance->dumping_avoid_collection++;
   GCPRINT(GCOUTF, "Begin Trace\n");
   for (i = 0; i < found_object_count; i++) {
@@ -101,10 +106,32 @@ static void print_traced_objects(int path_length_limit,
     int limit = path_length_limit;
     p = found_objects[i];
     p = print_out_pointer("==* ", p, get_type_name, get_xtagged_name, print_tagged_value);
+
+    j = 0; counter = 0; each = 1;
     while (p && limit) {
-      p = print_out_pointer(" <- ", p, get_type_name, get_xtagged_name, print_tagged_value);
-      limit--;
+      for (k = 0; k < DITTO_BUFFER_SIZE; k++) {
+        if (ditto[k] == p) {
+          GCPRINT(GCOUTF, " <- %p: DITTO\n", p);
+          p = NULL;
+          break;
+        }
+      }
+      if (p) {
+        if (j < DITTO_BUFFER_SIZE) {
+          /* Rememebr the 1st 2nd, 4th, 8th, etc. */
+          counter++;
+          if (counter == each) {
+            ditto[(j + dp) % DITTO_BUFFER_SIZE] = p;
+            j++;
+            each *= 2;
+            counter = 0;
+          }
+        }
+        p = print_out_pointer(" <- ", p, get_type_name, get_xtagged_name, print_tagged_value);
+        limit--;
+      }
     }
+    dp = (j % DITTO_BUFFER_SIZE);
   }
   GCPRINT(GCOUTF, "End Trace\n");
   --GC_instance->dumping_avoid_collection;

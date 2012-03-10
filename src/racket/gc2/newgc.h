@@ -250,6 +250,11 @@ typedef struct NewGC {
 
   uintptr_t place_memory_limit; /* set to propagate a custodian limit from a parent place */  
 
+#if MZ_GC_BACKTRACE
+  void *bt_source;
+  int bt_type;
+#endif
+
 #if defined(GC_DEBUG_PAGES)
   FILE *GCVERBOSEFH;
 #endif

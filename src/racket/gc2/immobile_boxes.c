@@ -41,7 +41,7 @@ void GC_free_immobile_box(void **b)
 #define traverse_immobiles(gcMUCK, set_bt_src) {			  \
     GC_Immobile_Box *ib;                                \
     for(ib = gc->immobile_boxes; ib; ib = ib->next) {		\
-      set_bt_src(ib, BT_IMMOBILE);					            \
+      set_bt_src(gc, ib, BT_IMMOBILE);                           \
       gcMUCK(ib->p);                                    \
     }                                                   \
   }
@@ -53,7 +53,5 @@ inline static void mark_immobiles(GCTYPE *gc)
 
 inline static void repair_immobiles(GCTYPE *gc)
 {
-  traverse_immobiles(gcFIXUP, two_arg_no_op);
+  traverse_immobiles(gcFIXUP, three_arg_no_op);
 }
-
-

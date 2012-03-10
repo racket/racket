@@ -390,18 +390,18 @@ Scheme_Type scheme_make_type(const char *name)
   return newtype;
 }
 
+char *scheme_get_type_name_or_null(Scheme_Type t)
+{
+  if (t < 0 || t >= maxtype)
+    return "<bad-value>";
+  return type_names[t];
+}
+
 char *scheme_get_type_name(Scheme_Type t)
 {
   char *s;
-  if (t < 0 || t >= maxtype)
-    return "<bad-value>";
-  s = type_names[t];
-#ifndef MZ_GC_BACKTRACE
-  if (!s)
-    return "???";
-  else
-#endif
-    return s;
+  s = scheme_get_type_name_or_null(t);
+  return s ? s : "???";
 }
 
 void scheme_install_type_reader(Scheme_Type t, Scheme_Type_Reader f)

@@ -123,6 +123,7 @@
   scheme_extension_table->scheme_dynamic_wind = scheme_dynamic_wind;
   scheme_extension_table->scheme_make_type = scheme_make_type;
   scheme_extension_table->scheme_get_type_name = scheme_get_type_name;
+  scheme_extension_table->scheme_get_type_name_or_null = scheme_get_type_name_or_null;
   scheme_extension_table->scheme_eof = scheme_eof;
   scheme_extension_table->scheme_make_eof = scheme_make_eof;
   scheme_extension_table->scheme_null = scheme_null;

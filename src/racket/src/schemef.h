@@ -254,6 +254,7 @@ MZ_EXTERN Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
 MZ_EXTERN Scheme_Type scheme_make_type(const char *name);
 
 MZ_EXTERN char *scheme_get_type_name(Scheme_Type type);
+MZ_EXTERN char *scheme_get_type_name_or_null(Scheme_Type type);
 
 /*========================================================================*/
 /*                              constants                                 */

@@ -123,6 +123,7 @@
 #define scheme_dynamic_wind (scheme_extension_table->scheme_dynamic_wind)
 #define scheme_make_type (scheme_extension_table->scheme_make_type)
 #define scheme_get_type_name (scheme_extension_table->scheme_get_type_name)
+#define scheme_get_type_name_or_null (scheme_extension_table->scheme_get_type_name_or_null)
 #define scheme_eof (scheme_extension_table->scheme_eof)
 #define scheme_make_eof (scheme_extension_table->scheme_make_eof)
 #define scheme_null (scheme_extension_table->scheme_null)

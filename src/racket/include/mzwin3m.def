@@ -117,6 +117,7 @@ EXPORTS
  scheme_dynamic_wind
  scheme_make_type
  scheme_get_type_name
+ scheme_get_type_name_or_null
  scheme_eof DATA
  scheme_make_eof
  scheme_null DATA
