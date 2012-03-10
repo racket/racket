@@ -15,9 +15,12 @@
 	 mzlib/etc)
 
 (define (test-connect)
-  (let ([c (ssl-make-client-context)])
-    (let-values ([(in out) (ssl-connect imap-server imap-port-no c)])
-      (imap-connect* in out username pw mailbox-name))))
+  (if (zero? (random 2))
+      (parameterize ([imap-port-number 993])
+        (imap-connect #:tls? #t imap-server username pw mailbox-name))
+      (let ([c (ssl-make-client-context)])
+        (let-values ([(in out) (ssl-connect imap-server imap-port-no c)])
+          (imap-connect* in out username pw mailbox-name)))))
 
 (define-values (imap cnt recent) (test-connect))
 
@@ -31,7 +34,7 @@
 (test #f imap-new? imap)
 
 (imap-disconnect imap)
-done
+(error "comment out these two lines to finish...")
 
 (define (delete-all)
   (let ([cnt (imap-messages imap)])

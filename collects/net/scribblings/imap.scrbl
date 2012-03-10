@@ -55,13 +55,20 @@ opaque), @racket[#f] otherwise.}
 @defproc[(imap-connect [server string?]
                        [username (or/c string? bytes?)]
                        [password (or/c string? bytes?)]
-                       [mailbox (or/c string? bytes?)])
+                       [mailbox (or/c string? bytes?)]
+                       [#:tls? tls? any/c #f]
+                       [#:try-tls? try-tls? any/c #t])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 Establishes an IMAP connection to the given server using the given
-username and password, and selects the specified mailbox. The first
-result value reprsents the connection.
+username and password, and selects the specified mailbox. If
+@racket[tls?]  is true, a TLS connection is made to the server before
+communicating using the IMAP protocol. If @racket[tls?] is @racket[#f]
+but @racket[try-tls?] is true, then after the IMAP connection is
+initially established, the connection is switched to a TLS connection
+if the server supports it.
 
+The first result value represents the connection.
 The second and third return values indicate the total number of
 messages in the mailbox and the number of recent messages (i.e.,
 messages received since the mailbox was last selected), respectively.
@@ -87,7 +94,9 @@ is @racket[143].}
                         [out output-port?]
                         [username (or/c string? bytes?)]
                         [password (or/c string? bytes?)]
-                        [mailbox (or/c string? bytes?)])
+                        [mailbox (or/c string? bytes?)]
+                        [#:tls? tls? any/c #f]
+                        [#:try-tls? try-tls? any/c #t])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 Like @racket[imap-connect], but given input and output ports (e.g.,

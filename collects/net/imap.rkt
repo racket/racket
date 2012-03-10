@@ -1,6 +1,9 @@
 #lang racket/base
 
-(require racket/contract/base racket/tcp "private/rbtree.rkt")
+(require racket/contract/base 
+         racket/tcp 
+         openssl 
+         "private/rbtree.rkt")
 
 ;; define the imap struct and its predicate here, for use in the contract, below
 (define-struct imap (r w exists recent unseen uidnext uidvalidity
@@ -311,33 +314,62 @@
                                         v))
                     v)))
 
-(define (imap-connect* r w username password inbox)
+(define (has-starttls? imap)
+  (let ([has? #f])
+    (check-ok (imap-send imap
+                         "CAPABILITY"
+                         (lambda (caps) 
+                           (when (member 'STARTTLS caps)
+                             (set! has? #t)))))
+    has?))
+
+(define (imap-login imap username password inbox)
+  (let ([reply (imap-send imap (list "LOGIN" username password) void)])
+    (if (and (pair? reply) (tag-eq? 'NO (car reply)))
+      (error 'imap-connect
+        "username or password rejected by server: ~s" reply)
+      (check-ok reply)))
+  (let-values ([(init-count init-recent) (imap-reselect imap inbox)])
+    (values imap init-count init-recent)))
+
+(define (ports->tls-ports r w)  
+  (ports->ssl-ports r w #:close-original? #t #:encrypt 'tls))
+
+(define (imap-connect* r w username password inbox
+                       #:tls? [tls? #f]
+                       #:try-tls? [try-tls? #t])
   (with-handlers ([void
                    (lambda (x)
                      (close-input-port r)
                      (close-output-port w)
                      (raise x))])
+    (let-values ([(r w)
+                  (if tls?
+                      (ports->tls-ports r w)
+                      (values r w))])
+      (let ([imap (make-imap r w #f #f #f #f #f
+                             (new-tree) (new-tree) #f)])
+        (check-ok (imap-send imap "NOOP" void))
+        (define imap-maybe-tls
+          (if (and (not tls?) try-tls? (has-starttls? imap))
+              (begin
+                (check-ok (imap-send imap "STARTTLS" void))
+                (let-values ([(ssl-in ssl-out) (ports->tls-ports r w)])
+                  (make-imap ssl-in ssl-out #f #f #f #f #f (new-tree) (new-tree) #f)))
+              imap))
+        (imap-login imap-maybe-tls username password inbox)))))
 
-    (let ([imap (make-imap r w #f #f #f #f #f
-                           (new-tree) (new-tree) #f)])
-      (check-ok (imap-send imap "NOOP" void))
-      (let ([reply (imap-send imap (list "LOGIN" username password) void)])
-        (if (and (pair? reply) (tag-eq? 'NO (car reply)))
-          (error 'imap-connect
-                 "username or password rejected by server: ~s" reply)
-          (check-ok reply)))
-      (let-values ([(init-count init-recent) (imap-reselect imap inbox)])
-        (values imap init-count init-recent)))))
-
-(define (imap-connect server username password inbox)
+(define (imap-connect server username password inbox 
+                       #:tls? [tls? #f]
+                       #:try-tls? [try-tls? #t])
   ;; => imap count-k recent-k
   (let-values ([(r w)
                 (if debug-via-stdio?
-                  (begin
-                    (printf "stdin == ~a\n" server)
-                    (values  (current-input-port) (current-output-port)))
-                  (tcp-connect server (imap-port-number)))])
-    (imap-connect* r w username password inbox)))
+                    (begin
+                      (printf "stdin == ~a\n" server)
+                      (values  (current-input-port) (current-output-port)))
+                    (tcp-connect server (imap-port-number)))])
+    (imap-connect* r w username password inbox #:tls? tls? #:try-tls? try-tls?)))
 
 (define (imap-reselect imap inbox)
   (imap-selectish-command imap (list "SELECT" inbox) #t))
