@@ -30,7 +30,7 @@ added get-regions
 (init-depend framework:text^ framework:mode^)
 
 (define (should-color-type? type)
-  (not (memq type '(white-space no-color))))
+  (not (memq type '(no-color))))
 
 (define (make-data type mode backup-delta) 
   (if (zero? backup-delta)

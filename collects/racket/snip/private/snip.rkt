@@ -405,7 +405,7 @@
 
     (set! s-flags (add-flag (add-flag s-flags IS-TEXT) CAN-APPEND))
 
-    (let ([len (max 20 (* 2 (min len 5000)))])
+    (let ([len (max 8 (* 2 (min len 5000)))])
       (set! s-buffer (make-string len)))
     
     (set! s-snipclass the-string-snip-class)

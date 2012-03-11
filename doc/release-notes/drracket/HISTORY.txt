@@ -5,6 +5,10 @@
   . DrRacket's toolbar buttons now have numbers associated with them
     to control what order they appear in.
 
+  . The framework's color:text%'s token-sym->style init argument (also
+    the same as the color:text%'s start-colorer method's argument of
+    the same name) is a function that now might be passed 'white-space.
+
 ------------------------------
        Version 5.2.1
 ------------------------------

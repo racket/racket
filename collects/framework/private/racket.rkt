@@ -328,7 +328,10 @@
                                 [(sexp-comment) 'comment]
                                 [else sym]))
 (define sn-hash (make-hasheq))
-(define (short-sym->style-name sym)
+(define (short-sym->style-name _sym)
+  (define sym (if (eq? _sym 'white-space)
+                  'parenthesis
+                  _sym))
   (hash-ref sn-hash sym
             (λ ()
               (let ([s (format "framework:syntax-color:scheme:~a"
