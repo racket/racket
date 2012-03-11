@@ -19,9 +19,6 @@
 ;; - To signal failures, either raise an error, or `exit' with a
 ;;   positive code.  Obviously, make sure that failures print some
 ;;   indicative text for you.
-;; - A semi-related note: the PLT tree compilation should not rely on
-;;   planet packages, so if you use them, make sure you add a
-;;   `compile-omit-paths' in your test's info file.
 
 ;; Tests to run:
 ;; - Each should be a `test' call, with the path to the test file to
