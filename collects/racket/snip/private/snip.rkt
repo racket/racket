@@ -404,8 +404,10 @@
                    (init-name 'string-snip%))])])
 
     (set! s-flags (add-flag (add-flag s-flags IS-TEXT) CAN-APPEND))
-
-    (let ([len (max 8 (* 2 (min len 5000)))])
+    
+    (let ([len (if (equal? str "\n")
+                   1 ;; string snips that are just created to be newlines don't need extra space
+                   (max 8 (* 2 (min len 5000))))])
       (set! s-buffer (make-string len)))
     
     (set! s-snipclass the-string-snip-class)
@@ -500,7 +502,12 @@
     (let ([count s-count])
       (unless (or (position . < . 0)
                   (position . > . count))
-        (let ([snip (make-object string-snip% position)])
+        
+        (let ([snip (if (and (= 1 position)
+                             (equal? (string-ref s-buffer s-dtext) #\newline))
+                        ;; making a newline snip, so signal string-snip% this fact by passing "\n"
+                        (make-object string-snip% "\n")
+                        (make-object string-snip% position))])
           
           (set! str-w -1.0)
 
