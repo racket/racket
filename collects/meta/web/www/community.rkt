@@ -20,11 +20,13 @@
             @a[href: "http://github.com/plt/racket/"]{GitHub})}
       @text{@pre:installers and @pre:index{more}.}]
     @parlist[@strong{Support}
-      @text{Thanks to @a[href: "http://www.nsf.gov/"]{the NSF}, 
-                      @a[href: "http://www.darpa.mil/"]{DARPA}
-                      the Fund for the Improvement of Postsecondary Education (FIPSE) at the US Department of Education,
-                      the Exxon Foundation,
-                      CORD, partners of the Academy of Information Technology,
-                      Microsoft, and
-                      Google
-                      for their generous support.}]})
+      @text{
+        Thanks to @a[href: "http://www.nsf.gov/"]{the NSF},
+        @a[href: "http://www.darpa.mil/"]{DARPA},
+        the Fund for the Improvement of Postsecondary Education (FIPSE)
+          at the US Department of Education,
+        the Exxon Foundation,
+        CORD,
+        partners of the Academy of Information Technology,
+        Microsoft,
+        and Google for their generous support over the years.}]})
