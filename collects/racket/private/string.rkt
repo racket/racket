@@ -229,7 +229,7 @@
                  (let* ([mstart (caar m)]
                         [mend (cdar m)]
                         [0-ok? (not (= mstart mend))])
-                   (if port-success-k
+                   (if (and port-success-k (input-port? string))
                      (port-success-k
                       (lambda (acc new-start new-end)
                         (loop acc new-start new-end ipre 0-ok?))
@@ -247,12 +247,11 @@
       ;; port-success-k: need to shift index of rest as reading; cannot
       ;; do a tail call without adding another state variable to the
       ;; regexp loop, so this remains inefficient
-      (and (input-port? string)
-           (lambda (loop acc start end mstart mend)
-             (append (map (lambda (p)
-                            (cons (+ mend (car p)) (+ mend (cdr p))))
-                          (loop '() 0 (and end (- end mend))))
-                     (cons (cons mstart mend) acc))))
+      (lambda (loop acc start end mstart mend)
+        (append (map (lambda (p)
+                       (cons (+ mend (car p)) (+ mend (cdr p))))
+                     (loop '() 0 (and end (- end mend))))
+                (cons (cons mstart mend) acc)))
       ;; other port functions: use string case
       #f #f
       ;; flags
