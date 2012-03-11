@@ -29,7 +29,7 @@ The @web-server implements many HTTP libraries that are provided by this module.
 @defproc[(headers-assq* [id bytes?] [heads (listof header?)])
          (or/c false/c header?)]{
  Returns the header with a field case-insensitively equal to @racket[id] from @racket[heads] or @racket[#f].
-         
+
  You almost @bold{always} want to use this, rather than @racket[headers-assq] because Web browsers may send headers with arbitrary casing.
 }
 
@@ -54,6 +54,13 @@ The @web-server implements many HTTP libraries that are provided by this module.
  Returns the binding with an id equal to @racket[id] from @racket[binds] or @racket[#f].
 }
 
+@defproc[(bindings-assq-all [id bytes?]
+                            [binds (listof binding?)])
+         (listof binding?)]{
+Like @racket[bindings-assq], but returns a list of all bindings matching @racket[id].
+}
+
+
 @defstruct[request ([method bytes?]
                     [uri url?]
                     [headers/raw (listof header?)]
@@ -66,7 +73,7 @@ The @web-server implements many HTTP libraries that are provided by this module.
  to the server at @racket[host-ip]:@racket[host-port] with @racket[headers/raw]
  headers, @racket[bindings/raw] GET and POST queries and @racket[post-data/raw]
  POST data.
- 
+
  You are @bold{unlikely to need to construct} a request struct.
 }
 
@@ -79,7 +86,7 @@ Here is an example typical of what you will find in many applications:
 @racketblock[
 (define (get-number req)
   (match
-    (bindings-assq 
+    (bindings-assq
       #"number"
       (request-bindings/raw req))
     [(? binding:form? b)
@@ -142,7 +149,7 @@ they are provided for compatibility with old code.}
  Returns @racket[#t] if @racket[binds] contains a binding for @racket[id].
  Otherwise, @racket[#f].
 }
-                  
+
 Here is an example typical of what you will find in many applications:
 @racketblock[
 (define (get-number req)
@@ -170,7 +177,7 @@ Here is an example typical of what you will find in many applications:
  An HTTP response where @racket[output] produces the body. @racket[code] is the response code,
  @racket[message] the message, @racket[seconds] the generation time, @racket[mime]
  the MIME type of the file, and @racket[headers] are the headers. If @racket[headers] does not include @litchar{Date}, @litchar{Last-Modified}, @litchar{Server}, or @litchar{Content-Type} headers, then the server will automatically add them. The server will always replace your @litchar{Connection} header if it needs to ensure the connection will be closed. (Typically with an HTTP/1.0 client.)
- 
+
  Example:
  @racketblock[
   (response
@@ -222,7 +229,7 @@ transmission that the server @bold{will not catch}.}
 
 @defmodule[web-server/http/cookie]{
  This module provides functions to create cookies and responses that set them.
-      
+
  @defproc[(make-cookie [name cookie-name?] [value cookie-value?]
                        [#:comment comment (or/c false/c string?) #f]
                        [#:domain domain (or/c false/c valid-domain?) #f]
@@ -232,25 +239,25 @@ transmission that the server @bold{will not catch}.}
           cookie?]{
   Constructs a cookie with the appropriate fields.
  }
- 
+
  @defproc[(cookie->header [c cookie?]) header?]{
   Constructs a header that sets the cookie.
- }             
-                  
+ }
+
  Examples:
  @racketblock[
-  (define time-cookie 
+  (define time-cookie
     (make-cookie "time" (number->string (current-seconds))))
   (define id-cookie
     (make-cookie "id" "joseph" #:secure? #t))
-  
-  (redirect-to 
+
+  (redirect-to
    "http://localhost/logged-in"
    see-other
-   #:headers 
+   #:headers
    (map cookie->header
         (list time-cookie id-cookie)))
-  
+
   (send/suspend
    (lambda (k-url)
      (response/xexpr
@@ -258,9 +265,9 @@ transmission that the server @bold{will not catch}.}
       `(html (head (title "Cookie Example"))
              (body (h1 "You're cookie'd!"))))))
  ]
- 
+
  @warning{When using cookies, make sure you follow the advice of the @link["http://cookies.lcs.mit.edu/"]{MIT Cookie Eaters},
-          or you will be susceptible to dangerous attacks.} 
+          or you will be susceptible to dangerous attacks.}
 }
 
 @; ------------------------------------------------------------
@@ -272,7 +279,7 @@ transmission that the server @bold{will not catch}.}
                      net/url
                      racket/list))
 @defmodule[web-server/http/cookie-parse]{
- @defstruct[client-cookie 
+ @defstruct[client-cookie
             ([name string?]
              [value string?]
              [domain (or/c false/c valid-domain?)]
@@ -282,7 +289,7 @@ transmission that the server @bold{will not catch}.}
   that come from the client are represented with a
   @racket[client-cookie] structure.
  }
- 
+
  @defproc[(request-cookies [req request?])
           (listof client-cookie?)]{
   Extracts the cookies from @racket[req]'s headers.
@@ -292,24 +299,24 @@ transmission that the server @bold{will not catch}.}
  @racketblock[
   (define (start req)
     (define cookies (request-cookies req))
-    (define id-cookie 
+    (define id-cookie
       (findf (lambda (c)
                (string=? "id" (client-cookie-name c)))
              cookies))
     (if id-cookie
         (hello (client-cookie-value id-cookie))
-        (redirect-to 
+        (redirect-to
          (url->string (request-uri req))
          see-other
-         #:headers 
+         #:headers
          (list
           (cookie->header (make-cookie "id" "joseph"))))))
-        
+
    (define (hello who)
      (response/xexpr
       `(html (head (title "Hello!"))
-             (body 
-              (h1 "Hello " 
+             (body
+              (h1 "Hello "
                   ,who)))))
  ]
 }
@@ -327,7 +334,7 @@ transmission that the server @bold{will not catch}.}
          response?]{
  Generates an HTTP response that redirects the browser to @racket[uri],
  while including the @racket[headers] in the response.
- 
+
  Example:
  @racket[(redirect-to "http://www.add-three-numbers.com" permanently)]
 }
@@ -353,23 +360,23 @@ transmission that the server @bold{will not catch}.}
 @defmodule[web-server/http/basic-auth]{
 
 An implementation of HTTP Basic Authentication.
-   
+
 @defproc[(make-basic-auth-header [realm string?])
          header?]{
  Returns a header that instructs the Web browser to request a username and password from the client using
  Basic authentication with @racket[realm] as the realm.
 }
-                 
+
 @defproc[(request->basic-credentials [req request?])
          (or/c false/c (cons/c bytes? bytes?))]{
  Returns a pair of the username and password from the authentication
- header in @racket[req] if they are present, or @racket[#f]. 
+ header in @racket[req] if they are present, or @racket[#f].
 }
 
 Example:
 @racketmod[
 web-server/insta
- 
+
 (define (start req)
   (match (request->basic-credentials req)
     [(cons user pass)
@@ -380,10 +387,10 @@ web-server/insta
     [else
      (response
       401 #"Unauthorized" (current-seconds) TEXT/HTML-MIME-TYPE
-      (list 
-       (make-basic-auth-header 
+      (list
+       (make-basic-auth-header
         (format "Basic Auth Test: ~a" (gensym))))
-      void)])) 
+      void)]))
 ]
 }
 
@@ -397,18 +404,18 @@ web-server/insta
 @defmodule[web-server/http/digest-auth]{
 
 An implementation of HTTP Digest Authentication.
-   
+
 @defproc[(make-digest-auth-header [realm string?] [private-key string?] [opaque string?])
          header?]{
  Returns a header that instructs the Web browser to request a username and password from the client
  using Digest authentication with @racket[realm] as the realm, @racket[private-key] as the server's
  contribution to the nonce, and @racket[opaque] as the opaque data passed through the client.
 }
-                 
+
 @defproc[(request->digest-credentials [req request?])
          (or/c false/c (listof (cons/c symbol? string?)))]{
  Returns the Digest credentials from @racket[req] (if they appear) as an association list.
-}         
+}
 
 @defthing[username*realm->password/c contract?]{
  Used to look up the password for a user is a realm.
@@ -464,9 +471,9 @@ web-server/insta
        (check "GET" alist))
      (response/xexpr
       `(html (head (title "Digest Auth Test"))
-             (body 
+             (body
               (h1 ,(if pass? "Pass!" "No Pass!"))
-              (pre ,(pretty-format alist)))))])) 
+              (pre ,(pretty-format alist)))))]))
 ]
 }
 
@@ -489,11 +496,11 @@ web-server/insta
  Equivalent to
  @racketblock[
  (response/full
-  code message seconds mime-type 
+  code message seconds mime-type
   (append headers (map cookie->header cookies))
   (list preamble (string->bytes/utf-8 (xexpr->string xexpr))))
  ]
- 
+
  This is a viable function to pass to @racket[set-any->response!].
  }
 
