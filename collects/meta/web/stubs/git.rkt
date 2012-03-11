@@ -147,8 +147,8 @@
   things in this document are specific to that version.
 @~
   You can @a[href: "http://git-scm.com/download"]{download a recent version},
-  available in binary form for some popular platforms (RPMs for Fedora and
-  RedHat, Windows, OSX).  In addition to these, you can get a build for
+  available in binary form for several popular platforms.  In addition to
+  these, you can get a build for
   @ul*{
   @~ Ubuntu:
      @pre{sudo add-apt-repository ppa:git-core/ppa
@@ -162,8 +162,8 @@
 @~
   You can also build git from source is — here are the steps that I'm using to
   install a new version:
-  @pre{GVER=1.7.1
-       BASE=http://www.kernel.org/pub/software/scm/git
+  @pre{GVER=1.7.10
+       BASE=http://git-core.googlecode.com/files
        TARGET=/usr/local
        cd /tmp; curl $BASE/git-$GVER.tar.gz | gunzip | tar xf -; cd git-$GVER
        make prefix=$TARGET all && sudo make prefix=$TARGET install}
@@ -205,9 +205,9 @@
 
 @section{SSH setup}
 @p*{
-  Being a distributed system, you can do everything locally on your own
-  repository, but eventually you will want to communicate with other people and
-  you'll need to push these changes elsewhere.  The most popular way to
+  Since git is a distributed system, you can do everything locally on your own
+  repository, but obviously, the goal is to communicate with other people so
+  you'll need to push these changes somewhere else.  The most popular way to
   communicate with remote repositories — including repositories on the PLT
   server, is via ssh.  (Access is controlled via a tool called “gitolite” —
   more on this below.)  The username and hostname of the server is
@@ -219,8 +219,8 @@
   current permissions.  The exact details of this is not important for now,
   just the fact that you were able to connect and get some reply.
 @~
-  Using an ssh configuration file (usually ~/.ssh/config), you can set up a
-  short name for the server.  For example, you can have this:
+  Using an ssh configuration file (usually @path{~/.ssh/config}), you
+  can set up a short name for the server.  For example, you can have this:
   @pre{Host pltgit
          HostName @git-host
          User git}
@@ -242,7 +242,32 @@
   @pre{Host pltgit
          HostName @git-host
          User git
-         IdentityFile ~/.ssh/my-plt-git-identity-file}}
+         IdentityFile ~/.ssh/my-plt-git-identity-file}
+@~
+  In addition to an ssh configuration file, git also has a way to create prefix
+  shorthands.  For example, if you use this configuration:
+  @pre|{git config --global url.git@foo.org:.insteadOf foo:}|
+  then whenever git expects a repository URL, it will replace @cmd{foo:}
+  with @cmd|{git@foo.org:}|, for example:
+  @pre{git clone foo:bar}
+  While it is possible to use this instead of an ssh config file to access the
+  @cmd{plt} repository, the former is preferable.  The reason for that is that
+  you will also interact with the server directly via ssh commands (described
+  in the following section).  Keeping the alias in your ssh configuration means
+  that you will use the same alias for both @cmd{git} commands and other
+  @cmd{ssh}-based commands.  You may still want to use it for other servers,
+  specifically, here is a popular setup for github (this is configuration text
+  that you can paste into your global @cmd{.gitconfig} file):
+  @pre|{[url "git://github.com/"]
+          insteadOf = github:
+        [url "git@github.com:"]
+          pushInsteadOf = github:
+          pushInsteadOf = git://github.com/}|
+  It translates @cmd{github:} to a github read-only @cmd{git://} URL, and it
+  translates pushes to the same prefix to use github's ssh URLs.  Note that it
+  also translates the read-only @cmd{git://} url to an ssh url for pushing.
+  (The same setup can be used for @cmd{gist.github.com}, to deal with github
+  gists via @cmd{git}.)}
 
 @section{Gitolite: the server's gateway}
 @p*{
@@ -547,11 +572,11 @@
   @~ You can create (and later delete) your own repositories — including making
      your own copy of the main repository, an operation that is known as
      “fork”.  Your fork will be created efficiently (ie, creating a fork of the
-     plt repository is cheap), but any changes made to it will not affect the
-     main repository.  A fork is created with a gitolite command, and once it's
-     there you can clone it and eventually delete it.  Here are the relevant
-     commands — use your actual username in place of @cmd{$user} (or have
-     @cmd{$user} set to your username):
+     @cmd{plt} repository is cheap), but any changes made to it will not affect
+     the main repository.  A fork is created with a gitolite command, and once
+     it's there you can clone it and eventually delete it.  Here are the
+     relevant commands — use your actual username in place of @cmd{$user} (or
+     have @cmd{$user} set to your username):
      @ol*{@~ @cmd{ssh pltgit fork plt $user/myplt}
           @~ @cmd{git clone pltgit:$user/myplt}
           @~ ...play with this clone, push, pull, etc...
@@ -690,8 +715,8 @@
        As said in the beginning of this text, you will likely want to set a
        default username and email for yourself.  But note that if you do set
        this globally, it will be your default identity for all repositories.
-       This makes sense only if you commit to plt-related repositories, but it
-       can be confusing if you're also committing to some other non-plt-related
+       This makes sense only if you commit to PLT-related repositories, but it
+       can be confusing if you're also committing to some other non-PLT-related
        repositories and want to commit under a different email (or name) — for
        example, you may want to commit to a public project with a gmail
        address, and to a departmental repository with your
@@ -855,7 +880,7 @@
 
 @section{User repositories}
 @p*{
-  As mentioned above, the plt server allows you to create your own
+  As mentioned above, the PLT server allows you to create your own
   repositories.  Repositories on the server can be organized in a nested
   directory structure, and you “own” all repositories that are in a directory
   with your username.  The gitolite @cmd{info} command that was mentioned above
@@ -907,12 +932,12 @@
 @~
   There is, however, an issue of efficiency here: with this last command I just
   created a second copy of it all.  This could be problematic if you have a
-  large repository (eg, a copy of the plt repository).  (Note that with
+  large repository (eg, a copy of the @cmd{plt} repository).  (Note that with
   subversion this is the only way to do things, but there you would create
   copies inside the tree, which subversion optimizes.)  One nice feature of git
   is that creating a clone of a repository on the same filesystem will use
   hard-links for the clone, which makes the clone use very little additional
-  space.  But the problem is that you have no access to the plt server.  The
+  space.  But the problem is that you have no access to the PLT server.  The
   solution here is in the form of a gitolite @cmd{fork} command (this is
   actually our own extension) — this command will create a clone on the server,
   starting from a specified repository.  I could therefore create my @path{bar}
@@ -922,10 +947,10 @@
   server will tell you about it.)  The result is a @path{$user/bar} repository
   that was cloned from @path{$user/foo}, and the two share their store using
   hard links.  If the two repositories are updated with identical content, the
-  new content will not be shared, but for a large repository like the plt
+  new content will not be shared, but for a large repository like the @cmd{plt}
   repository you still get the benefit of having the bulk of the data shared
   (the complete store, at the time of forking).  To get a feeling for how fast
-  this is, you can now clone the plt repository to your own private copy:
+  this is, you can now clone the @cmd{plt} repository to your own private copy:
   @pre{ssh pltgit fork plt $user/myplt}
   This would seem suspiciously fast for such a large repository — but this
   repository has most of the data packed (objects in the store are put in large
@@ -2348,7 +2373,7 @@
   There are a few more sub-verbs for the @cmd{git remote} command which you can
   see on the @man{git-remote} man page, the most important one is for adding a
   remote: @cmd{git remote add @i{short-name} @i{url}}.  This is especially
-  convenient if you want to have a fork of the plt repository, with most
+  convenient if you want to have a fork of the @cmd{plt} repository, with most
   interaction happening against it, but occasionally pull/push updates from/to
   the main repository.
 @~
@@ -2366,17 +2391,17 @@
 @subsection{Using private repositories}
 @p*{
   A particularly useful use-case for adding a new remote is when you want to
-  have private work done in your own fork of the plt repository.  Such a mode
-  of work is not strictly necessary — you could just do your work in your
+  have private work done in your own fork of the @cmd{plt} repository.  Such a
+  mode of work is not strictly necessary — you could just do your work in your
   repository in a long-lived branch, but there are certain cases where working
   with a private repository on the server might be more convenient.  For
   example, you might want to collaborate with someone else (that has access)
-  via the server, or you might use a private fork of the plt repository as a
-  central point for synchronizing work from clones on different filesystems as
-  described at the end of the last section (the difference from that is that
-  you basically use the plt server as your synchronization point).  Other than
-  having the main repository reside on the plt server, working with a private
-  repository is not different than working with any other repository.
+  via the server, or you might use a private fork of the @cmd{plt} repository
+  as a central point for synchronizing work from clones on different
+  filesystems as described at the end of the last section (the difference from
+  that is that you basically use the PLT server as your synchronization point).
+  Other than having the main repository reside on the PLT server, working with
+  a private repository is not different than working with any other repository.
 @~
   There are two facts that are worth reminding when you deal with a private
   repository.  First, remember that creating a private fork is cheap: creating
@@ -2387,10 +2412,10 @@
   doing just that.  Please use the @cmd{fork} command to create a private clone
   — gitolite has a feature where it creates any repository that you refer to
   (as long as it has a name that you're allowed to create — starts with your
-  username); this means that you could clone the main plt repository and push
-  from it into a private repository that doesn't exist: it will be created, but
-  such a copy will not share storage with the main repository — it will require
-  a new copy, and it will be slow to create.
+  username); this means that you could clone the main @cmd{plt} repository and
+  push from it into a private repository that doesn't exist: it will be
+  created, but such a copy will not share storage with the main repository — it
+  will require a new copy, and it will be slow to create.
 @~
   The second thing to remember is that due to the nature of the git store, any
   object, including commits, is stored exactly once.  Since commits contain
@@ -2408,10 +2433,10 @@
   example (which you are encouraged to experiment with).  Note that you can use
   a hybrid approach: you can think about a repository as a container for commit
   histories, pushing and pulling from any other repository, including the copy
-  you're working with, the main plt repository, or a private fork (your own or
-  another).  Note also that since forks are cheap, you can keep several of them
-  around, for example, you can have a fork for each long-lived branch — it's up
-  to you to settle on a layout that is convenient for your work.}
+  you're working with, the main @cmd{plt} repository, or a private fork (your
+  own or another).  Note also that since forks are cheap, you can keep several
+  of them around, for example, you can have a fork for each long-lived branch —
+  it's up to you to settle on a layout that is convenient for your work.}
 @h3{Using a clone of the public repository, pushing branches to your private
     one:}
 @ol*{
@@ -2497,7 +2522,7 @@
   it.  People who cannot push directly do so through someone who can, by
   sending out patches or “pull requests”.  The same applies for any repository,
   of course, including private repositories, even ones that you maintain
-  yourself independently of the plt server.
+  yourself independently of the PLT server.
 @~
   In the case of a patch-based workflow, the two sides that are involved are
   the patch author, and the receiver that integrates it into his/her own clone
@@ -2515,7 +2540,7 @@
 @subsection{Patch-based workflow@br
             — instructions for the patch sender side}
 @h4{Executive summary:}
-@ol*{@~ Work in a plt repository clone (possibly in your own branch)
+@ol*{@~ Work in a @cmd{plt} repository clone (possibly in your own branch)
      @~ @npre{$ git send-email origin/master}
      @~ You're done — thanks!
      @~ When the patch is applied, you will get the changes through
@@ -2537,7 +2562,7 @@
    course.
 @~ @p*{
      Verify that your commits are all in your history.  You can see the commits
-     that you have over the plt history with
+     that you have over the @cmd{plt} history with
      @pre{git log --oneline origin/master..}
      these are the commits that you're going to send over now.  (You can use
      the usual git toolset to tweak them further, or specify only some commits,
@@ -2608,9 +2633,9 @@
    than the ones you have — since the information changed (at least the
    committer information will be different, the log message might have been
    edited, etc).  If you made your commits on your master branch which is set
-   to track the plt master branch (the usual setup), then make sure that you
-   run @cmd{git pull --rebase} to update — this will identify the commits as
-   already included and will not include them in the rebased master.  But if
+   to track the @cmd{plt} master branch (the usual setup), then make sure that
+   you run @cmd{git pull --rebase} to update — this will identify the commits
+   as already included and will not include them in the rebased master.  But if
    you made your commits in a private branch, and assuming that you didn't do
    any additional work there, then you can now just delete that branch.  (If
    you did do more work there, then you should rebase it, to avoid resending
@@ -2666,7 +2691,7 @@
 
 @subsection{Making a private repository publicly available}
 @p*{
-  If you're working with “outside people” (people with no accounts on the plt
+  If you're working with “outside people” (people with no accounts on the PLT
   server, and no direct file-system access etc) on a private repository, you
   will need to find some way to make your repository available for cloning.  An
   easy way to do so is to put it on a filesystem that those people can access —
@@ -2727,9 +2752,9 @@
   repositories available somehow.  In the case of a private repository, the two
   sides can be in a shared file system, with read permissions for each other;
   or achieved as described in the previous subsection.  In the case of
-  contributing to the plt repository, the contributor can maintain a public
-  fork of the plt repository (eg, by forking the plt github mirror at
-  @selflink{https://github.com/plt/racket} directly on github).
+  contributing to the @cmd{plt} repository, the contributor can maintain a
+  public fork of the @cmd{plt} repository (eg, by forking the @cmd{plt} github
+  mirror at @selflink{https://github.com/plt/racket} directly on github).
 @~
   In this workflow there is no need to mail patches — instead, the receiver
   simply pulls them directly from the sender's repository.  For example,
@@ -2764,8 +2789,8 @@
   contributed line of work, which you can use with the usual git toolset.
 @~
   When/if you're happy with the changes, you can simply integrate them to your
-  master branch, and if this is in a clone of the plt repository, then at this
-  point you can simply push these commits to the main server.  Once that
+  master branch, and if this is in a clone of the @cmd{plt} repository, then at
+  this point you can simply push these commits to the main server.  Once that
   happens, the contributor can update their own clone, and continue working as
   usual.
 @~
@@ -2798,12 +2823,13 @@
 
 @subsection{Pull-request workflow@br
             — recipe for the sender side}
-@ol*{@~ Clone the plt repository and work with it as usual, commit your work
+@ol*{@~ Clone the @cmd{plt} repository and work with it as usual, commit your
+        work
      @~ Make your repository publicly available
      @~ @npre{$ git request-pull origin @i{your-repository-url}}
      @~ Send the resulting text to @cmd{dev@at-racket}
      @~ You're done — thanks!}
-@p{Alternatively, you can fork the plt repository on github:
+@p{Alternatively, you can fork the @cmd{plt} repository on github:
    @cmd{https://github.com/plt/racket}, commit, then do a pull request.  Note:
    it is better to send a note about your pull request to @cmd{dev@at-racket},
    or you can do the pull request directly with git as listed above (using
@@ -2815,8 +2841,8 @@
    need to cooperate more closely with someone, you will want to add the remote
    repository with @cmd{git remote} as shown above.}
 @ol*{
-@~ Get a plt clone, or use your own (it's safe to do the latter, no need for a
-   new clone unless you're paranoid):
+@~ Get a @cmd{plt} clone, or use your own (it's safe to do the latter, no need
+   for a new clone unless you're paranoid):
    @pre{git clone pltgit:plt
         cd plt}
 @~ Get the foreign repository's master branch (or any other branch) into a
