@@ -2903,6 +2903,7 @@ read_string(int is_byte, Scheme_Object *port,
       case 'U':
 	if (!is_byte) {
 	  int maxc = ((ch == 'u') ? 4 : 8);
+          char initial[8];
 	  ch = scheme_getc_special_ok(port);
 	  if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
 	    int count = 1;
@@ -2910,12 +2911,66 @@ read_string(int is_byte, Scheme_Object *port,
 	    while (count < maxc) {
 	      ch = scheme_peekc_special_ok(port);
 	      if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
+                initial[count] = ch;
 		n = n*16 + (ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10));
 		scheme_getc(port); /* must be ch */
 		count++;
 	      } else
 		break;
 	    }
+            if ((maxc == 4) && ((n >= 0xD800) && (n <= 0xDBFF))) {
+              /* Allow a surrogate-pair-like encoding, as long as
+                 the next part is "\uD..." */
+              int n2 = -1, sndp = 0;
+              mzchar snd[7];
+              ch = scheme_getc_special_ok(port);
+              if (ch == '\\') {
+                snd[sndp++] = ch;
+                ch = scheme_getc_special_ok(port);
+                if (ch == 'u') {
+                  snd[sndp++] = ch;
+                  ch = scheme_getc_special_ok(port);
+                  if ((ch == 'd') || (ch == 'D')) {
+                    snd[sndp++] = ch;
+                    ch = scheme_getc_special_ok(port);
+                    if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
+                      snd[sndp++] = ch;
+                      n2 = (scheme_toupper(ch)-'A'+10);
+                      if ((n2 >= 12) && (n2 <= 15)) {
+                        n2 = 0xD000 | (n2 << 8);
+                        ch = scheme_getc_special_ok(port);
+                        if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
+                          snd[sndp++] = ch;
+                          n2 |= ((ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10)) << 4);
+                          ch = scheme_getc_special_ok(port);
+                          if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
+                            n2 |= (ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10));
+                            n = (((n - 0xD800) << 10) + (n2 - 0xDC00)) + 0x10000;
+                          } else
+                            n2 = -1;
+                        } else
+                          n2 = -1;
+                      } else
+                        n2 = -1;
+                    }
+                  }
+                }
+              }
+              if (n2 < 0) {
+                if (ch == SCHEME_SPECIAL)
+                  scheme_get_ready_read_special(port, stxsrc, ht);
+                else if (NOT_EOF_OR_SPECIAL(ch))
+                  snd[sndp++] = ch;
+                snd[sndp] = 0;
+                initial[4] = 0;
+                if (err_ok)
+                  scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation,
+                                  "read: bad or incomplete surrogate-style encoding at `\\u%s%5'",
+                                  initial,
+                                  snd);
+                return NULL;
+              }
+            }
 	    /* disallow surrogate points, etc */
 	    if (((n >= 0xD800) && (n <= 0xDFFF))
 		|| (n > 0x10FFFF)) {

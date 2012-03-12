@@ -438,11 +438,21 @@ Within a string sequence, the following escape sequences are
        takes precedence over the shorter form.}
 
  @item{@as-index{@litchar{\u}@kleenerange[1
-       4]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up
-       to four hexadecimal digits (longer sequences take precedence).
+       4]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up to
+       four hexadecimal digits (longer sequences take precedence).
        The resulting hexadecimal number must be a valid argument to
        @racket[integer->char], otherwise the
-       @exnraise[exn:fail:read].}
+       @exnraise[exn:fail:read]---unless the encoding continues with
+       another @litchar{\u} to form a surrogate-style encoding.}
+
+ @item{@as-index{@litchar{\u}@kleenerange[4
+       4]{@nonterm{digit@sub{16}}}@litchar{\u}@kleenerange[4
+       4]{@nonterm{digit@sub{16}}}}: like @litchar{\u}, but for two
+       hexadecimal numbers, where the first is in the range
+       @code{#xD800} to @code{#xDBFF} and the second is in the
+       range @code{#xDC00} to @code{#xDFFF}; the resulting
+       character is the one represented by the numbers as a UTF-16
+       surrogate pair.}
 
  @item{@as-index{@litchar{\U}@kleenerange[1
        8]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up
