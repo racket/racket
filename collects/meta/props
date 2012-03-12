@@ -1422,6 +1422,7 @@ path/s is either such a string or a list of them.
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/demodularizer/demod-test.rkt" drdr:timeout 600
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
+"collects/tests/compiler/test" drdr:command-line (raco "test" "-r" "--" *)
 "collects/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
 "collects/tests/compiler/zo-test.rkt" drdr:command-line (racket "-t" * "--" "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
 "collects/tests/data" responsible (ryanc)
@@ -1892,6 +1893,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/set.rktl" drdr:command-line #f
 "collects/tests/racket/shared-tests.rktl" drdr:command-line #f
 "collects/tests/racket/shared.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/slice.rkt" responsible (jay)
 "collects/tests/racket/srfi.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stream.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stress" responsible (jay)
@@ -1904,7 +1906,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/structlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/stx.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/slice.rkt" responsible (jay)
 "collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *) drdr:random #t
 "collects/tests/racket/sync.rktl" drdr:command-line #f
 "collects/tests/racket/syntax-tests.rktl" drdr:command-line (racket "-f" *)
