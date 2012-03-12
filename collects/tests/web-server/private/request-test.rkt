@@ -94,6 +94,31 @@
      "Chunked transfer-encoding"
      (test-equal? "example"
                   (test-read-request
+                   #"POST http://127.0.0.1/test HTTP/1.0
+Date: Fri, 31 Dec 1999 23:59:59 GMT
+Content-Type: text/plain
+Content-Length: 42
+
+abcdefghijklmnopqrstuvwxyz1234567890abcdef
+")
+                  (list
+                   (list
+                    'request
+                    (list
+                     #"POST"
+                     "http://127.0.0.1/test"
+                     (list
+                      (header #"Date" #"Fri, 31 Dec 1999 23:59:59 GMT")
+                      (header #"Content-Type" #"text/plain")
+                      (header #"Content-Length" #"42"))
+                     '()
+                     #"abcdefghijklmnopqrstuvwxyz1234567890abcdef"
+                     "to"
+                     80
+                     "from"))
+                   #t))
+     (test-equal? "example"
+                  (test-read-request
                    #"POST http://127.0.0.1/test HTTP/1.1
 Date: Fri, 31 Dec 1999 23:59:59 GMT
 Content-Type: text/plain

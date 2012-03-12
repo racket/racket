@@ -53,18 +53,21 @@
   (define ip (open-input-bytes ib))
   (define op (open-output-bytes))
   (values (make-connection 0 (make-timer never-evt +inf.0 (lambda () (void)))
-                           ip op (make-custodian) #f)
+                           ip op (make-custodian) #t)
           ip
           op))
 
 (define (redact b)
-  (regexp-replace 
-   #"Date: [a-zA-Z0-9:, ]+ GMT\r\n"
-   (regexp-replace
-    #"Last-Modified: [a-zA-Z0-9:, ]+ GMT\r\n"
-    b
-    #"Last-Modified: REDACTED GMT\r\n")
-   #"Date: REDACTED GMT\r\n"))
+  (regexp-replace
+   #"Connection: close\r\n"
+   (regexp-replace 
+    #"Date: [a-zA-Z0-9:, ]+ GMT\r\n"
+    (regexp-replace
+     #"Last-Modified: [a-zA-Z0-9:, ]+ GMT\r\n"
+     b
+     #"Last-Modified: REDACTED GMT\r\n")
+    #"Date: REDACTED GMT\r\n")
+   #""))
 
 (define-syntax (make-module-eval m-expr)
   (syntax-case m-expr (module)

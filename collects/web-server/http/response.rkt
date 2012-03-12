@@ -22,12 +22,22 @@
   (output-response/method conn resp #"GET"))
 
 (define (output-response/method conn resp meth)
-  ; XXX Use chunked encoding for non-terminated responses
-  (unless (terminated-response? resp)
-    (set-connection-close?! conn #t))
-  (output-response-head conn resp)
-  (unless (bytes-ci=? meth #"HEAD")
-    (output-response-body conn resp)))
+  (cond
+    [(or 
+      ;; If it is terminated, just continue
+      (terminated-response? resp)
+      ;; If it is HTTP/1.0, ditto
+      (connection-close? conn)
+      ;; Or, if it is a HEAD request
+      (bytes-ci=? meth #"HEAD"))
+     (output-response-head conn resp)
+     (unless (bytes-ci=? meth #"HEAD")
+       (output-response-body conn resp))]
+    ;; Otherwise, use chunked encoding
+    [else
+     (output-response-head conn resp
+                           (list (header #"Transfer-Encoding" #"chunked")))
+     (output-response-body/chunked conn resp)]))
 
 ;; Write the headers portion of a response to an output port.
 ;; NOTE: According to RFC 2145 the server should write HTTP/1.1
@@ -40,12 +50,12 @@
   (append (maybe-header h k v)
           ...))
 
-(define (output-response-head conn bresp)
+(define (output-response-head conn bresp [more-hs empty])
   (fprintf (connection-o-port conn)
            "HTTP/1.1 ~a ~a\r\n"
            (response-code bresp)
            (response-message bresp))
-  (define hs (response-headers bresp))
+  (define hs (append (response-headers bresp) more-hs))
   (define seen? (make-hash))
   (for ([h (in-list hs)])
     (hash-set! seen? (header-field h) #t))
@@ -98,6 +108,33 @@
   (define o-port (connection-o-port conn))
   ((response-output bresp) o-port)
   (flush-output o-port))
+
+(define (output-response-body/chunked conn bresp)
+  (define-values (from-servlet to-chunker) (make-pipe))
+  (define to-client (connection-o-port conn))
+  (define to-chunker-t    
+    (thread (λ () 
+              ((response-output bresp) to-chunker)
+              (close-output-port to-chunker))))
+  (define buffer (make-bytes 1024))
+  (define total-size
+    (let loop ([total-size 0])
+      (define bytes-read-or-eof
+        (read-bytes-avail! buffer from-servlet))
+      (if (eof-object? bytes-read-or-eof)
+        total-size
+        (begin 
+          (fprintf to-client "~a\r\n" (number->string bytes-read-or-eof 16))
+          (write-bytes buffer to-client 0 bytes-read-or-eof)
+          (fprintf to-client "\r\n")
+          (loop (+ total-size bytes-read-or-eof))))))
+  (thread-wait to-chunker-t)
+  (fprintf to-client "0\r\n")
+  (print-headers 
+   to-client
+   (list (header #"Content-Length" 
+                 (string->bytes/utf-8 (number->string total-size)))))
+  (flush-output to-client))
 
 ; seconds->gmt-string : Nat -> String
 ; format is rfc1123 compliant according to rfc2068 (http/1.1)

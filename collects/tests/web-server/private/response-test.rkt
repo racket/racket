@@ -1,5 +1,6 @@
 #lang racket/base
-(require rackunit
+(require racket/slice
+         rackunit
          racket/port
          xml/xml
          (only-in mzlib/file
@@ -35,38 +36,38 @@
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n")
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\n\r\n")
      (test-equi? "response" 
                   (output output-response 
                           (response 404 #"404" (current-seconds) #f
                                     (list) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nConnection: close\r\n\r\n")
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\n\r\n")
      (test-equi? "response (header)" 
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list (make-header #"Header" #"Value")) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nHeader: Value\r\n\r\n")
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nHeader: Value\r\n\r\n")
      (test-equi? "response (body)" 
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n")
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\n\r\n")
      (test-equi? "response (bytes body)"
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n")
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\n\r\n")
      (test-equi? "response (both)" 
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list (make-header #"Header" #"Value")) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nHeader: Value\r\n\r\n")
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nHeader: Value\r\n\r\n")
      (test-equi? "response (both)" 
                   (output output-response 
                           (response 404 #"404" (current-seconds) #"text/html"
                                     (list (make-header #"Header" #"Value1")
                                           (make-header #"Header" #"Value2")) void))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nHeader: Value1\r\nHeader: Value2\r\n\r\n"))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nHeader: Value1\r\nHeader: Value2\r\n\r\n"))
     
     (test-suite 
      "response/full"
@@ -112,7 +113,7 @@
      (test-equi? "any"
                   (output output-response
                           (response/xexpr `(html (head (title "Hey!")) (body "Content"))))
-                  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>"))
+                  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>"))
     ))
 
 (define output-response/method-tests
@@ -176,7 +177,7 @@
                   (output output-response/method
                           (response/xexpr `(html (head (title "Hey!")) (body "Content")))
                           #"HEAD")
-                  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n"))))
+                  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\n\r\n"))))
 
 (define response-tests
   (test-suite
@@ -305,3 +306,7 @@
                    (output output-file/boundary tmp-file #"HEAD" #"text/html" '((-10 . -5) (1000 . 1050) (50 . 49)) #"BOUNDARY"))
                      (get-output-string os))
                   "")))))
+
+(slice test
+  (require rackunit/text-ui)
+  (run-tests response-tests))

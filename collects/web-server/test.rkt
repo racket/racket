@@ -72,7 +72,7 @@
   (define ip (open-input-bytes ib))
   (define op (open-output-bytes))
   (values (make-connection 0 (make-timer never-evt +inf.0 (lambda () (void)))
-                           ip op (current-custodian) #f)
+                           ip op (current-custodian) #t)
           ip
           op))
 
