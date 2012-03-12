@@ -2513,8 +2513,8 @@ static Scheme_Object *struct_info_chaperone(Scheme_Object *o, Scheme_Object *si,
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
     if (SCHEME_VECTORP(px->redirects)) {
-      if (SCHEME_VEC_ELS(px->redirects)[1]) {
-        proc = SCHEME_VEC_ELS(px->redirects)[1];
+      proc = SCHEME_VEC_ELS(px->redirects)[1];
+      if (SCHEME_TRUEP(proc)) {
         if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
           proc = scheme_box(proc);
         procs = scheme_make_pair(proc, procs);
@@ -5128,7 +5128,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   Scheme_Chaperone *px;
   Scheme_Struct_Type *stype;
   Scheme_Object *val = argv[0], *proc;
-  Scheme_Object *redirects, *prop, *si_chaperone = NULL;
+  Scheme_Object *redirects, *prop, *si_chaperone = scheme_false;
   Struct_Proc_Info *pi;
   Scheme_Object *a[1];
   int i, offset, arity;
@@ -5183,7 +5183,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     }
 
     if (offset == -2) {
-      if (si_chaperone)
+      if (SCHEME_TRUEP(si_chaperone))
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "%s: struct-info procedure supplied a second time: %V",
                          name,
@@ -5287,7 +5287,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     SCHEME_VEC_ELS(redirects)[1] = si_chaperone;
   }
 
-  SCHEME_VEC_ELS(redirects)[0] = (Scheme_Object *)red_props;
+  SCHEME_VEC_ELS(redirects)[0] = (red_props ? (Scheme_Object *)red_props : scheme_false);
 
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   if (SCHEME_PROCP(val))
