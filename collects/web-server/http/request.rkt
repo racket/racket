@@ -36,25 +36,68 @@
     (connection-i-port conn))
   (define-values (method uri major minor)
     (read-request-line ip))
-  (define headers 
+  (define initial-headers 
     (read-headers ip))
-  (define _
-    (match (headers-assq* #"Content-Length" headers)
-      [(struct header (f v))
-       ; Give it one second per byte (with 5 second minimum... a bit arbitrary)          
-       (adjust-connection-timeout! conn (max 5 (string->number (bytes->string/utf-8 v))))]
-      [#f
-       (void)]))
+  (match (headers-assq* #"Content-Length" initial-headers)
+    [(struct header (f v))
+     ;; Give it one second per byte (with 5 second minimum... a bit
+     ;; arbitrary)
+     (adjust-connection-timeout!
+      conn (max 5 (string->number (bytes->string/utf-8 v))))]
+    [#f
+     (void)])
+  (define-values (data-ip headers)
+    (complete-request ip initial-headers))
   (define-values (host-ip client-ip)
     (port-addresses ip))
   (define-values (bindings/raw-promise raw-post-data)
-    (read-bindings&post-data/raw conn method uri headers))
+    (read-bindings&post-data/raw data-ip method uri headers))
   (values
    (make-request method uri headers bindings/raw-promise raw-post-data
                  host-ip host-port client-ip)
    (or connection-close?
        (close-connection? headers major minor
                           client-ip host-ip))))
+
+;; If the headers says it uses chunked transfer encoding, then decode
+;; it
+(require racket/stxparam
+         (for-syntax racket/base))
+(define-syntax-parameter break 
+  (λ (stx) 
+    (raise-syntax-error 'break "Used outside forever" stx)))
+(define-syntax-rule (forever e ...)
+  (let/ec this-break
+    (let loop ()
+      (syntax-parameterize ([break (make-rename-transformer #'this-break)])
+        (begin e ...))
+      (loop))))
+(define (hex-string->number s)
+  (string->number s 16))
+(define (complete-request real-ip initial-headers)
+  (match (headers-assq* #"Transfer-Encoding" initial-headers)
+    [(struct header (f #"chunked"))
+     (define-values (decoded-ip decode-op) (make-pipe))
+     (define total-size 0)
+     (forever
+      (define size-line (read-line real-ip 'any))
+      (match-define (cons size-in-hex _) (regexp-split #rx";" size-line))
+      (define size-in-bytes (hex-string->number size-in-hex))
+      (set! total-size (+ total-size size-in-bytes))
+      (when (zero? size-in-bytes)
+        (break))
+      (define data-bytes (read-bytes size-in-bytes real-ip))
+      (write-bytes data-bytes decode-op)
+      ;; Ignore CRLF
+      (read-line real-ip 'any))
+     (define more-headers
+       (list* (header #"Content-Length" 
+                      (string->bytes/utf-8 (number->string total-size)))
+              (read-headers real-ip)))
+     (close-output-port decode-op)
+     (values decoded-ip (append initial-headers more-headers))]
+    [_
+     (values real-ip initial-headers)]))
 
 (define (make-ext:read-request 
          #:connection-close? [connection-close? #f])
@@ -74,7 +117,8 @@
 ;; close-connection?
 
 ; close-connection? : (listof (cons symbol bytes)) number number string string -> boolean
-; determine if this connection should be closed after serving the response
+;; determine if this connection should be closed after serving the
+;; response
 (define close-connection? 
   (let ([rx (byte-regexp #"[cC][lL][oO][sS][eE]")])
     (lambda (headers major minor client-ip host-ip)
@@ -88,10 +132,13 @@
              #f])
           (msie-from-local-machine? headers client-ip host-ip)))))
 
-; msie-from-local-machine? : table str str -> bool
-; to work around a bug in MSIE for documents < 265 bytes when connecting from the local
-; machine.  The server could pad the response as MSIIS does, but closing the connection works, too.
-; We do not check for version numbers since IE 6 under windows is 5.2 under macosX
+;; msie-from-local-machine? : table str str -> bool
+
+;; to work around a bug in MSIE for documents < 265 bytes when
+;; connecting from the local machine.  The server could pad the
+;; response as MSIIS does, but closing the connection works, too.  We
+;; do not check for version numbers since IE 6 under windows is 5.2
+;; under macosX
 (define msie-from-local-machine?
   (let ([rx (byte-regexp #"MSIE")])
     (lambda (headers client-ip host-ip)
@@ -169,8 +216,8 @@
 
 (define FILE-FORM-REGEXP (byte-regexp #"multipart/form-data; *boundary=(.*)"))
 
-;; read-bindings&post-data/raw: connection symbol url (listof header?) -> (values (or/c (listof binding?) string?) (or/c bytes? false/c?))
-(define (read-bindings&post-data/raw conn meth uri headers)
+;; read-bindings&post-data/raw: input-port symbol url (listof header?) -> (values (or/c (listof binding?) string?) (or/c bytes? false/c?))
+(define (read-bindings&post-data/raw in meth uri headers)
   (cond
     [(bytes-ci=? #"GET" meth)
      (values (delay
@@ -185,7 +232,6 @@
              #f)]
     [(bytes-ci=? #"POST" meth)
      (define content-type (headers-assq* #"Content-Type" headers))
-     (define in (connection-i-port conn))
      (cond
        [(and content-type 
              (regexp-match FILE-FORM-REGEXP (header-value content-type)))
@@ -236,7 +282,6 @@
            (values (delay empty) #f)])])]
     [meth
      (define content-type (headers-assq* #"Content-Type" headers))
-     (define in (connection-i-port conn))
      (match (headers-assq* #"Content-Length" headers)
        [(struct header (_ value))
         (cond [(string->number (bytes->string/utf-8 value))

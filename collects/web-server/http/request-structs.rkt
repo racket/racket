@@ -6,7 +6,7 @@
          net/url
          web-server/private/util)
 
-(define-serializable-struct header (field value))
+(define-serializable-struct header (field value) #:transparent)
 (define (headers-assq* f hs)
   (match hs
     [(list)
@@ -29,9 +29,12 @@
  [struct header ([field bytes?]
                  [value bytes?])])
 
-(define-serializable-struct binding (id))
-(define-serializable-struct (binding:form binding) (value))
-(define-serializable-struct (binding:file binding) (filename headers content))
+(define-serializable-struct binding
+  (id) #:transparent)
+(define-serializable-struct (binding:form binding)
+  (value) #:transparent)
+(define-serializable-struct (binding:file binding)
+  (filename headers content) #:transparent)
 (define (bindings-assq ti bs)
   (match bs
     [(list)
@@ -50,7 +53,11 @@
                                  [headers (listof header?)]
                                  [content bytes?])])
 
-(define-serializable-struct request (method uri headers/raw bindings/raw-promise post-data/raw host-ip host-port client-ip))
+(define-serializable-struct
+  request
+  (method uri headers/raw bindings/raw-promise post-data/raw 
+          host-ip host-port client-ip)
+  #:transparent)
 (define (request-bindings/raw r)
   (force (request-bindings/raw-promise r)))
 

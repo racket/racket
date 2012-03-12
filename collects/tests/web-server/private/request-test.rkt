@@ -1,6 +1,7 @@
 #lang racket
 (require rackunit
          racket/slice
+         net/url
          web-server/private/connection-manager
          web-server/private/timer
          web-server/http/request
@@ -26,19 +27,38 @@
 
 (define (get-bindings post-data)
   (define-values (conn headers) (make-mock-connection&headers post-data))
-  (call-with-values (lambda () (read-bindings&post-data/raw conn #"POST" #f headers))
-                    (lambda (f s) f)))
+  (call-with-values
+      (lambda ()
+        (read-bindings&post-data/raw (connection-i-port conn) #"POST" #f headers))
+    (lambda (f s) f)))
 
 (define (get-post-data/raw post-data)
   (define-values (conn headers) (make-mock-connection&headers post-data))
-  (call-with-values (lambda () (read-bindings&post-data/raw conn #"POST" #f headers))
-                    (lambda (f s) s)))
+  (call-with-values 
+      (lambda () 
+        (read-bindings&post-data/raw (connection-i-port conn) #"POST" #f headers))
+    (lambda (f s) s)))
 
+(define (test-read-request b)
+  (define ip (open-input-bytes b))
+  (define op (open-output-bytes))
+  (define c
+    (make-connection 0 (make-timer ip +inf.0 (lambda () (void)))
+                     ip op (make-custodian) #f))
+  (define-values (req flag)
+    (read-request c 80 (λ (_) (values "to" "from"))))
+  (list (list 'request
+              (map (λ (f) (f req))
+                   (list request-method (compose url->string request-uri)
+                         request-headers/raw
+                         request-bindings/raw request-post-data/raw
+                         request-host-ip request-host-port request-client-ip)))
+        flag))
 
 (define request-tests
   (test-suite
    "HTTP Requests"
-   
+
    (test-suite
     "Headers"
     (test-equal? "Simple" (header-value (headers-assq #"key" (list (make-header #"key" #"val")))) #"val")
@@ -47,14 +67,14 @@
     (test-equal? "Case" (header-value (headers-assq* #"Key" (list (make-header #"key" #"val")))) #"val")
     (test-equal? "Case (not first)"
                  (header-value (headers-assq* #"Key" (list (make-header #"key1" #"val") (make-header #"key" #"val")))) #"val"))
-   
+
    (test-suite
     "Bindings"
     (test-equal? "Simple" (binding:form-value (bindings-assq #"key" (list (make-binding:form #"key" #"val")))) #"val")
     (test-equal? "Simple (File)" (binding:file-content (bindings-assq #"key" (list (make-binding:file #"key" #"name" empty #"val")))) #"val")
     (test-false "Not present" (bindings-assq #"key" (list))))
-   
-   ; XXX This needs to be really extensive, see what Apache has
+
+                                        ; XXX This needs to be really extensive, see what Apache has
    (test-suite
     "Parsing"
     (test-suite
@@ -69,7 +89,44 @@
                       8081
                       (lambda _ (values "s1" "s2")))
                      (void))))
-    
+
+    (test-suite
+     "Chunked transfer-encoding"
+     (test-equal? "example"
+                  (test-read-request
+                   #"POST http://127.0.0.1/test HTTP/1.1
+Date: Fri, 31 Dec 1999 23:59:59 GMT
+Content-Type: text/plain
+Transfer-Encoding: chunked
+
+1a; ignore-stuff-here
+abcdefghijklmnopqrstuvwxyz
+10
+1234567890abcdef
+0
+some-footer: some-value
+another-footer: another-value
+")
+                  (list
+                   (list
+                    'request
+                    (list
+                     #"POST"
+                     "http://127.0.0.1/test"
+                     (list
+                      (header #"Date" #"Fri, 31 Dec 1999 23:59:59 GMT")
+                      (header #"Content-Type" #"text/plain")
+                      (header #"Transfer-Encoding" #"chunked")
+                      (header #"Content-Length" #"42")
+                      (header #"some-footer" #"some-value")
+                      (header #"another-footer" #"another-value"))
+                     '()
+                     #"abcdefghijklmnopqrstuvwxyz1234567890abcdef"
+                     "to"
+                     80
+                     "from"))
+                   #f)))
+
     (test-suite
      "POST Bindings"
      (test-equal? "simple test 1"
