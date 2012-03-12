@@ -139,9 +139,9 @@
       var p = navigator.platform;
       var l = function(str) { return p.indexOf(str) != -1@";" }
       var Win      = /Windows/,
-          Mac      = /Macintosh/,
-          MacIntel = /Macintosh.*Intel/,
-          MacPPC   = /Macintosh.*PPC/,
+          Mac      = /Mac/,
+          MacIntel = /Mac.*Intel/,
+          MacPPC   = /Mac.*PPC/,
           Linux    = /Linux/,
           Linux64  = /Linux.*x86_64/,
           Linux32  = /Linux.*i386/,

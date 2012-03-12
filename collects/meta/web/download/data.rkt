@@ -3,19 +3,23 @@
 (define -platform-names-
   `(;; source platforms
     ["win"  "Windows"]
-    ["mac"  "Macintosh"]
+    ["mac"  "Mac OS X"]
     ["unix" "Unix"]
     ;; binary platforms
-    ["i386-win32" "Windows x86"]
-    ["x86_64-win32" "Windows x64"]
+    ["i386-win32" "Windows (x86, 32-bit)"]
+    ["x86_64-win32" "Windows (x64, 64-bit)"]
     ["(ppc|i386|x86_64)-osx-mac"
      ,(λ (_ cpu)
-        (format "Macintosh OS X (~a)"
-                (if (equal? cpu "ppc") "PPC" (format "Intel ~a" cpu))))]
+        (format "Mac OS X (~a)"
+                (cond
+                 [(equal? cpu "ppc") "PPC"]
+                 [(equal? cpu "i386") "Intel 32-bit"]
+                 [(equal? cpu "x86_64") "Intel 64-bit"]
+                 [else (error "unregonized cpu!")])))]
     ["(ppc|68k)-mac-classic" "Macintosh Classic (\\1)"]
     ["(ppc|i386)-darwin"
      ,(λ (_ cpu)
-        (format "Macintosh Darwin (~a)"
+        (format "Darwin (~a)"
                 (if (equal? cpu "ppc") "PPC" "Intel")))]
     ["i386-linux(-gcc2)?"                  "Linux i386"]
     ["i386-linux-fc([0-9]+)"               "Linux i386 (Fedora Core \\1)"]
