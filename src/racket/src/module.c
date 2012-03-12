@@ -6540,7 +6540,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (iidx) {
     iim = module_load(_module_resolve(iidx, m->ii_src, NULL, 1), menv, NULL); 
     start_module(iim, find_env(menv, SCHEME_INT_VAL(super_phase_shift)), 0, iidx, 1, 0, menv->phase, scheme_null, 0);
-  }
+  } else
+    iim = NULL;
 
   m->requires = scheme_null;
   m->et_requires = scheme_null;
