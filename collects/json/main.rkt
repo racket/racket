@@ -1,226 +1,189 @@
 #lang racket/base
 
-#| Based on the PLaneT package by Dave Herman,
+#| Roughly based on the PLaneT package by Dave Herman,
    Originally released under MIT license.
 |#
 
-(require (only-in scheme/base [read scheme:read] [write scheme:write]))
-(provide read-json write-json jsexpr->json json->jsexpr jsexpr?)
+;; ----------------------------------------------------------------------------
+;; Customization
 
-(define (write-json json [port (current-output-port)])
-  (cond
-    [(hash? json)
-     (display "{" port)
-     (for ([(key value) json]
-           [i (in-naturals)])
-       (when (> i 0)
-         (display ", " port))
-       (fprintf port "\"~a\"" key)
-       (display ": " port)
-       (write-json value port))
-     (display "}" port)]
-    [(list? json)
-     (display "[" port)
-     (for ([(value i) (in-indexed json)])
-       (when (> i 0)
-         (display ", " port))
-       (write-json value port))
-     (display "]" port)]
-    [(or (string? json) (and (number? json) (or (integer? json) (inexact? json))))
-     (scheme:write json port)]
-    [(boolean? json) (scheme:write (if json 'true 'false) port)]
-    [(null-jsexpr? json) (scheme:write 'null port)]
-    [else (error 'json "bad json value: ~v" json)]))
+;; The default translation for a JSON `null' value
+(provide json-null)
+(define json-null (make-parameter 'null))
 
-(define (read-json [port (current-input-port)])
-  (skip-whitespace port)
-  (case (peek-char port)
-    [(#\{) (read/hash port)]
-    [(#\[) (read/list port)]
-    [(#\") (read/string port)]
-    [(#\t) (read/true port)]
-    [(#\f) (read/false port)]
-    [(#\n) (read/null port)]
-    [else (read/number port)]))
+;; ----------------------------------------------------------------------------
+;; Predicate
 
-(define (expect ch . expected)
-  (unless (memq ch expected)
-    (error 'read "expected: ~v, got: ~a" expected ch))
-  ch)
+(provide jsexpr?)
+(define (jsexpr? x #:null [jsnull (json-null)])
+  (let loop ([x x])
+    (or (exact-integer? x)
+        (inexact-real? x)
+        (boolean? x)
+        (string? x)
+        (eq? x jsnull)
+        (and (list? x) (andmap loop x))
+        (and (hash? x) (for/and ([(k v) (in-hash x)])
+                         (and (symbol? k) (loop v)))))))
 
-(define (expect-string port expected)
-  (list->string (for/list ([ch expected])
-                  (expect (read-char port) ch))))
+;; ----------------------------------------------------------------------------
+;; Generation: Racket -> JSON
 
-(define (skip-whitespace port)
-  (let ([ch (peek-char port)])
-    (when (char-whitespace? ch)
-      (read-char port)
-      (skip-whitespace port))))
+(provide write-json)
+(define (write-json x [o (current-output-port)]
+                    #:null [jsnull (json-null)] #:encode [enc 'control])
+  (define (escape m)
+    (define ch (string-ref m 0))
+    (define r
+      (assoc ch '([#\backspace . "\\b"] [#\newline . "\\n"] [#\return . "\\r"]
+                  [#\page . "\\f"] [#\tab . "\\t"]
+                  [#\\ . "\\\\"] [#\" . "\\\""])))
+    (define (u-esc n)
+      (define str (number->string n 16))
+      (define pad (case (string-length str)
+                    [(1) "000"] [(2) "00"] [(3) "0"] [else ""]))
+      (string-append "\\u" pad str))
+    (if r
+      (cdr r)
+      (let ([n (char->integer ch)])
+        (if (n . < . #x10000)
+          (u-esc n)
+          ;; use the (utf-16 surrogate pair) double \u-encoding
+          (let ([n (- n #x10000)])
+            (string-append (u-esc (+ #xD800 (arithmetic-shift n -10)))
+                           (u-esc (+ #xDC00 (bitwise-and n #x3FF)))))))))
+  (define rx-to-encode
+    (case enc
+      [(control) #rx"[\0-\37\\\"\177]"]
+      [(all)     #rx"[\0-\37\\\"\177-\U10FFFF]"]
+      [else (raise-type-error 'write-json "encoding symbol" enc)]))
+  (define (write-json-string str)
+    (write-bytes #"\"" o)
+    (write-string (regexp-replace* rx-to-encode str escape) o)
+    (write-bytes #"\"" o))
+  (let loop ([x x])
+    (cond [(or (exact-integer? x) (inexact-real? x)) (write x o)]
+          [(eq? x #f)     (write-bytes #"false" o)]
+          [(eq? x #t)     (write-bytes #"true" o)]
+          [(eq? x jsnull) (write-bytes #"null" o)]
+          [(string? x) (write-json-string x)]
+          [(list? x)
+           (write-bytes #"[" o)
+           (when (pair? x)
+             (loop (car x))
+             (for ([x (in-list (cdr x))]) (write-bytes #"," o) (loop x)))
+           (write-bytes #"]" o)]
+          [(hash? x)
+           (write-bytes #"{" o)
+           (define first? #t)
+           (for ([(k v) (in-hash x)])
+             (unless (symbol? k)
+               (raise-type-error 'write-json "bad JSON key value" k))
+             (if first? (set! first? #f) (write-bytes #"," o))
+             (write (symbol->string k) o) ; no `printf' => proper escapes
+             (write-bytes #":" o)
+             (loop v))
+           (write-bytes #"}" o)]
+          [else (raise-type-error 'write-json "bad JSON value" x)]))
+  (void))
 
-(define (in-port-until port reader done?)
-  (make-do-sequence (lambda ()
-                      (values reader
-                              (lambda (port) port)
-                              port
-                              (lambda (port)
-                                (not (done? port)))
-                              (lambda values #t)
-                              (lambda (port . values) #t)))))
+;; ----------------------------------------------------------------------------
+;; Parsing: JSON -> Racket
 
-(define (read/hash port)
-  (expect (read-char port) #\{)
-  (skip-whitespace port)
-  (begin0 (for/hasheq ([(key value)
-                        (in-port-until port
-                                       (lambda (port)
-                                         (let ([key (read/string port)])
-                                           (unless (string? key)
-                                             (error 'read "expected: string, got: ~v" key))
-                                           (skip-whitespace port)
-                                           (expect (read-char port) #\:)
-                                           (skip-whitespace port)
-                                           (let ([value (read-json port)])
-                                             (skip-whitespace port)
-                                             (expect (peek-char port) #\, #\})
-                                             (values (string->symbol key) value))))
-                                       (lambda (port)
-                                         (eq? (peek-char port) #\})))])
-            (when (eq? (peek-char port) #\,)
-              (read-char port))
-            (skip-whitespace port)
-            (values key value))
-          (expect (read-char port) #\})))
+(require syntax/readerr)
 
-(define (read/list port)
-  (expect (read-char port) #\[)
-  (begin0 (for/list ([value
-                      (in-port-until port
-                                     (lambda (port)
-                                       (skip-whitespace port)
-                                       (begin0 (read-json port)
-                                               (skip-whitespace port)
-                                               (expect (peek-char port) #\, #\])))
-                                     (lambda (port)
-                                       (eq? (peek-char port) #\])))])
-            (when (eq? (peek-char port) #\,)
-              (read-char port))
-            value)
-          (expect (read-char port) #\])))
+(provide read-json)
+(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
+  ;; Follows the specification (eg, at json.org) -- no extensions.
+  ;;
+  (define (err fmt . args)
+    (define-values [l c p] (port-next-location i))
+    (raise-read-error (format "read-json: ~a" (apply format fmt args))
+                      (object-name i) l c p #f))
+  (define (skip-whitespace) (regexp-match? #px#"^\\s*" i))
+  ;;
+  ;; Reading a string *could* have been nearly trivial using the racket
+  ;; reader, except that it won't handle a "\/"...
+  (define (read-string)
+    (let loop ([l* '()])
+      ;; note: use a string regexp to extract utf-8-able text
+      (define m (cdr (or (regexp-try-match #rx"^(.*?)(\"|\\\\(.))" i)
+                         (err "unterminated string"))))
+      (define l (if ((bytes-length (car m)) . > . 0) (cons (car m) l*) l*))
+      (define esc (caddr m))
+      (cond
+        [(not esc) (bytes->string/utf-8 (apply bytes-append (reverse l)))]
+        [(assoc esc '([#"b" . #"\b"] [#"n" . #"\n"] [#"r" . #"\r"]
+                      [#"f" . #"\f"] [#"t" . #"\t"]
+                      [#"\\" . #"\\"] [#"\"" . #"\""] [#"/" . #"/"]))
+         => (λ (m) (loop (cons (cdr m) l)))]
+        [(equal? esc #"u")
+         (let* ([e (or (regexp-try-match #px#"^[a-fA-F0-9]{4}" i)
+                       (err "bad string \\u escape"))]
+                [e (string->number (bytes->string/utf-8 (car e)) 16)])
+           (define e*
+             (if (<= #xD800 e #xDFFF)
+               ;; it's the first part of a UTF-16 surrogate pair
+               (let* ([e2 (or (regexp-try-match #px#"^\\\\u([a-fA-F0-9]{4})" i)
+                              (err "bad string \\u escape, ~a"
+                                   "missing second half of a UTF16 pair"))]
+                      [e2 (string->number (bytes->string/utf-8 (cadr e2)) 16)])
+                 (if (<= #xDC00 e2 #xDFFF)
+                   (+ (arithmetic-shift (- e #xD800) 10) (- e2 #xDC00) #x10000)
+                   (err "bad string \\u escape, ~a"
+                        "bad second half of a UTF16 pair")))
+               e)) ; single \u escape
+           (loop (cons (string->bytes/utf-8 (string (integer->char e*))) l)))]
+        [else (err "bad string escape: \"~a\"" esc)])))
+  ;;
+  (define (read-list what end-rx read-one)
+    (skip-whitespace)
+    (if (regexp-try-match end-rx i)
+      '()
+      (let loop ([l (list (read-one))])
+        (skip-whitespace)
+        (cond [(regexp-try-match end-rx i) (reverse l)]
+              [(regexp-try-match #rx#"^," i) (loop (cons (read-one) l))]
+              [else (err "error while parsing a json ~a" what)]))))
+  ;;
+  (define (read-hash)
+    (define (read-pair)
+      (define k (read-json))
+      (unless (string? k) (err "non-string value used for json object key"))
+      (skip-whitespace)
+      (unless (regexp-try-match #rx#"^:" i)
+        (err "error while parsing a json object pair"))
+      (list (string->symbol k) (read-json)))
+    (apply hasheq (apply append (read-list 'object #rx#"^}" read-pair))))
+  ;;
+  (define (read-json)
+    (skip-whitespace)
+    (cond
+      [(regexp-try-match #px#"^true\\b"  i) #t]
+      [(regexp-try-match #px#"^false\\b" i) #f]
+      [(regexp-try-match #px#"^null\\b"  i) jsnull]
+      [(regexp-try-match
+        #rx#"^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?" i)
+       => (λ (bs) (string->number (bytes->string/utf-8 (car bs))))]
+      [(regexp-try-match #rx#"^[\"[{]" i)
+       => (λ (m)
+            (let ([m (car m)])
+              (cond [(equal? m #"\"") (read-string)]
+                    [(equal? m #"[")  (read-list 'array #rx#"^\\]" read-json)]
+                    [(equal? m #"{")  (read-hash)])))]
+      [else (err "bad input")]))
+  ;;
+  (read-json))
 
-(define (read/string port)
-  (expect (read-char port) #\")
-  (begin0 (list->string
-           (for/list ([ch (in-port-until port
-                                         (lambda (port)
-                                           (let ([ch (read-char port)])
-                                             (when (eof-object? ch)
-                                               (error 'read "unexpected EOF"))
-                                             (if (eq? ch #\\)
-                                                 (let ([esc (read-char port)])
-                                                   (when (eof-object? ch)
-                                                     (error 'read "unexpected EOF"))
-                                                   (case esc
-                                                     [(#\b) #\backspace]
-                                                     [(#\n) #\newline]
-                                                     [(#\r) #\return]
-                                                     [(#\f) #\page]
-                                                     [(#\t) #\tab]
-                                                     [(#\\) #\\]
-                                                     [(#\") #\"]
-                                                     [(#\/) #\/]
-                                                     [(#\u) (unescape (read-string 4 port))]
-                                                     [else esc]))
-                                                 ch)))
-                                         (lambda (port)
-                                           (eq? (peek-char port) #\")))])
-             ch))
-          (expect (read-char port) #\")))
+;; ----------------------------------------------------------------------------
+;; Convenience functions
 
-(define (unescape str)
-  (unless (regexp-match #px"[a-fA-F0-9]{4}" str)
-    (error 'read "bad unicode escape sequence: \"\\u~a\"" str))
-  (integer->char (string->number str 16)))
+(provide jsexpr->string)
+(define (jsexpr->string x #:null [jsnull (json-null)] #:encode [enc 'control])
+  (define o (open-output-string))
+  (write-json x o #:null jsnull #:encode enc)
+  (get-output-string o))
 
-(define (read/true port)
-  (expect-string port "true")
-  #t)
-
-(define (read/false port)
-  (expect-string port "false")
-  #f)
-
-(define (read/null port)
-  (expect-string port "null")
-  null-jsexpr)
-
-(define (read/digits port)
-  (let ([digits (for/list ([digit (in-port-until port
-                                                 read-char
-                                                 (lambda (port)
-                                                   (let ([ch (peek-char port)])
-                                                     (or (eof-object? ch)
-                                                         (not (char-numeric? ch))))))])
-                  digit)])
-    (when (and (null? digits) (eof-object? (peek-char port)))
-      (error 'read "unexpected EOF"))
-    (when (null? digits)
-      (error 'read "expected: digits, got: ~a" (peek-char port)))
-    digits))
-
-(define (read/exponent port)
-  (let ([sign (case (peek-char port)
-                [(#\- #\+) (list (read-char port))]
-                [else '()])])
-    (append sign (read/digits port))))
-
-(define (read/number port)
-  (let* ([sign (if (eq? (peek-char port) #\-) (list (read-char port)) '())]
-         [digits (read/digits port)]
-         [frac (if (eq? (peek-char port) #\.)
-                   (list* (read-char port) (read/digits port))
-                   '())]
-         [exp (if (memq (peek-char port) '(#\e #\E))
-                  (list* (read-char port) (read/exponent port))
-                  '())])
-    (string->number
-     (list->string
-      (append sign digits frac exp)))))
-
-(define (jsexpr? x)
-  (or (integer? x)
-      (and (number? x) (inexact? x))
-      (null-jsexpr? x)
-      (boolean? x)
-      (string? x)
-      (null? x)
-      (array-jsexpr? x)
-      (object-jsexpr? x)))
-
-(define (array-jsexpr? x)
-  (or (null? x)
-      (and (pair? x)
-           (jsexpr? (car x))
-           (array-jsexpr? (cdr x)))))
-
-(define (object-jsexpr? x)
-  (let/ec return
-    (and (hash? x)
-         (for ([(key value) x])
-           (unless (and (symbol? key) (jsexpr? value))
-             (return #f)))
-         #t)))
-
-(define (null-jsexpr? x)
-  (eqv? x #\null))
-
-(define null-jsexpr #\null)
-
-(define (jsexpr->json x)
-  (let ([out (open-output-string)])
-    (write-json x out)
-    (get-output-string out)))
-
-(define (json->jsexpr s)
-  (let ([in (open-input-string s)])
-    (read-json in)))
+(provide string->jsexpr)
+(define (string->jsexpr str #:null [jsnull (json-null)])
+  (read-json (open-input-string str) #:null jsnull))
