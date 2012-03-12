@@ -19,6 +19,9 @@ Local changes:
 
  * Added powerpc .S patches from 2d3fb36420e09304220e
 
+ * In "darwin.S", added ".long 0" after ".LFE3:" to avoid
+   linker problems compiling with gcc-4.0 on Mac OS X 10.7.
+
 ========== libffi_msvc directory =====================================
 
 This directory is synced from the CTypes repository

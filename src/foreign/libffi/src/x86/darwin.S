@@ -327,6 +327,7 @@ _ffi_closure_raw_SYSV:
 	movl	-20(%ebp), %edx
 	jmp	.Lrcls_epilogue
 .LFE3:
+        .long 0
 #endif
 
 .section __IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5
