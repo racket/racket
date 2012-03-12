@@ -737,7 +737,7 @@ typedef struct Scheme_Struct_Property {
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos);
 
 typedef struct Scheme_Struct_Type {
-  Scheme_Inclhash_Object iso; /* scheme_structure_type or scheme_proc_struct_type */
+  Scheme_Inclhash_Object iso; /* scheme_struct_type_type */
   mzshort num_slots;   /* initialized + auto + parent-initialized + parent-auto */
   mzshort num_islots; /* initialized + parent-initialized */
   mzshort name_pos;
@@ -757,6 +757,10 @@ typedef struct Scheme_Struct_Type {
   char *immutables; /* for immediate slots, only (not parent) */
 
   Scheme_Object *guard;
+
+#if defined(MZ_GC_BACKTRACE) && defined(MZ_PRECISE_GC)
+  intptr_t instance_count;
+#endif
 
   struct Scheme_Struct_Type *parent_types[mzFLEX_ARRAY_DECL];
 } Scheme_Struct_Type;

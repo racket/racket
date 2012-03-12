@@ -3402,9 +3402,10 @@ void GC_dump_with_traces(int flags,
                          GC_get_type_name_proc get_type_name,
                          GC_get_xtagged_name_proc get_xtagged_name,
                          GC_for_each_found_proc for_each_found,
-                         short trace_for_tag,
+                         short min_trace_for_tag, short max_trace_for_tag,
                          GC_print_tagged_value_proc print_tagged_value,
-                         int path_length_limit)
+                         int path_length_limit,
+                         GC_for_each_struct_proc for_each_struct)
 {
   NewGC *gc = GC_get_GC();
   mpage *page;
@@ -3434,7 +3435,10 @@ void GC_dump_with_traces(int flags,
           counts[tag]++;
           sizes[tag] += info->size;
         }
-        if (tag == trace_for_tag) {
+        if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
+          if (for_each_struct) for_each_struct(obj_start);
+        }
+        if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
           register_traced_object(obj_start);
           if (for_each_found)
             for_each_found(obj_start);
@@ -3453,8 +3457,11 @@ void GC_dump_with_traces(int flags,
         counts[tag]++;
         sizes[tag] += gcBYTES_TO_WORDS(page->size);
       }
-      if ((tag == trace_for_tag)
-          || (tag == -trace_for_tag)) {
+      if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
+        if (for_each_struct) for_each_struct(obj_start);
+      }
+      if (((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag))
+          || ((-tag >= min_trace_for_tag) && (-tag <= max_trace_for_tag))) {
         register_traced_object(obj_start);
         if (for_each_found)
           for_each_found(obj_start);
@@ -3477,7 +3484,10 @@ void GC_dump_with_traces(int flags,
               counts[tag]++;
               sizes[tag] += info->size;
             }
-            if (tag == trace_for_tag) {
+            if ((tag == scheme_proc_struct_type) || (tag == scheme_structure_type)) {
+              if (for_each_struct) for_each_struct(obj_start);
+            }
+            if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
               register_traced_object(obj_start);
               if (for_each_found)
                 for_each_found(obj_start);
@@ -3569,7 +3579,7 @@ void GC_dump_with_traces(int flags,
 
 void GC_dump(void)
 {
-  GC_dump_with_traces(0, NULL, NULL, NULL, 0, NULL, 0);
+  GC_dump_with_traces(0, NULL, NULL, NULL, 0, -1, NULL, 0, NULL);
 }
 
 #ifdef MZ_GC_BACKTRACE
