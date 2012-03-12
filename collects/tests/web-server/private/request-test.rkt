@@ -1,5 +1,6 @@
 #lang racket
 (require rackunit
+         racket/slice
          web-server/private/connection-manager
          web-server/private/timer
          web-server/http/request
@@ -78,3 +79,7 @@
      (test-equal? "simple test 3"
                   (binding:form-value (bindings-assq #"hello" (force (get-bindings "hello=world"))))
                   #"world")))))
+
+(slice test
+  (require rackunit/text-ui)
+  (run-tests request-tests))

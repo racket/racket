@@ -1,5 +1,9 @@
-#lang racket
-(require net/url
+#lang racket/base
+(require racket/contract
+         racket/match
+         racket/list
+         racket/promise
+         net/url
          net/uri-codec
          unstable/contract
          web-server/private/util
@@ -170,67 +174,81 @@
   (cond
     [(bytes-ci=? #"GET" meth)
      (values (delay
-               (filter (lambda (x) x)
-                       (map (match-lambda
-                              [(list-rest k v)
-                               (if (and (symbol? k) (string? v))
-                                   (make-binding:form (string->bytes/utf-8 (symbol->string k))
-                                                      (string->bytes/utf-8 v))
-                                   #f)])
-                            (url-query uri))))
+               (filter-map 
+                (match-lambda
+                 [(list-rest k v)
+                  (if (and (symbol? k) (string? v))
+                    (make-binding:form (string->bytes/utf-8 (symbol->string k))
+                                       (string->bytes/utf-8 v))
+                    #f)])
+                (url-query uri)))
              #f)]
     [(bytes-ci=? #"POST" meth)
-     (local
-       [(define content-type (headers-assq* #"Content-Type" headers))
-        (define in (connection-i-port conn))]
-       (cond
-         [(and content-type (regexp-match FILE-FORM-REGEXP (header-value content-type)))
-          => (match-lambda
-               [(list _ content-boundary)
-                ; XXX This can't be delay because it reads from the port, which would otherwise be closed.
-                ;     I think this is reasonable because the Content-Type said it would have this format
-                (define bs
-                  (map (match-lambda
-                         [(struct mime-part (headers contents))
-                          (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
-                          (match (list (regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
-                                       (regexp-match #"[^e]name=(\"([^\"]*)\"|([^ ;]*))" rhs))
-                            [(list #f #f)
-                             (network-error 'reading-bindings "Couldn't extract form field name for file upload")]
-                            [(list #f (list _ _ f0 f1))
-                             (make-binding:form (or f0 f1) (apply bytes-append contents))]
-                            [(list (list _ _ f00 f01) (list _ _ f10 f11))
-                             (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
-                       (read-mime-multipart content-boundary in)))
-                (values
-                 (delay bs)
-                 #f)])]
-         [else        
-          (match (headers-assq* #"Content-Length" headers)
-            [(struct header (_ value))
-             (cond
-               [(string->number (bytes->string/utf-8 value))
-                => (lambda (len)
-                     (let ([raw-bytes (read-bytes len in)])
-                       (values (delay (parse-bindings raw-bytes)) raw-bytes)))]
-               [else 
-                (network-error 'read-bindings "Post request contained a non-numeric content-length")])]
-            [#f
-             (values (delay empty) #f)])]))]
+     (define content-type (headers-assq* #"Content-Type" headers))
+     (define in (connection-i-port conn))
+     (cond
+       [(and content-type 
+             (regexp-match FILE-FORM-REGEXP (header-value content-type)))
+        => (match-lambda
+            [(list _ content-boundary)
+             ;; XXX This can't be delay because it reads from the
+             ;;     port, which would otherwise be closed.  I think
+             ;;     this is reasonable because the Content-Type
+             ;;     said it would have this format
+             (define bs
+               (map (match-lambda
+                     [(struct mime-part (headers contents))
+                      (define rhs
+                        (header-value
+                         (headers-assq* #"Content-Disposition" headers)))
+                      (match* 
+                          ((regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
+                           (regexp-match #"[^e]name=(\"([^\"]*)\"|([^ ;]*))" rhs))
+                        [(#f #f)
+                         (network-error 
+                          'reading-bindings 
+                          "Couldn't extract form field name for file upload")]
+                        [(#f (list _ _ f0 f1))
+                         (make-binding:form (or f0 f1)
+                                            (apply bytes-append contents))]
+                        [((list _ _ f00 f01) (list _ _ f10 f11))
+                         (make-binding:file (or f10 f11)
+                                            (or f00 f01)
+                                            headers
+                                            (apply bytes-append contents))])])
+                    (read-mime-multipart content-boundary in)))
+             (values
+              (delay bs)
+              #f)])]
+       [else        
+        (match (headers-assq* #"Content-Length" headers)
+          [(struct header (_ value))
+           (cond
+             [(string->number (bytes->string/utf-8 value))
+              => (lambda (len)
+                   (let ([raw-bytes (read-bytes len in)])
+                     (values (delay (parse-bindings raw-bytes)) raw-bytes)))]
+             [else 
+              (network-error
+               'read-bindings
+               "Post request contained a non-numeric content-length")])]
+          [#f
+           (values (delay empty) #f)])])]
     [meth
-     (local
-       [(define content-type (headers-assq* #"Content-Type" headers))
-        (define in (connection-i-port conn))]
-       (match (headers-assq* #"Content-Length" headers)
-         [(struct header (_ value))
-          (cond [(string->number (bytes->string/utf-8 value))
-                 => (lambda (len)
-                      (let ([raw-bytes (read-bytes len in)])
-                        (values (delay empty) raw-bytes)))]
-                [else
-                 (network-error 'read-bindings "Non-GET/POST request contained a non-numeric content-length")])]
-         [#f
-          (values (delay empty) #f)]))]))
+     (define content-type (headers-assq* #"Content-Type" headers))
+     (define in (connection-i-port conn))
+     (match (headers-assq* #"Content-Length" headers)
+       [(struct header (_ value))
+        (cond [(string->number (bytes->string/utf-8 value))
+               => (lambda (len)
+                    (let ([raw-bytes (read-bytes len in)])
+                      (values (delay empty) raw-bytes)))]
+              [else
+               (network-error 
+                'read-bindings
+                "Non-GET/POST request contained a non-numeric content-length")])]
+       [#f
+        (values (delay empty) #f)])]))
 
 ;; parse-bindings : bytes? -> (listof binding?)
 (define (parse-bindings raw)
