@@ -51,18 +51,15 @@
                                           (auto-bib-specific bib-entry)
                                           ""))
                                 `(autobib ,(auto-bib-key bib-entry)))
-             (cond [(and disambiguation
-                         (or (pair? (cdr disambiguation))
-                             (and (null? (cdr disambiguation))
-                                  ))) ;; should be a list of bib-entries with same author/date
+             (cond [disambiguation ;; should be a list of bib-entries with same author/date
                     (define disambiguation*
                       (add-between (for/list ([bib (in-list disambiguation)])
                                      (define key (auto-bib-key bib))
                                      (define maybe-disambiguation
-                                       (resolve-get part ri `(autobib-disambiguation key)))
+                                       (resolve-get part ri `(autobib-disambiguation ,key)))
                                      (case maybe-disambiguation
                                        [(unambiguous) #f]
-                                       [else (make-link-element #f (list maybe-disambiguation) `(autobib ,key))]))
+                                       [else (make-link-element #f maybe-disambiguation `(autobib ,key))]))
                                    ","))
                     (cond [(not (car disambiguation*)) '()] ;; the bib was unambiguous
                           [else disambiguation*])]
