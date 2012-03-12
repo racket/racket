@@ -156,8 +156,9 @@
   (define render-date-bib (or maybe-render-date-bib default-render-date-bib))
   (define render-date-cite (or maybe-render-date-cite default-render-date-cite))
   (define (author/date<? a b)
-    (or (string-ci<? (extract-bib-key a) (extract-bib-key b))
-        (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
+    ;; comparing just the authors causes non-deterministic render order. Use entire key.
+    (or (string-ci<? (auto-bib-key a) (auto-bib-key b))
+        (and (string-ci=? (auto-bib-key a) (auto-bib-key b))
              (auto-bib-date a)
              (auto-bib-date b)
              (date<? a b))))
