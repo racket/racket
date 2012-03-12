@@ -77,6 +77,7 @@
 
 (test 12 (if #f + *) 3 4)
 (syntax-test #'(+ 3 . 4))
+(syntax-test #'(apply + 1 . 2))
 
 (test 8 (lambda (x) (+ x x)) 4)
 (define reverse-subtract

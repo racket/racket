@@ -49,10 +49,11 @@
                                           (ormap (lambda (x) (keyword? (syntax-e x))) l)
                                           #t)
                                       'new-apply-proc
-                                      'apply)])
+                                      'apply)]
+                           [(fst) (car (syntax-e stx))])
                 (datum->syntax
                  stx
-                 (cons (datum->syntax here app (car l) (car l))
+                 (cons (datum->syntax here app fst fst)
                        (cdr (syntax-e stx)))
                  stx
                  stx)))))))
