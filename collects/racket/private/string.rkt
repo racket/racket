@@ -233,42 +233,91 @@
                      (port-success-k
                       (lambda (acc new-start new-end)
                         (loop acc new-start new-end ipre 0-ok?))
-                      acc start end mstart mend)
+                      acc start end m)
                      (loop (success-choose start m acc)
                            mend end ipre 0-ok?)))))))))))
 
   ;; Returns all the positions at which the pattern matched.
-  (define (regexp-match-positions* pattern string [start 0] [end #f] [ipre #""])
-    (regexp-loop regexp-match-positions* loop start end pattern string ipre
-      ;; success-choose:
-      (lambda (start ms acc) (cons (car ms) acc))
-      ;; failure-k:
-      (lambda (acc start end) acc)
-      ;; port-success-k: need to shift index of rest as reading; cannot
-      ;; do a tail call without adding another state variable to the
-      ;; regexp loop, so this remains inefficient
-      (lambda (loop acc start end mstart mend)
-        (append (map (lambda (p)
-                       (cons (+ mend (car p)) (+ mend (cdr p))))
-                     (loop '() 0 (and end (- end mend))))
-                (cons (cons mstart mend) acc)))
-      ;; other port functions: use string case
-      #f #f
-      ;; flags
-      #f #f))
+  (define (regexp-match-positions* pattern string [start 0] [end #f] [ipre #""]
+                                   #:match-select [match-select car])
+    ;; Note: no need for a #:gap-select, since it is easily inferred from the
+    ;; resulting matches
+    (if (eq? match-select car)
+      ;; common case
+      (regexp-loop regexp-match-positions* loop start end pattern string ipre
+        ;; success-choose:
+        (lambda (start ms acc) (cons (car ms) acc))
+        ;; failure-k:
+        (lambda (acc start end) acc)
+        ;; port-success-k: need to shift index of rest as reading; cannot
+        ;; do a tail call without adding another state variable to the
+        ;; regexp loop, so this remains inefficient
+        (lambda (loop acc start end ms)
+          (let ([mstart (caar ms)] [mend (cdar ms)])
+            (append (map (lambda (p) (cons (+ mend (car p)) (+ mend (cdr p))))
+                         (loop '() 0 (and end (- end mend))))
+                    (cons (car ms) acc))))
+        ;; other port functions: use string case
+        #f #f
+        ;; flags
+        #f #f)
+      ;; using some selector
+      (regexp-loop regexp-match-positions* loop start end pattern string ipre
+        ;; success-choose:
+        (lambda (start ms acc) (cons (match-select ms) acc))
+        ;; failure-k:
+        (lambda (acc start end) acc)
+        ;; port-success-k: need to shift index of rest as reading; cannot
+        ;; do a tail call without adding another state variable to the
+        ;; regexp loop, so this remains inefficient
+        (lambda (loop acc start end ms)
+          (let* ([mend (cdar ms)]
+                 [rest (loop '() 0 (and end (- end mend)))]
+                 [s    (match-select ms)])
+            ;; assumes that it's a valid selector (and always works the same,
+            ;; ie, does not return a single pair sometimes a list of pairs at
+            ;; other times)
+            (append
+             (map (if (or (and (pair? s) (exact-integer? (car s))) (not s))
+                    ;; assume that it returns a single match
+                    (lambda (p) (cons (+ mend (car p)) (+ mend (cdr p))))
+                    ;; assume that it returns a list
+                    (lambda (ps)
+                      (map (lambda (p)
+                             (and p (cons (+ mend (car p)) (+ mend (cdr p)))))
+                           ps)))
+                  rest)
+             (cons s acc))))
+        ;; other port functions: use string case
+        #f #f
+        ;; flags
+        #f #f)))
 
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-peek-positions* pattern string [start 0] [end #f]
-                                        [ipre #""])
-    (regexp-loop regexp-match-peek-positions* loop start end pattern string ipre
-      ;; success-choose:
-      (lambda (start ms acc) (cons (car ms) acc))
-      ;; failure-k:
-      (lambda (acc start end) acc)
-      ;; port functions: use string case
-      #f #f #f
-      ;; flags
-      #f #t))
+                                        [ipre #""]
+                                        #:match-select [match-select car])
+    (if (eq? match-select car)
+      ;; common case
+      (regexp-loop regexp-match-peek-positions* loop start end pattern string ipre
+        ;; success-choose:
+        (lambda (start ms acc) (cons (car ms) acc))
+        ;; failure-k:
+        (lambda (acc start end) acc)
+        ;; port functions: use string case
+        #f #f #f
+        ;; flags
+        #f #t)
+      ;; using some selector
+      (regexp-loop regexp-match-peek-positions* loop start end pattern string ipre
+        ;; success-choose:
+        (lambda (start ms acc) (cons (match-select ms) acc))
+        ;; failure-k:
+        (lambda (acc start end) acc)
+        ;; port functions: use string case
+        #f #f #f
+        ;; flags
+        #f #t)))
 
   ;; Small helper for the functions below
   (define (get-buf+sub string pattern)
@@ -413,22 +462,91 @@
                 #t #f)))])
       regexp-replace*))
 
-  ;; Returns all the matches for the pattern in the string.
-  (define (regexp-match* pattern string [start 0] [end #f] [ipre #""])
-    (define-values [buf sub] (get-buf+sub string pattern))
-    (regexp-loop regexp-match* loop start end pattern buf ipre
-      ;; success-choose:
-      (lambda (start ms acc) (cons (sub buf (caar ms) (cdar ms)) acc))
-      ;; failure-k:
-      (lambda (acc start end) acc)
-      ;; port-success-k:
-      #f
-      ;; port-success-choose:
-      (lambda (leftovers ms acc) (cons (car ms) acc))
-      ;; port-failure-k:
-      (lambda (acc leftover) acc)
-      ;; flags
-      #f #f))
+  ;; Returns all the matches for the pattern in the string, optionally
+  ;; other submatches and/or gap strings too.
+  (define (regexp-match* pattern string [start 0] [end #f] [ipre #""]
+                         #:match-select [match-select car]
+                         #:gap-select   [gap-select   #f])
+    (cond
+      ;; nonsensical case => throw an error
+      [(and (not match-select) (not gap-select))
+       ;; An alternative would be to throw '(), but that's non-uniform in that
+       ;; it wouldn't consume the contents of a port.  Another alternative is
+       ;; to do the full code to consume what's needed, but that's spending
+       ;; cycles to always get a '() result.
+       (raise
+        (exn:fail:contract
+         "regexp-match*: one of `match-select' or `gap-select' must be non-#f"
+         (current-continuation-marks)))]
+      ;; no match-select => same as `regexp-split'
+      [(not match-select) (regexp-split pattern string start end ipre)]
+      ;; uncommon case => full code
+      [(not (eq? match-select car))
+       (define-values [buf sub] (get-buf+sub string pattern))
+       (regexp-loop regexp-explode loop start end pattern buf ipre
+         ;; success-choose:
+         (lambda (start ms acc)
+           (cons (let ([s (match-select ms)])
+                   ;; assumes a valid selector
+                   (cond [(not (pair? s)) s] ; #f or '()
+                         [(integer? (car s)) (sub buf (car s) (cdr s))]
+                         [else (map (lambda (m)
+                                      (and m (sub buf (car m) (cdr m))))
+                                    s)]))
+                 (if gap-select (cons (sub buf start (caar ms)) acc) acc)))
+         ;; failure-k:
+         (lambda (acc start end)
+           (if gap-select
+             (cons (if end (sub buf start end) (sub buf start)) acc)
+             acc))
+         ;; port-success-k:
+         #f
+         ;; port-success-choose:
+         (lambda (leftovers ms acc)
+           ;; assumes a valid selector too: here it's used with a bytes list so
+           ;; it's simple
+           (cons (match-select ms) (if gap-select (cons leftovers acc) acc)))
+         ;; port-failure-k:
+         (lambda (acc leftover)
+           (if (and gap-select leftover) (cons leftover acc) acc))
+         ;; flags
+         gap-select #f)]
+      ;; default for matches, but also include gaps
+      [gap-select
+       (define-values [buf sub] (get-buf+sub string pattern))
+       (regexp-loop regexp-explode loop start end pattern buf ipre
+         ;; success-choose:
+         (lambda (start ms acc)
+           (cons (sub buf (caar ms) (cdar ms))
+                 (cons (sub buf start (caar ms)) acc)))
+         ;; failure-k:
+         (lambda (acc start end)
+           (cons (if end (sub buf start end) (sub buf start)) acc))
+         ;; port-success-k:
+         #f
+         ;; port-success-choose:
+         (lambda (leftovers ms acc) (cons (car ms) (cons leftovers acc)))
+         ;; port-failure-k:
+         (lambda (acc leftover) (if leftover (cons leftover acc) acc))
+         ;; flags
+         gap-select #f)]
+      ;; default case => optimized with specific code (this is the previous
+      ;; functionality of `regexp-explode*' too)
+      [else
+       (define-values [buf sub] (get-buf+sub string pattern))
+       (regexp-loop regexp-match* loop start end pattern buf ipre
+         ;; success-choose:
+         (lambda (start ms acc) (cons (sub buf (caar ms) (cdar ms)) acc))
+         ;; failure-k:
+         (lambda (acc start end) acc)
+         ;; port-success-k:
+         #f
+         ;; port-success-choose:
+         (lambda (leftovers ms acc) (cons (car ms) acc))
+         ;; port-failure-k:
+         (lambda (acc leftover) acc)
+         ;; flags
+         #f #f)]))
 
   (define (regexp-match-exact? p s)
     (let ([m (regexp-match-positions p s)])

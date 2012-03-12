@@ -400,26 +400,29 @@ bytes. To avoid such interleaving, use @racket[regexp-match-peek]
                         [input (or/c string? bytes? path? input-port?)]
                         [start-pos exact-nonnegative-integer? 0]
                         [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                        [input-prefix bytes? #""])
+                        [input-prefix bytes? #""]
+                        [#:match-select match-select
+                         (or/c ((listof any?) . -> . (or/c any? (listof any?)))
+                               #f)
+                         car]
+                        [#:gap-select gap-select boolean? #f])
          (if (and (or (string? pattern) (regexp? pattern))
                   (or (string? input) (path? input)))
-             (listof string?)
-             (listof bytes?))]{
+             (listof (or/c string? (listof (or/c #f string?))))
+             (listof (or/c bytes? (listof (or/c #f bytes?)))))]{
 
 Like @racket[regexp-match], but the result is a list of strings or
 byte strings corresponding to a sequence of matches of
-@racket[pattern] in @racket[input]. (Unlike @racket[regexp-match],
-results for parenthesized sub-patterns in @racket[pattern] are not
-returned.)
+@racket[pattern] in @racket[input].
 
 The @racket[pattern] is used in order to find matches, where each
 match attempt starts at the end of the last match, and @litchar{^} is
 allowed to match the beginning of the input (if @racket[input-prefix]
 is @racket[#""]) only for the first match.  Empty matches are handled
 like other matches, returning a zero-length string or byte sequence
-(they are more useful in the complementing @racket[regexp-split]
-function), but @racket[pattern] is restricted from matching an empty
-sequence immediately after an empty match.
+(they are more useful in making this a complement of
+@racket[regexp-split]), but @racket[pattern] is restricted from
+matching an empty sequence immediately after an empty match.
 
 If @racket[input] contains no matches (in the range @racket[start-pos]
 to @racket[end-pos]), @racket[null] is returned. Otherwise, each item
@@ -432,6 +435,35 @@ port).
 @examples[
 (regexp-match* #rx"x." "12x4x6")
 (regexp-match* #rx"x*" "12x4x6")
+]
+
+@racket[match-select] specifies the collected results.  The default of
+@racket[car] means that the result is the list of matches without
+returning parenthesized sub-patterns.  It can be given as a `selector'
+function which chooses an item from a list, or it can choose a list of
+items.  For example, you can use @racket[cdr] to get a list of lists
+of parenthesized sub-patterns matches, or @racket[values] (as an
+identity function) to get the full matches as well.  (Note that the
+selector must choose an element of its input list or a list of
+elements, but it must not inspect its input as they can be either a
+list of strings or a list of position pairs.  Furthermore, the
+selector must be consistent in its choice(s).)
+
+@examples[
+(regexp-match* #rx"x(.)" "12x4x6" #:match-select cadr)
+(regexp-match* #rx"x(.)" "12x4x6" #:match-select values)
+]
+
+In addition, specifying @racket[gap-select] as a non-@racket[#f] value
+will make the result an interleaved list of the matches as well as the
+separators between them matches, starting and ending with a separator.
+In this case, @racket[match-select] can be given as @racket[#f] to
+return @emph{only} the separators, making such uses equivalent to
+@racket[regexp-split].
+
+@examples[
+(regexp-match* #rx"x(.)" "12x4x6" #:match-select cadr #:gap-select #t)
+(regexp-match* #rx"x(.)" "12x4x6" #:match-select #f #:gap-select #t)
 ]}
 
 
@@ -494,16 +526,27 @@ positions indicate the number of bytes that were read, including
                                   [input (or/c string? bytes? path? input-port?)]
                                   [start-pos exact-nonnegative-integer? 0]
                                   [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                                  [input-prefix bytes? #""])
-         (listof (cons/c exact-nonnegative-integer?
-                         exact-nonnegative-integer?))]{
+                                  [input-prefix bytes? #""]
+                                  [#:match-select match-select
+                                   ((listof any?) . -> . (or/c any? (listof any?)))
+                                   car])
+         (or/c (listof (cons/c exact-nonnegative-integer?
+                               exact-nonnegative-integer?))
+               (listof (listof (or/c #f (cons/c exact-nonnegative-integer?
+                                                exact-nonnegative-integer?)))))]{
 
 Like @racket[regexp-match-positions], but returns multiple matches
 like @racket[regexp-match*].
 
 @examples[
 (regexp-match-positions* #rx"x." "12x4x6")
-]}
+(regexp-match-positions* #rx"x(.)" "12x4x6" #:match-select cadr)
+]
+
+Note that unlike @racket[regexp-match*], there is no
+@racket[#:gap-select] input keyword, as this information can be easily
+inferred from the resulting matches.
+}
 
 
 @defproc[(regexp-match? [pattern (or/c string? bytes? regexp? byte-regexp?)]
@@ -623,11 +666,13 @@ used to match @racket[pattern].}
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
                             [input-prefix bytes? #""])
-         (listof (cons/c exact-nonnegative-integer?
-                         exact-nonnegative-integer?))]{
+         (or/c (listof (cons/c exact-nonnegative-integer?
+                               exact-nonnegative-integer?))
+               (listof (listof (or/c #f (cons/c exact-nonnegative-integer?
+                                                exact-nonnegative-integer?)))))]{
 
 Like @racket[regexp-match-peek-positions], but returns multiple matches like
-@racket[regexp-match*].}
+@racket[regexp-match-positions*].}
 
 @defproc[(regexp-match/end [pattern (or/c string? bytes? regexp? byte-regexp?)]
                        [input (or/c string? bytes? path? input-port?)]
