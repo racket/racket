@@ -456,10 +456,6 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 # define scheme_thread_hop_type scheme_thread_type
 #endif
 
-#ifdef MZ_PRECISE_GC
-uintptr_t scheme_get_current_thread_stack_start(void);
-#endif
-
 SHARED_OK Scheme_Object *initial_cmdline_vec;
 
 /*========================================================================*/

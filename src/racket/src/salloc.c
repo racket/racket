@@ -1951,14 +1951,19 @@ static void print_tagged_value(const char *prefix,
 			       const char *suffix)
 {
   char buffer[256];
-  char *type, *sep, diffstr[30];
+  char *type, *sep, diffstr[30], hashstr[30];
   intptr_t len;
+  const char *hash_code = "";
   
   sep = "";
   
   scheme_check_print_is_obj = check_home;
 
   if (!xtagged) {
+    if (SCHEME_TYPE(v) > _scheme_compiled_values_types_) {
+      sprintf(hashstr, "{%" PRIdPTR "}", scheme_hash_key(v));
+      hash_code = hashstr;
+    }
     type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
     if (!scheme_strncmp(type, "#<thread", 8) 
 	&& ((type[8] == '>') || (type[8] == ':'))) {
@@ -2135,11 +2140,12 @@ static void print_tagged_value(const char *prefix,
   
   if (diff)
     sprintf(diffstr, "%lx", diff);
-  
+
   object_console_printf(stderr,
-			"%s%p%s%s%s%s%s", 
+			"%s%p%s%s%s%s%s%s", 
 			prefix,
 			v, 
+                        hash_code,
 			sep,
 			type,
 			diff ? "+" : "",
@@ -2163,13 +2169,13 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 #if MZ_PRECISE_GC_TRACE
   int trace_for_tag = 0;
   int flags = 0;
-  int path_length_limit = 1000;
+  int path_length_limit = 10000;
   GC_for_each_found_proc for_each_found = NULL;
 #else
 # ifndef USE_TAGGED_ALLOCATION
 #  define flags 0
 #  define trace_for_tag 0
-#  define path_length_limit 1000
+#  define path_length_limit 10000
 #  define for_each_found NULL
 #  define GC_get_xtagged_name NULL
 #  define print_tagged_value NULL

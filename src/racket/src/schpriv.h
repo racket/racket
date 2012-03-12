@@ -136,6 +136,10 @@ uintptr_t scheme_get_primordial_thread_stack_base(void);
 uintptr_t scheme_get_current_os_thread_stack_base(void);
 void scheme_set_current_os_thread_stack_base(void *base);
 
+#ifdef MZ_PRECISE_GC
+uintptr_t scheme_get_current_thread_stack_start(void);
+#endif
+
 int scheme_propagate_ephemeron_marks(void);
 void scheme_clear_ephemerons(void);
 
