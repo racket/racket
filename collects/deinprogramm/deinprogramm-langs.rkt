@@ -762,7 +762,6 @@
                                      (get-reader)
                                      (get-module)
                                      (deinprogramm-lang-settings-teachpacks settings)
-                                     (drscheme:rep:current-rep)
 				     '#%deinprogramm))
 
           (define/override (front-end/interaction port settings)

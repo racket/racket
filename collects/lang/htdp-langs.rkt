@@ -534,8 +534,7 @@
             (expand-teaching-program port  
                                      (get-reader)
                                      (get-module)
-                                     (htdp-lang-settings-teachpacks settings)
-                                     (drscheme:rep:current-rep)))
+                                     (htdp-lang-settings-teachpacks settings)))
           
           (define/override (front-end/interaction port settings)
             (let ([t (super front-end/interaction port settings)]

@@ -157,7 +157,7 @@
          (let* (#;[port (open-input-file filename)]
                 [module-id (gensym "stepper-module-name-")])
            ;; thunk this so that syntax errors happen within the error handlers:
-           (lambda () (expand-teaching-program port read-syntax namespace-spec '() #f module-id enable-testing?))))])))
+           (lambda () (expand-teaching-program port read-syntax namespace-spec '() module-id enable-testing?))))])))
 
 ;; test-sequence/core : render-settings? boolean? syntax? steps?
 ;; this is a front end for calling the stepper's "go"; the main 
