@@ -6,7 +6,10 @@
          "kws.rkt")
 (provide syntax-patterns-fail
          current-failure-handler
-         maximal-failures)
+         maximal-failures
+
+         exn:syntax-parse?
+         exn:syntax-parse-info)
 
 #|
 TODO: given (expect:thing D _ R) and (expect:thing D _ #f),
@@ -34,6 +37,19 @@ broken by a lazy-require of this module into residual.rkt
 (define current-failure-handler
   (make-parameter default-failure-handler))
 
+;; Hack: alternative to new (primitive) phase-crossing exn type is to
+;; store extra information in exn continuation marks.
+
+(define (exn:syntax-parse? x)
+  (and (exn:fail:syntax? x)
+       (pair? (continuation-mark-set-first
+               (exn-continuation-marks x)
+               'exn:syntax-parse))))
+
+;; exn:syntax-parse-info : exn:syntax-parse -> (cons syntax failureset)
+(define (exn:syntax-parse-info x)
+  (continuation-mark-set-first (exn-continuation-marks x) 'exn:syntax-parse))
+
 #|
 Reporting
 ---------
@@ -43,14 +59,14 @@ grouped into equivalence classes. In principle, each failure in an
 equivalence class complains about the same term, but in practice,
 special handling of failures like "unexpected term" make things more
 complicated.
-
 |#
 
 ;; report-failureset : stx FailureSet -> escapes
 (define (report-failureset stx0 fs)
   (let* ([classes (maximal-failures fs)]
          [reports (apply append (map report/class classes))])
-    (raise-syntax-error/reports stx0 reports)))
+    (with-continuation-mark 'exn:syntax-parse (cons stx0 fs)
+      (raise-syntax-error/reports stx0 reports))))
 
 ;; A Report is
 ;;   - (report string stx)
