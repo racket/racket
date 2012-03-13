@@ -1092,7 +1092,9 @@
                                        (list (ss->rkt file)))))))]
                       [(path? s) 
                        ;; Use filesystem-sensitive `simplify-path' here:
-                       (path-ss->rkt (simplify-path (path->complete-path s (get-dir))))]
+                       (path-ss->rkt (simplify-path (if (complete-path? s)
+                                                        s
+                                                        (path->complete-path s (get-dir)))))]
                       [(eq? (car s) 'lib)
                        (or (path-cache-get (cons s (current-library-collection-paths)))
                            (let*-values ([(cols file) (split-relative-string (cadr s) #f)]
