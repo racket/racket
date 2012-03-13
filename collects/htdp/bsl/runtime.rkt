@@ -2,6 +2,7 @@
 (require mzlib/pconvert
          racket/pretty
          lang/private/set-result
+         lang/private/rewrite-error-message
          mrlib/image-core
          racket/snip
          racket/class)
@@ -63,6 +64,12 @@
        (define converted (print-convert v))
        (set-handlers
         (λ () (pretty-write converted))))))
+  (error-display-handler
+    (let ([o-d-h (error-display-handler)])
+      (lambda (msg exn)
+	(define x (get-rewriten-error-message exn))
+	(displayln `(hello ,x ,exn))
+	(o-d-h x exn))))
   (let ([orig (global-port-print-handler)])
     (global-port-print-handler
      (lambda (val port [depth 0])
