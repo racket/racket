@@ -132,7 +132,7 @@
   (or/c rel-to-path-string/c (-> rel-to-path-string/c) false/c))
 
 (provide/contract
- [resolve-module-path ((or/c module-path-v? (cons/c 'submod (cons/c path? (listof (or/c ".." symbol?)))))
+ [resolve-module-path (module-path?
                        rel-to-path-string/thunk/#f
                        . -> . (or/c path? symbol? 
                                     (cons/c 'submod (cons/c (or/c path? symbol?) 

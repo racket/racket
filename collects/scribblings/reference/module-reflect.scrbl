@@ -47,13 +47,14 @@ Returns the path or symbol encapsulated by a @tech{resolved module path}.}
 
 Returns @racket[#t] if @racket[v] corresponds to a datum that matches
 the grammar for @racket[_module-path] for @racket[require],
-@racket[#f] otherwise.}
+@racket[#f] otherwise. Note that a path (in the sense of
+@racket[path?]) is a module path.}
 
 
 @defparam[current-module-name-resolver proc
            (case->
             (resolved-module-path? . -> . any)
-            ((or/c module-path? path?)
+            (module-path?
              (or/c #f resolved-module-path?)
              (or/c #f syntax?)
              boolean?
@@ -220,7 +221,7 @@ resolved name can depend on the value of
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])
-         (values (or/c module-path? path? #f)
+         (values (or/c module-path? #f)
                  (or/c module-path-index? resolved-module-path? #f))]{
 
 Returns two values: a module path, and a base @tech{module path index}
@@ -235,7 +236,7 @@ A @racket[#f] for the first result implies a @racket[#f] for the
 second result, and means that @racket[mpi] represents ``self'' (see
 above).}
 
-@defproc[(module-path-index-join [path (or/c module-path? path? #f)]
+@defproc[(module-path-index-join [path (or/c module-path? #f)]
                                  [mpi (or/c module-path-index? resolved-module-path? #f)])
          module-path-index?]{
 
@@ -415,7 +416,7 @@ more than the namespace's @tech{base phase}.}
 
 
 @defproc[(module-declared?
-          [mod (or/c module-path? path? module-path-index? 
+          [mod (or/c module-path? module-path-index? 
                      resolved-module-path?)]
           [load? any/c #f])
          boolean?]{
@@ -434,7 +435,7 @@ because the root module does not exist.}
 
 
 @defproc[(module->language-info
-          [mod (or/c module-path? path? module-path-index?
+          [mod (or/c module-path? module-path-index?
                      resolved-module-path?)]
           [load? any/c #f])
          (or/c #f (vector/c module-path? symbol? any/c))]{
@@ -452,7 +453,7 @@ implementation as compiled code.}
 
 
 @defproc[(module->imports
-          [mod (or/c module-path? path? module-path-index?
+          [mod (or/c module-path? module-path-index?
                      resolved-module-path?)])
          (listof (cons/c (or/c exact-integer? #f) 
                          (listof module-path-index?)))]{
@@ -463,7 +464,7 @@ Like @racket[module-compiled-imports], but produces the imports of
 
 
 @defproc[(module->exports
-          [mod (or/c module-path? path? resolved-module-path?)])
+          [mod (or/c module-path? resolved-module-path?)])
          (values (listof (cons/c (or/c exact-integer? #f) list?))
                  (listof (cons/c (or/c exact-integer? #f) list?)))]{
 
@@ -472,7 +473,7 @@ Like @racket[module-compiled-exports], but produces the exports of
 @tech{instantiate}d or @tech{visit}ed) in the current namespace.}
 
 @defproc[(module-predefined?
-          [mod (or/c module-path? path? resolved-module-path?)])
+          [mod (or/c module-path? resolved-module-path?)])
          boolean?]{
 
 Reports whether @racket[mod] refers to a module that is predefined for

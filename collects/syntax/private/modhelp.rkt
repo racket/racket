@@ -1,7 +1,6 @@
 #lang racket/base
 
 (provide explode-relpath-string
-         module-path-v?
          module-path-v-string?)
 
 (define (explode-relpath-string p)
@@ -14,7 +13,3 @@
   (and (regexp-match? #rx"^[-a-zA-Z0-9./]+$" v)
        (not (regexp-match? #rx"^/" v))
        (not (regexp-match? #rx"/$" v))))
-
-(define (module-path-v? v)
-  (or (path? v)
-      (module-path? v)))

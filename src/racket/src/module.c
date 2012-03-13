@@ -2333,6 +2333,9 @@ int scheme_is_module_path(Scheme_Object *obj)
     }
   }
 
+  if (SCHEME_PATHP(obj))
+    return 1;
+
   if (SCHEME_CHAR_STRINGP(obj)) {
     return ok_path_string(obj, 1, 1, 1, 0);
   }
@@ -2835,9 +2838,8 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 
   env = scheme_get_env(NULL);
 
-  if (!SCHEME_PATHP(argv[0])
-      && !scheme_is_module_path(argv[0]))
-    scheme_wrong_type("module->namespace", "path or module-path", 0, argc, argv);
+  if (!scheme_is_module_path(argv[0]))
+    scheme_wrong_type("module->namespace", "module path", 0, argc, argv);
 
   return scheme_module_to_namespace(argv[0], env);
 }
@@ -2856,7 +2858,7 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
       && !SCHEME_MODNAMEP(name)
       && !SAME_TYPE(SCHEME_TYPE(name), scheme_module_index_type)
       && !scheme_is_module_path(name))
-    scheme_wrong_type(who, "path, module-path, module-path index, or resolved-module-path", 0, argc, argv);
+    scheme_wrong_type(who, "module path, module-path index, or resolved-module-path", 0, argc, argv);
 
   if (!SCHEME_MODNAMEP(name)) {
     if (!SAME_TYPE(SCHEME_TYPE(name), scheme_module_index_type))
@@ -3276,10 +3278,9 @@ static Scheme_Object *module_path_index_split(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_PATHP(argv[0])
-      && !scheme_is_module_path(argv[0])
+  if (!scheme_is_module_path(argv[0])
       && !SCHEME_FALSEP(argv[0]))
-    scheme_wrong_type("module-path-index-join", "module path, path, or #f", 0, argc, argv);
+    scheme_wrong_type("module-path-index-join", "module path or #f", 0, argc, argv);
 
   if (argv[1]) { /* mzc will generate NULL sometimes; see scheme_declare_module(), below */
     if (SCHEME_TRUEP(argv[1])

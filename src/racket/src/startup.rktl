@@ -1090,10 +1090,8 @@
                                             cols)
                                        (list (ss->rkt file)))))))]
                       [(path? s) 
-                       (if (absolute-path? s)
-                           ;; Use filesystem-sensitive `simplify-path' here:
-                           (path-ss->rkt (simplify-path s))
-                           (list " (a path must be absolute)"))]
+                       ;; Use filesystem-sensitive `simplify-path' here:
+                       (path-ss->rkt (simplify-path (path->complete-path s (get-dir))))]
                       [(eq? (car s) 'lib)
                        (or (path-cache-get (cons s (current-library-collection-paths)))
                            (let*-values ([(cols file) (split-relative-string (cadr s) #f)]
