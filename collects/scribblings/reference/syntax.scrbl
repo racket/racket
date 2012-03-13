@@ -11,7 +11,6 @@
                      racket/package
                      racket/splicing
                      racket/runtime-path
-                     racket/slice
                      racket/performance-hint))
 
 @(define require-eval (make-base-eval))
@@ -305,6 +304,22 @@ starts with an empty lexical context in the same way as a top-level
 have no effect on the submodule.}
 
 
+@defform[(module+ id form ...)]{
+
+Declares and/or adds to a @tech{submodule} named @racket[id].
+
+Each addition for @racket[id] is combined in order to form the entire
+submodule using @racket[(module* id #f ....)] at the end of the
+enclosing module. If there is only one @racket[module+] for a given
+@racket[id], then @racket[(module+ id form ...)] is equivalent to
+@racket[(module* id #f form ...)].
+
+A submodule must not be defined using @racket[module+] @emph{and}
+@racket[module] or @racket[module*]. That is, if a submodule is made
+of @racket[module+] pieces, then it must be made @emph{only} of
+@racket[module+] pieces. }
+
+
 @defform[(#%module-begin form ...)]{
 
 Legal only in a @tech{module begin context}, and handled by the
@@ -319,24 +334,6 @@ every top-level expression to print non-@|void-const| results using
 Legal only in a @tech{module begin context}, and handled by the
 @racket[module] and @racket[module*] forms.}
 
-
-@;------------------------------------------------------------------------
-@subsection[#:tag "slice"]{Slices: @racket[slice]}
-
-@note-lib-only[racket/slice]
-
-@defform[(slice id form ...)]{
-
-Declares a @tech{slice} of a @tech{submodule} named @racket[id].
-
-A @deftech{slice} is a piece of a @tech{submodule}. Each slice of a
-submodule is combined to form the entire submodule at
-the end of the enclosing module. If there is only one slice, then
-@racket[(slice id form ...)] is equivalent to @racket[(module* id #f
-form ...)]. It is an error for a submodule to be defined using
-@racket[slice] @emph{and} @racket[module] or @racket[module*]. That
-is, if a submodule is made of slices, then it must be
-made @emph{only} of slices. }
 
 @;------------------------------------------------------------------------
 @section[#:tag '("require" "provide")]{Importing and Exporting: @racket[require] and @racket[provide]}

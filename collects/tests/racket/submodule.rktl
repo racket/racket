@@ -320,5 +320,48 @@
 (test 'b dynamic-require '(submod 'subm-example-12 b) 'b)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The `section' form:
+
+(module module+-example-1 racket/base
+  (module+ alpha (define a root) (provide a))
+  (module+ beta (define b (+ root 1)) (provide b))
+  (module+ alpha (define aa (+ a a)) (provide aa))
+  (module+ gamma
+    (require (submod "." ".." beta))
+    (provide c)
+    (define c (+ b 1)))
+  (module+ beta)
+  (module+ beta)
+  (module+ beta)
+  (define root 1))
+
+(test 1 dynamic-require '(submod 'module+-example-1 alpha) 'a)
+(test 2 dynamic-require '(submod 'module+-example-1 alpha) 'aa)
+(test 2 dynamic-require '(submod 'module+-example-1 beta) 'b)
+(test 3 dynamic-require '(submod 'module+-example-1 gamma) 'c)
+
+(syntax-test #'(module+ a))
+(err/rt-test (eval #'(module m racket/base module+)) exn:fail:syntax?)
+(err/rt-test (eval #'(module m racket/base (module+))) exn:fail:syntax?)
+(err/rt-test (eval #'(module m racket/base (module+ 1))) exn:fail:syntax?)
+(err/rt-test (eval #'(module m racket/base (module+ a . 2))) exn:fail:syntax?)
+
+;; Check that `#%module-begin' context is reasonable:
+(module module+-example-2 racket/base
+  (module alt-mod-beg racket/base
+    (provide (rename-out [module-begin #%module-begin])
+             module+
+             #%datum
+             #%app
+             void)
+    (define-syntax-rule (module-begin a b c)
+      (#%module-begin a (define x (+ b c)) (provide x))))
+  (module a (submod "." ".." alt-mod-beg)
+    (module+ b (void) 1 2)
+    3 4))
+
+(test 3 dynamic-require '(submod 'module+-example-2 a b) 'x)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

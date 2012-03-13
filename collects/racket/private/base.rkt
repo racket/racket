@@ -10,6 +10,7 @@
              "namespace.rkt"
              "struct.rkt"
              "cert.rkt"
+             "submodule.rkt"
              (for-syntax "stxcase-scheme.rkt"))
 
   (#%provide (all-from-except "pre-base.rkt"
@@ -33,6 +34,7 @@
              (all-from-except "qqstx.rkt" quasidatum undatum undatum-splicing)
              (all-from "namespace.rkt")
              (all-from "cert.rkt")
+             (all-from "submodule.rkt")
              (for-syntax syntax-rules syntax-id-rules ... _)
              (rename -open-input-file open-input-file)
              (rename -open-output-file open-output-file)
