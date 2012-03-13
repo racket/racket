@@ -230,16 +230,16 @@ name_of_platform() {
                                    "$(last_part_capital "$1")" ;;
     ( "i386-freebsd"      ) echo "FreeBSD" ;;
     ( "sparc-solaris"     ) echo "Solaris" ;;
-    ( "i386-osx-mac"      ) echo "Mac OS X (Intel)" ;;
+    ( "i386-osx-mac"      ) echo "Mac OS X (Intel 32-bit)" ;;
     ( "ppc-osx-mac"       ) echo "Mac OS X (PPC)" ;;
-    ( "x86_64-osx-mac"    ) echo "Mac OS X (x86_64)" ;;
-    ( "ppc-darwin"        ) echo "Mac X11 on Darwin (PPC)" ;;
-    ( "i386-darwin"       ) echo "Mac X11 on Darwin (Intel)" ;;
-    ( "i386-win32"        ) echo "Windows" ;;
-    ( "x86_64-win32"      ) echo "Windows x64" ;;
+    ( "x86_64-osx-mac"    ) echo "Mac OS X (32-bit 64-bit)" ;;
+    ( "ppc-darwin"        ) echo "X11 on Darwin (PPC)" ;;
+    ( "i386-darwin"       ) echo "X11 on Darwin (Intel)" ;;
+    ( "i386-win32"        ) echo "Windows (x86, 32-bit)" ;;
+    ( "x86_64-win32"      ) echo "Windows (x64, 64-bit)" ;;
     # These are source distribution platforms
     ( "unix"              ) echo "Unix" ;;
-    ( "mac"               ) echo "Macintosh" ;;
+    ( "mac"               ) echo "Mac OS X" ;;
     ( "win"               ) echo "Windows" ;;
     ( * ) exit_error "Unknown platform name for name_of_platform \"$1\"" ;;
   esac

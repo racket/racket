@@ -7,13 +7,15 @@
 ;; a starred option is the default
 (define platform-options
   '([* "...or choose"   ""]
+    ["Windows 7/Vista, 32-bit" windows-7-32]
+    ["Windows 7/Vista, 64-bit" windows-7-64]
     ["Windows Vista"    windows-vista]
     ["Windows XP"       windows-xp]
     ["Windows 2000"     windows-2000]
     ["Windows NT"       windows-nt]
     ["Windows 95/98/Me" windows-9x]
-    ["Macintosh PowerPC (MacOS X)" mac-ppc-osx]
-    ["Macintosh Intel (MacOS X)"   mac-i386-osx]
+    ["Mac OS X PowerPC (MacOS X)" mac-ppc-osx]
+    ["Mac OS X Intel (MacOS X)"   mac-i386-osx]
     ["Linux, Fedora/RedHat based"  linux-fedora]
     ["Linux, Ubuntu/Debian based"  linux-ubuntu]
     ["Linux, other distro"         linux-other]
