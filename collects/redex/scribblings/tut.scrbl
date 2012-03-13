@@ -441,7 +441,7 @@ two open parentheses is that Redex exploits Racket's s-expressions
 to reflect Redex terms as Racket values. Here's another way
 to write the same value
 
-@interaction[(list (term (→ num num)))]
+@interaction[#:eval amb-eval (list (term (→ num num)))]
 
 Racket's printer does not know that it should use @racket[term] for the
 inner lists and @racket[list] (or @racket[quote]) for the
