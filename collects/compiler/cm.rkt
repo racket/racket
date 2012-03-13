@@ -668,7 +668,10 @@
         [default-handler (current-load/use-compiled)]
         [modes (use-compiled-file-paths)])
     (define (compilation-manager-load-handler path mod-name)
-      (cond [(not mod-name)
+      (cond [(or (not mod-name)
+                 ;; Don't trigger compilation if we're not supposed to work with source:
+                 (and (pair? mod-name)
+                      (not (car mod-name))))
              (trace-printf "skipping:  ~a mod-name ~s" path mod-name)]
             [(not (or (file-exists? path)
                       (let ([p2 (rkt->ss path)])
