@@ -6381,6 +6381,21 @@ void scheme_post_syncing_nacks(Syncing *syncing)
   }
 }
 
+static void escape_during_sync(Syncing *syncing) {
+#ifdef MZ_PRECISE_GC
+  Scheme_Thread *p = scheme_current_thread;
+#endif
+
+scheme_post_syncing_nacks(syncing);
+
+#ifdef MZ_PRECISE_GC
+  if (p->place_channel_msg_in_flight) {
+    GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
+    p->place_channel_msg_in_flight = NULL;
+  }
+#endif
+}
+
 static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[], 
 			      int with_break, int with_timeout, int _tailok)
 {
@@ -6478,7 +6493,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
     syncing->disable_break = scheme_current_thread;
   }
 
-  BEGIN_ESCAPEABLE(scheme_post_syncing_nacks, syncing);
+  BEGIN_ESCAPEABLE(escape_during_sync, syncing);
   scheme_block_until((Scheme_Ready_Fun)syncing_ready, syncing_needs_wakeup, 
 		     (Scheme_Object *)syncing, timeout);
   END_ESCAPEABLE();

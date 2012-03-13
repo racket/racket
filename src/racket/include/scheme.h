@@ -1148,7 +1148,9 @@ typedef struct Scheme_Thread {
 
 #ifdef MZ_PRECISE_GC
   struct GC_Thread_Info *gc_info; /* managed by the GC */
+  void *place_channel_msg_in_flight;
 #endif
+
 } Scheme_Thread;
 
 #include "schthread.h"

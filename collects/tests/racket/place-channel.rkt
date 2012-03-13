@@ -184,6 +184,16 @@
 
 (define (main)
   (let ()
+    (define pl (place ch                                                                                        
+      (for ([i 100000])                                                                                         
+        (place-channel-get ch)                                                                                  
+        (place-channel-put ch (list "foo" 1 "bar")))))                                                          
+                                                                                                                
+    (for ([i 100000])                                                                                           
+      (place-channel-put pl (list "hello" 4 "hello"))                                                           
+      (sync/timeout 1 pl)))
+
+  (let ()
     (define flx (make-shared-fxvector 10 0))
     (define flv (make-shared-flvector 10 0.0))
     (define bs (make-shared-bytes 10 60))
