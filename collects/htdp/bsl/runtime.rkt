@@ -68,7 +68,6 @@
     (let ([o-d-h (error-display-handler)])
       (lambda (msg exn)
 	(define x (get-rewriten-error-message exn))
-	(displayln `(hello ,x ,exn))
 	(o-d-h x exn))))
   (let ([orig (global-port-print-handler)])
     (global-port-print-handler
