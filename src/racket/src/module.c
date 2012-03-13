@@ -5879,7 +5879,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
     scheme_hash_set(env->module_registry->exports, m->modname, (Scheme_Object *)m->me);
   }
 
-  {
+  if (!set_in_pre) {
     Scheme_Object *resolver, *a[1];
     resolver = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER);
     a[0] = m->modname;

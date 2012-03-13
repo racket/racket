@@ -858,7 +858,8 @@
               => (lambda (zo-d)
                    (parameterize ([current-module-declare-source alt-path])
                      (with-dir (lambda () ((current-load) (car zo-d) expect-module)))))]
-             [else
+             [(or (not (pair? expect-module))
+                  (car expect-module))
               (let ([p (if try-main? path alt-path)])
                 ;; "quiet" failure when asking for a submodule:
                 (unless (and (pair? expect-module)
