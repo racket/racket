@@ -4285,7 +4285,7 @@ static Scheme_Object *do_load_handler(void *data)
       while (pos) {
         name_size = get_number(port, pos);
         s = get_bytes(port, pos + 4, name_size);
-        if ((name_size == namelen) && !strncmp(find_name, s,name_size)) {
+        if ((name_size == namelen) && !strncmp(find_name, s, name_size)) {
           /* found it */
           offset = get_number(port, pos + 4 + name_size);
           break;
@@ -4294,7 +4294,10 @@ static Scheme_Object *do_load_handler(void *data)
         rellen = namelen;
         for (i = 0; (i < rellen) && (i < name_size); i++) {
           if (find_name[i] != s[i]) {
-            rellen = 0;
+            if (((unsigned char *)find_name)[i] < ((unsigned char *)s)[i])
+              rellen = 0;
+            else
+              rellen = name_size + 1;
             break;
           }
         }

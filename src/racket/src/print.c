@@ -1851,7 +1851,7 @@ static intptr_t compute_module_subtrees(Module_And_Offset *a, intptr_t *subtrees
   intptr_t len;
 
   len = SCHEME_BYTE_STRLEN_VAL(o);
-  offset += 8 + len + 20;
+  offset += 4 + len + 16;
 
   if (midpt > start)
     offset = compute_module_subtrees(a, subtrees, start, midpt - start, offset);
@@ -3112,7 +3112,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       /* orig_a is in declaration order, a in sorted (for btree) order */
 
       subtrees = MALLOC_N_ATOMIC(intptr_t, count);
-      (void)compute_module_subtrees(a, subtrees, 0, count, 0);
+      (void)compute_module_subtrees(a, subtrees, 0, count, init_offset);
 
       print_this_string(pp, "#~", 0, 2);
       print_one_byte(pp, strlen(MZSCHEME_VERSION));

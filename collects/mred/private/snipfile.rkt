@@ -176,6 +176,71 @@
 		      (update-str-to-snip empty-string))
 		  port)))))))
 
+  (define (jump-to-submodule in-port expected-module k)
+    (let ([header (bytes-append #"^#~"
+                                (bytes (string-length (version)))
+                                (regexp-quote (string->bytes/utf-8 (version)))
+                                #"D")])
+      (cond
+       [(regexp-match-peek header in-port)
+        ;; The input has a submodule table:
+        (define encoded-expected
+          (apply bytes-append
+                 (for/list ([n (in-list (if (pair? expected-module)
+                                            (cdr expected-module)
+                                            '()))])
+                   (define s (string->bytes/utf-8 (symbol->string n)))
+                   (define l (bytes-length s))
+                   (bytes-append (if (l . < . 255)
+                                     (bytes l)
+                                     (bytes 255 
+                                            (bitwise-and l 255)
+                                            (bitwise-and (arithmetic-shift l -8) 255)
+                                            (bitwise-and (arithmetic-shift l -16) 255)
+                                            (bitwise-and (arithmetic-shift l -24) 255)))
+                                 s))))
+        (define (skip-bytes amt)
+          (if (file-stream-port? in-port)
+              (file-position in-port (+ (file-position in-port) amt))
+              (read-bytes amt in-port)))
+        (define len (+ 2 1 (string-length (version)) 1 4)) ; 4 for table count
+        (skip-bytes len)
+        (let loop ([pos len])
+          ;; Each node in the table's btree is <name-len> <name> <start> <len> <left> <right>
+          (define (read-num)
+            (integer-bytes->integer (read-bytes 4 in-port) #f #f))
+          (define len (read-num))
+          (define new-pos (+ pos 4))
+          (define name (read-bytes len in-port))
+          (define code-start (read-num))
+          (define code-len (read-num))
+          (define left (read-num))
+          (define right (read-num))
+          (define after-pos (+ new-pos len 16))
+          (cond
+           [(bytes=? encoded-expected name)
+            (skip-bytes (- code-start after-pos))
+            (k #f)]
+           [(bytes<? encoded-expected name)
+            (if (zero? left)
+                (void)
+                (begin
+                  (skip-bytes (- left after-pos))
+                  (loop left)))]
+           [else
+            (if (zero? right)
+                (void)
+                (begin
+                  (skip-bytes (- right after-pos))
+                  (loop right)))]))]
+       [(or (not (pair? expected-module))
+            (car expected-module))
+        ;; No table; ok to load source or full bytecode:
+        (k #t)]
+       [else
+        ;; don't load the file from source or reload useless bytecode:
+        (void)])))
+
   (define (text-editor-load-handler filename expected-module)
     (unless (path? filename)
       (raise-type-error 'text-editor-load-handler "path" filename))
@@ -187,18 +252,24 @@
                            [read-on-demand-source (and (load-on-demand-enabled)
                                                        (path->complete-path filename))])
 	      (if expected-module
-		  (with-module-reading-parameterization 
-		   (lambda ()
-		     (let* ([first (read-syntax src in-port)]
-			    [module-ized-exp (check-module-form first expected-module filename)]
-			    [second (read in-port)])
-		       (unless (eof-object? second)
-			 (raise-syntax-error
-			  'text-editor-load-handler
-			  (format "expected only a `module' declaration for `~s', but found an extra expression"
-				  expected-module)
-			  second))
-		       (eval module-ized-exp))))
+                  (jump-to-submodule
+                   in-port
+                   expected-module
+                   (lambda (check-second?)
+                      (with-module-reading-parameterization 
+                       (lambda ()
+                         (let* ([first (read-syntax src in-port)]
+                                [module-ized-exp (check-module-form first expected-module filename)]
+                                [second (if check-second?
+                                            (read in-port)
+                                            eof)])
+                           (unless (eof-object? second)
+                             (raise-syntax-error
+                              'text-editor-load-handler
+                              (format "expected only a `module' declaration for `~s', but found an extra expression"
+                                      expected-module)
+                              second))
+                           (eval module-ized-exp))))))
 		  (let loop ([last-time-values (list (void))])
 		    (let ([exp (read-syntax src in-port)])
 		      (if (eof-object? exp)
