@@ -1,6 +1,6 @@
 #lang racket
 (require rackunit
-         racket/slice
+         racket/submodule
          net/url
          web-server/private/connection-manager
          web-server/private/timer
@@ -162,6 +162,6 @@ another-footer: another-value
                   (binding:form-value (bindings-assq #"hello" (force (get-bindings "hello=world"))))
                   #"world")))))
 
-(slice test
+(module+ test
   (require rackunit/text-ui)
   (run-tests request-tests))

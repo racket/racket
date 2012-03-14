@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/slice
+(require racket/submodule
          rackunit
          racket/port
          xml/xml
@@ -307,6 +307,6 @@
                      (get-output-string os))
                   "")))))
 
-(slice test
+(module+ test
   (require rackunit/text-ui)
   (run-tests response-tests))
