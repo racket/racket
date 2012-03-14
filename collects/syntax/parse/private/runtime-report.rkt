@@ -12,8 +12,8 @@
          exn:syntax-parse-info)
 
 #|
-TODO: given (expect:thing D _ R) and (expect:thing D _ #f),
-  simplify to (expect:thing D _ #f)
+TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
+  simplify to (expect:thing _ D _ #f)
   thus, "expected D" rather than "expected D or D for R" (?)
 |#
 
@@ -113,7 +113,7 @@ complicated.
 ;; prose-for-expect : Expect -> string
 (define (prose-for-expect e)
   (match e
-    [(expect:thing description transparent? role)
+    [(expect:thing ??? description transparent? role)
      (if role
          (format "expected ~a for ~a" description role)
          (format "expected ~a" description))]
@@ -159,7 +159,6 @@ complicated.
 
 ;; ==== Failure analysis ====
 
-
 ;; == Failure simplification ==
 
 ;; maximal-failures : FailureSet -> (listof (listof Failure))
@@ -173,7 +172,9 @@ complicated.
 
 ;; normalize-expectstack : ExpectStack -> ExpectStack
 (define (normalize-expectstack es)
-  (filter-expectstack (truncate-opaque-expectstack es)))
+  (convert-expectstack
+   (filter-expectstack
+    (truncate-opaque-expectstack es))))
 
 ;; truncate-opaque-expectstack : ExpectStack -> ExpectStack
 ;; Eliminates expectations on top of opaque (ie, transparent=#f) frames.
@@ -182,20 +183,37 @@ complicated.
     (let loop ([es es])
       (match es
         ['() '()]
-        [(cons (expect:thing description '#f role) rest-es)
+        [(cons (expect:thing ps description '#f role) rest-es)
          ;; Tricky! If multiple opaque frames, multiple "returns",
          ;; but innermost one called first, so jumps past the rest.
          ;; Also, flip opaque to transparent for sake of equality.
-         (return (cons (expect:thing description #t role) (loop rest-es)))]
+         (return (cons (expect:thing ps description #t role) (loop rest-es)))]
+        [(cons (expect:thing ps description '#t role) rest-es)
+         (cons (expect:thing ps description #t role) (loop rest-es))]
         [(cons expect rest-es)
          (cons expect (loop rest-es))]))))
 
+;; convert-expectstack : ExpectStack -> ExpectStack
+;; Converts expect:thing term rep from progress to (cons stx index).
+(define (convert-expectstack es)
+  (define (convert-ps ps)
+    (let-values ([(stx index) (ps->stx+index ps)])
+      (cons stx index)))
+  (map (lambda (expect)
+         (match expect
+           [(expect:thing ps de tr? rl)
+            (expect:thing (convert-ps ps) de tr? rl)]
+           [_ expect]))
+       es))
+
 ;; filter-expectstack : ExpectStack -> ExpectStack
 ;; Eliminates missing (ie, #f) messages and descriptions
+;; FIXME: Change parsing code to avoid useless frame allocations?
+;;   Or are they worth retaining for debugging?
 (define (filter-expectstack es)
   (filter (lambda (expect)
             (match expect
-              [(expect:thing '#f _)
+              [(expect:thing _ '#f _ _)
                #f]
               [(expect:message '#f)
                #f]
@@ -220,7 +238,6 @@ So we go with option 2.
 |#
 
 ;; simplify-common-expectstacks : (listof ExpectStack) -> (listof ExpectStack)
-;; Should call remove-duplicates first.
 (define (simplify-common-expectstacks ess)
   ;; simplify : (listof ReversedExpectStack) -> (listof ReversedExpectStack)
   (define (simplify ress)

@@ -215,7 +215,7 @@
                      (loop (cdr x) cx (add1 i))
                      (let* ([pr (ps-add-cdr pr i)]
                             [pr (ps-add-car pr)]
-                            [es (cons (expect:thing desc #t rl) es)])
+                            [es (cons (expect:thing pr desc #t rl) es)])
                        (values 'fail (failure pr es))))]
                 [else ;; not null, because stx->list failed
                  (let ([pr (ps-add-cdr pr i)]

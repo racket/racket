@@ -76,7 +76,7 @@
                 (define (parser x cx pr es fh0 cp0 rl success)
                   (if (predicate x)
                       (success fh0)
-                      (let ([es (cons (expect:thing 'description #t rl) es)])
+                      (let ([es (cons (expect:thing pr 'description #t rl) es)])
                         (fh0 (failure pr es)))))))]))
 
 (define-syntax (parser/rhs stx)
@@ -260,7 +260,7 @@ Conventions:
             (syntax-parameterize ((this-context-syntax
                                    (syntax-rules ()
                                      [(tbs) (ps-context-syntax pr)])))
-              (let ([es (cons (expect:thing description 'transparent? rl) es)]
+              (let ([es (cons (expect:thing pr description 'transparent? rl) es)]
                     [pr (if 'transparent? pr (ps-add-opaque pr))])
                 (with ([fail-handler fh0]
                        [cut-prompt cp0])
@@ -549,7 +549,7 @@ Conventions:
                   (parse:S datum scx subpattern pr es k))
                 (fail (failure pr es))))]
        [#s(pat:describe attrs pattern description transparent? role)
-        #`(let ([es (cons (expect:thing description transparent? role) es)]
+        #`(let ([es (cons (expect:thing pr description transparent? role) es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:S x cx pattern pr es k))]
        [#s(pat:delimit attrs pattern)
@@ -575,7 +575,7 @@ Conventions:
           #'(let ([x* (datum->syntax cx x cx)])
               (if (predicate x*)
                   (let-attributes (name-attr ...) k)
-                  (let ([es (cons (expect:thing 'description #t role) es)])
+                  (let ([es (cons (expect:thing pr 'description #t role) es)])
                     (fail (failure pr es))))))])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
@@ -669,7 +669,7 @@ Conventions:
     [(parse:H x cx rest-x rest-cx rest-pr head pr es k)
      (syntax-case #'head ()
        [#s(hpat:describe _ pattern description transparent? role)
-        #`(let ([es* (cons (expect:thing description transparent? role) es)]
+        #`(let ([es* (cons (expect:thing pr description transparent? role) es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:H x cx rest-x rest-cx rest-pr pattern pr es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])

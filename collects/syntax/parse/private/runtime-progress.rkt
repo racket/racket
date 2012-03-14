@@ -30,23 +30,29 @@
 #|
 Progress (PS) is a non-empty list of Progress Frames (PF).
 
-A PF is one of
+A Progress Frame (PF) is one of
   - stx     ;; "Base" frame
-  - 'car
+  - 'car    ;; car of pair; also vector->list, unbox, struct->list, etc
   - nat     ;; Represents that many repeated cdrs
   - 'post
   - 'opaque
 
-stx frame introduced
+The error-reporting context (ie, syntax-parse #:context arg) is always
+the final frame.
+
+All non-stx frames (eg car, cdr) interpreted as applying to nearest following
+stx frame.
+
+A stx frame is introduced
   - always at base (that is, by syntax-parse)
     - if syntax-parse has #:context arg, then two stx frames at bottom:
       (list to-match-stx context-stx)
   - by #:with/~parse
   - by #:fail-*/#:when/~fail & stx
 
-Interpretation: Inner PS structures are applied first.
- eg, (list 'car 1 #'___)
-      means ( car of ( cdr once of the term ) )
+Interpretation: later frames are applied first.
+ eg, (list 'car 1 stx)
+      means ( car of ( cdr once of stx ) )
       NOT apply car, then apply cdr once, then stop
 |#
 
@@ -154,6 +160,7 @@ Interpretation: Inner PS structures are applied first.
   (reverse (ps-truncate-opaque ps)))
 
 ;; ps-pop-opaque : PS -> IPS
+;; Used to continue with progress from opaque head pattern.
 (define (ps-pop-opaque ps)
   (match ps
     [(cons (? exact-positive-integer? n) (cons 'opaque ps*))
@@ -164,7 +171,8 @@ Interpretation: Inner PS structures are applied first.
 
 ;; ==== Failure ====
 
-;; A Failure is (make-failure PS ExpectStack)
+;; A Failure is (failure PS ExpectStack)
+
 ;; A FailureSet is one of
 ;;   - Failure
 ;;   - (cons FailureSet FailureSet)
@@ -181,15 +189,19 @@ Interpretation: Inner PS structures are applied first.
 An ExpectStack is (listof Expect)
 
 An Expect is one of
-  - (make-expect:thing string boolean string/#f)
+  - (make-expect:thing ??? string boolean string/#f)
   * (make-expect:message string)
   * (make-expect:atom atom)
   * (make-expect:literal identifier)
   * (make-expect:disj (non-empty-listof Expect))
 
 The *-marked variants can only occur at the top of the stack.
+
+expect:thing frame contains representation of term:
+  - during parsing, represent as progress
+  - during reporting, convert to stx
 |#
-(define-struct expect:thing (description transparent? role) #:prefab)
+(define-struct expect:thing (term description transparent? role) #:prefab)
 (define-struct expect:message (message) #:prefab)
 (define-struct expect:atom (atom) #:prefab)
 (define-struct expect:literal (literal) #:prefab)
@@ -226,7 +238,10 @@ The *-marked variants can only occur at the top of the stack.
   (map expect->sexpr es))
 
 (define (expect->sexpr e)
-  e)
+  (match e
+    [(expect:thing term description transparent? role)
+     (expect:thing '<Term> description transparent? role)]
+    [else e]))
 
 (define (progress->sexpr ps)
   (for/list ([pf (in-list (invert-ps ps))])

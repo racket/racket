@@ -50,7 +50,7 @@
                      ((error)
                       (let ([es
                              (list* (expect:message (cadr result))
-                                    (expect:thing (get-description param ...) #f rl)
+                                    (expect:thing pr (get-description param ...) #f rl)
                                     es)])
                         (fh (failure pr es))))))))))
          (define-syntax name
