@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/submodule
-         rackunit
+(require rackunit
          racket/port
          xml/xml
          (only-in mzlib/file

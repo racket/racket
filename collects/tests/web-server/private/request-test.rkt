@@ -1,6 +1,5 @@
 #lang racket
 (require rackunit
-         racket/submodule
          net/url
          web-server/private/connection-manager
          web-server/private/timer
