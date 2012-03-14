@@ -76,7 +76,7 @@
                 (define (parser x cx pr es fh0 cp0 rl success)
                   (if (predicate x)
                       (success fh0)
-                      (let ([es (cons (expect:thing pr 'description #t rl) es)])
+                      (let ([es (es-add-thing pr 'description #t rl es)])
                         (fh0 (failure pr es)))))))]))
 
 (define-syntax (parser/rhs stx)
@@ -150,7 +150,7 @@
                (let* ([x (datum->syntax #f expr)]
                       [cx x]
                       [pr (ps-empty x x)]
-                      [es null]
+                      [es #f]
                       [fh0 (syntax-patterns-fail x)])
                  (parameterize ((current-syntax-context x))
                    def ...
@@ -260,7 +260,7 @@ Conventions:
             (syntax-parameterize ((this-context-syntax
                                    (syntax-rules ()
                                      [(tbs) (ps-context-syntax pr)])))
-              (let ([es (cons (expect:thing pr description 'transparent? rl) es)]
+              (let ([es (es-add-thing pr description 'transparent? rl es)]
                     [pr (if 'transparent? pr (ps-add-opaque pr))])
                 (with ([fail-handler fh0]
                        [cut-prompt cp0])
@@ -398,7 +398,7 @@ Conventions:
                       [(alternative ...) alternatives])
           #`(let* ([ctx0 #,context]
                    [pr (ps-empty x ctx0)]
-                   [es null]
+                   [es #f]
                    [cx x]
                    [fh0 (syntax-patterns-fail ctx0)])
               (parameterize ((current-syntax-context ctx0))
@@ -470,12 +470,12 @@ Conventions:
         #`(let ([d (if (syntax? x) (syntax-e x) x)])
             (if (equal? d (quote datum))
                 k
-                (fail (failure pr (cons (expect:atom 'datum) es)))))]
+                (fail (failure pr (es-add-atom 'datum es)))))]
        [#s(pat:literal attrs literal input-phase lit-phase)
         #`(if (and (identifier? x)
                    (free-identifier=? x (quote-syntax literal) input-phase lit-phase))
               k
-              (fail (failure pr (cons (expect:literal (quote-syntax literal)) es))))]
+              (fail (failure pr (es-add-literal (quote-syntax literal) es))))]
        [#s(pat:action attrs action subpattern)
         #'(parse:A x cx action pr es (parse:S x cx subpattern pr es k))]
        [#s(pat:head attrs head tail)
@@ -549,7 +549,7 @@ Conventions:
                   (parse:S datum scx subpattern pr es k))
                 (fail (failure pr es))))]
        [#s(pat:describe attrs pattern description transparent? role)
-        #`(let ([es (cons (expect:thing pr description transparent? role) es)]
+        #`(let ([es (es-add-thing pr description transparent? role es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:S x cx pattern pr es k))]
        [#s(pat:delimit attrs pattern)
@@ -575,7 +575,7 @@ Conventions:
           #'(let ([x* (datum->syntax cx x cx)])
               (if (predicate x*)
                   (let-attributes (name-attr ...) k)
-                  (let ([es (cons (expect:thing pr 'description #t role) es)])
+                  (let ([es (es-add-thing pr 'description #t role es)])
                     (fail (failure pr es))))))])]))
 
 ;; (disjunct ???-pattern success (pre:expr ...) (id:id ...)) : expr[Ans]
@@ -616,7 +616,7 @@ Conventions:
                 (let ([pr* (if (syntax? c)
                                (ps-add-stx pr c)
                                pr)]
-                      [es* (cons (expect:message message) es)])
+                      [es* (es-add-message message es)])
                   (fail (failure pr* es*)))
                 k))]
        [#s(action:parse _ pattern expr)
@@ -669,7 +669,7 @@ Conventions:
     [(parse:H x cx rest-x rest-cx rest-pr head pr es k)
      (syntax-case #'head ()
        [#s(hpat:describe _ pattern description transparent? role)
-        #`(let ([es* (cons (expect:thing pr description transparent? role) es)]
+        #`(let ([es* (es-add-thing pr description transparent? role es)]
                 [pr (if 'transparent? pr (ps-add-opaque pr))])
             (parse:H x cx rest-x rest-cx rest-pr pattern pr es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
@@ -867,7 +867,7 @@ Conventions:
                                   head es loop-k)
                         ...)
                    (cond [(< rel-rep (rep:min-number rel-repc))
-                          (let ([es (cons (expectation-of-reps/too-few rel-rep rel-repc) es)])
+                          (let ([es (expectation-of-reps/too-few es rel-rep rel-repc)])
                             (fail (failure loop-pr es)))]
                          ...
                          [else
@@ -912,7 +912,7 @@ Conventions:
          [_  #`(parse:H x cx x* cx* pr* head pr es
                         (if (< rep (rep:max-number repc))
                             (let ([rep (add1 rep)]) k*)
-                            (let ([es (cons (expectation-of-reps/too-many rep repc) es)])
+                            (let ([es (expectation-of-reps/too-many es rep repc)])
                               (fail (failure pr* es)))))]))]))
 
 ;; (rep:initial-value RepConstraint) : expr
@@ -962,26 +962,23 @@ Conventions:
 
 ;; ----
 
-(define-syntax-rule (expectation-of-message message)
-  (expect:message message))
-
 (define-syntax expectation-of-reps/too-few
   (syntax-rules ()
-    [(_ rep #s(rep:once name too-few-msg too-many-msg))
-     (expect:message (or too-few-msg (name->too-few/once name)))]
-    [(_ rep #s(rep:optional name too-many-msg _))
+    [(_ es rep #s(rep:once name too-few-msg too-many-msg))
+     (es-add-message (or too-few-msg (name->too-few/once name)) es)]
+    [(_ es rep #s(rep:optional name too-many-msg _))
      (error 'syntax-parse "INTERNAL ERROR: impossible (too-few)")]
-    [(_ rep #s(rep:bounds min max name too-few-msg too-many-msg))
-     (expect:message (or too-few-msg (name->too-few name)))]))
+    [(_ es rep #s(rep:bounds min max name too-few-msg too-many-msg))
+     (es-add-message (or too-few-msg (name->too-few name)) es)]))
 
 (define-syntax expectation-of-reps/too-many
   (syntax-rules ()
-    [(_ rep #s(rep:once name too-few-msg too-many-msg))
-     (expect:message (or too-many-msg (name->too-many name)))]
-    [(_ rep #s(rep:optional name too-many-msg _))
-     (expect:message (or too-many-msg (name->too-many name)))]
-    [(_ rep #s(rep:bounds min max name too-few-msg too-many-msg))
-     (expect:message (or too-many-msg (name->too-many name)))]))
+    [(_ es rep #s(rep:once name too-few-msg too-many-msg))
+     (es-add-message (or too-many-msg (name->too-many name)) es)]
+    [(_ es rep #s(rep:optional name too-many-msg _))
+     (es-add-message (or too-many-msg (name->too-many name)) es)]
+    [(_ es rep #s(rep:bounds min max name too-few-msg too-many-msg))
+     (es-add-message (or too-many-msg (name->too-many name)) es)]))
 
 ;; ====
 

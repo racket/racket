@@ -1,7 +1,5 @@
 #lang racket/base
 (require racket/list
-         unstable/struct
-         syntax/stx
          "minimatch.rkt")
 (provide ps-empty
          ps-add-car
@@ -13,9 +11,7 @@
          ps-add-unpstruct
          ps-add-opaque
 
-         invert-ps
          ps-pop-opaque
-         ps->stx+index
          ps-context-syntax
          ps-difference
 
@@ -25,7 +21,30 @@
          (struct-out expect:atom)
          (struct-out expect:literal)
          (struct-out expect:message)
-         (struct-out expect:disj))
+         (struct-out expect:disj)
+
+         es-add-thing
+         es-add-message
+         es-add-atom
+         es-add-literal)
+
+;; FIXME: add phase to expect:literal
+
+;; == Failure ==
+
+#|
+A Failure is (failure PS ExpectStack)
+
+A FailureSet is one of
+  - Failure
+  - (cons FailureSet FailureSet)
+
+A FailFunction = (FailureSet -> Answer)
+|#
+(define-struct failure (progress expectstack) #:prefab)
+
+
+;; == Progress ==
 
 #|
 Progress (PS) is a non-empty list of Progress Frames (PF).
@@ -86,45 +105,13 @@ Interpretation: later frames are applied first.
 ;; ps-context-syntax : Progress -> syntax
 (define (ps-context-syntax ps)
   ;; Bottom frame is always syntax
-  (car (reverse ps)))
-
-;; ps->stx+index : Progress -> (values stx nat)
-;; Gets the innermost stx that should have a real srcloc, and the offset
-;; (number of cdrs) within that where the progress ends.
-(define (ps->stx+index ps)
-  (define (interp ps)
-    (match ps
-      [(cons (? syntax? stx) _) stx]
-      [(cons 'car parent)
-       (let* ([d (interp parent)]
-              [d (if (syntax? d) (syntax-e d) d)])
-         (cond [(pair? d) (car d)]
-               [(vector? d) (vector->list d)]
-               [(box? d) (unbox d)]
-               [(prefab-struct-key d) (struct->list d)]
-               [else (error 'ps->stx+index "INTERNAL ERROR: unexpected: ~e" d)]))]
-      [(cons (? exact-positive-integer? n) parent)
-       (for/fold ([stx (interp parent)]) ([i (in-range n)])
-         (stx-cdr stx))]
-      [(cons 'post parent)
-       (interp parent)]))
-  (let ([ps (ps-truncate-opaque ps)])
-    (match ps
-      [(cons (? syntax? stx) _)
-       (values stx 0)]
-      [(cons 'car parent)
-       (values (interp ps) 0)]
-      [(cons (? exact-positive-integer? n) parent)
-       (values (interp parent) n)]
-      [(cons 'post parent)
-       (ps->stx+index parent)])))
+  (last ps))
 
 ;; ps-difference : PS PS -> nat
 ;; Returns N s.t. B = (ps-add-cdr^N A)
 (define (ps-difference a b)
   (define (whoops)
-    (error 'ps-difference "~e is not an extension of ~e"
-           (progress->sexpr b) (progress->sexpr a)))
+    (error 'ps-difference "~e is not an extension of ~e" a b))
   (match (list a b)
     [(list (cons (? exact-positive-integer? na) pa)
            (cons (? exact-positive-integer? nb) pb))
@@ -137,29 +124,7 @@ Interpretation: later frames are applied first.
      (unless (equal? a b) (whoops))
      0]))
 
-;; ps-truncate-opaque : PS -> PS
-(define (ps-truncate-opaque ps)
-  (let/ec return
-    (let loop ([ps ps])
-      (cond [(null? ps)
-             null]
-            [(eq? (car ps) 'opaque)
-             ;; Tricky! We only jump after loop returns,
-             ;; so jump closest to end wins.
-             (return (loop (cdr ps)))]
-            [else
-             ;; Either (loop _) jumps, or it is identity
-             (loop (cdr ps))
-             ps]))))
-
-;; An Inverted PS (IPS) is a PS inverted for easy comparison.
-;; An IPS may not contain any 'opaque frames.
-
-;; invert-ps : PS -> IPS
-(define (invert-ps ps)
-  (reverse (ps-truncate-opaque ps)))
-
-;; ps-pop-opaque : PS -> IPS
+;; ps-pop-opaque : PS -> PS
 ;; Used to continue with progress from opaque head pattern.
 (define (ps-pop-opaque ps)
   (match ps
@@ -169,43 +134,40 @@ Interpretation: later frames are applied first.
      ps*]
     [_ (error 'ps-pop-opaque "opaque marker not found: ~e" ps)]))
 
-;; ==== Failure ====
 
-;; A Failure is (failure PS ExpectStack)
-
-;; A FailureSet is one of
-;;   - Failure
-;;   - (cons FailureSet FailureSet)
-
-;; FailFunction = (FailureSet -> Answer)
-
-(define-struct failure (progress expectstack) #:prefab)
-
-;; == Expectations
-
-;; FIXME: add phase to expect:literal
+;; == Expectations ==
 
 #|
-An ExpectStack is (listof Expect)
-
-An Expect is one of
-  - (make-expect:thing ??? string boolean string/#f)
-  * (make-expect:message string)
-  * (make-expect:atom atom)
-  * (make-expect:literal identifier)
-  * (make-expect:disj (non-empty-listof Expect))
+An ExpectStack (during parsing) is one of
+  - (make-expect:thing Progress string boolean string/#f ExpectStack)
+  * (make-expect:message string ExpectStack)
+  * (make-expect:atom atom ExpectStack)
+  * (make-expect:literal identifier ExpectStack)
 
 The *-marked variants can only occur at the top of the stack.
 
-expect:thing frame contains representation of term:
-  - during parsing, represent as progress
-  - during reporting, convert to stx
+Goal during parsing is to minimize/consolidate allocations.
+
+During reporting, the representation changes somewhat:
+
+An ExpectStack (during reporting) is (listof Expect)
+An Expect is one of
+  - (expect:thing (cons syntax nat) string #t string/#f _)
+  * (expect:message string _)
+  * (expect:atom atom _)
+  * (expect:literal identifier _)
+  - (expect:disj (non-empty-listof Expect) _)
+
+That is, next link always ignored (replace with #f for sake of equal? cmp)
+and expect:thing term represented as syntax with index.
+
+Goal during reporting is ease of manipulation.
 |#
-(define-struct expect:thing (term description transparent? role) #:prefab)
-(define-struct expect:message (message) #:prefab)
-(define-struct expect:atom (atom) #:prefab)
-(define-struct expect:literal (literal) #:prefab)
-(define-struct expect:disj (expects) #:prefab)
+(struct expect:thing (term description transparent? role next) #:prefab)
+(struct expect:message (message next) #:prefab)
+(struct expect:atom (atom next) #:prefab)
+(struct expect:literal (literal next) #:prefab)
+(struct expect:disj (expects next) #:prefab)
 
 (define (expect? x)
   (or (expect:thing? x)
@@ -214,40 +176,18 @@ expect:thing frame contains representation of term:
       (expect:literal? x)
       (expect:disj? x)))
 
+(define (es-add-thing ps description transparent? role next)
+  (if description
+      (expect:thing ps description transparent? role next)
+      next))
 
-;; ==== Debugging
+(define (es-add-message message next)
+  (if message
+      (expect:message message next)
+      next))
 
-(provide failureset->sexpr
-         failure->sexpr
-         expectstack->sexpr
-         expect->sexpr)
+(define (es-add-atom atom next)
+  (expect:atom atom next))
 
-(define (failureset->sexpr fs)
-  (let ([fs (flatten fs)])
-    (case (length fs)
-      ((1) (failure->sexpr (car fs)))
-      (else `(union ,@(map failure->sexpr fs))))))
-
-(define (failure->sexpr f)
-  (match f
-    [(failure progress expectstack)
-     `(failure ,(progress->sexpr progress)
-               #:expected ,(expectstack->sexpr expectstack))]))
-
-(define (expectstack->sexpr es)
-  (map expect->sexpr es))
-
-(define (expect->sexpr e)
-  (match e
-    [(expect:thing term description transparent? role)
-     (expect:thing '<Term> description transparent? role)]
-    [else e]))
-
-(define (progress->sexpr ps)
-  (for/list ([pf (in-list (invert-ps ps))])
-    (match pf
-      [(? syntax? stx) 'stx]
-      ['car 'car]
-      ['post 'post]
-      [(? exact-positive-integer? n) n]
-      ['opaque 'opaque])))
+(define (es-add-literal literal next)
+  (expect:literal literal next))

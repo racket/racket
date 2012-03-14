@@ -215,13 +215,12 @@
                      (loop (cdr x) cx (add1 i))
                      (let* ([pr (ps-add-cdr pr i)]
                             [pr (ps-add-car pr)]
-                            [es (cons (expect:thing pr desc #t rl) es)])
+                            [es (es-add-thing pr desc #t rl es)])
                        (values 'fail (failure pr es))))]
                 [else ;; not null, because stx->list failed
                  (let ([pr (ps-add-cdr pr i)]
                        #|
                        ;; Don't extend es! That way we don't get spurious "expected ()"
                        ;; that *should* have been cancelled out by ineffable pair failures.
-                       [es (cons (expect:atom '()) es)]
                        |#)
                    (values 'fail (failure pr es)))])))))

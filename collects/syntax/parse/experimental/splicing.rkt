@@ -49,9 +49,8 @@
                               (cdr result))))
                      ((error)
                       (let ([es
-                             (list* (expect:message (cadr result))
-                                    (expect:thing pr (get-description param ...) #f rl)
-                                    es)])
+                             (es-add-message (cadr result)
+                                             (es-add-thing pr (get-description param ...) #f rl es))])
                         (fh (failure pr es))))))))))
          (define-syntax name
            (stxclass 'name (arity (length '(param ...)) (length '(param ...)) '() '())
