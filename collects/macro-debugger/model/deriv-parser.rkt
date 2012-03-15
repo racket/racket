@@ -288,10 +288,23 @@
      [() #f]
      [((? CheckImmediateMacro)) $1])
 
+    ;; FIXME: workaround for problem in expander instrumentation:
+    ;;   observer not propagated correctly to expand_all_provides
+    ;;   so local actions that should be within prim-provide's EE 
+    ;;   instead appear directly here
     (Prim#%ModuleBegin
+     (#:args e1 e2 rs)
+     [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) (? Eval))
+      (make p:#%module-begin e1 e2 rs $2 $3 $4
+            (for/or ([la (in-list $5)])
+              (and (local-exn? la) (local-exn-exn la))))])
+    #|
+    ;; restore this version when expander fixed
+    (Prim#%ModuleBegin-REAL
      (#:args e1 e2 rs)
      [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) !)
       (make p:#%module-begin e1 e2 rs $2 $3 $4 $5)])
+    |#
 
     (ModuleBegin/Phase
      [((? ModulePass1) next-group (? ModulePass2) next-group (? ModulePass3))

@@ -215,4 +215,12 @@
                            (syntax-local-value (quote-syntax lambda) void)))))])
         (check-pred deriv? d)
         (check-pred ok-node? d)))
+    (test-case "syntax-local-value in provide"
+      (let ([d (trace '(module m racket/base
+                         (#%plain-module-begin
+                          (provide (except-out (all-defined-out) x y))
+                          (define-values (x) 1)
+                          (define-values (y) 2))))])
+        (check-pred deriv? d)
+        (check-pred ok-node? d)))
     ))
