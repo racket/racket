@@ -1,30 +1,29 @@
 #lang racket/base
 (require racket/pretty
+         racket/promise
          "model/trace.rkt"
          "model/reductions.rkt"
          "model/reductions-config.rkt"
          "model/steps.rkt"
          "syntax-browser/partition.rkt"
-         "syntax-browser/pretty-helper.rkt")
+         "syntax-browser/pretty-helper.rkt"
+         "view/debug-format.rkt")
 (provide expand/step-text
          stepper-text)
 
-(define expand/step-text
-  (case-lambda 
-   [(stx) (expand/step-text stx #f)]
-   [(stx show)
-    (define s (stepper-text stx (->show-function show)))
-    (s 'all)]))
+(define (expand/step-text stx [show #f]
+                          #:internal-error-file [error-file #f])
+  (let ([s (stepper-text stx (->show-function show) #:internal-error-file error-file)])
+    (s 'all)))
 
-(define stepper-text
-  (case-lambda
-   [(stx) (internal-stepper stx #f)]
-   [(stx show) (internal-stepper stx (->show-function show))]))
+(define (stepper-text stx [show #f]
+                      #:internal-error-file [error-file #f])
+  (internal-stepper stx (->show-function show) error-file))
 
 ;; internal procedures
 
-(define (internal-stepper stx show?)
-  (define steps (get-steps stx show?))
+(define (internal-stepper stx show? error-file)
+  (define steps (get-steps stx show? error-file))
   (define used-steps null)
   (define partition (new-bound-partition))
   (define dispatch
@@ -50,14 +49,20 @@
            (dispatch 'all))))]))
   dispatch)
 
-(define (get-steps stx show?)
-  (define deriv (trace stx))
-  (define steps
-    (parameterize ((macro-policy show?))
-      (reductions deriv)))
-  (define (ok? x)
-    (or (rewrite-step? x) (misstep? x)))
-  (filter ok? steps))
+(define (get-steps stx show? error-file)
+  (let-values ([(_result events derivp) (trace* stx)])
+    (with-handlers ([exn:fail?
+                     (lambda (exn)
+                       (when error-file
+                         (write-debug-file error-file exn events))
+                       (raise exn))])
+      (define deriv (force derivp))
+      (define steps
+        (parameterize ((macro-policy show?))
+          (reductions deriv)))
+      (define (ok? x)
+        (or (rewrite-step? x) (misstep? x)))
+      (filter ok? steps))))
 
 (define (show-step step partition)
   (cond [(step? step)

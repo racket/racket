@@ -2,16 +2,21 @@
 (require racket/pretty)
 (provide write-debug-file
          load-debug-file
-         serialize-datum)
+         serialize-datum
+         approx-parse-state)
 
 (define (write-debug-file file exn events)
   (with-output-to-file file
     (lambda ()
-      (pretty-write (serialize-datum events))
+      (write-string "`(\n")
+      (for ([event (in-list events)])
+        (let ([event (list (car event) (cdr event))])
+          (pretty-write (serialize-datum* event))))
+      (write-string ")\n")
       (newline)
       (write (exn-message exn))
       (newline)
-      (pretty-print
+      (pretty-write
        (map serialize-context-frame
             (continuation-mark-set->context
              (exn-continuation-marks exn)))))
@@ -77,5 +82,27 @@
         (let* ([events-expr (read)]
                [exnmsg (read)]
                [ctx (read)])
-          (let ([events (eval events-expr)])
+          (let* ([events (eval events-expr)]
+                 [events
+                  (if (andmap (lambda (e) (and (list? e) (= 2 (length e)))) events)
+                      (map (lambda (l) (cons (car l) (cadr l))) events)
+                      events)])
             (values events exnmsg ctx)))))))
+
+(define (approx-parse-state events N)
+  (for/fold ([state null]) ([event (in-list events)] [index (in-range N)])
+    (define (pop expect)
+      (let ([top (car state)])
+        (unless (eq? (cadr top) expect)
+          (error "bad state on ~e: ~e" (car event) state))
+        (cdr state)))
+    (case (car event)
+      ((enter-macro enter-prim enter-local)
+       (cons (cons index event) state))
+      ((exit-macro)
+       (pop 'enter-macro))
+      ((exit-prim)
+       (pop 'enter-prim))
+      ((exit-local)
+       (pop 'enter-local))
+      (else state))))
