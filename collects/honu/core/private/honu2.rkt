@@ -229,10 +229,12 @@
 (define-honu-syntax honu-provide
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
-      [(_ name:id ... (~optional semicolon) . rest)
-       (define out (racket-syntax (provide name ...)))
+      [(_ name:honu-identifier ... (~optional semicolon) . rest)
+       (debug "Provide matched names ~a\n" (syntax->datum #'(name.result ...)))
+       (define out (racket-syntax (provide name.result ...)))
        (debug "Provide properties ~a\n" (syntax-property-symbol-keys out))
-       (values out #'() #'rest)])))
+       (debug "Rest ~a\n" #'rest)
+       (values out #'rest #f)])))
 
 (provide honu-with-input-from-file)
 (define-honu-syntax honu-with-input-from-file

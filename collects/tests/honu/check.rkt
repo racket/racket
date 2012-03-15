@@ -92,7 +92,7 @@
 (test
   "cond"
   @input{
-  var n = 5;
+  var n = 5
   cond
     n < 10: 'x1,
     n > 10: 'x2

@@ -416,6 +416,7 @@
                       (lambda (x) x)
                       (left final)))]
          
+         #;
          [(stopper? #'head)
           (debug "Parse a stopper ~a\n" #'head)
           (values (left final)
@@ -424,6 +425,10 @@
            (define-splicing-syntax-class no-left
              [pattern (~seq) #:when (and (= precedence 0) (not current))])
            (syntax-parse #'(head rest ...) #:literal-sets (cruft)
+             [(semicolon . rest)
+              (debug "Parsed a semicolon, finishing up with ~a\n" current)
+              (values (left current) #'rest)]
+             #;
              [((semicolon more ...) . rest)
               #;
               (define-values (parsed unparsed)
@@ -589,13 +594,19 @@
   #:attributes (result)
   #:description "expression"
   (lambda (stx fail)
-    (debug "honu expression syntax class\n")
-    (if (stx-null? stx)
-      (fail)
+    (define context (gensym))
+    (debug "[~a] honu expression syntax class on ~a\n" context stx)
+    (if (or (stx-null? stx)
+            #;
+            (stopper? (stx-car stx)))
+      (begin
+        (debug "[~a] failed\n" context)
+        (fail))
       (let ()
         (define-values (parsed unparsed)
                        (parse stx))
-        (debug "parsed ~a\n" (if parsed (syntax->datum parsed) parsed))
+        (debug "[~a] expression parsed ~a\n" context (if parsed (syntax->datum parsed) parsed))
+        (debug "[~a] Parsed things ~a\n" context (parsed-things stx unparsed))
         (list (parsed-things stx unparsed)
               (parsed-syntax parsed)
               #;
@@ -615,7 +626,15 @@
 
 (provide honu-identifier)
 (define-splicing-syntax-class honu-identifier
-  [pattern x:id #:with result #'x])
+                              #:literal-sets (cruft)
+  [pattern (~and (~not semicolon)
+                 x:id) #:with result #'x])
+
+(provide honu-number)
+(define-splicing-syntax-class honu-number
+                              #:literal-sets (cruft)
+  [pattern x:number #:with result #'x])
+
 
 (provide identifier-comma-list)
 (define-splicing-syntax-class identifier-comma-list

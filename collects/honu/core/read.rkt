@@ -333,7 +333,7 @@
   ;;   ((%semicolon 3 + 4) (%semicolon 1 + 2))
   ;;
   ;; The entire list will be reversed at the end of parsing.
-  (define (do-semicolon current tokens table)
+  (define (do-semicolon2 current tokens table)
     ;; (debug "Do semicolon on ~a\n" current)
     (define-values (wrap ok)
                    (let loop ([found '()]
@@ -350,7 +350,13 @@
                                    (car tokens)
                                    source))
 
+
     (do-parse (cons semicolon ok)
+              (cdr tokens)
+              table))
+
+  (define (do-semicolon current tokens table)
+    (do-parse (cons (make-syntax '%semicolon (car tokens) source) current)
               (cdr tokens)
               table))
 
@@ -423,6 +429,7 @@
          (action current tokens table)]
         [else (loop (cdr use))])))
 
+  (debug 3 "Parsing tokens ~a\n" (map position-token-token tokens))
   (if (null? tokens)
     (datum->syntax #f '() #f)
     (datum->syntax #f (do-parse '() tokens dispatch-table)

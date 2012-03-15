@@ -27,3 +27,9 @@ mymatch [1, 2, 3] with
 | [1, 2, 3] => 8,
 
 // mymatch [1] with | [2] => 5
+
+mymatch [true, false] with
+| [true] => 1,
+| [false] => 2,
+| [false, true] => 3,
+| [true, false] => 4,

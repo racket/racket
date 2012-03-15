@@ -481,6 +481,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
                              (honu->racket parsed))]
                    [(unparsed ...) unparsed])
        (debug "Final parsed syntax\n~a\n" (pretty-format (syntax->datum #'parsed)))
+       (debug "Unparsed syntax ~a\n" #'(unparsed ...))
        (if (null? (syntax->datum #'(unparsed ...)))
          (if (parsed-syntax? #'parsed)
            #'parsed

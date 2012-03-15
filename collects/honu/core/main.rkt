@@ -19,6 +19,7 @@
                                    [parse:honu-identifier identifier]
                                    [racket:else else]
                                    [racket:void void]
+                                   [parse:honu-number number]
                                    [honu-function function]
                                    [honu-function fun]
                                    [honu-var var]
