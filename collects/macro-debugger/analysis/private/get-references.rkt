@@ -130,8 +130,8 @@
        (recur/phase-up rhs)]
       [(p:define-values z1 z2 rs ?1 rhs)
        (recur rhs)]
-      [(p:begin-for-syntax z1 z2 rs ?1 prep body)
-       (recur prep)
+      [(p:begin-for-syntax z1 z2 rs ?1 prep body locals)
+       (recur prep locals)
        (recur/phase-up body)]
       [(p:#%expression z1 z2 rs ?1 inner untag)
        (recur inner)]

@@ -270,7 +270,7 @@
         [! ?2]
         [Expr ?rhs rhs])]
 
-    [(Wrap p:begin-for-syntax (e1 e2 rs ?1 prep body))
+    [(Wrap p:begin-for-syntax (e1 e2 rs ?1 prep body locals))
      (R [! ?1]
         [#:pattern ?form]
         [PrepareEnv ?form prep]
@@ -278,7 +278,8 @@
         [#:parameterize ((phase (add1 (phase))))
           [#:if (module-begin/phase? body)
                 [[ModuleBegin/Phase ?forms body]]
-                [[BeginForSyntax ?forms body]]]])]
+                [[BeginForSyntax ?forms body]]]]
+        [LocalActions ?forms locals])]
 
     ;; Macros
     [(Wrap mrule (e1 e2 rs ?1 me1 locals me2 ?2 etx next))

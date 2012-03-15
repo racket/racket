@@ -321,8 +321,8 @@
                   phase-up (? EE/LetLifts) (? Eval) exit-prim)
       (make p:define-syntaxes $1 $8 null $3 $4 $6 $7)]
      [(enter-prim prim-begin-for-syntax ! (? PrepareEnv)
-                  phase-up (? ModuleBegin/Phase) exit-prim)
-      (make p:begin-for-syntax $1 $7 null $3 $4 $6)]
+                  phase-up (? ModuleBegin/Phase) (? Eval) exit-prim)
+      (make p:begin-for-syntax $1 $7 null $3 $4 $6 $7)]
      [(enter-prim prim-require (? Eval) exit-prim)
       (make p:require $1 $4 null #f $3)]
      [()
@@ -504,8 +504,8 @@
 
     (PrimBeginForSyntax
      (#:args e1 e2 rs)
-     [(prim-begin-for-syntax ! (? PrepareEnv) (? BeginForSyntax*))
-      (make p:begin-for-syntax e1 e2 rs $2 $3 $4)])
+     [(prim-begin-for-syntax ! (? PrepareEnv) (? BeginForSyntax*) (? Eval))
+      (make p:begin-for-syntax e1 e2 rs $2 $3 $4 $5)])
     (BeginForSyntax*
      [((? EL))
       (list $1)]

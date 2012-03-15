@@ -36,7 +36,7 @@
 
 (define (ok-node? x)
   (check 'ok-node? node? "node" x)
-  (and (node-z1 x) #t))
+  (and (node-z2 x) #t))
 (define (interrupted-node? x)
   (check 'interrupted-node? node? "node" x)
   (not (node-z2 x)))

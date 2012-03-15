@@ -108,7 +108,7 @@
 ;;     where BFSBody is one of
 ;;       - ModuleBegin/Phase
 ;;       - (list BeginForSyntaxLifts ... LDeriv))
-(define-struct (p:begin-for-syntax prule) (prep body) #:transparent)
+(define-struct (p:begin-for-syntax prule) (prep body locals) #:transparent)
 
 ;;   (make-p:stop <Base>)
 ;;   (make-p:unknown <Base>)
