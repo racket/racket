@@ -923,7 +923,8 @@
 ;; (_list <mode> <type> [<len>])
 ;; Similar to _ptr, except that it is used for converting lists to/from C
 ;; vectors.  The length is needed for output values where it is used in the
-;; post code, and in the pre code of an output mode to allocate the block.  In
+;; post code, and in the pre code of an output mode to allocate the block.  (If
+;; the length is 0, then NULL is passed in and an empty list is returned.)  In
 ;; any case it can refer to a previous binding for the length of the list which
 ;; the C function will most likely require.
 (provide _list)
@@ -932,7 +933,7 @@
     [(_ i  t  ) (type: _pointer
                  pre:  (x => (list->cblock x t)))]
     [(_ o  t n) (type: _pointer
-                 pre:  (malloc n t)
+                 pre:  (if (zero? n) #f (malloc n t))
                  post: (x => (cblock->list x t n)))]
     [(_ io t n) (type: _pointer
                  pre:  (x => (list->cblock x t))
@@ -946,7 +947,7 @@
     [(_ i  t  ) (type: _pointer
                  pre:  (x => (vector->cblock x t)))]
     [(_ o  t n) (type: _pointer
-                 pre:  (malloc n t)
+                 pre:  (if (zero? n) #f (malloc n t))
                  post: (x => (cblock->vector x t n)))]
     [(_ io t n) (type: _pointer
                  pre:  (x => (vector->cblock x t))
