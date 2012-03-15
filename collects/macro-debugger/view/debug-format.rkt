@@ -1,13 +1,13 @@
 #lang racket/base
 (require racket/pretty)
 (provide write-debug-file
-         load-debug-file)
+         load-debug-file
+         serialize-datum)
 
 (define (write-debug-file file exn events)
   (with-output-to-file file
     (lambda ()
-      (pretty-print
-       `(list ,@(map (lambda (e) (serialize-datum e)) events)))
+      (pretty-write (serialize-datum events))
       (newline)
       (write (exn-message exn))
       (newline)
@@ -17,17 +17,44 @@
              (exn-continuation-marks exn)))))
     #:exists 'replace))
 
+(define (quoted? x) (and (pair? x) (eq? (car x) 'quote)))
+
 (define (serialize-datum d)
-  (cond [(number? d) `(quote ,d)]
-        [(boolean? d) `(quote ,d)]
-        [(symbol? d) `(quote ,d)]
-        [(string? d) `(quote ,d)]
-        [(pair? d) `(cons ,(serialize-datum (car d)) ,(serialize-datum (cdr d)))]
-        [(null? d) ''()]
-        [(exn? d) `(make-exn ,(exn-message d) (current-continuation-marks))]
-        [(syntax? d) `(datum->syntax #f ',(syntax->datum d))]
-        #;[(syntax? d) `(eval (quote ,(compile `(,#'quote-syntax ,d))))]
-        [else (error 'serialize-datum "got ~s" d)]))
+  (list 'quasiquote (serialize-datum* d)))
+
+(define (serialize-datum* d)
+  (define (UNQUOTE x) (list 'unquote x))
+  (cond [(number? d) d]
+        [(boolean? d) d]
+        [(symbol? d)
+         (case d
+           ((unquote) (UNQUOTE '(quote unquote)))
+           ((unquote-splicing) (UNQUOTE '(quote unquote-splicing)))
+           (else d))]
+        [(string? d) d]
+        [(bytes? d) d]
+        [(null? d) d]
+        [(pair? d)
+         (cons (serialize-datum* (car d)) (serialize-datum* (cdr d)))]
+        [(exn? d) (UNQUOTE `(make-exn ,(exn-message d) (current-continuation-marks)))]
+        [(syntax? d) (UNQUOTE `(datum->syntax #f ',(syntax->datum d)))]
+        [(module-path-index? d)
+         (define-values (path rel)
+           (module-path-index-split d))
+         (UNQUOTE `(module-path-index-join
+                    ,(serialize-datum path)
+                    ,(serialize-datum rel)))]
+        [(resolved-module-path? d)
+         (UNQUOTE `(make-resolved-module-path
+                    ,(serialize-datum
+                      (resolved-module-path-name d))))]
+        [(path? d)
+         (UNQUOTE `(bytes->path
+                    ,(serialize-datum (path->bytes d))
+                    ,(serialize-datum (path-convention-type d))))]
+        [else
+         (eprintf "unserializable value: ~e" d)
+         `(UNSERIALIZABLE ,(format "~s" d))]))
 
 (define (serialize-context-frame frame)
   (cons (car frame)
