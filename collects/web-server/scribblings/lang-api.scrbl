@@ -55,7 +55,7 @@ An example @racket['stateless] servlet module:
 ]
 
 
-These servlets have an extensive API available to them: @racketmodname[net/url], @racketmodname[web-server/http],
+These servlets have an extensive API available to them: @racketmodname[racket], @racketmodname[net/url], @racketmodname[web-server/http],
 @racketmodname[web-server/http/bindings],
 @racketmodname[web-server/lang/abort-resume], @racketmodname[web-server/lang/web], @racketmodname[web-server/lang/native],
 @racketmodname[web-server/lang/web-param],
