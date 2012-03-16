@@ -55,7 +55,6 @@
     (define next-msg-num 0)
 
     (define/private (fresh-exchange)
-      (set! msg-buffer null)
       (set! next-msg-num 0))
 
     ;; buffer-message : message -> void
@@ -68,6 +67,7 @@
     (define/private (flush-message-buffer)
       (for ([msg+num (in-list (reverse msg-buffer))])
         (write-packet outport (car msg+num) (cdr msg+num)))
+      (set! msg-buffer null)
       (flush-output outport))
 
     ;; send-message : message -> void
@@ -264,18 +264,15 @@
                                 (classify-my-sql stmt)])])
                    (check-statement/tx fsym stmt-type)
                    (begin0 (query1 fsym stmt cursor? #t)
-                     (when #f ;; DISABLED!
-                       ;; For some reason, *really* slow; the concurrent tests slow
-                       ;; down by over an order of magnitude when this is enabled.
-                       (statement:after-exec stmt #f))))))])
+                     (statement:after-exec stmt #f)))))])
         (query1:process-result fsym result)))
 
     ;; query1 : symbol Statement -> QueryResult
     (define/private (query1 fsym stmt cursor? warnings?)
       (let ([delenda (check/invalidate-cache stmt)])
-        ;; Don't do anything with delenda; too slow!
-        ;; (See comment in query method above.)
-        (void))
+        (when delenda
+          (for ([(_sql pst) (in-hash delenda)])
+            (free-statement pst #f))))
       (let ([wbox (and warnings? (box 0))])
         (fresh-exchange)
         (query1:enqueue stmt cursor?)
@@ -425,12 +422,15 @@
     (define/public (get-base) this)
 
     (define/public (free-statement pst need-lock?)
+      ;; Important: *buffer* statement-close message, but do not send (ie, flush).
+      ;; That way, message included in same TCP packet as next query message, avoiding
+      ;; write-write-read TCP packet sequence, Nagle's algorithm & delayed ACK issue.
       (define (do-free-statement)
         (let ([id (send pst get-handle)])
           (when (and id outport) ;; outport = connected?
             (send pst set-handle #f)
             (fresh-exchange)
-            (send-message (make-command:statement-packet 'statement-close id)))))
+            (buffer-message (make-command:statement-packet 'statement-close id)))))
       (if need-lock?
           (call-with-lock* 'free-statement do-free-statement void #f)
           (do-free-statement)))
