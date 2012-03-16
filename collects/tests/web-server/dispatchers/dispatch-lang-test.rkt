@@ -88,6 +88,12 @@
     mkd
     "add02.rkt - s/s/u, uri"
     (build-path example-servlets "add02.rkt"))
+
+   (test-add-two-numbers
+    mkd
+    "add02-base.rkt - s/s/u, uri"
+    (build-path example-servlets "add02-base.rkt"))
+
    
    ; XXX Use kont
    #;(test-add-two-numbers

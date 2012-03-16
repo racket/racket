@@ -1,26 +1,19 @@
-#lang racket/base
-(require (for-syntax racket/base)
-         (for-syntax racket/list)
-         (for-syntax "lang/labels.rkt")
-         (for-syntax "lang/util.rkt")
-         (for-syntax "lang/elim-letrec.rkt")
-         (for-syntax "lang/anormal.rkt")
-         (for-syntax "lang/elim-callcc.rkt")
-         (for-syntax "lang/defun.rkt")
-         "lang/lang-api.rkt")
+#lang racket
+(define-syntax-rule (reqpro m ...)
+  (begin (require m ...)
+         (provide (all-from-out m ...))))
+(provide (all-from-out racket))
+(reqpro web-server/lang/base
+        net/url
+        web-server/http
+        web-server/http/bindings
+        web-server/dispatch
+        web-server/stuffers
+        web-server/lang/abort-resume
+        web-server/lang/web
+        web-server/lang/native
+        web-server/lang/web-cells
+        web-server/lang/web-param
+        web-server/lang/file-box
+        web-server/lang/soft)
 
-(provide (rename-out [lang-module-begin #%module-begin])
-         (all-from-out "lang/lang-api.rkt"))
-
-(define-for-syntax anormalize (make-anormal-term elim-letrec-term))
-
-(define-syntax lang-module-begin 
-  (make-lang-module-begin 
-   make-labeling
-   (make-module-case
-    (make-define-case
-     (lambda (stx)
-       (define anf-stx (anormalize stx))
-       (define no-callcc-stx (elim-callcc anf-stx))
-       (define defun-stx (defun no-callcc-stx))
-       defun-stx)))))

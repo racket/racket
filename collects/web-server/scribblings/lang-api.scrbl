@@ -3,7 +3,7 @@
 
 @title[#:tag "stateless"]{Stateless Servlets}
 
-@defmodulelang[web-server]
+@defmodulelang*[(web-server/base web-server)]
 
 @section[#:style 'hidden #:tag "stateless-example"]{Example}
 
@@ -54,14 +54,23 @@ An example @racket['stateless] servlet module:
     `(html (body (h2 "Look ma, no state!")))))
 ]
 
+The @racketmodname[web-server/base] language exports all of the functions
+and syntax from @racketmodname[racket/base] and nothing else.
 
-These servlets have an extensive API available to them: @racketmodname[racket], @racketmodname[net/url], @racketmodname[web-server/http],
+The @racketmodname[web-server] language exports all of the functions
+and syntax from the following libraries: @racketmodname[racket],
+@racketmodname[net/url], @racketmodname[web-server/http],
 @racketmodname[web-server/http/bindings],
-@racketmodname[web-server/lang/abort-resume], @racketmodname[web-server/lang/web], @racketmodname[web-server/lang/native],
+@racketmodname[web-server/lang/abort-resume],
+@racketmodname[web-server/lang/web],
+@racketmodname[web-server/lang/native],
 @racketmodname[web-server/lang/web-param],
-@racketmodname[web-server/lang/web-cells], @racketmodname[web-server/lang/file-box], @racketmodname[web-server/lang/soft], @racketmodname[web-server/dispatch], and
-@racketmodname[web-server/stuffers].
-      Some of these are documented in the subsections that follow.
+@racketmodname[web-server/lang/web-cells],
+@racketmodname[web-server/lang/file-box],
+@racketmodname[web-server/lang/soft],
+@racketmodname[web-server/dispatch], and
+@racketmodname[web-server/stuffers].  Some of these are documented in
+the subsections that follow.
 
 @include-section["stateless-usage.scrbl"]
 @include-section["serial.scrbl"]
