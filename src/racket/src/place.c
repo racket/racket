@@ -3127,7 +3127,7 @@ static void cleanup_msg_memmory(void *msg_memory) {
 static Scheme_Object *scheme_place_async_try_receive(Scheme_Place_Async_Channel *ch) {
   Scheme_Object *msg = NULL;
   void *msg_memory = NULL;
-  BEGIN_ESCAPEABLE();
+  BEGIN_ESCAPEABLE(cleanup_msg_memmory, msg_memory);
   msg = scheme_place_async_try_receive_raw(ch, &msg_memory);
   if (msg) {
     msg = scheme_places_deserialize(msg, msg_memory);
