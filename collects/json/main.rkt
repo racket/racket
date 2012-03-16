@@ -178,12 +178,20 @@
 ;; ----------------------------------------------------------------------------
 ;; Convenience functions
 
-(provide jsexpr->string)
+(provide jsexpr->string jsexpr->bytes)
 (define (jsexpr->string x #:null [jsnull (json-null)] #:encode [enc 'control])
   (define o (open-output-string))
   (write-json x o #:null jsnull #:encode enc)
   (get-output-string o))
+(define (jsexpr->bytes x #:null [jsnull (json-null)] #:encode [enc 'control])
+  (define o (open-output-bytes))
+  (write-json x o #:null jsnull #:encode enc)
+  (get-output-bytes o))
 
-(provide string->jsexpr)
+(provide string->jsexpr bytes->jsexpr)
 (define (string->jsexpr str #:null [jsnull (json-null)])
+  (unless (string? str) (raise-type-error 'string->jsexpr "string" str))
   (read-json (open-input-string str) #:null jsnull))
+(define (bytes->jsexpr str #:null [jsnull (json-null)])
+  (unless (bytes? str) (raise-type-error 'bytes->jsexpr "bytes" str))
+  (read-json (open-input-bytes str) #:null jsnull))

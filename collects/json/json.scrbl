@@ -68,6 +68,13 @@ the @rfc for more information about JSON.
          string?]{
   Generates a JSON source string for the @tech{jsexpr} @racket[x].}
 
+@defproc[(jsexpr->bytes [x jsexpr?]
+                        [#:null jsnull any? (json-null)]
+                        [#:encode encode (or/c 'control 'all) 'control])
+         bytes?]{
+  Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
+  (The byte string is encoded in UTF-8.)}
+
 @section{Parsing JSON Text into JS-Expressions}
 
 @defproc[(read-json [in input-port? (current-input-port)]
@@ -79,6 +86,10 @@ the @rfc for more information about JSON.
 @defproc[(string->jsexpr [str string?] [#:null jsnull any? (json-null)])
          jsexpr?]{
   Parses the JSON string @racket[str] as an immutable @tech{jsexpr}.}
+
+@defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any? (json-null)])
+         jsexpr?]{
+  Parses the JSON bytes string @racket[str] as an immutable @tech{jsexpr}.}
 
 @section{A word about design}
 

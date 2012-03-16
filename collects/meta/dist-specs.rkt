@@ -534,6 +534,9 @@ mz-extras :+= (- (package: "xml/")
                  (cond* (not plt) => (srcfile: "*-{tool|snipclass}.rkt"
                                                "xml.png")))
 
+;; -------------------- json
+mz-extras :+= (package: "json/")
+
 ;; -------------------- ffi
 mz-extras :+= (collects: "ffi/") (doc: "objc")
 
