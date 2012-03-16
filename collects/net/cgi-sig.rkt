@@ -1,10 +1,5 @@
 #lang racket/signature
 
-;; -- exceptions raised --
-(struct cgi-error ())
-(struct incomplete-%-suffix (chars))
-(struct invalid-%-suffix (char))
-
 ;; -- cgi methods --
 get-bindings
 get-bindings/post

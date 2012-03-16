@@ -3,10 +3,6 @@
 (require "uri-codec.rkt")
 
 (provide
- ;; -- exceptions raised --
- (struct-out cgi-error)
- (struct-out incomplete-%-suffix)
- (struct-out invalid-%-suffix)
 
  ;; -- cgi methods --
  get-bindings
@@ -27,32 +23,6 @@
 ;; type bindings = list ((symbol . string))
 
 ;; --------------------------------------------------------------------
-
-;; Exceptions:
-
-(define-struct cgi-error ())
-
-;; chars : list (char)
-;; -- gives the suffix which is invalid, not including the `%'
-
-(define-struct (incomplete-%-suffix cgi-error) (chars))
-
-;; char : char
-;; -- an invalid character in a hex string
-
-(define-struct (invalid-%-suffix cgi-error) (char))
-
-;; --------------------------------------------------------------------
-
-;; query-string->string : string -> string
-
-;; -- The input is the string post-processed as per Web specs, which
-;; is as follows:
-;; spaces are turned into "+"es and lots of things are turned into %XX, where
-;; XX are hex digits, eg, %E7 for ~.  The output is a regular Scheme string
-;; with all the characters converted back.
-
-(define query-string->string form-urlencoded-decode)
 
 ;; string->html : string -> string
 ;; -- the input is raw text, the output is HTML appropriately quoted
@@ -137,7 +107,7 @@
      (list (format "Server generated malformed input for ~a method:" method)
            (apply format fmt xs))))
   (define value-rx (delimiter->rx (current-alist-separator-mode)))
-  (define (process str) (query-string->string (bytes->string/utf-8 str)))
+  (define (process str) (form-urlencoded-decode (bytes->string/utf-8 str)))
   (let loop ([bindings '()])
     (if (eof-object? (peek-char ip))
       (reverse bindings)

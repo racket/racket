@@ -116,26 +116,6 @@ CGI script, unpredictable otherwise.}
 Converts a set of bindings into a list of HTML strings, which is
 useful for debugging.}
 
-
-@defstruct[cgi-error ()]{
-
-A supertype for all exceptions thrown by the @racketmodname[net/cgi]
-library.}
-
-
-@defstruct[(incomplete-%-suffix cgi-error) ([chars (listof char?)])]{
-
-Raised when a @litchar{%} in a query is followed by an incomplete
-suffix.  The characters of the suffix---excluding the
-@litchar{%}---are provided by the exception.}
-
-
-@defstruct[(invalid-%-suffix cgi-error) ([char char?])]{
-
-Raised when the character immediately following a @litchar{%} in a
-query is invalid.}
-
-
 @; ----------------------------------------
 
 @section{CGI Unit}
