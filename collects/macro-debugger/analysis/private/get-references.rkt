@@ -201,12 +201,12 @@
        (recur head prim)]
       [(mod:splice head rename ?1 tail)
        (recur head)]
-      [(mod:lift head renames tail)
-       (recur head)]
+      [(mod:lift head locals renames tail)
+       (recur head locals)]
       [(mod:lift-end tail)
        (void)]
-      [(mod:cons head)
-       (recur head)]
+      [(mod:cons head locals)
+       (recur head locals)]
       [(mod:skip)
        (void)]
       ;; Shouldn't occur in module expansion.

@@ -324,7 +324,7 @@
      [(EE rename-one ! splice)
       (make mod:splice $1 $2 $3 $4)]
      [(EE rename-list module-lift-loop)
-      (make mod:lift $1 $2 $3)])
+      (make mod:lift $1 null $2 $3)])
 
     (ModulePass1/Prim
      (#:args e1)
@@ -354,11 +354,14 @@
      [()
       (make mod:skip)]
      ;; normal: expand completely
-     [((? EE))
-      (make mod:cons $1)]
+     [((? EE) (? Eval))
+      ;; after expansion, may compile => may eval letstx rhss again!
+      ;; need to include those evals too (for errors, etc)
+      (make mod:cons $1 $2)]
      ;; catch lifts
-     [(EE module-lift-loop)
-      (make mod:lift $1 #f $2)])
+     [(EE Eval module-lift-loop)
+      ;; same as above: after expansion, may compile => may eval
+      (make mod:lift $1 $2 #f $3)])
 
     (ModulePass3
      (#:skipped null)

@@ -181,9 +181,9 @@
 (define-struct modrule () #:transparent)
 (define-struct (mod:prim modrule) (head rename prim) #:transparent)
 (define-struct (mod:splice modrule) (head rename ?1 tail) #:transparent)
-(define-struct (mod:lift modrule) (head renames tail) #:transparent)
+(define-struct (mod:lift modrule) (head locals renames tail) #:transparent)
 (define-struct (mod:lift-end modrule) (tail) #:transparent)
-(define-struct (mod:cons modrule) (head) #:transparent)
+(define-struct (mod:cons modrule) (head locals) #:transparent)
 (define-struct (mod:skip modrule) () #:transparent)
 
 ;; A ModPrim is either #f or one of the following PRule variants:

@@ -669,7 +669,7 @@
         [#:step 'splice-module (stx->list (stx-cdr begin-form))]
         [#:rename ?forms tail]
         [ModulePass ?forms rest])]
-    [(cons (Wrap mod:lift (head renames stxs)) rest)
+    [(cons (Wrap mod:lift (head locals renames stxs)) rest)
      (R [#:pattern (?firstL . ?rest)]
         ;; renames has form (head-e2 . ?rest)
         ;; stxs has form (lifted ...),
@@ -678,6 +678,7 @@
                          (visible-lift-stxs null))
           [#:pass1]
           [Expr ?firstL head]
+          [LocalActions ?firstL locals]
           [#:do (when (pair? (available-lift-stxs))
                   (lift-error 'mod:lift "available lifts left over"))]
           [#:let visible-lifts (visible-lift-stxs)]
@@ -701,9 +702,10 @@
     [(cons (Wrap mod:skip ()) rest)
      (R [#:pattern (?firstS . ?rest)]
         [ModulePass ?rest rest])]
-    [(cons (Wrap mod:cons (head)) rest)
+    [(cons (Wrap mod:cons (head locals)) rest)
      (R [#:pattern (?firstC . ?rest)]
         [Expr ?firstC head]
+        [LocalActions ?firstC locals]
         [ModulePass ?rest rest])]))
 
 ;; Lifts
