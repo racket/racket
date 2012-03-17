@@ -2213,7 +2213,7 @@ turned into a pict for viewing in the REPL or using with
 Slideshow (see 
 @other-manual['(lib "scribblings/slideshow/slideshow.scrbl")]).
 
-@subsection{Picts & PostScript}
+@subsection{Picts, PDF, & PostScript}
 
 This section documents two classes of operations, one for
 direct use of creating postscript figures for use in papers
@@ -2240,10 +2240,12 @@ sets @racket[dc-for-text-size] and the latter does not.
 @defproc[(render-term [lang compiled-lang?] [term any/c] [file (or/c #f path-string?)]) 
          (if file void? pict?)]{
   Renders the term @racket[term]. If @racket[file] is @racket[#f],
-  it produces a pict; if @racket[file] is a path,  it saves
-  Encapsulated PostScript in the provided filename. See
-  @racket[render-language] for details on the construction of the pict.
-  }
+  it produces a pict; if @racket[file] is a path, it saves
+  Encapsulated PostScript in the provided filename, unless the filename
+  ends with @filepath{.pdf}, in which case it saves PDF.
+  
+  See @racket[render-language] for details on the construction of the pict.
+}
 
 
 @defproc[(term->pict [lang compiled-lang?] [term any/c]) pict?]{
@@ -2263,7 +2265,9 @@ sets @racket[dc-for-text-size] and the latter does not.
 
 Renders a language. If @racket[file] is @racket[#f],
 it produces a pict; if @racket[file] is a path, it saves
-Encapsulated PostScript in the provided filename. See
+Encapsulated PostScript in the provided filename, unless the filename
+ends with @filepath{.pdf}, in which case it saves PDF.
+See
 @racket[render-language-nts] for information on the
 @racket[nts] argument.
 
@@ -2293,8 +2297,9 @@ Slideshow or with other tools that combine picts together.
 
 Renders a reduction relation. If @racket[file] is @racket[#f],
 it produces a pict; if @racket[file] is a path, it saves
-Encapsulated PostScript in the provided filename. See
-@racket[rule-pict-style] for information on the
+Encapsulated PostScript in the provided filename, unless the filename
+ends with @filepath{.pdf}, in which case it saves PDF.
+See @racket[rule-pict-style] for information on the
 @racket[style] argument.
 
 This function parameterizes @racket[dc-for-text-size] to install a

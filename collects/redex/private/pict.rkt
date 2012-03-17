@@ -134,8 +134,9 @@
 (define (render-reduction-relation rr [filename #f]
                                    #:style [style (rule-pict-style)])
   (if filename
-      (save-as-ps (λ () (do-reduction-relation->pict 'render-reduction-relation rr style))
-                  filename)
+      (save-as-ps/pdf
+       (λ () (do-reduction-relation->pict 'render-reduction-relation rr style))
+       filename)
       (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
         (do-reduction-relation->pict 'render-reduction-relation rr style))))
 
@@ -476,7 +477,7 @@
 
 (define (render-language lang [filename #f] #:nts [nts (render-language-nts)])
   (if filename
-      (save-as-ps (λ () (do-language->pict 'render-language lang nts)) filename)
+      (save-as-ps/pdf (λ () (do-language->pict 'render-language lang nts)) filename)
       (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
         (do-language->pict 'render-language lang nts))))
 
@@ -512,23 +513,26 @@
                      (map (λ (x) (format " ~a" x)) (cdr langs-nts)))))))
      nts)))
 
-;; save-as-ps : (-> pict) string -> void
-(define (save-as-ps mk-pict filename) 
-  (let ([ps-dc (make-ps-dc filename)])
-    (parameterize ([dc-for-text-size ps-dc])
-      (send ps-dc start-doc "x")
-      (send ps-dc start-page)
-      (draw-pict (mk-pict) ps-dc 0 0)
-      (send ps-dc end-page)
-      (send ps-dc end-doc))))
+;; save-as-ps/pdf : (-> pict) path-string -> void
+(define (save-as-ps/pdf mk-pict filename) 
+  (let ([ps/pdf-dc (make-ps/pdf-dc filename)])
+    (parameterize ([dc-for-text-size ps/pdf-dc])
+      (send ps/pdf-dc start-doc "x")
+      (send ps/pdf-dc start-page)
+      (draw-pict (mk-pict) ps/pdf-dc 0 0)
+      (send ps/pdf-dc end-page)
+      (send ps/pdf-dc end-doc))))
 
-(define (make-ps-dc filename)
+(define (make-ps/pdf-dc filename)
   (let ([ps-setup (make-object ps-setup%)])
     (send ps-setup copy-from (current-ps-setup))
     (send ps-setup set-file filename)
     (send ps-setup set-mode 'file)
+    (define % (if (regexp-match #rx#"[.]pdf$" (path->bytes filename))
+                  pdf-dc%
+                  post-script-dc%))
     (parameterize ([current-ps-setup ps-setup])
-      (make-object post-script-dc% #f #f))))
+      (make-object % #f #f))))
 
 ;; raw-info : language-pict-info
 ;; nts : (listof symbol) -- the nts that the user expects to see
@@ -1015,8 +1019,8 @@
 (define (render-metafunction/proc mfs filename name)
   (cond
     [filename
-     (save-as-ps (λ () (metafunctions->pict/proc mfs name))
-                 filename)]
+     (save-as-ps/pdf (λ () (metafunctions->pict/proc mfs name))
+                     filename)]
     [else
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (metafunctions->pict/proc mfs name))]))
@@ -1035,7 +1039,7 @@
 (define (render-pict make-pict filename)
   (cond
     [filename
-     (save-as-ps make-pict filename)]
+     (save-as-ps/pdf make-pict filename)]
     [else
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (make-pict))]))
@@ -1132,7 +1136,7 @@
 
 (define (render-term/proc lang lw [filename #f])
   (if filename
-      (save-as-ps (λ () (do-term->pict lang lw)) filename)
+      (save-as-ps/pdf (λ () (do-term->pict lang lw)) filename)
       (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
         (do-term->pict lang lw))))
 

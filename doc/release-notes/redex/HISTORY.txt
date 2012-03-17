@@ -6,6 +6,8 @@ v5.2.2
 
   * added define-extended-judgment-form
 
+  * extended render-* functions so they can produce PDF
+
 v5.2.1
 
   * rewrote the internals of the pattern matcher to be more consistent
