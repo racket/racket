@@ -63,15 +63,19 @@
            (sync t))))))))
 
 (define (async-test)
-  (unless (ANYFLAGS 'ismy 'isora 'isdb2)
+  (unless (ANYFLAGS 'isora 'isdb2)
     (test-case "asynchronous execution"
       (call-with-connection
        (lambda (c)
-         (query-exec c "create temporary table nums (n integer)")
-         (for ([i (in-range 40)])
-           (query-exec c (sql "insert into nums (n) values ($1)") i))
-         (let* ([the-sql "select cast(max(a.n * b.n *c.n * d.n) as varchar) \
-                          from nums a, nums b, nums c, nums d"]
+         ;; MySQL cannot use same temp table multiple times in one query,
+         ;; so create multiple temp tables.
+         (for ([table '("numsa" "numsb" "numsc" "numsd")])
+           (query-exec c (format "create temporary table ~a (n integer)" table))
+           (for ([i (in-range 40)])
+             (query-exec c (sql (format "insert into ~a (n) values ($1)" table)) i)))
+         (let* ([the-sql
+                 (string-append "select max(a.n * b.n *c.n * d.n) "
+                                "from numsa a, numsb b, numsc c, numsd d")]
                 [pst (prepare c the-sql)]
                 [sema (make-semaphore 0)]
                 [peek (semaphore-peek-evt sema)]
