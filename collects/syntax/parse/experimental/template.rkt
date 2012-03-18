@@ -2,14 +2,10 @@
 (require (for-syntax racket/base
                      racket/set
                      racket/syntax
-                     racket/match
-                     racket/private/sc
-                     unstable/struct)
-         racket/match
-         racket/vector
-         syntax/stx
+                     syntax/parse/private/minimatch
+                     racket/private/sc)
          syntax/parse/private/residual
-         unstable/struct)
+         "private/substitute.rkt")
 (provide template
          define-template-metafunction
          ??
@@ -22,6 +18,7 @@ To do:
   (with-syntax ([(a ...) #'(1 2 3)]
                 [((b ...) ...) #'((1 2 3) (4 5 6) (7 8 9))])
     #'(((a b) ...) ...))  ;; a has depth 1, used at depth 2
+- support #hash templates, etc (check for other atomic & compound forms)
 |#
 
 #|
@@ -71,6 +68,20 @@ A HeadTemplate (H) is one of:
                                    'guide
                                    (vector var ...)))]))))])))
 
+;; substitute-table : hash[stx => translated-template]
+;; Cache for closure-compiled templates. Key is just syntax of
+;; template, since eq? templates must have equal? guides.
+(define substitute-table (make-weak-hasheq))
+
+(define (substitute stx g main-env)
+  (let ([f (or (hash-ref substitute-table stx #f)
+               (let ([f (translate stx g (vector-length main-env))])
+                 (hash-set! substitute-table stx f)
+                 f))])
+    (f main-env #f)))
+
+;; ----
+
 (define-syntaxes (?? ?@)
   (let ([tx (lambda (stx) (raise-syntax-error #f "not allowed as an expression" stx))])
     (values tx tx)))
@@ -78,50 +89,15 @@ A HeadTemplate (H) is one of:
 ;; ============================================================
 
 #|
-A Guide (G) is one of:
-  - _
-  - (G . G)
-  - integer
-  - #s(stxvector G)
-  - #s(stxstruct G)
-  - #&G
-  - #s(dots HG (vector-of integer) nat G)
-  - #s(app HG G)
-  - #s(escaped G)
-  - #s(orelse G (vector-of integer) G)
-  - #s(metafun integer G)
-  "optimized" forms:
-  - #s(sdots G integer G) ; simple head template, one driver, nesting=1
+See private/substitute for definition of Guide (G) and HeadGuide (HG).
 
-A HeadGuide (HG) is one of:
-  - G
-  - #s(app-opt G (vector-of integer))
-  - #s(splice G)
+An env-entry is one of
+  - syntax-mapping (for pattern variables)
+  - template-metafunction
 
-A Pre-Guide is like a Guide but with pvars and pvar sets instead of
-integers and integer vectors.
+A Pre-Guide is like a Guide but with env-entry and (setof env-entry)
+instead of integers and integer vectors.
 |#
-
-(define-syntax-rule (begin-both-phases form ...)
-  (begin (begin-for-syntax form ...)
-         (begin form ...)))
-
-(begin-both-phases
- (struct stxvector (g) #:prefab)
- (struct stxstruct (g) #:prefab)
- (struct dots (head hdrivers nesting tail) #:prefab)
- (struct app (head tail) #:prefab)
- (struct escaped (body) #:prefab)
- (struct orelse (g1 drivers1 g2) #:prefab)
- (struct metafun (index g) #:prefab)
- (struct app-opt (g drivers) #:prefab)
- (struct splice (g) #:prefab)
-
- (struct sdots (head driver tail) #:prefab)
-
- (define (head-guide? x)
-   (or (app-opt? x) (splice? x)))
- )
 
 ;; ============================================================
 
@@ -143,70 +119,73 @@ integers and integer vectors.
 
 (begin-for-syntax
 
+ ;; parse-template : stx -> (values guide (vectorof env-entry))
  (define (parse-template t)
-   (let-values ([(_const? drivers pre-guide) (parse-t t 0 #f)])
-     (define (set->env drivers)
-       (for/hash ([pvar (in-set drivers)]
-                  [n (in-naturals 1)])
-         (values pvar n)))
+   (let-values ([(drivers pre-guide) (parse-t t 0 #f)])
      (define main-env (set->env drivers))
-     (define (loop g loop-env)
-       (define (get-index x)
-         (let ([loop-index (hash-ref loop-env x #f)])
-           (if loop-index
-               (- loop-index)
-               (hash-ref main-env x))))
-       (match g
-         ['_ '_]
-         [(cons g1 g2) (cons (loop g1 loop-env) (loop g2 loop-env))]
-         [(? syntax-pattern-variable? pvar) (get-index pvar)]
-         [(dots head hdrivers nesting tail)
-          (cond [(and (= nesting 1)
-                      (= (set-count hdrivers) 1)
-                      (not (head-guide? head)))
-                 (let* ([pvar (for/first ([pvar (in-set hdrivers)]) pvar)]
-                        [sub-loop-env (hash pvar 0)])
-                   (sdots (loop head sub-loop-env)
-                          (get-index pvar)
-                          (loop tail loop-env)))]
-                [else
-                 (let* ([sub-loop-env (set->env hdrivers)]
-                        [sub-loop-vector (index-hash->vector sub-loop-env get-index)])
-                   (dots (loop head sub-loop-env)
-                         sub-loop-vector
-                         nesting
-                         (loop tail loop-env)))])]
-         [(app head tail)
-          (app (loop head loop-env) (loop tail loop-env))]
-         [(escaped g1)
-          (escaped (loop g1 loop-env))]
-         [(orelse g1 drivers1 g2)
-          (orelse (loop g1 loop-env)
-                  (for/vector ([pvar (in-set drivers1)])
-                    (get-index pvar))
-                  (loop g2 loop-env))]
-         [(metafun mf g1)
-          (metafun (get-index mf)
-                   (loop g1 loop-env))]
-         [(stxvector g1)
-          (stxvector (loop g1 loop-env))]
-         [(stxstruct g1)
-          (stxstruct (loop g1 loop-env))]
-         [(? box?)
-          (box (loop (unbox g) loop-env))]
-         [(app-opt g1 drivers1)
-          (app-opt (loop g1 loop-env)
-                   (for/vector ([pvar (in-set drivers1)])
-                     (get-index pvar)))]
-         [(splice g1)
-          (splice (loop g1 loop-env))]
-         [else (error 'template "internal error: bad pre-guide: ~e" g)]))
-     (define guide (loop pre-guide #hash()))
+     (define guide (guide-resolve-env pre-guide main-env))
      (values guide
              (index-hash->vector main-env))))
 
+ ;; set->env : (setof env-entry) -> hash[env-entry => nat]
+ (define (set->env drivers)
+   (for/hash ([pvar (in-set drivers)]
+              [n (in-naturals 1)])
+     (values pvar n)))
+
+ ;; guide-resolve-env : pre-guide hash[env-entry => nat] -> guide
+ (define (guide-resolve-env g0 main-env)
+   (define (loop g loop-env)
+     (define (get-index x)
+       (let ([loop-index (hash-ref loop-env x #f)])
+         (if loop-index
+             (- loop-index)
+             (hash-ref main-env x))))
+     (match g
+       ['_ '_]
+       [(cons g1 g2) (cons (loop g1 loop-env) (loop g2 loop-env))]
+       [(? syntax-pattern-variable? pvar) (get-index pvar)]
+       [(vector 'dots head hdrivers nesting tail)
+        (let* ([sub-loop-env (set->env hdrivers)]
+               [sub-loop-vector (index-hash->vector sub-loop-env get-index)])
+          (vector 'dots
+                  (loop head sub-loop-env)
+                  sub-loop-vector
+                  nesting
+                  (loop tail loop-env)))]
+       [(vector 'app head tail)
+        (vector 'app (loop head loop-env) (loop tail loop-env))]
+       [(vector 'escaped g1)
+        (vector 'escaped (loop g1 loop-env))]
+       [(vector 'orelse g1 drivers1 g2)
+        (vector 'orelse
+                (loop g1 loop-env)
+                (for/vector ([pvar (in-set drivers1)])
+                  (get-index pvar))
+                (loop g2 loop-env))]
+       [(vector 'metafun mf g1)
+        (vector 'metafun
+                (get-index mf)
+                (loop g1 loop-env))]
+       [(vector 'vector g1)
+        (vector 'vector (loop g1 loop-env))]
+       [(vector 'struct g1)
+        (vector 'struct (loop g1 loop-env))]
+       [(vector 'box g1)
+        (vector 'box (loop (unbox g) loop-env))]
+       [(vector 'app-opt g1 drivers1)
+        (vector 'app-opt
+                (loop g1 loop-env)
+                (for/vector ([pvar (in-set drivers1)])
+                  (get-index pvar)))]
+       [(vector 'splice g1)
+        (vector 'splice (loop g1 loop-env))]
+       [else (error 'template "internal error: bad pre-guide: ~e" g)]))
+   (loop g0 '#hash()))
+
  ;; ----------------------------------------
 
+ ;; parse-t : stx nat boolean -> (values (setof env-entry) pre-guide)
  (define (parse-t t depth esc?)
    (syntax-case t (?? ?@)
      [id
@@ -219,34 +198,32 @@ integers and integer vectors.
             [else
              (let ([pvar (lookup #'id depth)])
                (cond [(syntax-pattern-variable? pvar)
-                      (values #f (set pvar) pvar)]
+                      (values (set pvar) pvar)]
                      [(template-metafunction? pvar)
                       (wrong-syntax t "illegal use of syntax metafunction")]
-                     [else (values #t (set) '_)]))])]
+                     [else (values (set) '_)]))])]
      [atom
       (atom? (syntax-e #'atom))
-      (values #t (set) '_)]
+      (values (set) '_)]
      [(mf . template)
       (and (not esc?)
            (identifier? #'mf)
            (template-metafunction? (lookup #'mf #f)))
       (let-values ([(mf) (lookup #'mf #f)]
-                   [(const? drivers guide) (parse-t #'template depth esc?)])
-        (values #f
-                (set-union (set mf) drivers)
-                (metafun mf guide)))]
+                   [(drivers guide) (parse-t #'template depth esc?)])
+        (values (set-union (set mf) drivers)
+                (vector 'metafun mf guide)))]
      [(DOTS template)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
-      (let-values ([(const? drivers guide) (parse-t #'template depth #t)])
-        (values #f drivers (escaped guide)))]
+      (let-values ([(drivers guide) (parse-t #'template depth #t)])
+        (values drivers (vector 'escaped guide)))]
      [(?? t1 t2)
       (not esc?)
-      (let-values ([(const1? drivers1 guide1) (parse-t #'t1 depth esc?)]
-                   [(const2? drivers2 guide2) (parse-t #'t2 depth esc?)])
-        (values #f
-                (set-union drivers1 drivers2)
-                (orelse guide1 (set-filter drivers1 syntax-pattern-variable?) guide2)))]
+      (let-values ([(drivers1 guide1) (parse-t #'t1 depth esc?)]
+                   [(drivers2 guide2) (parse-t #'t2 depth esc?)])
+        (values (set-union drivers1 drivers2)
+                (vector 'orelse guide1 (set-filter drivers1 syntax-pattern-variable?) guide2)))]
      [(head DOTS . tail)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
@@ -257,48 +234,47 @@ integers and integer vectors.
                          (and (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
                          (loop (add1 nesting) #'tail)]
                         [else (values nesting tail)]))])
-        (let-values ([(hconst? hdrivers _hsplice? hguide) (parse-h #'head (+ depth nesting) esc?)]
-                     [(tconst? tdrivers tguide) (parse-t tail depth esc?)])
+        (let-values ([(hdrivers _hsplice? hguide) (parse-h #'head (+ depth nesting) esc?)]
+                     [(tdrivers tguide) (parse-t tail depth esc?)])
           (unless (positive? (set-count hdrivers))
             (wrong-syntax #'head "no pattern variables in term before ellipsis"))
-          (values #f
-                  (set-union hdrivers tdrivers)
-                  (dots hguide (set-filter hdrivers pvar/depth>0?) nesting tguide))))]
+          (values (set-union hdrivers tdrivers)
+                  (vector 'dots hguide (set-filter hdrivers pvar/depth>0?) nesting tguide))))]
      [(head . tail)
-      (let-values ([(hconst? hdrivers hsplice? hguide) (parse-h #'head depth esc?)]
-                   [(tconst? tdrivers tguide) (parse-t #'tail depth esc?)])
-        (let ([const? (and hconst? tconst?)])
-          (values const?
-                  (set-union hdrivers tdrivers)
-                  (cond [const? '_]
-                        [hsplice? (app hguide tguide)]
-                        [else (cons hguide tguide)]))))]
+      (let-values ([(hdrivers hsplice? hguide) (parse-h #'head depth esc?)]
+                   [(tdrivers tguide) (parse-t #'tail depth esc?)])
+        (values (set-union hdrivers tdrivers)
+                (cond [(and (eq? hguide '_) (eq? tguide '_)) '_]
+                      [hsplice? (vector 'app hguide tguide)]
+                      [else (cons hguide tguide)])))]
      [vec
       (vector? (syntax-e #'vec))
-      (let-values ([(const? drivers guide) (parse-t (vector->list (syntax-e #'vec)) depth esc?)])
-        (values const? drivers (if const? '_ (stxvector guide))))]
+      (let-values ([(drivers guide) (parse-t (vector->list (syntax-e #'vec)) depth esc?)])
+        (values drivers (if (eq? guide '_) '_ (vector 'vector guide))))]
      [pstruct
       (prefab-struct-key (syntax-e #'pstruct))
-      (let-values ([(const? drivers guide) (parse-t (struct->list (syntax-e #'pstruct)) depth esc?)])
-        (values const? drivers (if const? '_ (stxstruct guide))))]
+      (let-values ([(drivers guide)
+                    (parse-t (cdr (vector->list (struct->vector (syntax-e #'pstruct)))) depth esc?)])
+        (values drivers (if (eq? guide '_) '_ (vector 'struct guide))))]
      [#&template
-      (let-values ([(const? drivers guide) (parse-t #'template depth esc?)])
-        (values const? drivers (if const? '_ (box guide))))]
-     [_ (wrong-syntax t "bad pattern")]))
+      (let-values ([(drivers guide) (parse-t #'template depth esc?)])
+        (values drivers (if (eq? guide '_) '_ (vector 'box guide))))]
+     [_ (wrong-syntax t "bad template")]))
 
+ ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide)
  (define (parse-h h depth esc?)
    (syntax-case h (?? ?@)
      [(?? t)
       (not esc?)
-      (let-values ([(const? drivers guide) (parse-t #'t depth esc?)])
-        (values #f drivers #t (app-opt guide (set-filter drivers syntax-pattern-variable?))))]
+      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
+        (values drivers #t (vector 'app-opt guide (set-filter drivers syntax-pattern-variable?))))]
      [(?@ . t)
       (not esc?)
-      (let-values ([(const? drivers guide) (parse-t #'t depth esc?)])
-        (values #f drivers #t (splice guide)))]
+      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
+        (values drivers #t (vector 'splice guide)))]
      [t
-      (let-values ([(const? drivers guide) (parse-t #'t depth esc?)])
-        (values const? drivers #f guide))]))
+      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
+        (values drivers #f guide))]))
 
  (define (atom? x)
    (or (null? x)
@@ -349,136 +325,4 @@ integers and integer vectors.
  (define (pvar/depth>0? x)
    (and (syntax-pattern-variable? x)
         (positive? (syntax-mapping-depth x))))
-
  )
-
-;; ============================================================
-
-(define (substitute stx g main-env)
-  (define (get index lenv)
-    (cond [(positive? index)
-           (vector-ref main-env (sub1 index))]
-          [(negative? index)
-           (vector-ref lenv (- -1 index))]
-          [(zero? index) lenv]))
-  (define (loop stx g lenv)
-    (match g
-      ['_ stx]
-      [(cons g1 g2)
-       (restx stx (cons (loop (stx-car stx) g1 lenv) (loop (stx-cdr stx) g2 lenv)))]
-      [(? exact-integer? index)
-       (let ([v (get index lenv)])
-         (if (syntax? v)
-             v
-             (error/not-stx stx v)))]
-      [(sdots ghead loop-var gtail)
-       (let ([lenv* (get loop-var lenv)])
-         (unless lenv* (error 'template "pattern variable used in ellipsis pattern is not defined"))
-         (restx stx
-                (if (equal? ghead '0) ;; pattern was just (pvar ... . T)
-                    (append lenv* (loop (stx-cddr stx) gtail lenv))
-                    (let ([head-stx (stx-car stx)])
-                      (let dotsloop ([lenv* lenv*])
-                        (if (null? lenv*)
-                            (loop (stx-cddr stx) gtail lenv)
-                            (cons (loop head-stx ghead (car lenv*))
-                                  (dotsloop (cdr lenv*)))))))))]
-      [(dots ghead henv nesting gtail)
-       (define head-stx (stx-car stx))
-       (define (nestloop lenv* nesting)
-         (cond [(zero? nesting)
-                (loop-h head-stx ghead lenv*)]
-               [else
-                (for ([v (in-vector lenv*)])
-                  (unless v (error 'template "pattern variable used in ellipsis pattern is not defined")))
-                (let ([len0 (length (vector-ref lenv* 0))])
-                  (for ([v (in-vector lenv*)])
-                    (unless (= len0 (length v))
-                      (raise-syntax-error 'template
-                                          "incomplatible ellipsis match counts for template"
-                                          stx)))
-                  (let dotsloop ([len0 len0] [lenv* lenv*])
-                    (if (zero? len0)
-                        null
-                        (let ([lenv** (vector-map car lenv*)])
-                          (cons (nestloop lenv** (sub1 nesting))
-                                (dotsloop (sub1 len0) (vector-map! cdr lenv*)))))))]))
-       (let ([head-results ;; (listof^nesting (listof stx)) -- extra listof for loop-h
-              (nestloop (vector-map (lambda (index) (get index lenv)) henv) nesting)]
-             [tail-result (loop (stx-drop nesting (stx-cdr stx)) gtail lenv)])
-         (restx stx (deep-append head-results nesting tail-result)))]
-      [(app ghead gtail)
-       (restx stx (append (loop-h (stx-car stx) ghead lenv)
-                          (loop (stx-cdr stx) gtail lenv)))]
-      [(escaped g1)
-       (loop (stx-cadr stx) g1 lenv)]
-      [(orelse g1 drivers1 g2)
-       (if (for/and ([index (in-vector drivers1)]) (get index lenv))
-           (loop (stx-cadr stx) g1 lenv)
-           (loop (stx-caddr stx) g2 lenv))]
-      [(metafun index g1)
-       (let ([v (restx stx (cons (stx-car stx) (loop (stx-cdr stx) g1 lenv)))]
-             [mark (make-syntax-introducer)]
-             [old-mark (current-template-metafunction-introducer)]
-             [mf (get index lenv)])
-         (parameterize ((current-template-metafunction-introducer mark))
-           (let ([r (mf (mark (old-mark v)))])
-             (unless (syntax? r)
-               (raise-syntax-error 'template "result of metafunction was not syntax" stx))
-             (restx stx (old-mark (mark r))))))]
-      [(stxvector g1)
-       (restx stx (list->vector (loop (vector->list (syntax-e stx)) g1 lenv)))]
-      [(stxstruct g1)
-       (let ([s (syntax-e stx)])
-         (restx stx (apply make-prefab-struct
-                           (prefab-struct-key s)
-                           (loop (struct->list s) g1 lenv))))]
-      [(box g1)
-       (restx stx (box (loop (unbox (syntax-e stx)) g1 lenv)))]))
-  (define (loop-h stx hg lenv)
-    (match hg
-      [(app-opt g1 drivers1)
-       (if (for/and ([index (in-vector drivers1)]) (get index lenv))
-           (list (loop (stx-cadr stx) g1 lenv))
-           null)]
-      [(splice g1)
-       (let* ([v (loop (stx-cdr stx) g1 lenv)]
-              [v* (stx->list v)])
-         (unless v*
-           (raise-syntax-error 'template
-                               "splicing template did not produce a syntax list"
-                               stx))
-         v*)]
-      [else (list (loop stx hg lenv))]))
-  (loop stx g #f))
-
-(define current-template-metafunction-introducer
-  (make-parameter
-   (lambda (stx)
-     (if (syntax-transforming?)
-         (syntax-local-introduce stx)
-         stx))))
-
-(define (stx-cadr x) (stx-car (stx-cdr x)))
-(define (stx-cddr x) (stx-cdr (stx-cdr x)))
-(define (stx-caddr x) (stx-car (stx-cdr (stx-cdr x))))
-
-(define (stx-drop n x)
-  (cond [(zero? n) x]
-        [else (stx-drop (sub1 n) (stx-cdr x))]))
-
-(define (restx basis val)
-  (if (syntax? basis)
-      (datum->syntax basis val basis basis)
-      val))
-
-;; deep-append : (listof^(nesting+1) A) nat (listof A) -> (listof A)
-;; (Actually, in practice onto is stx, so this is an improper append.)
-(define (deep-append lst nesting onto)
-  (cond [(null? lst) onto]
-        [(zero? nesting) (append lst onto)]
-        [else (deep-append (car lst) (sub1 nesting)
-                           (deep-append (cdr lst) nesting onto))]))
-
-(define (error/not-stx stx val)
-  (raise-syntax-error 'template "pattern variable is not syntax-valued" stx))

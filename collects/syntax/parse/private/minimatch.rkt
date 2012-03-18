@@ -25,7 +25,7 @@
 
 ;; (match-p id Pattern SuccessExpr FailureExpr)
 (define-syntax (match-p stx)
-  (syntax-case stx (quote cons list make struct ?)
+  (syntax-case stx (quote cons list vector make struct ?)
     [(match-p x wildcard success failure)
      (and (identifier? #'wildcard) (free-identifier=? #'wildcard #'_))
      #'success]
@@ -43,6 +43,11 @@
      #'(match-p x (quote ()) success failure)]
     [(match-p x (list p1 p ...) success failure)
      #'(match-p x (cons p1 (list p ...)) success failure)]
+    [(match-p x (vector p ...) success failure)
+     #'(if (and (vector? x) (= (vector-length x) (length '(p ...))))
+           (let ([x* (vector->list x)])
+             (match-p x* (list p ...) success failure))
+           failure)]
     [(match-p x var success failure)
      (identifier? #'var)
      #'(let ([var x]) success)]
