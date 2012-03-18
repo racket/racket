@@ -70,9 +70,12 @@
        (repl-> (car strs))
        (loop (cdr strs) #f)])))
 
+(require setup/dirs)
 (define tmp (path->string (find-system-path 'temp-dir)))
+(define collects (path->string (find-collects-dir)))
 
 (provide test-xrepl)
+(module+ main (test-xrepl))
 (define test-xrepl @make-xrepl-test{
   -> «^»
   ; ^: no saved values, yet [,bt for context]
@@ -107,7 +110,7 @@
   -> «,en foo»                          ⇒ but this still works
   'foo> «,top»
   -> «,switch foo»
-  ; *** Initializing a new `foo' namespace with "racket/init.rkt" ***
+  ; *** Initializing a new `foo' namespace with 'foo ***
   ; *** Switching to the `foo' namespace ***
   foo::-> «,switch typed/racket»
   ; *** Initializing a new `typed/racket' namespace with typed/racket ***
@@ -153,5 +156,16 @@
   'broken> «foo»
   123                                   ⇒ ...but we still got in
   'broken> «,top»
+  -> «string->jsexpr»
+  ; reference to undefined identifier: string->jsexpr [,bt for context]
+  -> «,r (only-in json string->jsexpr)» ⇒ works with an expression
+  -> «string->jsexpr»
+  #<procedure:string->jsexpr>
+  -> «jsexpr->string»                   ⇒ didn't get this
+  ; reference to undefined identifier: jsexpr->string [,bt for context]
+  -> «,en json»
+  json/main> «,sh echo $F»
+  @|collects|/json/main.rkt
+  json/main> «,top»
   -> «,ex»
   @||})

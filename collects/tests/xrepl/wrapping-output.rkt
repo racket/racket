@@ -23,45 +23,48 @@
 (define s string-append)
 (define n "\n")
 
-(wrap-column 12)
-
-(test @s{blah} @s{blah})
-(test @s{blah@n} @s{blah@n})
-(test @s{#blah} @s{#blah})
-(test @s{#blah@n} @s{#blah@n})
-(test @s{#blah @n} @s{#blah@n})
-(test @s{# blah@n} @s{# blah@n})
-(test @s{# blah @n} @s{# blah@n})
-(test @s{#blah
-         #blah@n}
-      @s{#blah
-         #blah@n})
-(test @s{#ab cd ef gh ij kl mn op qr st}
-      @s{#ab cd ef gh
-         #  ij kl mn
-         #  op qr st})
-(test @s{#ab cd ef gh ij kl mn op qr st@n}
-      @s{#ab cd ef gh
-         #  ij kl mn
-         #  op qr st@n})
-(test @s{#ab
-         #cd ef gh ij kl mn op qr st@n}
-      @s{#ab
-         #cd ef gh ij
-         #  kl mn op
-         #  qr st@n})
-(test @s{#  ab
-         #  cd ef gh ij kl mn op qr st@n}
-      @s{#  ab
-         #  cd ef gh
-         #    ij kl
-         #    mn op
-         #    qr st@n})
-(test @s{# ab
-         # cd ef gh ij kl mn         op   qr st@n}
-      @s{# ab
-         # cd ef gh
-         #   ij kl mn
-         #   op   qr
-         #   st@n})
-(printf "~a wrapped output tests passed\n" test-num)
+(provide test-wrapping-output)
+(module+ main (test-wrapping-output))
+(define (test-wrapping-output)
+  (wrap-column 12)
+  (test @s{blah} @s{blah})
+  (test @s{blah@n} @s{blah@n})
+  (test @s{#blah} @s{#blah})
+  (test @s{#blah@n} @s{#blah@n})
+  (test @s{#blah @n} @s{#blah@n})
+  (test @s{# blah@n} @s{# blah@n})
+  (test @s{# blah @n} @s{# blah@n})
+  (test @s{#blah
+           #blah@n}
+        @s{#blah
+           #blah@n})
+  (test @s{#ab cd ef gh ij kl mn op qr st}
+        @s{#ab cd ef gh
+           #  ij kl mn
+           #  op qr st})
+  (test @s{#ab cd ef gh ij kl mn op qr st@n}
+        @s{#ab cd ef gh
+           #  ij kl mn
+           #  op qr st@n})
+  (test @s{#ab
+           #cd ef gh ij kl mn op qr st@n}
+        @s{#ab
+           #cd ef gh ij
+           #  kl mn op
+           #  qr st@n})
+  (test @s{#  ab
+           #  cd ef gh ij kl mn op qr st@n}
+        @s{#  ab
+           #  cd ef gh
+           #    ij kl
+           #    mn op
+           #    qr st@n})
+  (test @s{# ab
+           # cd ef gh ij kl mn         op   qr st@n}
+        @s{# ab
+           # cd ef gh
+           #   ij kl mn
+           #   op   qr
+           #   st@n})
+  (printf "~a wrapped output tests passed\n" test-num)
+  #t)

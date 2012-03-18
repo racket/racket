@@ -161,20 +161,20 @@ available.
 
 @defcmd[require]{
   Most arguments are passed to @racket[require] as is.  As a
-  convenience, if an argument specifies an existing file name, then use
-  its string form to specify the require, or use a @racket[file] in case
-  of an absolute path.  In addition, an argument that names a known
-  symbolic module name (e.g., one that was defined on the REPL, or a
-  builtin module like @racket[#%network]), then its quoted form is used.
-  (Note that these shorthands do not work inside require subforms like
-  @racket[only-in].)
+  convenience, if a symbolic argument specifies an existing file name,
+  then use its string form to specify the require, or use a
+  @racket[file] in case of an absolute path.  In addition, an argument
+  that names a known symbolic module name (e.g., one that was defined on
+  the REPL, or a builtin module like @racket[#%network]), then its
+  quoted form is used.  (Note that these shorthands do not work inside
+  require subforms like @racket[only-in].)
 }
 
 @defcmd[require-reloadable]{
   Same as @cmd[require], but arranges to load the code in a way that
   makes it possible to reload it later, or if a module was already
   loaded (using this command) then reload it.  Note that the arguments
-  should be simple specifications, without any require macros.  If no
+  should be simple module names, without any require macros.  If no
   arguments are given, use arguments from the last use of this command
   (if any).
 
@@ -185,7 +185,7 @@ available.
 }
 
 @defcmd[enter]{
-  Uses @racket[enter!] to have the REPL go `inside' a given module's
+  Uses @racket[enter!] to have the REPL go ``inside'' a given module's
   namespace.  A module name can specify an existing file as with the
   @cmd[require-reloadable] command.  If no module is given, and the REPL
   is already in some module's namespace, then `enter!' is used with that
