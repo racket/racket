@@ -255,7 +255,7 @@ in the sequence.
 
 @defproc[(in-directory [dir (or/c #f path-string?) #f]) sequence?]{
   Return a sequence that produces all of the paths for files,
-  directories, and links with @racket[dir].  If @racket[dir] is not
+  directories, and links within @racket[dir].  If @racket[dir] is not
   @racket[#f], then every produced path starts with @racket[dir] as its
   prefix.  If @racket[dir] is @racket[#f], then paths in and relative to
   the current directory are produced.}
