@@ -250,7 +250,7 @@
                      `(" " ,@(decode-content (list location)) ,(if date "," "."))
                      null)
                  (if date `(" "
-                            @,(if disambiguation
+                            ,@(if disambiguation
                                   `("(" ,@(decode-content (list (render-date-bib date))) ,disambiguation ")")
                                   (decode-content (list (render-date-bib date))))
                             ".")
@@ -314,7 +314,7 @@
                                  (list title)
                                  (if location (decode-content (list location)) null)
                                  (if date (decode-content (list (default-render-date-bib parsed-date))) null)
-                                 (if url (link url (make-element 'url (list url))) null))))
+                                 (if url (list (link url (make-element 'url (list url)))) null))))
                  ""))
 
 (define (in-bib bib where)

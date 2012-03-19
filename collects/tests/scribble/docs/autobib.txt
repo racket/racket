@@ -1,7 +1,11 @@
  (Felleisen et al. 2010)  (Felleisen et al. 2010, part I)  (Felleisen et
 al. 2010, part II)  (Felleisen et al. 2010)
 
+ (Sitaram 1993)
+
 Bibliography
 
+Dorai Sitaram. Programming in Schelog. 1993.                          
+http://www.ccs.neu.edu/~dorai/schelog/schelog.html                    
 Matthias Felleisen, Robert Bruce Findler, and Matthew Flatt. Semantics
 Engineering with PLT Redex. MIT Press, 2010.                          
