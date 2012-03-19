@@ -35,7 +35,7 @@
 
 (provide typecheck-tests g tc-expr/expand)
 
-(b:init) (n:init) (initialize-structs) (initialize-indexing)
+(b:init) (n:init) (initialize-structs) (initialize-indexing) 
 
 (define N -Number)
 (define B -Boolean)
@@ -1012,12 +1012,6 @@
         (tc-e (regexp-match #"foo" (string->path "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
         (tc-e (regexp-match "foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
         (tc-e (regexp-match #"foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
-
-        (tc-e (regexp-match* "foo" "foobar") (-lst -String))
-        (tc-e (regexp-match* "foo" #"foobar") (-lst -Bytes))
-        (tc-e (regexp-match* #"foo" "foobar") (-lst -Bytes))
-        (tc-e (regexp-match* #"foo" #"foobar") (-lst -Bytes))
-
 
         (tc-err (regexp-try-match "foo" "foobar"))
         (tc-e (regexp-try-match "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))

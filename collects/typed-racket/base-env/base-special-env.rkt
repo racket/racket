@@ -473,4 +473,50 @@
    (-SomeSystemPathlike -SomeSystemPathlike  #:more-than-root? Univ #f . ->key . -SomeSystemPath)]
   [((kw-expander-impl (syntax-local-value #'find-relative-path)))
    (Univ -Boolean -SomeSystemPathlike -SomeSystemPathlike  . -> . -SomeSystemPath)]
+
+  ;; FIXME -- the below function do not actually support their keyword arguments
+  [((kw-expander-proc (syntax-local-value #'regexp-match*)))
+   (let ([N       -Integer]
+	 [?N      (-opt -Integer)]
+	 [-StrRx  (Un -String -Regexp)]
+	 [-BtsRx  (Un -Bytes  -Byte-Regexp)]
+	 [-StrInput (Un -String -Path)]
+	 [-BtsInput (Un -Input-Port -Bytes)])
+     (cl->*
+      (-StrRx -StrInput [N ?N -Bytes] . ->opt . (-lst -String))
+      (-BtsRx (Un -StrInput -BtsInput) [N ?N -Bytes] . ->opt . (-lst -Bytes))
+      (-Pattern -BtsInput [N ?N -Bytes] . ->opt . (-lst -Bytes))))]
+  [((kw-expander-impl (syntax-local-value #'regexp-match*)))
+   (let ([N       -Integer]
+	 [B -Boolean]
+	 [?N      (-opt -Integer)]
+	 [-StrRx  (Un -String -Regexp)]
+	 [-BtsRx  (Un -Bytes  -Byte-Regexp)]
+	 [-StrInput (Un -String -Path)]
+	 [-BtsInput (Un -Input-Port -Bytes)])
+     (cl->*
+      (Univ (-val #f) Univ (-val #f) -StrRx -StrInput  (-opt N) B (-opt ?N) B (-opt -Bytes) B . -> . (-lst -String))
+      (Univ (-val #f) Univ (-val #f) -BtsRx (Un -StrInput -BtsInput) (-opt N) B (-opt ?N) B (-opt -Bytes) B . -> . (-lst -Bytes))
+      (Univ (-val #f) Univ (-val #f) -Pattern -BtsInput  (-opt N) B (-opt ?N) B (-opt -Bytes) B . -> . (-lst -Bytes))))]
+
+  [((kw-expander-proc (syntax-local-value #'regexp-match-positions*)))
+    (let* ([?outp   (-opt -Output-Port)]
+	   [B -Boolean]
+           [N       -Integer]
+           [?N      (-opt -Integer)]
+           [ind-pair (-pair -Index -Index)]
+           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))]
+           [-Input (Un -String -Input-Port -Bytes -Path)])
+      (->opt -Pattern -Input [N ?N ?outp -Bytes] output))]
+  [((kw-expander-impl (syntax-local-value #'regexp-match-positions*)))
+    (let* ([?outp   (-opt -Output-Port)]
+	   [B       -Boolean]
+           [N       -Integer]
+           [?N      (-opt -Integer)]
+           [ind-pair (-pair -Index -Index)]
+           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))]
+           [-Input (Un -String -Input-Port -Bytes -Path)])
+      (-> Univ (-val #f) Univ (-val #f) -Pattern -Input (-opt N) B (-opt ?N) B (-opt ?outp) B (-opt -Bytes) B output))]
+
+
   )
