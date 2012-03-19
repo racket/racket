@@ -702,10 +702,6 @@
 ;;   not going to be exiting yet.
 (autosave:restore-autosave-files/gui)
 
-;; install user's keybindings
-(for-each drracket:frame:add-keybindings-item 
-          (preferences:get 'drracket:user-defined-keybindings))
-
 ;; the initial window doesn't set the 
 ;; unit object's state correctly, yet.
 (define (make-basic)
@@ -727,9 +723,12 @@
                 (loop (cdr files))
                 (cons (car files) (loop (cdr files))))])))
 
-;; we queue a callback here to open the first frame
-;; so that the modules that are being loaded by drracket
-;; are all finished before we trigger the dynamic 
+;; Queue a callback here to open the first frame
+;; and install the user's keybindings so that the modules
+;; that are being loaded by drracket are all finished.
+;; This makes sure that drracket exports
+;; are all set up a) in case a user keybinding file uses
+;; them, and b) before we trigger the dynamic 
 ;; requires that can happen when the module language looks
 ;; at the #lang line (which can end up loading drracket itself
 ;; in a bad way leading to errors like this:
@@ -739,6 +738,11 @@
 
 (queue-callback
  (λ ()
+   
+   ;; install user's keybindings
+   (for-each drracket:frame:add-keybindings-item 
+             (preferences:get 'drracket:user-defined-keybindings))
+   
    ;; NOTE: drscheme-normal.rkt sets current-command-line-arguments to
    ;; the list of files to open, after parsing out flags like -h
    (let* ([files-to-open 

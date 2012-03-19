@@ -350,15 +350,16 @@
   ;; add-keybindings-item : keybindings-item[path or planet spec] -> boolean
   ;; boolean indicates if the addition happened sucessfully
   (define (add-keybindings-item item)
-    (with-handlers ([exn? (λ (x)
-                            (message-box (string-constant drscheme)
-                                         (format (string-constant keybindings-error-installing-file)
-                                                 (if (path? item)
-                                                     (path->string item)
-                                                     (format "~s" item))
-                                                 (exn-message x))
-                                         #:dialog-mixin frame:focus-table-mixin)
-                            #f)])
+    (with-handlers ([exn:fail?
+                     (λ (x)
+                       (message-box (string-constant drscheme)
+                                    (format (string-constant keybindings-error-installing-file)
+                                            (if (path? item)
+                                                (path->string item)
+                                                (format "~s" item))
+                                            (exn-message x))
+                                    #:dialog-mixin frame:focus-table-mixin)
+                       #f)])
       (keymap:add-user-keybindings-file item)
       #t))
   
