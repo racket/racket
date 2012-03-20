@@ -664,8 +664,12 @@ Returns the imaginary part of the complex number @racket[z] in
 
 @defproc[(angle [z number?]) real?]{ Returns the angle of
  the complex number @racket[z] in polar coordinates.
+ 
+ The result is guaranteed to be between @racket[(- pi)] and
+ @racket[pi], possibly equal to @racket[pi] (but never equal
+ to @racket[(- pi)]).
 
-@mz-examples[(angle -3) (angle 3.0) (angle 3+4i) (angle +inf.0+inf.0i)]}
+@mz-examples[(angle -3) (angle 3.0) (angle 3+4i) (angle +inf.0+inf.0i) (angle -1)]}
 
 @; ------------------------------------------------------------------------
 @subsection{Bitwise Operations}
