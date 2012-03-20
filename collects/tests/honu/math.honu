@@ -1,0 +1,16 @@
+#lang honu
+
+macro add_all(){
+  number:expression ...
+} {
+  syntax(
+    $ number + $ ... 0
+  )
+  /*
+  syntax(
+    $ printf("~a\n", number) $ ...
+    )
+    */
+}
+
+add_all 1 2 3 * 4;

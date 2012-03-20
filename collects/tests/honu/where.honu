@@ -1,0 +1,14 @@
+#lang honu
+
+var where = 0
+
+macro varwhere(where =){ unparsed where bind:identifier = any:expression }
+{ syntax({var bind = any
+          unparsed}) }
+
+varwhere { printf("x is ~a\n", x)
+           {
+             var x = 5;
+             x * 2
+           }
+         } where x = 2 + 1
