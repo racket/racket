@@ -446,8 +446,8 @@
   r)
 
 (define small-list-max 65)
-(define cpt-table
-  ;; The "schcpt.h" mapping
+(define raw-cpt-table
+  ;; The "schcpt.h" mapping, earlier entries override later ones
   `([0  escape]
     [1  symbol]
     [2  symref]
@@ -496,14 +496,15 @@
     [249 small-application3]
     [247 255 small-application]))
 
-(define (cpt-table-lookup i)
-  (for/or ([ent cpt-table])
-    (match ent
-      [(list k sym) (and (= k i) (cons k sym))]
-      [(list k k* sym)
-       (and (<= k i)
-            (< i k*)
-            (cons k sym))])))
+;; To accelerate cpt-table lookup, we flatten out the above
+;; list into a vector:
+(define cpt-table (make-vector 256 #f))
+(for ([ent (in-list (reverse raw-cpt-table))])
+  ;; reverse order so that early entries override later ones.
+  (match ent
+    [(list k sym)    (vector-set! cpt-table k (cons k sym))]
+    [(list k k* sym) (for ([i (in-range k k*)])
+                       (vector-set! cpt-table i (cons k sym)))]))
 
 (define (read-compact-bytes port c)
   (begin0
@@ -782,10 +783,9 @@
 (define (read-compact cp)
   (let loop ([need-car 0] [proper #f])
     (define ch (cp-getc cp))
-    (define-values (cpt-start cpt-tag) 
-      (let ([x (cpt-table-lookup ch)])
-        (unless x
-          (error 'read-compact "unknown code : ~a" ch))
+    (define-values (cpt-start cpt-tag)
+      (let ([x (vector-ref cpt-table ch)])
+        (unless x (error 'read-compact "unknown code : ~a" ch))
         (values (car x) (cdr x))))
     (define v
       (case cpt-tag
