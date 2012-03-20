@@ -363,5 +363,38 @@
 (test 3 dynamic-require '(submod 'module+-example-2 a b) 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that various shaodwings are allowed:
+
+(module subm-example-20 racket/base
+  (require (only-in racket/list third))
+  (provide first get-first second)
+
+  (define first 1)
+  (define (get-first) first) ;; verifies shadowing not mutation
+  (module* first #f
+    (define first 0)  ;; shadows outer 'first'
+    (define f first)
+    (provide first f))
+
+  (define second 2)
+  (module* second #f
+    (require (only-in racket/list second))
+    (define s second)
+    (provide second s))
+
+  (module* third #f
+    (require (only-in mzlib/list third)) ; different binding than from `racket/list'
+    (define t third)
+    (provide third t)))
+
+(test 1 dynamic-require ''subm-example-20 'first)
+(test 1 (dynamic-require ''subm-example-20 'get-first))
+(test 2 dynamic-require ''subm-example-20 'second)
+(test 'b (dynamic-require '(submod 'subm-example-20 second) 'second) '(a b c))
+(test 'b (dynamic-require '(submod 'subm-example-20 second) 's) '(a b c))
+(test 'c (dynamic-require '(submod 'subm-example-20 third) 'third) '(a b c))
+(test 'c (dynamic-require '(submod 'subm-example-20 third) 't) '(a b c))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -7017,7 +7017,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
             v = scheme_add_rename(v, rn);
           SCHEME_VEC_ELS(vec)[6] = v;
 
-          SCHEME_VEC_ELS(vec)[7] = SCHEME_VEC_ELS(super_vec)[7];
+          SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
           SCHEME_VEC_ELS(vec)[8] = SCHEME_VEC_ELS(super_vec)[8];
 
           scheme_hash_set(required, name, vec);
@@ -7058,7 +7058,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
         SCHEME_VEC_ELS(vec)[5] = name;
         name = scheme_add_rename(name, rn);
         SCHEME_VEC_ELS(vec)[6] = name;
-        SCHEME_VEC_ELS(vec)[7] = scheme_false;
+        SCHEME_VEC_ELS(vec)[7] = scheme_true; /* can be shadowed */
         SCHEME_VEC_ELS(vec)[8] = phase;
         
         name = SCHEME_STX_VAL(name); /* is this right? */
