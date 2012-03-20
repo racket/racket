@@ -486,14 +486,22 @@
     [249 small-application3]
     [247 255 small-application]))
 
+;; To accelerate cpt-table-lookup, we flatten out the
+;; cpt-table structure so that it's a simple lookup into
+;; this vector:
+(define cpt-table-as-vector (make-vector 256 #f))
+(for ([ent (reverse cpt-table)])
+     ;; Subtle!  Traverse in reverse order so that previous entries
+     ;; override later ones.
+  (match ent
+    [(list k sym)
+     (vector-set! cpt-table-as-vector k (cons k sym))]
+    [(list k k* sym)
+     (for ([i (in-range k k*)])
+       (vector-set! cpt-table-as-vector i (cons k sym)))]))
+
 (define (cpt-table-lookup i)
-  (for/or ([ent cpt-table])
-    (match ent
-      [(list k sym) (and (= k i) (cons k sym))]
-      [(list k k* sym)
-       (and (<= k i)
-            (< i k*)
-            (cons k sym))])))
+  (vector-ref cpt-table-as-vector i))
 
 (define (read-compact-bytes port c)
   (begin0
