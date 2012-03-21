@@ -92,6 +92,33 @@
 (tc (template ((?? (ready oo)) done))
     '(done))
 
+;; liberal depth rules
+
+(tc (template (((uu aa yy) ...) ...))
+    '(((abc a 1) (abc b 2) (abc c 3))
+      ((abc a 4) (abc b 5) (abc c 6))
+      ((abc a 7) (abc b 8) (abc c 9))))
+(tc (template (((uu aa yy) ...) ...))
+    ;; compatible with syntax
+    (syntax->datum #'(((uu aa yy) ...) ...)))
+
+;; liberal depth rules with consecutive ellipses
+
+(tc (template ((aa yy) ... ...))
+    '((a 1) (b 2) (c 3) (a 4) (b 5) (c 6) (a 7) (b 8) (c 9)))
+(tc (template ((aa yy) ... ...))
+    (syntax->datum #'((aa yy) ... ...)))
+
+;; head ??
+
+(tc (template ((?? (?@ #:yes uu) (?@ #:no)) done))
+    '(#:yes abc done))
+(tc (template ((?? (?@ #:yes oo) (?@ #:no)) done))
+    '(#:no done))
+
+(tc (template ((?? (?@ #:yes pp) (?@ #:no)) ...))
+    '(#:no #:yes 1 #:no #:yes 2 #:yes 3))
+
 ;; ----------------------------------------
 
 ;; combined ?? ?@

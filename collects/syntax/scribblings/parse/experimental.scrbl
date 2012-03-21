@@ -275,22 +275,25 @@ patterns as @racket[target-stxclass-id] but with the given
 @defform/subs[#:literals (?? ?@)
               (template tmpl)
               ([tmpl pattern-variable-id
-                     atomic-tmpl
                      (head-tmpl . tmpl)
                      (head-tmpl ellipsis ...+ . tmpl)
                      (metafunction-id . tmpl)
                      (?? tmpl tmpl)
-                     #(@#,svar[tmpl] ...)
-                     #s(prefab-struct-key @#,svar[tmpl] ...)
-                     #&@#,svar[tmpl]]
+                     #(@#,svar[head-tmpl] ...)
+                     #s(prefab-struct-key @#,svar[head-tmpl] ...)
+                     #&@#,svar[tmpl]
+                     constant-term]
                [head-templ tmpl
-                           (?? tmpl)
+                           (?? head-tmpl)
+                           (?? head-tmpl head-tmpl)
                            (?@ . tmpl)]
                [ellipsis @#,literal-ellipsis])]{
 
 Constructs a syntax object from a syntax template, like
 @racket[syntax], but provides additional templating forms for dealing
-with optional terms and splicing sequences of terms.
+with optional terms and splicing sequences of terms. Only the
+additional forms are described here; see @racket[syntax] for
+descriptions of pattern variables, etc.
 
 @specsubform[#:literals (??)
              (?? tmpl alt-tmpl)]{
@@ -306,14 +309,28 @@ an absent value; in that case, @racket[alt-tmpl] is used instead.
   [(_ (~optional (~seq #:op op:expr)) arg:expr ...)
    (template ((?? op +) arg ...))])
 ]
+
+If @racket[??] is used as a head-template, then its sub-templates may
+also be head-templates.
+
+@examples[#:eval the-eval
+(syntax-parse #'(m 1)
+  [(_ x:expr (~optional y:expr))
+   (template (m2 x (?? (?@ #:y y) (?@ #:z 0))))])
+(syntax-parse #'(m 1 2)
+  [(_ x:expr (~optional y:expr))
+   (template (m2 x (?? (?@ #:y y) (?@ #:z 0))))])
+]
 }
 
 @specsubform[#:literals (??)
-             (?? tmpl)]{
+             (?? head-tmpl)]{
 
-Produces @racket[tmpl] unless any attribute used in @racket[tmpl] has
-an absent value; in that case, the term is omitted.  Can only occur in
-head position in a template.
+Produces @racket[head-tmpl] unless any attribute used in
+@racket[head-tmpl] has an absent value; in that case, the term is
+omitted.  Can only occur in head position in a template.
+
+Equivalent to @racket[(?? head-tmpl (?@))].
 
 @examples[#:eval the-eval
 (syntax-parse #'(m 1)
@@ -322,6 +339,9 @@ head position in a template.
 (syntax-parse #'(m 1 2)
   [(_ x:expr (~optional y:expr))
    (template (m2 x (?? y)))])
+(syntax-parse #'(m 1 2)
+  [(_ x:expr (~optional y:expr))
+   (template (m2 x (?? (?@ #:y y))))])
 ]
 }
 
@@ -329,7 +349,7 @@ head position in a template.
              (?@ . tmpl)]{
 
 Similar to @racket[unquote-splicing], splices the result of
-@racket[tmpl] (which must be a syntax list) into the surrounding
+@racket[tmpl] (which must produce a syntax list) into the surrounding
 template. Can only occur in head position in a template.
 
 @examples[#:eval the-eval
@@ -338,10 +358,10 @@ template. Can only occur in head position in a template.
    (template (m2 (?@ kw kwarg) ... pos ...))])
 ]
 
-The @racket[tmpl] must produce proper syntax lists, but it does not
-itself need to be expressed as a proper list. For example, to unpack
-pattern variables that contain syntax lists, use a ``dotted''
-template:
+The @racket[tmpl] must produce a proper syntax list, but it does not
+need to be expressed as a proper list. For example, to unpack pattern
+variables that contain syntax lists, use a ``dotted'' template:
+
 @examples[#:eval the-eval
 (with-syntax ([x #'(a b c)])
   (template ((?@ . x) d)))
@@ -356,28 +376,39 @@ Applies the template metafunction named @racket[metafunction-id] to
 the result of the template (including @racket[metafunction-id]
 itself). See @racket[define-template-metafunction] for examples.
 }
+
+The @racket[??] and @racket[?@] forms and metafunction applications
+are disabled in an ``escaped template'' (see @racket[_stat-template]
+under @racket[syntax]).
+
+@examples[#:eval the-eval
+(template (... ((?@ a b c) d)))
+]
 }
 
 @deftogether[[
 @defidform[??]
 @defidform[?@]
 ]]{
-Auxiliary forms used by @racket[template].
+
+Auxiliary forms used by @racket[template]. They may not be used as
+expressions.
 }
 
 @defform*[[(define-template-metafunction metafunction-id expr)
            (define-template-metafunction (metafunction-id . formals) body ...+)]]{
 
-Defines @racket[metafunction-id] as a @deftech{template metafunction}. A
-metafunction application in a @racket[template] expression (but not a
-@racket[syntax] expression) is evaluated by applying the metafunction
-to the result of processing the ``argument'' part of the template.
+Defines @racket[metafunction-id] as a @deftech{template
+metafunction}. A metafunction application in a @racket[template]
+expression (but not a @racket[syntax] expression) is evaluated by
+applying the metafunction to the result of processing the ``argument''
+part of the template.
 
 @examples[#:eval the-eval
 (define-template-metafunction (join stx)
   (syntax-parse stx
-    [(join a:id b:id ...)
-     (datum->syntax #'a
+    [(join (~optional (~seq #:lctx lctx)) a:id b:id ...)
+     (datum->syntax (or (attribute lctx) #'a)
                     (string->symbol
                      (apply string-append
                             (map symbol->string
@@ -387,4 +418,23 @@ to the result of processing the ``argument'' part of the template.
 (with-syntax ([(x ...) #'(a b c)])
   (template ((x (join tmp- x)) ...)))
 ]
+
+Metafunctions are useful for performing transformations in contexts
+where macro expansion does not occur, such as binding occurrences. For
+example:
+
+@interaction[#:eval the-eval
+(syntax->datum 
+ (with-syntax ([name #'posn]
+               [(field ...) #'(x y)])
+   (template (let-values ([((join name ?) 
+                            (join #:lctx name make- name)
+                            (join name - field) ...)
+                           (make-struct-type ___)])
+               ___))))
+]
+
+If @racket[join] were defined as a macro, it would not be usable in
+the context above; instead, @racket[let-values] would report an
+invalid binding list.
 }

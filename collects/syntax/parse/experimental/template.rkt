@@ -14,26 +14,23 @@
 #|
 To do:
 - improve error messages
-- support flexible depths, eg
-  (with-syntax ([(a ...) #'(1 2 3)]
-                [((b ...) ...) #'((1 2 3) (4 5 6) (7 8 9))])
-    #'(((a b) ...) ...))  ;; a has depth 1, used at depth 2
-- support #hash templates, etc (check for other atomic & compound forms)
 |#
 
 #|
 A Template (T) is one of:
   - pvar
-  - atom (including (), not pvar)
+  - const (including () and non-pvar identifiers)
   - (metafunction . T)
   - (H . T)
   - (H ... . T), (H ... ... . T), etc
   - (?? T T)
-  - ... other standard compound forms
+  - #(T*)
+  - #s(prefab-struct-key T*)
 
 A HeadTemplate (H) is one of:
   - T
-  - (?? T)
+  - (?? H)
+  - (?? H H)
   - (?@ . T)
 |#
 
@@ -42,17 +39,21 @@ A HeadTemplate (H) is one of:
     (syntax-case stx ()
       [(template t)
        (let-values ([(guide deps) (parse-template #'t)])
-         ;; (eprintf "guide = ~s\n" guide)
          (let ([vars
                 (for/list ([dep (in-vector deps)])
-                  (cond [(syntax-pattern-variable? dep)
-                         (let* ([valvar (syntax-mapping-valvar dep)]
+                  (cond [(pvar? dep)
+                         (let* ([sm (pvar-sm dep)]
+                                [valvar (syntax-mapping-valvar sm)]
                                 [attr (syntax-local-value valvar (lambda () #f))])
                            (cond [(attribute-mapping? attr)
                                   (attribute-mapping-var attr)]
                                  [else valvar]))]
                         [(template-metafunction? dep)
-                         (template-metafunction-var dep)]))])
+                         (template-metafunction-var dep)]
+                        [else
+                         (error 'template
+                                "internal error: bad environment entry: ~e"
+                                dep)]))])
            (syntax-arm
             (cond [(equal? guide '1) ;; was (template pvar)
                    (with-syntax ([var (car vars)])
@@ -91,13 +92,38 @@ A HeadTemplate (H) is one of:
 #|
 See private/substitute for definition of Guide (G) and HeadGuide (HG).
 
-An env-entry is one of
-  - syntax-mapping (for pattern variables)
+A env-entry is one of
+  - (pvar syntax-mapping depth-delta)
   - template-metafunction
+
+The depth-delta associated with a depth>0 pattern variable is the difference
+between the pattern variable's depth and the depth at which it is used. (For
+depth 0 pvars, it's #f.) For example, in
+
+  (with-syntax ([x #'0]
+                [(y ...) #'(1 2)]
+                [((z ...) ...) #'((a b) (c d))])
+    (template (((x y) ...) ...)))
+
+the depth-delta for x is #f, the depth-delta for y is 1, and the depth-delta for
+z is 0. Coincidentally, the depth-delta is the same as the depth of the ellipsis
+form at which the variable should be moved to the loop-env. That is, the
+template above should be interpreted as roughly similar to
+
+  (let ([x (pvar-value-of x)]
+        [y (pvar-value-of y)]
+        [z (pvar-value-of z)])
+    (for ([Lz (in-list z)]) ;; depth 0
+      (for ([Ly (in-list y)] ;; depth 1
+            [Lz (in-list Lz)])
+        (___ x Ly Lz ___))))
 
 A Pre-Guide is like a Guide but with env-entry and (setof env-entry)
 instead of integers and integer vectors.
 |#
+
+(begin-for-syntax
+ (struct pvar (sm dd) #:prefab))
 
 ;; ============================================================
 
@@ -122,16 +148,17 @@ instead of integers and integer vectors.
  ;; parse-template : stx -> (values guide (vectorof env-entry))
  (define (parse-template t)
    (let-values ([(drivers pre-guide) (parse-t t 0 #f)])
-     (define main-env (set->env drivers))
+     (define main-env (set->env drivers (hash)))
      (define guide (guide-resolve-env pre-guide main-env))
      (values guide
              (index-hash->vector main-env))))
 
  ;; set->env : (setof env-entry) -> hash[env-entry => nat]
- (define (set->env drivers)
-   (for/hash ([pvar (in-set drivers)]
-              [n (in-naturals 1)])
-     (values pvar n)))
+ (define (set->env drivers init-env)
+   (for/fold ([env init-env])
+       ([pvar (in-set drivers)]
+        [n (in-naturals (+ 1 (hash-count init-env)))])
+     (hash-set env pvar n)))
 
  ;; guide-resolve-env : pre-guide hash[env-entry => nat] -> guide
  (define (guide-resolve-env g0 main-env)
@@ -144,15 +171,20 @@ instead of integers and integer vectors.
      (match g
        ['_ '_]
        [(cons g1 g2) (cons (loop g1 loop-env) (loop g2 loop-env))]
-       [(? syntax-pattern-variable? pvar) (get-index pvar)]
-       [(vector 'dots head hdrivers nesting tail)
-        (let* ([sub-loop-env (set->env hdrivers)]
-               [sub-loop-vector (index-hash->vector sub-loop-env get-index)])
-          (vector 'dots
-                  (loop head sub-loop-env)
-                  sub-loop-vector
-                  nesting
-                  (loop tail loop-env)))]
+       [(? pvar? pvar) (get-index pvar)]
+       [(vector 'dots head new-hdrivers/level nesting '#f tail)
+        (let-values ([(sub-loop-env r-uptos)
+                      (for/fold ([env (hash)] [r-uptos null])
+                          ([new-hdrivers (in-list new-hdrivers/level)])
+                        (let ([new-env (set->env new-hdrivers env)])
+                          (values new-env (cons (hash-count new-env) r-uptos))))])
+          (let ([sub-loop-vector (index-hash->vector sub-loop-env get-index)])
+            (vector 'dots
+                    (loop head sub-loop-env)
+                    sub-loop-vector
+                    nesting
+                    (reverse r-uptos)
+                    (loop tail loop-env))))]
        [(vector 'app head tail)
         (vector 'app (loop head loop-env) (loop tail loop-env))]
        [(vector 'escaped g1)
@@ -160,8 +192,14 @@ instead of integers and integer vectors.
        [(vector 'orelse g1 drivers1 g2)
         (vector 'orelse
                 (loop g1 loop-env)
-                (for/vector ([pvar (in-set drivers1)])
-                  (get-index pvar))
+                (for/vector ([ee (in-set drivers1)])
+                  (get-index ee))
+                (loop g2 loop-env))]
+       [(vector 'orelse-h g1 drivers1 g2)
+        (vector 'orelse-h
+                (loop g1 loop-env)
+                (for/vector ([ee (in-set drivers1)])
+                  (get-index ee))
                 (loop g2 loop-env))]
        [(vector 'metafun mf g1)
         (vector 'metafun
@@ -176,8 +214,8 @@ instead of integers and integer vectors.
        [(vector 'app-opt g1 drivers1)
         (vector 'app-opt
                 (loop g1 loop-env)
-                (for/vector ([pvar (in-set drivers1)])
-                  (get-index pvar)))]
+                (for/vector ([ee (in-set drivers1)])
+                  (get-index ee)))]
        [(vector 'splice g1)
         (vector 'splice (loop g1 loop-env))]
        [else (error 'template "internal error: bad pre-guide: ~e" g)]))
@@ -197,14 +235,11 @@ instead of integers and integer vectors.
              (wrong-syntax #'id "illegal use")]
             [else
              (let ([pvar (lookup #'id depth)])
-               (cond [(syntax-pattern-variable? pvar)
+               (cond [(pvar? pvar)
                       (values (set pvar) pvar)]
                      [(template-metafunction? pvar)
                       (wrong-syntax t "illegal use of syntax metafunction")]
                      [else (values (set) '_)]))])]
-     [atom
-      (atom? (syntax-e #'atom))
-      (values (set) '_)]
      [(mf . template)
       (and (not esc?)
            (identifier? #'mf)
@@ -223,7 +258,7 @@ instead of integers and integer vectors.
       (let-values ([(drivers1 guide1) (parse-t #'t1 depth esc?)]
                    [(drivers2 guide2) (parse-t #'t2 depth esc?)])
         (values (set-union drivers1 drivers2)
-                (vector 'orelse guide1 (set-filter drivers1 syntax-pattern-variable?) guide2)))]
+                (vector 'orelse guide1 (set-filter drivers1 pvar?) guide2)))]
      [(head DOTS . tail)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
@@ -239,7 +274,18 @@ instead of integers and integer vectors.
           (unless (positive? (set-count hdrivers))
             (wrong-syntax #'head "no pattern variables in term before ellipsis"))
           (values (set-union hdrivers tdrivers)
-                  (vector 'dots hguide (set-filter hdrivers pvar/depth>0?) nesting tguide))))]
+                  ;; pre-guide hdrivers is (listof (setof pvar))
+                  ;; set of pvars new to each level
+                  (let* ([hdrivers/level
+                          (for/list ([i (in-range nesting)])
+                            (set-filter hdrivers (pvar/dd<=? (+ depth i))))]
+                         [new-hdrivers/level
+                          (let loop ([raw hdrivers/level] [last (set)])
+                            (cond [(null? raw) null]
+                                  [else
+                                   (cons (set-subtract (car raw) last)
+                                         (loop (cdr raw) (car raw)))]))])
+                    (vector 'dots hguide new-hdrivers/level nesting #f tguide)))))]
      [(head . tail)
       (let-values ([(hdrivers hsplice? hguide) (parse-h #'head depth esc?)]
                    [(tdrivers tguide) (parse-t #'tail depth esc?)])
@@ -259,15 +305,24 @@ instead of integers and integer vectors.
      [#&template
       (let-values ([(drivers guide) (parse-t #'template depth esc?)])
         (values drivers (if (eq? guide '_) '_ (vector 'box guide))))]
-     [_ (wrong-syntax t "bad template")]))
+     [const
+      (values (set) '_)]))
 
  ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide)
  (define (parse-h h depth esc?)
    (syntax-case h (?? ?@)
      [(?? t)
       (not esc?)
-      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
-        (values drivers #t (vector 'app-opt guide (set-filter drivers syntax-pattern-variable?))))]
+      (let-values ([(drivers splice? guide) (parse-h #'t depth esc?)])
+        (values drivers #t (vector 'app-opt guide (set-filter drivers pvar?))))]
+     [(?? t1 t2)
+      (not esc?)
+      (let-values ([(drivers1 splice?1 guide1) (parse-h #'t1 depth esc?)]
+                   [(drivers2 splice?2 guide2) (parse-h #'t2 depth esc?)])
+        (values (set-union drivers1 drivers2)
+                (or splice?1 splice?2)
+                (vector (if (or splice?1 splice?2) 'orelse-h 'orelse)
+                        guide1 (set-filter drivers1 pvar?) guide2)))]
      [(?@ . t)
       (not esc?)
       (let-values ([(drivers guide) (parse-t #'t depth esc?)])
@@ -276,16 +331,6 @@ instead of integers and integer vectors.
       (let-values ([(drivers guide) (parse-t #'t depth esc?)])
         (values drivers #f guide))]))
 
- (define (atom? x)
-   (or (null? x)
-       (number? x)
-       (boolean? x)
-       (string? x)
-       (bytes? x)
-       (keyword? x)
-       (regexp? x)
-       (char? x)))
-
  ;; Note: always creates equal?-based set.
  (define (set-filter s pred?)
    (for/set ([el (in-set s)] #:when (pred? el)) el))
@@ -293,14 +338,18 @@ instead of integers and integer vectors.
  (define (lookup id depth)
    (let ([v (syntax-local-value id (lambda () #f))])
      (cond [(syntax-pattern-variable? v)
-            (unless (or (not depth)
-                        (= (syntax-mapping-depth v) depth)
-                        (= (syntax-mapping-depth v) 0))
-              (wrong-syntax id
-                            "pattern variable used at wrong ellipsis depth (expected ~s, used at ~s)"
-                            (syntax-mapping-depth v)
-                            depth))
-            v]
+            (let ([pvar-depth (syntax-mapping-depth v)])
+              (cond [(not depth) ;; not looking for pvars, only for metafuns
+                     #f]
+                    [(zero? pvar-depth)
+                     (pvar v #f)]
+                    [(>= depth pvar-depth)
+                     (pvar v (- depth pvar-depth))]
+                    [else
+                     (wrong-syntax id
+                                   (string-append "pattern variable used at wrong ellipsis depth "
+                                                  "(expected at least ~s, used at ~s)")
+                                   pvar-depth depth)]))]
            [(template-metafunction? v)
             v]
            [else
@@ -322,7 +371,8 @@ instead of integers and integer vectors.
        (vector-set! vec (sub1 index) (f value)))
      vec))
 
- (define (pvar/depth>0? x)
-   (and (syntax-pattern-variable? x)
-        (positive? (syntax-mapping-depth x))))
+ (define ((pvar/dd<=? expected-dd) x)
+   (match x
+     [(pvar sm dd) (and dd (<= dd expected-dd))]
+     [_ #f]))
  )

@@ -24,7 +24,7 @@ A Guide (G) is one of:
   - (vector 'vector G)
   - (vector 'struct G)
   - (vector 'box G)
-  - (vector 'dots HG (vector-of integer) nat G)
+  - (vector 'dots HG (listof (vector-of integer)) nat (listof nat) G)
   - (vector 'app HG G)
   - (vector 'escaped G)
   - (vector 'orelse G (vector-of integer) G)
@@ -32,7 +32,8 @@ A Guide (G) is one of:
 
 A HeadGuide (HG) is one of:
   - G
-  - (vector 'app-opt G (vector-of integer))
+  - (vector 'app-opt H (vector-of integer))
+  - (vector 'orelse-h H (vector-of integer) H)
   - (vector 'splice G)
 |#
 
@@ -40,6 +41,7 @@ A HeadGuide (HG) is one of:
   (match x
     [(vector 'app-opt g vars) #t]
     [(vector 'splice g) #t]
+    [(vector 'orelse-h g1 vars g2) #t]
     [_ #f]))
 
 ;; ============================================================
@@ -85,12 +87,26 @@ A HeadGuide (HG) is one of:
              [else
               (lambda (env lenv)
                 (cons (f1 env lenv) (f2 env lenv)))]))]
-    [(vector 'dots ghead henv nesting gtail)
+    [(vector 'dots ghead henv nesting uptos gtail)
+     ;; At each nesting depth, indexes [0,upto) of lenv* vary; the rest are fixed.
+     ;; An alternative would be to have a list of henvs, but that would inhibit
+     ;; the nice simple vector reuse via vector-car/cdr!.
      (let* ([lenv*-len (vector-length henv)]
             [ghead-is-hg? (head-guide? ghead)]
             [ftail (loop (stx-drop (add1 nesting) stx) gtail)])
        (for ([var (in-vector henv)])
          (check-var var env-length lenv-mode))
+       (unless (= nesting (length uptos))
+         (error 'template "internal error: wrong number of uptos"))
+       (let ([last-upto
+              (for/fold ([last 1]) ([upto (in-list uptos)])
+                (unless (<= upto lenv*-len)
+                  (error 'template "internal error: upto is to big"))
+                (unless (>= upto last)
+                  (error 'template "internal error: uptos decreased: ~e" uptos))
+                upto)])
+         (unless (= lenv*-len last-upto)
+           (error 'template "internal error: last upto was not full env")))
        (cond [(and (= lenv*-len 1) (= nesting 1) (not ghead-is-hg?) (equal? ghead '-1))
               ;; template was just (pvar ... . T)
               (let ([fhead (translate-g stx0 (stx-car stx) ghead env-length 'one)])
@@ -111,24 +127,26 @@ A HeadGuide (HG) is one of:
                                (translate-hg stx0 (stx-car stx) ghead env-length lenv*-len)
                                (translate-g stx0 (stx-car stx) ghead env-length lenv*-len))])
                 (lambda (env lenv)
-                  (define (nestloop lenv* nesting)
+                  (define (nestloop lenv* nesting uptos)
                     (cond [(zero? nesting)
                            (fhead env lenv*)]
                           [else
                            (check-lenv stx lenv*)
-                           (let ([len0 (length (vector-ref lenv* 0))])
-                             (let ([lenv** (make-vector (vector-length lenv*))])
-                               (let dotsloop ([len0 len0])
-                                 (if (zero? len0)
+                           (let ([iters (length (vector-ref lenv* 0))])
+                             (let ([lenv** (make-vector lenv*-len)]
+                                   [upto** (car uptos)]
+                                   [uptos** (cdr uptos)])
+                               (let dotsloop ([iters iters])
+                                 (if (zero? iters)
                                      null
-                                     (begin (vector-car/cdr! lenv** lenv*)
-                                            (cons (nestloop lenv** (sub1 nesting))
-                                                  (dotsloop (sub1 len0))))))))]))
+                                     (begin (vector-car/cdr! lenv** lenv* upto**)
+                                            (cons (nestloop lenv** (sub1 nesting) uptos**)
+                                                  (dotsloop (sub1 iters))))))))]))
                   (let ([head-results
                          ;; if ghead-is-hg?, is (listof^(nesting+1) stx) -- extra listof for loop-h
                          ;; otherwise, is (listof^nesting stx)
                          (nestloop (vector-map (lambda (index) (get index env lenv)) henv)
-                                   nesting)]
+                                   nesting uptos)]
                         [tail-result (ftail env lenv)])
                     (restx stx
                            (nested-append head-results
@@ -182,14 +200,23 @@ A HeadGuide (HG) is one of:
   (define (loop-h stx hg) (translate-hg stx0 stx hg env-length lenv-mode))
   (define (get index env lenv) (get-var index env lenv lenv-mode))
   (match hg
-    [(vector 'app-opt g1 drivers1)
-     (let ([f1 (loop (stx-cadr stx) g1)])
+    [(vector 'app-opt hg1 drivers1)
+     (let ([f1 (loop-h (stx-cadr stx) hg1)])
        (for ([var (in-vector drivers1)])
          (check-var var env-length lenv-mode))
        (lambda (env lenv)
          (if (for/and ([index (in-vector drivers1)]) (get index env lenv))
-             (list (f1 env lenv))
+             (f1 env lenv)
              null)))]
+    [(vector 'orelse-h hg1 drivers1 hg2)
+     (let ([f1 (loop-h (stx-cadr stx) hg1)]
+           [f2 (loop-h (stx-caddr stx) hg2)])
+       (for ([var (in-vector drivers1)])
+         (check-var var env-length lenv-mode))
+       (lambda (env lenv)
+         (if (for/and ([index (in-vector drivers1)]) (get index env lenv))
+             (f1 env lenv)
+             (f2 env lenv))))]
     [(vector 'splice g1)
      (let ([f1 (loop (stx-cdr stx) g1)])
        (lambda (env lenv)
@@ -256,7 +283,11 @@ A HeadGuide (HG) is one of:
 
 (define (restx basis val)
   (if (syntax? basis)
-      (datum->syntax basis val basis basis)
+      (let ([stx (datum->syntax basis val basis)]
+            [paren-shape (syntax-property basis 'paren-shape)])
+        (if paren-shape
+            (syntax-property stx 'paren-shape paren-shape)
+            stx))
       val))
 
 ;; nested-append : (listof^(nesting+1) A) nat (listof A) -> (listof A)
@@ -278,14 +309,18 @@ A HeadGuide (HG) is one of:
 (define (error/bad-index index)
   (error 'template "internal error: bad index: ~e" index))
 
-(define (vector-car/cdr! dest-v src-v)
+(define (vector-car/cdr! dest-v src-v upto)
   (let ([len (vector-length dest-v)])
     (let loop ([i 0])
-      (when (< i len)
+      (when (< i upto)
         (let ([p (vector-ref src-v i)])
           (vector-set! dest-v i (car p))
           (vector-set! src-v i (cdr p)))
-        (loop (add1 i))))))
+        (loop (add1 i))))
+    (let loop ([j upto])
+      (when (< j len)
+        (vector-set! dest-v j (vector-ref src-v j))
+        (loop (add1 j))))))
 
 (define (vector-map f src-v)
   (let* ([len (vector-length src-v)]
