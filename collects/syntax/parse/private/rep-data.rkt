@@ -5,6 +5,7 @@
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
+         unstable/struct
          "minimatch.rkt"
          "kws.rkt"
          "rep-attrs.rkt"
@@ -126,23 +127,23 @@ expressions are duplicated, and may be evaluated in different scopes.
   ;; So blame-declare? only applies to stxclass declares
   (let ([val (declenv-lookup env id #:use-conventions? #f)])
     (match val
-      [(struct den:lit (_i _e _ip _lp))
+      [(den:lit _i _e _ip _lp)
        (wrong-syntax id "identifier previously declared as literal")]
-      [(struct den:magic-class (name _c _a _r))
+      [(den:magic-class name _c _a _r)
        (if (and blame-declare? stxclass-name)
            (wrong-syntax name
                          "identifier previously declared with syntax class ~a"
                          stxclass-name)
            (wrong-syntax (if blame-declare? name id)
                          "identifier previously declared"))]
-      [(struct den:class (name _c _a))
+      [(den:class name _c _a)
        (if (and blame-declare? stxclass-name)
            (wrong-syntax name
                          "identifier previously declared with syntax class ~a"
                          stxclass-name)
            (wrong-syntax (if blame-declare? name id)
                          "identifier previously declared"))]
-      [(struct den:parser (_p _a _sp _c _dc?))
+      [(den:parser _p _a _sp _c _dc?)
        (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 

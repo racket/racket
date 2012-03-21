@@ -258,11 +258,11 @@
 ;; FIXME: replace with txlift mechanism
 (define (create-aux-def entry)
   (match entry
-    [(struct den:lit (_i _e _ip _lp))
+    [(den:lit _i _e _ip _lp)
      (values entry null)]
-    [(struct den:magic-class (name class argu role))
+    [(den:magic-class name class argu role)
      (values entry null)]
-    [(struct den:class (name class argu))
+    [(den:class name class argu)
      ;; FIXME: integrable syntax classes?
      (cond [(identifier? name)
             (let* ([pos-count (length (arguments-pargs argu))]
@@ -283,9 +283,9 @@
               (values (make den:delayed #'parser class)
                       (list #`(define-values (parser)
                                 (curried-stxclass-parser #,class #,argu)))))])]
-    [(struct den:parser (_p _a _sp _c _dc?))
+    [(den:parser _p _a _sp _c _dc?)
      (values entry null)]
-    [(struct den:delayed (_p _c))
+    [(den:delayed _p _c)
      (values entry null)]))
 
 (define (append-lits+litsets lits litsets)
@@ -361,18 +361,18 @@
     (create-action:and
      (for/list ([side (in-list sides)])
        (match side
-         [(make clause:fail condition message)
+         [(clause:fail condition message)
           (create-action:post
            (create-action:fail condition message))]
-         [(make clause:with wpat expr defs)
+         [(clause:with wpat expr defs)
           (let ([ap (create-action:post
                      (create-action:parse wpat expr))])
             (if (pair? defs)
                 (create-action:and (list (create-action:do defs) ap))
                 ap))]
-         [(make clause:attr attr expr)
+         [(clause:attr attr expr)
           (create-action:bind (list side))]
-         [(make clause:do stmts)
+         [(clause:do stmts)
           (create-action:do stmts)]))))
   (define dummy-pattern
     (and (pair? sides)
@@ -607,18 +607,18 @@
 (define (parse-pat:id id decls allow-head?)
   (define entry (declenv-lookup decls id))
   (match entry
-    [(struct den:lit (internal literal input-phase lit-phase))
+    [(den:lit internal literal input-phase lit-phase)
      (create-pat:literal literal input-phase lit-phase)]
-    [(struct den:magic-class (name class argu role))
+    [(den:magic-class name class argu role)
      (let* ([pos-count (length (arguments-pargs argu))]
             [kws (arguments-kws argu)]
             [sc (get-stxclass/check-arity class class pos-count kws)])
        (parse-pat:var* id allow-head? id sc argu "." role #f))]
-    [(struct den:class (_n _c _a))
+    [(den:class _n _c _a)
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
-    [(struct den:parser (parser attrs splicing? commit? delimit-cut?))
+    [(den:parser parser attrs splicing? commit? delimit-cut?)
      (check-no-delimit-cut-in-not id delimit-cut?)
      (cond [splicing?
             (unless allow-head?
@@ -626,7 +626,7 @@
             (parse-pat:id/h id parser no-arguments attrs commit? "." #f)]
            [else
             (parse-pat:id/s id parser no-arguments attrs commit? "." #f)])]
-    [(struct den:delayed (parser class))
+    [(den:delayed parser class)
      (let ([sc (get-stxclass class)])
        (parse-pat:var* id allow-head? id sc no-arguments "." #f parser))]
     ['#f
@@ -994,15 +994,15 @@
 
 (define (check-list-pattern pattern stx)
   (match pattern
-    [(make pat:datum _base '())
+    [(pat:datum _base '())
      #t]
-    [(make pat:head _base _head tail)
+    [(pat:head _base _head tail)
      (check-list-pattern tail stx)]
-    [(make pat:action _base _action tail)
+    [(pat:action _base _action tail)
      (check-list-pattern tail stx)]
-    [(make pat:dots _base _head tail)
+    [(pat:dots _base _head tail)
      (check-list-pattern tail stx)]
-    [(make pat:pair _base _head tail)
+    [(pat:pair _base _head tail)
      (check-list-pattern tail stx)]
     [_
      (wrong-syntax stx "expected proper list pattern")]))

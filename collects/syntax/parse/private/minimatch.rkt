@@ -1,7 +1,7 @@
 #lang racket/base
 (require unstable/struct
          (for-syntax racket/base racket/struct-info unstable/struct))
-(provide match make ?)
+(provide match ?)
 
 (define-syntax (match stx)
   (syntax-case stx ()
@@ -25,7 +25,7 @@
 
 ;; (match-p id Pattern SuccessExpr FailureExpr)
 (define-syntax (match-p stx)
-  (syntax-case stx (quote cons list vector make struct ?)
+  (syntax-case stx (quote cons list vector STRUCT ?)
     [(match-p x wildcard success failure)
      (and (identifier? #'wildcard) (free-identifier=? #'wildcard #'_))
      #'success]
@@ -51,9 +51,7 @@
     [(match-p x var success failure)
      (identifier? #'var)
      #'(let ([var x]) success)]
-    [(match-p x (make S p ...) success failure)
-     #'(match-p x (struct S (p ...)) success failure)]
-    [(match-p x (struct S (p ...)) success failure)
+    [(match-p x (STRUCT S (p ...)) success failure)
      (identifier? #'S)
      (let ()
        (define (not-a-struct)
@@ -79,7 +77,7 @@
     [(match-p x (S p ...) success failure)
      (identifier? #'S)
      (if (struct-info? (syntax-local-value #'S (lambda () #f)))
-         #'(match-p x (struct S (p ...)) success failure)
+         #'(match-p x (STRUCT S (p ...)) success failure)
          (raise-syntax-error #f "bad minimatch form" stx #'S))]
     [(match-p x s success failure)
      (prefab-struct-key (syntax-e #'s))
@@ -99,11 +97,8 @@
     [(match-p* ((x1 p1) . rest) success failure)
      (match-p x1 p1 (match-p* rest success failure) failure)]))
 
-#;
-(define-syntax struct
-  (lambda (stx)
-    (raise-syntax-error #f "illegal use of keyword" stx)))
-
 (define-syntax ?
   (lambda (stx)
     (raise-syntax-error #f "illegal use of minimatch form '?'" stx)))
+
+(define-syntax STRUCT #f) ;; internal keyword
