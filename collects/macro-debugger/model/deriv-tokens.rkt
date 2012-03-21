@@ -97,6 +97,7 @@
    prim-varref
    prim-#%stratified-body
    prim-begin-for-syntax
+   prim-submodule prim-submodule*
    ))
 
 ;; ** Signals to tokens
@@ -194,7 +195,10 @@
     (154 local-value-result      ,token-local-value-result)
     (155 prim-#%stratified-body)
     (156 prim-begin-for-syntax)
-    (157 prepare-env)))
+    (157 prepare-env)
+    (158 prim-submodule)
+    (159 prim-submodule*)
+    ))
 
 (define (signal->symbol sig)
   (if (symbol? sig)

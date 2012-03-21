@@ -7631,6 +7631,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     env->genv->module->dummy = dummy;
   }
 
+  SCHEME_EXPAND_OBSERVE_NEXT(observer);
+
   /* Submodules */
   if (has_submodules) {
     Scheme_Object *expanded_modules, *root_module_name;
@@ -8333,6 +8335,13 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           is_star = scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase);
 
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          if (is_star) {
+            SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE_STAR(observer);
+          } else {
+            SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE(observer);
+          }
+
           if (SCHEME_STX_PAIRP(e)) {
             p = SCHEME_STX_CDR(e);
             if (SCHEME_STX_PAIRP(p)) {
@@ -8375,6 +8384,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             bxs->saved_submodules = p;
             kind = MODULE_MODFORM_KIND;
           }
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer,e);
 	} else
 	  kind = EXPR_MODFORM_KIND;
       } else
@@ -8757,8 +8767,10 @@ static Scheme_Object *expand_submodules(Scheme_Compile_Expand_Info *rec, int dre
 
   while (!SCHEME_NULLP(l)) {
     mod = SCHEME_CAR(l);
+    SCHEME_EXPAND_OBSERVE_ENTER_PRIM(rec[drec].observer,SCHEME_CAR(mod));
     mod = do_module(SCHEME_CAR(mod), env, rec, drec, ancestry, env->genv->module->submodule_path, post,
                     bxs, SCHEME_CDR(mod));
+    SCHEME_EXPAND_OBSERVE_EXIT_PRIM(rec[drec].observer,mod);
 
     mods = scheme_make_pair(mod, mods);
 

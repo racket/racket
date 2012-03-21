@@ -123,8 +123,8 @@
        (void)]
       [(p:module z1 z2 rs ?1 locals tag rename check tag2 ?3 body shift)
        (recur locals check body)]
-      [(p:#%module-begin z1 z2 rs ?1 me body ?2)
-       (recur body)]
+      [(p:#%module-begin z1 z2 rs ?1 me body ?2 subs)
+       (recur body subs)]
       [(p:define-syntaxes z1 z2 rs ?1 prep rhs locals)
        (recur prep locals)
        (recur/phase-up rhs)]
@@ -164,6 +164,10 @@
        (recur inners)]
       [(p:require _ _ _ _ locals)
        (recur locals)]
+      [(p:submodule _ _ _ _ exp)
+       (recur exp)]
+      [(p:submodule* _ _ _ _)
+       (void)]
       [(p:#%stratified-body _ _ _ _ bderiv)
        (recur bderiv)]
       [(p:stop _ _ _ _) (void)]

@@ -30,7 +30,7 @@
             (src-pos)
             (tokens basic-empty-tokens basic-tokens prim-tokens renames-tokens)
             (end EOF)
-            #|(debug "/tmp/ryan/DEBUG-PARSER.txt")|#
+            #| (debug "/tmp/DEBUG-PARSER.txt") |#
             (error deriv-error))
 
    ;; tokens
@@ -292,17 +292,23 @@
     ;;   instead appear directly here
     (Prim#%ModuleBegin
      (#:args e1 e2 rs)
-     [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) (? Eval))
+     [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) (? Eval) next (? ExpandSubmodules))
       (make p:#%module-begin e1 e2 rs $2 $3 $4
             (for/or ([la (in-list $5)])
-              (and (local-exn? la) (local-exn-exn la))))])
+              (and (local-exn? la) (local-exn-exn la)))
+            $7)])
     #|
     ;; restore this version when expander fixed
     (Prim#%ModuleBegin-REAL
      (#:args e1 e2 rs)
-     [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) !)
+     [(prim-#%module-begin ! rename-one (? ModuleBegin/Phase) ! (? ExpandSubmodules))
       (make p:#%module-begin e1 e2 rs $2 $3 $4 $5)])
     |#
+    (ExpandSubmodules
+     (#:skipped null)
+     [(enter-prim (? PrimModule) exit-prim (? ExpandSubmodules))
+      (cons ($2 $1 $3 null) $4)]
+     [() null])
 
     (ModuleBegin/Phase
      [((? ModulePass1) next-group (? ModulePass2) next-group (? ModulePass3))
@@ -336,6 +342,10 @@
       (make p:begin-for-syntax $1 $7 null $3 $4 $6 $7)]
      [(enter-prim prim-require (? Eval) exit-prim)
       (make p:require $1 $4 null #f $3)]
+     [(enter-prim prim-submodule ! (? ExpandSubmodules #|one|#) exit-prim)
+      (make p:submodule $1 $5 null $3 (car $4))]
+     [(enter-prim prim-submodule* ! exit-prim)
+      (make p:submodule* $1 $4 null $3)]
      [()
       (make p:stop e1 e1 null #f)])
 

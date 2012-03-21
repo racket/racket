@@ -56,7 +56,7 @@
 ;;   (make-p:#%module-begin <Base> Stx ModuleBegin/Phase ?exn)
 (define-struct (p:module prule) (prep tag rename check tag2 ?3 body shift)
   #:transparent)
-(define-struct (p:#%module-begin prule) (me body ?2) #:transparent)
+(define-struct (p:#%module-begin prule) (me body ?2 subs) #:transparent)
 
 ;;   (make-p:define-syntaxes <Base> (listof LocalAction) DerivLL (listof LocalAction))
 ;;   (make-p:define-values <Base> Deriv)
@@ -100,6 +100,9 @@
 
 ;;   (make-p:require <Base> (listof LocalAction))
 (define-struct (p:require prule) (locals) #:transparent)
+
+(define-struct (p:submodule prule) (exp) #:transparent)
+(define-struct (p:submodule* prule) () #:transparent)
 
 ;;   (make-p:#%stratified-body <Base> BDeriv)
 (define-struct (p:#%stratified-body prule) (bderiv) #:transparent)

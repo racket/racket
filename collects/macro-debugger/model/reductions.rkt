@@ -97,13 +97,14 @@
         [Expr ?body body]
         [#:pattern ?form]
         [#:rename ?form shift])]
-    [(Wrap p:#%module-begin (e1 e2 rs ?1 me body ?2))
+    [(Wrap p:#%module-begin (e1 e2 rs ?1 me body ?2 subs))
      (R [! ?1]
         [#:pattern ?form]
         [#:rename ?form me]
         [#:pattern (?module-begin . ?forms)]
         [ModuleBegin/Phase ?forms body]
-        [! ?2])]
+        [! ?2]
+        [Submodules ?forms subs])]
     [(Wrap p:define-syntaxes (e1 e2 rs ?1 prep rhs locals))
      (R [! ?1]
         [#:pattern ?form]
@@ -251,6 +252,13 @@
         [#:hide-check rs]
         [#:pattern ?form]
         [#:walk e2 'macro])]
+
+    [(Wrap p:submodule* (e1 e2 rs ?1))
+     (R [! ?1])]
+    [(Wrap p:submodule (e1 e2 rs ?1 exp))
+     (R [! ?1]
+        [#:pattern ?form]
+        [Expr ?form exp])]
 
     [(Wrap p:stop (e1 e2 rs ?1))
      (R [! ?1])]
@@ -500,6 +508,18 @@
 
     [#f
      (R)]))
+
+(define (Submodules subs)
+  (match subs
+    ['()
+     (R)]
+    [(cons sub rest)
+     (R [#:pattern ?form]
+        [#:new-local-context
+         [#:pattern ?form]
+         [#:set-syntax (wderiv-e1 sub)]
+         [Expr ?form sub]]
+        [Submodules ?form rest])]))
 
 ;; List : ListDerivation -> RST
 (define (List ld)

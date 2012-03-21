@@ -97,7 +97,7 @@ extern Scheme_Object *scheme_get_expand_observe();
         _SCHEME_EXPOBS(observer,119,NULL)
 #define SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_SYNTAX(observer) \
         _SCHEME_EXPOBS(observer,120,NULL)
-#define SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_TEMPLATE(observer)   \
+#define SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_TEMPLATE(observer) \
         _SCHEME_EXPOBS(observer,121,NULL)
 #define SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(observer) \
         _SCHEME_EXPOBS(observer,122,NULL)
@@ -117,7 +117,12 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(observer) \
         _SCHEME_EXPOBS(observer,156,scheme_false)
 
-#define SCHEME_EXPAND_OBSERVE_VARIABLE(observer,e1,e2)       \
+#define SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE(observer) \
+        _SCHEME_EXPOBS(observer,158,scheme_false)
+#define SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE_STAR(observer) \
+        _SCHEME_EXPOBS(observer,159,scheme_false)
+
+#define SCHEME_EXPAND_OBSERVE_VARIABLE(observer,e1,e2) \
         _SCHEME_EXPOBS(observer,125,scheme_make_pair(e1, e2))
 
 #define SCHEME_EXPAND_OBSERVE_ENTER_CHECK(observer,stx) \
@@ -191,6 +196,6 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_PREPARE_ENV(obs) \
         _SCHEME_EXPOBS(obs,157,scheme_false)
 
-/* next: 158 */
+/* next: 160 */
 
 #endif
