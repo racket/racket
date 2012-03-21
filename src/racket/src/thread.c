@@ -5888,6 +5888,7 @@ static Syncing *make_syncing(Evt_Set *evt_set, float timeout, double start_time)
     pos = scheme_rand((Scheme_Random_State *)rand_state);
     syncing->start_pos = (pos % evt_set->argc);
   }
+  syncing->thread = scheme_current_thread;
 
   return syncing;
 }
@@ -6383,16 +6384,17 @@ void scheme_post_syncing_nacks(Syncing *syncing)
 
 static void escape_during_sync(Syncing *syncing) {
 #ifdef MZ_PRECISE_GC
-  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Thread *p = syncing->thread;
 #endif
 
 scheme_post_syncing_nacks(syncing);
 
 #ifdef MZ_PRECISE_GC
-  if (p->place_channel_msg_in_flight) {
+  if (p && p->place_channel_msg_in_flight) {
     GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
     p->place_channel_msg_in_flight = NULL;
   }
+  syncing->thread = NULL;
 #endif
 }
 

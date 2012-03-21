@@ -306,6 +306,7 @@ static int mark_syncing_MARK(void *p, struct NewGC *gc) {
   gcMARK2(w->reposts, gc);
   gcMARK2(w->accepts, gc);
   gcMARK2(w->disable_break, gc);
+  gcMARK2(w->thread, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Syncing));
@@ -320,6 +321,7 @@ static int mark_syncing_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(w->reposts, gc);
   gcFIXUP2(w->accepts, gc);
   gcFIXUP2(w->disable_break, gc);
+  gcFIXUP2(w->thread, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Syncing));

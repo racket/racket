@@ -1720,6 +1720,7 @@ typedef struct Syncing {
   Scheme_Accept_Sync *accepts;
 
   Scheme_Thread *disable_break; /* when result is set */
+  Scheme_Thread *thread; /* set when syncing to allow in flight place message cleanup */
 } Syncing;
 
 int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *syncing);

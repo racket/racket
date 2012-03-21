@@ -1915,6 +1915,7 @@ mark_syncing {
   gcMARK2(w->reposts, gc);
   gcMARK2(w->accepts, gc);
   gcMARK2(w->disable_break, gc);
+  gcMARK2(w->thread, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Syncing));

@@ -19,7 +19,6 @@
 */
 
 #include "schpriv.h"
-
 static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]);
 static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
@@ -3119,18 +3118,22 @@ static Scheme_Object *scheme_place_async_try_receive_raw(Scheme_Place_Async_Chan
   return msg;
 }
 
-static void cleanup_msg_memmory(void *msg_memory) {
-  if (msg_memory)
-    GC_destroy_orphan_msg_memory(msg_memory);
+static void cleanup_msg_memmory(void *thread) {
+  Scheme_Thread *p = thread;
+  if (p->place_channel_msg_in_flight) {
+    GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
+    p->place_channel_msg_in_flight = NULL;
+  }
 }
 
 static Scheme_Object *scheme_place_async_try_receive(Scheme_Place_Async_Channel *ch) {
   Scheme_Object *msg = NULL;
-  void *msg_memory = NULL;
-  BEGIN_ESCAPEABLE(cleanup_msg_memmory, msg_memory);
-  msg = scheme_place_async_try_receive_raw(ch, &msg_memory);
+  Scheme_Thread *p = scheme_current_thread;
+  BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
+  msg = scheme_place_async_try_receive_raw(ch, &p->place_channel_msg_in_flight);
   if (msg) {
-    msg = scheme_places_deserialize(msg, msg_memory);
+    msg = scheme_places_deserialize(msg, p->place_channel_msg_in_flight);
+    p->place_channel_msg_in_flight = NULL;
   }
   END_ESCAPEABLE();
   return msg;
@@ -3157,8 +3160,10 @@ static Scheme_Object *place_channel_finish_ready(void *d, int argc, struct Schem
 
   if (msg) {
     Scheme_Thread *p = scheme_current_thread;                                                                 
-    p->place_channel_msg_in_flight = NULL;
-    return scheme_places_deserialize(msg, msg_memory);
+    BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
+      msg = scheme_places_deserialize(msg, p->place_channel_msg_in_flight);
+      p->place_channel_msg_in_flight = NULL;
+    END_ESCAPEABLE();
   }
   return msg;
 }
@@ -3178,9 +3183,9 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
 
   msg = scheme_place_async_try_receive_raw((Scheme_Place_Async_Channel *) ch->recvch, &msg_memory);
   if (msg != NULL) {
-    Scheme_Thread *p = scheme_current_thread;
+    Scheme_Thread *p = ((Syncing *)(sinfo->current_syncing))->thread;
     p->place_channel_msg_in_flight = msg_memory;
-    o = scheme_make_pair(msg, msg_memory);
+    o = scheme_make_raw_pair(msg, msg_memory);
     wrapper = scheme_make_closed_prim(place_channel_finish_ready, NULL);
     scheme_set_sync_target(sinfo, o, wrapper, NULL, 0, 0, NULL);
     return 1;

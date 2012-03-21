@@ -183,15 +183,37 @@
 
 
 (define (main)
+  
+  ;test breaks in BEGIN_ESCAPABLE during scheme_place_async_try_receive
   (let ()
-    (define pl (place ch                                                                                        
-      (for ([i 100000])                                                                                         
-        (place-channel-get ch)                                                                                  
-        (place-channel-put ch (list "foo" 1 "bar")))))                                                          
-                                                                                                                
-    (for ([i 100000])                                                                                           
-      (place-channel-put pl (list "hello" 4 "hello"))                                                           
-      (sync/timeout 1 pl)))
+    (for ([i 25])
+      (let ()
+        (define-values (ch1 ch2) (place-channel))
+        (define mt 
+          (thread 
+            (lambda ()
+              (let loop () (loop)))))
+        (define t
+          (thread
+            (lambda ()
+              (for ([i 100000])
+                ;(place-channel-put ch1 (list "foo" 1 "bar"))
+                (place-channel-put ch1 (make-list 7000 'foo))
+                ))))
+        (define t2
+          (thread
+            (lambda ()
+              (time (for ([i 100000])
+                (sync ch2))))))
+
+        (define ti (/ (+ (random 100) 1) 100))
+        (sleep ti)
+        (kill-thread mt) 
+        (kill-thread t2)
+        (kill-thread t)
+        ;(displayln (exact->inexact ti))
+        (thread-wait t)
+        (thread-wait t2))))
 
   (let ()
     (define flx (make-shared-fxvector 10 0))
