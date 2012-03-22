@@ -7,38 +7,37 @@
 (define submodule 'test)
 (define run-anyways? #f)
 
-(define do-test
-  (match-lambda
-   [(? string? s)
-    (do-test (string->path s))]
-   [(? path? p)
-    (define ps (path->string p))
-    (cond
+(define (do-test e [check-suffix? #f])
+  (match e
+    [(? string? s)
+     (do-test (string->path s))]
+    [(? path? p)
+     (cond
       [(directory-exists? p)
        (for-each
         (λ (dp)
-          (do-test (build-path p dp)))
+           (do-test (build-path p dp) #t))
         (directory-list p))]
       [(and (file-exists? p)
-            (regexp-match #rx"\\.rkt$" ps))
-       (define fmod `(file ,ps))
-       (define mod `(submod ,fmod ,submodule))
+            (or (not check-suffix?)
+                (regexp-match #rx#"\\.rkt$" (path->bytes p))))
+       (define mod `(submod ,p ,submodule))
        (cond
          [(module-declared? mod #t)
           (dynamic-require mod #f)]
-         [(and run-anyways? (module-declared? fmod #t))
-          (dynamic-require fmod #f)])]
+         [(and run-anyways? (module-declared? p #t))
+          (dynamic-require p #f)])]
       [(not (file-exists? p))
        (error 'test "Given path ~e does not exist" p)])]))
 
 (command-line
  #:program (short-program+command-name)
  #:once-each
- [("--submodule" "-s") submodule-str
-  "Determines which submodule to load"
-  (set! submodule (string->symbol submodule-str))]
+ [("--submodule" "-s") name
+  "Runs submodule <name> (defaults to `test')"
+  (set! submodule (string->symbol name))]
  [("--run-if-absent" "-r")
-  "When set, raco test will require the default module if the given submodule is not present."
+  "Require base module if submodule is absent"
   (set! run-anyways? #t)]
- #:args files+directories
- (for-each do-test files+directories))
+ #:args file-or-directory
+ (for-each do-test file-or-directory))
