@@ -451,7 +451,7 @@ static int generate_inlined_constant_varref_test(mz_jit_state *jitter, Scheme_Ob
 
   /* Load global array: */
   pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
-  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+  mz_rs_ldxi(JIT_R2, pos);
   /* Load bucket: */
   pos = SCHEME_TOPLEVEL_POS(obj);
   jit_ldxi_p(JIT_R1, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));

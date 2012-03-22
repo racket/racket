@@ -2096,10 +2096,10 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       CHECK_LIMIT();
       mz_rs_sync();
       
-      /* Load global+stx array: */
+      /* Load prefix: */
       pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(v));
-      jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-      /* Try already-renamed stx: */
+      mz_rs_ldxi(JIT_R2, pos);
+      /* Extract bucket from prefix: */
       pos = SCHEME_TOPLEVEL_POS(v);
       jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
       CHECK_LIMIT();
@@ -2115,7 +2115,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       jit_stxi_p(&((Scheme_Bucket *)0x0)->val, JIT_R2, JIT_R0);
       ref3 = jit_jmpi(jit_forward());
       
-      /* slow path: */
+      /* Slow path: */
       mz_patch_branch(ref1);
       mz_patch_branch(ref2);
       __END_SHORT_JUMPS__(1);
