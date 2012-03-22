@@ -1,7 +1,8 @@
 #lang racket/base
 (require "private/lzw.rkt")
 
-(provide gif->rgba-rows)
+(provide gif->rgba-rows
+         gif->all-rgba-rows)
 
 (define-syntax-rule (when-debugging expr ...) 
   #;(begin expr ...)
@@ -179,6 +180,14 @@
 
 (define (gif->rgba-rows in)
   (let ([i (read-gif in #t)])
+    (image->rgbs-rows i)))
+
+(define (gif->all-rgba-rows in)
+  (for/list ([i (in-list (read-gif in #f))])
+    (define-values (w h vec) (image->rgbs-rows i))
+    (vector w h vec)))
+
+(define (image->rgbs-rows i)
     (let* ([data (image-data i)]
            [len (bytes-length data)]
            [ct (image-ct i)]
@@ -223,4 +232,4 @@
                   vec2)
                 ;; rows are already in order
                 vec)])
-      (values w h vec2))))
+      (values w h vec2)))
