@@ -886,6 +886,11 @@
       =>
       #t)
 
+;; make sure rotate can get non-integral arguments
+(test (rotate -90.5 (rotate 90.5 (rectangle 20 100 'solid 'orange)))
+      =>
+      (rectangle 20 100 'solid 'orange))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; scaling tests

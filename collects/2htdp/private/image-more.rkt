@@ -754,7 +754,7 @@
   (unless (and (<= 0 θ)
                (< θ 360))
     (error 'degrees->complex "~s" θ))
-  (case (modulo θ 360)
+  (case (and (integer? θ) (modulo θ 360))
     [(0)    1+0i]
     [(90)   0+1i]
     [(180) -1+0i]
