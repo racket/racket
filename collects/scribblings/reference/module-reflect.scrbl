@@ -24,11 +24,16 @@ to another module.
 Returns @racket[#f] if @racket[v] is a @tech{resolved module path},
 @racket[#f] otherwise.}
 
-@defproc[(make-resolved-module-path [path (or/c symbol? (and/c path? complete-path?))])
+@defproc[(make-resolved-module-path [path (or/c symbol? 
+                                                (and/c path? complete-path?)
+                                                (cons/c (or/c symbol?
+                                                              (and/c path? complete-path?))
+                                                        (listof symbol?)))])
          resolved-module-path?]{
 
-Returns a @tech{resolved module path} that encapsulates @racket[path].
-If @racket[path] is not a symbol, it normally should be
+Returns a @tech{resolved module path} that encapsulates @racket[path],
+where a list @racket[path] corresponds to a @tech{submodule} path.
+If @racket[path] is a path or starts with a path, the path normally should be
 @tech{cleanse}d (see @racket[cleanse-path]) and simplified (see
 @racket[simplify-path]).
 
@@ -38,9 +43,14 @@ A @tech{resolved module path} is interned. That is, if two
 @racket[eq?].}
 
 @defproc[(resolved-module-path-name [module-path resolved-module-path?])
-         (or/c path? symbol?)]{
+         (or/c symbol? 
+               (and/c path? complete-path?)
+               (cons/c (or/c symbol?
+                             (and/c path? complete-path?))
+                       (listof symbol?)))]{
 
-Returns the path or symbol encapsulated by a @tech{resolved module path}.}
+Returns the path or symbol encapsulated by a @tech{resolved module path}.
+A list result corresponds to a @tech{submodule} path.}
 
 
 @defproc[(module-path? [v any/c]) boolean?]{

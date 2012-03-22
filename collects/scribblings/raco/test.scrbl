@@ -7,15 +7,19 @@
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
-The @exec{raco test} command requires and runs the @racket['test]
-submodules associated with paths given on the command line. When a
+The @exec{raco test} command requires and runs the @racket[test]
+submodule (if any) associated with each path given on the command line. When a
 path refers to a directory, the tool recursively discovers all
-internal files that end in @filepath{.rkt} and inspects them as well.
+files that end in @filepath{.rkt} within the directory and runs their 
+@racket[test] submodules.
 
 The @exec{raco test} command accepts a few flags:
 
 @itemize[
- @item{@DFlag{s} @nonterm{id} or @DFlag{submodule} @nonterm{id}--- Requires the submodule @nonterm{id} rather than @racket['test].}
+ @item{@Flag{s} @nonterm{name} or @DFlag{submodule} @nonterm{name}
+       --- Requires the submodule @nonterm{name} rather than @racket[test].}
 
- @item{@DFlag{r} or @DFlag{run-if-absent}--- Requires the default module if the given submodule is not present in a file.}
+ @item{@Flag{r} or @DFlag{run-if-absent}
+       --- Requires the top-level module of a file if the relevant submodule is not 
+       present.}
 ]

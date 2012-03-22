@@ -290,6 +290,8 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].
 @defform*[((module* id module-path form ...)
            (module* id #f form ...))]{
 
+@guideintro["submodules"]{@racket[module*]}
+
 Like @racket[module], but only for declaring a @tech{submodule} within
 a module, and for submodules that may @racket[require] the enclosing module.
 
@@ -305,6 +307,8 @@ have no effect on the submodule.}
 
 
 @defform[(module+ id form ...)]{
+
+@guideintro["main-and-test"]{@racket[module+]}
 
 Declares and/or adds to a @tech{submodule} named @racket[id].
 
