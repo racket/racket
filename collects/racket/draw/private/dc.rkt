@@ -1286,7 +1286,8 @@
               ;; breaks the string into multiple layouts.
               (let loop ([s s] [draw-mode draw-mode] [measured? #f] [w 0.0] [h 0.0] [d 0.0] [a 0.0])
                 (cond
-                 [(not s)
+                 [(or (not s)
+                      (equal? s "")) ; can happen if last char is substituted
                   (when rotate? (cairo_restore cr))
                   (values w h d a)]
                  [else
