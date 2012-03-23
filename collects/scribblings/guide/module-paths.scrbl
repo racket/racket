@@ -210,7 +210,7 @@ with other forms.}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @specsubform/subs[#:literals (submod)
-                  (submod base element ...+)
+                  (@#,elemtag["submod"]{@racket[submod]} base element ...+)
                   ([base module-path
                          "."
                          ".."]
