@@ -112,8 +112,14 @@
                                          ;; Enable breaking:
                                          (when can-break?
                                                (break-enabled #t))
-                                         ;; Call the handler
-                                         (handler r w)))))])
+                                         ;; Prevent the handler from
+                                         ;; killing this custodian, by
+                                         ;; creating an intermediary,
+                                         ;; but child custodian
+                                         (parameterize ([current-custodian 
+                                                         (make-custodian)])
+                                           ;; Call the handler
+                                           (handler r w))))))])
                               ;; Clean-up and timeout thread:
                               (thread 
                                (lambda ()
