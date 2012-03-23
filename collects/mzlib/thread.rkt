@@ -79,56 +79,53 @@
                 ;; PR still shows up, but it has no effect on the
                 ;; response time/etc, whereas before it would stop
                 ;; listening and 'ab' would fail.
-                (thread-wait
-                 (thread
-                  (λ ()
-                     (with-handlers 
-                      ([exn:fail:network? handle-exn])
-                      ;; Make a custodian for the next session:
-                      (let ([c (make-custodian)])
-                        (parameterize
-                         ([current-custodian c])
-                         ;; disable breaks during session set-up...
-                         (parameterize-break 
-                          #f
-                          ;; ... but enable breaks while blocked on an accept:
-                          (let-values ([(r w) ((if can-break?
-                                                   tcp-accept/enable-break
-                                                   tcp-accept)
-                                               l)])
-                            ;; Handler thread:
-                            (let ([t 
-                                   (thread 
+                (with-handlers 
+                    ([exn:fail:network? handle-exn])
+                  ;; Make a custodian for the next session:
+                  (let ([c (make-custodian)])
+                    (parameterize
+                        ([current-custodian c])
+                      ;; disable breaks during session set-up...
+                      (parameterize-break 
+                       #f
+                       ;; ... but enable breaks while blocked on an accept:
+                       (let-values ([(r w) ((if can-break?
+                                              tcp-accept/enable-break
+                                              tcp-accept)
+                                            l)])
+                         ;; Handler thread:
+                         (let ([t 
+                                (thread 
+                                 (lambda ()
+                                   ;; First, install the parameterization
+                                   ;;  used for all connections:
+                                   (call-with-parameterization
+                                    paramz
                                     (lambda ()
-                                      ;; First, install the parameterization
-                                      ;;  used for all connections:
-                                      (call-with-parameterization
-                                       paramz
-                                       (lambda ()
-                                         ;; Install this connection's custodian
-                                         ;;  for this thread in the shared
-                                         ;;  parameterization:
-                                         (current-custodian c)
-                                         ;; Enable breaking:
-                                         (when can-break?
-                                               (break-enabled #t))
-                                         ;; Prevent the handler from
-                                         ;; killing this custodian, by
-                                         ;; creating an intermediary,
-                                         ;; but child custodian
-                                         (parameterize ([current-custodian 
-                                                         (make-custodian)])
-                                           ;; Call the handler
-                                           (handler r w))))))])
-                              ;; Clean-up and timeout thread:
-                              (thread 
-                               (lambda ()
-                                 (sync/timeout connection-timeout t)
-                                 (when (thread-running? t)
-                                       ;; Only happens if connection-timeout is not #f
-                                       (break-thread t))
-                                 (sync/timeout connection-timeout t)
-                                 (custodian-shutdown-all c))))))))))))
+                                      ;; Install this connection's custodian
+                                      ;;  for this thread in the shared
+                                      ;;  parameterization:
+                                      (current-custodian c)
+                                      ;; Enable breaking:
+                                      (when can-break?
+                                        (break-enabled #t))
+                                      ;; Prevent the handler from
+                                      ;; killing this custodian, by
+                                      ;; creating an intermediary,
+                                      ;; but child custodian
+                                      (parameterize ([current-custodian 
+                                                      (make-custodian)])
+                                        ;; Call the handler
+                                        (handler r w))))))])
+                           ;; Clean-up and timeout thread:
+                           (thread 
+                            (lambda ()
+                              (sync/timeout connection-timeout t)
+                              (when (thread-running? t)
+                                ;; Only happens if connection-timeout is not #f
+                                (break-thread t))
+                              (sync/timeout connection-timeout t)
+                              (custodian-shutdown-all c)))))))))
                 (loop))))
           (lambda () (tcp-close l)))))
 
