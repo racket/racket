@@ -1324,7 +1324,10 @@ See match-a-pattern.rkt for more details
             (let loop ([mtches mtches]
                        [acc null])
               (cond
-                [(null? mtches) acc]
+                [(null? mtches) 
+                 (if (null? acc)
+                   #f
+                   acc)]
                 [else 
                  (let* ([mtch (car mtches)]
                         [bindings (mtch-bindings mtch)]

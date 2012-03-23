@@ -424,6 +424,10 @@
     (test (and (redex-match L -b 100) #t) #t)
     (test (redex-match L -b 3) #f))
 
+  (let ()
+    (test (redex-match empty-language number 'a) #f)
+    (test (redex-match empty-language (in-hole hole number) 'a) #f))
+
   (parameterize ([current-namespace (make-base-namespace)])
     (eval '(require redex/reduction-semantics redex/pict))
     (eval '(define-language L
