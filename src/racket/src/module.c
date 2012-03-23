@@ -2305,30 +2305,32 @@ int scheme_is_module_path(Scheme_Object *obj)
   if (SCHEME_PAIRP(obj)
       && (SAME_OBJ(SCHEME_CAR(obj), submod_symbol))) {
     Scheme_Object *p, *a;
+    int len = 0;
     p = SCHEME_CDR(obj);
     if (SCHEME_PAIRP(p)) {
       p = SCHEME_CDR(p);
-      if (SCHEME_PAIRP(p)) {
-        while (SCHEME_PAIRP(p)) {
-          a = SCHEME_CAR(p);
-          if (!SCHEME_SYMBOLP(a)
-              && (!SCHEME_CHAR_STRINGP(a)
-                  || (SCHEME_CHAR_STRLEN_VAL(a) != 2)
-                  || (SCHEME_CHAR_STR_VAL(a)[0] != '.')
-                  || (SCHEME_CHAR_STR_VAL(a)[1] != '.')))
-            break;
-          p = SCHEME_CDR(p);
-        }
-      } else
-        p = scheme_false;
+      while (SCHEME_PAIRP(p)) {
+        len++;
+        a = SCHEME_CAR(p);
+        if (!SCHEME_SYMBOLP(a)
+            && (!SCHEME_CHAR_STRINGP(a)
+                || (SCHEME_CHAR_STRLEN_VAL(a) != 2)
+                || (SCHEME_CHAR_STR_VAL(a)[0] != '.')
+                || (SCHEME_CHAR_STR_VAL(a)[1] != '.')))
+          break;
+        p = SCHEME_CDR(p);
+      }
     } else
       p = scheme_false;
     if (SCHEME_NULLP(p)) {
       obj = SCHEME_CDR(obj);
       obj = SCHEME_CAR(obj);
       if (SCHEME_CHAR_STRINGP(obj) 
-          && (SCHEME_CHAR_STRLEN_VAL(obj) == 1)
-          && (SCHEME_CHAR_STR_VAL(obj)[0] == '.'))
+          && (((SCHEME_CHAR_STRLEN_VAL(obj) == 1)
+               && (SCHEME_CHAR_STR_VAL(obj)[0] == '.'))
+              || ((SCHEME_CHAR_STRLEN_VAL(obj) == 2)
+                  && (SCHEME_CHAR_STR_VAL(obj)[0] == '.')
+                  && (SCHEME_CHAR_STR_VAL(obj)[1] == '.'))))
         return 1;
     }
   }
@@ -6512,9 +6514,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     Scheme_Object *rn;
 
     iidx = scheme_make_modidx(scheme_make_pair(submod_symbol,
-                                               scheme_make_pair(scheme_make_utf8_string("."),
-                                                                scheme_make_pair(scheme_make_utf8_string(".."),
-                                                                                 scheme_null))),
+                                               scheme_make_pair(scheme_make_utf8_string(".."),
+                                                                scheme_null)),
                               self_modidx,
                               scheme_false);
 

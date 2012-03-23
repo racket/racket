@@ -287,7 +287,9 @@ Use syntax/modcollapse instead.
           (if (null? subpath)
               (cadr sm)
               `(submod ,(cadr sm) ,@subpath)))
-        sm))
+        (if (null? (cddr sm))
+            (cadr sm)
+            sm)))
 
   (let normalize-recur ([s s])
     (cond [(string? s)
@@ -317,11 +319,15 @@ Use syntax/modcollapse instead.
           [(eq? (car s) 'planet) (normalize-planet s)]
           [(eq? (car s) 'quote) s]
           [(eq? (car s) 'submod) 
-           (if (equal? (cadr s) ".")
-               (begin
-                 (flatten-relto-mp!)
-                 (normalize-submod `(submod ,relto-mp ,@relto-submod ,@(cddr s))))
-               (normalize-submod `(submod ,(normalize-recur (cadr s)) ,@relto-submod ,@(cddr s))))]
+           (cond
+            [(equal? (cadr s) ".")
+             (flatten-relto-mp!)
+             (normalize-submod `(submod ,relto-mp ,@relto-submod ,@(cddr s)))]
+            [(equal? (cadr s) "..")
+             (flatten-relto-mp!)
+             (normalize-submod `(submod ,relto-mp ,@relto-submod ,@(cdr s)))]
+            [else
+             (normalize-submod `(submod ,(normalize-recur (cadr s)) ,@relto-submod ,@(cddr s)))])]
           [else #f])))
 
 (define (collapse-module-path-index mpi relto-mp)

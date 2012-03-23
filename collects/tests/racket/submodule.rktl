@@ -5,6 +5,44 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #t module-path? '(submod "."))
+(test #t module-path? '(submod "." x))
+(test #t module-path? '(submod "." x y))
+(test #t module-path? '(submod "." x ".." y))
+(test #t module-path? '(submod "." x ".." y ".." ".." ".."))
+(test #f module-path? '(submod "." "x" y))
+(test #f module-path? '(submod "." x "y"))
+(test #t module-path? '(submod ".."))
+(test #t module-path? '(submod ".." x))
+(test #t module-path? '(submod ".." x y))
+(test #f module-path? '(submod ".." "x" y))
+(test #f module-path? '(submod ".." x "y"))
+(test #t module-path? '(submod ".." ".."))
+(test #f module-path? '(submod ".." "."))
+
+(test #t module-path? '(submod x a b))
+(test #f module-path? '(submod x "a" b))
+
+(test #t module-path? '(submod 'x a))
+(test #t module-path? '(submod 'x))
+
+(define (check-resolution root [root-mod root])
+  (test root resolved-module-path-name
+        (module-path-index-resolve (module-path-index-join `(submod ,root-mod) #f)))
+  (test root resolved-module-path-name
+        (module-path-index-resolve (module-path-index-join `(submod ".") (make-resolved-module-path root))))
+  (test root resolved-module-path-name
+        (module-path-index-resolve (module-path-index-join `(submod "." "..") (make-resolved-module-path (list root 'y)))))
+  (test root resolved-module-path-name
+        (module-path-index-resolve (module-path-index-join `(submod "..") (make-resolved-module-path (list root 'y)))))
+  (err/rt-test
+   (module-path-index-resolve (module-path-index-join `(submod "..") (make-resolved-module-path root)))
+   exn:fail?))
+(check-resolution 'x ''x)
+(check-resolution (path->complete-path "file.rkt"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (module subm-example-1 racket/base
   (define x 1)
   (provide x)

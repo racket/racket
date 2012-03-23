@@ -389,6 +389,9 @@
 (test #t module-path? "x/.")
 (test #t module-path? "x/..")
 
+(test #t module-path? (collection-file-path "module.rktl" "tests" "racket"))
+(test #t module-path? (string->path "x"))
+
 (test #t module-path? 'hello)
 (test #f module-path? 'hello/)
 (test #f module-path? 'hello.rkt)

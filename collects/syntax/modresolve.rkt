@@ -96,14 +96,20 @@
             (module-path-index-join s #f)))
           submod)]
         [(eq? (car s) 'submod)
-         (define r (if (equal? (cadr s) ".")
-                       (let ()
-                         (define-values (d submod) (force-relto relto #f))
-                         (combine-submod d submod))
-                       (resolve-module-path (cadr s) relto)))
-         (define base-submods (if (and (equal? (cadr s) ".") (pair? r)) (cddr r) null))
+         (define r (cond
+                    [(or (equal? (cadr s) ".")
+                         (equal? (cadr s) ".."))
+                     (define-values (d submod) (force-relto relto #f))
+                     (combine-submod d submod)]
+                    [else (resolve-module-path (cadr s) relto)]))
+         (define base-submods (if (and (or (equal? (cadr s) ".") 
+                                           (equal? (cadr s) ".."))
+                                       (pair? r)) 
+                                  (cddr r)
+                                  null))
          (define base (if (pair? r) (cadr r) r))
-         (flatten base (append base-submods (cddr s)))]
+         (flatten base (append base-submods 
+                               (if (equal? (cadr s) "..") (cdr s) (cddr s))))]
         [else #f]))
 
 (define (resolve-module-path-index mpi relto)

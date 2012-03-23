@@ -14,6 +14,7 @@
   (unless (and (pair? path) (eq? 'submod (car path)))
     (test `(submod ,expect a b) resolve-module-path `(submod ,path a b) rel-to)
     (test `(submod ,expect a b) resolve-module-path `(submod ,path a c ".." b) rel-to)
+    (test expect resolve-module-path `(submod ,path) rel-to)
     (when rel-to
       (test expect collapse-module-path path (if (procedure? rel-to)
                                                  (lambda () `(submod ,(rel-to) a b))
@@ -29,7 +30,8 @@
 	  pi-rel-to)
     (unless (and (pair? path)
                  (eq? (car path) 'submod)
-                 (equal? (cadr path) "."))
+                 (or (equal? (cadr path) ".")
+                     (equal? (cadr path) "..")))
       (test expect resolve-module-path-index 
             (module-path-index-join path 
                                     (module-path-index-join
@@ -67,8 +69,10 @@
   (test-rmp (build-path (current-directory) "x.rkt") (build-path (current-directory) "x.ss") #f)
   (test-rmp (build-path (current-directory) "x.rkt") (build-path "x.ss") #f)
   (test-rmp `(submod ,(build-path mzlib "y.rkt") n) '(submod "y.rkt" n) `(submod ,(build-path mzlib "x.rkt") q z))
+  (test-rmp `(submod ,(build-path mzlib "x.rkt") q) '(submod "..") `(submod ,(build-path mzlib "x.rkt") q z))
   (test-rmp `(submod ,(build-path mzlib "x.rkt") q) '(submod "." "..") `(submod ,(build-path mzlib "x.rkt") q z))
   (test-rmp (build-path mzlib "x.rkt") '(submod "." ".." "..") `(submod ,(build-path mzlib "x.rkt") q z))
+  (test-rmp (build-path mzlib "x.rkt") '(submod ".." "..") `(submod ,(build-path mzlib "x.rkt") q z))
   (void))
 
 (err/rt-test (resolve-module-path "apple.ss" 'no))
@@ -90,6 +94,7 @@
   (unless (and (pair? path) (eq? 'submod (car path)))
     (test `(submod ,expect a b) collapse-module-path `(submod ,path a b) rel-to)
     (test `(submod ,expect a b) collapse-module-path `(submod ,path a c ".." b) rel-to)
+    (test expect collapse-module-path `(submod ,path) rel-to)
     (unless (symbol? rel-to)
       (test expect collapse-module-path path (if (procedure? rel-to)
                                                  (lambda () `(submod ,(rel-to) a b))
@@ -97,7 +102,10 @@
   (test expect collapse-module-path-index 
 	(module-path-index-join path (module-path-index-join #f #f))
 	rel-to)
-  (unless (and (pair? path) (eq? 'submod (car path)) (equal? (cadr path) "."))
+  (unless (and (pair? path) 
+               (eq? 'submod (car path)) 
+               (or (equal? (cadr path) ".")
+                   (equal? (cadr path) "..")))
     (test expect collapse-module-path-index 
           (module-path-index-join path 
                                   (module-path-index-join
@@ -258,9 +266,13 @@
 (test-cmp (build-path 'same "x.rkt") "x.ss" (build-path 'same))
 (test-cmp (build-path 'same "x.scm") "x.scm" (build-path 'same))
 
+(test-cmp ''a '(submod ".") ''a)
 (test-cmp '(submod 'a x y) '(submod "." x y) ''a)
 (test-cmp '(submod 'a q z x y) '(submod "." x y) '(submod 'a q z))
 (test-cmp '(submod 'a q y) '(submod "." ".." y) '(submod 'a q z))
+(test-cmp '(submod 'a q y) '(submod ".." y) '(submod 'a q z))
+(test-cmp '(submod 'a q) '(submod "..") '(submod 'a q z))
+(test-cmp '(submod 'a q y) '(submod ".." y) '(submod 'a q z))
 (test-cmp ''a '(submod "." ".." "..") '(submod 'a q z))
 (test-cmp `(submod ,(build-path 'same) x y) '(submod "." x y) (build-path 'same))
 

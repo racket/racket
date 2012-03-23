@@ -212,7 +212,8 @@ with other forms.}
 @specsubform/subs[#:literals (submod)
                   (submod base element ...+)
                   ([base module-path
-                         "."]
+                         "."
+                         ".."]
                    [element id
                             ".."])]{
 
@@ -229,13 +230,14 @@ names to reach the final submodule.
   monkey
 ]
 
-Using @racket["."] as @racket[base] within @racket[submod] stands for the
-enclosing module. When a path of the form @racket[(#,(racket quote)
-id)] refers to a submodule, it is equivalent to @racket[(submod "."
-id)].
+Using @racket["."] as @racket[base] within @racket[submod] stands for
+the enclosing module. Using @racket[".."] as @racket[base] is
+equivalent to using @racket["."] followed by an extra
+@racket[".."]. When a path of the form @racket[(#,(racket quote) id)]
+refers to a submodule, it is equivalent to @racket[(submod "."  id)].
 
 Using @racket[".."] as an @racket[element] cancels one submodule step, effectively
-referring to the enclosing module. For example, @racket[(submod "." "..")]
+referring to the enclosing module. For example, @racket[(submod "..")]
 refers to the enclosing module of the submodule in which the path
 appears.
 
@@ -245,7 +247,7 @@ appears.
       (provide monkey)
       (define monkey "Curious George"))
     (module crocodile-house racket
-      (require (submod "." ".." monkey-house))
+      (require (submod ".." monkey-house))
       (provide dinner)
       (define dinner monkey)))
   (require (submod 'zoo crocodile-house))

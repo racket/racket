@@ -362,8 +362,9 @@ Legal only in a @tech{module begin context}, and handled by the
                              (for-label require-spec ...)
                              (for-meta phase-level require-spec ...)
                              derived-require-spec]
-               [module-path (submod root-module-path submod-path-element ...+)
-                            (submod "." submod-path-element ...+)]
+               [module-path (submod root-module-path submod-path-element ...)
+                            (submod "." submod-path-element ...)
+                            (submod ".." submod-path-element ...)]
                [root-module-path (#,(racket quote) id)
                             rel-string
                             (lib rel-string ...+)
@@ -765,14 +766,18 @@ corresponds to the default @tech{module name resolver}.
  (eval:alts (require (planet mcdonald/farm:2:5/duck)) (void))
  ]}
 
- @defsubform*[((submod root-module submod-path-element ...+)
-               (submod "." submod-path-element ...+))]{
+ @defsubform*[((submod root-module submod-path-element ...)
+               (submod "." submod-path-element ...)
+               (submod ".." submod-path-element ...))]{
   Identifies a @tech{submodule} within the module specified by @racket[root-module]
-  or relative to the current module in the case of @racket[(submod "." ....)].
+  or relative to the current module in the case of @racket[(submod "." ....)],
+  where  @racket[(submod ".." submod-path-element ...)] is equivalent to
+  @racket[(submod "." ".." submod-path-element ...)].
   Submodules have symbolic names, and a sequence of identifiers as @racket[submod-path-element]s
   determine a path of successively nested submodules with the given names.
   A @racket[".."] as a @racket[submod-path-element] names the enclosing module
-  of a submodule, and it's intended for use in @racket[(submod "." ....)] forms.}
+  of a submodule, and it's intended for use in @racket[(submod "." ....)] 
+  and @racket[(submod ".." ....)] forms.}
 
 }
 
