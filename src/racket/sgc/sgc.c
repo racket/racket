@@ -35,6 +35,11 @@
 #include "mzconfig.h"
 #include "sgc.h"
 
+#ifdef _WIN64
+# define SIZEOF_LONG 8
+# define inline _inline
+#endif
+
 #ifdef SIZEOF_LONG
 # if SIZEOF_LONG == 8
 #  define SIXTY_FOUR_BIT_INTEGERS

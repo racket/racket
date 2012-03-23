@@ -154,7 +154,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:X64"
 				AdditionalDependencies="WS2_32.lib Shell32.lib User32.lib"
 				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
@@ -482,7 +482,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE;USE_SENORA_GC;SGC_STD_DEBUGGING=1"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"

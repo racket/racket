@@ -151,7 +151,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
+				AdditionalOptions="/MACHINE:X64"
 				AdditionalDependencies="User32.lib"
 				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
 				SuppressStartupBanner="true"
