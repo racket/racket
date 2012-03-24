@@ -22,6 +22,10 @@
 
 (application-preferences-handler (λ () (preferences:show-dialog)))
 
+(preferences:set-default 'framework:line-spacing-add-gap?
+                         (not (eq? (system-type) 'windows))
+                         boolean?)
+
 ;; used to time how long it takes to set a preference; the value is not actually used.
 (preferences:set-default 'drracket:prefs-debug #f (λ (x) #t))
 

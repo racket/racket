@@ -172,7 +172,7 @@
                 
                 [text (make-object (text:foreground-color-mixin
                                     (editor:standard-style-list-mixin 
-                                     text:basic%)))]
+                                     text:line-spacing%)))]
                 [ex-panel (make-object horizontal-panel% main)]
                 [msg (make-object message% (string-constant example-text) ex-panel)]
                 [canvas (make-object canvas:color% main text)]

@@ -509,6 +509,8 @@ please adhere to these guidelines:
   (black-on-white-color-scheme "Black on White") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
   
+  (add-spacing-between-lines "Add one pixel of extra space between lines")
+  
  ; title of the color choosing dialog
 
  ; should have entire alphabet

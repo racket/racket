@@ -456,7 +456,7 @@ the state transitions / contracts are:
                  (list (string-constant editor-prefs-panel-label) 
                        (string-constant general-prefs-panel-label))
                  (λ (editor-panel)
-                   (make-check editor-panel  'framework:delete-forward? (string-constant map-delete-to-backspace)
+                   (make-check editor-panel 'framework:delete-forward? (string-constant map-delete-to-backspace)
                                not not)
                    (make-check editor-panel 
                                'framework:auto-set-wrap?
@@ -499,6 +499,10 @@ the state transitions / contracts are:
                                  'framework:always-use-platform-specific-linefeed-convention
                                  (string-constant always-use-platform-specific-linefeed-convention)
                                  values values))
+                   (make-check editor-panel
+                               'framework:line-spacing-add-gap?
+                               (string-constant add-spacing-between-lines)
+                               values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   

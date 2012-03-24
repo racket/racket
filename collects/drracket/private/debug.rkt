@@ -1765,7 +1765,7 @@ profile todo:
   ;; GUI. They only manage the profiling information reported
   ;; in the bottom window
   (define profile-text% 
-    (class text:basic%
+    (class text:line-spacing%
       (init-field tab)
       
       ;; clear-profile-display : -> void

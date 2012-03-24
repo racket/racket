@@ -124,10 +124,11 @@
   
   (define results-super-text% 
     (text:hide-caret/selection-mixin
-     (text:basic-mixin 
-      (editor:standard-style-list-mixin 
-       (editor:basic-mixin
-        text%)))))
+     (text:line-spacing-mixin
+      (text:basic-mixin
+       (editor:standard-style-list-mixin 
+        (editor:basic-mixin
+         text%))))))
   
   ;; results-text% : derived from text%
   ;; init args: zoom-text
@@ -631,7 +632,7 @@
   (define (exact-match-searcher params key)        ;; thread: main eventspace thread
     (let ([case-sensitive? (car params)])
       (λ (filename add-entry)                 ;; thread: searching thread
-        (let ([text (make-object text:basic%)])
+        (let ([text (make-object text:line-spacing%)])
           (send text load-file filename)
           (let loop ([pos 0])
             (let ([found (send text find-string key 'forward pos 'eof #t case-sensitive?)])

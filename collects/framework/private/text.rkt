@@ -56,10 +56,6 @@
     
     (values register-port-name! lookup-port-name)))
 
-
-;; wx: `default-wrapping?', add as the initial value for auto-wrap bitmap,
-;; unless matthew makes it primitive
-
 (define basic<%>
   (interface (editor:basic<%> (class->interface text%))
     highlight-range
@@ -544,6 +540,23 @@
 
 
 (define (hash-cons! h k v) (hash-set! h k (cons v (hash-ref h k '()))))
+
+(define line-spacing<%> (interface ()))
+
+(define line-spacing-mixin
+  (mixin (basic<%>) (line-spacing<%>)
+    (super-new)
+    (inherit set-line-spacing)
+    ;; this is a field so that the weakly
+    ;; held callback works out properly
+    (define (pref-cb-func sym val)
+      (set-line-spacing (if val 1 0)))
+    (preferences:add-callback 'framework:line-spacing-add-gap?
+                              pref-cb-func
+                              #t)
+    (set-line-spacing (if (preferences:get 'framework:line-spacing-add-gap?)
+                          1
+                          0))))
 
 (define first-line<%>
   (interface ()
@@ -4119,11 +4132,12 @@ designates the character that triggers autocompletion
     (setup-padding)))
 
 (define basic% (basic-mixin (editor:basic-mixin text%)))
-(define hide-caret/selection% (hide-caret/selection-mixin basic%))
-(define nbsp->space% (nbsp->space-mixin basic%))
-(define normalize-paste% (normalize-paste-mixin basic%))
-(define delegate% (delegate-mixin basic%))
-(define wide-snip% (wide-snip-mixin basic%))
+(define line-spacing% (line-spacing-mixin basic%))
+(define hide-caret/selection% (hide-caret/selection-mixin line-spacing%))
+(define nbsp->space% (nbsp->space-mixin line-spacing%))
+(define normalize-paste% (normalize-paste-mixin line-spacing%))
+(define delegate% (delegate-mixin line-spacing%))
+(define wide-snip% (wide-snip-mixin line-spacing%))
 (define standard-style-list% (editor:standard-style-list-mixin wide-snip%))
 (define input-box% (input-box-mixin standard-style-list%))
 (define -keymap% (editor:keymap-mixin standard-style-list%))

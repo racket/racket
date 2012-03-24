@@ -1531,7 +1531,7 @@ module browser threading seems wrong.
              (member logger-panel (send logger-parent-panel get-children))))
       
       (define/private (new-logger-text)
-        (set! logger-gui-text (new (text:hide-caret/selection-mixin text:basic%)))
+        (set! logger-gui-text (new (text:hide-caret/selection-mixin text:line-spacing%)))
         (send logger-gui-text lock #t))
       
       (define/public (update-logger-window command)

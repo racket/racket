@@ -86,7 +86,7 @@
     [else (format "~a" n)]))
 
 (define cumulative-t%
-  (class text:basic%
+  (class text:line-spacing%
     (init-field open-button vp ec1 lp info-editor)
     (inherit begin-edit-sequence
              end-edit-sequence

@@ -168,6 +168,7 @@
   
   (define-signature text-class^
     (basic<%>
+     line-spacing<%>
      first-line<%>
      line-numbers<%>
      foreground-color<%>
@@ -187,6 +188,7 @@
      autocomplete<%>
      
      basic% 
+     line-spacing%
      hide-caret/selection%
      nbsp->space%
      normalize-paste%
@@ -206,6 +208,7 @@
      input-box%
      
      basic-mixin
+     line-spacing-mixin
      first-line-mixin
      line-numbers-mixin
      foreground-color-mixin

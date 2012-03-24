@@ -1978,7 +1978,7 @@ TODO
                 (insert/delta text " in: ")
                 (insert/delta text (format "~s" (syntax->datum expr)) error-text-style-delta))
               (insert/delta text "\n")
-              (when (and (is-a? src text:basic%)
+              (when (and (is-a? src text:basic<%>)
                          (number? pos)
                          (number? span))
                 (highlight-errors (list (list src (- pos 1) (+ pos -1 span)))))))
@@ -1997,7 +1997,7 @@ TODO
               (insert-file-name/icon src pos span line col))
             (insert/delta text (format "~a" (exn-message exn)) error-delta)
             (insert/delta text "\n")
-            (when (and (is-a? src text:basic%)
+            (when (and (is-a? src text:basic<%>)
                        (number? pos)
                        (number? span))
               (highlight-errors (list (list src (- pos 1) (+ pos -1 span))))))]
