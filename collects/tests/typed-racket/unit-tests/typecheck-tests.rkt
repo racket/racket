@@ -875,6 +875,8 @@
 
  
         ;;Path tests
+        (tc-e (path-string? "foo") B)
+        (tc-e (path-string? (string->path "foo")) #:ret (ret B (-FS -top -bot)))
         (tc-e (bytes->path #"foo" 'unix) -SomeSystemPath)
         (tc-e (bytes->path #"foo") -Path)
         (tc-e (bytes->path-element #"foo") -Path)

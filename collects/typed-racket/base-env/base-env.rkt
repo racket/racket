@@ -790,7 +790,9 @@
 ;; path manipulation
 
 [path? (make-pred-ty -Path)]
-[path-string? (-> Univ B)]
+[path-string? (asym-pred Univ B 
+                         (-FS (-filter (Un -Path -String) 0)
+                              (-not-filter -Path 0)))]
 [path-for-some-system? (make-pred-ty -SomeSystemPath)]
 
 [string->path (-> -String -Path)]
