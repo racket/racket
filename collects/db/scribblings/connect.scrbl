@@ -665,7 +665,7 @@ ODBC's DSNs.
 
 @;{============================================================}
 
-@section[#:tag "managing-connections"]{Mangaging Connections}
+@section[#:tag "managing-connections"]{Managing Connections}
 
 @declare-exporting[db db/base #:use-sources (db/base)]
 
