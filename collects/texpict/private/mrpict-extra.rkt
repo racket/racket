@@ -491,6 +491,7 @@
                             [width (* (pict-width p) (unbox xs))]
                             [height (* (pict-height p) (unbox ys))]
                             [output s])])
+               (send dc set-smoothing 'smoothed)
                (send dc start-doc "pict")
                (send dc start-page)
                (draw-pict p dc 0 0)
