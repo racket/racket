@@ -1121,10 +1121,11 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   [sync     "Scheme_Object*"]]
 
 /* The sync field:
-     NULL => non-atomic mode
-     #t => atomic mode, no sync proc
-     proc => non-atomic mode, sync proc
-     (box proc) => atomic mode, sync proc */
+ *   NULL => non-atomic mode
+ *   #t => atomic mode, no sync proc
+ *   proc => non-atomic mode, sync proc
+ *   (box proc) => atomic mode, sync proc
+*/
 
 /*****************************************************************************/
 /* Pointer objects */
@@ -1484,7 +1485,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
   if (basetype == 0) basetype = 1; /* int is the default type */
   /* don't assume anything, so it can be used to verify compiler assumptions */
   /* (only forbid stuff that the compiler doesn't allow) */
-  @@DEFINE{RETSIZE(t) res=((stars==0)?sizeof(t):sizeof(t *))}
+  @DEFINE{RETSIZE(t) res=((stars==0)?sizeof(t):sizeof(t *))}
   switch (basetype) {
   case 1: /* int */
     switch (intsize) {
@@ -2345,12 +2346,12 @@ static Scheme_Object *ffi_name_prefix = NULL;
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
   int i, nargs, save_errno;
-#ifdef MZ_USE_PLACES
-  int orig_place;
-# define FFI_CALL_VEC_SIZE 8
-#else
-# define FFI_CALL_VEC_SIZE 7
-#endif
+  @@@IFDEF{MZ_USE_PLACES}{
+    int orig_place;
+    @DEFINE{FFI_CALL_VEC_SIZE 8}
+  }{
+    @DEFINE{FFI_CALL_VEC_SIZE 7}
+  }
   cp = unwrap_cpointer_property(argv[0]);
   if (!SCHEME_FFIANYPTRP(cp))
     scheme_wrong_type(MYNAME, "ffi-obj-or-cpointer", 0, argc, argv);
@@ -2381,12 +2382,10 @@ static Scheme_Object *ffi_name_prefix = NULL;
     }
   } else
     save_errno = 0;
-#ifdef MZ_USE_PLACES
-  if (argc > 5) {
-    orig_place = SCHEME_TRUEP(argv[5]);
-  } else
-    orig_place = 0;
-#endif
+  @@IFDEF{MZ_USE_PLACES}{
+    if (argc > 5) orig_place = SCHEME_TRUEP(argv[5]);
+    else orig_place = 0;
+  }
   atypes = malloc(nargs * sizeof(ffi_type*));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
@@ -2411,9 +2410,9 @@ static Scheme_Object *ffi_name_prefix = NULL;
   SCHEME_VEC_ELS(data)[4] = (Scheme_Object*)cif;
   SCHEME_VEC_ELS(data)[5] = scheme_make_integer(ooff);
   SCHEME_VEC_ELS(data)[6] = scheme_make_integer(save_errno);
-#ifdef MZ_USE_PLACES
-  SCHEME_VEC_ELS(data)[7] = (orig_place ? scheme_true : scheme_false);
-#endif
+  @@IFDEF{MZ_USE_PLACES}{
+    SCHEME_VEC_ELS(data)[7] = (orig_place ? scheme_true : scheme_false);
+  }
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   return scheme_make_closed_prim_w_arity
            (ffi_do_call, (void*)data, SCHEME_BYTE_STR_VAL(p),
@@ -2482,7 +2481,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
 typedef struct Queued_Callback {
   ffi_cif* cif;
   void* resultp;
-  void** args; 
+  void** args;
   void *userdata;
   mzrt_sema *sema;
   int called;
@@ -2563,7 +2562,7 @@ void scheme_check_foreign_work(void)
         else
           orig_place_calls = NULL;
         todo->needs_queue = 0;
-      } 
+      }
       mzrt_mutex_unlock(orig_place_mutex);
 
       if (todo) {
@@ -2584,18 +2583,18 @@ void scheme_check_foreign_work(void)
 
 #endif
 
-void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *userdata) 
+void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   XFORM_SKIP_PROC
 {
 #ifdef MZ_USE_MZRT
   /* This function must not refer to any GCable address, not even
-     temporarily, because a GC may occur concurrent to this 
+     temporarily, because a GC may occur concurrent to this
      function if it's in another thread. */
   FFI_Sync_Queue *queue;
 
   queue = (FFI_Sync_Queue *)((void **)userdata)[1];
   userdata = ((void **)userdata)[0];
-  
+
   if (queue->orig_thread != mz_proc_thread_self()) {
     Queued_Callback *qc;
     mzrt_sema *sema;
@@ -2715,9 +2714,9 @@ void free_cl_cif_queue_args(void *ignored, void *p)
   GC_CAN_IGNORE closure_and_cif *cl_cif_args;
   GC_CAN_IGNORE ffi_callback_t do_callback;
   GC_CAN_IGNORE void *callback_data;
-#ifdef MZ_USE_MZRT
-  int keep_queue = 0;
-#endif
+  @@IFDEF{MZ_USE_MZRT}{
+    int keep_queue = 0;
+  }
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type(MYNAME, "procedure", 0, argc, argv);
@@ -2733,28 +2732,29 @@ void free_cl_cif_queue_args(void *ignored, void *p)
   if (argc > 5) 
     (void)scheme_check_proc_arity2(MYNAME, 1, 5, argc, argv, 1);
   if (((argc > 5) && SCHEME_TRUEP(argv[5]))) {
-#ifdef MZ_USE_MZRT
-    if (!ffi_sync_queue) {
-      mzrt_thread_id tid;
-      void *sig_hand;
+    @@IFDEF{MZ_USE_MZRT}{
+      if (!ffi_sync_queue) {
+        mzrt_thread_id tid;
+        void *sig_hand;
 
-      ffi_sync_queue = (FFI_Sync_Queue *)malloc(sizeof(FFI_Sync_Queue));
-      tid = mz_proc_thread_self();
-      ffi_sync_queue->orig_thread = tid;
-      mzrt_mutex_create(&ffi_sync_queue->lock);
-      sig_hand = scheme_get_signal_handle();
-      ffi_sync_queue->sig_hand = sig_hand;
-      ffi_sync_queue->callbacks = NULL;
+        ffi_sync_queue = (FFI_Sync_Queue *)malloc(sizeof(FFI_Sync_Queue));
+        tid = mz_proc_thread_self();
+        ffi_sync_queue->orig_thread = tid;
+        mzrt_mutex_create(&ffi_sync_queue->lock);
+        sig_hand = scheme_get_signal_handle();
+        ffi_sync_queue->sig_hand = sig_hand;
+        ffi_sync_queue->callbacks = NULL;
+      }
+      sync = argv[5];
+      if (is_atomic) sync = scheme_box(sync);
+      keep_queue = 1;
     }
-    sync = argv[5];
-    if (is_atomic) sync = scheme_box(sync);
-    keep_queue = 1;
-#endif
     do_callback = ffi_queue_callback;
   } else
     do_callback = ffi_do_callback;
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args =
+    scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
@@ -2780,29 +2780,30 @@ void free_cl_cif_queue_args(void *ignored, void *p)
   }{
   callback_data = (void*)data;
   }
-#ifdef MZ_USE_MZRT
-  if (keep_queue) {
-    /* For ffi_queue_callback(), add a level of indirection in 
-       `data' to hold the place-specific `ffi_sync_queue'.
-       Use `free_cl_cif_data_args' to clean up this extra level. */
-    GC_CAN_IGNORE void **tmp;
-    tmp = (void **)malloc(sizeof(void*) * 2);
-    tmp[0] = callback_data;
-    tmp[1] = ffi_sync_queue;
-    callback_data = (void *)tmp;
+  @@IFDEF{MZ_USE_MZRT}{
+    if (keep_queue) {
+      /* For ffi_queue_callback(), add a level of indirection in `data' to
+         hold the place-specific `ffi_sync_queue'.  Use
+         `free_cl_cif_data_args' to clean up this extra level. */
+      GC_CAN_IGNORE void **tmp;
+      tmp = (void **)malloc(sizeof(void*) * 2);
+      tmp[0] = callback_data;
+      tmp[1] = ffi_sync_queue;
+      callback_data = (void *)tmp;
+    }
   }
-#endif
   cl_cif_args->data = callback_data;
   if (ffi_prep_closure(cl, cif, do_callback, (void*)(cl_cif_args->data))
       != FFI_OK)
     scheme_signal_error
       ("internal error: ffi_prep_closure did not return FFI_OK");
-#ifdef MZ_USE_MZRT
-  if (keep_queue)
-    scheme_register_finalizer(data, free_cl_cif_queue_args, cl_cif_args, NULL, NULL);
-  else
-#endif
-    scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
+  @@IFDEF{MZ_USE_MZRT}{
+    if (keep_queue)
+      scheme_register_finalizer(data, free_cl_cif_queue_args, cl_cif_args,
+                                NULL, NULL);
+    else
+  }
+  scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
   return (Scheme_Object*)data;
 }
 

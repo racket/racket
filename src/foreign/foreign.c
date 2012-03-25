@@ -1339,10 +1339,11 @@ END_XFORM_SKIP;
 #endif
 
 /* The sync field:
-     NULL => non-atomic mode
-     #t => atomic mode, no sync proc
-     proc => non-atomic mode, sync proc
-     (box proc) => atomic mode, sync proc */
+ *   NULL => non-atomic mode
+ *   #t => atomic mode, no sync proc
+ *   proc => non-atomic mode, sync proc
+ *   (box proc) => atomic mode, sync proc
+*/
 
 /*****************************************************************************/
 /* Pointer objects */
@@ -2741,6 +2742,11 @@ static void *orig_place_signal_handle;
 static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
                                    int nargs, GC_CAN_IGNORE ForeignAny *ivals, void **avalues,
                                    intptr_t *offsets, void *p)
+/* This function can trigger a GC, but it won't escape --- unless
+   the called function goes back to Racket and raises an exception,
+   and raising an exception in a callback creates all sorts of
+   other problems, anyway. No other Racket threads will run in the
+   place, so it's ok for the arguments to have stack addresses. */
 {
   FFI_Orig_Place_Call *todo;
   void *sh;
@@ -2758,6 +2764,8 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
      GCs while we wait, but still wake up on an external signal. */
 
   GC_check_master_gc_request();
+  /* If a GC is needed from here on, a signal will be posted
+     to the current place */
 
   while (1) {
     todo->cif = cif;
@@ -2785,15 +2793,15 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
     mzrt_mutex_unlock(orig_place_mutex);
 
     if (!ready) {
-      /* tell original-place thread that there's work: */
+      /* Tell original-place thread that there's work: */
       scheme_signal_received_at(orig_place_signal_handle);
-      /* wait for notificiation: */
+      /* Wait for notificiation or a master-GC request: */
       scheme_wait_until_signal_received();
     }
 
     mzrt_mutex_lock(orig_place_mutex);
     if (!todo->signal_handle) {
-      /* done */
+      /* Done */
       mzrt_mutex_unlock(orig_place_mutex);
       free(todo);
       break;
@@ -2978,87 +2986,85 @@ static Scheme_Object *ffi_name_prefix = NULL;
 #define MYNAME "ffi-call"
 static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 {
-    Scheme_Object *itypes = argv[1];
-    Scheme_Object *otype  = argv[2];
-    Scheme_Object *obj, *data, *p, *base, *cp;
-    ffi_abi abi;
-    intptr_t ooff;
-    GC_CAN_IGNORE ffi_type *rtype, **atypes;
-    GC_CAN_IGNORE ffi_cif *cif;
-    int i, nargs, save_errno;
-  #ifdef MZ_USE_PLACES
-    int orig_place;
-  # define FFI_CALL_VEC_SIZE 8
-  #else
-  # define FFI_CALL_VEC_SIZE 7
-  #endif
-    cp = unwrap_cpointer_property(argv[0]);
-    if (!SCHEME_FFIANYPTRP(cp))
-      scheme_wrong_type(MYNAME, "ffi-obj-or-cpointer", 0, argc, argv);
-    obj = SCHEME_FFIANYPTR_VAL(cp);
-    ooff = SCHEME_FFIANYPTR_OFFSET(cp);
-    if ((obj == NULL) && (ooff == 0))
-      scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
-    nargs = scheme_proper_list_length(itypes);
-    if (nargs < 0)
-      scheme_wrong_type(MYNAME, "proper list", 1, argc, argv);
-    if (NULL == (base = get_ctype_base(otype)))
-      scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
-    rtype = CTYPE_ARG_PRIMTYPE(base);
-    abi = GET_ABI(MYNAME,3);
-    if (argc > 4) {
-      save_errno = -1;
-      if (SCHEME_FALSEP(argv[4]))
-        save_errno = 0;
-      else if (SCHEME_SYMBOLP(argv[4])
-               && !SCHEME_SYM_WEIRDP(argv[4])) {
-        if (!strcmp(SCHEME_SYM_VAL(argv[4]), "posix"))
-          save_errno = 1;
-        else if (!strcmp(SCHEME_SYM_VAL(argv[4]), "windows"))
-          save_errno = 2;
-      }
-      if (save_errno == -1) {
-        scheme_wrong_type(MYNAME, "'posix, 'windows, or #f", 4, argc, argv);
-      }
-    } else
+  Scheme_Object *itypes = argv[1];
+  Scheme_Object *otype  = argv[2];
+  Scheme_Object *obj, *data, *p, *base, *cp;
+  ffi_abi abi;
+  intptr_t ooff;
+  GC_CAN_IGNORE ffi_type *rtype, **atypes;
+  GC_CAN_IGNORE ffi_cif *cif;
+  int i, nargs, save_errno;
+# ifdef MZ_USE_PLACES
+  int orig_place;
+# define FFI_CALL_VEC_SIZE 8
+# else /* MZ_USE_PLACES undefined */
+# define FFI_CALL_VEC_SIZE 7
+# endif /* MZ_USE_PLACES */
+  cp = unwrap_cpointer_property(argv[0]);
+  if (!SCHEME_FFIANYPTRP(cp))
+    scheme_wrong_type(MYNAME, "ffi-obj-or-cpointer", 0, argc, argv);
+  obj = SCHEME_FFIANYPTR_VAL(cp);
+  ooff = SCHEME_FFIANYPTR_OFFSET(cp);
+  if ((obj == NULL) && (ooff == 0))
+    scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
+  nargs = scheme_proper_list_length(itypes);
+  if (nargs < 0)
+    scheme_wrong_type(MYNAME, "proper list", 1, argc, argv);
+  if (NULL == (base = get_ctype_base(otype)))
+    scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
+  rtype = CTYPE_ARG_PRIMTYPE(base);
+  abi = GET_ABI(MYNAME,3);
+  if (argc > 4) {
+    save_errno = -1;
+    if (SCHEME_FALSEP(argv[4]))
       save_errno = 0;
-  #ifdef MZ_USE_PLACES
-    if (argc > 5) {
-      orig_place = SCHEME_TRUEP(argv[5]);
-    } else
-      orig_place = 0;
-  #endif
-    atypes = malloc(nargs * sizeof(ffi_type*));
-    for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
-      if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
-        scheme_wrong_type(MYNAME, "list-of-C-types", 1, argc, argv);
-      if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
-        scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
-      atypes[i] = CTYPE_ARG_PRIMTYPE(base);
+    else if (SCHEME_SYMBOLP(argv[4])
+             && !SCHEME_SYM_WEIRDP(argv[4])) {
+      if (!strcmp(SCHEME_SYM_VAL(argv[4]), "posix"))
+        save_errno = 1;
+      else if (!strcmp(SCHEME_SYM_VAL(argv[4]), "windows"))
+        save_errno = 2;
     }
-    cif = malloc(sizeof(ffi_cif));
-    if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
-      scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
-    data = scheme_make_vector(FFI_CALL_VEC_SIZE, NULL);
-    p = scheme_append_byte_string
-          (ffi_name_prefix,
-           scheme_make_byte_string_without_copying
-             (SCHEME_FFIOBJP(cp) ?
-               ((ffi_obj_struct*)(cp))->name : "proc"));
-    SCHEME_VEC_ELS(data)[0] = p;
-    SCHEME_VEC_ELS(data)[1] = obj;
-    SCHEME_VEC_ELS(data)[2] = itypes;
-    SCHEME_VEC_ELS(data)[3] = otype;
-    SCHEME_VEC_ELS(data)[4] = (Scheme_Object*)cif;
-    SCHEME_VEC_ELS(data)[5] = scheme_make_integer(ooff);
-    SCHEME_VEC_ELS(data)[6] = scheme_make_integer(save_errno);
-  #ifdef MZ_USE_PLACES
-    SCHEME_VEC_ELS(data)[7] = (orig_place ? scheme_true : scheme_false);
-  #endif
-    scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
-    return scheme_make_closed_prim_w_arity
-             (ffi_do_call, (void*)data, SCHEME_BYTE_STR_VAL(p),
-              nargs, nargs);
+    if (save_errno == -1) {
+      scheme_wrong_type(MYNAME, "'posix, 'windows, or #f", 4, argc, argv);
+    }
+  } else
+    save_errno = 0;
+# ifdef MZ_USE_PLACES
+  if (argc > 5) orig_place = SCHEME_TRUEP(argv[5]);
+  else orig_place = 0;
+# endif /* MZ_USE_PLACES */
+  atypes = malloc(nargs * sizeof(ffi_type*));
+  for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
+    if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
+      scheme_wrong_type(MYNAME, "list-of-C-types", 1, argc, argv);
+    if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
+      scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
+    atypes[i] = CTYPE_ARG_PRIMTYPE(base);
+  }
+  cif = malloc(sizeof(ffi_cif));
+  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
+    scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  data = scheme_make_vector(FFI_CALL_VEC_SIZE, NULL);
+  p = scheme_append_byte_string
+        (ffi_name_prefix,
+         scheme_make_byte_string_without_copying
+           (SCHEME_FFIOBJP(cp) ?
+             ((ffi_obj_struct*)(cp))->name : "proc"));
+  SCHEME_VEC_ELS(data)[0] = p;
+  SCHEME_VEC_ELS(data)[1] = obj;
+  SCHEME_VEC_ELS(data)[2] = itypes;
+  SCHEME_VEC_ELS(data)[3] = otype;
+  SCHEME_VEC_ELS(data)[4] = (Scheme_Object*)cif;
+  SCHEME_VEC_ELS(data)[5] = scheme_make_integer(ooff);
+  SCHEME_VEC_ELS(data)[6] = scheme_make_integer(save_errno);
+# ifdef MZ_USE_PLACES
+  SCHEME_VEC_ELS(data)[7] = (orig_place ? scheme_true : scheme_false);
+# endif /* MZ_USE_PLACES */
+  scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
+  return scheme_make_closed_prim_w_arity
+           (ffi_do_call, (void*)data, SCHEME_BYTE_STR_VAL(p),
+            nargs, nargs);
 }
 #undef MYNAME
 
@@ -3316,142 +3322,144 @@ void free_cl_cif_queue_args(void *ignored, void *p)
 #define MYNAME "ffi-callback"
 static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
 {
-    ffi_callback_struct *data;
-    Scheme_Object *itypes = argv[1];
-    Scheme_Object *otype = argv[2];
-    Scheme_Object *sync;
-    Scheme_Object *p, *base;
-    ffi_abi abi;
-    int is_atomic;
-    int nargs, i;
-    /* ffi_closure objects are problematic when used with a moving GC.  The
-     * problem is that memory that is GC-visible can move at any time.  The
-     * solution is to use an immobile-box, which an immobile pointer (in a simple
-     * malloced block), which points to the ffi_callback_struct that contains the
-     * relevant Racket call details.  Another minor complexity is that an
-     * immobile box serves as a reference for the GC, which means that nothing
-     * will ever get collected: and the solution for this is to stick a weak-box
-     * in the chain.  Users need to be aware of GC issues, and need to keep a
-     * reference to the callback object to avoid releasing the whole thing --
-     * when that reference is lost, the ffi_callback_struct will be GCed, and a
-     * finalizer will free() the malloced memory.  Everything on the malloced
-     * part is allocated in one block, to make it easy to free.  The final layout
-     * of the various objects is:
-     *
-     * <<======malloc======>> : <<===========scheme_malloc===============>>
-     *                        :
-     *    ffi_closure <------------------------\
-     *      |  |              :                |
-     *      |  |              :                |
-     *      |  \--> immobile ----> weak        |
-     *      |         box     :    box         |
-     *      |                 :     |          |
-     *      |                 :     |          |
-     *      |                 :     \--> ffi_callback_struct
-     *      |                 :               |  |
-     *      V                 :               |  \-----> Racket Closure
-     *     cif ---> atypes    :               |
-     *                        :               \--------> input/output types
-     */
-    GC_CAN_IGNORE ffi_type *rtype, **atypes;
-    GC_CAN_IGNORE ffi_cif *cif;
-    GC_CAN_IGNORE ffi_closure *cl;
-    GC_CAN_IGNORE closure_and_cif *cl_cif_args;
-    GC_CAN_IGNORE ffi_callback_t do_callback;
-    GC_CAN_IGNORE void *callback_data;
-  #ifdef MZ_USE_MZRT
-    int keep_queue = 0;
-  #endif
+  ffi_callback_struct *data;
+  Scheme_Object *itypes = argv[1];
+  Scheme_Object *otype = argv[2];
+  Scheme_Object *sync;
+  Scheme_Object *p, *base;
+  ffi_abi abi;
+  int is_atomic;
+  int nargs, i;
+  /* ffi_closure objects are problematic when used with a moving GC.  The
+   * problem is that memory that is GC-visible can move at any time.  The
+   * solution is to use an immobile-box, which an immobile pointer (in a simple
+   * malloced block), which points to the ffi_callback_struct that contains the
+   * relevant Racket call details.  Another minor complexity is that an
+   * immobile box serves as a reference for the GC, which means that nothing
+   * will ever get collected: and the solution for this is to stick a weak-box
+   * in the chain.  Users need to be aware of GC issues, and need to keep a
+   * reference to the callback object to avoid releasing the whole thing --
+   * when that reference is lost, the ffi_callback_struct will be GCed, and a
+   * finalizer will free() the malloced memory.  Everything on the malloced
+   * part is allocated in one block, to make it easy to free.  The final layout
+   * of the various objects is:
+   *
+   * <<======malloc======>> : <<===========scheme_malloc===============>>
+   *                        :
+   *    ffi_closure <------------------------\
+   *      |  |              :                |
+   *      |  |              :                |
+   *      |  \--> immobile ----> weak        |
+   *      |         box     :    box         |
+   *      |                 :     |          |
+   *      |                 :     |          |
+   *      |                 :     \--> ffi_callback_struct
+   *      |                 :               |  |
+   *      V                 :               |  \-----> Racket Closure
+   *     cif ---> atypes    :               |
+   *                        :               \--------> input/output types
+   */
+  GC_CAN_IGNORE ffi_type *rtype, **atypes;
+  GC_CAN_IGNORE ffi_cif *cif;
+  GC_CAN_IGNORE ffi_closure *cl;
+  GC_CAN_IGNORE closure_and_cif *cl_cif_args;
+  GC_CAN_IGNORE ffi_callback_t do_callback;
+  GC_CAN_IGNORE void *callback_data;
+# ifdef MZ_USE_MZRT
+  int keep_queue = 0;
+# endif /* MZ_USE_MZRT */
 
-    if (!SCHEME_PROCP(argv[0]))
-      scheme_wrong_type(MYNAME, "procedure", 0, argc, argv);
-    nargs = scheme_proper_list_length(itypes);
-    if (nargs < 0)
-      scheme_wrong_type(MYNAME, "proper list", 1, argc, argv);
-    if (NULL == (base = get_ctype_base(otype)))
-      scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
-    rtype = CTYPE_ARG_PRIMTYPE(base);
-    abi = GET_ABI(MYNAME,3);
-    is_atomic = ((argc > 4) && SCHEME_TRUEP(argv[4]));
-    sync = (is_atomic ? scheme_true : NULL);
-    if (argc > 5)
-      (void)scheme_check_proc_arity2(MYNAME, 1, 5, argc, argv, 1);
-    if (((argc > 5) && SCHEME_TRUEP(argv[5]))) {
-  #ifdef MZ_USE_MZRT
-      if (!ffi_sync_queue) {
-        mzrt_thread_id tid;
-        void *sig_hand;
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_type(MYNAME, "procedure", 0, argc, argv);
+  nargs = scheme_proper_list_length(itypes);
+  if (nargs < 0)
+    scheme_wrong_type(MYNAME, "proper list", 1, argc, argv);
+  if (NULL == (base = get_ctype_base(otype)))
+    scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
+  rtype = CTYPE_ARG_PRIMTYPE(base);
+  abi = GET_ABI(MYNAME,3);
+  is_atomic = ((argc > 4) && SCHEME_TRUEP(argv[4]));
+  sync = (is_atomic ? scheme_true : NULL);
+  if (argc > 5)
+    (void)scheme_check_proc_arity2(MYNAME, 1, 5, argc, argv, 1);
+  if (((argc > 5) && SCHEME_TRUEP(argv[5]))) {
+#   ifdef MZ_USE_MZRT
+    if (!ffi_sync_queue) {
+      mzrt_thread_id tid;
+      void *sig_hand;
 
-        ffi_sync_queue = (FFI_Sync_Queue *)malloc(sizeof(FFI_Sync_Queue));
-        tid = mz_proc_thread_self();
-        ffi_sync_queue->orig_thread = tid;
-        mzrt_mutex_create(&ffi_sync_queue->lock);
-        sig_hand = scheme_get_signal_handle();
-        ffi_sync_queue->sig_hand = sig_hand;
-        ffi_sync_queue->callbacks = NULL;
-      }
-      sync = argv[5];
-      if (is_atomic) sync = scheme_box(sync);
-      keep_queue = 1;
-  #endif
-      do_callback = ffi_queue_callback;
-    } else
-      do_callback = ffi_do_callback;
-    /* malloc space for everything needed, so a single free gets rid of this */
-    cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
-    cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
-    cif = &(cl_cif_args->cif);
-    atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
-    for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
-      if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
-        scheme_wrong_type(MYNAME, "list-of-C-types", 1, argc, argv);
-      if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
-        scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
-      atypes[i] = CTYPE_ARG_PRIMTYPE(base);
+      ffi_sync_queue = (FFI_Sync_Queue *)malloc(sizeof(FFI_Sync_Queue));
+      tid = mz_proc_thread_self();
+      ffi_sync_queue->orig_thread = tid;
+      mzrt_mutex_create(&ffi_sync_queue->lock);
+      sig_hand = scheme_get_signal_handle();
+      ffi_sync_queue->sig_hand = sig_hand;
+      ffi_sync_queue->callbacks = NULL;
     }
-    if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
-      scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
-    data = (ffi_callback_struct*)scheme_malloc_tagged(sizeof(ffi_callback_struct));
-    data->so.type = ffi_callback_tag;
-    data->callback = (cl_cif_args);
-    data->proc = (argv[0]);
-    data->itypes = (argv[1]);
-    data->otype = (argv[2]);
-    data->sync = (sync);
-#   ifdef MZ_PRECISE_GC
-    {
-      /* put data in immobile, weak box */
-      GC_CAN_IGNORE void **tmp;
-      tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0, 1));
-      callback_data = (struct immobile_box*)tmp;
-    }
-#   else /* MZ_PRECISE_GC undefined */
-    callback_data = (void*)data;
-#   endif /* MZ_PRECISE_GC */
-  #ifdef MZ_USE_MZRT
-    if (keep_queue) {
-      /* For ffi_queue_callback(), add a level of indirection in
-         `data' to hold the place-specific `ffi_sync_queue'.
-         Use `free_cl_cif_data_args' to clean up this extra level. */
-      GC_CAN_IGNORE void **tmp;
-      tmp = (void **)malloc(sizeof(void*) * 2);
-      tmp[0] = callback_data;
-      tmp[1] = ffi_sync_queue;
-      callback_data = (void *)tmp;
-    }
-  #endif
-    cl_cif_args->data = callback_data;
-    if (ffi_prep_closure(cl, cif, do_callback, (void*)(cl_cif_args->data))
-        != FFI_OK)
-      scheme_signal_error
-        ("internal error: ffi_prep_closure did not return FFI_OK");
-  #ifdef MZ_USE_MZRT
-    if (keep_queue)
-      scheme_register_finalizer(data, free_cl_cif_queue_args, cl_cif_args, NULL, NULL);
-    else
-  #endif
-      scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
-    return (Scheme_Object*)data;
+    sync = argv[5];
+    if (is_atomic) sync = scheme_box(sync);
+    keep_queue = 1;
+#   endif /* MZ_USE_MZRT */
+    do_callback = ffi_queue_callback;
+  } else
+    do_callback = ffi_do_callback;
+  /* malloc space for everything needed, so a single free gets rid of this */
+  cl_cif_args =
+    scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
+  cif = &(cl_cif_args->cif);
+  atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
+  for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
+    if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
+      scheme_wrong_type(MYNAME, "list-of-C-types", 1, argc, argv);
+    if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
+      scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
+    atypes[i] = CTYPE_ARG_PRIMTYPE(base);
+  }
+  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
+    scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
+  data = (ffi_callback_struct*)scheme_malloc_tagged(sizeof(ffi_callback_struct));
+  data->so.type = ffi_callback_tag;
+  data->callback = (cl_cif_args);
+  data->proc = (argv[0]);
+  data->itypes = (argv[1]);
+  data->otype = (argv[2]);
+  data->sync = (sync);
+# ifdef MZ_PRECISE_GC
+  {
+    /* put data in immobile, weak box */
+    GC_CAN_IGNORE void **tmp;
+    tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0, 1));
+    callback_data = (struct immobile_box*)tmp;
+  }
+# else /* MZ_PRECISE_GC undefined */
+  callback_data = (void*)data;
+# endif /* MZ_PRECISE_GC */
+# ifdef MZ_USE_MZRT
+  if (keep_queue) {
+    /* For ffi_queue_callback(), add a level of indirection in `data' to
+       hold the place-specific `ffi_sync_queue'.  Use
+       `free_cl_cif_data_args' to clean up this extra level. */
+    GC_CAN_IGNORE void **tmp;
+    tmp = (void **)malloc(sizeof(void*) * 2);
+    tmp[0] = callback_data;
+    tmp[1] = ffi_sync_queue;
+    callback_data = (void *)tmp;
+  }
+# endif /* MZ_USE_MZRT */
+  cl_cif_args->data = callback_data;
+  if (ffi_prep_closure(cl, cif, do_callback, (void*)(cl_cif_args->data))
+      != FFI_OK)
+    scheme_signal_error
+      ("internal error: ffi_prep_closure did not return FFI_OK");
+# ifdef MZ_USE_MZRT
+  if (keep_queue)
+    scheme_register_finalizer(data, free_cl_cif_queue_args, cl_cif_args,
+                              NULL, NULL);
+  else
+# endif /* MZ_USE_MZRT */
+  scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
+  return (Scheme_Object*)data;
 }
 #undef MYNAME
 
