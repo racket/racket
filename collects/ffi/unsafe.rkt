@@ -307,11 +307,8 @@
             [else (loop (cdr args)
                         (cons (cons (car args) (car r)) (cdr r)))])))
 
-  (define (add-renamer body from to)
-    (with-syntax ([body body] [from from] [to to])
-      #'(let-syntax ([to (syntax-id-rules ()
-                           [(_?_ . _rest_) (from . _rest_)] [_?_ from])])
-          body)))
+  (define (with-renamer to from body)
+    #`(let-syntax ([#,to (make-rename-transformer #'#,from)]) #,body))
 
   (define (custom-type->keys type err)
     (define stops (map (lambda (s) (datum->syntax type s #f))
@@ -526,17 +523,17 @@
             (err "got an expression for a custom type that do not use it"
                  clause)
             (set! expr (void))))
-        (set! x (if use-expr? (add-renamer (cadr x) name (car x)) x))
+        (when use-expr? (set! x (with-renamer (car x) name (cadr x))))
         (cond [(getkey '1st) =>
                (lambda (v)
                  (if 1st-arg
-                   (set! x (add-renamer x 1st-arg v))
+                   (set! x (with-renamer v 1st-arg x))
                    (err "got a custom type that wants 1st arg too early"
                         clause)))])
         (cond [(getkey 'prev) =>
                (lambda (v)
                  (if prev-arg
-                   (set! x (add-renamer x prev-arg v))
+                   (set! x (with-renamer v prev-arg x))
                    (err "got a custom type that wants prev arg too early"
                         clause)))])
         x)
