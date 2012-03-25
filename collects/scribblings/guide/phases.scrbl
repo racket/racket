@@ -6,26 +6,33 @@
 
 @title[#:tag "phases"]{General Phase Levels}
 
-A @deftech{phase} can be thought of as a way to separate
-computations. Imagine starting two Racket processes. If you ignore
-socket communication and the filesystem, the processes will have no
-way to share anything. Similarly, Racket effectively allows multiple
-invocations of a module to exist in the same process but separated by
-phase. Similar to socket communication for processes, module instances
-separated by phases can communicate only through the protocol of macro
-expansion.
+A @deftech{phase} can be thought of as a way to separate computations in
+a pipeline of processes where one produces code that is used by the
+next.  (E.g., a pipeline that consists of a preprocessor process, a
+compiler, and an assembler.)
+
+Imagine starting two Racket processes for this purpose.  If you ignore
+inter-process communication channels like sockets and files, the
+processes will have no way to share anything other than the text that is
+piped from the standard output of one process into the standard input of
+the other.  Similarly, Racket effectively allows multiple invocations of
+a module to exist in the same process but separated by phase.  Racket
+enforces @emph{separation} of such phases, where different phases cannot
+communicate in any way other than via the protocol of macro expansion,
+where the output of one phases is the code used in the next.
 
 @section{Phases and Bindings}
 
-Every binding of an identifier exists in a particular phase. The link between
-a binding and its phase is represented by an integer @deftech{phase
-level}. Phase level 0 is the phase used for ``plain'' definitions, so
+Every binding of an identifier exists in a particular phase.  The link
+between a binding and its phase is represented by an integer
+@deftech{phase level}.  Phase level 0 is the phase used for ``plain''
+(or ``runtime'') definitions, so
 
 @racketblock[
 (define age 5)
 ]
 
-adds a binding for @racket[age] into phase level 0. The identifier
+adds a binding for @racket[age] into phase level 0.  The identifier
 @racket[age] can be defined at a higher phase level using
 @racket[begin-for-syntax]:
 
@@ -35,13 +42,13 @@ adds a binding for @racket[age] into phase level 0. The identifier
 ]
 
 With a single @racket[begin-for-syntax] wrapper, @racket[age] is
-defined at phase level 1. We can easily mix these two definitions in
-the same module or top-level namespace, and there is no clash between
-the two @racket[age]'s that are defined at different phase levels:
+defined at phase level 1.  We can easily mix these two definitions in
+the same module or in a top-level namespace, and there is no clash
+between the two @racket[age]s that are defined at different phase
+levels:
 
 @(define age-eval (make-base-eval))
-@(interaction-eval #:eval age-eval
-                (require (for-syntax racket/base)))
+@(interaction-eval #:eval age-eval (require (for-syntax racket/base)))
 
 @interaction[#:eval age-eval
 (define age 3)
@@ -52,30 +59,31 @@ the two @racket[age]'s that are defined at different phase levels:
 The @racket[age] binding at phase level 0 has a value of 3, and the
 @racket[age] binding at phase level 1 has a value of 9.
 
-Syntax objects capture binding information as a first-class value. Thus,
+Syntax objects capture binding information as a first-class value.
+Thus,
 
 @racketblock[#'age]
 
 is a syntax object that represents the @racket[age] binding---but
-since there are two @racket[age]'s (one at phase level 0 and one at
-phase level 1), which one does it capture? In fact, Racket imbues
+since there are two @racket[age]s (one at phase level 0 and one at
+phase level 1), which one does it capture?  In fact, Racket imbues
 @racket[#'age] with lexical information for all phase levels, so the
-answer is that @racket[#'age] captures both!
+answer is that @racket[#'age] captures both.
 
 The relevant binding of @racket[age] captured by @racket[#'age] is
 determined when @racket[#'age] is eventually used.  As an example, we
 bind @racket[#'age] to a pattern variable so we can use it in a
 template, and then we @racket[eval]utae the template: @margin-note*{We
-use @racket[eval] here to demonstrate phases, but see
-@secref["reflection"] for caveats about @racket[eval].}
+  use @racket[eval] here to demonstrate phases, but see
+  @secref["reflection"] for caveats about @racket[eval].}
 
 @interaction[#:eval age-eval
 (eval (with-syntax ([age #'age])
         #'(displayln age)))
 ]
 
-The result is 3 because @racket[age] is used at phase 0 level. We can
-try again with the use of @racket[age] inside
+The result is @racket[3] because @racket[age] is used at phase 0 level.
+We can try again with the use of @racket[age] inside
 @racket[begin-for-syntax]:
 
 @interaction[#:eval age-eval
@@ -84,18 +92,20 @@ try again with the use of @racket[age] inside
             (displayln age))))
 ]
 
-In this case, the answer is 9, because we are using @racket[age] at
-phase level 1 instead of 0 (i.e., @racket[begin-for-syntax] evaluates its
-expressions at phase level 1). So, you can see that we started with the
-same syntax object, @racket[#'age], and we were able to use it in two
-different ways: at phase level 0 and at phase level 1.
+In this case, the answer is @racket[9], because we are using
+@racket[age] at phase level 1 instead of 0 (i.e.,
+@racket[begin-for-syntax] evaluates its expressions at phase level 1).
+So, you can see that we started with the same syntax object,
+@racket[#'age], and we were able to use it in two different ways: at
+phase level 0 and at phase level 1.
 
 A syntax object has a lexical context from the moment it first exists.
-A syntax objects that is provided from a module retains its lexical
-context, and so it references bindings in the source module, not the use context.
-The following example defines @racket[button] at phase
-level 0 bound to the value 0, while @racket[see-button] binds the
-syntax object for @racket[button] in module @racket[a]:
+A syntax object that is provided from a module retains its lexical
+context, and so it references bindings in the context of its source
+module, not the context of its use.  The following example defines
+@racket[button] at phase level 0 and binds it to @racket[0], while
+@racket[see-button] binds the syntax object for @racket[button] in
+module @racket[a]:
 
 @interaction[
 (module a racket
@@ -114,39 +124,39 @@ syntax object for @racket[button] in module @racket[a]:
 (require 'b)
 ]
 
-The result of the @racket[m] macro is the value of
-@racket[see-button], which is @racket[#'button] with the lexical
-context of the @racket[a] module. Even though there is another
-@racket[button] in @racket[b], the second @racket[button] will not
-confuse Racket, because the lexical context of @racket[#'button] is
+The result of the @racket[m] macro is the value of @racket[see-button],
+which is @racket[#'button] with the lexical context of the @racket[a]
+module.  Even though there is another @racket[button] in @racket[b], the
+second @racket[button] will not confuse Racket, because the lexical
+context of @racket[#'button] (the value bound to @racket[see-button]) is
 @racket[a].
 
 Note that @racket[see-button] is bound at phase level 1 by virtue of
-defining it with @racket[define-for-syntax]. Phase level 1 is needed
-because @racket[m] is a macro, so its body executes at one phase
-higher than the context of its definition. Since @racket[m] is defined
-at phase level 0, its body is at phase level 1, so any bindings
-referenced by the body must be at phase level 1.
+defining it with @racket[define-for-syntax].  Phase level 1 is needed
+because @racket[m] is a macro, so its body executes at one phase higher
+than the context of its definition.  Since @racket[m] is defined at
+phase level 0, its body is at phase level 1, so any bindings referenced
+by the body must be at phase level 1.
 
 @; ======================================================================
 
 @section{Phases and Modules}
 
-A @tech{phase level} is a module-relative concept. When importing from
-an other module via @racket[require], Racket lets us shift imported
-bindings to a different phase level than the original one:
+A @tech{phase level} is a module-relative concept.  When importing from
+another module via @racket[require], Racket lets us shift imported
+bindings to a phase level that is different from the original one:
 
 @racketblock[
-(require "a.rkt") @code:comment{import with no phase shift}
-(require (for-syntax "a.rkt")) @code:comment{shift phase by +1}
+(require "a.rkt")                @code:comment{import with no phase shift}
+(require (for-syntax "a.rkt"))   @code:comment{shift phase by +1}
 (require (for-template "a.rkt")) @code:comment{shift phase by -1}
-(require (for-meta 5 "a.rkt" )) @code:comment{shift phase by +5}
+(require (for-meta 5 "a.rkt" ))  @code:comment{shift phase by +5}
 ]
 
-That is, using @racket[for-syntax] in @racket[require] means that all
-of the bindings from that module will have their phase levels increased by
-one. A binding that is @racket[defined] at phase level 0
-and imported with @racket[for-syntax] becomes a phase-level 1 binding:
+That is, using @racket[for-syntax] in @racket[require] means that all of
+the bindings from that module will have their phase levels increased by
+one.  A binding that is @racket[define]d at phase level 0 and imported
+with @racket[for-syntax] becomes a phase-level 1 binding:
 
 @interaction[
 (module c racket
@@ -171,8 +181,8 @@ Let's see what happens if we try to create a binding for the
 ]
 
 Now both @racket[button] and @racket[see-button] are defined at phase
-0. The lexical context of @racket[#'button] will know that there is a
-binding for @racket[button] at phase 0. In fact it seems like things
+0.  The lexical context of @racket[#'button] will know that there is a
+binding for @racket[button] at phase 0.  In fact, it seems like things
 are working just fine if we try to @racket[eval] @racket[see-button]:
 
 @interaction[#:eval button-eval
@@ -187,10 +197,11 @@ Now, let's use @racket[see-button] in a macro:
 (m)
 ]
 
-Clearly @racket[see-button] is not defined at phase level 1, so we cannot refer to
-it inside the macro body. Let's try to use @racket[see-button] in another module by
-putting the button definitions in a module and importing it at phase level 1.
-Then, we will get @racket[see-button] at phase level 1:
+Clearly, @racket[see-button] is not defined at phase level 1, so we
+cannot refer to it inside the macro body.  Let's try to use
+@racket[see-button] in another module by putting the button definitions
+in a module and importing it at phase level 1.  Then, we will get
+@racket[see-button] at phase level 1:
 
 @interaction[
 (module a racket
@@ -205,36 +216,36 @@ Then, we will get @racket[see-button] at phase level 1:
   (m))
 ]
 
-Racket says that @racket[button] is unbound now! When @racket[a] is imported at
-phase level 1, we have the following bindings:
+Racket says that @racket[button] is unbound now!  When @racket[a] is
+imported at phase level 1, we have the following bindings:
 
 @racketblock[
-button @#,elem{at phase level 1}
+button     @#,elem{at phase level 1}
 see-button @#,elem{at phase level 1}
 ]
 
-So, the macro @racket[m] can see a binding for @racket[see-button] at
-phase level 1 and will return the @racket[#'button] syntax object,
-which refers to @racket[button] binding at phase level 1. But the use
-of @racket[m] is at phase level 0, and there is no @racket[button] at
-phase level 0 in @racket[b].  That is why @racket[see-button] needs to
-be bound at phase level 1, as in the original @racket[a]. In the original @racket[b], then,
-we have the following bindings:
+So the macro @racket[m] can see a binding for @racket[see-button] at
+phase level 1 and will return the @racket[#'button] syntax object, which
+refers to @racket[button] binding at phase level 1.  But the use of
+@racket[m] is at phase level 0, and there is no @racket[button] at phase
+level 0 in @racket[b].  That is why @racket[see-button] needs to be
+bound at phase level 1, as in the original @racket[a].  In the original
+@racket[b], then, we have the following bindings:
 
 @racketblock[
-button @#,elem{at phase level 0}
+button     @#,elem{at phase level 0}
 see-button @#,elem{at phase level 1}
 ]
 
 In this scenario, we can use @racket[see-button] in the macro, since
-@racket[see-button] is bound at phase level 1. When the macro expands,
+@racket[see-button] is bound at phase level 1.  When the macro expands,
 it will refer to a @racket[button] binding at phase level 0.
 
 Defining @racket[see-button] with @racket[(define see-button
-#'button)] isn't inherently wrong; it depends on how we intend
-@racket[see-button] to be used. For example, we can arrange for
-@racket[m] to sensibly use @racket[see-button] because it puts it in a
-phase level 1 context using @racket[begin-for-syntax]:
+#'button)] isn't inherently wrong; it depends on how we intend to use
+@racket[see-button].  For example, we can arrange for @racket[m] to
+sensibly use @racket[see-button] because it puts it in a phase level 1
+context using @racket[begin-for-syntax]:
 
 @interaction[
 (module a racket
@@ -252,7 +263,7 @@ phase level 1 context using @racket[begin-for-syntax]:
 ]
 
 In this case, module @racket[b] has both @racket[button] and
-@racket[see-button] bound at phase level 1. The expansion of the macro
+@racket[see-button] bound at phase level 1.  The expansion of the macro
 is
 
 @racketblock[
@@ -262,18 +273,19 @@ is
 
 which works, because @racket[button] is bound at phase level 1.
 
-Now, you might try to cheat the phase system by importing @racket[a] at both
-phase level 0 and phase level 1. Then you would have the following bindings
+Now, you might try to cheat the phase system by importing @racket[a] at
+both phase level 0 and phase level 1.  Then you would have the following
+bindings
 
 @racketblock[
-button @#,elem{at phase level 0}
+button     @#,elem{at phase level 0}
 see-button @#,elem{at phase level 0}
-button @#,elem{at phase level 1}
+button     @#,elem{at phase level 1}
 see-button @#,elem{at phase level 1}
 ]
 
-In that case you might expect that @racket[see-button] in a macro should
-work, but it doesn't:
+You might expect now that @racket[see-button] in a macro would work, but
+it doesn't:
 
 @interaction[
 (module a racket
@@ -290,22 +302,23 @@ work, but it doesn't:
 ]
 
 The @racket[see-button] inside the @racket[m] macro comes from the
-@racket[(for-syntax 'a)] import. For the macro to work, there must be a @racket[button]
-at phase 0 bound, and there is such a binding implied by @racket[(require 'a)].
-However, @racket[(require 'a)] and @racket[(require (for-syntax
-'a))] are different instantiations of the same module.  The @racket[see-button] at
-phase 1 only refers to the @racket[button] at phase level 1, not the @racket[button]
-bound at phase 0 from a different instantiation---even from the same source module.
+@racket[(for-syntax 'a)] import.  For the macro to work, there must be a
+@racket[button] at phase 0 bound, and there is such a binding implied by
+@racket[(require 'a)].  However, @racket[(require 'a)] and
+@racket[(require (for-syntax 'a))] are @emph{different instantiations}
+of the same module.  The @racket[see-button] at phase 1 only refers to
+the @racket[button] at phase level 1, not the @racket[button] bound at
+phase 0 from a different instantiation---even from the same source
+module.
 
-Mismatches like the one above can easily show up when a macro tries to
-match literal bindings---using @racket[syntax-case] or
-@racket[syntax/parse].
+Mismatches like the one above can show up when a macro tries to match
+literal bindings---using @racket[syntax-case] or @racket[syntax-parse].
 
 @interaction[
 (module x racket
   (require (for-syntax syntax/parse)
            (for-template racket/base))
-                  
+
   (provide (all-defined-out))
 
   (define button 0)
@@ -318,12 +331,12 @@ match literal bindings---using @racket[syntax-case] or
 (module y racket
   (require (for-meta 1 'x)
            (for-meta 2 'x racket/base))
-         
+
   (begin-for-syntax
     (define-syntax (m stx)
       (with-syntax ([out (make)])
-        #'(process (0 out))))) 
-    
+        #'(process (0 out)))))
+
   (define-syntax (p stx)
     (m))
 
@@ -336,7 +349,7 @@ refers to @racket[button] bound at phase level 0 inside @racket[x] and
 at phase level 2 in @racket[y] from @racket[(for-meta 2 'x)].  The
 @racket[process] macro is imported at phase level 1 from
 @racket[(for-meta 1 'x)], and it knows that @racket[button] should be
-bound at phase level 1. When the @racket[syntax-parse] is executed
+bound at phase level 1.  When the @racket[syntax-parse] is executed
 inside @racket[process], it is looking for @racket[button] bound at
 phase level 1 but it sees only a phase level 2 binding and doesn't
 match.
@@ -349,7 +362,7 @@ relative to @racket[x], and then we import it at phase level 1 in
 (module x racket
   (require (for-syntax syntax/parse)
            (for-template racket/base))
-                  
+
   (provide (all-defined-out))
 
   (define button 0)
@@ -368,8 +381,8 @@ relative to @racket[x], and then we import it at phase level 1 in
   (begin-for-syntax
     (define-syntax (m stx)
       (with-syntax ([out (make)])
-        #'(process (0 out))))) 
-    
+        #'(process (0 out)))))
+
   (define-syntax (p stx)
     (m))
 
