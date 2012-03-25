@@ -2813,7 +2813,10 @@ module browser threading seems wrong.
                 text-port
                 #t
                 (λ ()
-                  (send interactions-text clear-undos)))))
+                  (parameterize ([current-eventspace drracket:init:system-eventspace])
+                    (queue-callback 
+                     (λ ()
+                       (send interactions-text clear-undos))))))))
       
       (inherit revert save)
       (define/private (check-if-save-file-up-to-date)
