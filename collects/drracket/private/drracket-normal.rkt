@@ -132,10 +132,10 @@
     [(currently-the-weekend?)
      weekend-bitmap-spec]
     [else normal-bitmap-spec]))
-(define the-splash-bitmap (if (path? the-bitmap-spec)
-                              (read-bitmap the-bitmap-spec)
-                              the-bitmap-spec))
-(set-splash-char-observer drracket-splash-char-observer)
+
+(define the-splash-bitmap (and (path? the-bitmap-spec) (read-bitmap the-bitmap-spec)))
+(when the-splash-bitmap
+  (set-splash-char-observer drracket-splash-char-observer))
 
 (when (eq? (system-type) 'macosx)
   (define initial-state (current-icon-state))
@@ -171,7 +171,8 @@
           (set-icon next-state))
         (loop next-state))))))
 
-(start-splash the-splash-bitmap
+(start-splash (or the-splash-bitmap
+                  the-bitmap-spec)
               "DrRacket"
               700
               #:allow-funny? #t
