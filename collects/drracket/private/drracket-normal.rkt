@@ -132,19 +132,19 @@
     [(currently-the-weekend?)
      weekend-bitmap-spec]
     [else normal-bitmap-spec]))
-(define the-splash-bitmap (read-bitmap the-bitmap-spec))
+(define the-splash-bitmap the-bitmap-spec)
 (set-splash-char-observer drracket-splash-char-observer)
 
 (when (eq? (system-type) 'macosx)
   (define initial-state (current-icon-state))
   (define weekend-bitmap (if (equal? the-bitmap-spec weekend-bitmap-spec)
-                             the-splash-bitmap
+                             (read-bitmap the-splash-bitmap)
                              #f))
   (define weekday-bitmap (if (equal? the-bitmap-spec normal-bitmap-spec)
-                             the-splash-bitmap
+                             (read-bitmap the-splash-bitmap)
                              #f))
   (define valentines-bitmap (if (equal? the-bitmap-spec valentines-days-spec)
-                                the-splash-bitmap
+                                (read-bitmap the-splash-bitmap)
                                 #f))
   (define set-doc-tile-bitmap (dynamic-require doc-icon.rkt 'set-dock-tile-bitmap))
   (define (set-icon state)
