@@ -604,8 +604,8 @@
   (define (fire-up-drracket-and-run-tests #:use-focus-table? [use-focus-table? #t] run-test)
     (on-eventspace-handler-thread 'fire-up-drracket-and-run-tests)
     (let ()
-      (use-hash-for-prefs fw:preferences:low-level-put-preferences
-                          fw:preferences:low-level-get-preference
+      (use-hash-for-prefs fw:preferences:low-level-get-preference
+                          fw:preferences:low-level-put-preferences
                           fw:preferences:restore-defaults)
       
       (parameterize ([current-command-line-arguments #()])
