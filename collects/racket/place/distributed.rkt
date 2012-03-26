@@ -4,23 +4,24 @@
          racket/tcp
          racket/place
          racket/place/private/th-place
+         racket/place/private/coercion
          racket/class
          racket/trait
          racket/udp
          racket/runtime-path
-         racket/date)
+         racket/date
+         syntax/location)
 
 (provide ssh-bin-path
          racket-path
          distributed-launch-path
-         get-current-module-path
 
          ;; New Design Pattern 2 API
-         master-event-loop
+         message-router
          spawn-vm-supervise-dynamic-place-at
          spawn-vm-supervise-place-thunk-at
-         spawn-vm-supervise-dynamic-place-at/2
-         spawn-vm-supervise-place-thunk-at/2
+         spawn-vm-with-dynamic-place-at
+         spawn-vm-with-place-thunk-at
          supervise-named-dynamic-place-at
          supervise-named-place-thunk-at
          supervise-place-thunk-at
@@ -87,39 +88,26 @@
          respawn-and-fire%
          after-seconds%
          restarter%
+
+         ;re-provides
+         quote-module-path
          )
 
 (define-runtime-path distributed-launch-path "distributed/launch.rkt")
 
 (define DEFAULT-ROUTER-PORT 6340)
 
-(define (->path x)
-  (cond [(path? x) x]
-        [(string? x) (string->path x)]))
+(define-syntax quote-module-path-bytes
+  (syntax-rules ()
+    [(_)
+      (->module-path (quote-module-name))]
+    [(_ path ... )
+      (->module-path
+        (let ([qmn (quote-module-name)])
+          (cond 
+            [(list? qmn) (append (list 'submod) qmn (list path ...))]
+            [else (list 'submod qmn path ...)])))]))
 
-(define (->number x)
-  (cond [(number? x) x]
-        [(string? x) (string->number x)]))
-
-(define (->string x)
-  (cond [(string? x) x]
-        [(number? x) (number->string x)]
-        [(symbol? x) (symbol->string x)]
-        [(path? x) (path->string x)]
-        [(bytes? x) (bytes->string/locale x)]
-        ))
-
-(define (->length x)
-  (cond [(string? x) (string-length x)]
-        [(bytes? x) (bytes-length x)]
-        [(list?  x) (length x)]))
-
-(define-syntax-rule (get-current-module-path)
-  (let ()
-    (define rmpn (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference))))
-    (cond
-      [(symbol? rmpn) rmpn]
-      [(path? rmpn) (path->string rmpn)])))
 
 ; returns the path to the racket executable on the current machine.
 (define (racket-path)
@@ -161,7 +149,7 @@
              [wait-time start-seconds])
     (with-handlers ([exn? (lambda (e)
                   (cond [(t . < . times)
-                         (printf "backing off ~a sec to ~a:~a\n" (expt 2 t) rname rport)
+                         (log-debug (format "backing off ~a sec to ~a:~a" (expt 2 t) rname rport))
                          (sleep wait-time)
                          (loop (add1 t) (* 2 wait-time))]
                         [else (raise e)]))])
@@ -171,14 +159,14 @@
   (let loop ([t 0])
     (with-handlers ([exn? (lambda (e)
                   (cond [(t . < . times)
-                         (printf "waiting ~a sec to retry connection to ~a:~a\n" delay rname rport)
+                         (log-debug (format "waiting ~a sec to retry connection to ~a:~a" delay rname rport))
                          (sleep delay)
                          (loop (add1 t))]
                         [else (raise e)]))])
       (tcp-connect rname (->number rport)))))
 
-(define (print-log-message severity msg)
-  (printf "~a ~a ~a\n" (date->string (current-date) #t) severity msg)
+(define (format-log-message severity msg)
+  (log-info (format "~a ~a ~a\n" (date->string (current-date) #t) severity msg))
   (flush-output))
 
 
@@ -309,13 +297,13 @@
         (set! o (box _o))
         (set! i (box _i))
         (set! e (box _e)))
-      (printf "SPAWNED-PROCESS:~a ~a\n" pid cmdline-list)
+      (log-debug (format"SPAWNED-PROCESS:~a ~a" pid cmdline-list))
 
       (define (mk-handler _port desc)
         (define port (unbox _port))
         (if port
           (wrap-evt port (lambda (e)
-            (define (print-out x) (printf "SPAWNED-PROCESS ~a:~a:~a ~a\n" pid desc (->length x) x)
+            (define (print-out x) (log-debug (format "SPAWNED-PROCESS ~a:~a:~a ~a" pid desc (->length x) x))
               (flush-output))
             (cond
               [(not port) (print-out "IS #F")]
@@ -336,7 +324,7 @@
         (for/filter/fold/cons nes ([x (list s (list o "OUT") (list e "ERR"))])
           (cond
             [(subprocess? x) (wrap-evt s (lambda (e)
-                                             (printf "SPAWNED-PROCESS ~a DIED\n" pid)
+                                             (log-debug (format "SPAWNED-PROCESS ~a DIED" pid))
                                              (and parent (send parent process-died this))))]
             [(list? x) (apply mk-handler x)]
             [else #f])))
@@ -468,15 +456,15 @@
            (send vm launch-place
                     (list 'dynamic-place mod-path funcname)
                     ;#:initial-message initial-message
-                    #:one-sided-place ch1
+                    #:one-sided-place? ch1
                     ;#:restart-on-exit restart-on-exit
                     )]
           [(dcgm 7 #;(== DCGM-DPLACE-DIED) -1 -1 ch-id)
-            (printf "PLACE ~a died\n" ch-id)]
+            (log-debug (format"PLACE ~a died" ch-id))]
           [(dcgm 8 #;(== DCGM-TYPE-LOG-TO-PARENT) _ _ (list severity msg))
             (log-from-child #:severity severity msg)]
           [(dcgm 10 #;(== DCGM-TYPE-SET-OWNER) -1 -1 msg)
-            (printf "RECV DCGM-TYPE-SET-OWNER ~a\n" src-channel)
+            (log-debug (format "RECV DCGM-TYPE-SET-OWNER ~a" src-channel))
             (set! owner src-channel)]
           [(dcgm mtype srcs dest msg)
             (define d (vector-ref chan-vec dest))
@@ -486,7 +474,7 @@
               [(or (place-channel? d) (place? d))
                 (place-channel-put d m)])]
           [(? eof-object?)
-            (printf "connection died\n")
+            (log-debug (format "connection died"))
             (flush-output)
             (exit 1)
             ]))
@@ -510,7 +498,7 @@
           [owner
             ;(printf "Sent to owner\n")
             (sconn-write-flush owner (log-message severity msg))]
-          [else (print-log-message severity msg)]))
+          [else (format-log-message severity msg)]))
 
       (define/public (register nes)
         (let*
@@ -532,7 +520,7 @@
                 (wrap-evt listen-port (lambda (e)
                   (define-values (in out) (tcp-accept listen-port))
                   (define-values (lh lp rh rp) (tcp-addresses in #t))
-                  (printf "INCOMING CONNECTION ~a:~a <- ~a:~a\n" lh lp rh rp)
+                  (log-debug (format "INCOMING CONNECTION ~a:~a <- ~a:~a" lh lp rh rp))
                   (define sp (new socket-connection% [in in] [out out]))
                   (add-socket-port sp)))
                 nes)
@@ -613,7 +601,7 @@
         (let loop ([t 0])
           (with-handlers ([exn? (lambda (e)
                         (cond [(t . < . times)
-                               (printf "try ~a waiting ~a sec to retry connection to ~a:~a\n" t delay rname rport)
+                               (log-debug (format "try ~a waiting ~a sec to retry connection to ~a:~a" t delay rname rport))
                                (sleep delay)
                                (loop (add1 t))]
                               [else (raise e)]))])
@@ -647,7 +635,7 @@
         (when (equal? out #f) (ensure-connected))
         (read in))
       (define/public (register nes)
-        (error)
+        (raise "Not-implemented/needed")
         (cons (wrap-evt in void) nes))
 
       (when (and host port background-connect)
@@ -659,8 +647,7 @@
               ch
               (call-with-values
                 (lambda () (with-handlers ([exn:fail? (lambda (e)
-                                                        (printf "OPPS ~a\n" e)
-                                                        (values 'bozo #f))])
+                                                        (raise (format "socket error connecting to ~a:~a" host port)))])
                              (tcp-connect/retry host port #:times retry-times #:delay delay)))
                 list)))))
       (when (and host port (not background-connect))
@@ -707,14 +694,19 @@
             rp
             r)))
 
+      (define (get-sp-pid)
+        (cond
+          [sp (send sp get-pid)]
+          [else 'failed-to-launch ]))
+
       (define (on-socket-event it in-port)
         (match it
           [(dcgm 7 #;(== DCGM-DPLACE-DIED) -1 -1 ch-id)
-            (printf "SPAWNED-PROCESS:~a PLACE DIED ~a:~a:~a\n" (send sp get-pid) host-name listen-port ch-id)
+            (log-debug (format "SPAWNED-PROCESS:~a PLACE DIED ~a:~a:~a" (get-sp-pid) host-name listen-port ch-id))
             (cond
               [(find-place-by-sc-id ch-id) => (lambda (rp)
                                                 (send rp place-died))]
-              [else (printf "remote-place for sc-id ~a not found\n" ch-id)])]
+              [else (raise (format "remote-place for sc-id ~a not found\n" ch-id))])]
           [(dcgm 4 #;(== DCGM-TYPE-INTER-DCHANNEL) _ ch-id msg)
             (define pch (sconn-lookup-subchannel sc ch-id))
             (cond
@@ -727,18 +719,18 @@
             (cond
               [parent
                 (send parent log-from-child #:severity severity msg)]
-              [else (print-log-message severity msg)])]
+              [else (format-log-message severity msg)])]
 
           [(? eof-object?)
            (define-values (lh lp rh rp) (send sc addresses))
-           (printf "EOF on vm socket connection pid to ~a ~a:~a CONNECTION ~a:~a -> ~a:~a\n" (send sp get-pid) host-name listen-port lh lp rh rp)
+           (log-debug (format "EOF on vm socket connection pid to ~a ~a:~a CONNECTION ~a:~a -> ~a:~a" (get-sp-pid) host-name listen-port lh lp rh rp))
            (set! sc #f)]
 
-          [else (printf "received message ~a\n" it)]))
+          [else (log-debug (format"received message ~a" it))]))
 
       (define/public (get-log-prefix) (format "PLACE ~a:~a" host-name listen-port))
       (define/public (process-died child)
-        (printf "Remote VM pid ~a ~a:~a died \n" (send sp get-pid) host-name listen-port)
+        (log-debug (format "Remote VM pid ~a ~a:~a died" (get-sp-pid) host-name listen-port))
         (set! sp #f)
         (cond
           [restart-on-exit
@@ -748,11 +740,9 @@
                   (restart-node)
                   (send restart-on-exit restart restart-node))]
               [else
-                (printf "No restart cmdline arguments for ~a\n"
-                        (get-log-prefix))])]
+                (log-debug (format "No restart cmdline arguments for ~a" (get-log-prefix)))])]
           [else
-            (printf "No restart condition for ~a\n"
-                    (get-log-prefix))]))
+            (log-debug (format "No restart condition for ~a" (get-log-prefix)))]))
 
       (define/public (get-first-place)
         (car remote-places))
@@ -762,9 +752,9 @@
       (define/public (drop-sc-id scid)
         (sconn-remove-subchannel sc scid))
 
-      (define/public (launch-place place-exec #:restart-on-exit [restart-on-exit #f] #:one-sided-place [one-sided-place #f])
+      (define/public (launch-place place-exec #:restart-on-exit [restart-on-exit #f] #:one-sided-place? [one-sided-place? #f])
         (define rp (new remote-place% [vm this] [place-exec place-exec] [restart-on-exit restart-on-exit]
-                        [one-sided-place one-sided-place]))
+                        [one-sided-place? one-sided-place?]))
         (add-remote-place rp)
         rp)
 
@@ -815,8 +805,8 @@
       (init-field vm)
       (init-field [place-exec #f])
       (init-field [restart-on-exit #f])
-      (init-field [one-sided-place #f])
-      (init-field [on-channel/2 #f])
+      (init-field [one-sided-place? #f])
+      (init-field [on-channel #f])
       (field [psb #f])
       (field [pc #f])
       (field [rpc #f])
@@ -825,8 +815,8 @@
       (field [handle-channel #t])
 
       (cond
-        [one-sided-place
-          (set! rpc one-sided-place)]
+        [one-sided-place?
+          (set! rpc one-sided-place?)]
         [else
           (define-values (pch1 pch2) (place-channel))
           (set! rpc pch1)
@@ -840,7 +830,7 @@
 
       (define/public (stop) (void))
       (define/public (get-channel) pc)
-      (define/public (set-on-channel/2! proc) (set! on-channel/2 proc))
+      (define/public (set-on-channel! proc) (set! on-channel proc))
       (define/public (get-sc-id) (send psb get-sc-id))
       (define/public (set-handle-channel! x) (set! handle-channel x))
       (define/public (place-died)
@@ -850,11 +840,11 @@
                   (restart-place)
                   (send restart-on-exit restart restart-place))]
           [else
-            (printf "No restart condition for ~a:~a\n"
+            (log-debug (format "No restart condition for ~a:~a"
                     (send vm get-log-prefix)
-                    (send psb get-sc-id))]))
+                    (send psb get-sc-id)))]))
       (define (on-channel-event e)
-        (printf "~a ~a\n" (send vm get-log-prefix) e))
+        (log-debug (format "~a ~a" (send vm get-log-prefix) e)))
       (define/public (register es)
         (let* ([es (if (and handle-channel pc)
                        (cons (wrap-evt pc
@@ -865,9 +855,9 @@
                                                    (begin0
                                                      (k e)
                                                      (set! k #f)))))]
-                                              [on-channel/2
+                                              [on-channel
                                                (lambda (e)
-                                                 (on-channel/2 pc e))]
+                                                 (on-channel pc e))]
                                               [else
                                                on-channel-event])) es)
                        es)]
@@ -908,7 +898,7 @@
       (init-field vm)
       (init-field name)
       (init-field [restart-on-exit #f])
-      (init-field [on-channel/2 #f])
+      (init-field [on-channel #f])
       (field [psb #f])
       (field [pc #f])
       (field [running #f])
@@ -920,14 +910,14 @@
 
       (define/public (stop) (void))
       (define/public (get-channel) pc)
-      (define/public (set-on-channel/2! proc) (set! on-channel/2 proc))
+      (define/public (set-on-channel! proc) (set! on-channel proc))
       (define/public (get-sc-id) (send psb get-sc-id))
       (define/public (place-died)
-            (printf "No restart condition for ~a:~a\n"
+            (log-debug (format "No restart condition for ~a:~a"
                     (send vm get-log-prefix)
-                    (send psb get-sc-id)))
+                    (send psb get-sc-id))))
       (define (on-channel-event e)
-        (printf "~a ~a\n" (send vm get-log-prefix) e))
+        (log-debug (format "~a ~a" (send vm get-log-prefix) e)))
       (define/public (register es)
         (let* ([es (if pc (cons (wrap-evt pc
                                             (cond
@@ -937,9 +927,9 @@
                                                    (begin0
                                                      (k e)
                                                      (set! k #f)))))]
-                                              [on-channel/2
+                                              [on-channel
                                                 (lambda (e)
-                                                  (on-channel/2 pc e))]
+                                                  (on-channel pc e))]
                                               [else
                                                on-channel-event])) es) es)]
                [es (send psb register es)])
@@ -980,20 +970,20 @@
         (match place-exec
           ;place% is a named place
           [(list 'dynamic-place place-path place-func name)
-            (dynamic-place (->path place-path) place-func)]
+            (dynamic-place (->module-path place-path) place-func)]
           [(list 'place place-path place-func name)
-            ((dynamic-require (->path place-path) place-func))]
+            ((dynamic-require (->module-path place-path) place-func))]
           ;place% is a single connected place
           [(list 'dynamic-place place-path place-func)
-            (dynamic-place (->path place-path) place-func)]
+            (dynamic-place (->module-path place-path) place-func)]
           [(list 'place place-path place-func)
-            ((dynamic-require (->path place-path) place-func))]
+            ((dynamic-require (->module-path place-path) place-func))]
           [(list 'thread place-path place-func)
            (define-values (ch1 ch2) (th-place-channel))
            (define th 
              (thread
                (lambda ()
-                 ((dynamic-require (->path place-path) place-func) ch1))))
+                 ((dynamic-require (->module-path place-path) place-func) ch1))))
            (th-place th ch2 null)]))
 
       (sconn-add-subchannel sc ch-id pd)
@@ -1107,7 +1097,7 @@
       (define/public (restart restart-func)
         (cond
           [(and retry (>= retries retry))
-           (printf "Already retried to restart ~a times\n" retry)
+           (log-debug (format "Already retried to restart ~a times" retry))
            (and on-final-fail (on-final-fail))]
           [(> (- (current-inexact-milliseconds) last-attempt) (* seconds 1000))
            (when (> (- (current-inexact-milliseconds) last-attempt) (* retry-reset 1000))
@@ -1216,7 +1206,7 @@
                             #:initial-message [initial-message #f]
                             #:restart-on-exit [restart-on-exit #f])
     (send vm launch-place
-        (list 'place (->string place-path) place-func (->string name))
+        (list 'place (->module-path-bytes place-path) place-func (->string name))
         ;#:initial-message initial-message
         #:restart-on-exit restart-on-exit
         ))
@@ -1225,61 +1215,61 @@
                             #:initial-message [initial-message #f]
                             #:restart-on-exit [restart-on-exit #f])
     (send vm launch-place
-        (list 'dynamic-place (->string place-path) place-func (->string name))
+        (list 'dynamic-place (->module-path-bytes place-path) place-func (->string name))
         ;#:initial-message initial-message
         #:restart-on-exit restart-on-exit
         ))
+
+(define (spawn-vm-with-dynamic-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
+                            #:initial-message [initial-message #f]
+                            #:racket-path [racketpath (racket-path)]
+                            #:ssh-bin-path [sshpath (ssh-bin-path)]
+                            #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
+                            #:restart-on-exit [restart-on-exit #f])
+    (define-values (vm pl)
+      (spawn-vm-supervise-place-at/exec host (list 'dynamic-place (->module-path-bytes place-path) place-func) #:listen-port listen-port
+                            #:initial-message initial-message
+                            #:racket-path racketpath
+                            #:ssh-bin-path sshpath
+                            #:distributed-launch-path distributedlaunchpath
+                            #:restart-on-exit restart-on-exit))
+    vm)
+
+(define (spawn-vm-with-place-thunk-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
+                            #:initial-message [initial-message #f]
+                            #:racket-path [racketpath (racket-path)]
+                            #:ssh-bin-path [sshpath (ssh-bin-path)]
+                            #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
+                            #:restart-on-exit [restart-on-exit #f])
+    (define-values (vm pl)
+      (spawn-vm-supervise-place-at/exec host (list 'place (->module-path-bytes place-path) place-func) #:listen-port listen-port
+                            #:initial-message initial-message
+                            #:racket-path racketpath
+                            #:ssh-bin-path sshpath
+                            #:distributed-launch-path distributedlaunchpath
+                            #:restart-on-exit restart-on-exit))
+    vm)
 
 (define (spawn-vm-supervise-dynamic-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->string distributed-launch-path)]
+                            #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
                             #:restart-on-exit [restart-on-exit #f])
-    (define-values (vm pl)
-      (spawn-vm-supervise-place-at/exec host (list 'dynamic-place (->string place-path) place-func) #:listen-port listen-port
+    (spawn-vm-supervise-place-at/exec host (list 'dynamic-place (->module-path-bytes place-path) place-func) #:listen-port listen-port
                             #:initial-message initial-message
                             #:racket-path racketpath
                             #:ssh-bin-path sshpath
                             #:distributed-launch-path distributedlaunchpath
                             #:restart-on-exit restart-on-exit))
-    vm)
 
 (define (spawn-vm-supervise-place-thunk-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->string distributed-launch-path)]
+                            #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
                             #:restart-on-exit [restart-on-exit #f])
-    (define-values (vm pl)
-      (spawn-vm-supervise-place-at/exec host (list 'place (->string place-path) place-func) #:listen-port listen-port
-                            #:initial-message initial-message
-                            #:racket-path racketpath
-                            #:ssh-bin-path sshpath
-                            #:distributed-launch-path distributedlaunchpath
-                            #:restart-on-exit restart-on-exit))
-    vm)
-
-(define (spawn-vm-supervise-dynamic-place-at/2 host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
-                            #:initial-message [initial-message #f]
-                            #:racket-path [racketpath (racket-path)]
-                            #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->string distributed-launch-path)]
-                            #:restart-on-exit [restart-on-exit #f])
-    (spawn-vm-supervise-place-at/exec host (list 'dynamic-place (->string place-path) place-func) #:listen-port listen-port
-                            #:initial-message initial-message
-                            #:racket-path racketpath
-                            #:ssh-bin-path sshpath
-                            #:distributed-launch-path distributedlaunchpath
-                            #:restart-on-exit restart-on-exit))
-
-(define (spawn-vm-supervise-place-thunk-at/2 host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
-                            #:initial-message [initial-message #f]
-                            #:racket-path [racketpath (racket-path)]
-                            #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->string distributed-launch-path)]
-                            #:restart-on-exit [restart-on-exit #f])
-    (spawn-vm-supervise-place-at/exec host (list 'place (->string place-path) place-func) #:listen-port listen-port
+    (spawn-vm-supervise-place-at/exec host (list 'place (->module-path-bytes place-path) place-func) #:listen-port listen-port
                             #:initial-message initial-message
                             #:racket-path racketpath
                             #:ssh-bin-path sshpath
@@ -1290,7 +1280,7 @@
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->string distributed-launch-path)]
+                            #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
                             #:restart-on-exit [restart-on-exit #f])
   (define vm (spawn-remote-racket-vm host
                                      #:listen-port listen-port
@@ -1306,7 +1296,7 @@
 
   (values vm dp))
 
-(define (master-event-loop #:node [_nc #f] #:listen-port [listen-port DEFAULT-ROUTER-PORT] . event-containers)
+(define (message-router #:node [_nc #f] #:listen-port [listen-port DEFAULT-ROUTER-PORT] . event-containers)
   (define listener (tcp-listen listen-port 4 #t))
   (define nc (or _nc (new node% [listen-port listener])))
   (for ([ec event-containers])
@@ -1318,20 +1308,20 @@
 (define (spawn-remote-racket-vm host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                                      #:racket-path [racketpath (racket-path)]
                                      #:ssh-bin-path [sshpath (ssh-bin-path)]
-                                     #:distributed-launch-path [distributedlaunchpath (->string distributed-launch-path)])
+                                     #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)])
   (new remote-node%
        [host-name host]
        [listen-port listen-port]
        [cmdline-list (list sshpath host racketpath "-tm" distributedlaunchpath "spawn" (->string listen-port))]))
 
 (define (supervise-dynamic-place-at remote-vm place-path place-func)
-  (send remote-vm launch-place (list 'dynamic-place (->string place-path) place-func)))
+  (send remote-vm launch-place (list 'dynamic-place (->module-path-bytes  place-path) place-func)))
 
 (define (supervise-place-thunk-at remote-vm place-path place-func)
-  (send remote-vm launch-place (list 'place (->string place-path) place-func)))
+  (send remote-vm launch-place (list 'place (->module-path-bytes place-path) place-func)))
 
 (define (supervise-thread-at remote-vm place-path place-func)
-  (send remote-vm launch-place (list 'thread (->string place-path) place-func)))
+  (send remote-vm launch-place (list 'thread (->module-path-bytes place-path) place-func)))
 
 (define-syntax-rule (every-seconds _seconds _body ...)
   (new respawn-and-fire% [seconds _seconds] [thunk (lambda () _body ...)]))
@@ -1386,7 +1376,7 @@
               (lambda (x)
                 (define bbl (read-bytes-avail!* bb x))
                 (define (print-out x)
-                  (printf "~a:~a:~a ~a\n" (node-config-node-name config) (node-config-node-port config) bbl x)
+                  (log-debug (format "~a:~a:~a ~a" (node-config-node-name config) (node-config-node-port config) bbl x))
                   (flush-output))
                 (cond [(eof-object? bbl)
                        (print-out "EOF")
@@ -1411,9 +1401,9 @@
     (lambda ()
       (unless normal-finish
         (for ([n nodes])
-          (printf "Killing ~a\n" n)
+          (log-debug (format "Killing ~a" n))
           (define out (third (first n)))
-          (with-handlers ([exn:fail? (lambda (e) (printf "Error sending Ctrl-C: ~a\n" e))])
+          (with-handlers ([exn:fail? (lambda (e) (log-debug (format "Error sending Ctrl-C: ~a" e)))])
             (write-byte 3 out)
             (flush-output out)
             (sleep))

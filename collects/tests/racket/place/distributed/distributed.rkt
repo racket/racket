@@ -25,10 +25,10 @@
         ok?)))
 
   (define remote-vm   (spawn-remote-racket-vm "localhost" #:listen-port 6344))
-  (define tuple-place (supervise-named-place-thunk-at remote-vm 'tuple-server tuple-path 'make-tuple-server))
-  (define bank-place  (supervise-place-thunk-at remote-vm bank-path 'make-bank))
+  (define tuple-place (supervise-named-dynamic-place-at remote-vm 'tuple-server tuple-path 'make-tuple-server))
+  (define bank-place  (supervise-dynamic-place-at remote-vm bank-path 'make-bank))
 
-  (master-event-loop
+  (message-router
     remote-vm
     (after-seconds 2
       (define c (connect-to-named-place remote-vm 'tuple-server))

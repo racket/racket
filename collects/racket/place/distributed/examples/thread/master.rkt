@@ -4,7 +4,8 @@
          racket/match
          racket/place
          racket/place/define-remote-server
-         racket/runtime-path)
+         racket/runtime-path
+         syntax/location)
 
 (define-remote-server
   bank
@@ -43,9 +44,9 @@
 
 (define (main)
   (define remote-vm   (spawn-remote-racket-vm "localhost" #:listen-port 6344))
-  (define bank-place  (supervise-thread-at remote-vm (get-current-module-path) 'make-bank))
+  (define bank-place  (supervise-thread-at remote-vm (quote-module-name) 'make-bank))
 
-  (master-event-loop
+  (message-router
     remote-vm
     (after-seconds 2
       (displayln (bank-new-account bank-place 'user0))

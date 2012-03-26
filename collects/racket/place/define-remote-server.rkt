@@ -3,6 +3,7 @@
          (for-syntax syntax/stx)
          racket/place
          racket/place/private/th-place
+         racket/place/private/coercion
          racket/match
          racket/class
          racket/stxparam

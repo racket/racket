@@ -15,7 +15,7 @@
   (define tuple-place (supervise-named-dynamic-place-at remote-vm 'tuple-server tuple-path 'make-tuple-server))
   (define bank-place  (supervise-dynamic-place-at remote-vm bank-path 'make-bank))
 
-  (master-event-loop
+  (message-router
     remote-vm
     (after-seconds 4
       (displayln (bank-new-account bank-place 'user1))

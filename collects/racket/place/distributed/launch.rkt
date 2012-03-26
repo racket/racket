@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/match
          racket/tcp
-         racket/place/distributed)
+         racket/place/distributed
+         racket/place/private/coercion)
 
 (provide main)
 
