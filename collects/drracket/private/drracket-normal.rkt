@@ -132,7 +132,9 @@
     [(currently-the-weekend?)
      weekend-bitmap-spec]
     [else normal-bitmap-spec]))
-(define the-splash-bitmap (read-bitmap the-bitmap-spec))
+(define the-splash-bitmap (if (path? the-bitmap-spec)
+                              (read-bitmap the-bitmap-spec)
+                              the-bitmap-spec))
 (set-splash-char-observer drracket-splash-char-observer)
 
 (when (eq? (system-type) 'macosx)
