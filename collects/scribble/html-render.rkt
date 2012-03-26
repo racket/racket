@@ -191,6 +191,12 @@
 (define search-box (make-search-box "../"))
 (define top-search-box (make-search-box ""))
 
+(define (part-tags/nonempty p)
+  (define l (part-tags p))
+  (if (null? l)
+      (list `(part "???"))
+      l))
+
 ;; ----------------------------------------
 ;;  main mixin
 
@@ -267,8 +273,8 @@
            fns))
 
     (define/public (part-whole-page? p ri)
-      (let ([dest (resolve-get p ri (car (part-tags p)))])
-        (dest-page? dest)))
+      (let ([dest (resolve-get p ri (car (part-tags/nonempty p)))])
+        (and dest (dest-page? dest))))
 
     (define/public (current-part-whole-page? d)
       (eq? d (current-top-part)))
@@ -375,15 +381,17 @@
       null)
 
     (define/private (dest->url dest)
-      (format "~a~a~a"
-              (let ([p (relative->path (dest-path dest))])
-                (if (equal? p (current-output-file))
-                    ""
-                    (from-root p (get-dest-directory))))
-              (if (dest-page? dest) "" "#")
-              (if (dest-page? dest)
-                  ""
-                  (anchor-name (dest-anchor dest)))))
+      (if dest
+          (format "~a~a~a"
+                  (let ([p (relative->path (dest-path dest))])
+                    (if (equal? p (current-output-file))
+                        ""
+                        (from-root p (get-dest-directory))))
+                  (if (dest-page? dest) "" "#")
+                  (if (dest-page? dest)
+                      ""
+                      (anchor-name (dest-anchor dest))))
+          "???"))
 
     (define/public (render-toc-view d ri)
       (define has-sub-parts?
@@ -401,7 +409,7 @@
       (define top (car toc-chain))
       (define (toc-item->title+num t show-mine?)
         (values
-         `((a ([href ,(dest->url (resolve-get t ri (car (part-tags t))))]
+         `((a ([href ,(dest->url (resolve-get t ri (car (part-tags/nonempty t))))]
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")]
@@ -586,7 +594,7 @@
                                                  (anchor-name
                                                   (add-tag-prefixes
                                                    (tag-key (if (part? p)
-                                                                (car (part-tags p))
+                                                                (car (part-tags/nonempty p))
                                                                 (target-element-tag p))
                                                             ri)
                                                    prefixes)))]
@@ -755,7 +763,7 @@
         (define-values (url title)
           (cond [(part? x)
                  (values
-                  (dest->url (resolve-get x ri (car (part-tags x))))
+                  (dest->url (resolve-get x ri (car (part-tags/nonempty x))))
                   (string-append
                    "\""
                    (content->string
@@ -805,7 +813,7 @@
               ;; sep-element
               ;; (if (or (not index) (eq? d index))
               ;;   (make-element "nonavigation" index-content)
-              ;;   (make-link-element #f index-content (car (part-tags index))))
+              ;;   (make-link-element #f index-content (car (part-tags/nonempty index))))
               )))
       (define navright
         (if (not (or parent up-path next))
@@ -1429,7 +1437,7 @@
                          "[^-a-zA-Z0-9_=]"
                          (string-append
                           (append-part-prefixes d ci ri)
-                          (let ([s (cadr (car (part-tags d)))])
+                          (let ([s (cadr (car (part-tags/nonempty d)))])
                             (cond [(string? s) s]
                                   [(part-title-content d)
                                    (content->string (part-title-content d))]

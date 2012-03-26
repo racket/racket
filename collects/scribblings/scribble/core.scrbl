@@ -308,7 +308,8 @@ The @racket[tag-prefix] field determines the optional @techlink{tag
 prefix} for the part.
 
 The @racket[tags] indicates a list of @techlink{tags} that each link
-to the section.
+to the section. Normally, @racket[tags] should be a non-empty list, so
+that hyperlinks can target the section.
 
 The @racket[title-content] field holds the part's title, if any.
 
