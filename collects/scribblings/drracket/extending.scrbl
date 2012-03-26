@@ -176,4 +176,10 @@ Several environment variables can affect DrRacket's behavior:
         set, DrRacket will print out that it is set, and will print
         when the index is started loading and when it finishes loading.}
 
+ @item{@indexed-envvar{PLTDREASTERSECONDS} : When this environment variable
+        is set, DrRacket pretends that the result of @racket[current-seconds]
+        is actually this environment variable's value, for the purposes
+        of easter eggs. For example, setting it to 1339390801 would simulate
+        King Kamehameha day 2012 and show the corresponding easter egg splash 
+        screen.}
 ]

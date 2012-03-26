@@ -240,7 +240,10 @@
   (set! splash-load-handler (λ (old-load f expected) (old-load f expected))))
 
 (define funny?
-  (let ([date (seconds->date (current-seconds))])
+  (let ([date (seconds->date (let ([ssec (getenv "PLTDREASTERSECONDS")])
+                               (if ssec
+                                   (string->number ssec)
+                                   (current-seconds))))])
     (and (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
            (collection-path "icons")
            #t)

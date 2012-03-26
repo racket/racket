@@ -15,19 +15,23 @@
 
 (define files-to-open (command-line #:args filenames filenames))
 
+(define the-date (seconds->date
+                  (let ([ssec (getenv "PLTDREASTERSECONDS")])
+                    (if ssec
+                        (string->number ssec)
+                        (current-seconds)))))
+
 ;; updates the command-line-arguments with only the files
 ;; to open. See also main.rkt.
 (current-command-line-arguments (apply vector files-to-open))
 
 (define (currently-the-weekend?)
-  (define date (seconds->date (current-seconds)))
-  (define dow (date-week-day date))
+  (define dow (date-week-day the-date))
   (or (= dow 6) (= dow 0)))
 
 (define (valentines-day?)
-  (define date (seconds->date (current-seconds)))
-  (and (= 2 (date-month date))
-       (= 14 (date-day date))))
+  (and (= 2 (date-month the-date))
+       (= 14 (date-day the-date))))
 
 (define (current-icon-state)
   (cond
@@ -36,15 +40,13 @@
     [else 'normal]))
 
 (define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween?)
-  (let* ([date (seconds->date (current-seconds))]
-         [month (date-month date)]
-         [day (date-day date)]
-         [dow (date-week-day date)])
+  (let* ([month (date-month the-date)]
+         [day (date-day the-date)]
+         [dow (date-week-day the-date)])
     (values (and (= 3 month) (= 2 day))
             (and (= 3 month) (= 26 day))
             (and (= 6 month) (= 11 day))
             (and (= 10 month) (= 31 day)))))
-
 
 (define special-state #f)
 
@@ -95,7 +97,7 @@
     (when (and (eq? ch #\q)
                (send evt get-control-down))
       (exit))
-    (when (char? ch)
+    (when (and the-splash-bitmap (char? ch))
       ;; as soon as something is typed, load the bitmaps
       (load-magic-images)
       (add-key-code ch)
@@ -134,8 +136,7 @@
     [else normal-bitmap-spec]))
 
 (define the-splash-bitmap (and (path? the-bitmap-spec) (read-bitmap the-bitmap-spec)))
-(when the-splash-bitmap
-  (set-splash-char-observer drracket-splash-char-observer))
+(set-splash-char-observer drracket-splash-char-observer)
 
 (when (eq? (system-type) 'macosx)
   (define initial-state (current-icon-state))

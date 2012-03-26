@@ -13,6 +13,7 @@
   
   (provide queue-callback/res
            fire-up-drracket-and-run-tests
+           fire-up-separate-drracket-and-run-tests
            save-drracket-window-as
            do-execute
            test-util-error
@@ -168,7 +169,7 @@
       (let ([button (queue-callback/res (λ () (send frame get-execute-button)))])
 	(fw:test:run-one (lambda () (send button command)))
 	(when wait-for-finish?
-	  (wait-for-computation frame)))]))
+          (wait-for-computation frame)))]))
   
   (define (verify-drracket-frame-frontmost function-name frame)
     (on-eventspace-handler-thread 'verify-drracket-frame-frontmost)
@@ -603,25 +604,12 @@
   (define (fire-up-drracket-and-run-tests #:use-focus-table? [use-focus-table? #t] run-test)
     (on-eventspace-handler-thread 'fire-up-drracket-and-run-tests)
     (let ()
-      ;; change the preferences system so that it doesn't write to 
-      ;; a file; partly to avoid problems of concurrency in drdr
-      ;; but also to make the test suite easier for everyone to run.
-      (let ([prefs-table (make-hash)])
-	(fw:preferences:low-level-put-preferences
-	 (lambda (names vals)
-	   (for-each (lambda (name val) (hash-set! prefs-table name val))
-		     names vals)))
-	(fw:preferences:low-level-get-preference 
-	 (lambda (name [fail (lambda () #f)])
-	   (hash-ref prefs-table name fail))))
-	 
+      (use-hash-for-prefs fw:preferences:low-level-put-preferences
+                          fw:preferences:low-level-get-preference
+                          fw:preferences:restore-defaults)
+      
       (parameterize ([current-command-line-arguments #()])
-        (dynamic-require 'drscheme #f))
-
-      ;; set all preferences to their defaults (some pref values may have
-      ;; been read by this point, but hopefully that won't affect much
-      ;; of the startup of drracket)
-      (fw:preferences:restore-defaults)
+        (dynamic-require 'drracket #f))
       
       (fw:test:use-focus-table use-focus-table?)
       
@@ -636,7 +624,65 @@
 		 (run-test)
 		 (exit)))
       (yield (make-semaphore 0))))
+  
+  ;; fire-up-separate-drracket-and-run-tests : (-> any) -> any
+  ;; creates a separate custodian, eventspace, namespace, etc to
+  ;; start up a new DrRacket. This has the advantage over fire-up-drracket-and-run-tests
+  ;; that a single test suite can start up DrRacket multiple times, but it has the 
+  ;; disadvantage that there is little sharing between the test suite implementation code and
+  ;; DrRacket, so writing the testing code is more painful
+  ;;
+  ;; the only things shared are mred/mred (and its dependencies).
+  (define (fire-up-separate-drracket-and-run-tests run-test)
+    (define c (make-custodian))
+    (define s (make-semaphore 0))
+    (define orig-ns (current-namespace))
+    (parameterize ([current-custodian c])
+      (parameterize ([exit-handler (λ (v) 
+                                     (semaphore-post s)
+                                     (custodian-shutdown-all c))]
+                     [current-namespace (make-empty-namespace)]
+                     [current-command-line-arguments #()])
+        (parameterize ([current-eventspace (make-eventspace)])
+          (namespace-attach-module orig-ns 'mred/mred)
+          
+          ;; do this now so that dynamically requiring framework
+          ;; exports during the call to 'run-test' is safe
+          (namespace-require 'framework)
+          
+          (use-hash-for-prefs (dynamic-require 'framework 'preferences:low-level-get-preference)
+                              (dynamic-require 'framework 'preferences:low-level-put-preferences)
+                              (dynamic-require 'framework 'preferences:restore-defaults))
+          
+          (queue-callback
+           (λ ()
+             (dynamic-require 'drracket #f)
+             (thread (λ ()
+                       (run-test)
+                       (exit)))
+             (yield (make-semaphore 0)))))))
+    (semaphore-wait s))
 
+  (define (use-hash-for-prefs preferences:low-level-get-preference 
+                              preferences:low-level-put-preferences
+                              preferences:restore-defaults)
+    ;; change the preferences system so that it doesn't write to 
+    ;; a file; partly to avoid problems of concurrency in drdr
+    ;; but also to make the test suite easier for everyone to run.
+    (let ([prefs-table (make-hash)])
+      (preferences:low-level-put-preferences
+       (lambda (names vals)
+         (for-each (lambda (name val) (hash-set! prefs-table name val))
+                   names vals)))
+      (preferences:low-level-get-preference 
+       (lambda (name [fail (lambda () #f)])
+         (hash-ref prefs-table name fail)))
+      
+      ;; set all preferences to their defaults (some pref values may have
+      ;; been read by this point, but hopefully that won't affect the
+      ;; startup of drracket)
+      (preferences:restore-defaults)))
+  
 (define (not-on-eventspace-handler-thread fn)
   (when (eq? (current-thread) (eventspace-handler-thread (current-eventspace)))
     (error fn "expected to be run on some thread other than the eventspace handler thread")))
