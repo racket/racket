@@ -53,7 +53,13 @@
        #'(begin
            (printf "starting ~a\n" line)
            (begin0 
-             (on-splash-eventspace/ret/proc (λ () e ...))
+             (on-splash-eventspace/ret/proc (λ () (with-handlers ((exn:fail? (λ (x) 
+                                                                               (printf "~a\n" (exn-message x)) 
+                                                                               (for ([x (in-list (continuation-mark-set->context
+                                                                                                  (exn-continuation-marks x)))])
+                                                                                 (printf "  ~s\n" x))
+                                                                               (void))))
+                                                    e ...)))
              (printf "finishing ~a\n" line))))]))
 
 (define (get-splash-bitmap) splash-bitmap)
@@ -146,14 +152,14 @@
   (unless allow-funny? (set! funny? #f))
   (set! splash-title _splash-title)
   (set! splash-max-width (max 1 (splash-get-preference (get-splash-width-preference-name) width-default)))
-  (let/ec k
-    (define (no-splash)
-      (set! splash-bitmap #f)
-      (set! splash-canvas #f)
-      (set! splash-eventspace #f)
-      (k (void)))
     
-    (on-splash-eventspace/ret
+  (on-splash-eventspace/ret
+   (let/ec k
+     (define (no-splash)
+       (set! splash-bitmap #f)
+       (set! splash-canvas #f)
+       (set! splash-eventspace #f)
+       (k (void)))
      (send (get-gauge) set-range splash-max-width)
      (send splash-tlw set-label splash-title)
      
