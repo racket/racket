@@ -178,7 +178,6 @@ needed to check the desired bounds at runtime.
 @defidform[Output-Port]
 @defidform[Port]
 @defidform[Path]
-@defidform[Path-String]
 @defidform[Path-For-Some-System]
 @defidform[Regexp]
 @defidform[PRegexp]
@@ -240,6 +239,12 @@ These types represent primitive Racket data.
 (thread (lambda () (add1 7)))
 ]
 }
+
+@defidform[Path-String]{ The union of the @racket[Path] and
+@racket[String] types.  Note that this includes some strings where
+@racket[path-string?] produces @racketresult[false], such as strings
+that contain the character @racket[#\nul].}
+
 
 @section{Singleton Types}
 
