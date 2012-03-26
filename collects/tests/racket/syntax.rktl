@@ -1434,5 +1434,10 @@
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `syntax/loc' preserves the 'parent-shape property
+
+(test #\[ syntax-property (syntax/loc #'a [b c]) 'paren-shape)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

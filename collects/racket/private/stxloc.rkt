@@ -33,7 +33,7 @@
         (datum->syntax stx
                        (syntax-e stx)
                        loc
-                       #f)
+                       stx)
 	stx))
 
   ;; Like syntax, but also takes a syntax object
