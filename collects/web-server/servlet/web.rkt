@@ -50,9 +50,9 @@
  [send/finish (can-be-response? . -> . void?)]
  [send/forward ((string? . -> . can-be-response?) . -> . request?)]
  [send/suspend ((string? . -> . can-be-response?) . -> . request?)]
- [send/suspend/dispatch ((((request? . -> . any) . -> . string?) . -> . can-be-response?) . -> . any/c)]
+ [send/suspend/dispatch ((((request? . -> . any) . -> . string?) . -> . can-be-response?) . -> . any)]
  [send/suspend/url ((url? . -> . can-be-response?) . -> . request?)]
- [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . can-be-response?) . -> . any/c)])
+ [send/suspend/url/dispatch ((((request? . -> . any) . -> . url?) . -> . can-be-response?) . -> . any)])
 
 ;; ************************************************************
 ;; EXPORTS
