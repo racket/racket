@@ -623,6 +623,8 @@
                 alpha-s))
           (get-empty-surface)))
 
+    (define/public (get-handle) s)
+
     (def/public (get-argb-pixels [exact-nonnegative-integer? x]
                                  [exact-nonnegative-integer? y]
                                  [exact-nonnegative-integer? w]

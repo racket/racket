@@ -823,13 +823,15 @@
                                (send st get-width) (send st get-height) 
                                0 0 mode col alpha #f)
                               get-cairo-surface))])])
-          (let* ([p (cairo_pattern_create_for_surface s)])
-            (cairo_pattern_set_extend p CAIRO_EXTEND_REPEAT)
-            (install-transformation transformation cr)
-            (cairo_set_source cr p)
-            (when transformation
-              (do-reset-matrix cr))
-            (cairo_pattern_destroy p))))
+          (install-surface s transformation)))
+      (define (install-surface s transformation)
+        (let* ([p (cairo_pattern_create_for_surface s)])
+          (cairo_pattern_set_extend p CAIRO_EXTEND_REPEAT)
+          (install-transformation transformation cr)
+          (cairo_set_source cr p)
+          (when transformation
+            (do-reset-matrix cr))
+          (cairo_pattern_destroy p)))
       (cairo_set_antialias cr (case (dc-adjust-smoothing smoothing)
                                 [(unsmoothed) CAIRO_ANTIALIAS_NONE]
                                 [else CAIRO_ANTIALIAS_GRAY]))
@@ -838,85 +840,100 @@
           (unless (eq? 'transparent s)
             (let ([st (send brush get-stipple)]
                   [col (send brush get-color)]
-                  [gradient (send brush get-gradient)])
-              (if (and gradient
-                       (not (collapse-bitmap-b&w?)))
-                  (make-gradient-pattern cr gradient (send brush get-transformation))
-                  (if st
-                      (install-stipple st col s 
-                                       (send brush get-transformation)
-                                       (lambda () brush-stipple-s)
-                                       (lambda (v) (set! brush-stipple-s v) v))
-                      (let ([horiz (lambda (cr2)
-                                     (cairo_move_to cr2 0 3.5)
-                                     (cairo_line_to cr2 12 3.5)
-                                     (cairo_move_to cr2 0 7.5)
-                                     (cairo_line_to cr2 12 7.5)
-                                     (cairo_move_to cr2 0 11.5)
-                                     (cairo_line_to cr2 12 11.5))]
-                            [vert (lambda (cr2)
-                                    (cairo_move_to cr2 3.5 0)
-                                    (cairo_line_to cr2 3.5 12)
-                                    (cairo_move_to cr2 7.5 0)
-                                    (cairo_line_to cr2 7.5 12)
-                                    (cairo_move_to cr2 11.5 0)
-                                    (cairo_line_to cr2 11.5 12))]
-                            [bdiag (lambda (cr2)
-                                     (for ([i (in-range -2 3)])
-                                       (let ([y (* i 6)])
-                                         (cairo_move_to cr2 -1 (+ -1 y))
-                                         (cairo_line_to cr2 13 (+ 13 y)))))]
-                            [fdiag (lambda (cr2)
-                                     (for ([i (in-range -2 3)])
-                                       (let ([y (* i 6)])
-                                         (cairo_move_to cr2 13 (+ -1 y))
-                                         (cairo_line_to cr2 -1 (+ 13 y)))))])
-                        
-                        (case s
-                          [(horizontal-hatch)
-                           (make-pattern-surface
-                            cr col
-                            horiz)]
-                          [(vertical-hatch)
-                           (make-pattern-surface
-                            cr col
-                            vert)]
-                          [(cross-hatch)
-                           (make-pattern-surface
-                            cr col
-                            (lambda (cr) (horiz cr) (vert cr)))]
-                          [(bdiagonal-hatch)
-                           (make-pattern-surface
-                            cr col
-                            bdiag)]
-                          [(fdiagonal-hatch)
-                           (make-pattern-surface
-                            cr col
-                            fdiag)]
-                          [(crossdiag-hatch)
-                           (make-pattern-surface
-                            cr col
-                            (lambda (cr) (bdiag cr) (fdiag cr)))]
-                          [else
-                           (install-color cr 
-                                          (if (eq? s 'hilite) hilite-color col)
-                                          alpha
-                                          #f)])))))
+                  [gradient (send brush get-gradient)]
+                  [handle-info (send brush get-surface-handle-info)])
+              (cond
+               [handle-info
+                (if (collapse-bitmap-b&w?)
+                    ;; convert surface to a stipple:
+                    (install-stipple (surface-handle-info->bitmap handle-info) col s
+                                     (send brush get-transformation)
+                                     (lambda () brush-stipple-s)
+                                     (lambda (v) (set! brush-stipple-s v) v))
+                    ;; normal use of surface:
+                    (install-surface (vector-ref handle-info 0) 
+                                     (send brush get-transformation)))]
+               [(and gradient
+                     (not (collapse-bitmap-b&w?)))
+                (make-gradient-pattern cr gradient (send brush get-transformation))]
+               [st
+                (install-stipple st col s 
+                                 (send brush get-transformation)
+                                 (lambda () brush-stipple-s)
+                                 (lambda (v) (set! brush-stipple-s v) v))]
+               [else
+                (let ([horiz (lambda (cr2)
+                               (cairo_move_to cr2 0 3.5)
+                               (cairo_line_to cr2 12 3.5)
+                               (cairo_move_to cr2 0 7.5)
+                               (cairo_line_to cr2 12 7.5)
+                               (cairo_move_to cr2 0 11.5)
+                               (cairo_line_to cr2 12 11.5))]
+                      [vert (lambda (cr2)
+                              (cairo_move_to cr2 3.5 0)
+                              (cairo_line_to cr2 3.5 12)
+                              (cairo_move_to cr2 7.5 0)
+                              (cairo_line_to cr2 7.5 12)
+                              (cairo_move_to cr2 11.5 0)
+                              (cairo_line_to cr2 11.5 12))]
+                      [bdiag (lambda (cr2)
+                               (for ([i (in-range -2 3)])
+                                 (let ([y (* i 6)])
+                                   (cairo_move_to cr2 -1 (+ -1 y))
+                                   (cairo_line_to cr2 13 (+ 13 y)))))]
+                      [fdiag (lambda (cr2)
+                               (for ([i (in-range -2 3)])
+                                 (let ([y (* i 6)])
+                                   (cairo_move_to cr2 13 (+ -1 y))
+                                   (cairo_line_to cr2 -1 (+ 13 y)))))])
+                  
+                  (case s
+                    [(horizontal-hatch)
+                     (make-pattern-surface
+                      cr col
+                      horiz)]
+                    [(vertical-hatch)
+                     (make-pattern-surface
+                      cr col
+                      vert)]
+                    [(cross-hatch)
+                     (make-pattern-surface
+                      cr col
+                      (lambda (cr) (horiz cr) (vert cr)))]
+                    [(bdiagonal-hatch)
+                     (make-pattern-surface
+                      cr col
+                      bdiag)]
+                    [(fdiagonal-hatch)
+                     (make-pattern-surface
+                      cr col
+                      fdiag)]
+                    [(crossdiag-hatch)
+                     (make-pattern-surface
+                      cr col
+                      (lambda (cr) (bdiag cr) (fdiag cr)))]
+                    [else
+                     (install-color cr 
+                                    (if (eq? s 'hilite) hilite-color col)
+                                    alpha
+                                    #f)]))]))
             (cairo_fill_preserve cr))))
       (when pen?
         (let ([s (send pen get-style)])
           (unless (eq? 'transparent s)
             (let ([st (send pen get-stipple)]
                   [col (send pen get-color)])
-              (if st
-                  (install-stipple st col s
-                                   #f
-                                   (lambda () pen-stipple-s)
-                                   (lambda (v) (set! pen-stipple-s v) v))
-                  (install-color cr 
-                                 (if (eq? s 'hilite) hilite-color col)
-                                 alpha
-                                 #f)))
+              (cond
+               [st
+                (install-stipple st col s
+                                 #f
+                                 (lambda () pen-stipple-s)
+                                 (lambda (v) (set! pen-stipple-s v) v))]
+               [else
+                (install-color cr 
+                               (if (eq? s 'hilite) hilite-color col)
+                               alpha
+                               #f)]))
             (cairo_set_line_width cr (let* ([v (send pen get-width)]
                                             [align? (aligned? smoothing)]
                                             [v (if align?

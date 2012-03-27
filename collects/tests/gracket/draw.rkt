@@ -1,4 +1,5 @@
 #lang scheme/gui
+(require "unsafe-draw.rkt")
 
 (define manual-chinese? #f)
 
@@ -969,6 +970,12 @@
                                                                             (list 1.0
                                                                                   (make-object color% 0 0 255 0.0))))]))
                                 (send dc draw-rectangle 300 320 80 20)
+                                (send dc set-pen p))
+
+                              (let ([p (send dc get-pen)])
+                                (send dc set-pen "black" 1 'solid)
+                                (send dc set-brush surface-brush)
+                                (send dc draw-rectangle 400 320 30 40)
                                 (send dc set-pen p))
 
                               (let ([p (send dc get-pen)])

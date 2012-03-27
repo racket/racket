@@ -104,34 +104,54 @@
         (send the-pen-list find-or-create-pen color width style cap join)))
 
 (define (clone-brush b)
-  (let ([s (send b get-stipple)])
-    (if s
-        (let ([b (make-object brush% 
-                              (send b get-color)
-                              (send b get-style))]
-              [t (send b get-transformation)])
-          (send b set-stipple (clone-bitmap s) t)
-          b)
-        (let ([g (send b get-gradient)])
-          (if g
-              (make-object brush% 
-                           (send b get-color)
-                           (send b get-style)
-                           #f
-                           g
-                           (send b get-transformation))
-              (send the-brush-list find-or-create-brush
-                    (send b get-color)
-                    (send b get-style)))))))
+  (cond
+   [(send b get-surface-handle-info)
+    => (lambda (hi)
+         (make-handle-brush (vector-ref hi 0) #:copy? #f
+                            (vector-ref hi 1)
+                            (vector-ref hi 2)
+                            (send b get-transformation)))]
+   [(send b get-stipple)
+    => (lambda (s)
+         (let ([b (make-object brush% 
+                               (send b get-color)
+                               (send b get-style))]
+               [t (send b get-transformation)])
+           (send b set-stipple (clone-bitmap s) t)
+           b))]
+   [(send b get-gradient)
+    => (lambda (g)
+         (make-object brush% 
+                      (send b get-color)
+                      (send b get-style)
+                      #f
+                      g
+                      (send b get-transformation)))]
+   [else
+    (send the-brush-list find-or-create-brush
+          (send b get-color)
+          (send b get-style))]))
 
 (define (convert-brush b)
-  (let ([s (send b get-stipple)]
-        [g (send b get-gradient)])
-    (list (convert-color (send b get-color))
-          (send b get-style)
-          (and s (convert-bitmap s))
-          (and g (convert-gradient g))
-          (send b get-transformation))))
+  (cond
+   [(send b get-surface-handle-info)
+    => (lambda (hi)
+         ;; Flatten the surface into a bitmap:
+         (define bm (surface-handle-info->bitmap hi))
+         (let ([b (make-object brush% 
+                               (send b get-color)
+                               (send b get-style))]
+               [t (send b get-transformation)])
+           (send b set-stipple bm t)
+           (convert-brush b)))]
+   [else
+    (let ([s (send b get-stipple)]
+          [g (send b get-gradient)])
+      (list (convert-color (send b get-color))
+            (send b get-style)
+            (and s (convert-bitmap s))
+            (and g (convert-gradient g))
+            (send b get-transformation)))]))
 
 (define (unconvert-brush l)
   (define-values (c style stipple gradient transformation)

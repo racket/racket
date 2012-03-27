@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.rkt"
+          (for-label (only-in ffi/unsafe cpointer?)))
 
 @defclass/title[bitmap% object% ()]{
 
@@ -83,6 +84,15 @@ monochrome bitmap and @racket[32] for a color bitmap. See also
 @method[bitmap% is-color?].
 
 }
+
+
+@defmethod[(get-handle) cpointer?]{
+
+Returns a low-level handle to the bitmap content. Currently, on all
+platforms, a handle is a @tt{cairo_surface_t}. For a bitmap created
+with @racket[make-bitmap], the handle is specifically a Cairo
+image surface.}
+
 
 @defmethod[(get-height)
            exact-positive-integer?]{

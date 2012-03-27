@@ -1,6 +1,8 @@
 #lang scheme/base
 (require scheme/class
+         ffi/unsafe
          ffi/unsafe/atomic
+         "../unsafe/cairo.rkt"
          "color.rkt"
          "syntax.rkt"
          "local.rkt"
@@ -21,7 +23,9 @@
 
 (define black (send the-color-database find-color "black"))
 
-(define-local-member-name s-set-key)
+(define-local-member-name 
+  s-set-key
+  set-surface-handle-info)
 
 (defclass brush% object%
   (define key #f)
@@ -118,7 +122,63 @@
                            [(make-or-false transformation-vector?) [t #f]])
     (check-immutable 'set-stipple)
     (set! stipple s)
-    (set! transformation (and s t))))
+    (set! transformation (and s t)))
+
+  (define surface-handle #f)
+  (define/public (get-surface-handle-info) surface-handle) ; local
+  (def/public (get-handle) (and surface-handle
+                                (vector-ref surface-handle 0)))
+  (define/public (set-surface-handle-info h t)
+    (set! surface-handle h)
+    (set! transformation t)))
+
+;; unsafe (and so exported by `racket/draw/unsafe/brush'):
+(provide (protect-out make-handle-brush))
+(define (make-handle-brush handle width height [t #f]
+                           #:copy? [copy? #t])
+  ;; for argument checking:
+  (define/top (make-handle-brush [cpointer? handle]
+                                 [exact-nonnegative-integer? width]
+                                 [exact-nonnegative-integer? height]
+                                 [(make-or-false transformation-vector?) t])
+    'ok)
+  (make-handle-brush handle width height t)
+  ;; arguments are ok, so proceed:
+  (define s-in (cast handle _pointer _cairo_surface_t))
+  (define s
+    (if copy?
+        (let ()
+          (define s (cairo_surface_create_similar s-in CAIRO_CONTENT_COLOR_ALPHA width height))
+          (define cr (cairo_create s))
+          (let* ([p (cairo_pattern_create_for_surface s-in)])
+            (cairo_set_source cr p)
+            (cairo_pattern_destroy p)
+            (cairo_rectangle cr 0 0 width height)
+            (cairo_fill cr)
+            (cairo_destroy cr))
+          s)
+        s-in))
+  (define b (new brush%))
+  (send b set-surface-handle-info (vector s width height #f) t)
+  b)
+
+(provide (protect-out surface-handle-info->bitmap))
+(define (surface-handle-info->bitmap hi)
+  (or (vector-ref hi 3)
+      (let ()
+        (define width (vector-ref hi 1))
+        (define height (vector-ref hi 2))
+        (define bm (make-bitmap width height))
+        (define s (send bm get-cairo-surface))
+        (define cr (cairo_create s))
+        (let* ([p (cairo_pattern_create_for_surface (vector-ref hi 0))])
+          (cairo_set_source cr p)
+          (cairo_pattern_destroy p)
+          (cairo_rectangle cr 0 0 width height)
+          (cairo_fill cr)
+          (cairo_destroy cr))
+        (vector-set! hi 3 bm)
+        bm)))
 
 ;; ----------------------------------------
 

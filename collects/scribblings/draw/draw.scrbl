@@ -42,6 +42,7 @@ interface, and procedure bindings defined in this manual.}
 @include-section["svg-dc-class.scrbl"]
 @include-section["draw-funcs.scrbl"]
 @include-section["draw-unit.scrbl"]
+@include-section["unsafe.scrbl"]
 @include-section["libs.scrbl"]
 
 @;------------------------------------------------------------------------

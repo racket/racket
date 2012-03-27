@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require "common.rkt" scribble/eval)
+@(require "common.rkt"
+          scribble/eval
+          (for-label racket/draw/unsafe/brush
+                     (only-in ffi/unsafe cpointer?)))
 
 @(define class-eval (make-base-eval))
 @(interaction-eval #:eval class-eval (require racket/class racket/draw))
@@ -118,18 +121,24 @@ Returns the brush's color.
 
 }
 
-@defmethod[(get-stipple)
-           (or/c (is-a?/c bitmap%) #f)]{
-
-Gets the @tech{brush stipple} bitmap, or @racket[#f] if the brush has no stipple.}
-
-
 @defmethod[(get-gradient)
            (or/c (is-a?/c linear-gradient%)
                  (is-a?/c radial-gradient%)
                  #f)]{
 
 Gets the @tech{gradient}, or @racket[#f] if the brush has no gradient.}
+
+
+@defmethod[(get-handle) (or/c cpointer? #f)]{
+
+Returns a low-level handle for the brush content, but only for brushes
+created with @racket[make-handle-brush]; otherwise, the result is @racket[#f].}
+
+
+@defmethod[(get-stipple)
+           (or/c (is-a?/c bitmap%) #f)]{
+
+Gets the @tech{brush stipple} bitmap, or @racket[#f] if the brush has no stipple.}
 
 
 @defmethod[(get-style)

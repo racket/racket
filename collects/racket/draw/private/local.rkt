@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class)
 
-(provide (all-defined-out))
+(provide (protect-out (all-defined-out)))
 
 (define-local-member-name
   ;; various
@@ -33,6 +33,9 @@
   ;; font%
   get-ps-pango
   get-font-key
+
+  ;; brush%
+  get-surface-handle-info
 
   ;; dc-backend<%>
   get-cr
