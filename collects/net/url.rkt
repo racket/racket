@@ -433,7 +433,7 @@
 ;; `*' instead of `+' for the scheme part (it is checked later anyway, and
 ;; we don't want to parse it as a path element), and the user@host:port is
 ;; parsed here.
-(define url-rx
+(define url-regexp
   (regexp (string-append
            "^"
            "(?:"              ; / scheme-colon-opt
@@ -488,8 +488,7 @@
               [query    (if query (form-urlencoded->alist query) '())]
               [fragment (uri-decode/maybe fragment)])
          (make-url scheme user host port abs? path query fragment))))
-   (cdr (or (regexp-match url-rx str)
-            (url-error "Invalid URL string: ~e" str)))))
+   (cdr (regexp-match url-regexp str))))
 
 (define (uri-decode/maybe f) (friendly-decode/maybe f uri-decode))
 
@@ -661,7 +660,8 @@
 (provide (struct-out url) (struct-out path/param))
 
 (provide/contract
- (string->url ((or/c bytes? string?) . -> . url?))
+ [url-regexp regexp?]
+ (string->url (url-regexp . -> . url?))
  (path->url ((or/c path-string? path-for-some-system?) . -> . url?))
  (url->string (url? . -> . string?))
  (url->path (->* (url?) ((one-of/c 'unix 'windows)) path-for-some-system?))
