@@ -83,20 +83,14 @@
     (set-posn-y! (posn number -> void) "Updates the x component of a posn."))
    
    ("Vectors"
-    (vector (X ... -> (vector X ...))
-            "Constructs a vector.")
-    (make-vector (number X -> (vectorof X))
-                 "Constructs a vector.")
-    (build-vector (nat (nat -> X)  -> (vectorof X))
-                  "Constructs a vector.")	
-    (vector-ref ((vector X) nat -> X)
-                "Extracts an element from a vector.")
-    (vector-length ((vector X) -> nat)
-                   "Determines the length of a vector.")	
-    (vector-set! ((vectorof X) nat X -> void)
-                 "Updates a vector.")
-    (vector? (any -> boolean)
-             "Determines if a value is a vector."))
+    (vector (X ... -> (vector X ...)) "Constructs a vector.")
+    (make-vector (number X -> (vectorof X)) "Constructs a vector.")
+    (build-vector (nat (nat -> X)  -> (vectorof X)) "Constructs a vector.")	
+    (vector-ref ((vector X) nat -> X) "Extracts an element from a vector.")
+    (vector-length ((vector X) -> nat) "Determines the length of a vector.")	
+    (vector-set! ((vectorof X) nat X -> void) "Updates a vector.")
+    (vector->list ((vectorof X) -> (listof X)) "creates a list of values from the vector of values.")
+    (vector? (any -> boolean) "Determines if a value is a vector."))
    
    ("Boxes"
     (box (any -> box)
