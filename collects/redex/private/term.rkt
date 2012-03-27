@@ -5,6 +5,7 @@
                      syntax/boundmap
                      syntax/parse
                      racket/syntax
+                     (only-in racket/list flatten)
                      "keyword-macros.rkt"
                      "matcher.rkt")
          syntax/datum
@@ -14,7 +15,10 @@
 (provide term term-let define-term
          hole in-hole
          term-let/error-name term-let-fn term-define-fn
-         term/nts)
+         term/nts
+         (for-syntax term-rewrite
+                     term-temp->pat
+                     currently-expanding-term-fn))
 
 (define-syntax (hole stx) (raise-syntax-error 'hole "used outside of term"))
 (define-syntax (in-hole stx) (raise-syntax-error 'in-hole "used outside of term"))
@@ -44,16 +48,54 @@
     [(_ arg nts)
      #'(#%expression (term/private arg nts))]))
 
-(define-syntax (term/private orig-stx)
-  (define lang-nts #f)
+(define-syntax (term/private stx)
+  (syntax-case stx ()
+    [(_ arg-stx nts-stx)
+     (with-disappeared-uses
+      (let-values ([(t a-mfs) (term-rewrite/private #'arg-stx #'nts-stx #f)])
+        (term-temp->unexpanded-term t a-mfs)))]))
+
+(define-for-syntax (term-rewrite t names)
+  (let*-values ([(t-t a-mfs) (term-rewrite/private t #`#f names)]
+                [(t-pat) (term-temp->pat t-t names)])
+    t-pat))
+
+(define-syntax (mf-apply stx)
+  (syntax-case stx ()
+    [(_ mf)
+     #'(λ (x) (mf x))]))
+
+(define-syntax (mf-map stx)
+  (syntax-case stx ()
+    [(_ inner-apps)
+     #'(λ (l) (map inner-apps l))]))
+
+(define-for-syntax currently-expanding-term-fn (make-parameter #f))
+
+
+;; term-rewrite/private produces expressions from the following grammar:
+;; (which get further processed by term-temp->unexpanded-term or term-temp->pat)
+;;
+;; term-template := `(term-template (,term-binding ...) ,term-datum)
+;; term-binding  := `(,t-bind-pat (,mf-apps ,term-datum))
+;; t-bind-pat    := id | (ref id) | `(,t-b-seq ...)
+;; t-b-seq       := t-bind-pat | ellipsis
+;; mf-apps       := `(mf-map ,mf-apps) | `(mf-app ,metafunction-id)
+;; term-datum    := `(quasidatum ,d)
+;; d             := literal | pattern-variable | `(,d-seq ...) | ;; other (holes, undatum)
+;; d-seq         := d | ellipsis
+
+;; actually can be attached to anything that matches a variable in the language
+;; is removed by the internal term rewriter
+;; and expands into an error
+;; *bound* things will be caught by the other rewrite/max-depth possibilities
+
+(define-for-syntax (term-rewrite/private arg-stx nts-stx names)
+
+  (define lang-nts (syntax->datum nts-stx))
   (define outer-bindings '())
   (define applied-metafunctions
     (make-free-identifier-mapping))
-  
-  (define error-stx
-    (syntax-case orig-stx ()
-      [(_ e-stx nts-stx)
-       #'e-stx]))
   
   (define (rewrite stx)
     (let-values ([(rewritten _) (rewrite/max-depth stx 0)])
@@ -63,7 +105,7 @@
     (let-values ([(rewritten max-depth) (rewrite/max-depth args depth)])
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
-          (let loop ([func (syntax (λ (x) (fn x)))]
+          (let loop ([func (syntax (mf-apply fn))]
                      [args-stx rewritten]
                      [res result-id]
                      [args-depth (min depth max-depth)])
@@ -76,7 +118,7 @@
                           (cons (syntax [res (func (quasidatum args))])
                                 outer-bindings))
                     (values result-id (min depth max-depth)))
-                  (loop (syntax (λ (l) (map func l)))
+                  (loop (syntax (mf-map func))
                         (syntax/loc args-stx (args (... ...)))
                         (syntax (res (... ...)))
                         (sub1 args-depth)))))))))
@@ -85,14 +127,20 @@
     (syntax-case stx (unquote unquote-splicing in-hole hole)
       [(metafunc-name arg ...)
        (and (identifier? (syntax metafunc-name))
+            (if names
+                (not (memq (syntax->datum #'metafunc-name) names))
+                #t)
             (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))
        (let ([f (term-fn-get-id (syntax-local-value/record (syntax metafunc-name) (λ (x) #t)))])
          (free-identifier-mapping-put! applied-metafunctions f #t)
          (rewrite-application f (syntax/loc stx (arg ...)) depth))]
       [f
        (and (identifier? (syntax f))
+            (if names
+                (not (memq (syntax->datum #'f) names))
+                #t)
             (term-fn? (syntax-local-value (syntax f) (λ () #f))))
-       (raise-syntax-error 'term "metafunction must be in an application" orig-stx stx)]
+       (raise-syntax-error 'term "metafunction must be in an application" arg-stx stx)]
       [x
        (and (identifier? (syntax x))
             (term-id? (syntax-local-value (syntax x) (λ () #f))))
@@ -114,22 +162,20 @@
       [(unquote x)
        (values (syntax (undatum x)) 0)]
       [(unquote . x)
-       (raise-syntax-error 'term "malformed unquote" orig-stx stx)]
+       (raise-syntax-error 'term "malformed unquote" arg-stx stx)]
       [(unquote-splicing x)
        (values (syntax (undatum-splicing x)) 0)]
       [(unquote-splicing . x)
-       (raise-syntax-error 'term "malformed unquote splicing" orig-stx stx)]
+       (raise-syntax-error 'term "malformed unquote splicing" arg-stx stx)]
       [(in-hole id body)
        (rewrite-application (syntax (λ (x) (apply plug x))) (syntax/loc stx (id body)) depth)]
       [(in-hole . x)
-       (raise-syntax-error 'term "malformed in-hole" orig-stx stx)]
+       (raise-syntax-error 'term "malformed in-hole" arg-stx stx)]
       [hole (values (syntax (undatum the-hole)) 0)]
       [x
        (and (identifier? (syntax x))
             (check-id (syntax->datum #'x) stx))
        (values stx 0)]
-      
-      
       [() (values stx 0)]
       [(x ... . y)
        (not (null? (syntax->list #'(x ...))))
@@ -159,46 +205,133 @@
       (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
       (when m
         (unless (memq (string->symbol (list-ref m 1)) (append pattern-symbols lang-nts))
-          (raise-syntax-error 'term "before underscore must be either a non-terminal or a built-in pattern" error-stx stx)))))
+          (raise-syntax-error 'term "before underscore must be either a non-terminal or a built-in pattern" arg-stx stx)))))
   
-  (syntax-case orig-stx ()
-    [(_ arg nts-stx)
-     (begin
-       (when (syntax->datum #'nts-stx)
-         (set! lang-nts (syntax->datum #'nts-stx)))
-       (with-disappeared-uses
-        (with-syntax ([rewritten (rewrite (syntax arg))])
-          #`(begin
-              #,@(free-identifier-mapping-map
-                  applied-metafunctions
-                  (λ (f _) (defined-check f "metafunction")))
-              #,(let loop ([bs (reverse outer-bindings)])
-                  (cond
-                    [(null? bs) (syntax (quasidatum rewritten))]
-                    [else (with-syntax ([rec (loop (cdr bs))]
-                                        [fst (car bs)])
-                            (syntax (with-datum (fst)
-                                                rec)))]))))))]))
- 
+  (values
+   (with-syntax ([rewritten (rewrite arg-stx)])
+     (with-syntax ([(outer-bs ...) (reverse outer-bindings)])
+       #'(term-template
+          (outer-bs ...)
+          (quasidatum rewritten))))
+   applied-metafunctions))
+
+(define-for-syntax (term-temp->unexpanded-term term-stx applied-mfs)
+  (syntax-case term-stx (term-template)
+    [(term-template (outer-bs ...) t)
+     (let ([outer-bindings (syntax->list #'(outer-bs ...))])
+       #`(begin
+           #,@(free-identifier-mapping-map
+               applied-mfs
+               (λ (f _) (defined-check f "metafunction")))
+           #,(let loop ([bs outer-bindings])
+               (cond
+                 [(null? bs) (syntax t)]
+                 [else (with-syntax ([rec (loop (cdr bs))]
+                                     [fst (car bs)])
+                         (syntax (with-datum (fst)
+                                             rec)))]))))]))
+
+(define-for-syntax (term-temp->pat t-t names)
+  (syntax-case t-t (term-template)
+    [(term-template (term-bindings ...) body-datum)
+     (let loop ([t-bs-raw (syntax->list #'(term-bindings ...))]
+                [t-bs '()]
+                [ns names])
+       (cond
+         [(null? t-bs-raw)
+          (with-syntax ([body-pat (term-datum->pat #'body-datum ns)]
+                        [(bind-pats ...) (reverse t-bs)])
+            #'(term-pattern (bind-pats ...) body-pat))]
+         [else
+          (with-syntax ([(bind-lhs (bind-mf-sig bind-term-datum)) (car t-bs-raw)])
+            (let ([new-names (append ns (bind-lhs-name #'bind-lhs))])
+              (with-syntax ([bind-rhs-pat (term-datum->pat #'bind-term-datum new-names)]
+                            [bind-lhs-pat (d->pat #'bind-lhs new-names)]
+                            [bind-mf-pat (bind-mf-sig->pat #'bind-mf-sig)])
+                (loop (cdr t-bs-raw)
+                      (cons #'(bind-lhs-pat (bind-mf-pat bind-rhs-pat)) t-bs)
+                      new-names))))]))]))
+
+(define-for-syntax (term-datum->pat t-d names)
+  (syntax-case t-d ()
+    [(quasidatum d)
+     (d->pat #'d names)]))
+
+(define-for-syntax (d->pat d names)
+  (syntax-case d (... undatum in-hole undatum-splicing)
+    [()
+     #'(list)]
+    [(undatum rest ...) ;; holes are also undatumed
+     d]
+    [(undatum-splicing rest ...)
+     d]
+    [(in-hole rest ...)
+     d]
+    [(r-dat (... ...) rest ...)
+     (with-syntax ([r-pat (d->pat #'r-dat names)]
+                   [(list rest-pats ...) (d->pat #'(rest ...) names)])
+       #'(list (repeat r-pat #f #f) rest-pats ...))]
+    [(d ds ...)
+     (with-syntax ([p (d->pat #'d names)]
+                   [(list ps ...) (d->pat #'(ds ...) names)])
+       #'(list p ps ...))]
+    [var
+     (and (identifier? #'var)
+          (memq (syntax->datum #'var) names))
+     #'(name var any)]
+    [literal
+     #'literal]))
+
+(define-for-syntax (bind-lhs-name blhs)
+  (define name (filter (λ (n) (not (eq? n '...)))
+                       (flatten (syntax->datum blhs))))
+  (unless (equal? (length name) 1)
+    (error 'term-rewrite "term function lhs binding had more than one name: ~s" (syntax->datum blhs)))
+  name)
+
+(define-for-syntax (bind-mf-sig->pat bmfs)
+  (syntax-case bmfs ()
+    ;; TODO : handle apps at ellipsis depth 
+    [(mf-apply f)
+     (and (identifier? #'mf-apply)
+          (eq? (syntax-e #'mf-apply) 'mf-apply))
+     #'(metafunc f)]))
+
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
-    [(_ ([f rhs] ...) body1 body2 ...)
-     (with-syntax ([(g ...) (generate-temporaries (syntax (f ...)))])
+    [(_ ([f . rhs-stuff] ...) body1 body2 ...)
+     (with-syntax ([(g ...) (generate-temporaries (syntax (f ...)))]
+                   [((rhs info) ...)
+                    (for/list ([rhs-stuff (in-list (syntax->list #'(rhs-stuff ...)))]
+                               [f (in-list (syntax->list #'(f ...)))])
+                      (syntax-case rhs-stuff ()
+                        [(rhs) #'(rhs #f)]
+                        [(rhs info) #'(rhs info)]
+                        [else (raise-syntax-error 'term-let-fn 
+                                                  (format "expected the rhs of a binding for ~a"
+                                                          (syntax->datum f))
+                                                  stx f)]))])
        (syntax 
         (let ([g rhs] ...)
-          (let-syntax ([f (make-term-fn #'g)] ...)
+          (let-syntax ([f (make-term-fn #'g info)] ...)
             body1
             body2 ...))))]))
 
 (define-syntax (term-define-fn stx)
   (syntax-case stx ()
-    [(_ id exp)
+    [(_ id exp info)
+     ;; this info is currently used to record the 
+     ;; difference between define-metafunctions 
+     ;; bound identifiers and define-relation bound
+     ;; ones for use in the unification-based generator
      (with-syntax ([id2 (datum->syntax #'here (syntax-e #'id))])
        (syntax
         (begin
           (define id2 exp)
           (define-syntax id
-            (make-term-fn ((syntax-local-certifier) #'id2))))))]))
+            (make-term-fn #'id2 info)))))]
+    [(_ id exp)
+     #'(term-define-fn id exp #f)]))
 
 (define-syntax (term-let/error-name stx)
   (syntax-case stx ()
@@ -245,10 +378,13 @@
                                  (error 'error-name "term ~s does not match pattern ~s" rhs1 'x1))])
          (syntax
           (datum-case rhs1 ()
-            [new-x1 
-             (let-syntax ([orig-names (make-term-id #'new-names depths)] ...)
-               (term-let/error-name error-name ((x rhs) ...) body1 body2 ...))]
-            [_ no-match]))))]
+                      [new-x1
+                       ;; syntax local value on an id to check if it's bound correctly in
+                       ;; a term
+                       ;; term (term #:lang L (x_1 y_2)) term -> optional argument with lang
+                       (let-syntax ([orig-names (make-term-id #'new-names depths)] ...)
+                         (term-let/error-name error-name ((x rhs) ...) body1 body2 ...))]
+                      [_ no-match]))))]
     [(_ error-name () body1 body2 ...)
      (syntax
       (begin body1 body2 ...))]
@@ -267,8 +403,8 @@
 
 (define-syntax (define-term stx)
   (syntax-parse stx
-    [(_ x:id t:expr)
-     (not-expression-context stx)
-     #'(begin
-         (define term-val (term t))
-         (define-syntax x (defined-term #'term-val)))]))
+                [(_ x:id t:expr)
+                 (not-expression-context stx)
+                 #'(begin
+                     (define term-val (term t))
+                     (define-syntax x (defined-term #'term-val)))]))

@@ -4,11 +4,16 @@
          "term.rkt"
          "fresh.rkt"
          "error.rkt"
+         "search.rkt"
          racket/trace
-         racket/stxparam)
+         racket/stxparam
+         "term-fn.rkt"
+         "rewrite-side-conditions.rkt"
+         (prefix-in pu: "pat-unify.rkt"))
 
 (require
  (for-syntax "rewrite-side-conditions.rkt"
+             "term.rkt"
              "term-fn.rkt"
              "loc-wrapper-ct.rkt"
              racket/stxparam-exptime
@@ -17,6 +22,9 @@
              syntax/id-table
              racket/list
              syntax/parse))
+
+(require
+ (for-template "term.rkt"))
 
 ;; Intermediate structures recording clause "extras" for typesetting.
 (define-struct metafunc-extra-side-cond (expr))
@@ -232,7 +240,7 @@
         (if (null? output)
             '()
             (for*/list ([o output] [os (repeated-premise-outputs (cdr inputs) premise)])
-                       (cons o os))))))
+              (cons o os))))))
 
 (define (call-judgment-form form-name form-proc mode input)
   (define traced (current-traced-metafunctions))
@@ -240,7 +248,7 @@
       (let ([outputs #f])
         (define spacers
           (for/fold ([s '()]) ([m mode])
-                    (case m [(I) s] [(O) (cons '_ s)])))
+            (case m [(I) s] [(O) (cons '_ s)])))
         (define (assemble inputs outputs)
           (let loop ([ms mode] [is inputs] [os outputs])
             (if (null? ms)
@@ -342,14 +350,18 @@
   (define definitions
     #`(begin
         (define-syntax #,judgment-form-name 
-          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws '#,rule-names))
+          (judgment-form '#,judgment-form-name '#,(cdr (syntax->datum mode)) #'judgment-form-runtime-proc #'mk-judgment-form-proc #'#,lang #'judgment-form-lws
+                         '#,rule-names #'judgment-runtime-gen-clauses #'mk-judgment-gen-clauses))
         (define mk-judgment-form-proc
           (compile-judgment-form-proc #,judgment-form-name #,mode #,lang #,clauses #,position-contracts #,orig #,stx #,syn-err-name))
         (define judgment-form-runtime-proc (mk-judgment-form-proc #,lang))
         (define judgment-form-lws
-          (compiled-judgment-form-lws #,clauses))))
+          (compiled-judgment-form-lws #,clauses))
+        (define mk-judgment-gen-clauses
+          (compile-judgment-gen-clauses #,judgment-form-name #,mode #,lang #,clauses #,position-contracts #,orig #,stx #,syn-err-name judgment-runtime-gen-clauses))
+        (define judgment-runtime-gen-clauses (mk-judgment-gen-clauses #,lang (λ () (judgment-runtime-gen-clauses))))))
   (syntax-property
-   (prune-syntax
+   (values ;prune-syntax
     (if (eq? 'top-level (syntax-local-context))
         ; Introduce the names before using them, to allow
         ; judgment form definition at the top-level.
@@ -510,6 +522,11 @@
 
 (define-for-syntax (do-compile-judgment-form-proc name mode-stx clauses contracts nts orig stx syn-error-name)
   (define mode (cdr (syntax->datum mode-stx)))
+  (define-values (input-contracts output-contracts)
+    (if contracts
+        (let-values ([(ins outs) (split-by-mode contracts mode)])
+          (values ins outs))
+        (values #f #f)))
   (define (compile-clause clause)
     (syntax-case clause ()
       [((_ . conc-pats) . prems)
@@ -519,19 +536,6 @@
              (and ctcs
                   (with-syntax ([(ctc ...) ctcs])
                     #`(list (compile-pattern lang `ctc #f) ...))))
-           (define-values (input-contracts output-contracts)
-             (syntax-case contracts ()
-               [#f (values #f #f)]
-               [(p ...) 
-                (let-values ([(ins outs) (split-by-mode (syntax->list #'(p ...)) mode)])
-                  (define (rewrite-pattern pat)
-                    (rewrite-side-conditions/check-errs nts syn-error-name #f pat))
-                  (with-syntax ([((in-pat in-names in-names/ellipses) ...)
-                                 (map rewrite-pattern ins)]
-                                [((out-pat out-names out-names/ellipses) ...)
-                                 (map rewrite-pattern outs)])
-                    (values #'(in-pat ...)
-                            #'(out-pat ...))))]))
            (define body
              (parameterize ([judgment-form-pending-expansion
                              (cons name
@@ -585,12 +589,12 @@
     (with-syntax ([(clause-proc-body-backwards ...) (reverse (syntax->list #'(clause-proc-body ...)))])
       (if (identifier? orig)
           (with-syntax ([orig-mk (judgment-form-mk-proc (lookup-judgment-form-id orig))])
-          #`(λ (lang)
-              (let (clause-proc-binding ... ...)
-                (let ([prev (orig-mk lang)])
-                  (λ (recur input)
-                    (append (prev recur input)
-                            clause-proc-body-backwards ...))))))
+            #`(λ (lang)
+                (let (clause-proc-binding ... ...)
+                  (let ([prev (orig-mk lang)])
+                    (λ (recur input)
+                      (append (prev recur input)
+                              clause-proc-body-backwards ...))))))
           #`(λ (lang)
               (let (clause-proc-binding ... ...)
                 (λ (recur input)
@@ -658,7 +662,7 @@
     (define-values (ids _)
       (extract-names nts syn-err-name #t pat kind))
     (for/fold ([b bound]) ([x ids])
-              (free-id-table-set b x #t)))
+      (free-id-table-set b x #t)))
   (define (split-body judgment)
     (syntax-case judgment ()
       [(form-name . body)
@@ -684,25 +688,25 @@
          (check-judgment-arity orig-stx #'conc)
          (define acc-out
            (for/fold ([acc (foldl pat-pos acc-init conc-in)])
-                     ([prem (drop-ellipses #'prems)])
-                     (syntax-case prem ()
-                       [(-where pat tmpl)
-                        (where-keyword? #'-where)
-                        (begin
-                          (tmpl-pos #'tmpl acc)
-                          (pat-pos #'pat acc))]
-                       [(-side-condition tmpl)
-                        (side-condition-keyword? #'-side-condition)
-                        (begin (tmpl-pos #'tmpl acc)
-                               acc)]
-                       [(form-name . _)
-                        (if (judgment-form-id? #'form-name)
-                            (let-values ([(prem-in prem-out) (split-body prem)])
-                              (check-judgment-arity orig-stx prem)
-                              (for ([pos prem-in]) (tmpl-pos pos acc))
-                              (foldl pat-pos acc prem-out))
-                            (raise-syntax-error syn-err-name "expected judgment form name" #'form-name))]
-                       [_ (raise-syntax-error syn-err-name "malformed premise" prem)])))
+             ([prem (drop-ellipses #'prems)])
+             (syntax-case prem ()
+               [(-where pat tmpl)
+                (where-keyword? #'-where)
+                (begin
+                  (tmpl-pos #'tmpl acc)
+                  (pat-pos #'pat acc))]
+               [(-side-condition tmpl)
+                (side-condition-keyword? #'-side-condition)
+                (begin (tmpl-pos #'tmpl acc)
+                       acc)]
+               [(form-name . _)
+                (if (judgment-form-id? #'form-name)
+                    (let-values ([(prem-in prem-out) (split-body prem)])
+                      (check-judgment-arity orig-stx prem)
+                      (for ([pos prem-in]) (tmpl-pos pos acc))
+                      (foldl pat-pos acc prem-out))
+                    (raise-syntax-error syn-err-name "expected judgment form name" #'form-name))]
+               [_ (raise-syntax-error syn-err-name "malformed premise" prem)])))
          (for ([pos conc-out]) (tmpl-pos pos acc-out))
          acc-out)]))
   (for ([clause clauses])
@@ -763,15 +767,15 @@
           [(((where-bind-id/lw . where-bind-pat/lw) ...) ...)
            (map (λ (clauses)
                   (for/fold ([binds '()]) ([clause (visible-extras clauses)])
-                            (syntax-case clause (where)
-                              [(form-name . pieces)
-                               (judgment-form-id? #'form-name)
-                               (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
-                                             [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
-                                 (for/fold ([binds binds]) ([out outs])
-                                           (append (name-pattern-lws out) binds)))]
-                              [(where lhs rhs) (append (name-pattern-lws #'lhs) binds)]
-                              [_ binds])))
+                    (syntax-case clause (where)
+                      [(form-name . pieces)
+                       (judgment-form-id? #'form-name)
+                       (let*-values ([(mode) (judgment-form-mode (lookup-judgment-form-id #'form-name))]
+                                     [(_ outs) (split-by-mode (syntax->list #'pieces) mode)])
+                         (for/fold ([binds binds]) ([out outs])
+                           (append (name-pattern-lws out) binds)))]
+                      [(where lhs rhs) (append (name-pattern-lws #'lhs) binds)]
+                      [_ binds])))
                 (syntax->list #'seq-of-tl-side-cond/binds))]
           [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
            ;; Also for pict, extract pattern bindings
@@ -790,14 +794,14 @@
 
 (define-for-syntax (visible-extras extras)
   (for/fold ([visible empty]) ([extra (syntax->list extras)])
-            (syntax-case extra (where/hidden
-                                side-condition/hidden
-                                judgment-holds)
-              [(where/hidden pat exp) visible]
-              [(side-condition/hidden x) visible]
-              [(judgment-holds judgment)
-               (cons #'judgment visible)]
-              [_ (cons extra visible)])))
+    (syntax-case extra (where/hidden
+                        side-condition/hidden
+                        judgment-holds)
+      [(where/hidden pat exp) visible]
+      [(side-condition/hidden x) visible]
+      [(judgment-holds judgment)
+       (cons #'judgment visible)]
+      [_ (cons extra visible)])))
 
 (define-syntax (compile-judgment-form-proc stx)
   (syntax-case stx ()
@@ -806,10 +810,18 @@
            [clauses (syntax->list #'clauses)]
            [syn-err-name (syntax-e #'syn-err-name)])
        (mode-check (cdr (syntax->datum #'mode-arg)) clauses nts syn-err-name stx)
+       (define contracts (syntax-case #'ctcs ()
+                           [#f #f]
+                           [(p ...)
+                            (map (λ (pat) 
+                                   (with-syntax ([(pat (names ...) (names/ellipses ...)) 
+                                                  (rewrite-side-conditions/check-errs nts #'syn-error-name #f pat)])
+                                     #'pat))
+                                 (syntax->list #'(p ...)))]))
        (do-compile-judgment-form-proc #'judgment-form-name
                                       #'mode-arg
                                       clauses
-                                      #'ctcs
+                                      contracts
                                       nts
                                       #'orig
                                       #'full-def
@@ -886,17 +898,41 @@
 
 (define-for-syntax (split-by-mode xs mode)
   (for/fold ([ins '()] [outs '()])
-            ([x (reverse xs)]
-             [m (reverse mode)])
+    ([x (reverse xs)]
+     [m (reverse mode)])
     (case m
       [(I) (values (cons x ins) outs)]
       [(O) (values ins (cons x outs))]
       [else (error 'split-by-mode "ack ~s" m)])))
 
+(define-for-syntax (fuse-by-mode ins outs mode)
+  (let loop ([is (reverse ins)]
+             [os (reverse outs)]
+             [ms (reverse mode)]
+             [res '()])
+    (define err (λ () (error 'fuse-by-mode "mismatched mode and split: ~s ~s ~s" ins outs mode)))
+    (cond
+      [(and (empty? ms)
+            (empty? is)
+            (empty? os))
+       res]
+      [(empty? ms)
+       (err)]
+      [else
+       (case (car ms)
+         [(I) (if (empty? is)
+                  (err)
+                  (loop (cdr is) os (cdr ms)
+                        (cons (car is) res)))]
+         [(O) (if (empty? os)
+                  (err)
+                  (loop is (cdr os) (cdr ms)
+                        (cons (car os) res)))]
+         [else (error 'fuse-by-mode "ack ~s" (car ms))])])))
+
 (define-for-syntax (ellipsis? stx)
   (and (identifier? stx)
        (free-identifier=? stx (quote-syntax ...))))
-
 
 (define-for-syntax (where-keyword? id)
   (or (free-identifier=? id #'where)
@@ -904,6 +940,177 @@
 (define-for-syntax (side-condition-keyword? id)
   (or (free-identifier=? id #'side-condition)
       (free-identifier=? id #'side-condition/hidden)))
+;                                                                        
+;                                                                        
+;                                                      ;                 
+;                                              ;                         
+;    ;; ;;  ;;;  ;; ;;    ;;;   ;; ;;   ;;;   ;;;;;  ;;;     ;;;  ;; ;;  
+;   ;  ;;  ;   ;  ;;  ;  ;   ;   ;;    ;   ;   ;       ;    ;   ;  ;;  ; 
+;   ;   ;  ;;;;;  ;   ;  ;;;;;   ;      ;;;;   ;       ;    ;   ;  ;   ; 
+;   ;   ;  ;      ;   ;  ;       ;     ;   ;   ;       ;    ;   ;  ;   ; 
+;   ;   ;  ;      ;   ;  ;       ;     ;   ;   ;   ;   ;    ;   ;  ;   ; 
+;    ;;;;   ;;;; ;;; ;;;  ;;;;  ;;;;;   ;;;;;   ;;;  ;;;;;   ;;;  ;;; ;;;
+;       ;                                                                
+;    ;;;                                                                 
+;                                                                        
+;                                                                        
+
+
+(define-syntax (compile-judgment-gen-clauses stx)
+  (syntax-case stx ()
+    [(_ judgment-form-name mode-arg lang clauses ctcs orig full-def syn-err-name judgment-form-runtime-gen-clauses)
+     (let ([clauses (syntax->list #'clauses)]
+           [nts (definition-nts #'lang #'full-def (syntax-e #'syn-err-name))]
+           [syn-err-name (syntax-e #'syn-err-name)]
+           [mode (cdr (syntax->datum #'mode-arg))])
+       (with-syntax* ([(comp-clauses ...) 
+                       (map (λ (c) (compile-gen-clause c mode nts syn-err-name 
+                                                       #'judgment-form-name #'lang)) 
+                            clauses)])
+                     (if (identifier? #'orig)
+                         (with-syntax ([prev-mk (judgment-form-mk-gen-clauses (lookup-judgment-form-id #'orig))])
+                           #`(λ (effective-lang judgment-form-runtime-gen-clauses)
+                               (define mk-prev-clauses (prev-mk effective-lang judgment-form-runtime-gen-clauses))
+                               (λ ()
+                                 (append 
+                                  (mk-prev-clauses)
+                                  #,(check-pats
+                                     #'(list comp-clauses ...))))))
+                         #`(λ (effective-lang judgment-form-runtime-gen-clauses)
+                             (λ ()
+                               #,(check-pats
+                                  #'(list comp-clauses ...)))))))]))
+
+
+
+
+(define-for-syntax (compile-gen-clause clause-stx mode nts syn-error-name jdg-name lang)
+  (syntax-case clause-stx ()
+    [((conc-name . conc-body-raw) prems ...)
+     (let*-values ([(conc/+ conc/-) (split-by-mode (syntax->list #'conc-body-raw) mode)]
+                   [(conc/+rw names) (rewrite-pats conc/+ nts)]
+                   [(ps-rw eqs p-names) (rewrite-prems #t (syntax->list #'(prems ...)) nts names 'define-judgment-form)]
+                   [(conc/-rw conc-mfs) (rewrite-terms conc/- p-names)]
+                   [(conc) (fuse-by-mode conc/+rw conc/-rw mode)])
+       (with-syntax ([(c ...) conc]
+                     [(c-mf ...) conc-mfs]
+                     [(eq ...) eqs]
+                     [(prem-bod ...) (reverse ps-rw)])
+         #`(clause '(list c ...) (list eq ...) (list c-mf ... prem-bod ...) effective-lang '#,jdg-name)))]))
+
+
+(define-for-syntax (rewrite-prems in-judgment-form? prems nts names what)
+  (define (rewrite-jf prem-name prem-body ns ps-rw eqs)
+    (define p-form (lookup-judgment-form-id prem-name))
+    (define p-mode (judgment-form-mode p-form))
+    (define p-clauses (judgment-form-gen-clauses p-form))
+    (define-values (p/-s p/+s) (split-by-mode (syntax->list prem-body) p-mode))
+    (define-values (p/-rws mf-apps) (rewrite-terms p/-s ns))
+    (define-values (p/+rws new-names) (rewrite-pats p/+s nts))
+    (define p-rw (fuse-by-mode p/-rws p/+rws p-mode))
+    (with-syntax ([(p ...) p-rw])
+      (values (cons #`(prem #,p-clauses '(list p ...)) (append mf-apps ps-rw))
+              eqs
+              (append ns new-names))))
+  (define-values (prems-rev new-eqs new-names)
+    (for/fold ([ps-rw '()] 
+               [eqs '()]
+               [ns names])
+      ([prem prems])
+      (syntax-case prem ()
+        [(-where pat term)
+         (where-keyword? #'-where)
+         (let-values ([(term-rws mf-cs) (rewrite-terms (list #'term) ns)])
+           (with-syntax ([(pat-rw new-names) (rewrite/pat #'pat nts)])
+             (values (append mf-cs ps-rw)
+                     (cons #`(eqn 'pat-rw '#,(car term-rws)) eqs)
+                     (append (syntax->datum #'new-names) ns))))]
+        [(side-cond . rest)
+         (side-condition-keyword? #'side-cond)
+         ;; TODO - side condition handling
+         (values ps-rw eqs ns)]
+        [(prem-name . prem-body)
+         (and (judgment-form-id? #'prem-name) in-judgment-form?)
+         (rewrite-jf #'prem-name #'prem-body ns ps-rw eqs)]
+        [(judgment-holds (prem-name . prem-body))
+         (and (judgment-form-id? #'prem-name) (not in-judgment-form?))
+         (rewrite-jf #'prem-name #'prem-body ns ps-rw eqs)]
+        [var
+         (eq? '... (syntax-e #'var))
+         ;; TODO - fix when implementing ellipses
+         (values ps-rw eqs ns)]
+        [term
+         (not in-judgment-form?) ;; in a relation
+         (let-values ([(term-rws mf-cs) (rewrite-terms (list #'term) ns)])
+           (values (append mf-cs ps-rw)
+                   eqs
+                   ns))]
+        [else (raise-syntax-error what "malformed premise" prem)])))
+  (values prems-rev new-eqs new-names))
+
+(define-for-syntax (rewrite-pats pats nts)
+  (with-syntax ([((pat-rw (names ...)) ...) 
+                 (map (λ (p) (rewrite/pat p nts))
+                      pats)])
+    (values (syntax->list #'(pat-rw ...))
+            (remove-duplicates (syntax->datum #'(names ... ...))))))
+                  
+
+(define-for-syntax (rewrite/pat pat nts)
+  (with-syntax ([(body (names ...) (names/ellipses ...))
+                 (rewrite-side-conditions/check-errs nts #'rewrite/pat #t pat)])
+    #'(body (names ...))))
+
+(define-for-syntax (rewrite-terms terms names)
+  (with-syntax* ([((term-pattern ((res-pat ((metafunc f) args-pat)) ...) body-pat) ...)
+                  (map (λ (t) (term-rewrite t names)) terms)]
+                 [((mf-clauses ...) ...) (map (λ (fs) 
+                                                (map (λ (f-id)
+                                                       (with-syntax ([f-id f-id])
+                                                         #'(metafunc-proc-gen-clauses f-id)))
+                                                     (syntax->list fs)))
+                                              (syntax->list #'((f ...) ...)))])
+                (values (syntax->list #'(body-pat ...))
+                        (syntax->list #'((prem mf-clauses '(list args-pat res-pat)) ... ...)))))
+
+(define unsupported-pat-err-name (make-parameter #f))
+
+(define-for-syntax (check-pats stx)
+  (cond
+    [(has-unsupported-pat? stx) 
+     =>
+     (λ (bad-stx)
+       #`(error (unsupported-pat-err-name) "generation failed at unsupported pattern: ~s" #,bad-stx))]
+    [else
+     stx]))
+
+(define-for-syntax (has-unsupported-pat? stx)
+  (syntax-case stx (repeat side-condition in-hole undatum-splicing)
+    [(repeat . rest)
+     (and (identifier? #'repeat)
+          (eq? (syntax-e #'repeat) 'repeat))
+     #''(repeat . rest)]
+    [(side-condition . rest)
+     (and (identifier? #'side-condition)
+          (eq? (syntax-e #'side-condition) 'side-condition))
+     #''(side-condition . rest)]
+    [(in-hole . rest)
+     (and (identifier? #'in-hole)
+          (eq? (syntax-e #'in-hole) 'in-hole))
+     #''(in-hole . rest)]
+    [(undatum . rest)
+     (and (identifier? #'undatum)
+          (eq? (syntax-e #'undatum) 'undatum))
+     #''(undatum . rest)]
+    [(undatum-splicing .rest)
+     (and (identifier? #'undatum-splicing)
+          (eq? (syntax-e #'undatum-splicing) 'undatum-splicing))
+     #''(undatum-splicing .rest)]
+    [(elems ...)
+     (for/or ([e (in-list (syntax->list #'(elems ...)))])
+       (has-unsupported-pat? e))]
+    [_
+     #f]))
 
 (provide define-judgment-form 
          define-extended-judgment-form
@@ -932,3 +1139,11 @@
          (struct-out metafunc-extra-side-cond)
          (struct-out metafunc-extra-where)
          (struct-out metafunc-extra-fresh))
+
+(provide unsupported-pat-err-name
+         (for-syntax rewrite-terms
+                     currently-expanding-term-fn
+                     rewrite-prems
+                     with-syntax*
+                     definition-nts
+                     check-pats))

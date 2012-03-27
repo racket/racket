@@ -116,10 +116,11 @@ See match-a-pattern.rkt for more details
 ;;                                     pict-builder
 ;;                                     (listof symbol)
 ;;                                     (listof (listof symbol))) -- keeps track of `primary' non-terminals
+;;                                     hash[sym -o> pattern]
 
 (define-struct compiled-lang (lang delayed-cclang ht list-ht raw-across-ht raw-across-list-ht
                                    has-hole-or-hide-hole-ht cache bind-names-cache pict-builder
-                                   literals nt-map))
+                                   literals nt-map collapsible-nts))
 (define (compiled-lang-cclang x) (force (compiled-lang-delayed-cclang x)))
 (define (compiled-lang-across-ht x)
   (compiled-lang-cclang x) ;; ensure this is computed
@@ -153,13 +154,15 @@ See match-a-pattern.rkt for more details
          [cache (make-hash)]
          [bind-names-cache (make-hash)]
          [literals (extract-literals lang)]
+         [collapsible-nts (extract-collapsible-nts lang)]
          [clang (make-compiled-lang lang #f clang-ht clang-list-ht 
                                     across-ht across-list-ht
                                     has-hole-or-hide-hole-ht 
                                     cache bind-names-cache
                                     pict-info
                                     literals
-                                    nt-map)]
+                                    nt-map
+                                    collapsible-nts)]
          [non-list-nt-table (build-non-list-nt-label lang)]
          [list-nt-table (build-list-nt-label lang)]
          [do-compilation
@@ -206,6 +209,22 @@ See match-a-pattern.rkt for more details
           compatible-context-language)))
     (do-compilation clang-ht clang-list-ht lang)
     (struct-copy compiled-lang clang [delayed-cclang compatible-context-language])))
+
+;; extract-collapsible-nts : (listof nt) -> (listof any)
+(define (extract-collapsible-nts nts)
+  (define nt-hash (for/hasheq ([nt nts]) 
+                    (values (nt-name nt) (nt-rhs nt))))
+  (for/fold ([c-nts (hasheq)])
+    ([nt (in-hash-keys nt-hash)])
+    (let loop ([rhss (hash-ref nt-hash nt)])
+      (if (= (length rhss) 1)
+          (match (rhs-pattern (car rhss))
+            [`(nt ,next)
+             (loop (hash-ref nt-hash next))]
+            [else
+             (hash-set c-nts nt (rhs-pattern (car rhss)))])
+          c-nts))))
+
 
 ;; extract-literals : (listof nt) -> (listof symbol)
 (define (extract-literals nts)

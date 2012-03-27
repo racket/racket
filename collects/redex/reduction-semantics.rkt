@@ -6,7 +6,8 @@
          "private/matcher.rkt"
          "private/term.rkt"
          "private/rg.rkt"
-         "private/error.rkt")
+         "private/error.rkt"
+         "private/generate-term.rkt")
 
 (provide exn:fail:redex?) ;; from error.rkt
 

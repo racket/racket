@@ -1620,6 +1620,8 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
 @defform*/subs[[(generate-term term-spec size-expr kw-args ...)
                 (generate-term term-spec)]
               ([term-spec (code:line language @#,ttpattern)
+                          (code:line language #:satisfying (judgment-form-id @#,ttpattern ...))
+                          (code:line language #:satisfying (metafunction-id @#,ttpattern ...) @#,ttpattern)
                           (code:line #:source metafunction)
                           (code:line #:source relation-expr)]
                [kw-args (code:line #:attempt-num attempts-expr)
@@ -1629,14 +1631,21 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
                            [retries-expr natural-number/c])]{
 
 In its first form, @racket[generate-term] produces a random term according
-to @racket[term-spec], which is either a language and a pattern, the name
-of a metafunction, or an expression producing a reduction relation. In the
-first of these cases, the produced term matches the given pattern (interpreted 
-according to the definition of the given language). In the second and third cases, 
-the produced term matches one of the clauses of the specified metafunction or
-reduction relation.
+to @racket[term-spec]:
+@itemlist[@item{In the first @racket[term-spec] case, the produced 
+                term matches the given pattern (interpreted 
+                according to the definition of the given language).}
+           @item{In the second case,
+                 the expression produced is the quoted form of a use of the judgment-form or
+                 @racket[#f], if Redex cannot find one.}
+           @item{The third cases generates a random term that satsifies 
+                 the call to the metafunction with the given result 
+                 or @racket[#f], if Redex cannot find one.}
+           @item{In the last two cases, 
+                 the produced term matches one of the clauses of the specified metafunction or
+                 reduction relation.}]
 
-In its second form, @racket[generate-term] produces a procedure for constructing 
+In @racket[generate-term]'s second form, it produces a procedure for constructing 
 terms according to @racket[term-spec].
 This procedure expects @racket[size-expr] (below) as its sole positional
 argument and allows the same optional keyword arguments as the first form.
