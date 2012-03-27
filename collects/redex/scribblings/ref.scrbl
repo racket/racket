@@ -344,6 +344,13 @@ matches, it returns a list of match structures describing the
 matches. If the match fails, the procedure returns @racket[#f].
 }
 
+@defform*[[(redex-match? lang @#,ttpattern any)
+           (redex-match? lang @#,ttpattern)]]{
+          
+Like @racket[redex-match], except it returns only a boolean
+indicating if the match was successful.
+}
+
 @defproc[(match? [val any/c]) boolean?]{
 
 Determines if a value is a @tt{match} structure.

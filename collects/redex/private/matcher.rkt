@@ -601,6 +601,11 @@ See match-a-pattern.rkt for more details
       [`(list ,pats ...) #f]
       [(? (compose not pair?)) #t])))
 
+;; match-pattern? : compiled-pattern exp -> boolean
+(define (match-pattern? compiled-pattern exp)
+  (let ([results ((compiled-pattern-cp compiled-pattern) exp #f)])
+    (and results #t)))
+
 ;; match-pattern : compiled-pattern exp -> (union #f (listof bindings))
 (define (match-pattern compiled-pattern exp)
   (let ([results ((compiled-pattern-cp compiled-pattern) exp #f)])
@@ -1952,6 +1957,7 @@ See match-a-pattern.rkt for more details
 
 (provide/contract
  (match-pattern (compiled-pattern? any/c . -> . (or/c false/c (listof mtch?))))
+ (match-pattern? (compiled-pattern? any/c . -> . boolean?))
  (compile-pattern (-> compiled-lang? any/c boolean?
                       compiled-pattern?))
  

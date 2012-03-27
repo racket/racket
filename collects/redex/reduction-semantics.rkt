@@ -40,6 +40,7 @@
          check-redudancy)
 
 (provide (rename-out [test-match redex-match])
+         (rename-out [test-match? redex-match?])
          term-match
          term-match/single
          redex-let

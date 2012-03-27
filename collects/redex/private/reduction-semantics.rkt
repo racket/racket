@@ -1009,7 +1009,10 @@
                   (reduction-relation-make-procs subj))])
           (make-coverage subj h))))]))
 
-(define-syntax (test-match stx)
+(define-syntax (test-match stx) (test-match/both stx #f))
+(define-syntax (test-match? stx) (test-match/both stx #t))
+
+(define-for-syntax (test-match/both stx boolean-only?)
   (syntax-case stx ()
     [(form-name lang-exp pattern)
      (identifier? #'lang-exp)
@@ -1019,8 +1022,7 @@
                       (rewrite-side-conditions/check-errs nts what #t #'pattern)])
          (with-syntax ([binders (map syntax-e (syntax->list #'(vars ...)))]
                        [name (syntax-local-infer-name stx)])
-           (syntax 
-            (do-test-match lang-exp `side-condition-rewritten 'binders 'name)))))]
+           #`(do-test-match lang-exp `side-condition-rewritten 'binders 'name #,boolean-only?))))]
     [(form-name lang-exp pattern expression)
      (identifier? #'lang-exp)
      (syntax 
@@ -1032,7 +1034,7 @@
 
 (define-struct match (bindings) #:inspector #f)
 
-(define (do-test-match lang pat binders context-name)
+(define (do-test-match lang pat binders context-name boolean-only?)
   (unless (compiled-lang? lang)
     (error 'redex-match "expected first argument to be a language, got ~e" lang))
   (define name (or context-name
@@ -1040,13 +1042,15 @@
                         pat)))
   (define cpat (compile-pattern lang pat #t))
   (define redex-match-proc
-    (λ (exp)
-      (let ([ans (match-pattern cpat exp)])
-        (and ans
-             (map (λ (m) (make-match (sort-bindings 
-                                      (filter (λ (x) (memq (bind-name x) binders))
-                                              (bindings-table (mtch-bindings m))))))
-                  ans)))))
+    (if boolean-only?
+        (λ (exp) (match-pattern? cpat exp))
+        (λ (exp)
+          (let ([ans (match-pattern cpat exp)])
+            (and ans
+                 (map (λ (m) (make-match (sort-bindings 
+                                          (filter (λ (x) (memq (bind-name x) binders))
+                                                  (bindings-table (mtch-bindings m))))))
+                      ans))))))
   (if name
       (procedure-rename redex-match-proc name)
       redex-match-proc))
@@ -2369,6 +2373,7 @@
          (struct-out binds))
 
 (provide test-match
+         test-match?
          term-match
          term-match/single
          redex-let 
