@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(provide family-symbol? style-symbol? weight-symbol? smoothing-symbol?)
+(provide family-symbol? style-symbol? weight-symbol? 
+         smoothing-symbol? hinting-symbol?)
 
 (define (family-symbol? s)
   (memq s '(default decorative roman script
@@ -15,3 +16,5 @@
 (define (smoothing-symbol? s)
   (memq s '(default smoothed unsmoothed partly-smoothed)))
 
+(define (hinting-symbol? s)
+  (memq s '(aligned unaligned)))

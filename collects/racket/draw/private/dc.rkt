@@ -237,7 +237,8 @@
 ;; time a font is used in a given map seems to stick,
 ;; at least for the Quartz and Win32 back-ends.
 ;; (But we create the font maps on demand.)
-(define font-maps (make-vector 4 #f))
+;; We fold hinting in, too, as an extra factor of 2.
+(define font-maps (make-vector 8 #f))
 
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
@@ -546,7 +547,7 @@
 
     (define current-smoothing #f)
 
-    (define (set-font-antialias context smoothing)
+    (define (set-font-antialias context smoothing hinting)
       (let ([o (pango_cairo_context_get_font_options context)]
             [o2 (cairo_font_options_create)])
         (when o
@@ -560,8 +561,13 @@
            [(unsmoothed) CAIRO_ANTIALIAS_NONE]
            [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
            [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
-        (cairo_font_options_set_hint_metrics o2 CAIRO_HINT_METRICS_OFF)
-        ;; good idea?: (cairo_font_options_set_hint_style o2 CAIRO_HINT_STYLE_NONE)
+        (case hinting
+          [(aligned)
+           (cairo_font_options_set_hint_metrics o2 CAIRO_HINT_METRICS_ON)
+           (cairo_font_options_set_hint_style o2 CAIRO_HINT_STYLE_DEFAULT)]
+          [(unaligned)
+           (cairo_font_options_set_hint_metrics o2 CAIRO_HINT_METRICS_OFF)
+           (cairo_font_options_set_hint_style o2 CAIRO_HINT_STYLE_NONE)])
         (pango_cairo_context_set_font_options context o2)
         (cairo_font_options_destroy o2)))
 
@@ -1220,11 +1226,14 @@
                (do-text cr #f s 0 0 use-font combine? offset 0.0))))))
 
     (define/private (get-smoothing-index)
-      (case (dc-adjust-smoothing (send font get-smoothing))
-	[(default) 0]
-	[(unsmoothed) 1]
-	[(partly-smoothed) 2]
-	[(smoothed) 3]))
+      (+ (case (dc-adjust-smoothing (send font get-smoothing))
+           [(default) 0]
+           [(unsmoothed) 1]
+           [(partly-smoothed) 2]
+           [(smoothed) 3])
+         (case (send font get-hinting)
+           [(aligned) 0]
+           [(unaligned) 4])))
 
     (define/private (get-context cr smoothing-index)
       (or (vector-ref contexts smoothing-index)
@@ -1236,7 +1245,9 @@
 			    fm))))])
 	    (pango_cairo_update_context cr c)
 	    (vector-set! contexts smoothing-index c)
-	    (set-font-antialias c (dc-adjust-smoothing (send font get-smoothing)))
+	    (set-font-antialias c 
+                                (dc-adjust-smoothing (send font get-smoothing)) 
+                                (send font get-hinting))
 	    c)))
 
     (define/private (do-text cr draw-mode s x y font combine? offset angle)
@@ -1271,7 +1282,9 @@
           (cairo_rotate cr (- angle)))
         (let ([desc (get-pango font)]
               [attrs (send font get-pango-attrs)]
-              [integral round]
+              [force-hinting (case (send font get-hinting)
+                               [(aligned) round]
+                               [else values])]
               [x (if rotate? 0.0 (exact->inexact x))]
               [y (if rotate? 0.0 (exact->inexact y))])
           ;; We have two ways to draw text:
@@ -1352,7 +1365,8 @@
                              [else
                               (let ([nw (if blank?
                                             0.0
-                                            (integral (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
+                                            (force-hinting
+                                             (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
                                     [na 0.0])
                                 (loop next-s draw-mode measured? (+ w nw) (max h nh) (max d nd) (max a na)))])))])))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
@@ -1445,10 +1459,10 @@
                                             (memcpy glyph-infos i glyphs 1 _PangoGlyphInfo)
                                             ;; Every glyph is is own cluster:
                                             (ptr-set! log-clusters _int i i)
-                                            ;; Adjust width to be consistent with integral widths
+                                            ;; Adjust width to be consistent with measured widths
                                             ;; used when drawing individual characters.
                                             ;; This is `set-PangoGlyphInfo-width!', but without
-                                            ;; computing a 
+                                            ;; computing an intermediate pointer:
                                             (ptr-set! glyph-infos _uint32 'abs (+ (* i pgi-size) 4) (vector-ref v 5))
                                             (loop (add1 i))))))
                                ;; If we get here, we can use the fast way:
@@ -1482,10 +1496,9 @@
                                              (pango_layout_get_extents layout #f logical)
                                              (let ([baseline (pango_layout_get_baseline layout)]
                                                    [orig-h (PangoRectangle-height logical)])
-                                               ;; We keep integer width & height to pixel-align each individual character,
-                                               ;; but we keep non-integral lh & ld to pixel-align the baseline.
-                                               (let ([lw (integral (/ (PangoRectangle-width logical) 
-                                                                      (exact->inexact PANGO_SCALE)))]
+                                               (let ([lw (force-hinting
+                                                          (/ (PangoRectangle-width logical) 
+                                                             (exact->inexact PANGO_SCALE)))]
                                                      [flh (/ orig-h (exact->inexact PANGO_SCALE))]
                                                      [ld (/ (- orig-h baseline) (exact->inexact PANGO_SCALE))]
                                                      [la 0.0])

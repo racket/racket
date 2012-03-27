@@ -90,7 +90,7 @@
 		(memq* a (cdr l)))
 	    #f))
 
-      (define (extend-font font size style weight)
+      (define (extend-font font size style weight hinting)
 	(if (send font get-face)
 	    (send the-font-list find-or-create-font
 		  size 
@@ -100,7 +100,8 @@
 		  weight
 		  #f
 		  'default
-		  #t)
+		  #t
+                  hinting)
 	    (send the-font-list find-or-create-font
 		  size 
 		  (send font get-family)
@@ -108,7 +109,8 @@
 		  weight
 		  #f
 		  'default
-		  #t)))
+		  #t
+                  hinting)))
 
   (define text
     (case-lambda
@@ -142,25 +144,26 @@
 		   (cond
 		    [(null? style) 
 		     (send the-font-list find-or-create-font
-			   size 'default 'normal 'normal #f 'default #t)]
+			   size 'default 'normal 'normal #f 'default #t 'unaligned)]
 		    [(is-a? style font%)
 		     style]
 		    [(memq style families)
 		     (send the-font-list find-or-create-font
-			   size style 'normal 'normal #f 'default #t)]
+			   size style 'normal 'normal #f 'default #t 'unaligned)]
 		    [(string? style)
 		     (send the-font-list find-or-create-font
-			   size style 'default 'normal 'normal #f 'default #t)]
+			   size style 'default 'normal 'normal #f 'default #t 'unaligned)]
                     [(and (pair? style)
                           (string? (car style))
                           (memq (cdr style) families))
                      (send the-font-list find-or-create-font
-			   size (car style) (cdr style) 'normal 'normal #f 'default #t)]
+			   size (car style) (cdr style) 'normal 'normal #f 'default #t 'unaligned)]
 		    [(and (pair? style)
 			  (memq (car style)
 				'(superscript 
 				  subscript
-				  bold italic)))
+				  bold italic
+                                  aligned unaligned)))
 		     (let ([font (loop (cdr style))]
 			   [style (car style)])
 		       (cond
@@ -168,12 +171,21 @@
 			 (extend-font font
 				      (send font get-point-size)
 				      (send font get-style)
-				      'bold)]
+				      'bold
+                                      (send font get-hinting))]
 			[(eq? style 'italic)
 			 (extend-font font
 				      (send font get-point-size)
 				      'italic
-				      (send font get-weight))]
+				      (send font get-weight)
+                                      (send font get-hinting))]
+			[(or (eq? style 'aligned)
+                             (eq? style 'unaligned))
+			 (extend-font font
+				      (send font get-point-size)
+				      (send font get-style)
+				      (send font get-weight)
+                                      style)]
 			[else font]))]
 		    [(and (pair? style)
 			  (memq (car style) '(combine no-combine)))
@@ -194,7 +206,8 @@
 			      (extend-font font
 					   (floor (* 6/10 (send font get-point-size)))
 					   (send font get-style)
-					   (send font get-weight))
+					   (send font get-weight)
+                                           (send font get-hinting))
 			      font)]
 		  [dc (dc-for-text-size)])
 	      (unless dc

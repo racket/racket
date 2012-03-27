@@ -78,6 +78,14 @@ A @defterm{font} is an object which determines the appearance of text,
  bitmap drawing context), @racket[#f] if the size of the font is in
  points (which can depend on screen resolution).}
 
+@item{hinting --- Whether font metrics should be rounded to integers:
+ @itemize[
+   @item{@indexed-racket['aligned] (the default) --- rounds to integers
+    to improve the consistency of letter spacing for pixel-based
+    targets, but at the expense of making metrics unscalable}
+   @item{@indexed-racket['unaligned] --- disables rounding}
+ ]}
+
 ]
 
 To avoid creating multiple fonts with the same characteristics, use
@@ -90,33 +98,37 @@ See also
 
 @defconstructor*/make[(()
                        ([size (integer-in 1 1024)]
-                        [family (one-of/c 'default 'decorative 'roman 'script 
-                                          'swiss 'modern 'symbol 'system)]
-                        [style (one-of/c 'normal 'italic 'slant) 'normal]
-                        [weight (one-of/c 'normal 'bold 'light) 'normal]
+                        [family (or/c 'default 'decorative 'roman 'script 
+                                      'swiss 'modern 'symbol 'system)]
+                        [style (or/c 'normal 'italic 'slant) 'normal]
+                        [weight (or/c 'normal 'bold 'light) 'normal]
                         [underline? any/c #f]
-                        [smoothing (one-of/c 'default 'partly-smoothed 
+                        [smoothing (or/c 'default 'partly-smoothed 
                                              'smoothed 'unsmoothed) 
                                    'default]
-                        [size-in-pixels? any/c #f])
+                        [size-in-pixels? any/c #f]
+                        [hinting (or/c 'aligned 'unaligned) 'aligned])
                        ([size (integer-in 1 1024)]
                         [face string?]
-                        [family (one-of/c 'default 'decorative 'roman 'script 
-                                          'swiss 'modern 'symbol 'system)]
-                        [style (one-of/c 'normal 'italic 'slant) 'normal]
-                        [weight (one-of/c 'normal 'bold 'light) 'normal]
+                        [family (or/c 'default 'decorative 'roman 'script 
+                                      'swiss 'modern 'symbol 'system)]
+                        [style (or/c 'normal 'italic 'slant) 'normal]
+                        [weight (or/c 'normal 'bold 'light) 'normal]
                         [underline? any/c #f]
-                        [smoothing (one-of/c 'default 'partly-smoothed 
-                                             'smoothed 'unsmoothed) 
+                        [smoothing (or/c 'default 'partly-smoothed 
+                                         'smoothed 'unsmoothed) 
                                    'default]
-                        [size-in-pixels? any/c #f]))]{
+                        [size-in-pixels? any/c #f]
+                        [hinting (or/c 'aligned 'unaligned) 'aligned]))]{
 
 When no arguments are provided, creates an instance of the default
  font. If no face name is provided, the font is created without a face
  name.
 
 See @racket[font%] for information about @racket[family],
- @racket[style], and @racket[weight].  @racket[font-name-directory<%>].
+ @racket[style], @racket[weight], @racket[smoothing],
+ @racket[size-in-pixels?], and @racket[hinting].
+ @racket[font-name-directory<%>].
 
 See also @racket[make-font].
 
@@ -130,8 +142,8 @@ Gets the font's face name, or @racket[#f] if none is specified.
 }
 
 @defmethod[(get-family)
-           (one-of/c 'default 'decorative 'roman 'script 
-                     'swiss 'modern 'symbol 'system)]{
+           (or/c 'default 'decorative 'roman 'script 
+                 'swiss 'modern 'symbol 'system)]{
 
 Gets the font's family. See @racket[font%] for information about
 families.
@@ -144,6 +156,14 @@ families.
 Gets the font's ID, for use with a
 @racket[font-name-directory<%>]. The ID is determined by the font's
 face and family specifications, only.
+
+}
+
+@defmethod[(get-hinting)
+           (or/c 'aligned 'unaligned)]{
+
+Gets the font's hinting. See @racket[font%] for information about
+hinting.
 
 }
 
@@ -172,7 +192,7 @@ For a size in points and a screen or bitmap drawing context, the
 }
 
 @defmethod[(get-smoothing)
-           (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
+           (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
 
 Gets the font's anti-alias smoothing mode. See @racket[font%] for
  information about smoothing.
@@ -180,7 +200,7 @@ Gets the font's anti-alias smoothing mode. See @racket[font%] for
 }
 
 @defmethod[(get-style)
-           (one-of/c 'normal 'italic 'slant)]{
+           (or/c 'normal 'italic 'slant)]{
 
 Gets the font's slant style. See @racket[font%] for information about
  styles.
@@ -196,7 +216,7 @@ otherwise.
 }
 
 @defmethod[(get-weight)
-           (one-of/c 'normal 'bold 'light)]{
+           (or/c 'normal 'bold 'light)]{
 
 Gets the font's weight. See @racket[font%] for information about
  weights.

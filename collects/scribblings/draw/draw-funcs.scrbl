@@ -11,7 +11,7 @@ A parameter that determines the current PostScript configuration
  settings. See @racket[post-script-dc%] and @racket[printer-dc%].}
 
 
-@defproc[(get-face-list [kind (one-of/c 'mono 'all) 'all]
+@defproc[(get-face-list [kind (or/c 'mono 'all) 'all]
                         [#:all-variants? all-variants? any/c #f])
          (listof string?)]{
 
@@ -26,8 +26,8 @@ If @racket[all-variants?] is @racket[#f] (the default), then the
  includes a string for each available face in the family.}
 
 
-@defproc[(get-family-builtin-face [family (one-of/c 'default 'decorative 'roman 'script 
-                                                    'swiss 'modern 'symbol 'system)])
+@defproc[(get-family-builtin-face [family (or/c 'default 'decorative 'roman 'script 
+                                                'swiss 'modern 'symbol 'system)])
          string?]{
 
 Returns the built-in default face mapping for a particular font
@@ -50,16 +50,17 @@ See also @racket[make-platform-bitmap] and @secref["Portability"].
 
 @defproc[(make-font [#:size size (integer-in 1 1024) 12]
                     [#:face face (or/c string? #f) #f]
-                    [#:family family (one-of/c 'default 'decorative 'roman 'script 
-                                               'swiss 'modern 'symbol 'system)
+                    [#:family family (or/c 'default 'decorative 'roman 'script 
+                                           'swiss 'modern 'symbol 'system)
                               'default]
-                    [#:style style (one-of/c 'normal 'italic 'slant) 'normal]
-                    [#:weight weight (one-of/c 'normal 'bold 'light) 'normal]
+                    [#:style style (or/c 'normal 'italic 'slant) 'normal]
+                    [#:weight weight (or/c 'normal 'bold 'light) 'normal]
                     [#:underlined? underlined? any/c #f]
-                    [#:smoothing smoothing (one-of/c 'default 'partly-smoothed 
-                                                      'smoothed 'unsmoothed) 
+                    [#:smoothing smoothing (or/c 'default 'partly-smoothed 
+                                                 'smoothed 'unsmoothed) 
                                  'default]
-                    [#:size-in-pixels? size-in-pixels? any/c #f])
+                    [#:size-in-pixels? size-in-pixels? any/c #f]
+                    [#:hinting hinting (or/c 'aligned 'unaligned) 'aligned])
          (is-a?/c font%)]{
 
 Creates a @racket[font%] instance. This procedure provides an
@@ -90,12 +91,12 @@ on Windows and Mac OS X. See @secref["Portability"] for more information.}
                  
 
 @defproc[(read-bitmap [in (or path-string? input-port?)]
-                      [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                                      'gif 'gif/mask 'gif/alpha 
-                                      'jpeg 'jpeg/alpha
-                                      'png 'png/mask 'png/alpha
-                                      'xbm 'xbm/alpha 'xpm 'xpm/alpha
-                                      'bmp 'bmp/alpha)
+                      [kind (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                  'gif 'gif/mask 'gif/alpha 
+                                  'jpeg 'jpeg/alpha
+                                  'png 'png/mask 'png/alpha
+                                  'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                  'bmp 'bmp/alpha)
                             'unknown/alpha]
                       [bg-color (or/c (is-a?/c color%) false/c) #f]
                       [complain-on-failure? any/c #t])

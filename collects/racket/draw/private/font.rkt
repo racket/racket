@@ -13,7 +13,7 @@
 (provide font%
          font-list% the-font-list
          make-font
-         family-symbol? style-symbol? weight-symbol? smoothing-symbol?
+         family-symbol? style-symbol? weight-symbol? smoothing-symbol? hinting-symbol?
          get-pango-attrs
          get-face-list
          (protect-out substitute-fonts?
@@ -186,6 +186,9 @@
   (define smoothing 'default)
   (def/public (get-smoothing) smoothing)
   
+  (define hinting 'aligned)
+  (def/public (get-hinting) hinting)
+  
   (define style 'normal)
   (def/public (get-style) style)
 
@@ -213,14 +216,16 @@
      [weight-symbol? [_weight 'normal]]
      [any? [_underlined? #f]]
      [smoothing-symbol? [_smoothing 'default]]
-     [any? [_size-in-pixels? #f]])
+     [any? [_size-in-pixels? #f]]
+     [hinting-symbol? [_hinting 'aligned]])
     (set! size _size)
     (set! family _family)
     (set! style _style)
     (set! weight _weight)
     (set! underlined? _underlined?)
     (set! smoothing _smoothing)
-    (set! size-in-pixels? _size-in-pixels?)]
+    (set! size-in-pixels? _size-in-pixels?)
+    (set! hinting _hinting)]
    [([size? _size]
      [(make-or-false string?) _face]
      [family-symbol? _family]
@@ -228,7 +233,8 @@
      [weight-symbol? [_weight 'normal]]
      [any? [_underlined? #f]]
      [smoothing-symbol? [_smoothing 'default]]
-     [any? [_size-in-pixels? #f]])
+     [any? [_size-in-pixels? #f]]
+     [hinting-symbol? [_hinting 'aligned]])
     (set! size _size)
     (set! face (and _face (string->immutable-string _face)))
     (set! family _family)
@@ -236,7 +242,8 @@
     (set! weight _weight)
     (set! underlined? _underlined?)
     (set! smoothing _smoothing)
-    (set! size-in-pixels? _size-in-pixels?)]
+    (set! size-in-pixels? _size-in-pixels?)
+    (set! hinting _hinting)]
    (init-name 'font%))
 
   (define id 
@@ -244,7 +251,7 @@
         (send the-font-name-directory find-or-create-font-id face family)
         (send the-font-name-directory find-family-default-font-id family)))
   (define key
-    (let ([key (vector id size style weight underlined? smoothing size-in-pixels?)])
+    (let ([key (vector id size style weight underlined? smoothing size-in-pixels? hinting)])
       (let ([old-key (atomically (hash-ref keys key #f))])
         (if old-key
             (weak-box-value old-key)
@@ -267,8 +274,9 @@
               [weight-symbol? [weight 'normal]]
               [any? [underlined? #f]]
               [smoothing-symbol? [smoothing 'default]]
-              [any? [size-in-pixels? #f]])
-             (vector size family style weight underlined? smoothing size-in-pixels?)]
+              [any? [size-in-pixels? #f]]
+              [hinting-symbol? [hinting 'aligned]])
+             (vector size family style weight underlined? smoothing size-in-pixels? hinting)]
             [([size? size]
               [(make-or-false string?) face]
               [family-symbol? family]
@@ -276,10 +284,11 @@
               [weight-symbol? [weight 'normal]]
               [any? [underlined? #f]]
               [smoothing-symbol? [smoothing 'default]]
-              [any? [size-in-pixels? #f]])
+              [any? [size-in-pixels? #f]]
+              [hinting-symbol? [hinting 'aligned]])
              (vector size (and face (string->immutable-string face)) family
-                     style weight underlined? smoothing size-in-pixels?)]
-            (method-name 'find-or-create-font font-list%))])
+                     style weight underlined? smoothing size-in-pixels? hinting)]
+            (method-name 'find-or-create-font 'font-list%))])
       (atomically
        (let ([e (hash-ref fonts key #f)])
          (or (and e
@@ -320,11 +329,13 @@
                    #:weight [weight 'normal]
                    #:underlined? [underlined? #f]
                    #:smoothing [smoothing 'default]
-                   #:size-in-pixels? [size-in-pixels? #f])
+                   #:size-in-pixels? [size-in-pixels? #f]
+                   #:hinting [hinting 'aligned])
   (unless (size? size) (raise-type-error 'make-font "exact integer in [1, 1024]" size))
   (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
   (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
   (unless (style-symbol? style) (raise-type-error 'make-font "style-symbol" style))
   (unless (weight-symbol? weight) (raise-type-error 'make-font "weight-symbol" weight))
   (unless (smoothing-symbol? smoothing) (raise-type-error 'make-font "smoothing-symbol" smoothing))
-  (make-object font% size face family style weight underlined? smoothing size-in-pixels?))
+  (unless (hinting-symbol? hinting) (raise-type-error 'make-font "hinting-symbol" hinting))
+  (make-object font% size face family style weight underlined? smoothing size-in-pixels? hinting))

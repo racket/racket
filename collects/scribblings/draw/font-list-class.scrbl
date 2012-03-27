@@ -22,7 +22,8 @@ Creates an empty font list.
                                    [weight (one-of/c 'normal 'bold 'light)]
                                    [underline? any/c #f]
                                    [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
-                                   [size-in-pixels? any/c #f])
+                                   [size-in-pixels? any/c #f]
+                                   [hinting (or/c 'aligned 'unaligned) 'aligned])
               (is-a?/c font%)]
              [(find-or-create-font [size (integer-in 1 255)]
                                    [face string?]
@@ -32,7 +33,8 @@ Creates an empty font list.
                                    [weight (one-of/c 'normal 'bold 'light)]
                                    [underline any/c #f]
                                    [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
-                                   [size-in-pixels? any/c #f])
+                                   [size-in-pixels? any/c #f]
+                                   [hinting (or/c 'aligned 'unaligned) 'aligned])
               (is-a?/c font%)])]{
 
 Finds an existing font in the list or creates a new one (that is

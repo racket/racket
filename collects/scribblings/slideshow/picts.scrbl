@@ -189,11 +189,20 @@ The @racket[style] argument must be one of the following:
       (the default, unless the @racket['modern] family is specified)}
 
  @item{@racket[(cons 'no-combine style)] --- renders characters individually}
+
+ @item{@racket[(cons 'aligned style)] --- enables hinting, which
+       rounds metrics to integers}
+
+ @item{@racket[(cons 'unaligned style)] --- disables hinting (which is
+       the default), so that metrics are scalable}
+
 ]
 
 If both @racket['combine] and @racket['no-combine] are specified, the
-first one takes precedence. If caps is specified, the angle must be
-zero.
+first one in @racket[style] takes precedence. Similarly, if both
+@racket['aligned] and @racket['unaligned] are specified, the first one
+in !racket[style] takes precedence. If @racket['caps] is specified,
+the @racket[angle] must be zero.
 
 The given @racket[size] is in pixels, but it is ignored if a
 @racket[font%] object is provided in the text-style.
