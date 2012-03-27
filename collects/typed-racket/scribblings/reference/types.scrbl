@@ -240,10 +240,16 @@ These types represent primitive Racket data.
 ]
 }
 
-@defidform[Path-String]{ The union of the @racket[Path] and
-@racket[String] types.  Note that this includes some strings where
-@racket[path-string?] produces @racketresult[false], such as strings
-that contain the character @racket[#\nul].}
+@defidform[Path-String]{
+The union of the @racket[Path] and
+@racket[String] types.  Note that this does not
+match exactly what the predicate @racket[path-string?]
+recognizes. For example, strings
+that contain the character @racket[#\nul] have the type
+@racket[Path-String] but @racket[path-string?] returns
+@racket[#f] for those strings. For a complete specification
+of which strings @racket[path-string?] accepts, see its
+documentation.}
 
 
 @section{Singleton Types}
