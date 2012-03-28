@@ -18,7 +18,7 @@ their paper @link["http://groups.inf.ed.ac.uk/links/formlets/"]{The Essence of F
 @section{Basic Formlet Usage}
 
 Suppose we want to create an abstraction of entering a date in an HTML form. The following
-@tech{formlet} captures this idea:
+@deftech{formlet} captures this idea:
 
 @racketblock[
 (define date-formlet
@@ -194,7 +194,7 @@ to be @emph{syntactically} an @|xexpr|. You may discover you want to use a more 
 @(require (for-label web-server/formlets/lib))
 @defmodule[web-server/formlets/lib]{
 
-The syntactic shorthand abbreviates the construction of @deftech{formlet}s with the following library.
+The syntactic shorthand abbreviates the construction of @tech{formlet}s with the following library.
 These combinators may be used directly to construct low-level formlets, such as those for new INPUT element
 types. Refer to @secref["input-formlets"] for example low-level formlets using these combinators.
 
