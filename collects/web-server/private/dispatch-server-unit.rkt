@@ -72,10 +72,25 @@
     (new-connection config:initial-connection-timeout
                     ip op (current-custodian) #f))
   (let connection-loop ()
-    #;(printf "C: ~a\n" (connection-id conn))
-    (let-values ([(req close?) (config:read-request conn config:port port-addresses)])
-      (set-connection-close?! conn close?)
-      (config:dispatch conn req)
-      (if (connection-close? conn)
+    ;; HTTP/1.1 allows any number of requests to come from this input
+    ;; port. However, there is no explicit cancellation of a
+    ;; connection---the browser will just close the port. This leaves
+    ;; the Web server in the unfortunate state of config:read-request
+    ;; trying to read an HTTP and failing---with an ugly error
+    ;; message. This call to peek here will block until at least one
+    ;; character is available and then transfer to read-request. At
+    ;; that point, an error message would be reasonable because the
+    ;; request would be badly formatted or ended early. However, if
+    ;; the connection is closed, then peek will get the EOF and the
+    ;; connection will be closed. This shouldn't change any other
+    ;; behavior: read-request is already blocking, peeking doesn't
+    ;; consume a byte, etc.
+    (if (eof-object? (peek-byte ip))
+      (kill-connection! conn)
+      (let-values
+          ([(req close?) (config:read-request conn config:port port-addresses)])
+        (set-connection-close?! conn close?)
+        (config:dispatch conn req)
+        (if (connection-close? conn)
           (kill-connection! conn)
-          (connection-loop)))))
+          (connection-loop))))))
