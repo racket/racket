@@ -476,6 +476,7 @@
     (define a (dyn pict-ascent pict))
     (define d (dyn pict-descent pict))
     (define rdc (new record-dc%))
+    (send rdc set-smoothing 'aligned)
     (dyn draw-pict pict rdc 0 0)
     (define recorded-datum (send rdc get-recorded-datum))
     (new pict-snip:pict-snip% [w w] [h h] [d d] [a a] [recorded-datum recorded-datum]))
