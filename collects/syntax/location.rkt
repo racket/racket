@@ -46,21 +46,46 @@
   [quote-character-position source-location-position]
   [quote-character-span source-location-span])
 
-(define-syntax-rule (quote-module-name)
-  (module-source->module-name
-   (variable-reference->module-source
-    (#%variable-reference))))
+(define-syntax-rule (module-source)
+ (variable-reference->module-source
+  (#%variable-reference)))
 
-(define-syntax-rule (quote-module-path)
-  (module-source->module-path
-   (variable-reference->module-source
-    (#%variable-reference))))
+(define-syntax (quote-module-name stx)
+  (syntax-case stx ()
+    [(_) #'(module-name-fixup (module-source) null)]
+    [(_ "." path ...) #'(module-name-fixup (module-source) (list path ...))]
+    [(_ ".." path ...) #'(module-name-fixup (module-source) (list ".." path ...))]
+    [(_ path ...) #'(module-name-fixup null (list path ...))]))
 
-(define (module-source->module-name src)
-  (or src 'top-level))
+(define (module-name-fixup src path)
+  (or
+    (cond 
+      [(null? path) src]
+      [(list? src) (append src path)]
+      [else (append (list src) path)])
+    'top-level))
 
-(define (module-source->module-path src)
-  (cond
-   [(path? src) `(file ,(path->string src))]
-   [(symbol? src) `(quote ,src)]
-   [else 'top-level]))
+(define-syntax (quote-module-path stx)
+  (syntax-case stx ()
+    [(_) #'(module-path-fixup (module-source) null)]
+    [(_ "." path ...) #'(module-path-fixup (module-source) (list path ...))]
+    [(_ ".." path ...) #'(module-path-fixup (module-source) (list ".." path ...))]
+    [(_ path ...) #'(module-path-fixup null (list path ...))]))
+
+(define (module-path-fixup src path)
+  (define (map-path->string l)
+    (for/list ([i l])
+      (cond 
+        [(path? i) (path->bytes i)]
+        [else i])))
+  (define (last-pass src)
+    (cond
+     [(path? src) `(file ,(path->bytes src))]
+     [(symbol? src) `(quote ,src)]
+     [(list? src) (map-path->string `(submod ,@src))]
+     [else 'top-level]))
+  (last-pass
+    (cond 
+      [(null? path) src]
+      [(list? src) (append src path)]
+      [else (append (list src) path)])))
