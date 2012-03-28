@@ -90,19 +90,33 @@
 (preferences:set-default 'framework:square-bracket:local
                          '("local")
                          (λ (x) (and (list? x) (andmap string? x))))
+
+(define all-fors
+  (let ()
+    (define base-fors
+      '(for for/list for/hash for/hasheq for/hasheqv for/and for/or 
+         for/lists for/first for/last for/fold for/vector for/flvector
+         for/sum for/product))
+    (define untyped-fors
+      (append base-fors
+              (map (λ (x) (string->symbol (regexp-replace #rx"^for" (symbol->string x) "for*")))
+                   base-fors)))
+    (define all-fors
+      (append untyped-fors
+              (map (λ (x) (string->symbol (string-append (symbol->string x) ":")))
+                   untyped-fors)))
+    all-fors))
+
 (preferences:set-default 'framework:square-bracket:letrec
-                         (let ([fors '("for" "for/fold" "for/list" "for/hash" "for/and" "for/or" "for/first" "for/last")])
-                           (append fors
-                                   (map (λ (x) (regexp-replace #rx"for" x "for*"))
-                                        fors)
-                                   '("let" 
-                                     "let*" "let-values" "let*-values"
-                                     "let-syntax" "let-struct" "let-syntaxes"
-                                     "match-let" "match-let*" "match-letrec"
-                                     "letrec"
-                                     "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
-                                     "parameterize"
-                                     "with-syntax")))
+                         (append (map symbol->string all-fors)
+                                 '("let" 
+                                   "let*" "let-values" "let*-values"
+                                   "let-syntax" "let-struct" "let-syntaxes"
+                                   "match-let" "match-let*" "match-letrec"
+                                   "letrec"
+                                   "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
+                                   "parameterize"
+                                   "with-syntax"))
                          (λ (x) (and (list? x) (andmap string? x))))
 
 (preferences:set-default 'framework:white-on-black? #f boolean?)
@@ -241,7 +255,7 @@
                inherit sequence))
   (for-each (λ (x) 
               (hash-set! hash-table x 'lambda))
-            '(
+            `(
               cases
                  instantiate super-instantiate
                syntax/loc quasisyntax/loc
@@ -268,16 +282,9 @@
                splicing-letrec-syntax splicing-let-syntaxes
                splicing-letrec-syntaxes splicing-letrec-syntaxes+values
                splicing-local               
-               
-               for for/list for/hash for/hasheq for/hasheqv for/and for/or 
-               for/lists for/first for/last for/fold for/vector for/flvector
-               for* for*/list for*/hash for*/hasheq for*/hasheqv for*/and for*/or 
-               for*/lists for*/first for*/last for*/fold for*/vector for*/flvector
 
-               for: for/list: for/hash: for/hasheq: for/hasheqv: for/and: for/or:
-               for/lists: for/first: for/last: for/fold: for/vector: for/flvector:
-               for*: for*/list: for*/hash: for*/hasheq: for*/hasheqv: for*/and: for*/or:
-               for*/lists: for*/first: for*/last: for*/fold: for*/vector: for*/flvector:
+               ,@all-fors
+
                do:
                
                kernel-syntax-case
