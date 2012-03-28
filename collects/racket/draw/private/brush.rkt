@@ -159,7 +159,12 @@
           s)
         s-in))
   (define b (new brush%))
-  (send b set-surface-handle-info (vector s width height #f) t)
+  (send b set-surface-handle-info (vector s width height
+                                          ;; cache for bitmap version:
+                                          #f 
+                                          ;; retain original if not copied:
+                                          (if copy? #f handle)) 
+        t)
   b)
 
 (provide (protect-out surface-handle-info->bitmap))
