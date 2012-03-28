@@ -1200,7 +1200,18 @@
                             (when (send r get-dc)
                               (unless (eq? (send r is-empty?) (eq? clip 'empty))
                                 (show-error 'draw-text "region `is-empty?' mismatch"))))))
-		      
+                      
+                      (define (mutate-region)
+                        (when (and (not clock-clip?)
+                                   (not (eq? clip 'none)))
+                          ;; To be uncooperative, mutate the clipping region:
+                          (define r (send dc get-clipping-region))
+                          (define r2 (make-object region% (send r get-dc)))
+                          (send r2 union r)
+                          (send dc set-clipping-region #f)
+                          (send r set-rectangle 0 0 10 10)
+                          (send dc set-clipping-region r2)))
+
 		      ;; check default pen/brush:
 		      (send dc draw-rectangle 0 0 5 5)
 		      (send dc draw-line 0 0 20 6)
@@ -1208,6 +1219,8 @@
 		      (send dc set-font (make-object font% 10 'default))
 
 		      (draw-series dc pen0s pen0t pen0x "0 x 0" 5 0 0 #f)
+
+                      (mutate-region)
 		      
 		      (draw-series dc pen1s pen1t pen1x "1 x 1" 70 0 1 #f)
 		      
@@ -1256,8 +1269,7 @@
                                           (list (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
                                           (list (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT))))))
 
-		      (send dc set-clipping-region #f)
-
+                      (send dc set-clipping-region #f)
 
                       (send dc end-page)
                       (when (and kind multi-page?)

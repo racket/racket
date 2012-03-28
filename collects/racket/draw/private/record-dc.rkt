@@ -197,14 +197,20 @@
   (if r
       (if (send r internal-get-dc)
           (let ([paths (send r get-paths)])
-            (lambda (dc state)
-              (let ([new-r (make-object region% dc)])
-                (send new-r set-paths! (transform-region-paths paths (dc-state-transformation state)))
-                new-r)))
+            (values (lambda (dc state)
+                      (let ([new-r (make-object region% dc)])
+                        (send new-r set-paths! (transform-region-paths paths (dc-state-transformation state)))
+                        new-r))
+                    paths
+                    #t))
           (let ([new-r (make-object region%)])
             (send new-r union r)
-            (lambda (dc state) new-r)))
-      (lambda (dc state) #f)))
+            (values (lambda (dc state) new-r)
+                    new-r
+                    #f)))
+      (values (lambda (dc state) #f)
+              #f
+              #f)))
 
 (define (transform-region-paths paths t)
   (if (equal? t '#(1.0 0.0 0.0 1.0 0.0 0.0))
@@ -220,11 +226,13 @@
              (cons new-p (cdr p)))
            paths)))
 
-(define (convert-region r)
-  (and r
-       (cons (and (send r internal-get-dc) #t)
+(define (convert-region paths/r has-dc?)
+  (and paths/r
+       (cons has-dc?
              (map (lambda (s) (cons (convert-path (car s)) (cdr s)))
-                  (send r get-paths)))))
+                  (if (paths/r . is-a? . region%)
+                      (send paths/r get-paths)
+                      paths/r)))))
 
 (define (unconvert-region l)
   (if l
@@ -525,13 +533,13 @@
     (define/override (set-clipping-region r)
       (super set-clipping-region r)
       (when (continue-recording?)
-        (let ([make-r (region-maker r)])
+        (let-values ([(make-r paths has-dc?) (region-maker r)])
           (record (lambda (dc state) 
                     (send dc set-clipping-region (combine-regions dc
                                                                   (dc-state-region state)
                                                                   (make-r dc state)))
                     state)
-                  (lambda () (list 'set-clipping-region (convert-region r)))))))
+                  (lambda () (list 'set-clipping-region (convert-region paths has-dc?)))))))
 
     (define/override (set-alpha a)
       (super set-alpha a)
