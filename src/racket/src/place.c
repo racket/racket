@@ -3150,13 +3150,9 @@ static int scheme_place_async_ch_ready(Scheme_Place_Async_Channel *ch) {
   return ready;
 }
 static Scheme_Object *place_channel_finish_ready(void *d, int argc, struct Scheme_Object *argv[]) {
-  Scheme_Object *o;
   Scheme_Object *msg;
-  void *msg_memory;
 
-  o = argv[0];
-  msg = SCHEME_CAR(o);
-  msg_memory = SCHEME_CDR(o);
+  msg = argv[0];
 
   if (msg) {
     Scheme_Thread *p = scheme_current_thread;                                                                 
@@ -3171,7 +3167,6 @@ static Scheme_Object *place_channel_finish_ready(void *d, int argc, struct Schem
 static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
   Scheme_Place_Bi_Channel *ch;
   Scheme_Object *msg = NULL;
-  Scheme_Object *o;
   Scheme_Object *wrapper;
   void *msg_memory = NULL;
   if (SAME_TYPE(SCHEME_TYPE(so), scheme_place_type)) {
@@ -3185,9 +3180,8 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
   if (msg != NULL) {
     Scheme_Thread *p = ((Syncing *)(sinfo->current_syncing))->thread;
     p->place_channel_msg_in_flight = msg_memory;
-    o = scheme_make_raw_pair(msg, msg_memory);
     wrapper = scheme_make_closed_prim(place_channel_finish_ready, NULL);
-    scheme_set_sync_target(sinfo, o, wrapper, NULL, 0, 0, NULL);
+    scheme_set_sync_target(sinfo, msg, wrapper, NULL, 0, 0, NULL);
     return 1;
   }
   return 0;
