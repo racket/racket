@@ -305,10 +305,10 @@
   (build-flat-contract-property
    #:first-order
    (λ (ctc)
+     (define reg (regexp/c-reg ctc))
       (λ (x)
          (and (or (string? x) (bytes? x))
-              (regexp-match (regexp/c-reg ctc) x)
-              #t)))
+              (regexp-match? reg x))))
    #:name (λ (ctc) (regexp/c-reg ctc))
    #:stronger
    (λ (this that)
