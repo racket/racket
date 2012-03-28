@@ -3,6 +3,8 @@
 
 @title[#:style 'toc #:tag "data"]{Datatypes}
 
+@guideintro["datatypes"]{Datatypes}
+
 Each pre-defined datatype comes with a set of procedures for
 manipulating instances of the datatype.
 

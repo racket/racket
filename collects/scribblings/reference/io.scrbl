@@ -3,6 +3,8 @@
 
 @title[#:tag "input-and-output" #:style 'toc]{Input and Output}
 
+@guideintro["i/o"]{Ports and I/O}
+
 @local-table-of-contents[]
 
 @include-section["ports.scrbl"]

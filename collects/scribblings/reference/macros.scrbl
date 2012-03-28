@@ -3,11 +3,14 @@
 
 @title[#:style 'toc]{Macros}
 
+@guideintro["macros"]{Macros}
+
 See @secref["syntax-model"] for general information on how programs
 are parsed. In particular, the subsection @secref["expand-steps"]
 describes how parsing triggers macros, and
 @secref["transformer-model"] describes how macro transformers are
 called.
+
 
 @local-table-of-contents[]
 
