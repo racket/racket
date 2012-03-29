@@ -877,6 +877,23 @@
                         (eq? (cadr r) 4)
                         (memq (cadr r) '(2 4))))))
 
+
+(let-values ([(in out) (make-pipe-with-specials)])
+  (struct str (v)    
+          #:property prop:custom-write
+          (lambda (a-str port mode)
+            (let ([recur (case mode
+                           [(#t) write]
+                           [(#f) display]
+                           [else
+                            (lambda (p port)
+                              (print p port mode))])])
+              (recur (str-v a-str) port))))
+    (write (str "hello world") out)
+    (flush-output out)
+    (test "hello world" read in))
+
+
 ;; --------------------------------------------------
 
 (report-errs)
