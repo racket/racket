@@ -710,7 +710,7 @@
          ;; write
          (lambda (str start end buffer? w/break?)
            (if (= start end)
-             #t
+             0
              (begin
                (resume-mgr)
                (call-with-semaphore
