@@ -236,5 +236,5 @@
            (append (pluralize n-successes    "success" #:suffix "es")
                    (pluralize n-unrollings   "unrolling")
                    (pluralize n-failures     "failure")
-                   (pluralize n-out-of-fuels "out of fuel"))
+                   (string-append n-out-of-fuels " out of fuel")) ; no plural
            ", ")))
