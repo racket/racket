@@ -5,7 +5,7 @@
          raco/command-name)
 
 (define submodule 'test)
-(define run-anyways? #f)
+(define run-anyways? #t)
 
 (define (do-test e [check-suffix? #f])
   (match e
@@ -37,7 +37,10 @@
   "Runs submodule <name> (defaults to `test')"
   (set! submodule (string->symbol name))]
  [("--run-if-absent" "-r")
-  "Require base module if submodule is absent"
+  "Require module if submodule is absent (on by default)"
   (set! run-anyways? #t)]
+ [("--no-run-if-absent" "-x")
+  "Require nothing if submodule is absent"
+  (set! run-anyways? #f)]
  #:args file-or-directory
  (for-each do-test file-or-directory))

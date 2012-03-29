@@ -21,5 +21,8 @@ The @exec{raco test} command accepts a few flags:
 
  @item{@Flag{r} or @DFlag{run-if-absent}
        --- Requires the top-level module of a file if the relevant submodule is not 
-       present.}
+       present. This is the default mode.}
+
+ @item{@Flag{x} or @DFlag{no-run-if-absent}
+       --- Ignores a file if the relevant submodule is not present.}
 ]
