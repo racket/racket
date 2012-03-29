@@ -9,8 +9,8 @@
          rackunit
          (for-syntax racket/base))
 
-(provide main)
-
+(module+ test
+  (main))
 
 (define (main)
   (with-output-to-file "test2" #:exists 'replace (lambda () (write "Get it?\n")))

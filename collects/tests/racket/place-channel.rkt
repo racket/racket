@@ -8,8 +8,6 @@
          rackunit
          (for-syntax racket/base))
 
-(provide main)
-
 (define-syntax-rule (define-place (name ch) body ...)
   (define name (lambda () (place ch body ...))))
 
@@ -181,6 +179,8 @@
       (raise (format "~a master length ~a != worker length ~a\n" desc ll wlen))
     (place-wait p))))
 
+(module+ test
+  (main))
 
 (define (main)
   

@@ -4,7 +4,8 @@
          racket/tcp
          rackunit)
 
-(provide main)
+(module+ test
+  (main))
 
 (define (main)
   (test-case

@@ -1,6 +1,7 @@
 #lang racket
 
-(provide main)
+(module+ test
+  (main))
 
 ;; Runs 3 places perfoming the test suite simultaneously. Each
 ;;  thread creates a directory sub<n> to run in, so that filesystem

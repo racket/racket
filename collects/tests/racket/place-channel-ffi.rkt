@@ -6,8 +6,6 @@
          rackunit
          (for-syntax racket/base))
 
-(provide main)
-
 (define-runtime-path libcrypto-so
   (case (system-type)
     [(windows) '(so "libeay32")]
@@ -29,7 +27,10 @@
 
 
 (define-cstruct _BN ([j1 _long] [top _int] [dmax _int] [neg _int] [flags _int]))
-(define-crypto-func BN_new          (_fun                                     -> _BN-pointer))
+(define-crypto-func BN_new (_fun -> _BN-pointer))
+
+(module+ test
+  (main))
 
 (define (main)
   (define bn (BN_new))

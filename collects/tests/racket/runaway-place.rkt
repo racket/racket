@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/place)
 
-(provide main runaway)
+(module+ test
+  (main))
 
 (define (main)
   (parameterize ([current-custodian (make-custodian)])

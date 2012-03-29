@@ -1,7 +1,8 @@
 #lang racket
 (require ffi/unsafe)
 
-(provide main)
+(module+ test
+  (main))
 
 ;; Make sure that `#:in-original-place?' doesn't lead to deadlock:
 

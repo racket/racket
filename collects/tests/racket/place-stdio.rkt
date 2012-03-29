@@ -1,7 +1,9 @@
 #lang racket
 
-(unless (getenv "IN_SUBPLACE")
-  (putenv "IN_SUBPLACE" "yes")
+(module+ test 
+  (main))
+
+(define (main)
 
   ;; Place that closes stdin shouldn't close stdin in the original
   ;; place:
@@ -41,4 +43,3 @@
         (lambda ()
           (delete-file f))))
   (try-closed open-output-bytes))
-

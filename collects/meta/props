@@ -1816,7 +1816,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/etc.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/expand.rktl" drdr:command-line #f
 "collects/tests/racket/fact.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/ffi-orig-place.rkt" drdr:command-line (racket "-tm" *)
 "collects/tests/racket/file.rktl" drdr:command-line #f
 "collects/tests/racket/filelib.rktl" drdr:command-line #f drdr:timeout 360
 "collects/tests/racket/fixnum.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
@@ -1868,11 +1867,11 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/place" responsible (tewk)
 "collects/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
 "collects/tests/racket/place-chan-rand.rkt" responsible (tewk) drdr:random #t
-"collects/tests/racket/place-channel-fd.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
-"collects/tests/racket/place-channel-fd2.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
-"collects/tests/racket/place-channel-ffi.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
-"collects/tests/racket/place-channel-socket.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
-"collects/tests/racket/place-channel.rkt" responsible (tewk) drdr:command-line (racket "-tm" *) drdr:timeout 300
+"collects/tests/racket/place-channel-fd.rkt" responsible (tewk)
+"collects/tests/racket/place-channel-fd2.rkt" responsible (tewk)
+"collects/tests/racket/place-channel-ffi.rkt" responsible (tewk)
+"collects/tests/racket/place-channel-socket.rkt" responsible (tewk)
+"collects/tests/racket/place-channel.rkt" responsible (tewk) drdr:timeout 300
 "collects/tests/racket/place.rktl" responsible (tewk) drdr:command-line (racket "-f" *)
 "collects/tests/racket/places.rkt" responsible (tewk) drdr:command-line (racket *)
 "collects/tests/racket/port.rktl" drdr:command-line #f
@@ -1885,7 +1884,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/read.rktl" drdr:command-line #f
 "collects/tests/racket/readtable.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/restart.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/runaway-place.rkt" drdr:command-line (racket "-tm" *)
 "collects/tests/racket/runflats.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/rx.rktl" drdr:command-line #f
 "collects/tests/racket/sandbox.rktl" drdr:command-line (racket "-f" *)

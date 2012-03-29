@@ -3,7 +3,8 @@
          racket/port
          rackunit)
 
-(provide main)
+(module+ test
+  (main))
 
 (define (main)
 

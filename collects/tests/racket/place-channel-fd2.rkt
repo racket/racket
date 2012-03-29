@@ -10,7 +10,9 @@
 
   (apply subprocess o i e (current-executable-path) args))
 
-(provide main)
+(module+ test
+  (main))
+
 (define (main)
   (test-case
     "test file descriptors copied across place channesl"
