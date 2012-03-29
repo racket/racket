@@ -889,7 +889,7 @@
                             (lambda (p port)
                               (print p port mode))])])
               (recur (str-v a-str) port))))
-    (write "hello world" out)
+    (write (str "hello world") out)
     (flush-output out)
     (test "hello world" read in))
 
