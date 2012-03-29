@@ -34,6 +34,9 @@
 (define-struct (author-element element) (names cite))
 (define-struct (other-author-element author-element) ())
 
+(define (author-element-names* x)
+  (and x (author-element-names x)))
+
 ;; render the use of a citation.
 (define (add-cite group bib-entry which with-specific? disambiguation)
   (let ([key (auto-bib-key bib-entry)])
@@ -95,9 +98,9 @@
   (for ([i bib-entries])
     (hash-set! (bib-group-ht group) (auto-bib-key i) i))
   (when (and (pair? (cdr bib-entries))
-             (not (apply equal? (map (compose author-element-names auto-bib-author) bib-entries))))
+             (not (apply equal? (map (compose author-element-names* auto-bib-author) bib-entries))))
     (error 'citet "citet must be used with identical authors, given ~a"
-           (map (compose author-element-names auto-bib-author) bib-entries)))
+           (map (compose author-element-names* auto-bib-author) bib-entries)))
   (make-element
    #f
    (list (add-cite group (car bib-entries) 'autobib-author #f #f)
@@ -108,7 +111,7 @@
 (define (add-cites group bib-entries sort? bib-date<? bib-date=?)
   (define-values (groups keys)
     (for/fold ([h (hash)] [ks null]) ([b (reverse bib-entries)])
-      (let ([k (author-element-names (auto-bib-author b))])
+      (let ([k (author-element-names* (auto-bib-author b))])
         (values (hash-update h k (lambda (cur) (cons b cur)) null)
                 (cons k (remove k ks))))))
   (make-element
@@ -139,9 +142,11 @@
 (define (default-render-date-cite date)
   (make-element #f (list (number->string (date-year date)))))
 (define (default-date<? b0 b1)
-  (< (date-year (auto-bib-date b0)) (date-year (auto-bib-date b1))))
+  (and (auto-bib-date b0) (auto-bib-date b1)
+       (< (date-year (auto-bib-date b0)) (date-year (auto-bib-date b1)))))
 (define (default-date=? b0 b1)
-  (= (date-year (auto-bib-date b0)) (date-year (auto-bib-date b1))))
+  (and (auto-bib-date b0) (auto-bib-date b1)
+       (= (date-year (auto-bib-date b0)) (date-year (auto-bib-date b1)))))
 
 ;; 0 -> a, 1 -> b, etc.
 (define (default-disambiguation n)
@@ -186,9 +191,10 @@
                          #f
                          (list (author-element-cite (extract-bib-author bib)))))
           ;; store the date
-          (collect-put! ci
-                        `(autobib-date ,(auto-bib-key bib)) ;; (list which key)
-                        (make-element #f (list (render-date-cite (auto-bib-date bib)))))
+          (when (auto-bib-date bib)
+            (collect-put! ci
+                          `(autobib-date ,(auto-bib-key bib)) ;; (list which key)
+                          (make-element #f (list (render-date-cite (auto-bib-date bib))))))
           ;; store how to disambiguate it from other like citations.
           (collect-put! ci
                         `(autobib-disambiguation ,(auto-bib-key bib))
