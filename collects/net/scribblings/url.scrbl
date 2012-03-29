@@ -1,6 +1,5 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf
-          (only-in net/url url-regexp)
           (for-label net/url net/url-unit net/url-sig 
                      net/head net/uri-codec net/tcp-sig
                      (only-in net/url-connect current-https-protocol)
@@ -96,13 +95,19 @@ An HTTP connection is created as a @deftech{pure port} or a
 have been removed, so that what remains is purely the first content
 fragment. An impure port is one that still has its MIME headers.
 
-@defproc[(string->url [str (and/c (or/c string? bytes?) url-regexp)]) url?]{
+@defproc[(string->url [str (or/c (not/c #rx"^([^:/?#]*):")
+                                 #rx"^[a-zA-Z][a-zA-Z0-9+.-]*:")])
+         url?]{
 
 Parses the URL specified by @racket[str] into a @racket[url]
 struct. The @racket[string->url] procedure uses
 @racket[form-urlencoded->alist] when parsing the query, so it is
 sensitive to the @racket[current-alist-separator-mode] parameter for
 determining the association separator.
+
+The contract on @racket[str] insists that, if the url has a scheme,
+then the scheme begins with a letter and consists only of letters,
+numbers, @litchar{+}, @litchar{-}, and @litchar{.} characters.
 
 If @racket[str] starts with @racket["file:"], then the path is always
 parsed as an absolute path, and the parsing details depend on
@@ -122,17 +127,6 @@ parsed as an absolute path, and the parsing details depend on
        the port is always @racket[#f].}
 
 ]}
-
-@defthing[url-regexp regexp?]{
-
-This is a regular expression based on the one in
-Appendix B of RFC 3986 for recognizing urls.
-
-This is the precise regexp:
-
-@centered{@tt{@(object-name url-regexp)}}
-                              
-}
 
 @defproc[(combine-url/relative [base url?] [relative string?]) url?]{
 
