@@ -3963,8 +3963,8 @@ static int check_sleep(int need_activity, int sleep_now)
       float mst = (float)max_sleep_time;
 
       /* Make sure that mst didn't go to infinity: */
-      if ((double)mst > (2 * max_sleep_time)) {
-	mst = 100000000.0;
+      if (mst && !((double)mst < (2 * max_sleep_time))) {
+        mst = 1000000.0;
       }
 
       {
