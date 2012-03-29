@@ -254,11 +254,16 @@ in the sequence.
   }
 
 @defproc[(in-directory [dir (or/c #f path-string?) #f]) sequence?]{
-  Return a sequence that produces all of the paths for files,
+  Returns a sequence that produces all of the paths for files,
   directories, and links within @racket[dir].  If @racket[dir] is not
   @racket[#f], then every produced path starts with @racket[dir] as its
   prefix.  If @racket[dir] is @racket[#f], then paths in and relative to
-  the current directory are produced.}
+  the current directory are produced.
+
+  An @racket[in-directory] sequence traverses nested subdirectories
+  recursively. To generate a sequence that includes only the immediate
+  content of a directory, use the result of @racket[directory-list] as
+  a sequence.}
 
 @defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
          sequence?]{
