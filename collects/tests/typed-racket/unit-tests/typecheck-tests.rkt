@@ -181,6 +181,9 @@
         (tc-e (lcm 3 1/2) -PosRat)
         (tc-e (lcm (ann 3 Integer) 1/2) -NonNegRat)
         (tc-e (lcm (ann 3 Integer) -1/2) -NonNegRat)
+        (tc-e (expt 0.5 0.3) -PosFlonum)
+        (tc-e (expt 0.5 2) -PosFlonum)
+        (tc-e (expt 0.5 0) -PosReal)
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
