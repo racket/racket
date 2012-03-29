@@ -284,6 +284,20 @@
 
 (test 11 dynamic-require '(submod 'sub2-m n) 'y)
 
+(expand
+ (expand
+  #'(module s racket/base
+      (struct node (height))
+      (node-height 0)
+      (module+ main))))
+
+(expand
+ (expand
+  #'(module s racket/base
+      (module* main #f)
+      (struct node (height))
+      (node-height 0))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 

@@ -6209,11 +6209,25 @@ static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
   return orig_fm;
 }
 
+static Scheme_Object *phase_shift_tail(Scheme_Object *v, Scheme_Object *old_midx, Scheme_Object *new_midx)
+{
+  if (!SCHEME_STXP(v))
+    v = scheme_datum_to_syntax(v, scheme_false, scheme_false, 0, 0);
+
+  return scheme_stx_phase_shift(v, NULL, old_midx, new_midx, NULL, NULL);
+}
+
 static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Object *a, Scheme_Object *d, 
                                                Scheme_Object *old_midx, Scheme_Object *new_midx)
 {
-  if (!a) a = SCHEME_STX_CAR(orig);
-  if (!d) d = SCHEME_STX_CDR(orig);
+  if (!a) {
+    a = SCHEME_STX_CAR(orig);
+    a = scheme_stx_phase_shift(a, NULL, old_midx, new_midx, NULL, NULL);
+  }
+  if (!d) {
+    d = SCHEME_STX_CDR(orig);
+    d = phase_shift_tail(d, old_midx, new_midx);
+  }
 
   a = scheme_make_pair(a, d);
 
@@ -6279,6 +6293,8 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm,
           /* found a submodule */
           v2 = SCHEME_STX_CDR(fm);
           naya = phase_shift_skip_submodules(v2, old_midx, new_midx, phase);
+          if (SAME_OBJ(naya, v2))
+            naya = phase_shift_tail(naya, old_midx, new_midx);
           return rebuild_with_phase_shift(fm, v1, naya, old_midx, new_midx);
         } else if (scheme_stx_module_eq3(scheme_begin_for_syntax_stx, v2, 
                                          scheme_make_integer(0), scheme_make_integer(phase),
@@ -6289,8 +6305,11 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm,
           v3 = phase_shift_skip_submodules(v2, old_midx, new_midx, phase+1);
           if (SAME_OBJ(naya, v1) && SAME_OBJ(v2, v3))
             return fm;
-          else
+          else {
+            if (SAME_OBJ(v2, v3))
+              v3 = phase_shift_tail(v3, old_midx, new_midx);
             return rebuild_with_phase_shift(fm, naya, v3, old_midx, new_midx);
+          }
         }
       }
     }
@@ -6299,8 +6318,10 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm,
     v4 = phase_shift_skip_submodules(v3, old_midx, new_midx, phase);
     if (SAME_OBJ(v3, v4))
       return fm;
-    else
+    else {
+      v1 = scheme_stx_phase_shift(v1, NULL, old_midx, new_midx, NULL, NULL);
       return rebuild_with_phase_shift(fm, v1, v4, old_midx, new_midx);
+    }
   }
 }
 
