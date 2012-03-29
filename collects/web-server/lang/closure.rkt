@@ -82,7 +82,7 @@
                                       (make-keyword-procedure
                                        (lambda (kws kw-vals clsr . rst)
                                          (let-values ([#,fvars ((CLOSURE-ref clsr 0))])
-                                          (keyword-apply #,stx
+                                          (keyword-apply (procedure-rename #,stx '#,(syntax-local-name))
                                                          kws kw-vals
                                                          rst))))))
                           
