@@ -448,5 +448,15 @@
 (test 'c (dynamic-require '(submod 'subm-example-20 third) 't) '(a b c))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `all-defined-out':
+
+(module subm-all-defined-1 racket/base
+  (module+ main
+    (define x 10)
+    (provide (all-defined-out))))
+
+(test 10 dynamic-require '(submod 'subm-all-defined-1 main) 'x)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

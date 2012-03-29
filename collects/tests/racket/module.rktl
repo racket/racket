@@ -659,6 +659,28 @@
   (require 'post-ex-rename-example-1)
   (go))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interaction of binding-context and mark:
+
+(module binding-context-a racket
+  (provide q)
+
+  (define-syntax (q stx)
+    (syntax-case stx ()
+      [(_ f) (with-syntax ([x (syntax-local-introduce #'x)])
+               #'(f x))])))
+
+(module binding-context-b racket
+  (require 'binding-context-a)
+
+  (define-syntax-rule (go id)
+    (begin
+      (define id 5)
+      (define-syntax-rule (prov)
+        (provide id))
+      (prov)))
+  
+  (q go))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

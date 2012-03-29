@@ -1085,7 +1085,9 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
     marks = SCHEME_CAR(marks);
   }
 
-  if (!SCHEME_TRUEP(bdg))
+  /* Treat #f and void values of bdg the same, since a void value is
+     the same #f, but ensure that we get this far: */
+  if (SCHEME_FALSEP(bdg) || SCHEME_VOIDP(bdg))
     bdg = NULL;
 
   /* Find a mapping that matches the longest tail of marks */
