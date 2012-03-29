@@ -217,8 +217,11 @@ can contain other information).}
 For general information on C-level memory management with Racket,
 see @|InsideRacket|.
 
-@defproc[(malloc [bytes-or-type (or/c exact-nonnegative-integer? ctype?)]
-                 [type-or-bytes (or/c exact-nonnegative-integer? ctype?) @#,elem{absent}]
+@defproc[(malloc [bytes-or-type (or/c (and/c exact-nonnegative-integer? fixnum?) 
+                                      ctype?)]
+                 [type-or-bytes (or/c (and/c exact-nonnegative-integer? fixnum?) 
+                                      ctype?) 
+                                @#,elem{absent}]
                  [cptr cpointer? @#,elem{absent}]
                  [mode (one-of/c 'nonatomic 'stubborn 'uncollectable
                                  'eternal 'interior 'atomic-interior
@@ -229,8 +232,9 @@ see @|InsideRacket|.
 
 Allocates a memory block of a specified size using a specified
 allocation. The result is a @racket[cpointer] to the allocated
-memory.  Although not reflected above, the four arguments can appear in
-any order since they are all different types of Racket objects; a size
+memory, or @racket[#f] if the requested size is zero.  Although 
+not reflected above, the four arguments can appear in
+any order, since they are all different types of Racket objects; a size
 specification is required at minimum:
 
 @itemize[

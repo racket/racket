@@ -933,7 +933,7 @@
     [(_ i  t  ) (type: _pointer
                  pre:  (x => (list->cblock x t)))]
     [(_ o  t n) (type: _pointer
-                 pre:  (if (zero? n) #f (malloc n t))
+                 pre:  (malloc n t)
                  post: (x => (cblock->list x t n)))]
     [(_ io t n) (type: _pointer
                  pre:  (x => (list->cblock x t))
@@ -947,7 +947,7 @@
     [(_ i  t  ) (type: _pointer
                  pre:  (x => (vector->cblock x t)))]
     [(_ o  t n) (type: _pointer
-                 pre:  (if (zero? n) #f (malloc n t))
+                 pre:  (malloc n t)
                  post: (x => (cblock->vector x t n)))]
     [(_ io t n) (type: _pointer
                  pre:  (x => (vector->cblock x t))

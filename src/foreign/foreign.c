@@ -2130,7 +2130,7 @@ static Scheme_Object *fail_ok_sym;
 static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
 {
   int i, failok=0;
-  intptr_t size=0, num=0;
+  intptr_t size=0, num=-1;
   void *from = NULL, *res = NULL;
   intptr_t foff = 0;
   Scheme_Object *mode = NULL, *a, *base = NULL;
@@ -2139,11 +2139,11 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
     a = argv[i];
     a = unwrap_cpointer_property(argv[i]);
     if (SCHEME_INTP(a)) {
-      if (num != 0)
+      if (num != -1)
         scheme_signal_error(MYNAME": specifying a second integer size: %V", a);
       num = SCHEME_INT_VAL(a);
-      if (num <= 0)
-        scheme_wrong_type(MYNAME, "positive fixnum", 0, argc, argv);
+      if (num < 0)
+        scheme_wrong_type(MYNAME, "nonnegative fixnum", 0, argc, argv);
     } else if (SCHEME_CTYPEP(a)) {
       if (size != 0)
         scheme_signal_error(MYNAME": specifying a second type: %V", a);
@@ -2168,8 +2168,9 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "malloc-argument", i, argc, argv);
     }
   }
-  if ((num == 0) && (size == 0)) scheme_signal_error(MYNAME": no size given");
-  size = ((size==0) ? 1 : size) * ((num==0) ? 1 : num);
+  if (!num) return scheme_false;
+  if ((num == -1) && (size == 0)) scheme_signal_error(MYNAME": no size given");
+  size = ((size==0) ? 1 : size) * ((num==-1) ? 1 : num);
   if (mode == NULL)
     mf = (base != NULL && CTYPE_PRIMTYPE(base) == &ffi_type_gcpointer)
       ? scheme_malloc : scheme_malloc_atomic;

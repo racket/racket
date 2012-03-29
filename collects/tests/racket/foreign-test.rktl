@@ -6,6 +6,10 @@
 (require mzlib/foreign)
 (unsafe!)
 
+(test #f malloc 0)
+(test #f malloc 0 _int)
+(test #f malloc _int 0)
+
 (let ([big/little (if (system-big-endian?) (lambda (x y) x) (lambda (x y) y))]
       [p (malloc _int32)])
   (ptr-set! p _int32 0)
@@ -168,18 +172,20 @@
         ((ffi 'hoho (_fun _int (_fun _int -> (_fun _int -> _int)) -> _int))
          3 (lambda (x) (lambda (y) (+ y (* x x))))))
   ;; ---
-  (test '(0 1 2 3 4 5 6 7 8 9)
-        'qsort
-        ((get-ffi-obj 'qsort #f
-                      (_fun (l    : (_list io _int len))
-                            (len  : _int = (length l))
-                            (size : _int = (ctype-sizeof _int))
-                            (compare : (_fun _pointer _pointer -> _int))
-                            -> _void -> l))
-         '(7 1 2 3 5 6 4 8 0 9)
-         (lambda (x y)
-           (let ([x (ptr-ref x _int)] [y (ptr-ref y _int)])
-             (cond [(< x y) -1] [(> x y) +1] [else 0])))))
+  (let ([qsort (get-ffi-obj 'qsort #f
+                            (_fun (l    : (_list io _int len))
+                                  (len  : _int = (length l))
+                                  (size : _int = (ctype-sizeof _int))
+                                  (compare : (_fun _pointer _pointer -> _int))
+                                  -> _void -> l))])
+    (test '(0 1 2 3 4 5 6 7 8 9)
+          'qsort
+          (qsort
+           '(7 1 2 3 5 6 4 8 0 9)
+           (lambda (x y)
+             (let ([x (ptr-ref x _int)] [y (ptr-ref y _int)])
+               (cond [(< x y) -1] [(> x y) +1] [else 0])))))
+    (test '() 'qsort (qsort '() (lambda (x y) (error "bad!")))))
   ;; ---
   ;; test vectors
   (t 55 'grab7th (_fun _pointer -> _int ) #"012345678")
