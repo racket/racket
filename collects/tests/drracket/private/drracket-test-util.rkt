@@ -650,12 +650,11 @@
           ;; exports during the call to 'run-test' is safe
           (namespace-require 'framework)
           
-          (use-hash-for-prefs (dynamic-require 'framework 'preferences:low-level-get-preference)
-                              (dynamic-require 'framework 'preferences:low-level-put-preferences)
-                              (dynamic-require 'framework 'preferences:restore-defaults))
-          
           (queue-callback
            (λ ()
+             (use-hash-for-prefs (dynamic-require 'framework 'preferences:low-level-get-preference)
+                                 (dynamic-require 'framework 'preferences:low-level-put-preferences)
+                                 (dynamic-require 'framework 'preferences:restore-defaults))
              (dynamic-require 'drracket #f)
              (thread (λ ()
                        (run-test)
