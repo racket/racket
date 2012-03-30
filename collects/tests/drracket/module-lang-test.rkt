@@ -378,4 +378,11 @@
      ;; test to make sure that we don't get "exception raised by error display handler"
      #rx"module-lang-test-syn-error.rkt:[0-9]+:[0-9]+: lambda: bad syntax in: \\(lambda\\)")
 
+(test @t{#lang racket
+(module+ main (printf "main\n"))
+(module+ test (printf "test\n"))
+(module+ other (printf "other\n"))}
+      #f
+      #rx"main\ntest")
+
 (fire-up-drracket-and-run-tests run-test)

@@ -67,7 +67,7 @@
   ;; command-line-args : (vectorof string)
   ;; auto-text : string
   (define-struct (module-language-settings drracket:language:simple-settings)
-    (collection-paths command-line-args auto-text compilation-on? full-trace?))
+    (collection-paths command-line-args auto-text compilation-on? full-trace? run-test-submodule?))
   
   (define (module-language-settings->prefab-module-settings settings)
     (prefab-module-settings (module-language-settings-command-line-args settings)
@@ -78,6 +78,7 @@
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
+  (define default-run-test-submodule? #t)
   (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))
   
   ;; module-mixin : (implements drracket:language:language<%>)
@@ -181,7 +182,8 @@
            #()
            (get-default-auto-text)
            default-compilation-on?
-           default-full-trace?)))
+           default-full-trace?
+           default-run-test-submodule?)))
       
       ;; default-settings? : -> boolean
       (define/override (default-settings? settings)
@@ -199,7 +201,9 @@
              (equal? (module-language-settings-compilation-on? settings)
                      default-compilation-on?)
              (equal? (module-language-settings-full-trace? settings)
-                     default-full-trace?)))
+                     default-full-trace?)
+             (equal? (module-language-settings-run-test-submodule? settings)
+                     default-run-test-submodule?)))
       
       (define/override (marshall-settings settings)
         (let ([super-marshalled (super marshall-settings settings)])
@@ -208,7 +212,8 @@
                 (module-language-settings-command-line-args settings)
                 (module-language-settings-auto-text settings)
                 (module-language-settings-compilation-on? settings)
-                (module-language-settings-full-trace? settings))))
+                (module-language-settings-full-trace? settings)
+                (module-language-settings-run-test-submodule? settings))))
       
       (define/override (unmarshall-settings marshalled)
         (and (list? marshalled)
@@ -225,7 +230,10 @@
                                                (list-ref marshalled 4))]
                           [full-trace? (if (<= marshalled-len 5)
                                            default-full-trace?
-                                           (list-ref marshalled 5))])
+                                           (list-ref marshalled 5))]
+                          [run-test-submodule? (if (<= marshalled-len 6)
+                                                   default-run-test-submodule?
+                                                   (list-ref marshalled 6))])
                       (and (list? collection-paths)
                            (andmap (λ (x) (or (string? x) (symbol? x)))
                                    collection-paths)
@@ -233,6 +241,7 @@
                            (andmap string? (vector->list command-line-args))
                            (string? auto-text)
                            (boolean? compilation-on?)
+                           (boolean? run-test-submodule?)
                            (let ([super (super unmarshall-settings 
                                                (let ([p (car marshalled)])
                                                  ;; Convert 'write to 'print:
@@ -257,7 +266,8 @@
                                                            '(none debug))
                                                      compilation-on?)
                                                 
-                                                full-trace?)))))))))))
+                                                full-trace?
+                                                run-test-submodule?)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
@@ -376,7 +386,10 @@
                       (*do-module-specified-configuration)
                       (namespace-require modspec)
                       (when (module-declared? `(submod ,modspec main) #t)
-                        (dynamic-require `(submod ,modspec main) #f)))))))
+                        (dynamic-require `(submod ,modspec main) #f))
+                      (when (module-language-settings-run-test-submodule? settings)
+                        (when (module-declared? `(submod ,modspec test) #t)
+                          (dynamic-require `(submod ,modspec test) #f))))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
         (define (*do-module-specified-configuration)
@@ -530,6 +543,7 @@
     (define compilation-on-check-box #f)
     (define compilation-on? #t)
     (define save-stacktrace-on-check-box #f)
+    (define run-test-submodule #f)
     (define left-debugging-radio-box #f)
     (define right-debugging-radio-box #f)
     (define simple-case-lambda
@@ -555,7 +569,10 @@
                      (λ (_1 _2) (set! compilation-on? (send compilation-on-check-box get-value)))]))
          (set! save-stacktrace-on-check-box (new check-box%
                                                  [label (string-constant preserve-stacktrace-information)]
-                                                 [parent dynamic-panel])))))
+                                                 [parent dynamic-panel]))
+         (set! run-test-submodule (new check-box%
+                                       [label (string-constant run-test-submodule)]
+                                       [parent dynamic-panel])))))
     (define (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
       (case (send left-debugging-radio-box get-selection)
         [(0 1)
@@ -729,7 +746,8 @@
                        (case (send left-debugging-radio-box get-selection)
                          [(0 1) compilation-on?]
                          [(#f) #f])
-                       (send save-stacktrace-on-check-box get-value)))))]
+                       (send save-stacktrace-on-check-box get-value)
+                       (send run-test-submodule get-value)))))]
       [(settings)
        (simple-case-lambda settings)
        (install-collection-paths (module-language-settings-collection-paths settings))
@@ -739,6 +757,7 @@
        (send compilation-on-check-box set-value (module-language-settings-compilation-on? settings))
        (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
        (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
+       (send run-test-submodule set-value (module-language-settings-run-test-submodule? settings))
        (update-buttons)]))
   
   ;; get-filename : port -> (union string #f)
