@@ -265,7 +265,7 @@
     (def/public (get-height) (max 1 height))
     (def/public (get-depth) (if b&w? 1 32))
     (def/public (is-color?) (not b&w?))
-    (def/public (has-alpha-channel?) alpha-channel?)
+    (def/public (has-alpha-channel?) (and alpha-channel? #t))
 
     (define/private (check-alternate who)
       (when alt?
