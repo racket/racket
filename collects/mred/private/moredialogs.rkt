@@ -189,7 +189,8 @@
                               [parent #f]
                               [init-val ""]
                               [style null]
-                              #:dialog-mixin [dialog-mixin values])
+                              #:dialog-mixin [dialog-mixin values]
+                              #:validate [validate (λ (x) #t)])
     (check-label-string 'get-text-from-user title)
     (check-label-string/false 'get-text-from-user message)
     (check-top-level-parent/false 'get-text-from-user parent)
@@ -197,16 +198,29 @@
     (check-style 'get-text-from-user #f '(password) style)
     (define f (make-object (dialog-mixin dialog%) title parent box-width))
     (define ok? #f)
-    (define ((done ?) b e) (set! ok? ?) (send f show #f))
-    (define t (make-object text-field% message f (lambda (t e) (when (eq? (send e get-event-type) 'text-field-enter)
-                                                                 ((done #t) #f #f)))
-                init-val (list* 'single 'vertical-label style)))
+    (define (done ?) (set! ok? ?) (send f show #f))
+    (define t (new text-field% 
+                   [label message]
+                   [parent f]
+                   [callback (λ (t e) 
+                               (cond
+                                 [(eq? (send e get-event-type) 'text-field-enter)
+                                  (done #t)]
+                                 [else (do-validation)]))]
+                   [init-value init-val]
+                   [style (list* 'single 'vertical-label style)]))
+    (define default-background (send t get-field-background))
+    (define (do-validation)
+      (send t set-field-background 
+            (if (validate (send t get-value))
+                default-background
+                (send wx:the-color-database find-color "pink"))))
     (define p (make-object horizontal-pane% f))
     (send p set-alignment 'right 'center)
     (send f stretchable-height #f)
     (ok-cancel
-     (lambda () (make-object button% "OK" p (done #t) '(border)))
-     (lambda () (make-object button% "Cancel" p (done #f))))
+     (lambda () (make-object button% "OK" p (λ (b e) (done #t)) '(border)))
+     (lambda () (make-object button% "Cancel" p (λ (b e) (done #f)))))
     (send (send t get-editor) select-all)
     (send t focus)
     (send f center)

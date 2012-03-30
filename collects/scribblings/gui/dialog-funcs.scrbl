@@ -391,11 +391,12 @@ Like @racket[message-box/custom], except that
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-val string? ""]
                              [style (listof 'password) null]
+                             [#:validate validate (-> string? boolean?)]
                              [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values]) 
          (or/c string? #f)]{
 
 Gets a text string from the user via a modal dialog, using
- @racket[parent] as the parent window if it is specified. The dialog's
+ @racket[parent] as the parent window, if it is specified. The dialog's
  title is @racket[title]. The dialog's text field is labelled with
  @racket[message] and initialized to @racket[init-val] (but @racket[init-val]
  does not determine the size of the dialog).
@@ -407,6 +408,10 @@ If @racket[style] includes @racket['password], the dialog's text field
  draws each character of its content using a generic symbol, instead
  of the actual character.
 
+The @racket[validate] function is called each time the text field changed,
+with the contents of the text field. If it returns @racket[#t], the background
+of the text is colored pink.
+ 
 The @racket[dialog-mixin] argument is applied to the class that implements the dialog
 before the dialog is created. 
 }
