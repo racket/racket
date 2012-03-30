@@ -24,15 +24,15 @@
           (eprintf "ERROR\n"))
         ok?)))
 
-  (define remote-vm   (spawn-remote-racket-vm "localhost" #:listen-port 6344))
-  (define tuple-place (supervise-named-dynamic-place-at remote-vm 'tuple-server tuple-path 'make-tuple-server))
-  (define bank-place  (supervise-dynamic-place-at remote-vm bank-path 'make-bank))
+  (define remote-node (spawn-remote-racket-node "localhost" #:listen-port 6344))
+  (define tuple-place (supervise-named-dynamic-place-at remote-node 'tuple-server tuple-path 'make-tuple-server))
+  (define bank-place  (supervise-dynamic-place-at remote-node bank-path 'make-bank))
 
   (message-router
-    remote-vm
+    remote-node
     (after-seconds 2
-      (define c (connect-to-named-place remote-vm 'tuple-server))
-      (define d (connect-to-named-place remote-vm 'tuple-server))
+      (define c (connect-to-named-place remote-node 'tuple-server))
+      (define d (connect-to-named-place remote-node 'tuple-server))
       (tuple-server-hello c)
       (tuple-server-hello d)
       (test 100 tuple-server-set c "user0" 100)
@@ -49,6 +49,6 @@
       )
 
     (after-seconds 15
-      (node-send-exit remote-vm))
+      (node-send-exit remote-node))
     (after-seconds 20
       (exit 0))))

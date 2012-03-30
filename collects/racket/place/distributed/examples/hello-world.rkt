@@ -13,13 +13,13 @@
 
 
 (module+ main
-  (define-values (vm pl)
-    (spawn-vm-supervise-place-thunk-at "localhost"
-                                       #:listen-port 6344
-                                       (quote-module-path "..")
-                                       'hello-world))
+  (define-values (node pl)
+    (spawn-node-supervise-place-thunk-at "localhost"
+                                         #:listen-port 6344
+                                         (quote-module-path "..")
+                                         'hello-world))
   (message-router
-    vm
+    node
     (after-seconds 2
       (dplace-put pl "Hello")
       (printf "message-router received: ~a\n" (dplace-get pl)))

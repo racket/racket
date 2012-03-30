@@ -15,7 +15,7 @@
          wait-place-thunk)
 
 (define (spawn-place-worker-at port message)
-  (spawn-vm-with-dynamic-place-at "localhost" #:listen-port port place-worker-path 'place-worker #:initial-message message #:restart-on-exit #f))
+  (spawn-node-with-dynamic-place-at "localhost" #:listen-port port place-worker-path 'place-worker #:initial-message message #:restart-on-exit #f))
 
 (define (wait-place-thunk)
   (place ch
@@ -25,14 +25,14 @@
 
 
 (define (main)
-  (define bank-vm (spawn-vm-with-dynamic-place-at "localhost" #:listen-port 6344 bank-path 'make-bank))
-  (define bank-place (send bank-vm get-first-place))
+  (define bank-node (spawn-node-with-dynamic-place-at "localhost" #:listen-port 6344 bank-path 'make-bank))
+  (define bank-place (send bank-node get-first-place))
   (message-router
     (spawn-place-worker-at 6341 "ONE")
     (spawn-place-worker-at 6342 "TWO")
     (spawn-place-worker-at 6343 "THREE")
-    bank-vm
-    (spawn-vm-with-place-thunk-at "localhost" #:listen-port 6345 (quote-module-name) 'wait-place-thunk #:restart-on-exit #t)
+    bank-node
+    (spawn-node-with-place-thunk-at "localhost" #:listen-port 6345 (quote-module-name) 'wait-place-thunk #:restart-on-exit #t)
     (every-seconds 3.3 (printf "Hello from every-seconds\n") (flush-output))
     (after-seconds 2
       (displayln (bank-new-account bank-place 'user0))

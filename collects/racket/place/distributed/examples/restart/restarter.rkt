@@ -15,5 +15,5 @@
 
 (define (main)
   (message-router
-    (spawn-vm-with-place-thunk-at "localhost" #:listen-port 6345 (quote-module-name) 'wait-place-thunk 
+    (spawn-node-with-place-thunk-at "localhost" #:listen-port 6345 (quote-module-name) 'wait-place-thunk 
                                        #:restart-on-exit (restart-every 5 #:retry 3))))

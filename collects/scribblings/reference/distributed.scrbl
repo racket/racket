@@ -60,8 +60,7 @@ The use of Distributed Places is predicated on a couple assumptions:
   (require racket/place/distributed
            racket/place)
 
-  (provide main
-           hello-world)
+  (provide hello-world)
 
   (define (hello-world)
     (place ch
@@ -71,21 +70,20 @@ The use of Distributed Places is predicated on a couple assumptions:
       (printf "hello-world sent: ~a\n" HW)))
 
 
-  (define (main)
-    (define-values (vm pl)
-      (spawn-vm-supervise-place-thunk-at "localhost"
+  (module+ main
+    (define-values (node pl)
+      (spawn-node-supervise-place-thunk-at "localhost"
                                            #:listen-port 6344
-                                           (get-current-module-path)
+                                           (quote-module-path "..")
                                            'hello-world))
     (message-router
-      vm
+      node
       (after-seconds 2
         (dplace-put pl "Hello")
         (printf "message-router received: ~a\n" (dplace-get pl)))
 
       (after-seconds 6
-        (exit 0))
-      )))
+        (exit 0)))))
 
 (require 'hello-world-example)
 ]
@@ -101,13 +99,13 @@ The use of Distributed Places is predicated on a couple assumptions:
 }
 
 @(define (p . l) (decode-paragraph l))
-@(define spawn-vm-note
+@(define spawn-node-note
     (make-splice
      (list
       @p{This function returns a @racket[remote-node%] instance not a @racket[remote-place%]
-      Call @racket[(send vm get-first-place)] to obtain the @racket[remote-place%] instance.})) )
+      Call @racket[(send node get-first-place)] to obtain the @racket[remote-place%] instance.})) )
 
-@(define spawn-vm-dynamic-note
+@(define spawn-node-dynamic-note
    (make-splice
      (list
        @p{
@@ -117,7 +115,7 @@ parameters. This procedure constructs the new remote-place by calling
 @racket[(dynamic-place instance-module-path instance-place-function-name)].
        })))
 
-@defproc[(spawn-vm-with-dynamic-place-at
+@defproc[(spawn-node-with-dynamic-place-at
            [hostname string?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
@@ -127,11 +125,11 @@ parameters. This procedure constructs the new remote-place by calling
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
            [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
            [#:restart-on-exit restart-on-exit any/c #f]) remote-place?]{
-@|spawn-vm-dynamic-note|
-@|spawn-vm-note|
+@|spawn-node-dynamic-note|
+@|spawn-node-note|
 }
 
-@defproc[(spawn-vm-supervise-dynamic-place-at
+@defproc[(spawn-node-supervise-dynamic-place-at
            [hostname string?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
@@ -141,8 +139,8 @@ parameters. This procedure constructs the new remote-place by calling
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
            [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
            [#:restart-on-exit restart-on-exit any/c #f]) (values remote-node%? remote-place%?)]{
-@|spawn-vm-dynamic-note|
-The new @racket[remote-vm%] and @racket[remote-place%] instances make up the two return values.
+@|spawn-node-dynamic-note|
+The new @racket[remote-node%] and @racket[remote-place%] instances make up the two return values.
 }
 
 @(define place-thunk-function
@@ -157,7 +155,7 @@ accomplish this by calling either @racket[dynamic-place] or
 @racket[place] inside the thunk.
       })) )
 
-@(define spawn-vm-thunk-note
+@(define spawn-node-thunk-note
    (make-splice
      (list
        @p{
@@ -171,7 +169,7 @@ dynamically requiring the
        @p{
 @racket[((dynamic-require instance-module-path instance-thunk-function-name))]
        })))
-@defproc[(spawn-vm-with-place-thunk-at
+@defproc[(spawn-node-with-place-thunk-at
            [hostname string?]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
@@ -181,11 +179,11 @@ dynamically requiring the
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
            [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
            [#:restart-on-exit restart-on-exit any/c #f]) remote-place%?]{
-@|spawn-vm-thunk-note|
+@|spawn-node-thunk-note|
 @|place-thunk-function|
-@|spawn-vm-note|
+@|spawn-node-note|
 }
-@defproc[(spawn-vm-supervise-place-thunk-at
+@defproc[(spawn-node-supervise-place-thunk-at
            [hostname string?]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
@@ -194,13 +192,13 @@ dynamically requiring the
            [#:racket-path racketpath string-path? (racket-path)]
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
            [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (values remote-vm%? remote-place%?)]{
-@|spawn-vm-thunk-note|
+           [#:restart-on-exit restart-on-exit any/c #f]) (values remote-node%? remote-place%?)]{
+@|spawn-node-thunk-note|
 @|place-thunk-function|
-The new @racket[remote-vm%] and @racket[remote-place%] instances make up the two return values.
+The new @racket[remote-node%] and @racket[remote-place%] instances make up the two return values.
 }
 
-@defproc[(spawn-remote-racket-vm
+@defproc[(spawn-remote-racket-node
            [hostname string?]
            [#:listen-port port non-negative-integer? DEFAULT-ROUTER-PORT]
            [#:racket-path racketpath string-path? (racket-path)]
@@ -209,22 +207,22 @@ The new @racket[remote-vm%] and @racket[remote-place%] instances make up the two
 Spawns a new remote node at @racket[hostname] and returns a @racket[remote-node%] handle.
 }
 @defproc[(supervise-dynamic-place-at
-           [remote-vm remote-vm?]
+           [remote-node remote-node?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
            [#:restart-on-exit restart-on-exit any/c #f]) remote-place%?]{
-Creates a new place on the @racket[remote-vm] by using
+Creates a new place on the @racket[remote-node] by using
 @racket[dynamic-place] to invoke
 @racket[instance-place-function-name] from the module
 @racket[instance-module-path].
 }
 
 @defproc[(supervise-place-thunk-at
-           [remote-vm remote-vm?]
+           [remote-node remote-node?]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
            [#:restart-on-exit restart-on-exit any/c #f]) remote-place%?]{
-Creates a new place on the @racket[remote-vm] by executing the thunk
+Creates a new place on the @racket[remote-node] by executing the thunk
 @racket[instance-thunk-function-name] from the module
 @racket[instance-module-path].
 
@@ -239,12 +237,12 @@ Spawns an attached external process at host @racket[hostname].
 }
 
 @defproc[(supervise-named-dynamic-place-at
-           [remote-vm remote-vm?]
+           [remote-node remote-node?]
            [place-name symbol?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
            [#:restart-on-exit restart-on-exit any/c #f]) remote-place%?]{
-Creates a new place on the @racket[remote-vm] by using
+Creates a new place on the @racket[remote-node] by using
 @racket[dynamic-place] to invoke
 @racket[instance-place-function-name] from the module
 @racket[instance-module-path]. The @racket[place-name] symbol
@@ -252,12 +250,12 @@ is used to establish later connections to the named place.
 }
 
 @defproc[(supervise-named-place-thunk-at
-           [remote-vm remote-vm?]
+           [remote-node remote-node?]
            [place-name symbol?]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
            [#:restart-on-exit restart-on-exit any/c #f]) remote-place%?]{
-Creates a new place on the @racket[remote-vm] by executing the thunk
+Creates a new place on the @racket[remote-node] by executing the thunk
 @racket[instance-thunk-function-name] from the module
 @racket[instance-module-path].  The @racket[place-name] symbol
 is used to establish later connections to the named place.
@@ -283,8 +281,8 @@ Returns a @racket[after-seconds%] instance that should be supplied to a @racket[
 Executes the body expressions after a delay of @racket[seconds] from the start of the event loop.
 }
 
-@defproc[(connect-to-named-place [vm remote-node%?] [name symbol?]) remote-connection%?]{
-Connects to a named place on the @racket[vm] named @racket[name] and returns a @racket[remote-connection%] object.
+@defproc[(connect-to-named-place [node remote-node%?] [name symbol?]) remote-connection%?]{
+Connects to a named place on the @racket[node] named @racket[name] and returns a @racket[remote-connection%] object.
 }
 
 @defproc[(log-message [severity symbol?] [msg string?]) void?]{
@@ -405,9 +403,9 @@ node's message router.
   launches compute places and routes inter-node place messages in the
   distributed system.  This is the remote api to a distributed places
   node. Instances of @racket[remote-node%] are returned by
-  @racket[spawn-remote-racket-vm],
-  @racket[spawn-vm-supervise-dynamic-place-at], and
-  @racket[spawn-vm-supervise-place-thunk-at].
+  @racket[spawn-remote-racket-node],
+  @racket[spawn-node-supervise-dynamic-place-at], and
+  @racket[spawn-node-supervise-place-thunk-at].
 
   @defconstructor[([listen-port tcp-listen-port? #f]
                    [restart-on-exit any/c #f])]{
@@ -455,7 +453,7 @@ The @racket[remote-place%] instance provides a remote api to a place
 running on a remote distributed places node. It launches a compute
 places and routes inter-node place messages to the remote place.
 
-@defconstructor[([vm remote-node%?]
+@defconstructor[([node remote-node%?]
                  [place-exec list?]
                  [restart-on-exit #f]
                  [one-sided-place? #f]
@@ -490,7 +488,7 @@ The @racket[remote-connection%] instance provides a remote api to a named place
 running on a remote distributed places node. It connects to a named compute
 places and routes inter-node place messages to the remote place.
 
-@defconstructor[([vm remote-node%?]
+@defconstructor[([node remote-node%?]
                  [name string?]
                  [restart-on-exit #f]
                  [on-channel #f])]{
@@ -512,7 +510,7 @@ places and routes inter-node place messages to the remote place.
   distributed places node at that node. It launches a compute places and
   routes inter-node place messages to the place.
 
-  @defconstructor[([vm remote-place%?]
+  @defconstructor[([node remote-place%?]
                  [place-exec list?]
                  [ch-id exact-positive-integer?]
                  [sc socket-connection%?]
@@ -543,7 +541,7 @@ The @racket[connection%] instance represents a connection to a
 named-place instance running on the current node. It routes inter-node
 place messages to the named place.
 
-@defconstructor[([vm remote-node%?]
+@defconstructor[([node remote-node%?]
                  [name string?]
                  [ch-id exact-positive-integer?]
                  [sc socket-connection%?])]{

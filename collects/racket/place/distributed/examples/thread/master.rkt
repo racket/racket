@@ -43,17 +43,17 @@
 (provide main)
 
 (define (main)
-  (define remote-vm   (spawn-remote-racket-vm "localhost" #:listen-port 6344))
-  (define bank-place  (supervise-thread-at remote-vm (quote-module-name) 'make-bank))
+  (define remote-node (spawn-remote-racket-node "localhost" #:listen-port 6344))
+  (define bank-place  (supervise-thread-at remote-node (quote-module-name) 'make-bank))
 
   (message-router
-    remote-vm
+    remote-node
     (after-seconds 2
       (displayln (bank-new-account bank-place 'user0))
       (displayln (bank-add bank-place 'user0 10))
       (displayln (bank-removeM bank-place 'user0 5)))
 
     (after-seconds 6
-      (node-send-exit remote-vm))
+      (node-send-exit remote-node))
     (after-seconds 8
       (exit 0))))
