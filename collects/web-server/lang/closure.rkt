@@ -1,5 +1,6 @@
 #lang racket
 (require syntax/free-vars
+         racket/syntax
          (for-template
           racket/base
           racket/serialize)
@@ -61,6 +62,8 @@
         ;; Directory for last-ditch resolution --------------------
         (or (current-load-relative-directory) (current-directory))))))
   ; Define the closure struct (req serialize info value)
+  (define fun-name
+    (or (syntax-local-name) (generate-temporary)))
   (define-values
     (make-CLOSURE-id CLOSURE?-id CLOSURE-env-id CLOSURE-set-env!-id)
     (apply
@@ -77,14 +80,16 @@
                           #f  ; auto-v
                           
                           ; prop-vals:
-                          (list (cons prop:serializable #,CLOSURE:serialize-info-id)
-                                (cons prop:procedure
-                                      (make-keyword-procedure
-                                       (lambda (kws kw-vals clsr . rst)
-                                         (let-values ([#,fvars ((CLOSURE-ref clsr 0))])
-                                          (keyword-apply (procedure-rename #,stx '#,(syntax-local-name))
-                                                         kws kw-vals
-                                                         rst))))))
+                          (list
+                           (cons prop:serializable #,CLOSURE:serialize-info-id)
+                           (cons prop:procedure
+                                 (make-keyword-procedure
+                                  (lambda (kws kw-vals clsr . rst)
+                                    (let-values ([#,fvars ((CLOSURE-ref clsr 0))])
+                                      (let ([#,fun-name #,stx])
+                                        (keyword-apply #,fun-name
+                                                       kws kw-vals
+                                                       rst)))))))
                           
                           #f  ; inspector
                           
