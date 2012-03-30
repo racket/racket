@@ -130,7 +130,7 @@ the settings above should match r5rs
     (test-expression "(current-command-line-arguments)" "'#()")
     (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
     
-    (test-expression "#lang racket" #rx"module: illegal use \\(not at top-level\\)" #rx"read: #lang not enabled in the current context")
+    (test-expression "#lang racket" "" #rx"read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      "a: b")))
 
