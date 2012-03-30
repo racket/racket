@@ -19,6 +19,7 @@
          setup/dirs
          racket/place
          mrlib/close-icon
+         mrlib/name-message
          "tooltip.rkt"
          "drsig.rkt"
          "rep.rkt"
@@ -67,7 +68,7 @@
   ;; command-line-args : (vectorof string)
   ;; auto-text : string
   (define-struct (module-language-settings drracket:language:simple-settings)
-    (collection-paths command-line-args auto-text compilation-on? full-trace? run-test-submodule?))
+    (collection-paths command-line-args auto-text compilation-on? full-trace? submodules-to-run))
   
   (define (module-language-settings->prefab-module-settings settings)
     (prefab-module-settings (module-language-settings-command-line-args settings)
@@ -78,7 +79,7 @@
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
-  (define default-run-test-submodule? #t)
+  (define default-submodules-to-run (list '(main) '(test)))
   (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))
   
   ;; module-mixin : (implements drracket:language:language<%>)
@@ -183,7 +184,7 @@
            (get-default-auto-text)
            default-compilation-on?
            default-full-trace?
-           default-run-test-submodule?)))
+           default-submodules-to-run)))
       
       ;; default-settings? : -> boolean
       (define/override (default-settings? settings)
@@ -202,8 +203,8 @@
                      default-compilation-on?)
              (equal? (module-language-settings-full-trace? settings)
                      default-full-trace?)
-             (equal? (module-language-settings-run-test-submodule? settings)
-                     default-run-test-submodule?)))
+             (equal? (module-language-settings-submodules-to-run settings)
+                     default-submodules-to-run)))
       
       (define/override (marshall-settings settings)
         (let ([super-marshalled (super marshall-settings settings)])
@@ -213,7 +214,7 @@
                 (module-language-settings-auto-text settings)
                 (module-language-settings-compilation-on? settings)
                 (module-language-settings-full-trace? settings)
-                (module-language-settings-run-test-submodule? settings))))
+                (module-language-settings-submodules-to-run settings))))
       
       (define/override (unmarshall-settings marshalled)
         (and (list? marshalled)
@@ -231,9 +232,9 @@
                           [full-trace? (if (<= marshalled-len 5)
                                            default-full-trace?
                                            (list-ref marshalled 5))]
-                          [run-test-submodule? (if (<= marshalled-len 6)
-                                                   default-run-test-submodule?
-                                                   (list-ref marshalled 6))])
+                          [submodules-to-run (if (<= marshalled-len 6)
+                                                 default-submodules-to-run
+                                                 (list-ref marshalled 6))])
                       (and (list? collection-paths)
                            (andmap (λ (x) (or (string? x) (symbol? x)))
                                    collection-paths)
@@ -241,7 +242,7 @@
                            (andmap string? (vector->list command-line-args))
                            (string? auto-text)
                            (boolean? compilation-on?)
-                           (boolean? run-test-submodule?)
+                           ((listof (listof symbol?)) submodules-to-run)
                            (let ([super (super unmarshall-settings 
                                                (let ([p (car marshalled)])
                                                  ;; Convert 'write to 'print:
@@ -267,7 +268,7 @@
                                                      compilation-on?)
                                                 
                                                 full-trace?
-                                                run-test-submodule?)))))))))))
+                                                submodules-to-run)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
@@ -385,11 +386,10 @@
                     (begin
                       (*do-module-specified-configuration)
                       (namespace-require modspec)
-                      (when (module-declared? `(submod ,modspec main) #t)
-                        (dynamic-require `(submod ,modspec main) #f))
-                      (when (module-language-settings-run-test-submodule? settings)
-                        (when (module-declared? `(submod ,modspec test) #t)
-                          (dynamic-require `(submod ,modspec test) #f))))))))
+                      (for ([submod (in-list (module-language-settings-submodules-to-run settings))])
+                        (define submod-spec `(submod ,modspec ,@submod))
+                        (when (module-declared? submod-spec #t)
+                          (dynamic-require submod-spec #f))))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
         (define (*do-module-specified-configuration)
@@ -543,9 +543,20 @@
     (define compilation-on-check-box #f)
     (define compilation-on? #t)
     (define save-stacktrace-on-check-box #f)
-    (define run-test-submodule #f)
+    (define run-submodules-choice #f)
     (define left-debugging-radio-box #f)
     (define right-debugging-radio-box #f)
+    (define submodules-to-run #f)
+    
+    (define (sort-submodules-to-run!)
+      (define ht (make-hash))
+      (for ([submod (in-list (preferences:get 'drracket:submodules-to-choose-from))]
+            [x (in-naturals)])
+        (hash-set! ht submod x))
+      (set! submodules-to-run (sort submodules-to-run
+                                    < 
+                                    #:key (λ (x) (hash-ref ht x)))))
+    
     (define simple-case-lambda
       (drracket:language:simple-module-based-language-config-panel
        new-parent
@@ -570,9 +581,31 @@
          (set! save-stacktrace-on-check-box (new check-box%
                                                  [label (string-constant preserve-stacktrace-information)]
                                                  [parent dynamic-panel]))
-         (set! run-test-submodule (new check-box%
-                                       [label (string-constant run-test-submodule)]
-                                       [parent dynamic-panel])))))
+         (set! run-submodules-choice 
+               (new (class name-message%
+                      (define/override (fill-popup menu reset)
+                        (for ([item (in-list (preferences:get 'drracket:submodules-to-choose-from))]
+                              [x (in-naturals)])
+                          (new checkable-menu-item%
+                               [label (apply string-append (add-between (map symbol->string item) " "))]
+                               [checked (member item submodules-to-run)]
+                               [callback 
+                                (λ (a b)
+                                  (if (member item submodules-to-run)
+                                      (set! submodules-to-run (remove item submodules-to-run))
+                                      (begin
+                                        (set! submodules-to-run (cons item submodules-to-run))
+                                        (sort-submodules-to-run!))))]
+                               [parent menu]))
+                        (new separator-menu-item% [parent menu])
+                        (new menu-item% 
+                             [parent menu]
+                             [callback (λ (a b) (add-another-possible-submodule parent))]
+                             [label (string-constant add-submodule)]))
+                      (super-new
+                       [font normal-control-font]
+                       [parent dynamic-panel]
+                       [label (string-constant submodules-to-run)])))))))
     (define (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
       (case (send left-debugging-radio-box get-selection)
         [(0 1)
@@ -747,7 +780,7 @@
                          [(0 1) compilation-on?]
                          [(#f) #f])
                        (send save-stacktrace-on-check-box get-value)
-                       (send run-test-submodule get-value)))))]
+                       submodules-to-run))))]
       [(settings)
        (simple-case-lambda settings)
        (install-collection-paths (module-language-settings-collection-paths settings))
@@ -757,8 +790,33 @@
        (send compilation-on-check-box set-value (module-language-settings-compilation-on? settings))
        (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
        (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
-       (send run-test-submodule set-value (module-language-settings-run-test-submodule? settings))
+       (set! submodules-to-run (module-language-settings-submodules-to-run settings))
        (update-buttons)]))
+  
+  (define (add-another-possible-submodule parent)
+    (define (get-sexp x)
+      (with-handlers ((exn:fail:read? (λ (x) #f)))
+        (define p (open-input-string (string-append "(" x ")")))
+        (define sexp (read p))
+        (and (eof-object? (read-char p))
+             (list? sexp)
+             (andmap symbol? sexp)
+             sexp)))
+    (define msg (get-text-from-user (string-constant add-submodule-title) 
+                                    "submodule"
+                                    (let loop ([parent parent])
+                                      (define p (send parent get-parent))
+                                      (if p
+                                          (loop p)
+                                          parent))
+                                    #:validate (λ (x) (get-sexp x))))
+    (define submods
+      (and msg
+           (get-sexp msg)))
+    (when submods
+      (preferences:set 'drracket:submodules-to-choose-from
+                       (append (preferences:get 'drracket:submodules-to-choose-from)
+                               (list submods)))))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.

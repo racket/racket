@@ -1095,7 +1095,9 @@ please adhere to these guidelines:
  (preserve-stacktrace-information "Preserve stacktrace (disable some optimizations)")
  (expression-level-stacktrace "Expression-level stacktrace")
  (function-level-stacktrace "Function-level stacktrace")
- (run-test-submodule "Run the test submodule")
+ (submodules-to-run "Submodules to Run")
+ (add-submodule "Add Submodule Option ...") ;; menu item
+ (add-submodule-title "Add Submodule") ;; title of dialog opened by above menu item
   
   
   ; used in the bottom left of the drscheme frame 

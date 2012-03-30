@@ -11,6 +11,7 @@
          racket/path
          racket/file
          racket/dict
+         racket/set
          browser/external
          setup/plt-installer)
 
@@ -62,6 +63,12 @@
    ,@(finder:default-filters)))
 
 (application:current-app-name (string-constant drscheme))
+
+(preferences:set-default 'drracket:submodules-to-choose-from 
+                         '((main) (test)) 
+                         (cons/c (list/c 'main)
+                                 (cons/c (list/c 'test)
+                                         (listof (listof symbol?)))))
 
 (drr:set-default 'drracket:language-dialog:hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
 

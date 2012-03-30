@@ -72,6 +72,12 @@ saying that there is no file name until the file is saved.}
   the @method[name-message% set-message].
 }
 
+@defmethod[(fill-popup [menu (is-a?/c popup-menu%)]
+                       [reset (-> void?)])]{
+  This method is called when the user clicks in the name message.
+  Override it to fill in the menu items for the popup menu @racket[menu].
+}
+
 @defmethod[(get-background-color) (or/c #f (is-a/c color%) string?)]{
 
 The result of this method is used for the background color
