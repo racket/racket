@@ -3129,7 +3129,7 @@ static void cleanup_msg_memmory(void *thread) {
 static Scheme_Object *scheme_place_async_try_receive(Scheme_Place_Async_Channel *ch) {
   Scheme_Object *msg = NULL;
   Scheme_Thread *p = scheme_current_thread;
-  GC_CAN_IGNORE void **msg_memory;
+  GC_CAN_IGNORE void *msg_memory;
   BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
   msg = scheme_place_async_try_receive_raw(ch, &msg_memory);
   if (msg) {
