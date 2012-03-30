@@ -70,7 +70,7 @@
              (set! init? #t))
            (gl-draw)
            (swap-gl-buffers)))
-        (refresh))
+        (queue-callback (lambda () (refresh)) #f))
       
       (define/override (on-size w h)
         (with-gl-context 
