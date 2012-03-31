@@ -338,7 +338,7 @@ Returns @racket[0.0]
 }}
 
 @defmethod[(get-selected-text-color)
-           void?]{
+           (or/c (is-a?/c color%) #f)]{
 
 @methspec{
 
