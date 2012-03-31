@@ -73,7 +73,8 @@ saying that there is no file name until the file is saved.}
 }
 
 @defmethod[(fill-popup [menu (is-a?/c popup-menu%)]
-                       [reset (-> void?)])]{
+                       [reset (-> void?)])
+           any]{
   This method is called when the user clicks in the name message.
   Override it to fill in the menu items for the popup menu @racket[menu].
 }
