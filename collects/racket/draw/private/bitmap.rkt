@@ -286,10 +286,10 @@
     (define/public (get-bitmap-gl-context)
       #f)
 
-    (def/public (load-file [(make-alts path-string? input-port?) in]
-                           [bitmap-file-kind-symbol? [kind 'unknown]]
-                           [(make-or-false color%) [bg #f]]
-                           [any? [complain-on-failure? #f]])
+    (define/public (load-file in
+                              [kind 'unknown]
+                              [bg #f]
+                              [complain-on-failure? #f])
       (check-alternate 'load-file)
       (release-bitmap-storage)
       (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
@@ -502,9 +502,7 @@
         (proc bm)
         (send bm release-bitmap-storage)))
 
-    (def/public (save-file [(make-alts path-string? output-port?) out]
-                           [bitmap-save-kind-symbol? [kind 'unknown]]
-                           [quality-integer? [quality 75]])
+    (define/public (save-file out [kind 'unknown] [quality 75])
       (and (ok?)
            (begin
              (if alt?
@@ -625,13 +623,9 @@
 
     (define/public (get-handle) s)
 
-    (def/public (get-argb-pixels [exact-nonnegative-integer? x]
-                                 [exact-nonnegative-integer? y]
-                                 [exact-nonnegative-integer? w]
-                                 [exact-nonnegative-integer? h]
-                                 [bytes? bstr]
-                                 [any? [get-alpha? #f]]
-                                 [any? [pre-mult? #f]])
+    (define/public (get-argb-pixels x y w h bstr
+                                    [get-alpha? #f]
+                                    [pre-mult? #f])
       (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'get-argb-pixels)
                               "byte string is too short: "
@@ -701,13 +695,9 @@
               (let ([p (+ (* 4 i) row)])
                 (bytes-set! bstr p 255)))))]))
 
-    (def/public (set-argb-pixels [exact-nonnegative-integer? x]
-                                 [exact-nonnegative-integer? y]
-                                 [exact-nonnegative-integer? w]
-                                 [exact-nonnegative-integer? h]
-                                 [bytes? bstr]
-                                 [any? [set-alpha? #f]]
-                                 [any? [pre-mult? #f]])
+    (define/public (set-argb-pixels x y w h bstr
+                                    [set-alpha? #f]
+                                    [pre-mult? #f])
       (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'set-argb-pixels)
                               "byte string is too short: "

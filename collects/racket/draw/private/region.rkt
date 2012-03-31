@@ -188,8 +188,7 @@
              [temp-cr (cairo_destroy cr)]
              [else (set! temp-cr cr)]))))))
     
-    (def/public (in-region? [real? x]
-                            [real? y])
+    (define/public (in-region? x y)
       (with-temp-cr
        (lambda (cr)
         (let-values ([(x y)
@@ -206,12 +205,7 @@
                           (values x y))])
           (install-region cr #t values values (lambda (cr v) (and v (cairo_in_fill cr x y))))))))
 
-    (def/public (set-arc [real? x]
-                         [real? y]
-                         [nonnegative-real? width]
-                         [nonnegative-real? height]
-                         [real? start-radians]
-                         [real? end-radians])
+    (define/public (set-arc x y width height start-radians end-radians)
       (modifying 'set-arc)
       (let ([p (new dc-path%)])
         (send p move-to (+ x (/ width 2)) (+ y (/ height 2)))
@@ -220,20 +214,16 @@
         (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
-    (def/public (set-ellipse [real? x]
-                             [real? y]
-                             [nonnegative-real? width]
-                             [nonnegative-real? height])
+    (define/public (set-ellipse x y width height)
       (modifying 'set-ellipse)
       (let ([p (new dc-path%)])
         (send p ellipse x y width height)
         (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
-    (def/public (set-path [dc-path% path]
-                          [real? [x 0.0]]
-                          [real? [y 0.0]]
-                          [(symbol-in odd-even winding) [fill-style 'odd-even]])
+    (define/public (set-path path
+                             [x 0.0] [y 0.0]
+                             [fill-style 'odd-even])
       (modifying 'set-path)
       (let ([p (new dc-path%)])
         (send p append path)
@@ -241,10 +231,9 @@
         (when matrix (send p transform matrix))
         (set! paths (list (cons p fill-style)))))
 
-    (def/public (set-polygon [(make-alts (make-list point%) list-of-pair-of-real?) pts]
-                             [real? [x 0.0]]
-                             [real? [y 0.0]]
-                             [(symbol-in odd-even winding) [fill-style 'odd-even]])
+    (define/public (set-polygon pts
+                                [x 0.0] [y 0.0]
+                                [fill-style 'odd-even])
       (modifying 'set-polygon)
       (if (null? pts)
           (set! paths null)
@@ -261,21 +250,14 @@
             (when matrix (send p transform matrix))
             (set! paths (list (cons p fill-style))))))
 
-    (def/public (set-rectangle [real? x]
-                               [real? y]
-                               [nonnegative-real? width]
-                               [nonnegative-real? height])
+    (define/public (set-rectangle x y width height)
       (modifying 'set-rectangle)
       (let ([p (new dc-path%)])
         (send p rectangle x y width height)
         (when matrix (send p transform matrix))
         (set! paths (list (cons p 'any)))))
 
-    (def/public (set-rounded-rectangle [real? x]
-                                       [real? y]
-                                       [nonnegative-real? width]
-                                       [nonnegative-real? height]
-                                       [real? [radius -0.25]])
+    (define/public (set-rounded-rectangle x y width height [radius -0.25])
       (modifying 'set-rounded-rectangle)
       (let ([p (new dc-path%)])
         (send p rounded-rectangle x y width height radius)
@@ -288,12 +270,12 @@
                               "different built-in dc for given region: " 
                               r)))
 
-    (def/public (intersect [region% r])
+    (define/public (intersect r)
       (check-compatible r 'union)
       (modifying 'intersect)
       (set! paths (append paths (send r get-paths))))
 
-    (def/public (subtract [region% r])
+    (define/public (subtract r)
       (check-compatible r 'subtract)
       (unless (null? paths)
         (let ([add-paths (send r get-paths)])
@@ -302,10 +284,10 @@
               (do-union 'subtract r  (lambda (p) (rev-paths p)))
               (set! paths (append paths p)))))))
 
-    (def/public (union [region% r])
+    (define/public (union r)
       (do-union 'union r values))
 
-    (def/public (xor [region% r])
+    (define/public (xor r)
       (do-union 'xor r (lambda (p) (rev-paths p))))
 
     (define/private rev-paths

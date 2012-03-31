@@ -118,8 +118,7 @@
   (define/public (get-transformation) transformation)
 
   (def/public (get-stipple) stipple)
-  (def/public (set-stipple [(make-or-false bitmap%) s] 
-                           [(make-or-false transformation-vector?) [t #f]])
+  (define/public (set-stipple s [t #f])
     (check-immutable 'set-stipple)
     (set! stipple s)
     (set! transformation (and s t)))

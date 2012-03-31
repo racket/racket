@@ -201,8 +201,7 @@
   (def/public (get-font-id) id)
   (def/public (get-font-key) key)
 
-  (def/public (screen-glyph-exists? [char? c]
-                                    [any? [for-label? #f]])
+  (define/public (screen-glyph-exists? c [for-label? #f])
     (has-screen-glyph? c this (get-pango) for-label?))
 
   (init-rest args)

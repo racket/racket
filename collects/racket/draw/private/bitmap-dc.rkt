@@ -112,57 +112,44 @@
         (and bm
              (send bm get-bitmap-gl-context))))
 
-    (def/public (set-bitmap [(make-or-false bitmap%) v])
+    (define/public (set-bitmap v)
       (internal-set-bitmap v))
 
     (def/public (get-bitmap)
       (internal-get-bitmap))
     
-    (def/public (set-pixel [real? x][real? y][color% c])
+    (define/public (set-pixel x y c)
       (let ([s (bytes 255 (color-red c) (color-green c) (color-blue c))])
         (set-argb-pixels x y 1 1 s)))
 
-    (def/public (get-pixel [real? x][real? y][color% c])
+    (define/public (get-pixel x y c)
       (let-values ([(w h) (get-size)])
         (let ([b (make-bytes 4)])
           (get-argb-pixels x y 1 1 b)
           (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3))
           (and (<= 0 x w) (<= 0 y h)))))
 
-    (def/public (set-argb-pixels [exact-nonnegative-integer? x]
-                                 [exact-nonnegative-integer? y]
-                                 [exact-nonnegative-integer? w]
-                                 [exact-nonnegative-integer? h]
-                                 [bytes? bstr]
-                                 [any? [set-alpha? #f]]
-                                 [any? [pre-mult? #f]])
+    (define/public (set-argb-pixels x y w h bstr
+                                    [set-alpha? #f]
+                                    [pre-mult? #f])
       (let ([bm (internal-get-bitmap)])
         (when bm
           (send bm set-argb-pixels x y w h bstr set-alpha? pre-mult?))))
 
-    (def/public (get-argb-pixels [exact-nonnegative-integer? x]
-                                 [exact-nonnegative-integer? y]
-                                 [exact-nonnegative-integer? w]
-                                 [exact-nonnegative-integer? h]
-                                 [bytes? bstr]
-                                 [any? [get-alpha? #f]]
-                                 [any? [pre-mult? #f]])
+    (define/public (get-argb-pixels x y w h bstr
+                                    [get-alpha? #f]
+                                    [pre-mult? #f])
       (let ([bm (internal-get-bitmap)])
         (when bm
           (send bm get-argb-pixels x y w h bstr get-alpha? pre-mult?))))
 
-    (def/public (draw-bitmap-section-smooth [bitmap% src]
-                                            [real? dest-x]
-                                            [real? dest-y]
-                                            [nonnegative-real? dest-w]
-                                            [nonnegative-real? dest-h]
-                                            [real? src-x]
-                                            [real? src-y]
-                                            [nonnegative-real? src-w]
-                                            [nonnegative-real? src-h]
-                                            [(symbol-in solid opaque xor) [style 'solid]]
-                                            [(make-or-false color%) [color black]]
-                                            [(make-or-false bitmap%) [mask #f]])
+    (define/public (draw-bitmap-section-smooth src dest-x dest-y
+                                               dest-w dest-h
+                                               src-x src-y
+                                               src-w src-h
+                                               [style 'solid]
+                                               [color black]
+                                               [mask #f])
       (let ([sx (if (zero? src-w) 1.0 (/ dest-w src-w))]
             [sy (if (zero? src-h) 1.0 (/ dest-h src-h))])
         (let ([t (get-transformation)]

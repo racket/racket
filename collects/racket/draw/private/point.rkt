@@ -11,8 +11,8 @@
                 [y 0.0])
     (define/public (get-x) x)
     (define/public (get-y) y)
-    (def/public (set-x [real? v]) (set! x (exact->inexact v)))
-    (def/public (set-y [real? v]) (set! y (exact->inexact v)))
+    (define/public (set-x v) (set! x (exact->inexact v)))
+    (define/public (set-y v) (set! y (exact->inexact v)))
     (super-new)))
 
 (define point-x (class-field-accessor point% x))

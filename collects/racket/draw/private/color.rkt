@@ -55,7 +55,7 @@
   (def/public (blue) b)
   (def/public (alpha) a)
 
-  (def/public (set [byte? rr] [byte? rg] [byte? rb] [(real-in 0 1) [ra 1.0]])
+  (define/public (set rr rg rb [ra 1.0])
     (if immutable?
         (error (method-name 'color% 'set) "object is immutable")
         (begin
@@ -68,7 +68,7 @@
   (def/public (is-immutable?) immutable?)
   (def/public (set-immutable) (set! immutable? #t))
   
-  (def/public (copy-from [color% c])
+  (define/public (copy-from c)
     (if immutable?
         (error (method-name 'color% 'copy-from) "object is immutable")
         (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))

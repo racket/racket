@@ -125,7 +125,7 @@
 
   (define stipple #f)
   (def/public (get-stipple) stipple)
-  (def/public (set-stipple [(make-or-false bitmap%) s]) 
+  (define/public (set-stipple s)
     (check-immutable 'set-stipple)
     (set! stipple s)))
 
