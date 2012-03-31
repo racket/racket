@@ -235,18 +235,26 @@ list is also in the second list.
          procedure?]{
 
 Returns a procedure that accepts all keyword arguments (without
-requiring any keyword arguments). See also
-@racket[procedure-reduce-keyword-arity].
+requiring any keyword arguments).
 
-When the result is called with keyword arguments, then @racket[proc]
+When the procedure returned by @racket[make-keyword-procedure]
+is called with keyword arguments, then @racket[proc]
 is called; the first argument is a list of distinct keywords sorted by
 @racket[keyword<?], the second argument is a parallel list containing a
 value for each keyword, and the remaining arguments are the
 by-position arguments.
 
-When the result is called without keyword arguments, then
-@racket[plain-proc] is called. Furthermore, @racket[procedure-arity]
-obtains its result from @racket[plain-proc].
+When the procedure returned by @racket[make-keyword-procedure]
+is called without keyword arguments, then
+@racket[plain-proc] is called---possibly more efficiently than
+dispatching through @racket[proc]. Normally, @racket[plain-proc]
+should have the same behavior as calling @racket[proc] with empty lists as
+the first two arguments, but that correspondence is in no way
+enforced.
+
+The result of @racket[procedure-arity] and @racket[object-name] on the
+new procedure is the same as for @racket[plain-proc]. See also
+@racket[procedure-reduce-keyword-arity] and @racket[procedure-rename].
 
 @defexamples[
 (define show
@@ -255,6 +263,14 @@ obtains its result from @racket[plain-proc].
 
 (show 1)
 (show #:init 0 1 2 3 #:extra 4)
+
+(define show2
+  (make-keyword-procedure (lambda (kws kw-args . rest)
+                            (list kws kw-args rest))
+                          (lambda args 
+                            (list->vector args))))
+(show2 1)
+(show2 #:init 0 1 2 3 #:extra 4)
 ]}
 
 @defproc[(procedure-reduce-keyword-arity [proc procedure?]
