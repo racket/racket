@@ -409,6 +409,8 @@
   (black-on-white-color-scheme "Schwarz auf Weiß") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
 
+  (add-spacing-between-lines "Ein Pixel Extra-Platz zwischen den Zeilen")
+
  ; title of the color choosing dialog
 
  ; should have entire alphabet
@@ -993,6 +995,9 @@
  (preserve-stacktrace-information "Stack-Trace behalten (einige Optimierungen werden abgeschaltet)")
  (expression-level-stacktrace "Stack-Trace mit Ausdrücken")
  (function-level-stacktrace "Stack-Trace mit Funktionen")
+ (submodules-to-run "Submodule zum Ausführen")
+ (add-submodule "Submodul-Option hinzufügen ...") ;; menu item
+ (add-submodule-title "Submodul hinzufügen") ;; title of dialog opened by above menu item
 
  ;; used in the bottom left of the drscheme frame as the label
  ;; above the programming language's name
