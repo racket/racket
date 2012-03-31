@@ -25,4 +25,8 @@
 
 @cite[schelog]
 
+@cite[(make-bib #:title "Look ma, no authors")]
+
+@cite[(make-bib #:title "Look ma, no authors" #:author "And no date")]
+
 @(gen)
