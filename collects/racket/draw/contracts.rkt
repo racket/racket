@@ -45,6 +45,10 @@
 	    'xor-dot 'xor-long-dash 'xor-short-dash
 	    'xor-dot-dash))
 
+(define transformation-vector/c
+  (vector/c (vector/c real? real? real? real? real? real?)
+            real? real? real? real? real?))
+
 
 (define dc<%>/c
   (class/c
@@ -198,10 +202,9 @@
     (green (->m (integer-in 0 255)))
     (copy-from (->m (is-a?/c color%) (is-a?/c color%)))
     (ok? (->m boolean?))
-    (set (->m (integer-in 0 255)
-              (integer-in 0 255)
-              (integer-in 0 255)
-              void?))))
+    (set (->*m (byte? byte? byte?)
+               ((real-in 0 1))
+               void?))))
 
 (define point%/c
   (class/c
@@ -266,7 +269,9 @@
                      (integer-in 0 255)
                      (integer-in 0 255)
                      void?)))
-    (set-stipple (->m (or/c (is-a?/c bitmap%) false/c) void?))
+    (set-stipple (->*m ((or/c (is-a?/c bitmap%) #f))
+                       ((or/c transformation-vector/c #f))
+                       void?))
     (set-style (->m brush-style/c void?))))
 
 (define brush-list%/c
@@ -305,30 +310,34 @@
          (class/c
            (init [bitmap (or/c (is-a?/c bitmap%) #f)])
            [draw-bitmap-section-smooth
-             (->m (is-a?/c bitmap%)
-                  real? real?
-                  (and/c real? (not/c negative?))
-                  (and/c real? (not/c negative?))
-                  real? real?
-                  (and/c real? (not/c negative?))
-                  (and/c real? (not/c negative?))
-                  (or/c (is-a?/c bitmap%) #f)
+             (->*m ((is-a?/c bitmap%)
+                    real? real?
+                    (and/c real? (not/c negative?))
+                    (and/c real? (not/c negative?))
+                    real? real?
+                    (and/c real? (not/c negative?))
+                    (and/c real? (not/c negative?)))
+                   ((one-of/c 'solid 'opaque 'xor)
+                    (or/c (is-a?/c color%) #f)
+                    (or/c (is-a?/c bitmap%) #f))
                   boolean?)]
            [get-argb-pixels
-             (->*m (real? real?
+             (->*m (exact-nonnegative-integer?
+                    exact-nonnegative-integer?
                     exact-nonnegative-integer?
                     exact-nonnegative-integer?
                     (and/c bytes? (not/c immutable?)))
-                   (any/c)
+                   (any/c any/c)
                    void?)]
            [get-bitmap (->m (or/c (is-a?/c bitmap%) #f))]
            [get-pixel (->m real? real? (is-a?/c color%) boolean?)]
            [set-argb-pixels
-             (->*m (real? real?
+             (->*m (exact-nonnegative-integer?
                     exact-nonnegative-integer?
                     exact-nonnegative-integer?
-                    bytes?)
-                   (any/c)
+                    exact-nonnegative-integer?
+                    (and/c bytes? (not/c immutable?)))
+                   (any/c any/c)
                    void?)]
            [set-bitmap (->m (or/c (is-a?/c bitmap%) #f) void?)]
            [set-pixel (->m real? real? (is-a?/c color%) void?)])))
@@ -395,13 +404,14 @@
                       void?))
     (set-path (->*m ((is-a?/c dc-path%))
                     (real?
-                      real?
-                      (one-of/c 'odd-even 'winding))
+                     real?
+                     (one-of/c 'odd-even 'winding))
                     void?))
-    (set-polygon (->*m ((listof (is-a?/c point%)))
+    (set-polygon (->*m ((or/c (listof (is-a?/c point%))
+                              (listof (cons/c real? real?))))
                        (real?
-                         real?
-                         (one-of/c 'odd-even 'winding))
+                        real?
+                        (one-of/c 'odd-even 'winding))
                        void?))
     (set-rectangle (->m real?
                         real?
@@ -409,9 +419,9 @@
                         (and/c real? (not/c negative?))
                         void?))
     (set-rounded-rectangle (->*m (real?
-                                   real?
-                                   (and/c real? (not/c negative?))
-                                   (and/c real? (not/c negative?)))
+                                  real?
+                                  (and/c real? (not/c negative?))
+                                  (and/c real? (not/c negative?)))
                                  (real?)
                                  void?))
     (subtract (->m (is-a?/c region%) void?))
@@ -422,11 +432,11 @@
   (class/c
     (append (->m (is-a?/c dc-path%) void?))
     (arc (->*m (real?
-                 real?
-                 (and/c real? (not/c negative?))
-                 (and/c real? (not/c negative?))
-                 real?
-                 real?)
+                real?
+                real?
+                real?
+                real?
+                real?)
                (any/c)
                void?))
     (close (->m void?))
@@ -438,7 +448,8 @@
                   void?))
     (get-bounding-box (->m (values real? real? real? real?)))
     (line-to (->m real? real? void?))
-    (lines (->*m ((listof (is-a?/c point%)))
+    (lines (->*m ((or/c (listof (is-a?/c point%))
+                        (listof (cons/c real? real?))))
                  (real? real?)
                  void?))
     (move-to (->m real? real? void?))
@@ -452,12 +463,19 @@
     (reverse (->m void?))
     (rotate (->m real? void?))
     (rounded-rectangle (->*m (real?
-                               real?
-                               (and/c real? (not/c negative?))
-                               (and/c real? (not/c negative?)))
+                              real?
+                              (and/c real? (not/c negative?))
+                              (and/c real? (not/c negative?)))
                              (real?)
                              void?))
     (scale (->m real? real? void?))
+    (text-outline (->*m ((is-a?/c font%)
+                         string?
+                         real? real?)
+                        (any/c)
+                        void?))
+    (transform (->m (vector/c real? real? real? real? real? real?)
+                    void?))
     (translate (->m real? real? void?))))
 
 (define gl-config%/c
@@ -478,8 +496,8 @@
 (define bitmap%/c
   (class/c
     (get-argb-pixels (->*m
-                       (real?
-                        real?
+                       (exact-nonnegative-integer?
+                        exact-nonnegative-integer?
                         exact-nonnegative-integer?
                         exact-nonnegative-integer?
                         (and/c bytes? (not/c immutable?)))
@@ -507,8 +525,8 @@
                      ((integer-in 0 100))
                      boolean?))
     (set-argb-pixels (->*m
-                       (real?
-                        real?
+                       (exact-nonnegative-integer?
+                        exact-nonnegative-integer?
                         exact-nonnegative-integer?
                         exact-nonnegative-integer?
                         bytes?)
