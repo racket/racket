@@ -528,6 +528,8 @@
     (set-method (preferences:get 'drracket:multi-file-search:search-type)) 
         
     (send search-text-field focus)
+    (let ([t (send search-text-field get-editor)])
+      (send t set-position 0 (send t last-position)))
     (send dialog show #t)
     
     (and
