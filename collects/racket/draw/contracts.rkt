@@ -23,6 +23,9 @@
 
 (provide (all-defined-out))
 
+;; dummy values to avoid cycles
+(define-values (frame% dialog%) (values object% object%))
+
 (define brush-style/c
   (one-of/c 'transparent 'solid 'opaque
 	    'xor 'hilite 'panel
@@ -116,9 +119,8 @@
     [get-char-height (->m (and/c real? (not/c negative?)))]
     [get-char-width (->m (and/c real? (not/c negative?)))]
     [get-clipping-region (->m (or/c (is-a?/c region%) #f))]
-    ;; Missing in this version, but fixed in master
-    ;[get-device-scale (->m (values (and/c real? (not/c negative?))
-    ;                               (and/c real? (not/c negative?))))]
+    [get-device-scale (->m (values (and/c real? (not/c negative?))
+                                   (and/c real? (not/c negative?))))]
     [get-font (->m (is-a?/c font%))]
     [get-gl-context (->m (or/c (is-a?/c gl-context<%>) #f))]
     [get-initial-matrix (->m (vector/c real? real? real?
@@ -335,8 +337,7 @@
   (and/c dc<%>/c
          (class/c
            (init [interactive any/c]
-                 ;; this doesn't work due to a cyclic dependency
-                 ;[parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
                  [use-paper-bbox any/c]
                  [as-eps any/c]
                  [width (or/c (and/c real? (not/c negative?)) #f)]
@@ -347,8 +348,7 @@
   (and/c dc<%>/c
          (class/c
            (init [interactive any/c]
-                 ;; see above
-                 ;[parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
                  [use-paper-bbox any/c]
                  [as-eps any/c]
                  [width (or/c (and/c real? (not/c negative?)) #f)]
