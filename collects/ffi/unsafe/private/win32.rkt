@@ -108,6 +108,7 @@
 (define _VVAL (_union _double
                       _intptr
                       ;; etc.
+		      (_array _pointer 2)
                       ))
 
 (define-cstruct _VARIANT ([vt _VARTYPE]
@@ -347,3 +348,33 @@
     (let ([p (ptr-ref v _gcpointer)])
       (let ([len (utf-16-length s)])
         (SysAllocStringLen p len)))))
+
+(define _SAFEARRAY-pointer (_cpointer 'SAFEARRAY))
+
+(define-oleaut SafeArrayCreate (_wfun _VARTYPE 
+				      _UINT
+				      (dims : (_list i _SAFEARRAYBOUND))
+				      -> _SAFEARRAY-pointer))
+(define-oleaut SafeArrayDestroy (_hfun _SAFEARRAY-pointer
+				       -> SafeArrayDestroy (void)))
+(define-oleaut SafeArrayGetVartype (_hfun _SAFEARRAY-pointer
+					  (vt : (_ptr o _VARTYPE))
+					  -> SafeArrayGetVartype vt))
+(define-oleaut SafeArrayGetLBound (_hfun _SAFEARRAY-pointer
+					 _UINT
+					 (v : (_ptr o _LONG))
+					 -> SafeArrayGetLBound v))
+(define-oleaut SafeArrayGetUBound (_hfun _SAFEARRAY-pointer
+					 _UINT
+					 (v : (_ptr o _LONG))
+					 -> SafeArrayGetUBound v))
+(define-oleaut SafeArrayPutElement (_hfun _SAFEARRAY-pointer
+					  (_list i _LONG)
+					  _pointer
+					  -> SafeArrayPutElement (void)))
+(define-oleaut SafeArrayGetElement (_hfun _SAFEARRAY-pointer
+					  (_list i _LONG)
+					  _pointer
+					  -> SafeArrayGetElement (void)))
+(define-oleaut SafeArrayGetDim (_wfun _SAFEARRAY-pointer
+				      -> _UINT))

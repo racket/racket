@@ -745,7 +745,7 @@
           (GetTypeInfo/tl type-lib coclass-index))
      (Release type-lib))]))
 
-(define (event-type-info-from-com-object obj [exn? #t])
+(define (event-type-info-from-com-object obj)
   (or (com-object-event-type-info obj)
       (let ([dispatch (com-object-get-dispatch obj)])
         (define provide-class-info (QueryInterface dispatch IID_IProvideClassInfo _IProvideClassInfo-pointer))
@@ -807,14 +807,14 @@
            (cons name accum)
            (ReleaseVarDesc type-info var-desc))))))
 
-(define (extract-type-info who obj)
+(define (extract-type-info who obj exn?)
   (cond
-   [(com-object? obj) (type-info-from-com-object obj)]
+   [(com-object? obj) (type-info-from-com-object obj exn?)]
    [(com-type? obj) (com-type-type-info obj)]
    [else (raise-type-error who "com-object or com-type" obj)]))
 
 (define (do-get-methods who obj inv-kind)
-  (define type-info (extract-type-info who obj))
+  (define type-info (extract-type-info who obj #t))
   (define type-attr (GetTypeAttr type-info))
   (begin0
    (sort (get-type-names type-info type-attr null inv-kind) string-ci<?)
@@ -977,14 +977,14 @@
   (event-type-info-from-type-info (com-type-type-info obj)
                                   (com-type-clsid obj)))
 
-(define (get-method-type obj name inv-kind)
+(define (get-method-type obj name inv-kind [exn? #t])
   (or (hash-ref (com-object-types obj) (cons name inv-kind) #f)
       (let ([type-info
              (cond
               [(= inv-kind INVOKE_EVENT)
                (event-type-info-from-com-object obj)]
               [else
-               (type-info-from-com-object obj)])])
+               (type-info-from-com-object obj exn?)])])
         (and type-info
              (let ([mx-type-desc (type-desc-from-type-info name inv-kind type-info)])
                (when mx-type-desc
@@ -1037,7 +1037,6 @@
         'iunknown
         '(opt iunknown))]
    [(bit-and? vt VT_ARRAY)
-    (error "here")
     (define array-desc (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 1)
                              _pointer
                              _ARRAYDESC-pointer))
@@ -1091,10 +1090,14 @@
     ;; but we'll report them as an enumeration.
     'com-enumeration]
    [VT_VOID 'void]
-   [else (string->symbol (format "COM-0x~x" vt))]))
+   [else 
+    (if (= VT_ARRAY (bitwise-and vt VT_ARRAY))
+	`(array ? ,(vt-to-scheme-type (- vt VT_ARRAY)))
+	(string->symbol (format "COM-0x~x" vt)))]))
 
 (define (arg-to-type arg)
   (cond
+   [(boolean? arg) 'boolean]
    [(signed-int? arg 32) 'int]
    [(unsigned-int? arg 32) 'unsigned-int]
    [(signed-int? arg 64) 'long-long]
@@ -1103,7 +1106,14 @@
    [(real? arg) 'double]
    [(com-object? arg) 'com-object]
    [(IUnknown? arg) 'iunknown]
-   [else 'any]))
+   [(vector? arg) `(array ,(vector-length arg)
+			  ,(if (zero? (vector-length arg))
+			       'int
+			       (for/fold ([t (arg-to-type (vector-ref arg 0))]) ([v (in-vector arg)])
+				 (if (equal? t (arg-to-type v))
+				     t
+				     'any))))]
+   [else (error 'com "cannot infer marshal format for value: ~e" arg)]))
 
 (define (elem-desc-ref func-desc i)
   (ptr-add (FUNCDESC-lprgelemdescParam func-desc) i _ELEMDESC))
@@ -1132,13 +1142,13 @@
         0)))
 
 (define (do-get-method-type who obj name inv-kind internal?)
-  (define type-info (extract-type-info who obj))  
+  (define type-info (extract-type-info who obj (not internal?)))
   (when (and (= inv-kind INVOKE_FUNC)
              (is-dispatch-name? name))
     (error who "IDispatch methods not available"))
   (define mx-type-desc
     (cond
-     [(com-object? obj) (get-method-type obj name inv-kind)]
+     [(com-object? obj) (get-method-type obj name inv-kind (not internal?))]
      [else (define x-type-info
              (if (= inv-kind INVOKE_EVENT)
                  (event-type-info-from-com-type obj)
@@ -1384,8 +1394,11 @@
     (set-VARIANT-vt! var (get-var-type-from-elem-desc elem-desc))
     (variant-set! var (to-ctype scheme-type) a)]
    [else
-    (set-VARIANT-vt! var (to-vt scheme-type))
-    (variant-set! var (to-ctype scheme-type) a)]))
+    (define use-scheme-type (if (eq? scheme-type 'any)
+				(arg-to-type a)
+				scheme-type))
+    (set-VARIANT-vt! var (to-vt use-scheme-type))
+    (variant-set! var (to-ctype use-scheme-type) a)]))
 
 (define _float*
   (make-ctype _float
@@ -1404,6 +1417,61 @@
                 p)
               (lambda (p)
                 (ptr-ref p _t))))
+
+(define (make-a-VARIANT)
+  (define var (cast (malloc _VARIANT 'atomic-interior)
+		    _pointer 
+		    _VARIANT-pointer))
+  (VariantInit var)
+  var)
+
+(define (extract-variant-pointer var get?)
+  (define vt (VARIANT-vt var))
+  (define ptr (union-ptr (VARIANT-u var)))
+  (switch
+   vt
+   [VT_BSTR (if get? ptr (ptr-ref ptr _pointer))]
+   [VT_DISPATCH (if get? ptr (ptr-ref ptr _pointer))]
+   [VT_UNKNOWN (if get? ptr (ptr-ref ptr _pointer))]
+   [VT_VARIANT var]
+   [else ptr]))
+
+(define (_safe-array/vectors dims base)
+  (make-ctype _pointer
+	      (lambda (v)
+		(define sa (SafeArrayCreate (to-vt base)
+					    (length dims)
+					    (for/list ([d (in-list dims)])
+					      (make-SAFEARRAYBOUND d 0))))
+		(register-cleanup!
+		 (lambda () (SafeArrayDestroy sa)))
+		(let loop ([v v] [index null] [dims dims])
+		  (for ([v (in-vector v)]
+			[i (in-naturals)])
+		    (define idx (cons i index))
+		    (if (null? (cdr dims))
+			(let ([var (make-a-VARIANT)])
+			  (scheme-to-variant! var v #f base)
+			  (SafeArrayPutElement sa (reverse idx) 
+					       (extract-variant-pointer var #f)))
+			(loop v idx (cdr dims)))))
+		sa)	      
+	      (lambda (_sa)
+		(define sa (cast _sa _pointer _SAFEARRAY-pointer))
+		(define dims (for/list ([i (in-range (SafeArrayGetDim sa))])
+			       (- (add1 (SafeArrayGetUBound sa (add1 i)))
+				  (SafeArrayGetLBound sa (add1 i)))))
+		(define vt (SafeArrayGetVartype sa))
+		(let loop ([dims dims] [level 1] [index null])
+		  (define lb (SafeArrayGetLBound sa level))
+		  (for/vector ([i (in-range (car dims))])
+		    (if (null? (cdr dims))
+			(let ([var (make-a-VARIANT)])
+			  (set-VARIANT-vt! var vt)
+			  (SafeArrayGetElement sa (reverse (cons i index)) 
+					       (extract-variant-pointer var #t))
+			  (variant-to-scheme var))
+			(loop (cdr dims) (add1 level) (cons i index))))))))
 
 (define (to-ctype type)
   (cond
@@ -1435,8 +1503,15 @@
    [(eq? 'box (car type))
     (_box/permanent (to-ctype (cadr type)))]
    [(eq? 'array (car type))
-    (_array/vector (to-ctype (caddr type))
-                   (cadr type))]
+    (define-values (dims base)
+      (let loop ([t type])
+	(cond
+	 [(and (pair? t) (eq? 'array (car t)))
+	  (define-values (d b) (loop (caddr t)))
+	  (values (cons (cadr t) d) b)]
+	 [else
+	  (values null t)])))
+    (_safe-array/vectors dims base)]
    [else #f]))
 
 (define (to-vt type)
@@ -1459,7 +1534,13 @@
     [(boolean) VT_BOOL]
     [(iunknown) VT_UNKNOWN]
     [(com-object) VT_DISPATCH]
-    [else (error 'to-vt "Internal error: unsupported type ~s" type)]))
+    [(any) VT_VARIANT]
+    [else 
+     (case (and (pair? type)
+		(car type))
+       [(array) (bitwise-ior VT_ARRAY (to-vt (caddr type)))]
+       [else
+	(error 'to-vt "Internal error: unsupported type ~s" type)])]))
 
 (define (build-method-arguments-using-function-desc func-desc scheme-types inv-kind args)
   (define lcid-index (and func-desc (get-lcid-param-index func-desc)))
@@ -1528,7 +1609,7 @@
 (define (do-com-invoke who obj name args inv-kind)
   (check-com-obj who obj)
   (unless (string? name) (raise-type-error who "string" name))
-  (let ([t (or (do-get-method-type 'com-invoke obj name inv-kind #t)
+  (let ([t (or (do-get-method-type who obj name inv-kind #t)
                ;; wing it by inferring types from the arguments:
                `(-> ,(map arg-to-type args) any))])
     (unless (<= (length (filter (lambda (v) (not (and (pair? v) (eq? (car v) 'opt))))
@@ -1539,7 +1620,7 @@
     (for ([arg (in-list args)]
           [type (in-list (cadr t))])
       (check-argument 'com-invoke name arg type))
-    (define type-desc (get-method-type obj name inv-kind)) ; cached
+    (define type-desc (get-method-type obj name inv-kind #f)) ; cached
     (cond
      [(if type-desc
           (mx-com-type-desc-memid type-desc)
@@ -1551,13 +1632,22 @@
                                      inv-kind
                                      args))
            ;; from this point, don't escape/return without running cleanups
+           (when #f
+	     ;; for debugging, inspect constructed arguments:
+	     (eprintf "~e ~e\n" 
+		      t
+		      (reverse
+		       (for/list ([i (in-range num-params-passed)])
+			 (variant-to-scheme (ptr-ref (DISPPARAMS-rgvarg method-arguments) 
+						     _VARIANT 
+						     i))))))
            (define method-result
              (if (= inv-kind INVOKE_PROPERTYPUT)
                  #f
                  (cast (malloc 'atomic _VARIANT) _pointer _VARIANT-pointer)))
            (when method-result
              (VariantInit method-result))
-           (define-values (hr exn-info error-index)
+	   (define-values (hr exn-info error-index)
              (Invoke (com-object-get-dispatch obj)
                      memid IID_NULL LOCALE_SYSTEM_DEFAULT
                      inv-kind method-arguments
