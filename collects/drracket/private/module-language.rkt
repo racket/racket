@@ -600,7 +600,11 @@
                         (new separator-menu-item% [parent menu])
                         (new menu-item% 
                              [parent menu]
-                             [callback (λ (a b) (add-another-possible-submodule parent))]
+                             [callback (λ (a b)
+                                         (define new-submod (add-another-possible-submodule parent))
+                                         (when new-submod
+                                           (set! submodules-to-run (cons new-submod submodules-to-run))
+                                           (sort-submodules-to-run!)))]
                              [label (string-constant add-submodule)]))
                       (super-new
                        [font normal-control-font]
@@ -813,10 +817,13 @@
     (define submods
       (and msg
            (get-sexp msg)))
-    (when submods
-      (preferences:set 'drracket:submodules-to-choose-from
-                       (append (preferences:get 'drracket:submodules-to-choose-from)
-                               (list submods)))))
+    (cond
+      [submods
+       (preferences:set 'drracket:submodules-to-choose-from
+                        (append (preferences:get 'drracket:submodules-to-choose-from)
+                                (list submods)))
+       submods]
+      [else #f]))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.
