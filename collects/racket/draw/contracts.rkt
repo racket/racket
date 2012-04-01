@@ -336,7 +336,7 @@
                     exact-nonnegative-integer?
                     exact-nonnegative-integer?
                     exact-nonnegative-integer?
-                    (and/c bytes? (not/c immutable?)))
+                    bytes?)
                    (any/c any/c)
                    void?)]
            [set-bitmap (->m (or/c (is-a?/c bitmap%) #f) void?)]
