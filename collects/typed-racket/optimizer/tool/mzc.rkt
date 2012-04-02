@@ -199,6 +199,7 @@
 
          (define n-successes (- (length (filter success?     group)) n-unrollings))
          (define n-failures     (length (filter failure?     group)))
+         ;; self o-o-f are already gone at this point
          (define n-out-of-fuels (length (filter out-of-fuel? group)))
 
          (define aggregation-string
@@ -210,10 +211,19 @@
            (or (> n-failures 0) ; any straight failure is a problem
                (> n-out-of-fuels n-successes) ; we fail more often than not
                ))
+
+         (define recommendation
+           (cond [is-a-loop?
+                  "Consider making this function smaller to encourage inlining."]
+                 [else
+                  ;; Non-recursive function -> macro
+                  "Consider turning this function into a macro to force inlining."]))
+
          (if counts-as-a-missed-opt?
              (missed-opt-log-entry
               kind
-              (format "Missed Inlining ~a" aggregation-string)
+              (format "Missed Inlining ~a\n~a"
+                      aggregation-string recommendation)
               stx located-stx pos
               '() '()
               (+ n-failures (- n-out-of-fuels n-successes))) ; badness
