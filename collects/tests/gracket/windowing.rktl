@@ -630,6 +630,10 @@
     (containee-window-tests g #t #f parent frame 2))
 
   (printf "Slider\n")
+  (mismatch
+   (new slider% [parent parent] [label #f] [min-value 10] [max-value 9]))
+  (mismatch
+   (new slider% [parent parent] [label #f] [min-value 10] [max-value 11] [init-value 12]))
   (letrec ([s (make-object slider% 
 			   "&Slider"
 			   -2 8

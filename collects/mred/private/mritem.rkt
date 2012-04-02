@@ -361,7 +361,17 @@
 	  (check-callback cwho callback)
 	  (check-slider-integer cwho init-value)
 	  (check-style cwho '(vertical horizontal) '(plain vertical-label horizontal-label deleted) style)
-	  (check-font cwho font)))
+	  (check-font cwho font)
+          (unless (<= minv maxv)
+            (raise-mismatch-error (who->name cwho) 
+                                  (format "minumum value: ~e is greater than maximum value: " minv)
+                                  maxv))
+          (unless (<= minv init-value maxv)
+            (raise-mismatch-error (who->name cwho) 
+                                  (format "minumum value: ~e and maximum value: ~e do no bound initial value: " 
+                                          minv
+                                          maxv)
+                                  init-value))))
       (private-field
        [wx #f])
       (public
