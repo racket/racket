@@ -228,13 +228,10 @@
   ;; Integer String #:suffix String -> (U Null (List String))
   ;; if n = 0, nothing, if n = 1 singular, o/w plural
   (define (pluralize n noun #:suffix [suffix "s"])
-    (if (> n 0)
-        (list (format "~a ~a~a" n noun (if (> n 1) suffix "")))
-        '()))
-  (format "(~a)"
-          (string-join
-           (append (pluralize n-successes    "success" #:suffix "es")
-                   (pluralize n-unrollings   "unrolling")
-                   (pluralize n-failures     "failure")
-                   (string-append n-out-of-fuels " out of fuel")) ; no plural
-           ", ")))
+    (format "~a ~a~a" n noun (if (> n 1) suffix "")))
+  (format "(~a out of ~a~a)"
+          (pluralize n-successes "success" #:suffix "es")
+          (+ n-successes n-failures n-out-of-fuels)
+          (if (> n-unrollings 0)
+              (format " and ~a" (pluralize n-unrollings   "unrolling"))
+              "")))
