@@ -2114,8 +2114,6 @@ BUILD_PRE_WEB() {
   move_from_maindir "$docdir"
   html_file_row "$docdir" "Documentation files"
   #----
-  html_file_row "search.html" "Search the current sources and docs"
-  #----
   move_from_maindir "$bindir"
   html_file_row "$bindir" "Platform-specific binary files"
   #----
