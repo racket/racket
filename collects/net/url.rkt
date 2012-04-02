@@ -16,6 +16,16 @@
 ;;   "pure" = the MIME headers have been read
 
 (define-struct (url-exception exn:fail) ())
+(define (-url-exception? x)
+  (or (url-exception? x)
+      
+      ;; two of the errors that string->url can raise are
+      ;; now contract violations instead of url-expcetion
+      ;; structs. since only the url-exception? predicate
+      ;; was exported, we just add this in to the predicate
+      ;; to preserve backwards compatibility
+      (and (exn:fail:contract:blame? x)
+           (regexp-match? #rx"^string->url:" (exn-message x)))))
 
 (define file-url-path-convention-type (make-parameter (system-path-convention-type)))
 
@@ -693,7 +703,7 @@
                              (listof string?)
                              any)))
  (combine-url/relative (url? string? . -> . url?))
- (url-exception? (any/c . -> . boolean?))
+ (rename -url-exception? url-exception? (any/c . -> . boolean?))
  (current-proxy-servers
   (parameter/c (or/c false/c (listof (list/c string? string? number?)))))
  (file-url-path-convention-type
