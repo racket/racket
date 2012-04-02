@@ -590,7 +590,9 @@
   (check-com-obj 'com-release obj)
   (call-as-atomic
    (lambda ()
-     (scheme_remove_managed (com-object-mref obj) obj)
+     (let ([mref (com-object-mref obj)])
+       (when mref
+	 (scheme_remove_managed mref obj)))
      (define (bye! sel st!)
        (when (sel obj)
          (Release (sel obj))
@@ -1883,8 +1885,11 @@
 ;; ----------------------------------------
 ;; Initialize
 
-(define-ole CoInitialize (_hfun (_pointer = #f) 
-                                -> CoInitialize (void)))
+(define-ole CoInitialize (_wfun (_pointer = #f) -> (r : _HRESULT)
+				-> (cond
+				    [(= r 0) (void)] ; ok
+				    [(= r 1) (void)] ; already initialized
+				    [else (windows-error (format "~a: failed" 'CoInitialize) r)])))
 
 (define inited? #f)
 (define (init!)
