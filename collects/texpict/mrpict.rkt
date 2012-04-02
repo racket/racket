@@ -48,7 +48,7 @@
   (provide/contract
    [text (->* (string?)
               (text-style/c 
-               (and/c (between/c 1 255) integer?)
+               (and/c (between/c 1 1024) integer?)
                number?)
               pict?)])
   

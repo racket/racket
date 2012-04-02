@@ -155,7 +155,7 @@ adding the given ascent and descent.}
 
 @defproc[(text [content string?]
                [style text-style/c null]
-               [size (integer-in 1 255) 12] 
+               [size (integer-in 1 1024) 12] 
                [angle real? 0])
          pict?]{
 
