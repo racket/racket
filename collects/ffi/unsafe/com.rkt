@@ -480,7 +480,14 @@
                     [connection-cookie #:mutable]
                     [sink #:mutable]
                     [types #:mutable]
-                    [mref #:mutable]))
+                    [mref #:mutable])
+  #:property prop:equal+hash (list
+                              (lambda (a b eql?)
+                                (ptr-equal? (com-object-unknown a) (com-object-unknown b)))
+                              (lambda (a ehc)
+                                (ehc (com-object-unknown a)))
+                              (lambda (a ehc2)
+                                (ehc2 (com-object-unknown a)))))
 
 (define (com-object-eq? a b)
   (check-com-obj 'com-object-eq? a)

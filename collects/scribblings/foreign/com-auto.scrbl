@@ -78,7 +78,7 @@ produces a @tech{ProgID} with its version.}
 
 @defproc[(com-object? [obj com-object?]) boolean?]{
 
-  Returns @racket[#t] if the argument is a COM object, @racket[#f]
+  Returns @racket[#t] if the argument represents a @tech{COM object}, @racket[#f]
   otherwise.}
 
 
@@ -135,8 +135,13 @@ unsafe operations).}
 @defproc[(com-object-eq? [obj1 com-object?] [obj2 com-object?])
          boolean?]{
 
-  Returns @racket[#t] if the two COM objects are the same,
-  @racket[#f] otherwise.}
+  Returns @racket[#t] if @racket[obj1] and @racket[obj2] refer to the
+  same @tech{COM object}, @racket[#f] otherwise.
+
+  If two references to a COM object are the same according to
+  @racket[com-object-eq?], then they are also the same according to
+  @racket[equal?]. Two @racket[com-object-eq?]  references are not
+  necessarily @racket[eq?], however.}
 
 
 @defproc[(com-type? [v any/c]) boolean?]{

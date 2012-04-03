@@ -1,5 +1,6 @@
 #lang racket/base
 (require ffi/com
+         (only-in ffi/unsafe/com make-com-object)
          racket/system
          setup/dirs)
 
@@ -39,6 +40,11 @@
   (test #t (guid=? (progid->clsid mzcom-progid) (com-object-clsid mzcom)))
   (test (void) (com-object-set-clsid! mzcom (progid->clsid mzcom-progid)))
   (test #t (com-object-eq? mzcom mzcom))
+  (let ([mzcom2 (make-com-object (com-object-get-iunknown mzcom) #f)])
+    (test #t (com-object-eq? mzcom mzcom2))
+    (test #t (equal? mzcom mzcom2))
+    (test (equal-hash-code mzcom) (equal-hash-code mzcom2))
+    (test (equal-secondary-hash-code mzcom) (equal-secondary-hash-code mzcom2)))
   (test '("About" "Eval" "Reset") (com-methods mzcom))
   (test '("About" "Eval" "Reset") (com-methods (com-object-type mzcom)))
   (test '(-> () void) (com-method-type mzcom "About"))
