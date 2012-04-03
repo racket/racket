@@ -1,5 +1,6 @@
 (module paren-tree mzscheme
   (require mzlib/class
+           mzlib/list
            "token-tree.rkt")
   
   (provide paren-tree%)
@@ -46,6 +47,27 @@
       (define tree (new token-tree%))
       (define invalid-tree (new token-tree%))
       
+      (define common-parens
+        (list (make-paren '|(| 1)
+              (make-paren '|)| 1)
+              (make-paren '|]| 1)
+              (make-paren '|[| 1)
+              (make-paren '|}| 1)
+              (make-paren '|{| 1)))
+      (define false-zero-paren (make-paren #f 0))
+      
+      (define (build-paren type len)
+        (cond
+          [(eq? len 1)
+           (or (ormap (λ (cp) (and (equal? (paren-type cp) type)
+                                   cp))
+                      common-parens)
+               (make-paren type len))]
+          [(and (eq? length 0) (eq? type #f))
+           false-zero-paren]
+          [else
+           (make-paren type len)]))
+        
       (define/private (split tree pos)
         (send tree search! pos)
         (let ((token-start (send tree get-root-start-position)))
@@ -60,7 +82,7 @@
                  (send first add-to-root-length (- pos first-end))
                  (insert-first! next (new token-tree%
                                           (length (- first-end pos))
-                                          (data (make-paren #f 0))))
+                                          (data (build-paren #f 0))))
                  (values first next)))))))
       
       ;; split-tree: natural-number -> void
@@ -100,7 +122,7 @@
            ; Big performance increase using the -spec version.
            ;(insert-last! tree (new token-tree% (length length) (data (cons type length))))
            (insert-last-spec! tree length 
-                              (make-paren type (if type length 0))))
+                              (build-paren type (if type length 0))))
           (else
            (send tree search-max!)
            (send tree add-to-root-length length))))
