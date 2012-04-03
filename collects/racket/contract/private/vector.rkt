@@ -47,22 +47,22 @@
   (let ([elem-ctc (base-vectorof-elem c)]
         [immutable (base-vectorof-immutable c)]
         [flat? (flat-vectorof? c)])
-    (λ (val fail [first-order? #f])
+    (λ (val fail first-order?)
       (unless (vector? val)
-        (fail "expected a vector, got ~a" val))
+        (fail val "expected a vector, got ~a" val))
       (cond
         [(eq? immutable #t)
          (unless (immutable? val)
-           (fail "expected an immutable vector, got ~a" val))]
+           (fail val "expected an immutable vector, got ~a" val))]
         [(eq? immutable #f)
          (when (immutable? val)
-           (fail "expected an mutable vector, got ~a" val))]
+           (fail val "expected an mutable vector, got ~a" val))]
         [else (void)])
       (when first-order?
         (for ([e (in-vector val)]
               [n (in-naturals)])
           (unless (contract-first-order-passes? elem-ctc e)
-            (fail "expected: ~s for element ~v, got ~v" (contract-name elem-ctc) n e))))
+            (fail val "expected: ~s for element ~v, got ~v" (contract-name elem-ctc) n e))))
       #t)))
 
 (define (vectorof-first-order ctc)
@@ -78,9 +78,12 @@
    #:first-order vectorof-first-order
    #:projection 
    (λ (ctc) 
+     (define check (check-vectorof ctc))
      (λ (blame) 
+       (define raise-blame (λ (val . args) 
+                              (apply raise-blame-error blame val args)))
        (λ (val)
-         ((check-vectorof ctc) val (λ args (apply raise-blame-error blame val args)))
+         (check val raise-blame #f)
          (let* ([elem-ctc (base-vectorof-elem ctc)]
                 [p ((contract-projection elem-ctc) blame)])
            (for ([e (in-vector val)])
@@ -90,22 +93,25 @@
 (define (vectorof-ho-projection vector-wrapper)
   (λ (ctc)
      (let ([elem-ctc (base-vectorof-elem ctc)]
-           [immutable (base-vectorof-immutable ctc)])
+           [immutable (base-vectorof-immutable ctc)]
+           [check (check-vectorof ctc)])
        (λ (blame)
          (let ([elem-pos-proj ((contract-projection elem-ctc) blame)]
                [elem-neg-proj ((contract-projection elem-ctc) (blame-swap blame))])
+           (define checked-ref (λ (vec i val) (elem-pos-proj val)))
+           (define checked-set (λ (vec i val) (elem-neg-proj val)))
+           (define raise-blame (λ (val . args)
+                                  (apply raise-blame-error blame val args)))
            (λ (val)
-             ((check-vectorof ctc) val (λ args (apply raise-blame-error blame val args)))
+             (check val raise-blame #f)
              (if (immutable? val)
                  (apply vector-immutable
                         (for/list ([e (in-vector val)])
                           (elem-pos-proj e)))
                  (vector-wrapper
                   val
-                  (λ (vec i val)
-                    (elem-pos-proj val))
-                  (λ (vec i val)
-                    (elem-neg-proj val))
+                  checked-ref
+                  checked-set
                   impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-vectorof base-vectorof) ()
