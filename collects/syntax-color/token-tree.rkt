@@ -1,5 +1,5 @@
-(module token-tree mzscheme
-  (require mzlib/class)
+#lang racket/base
+  (require racket/class)
   
   (provide token-tree% insert-first! insert-last! insert-last-spec!
            node? node-token-length node-token-data node-left-subtree-length node-left node-right)
@@ -7,8 +7,7 @@
   ;; A tree is 
   ;;  - #f
   ;;  - (make-node NAT 'a NAT tree tree)
-  (define-struct node (token-length token-data left-subtree-length left right))
-  
+  (define-struct node ([token-length #:mutable] token-data [left-subtree-length #:mutable] [left #:mutable] [right #:mutable]))
   
   ;; ----- The algorithmic implementation of the splay tree for a buffer ------
   
@@ -124,10 +123,10 @@
                                                  (node-left-subtree-length self)
                                                  (node-token-length self)))
                (update-subtree-length-right-rotate self parent)))))
-         (if (not (null? (cddr path)))
-             (if (eq? grand (node-left (caddr path)))
-                 (set-node-left! (caddr path) self)
-                 (set-node-right! (caddr path) self)))
+         (unless (null? (cddr path))
+           (if (eq? grand (node-left (caddr path)))
+               (set-node-left! (caddr path) self)
+               (set-node-right! (caddr path) self)))
          (bottom-up-splay self (cddr path))))))
 
   (define (size node acc)
@@ -374,5 +373,3 @@
          (set-node-right! node1 node2))
         (else
          (send tree1 set-root node2)))))
-    
-  )
