@@ -12,3 +12,6 @@ varwhere { printf("x is ~a\n", x)
              x * 2
            }
          } where x = 2 + 1
+
+varwhere { macro foo(){ z:expression }{ syntax(x + z) }
+           foo 5 } where x = 2 * 8
