@@ -161,12 +161,16 @@
   (define render-date-bib (or maybe-render-date-bib default-render-date-bib))
   (define render-date-cite (or maybe-render-date-cite default-render-date-cite))
   (define (author/date<? a b)
-    ;; comparing just the authors causes non-deterministic render order. Use entire key.
-    (or (string-ci<? (auto-bib-key a) (auto-bib-key b))
-        (and (string-ci=? (auto-bib-key a) (auto-bib-key b))
-             (auto-bib-date a)
-             (auto-bib-date b)
-             (date<? a b))))
+    ;; comparing just the authors causes non-deterministic render order.
+    ;; We still have to use the authors first in order for last name order.
+    ;; If there is a collision for names, then disambiguate with the keys and then the date.
+    (or (string-ci<? (extract-bib-key a) (extract-bib-key b))
+        (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
+             (or (string-ci<? (auto-bib-key a) (auto-bib-key b))
+                 (and (string-ci=? (auto-bib-key a) (auto-bib-key b))
+                      (auto-bib-date a)
+                      (auto-bib-date b)
+                      (date<? a b))))))
   (define (ambiguous? a b)
     (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
          (auto-bib-date a)
