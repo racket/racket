@@ -1239,5 +1239,36 @@
                                        (get-output-string o))))
 
 ;; ----------------------------------------
+;; Check that only key-proc is called during hash-keys
+
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash])
+ (let* ([h1 (make-hash (list (cons 1 2) (cons 3 4) (cons 5 6) (cons 7 8)))]
+        [res1 (hash-keys h1)]
+        [ref-proc #f]
+        [set-proc #f]
+        [remove-proc #f]
+        [key-proc #f]
+        [h2 (chaperone-hash h1
+                            (λ (h k)
+                              (set! ref-proc #t)
+                              (values k (λ (h k v) v)))
+                            (λ (h k v)
+                              (set! set-proc #t)
+                              (values k v))
+                            (λ (h k)
+                              (set! remove-proc #t)
+                              k)
+                            (λ (h k)
+                              (set! key-proc #t)
+                              k))]
+        [res2 (hash-keys h2)])
+   (test #t equal? res1 res2)
+   (test #t values key-proc)
+   (test #f values ref-proc)
+   (test #f values set-proc)
+   (test #f values remove-proc)))
+
+;; ----------------------------------------
 
 (report-errs)

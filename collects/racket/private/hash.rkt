@@ -1,6 +1,10 @@
 (module hash "pre-base.rkt"
-  (define (hash-keys table)
-    (hash-map table (λ (k v) k)))
+  (define (hash-keys h)
+    (let loop ([pos (hash-iterate-first h)])
+      (if pos
+          (cons (hash-iterate-key h pos)
+                (loop (hash-iterate-next h pos)))
+          null)))
   
   (define (hash-values table)
     (hash-map table (λ (k v) v)))
