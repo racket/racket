@@ -4,6 +4,7 @@
          racket/place
          racket/place/private/th-place
          racket/place/private/coercion
+         racket/place/private/async-bi-channel
          racket/match
          racket/class
          racket/stxparam
@@ -23,12 +24,16 @@
   (cond
     [(place-channel? dest) (place-channel-get dest)]
     [(th-place-channel? dest) (th-place-channel-get dest)]
+    [(channel? dest) (channel-get dest)]
+    [(async-bi-channel? dest) (async-bi-channel-get dest)]
     [else (send dest get-msg)]))
 
 (define (dplace/place-channel-put dest msg)
   (cond
     [(place-channel? dest) (place-channel-put dest msg)]
     [(th-place-channel? dest) (th-place-channel-put dest msg)]
+    [(channel? dest) (channel-put dest msg)]
+    [(async-bi-channel? dest) (async-bi-channel-put dest msg)]
     [else (send dest put-msg msg)]))
 
 

@@ -1181,6 +1181,7 @@ path/s is either such a string or a list of them.
 "collects/racket/match" responsible (samth)
 "collects/racket/match.rkt" responsible (samth)
 "collects/racket/place" responsible (tewk)
+"collects/racket/place/distributed/examples/hello-world.rkt" drdr:command-line #f
 "collects/racket/slice.rkt" responsible (jay)
 "collects/racklog" responsible (jay)
 "collects/rackunit" responsible (jay noel ryanc)
