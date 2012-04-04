@@ -268,9 +268,10 @@
 		  [win-add (lambda (s) (if (eq? (system-type) 'windows) 
 					   (cons (bytes->path #".") s) 
 					   s))])
-	      (let loop ([paths (if paths-str 
-				    (win-add (path-list-string->path-list paths-str null))
-				    null)])
+	      (let loop ([paths (win-add 
+                                 (if paths-str 
+                                     (path-list-string->path-list paths-str null)
+                                     null))])
 		(if (null? paths)
 		    #f
 		    (let* ([base (path->complete-path (car paths))]
