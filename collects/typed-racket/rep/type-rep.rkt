@@ -374,7 +374,7 @@
 (def-type Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
   [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
 
-(def-type Refinement ([parent Type/c] [pred identifier?] [cert certifier?])
+(def-type Refinement ([parent Type/c] [pred identifier?] [cert procedure?])
   [#:key (Type-key parent)]
   [#:intern (list (Rep-seq parent) (hash-id pred))]
   [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]

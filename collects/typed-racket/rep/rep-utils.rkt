@@ -2,6 +2,7 @@
 (require "../utils/utils.rkt"
          mzlib/pconvert
          racket/match
+         (contract-req)
          "free-variance.rkt"
          "interning.rkt"
          unstable/match unstable/struct
@@ -11,7 +12,7 @@
           (except-in syntax/parse id identifier keyword)
           racket/base
           syntax/struct
-          racket/contract
+          (contract-req)
           racket/syntax
           (rename-in (except-in (utils stxclass-util) bytes byte-regexp regexp byte-pregexp pregexp)
                      [id* id]
