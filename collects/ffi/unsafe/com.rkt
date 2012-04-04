@@ -479,6 +479,7 @@
                     [connection-point #:mutable]
                     [connection-cookie #:mutable]
                     [sink #:mutable]
+                    [sink-table-links #:mutable]
                     [types #:mutable]
                     [mref #:mutable])
   #:property prop:equal+hash (list
@@ -587,6 +588,7 @@
               #f
               #f
               clsid
+              #f
               #f
               #f
               #f
@@ -1809,13 +1811,21 @@
 (define (sink-make-scode v)
   (malloc-immobile-cell v))
 
-(define myssink-table
-  (make-MYSSINK_TABLE sink-release-handler
-                      sink-release-arg
-                      sink-apply
-                      sink-variant-to-scheme
-                      sink-unmarshal-scheme
-                      sink-make-scode))
+(define myssink-table (cast (malloc _MYSSINK_TABLE 'atomic-interior)
+                            _pointer
+                            (_gcable _MYSSINK_TABLE-pointer)))
+(define sink-table-links 
+  ;; used to ensure that everything is retained long enough:
+  (list myssink-table
+        sink-release-handler
+        sink-release-arg
+        sink-apply
+        sink-variant-to-scheme
+        sink-unmarshal-scheme
+        sink-make-scode))
+(memcpy myssink-table
+        (apply make-MYSSINK_TABLE (cdr sink-table-links))
+        (ctype-sizeof _MYSSINK_TABLE))
 
 (define (connect-com-object-to-event-sink obj)
   (or (com-object-connection-point obj)
@@ -1847,6 +1857,7 @@
         (set-com-object-connection-point! obj connection-point)
         (set-com-object-connection-cookie! obj cookie)
         (set-com-object-sink! obj sink)
+        (set-com-object-sink-table-links! obj sink-table-links)
         (Release connection-point-container)
         connection-point)))
 
