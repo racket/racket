@@ -28,7 +28,9 @@
                 max-let-depth
                 (make-toplevel 0 0 #f #f) ; dummy
                 lang-info
-                #t))]))
+                #t
+                empty
+                empty))]))
 
 (provide/contract
  [wrap-in-kernel-module (symbol? symbol? lang-info/c module-path-index? compilation-top? . -> . compilation-top?)])
