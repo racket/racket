@@ -55,7 +55,8 @@
 	[get-x (lambda () pos-x)]
 	[get-y (lambda () pos-y)]
 	[get-width (lambda () width)]
-	[get-height (lambda () height)])
+	[get-height (lambda () height)]
+        [adopt-child (lambda (c) (send (get-parent) adopt-child c))])
       (sequence (super-init))))
 
   (define tab-h-border (if (eq? (system-type) 'unix)

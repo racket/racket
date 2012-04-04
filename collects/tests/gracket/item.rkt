@@ -519,7 +519,10 @@
 		   (let ([v (send c get-selection)])
 		     (when (positive? v)
                        (define f (new frame% [label "New Parent"]))
-		       (send (list-ref items (sub1 v)) reparent f)
+                       (define p (if (zero? (random 2))
+                                     (new vertical-pane% [parent f])
+                                     f))
+		       (send (list-ref items (sub1 v)) reparent p)
                        (send f show #t)
 		       (send c set-selection 0)))))
     (cons (make-object popup-test-canvas% 
