@@ -12,46 +12,56 @@
   ;; ----- The algorithmic implementation of the splay tree for a buffer ------
   
   ;; search-max: tree * tree list -> tree
-  (define (search-max node path)
-    (cond
-      ((not node)
-       (end-search path))
-      (else
-       (search-max (node-right node) (cons node path)))))
+  (define (search-max node path) (search-dir node path node-right))
   
   ;; search-min: tree * tree list -> tree
-  (define (search-min node path)
+  (define (search-min node path) (search-dir node path node-left))
+  
+  (define (search-dir node path direction)
     (cond
-      ((not node)
-       (end-search path))
-      (else
-       (search-min (node-left node) (cons node path)))))
+      [(not node) #f]
+      [else
+       (let loop ([node (direction node)]
+                  [path-hd node]
+                  [path-tl path]
+                  [direction direction])
+         (cond
+           [(not node) (bottom-up-splay path-hd path-tl)]
+           [else
+            (loop (direction node) node (i-cons path-hd path-tl) direction)]))]))
   
   ;; internal-search: tree * NAT * NAT * tree list -> tree
   ;; key-position is the position in the buffer we are looking for
   ;; offset is the offset for the whole subtree of node in the buffer.
   ;; path is the path back to the root
-  (define (internal-search node key-position offset path)
+  (define (internal-search node key-position)
     (cond
-      ((not node)
-       (end-search path))
-      (else
-       (let* ((node-start (+ offset (node-left-subtree-length node)))
-              (node-end (+ node-start (node-token-length node))))
+      [(not node) #f]
+      [else 
+       (define-values (first-node first-offset) (internal-direction node key-position 0))
+       (let loop ([node first-node]
+                  [key-position key-position]
+                  [offset first-offset]
+                  [path-hd node]
+                  [path-tl '()])
          (cond
-           ((< key-position node-start)
-            (internal-search (node-left node) key-position offset (cons node path)))
-           ((>= key-position node-end)
-            (internal-search (node-right node) key-position node-end (cons node path)))
-           (else
-            (bottom-up-splay node path)))))))
+           [(not node)
+            (bottom-up-splay path-hd path-tl)]
+           [else
+            (define-values (next-node next-offset) (internal-direction node key-position offset))
+            (loop next-node key-position next-offset node (i-cons path-hd path-tl))]))]))
   
-  ;; end-search: tree list -> tree
-  (define (end-search path)
+  (define (internal-direction node key-position offset)
+    (define node-start (+ offset (node-left-subtree-length node)))
+    (define node-end (+ node-start (node-token-length node)))
     (cond
-      ((null? path) #f)
-      (else (bottom-up-splay (car path) (cdr path)))))
-  
+      [(< key-position node-start)
+       (values (node-left node) offset)]
+      [(>= key-position node-end)
+       (values (node-right node) node-end)]
+      [else
+       (values #f #f)]))
+       
   ;; update-subtree-length-left-rotate: tree * tree -> 
   (define (update-subtree-length-left-rotate self parent)
     (set-node-left-subtree-length! parent 
@@ -68,66 +78,67 @@
   
   ;; bottom-up-splay: tree * tree list -> tree
   (define (bottom-up-splay self path)
-    (cond
-      ((null? path) self)               ;; node is root already
-      ((null? (cdr path))               ;; node's parent is root
-       (let ((parent (car path)))
-         (cond
-           ((eq? self (node-left parent))
-            (set-node-left! parent (node-right self))
-            (set-node-right! self parent)
-            (update-subtree-length-left-rotate self parent))
-           (else
-            (set-node-right! parent (node-left self))
-            (set-node-left! self parent)
-            (update-subtree-length-right-rotate self parent))))
-       self)
-      (else
-       (let ((grand (cadr path))
-             (parent (car path)))
-         (cond
-           ((eq? self (node-left parent))
-            (cond
-              ((eq? parent (node-left grand))
-               (set-node-left! grand (node-right parent))
-               (set-node-right! parent grand)
-               (set-node-left! parent (node-right self))
-               (set-node-right! self parent)
-               (update-subtree-length-left-rotate parent grand)
-               (update-subtree-length-left-rotate self parent))
-              (else
-               (set-node-right! grand (node-left self))
-               (set-node-left! self grand)
-               (set-node-left! parent (node-right self))
-               (set-node-right! self parent)
-               (update-subtree-length-left-rotate self parent)
-               (update-subtree-length-right-rotate self grand))))
-           (else
-            (cond
-              ((eq? parent (node-right grand))
-               (set-node-right! grand (node-left parent))
-               (set-node-left! parent grand)
-               (set-node-right! parent (node-left self))
-               (set-node-left! self parent)
-               (update-subtree-length-right-rotate parent grand)
-               (update-subtree-length-right-rotate self parent))
-              (else
-               (set-node-left! grand (node-right self))
-               (set-node-right! self grand)
-               (set-node-right! parent (node-left self))
-               (set-node-left! self parent)
-               (set-node-left-subtree-length! grand
-                                              (- (node-left-subtree-length grand)
-                                                 (node-left-subtree-length parent)
-                                                 (node-token-length parent)
-                                                 (node-left-subtree-length self)
-                                                 (node-token-length self)))
-               (update-subtree-length-right-rotate self parent)))))
-         (unless (null? (cddr path))
-           (if (eq? grand (node-left (caddr path)))
-               (set-node-left! (caddr path) self)
-               (set-node-right! (caddr path) self)))
-         (bottom-up-splay self (cddr path))))))
+    (let loop ([self self] [path path])
+      (cond
+        ((null? path) self)               ;; node is root already
+        ((null? (i-cdr path))             ;; node's parent is root
+         (let ((parent (i-car path)))
+           (cond
+             ((eq? self (node-left parent))
+              (set-node-left! parent (node-right self))
+              (set-node-right! self parent)
+              (update-subtree-length-left-rotate self parent))
+             (else
+              (set-node-right! parent (node-left self))
+              (set-node-left! self parent)
+              (update-subtree-length-right-rotate self parent))))
+         self)
+        (else
+         (let ((grand (i-cadr path))
+               (parent (i-car path)))
+           (cond
+             ((eq? self (node-left parent))
+              (cond
+                ((eq? parent (node-left grand))
+                 (set-node-left! grand (node-right parent))
+                 (set-node-right! parent grand)
+                 (set-node-left! parent (node-right self))
+                 (set-node-right! self parent)
+                 (update-subtree-length-left-rotate parent grand)
+                 (update-subtree-length-left-rotate self parent))
+                (else
+                 (set-node-right! grand (node-left self))
+                 (set-node-left! self grand)
+                 (set-node-left! parent (node-right self))
+                 (set-node-right! self parent)
+                 (update-subtree-length-left-rotate self parent)
+                 (update-subtree-length-right-rotate self grand))))
+             (else
+              (cond
+                ((eq? parent (node-right grand))
+                 (set-node-right! grand (node-left parent))
+                 (set-node-left! parent grand)
+                 (set-node-right! parent (node-left self))
+                 (set-node-left! self parent)
+                 (update-subtree-length-right-rotate parent grand)
+                 (update-subtree-length-right-rotate self parent))
+                (else
+                 (set-node-left! grand (node-right self))
+                 (set-node-right! self grand)
+                 (set-node-right! parent (node-left self))
+                 (set-node-left! self parent)
+                 (set-node-left-subtree-length! grand
+                                                (- (node-left-subtree-length grand)
+                                                   (node-left-subtree-length parent)
+                                                   (node-token-length parent)
+                                                   (node-left-subtree-length self)
+                                                   (node-token-length self)))
+                 (update-subtree-length-right-rotate self parent)))))
+           (unless (null? (i-cddr path))
+             (if (eq? grand (node-left (i-caddr path)))
+                 (set-node-left! (i-caddr path) self)
+                 (set-node-right! (i-caddr path) self)))
+           (loop self (i-cddr path)))))))
 
   (define (size node acc)
     (cond
@@ -158,6 +169,14 @@
       (let ((node-start (+ offset (node-left-subtree-length node))))
         (f node-start (node-token-length node) (node-token-data node))
         (do-splay-tree-for-each f (node-right node) (+ node-start (node-token-length node))))))
+  
+  ;; represent paths as improper lists of nodes
+  (define (i-cons hd tl) (if (null? tl) hd (cons hd tl)))
+  (define (i-car pr) (if (node? pr) pr (car pr)))
+  (define (i-cdr pr) (if (node? pr) '() (cdr pr)))
+  (define (i-cadr pr) (i-car (i-cdr pr)))
+  (define (i-cddr pr) (i-cdr (i-cdr pr)))
+  (define (i-caddr pr) (i-car (i-cddr pr)))
   
   ;; --------------------- The interface to the splay tree --------------------
   
@@ -221,7 +240,7 @@
       ;; Moves the node at key-position to the root
       (define/public (search! key-position)
         (when root
-          (set! root (internal-search root key-position 0 null))))
+          (set! root (internal-search root key-position))))
       
       ;; search-max!: ->
       ;; moves the maximum node to the root
