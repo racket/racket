@@ -517,10 +517,10 @@
 (define scheme_add_managed
   (get-ffi-obj 'scheme_add_managed #f
                (_fun _racket _racket _fpointer _racket _int 
-                     -> _pointer)))
+                     -> _gcpointer)))
 (define scheme_remove_managed
   (get-ffi-obj 'scheme_remove_managed #f
-               (_fun _pointer _racket -> _void)))
+               (_fun _gcpointer _racket -> _void)))
 (define (custodian-shutdown-com obj proc-self) (com-release obj))
 (define custodian_shutdown_com 
   (cast custodian-shutdown-com (_fun #:atomic? #t _racket _racket -> _void) _fpointer))
