@@ -281,7 +281,7 @@
                splicing-letrec-values splicing-let-syntax
                splicing-letrec-syntax splicing-let-syntaxes
                splicing-letrec-syntaxes splicing-letrec-syntaxes+values
-               splicing-local               
+               splicing-local splicing-syntax-parameterize
 
                ,@all-fors
 
