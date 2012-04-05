@@ -482,7 +482,9 @@ web-server/insta
 @(require (for-label web-server/http/xexpr
                      xml))
 
-@defmodule[web-server/http/xexpr]{
+@defmodule*/no-declare[(web-server/http/xexpr)]{}
+
+@declare-exporting[web-server/http/xexpr web-server]
 
 @defproc[(response/xexpr [xexpr xexpr/c]
                          [#:code code number? 200]
@@ -503,5 +505,3 @@ web-server/insta
 
  This is a viable function to pass to @racket[set-any->response!].
  }
-
-}
