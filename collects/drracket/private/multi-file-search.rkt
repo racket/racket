@@ -57,8 +57,12 @@
   ;; opens a window and creates the thread that does the search
   (define (open-search-window search-info)
     (define frame (new search-size-frame%
-                       [name (format (string-constant mfs-drscheme-multi-file-search-title)
-                                      (search-info-search-string search-info))]))
+                       [name 
+                        (let ([fmt-s (string-constant mfs-drscheme-multi-file-search-title)])
+                          (format 
+                           fmt-s
+                           (gui-utils:trim-string (search-info-search-string search-info)
+                                                  (- 200 (string-length fmt-s)))))]))
     (define panel (make-object saved-vertical-resizable% (send frame get-area-container)))
     (define button-panel (make-object horizontal-panel% (send frame get-area-container)))
     (define open-button (make-object button% (string-constant mfs-open-file) button-panel
