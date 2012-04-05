@@ -33,6 +33,7 @@
 (define dialog% 
   (class (dialog-mixin frame%)
     (super-new)
+    (inherit get-eventspace)
 
     (define/override (create-frame parent label x y w h style)
       (let ([hwnd
@@ -51,4 +52,11 @@
           (MoveWindow hwnd x y w h #t))
         hwnd))
 
-    (define/override (is-dialog?) #t)))
+    (define/override (is-dialog?) #t)
+
+    (define/override (direct-show on?)
+      ;; atomic mode
+      (when on? (super direct-show on?))
+      (for ([f (in-list (get-top-level-windows (get-eventspace)))])
+        (send f modal-enable (and (not on?) this)))
+      (when (not on?) (super direct-show on?)))))

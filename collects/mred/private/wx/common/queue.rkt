@@ -551,7 +551,7 @@
   (hash-map (eventspace-frames-hash e)
             (lambda (k v) k)))
 
-(define (other-modal? win [e #f])
+(define (other-modal? win [e #f] [ignore-win #f])
   ;; called in atomic mode in eventspace's thread
   (and
    ;; deliver mouse-motion events even if a modal window
@@ -566,7 +566,9 @@
      (or (positive? (eventspace-external-modal es))
          (let loop ([frames (get-top-level-windows es)]) 
            (and (pair? frames)
-                (let ([status (send (car frames) frame-relative-dialog-status win)])
+                (let ([status (if (eq? ignore-win (car frames))
+                                  #f
+                                  (send (car frames) frame-relative-dialog-status win))])
                   (case status
                     [(#f) (loop (cdr frames))]
                     [(same) (loop (cdr frames))]

@@ -65,6 +65,8 @@
 
 (define SPI_GETWORKAREA            #x0030)
 
+(define MA_NOACTIVATEANDEAT 4)
+
 (define (get-all-screen-rects)
   (let ([rects null])
     (EnumDisplayMonitors #f #f (lambda (mon dc r ptr)
@@ -268,10 +270,11 @@
   (define/override (wndproc w msg wParam lParam default)
     (cond
      [(= msg WM_CLOSE)
-      (queue-window-event this (lambda () 
-				 (when (on-close)
-                                   (atomically
-                                    (direct-show #f)))))
+      (unless (other-modal? this)
+        (queue-window-event this (lambda () 
+                                   (when (on-close)
+                                     (atomically
+                                      (direct-show #f))))))
       0]
      [(and (= msg WM_SIZE)
            (not (= wParam SIZE_MINIMIZED)))
@@ -386,6 +389,19 @@
     (pre-on-event w e))
   (define/override (call-pre-on-char w e)
     (pre-on-char w e))
+
+  (define modal-enabled? #t)
+  (define otherwise-enabled? #t)
+  (define/public (modal-enable ignoring)
+    (define on? (not (other-modal? this #f ignoring)))
+    (unless (eq? modal-enabled? on?)
+      (set! modal-enabled? on?)
+      (update-enabled)))
+  (define/override (internal-enable on?)
+    (set! otherwise-enabled? on?)
+    (update-enabled))
+  (define/private (update-enabled)
+    (super internal-enable (and modal-enabled? otherwise-enabled?)))
 
   (define/override (generate-parent-mouse-ins mk)
     ;; assert: in-window is always the panel child
