@@ -433,6 +433,7 @@
              [index? (eq? 'index s-name)]
              [tableform
               (cond [index? "list"]
+                    [(eq? 'block s-name) "tabular"]
                     [(not (current-table-mode)) "bigtabular"]
                     [else "tabular"])]
              [opt (cond [(equal? tableform "bigtabular") ""]

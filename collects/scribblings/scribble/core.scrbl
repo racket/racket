@@ -477,6 +477,8 @@ recognized:
 
  @item{@racket['centered] --- Centers HTML output horizontally.}
 
+ @item{@racket['block] --- Prevents pages breaks in Latex output.}
+
 ]
 
 The following @tech{style properties} are currently recognized:
