@@ -948,6 +948,7 @@
      (->* (list R R) R B))]
 
 [* (from-cases
+    (-> -One)
     (commutative-case -Zero N -Zero)
     (map (lambda (t) (commutative-binop -One t))
          all-number-types)

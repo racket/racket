@@ -172,6 +172,7 @@
         (tc-e (- -23524623547234734568) -PosInt)
         (tc-e (- 241.3) -NegFlonum)
         (tc-e (- -24.3) -PosFlonum)
+        (tc-e (*) -One)
 
         (tc-e (gcd 1/2) -PosRat)
         (tc-e (gcd 3 1/2) -PosRat)
