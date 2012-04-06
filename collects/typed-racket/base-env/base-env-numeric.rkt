@@ -1608,6 +1608,7 @@
              (-SingleFlonum (Un -NegInt -PosInt) . -> . -SingleFlonum)
              (-SingleFlonum -SingleFlonum . -> . (Un -SingleFlonum -SingleFlonumComplex))
              (-InexactReal (Un -NegInt -PosInt) . -> . -InexactReal)
+             (-Real (Un -NegInt -PosInt) . -> . -Real)
              (-InexactReal -InexactReal . -> . (Un -InexactReal -InexactComplex))
              (-ExactNumber -ExactNumber . -> . -ExactNumber)
              (N -FloatComplex . -> . -FloatComplex)
