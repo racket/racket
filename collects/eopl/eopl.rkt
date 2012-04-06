@@ -141,7 +141,7 @@
          empty           ;; for constructor-based printing
          trace untrace   ;; debugging
          require module  ;; we allow full use of modules
-         only-in 
+         only-in
 	 prefix-in
          provide         ;; in case someone wants to use a module
 	 all-defined-out
