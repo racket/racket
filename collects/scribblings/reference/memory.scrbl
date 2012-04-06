@@ -240,7 +240,13 @@ When Racket is compiled without support for memory accounting, the
 estimate is the same (i.e., all memory) for any individual custodian;
 see also @racket[custodian-memory-accounting-available?].}
 
-@defproc[(dump-memory-stats) any]{
+@defproc[(dump-memory-stats [v any/c] ...) any]{
 
-Dumps information about memory usage to the (low-level) standard
-output port.}
+Dumps information about memory usage to the low-level error port
+ or console.
+
+Various combinations of @racket[v] arguments can control the
+information in a dump. The information that is available depends on
+your Racket build; check the end of a dump from a particular build to
+see if it offers additional information; otherwise, all @racket[v]s are
+ignored.}
