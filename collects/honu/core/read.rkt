@@ -71,7 +71,7 @@
     ["/*" (token-block-comment)]
     ["..." (token-identifier '...)]
     ["." (token-identifier '%dot)]
-    ["," (token-identifier '%comma)]
+    ["," (token-identifier 'honu-comma)]
     [":" (token-identifier '%colon)]
     ["'" (token-identifier 'quote)]
     ["`" (token-identifier 'quasiquote)]

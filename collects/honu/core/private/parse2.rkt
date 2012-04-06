@@ -303,6 +303,7 @@
             #;
             (debug "Reparsed output ~a\n" (pretty-format (syntax->datum re-parse)))
             (define terminate (definition? re-parse))
+            (debug "Terminate? ~a\n" terminate)
             (if terminate?
               (values (left re-parse)
                       #'rest)
@@ -606,12 +607,12 @@
         (define-values (parsed unparsed)
                        (parse stx))
         (debug "[~a] expression parsed ~a\n" context (if parsed (syntax->datum parsed) parsed))
-        (debug "[~a] Parsed things ~a\n" context (parsed-things stx unparsed))
-        (list (parsed-things stx unparsed)
-              (parsed-syntax parsed)
-              #;
-              (with-syntax ([parsed parsed])
-                #'(%racket parsed)))))))
+        (debug 2 "[~a] Parsed things ~a\n" context (parsed-things stx unparsed))
+        (if (parsed-syntax? parsed)
+          (list (parsed-things stx unparsed)
+                (parsed-syntax parsed))
+          (list (parsed-things stx unparsed)
+                (parse-all parsed)))))))
 
 (provide honu-expression-list)
 (define-splicing-syntax-class (honu-expression-list)

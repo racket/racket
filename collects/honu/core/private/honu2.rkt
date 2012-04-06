@@ -334,9 +334,8 @@
     (syntax-parse code #:literal-sets (cruft)
       [(var:honu-declaration . rest)
        (define result 
-         (with-syntax ([var.expression (honu->racket #'var.expression)])
-           ;; wrap the expression in a let so that we can insert new `define-syntax'es
-           (racket-syntax (define-values (var.name ...) (let () var.expression)))))
+         ;; wrap the expression in a let so that we can insert new `define-syntax'es
+         (racket-syntax (define-values (var.name ...) (let () var.expression))))
        (values result #'rest #t)])))
 
 (provide (rename-out [honu-with-syntax withSyntax]))
