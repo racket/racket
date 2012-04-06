@@ -240,9 +240,7 @@ it around flattened out.
                            #f)
                        (if (contract-struct? b-sel)
                            #f
-                           (begin
-                             (printf "comparing ~s ~s ~s\n" a-sel b-sel (procedure-closure-contents-eq? a-sel b-sel))
-                             (procedure-closure-contents-eq? a-sel b-sel)))))
+                           (procedure-closure-contents-eq? a-sel b-sel))))
                  ...))
           
           (define (lazy-contract-proj ctc)
