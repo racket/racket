@@ -2966,54 +2966,55 @@
    inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
-   augrides augride-contracts absents absent-fields opaque?)
+   augrides augride-contracts absents absent-fields opaque? name)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
    #:projection class/c-proj
    #:name 
    (λ (ctc)
-     (let* ([pair-ids-ctcs
-             (λ (is ctcs)
-               (for/list ([i (in-list is)]
-                          [ctc (in-list ctcs)])
-                 (if (not ctc)
-                     i
-                     (build-compound-type-name i ctc))))]
-            [handle-optional
-             (λ (name is ctcs)
-               (if (null? is)
-                   null
-                   (list (cons name (pair-ids-ctcs is ctcs)))))]
-            [handle-absents
-             (λ (meths fields)
-               (cond
-                 [(and (null? meths) (null? fields))
-                  null]
-                 [(null? fields)
-                  (list (cons 'absent meths))]
-                 [else
-                  (list (list* 'absent (cons 'field fields) meths))]))]
-            [handled-methods
-             (for/list ([i (in-list (class/c-methods ctc))]
-                        [ctc (in-list (class/c-method-contracts ctc))])
-               (cond
-                 [ctc (build-compound-type-name i ctc)]
-                 [else i]))])
-       (apply build-compound-type-name
-              'class/c 
-              (append
-               handled-methods
-               (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
-               (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
-               (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
-               (handle-optional 'inherit-field (class/c-inherit-fields ctc) (class/c-inherit-field-contracts ctc))
-               (handle-optional 'super (class/c-supers ctc) (class/c-super-contracts ctc))
-               (handle-optional 'inner (class/c-inners ctc) (class/c-inner-contracts ctc))
-               (handle-optional 'override (class/c-overrides ctc) (class/c-override-contracts ctc))
-               (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))
-               (handle-optional 'augride (class/c-augrides ctc) (class/c-augride-contracts ctc))
-               (handle-absents (class/c-absents ctc) (class/c-absent-fields ctc))))))
+     (or (class/c-name ctc)
+         (let* ([pair-ids-ctcs
+                 (λ (is ctcs)
+                   (for/list ([i (in-list is)]
+                              [ctc (in-list ctcs)])
+                     (if (not ctc)
+                         i
+                         (build-compound-type-name i ctc))))]
+                [handle-optional
+                 (λ (name is ctcs)
+                   (if (null? is)
+                       null
+                       (list (cons name (pair-ids-ctcs is ctcs)))))]
+                [handle-absents
+                 (λ (meths fields)
+                   (cond
+                     [(and (null? meths) (null? fields))
+                      null]
+                     [(null? fields)
+                      (list (cons 'absent meths))]
+                     [else
+                      (list (list* 'absent (cons 'field fields) meths))]))]
+                [handled-methods
+                 (for/list ([i (in-list (class/c-methods ctc))]
+                            [ctc (in-list (class/c-method-contracts ctc))])
+                   (cond
+                     [ctc (build-compound-type-name i ctc)]
+                     [else i]))])
+           (apply build-compound-type-name
+                  'class/c 
+                  (append
+                   handled-methods
+                   (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
+                   (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
+                   (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
+                   (handle-optional 'inherit-field (class/c-inherit-fields ctc) (class/c-inherit-field-contracts ctc))
+                   (handle-optional 'super (class/c-supers ctc) (class/c-super-contracts ctc))
+                   (handle-optional 'inner (class/c-inners ctc) (class/c-inner-contracts ctc))
+                   (handle-optional 'override (class/c-overrides ctc) (class/c-override-contracts ctc))
+                   (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))
+                   (handle-optional 'augride (class/c-augrides ctc) (class/c-augride-contracts ctc))
+                   (handle-absents (class/c-absents ctc) (class/c-absent-fields ctc)))))))
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -3201,23 +3202,35 @@
                      [augride-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augride-contracts null)))]
                      [absents #`(list #,@(reverse (hash-ref parsed-forms 'absents null)))]
                      [absent-fields #`(list #,@(reverse (hash-ref parsed-forms 'absent-fields null)))])
-         (syntax/loc stx
-           (let* ([inits+contracts (sort (list (cons i i-c) ...)
-                                         (lambda (s1 s2) 
-                                           (string<? (symbol->string s1) (symbol->string s2)))
-                                         #:key car)])
-             (make-class/c methods method-ctcs
-                           fields field-ctcs
-                           (map car inits+contracts) (map cdr inits+contracts)
-                           inherits inherit-ctcs
-                           inherit-fields inherit-field-ctcs
-                           supers super-ctcs
-                           inners inner-ctcs
-                           overrides override-ctcs
-                           augments augment-ctcs
-                           augrides augride-ctcs
-                           absents absent-fields
-                           opaque?)))))]))
+         (with-syntax ([name 
+                        ;; same as syntax-local-infer-name, except doesn't
+                        ;; make a name up from the src loc; in that case,
+                        ;; we just use the big ole (class/c  ...)-based name
+                        (or (let loop ([prop (syntax-property stx 'inferred-name)])
+                              (cond
+                                [(symbol? prop) prop]
+                                [(pair? prop) (or (loop (car prop))
+                                                  (loop (cdr prop)))]
+                                [else #f]))
+                            (syntax-local-name))])
+           (syntax/loc stx
+             (let* ([inits+contracts (sort (list (cons i i-c) ...)
+                                           (lambda (s1 s2) 
+                                             (string<? (symbol->string s1) (symbol->string s2)))
+                                           #:key car)])
+               (make-class/c methods method-ctcs
+                             fields field-ctcs
+                             (map car inits+contracts) (map cdr inits+contracts)
+                             inherits inherit-ctcs
+                             inherit-fields inherit-field-ctcs
+                             supers super-ctcs
+                             inners inner-ctcs
+                             overrides override-ctcs
+                             augments augment-ctcs
+                             augrides augride-ctcs
+                             absents absent-fields
+                             opaque?
+                             'name))))))]))
 
 (define (check-object-contract obj methods fields fail)
   (unless (object? obj)

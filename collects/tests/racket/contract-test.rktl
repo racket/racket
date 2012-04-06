@@ -10256,6 +10256,10 @@ so that propagation occurs.
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
   (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
   
+  (test-name '(class/c [m (->m integer? integer?)]) (class/c [m (->m integer? integer?)]))
+  (test-name 'c%/c (let ([c%/c (class/c [m (->m integer? integer?)])])
+                     c%/c))
+  
   ;; NOT YET RELEASED
   #;
   (test-name '(pr/dc [x integer?]
