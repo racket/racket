@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "ss.rkt" "pict-diagram.rkt"
           (for-label racket/gui slideshow/code slideshow/flash slideshow/face
-                     slideshow/balloon))
+                     slideshow/balloon slideshow/pict-convert))
 
 @title[#:style 'toc]{Making Pictures}
 
@@ -21,7 +21,8 @@ PostScript for inclusion into a larger document. The
 
 @section{Pict Datatype}
 
-A picture is a @racket[pict] structure. Some functions, such as
+A @deftech{pict} is a @racket[pict] structure representing an image.
+Some functions, such as
 @racket[hline], create new simple picts. Other functions, such as
 @racket[ht-append], build new picts out of existing picts. In the
 latter case, the embedded picts retain their identity, so that
@@ -1130,23 +1131,26 @@ A parameter used to refine text measurements to better match an
 expected scaling of the image. The @racket[scale/improve-new-text]
 form sets this parameter while also scaling the resulting pict.}
 
-@section{Convertion to @racket[pict?]s}
+@;----------------------------------------
 
-This section describes a protocol for values to be
-able to convert themselves to @racket[pict?]s. The 
-protocol is used by DrRacket's REPL to render values
-that it prints out.
+@section{Conversion to Picts}
 
-@defthing[prop:convertible struct-type-property?]{
+@defmodule[slideshow/pict-convert]{The
+@racketmodname[slideshow/pict-convert] library defines a protocol for
+values to convert themselves to @tech{picts}. The protocol
+is used by DrRacket's interactions window, for example, to render
+values that it prints}
+
+@defthing[prop:pict-convertible struct-type-property?]{
 
 A property whose value should be a procedure matching the
 contract @racket[(-> any/c pict?)]. The
 procedure is called when a structure with the property is passed to
-@racket[convert]; the argument to the procedure is the
+@racket[pict-convert]; the argument to the procedure is the
 structure, and the procedure's result should be a pict.
 }
 
-@defthing[prop:convertible? struct-type-property?]{
+@defthing[prop:pict-convertible? struct-type-property?]{
 A property whose value should be a predicate procedure
 (i.e., matching the contract @racket[predicate/c]).
 
@@ -1154,18 +1158,18 @@ If this property is not set, then it is assumed to be
 the function @racket[(λ (x) #t)]. 
 
 If this property is set, then this procedure is called
-by @racket[convertible?] to determine if this particular
+by @racket[pict-convertible?] to determine if this particular
 value is convertible (thereby supporting situations
 where some instances of a given struct are convertible
 to picts, but others are not).
 }
 
-@defproc[(convertible? [v any/c]) boolean?]{
+@defproc[(pict-convertible? [v any/c]) boolean?]{
 Returns @racket[#t] if @racket[v] supports the conversion protocol
-(by being a struct with the @racket[prop:convertible] property)
+(by being a struct with the @racket[prop:pict-convertible] property)
 and @racket[#f] otherwise.
 }
 
-@defproc[(convert [v convertible?]) pict?]{
-  Requests a data conversion from @racket[v] to a @racket[pict?].
+@defproc[(pict-convert [v pict-convertible?]) pict?]{
+  Requests a data conversion from @racket[v] to a pict.
 }

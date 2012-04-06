@@ -373,7 +373,7 @@
       (define convert-table (make-hasheq))
       (define pict:convertible?
         (with-handlers ((exn:fail? (λ (exn) (λ (val) #f))))
-          (dynamic-require 'texpict/mrpict 'convertible?)))
+          (dynamic-require 'slideshow/pict-convert 'pict-convertible?)))
       (parameterize ([pretty-print-pre-print-hook (λ (val port) (void))]
                      [pretty-print-post-print-hook (λ (val port) (void))]
                      [pretty-print-exact-as-decimal #f]
@@ -469,8 +469,9 @@
   (define (mk-pict-snip convertible)
     (define-syntax-rule 
       (dyn name args ...)
-      ((dynamic-require 'texpict/mrpict 'name) args ...))
-    (define pict (dyn convert convertible))
+      ((dynamic-require 'slideshow/pict 'name) args ...))
+    (define pict ((dynamic-require 'slideshow/pict-convert 'pict-convert) 
+                  convertible))
     (define w (dyn pict-width pict))
     (define h (dyn pict-height pict))
     (define a (dyn pict-ascent pict))

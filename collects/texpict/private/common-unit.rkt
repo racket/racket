@@ -23,7 +23,7 @@
 			   panbox     ; panorama box, computed on demand
                            last)      ; a descendent for the bottom-right
         #:mutable
-        #:property prop:convertible (λ (v) v)
+        #:property prop:pict-convertible (λ (v) v)
         #:property file:prop:convertible (lambda (v mode default)
                                            (convert-pict v mode default)))
       (define-struct child (pict dx dy sx sy syx sxy))

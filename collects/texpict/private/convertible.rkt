@@ -1,19 +1,19 @@
 #lang racket/base
-(provide prop:convertible prop:convertible? convertible? convert)
+(provide prop:pict-convertible prop:pict-convertible? pict-convertible? pict-convert)
 
-(define-values (prop:convertible -convertible? convertible-ref)
-  (make-struct-type-property 'convertible))
+(define-values (prop:pict-convertible -pict-convertible? pict-convertible-ref)
+  (make-struct-type-property 'pict-convertible))
 
-(define-values (prop:convertible? convertible?? convertible?-ref)
-  (make-struct-type-property 'convertible?))
+(define-values (prop:pict-convertible? pict-convertible?? pict-convertible?-ref)
+  (make-struct-type-property 'pict-convertible?))
 
-(define (convertible? x)
-  (and (-convertible? x)
-       (if (convertible?? x)
-           ((convertible?-ref x) x)
+(define (pict-convertible? x)
+  (and (-pict-convertible? x)
+       (if (pict-convertible?? x)
+           ((pict-convertible?-ref x) x)
            #t)))
 
-(define (convert v)
-  (unless (convertible? v)
-    (raise-type-error 'convert "convertible" v))
-  ((convertible-ref v) v))
+(define (pict-convert v)
+  (unless (pict-convertible? v)
+    (raise-type-error 'pict-convert "pict-convertible" v))
+  ((pict-convertible-ref v) v))

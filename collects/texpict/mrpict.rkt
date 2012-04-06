@@ -8,7 +8,6 @@
            racket/draw/draw-unit
            "private/mrpict-sig.rkt"
            "private/common-sig.rkt"
-           "private/convertible.rkt"
            "mrpict-sig.rkt"
            "mrpict-unit.rkt")
 
@@ -53,7 +52,3 @@
               pict?)])
   
   (provide text-style/c)
-
-  (provide convert convertible?)
-  (provide/contract
-   [prop:convertible (struct-type-property/c (-> convertible? pict?))])
