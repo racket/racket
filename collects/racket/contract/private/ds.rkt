@@ -232,9 +232,18 @@ it around flattened out.
           
           (define (stronger-lazy-contract? a b)
             (and (contract-predicate b)
-                 (contract-stronger? 
-                  (contract-get a selector-indices)
-                  (contract-get b selector-indices)) ...))
+                 (let ([a-sel (contract-get a selector-indices)]
+                       [b-sel (contract-get b selector-indices)])
+                   (if (contract-struct? a-sel)
+                       (if (contract-struct? b-sel)
+                           (contract-stronger? a-sel b-sel)
+                           #f)
+                       (if (contract-struct? b-sel)
+                           #f
+                           (begin
+                             (printf "comparing ~s ~s ~s\n" a-sel b-sel (procedure-closure-contents-eq? a-sel b-sel))
+                             (procedure-closure-contents-eq? a-sel b-sel)))))
+                 ...))
           
           (define (lazy-contract-proj ctc)
             (λ (blame)

@@ -82,11 +82,14 @@ which are then called when the contract's fields are explored
                   [(id (x ...) ctc-exp)
                    (and (identifier? (syntax id))
                         (andmap identifier? (syntax->list (syntax (x ...)))))
-                   (let ([maker-arg #`(λ #,(match-up (reverse prior-ac-ids)
-                                                     (syntax (x ...))
-                                                     field-names)
-                                        #,(defeat-inlining
-                                            #`(#,coerce-contract '#,name ctc-exp)))])
+                   (let* ([proc-name (string->symbol (string-append (symbol->string (syntax-e #'id)) "-dep-proc"))]
+                          [maker-arg #`(let ([#,proc-name
+                                              (λ #,(match-up (reverse prior-ac-ids)
+                                                             (syntax (x ...))
+                                                             field-names)
+                                                #,(defeat-inlining
+                                                    #`(#,coerce-contract '#,name ctc-exp)))])
+                                         #,proc-name)])
                      (loop (cdr clauses)
                            (cdr ac-ids)
                            (cons (car ac-ids) prior-ac-ids)

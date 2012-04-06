@@ -8770,6 +8770,7 @@
 
   
   (contract-eval '(define-contract-struct couple (hd tl)))
+  (contract-eval '(contract-struct triple (a b c)))
   
   (test/spec-passed
    'd-c-s-match1
@@ -9203,6 +9204,7 @@
   'd-c-s44
   '(no-define? (no-define 1))
   '#t)
+  
 
   
 ;                                                                                            
@@ -10410,7 +10412,14 @@ so that propagation occurs.
       (,test #f contract-stronger? (short-sorted-list/less-than 5) (short-sorted-list/less-than 4))
       (,test #t contract-stronger? (sorted-list/less-than 4) (sorted-list/less-than 5))
       (,test #f contract-stronger? (sorted-list/less-than 5) (sorted-list/less-than 4))
-      (,test #t contract-stronger? (closure-comparison-test 4) (closure-comparison-test 5))))
+      (,test #t contract-stronger? (closure-comparison-test 4) (closure-comparison-test 5))
+      
+      (letrec ([mk-c
+                (λ (x)
+                  (triple/dc [a (<=/c x)]
+                             [b any/c]
+                             [c (a b) (or/c #f (mk-c a))]))])
+        (,test #t contract-stronger? (mk-c 1) (mk-c 2)))))
 
   
 
