@@ -10126,17 +10126,17 @@ so that propagation occurs.
   (test-name #\a #\a)
   (test-name "x" "x")
   (test-name ''x 'x)
-  ;(test-name #rx"x" #rx"x")  ;; commented out because regexps don't compare via equal?
-  ;(test-name #rx#"x" #rx#"x") ;; commented out because regexps don't compare via equal?
+  (test-name #rx"x" #rx"x")
+  (test-name #rx#"x" #rx#"x")
   (test-name 'printable/c printable/c)
-  (test-name '(symbols 'a 'b 'c) (symbols 'a 'b 'c))
-  (test-name '(one-of/c 1 2 3) (one-of/c 1 2 3))
+  (test-name '(or/c 'a 'b 'c) (symbols 'a 'b 'c))
+  (test-name '(or/c 1 2 3) (one-of/c 1 2 3))
   (test-name '(one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)) 
              (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
   
   (test-name '(or/c #f #t #\a "x") (or/c #f #t #\a "x"))
-  ;(test-name '(or/c #f #t #\a "x" #rx"x" #rx#"x") (or/c #f #t #\a "x" #rx"x" #rx#"x")) ;; commented out because regexps don't compare via equal?
-
+  (test-name '(or/c #f #t #\a "x" #rx"x" #rx#"x") (or/c #f #t #\a "x" #rx"x" #rx#"x"))
+  
   (test-name '(subclass?/c class:c%) 
              (let ([c% (class object% (super-new))]) (subclass?/c c%)))
   

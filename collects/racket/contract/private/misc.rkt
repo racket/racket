@@ -291,10 +291,29 @@
       (and (flat-or/c? that)
            (let ([this-ctcs (flat-or/c-flat-ctcs this)]
                  [that-ctcs (flat-or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))))
+             (cond
+               [(and (<= (length this-ctcs) (length that-ctcs))
+                     (for/and ([this-ctc (in-list this-ctcs)]
+                               [that-ctc (in-list that-ctcs)])
+                       (contract-stronger? this-ctc that-ctc)))
+                #t]
+               [(and (andmap (λ (x) (or (eq-contract? x) (equal-contract? x))) this-ctcs)
+                     (andmap (λ (x) (or (eq-contract? x) (equal-contract? x))) that-ctcs))
+                (define ht (make-hash))
+                (for ([x (in-list that-ctcs)])
+                  (hash-set! ht
+                             (if (equal-contract? x)
+                                 (equal-contract-val x)
+                                 (eq-contract-val x))
+                             #t))
+                (for/and ([x (in-list this-ctcs)])
+                  (hash-ref ht 
+                            (if (equal-contract? x)
+                                (equal-contract-val x)
+                                (eq-contract-val x))
+                            #f))]
+               [else #f]))))
+                    
 
    #:first-order
    (λ (ctc) (flat-or/c-pred ctc))
@@ -400,7 +419,7 @@
   (unless (andmap symbol? ss)
     (error 'symbols "expected symbols as arguments, given: ~a"
            (apply string-append (map (λ (x) (format "~e " x)) ss))))
-  (make-one-of/c ss))
+  (apply or/c ss))
 
 (define atomic-value? 
   (let ([undefined (letrec ([x x]) x)])
@@ -413,7 +432,10 @@
   (unless (andmap atomic-value? elems)
     (error 'one-of/c "expected chars, symbols, booleans, null, keywords, numbers, void, or undefined, got ~e"
            elems))
-  (make-one-of/c elems))
+  (if (or (member (void) elems)
+          (member (letrec ([x x]) x) elems))
+      (make-one-of/c elems)
+      (apply or/c elems)))
 
 (define (one-of-pc x)
   (cond
@@ -440,12 +462,7 @@
    #:name
    (λ (ctc) 
       (let ([elems (one-of/c-elems ctc)])
-        `(,(cond
-            [(andmap symbol? elems)
-             'symbols]
-            [else
-             'one-of/c])
-          ,@(map one-of-pc elems))))
+        `(one-of/c ,@(map one-of-pc elems))))
 
    #:stronger
    (λ (this that)

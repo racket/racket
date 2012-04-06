@@ -47,7 +47,7 @@ constraints.
 various operations listed in this section of the manual, and various
 ordinary Racket values that double as contracts, including 
 @itemize[
-@item{@tech{symbols}, @tech{booleans}, @tech{characters}, and
+@item{@tech{symbols}, @tech{booleans}, @tech{characters}, @tech{keywords}, and
 @racket[null], which are treated as contracts that recognize
 themselves, using @racket[eq?], }
 
@@ -243,13 +243,22 @@ recognizes those values, using @racket[eqv?]  as the comparison
 predicate.  For the purposes of @racket[one-of/c], atomic values are
 defined to be: @tech{characters}, @tech{symbols}, @tech{booleans},
 @racket[null], @tech{keywords}, @tech{numbers},
-@|void-const|, and @|undefined-const|.}
+@|void-const|, and @|undefined-const|.
+
+This is a backwards compatibility contract constructor. If
+neither @|void-const| nor @|undefined-const| are arguments,
+it simply passes its arguments to @racket[or/c].
+}
 
 
 @defproc[(symbols [sym symbol?] ...+) flat-contract?]{
 
 Accepts any number of symbols and returns a flat contract that
-recognizes those symbols.}
+recognizes those symbols.
+
+This is a backwards compatibility constructor; it merely
+passes its arguments to @racket[or/c].
+}
 
 @defproc[(vectorof [c contract?] 
                    [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]

@@ -37,7 +37,12 @@
          define/final-prop
          define/subexpression-pos-prop
          
-         make-predicate-contract)
+         make-predicate-contract
+         
+         eq-contract?
+         eq-contract-val
+         equal-contract?
+         equal-contract-val)
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
@@ -154,7 +159,7 @@
     [(contract-struct? x) x]
     [(and (procedure? x) (procedure-arity-includes? x 1)) 
      (make-predicate-contract (or (object-name x) '???) x (make-generate-ctc-fail))]
-    [(or (symbol? x) (boolean? x) (char? x) (null? x)) (make-eq-contract x)]
+    [(or (symbol? x) (boolean? x) (char? x) (null? x) (keyword? x)) (make-eq-contract x)]
     [(or (bytes? x) (string? x)) (make-equal-contract x)]
     [(number? x) (make-=-contract x)]
     [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
