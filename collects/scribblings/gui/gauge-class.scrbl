@@ -10,13 +10,13 @@ range, inclusive. Use @method[gauge% set-value] to set the value
 of the gauge.
 
 
-@defconstructor[([label (or/c label-string? false/c)]
+@defconstructor[([label (or/c label-string? #f)]
                  [range (integer-in 1 1000000)]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [style (listof (one-of/c 'horizontal 'vertical 
-                                          'vertical-label 'horizontal-label 
-                                          'deleted)) 
+                 [style (listof (or/c 'horizontal 'vertical 
+                                      'vertical-label 'horizontal-label 
+                                      'deleted)) 
                         '(horizontal)]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]

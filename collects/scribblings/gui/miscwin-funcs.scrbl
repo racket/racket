@@ -53,7 +53,7 @@ The get operation always returns @racket[#"????"] and @racket[#"????"] for
  Windows.
 }
 
-@defproc[(find-graphical-system-path [what (one-of/c 'init-file 'x-display)])
+@defproc[(find-graphical-system-path [what (or/c 'init-file 'x-display)])
          (or/c path? #f)]{
 
 Finds a platform-specific (and possibly user- or machine-specific)
@@ -88,7 +88,7 @@ The result depends on @racket[what], and a @racket[#f] result is only
 
 
 @defproc[(get-default-shortcut-prefix)
-         (listof (one-of/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
+         (listof (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
 Returns an immutable list specifying the default prefix for menu
 shortcuts. See also
 @xmethod[selectable-menu-item<%> get-shortcut-prefix].

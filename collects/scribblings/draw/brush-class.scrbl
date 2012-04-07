@@ -90,11 +90,11 @@ To avoid creating multiple brushes with the same characteristics, use
 
 
 @defconstructor[([color (or/c string? (is-a?/c color%)) "black"]
-                 [style (one-of/c 'transparent 'solid 'opaque 
-                                  'xor 'hilite 'panel 
-                                  'bdiagonal-hatch 'crossdiag-hatch 
-                                  'fdiagonal-hatch 'cross-hatch
-                                  'horizontal-hatch 'vertical-hatch)
+                 [style (or/c 'transparent 'solid 'opaque 
+                              'xor 'hilite 'panel 
+                              'bdiagonal-hatch 'crossdiag-hatch 
+                              'fdiagonal-hatch 'cross-hatch
+                              'horizontal-hatch 'vertical-hatch)
                          'solid]
                  [stipple (or/c #f (is-a?/c bitmap%))
                           #f]
@@ -142,11 +142,11 @@ Gets the @tech{brush stipple} bitmap, or @racket[#f] if the brush has no stipple
 
 
 @defmethod[(get-style)
-           (one-of/c 'transparent 'solid 'opaque 
-                     'xor 'hilite 'panel 
-                     'bdiagonal-hatch 'crossdiag-hatch
-                     'fdiagonal-hatch 'cross-hatch 
-                     'horizontal-hatch 'vertical-hatch)]{
+           (or/c 'transparent 'solid 'opaque 
+                 'xor 'hilite 'panel 
+                 'bdiagonal-hatch 'crossdiag-hatch
+                 'fdiagonal-hatch 'cross-hatch 
+                 'horizontal-hatch 'vertical-hatch)]{
 
 Returns the @tech{brush style}. See @racket[brush%] for information about
 brush styles.}
@@ -200,11 +200,11 @@ If @racket[bitmap] is modified while is associated with a brush, the
 
 }
 
-@defmethod[(set-style [style (one-of/c 'transparent 'solid 'opaque
-                                       'xor 'hilite 'panel 
-                                       'bdiagonal-hatch 'crossdiag-hatch
-                                       'fdiagonal-hatch 'cross-hatch
-                                       'horizontal-hatch 'vertical-hatch)])
+@defmethod[(set-style [style (or/c 'transparent 'solid 'opaque
+                                   'xor 'hilite 'panel 
+                                   'bdiagonal-hatch 'crossdiag-hatch
+                                   'fdiagonal-hatch 'cross-hatch
+                                   'horizontal-hatch 'vertical-hatch)])
            void?]{
 
 Sets the @tech{brush style}. See

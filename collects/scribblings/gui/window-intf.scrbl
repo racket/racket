@@ -160,10 +160,10 @@ See also
 @defmethod[(get-label)
            (or/c label-string? 
                  (is-a?/c bitmap%)
-                 (one-of/c 'app 'caution 'stop) 
+                 (or/c 'app 'caution 'stop) 
                  (list/c (is-a?/c bitmap%)
                          label-string?
-                         (one-of/c 'left 'top 'right 'bottom))
+                         (or/c 'left 'top 'right 'bottom))
                  #f)]{
 
 Gets a window's label, if any. Control windows generally display their

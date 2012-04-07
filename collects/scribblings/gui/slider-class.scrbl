@@ -14,16 +14,16 @@ Whenever the user changes the value of a slider, its callback
 
 
 
-@defconstructor[([label (or/c label-string? false/c)]
+@defconstructor[([label (or/c label-string? #f)]
                  [min-value (integer-in -10000 10000)]
                  [max-value (integer-in -10000 10000)]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c slider%) (is-a?/c control-event%) . -> . any) (lambda (b e) (void))]
                  [init-value (integer-in -10000 10000) min-value]
-                 [style (listof (one-of/c 'horizontal 'vertical 'plain 
-                                          'vertical-label 'horizontal-label 
-                                          'deleted)) 
+                 [style (listof (or/c 'horizontal 'vertical 'plain 
+                                      'vertical-label 'horizontal-label 
+                                      'deleted)) 
                         '(horizontal)]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]

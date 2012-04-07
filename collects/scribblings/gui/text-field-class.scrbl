@@ -36,16 +36,16 @@ The keymap for the text field's editor is initialized by calling the
  @racket[current-text-keymap-initializer] parameter.
 
 
-@defconstructor[([label (or/c label-string? false/c)]
+@defconstructor[([label (or/c label-string? #f)]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c text-field%) (is-a?/c control-event%) 
                             . -> . any) 
                            (lambda (t e) (void))]
                  [init-value string? ""]
-                 [style (listof (one-of/c 'single 'multiple 'hscroll 'password 
-                                          'vertical-label 'horizontal-label 
-                                          'deleted)) 
+                 [style (listof (or/c 'single 'multiple 'hscroll 'password 
+                                      'vertical-label 'horizontal-label 
+                                      'deleted)) 
                         '(single)]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]

@@ -62,7 +62,7 @@ Does nothing.
 
 @defmethod[#:mode pubment 
            (after-insert [snip (is-a?/c snip%)]
-                         [before (or/c (is-a?/c snip%) false/c)]
+                         [before (or/c (is-a?/c snip%) #f)]
                          [x real?]
                          [y real?])
            void?]{
@@ -272,7 +272,7 @@ Returns @racket[#t].
 
 @defmethod[#:mode pubment 
            (can-insert? [snip (is-a?/c snip%)]
-                        [before (or/c (is-a?/c snip%) false/c)]
+                        [before (or/c (is-a?/c snip%) #f)]
                         [x real?]
                         [y real?])
            boolean?]{
@@ -580,8 +580,8 @@ See also @method[pasteboard% delete].
 }
 
 
-@defmethod[(find-next-selected-snip [start (or/c (is-a?/c snip%) false/c)])
-           (or/c (is-a?/c snip%) false/c)]{
+@defmethod[(find-next-selected-snip [start (or/c (is-a?/c snip%) #f)])
+           (or/c (is-a?/c snip%) #f)]{
 
 Returns the next selected snip in the editor, starting the search
  after @racket[start]. (@|seesniporderdiscuss|) If @racket[start] is @racket[#f],
@@ -595,8 +595,8 @@ Returns the next selected snip in the editor, starting the search
 
 @defmethod[(find-snip [x real?]
                       [y real?]
-                      [after (or/c (is-a?/c snip%) false/c) #f])
-           (or/c (is-a?/c snip%) false/c)]{
+                      [after (or/c (is-a?/c snip%) #f) #f])
+           (or/c (is-a?/c snip%) #f)]{
 
 Finds the frontmost snip (after a given snip) that intersects a given
  @techlink{location}.  @|seesniporderdiscuss|
@@ -655,7 +655,7 @@ Returns whether selection dots are drawn around the edge of selected
             ([(insert [snip (is-a?/c snip%)])
               void?]
              [(insert [snip (is-a?/c snip%)]
-                      [before (or/c (is-a?/c snip%) false/c)]
+                      [before (or/c (is-a?/c snip%) #f)]
                       [x real?]
                       [y real?])
               void?]
@@ -664,7 +664,7 @@ Returns whether selection dots are drawn around the edge of selected
                       [y real?])
               void?]
              [(insert [snip (is-a?/c snip%)]
-                      [before (or/c (is-a?/c snip%) false/c)])
+                      [before (or/c (is-a?/c snip%) #f)])
               void?])]{
 
 Inserts @racket[snip] at @techlink{location} @math{(@racket[x],
@@ -873,7 +873,7 @@ If @racket[snip] accepts events, it is designated as the caret owner
 
 @defmethod[#:mode pubment 
            (on-insert [snip (is-a?/c snip%)]
-                      [before (or/c (is-a?/c snip%) false/c)]
+                      [before (or/c (is-a?/c snip%) #f)]
                       [x real?]
                       [y real?])
            void?]{
@@ -1099,7 +1099,7 @@ Attempts to resize a given snip. If the snip allows resizing,
 
 
 @defmethod[(set-after [snip (is-a?/c snip%)]
-                      [after (or/c (is-a?/c snip%) false/c)])
+                      [after (or/c (is-a?/c snip%) #f)])
            void?]{
 
 Changes the depth of @racket[snip] moving it just behind
@@ -1113,7 +1113,7 @@ See also @method[pasteboard% raise], @method[pasteboard% lower], and
 
 
 @defmethod[(set-before [snip (is-a?/c snip%)]
-                       [before (or/c (is-a?/c snip%) false/c)])
+                       [before (or/c (is-a?/c snip%) #f)])
            void?]{
 
 Changes the depth of @racket[snip] moving it just in front of

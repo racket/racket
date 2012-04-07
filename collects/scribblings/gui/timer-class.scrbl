@@ -23,7 +23,7 @@ See @secref["eventspaceinfo"] for more information about event
 
 
 @defconstructor[([notify-callback (-> any) void]
-                 [interval (or/c (integer-in 0 1000000000) false/c) #f]
+                 [interval (or/c (integer-in 0 1000000000) #f) #f]
                  [just-once? any/c #f])]{
 
 The @racket[notify-callback] thunk is called by the default

@@ -39,7 +39,7 @@ See @|geomdiscuss| for more information. Note that the return value
 }
 
 @defmethod[(get-parent)
-           (or/c (is-a?/c area-container<%>) false/c)]{
+           (or/c (is-a?/c area-container<%>) #f)]{
 
 Returns the area's parent. A top-level window may have no parent (in
  which case @racket[#f] is returned), or it may have another top-level

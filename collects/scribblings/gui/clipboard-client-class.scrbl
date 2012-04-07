@@ -33,7 +33,7 @@ The @racket[format] string is typically four capital letters. (On
 }
 
 @defmethod[(get-data [format string?])
-           (or/c bytes? string? false/c)]{
+           (or/c bytes? string? #f)]{
 
 Called when a process requests clipboard data while this client is the
  current one for the clipboard. The requested format is passed to the

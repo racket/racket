@@ -18,9 +18,9 @@ Since @racket[read] and @racket[read-syntax] build on
  containing the snip.
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c exact-nonnegative-integer? false/c)]
-                         [column (or/c exact-nonnegative-integer? false/c)]
-                         [position (or/c exact-nonnegative-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-nonnegative-integer? #f)]
+                         [position (or/c exact-nonnegative-integer? #f)])
            any/c]{
 
 The arguments are the same as the arguments to a procedure returned by

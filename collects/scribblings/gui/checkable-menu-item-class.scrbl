@@ -11,15 +11,16 @@ A @racket[checkable-menu-item%] is a string-labelled menu item that
 
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c menu%) (is-a?/c popup-menu%))]
-                 [callback ((is-a?/c checkable-menu-item%) (is-a?/c control-event%) . -> . any) 
+                 [callback ((is-a?/c checkable-menu-item%) (is-a?/c control-event%)
+                            . -> . any) 
                            (lambda (i e) (void))]
-                 [shortcut (or/c char? symbol? false/c) #f]
-                 [help-string (or/c label-string? false/c) #f]
+                 [shortcut (or/c char? symbol? #f) #f]
+                 [help-string (or/c label-string? #f) #f]
                  [demand-callback ((is-a?/c menu-item%) . -> . any) 
                            (lambda (i) (void))]
                  [checked any/c #f]
-                 [shortcut-prefix (listof (one-of/c 'alt 'cmd 'meta 'ctl 
-                                                    'shift 'option)) 
+                 [shortcut-prefix (listof (or/c 'alt 'cmd 'meta 'ctl 
+                                                'shift 'option)) 
                                   (get-default-shortcut-prefix)])]{
 
 Creates a new menu item in @racket[parent]. The item is initially

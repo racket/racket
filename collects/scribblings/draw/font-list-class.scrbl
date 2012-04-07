@@ -16,23 +16,23 @@ Creates an empty font list.
 }
 
 @defmethod*[([(find-or-create-font [size (integer-in 1 255)]
-                                   [family (one-of/c 'default 'decorative 'roman 'script 
-                                                     'swiss 'modern 'symbol 'system)]
-                                   [style (one-of/c 'normal 'italic 'slant)]
-                                   [weight (one-of/c 'normal 'bold 'light)]
+                                   [family (or/c 'default 'decorative 'roman 'script 
+                                                 'swiss 'modern 'symbol 'system)]
+                                   [style (or/c 'normal 'italic 'slant)]
+                                   [weight (or/c 'normal 'bold 'light)]
                                    [underline? any/c #f]
-                                   [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
+                                   [smoothing (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
                                    [size-in-pixels? any/c #f]
                                    [hinting (or/c 'aligned 'unaligned) 'aligned])
               (is-a?/c font%)]
              [(find-or-create-font [size (integer-in 1 255)]
                                    [face string?]
-                                   [family (one-of/c 'default 'decorative 'roman 'script
-                                                     'swiss 'modern 'symbol 'system)]
-                                   [style (one-of/c 'normal 'italic 'slant)]
-                                   [weight (one-of/c 'normal 'bold 'light)]
+                                   [family (or/c 'default 'decorative 'roman 'script
+                                                 'swiss 'modern 'symbol 'system)]
+                                   [style (or/c 'normal 'italic 'slant)]
+                                   [weight (or/c 'normal 'bold 'light)]
                                    [underline any/c #f]
-                                   [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
+                                   [smoothing (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
                                    [size-in-pixels? any/c #f]
                                    [hinting (or/c 'aligned 'unaligned) 'aligned])
               (is-a?/c font%)])]{

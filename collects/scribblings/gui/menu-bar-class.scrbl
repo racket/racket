@@ -10,7 +10,7 @@ A @racket[menu-bar%] object is created for a particular
 
 
 
-@defconstructor[([parent (or/c (is-a?/c frame%) (one-of/c 'root))]
+@defconstructor[([parent (or/c (is-a?/c frame%) 'root)]
                  [demand-callback ((is-a?/c menu-bar%) . -> . any) (lambda (m) (void))])]{
 
 Creates a menu bar in the specified frame. The menu bar is initially

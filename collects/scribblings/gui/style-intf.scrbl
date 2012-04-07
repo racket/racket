@@ -12,7 +12,7 @@ See also @|stylediscuss|.
 
 
 @defmethod[(get-alignment)
-           (one-of/c 'top 'center 'bottom)]{
+           (or/c 'top 'center 'bottom)]{
 
 Returns the style's alignment: @racket['top], @racket['center], or
  @racket['bottom].
@@ -29,7 +29,7 @@ Returns the style's background color.
 
 
 @defmethod[(get-base-style)
-           (or/c (is-a?/c style<%>) false/c)]{
+           (or/c (is-a?/c style<%>) #f)]{
 
 Returns the style's base style. See @|stylediscuss| for more
  information. The return value is @racket[#f] only for the basic style
@@ -46,7 +46,7 @@ Mutates @racket[delta], changing it to match the style's delta, if the style is 
 }
 
 @defmethod[(get-face)
-           (or/c string? false/c)]{
+           (or/c string? #f)]{
 
 Returns the style's face name. See @racket[font%].
 
@@ -54,8 +54,8 @@ Returns the style's face name. See @racket[font%].
 
 
 @defmethod[(get-family)
-           (one-of/c 'default 'decorative 'roman 'script 
-                     'swiss 'modern 'symbol 'system)]{
+           (or/c 'default 'decorative 'roman 'script 
+                 'swiss 'modern 'symbol 'system)]{
 
 Returns the style's font family. See @racket[font%].
 
@@ -76,7 +76,7 @@ Returns the style's foreground color.
 }
 
 @defmethod[(get-name)
-           (or/c string? false/c)]{
+           (or/c string? #f)]{
 
 Returns the style's name, or @racket[#f] if it is unnamed. Style names
  are only set through the style's @racket[style-list%] object.
@@ -107,14 +107,14 @@ Returns @racket[#t] if the style size is in pixels, instead of points,
 }
 
 @defmethod[(get-smoothing)
-           (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
+           (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
 
 Returns the style's font smoothing. See @racket[font%].
 
 }
 
 @defmethod[(get-style)
-           (one-of/c 'normal 'italic 'slant)]{
+           (or/c 'normal 'italic 'slant)]{
 
 Returns the style's font style. See @racket[font%].
 
@@ -166,7 +166,7 @@ Returns @racket[#t] if the style is underlined or @racket[#f]
 }
 
 @defmethod[(get-weight)
-           (one-of/c 'normal 'bold 'light)]{
+           (or/c 'normal 'bold 'light)]{
 
 Returns the style's font weight. See @racket[font%].
 
@@ -205,7 +205,7 @@ the style's font, etc. See @|stylediscuss| for more information.
 }
 
 @defmethod[(switch-to [dc (is-a?/c dc<%>)]
-                      [old-style (or/c (is-a?/c style<%>) false/c)])
+                      [old-style (or/c (is-a?/c style<%>) #f)])
            void?]{
 
 Sets the font, pen color, etc. of the given drawing context. If

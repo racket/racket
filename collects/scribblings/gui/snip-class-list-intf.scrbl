@@ -19,7 +19,7 @@ Adds a snip class to the list. If a class with the same name already
 }
 
 @defmethod[(find [name string?])
-           (or/c (is-a?/c snip-class%) false/c)]{
+           (or/c (is-a?/c snip-class%) #f)]{
 
 Finds a snip class from the list with the given name, returning
  @racket[#f] if none is found.
@@ -34,7 +34,7 @@ Returns an index into the list for the specified class.
 }
 
 @defmethod[(nth [n exact-nonnegative-integer?])
-           (or/c (is-a?/c snip-class%) false/c)]{
+           (or/c (is-a?/c snip-class%) #f)]{
 
 Returns the @racket[n]th class in the list, or @racket[#f] if
  the list has @racket[n] classes or less.

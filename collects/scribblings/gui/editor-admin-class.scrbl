@@ -23,9 +23,9 @@ Creates a (useless) editor administrator.
 
 }
 
-@defmethod[(get-dc [x (or/c (box/c real?) false/c) #f]
-                   [y (or/c (box/c real?) false/c) #f])
-           (or/c (is-a?/c dc<%>) false/c)]{
+@defmethod[(get-dc [x (or/c (box/c real?) #f) #f]
+                   [y (or/c (box/c real?) #f) #f])
+           (or/c (is-a?/c dc<%>) #f)]{
 @methspec{
 
 Returns either the drawing context into which the editor is displayed,
@@ -52,10 +52,10 @@ Fills all boxes with @racket[0.0] and returns @racket[#f].
 
 }}
 
-@defmethod[(get-max-view [x (or/c (box/c real?) false/c)]
-                         [y (or/c (box/c real?) false/c)]
-                         [w (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                         [h (or/c (box/c (and/c real? (not/c negative?))) false/c)]
+@defmethod[(get-max-view [x (or/c (box/c real?) #f)]
+                         [y (or/c (box/c real?) #f)]
+                         [w (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                         [h (or/c (box/c (and/c real? (not/c negative?))) #f)]
                          [full? any/c #f])
            void?]{
 @methspec{
@@ -75,10 +75,10 @@ Fills all boxes with @racket[0.0].
 }}
 
 
-@defmethod[(get-view [x (or/c (box/c real?) false/c)]
-                     [y (or/c (box/c real?) false/c)]
-                     [w (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                     [h (or/c (box/c (and/c real? (not/c negative?))) false/c)]
+@defmethod[(get-view [x (or/c (box/c real?) #f)]
+                     [y (or/c (box/c real?) #f)]
+                     [w (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                     [h (or/c (box/c (and/c real? (not/c negative?))) #f)]
                      [full? any/c #f])
            void?]{
 @methspec{
@@ -122,7 +122,7 @@ Fills all boxes with @racket[0.0].
 
 }}
 
-@defmethod[(grab-caret [domain (one-of/c 'immediate 'display 'global) 'global])
+@defmethod[(grab-caret [domain (or/c 'immediate 'display 'global) 'global])
            void?]{
 @methspec{
 
@@ -245,7 +245,7 @@ Does nothing.
                       [w (and/c real? (not/c negative?))]
                       [h (and/c real? (not/c negative?))]
                       [refresh? any/c #t]
-                      [bias (one-of/c 'start 'end 'none) 'none])
+                      [bias (or/c 'start 'end 'none) 'none])
            boolean?]{
 @methspec{
 

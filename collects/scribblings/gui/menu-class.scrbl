@@ -11,7 +11,7 @@ A @racket[menu%] object is a submenu within a @racket[menu%] or
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c menu%) (is-a?/c popup-menu%) 
                                (is-a?/c menu-bar%))]
-                 [help-string (or/c label-string? false/c) #f]
+                 [help-string (or/c label-string? #f) #f]
                  [demand-callback ((is-a?/c menu%) . -> . any) (lambda (m) (void))])]{
 
 Creates a new menu with the given label.

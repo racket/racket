@@ -10,13 +10,13 @@ A @racket[canvas%] object is a general-purpose window for drawing and
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [style (listof (one-of/c 'border 'control-border 'combo 
-                                          'vscroll 'hscroll 'resize-corner
-                                          'gl 'no-autoclear 'transparent
-                                          'no-focus 'deleted)) null]
+                 [style (listof (or/c 'border 'control-border 'combo 
+                                      'vscroll 'hscroll 'resize-corner
+                                      'gl 'no-autoclear 'transparent
+                                      'no-focus 'deleted)) null]
                  [paint-callback ((is-a?/c canvas%) (is-a?/c dc<%>) . -> . any) void]
-                 [label (or/c label-string? false/c) #f]
-                 [gl-config (or/c (is-a?/c gl-config%) false/c) #f]
+                 [label (or/c label-string? #f) #f]
+                 [gl-config (or/c (is-a?/c gl-config%) #f) #f]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 0]
                  [horiz-margin (integer-in 0 1000) 0]
@@ -100,7 +100,7 @@ The @racket[gl-config] argument determines properties of an OpenGL
 }
 
 
-@defmethod[(get-scroll-page [which (one-of/c 'horizontal 'vertical)])
+@defmethod[(get-scroll-page [which (or/c 'horizontal 'vertical)])
            (integer-in 1 1000000)]{
 
 Get the current page step size of a manual scrollbar. The result is
@@ -115,7 +115,7 @@ See also
 }
 
 
-@defmethod[(get-scroll-pos [which (one-of/c 'horizontal 'vertical)])
+@defmethod[(get-scroll-pos [which (or/c 'horizontal 'vertical)])
            (integer-in 0 1000000)]{
 
 Gets the current value of a manual scrollbar. The result is always
@@ -130,7 +130,7 @@ See also
 }
 
 
-@defmethod[(get-scroll-range [which (one-of/c 'horizontal 'vertical)])
+@defmethod[(get-scroll-range [which (or/c 'horizontal 'vertical)])
            (integer-in 0 1000000)]{
 
 Gets the current maximum value of a manual scrollbar. The result is
@@ -173,8 +173,8 @@ Gets the size in device units of the scrollable canvas area (as
 }
 
 
-@defmethod[(init-auto-scrollbars [horiz-pixels (or/c (integer-in 1 1000000) false/c)]
-                                 [vert-pixels (or/c (integer-in 1 1000000) false/c)]
+@defmethod[(init-auto-scrollbars [horiz-pixels (or/c (integer-in 1 1000000) #f)]
+                                 [vert-pixels (or/c (integer-in 1 1000000) #f)]
                                  [h-value (real-in 0.0 1.0)]
                                  [v-value (real-in 0.0 1.0)])
            void?]{
@@ -218,8 +218,8 @@ See also
 
 }
 
-@defmethod[(init-manual-scrollbars [h-length (or/c (integer-in 0 1000000) false/c)]
-                                   [v-length (or/c (integer-in 0 1000000) false/c)]
+@defmethod[(init-manual-scrollbars [h-length (or/c (integer-in 0 1000000) #f)]
+                                   [v-length (or/c (integer-in 0 1000000) #f)]
                                    [h-page (integer-in 1 1000000)]
                                    [v-page (integer-in 1 1000000)]
                                    [h-value (integer-in 0 1000000)]
@@ -312,8 +312,8 @@ flushing is enabled, and if @racket[flush?] is true, then
 @method[canvas<%> flush] is called immediately.}
 
 
-@defmethod[(scroll [h-value (or/c (real-in 0.0 1.0) false/c)]
-                   [v-value (or/c (real-in 0.0 1.0) false/c)])
+@defmethod[(scroll [h-value (or/c (real-in 0.0 1.0) #f)]
+                   [v-value (or/c (real-in 0.0 1.0) #f)])
            void?]{
 
 Sets the values of automatic scrollbars. (This method has no effect on
@@ -337,7 +337,7 @@ See also
 }
 
 
-@defmethod[(set-scroll-page [which (one-of/c 'horizontal 'vertical)]
+@defmethod[(set-scroll-page [which (or/c 'horizontal 'vertical)]
                             [value (integer-in 1 1000000)])
            void?]{
 
@@ -354,7 +354,7 @@ See also
 }
 
 
-@defmethod[(set-scroll-pos [which (one-of/c 'horizontal 'vertical)]
+@defmethod[(set-scroll-pos [which (or/c 'horizontal 'vertical)]
                            [value (integer-in 0 1000000)])
            void?]{
 
@@ -374,7 +374,7 @@ See also
 }
 
 
-@defmethod[(set-scroll-range [which (one-of/c 'horizontal 'vertical)]
+@defmethod[(set-scroll-range [which (or/c 'horizontal 'vertical)]
                              [value (integer-in 0 1000000)])
            void?]{
 

@@ -11,12 +11,12 @@ A @racket[menu-item%] is a plain string-labelled menu item. Its
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c menu%) (is-a?/c popup-menu%))]
                  [callback ((is-a?/c menu-item%) (is-a?/c control-event%) . -> . any)]
-                 [shortcut (or/c char? symbol? false/c) #f]
-                 [help-string (or/c label-string? false/c) #f]
+                 [shortcut (or/c char? symbol? #f) #f]
+                 [help-string (or/c label-string? #f) #f]
                  [demand-callback ((is-a?/c menu-item%) . -> . any) 
                            (lambda (i) (void))]
-                 [shortcut-prefix (listof (one-of/c 'alt 'cmd 'meta 'ctl 
-                                                    'shift 'option)) 
+                 [shortcut-prefix (listof (or/c 'alt 'cmd 'meta 'ctl 
+                                                'shift 'option)) 
                                   (get-default-shortcut-prefix)])]{
 
 Creates a new menu item in @racket[parent]. The item is initially

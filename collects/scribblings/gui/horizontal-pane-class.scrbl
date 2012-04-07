@@ -12,8 +12,8 @@ A horizontal pane arranges its subwindows in a single row. See also
                  [horiz-margin (integer-in 0 1000) 0]
                  [border (integer-in 0 1000) 0]
                  [spacing (integer-in 0 1000) 0]
-                 [alignment (list/c (one-of/c 'left 'center 'right)
-                                    (one-of/c 'top 'center 'bottom))
+                 [alignment (list/c (or/c 'left 'center 'right)
+                                    (or/c 'top 'center 'bottom))
                             '(left center)]
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]

@@ -98,7 +98,7 @@ on Windows and Mac OS X. See @secref["Portability"] for more information.}
                                   'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                   'bmp 'bmp/alpha)
                             'unknown/alpha]
-                      [bg-color (or/c (is-a?/c color%) false/c) #f]
+                      [bg-color (or/c (is-a?/c color%) #f) #f]
                       [complain-on-failure? any/c #t])
          (is-a?/c bitmap%)]{
 

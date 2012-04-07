@@ -20,7 +20,7 @@ When a @racket[printer-dc%] object is created, the user gets
  If the user cancels the dialog, the @method[dc<%> ok?] method
  of the object returns @racket[#f].
 
-@defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f])]{
+@defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f])]{
 
 If @racket[parent] is not @racket[#f], it is used as the parent window
  of the configuration dialog.

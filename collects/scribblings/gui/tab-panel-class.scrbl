@@ -21,15 +21,15 @@ The @racket[tab-panel%] class does not implement the virtual
                  [callback ((is-a?/c tab-panel%) (is-a?/c control-event%)
                             . -> . any) 
                            (lambda (b e) (void))]
-                 [style (listof (one-of/c 'no-border 'deleted)) null]
+                 [style (listof (or/c 'no-border 'deleted)) null]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 0]
                  [horiz-margin (integer-in 0 1000) 0]
                  [border (integer-in 0 1000) 0]
                  [spacing (integer-in 0 1000) 0]
-                 [alignment (list/c (one-of/c 'left 'center 'right)
-                                    (one-of/c 'top 'center 'bottom))
+                 [alignment (list/c (or/c 'left 'center 'right)
+                                    (or/c 'top 'center 'bottom))
                             '(center top)]
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]
@@ -91,7 +91,7 @@ Returns the number of tabs on the panel.
 }
 
 @defmethod[(get-selection)
-           (or/c exact-nonnegative-integer? false/c)]{
+           (or/c exact-nonnegative-integer? #f)]{
 
 Returns the index (counting from 0) of the currently selected tab.  If
  the panel has no tabs, the result is @racket[#f].

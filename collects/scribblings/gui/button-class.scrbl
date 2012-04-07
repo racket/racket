@@ -11,11 +11,11 @@ Whenever a button is clicked by the user, the button's callback
                               (is-a?/c bitmap%)
                               (list/c (is-a?/c bitmap%)
                                       label-string?
-                                      (one-of/c 'left 'top 'right 'bottom)))]
+                                      (or/c 'left 'top 'right 'bottom)))]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c button%) (is-a?/c control-event%) . -> . any) (lambda (b e) (void))]
-                 [style (listof (one-of/c 'border 'deleted)) null]
+                 [style (listof (or/c 'border 'deleted)) null]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]

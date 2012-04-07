@@ -87,8 +87,8 @@ or has no effect (when called with a handler).
 
 
 @defproc*[([(application-preferences-handler)
-            (or/c (-> any) false/c)]
-           [(application-preferences-handler [handler-thunk (or/c (-> any) false/c)])
+            (or/c (-> any) #f)]
+           [(application-preferences-handler [handler-thunk (or/c (-> any) #f)])
             void?])]{
 When the current eventspace is the initial eventspace, this procedure
  retrieves or installs a thunk that is called when the user selects

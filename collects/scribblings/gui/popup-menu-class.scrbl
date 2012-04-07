@@ -13,7 +13,7 @@ however, displays a single value that the user selects from a popup
  control, and it is not accessible to the programmer.
 
 
-@defconstructor[([title (or/c label-string? false/c) #f]
+@defconstructor[([title (or/c label-string? #f) #f]
                  [popdown-callback ((is-a?/c popup-menu%) (is-a?/c control-event%)
                                     . -> . any) 
                                    (lambda (p e) (void))]
@@ -55,7 +55,7 @@ Returns the font used for the popup menu's items, which is optionally
 
 
 @defmethod[(get-popup-target)
-           (or/c (is-a?/c window<%>) (is-a?/c editor<%>) false/c)]{
+           (or/c (is-a?/c window<%>) (is-a?/c editor<%>) #f)]{
 
 Returns the context in which the popup menu is currently displayed, or
  @racket[#f] if it is not popped up in any window.

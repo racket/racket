@@ -118,7 +118,7 @@ Like @racket[flush-display], but constrained if possible to the canvas.}
 
 
 @defmethod[(get-canvas-background)
-           (or/c (is-a?/c color%) false/c)]{
+           (or/c (is-a?/c color%) #f)]{
 Returns the color currently used to ``erase'' the canvas content before
 @method[canvas<%> on-paint] is called. See also
 @method[canvas<%> set-canvas-background].

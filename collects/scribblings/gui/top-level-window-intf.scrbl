@@ -34,7 +34,7 @@ Calls @method[top-level-window<%> can-close?] and returns the result.
 
 }}
 
-@defmethod[(center [direction (one-of/c 'horizontal 'vertical 'both) 'both])
+@defmethod[(center [direction (or/c 'horizontal 'vertical 'both) 'both])
            void?]{
 
 Centers the window on the screen if it has no parent. If it has a
@@ -48,7 +48,7 @@ If @racket[direction] is @racket['horizontal], the window is centered
 }
 
 @defmethod[(get-edit-target-object)
-           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) false/c)]{
+           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) #f)]{
 
 @index['("keyboard focus" "last active")]{Like}
  @method[top-level-window<%> get-edit-target-window], but if an editor
@@ -61,7 +61,7 @@ See also @method[top-level-window<%> get-focus-object].
 }
 
 @defmethod[(get-edit-target-window)
-           (or/c (is-a?/c window<%>) false/c)]{
+           (or/c (is-a?/c window<%>) #f)]{
 
 @index['("keyboard focus" "last active")]{Returns} the window that
 most recently had the keyboard focus, either the top-level window or
@@ -81,7 +81,7 @@ Returns the window's eventspace.
 }
 
 @defmethod[(get-focus-object)
-           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) false/c)]{
+           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) #f)]{
 
 @index["keyboard focus"]{Like} @method[top-level-window<%>
 get-focus-window], but if an editor canvas has the focus and it also
@@ -94,7 +94,7 @@ See also @method[top-level-window<%> get-edit-target-object].
 }
 
 @defmethod[(get-focus-window)
-           (or/c (is-a?/c window<%>) false/c)]{
+           (or/c (is-a?/c window<%>) #f)]{
 
 @index["keyboard focus"]{Returns} the window that has the keyboard
  focus, either the top-level window or one of its children. If neither
@@ -315,7 +315,7 @@ Sets the size of the window (in pixels), but only if the given size is
 
 @defmethod[(set-icon [icon (is-a?/c bitmap%)]
                      [mask (is-a?/c bitmap%) #f]
-                     [which (one-of/c 'small 'large 'both) 'both])
+                     [which (or/c 'small 'large 'both) 'both])
            void?]{
 
 Sets the large or small icon bitmap for the window.  Future changes to

@@ -51,7 +51,7 @@ Returns the current settings for horizontal and vertical margins when
 }
 
 @defmethod[(get-file)
-           (or/c path-string? false/c)]{
+           (or/c path-string? #f)]{
 
 Gets the PostScript output filename. A @racket[#f] value (the default)
  indicates that the user should be prompted for a filename when a
@@ -82,7 +82,7 @@ Returns the current settings for horizontal and vertical PostScript
 }
 
 @defmethod[(get-mode)
-           (one-of/c 'preview 'file 'printer)]{
+           (or/c 'preview 'file 'printer)]{
 
 Gets the printing mode that determines where output is sent:
  @racket['preview], @racket['file], or @racket['printer].  The default
@@ -92,7 +92,7 @@ Gets the printing mode that determines where output is sent:
 }
 
 @defmethod[(get-orientation)
-           (one-of/c 'portrait 'landscape)]{
+           (or/c 'portrait 'landscape)]{
 
 Gets the orientation: @racket['portrait] or @racket['landscape]. The
  default is @racket['portrait]. Unlike most other settings, this one
@@ -185,7 +185,7 @@ Sets the horizontal and vertical margins used when printing an editor
 
 }
 
-@defmethod[(set-file [filename (or/c path-string? false/c)])
+@defmethod[(set-file [filename (or/c path-string? #f)])
            void?]{
 
 Sets the PostScript output filename. See
@@ -222,7 +222,7 @@ The margins are in unscaled @racket[post-script-dc%] units, which
 
 }
 
-@defmethod[(set-mode [mode (one-of/c 'preview 'file 'printer)])
+@defmethod[(set-mode [mode (or/c 'preview 'file 'printer)])
            void?]{
 
 Sets the printing mode controlling where output is sent. See
@@ -233,7 +233,7 @@ On Windows and Mac OS X, if @racket['preview] or @racket['printer]
 
 }
 
-@defmethod[(set-orientation [orientation (one-of/c 'portrait 'landscape)])
+@defmethod[(set-orientation [orientation (or/c 'portrait 'landscape)])
            void?]{
 
 Sets the orientation. See @method[ps-setup% get-orientation].

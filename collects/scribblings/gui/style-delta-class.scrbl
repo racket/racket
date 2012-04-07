@@ -219,7 +219,7 @@ Gets the multiplicative color shift for the background (applied before
 }
 
 @defmethod[(get-face)
-           (or/c string? false/c)]{
+           (or/c string? #f)]{
 
 Gets the delta's font face string. If this string is @racket[#f] and the
  family is @indexed-racket['base] when the delta is applied to a style,
@@ -486,7 +486,7 @@ For the case that a string color name is supplied, see
 }
 
 
-@defmethod[(set-face [v (or/c string? false/c)])
+@defmethod[(set-face [v (or/c string? #f)])
            void?]{See
 @method[style-delta% get-face]. See also
 @method[style-delta% set-delta-face].

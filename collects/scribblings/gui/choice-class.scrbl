@@ -15,14 +15,14 @@ Whenever the selection of a choice item is changed by the user, the
 See also @racket[list-box%].
 
 
-@defconstructor[([label (or/c label-string? false/c)]
+@defconstructor[([label (or/c label-string? #f)]
                  [choices (listof label-string?)]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c choice%) (is-a?/c control-event%) . -> . any) 
                            (lambda (c e) (void))]
-                 [style (listof (one-of/c 'horizontal-label 'vertical-label
-                                          'deleted)) 
+                 [style (listof (or/c 'horizontal-label 'vertical-label
+                                      'deleted)) 
                    null]
                  [selection exact-nonnegative-integer? 0]
                  [font (is-a?/c font%) normal-control-font]

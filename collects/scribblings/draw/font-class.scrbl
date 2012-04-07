@@ -135,7 +135,7 @@ See also @racket[make-font].
 }
 
 @defmethod[(get-face)
-           (or/c string? false/c)]{
+           (or/c string? #f)]{
 
 Gets the font's face name, or @racket[#f] if none is specified.
 

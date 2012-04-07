@@ -36,7 +36,7 @@ Creates a new bitmap DC. If @racket[bitmap] is not @racket[#f], it is
                                        [src-y real?]
                                        [src-width (and/c real? (not/c negative?))]
                                        [src-height (and/c real? (not/c negative?))]
-                                       [style (one-of/c 'solid 'opaque 'xor) 'solid]
+                                       [style (or/c 'solid 'opaque 'xor) 'solid]
                                        [color (is-a?/c color%) (send the-color-database find-color "black")]
                                        [mask (or/c (is-a?/c bitmap%) #f) #f])
            boolean?]{

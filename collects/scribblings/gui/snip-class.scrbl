@@ -90,7 +90,7 @@ Creates a plain snip of length 1 with the @racket["Basic"] style of
                           [editorx real?]
                           [editory real?]
                           [event (is-a?/c mouse-event%)])
-           (or/c (is-a?/c cursor%) false/c)]{
+           (or/c (is-a?/c cursor%) #f)]{
 
 @methspec{
 
@@ -122,10 +122,10 @@ The drawing context and snip's @techlink{location}s in drawing context
 }
 
 
-@defmethod[(can-do-edit-operation? [op (one-of/c 'undo 'redo 'clear 'cut 'copy 
-                                                 'paste 'kill 'select-all 
-                                                 'insert-text-box 'insert-pasteboard-box 
-                                                 'insert-image)]
+@defmethod[(can-do-edit-operation? [op (or/c 'undo 'redo 'clear 'cut 'copy 
+                                             'paste 'kill 'select-all 
+                                             'insert-text-box 'insert-pasteboard-box 
+                                             'insert-image)]
                                    [recursive? any/c #t])
            boolean?]{
 
@@ -147,10 +147,10 @@ Creates and returns a copy of this snip. The @method[snip% copy]
 }
 
 
-@defmethod[(do-edit-operation [op (one-of/c 'undo 'redo 'clear 'cut 'copy 
-                                            'paste 'kill 'select-all 
-                                            'insert-text-box 'insert-pasteboard-box 
-                                            'insert-image)]
+@defmethod[(do-edit-operation [op (or/c 'undo 'redo 'clear 'cut 'copy 
+                                        'paste 'kill 'select-all 
+                                        'insert-text-box 'insert-pasteboard-box 
+                                        'insert-image)]
                               [recursive? any/c #t]
                               [time exact-integer? 0])
            void?]{
@@ -265,7 +265,7 @@ Returns @racket[0].
 }}
 
 @defmethod[(get-admin)
-           (or/c (is-a?/c snip-admin%) false/c)]{
+           (or/c (is-a?/c snip-admin%) #f)]{
 
 Returns the administrator for this snip. (The administrator can be
  @racket[#f] even if the snip is owned but not visible in the editor.)
@@ -283,12 +283,12 @@ Returns the snip's @techlink{count} (i.e., number of @techlink{item}s
 @defmethod[(get-extent [dc (is-a?/c dc<%>)]
                        [x real?]
                        [y real?]
-                       [w (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [h (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [descent (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [space (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [lspace (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [rspace (or/c (box/c (and/c real? (not/c negative?))) false/c) #f])
+                       [w (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [h (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [descent (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [space (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [lspace (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [rspace (or/c (box/c (and/c real? (not/c negative?))) #f) #f])
            void?]{
 @methspec{
 
@@ -532,7 +532,7 @@ Returns @racket[#t] if the @racket[snip] and @this-obj[] are from the
 
 
 @defmethod[(merge-with [prev (is-a?/c snip%)])
-           (or/c (is-a?/c snip%) false/c)]{
+           (or/c (is-a?/c snip%) #f)]{
 
 @methspec{
 
@@ -557,7 +557,7 @@ Returns @racket[#f].
 
 
 @defmethod[(next)
-           (or/c (is-a?/c snip%) false/c)]{
+           (or/c (is-a?/c snip%) #f)]{
 
 Returns the next snip in the editor owning this snip, or @racket[#f]
  if this is the last snip.
@@ -677,7 +677,7 @@ Returns @racket[0.0].
 
 
 @defmethod[(previous)
-           (or/c (is-a?/c snip%) false/c)]{
+           (or/c (is-a?/c snip%) #f)]{
 
 Returns the previous snip in the editor owning this snip, or @racket[#f] if this
  is the first snip.
@@ -727,7 +727,7 @@ Returns @racket[#f].
 }}
 
 
-@defmethod[(set-admin [admin (or/c (is-a?/c snip-admin%) false/c)])
+@defmethod[(set-admin [admin (or/c (is-a?/c snip-admin%) #f)])
            void?]{
 
 Sets the snip's administrator. Only an administrator should call this

@@ -30,8 +30,8 @@ Reading from a bad stream always gives @racket[0].
 }
 
 
-@defmethod[(get-bytes [len (or/c (box/c exact-nonnegative-integer?) false/c) #f])
-           (or/c bytes? false/c)]{
+@defmethod[(get-bytes [len (or/c (box/c exact-nonnegative-integer?) #f) #f])
+           (or/c bytes? #f)]{
 
 Like @method[editor-stream-in% get-unterminated-bytes], but the last
  read byte is assumed to be a nul terminator and discarded. Use this
@@ -75,8 +75,8 @@ Returns the next floating-point value in the stream.
 
 }
 
-@defmethod[(get-unterminated-bytes [len (or/c (box/c exact-nonnegative-integer?) false/c) #f])
-           (or/c bytes? false/c)]{
+@defmethod[(get-unterminated-bytes [len (or/c (box/c exact-nonnegative-integer?) #f) #f])
+           (or/c bytes? #f)]{
 
 Returns the next byte string from the stream.  This is
 the recommended way to read bytes back in from a stream;

@@ -16,12 +16,12 @@ to @racket[#f].
 }
 
 @defmethod[(get-dataclass)
-           (or/c (is-a?/c editor-data-class%) false/c)]{
+           (or/c (is-a?/c editor-data-class%) #f)]{
 Gets the class for this data.
 }
 
 @defmethod[(get-next)
-           (or/c (is-a?/c editor-data%) false/c)]{
+           (or/c (is-a?/c editor-data%) #f)]{
 Gets the next editor data element in a list of editor data elements.
 A @racket[#f] terminates the list.
 }
@@ -30,7 +30,7 @@ A @racket[#f] terminates the list.
            void?]{Sets the class for this data.
 }
 
-@defmethod[(set-next [v (or/c (is-a?/c editor-data%) false/c)])
+@defmethod[(set-next [v (or/c (is-a?/c editor-data%) #f)])
            void?]{Sets the next editor data element in a list of editor data elements.
 A @racket[#f] terminates the list.
 }

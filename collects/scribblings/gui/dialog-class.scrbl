@@ -8,19 +8,19 @@ A dialog is a top-level window that is @defterm{modal}: while the
  all other top-level windows in the dialog's eventspace.
 
 @defconstructor[([label label-string?]
-                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
-                 [width (or/c (integer-in 0 10000) false/c) #f]
-                 [height (or/c (integer-in 0 10000) false/c) #f]
-                 [x (or/c (integer-in 0 10000) false/c) #f]
-                 [y (or/c (integer-in 0 10000) false/c) #f]
-                 [style (listof (one-of/c 'no-caption 'resize-border 
-                                          'no-sheet 'close-button)) 
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
+                 [width (or/c (integer-in 0 10000) #f) #f]
+                 [height (or/c (integer-in 0 10000) #f) #f]
+                 [x (or/c (integer-in 0 10000) #f) #f]
+                 [y (or/c (integer-in 0 10000) #f) #f]
+                 [style (listof (or/c 'no-caption 'resize-border 
+                                      'no-sheet 'close-button)) 
                         null]
                  [enabled any/c #t]
                  [border (integer-in 0 1000) 0]
                  [spacing (integer-in 0 1000) 0]
-                 [alignment (list/c (one-of/c 'left 'center 'right)
-                                    (one-of/c 'top 'center 'bottom))
+                 [alignment (list/c (or/c 'left 'center 'right)
+                                    (or/c 'top 'center 'bottom))
                             '(center top)]
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]

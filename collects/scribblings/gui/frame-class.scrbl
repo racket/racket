@@ -8,19 +8,19 @@ A frame is a top-level container window. It has a title bar (which
  status line.
 
 @defconstructor[([label label-string?]
-                 [parent (or/c (is-a?/c frame%) false/c) #f]
-                 [width (or/c (integer-in 0 10000) false/c) #f]
-                 [height (or/c (integer-in 0 10000) false/c) #f]
-                 [x (or/c (integer-in -10000 10000) false/c) #f]
-                 [y (or/c (integer-in -10000 10000) false/c) #f]
-                 [style (listof (one-of/c 'no-resize-border 'no-caption 
-                                          'no-system-menu 'hide-menu-bar 
-                                          'toolbar-button 'float 'metal)) null]
+                 [parent (or/c (is-a?/c frame%) #f) #f]
+                 [width (or/c (integer-in 0 10000) #f) #f]
+                 [height (or/c (integer-in 0 10000) #f) #f]
+                 [x (or/c (integer-in -10000 10000) #f) #f]
+                 [y (or/c (integer-in -10000 10000) #f) #f]
+                 [style (listof (or/c 'no-resize-border 'no-caption 
+                                      'no-system-menu 'hide-menu-bar 
+                                      'toolbar-button 'float 'metal)) null]
                  [enabled any/c #t]
                  [border (integer-in 0 1000) 0]
                  [spacing (integer-in 0 1000) 0]
-                 [alignment (list/c (one-of/c 'left 'center 'right)
-                                    (one-of/c 'top 'center 'bottom))
+                 [alignment (list/c (or/c 'left 'center 'right)
+                                    (or/c 'top 'center 'bottom))
                             '(center top)]
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]
@@ -108,7 +108,7 @@ See also @method[frame% set-status-text].
 }
 
 @defmethod[(get-menu-bar)
-           (or/c (is-a?/c menu-bar%) false/c)]{
+           (or/c (is-a?/c menu-bar%) #f)]{
 
 Returns the frame's menu bar, or @racket[#f] if none has been created
  for the frame.

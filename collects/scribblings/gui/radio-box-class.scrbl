@@ -17,16 +17,16 @@ Whenever the user changes the selected radio button, the radio box's
 
 
 
-@defconstructor[([label (or/c label-string? false/c)]
+@defconstructor[([label (or/c label-string? #f)]
                  [choices (or/c (listof label-string?) (listof (is-a?/c bitmap%)))]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c radio-box%) (is-a?/c control-event%)
                             . -> . any) 
                            (lambda (r e) (void))]
-                 [style (listof (one-of/c 'horizontal 'vertical 
-                                          'vertical-label 'horizontal-label 
-                                          'deleted)) 
+                 [style (listof (or/c 'horizontal 'vertical 
+                                      'vertical-label 'horizontal-label 
+                                      'deleted)) 
                         '(vertical)]
                  [selection (or/c exact-nonnegative-integer? #f) 0]
                  [font (is-a?/c font%) normal-control-font]

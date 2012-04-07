@@ -7,7 +7,7 @@ Like @racket[post-script-dc%], but generates a PDF file instead of a
  PostScript file.
 
 @defconstructor[([interactive any/c #t]
-                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                  [use-paper-bbox any/c #f]
                  [as-eps any/c #t]
                  [width (or/c (and/c real? (not/c negative?)) #f) #f]

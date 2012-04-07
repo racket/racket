@@ -18,7 +18,7 @@ exists in the list, this one will not be added.
 }
 
 @defmethod[(find [name string?])
-           (or/c (is-a?/c snip-class%) false/c)]{
+           (or/c (is-a?/c snip-class%) #f)]{
 Finds a snip data class from the list with the given name, returning
  @racket[#f] if none can be found.
 
@@ -31,7 +31,7 @@ Returns an index into the list for the specified class.
 }
 
 @defmethod[(nth [n exact-nonnegative-integer?])
-           (or/c (is-a?/c editor-data-class%) false/c)]{
+           (or/c (is-a?/c editor-data-class%) #f)]{
 Returns the @racket[n]th class in the list (counting from 0), returning
  @racket[#f] if the list has @racket[n] or less classes.
 

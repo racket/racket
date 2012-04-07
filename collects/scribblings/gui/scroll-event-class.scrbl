@@ -13,10 +13,10 @@ See
 
 
 
-@defconstructor[([event-type (one-of/c 'top 'bottom 'line-up 'line-down 
-                                       'page-up 'page-down 'thumb)
+@defconstructor[([event-type (or/c 'top 'bottom 'line-up 'line-down 
+                                   'page-up 'page-down 'thumb)
                              'thumb]
-                 [direction (one-of/c 'horizontal 'vertical) 'vertical]
+                 [direction (or/c 'horizontal 'vertical) 'vertical]
                  [position (integer-in 0 10000) 0]
                  [time-stamp exact-integer? 0])]{
 
@@ -27,7 +27,7 @@ See the corresponding @racket[get-] and @racket[set-] methods for
 }
 
 @defmethod[(get-direction)
-           (one-of/c 'horizontal 'vertical)]{
+           (or/c 'horizontal 'vertical)]{
 
 Gets the identity of the scrollbar that was modified by the event,
  either the horizontal scrollbar or the vertical scrollbar, as
@@ -37,7 +37,8 @@ Gets the identity of the scrollbar that was modified by the event,
 }
 
 @defmethod[(get-event-type)
-           (one-of/c 'top 'bottom 'line-up 'line-down 'page-up 'page-down 'thumb)]{
+           (or/c 'top 'bottom 'line-up 'line-down 
+                 'page-up 'page-down 'thumb)]{
 
 Returns the type of the event, one of the following:
 
@@ -61,7 +62,7 @@ Returns the position of the scrollbar after the action triggering the
 
 }
 
-@defmethod[(set-direction [direction (one-of/c 'horizontal 'vertical)])
+@defmethod[(set-direction [direction (or/c 'horizontal 'vertical)])
            void?]{
 
 Sets the identity of the scrollbar that was modified by the event,
@@ -71,8 +72,8 @@ Sets the identity of the scrollbar that was modified by the event,
 
 }
 
-@defmethod[(set-event-type [type (one-of/c 'top 'bottom 'line-up 'line-down 
-                                           'page-up 'page-down 'thumb)])
+@defmethod[(set-event-type [type (or/c 'top 'bottom 'line-up 'line-down 
+                                       'page-up 'page-down 'thumb)])
            void?]{
 
 Sets the type of the event. See @method[scroll-event% get-event-type]

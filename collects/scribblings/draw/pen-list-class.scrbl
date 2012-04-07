@@ -19,22 +19,22 @@ Creates an empty pen list.
 
 @defmethod*[([(find-or-create-pen [color (is-a?/c color%)]
                                   [width (real-in 0 255)]
-                                  [style (one-of/c 'transparent 'solid 'xor 'hilite 
-                                                   'dot 'long-dash 'short-dash 'dot-dash 
-                                                   'xor-dot 'xor-long-dash 'xor-short-dash 
-                                                   'xor-dot-dash)]
-                                  [cap (one-of/c 'round 'projecting 'butt) 'round]
-                                  [join (one-of/c 'round 'bevel 'miter) 'round])
+                                  [style (or/c 'transparent 'solid 'xor 'hilite 
+                                               'dot 'long-dash 'short-dash 'dot-dash 
+                                               'xor-dot 'xor-long-dash 'xor-short-dash 
+                                               'xor-dot-dash)]
+                                  [cap (or/c 'round 'projecting 'butt) 'round]
+                                  [join (or/c 'round 'bevel 'miter) 'round])
               (is-a?/c pen%)]
              [(find-or-create-pen [color-name string?]
                                   [width (real-in 0 255)]
-                                  [style (one-of/c 'transparent 'solid 'xor 'hilite 
-                                                   'dot 'long-dash 'short-dash 'dot-dash 
-                                                   'xor-dot 'xor-long-dash 'xor-short-dash 
-                                                   'xor-dot-dash)]
-                                  [cap (one-of/c 'round 'projecting 'butt) 'round]
-                                  [join (one-of/c 'round 'bevel 'miter) 'round])
-              (or/c (is-a?/c pen%) false/c)])]{
+                                  [style (or/c 'transparent 'solid 'xor 'hilite 
+                                               'dot 'long-dash 'short-dash 'dot-dash 
+                                               'xor-dot 'xor-long-dash 'xor-short-dash 
+                                               'xor-dot-dash)]
+                                  [cap (or/c 'round 'projecting 'butt) 'round]
+                                  [join (or/c 'round 'bevel 'miter) 'round])
+              (or/c (is-a?/c pen%) #f)])]{
 
 Finds a pen of the given specification, or creates one and adds it to
 the list.  The arguments are the same as for creating a @racket[pen%]

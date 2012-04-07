@@ -22,7 +22,7 @@ internal use.
 }
 
 @defmethod[(read [f (is-a?/c editor-stream-in%)])
-           (or/c (is-a?/c editor-data%) false/c)]{
+           (or/c (is-a?/c editor-data%) #f)]{
 
 Reads a new data object from the given stream, returning @racket[#f] if
  there is an error.

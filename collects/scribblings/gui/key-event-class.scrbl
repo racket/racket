@@ -205,28 +205,28 @@ Returns @racket[#t] if the Meta (Unix), Alt (Windows), or Command (Mac OS
 }
 
 @defmethod[(get-other-altgr-key-code)
-           (or/c char? key-code-symbol? false/c)]{
+           (or/c char? key-code-symbol? #f)]{
 
 See @method[key-event% get-other-shift-key-code].
 
 }
 
 @defmethod[(get-other-caps-key-code)
-           (or/c char? key-code-symbol? false/c)]{
+           (or/c char? key-code-symbol? #f)]{
 
 See @method[key-event% get-other-shift-key-code].
 
 }
 
 @defmethod[(get-other-shift-altgr-key-code)
-           (or/c char? key-code-symbol? false/c)]{
+           (or/c char? key-code-symbol? #f)]{
 
 See @method[key-event% get-other-shift-key-code].
 
 }
 
 @defmethod[(get-other-shift-key-code)
-           (or/c char? key-code-symbol? false/c)]{
+           (or/c char? key-code-symbol? #f)]{
 
 Since keyboard mappings vary, it is sometimes useful in key mappings
  for a program to know the result that the keyboard would have
@@ -338,7 +338,7 @@ Sets whether the Meta (Unix), Alt (Windows), or Command (Mac OS X) key
 
 }
 
-@defmethod[(set-other-altgr-key-code [code (or/c char? key-code-symbol? false/c)])
+@defmethod[(set-other-altgr-key-code [code (or/c char? key-code-symbol? #f)])
            void?]{
 
 Sets the key code produced by @method[key-event%
@@ -346,7 +346,7 @@ get-other-altgr-key-code].
 
 }
 
-@defmethod[(set-other-caps-key-code [code (or/c char? key-code-symbol? false/c)])
+@defmethod[(set-other-caps-key-code [code (or/c char? key-code-symbol? #f)])
            void?]{
 
 Sets the key code produced by @method[key-event%
@@ -354,7 +354,7 @@ Sets the key code produced by @method[key-event%
 
 }
 
-@defmethod[(set-other-shift-altgr-key-code [code (or/c char? key-code-symbol? false/c)])
+@defmethod[(set-other-shift-altgr-key-code [code (or/c char? key-code-symbol? #f)])
            void?]{
 
 Sets the key code produced by @method[key-event%
@@ -362,7 +362,7 @@ Sets the key code produced by @method[key-event%
 
 }
 
-@defmethod[(set-other-shift-key-code [code (or/c char? key-code-symbol? false/c)])
+@defmethod[(set-other-shift-key-code [code (or/c char? key-code-symbol? #f)])
            void?]{
 
 Sets the key code produced by @method[key-event%

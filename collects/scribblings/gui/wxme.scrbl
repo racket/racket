@@ -95,7 +95,7 @@ any) is consumed.}
 
 
 @defproc[(register-lib-mapping! [str string?] 
-                                [mod-path (cons/c (one-of/c 'lib) (listof string?))])
+                                [mod-path (cons/c 'lib (listof string?))])
          void?]{
 
 Maps a snip-class name to a quoted module path that provides a
@@ -106,7 +106,7 @@ contains only alpha-numeric ASCII characters, @litchar{.},
 
 
 @defproc[(string->lib-path [str string?] [gui? any/c])
-         (cons/c (one-of/c 'lib) (listof string?))]{
+         (cons/c 'lib (listof string?))]{
 
 Returns a quoted module path for @racket[str] for either
 @racket[editor<%>] mode when @racket[gui?] is true, or
@@ -198,9 +198,9 @@ An interface to be implemented by values returned from a snip reader.
 The only method is @method[readable<%> read-special].
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c exact-nonnegative-integer? false/c)]
-                         [column (or/c exact-nonnegative-integer? false/c)]
-                         [position (or/c exact-nonnegative-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-nonnegative-integer? #f)]
+                         [position (or/c exact-nonnegative-integer? #f)])
            any/c]{
 
 Like @method[readable-snip<%> read-special], but for non-graphical
@@ -385,17 +385,17 @@ in case old code still needs them. In other words, the methods
 below are provided for backwards compatibility with earlier 
 verisons of Racket.
 
-@defmethod[(get-data) (or/c bytes? false/c)]{
+@defmethod[(get-data) (or/c bytes? #f)]{
 
 Returns bytes for a PNG, XBM,or XPM file for the image.}
 
-@defmethod[(get-w) (or/c exact-nonnegative-integer? (one-of/c -1))]{
+@defmethod[(get-w) (or/c exact-nonnegative-integer? -1)]{
 
 Returns the display width of the image, which may differ from the
 width of the actual image specified as data or by a filename; -1 means
 that the image data's width should be used.}
 
-@defmethod[(get-h) (or/c exact-nonnegative-integer? (one-of/c -1))]{
+@defmethod[(get-h) (or/c exact-nonnegative-integer? -1)]{
 
 Returns the display height of the image, which may differ from the
 height of the actual image specified as data or by a filename; -1
@@ -430,16 +430,16 @@ A text-mode reader for comment boxes.}]
 Instantiated for DrRacket comment boxes in a @tech{WXME} stream for
 text mode.
 
-@defmethod[(get-data) false/c]{
+@defmethod[(get-data) #f]{
 
 No data is available.
 
 }
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c exact-nonnegative-integer? false/c)]
-                         [column (or/c exact-nonnegative-integer? false/c)]
-                         [position (or/c exact-nonnegative-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-nonnegative-integer? #f)]
+                         [position (or/c exact-nonnegative-integer? #f)])
            any/c]{
 
 Generates a special comment using @racket[make-special-comment]. The
@@ -470,9 +470,9 @@ Returns @racket[#t] if whitespace is elimited from the contained XML
 literal, @racket[#f] otherwise.}
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c exact-nonnegative-integer? false/c)]
-                         [column (or/c exact-nonnegative-integer? false/c)]
-                         [position (or/c exact-nonnegative-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-nonnegative-integer? #f)]
+                         [position (or/c exact-nonnegative-integer? #f)])
            any/c]{
 
 Generates a @racket[quasiquote] S-expression that enclosed the XML,
@@ -504,9 +504,9 @@ Returns @racket[#t] if the box corresponds to a splicing unquote,
 @racket[#f] for a non-splicing unquote.}
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c exact-nonnegative-integer? false/c)]
-                         [column (or/c exact-nonnegative-integer? false/c)]
-                         [position (or/c exact-nonnegative-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-nonnegative-integer? #f)]
+                         [position (or/c exact-nonnegative-integer? #f)])
            any/c]{
 
 Generates an S-expression for the code in the box.}
@@ -530,14 +530,14 @@ A text-mode reader for text boxes.}]
 Instantiated for DrRacket text boxes in a @tech{WXME} stream for text
 mode.
 
-@defmethod[(get-data) false/c]{
+@defmethod[(get-data) #f]{
 
 No data is available.}
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c exact-nonnegative-integer? false/c)]
-                         [column (or/c exact-nonnegative-integer? false/c)]
-                         [position (or/c exact-nonnegative-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-nonnegative-integer? #f)]
+                         [position (or/c exact-nonnegative-integer? #f)])
            any/c]{
 
 Generates a string containing the text.}
@@ -612,7 +612,7 @@ generates instances of @racket[test-case%].}]
 Instantiated for old-style DrRacket test-case boxes in a @tech{WXME}
 stream for text mode.
 
-@defmethod[(get-comment) (or/c false/c input-port?)]{
+@defmethod[(get-comment) (or/c #f input-port?)]{
 
 Returns a port for the comment field, if any.}
 
@@ -624,11 +624,11 @@ Returns a port for the ``test'' field.}
 
 Returns a port for the ``expected'' field.}
 
-@defmethod[(get-should-raise) (or/c false/c input-port?)]{
+@defmethod[(get-should-raise) (or/c #f input-port?)]{
 
 Returns a port for the ``should raise'' field, if any.}
 
-@defmethod[(get-error-message) (or/c false/c input-port?)]{
+@defmethod[(get-error-message) (or/c #f input-port?)]{
 
 Returns a port for the ``error msg'' field, if any.}
 

@@ -22,7 +22,7 @@ Invokes the menu item's callback procedure, which is supplied when an
 }
 
 @defmethod[(get-shortcut)
-           (or/c char? symbol? false/c)]{
+           (or/c char? symbol? #f)]{
 
 Gets the keyboard shortcut character or virtual key for the menu
  item. This character or key is combined with the shortcut prefix,
@@ -43,7 +43,7 @@ For a list of allowed key symbols, see @xmethod[key-event%
 }
 
 @defmethod[(get-shortcut-prefix)
-           (listof (one-of/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
+           (listof (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
 
 Returns a list of symbols that indicates the keyboard prefix used for the menu
  item's keyboard shortcut. The allowed symbols for the list are the following:
@@ -88,7 +88,7 @@ An empty list can be used for a shortcut prefix. However, the default
 }
 
 
-@defmethod[(set-shortcut [shortcut (or/c char? symbol? false/c)])
+@defmethod[(set-shortcut [shortcut (or/c char? symbol? #f)])
            void?]{
 
 Sets the keyboard shortcut character for the menu item. See
@@ -99,7 +99,7 @@ keyboard shortcut.
 
 }
 
-@defmethod[(set-shortcut-prefix [prefix (listof (one-of/c 'alt 'cmd 'meta 'ctl 'shift 'option))])
+@defmethod[(set-shortcut-prefix [prefix (listof (or/c 'alt 'cmd 'meta 'ctl 'shift 'option))])
            void?]{
 
 Sets a list of symbols to indicates the keyboard prefix used for the

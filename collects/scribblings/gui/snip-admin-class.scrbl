@@ -27,7 +27,7 @@ Creates a (useless) editor administrator.
 }
 
 @defmethod[(get-dc)
-           (or/c (is-a?/c dc<%>) false/c)]{
+           (or/c (is-a?/c dc<%>) #f)]{
 
 Gets a drawing context suitable for determining display size
  information. If the snip is not displayed, @racket[#f] is returned.
@@ -42,11 +42,11 @@ Returns the editor that this administrator reports to (directly or
 
 }
 
-@defmethod[(get-view [x (or/c (box/c real?) false/c)]
-                     [y (or/c (box/c real?) false/c)]
-                     [w (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                     [h (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                     [snip (or/c (is-a?/c snip%) false/c) #f])
+@defmethod[(get-view [x (or/c (box/c real?) #f)]
+                     [y (or/c (box/c real?) #f)]
+                     [w (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                     [h (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                     [snip (or/c (is-a?/c snip%) #f) #f])
            void?]{
 @methspec{
 
@@ -78,8 +78,8 @@ Fills all boxes with @racket[0.0].
 
 }}
 
-@defmethod[(get-view-size [h (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                          [w (or/c (box/c (and/c real? (not/c negative?))) false/c)])
+@defmethod[(get-view-size [h (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                          [w (or/c (box/c (and/c real? (not/c negative?))) #f)])
            void?]{
 
 @methspec{
@@ -243,7 +243,7 @@ Does nothing.
                       [w (and/c real? (not/c negative?))]
                       [h (and/c real? (not/c negative?))]
                       [refresh? any/c]
-                      [bias (one-of/c 'start 'end 'none) 'none])
+                      [bias (or/c 'start 'end 'none) 'none])
            boolean?]{
 @methspec{
 
@@ -283,7 +283,7 @@ Returns @racket[#f].
 }}
 
 @defmethod[(set-caret-owner [snip (is-a?/c snip%)]
-                            [domain (one-of/c 'immediate 'display 'global)])
+                            [domain (or/c 'immediate 'display 'global)])
            void?]{
 @methspec{
 

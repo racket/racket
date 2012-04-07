@@ -9,17 +9,17 @@ An @racket[editor-canvas%] object manages and displays a
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [editor (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c) #f]
-                 [style (listof (one-of/c 'no-border 'control-border 'combo 
-                                          'no-hscroll 'no-vscroll 
-                                          'hide-hscroll 'hide-vscroll 
-                                          'auto-vscroll 'auto-hscroll 
-                                          'resize-corner 'no-focus 'deleted 
-                                          'transparent)) null]
+                 [editor (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) #f) #f]
+                 [style (listof (or/c 'no-border 'control-border 'combo 
+                                      'no-hscroll 'no-vscroll 
+                                      'hide-hscroll 'hide-vscroll 
+                                      'auto-vscroll 'auto-hscroll 
+                                      'resize-corner 'no-focus 'deleted 
+                                      'transparent)) null]
                  [scrolls-per-page (integer-in 1 10000) 100]
-                 [label (or/c label-string? false/c) #f]
-                 [wheel-step (or/c (integer-in 1 10000) false/c) 3]
-                 [line-count (or/c (integer-in 1 1000) false/c) #f]
+                 [label (or/c label-string? #f) #f]
+                 [wheel-step (or/c (integer-in 1 10000) #f) 3]
+                 [line-count (or/c (integer-in 1 1000) #f) #f]
                  [horizontal-inset (integer-in 0 1000) 5]
                  [vertical-inset (integer-in 0 1000) 5]
                  [enabled any/c #t]
@@ -165,7 +165,7 @@ Enables or disables force-focus mode.  In force-focus mode, the caret
 
 
 @defmethod[(get-editor)
-           (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]{
+           (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) #f)]{
 
 Returns the editor currently displayed by this canvas, or @racket[#f]
  if the canvas does not have an editor.
@@ -174,7 +174,7 @@ Returns the editor currently displayed by this canvas, or @racket[#f]
 
 
 @defmethod[(get-line-count)
-           (or/c (integer-in 1 1000) false/c)]{
+           (or/c (integer-in 1 1000) #f)]{
 
 Returns a line count installed with @method[editor-canvas%
  set-line-count], or @racket[#f] if no minimum line count is set.
@@ -270,7 +270,7 @@ on-display-size] method is called.
                       [w (and/c real? (not/c negative?))]
                       [h (and/c real? (not/c negative?))]
                       [refresh? any/c]
-                      [bias (one-of/c 'start 'end 'none) 'none])
+                      [bias (or/c 'start 'end 'none) 'none])
            boolean?]{
 
 Requests scrolling so that the given region in the currently displayed
@@ -323,7 +323,7 @@ Enables or disables bottom-base scrolling, or gets the current enable
 
 
 
-@defmethod[(set-editor [edit (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]
+@defmethod[(set-editor [edit (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) #f)]
                        [redraw? any/c #t])
            void?]{
 
@@ -342,7 +342,7 @@ If the canvas has a line count installed with @method[editor-canvas%
 }
 
 
-@defmethod[(set-line-count [count (or/c (integer-in 1 1000) false/c)])
+@defmethod[(set-line-count [count (or/c (integer-in 1 1000) #f)])
            void?]{
 
 Sets the canvas's graphical minimum height to display a particular
@@ -370,8 +370,8 @@ Gets or sets the number of pixels within the canvas reserved above
 
 
 @defmethod*[([(wheel-step)
-              (or/c (integer-in 1 10000) false/c)]
-             [(wheel-step [step (or/c (integer-in 1 10000) false/c)])
+              (or/c (integer-in 1 10000) #f)]
+             [(wheel-step [step (or/c (integer-in 1 10000) #f)])
               void?])]{
 
 Gets or sets the number of vertical scroll steps taken for one click

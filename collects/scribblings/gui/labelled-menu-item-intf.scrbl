@@ -22,7 +22,7 @@ Enables or disables the menu item. If the item is a submenu (or menu
 }
 
 @defmethod[(get-help-string)
-           (or/c label-string? false/c)]{
+           (or/c label-string? #f)]{
 
 Returns the help string for the menu item, or @racket[#f] if the item
  has no help string.
@@ -85,7 +85,7 @@ Calls the @racket[demand-callback] procedure that was provided when the
 
 }}
 
-@defmethod[(set-help-string [help (or/c label-string? false/c)])
+@defmethod[(set-help-string [help (or/c label-string? #f)])
            void?]{
 
 Sets the help string for the menu item. Use @racket[#f] to remove the

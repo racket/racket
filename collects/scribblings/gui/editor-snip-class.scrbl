@@ -9,7 +9,7 @@ An @racket[editor-snip%] object is a @racket[snip%] object that
  another editor.
 
 
-@defconstructor[([editor (or/c (is-a?/c editor<%>) false/c) #f]
+@defconstructor[([editor (or/c (is-a?/c editor<%>) #f) #f]
                  [with-border? any/c #t]
                  [left-margin exact-nonnegative-integer? 5]
                  [top-margin exact-nonnegative-integer? 5]
@@ -19,10 +19,10 @@ An @racket[editor-snip%] object is a @racket[snip%] object that
                  [top-inset exact-nonnegative-integer? 1]
                  [right-inset exact-nonnegative-integer? 1]
                  [bottom-inset exact-nonnegative-integer? 1]
-                 [min-width (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none]
-                 [max-width (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none]
-                 [min-height (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none]
-                 [max-height (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none])]{
+                 [min-width (or/c (and/c real? (not/c negative?)) 'none) 'none]
+                 [max-width (or/c (and/c real? (not/c negative?)) 'none) 'none]
+                 [min-height (or/c (and/c real? (not/c negative?)) 'none) 'none]
+                 [max-height (or/c (and/c real? (not/c negative?)) 'none) 'none])]{
 
 If @racket[editor] is non-@racket[#f], then it will be used as the
  editor contained by the snip. See also @method[editor-snip%
@@ -46,7 +46,7 @@ get-margin] for information about the inset and margin arguments.
                           [editorx real?]
                           [editory real?]
                           [event (is-a?/c mouse-event%)])
-           (or/c (is-a?/c cursor%) false/c)]{
+           (or/c (is-a?/c cursor%) #f)]{
 
 Gets a cursor from the embedded editor by calling its
 @method[editor<%> adjust-cursor] method.
@@ -77,7 +77,7 @@ See also @method[editor-snip% set-align-top-line].
 
 
 @defmethod[(get-editor)
-           (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]{
+           (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) #f)]{
 
 Returns the editor contained by the snip, or @racket[#f] is there is
  no editor.
@@ -88,12 +88,12 @@ Returns the editor contained by the snip, or @racket[#f] is there is
            (get-extent [dc (is-a?/c dc<%>)]
                        [x real?]
                        [y real?]
-                       [w (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [h (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [descent (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [space (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [lspace (or/c (box/c (and/c real? (not/c negative?))) false/c) #f]
-                       [rspace (or/c (box/c (and/c real? (not/c negative?))) false/c) #f])
+                       [w (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [h (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [descent (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [space (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [lspace (or/c (box/c (and/c real? (not/c negative?))) #f) #f]
+                       [rspace (or/c (box/c (and/c real? (not/c negative?))) #f) #f])
            void?]{
 
 Calls its editor's @method[editor<%> get-extent] method, then adds the
@@ -156,7 +156,7 @@ snip.
 
 
 @defmethod[(get-max-height)
-           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the maximum display height of the snip; zero or @racket['none]
  indicates that there is no maximum.
@@ -165,7 +165,7 @@ Gets the maximum display height of the snip; zero or @racket['none]
 
 
 @defmethod[(get-max-width)
-           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the maximum display width of the snip; zero or @racket['none]
  indicates that there is no maximum.
@@ -173,7 +173,7 @@ Gets the maximum display width of the snip; zero or @racket['none]
 }
 
 @defmethod[(get-min-height)
-           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the minimum display height of the snip; zero or @racket['none]
  indicates that there is no minimum.
@@ -181,7 +181,7 @@ Gets the minimum display height of the snip; zero or @racket['none]
 }
 
 @defmethod[(get-min-width)
-           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the minimum display width of the snip; zero or @racket['none]
  indicates that there is no minimum.
@@ -226,7 +226,7 @@ See also @method[editor-snip% get-align-top-line].
 
 }
 
-@defmethod[(set-editor [editor (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)])
+@defmethod[(set-editor [editor (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) #f)])
            void?]{
 
 Sets the editor contained by the snip, releasing the old editor in the
@@ -268,7 +268,7 @@ Sets the current margins for the snip. The margin sets how much space
 
 }
 
-@defmethod[(set-max-height [h (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
+@defmethod[(set-max-height [h (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 @edsnipmax[@racket[height]]
@@ -277,7 +277,7 @@ Zero or @racket['none] disables the limit.
 
 }
 
-@defmethod[(set-max-width [w (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
+@defmethod[(set-max-width [w (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 @edsnipmax[@racket[width]] The contained editor's width limits are not
@@ -287,7 +287,7 @@ Zero or @racket['none] disables the limit.
 
 }
 
-@defmethod[(set-min-height [h (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
+@defmethod[(set-min-height [h (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 @edsnipmin[@racket[height] @elem{top}]
@@ -296,7 +296,7 @@ Zero or @racket['none] disables the limit.
 
 }
 
-@defmethod[(set-min-width [w (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
+@defmethod[(set-min-width [w (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 @edsnipmin[@racket[width] @elem{left}] The contained editor's width

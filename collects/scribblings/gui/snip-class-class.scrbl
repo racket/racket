@@ -60,7 +60,7 @@ Returns the version of this snip class. When attempting to load a file
 }
 
 @defmethod[(read [f (is-a?/c editor-stream-in%)])
-           (or/c (is-a?/c snip%) false/c)]{
+           (or/c (is-a?/c snip%) #f)]{
 
 @methspec{
 

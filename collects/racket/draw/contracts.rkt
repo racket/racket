@@ -27,23 +27,23 @@
 (define-values (frame% dialog%) (values object% object%))
 
 (define brush-style/c
-  (one-of/c 'transparent 'solid 'opaque
-	    'xor 'hilite 'panel
-	    'bdiagonal-hatch 'crossdiag-hatch
-	    'fdiagonal-hatch 'cross-hatch
-	    'horizontal-hatch 'vertical-hatch))
+  (or/c 'transparent 'solid 'opaque
+        'xor 'hilite 'panel
+        'bdiagonal-hatch 'crossdiag-hatch
+        'fdiagonal-hatch 'cross-hatch
+        'horizontal-hatch 'vertical-hatch))
 
 (define pen-cap-style/c
-  (one-of/c 'round 'projecting 'butt))
+  (or/c 'round 'projecting 'butt))
 
 (define pen-join-style/c
-  (one-of/c 'round 'bevel 'miter))
+  (or/c 'round 'bevel 'miter))
 
 (define pen-style/c
-  (one-of/c 'transparent 'solid 'xor 'hilite
-	    'dot 'long-dash 'short-dash 'dot-dash
-	    'xor-dot 'xor-long-dash 'xor-short-dash
-	    'xor-dot-dash))
+  (or/c 'transparent 'solid 'xor 'hilite
+        'dot 'long-dash 'short-dash 'dot-dash
+        'xor-dot 'xor-long-dash 'xor-short-dash
+        'xor-dot-dash))
 
 (define transformation-vector/c
   (vector/c (vector/c real? real? real? real? real? real?)
@@ -66,7 +66,7 @@
                    void?)]
     [draw-bitmap (->*m ((is-a?/c bitmap%)
                         real? real?)
-                       ((one-of/c 'solid 'opaque 'xor)
+                       ((or/c 'solid 'opaque 'xor)
                         (is-a?/c color%)
                         (or/c (is-a?/c bitmap%) #f))
                        boolean?)]
@@ -75,7 +75,7 @@
                                 real? real?
                                 (and/c real? (not/c negative?))
                                 (and/c real? (not/c negative?)))
-                               ((one-of/c 'solid 'opaque 'xor)
+                               ((or/c 'solid 'opaque 'xor)
                                 (is-a?/c color%)
                                 (or/c (is-a?/c bitmap%) #f))
                                boolean?)]
@@ -91,12 +91,12 @@
                       (real? real?)
                       void?)]
     [draw-path (->*m ((is-a?/c dc-path%))
-                     (real? real? (one-of/c 'odd-even 'winding))
+                     (real? real? (or/c 'odd-even 'winding))
                      void?)]
     [draw-point (->m real? real? void?)]
     [draw-polygon (->*m ((or/c (listof (is-a?/c point%))
                                (listof (cons/c real? real?))))
-                        (real? real? (one-of/c 'odd-even 'winding))
+                        (real? real? (or/c 'odd-even 'winding))
                         void?)]
     [draw-rectangle (->m real? real?
                          (and/c real? (not/c negative?))
@@ -135,7 +135,7 @@
     [get-scale (->m (values real? real?))]
     [get-size (->m (values (and/c real? (not/c negative?))
                            (and/c real? (not/c negative?))))]
-    [get-smoothing (->m (one-of/c 'unsmoothed 'smoothed 'aligned))]
+    [get-smoothing (->m (or/c 'unsmoothed 'smoothed 'aligned))]
     [get-text-background (->m (is-a?/c color%))]
     [get-text-extent (->*m (string?)
                            ((or/c (is-a?/c font%) #f)
@@ -147,7 +147,7 @@
                              (and/c real? (not/c negative?))
                              (and/c real? (not/c negative?))))]
     [get-text-foreground (->m (is-a?/c color%))]
-    [get-text-mode (->m (one-of/c 'solid 'transparent))]
+    [get-text-mode (->m (or/c 'solid 'transparent))]
     [get-transformation (->m (vector/c (vector/c real? real? real?
                                                  real? real? real?)
                                        real? real? real? real? real?))]
@@ -179,10 +179,10 @@
                           void?))]
     [set-rotation (->m real? void?)]
     [set-scale (->m real? real? void?)]
-    [set-smoothing (->m (one-of/c 'unsmoothed 'smoothed 'aligned) void?)]
+    [set-smoothing (->m (or/c 'unsmoothed 'smoothed 'aligned) void?)]
     [set-text-background (->m (or/c (is-a?/c color%) string?) void?)]
     [set-text-foreground (->m (or/c (is-a?/c color%) string?) void?)]
-    [set-text-mode (->m (one-of/c 'solid 'transparent) void?)]
+    [set-text-mode (->m (or/c 'solid 'transparent) void?)]
     [set-transformation (->m (vector/c (vector/c real? real? real?
                                                  real? real? real?)
                                        real? real? real? real? real?)
@@ -215,17 +215,17 @@
 
 (define font%/c
   (class/c
-    (get-face (->m (or/c string? false/c)))
-    (get-family (->m (one-of/c 'default 'decorative 'roman 'script
-                               'swiss 'modern 'symbol 'system)))
+    (get-face (->m (or/c string? #f)))
+    (get-family (->m (or/c 'default 'decorative 'roman 'script
+                           'swiss 'modern 'symbol 'system)))
     (get-font-id (->m exact-integer?))
     (get-point-size (->m (integer-in 1 255)))
     (get-size-in-pixels (->m boolean?))
-    (get-smoothing (->m (one-of/c 'default 'partly-smoothed
-                                  'smoothed 'unsmoothed)))
-    (get-style (->m (one-of/c 'normal 'italic 'slant)))
+    (get-smoothing (->m (or/c 'default 'partly-smoothed
+                              'smoothed 'unsmoothed)))
+    (get-style (->m (or/c 'normal 'italic 'slant)))
     (get-underlined (->m boolean?))
-    (get-weight (->m (one-of/c 'normal 'bold 'light)))
+    (get-weight (->m (or/c 'normal 'bold 'light)))
     (screen-glyph-exists? (->*m (char?) (any/c) boolean?))))
 
 (define pen%/c
@@ -233,7 +233,7 @@
     (get-cap (->m pen-cap-style/c))
     (get-color (->m (is-a?/c color%)))
     (get-join (->m pen-join-style/c))
-    (get-stipple (->m (or/c (is-a?/c bitmap%) false/c)))
+    (get-stipple (->m (or/c (is-a?/c bitmap%) #f)))
     (get-style (->m pen-style/c))
     (get-width (->m (real-in 0 255)))
     (set-cap (->m pen-cap-style/c void?))
@@ -244,7 +244,7 @@
                      (integer-in 0 255)
                      void?)))
     (set-join (->m pen-join-style/c void?))
-    (set-stipple (->m (or/c (is-a?/c bitmap%) false/c) void?))
+    (set-stipple (->m (or/c (is-a?/c bitmap%) #f) void?))
     (set-style (->m pen-style/c void?))
     (set-width (->m (real-in 0 255) void?))))
 
@@ -261,7 +261,7 @@
 (define brush%/c
   (class/c
     (get-color (->m (is-a?/c color%)))
-    (get-stipple (->m (or/c (is-a?/c bitmap%) false/c)))
+    (get-stipple (->m (or/c (is-a?/c bitmap%) #f)))
     (get-style (->m brush-style/c))
     (set-color (case->m
                  (-> (or/c (is-a?/c color%) string?) void?)
@@ -317,7 +317,7 @@
                     real? real?
                     (and/c real? (not/c negative?))
                     (and/c real? (not/c negative?)))
-                   ((one-of/c 'solid 'opaque 'xor)
+                   ((or/c 'solid 'opaque 'xor)
                     (or/c (is-a?/c color%) #f)
                     (or/c (is-a?/c bitmap%) #f))
                   boolean?)]
@@ -405,13 +405,13 @@
     (set-path (->*m ((is-a?/c dc-path%))
                     (real?
                      real?
-                     (one-of/c 'odd-even 'winding))
+                     (or/c 'odd-even 'winding))
                     void?))
     (set-polygon (->*m ((or/c (listof (is-a?/c point%))
                               (listof (cons/c real? real?))))
                        (real?
                         real?
-                        (one-of/c 'odd-even 'winding))
+                        (or/c 'odd-even 'winding))
                        void?))
     (set-rectangle (->m real?
                         real?
@@ -505,23 +505,23 @@
                        void?))
     (get-depth (->m exact-nonnegative-integer?))
     (get-height (->m exact-nonnegative-integer?))
-    (get-loaded-mask (->m (or/c (is-a?/c bitmap%) false/c)))
+    (get-loaded-mask (->m (or/c (is-a?/c bitmap%) #f)))
     (get-width (->m exact-nonnegative-integer?))
     (has-alpha-channel? (->m boolean?))
     (is-color? (->m boolean?))
     (load-file (->*m ((or/c path-string? input-port?))
-                     ((one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                                'gif 'gif/mask 'gif/alpha
-                                'jpeg 'jpeg/alpha
-                                'png 'png/mask 'png/alpha
-                                'xbm 'xbm/alpha 'xpm 'xpm/alpha
-                                'bmp 'bmp/alpha)
-                      (or/c (is-a?/c color%) false/c)
+                     ((or/c 'unknown 'unknown/mask 'unknown/alpha
+                            'gif 'gif/mask 'gif/alpha
+                            'jpeg 'jpeg/alpha
+                            'png 'png/mask 'png/alpha
+                            'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                            'bmp 'bmp/alpha)
+                      (or/c (is-a?/c color%) #f)
                       any/c)
                      boolean?))
     (ok? (->m boolean?))
     (save-file (->*m ((or/c path-string? output-port?)
-                      (one-of/c 'png 'jpeg 'xbm 'xpm 'bmp))
+                      (or/c 'png 'jpeg 'xbm 'xpm 'bmp))
                      ((integer-in 0 100))
                      boolean?))
     (set-argb-pixels (->*m

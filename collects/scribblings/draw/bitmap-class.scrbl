@@ -19,12 +19,12 @@ A bitmap is convertible to @racket['png-bytes] through the
                         [monochrome? any/c #f]
                         [alpha? any/c #f])
                        ([in (or/c path-string? input-port?)]
-                        [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                                        'gif 'gif/mask 'gif/alpha 
-                                        'jpeg 'jpeg/alpha
-                                        'png 'png/mask 'png/alpha
-                                        'xbm 'xbm/alpha 'xpm 'xpm/alpha
-                                        'bmp 'bmp/alpha)
+                        [kind (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                    'gif 'gif/mask 'gif/alpha 
+                                    'jpeg 'jpeg/alpha
+                                    'png 'png/mask 'png/alpha
+                                    'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                    'bmp 'bmp/alpha)
                               'unknown]
                         [bg-color (or/c (is-a?/c color%) #f) #f]
                         [complain-on-failure? any/c #f])
@@ -160,12 +160,12 @@ Returns @racket[#f] if the bitmap is monochrome, @racket[#t] otherwise.
 }
 
 @defmethod[(load-file [in (or/c path-string? input-port?)]
-                      [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                                      'gif 'gif/mask 'gif/alpha 
-                                      'jpeg 'jpeg/alpha
-                                      'png 'png/mask 'png/alpha
-                                      'xbm 'xbm/alpha 'xpm 'xpm/alpha
-                                      'bmp 'bmp/alpha)
+                      [kind (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                  'gif 'gif/mask 'gif/alpha 
+                                  'jpeg 'jpeg/alpha
+                                  'png 'png/mask 'png/alpha
+                                  'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                  'bmp 'bmp/alpha)
                             'unknown]
                       [bg-color (or/c (is-a?/c color%) #f) #f]
                       [complain-on-failure? any/c #f])
@@ -252,7 +252,7 @@ Returns @racket[#t] if the bitmap is valid in the sense that an image
 
 
 @defmethod[(save-file [name (or/c path-string? output-port?)]
-                      [kind (one-of/c 'png 'jpeg 'xbm 'xpm 'bmp)]
+                      [kind (or/c 'png 'jpeg 'xbm 'xpm 'bmp)]
                       [quality (integer-in 0 100) 75])
            boolean?]{
 

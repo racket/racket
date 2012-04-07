@@ -9,10 +9,10 @@ An @racket[image-snip%] is a snip that can display bitmap images
 
 
 @defconstructor*/make[(([file (or/c path-string? input-port? #f) #f]
-                        [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                                        'gif 'gif/mask 'gif/alpha 
-                                        'jpeg 'png 'png/mask 'png/alpha
-                                        'xbm 'xpm 'bmp 'pict) 'unknown]
+                        [kind (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                    'gif 'gif/mask 'gif/alpha 
+                                    'jpeg 'png 'png/mask 'png/alpha
+                                    'xbm 'xpm 'bmp 'pict) 'unknown]
                         [relative-path? any/c #f]
                         [inline? any/c #t])
                        ([bitmap (is-a?/c bitmap%)]
@@ -74,10 +74,10 @@ relative to the owning editor's path}]
 }
 
 @defmethod[(get-filetype)
-           (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                     'gif 'gif/mask 'gif/alpha 
-                     'jpeg 'png 'png/mask 'png/alpha
-                     'xbm 'xpm 'bmp 'pict)]{
+           (or/c 'unknown 'unknown/mask 'unknown/alpha
+                 'gif 'gif/mask 'gif/alpha 
+                 'jpeg 'png 'png/mask 'png/alpha
+                 'xbm 'xpm 'bmp 'pict)]{
 
 Returns the kind used to load the currently loaded, non-inlined file,
  or @racket['unknown] if a file is not loaded or if a file was loaded
@@ -86,10 +86,10 @@ Returns the kind used to load the currently loaded, non-inlined file,
 }
 
 @defmethod[(load-file [file (or/c path-string? input-port? #f)]
-                      [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
-                                      'gif 'gif/mask 'gif/alpha 
-                                      'jpeg 'png 'png/mask 'png/alpha
-                                      'xbm 'xpm 'bmp 'pict) 'unknown]
+                      [kind (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                  'gif 'gif/mask 'gif/alpha 
+                                  'jpeg 'png 'png/mask 'png/alpha
+                                  'xbm 'xpm 'bmp 'pict) 'unknown]
                       [relative-path? any/c #f]
                       [inline? any/c #t])
            void?]{

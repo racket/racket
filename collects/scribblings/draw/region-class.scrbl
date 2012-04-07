@@ -137,7 +137,7 @@ The region corresponds to a clockwise path with a @tech{flexible
 @defmethod[(set-path [path (is-a?/c dc-path%)]
                      [xoffset real? 0]
                      [yoffset real? 0]
-                     [fill-style (one-of/c 'odd-even 'winding) 'odd-even])
+                     [fill-style (or/c 'odd-even 'winding) 'odd-even])
            void?]{
 
 Sets the region to the content of the given path.
@@ -156,7 +156,7 @@ The fill style affects how well the region reliably combines with
                                       (listof (cons/c real? real?)))]
                         [xoffset real? 0]
                         [yoffset real? 0]
-                        [fill-style (one-of/c 'odd-even 'winding) 'odd-even])
+                        [fill-style (or/c 'odd-even 'winding) 'odd-even])
            void?]{
 
 Sets the region to the interior of the polygon specified by

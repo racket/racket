@@ -18,19 +18,19 @@ Creates an empty brush list.
 }
 
 @defmethod*[([(find-or-create-brush [color (is-a?/c color%)]
-                                    [style (one-of/c 'transparent 'solid 'opaque
-                                                     'xor 'hilite 'panel 
-                                                     'bdiagonal-hatch 'crossdiag-hatch 
-                                                     'fdiagonal-hatch 'cross-hatch 
-                                                     'horizontal-hatch 'vertical-hatch)])
+                                    [style (or/c 'transparent 'solid 'opaque
+                                                 'xor 'hilite 'panel 
+                                                 'bdiagonal-hatch 'crossdiag-hatch 
+                                                 'fdiagonal-hatch 'cross-hatch 
+                                                 'horizontal-hatch 'vertical-hatch)])
               (is-a?/c brush%)]
              [(find-or-create-brush [color-name string?]
-                                    [style (one-of/c 'transparent 'solid 'opaque 
-                                                     'xor 'hilite 'panel 
-                                                     'bdiagonal-hatch 'crossdiag-hatch 
-                                                     'fdiagonal-hatch 'cross-hatch 
-                                                     'horizontal-hatch 'vertical-hatch)])
-              (or/c (is-a?/c brush%) false/c)])]{
+                                    [style (or/c 'transparent 'solid 'opaque 
+                                                 'xor 'hilite 'panel 
+                                                 'bdiagonal-hatch 'crossdiag-hatch 
+                                                 'fdiagonal-hatch 'cross-hatch 
+                                                 'horizontal-hatch 'vertical-hatch)])
+              (or/c (is-a?/c brush%) #f)])]{
 
 Finds a brush of the given specification, or creates one and adds it
  to the list. See @racket[brush%] for a further explanation of the

@@ -14,15 +14,15 @@ Unlike most panel classes, a group-box panel's horizontal and vertical
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%)
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [style (listof (one-of/c 'deleted)) null]
+                 [style (listof (or/c 'deleted)) null]
                  [font (is-a?/c font%) small-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
                  [border (integer-in 0 1000) 0]
                  [spacing (integer-in 0 1000) 0]
-                 [alignment (list/c (one-of/c 'left 'center 'right)
-                                    (one-of/c 'top 'center 'bottom))
+                 [alignment (list/c (or/c 'left 'center 'right)
+                                    (or/c 'top 'center 'bottom))
                             '(center top)]
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]

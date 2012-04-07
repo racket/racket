@@ -16,8 +16,9 @@ Whenever a check box is clicked by the user, the check box's value is
 @defconstructor[([label (or/c label-string? (is-a?/c bitmap%))]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%)
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [callback ((is-a?/c check-box%) (is-a?/c control-event%) . -> . any) (lambda (c e) (void))]
-                 [style (listof (one-of/c 'deleted)) null]
+                 [callback ((is-a?/c check-box%) (is-a?/c control-event%)
+                            . -> . any) (lambda (c e) (void))]
+                 [style (listof (or/c 'deleted)) null]
                  [value any/c #f]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]

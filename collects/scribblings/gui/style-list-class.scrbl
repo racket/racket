@@ -47,7 +47,7 @@ a new style in this list.
 }
 
 @defmethod[(find-named-style [name string?])
-           (or/c (is-a?/c style<%>) false/c)]{
+           (or/c (is-a?/c style<%>) #f)]{
 
 Finds a style by name. If no such style can be found, @racket[#f] is
 returned.
@@ -97,7 +97,7 @@ notify-on-change].
 
 
 @defmethod[(index-to-style [i exact-nonnegative-integer?])
-           (or/c (is-a?/c style<%>) false/c)]{
+           (or/c (is-a?/c style<%>) #f)]{
 
 Returns the style associated with the given index, or @racket[#f] for
  a bad index. See also @method[style-list% style-to-index].
@@ -158,7 +158,7 @@ Like @method[style-list% new-named-style], except that if the name is
 }
 
 @defmethod[(style-to-index [style (is-a?/c style<%>)])
-           (or/c exact-nonnegative-integer? false/c)]{
+           (or/c exact-nonnegative-integer? #f)]{
 
 Returns the index for a particular style. The index for a style's base
  style (and shift style, if it is a join style) is guaranteed to be

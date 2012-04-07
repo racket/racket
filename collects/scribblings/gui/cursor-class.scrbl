@@ -18,8 +18,8 @@ A cursor is assigned to each window (or the window may use its
                         [mask (is-a?/c bitmap%)]
                         [hot-spot-x (integer-in 0 15) 0]
                         [hot-spot-y (integer-in 0 15) 0])
-                       ([id (one-of/c 'arrow 'bullseye 'cross 'hand 'ibeam 'watch 'blank 
-                                      'size-n/s 'size-e/w 'size-ne/sw 'size-nw/se)]))]{
+                       ([id (or/c 'arrow 'bullseye 'cross 'hand 'ibeam 'watch 'blank 
+                                  'size-n/s 'size-e/w 'size-ne/sw 'size-nw/se)]))]{
 
 The first case creates a cursor using an image bitmap and a mask
 bitmap. Both bitmaps must have depth 1 and size 16 by 16

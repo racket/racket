@@ -29,19 +29,20 @@ A list box can have multiple columns with optional column headers. An
 See also @racket[choice%].
 
 
-@defconstructor[([label (or/c label-string? false/c)]
+@defconstructor[([label (or/c label-string? #f)]
                  [choices (listof label-string?)]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [callback ((is-a?/c list-box%) (is-a?/c control-event%) . -> . any) 
+                 [callback ((is-a?/c list-box%) (is-a?/c control-event%) 
+                            . -> . any) 
                            (lambda (c e) (void))]
-                 [style (listof (one-of/c 'single 'multiple 'extended 
-                                          'vertical-label 'horizontal-label 
-                                          'variable-columns 'column-headers 
-                                          'clickable-headers 'reorderable-headers 
-                                          'deleted)) 
+                 [style (listof (or/c 'single 'multiple 'extended 
+                                      'vertical-label 'horizontal-label 
+                                      'variable-columns 'column-headers 
+                                      'clickable-headers 'reorderable-headers 
+                                      'deleted)) 
                         '(single)]
-                 [selection (or/c exact-nonnegative-integer? false/c) #f]
+                 [selection (or/c exact-nonnegative-integer? #f) #f]
                  [font (is-a?/c font%) view-control-font]
                  [label-font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
