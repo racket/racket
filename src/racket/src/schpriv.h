@@ -844,6 +844,9 @@ Scheme_Object *scheme_prefab_struct_key(Scheme_Object *s);
 Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *s, int num_slots);
 #endif
 
+Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim);
+Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim);
+
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
@@ -2127,6 +2130,8 @@ Scheme_Object *scheme_eval_linked_expr_multi_with_dynamic_state(Scheme_Object *o
 
 Scheme_Object *_scheme_apply_to_list (Scheme_Object *rator, Scheme_Object *rands);
 Scheme_Object *_scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands);
+
+Scheme_Object *_scheme_apply_native(Scheme_Object *obj, int num_rands, Scheme_Object **rands);
 
 Scheme_Object *scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, 
 				    int recur, int expose_comment, int pre_char, Scheme_Object *readtable,

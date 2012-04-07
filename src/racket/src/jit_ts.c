@@ -88,6 +88,8 @@ define_ts_iS_s(scheme_procedure_arity_includes, FSRC_MARKS)
 define_ts_ssi_s(vector_check_chaperone_of, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_list_ref, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_list_tail, FSRC_MARKS)
+define_ts_iSs_s(scheme_struct_getter, FSRC_MARKS)
+define_ts_iSs_s(scheme_struct_setter, FSRC_MARKS)
 #endif
 
 #ifdef JITCALL_TS_PROCS
@@ -207,4 +209,6 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_vector_check_chaperone_of vector_check_chaperone_of
 # define ts_scheme_checked_list_ref scheme_checked_list_ref
 # define ts_scheme_checked_list_tail scheme_checked_list_tail
+# define ts_scheme_struct_getter scheme_struct_getter
+# define ts_scheme_struct_setter scheme_struct_setter
 #endif

@@ -1324,6 +1324,67 @@ static int common3(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int gen_struct_slow(mz_jit_state *jitter, int kind, int ok_proc, 
+                           int for_branch, int multi_ok,
+                           GC_CAN_IGNORE jit_insn **_bref5,
+                           GC_CAN_IGNORE jit_insn **_bref6)
+{
+  GC_CAN_IGNORE jit_insn *bref5, *bref6, *refrts;
+
+  jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES((kind == 3) ? 2 : 1));
+  CHECK_RUNSTACK_OVERFLOW();
+  JIT_UPDATE_THREAD_RSPTR();
+  jit_str_p(JIT_RUNSTACK, JIT_R1);
+  if (kind == 3) {
+    restore_struct_temp(jitter, JIT_V1);        
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_V1);
+  }
+  jit_movi_i(JIT_V1, ((kind == 3) ? 2 : 1));
+  jit_prepare(3);
+  if (!ok_proc) {
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_V1);
+    jit_pusharg_p(JIT_R0);
+    if (multi_ok) {
+      (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
+    } else {
+      (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
+    }
+  } else {
+    /* The proc is a setter or getter, but the argument is
+       bad or chaperoned. We can take a shortcut by using
+       scheme_struct_getter() or scheme_struct_setter() instead
+       of going through scheme_apply(). */
+    jit_pusharg_p(JIT_R0);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_V1);
+    if (kind == 2)
+      (void)mz_finish_lwe(ts_scheme_struct_getter, refrts);
+    else
+      (void)mz_finish_lwe(ts_scheme_struct_setter, refrts);
+  }
+  jit_retval(JIT_R0);
+  VALIDATE_RESULT(JIT_R0);
+  jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES((kind == 3) ? 2 : 1));
+  JIT_UPDATE_THREAD_RSPTR();
+  if (!for_branch) {
+    mz_epilog(JIT_V1);
+    bref5 = NULL;
+    bref6 = NULL;
+  } else {
+    /* Need to check for true or false. */
+    bref5 = jit_beqi_p(jit_forward(), JIT_R0, scheme_false);
+    bref6 = jit_jmpi(jit_forward());
+  }
+
+  if (_bref5) {
+    *_bref5 = bref5;
+    *_bref6 = bref6;
+  }
+
+  return 1;
+}
+
 static int common4(mz_jit_state *jitter, void *_data)
 {
   int i, ii, iii;
@@ -1476,8 +1537,8 @@ static int common4(mz_jit_state *jitter, void *_data)
     for (i = 0; i < 4; i++) {
       void *code;
       int kind, for_branch;
-      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *bref1, *bref2, *refretry;
-      GC_CAN_IGNORE jit_insn *bref3, *bref4, *bref5, *bref6, *bref8, *ref9, *refrts;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *refslow2, *bref1, *bref2, *refretry;
+      GC_CAN_IGNORE jit_insn *bref3, *bref4, *bref5, *bref6, *bref8, *ref9;
 
       if ((ii == 1) && (i == 1)) continue; /* no multi variant of pred branch */
 
@@ -1521,41 +1582,18 @@ static int common4(mz_jit_state *jitter, void *_data)
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
       CHECK_LIMIT();
 
-      /* Slow path: non-struct proc, or argument type is
-	 bad for a getter. */
+      /* Slow path: non-struct proc. */
       refslow = _jit.x.pc;
-      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES((kind == 3) ? 2 : 1));
-      CHECK_RUNSTACK_OVERFLOW();
-      JIT_UPDATE_THREAD_RSPTR();
-      jit_str_p(JIT_RUNSTACK, JIT_R1);
-      if (kind == 3) {
-        restore_struct_temp(jitter, JIT_V1);        
-        jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_V1);
-      }
-      jit_movi_i(JIT_V1, ((kind == 3) ? 2 : 1));
-      jit_prepare(3);
-      jit_pusharg_p(JIT_RUNSTACK);
-      jit_pusharg_i(JIT_V1);
-      jit_pusharg_p(JIT_R0);
-      if (ii == 1) {
-        (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
-      } else {
-        (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
-      }
-      jit_retval(JIT_R0);
-      VALIDATE_RESULT(JIT_R0);
-      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES((kind == 3) ? 2 : 1));
-      JIT_UPDATE_THREAD_RSPTR();
-      if (!for_branch) {
-	mz_epilog(JIT_V1);
-	bref5 = NULL;
-	bref6 = NULL;
-      } else {
-	/* Need to check for true or false. */
-	bref5 = jit_beqi_p(jit_forward(), JIT_R0, scheme_false);
-	bref6 = jit_jmpi(jit_forward());
-      }
+      gen_struct_slow(jitter, kind, 0, for_branch, ii == 1, &bref5, &bref6);
       CHECK_LIMIT();
+
+      if ((kind == 2) || (kind == 3)) {
+        /* Slow path: argument type is bad for a getter/setter. */
+        refslow2 = _jit.x.pc;
+        gen_struct_slow(jitter, kind, 1, 0, 0, NULL, NULL);
+        CHECK_LIMIT();
+      } else
+        refslow2 = refslow;
 
       /* Continue trying fast path: check proc */
       mz_patch_branch(ref);
@@ -1587,12 +1625,12 @@ static int common4(mz_jit_state *jitter, void *_data)
         mz_patch_branch(ref3);
         __END_INNER_TINY__(1);
       } else {
-	(void)jit_bmsi_ul(refslow, JIT_R1, 0x1);
+	(void)jit_bmsi_ul(refslow2, JIT_R1, 0x1);
 	jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
         __START_INNER_TINY__(1);
 	ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
         __END_INNER_TINY__(1);
-	(void)jit_bnei_i(refslow, JIT_R2, scheme_proc_struct_type);
+	(void)jit_bnei_i(refslow2, JIT_R2, scheme_proc_struct_type);
 	bref1 = bref2 = NULL;
       }
       __START_INNER_TINY__(1);
@@ -1622,7 +1660,7 @@ static int common4(mz_jit_state *jitter, void *_data)
       if (kind == 1) {
 	bref3 = jit_bltr_i(jit_forward(), JIT_R2, JIT_V1);
       } else {
-	(void)jit_bltr_i(refslow, JIT_R2, JIT_V1);
+	(void)jit_bltr_i(refslow2, JIT_R2, JIT_V1);
 	bref3 = NULL;
       }
       CHECK_LIMIT();
@@ -1670,7 +1708,7 @@ static int common4(mz_jit_state *jitter, void *_data)
 	  mz_epilog(JIT_V1);
 	}
       } else {
-	(void)jit_bner_p(refslow, JIT_R2, JIT_V1);
+	(void)jit_bner_p(refslow2, JIT_R2, JIT_V1);
 	bref4 = NULL;
         __START_INNER_TINY__(1);
         mz_patch_branch(bref8);

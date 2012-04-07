@@ -3151,6 +3151,11 @@ static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
   return obj;
 }
 
+Scheme_Object *_scheme_apply_native(Scheme_Object *obj, int num_rands, Scheme_Object **rands)
+{
+  return _apply_native(obj, num_rands, rands);
+}
+
 /* must be at least 3: */
 #define MAX_QUICK_CHAP_ARGV 5
 

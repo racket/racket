@@ -1933,10 +1933,13 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
         a[0] = px->prev;
         a[1] = orig;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i];
-        o = _scheme_apply(red, 2, a);
+        if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type))
+          o = _scheme_apply_native(red, 2, a);
+        else
+          o = _scheme_apply(red, 2, a);
         
         if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
-          if (!scheme_chaperone_of(o, orig))
+          if (!SAME_OBJ(o, orig) && !scheme_chaperone_of(o, orig))
             scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                              "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
                              who,
@@ -1978,10 +1981,13 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
         if (SCHEME_TRUEP(red)) {
           a[0] = o;
           a[1] = v;
-          v = _scheme_apply(red, 2, a);
+          if (SAME_TYPE(SCHEME_TYPE(red), scheme_native_closure_type))
+            v = _scheme_apply_native(red, 2, a);
+          else
+            v = _scheme_apply(red, 2, a);
 
           if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
-            if (!scheme_chaperone_of(v, a[1]))
+            if (!SAME_OBJ(v, a[1]) && !scheme_chaperone_of(v, a[1]))
               scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                                "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
                                who,
@@ -2315,7 +2321,7 @@ static int parse_pos(const char *who, Struct_Proc_Info *i, Scheme_Object **args,
   return pos;
 }
 
-static Scheme_Object *struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim)
+Scheme_Object *scheme_struct_getter(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   Scheme_Structure *inst;
   int pos;
@@ -2349,7 +2355,7 @@ static Scheme_Object *struct_getter(int argc, Scheme_Object **args, Scheme_Objec
     return scheme_struct_ref(args[0], pos);
 }
 
-static Scheme_Object *struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim)
+Scheme_Object *scheme_struct_setter(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   Scheme_Structure *inst;
   int pos;
@@ -3765,7 +3771,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
     a[0] = (Scheme_Object *)i;
 
     if ((proc_type == SCHEME_GETTER) || (proc_type == SCHEME_GEN_GETTER)) {
-      p = scheme_make_folding_prim_closure(struct_getter,
+      p = scheme_make_folding_prim_closure(scheme_struct_getter,
 					   1, a,
 					   func_name,
 					   1 + need_pos, 1 + need_pos, 0);
@@ -3777,7 +3783,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
 	 This avoids keep lots of useless accessors.
 	 if (need_pos) struct_type->accessor = p; */
     } else {
-      p = scheme_make_folding_prim_closure(struct_setter,
+      p = scheme_make_folding_prim_closure(scheme_struct_setter,
 					   1, a,
 					   func_name,
 					   2 + need_pos, 2 + need_pos, 0);
