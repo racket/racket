@@ -29,7 +29,9 @@
 
          make-contract
          make-chaperone-contract
-         make-flat-contract)
+         make-flat-contract
+         
+         skip-projection-wrapper?)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -167,6 +169,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define skip-projection-wrapper? (make-parameter #f))
+
 (define ((build-property mk default-name projection-wrapper)
          #:name [get-name #f]
          #:first-order [get-first-order #f]
@@ -179,7 +183,9 @@
          [get-first-order (or get-first-order get-any?)]
          [get-projection
           (cond
-            [get-projection (projection-wrapper get-projection)]
+            [get-projection (if (skip-projection-wrapper?)
+                                get-projection
+                                (projection-wrapper get-projection))]
             [else (get-first-order-projection
                    get-name get-first-order)])]
          [stronger (or stronger weakest)])
@@ -299,4 +305,3 @@
 
 (define make-flat-contract
   (build-contract make-make-flat-contract 'anonymous-flat-contract))
-

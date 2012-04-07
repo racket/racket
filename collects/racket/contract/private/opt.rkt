@@ -1,6 +1,7 @@
 #lang racket/base
 (require "prop.rkt"
          "misc.rkt"
+         "blame.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
          (for-syntax "opt-guts.rkt")
@@ -10,18 +11,23 @@
          opt/direct
          begin-lifted)
 
-;; define/opter : id -> syntax
+;; (define/opter (<contract-combinator> opt/i opt/info stx) body)
 ;;
-;; Takes an expression which is to be expected of the following signature: 
+;; An opter is to a function with the following signature: 
 ;;
-;; opter : id id syntax list-of-ids ->
-;;         syntax syntax-list syntax-list syntax-list (union syntax #f) (union syntax #f) syntax
-;;         
+;; opter : (syntax opt/info -> <opter-results>) opt/info list-of-ids ->
+;;         (values syntax syntax-list syntax-list
+;;                 syntax-list (union syntax #f) (union syntax #f) syntax)
 ;;
-;; It takes in an identifier for pos, neg, and the original syntax. An identifier
-;; that can be used to call the opt/i function is also implicitly passed into
-;; every opter. A list of free-variables is implicitly passed if the calling context
-;; was define/osc otherwise it is null.
+;; The first argument can be used to recursively process sub-contracts
+;; It returns what an opter returns and its results should be accumulated
+;; into the opter's results.
+;;
+;; The opt/info struct has a number of identifiers that get used to build
+;; contracts; see opt-guts.rkt for the selectors.
+;;
+;; The last argument is a list of free-variables if the calling context
+;; was define/opt otherwise it is null.
 ;;
 ;; Every opter needs to return:
 ;;  - the optimized syntax
@@ -40,6 +46,7 @@
 ;;    else the symbol of the lifted variable
 ;;    This is used for contracts with subcontracts (like cons) doing checks.
 ;;  - a list of stronger-ribs
+;;  - a boolean indicating if this contract is a chaperone contract
 (define-syntax (define/opter stx)
   (syntax-case stx ()
     [(_ (for opt/i opt/info stx) expr ...)
@@ -82,6 +89,55 @@
         (with-syntax (((stronger ...) strongers))
           (syntax (and stronger ...))))))
 
+(define-for-syntax (coerecable-constant? konst)
+  (syntax-case konst (quote)
+    ['x
+     (identifier? #'x)
+     #t]
+    [other
+     (let ([o (syntax-e #'other)])
+       (or (boolean? o)
+           (char? o)
+           (null? o)
+           (string? o)
+           (bytes? o)
+           (number? o)))]))
+
+(define-for-syntax (opt-constant-contract konst opt/info)
+  (define v (opt/info-val opt/info))
+  (define-values (predicate word)
+    (cond
+      [(and (pair? konst) (eq? (car konst) 'quote))
+       (values #`(eq? #,konst #,v)
+               "eq?")]
+      [(or (boolean? konst) (char? konst) (null? konst))
+       (values #`(eq? #,konst #,v)
+               "eq?")]
+      [(or (string? konst) (bytes? konst))
+       (values #`(equal? #,konst #,v)
+               "equal?")]
+      [(number? konst)
+       (values #`(and (number? #,v) (= #,konst #,v))
+               "=")]))
+  (values
+   #`(if #,predicate
+         #,v
+         (opt-constant-contract-failure #,(opt/info-blame opt/info) #,v #,word #,konst))
+   null
+   null
+   null
+   predicate
+   #f
+   null
+   #t))
+
+(define (opt-constant-contract-failure blame val compare should-be)
+  (raise-blame-error blame val "expected a value ~a to ~e" compare should-be))
+
+(begin-for-syntax
+  (define-struct define-opt/recursive-fn (transformer internal-fn)
+    #:property prop:procedure 0))
+
 ;; opt/i : id opt/info syntax ->
 ;;         syntax syntax-list syntax-list (union syntax #f) (union syntax #f)
 (define-for-syntax (opt/i opt/info stx)
@@ -95,11 +151,13 @@
      ((opter #'argless-ctc) opt/i opt/info stx)]
     [(f arg ...)
      (and (identifier? #'f) 
-          (syntax-parameter-value #'define/opt-recursive-fn)
-          (free-identifier=? (syntax-parameter-value #'define/opt-recursive-fn)
-                             #'f))
+          (define-opt/recursive-fn? (syntax-local-value #'f (λ () #f))))
      (values
-      #`(#,(syntax-parameter-value #'define/opt-recursive-fn) #,(opt/info-val opt/info) arg ...)
+      #`(#,(define-opt/recursive-fn-internal-fn (syntax-local-value #'f))
+         #,(opt/info-contract opt/info)
+         #,(opt/info-blame opt/info)
+         #,(opt/info-val opt/info)
+         arg ...)
       null
       null
       null
@@ -107,7 +165,16 @@
       #f
       null
       #t)]
+    [konst
+     (coerecable-constant? #'konst)
+     (opt-constant-contract (syntax->datum #'konst) opt/info)]
     [else
+     (log-info (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
+                       (syntax-source stx)
+                       (if (syntax-line stx)
+                           (format "~a:~a" (syntax-line stx) (syntax-column stx))
+                           (format ":~a" (syntax-position stx)))
+                       (syntax->datum stx)))
      (opt/unknown opt/i opt/info stx)]))
 
 ;; top-level-unknown? : syntax -> boolean
@@ -120,11 +187,12 @@
     [argless-ctc
      (and (identifier? #'argless-ctc) (opter #'argless-ctc))
      #f]
+    [konst
+     (coerecable-constant? #'konst)
+     #f]
     [(f arg ...)
      (and (identifier? #'f) 
-          (syntax-parameter-value #'define/opt-recursive-fn)
-          (free-identifier=? (syntax-parameter-value #'define/opt-recursive-fn)
-                             #'f))
+          (define-opt/recursive-fn? (syntax-local-value #'f (λ () #f))))
      #f]
     [else
      #t]))
@@ -135,16 +203,12 @@
 ;; on things such as closure allocation time.
 (define-syntax (opt/c stx)  
   (syntax-case stx ()
-    [(_ e) 
-     (if (top-level-unknown? #'e)
-         #'e
-         #'(opt/c e ()))]
-    [(_ e (opt-recursive-args ...))
+    [(_ e)
      (let*-values ([(info) (make-opt/info #'ctc
                                           #'val
                                           #'blame
                                           #f
-                                          (syntax->list #'(opt-recursive-args ...))
+                                          '()
                                           #f
                                           #f
                                           #'this
@@ -158,18 +222,9 @@
            #`(make-opt-contract
               (λ (ctc)
                 (λ (blame)
-                  #,(if (syntax-parameter-value #'define/opt-recursive-fn)
-                        (with-syntax ([f (syntax-parameter-value #'define/opt-recursive-fn)])
-                          (bind-superlifts
-                           (cons
-                            (cons (syntax-parameter-value #'define/opt-recursive-fn)
-                                  #'(λ (val opt-recursive-args ...) next))
-                            partials)
-                           #'(λ (val) 
-                               (f val opt-recursive-args ...))))
-                        (bind-superlifts
-                         partials
-                         #`(λ (val) next)))))
+                  #,(bind-superlifts
+                     partials
+                     #`(λ (val) next))))
               (λ () e)
               (λ (this that) #f)
               (vector)
@@ -209,14 +264,64 @@
     [(_ expr)
      (syntax-local-lift-expression #'expr)]))
 
-(define-syntax-parameter define/opt-recursive-fn #f)
-
 (define-syntax (define-opt/c stx)
   (syntax-case stx ()
-    [(_ (id args ...) body)
-     #'(define (id args ...)
-         (syntax-parameterize ([define/opt-recursive-fn #'id])
-                              (opt/c body (args ...))))]))
+    [(_ (id args ...) e)
+     (with-syntax ([(f1 f2)
+                    (generate-temporaries (list (format "~a-f1" (syntax-e #'id))
+                                                (format "~a-f2" (syntax-e #'id))))])
+       #`(begin
+           (define-syntax id
+             (define-opt/recursive-fn
+               (λ (stx)
+                 (syntax-case stx ()
+                   [f
+                    (identifier? #'f)
+                    #'f1]
+                   [(f . call-args)
+                    (with-syntax ([app (datum->syntax stx '#%app)])
+                      #'(app f1 . call-args))]))
+               #'f2))
+           (define-values (f1 f2) (opt/c-helper f1 f2 (id args ...) e))))]))
+
+(define-syntax (opt/c-helper stx)
+  (syntax-case stx ()
+    [(_ f1 f2 (id args ...) e)
+     (let*-values ([(info) (make-opt/info #'ctc
+                                          #'val
+                                          #'blame
+                                          #f
+                                          (syntax->list #'(args ...))
+                                          #f
+                                          #f
+                                          #'this
+                                          #'that)]
+                   [(next lifts superlifts partials _ __ stronger-ribs chaperone?) (opt/i info #'e)])
+       (with-syntax ([next next])
+         #`(let ()
+             (define (f2 ctc blame val args ...)
+               #,(bind-superlifts
+                  superlifts
+                  (bind-lifts
+                   lifts
+                   (bind-superlifts
+                    partials
+                    #'next))))
+             (define (f1 args ...)
+               #,(bind-superlifts
+                  superlifts
+                  (bind-lifts
+                   lifts
+                   #`(make-opt-contract
+                      (λ (ctc)
+                        (λ (blame)
+                          (λ (val) 
+                            (f2 ctc blame val args ...))))
+                      (λ () e)
+                      (λ (this that) #f)
+                      (vector)
+                      (begin-lifted (box #f))))))
+             (values f1 f2))))]))
 
 ;; optimized contracts
 ;;

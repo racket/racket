@@ -4,7 +4,8 @@
          build-clauses
          build-enforcer-clauses
          generate-arglists
-         (struct-out contract-struct-transformer))
+         (struct-out contract-struct-transformer)
+         defeat-inlining)
 
 (require racket/struct-info "opt-guts.rkt")
 (require (for-template racket/base))
@@ -47,19 +48,7 @@ which are then called when the contract's fields are explored
                                              "expected a field name and a contract together"
                                              stx
                                              clause)]))]))]
-         [all-ac-ids (generate-temporaries field-names)]
-         [defeat-inlining 
-           ;; makes the procedure confusing enough so that
-           ;; inlining doesn't consider it. this makes the 
-           ;; call to procedure-closure-contents-eq? work 
-           ;; properly
-           (λ (e)
-             (let loop ([n 30])
-               (if (zero? n)
-                   e
-                   #`(if (zero? (random 1))
-                         #,(loop (- n 1))
-                         (/ 1 0)))))])
+         [all-ac-ids (generate-temporaries field-names)])
     (let loop ([clauses (syntax->list clauses)]
                [ac-ids all-ac-ids]
                [prior-ac-ids '()]
@@ -112,6 +101,18 @@ which are then called when the contract's fields are explored
                   [_
                    (raise-syntax-error name "expected name/identifier binding" stx clause)]))]))]))))
 
+;; makes the procedure confusing enough so that
+;; inlining doesn't consider it. this makes the 
+;; call to procedure-closure-contents-eq? work 
+;; properly
+(define (defeat-inlining e)
+  (let loop ([n 30])
+    (if (zero? n)
+        e
+        #`(if (zero? (random 1))
+              #,(loop (- n 1))
+              (/ 1 0)))))
+
 (define (build-clauses/where name stx clauses field-names maker-args)
   (with-syntax ([(field-names ...) field-names])
     (let loop ([clauses clauses]
@@ -143,7 +144,9 @@ which are then called when the contract's fields are explored
     (syntax-case stx ()
       [(f arg ...)
        ;; we need to override the default optimization of recursive calls to use our helper
-       (and (opt/info-recf opt/info) (free-identifier=? (opt/info-recf opt/info) #'f))
+       (and (identifier? #'f) 
+            (opt/info-recf opt/info)
+            (free-identifier=? (opt/info-recf opt/info) #'f))
        (values
         #`(f #,id arg ...)
         null

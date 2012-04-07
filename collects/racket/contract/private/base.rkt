@@ -47,7 +47,7 @@ improve method arity mismatch contract violation error messages?
     (check-source-location! 'contract loc)
     (let ([new-val
            (((contract-projection c)
-             (make-blame loc name (contract-name c) pos neg #t))
+             (make-blame loc name (λ () (contract-name c)) pos neg #t))
             v)])
       (if (and (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
                (procedure? new-val)

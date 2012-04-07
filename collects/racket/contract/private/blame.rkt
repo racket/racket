@@ -1,5 +1,4 @@
 #lang racket/base
-
 (require syntax/srcloc racket/pretty setup/path-to-relative)
 
 (provide blame?
@@ -35,9 +34,11 @@
                (hash/recur (blame-original? b))))
 
 (define-struct blame
-  [source value contract positive negative original?]
+  [source value build-name positive negative original?]
   #:property prop:equal+hash
   (list blame=? blame-hash blame-hash))
+
+(define (blame-contract b) ((blame-build-name b)))
 
 (define (blame-swap b)
   (struct-copy

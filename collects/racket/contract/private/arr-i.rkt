@@ -7,6 +7,7 @@
          "misc.rkt"
          "blame.rkt"
          syntax/location
+         racket/performance-hint
          (for-syntax racket/base
                      racket/stxparam-exptime
                      "arr-i-parse.rkt"
@@ -623,9 +624,10 @@
                   (λ args (apply arg-checker args)))
                  impersonator-prop:contracted ctc))))))))
 
-(define (un-dep ctc obj blame)
-  (let ([ctc (coerce-contract '->i ctc)])
-    (((contract-projection ctc) blame) obj)))
+(begin-encourage-inline
+  (define (un-dep ctc obj blame)
+    (let ([ctc (coerce-contract '->i ctc)])
+      (((contract-projection ctc) blame) obj))))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])

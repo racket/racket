@@ -10,7 +10,7 @@
   (apply raise-blame-error
          (make-blame (unpack-source src)
                      (unpack-name src)
-                     name
+                     (λ () name)
                      (unpack-blame pos)
                      "<<unknown party>>"
                      #t)
@@ -47,7 +47,7 @@
     (lambda (pos neg src name [original? #t])
       (proj (make-blame (unpack-source src)
                         (unpack-name src)
-                        name
+                        (λ () name)
                         (unpack-blame (if original? pos neg))
                         (unpack-blame (if original? neg pos))
                         original?)))))

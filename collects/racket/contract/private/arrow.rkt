@@ -569,13 +569,14 @@ v4 todo:
 
 (define-struct (chaperone-> base->) ()
   #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:projection (->-proj chaperone-procedure)
-   #:name ->-name
-   #:first-order ->-first-order
-   #:stronger ->-stronger?
-   #:generate ->-generate
-   #:exercise ->-exercise))
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:projection (->-proj chaperone-procedure)
+     #:name ->-name
+     #:first-order ->-first-order
+     #:stronger ->-stronger?
+     #:generate ->-generate
+     #:exercise ->-exercise)))
 
 (define-struct (impersonator-> base->) ()
   #:property prop:contract

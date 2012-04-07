@@ -22,7 +22,7 @@ it around flattened out.
          "blame.rkt"
          "opt.rkt"
          "misc.rkt")
-(require (for-syntax scheme/base)
+(require (for-syntax racket/base)
          (for-syntax "ds-helpers.rkt")
          (for-syntax "helpers.rkt")
          (for-syntax "opt-guts.rkt"))
@@ -367,8 +367,7 @@ it around flattened out.
                             [enforcer-id enforcer-id-var]
                             [helper-id helper-id-var]
                             [((free-var free-var-val) (... ...))
-                             (make-free-vars (append (opt/info-free-vars opt/info)) #'freev)]
-                            [(saved-lifts (... ...)) (lifts-to-save lifts)])
+                             (make-free-vars (append (opt/info-free-vars opt/info)) #'freev)])
                 (values
                  #`(λ (stct f-x ...)
                      (let ((free-var free-var-val) (... ...))

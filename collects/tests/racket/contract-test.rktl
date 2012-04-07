@@ -41,7 +41,7 @@
   (define (contract-error-test name exp exn-ok?)
     (test #t 
           name
-          (contract-eval `(with-handlers ((exn? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
+          (contract-eval `(with-handlers ((exn:fail? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
 
   (define (contract-syntax-error-test name exp [reg #rx""])
     (test #t
@@ -8632,6 +8632,270 @@
         (set-s-a! v* 4))))
 
   
+;                                                           
+;                                                           
+;                                                           
+;                                                           
+;           ;                         ;    ;    ;;;         
+;         ;;;                       ;;;    ;    ;;;         
+;   ;;;;  ;;;; ;;; ;;;; ;;;   ;;;   ;;;;  ;  ;; ;;;   ;;;   
+;  ;;; ;; ;;;; ;;;;;;;; ;;;  ;;;;;  ;;;;  ; ;;;;;;;  ;;;;;  
+;  ;;;    ;;;  ;;;  ;;; ;;; ;;;  ;; ;;;   ; ;;; ;;; ;;;  ;; 
+;   ;;;;  ;;;  ;;;  ;;; ;;; ;;;     ;;;   ; ;;; ;;; ;;;     
+;     ;;; ;;;  ;;;  ;;; ;;; ;;;  ;; ;;;   ; ;;; ;;; ;;;  ;; 
+;  ;; ;;; ;;;; ;;;  ;;;;;;;  ;;;;;  ;;;; ;  ;;;;;;;  ;;;;;  
+;   ;;;;   ;;; ;;;   ;; ;;;   ;;;    ;;; ;   ;; ;;;   ;;;   
+;                                                           
+;                                                           
+;                                                           
+;                                                           
+
+  
+  (test/spec-passed
+   'struct/dc-1
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s 
+                         [a () number?]
+                         [b (a) boolean?])
+              (s 1 #f)
+              'pos
+              'neg)))
+
+  (test/spec-passed
+   'struct/dc-2
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s 
+                           [a () number?]
+                           [b (a) (>=/c a)])
+                (s 1 2)
+                'pos
+                'neg)))
+
+  (test/pos-blame
+   'struct/dc-3
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s 
+                         [a () number?]
+                         [b (a) (>=/c a)])
+              (s 2 1)
+              'pos
+              'neg)))
+  
+  (test/spec-passed
+   'struct/dc-3b
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s 
+                         [a () number?]
+                         [b (a) (<=/c a)])
+              (s 2 1)
+              'pos
+              'neg)))
+
+  (test/spec-passed
+   'struct/dc-4
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s 
+                           [a number?]
+                           [b (a) (>=/c a)])
+                (s 1 2)
+                'pos
+                'neg)))
+
+
+  (test/pos-blame
+   'struct/dc-5
+   '(let ()
+      (struct s (a b))
+      (s-b (contract (struct/dc s 
+                                [a () number?]
+                                [b (a) (>=/c a)])
+                     (s 2 1)
+                     'pos
+                     'neg))))
+   
+  (test/spec-passed/result
+   'struct/dc-6
+   '(let ()
+      (struct s (a b))
+      (define-opt/c (f z)
+        (struct/dc s
+                   [a (>=/c z)]
+                   [b #:lazy (a) (f a)]))
+      
+      (s-a (contract (f 11)
+                     (s 12 (s 13 #f))
+                     'pos
+                     'neg)))
+   12)
+  
+  (test/spec-passed/result
+   'struct/dc-7
+   '(let ()
+      (struct s (a b))
+      (define-opt/c (f z)
+        (struct/dc s
+                   [a (>=/c z)]
+                   [b #:lazy (a) (f a)]))
+      
+      (s-a (s-b (contract (f 11)
+                            (s 12 (s 13 #f))
+                            'pos
+                            'neg))))
+   13)
+  
+  
+  (test/pos-blame
+   'struct/dc-8
+   '(let ()
+      (struct s (a b))
+      (define-opt/c (f z)
+        (struct/dc s
+                   [a (>=/c z)]
+                   [b #:lazy (a) (f a)]))
+      (s-b (s-b (contract (f 11)
+                          (s 12 (s 13 #f))
+                          'pos
+                          'neg)))))
+  
+  
+  (test/spec-passed/result
+   'struct/dc-9
+   '(let ()
+      (struct s (a b))
+      
+      (define-opt/c (g z)
+        (struct/dc s
+                   [a (>=/c z)]
+                   [b #:lazy (a) (>=/c (+ a 1))]))
+      
+      (s-a (contract (g 10)
+                     (s 12 (s 14 #f))
+                     'pos
+                     'neg)))
+   12)
+
+  (test/spec-passed/result
+   'struct/dc-10
+   '(let ()
+      (struct s (a b))
+      
+      (define-opt/c (g z)
+        (struct/dc s
+                   [a (>=/c z)]
+                   [b #:lazy (a) (>=/c (+ a 1))]))
+      
+      (s-b (contract (g 10)
+                     (s 12 14)
+                     'pos
+                     'neg)))
+   14)
+  
+  (test/pos-blame
+   'struct/dc-11
+   '(let ()
+      
+      (struct s (a b))
+      
+      (define-opt/c (g z)
+        (struct/dc s
+                   [a (>=/c z)]
+                   [b #:lazy (a) (>=/c (+ a 1))]))
+      
+      (s-b (contract (g 11)
+                     (s 12 10)
+                     'pos
+                     'neg))))
+  
+  (test/spec-passed/result
+   'struct/dc-12
+   '(let ()
+      (struct kons (hd tl) #:transparent)
+      (define (unknown-function a) (=/c a))
+      (define-opt/c (f a b)
+        (or/c not
+              (struct/dc kons
+                         [hd (unknown-function a)]
+                         [tl #:lazy () (or/c #f (f b a))])))
+      (kons-hd (kons-tl (contract (f 1 2)
+                                  (kons 1 (kons 2 #f))
+                                  'pos
+                                  'neg))))
+   2)
+
+  (test/spec-passed
+   'struct/dc-13
+   '(let ()
+      (struct s (a))
+      (contract (struct/dc s
+                           [a #:lazy integer?])
+                (s #f)
+                'pos
+                'neg)))
+  
+  (test/spec-passed
+   'struct/dc-14
+   '(let ()
+      (struct s (a))
+      (contract (struct/dc s
+                           [a #:lazy (-> integer? integer?)])
+                (s #f)
+                'pos
+                'neg)))
+  
+  (test/pos-blame
+   'struct/dc-15
+   '(let ()
+      (struct s (a))
+      (contract (struct/dc s
+                           [a integer?])
+                (s #f)
+                'pos
+                'neg)))
+  
+  (test/pos-blame
+   'struct/dc-16
+   '(let ()
+      (struct s (a))
+      (contract (struct/dc s
+                           [a (-> integer? integer?)])
+                (s #f)
+                'pos
+                'neg)))
+  
+  (test/spec-passed
+   'struct/dc-17
+   '(let ()
+      (struct s (q a))
+      (contract (struct/dc s
+                           [q integer?]
+                           [a #:lazy (q) (<=/c a)])
+                (s 1 #f)
+                'pos
+                'neg)))
+  
+  (test/pos-blame
+   'struct/dc-18
+   '(let ()
+      (struct s (q a))
+      (contract (struct/dc s
+                           [q integer?]
+                           [a (q) (<=/c q)])
+                (s 1 #f)
+                'pos
+                'neg)))
+  
+  (contract-error-test
+   'struct/dc-19
+   '(let ()
+      (struct s (a b))
+      (struct/dc s [a (new-∃/c 'α)]))
+   exn:fail?)
+  
 ;                                                                              
 ;                                                                              
 ;                                                                              
@@ -9411,6 +9675,18 @@
                                   #f)))))
    178)
   
+  (test/spec-passed/result
+   'd-o/c27
+   '(let ()
+      (define-opt/c (f x)
+        (and/c (>=/c x)
+               (g x)))
+      (define-opt/c (g x)
+        (<=/c x))
+      (contract (f 11) 11 'pos 'neg))
+   11)
+  
+  
   ;;
   ;;  end of define-opt/c
   ;;
@@ -9801,6 +10077,19 @@ so that propagation occurs.
 
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))
+  
+  (ctest #t chaperone-contract? (let ()
+                                  (struct s (a b))
+                                  (struct/dc s [a integer?] [b integer?])))
+  (ctest #f flat-contract? (let ()
+                             (struct s (a b))
+                             (struct/dc s [a integer?] [b integer?])))
+  (ctest #f flat-contract? (let ()
+                             (struct s (a b))
+                             (struct/dc s [a integer?] [b (a) (>=/c a)])))
+  (ctest #t chaperone-contract? (let ()
+                                  (struct s (a b))
+                                  (struct/dc s [a integer?] [b (a) (>=/c a)])))
   
   (test-flat-contract '(and/c number? integer?) 1 3/2)
 
@@ -10426,7 +10715,56 @@ so that propagation occurs.
         (,test #t contract-stronger? (mk-c 1) (mk-c 2)))))
 
   
+  (contract-eval
+   `(let ()
 
+      (struct s (a b))
+      (struct t (a b))
+
+      (,test #f contract-stronger?
+             (struct/dc s
+                        [a (>=/c 1)]
+                        [b (>=/c 2)])
+             (struct/dc s
+                        [a (>=/c 2)]
+                        [b (>=/c 3)]))
+      (,test #t contract-stronger?
+              (struct/dc s
+                         [a (>=/c 2)]
+                         [b (>=/c 3)])
+              (struct/dc s
+                         [a (>=/c 1)]
+                         [b (>=/c 2)]))
+
+      (,test #f contract-stronger?
+             (struct/dc s
+                    [a number?]
+                    [b number?])
+             (struct/dc t
+                        [a number?]
+                        [b number?]))
+      
+      (,test #f contract-stronger?
+             (struct/dc t
+                        [a number?]
+                        [b number?])
+             (struct/dc s
+                        [a number?]
+                        [b number?]))
+
+      (define (mk c)
+        (struct/dc s
+                   [a (>=/c c)]
+                   [b (a) (>=/c a)]))
+      (define one (mk 1))
+      (define two (mk 2))
+      (,test #f contract-stronger? one two)
+      (,test #t contract-stronger? two one)))
+
+
+
+  
+  
 ;                                                                                    
 ;                                                                                    
 ;                                                                                    

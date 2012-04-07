@@ -131,14 +131,21 @@
 ;; the initial lifts
 (define empty-lifts '())
 
-(define (bind-lifts lifts stx) (do-bind-lifts lifts stx #'let*))
-(define (bind-superlifts lifts stx) (do-bind-lifts lifts stx #'letrec))
+(define (bind-lifts lifts stx) (do-bind-lifts lifts stx #'let*-values))
+(define (bind-superlifts lifts stx) (do-bind-lifts lifts stx #'letrec-values))
 
 (define (do-bind-lifts lifts stx binding-form)
   (if (null? lifts)
       stx
       (with-syntax ([((lifts-x . lift-e) ...) lifts])
-        (with-syntax ([(lifts-x ...) (map (λ (x) (if (identifier? x) x (car (generate-temporaries '(junk)))))
+        (with-syntax ([(lifts-x ...) (map (λ (x) (cond
+                                                   [(identifier? x) (list x)]
+                                                   [(let ([lst (syntax->list x)])
+                                                      (and lst
+                                                           (andmap identifier? lst)))
+                                                    x]
+                                                   [else
+                                                    (generate-temporaries '(junk))]))
                                           (syntax->list (syntax (lifts-x ...))))]
                       [binding-form binding-form])
           #`(binding-form ([lifts-x lift-e] ...)

@@ -385,7 +385,46 @@ Contracts for mutable fields may be impersonator contracts.
 If all fields are immutable and the @racket[contract-expr]s evaluate
 to flat contracts, a flat contract is produced.  If all the
 @racket[contract-expr]s are chaperone contracts, a chaperone contract is
-produced.  Otherwise, an impersonator contract is produced.}
+produced.  Otherwise, an impersonator contract is produced.
+}
+
+
+@defform/subs[(struct/dc struct-id field-spec ...)
+              ([field-spec [field-id contract-expr]
+                           [field-id #:lazy contract-expr]
+                           [field-id (dep-field-id ...) contract-expr]
+                           [field-id (dep-field-id ...) #:lazy contract-expr]])]{
+Produces a contract that recognizes instances of the structure
+type named by @racket[struct-id], and whose field values match the
+contracts produced by the @racket[field-spec]s.
+
+Each @racket[field-spec] can specify if the field is check lazily 
+(only when a selector is applied) or not via the @racket[#:lazy] 
+keyword. If the @racket[field-spec] lists the names of other fields,
+then the contract depends on values in those fields, and the @racket[contract-expr]
+expression is evaluated each time a selector is applied, building a new contract
+for the fields based on the values of the @racket[dep-field-id] fields.
+
+Contracts for immutable fields must be either flat or chaperone contracts.
+Contracts for mutable fields may be impersonator contracts.
+If all fields are immutable and the @racket[contract-expr]s evaluate
+to flat contracts, a flat contract is produced.  If all the
+@racket[contract-expr]s are chaperone contracts, a chaperone contract is
+produced.  Otherwise, an impersonator contract is produced.
+
+For example, the function @racket[bst/c] below 
+returns a contract for binary search trees whose values
+are all between @racket[lo] and @racket[hi].
+
+@racketblock[(struct bt (val left right))
+             (define (bst/c lo hi)
+               (or/c #f
+                     (struct/dc bt
+                                [val (between/c lo hi)]
+                                [left (val) (bst lo val)]
+                                [right (val) (bst val hi)])))]
+
+}
 
 
 @defproc[(parameter/c [c contract?]) contract?]{

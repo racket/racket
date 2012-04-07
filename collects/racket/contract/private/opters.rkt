@@ -6,6 +6,7 @@
          "blame.rkt"
          "misc.rkt"
          "arrow.rkt"
+         "struct.rkt"
          (for-syntax racket/base
                      syntax/stx
                      "opt-guts.rkt"))
@@ -106,7 +107,8 @@
                                         val
                                         "none of the branches of the or/c matched"))))]
              [(= (length hos) 1)
-              (with-syntax ((ho-ctc ho-ctc))
+              (with-syntax ([ho-ctc ho-ctc]
+                            [val (opt/info-val opt/info)])
                 (syntax
                  (if next-ps val ho-ctc)))]
              ;; FIXME something's not right with this case.
@@ -153,12 +155,8 @@
              (values
               (syntax (if (and (number? val) (<= n val m)) 
                           val
-                          (raise-blame-error
-                           blame
-                           val
-                           "expected: ~s, given: ~e"
-                           (contract-name ctc)
-                           val)))
+                          (raise-opt-between/c-error
+                           blame val n m)))
               lifts3
               null
               null
@@ -178,6 +176,14 @@
                          (syntax (<= this that))))))
               #t)))))]))
 
+(define (raise-opt-between/c-error blame val lo hi)
+  (raise-blame-error
+   blame
+   val
+   "expected a number between ~a and ~a, given: ~e"
+   lo hi
+   val))
+
 (define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg)
   (with-syntax ([comparison comparison])
     (let*-values ([(lift-low lifts2) (lift/binding arg 'single-comparison-val empty-lifts)])
@@ -192,12 +198,7 @@
              (syntax 
               (if (and (real? val) (comparison val m)) 
                   val
-                  (raise-blame-error
-                   blame
-                   val
-                   "expected: ~s, given: ~e"
-                   (contract-name ctc)
-                   val)))
+                  (raise-opt-single-comparison-opter-error blame val comparison m)))
              lifts3
              null
              null
@@ -210,6 +211,26 @@
                                     [that that])
                         (syntax (comparison this that))))))
              #t)))))))
+
+(define (raise-opt-single-comparison-opter-error blame val comparison m)
+  (raise-blame-error
+   blame
+   val
+   "expected a number ~a ~a, given: ~e"
+   (object-name comparison) m
+   val))
+
+
+(define/opter (=/c opt/i opt/info stx)
+  (syntax-case stx (=/c)
+    [(=/c x)
+     (single-comparison-opter 
+      opt/info
+      stx
+      (λ (m) (with-syntax ([m m])
+               #'(check-unary-between/c '=/c m)))
+      #'=
+      #'x)]))
 
 (define/opter (>=/c opt/i opt/info stx)
   (syntax-case stx (>=/c)

@@ -18,12 +18,7 @@
                    (blame (opt/info-blame opt/info)))
        (syntax (if (pred val)
                    val
-                   (raise-blame-error
-                    blame
-                    val
-                    "expected: ~s, given: ~e"
-                    (contract-name ctc)
-                    val))))
+                   (raise-opt/pred-error blame val 'pred))))
      null
      null
      null
@@ -32,33 +27,24 @@
      null
      #t)))
 
+(define (raise-opt/pred-error blame val pred-name)
+  (raise-blame-error
+   blame
+   val
+   "expected ~a"
+   pred-name))
+
 ;;
 ;; built-in predicate opters
 ;;
-(define/opter (null? opt/i opt/info stx)
-  (syntax-case stx (null?)
-    [null? (opt/pred opt/info #'null?)]))
-(define/opter (boolean? opt/i opt/info stx)
-  (syntax-case stx (boolean?)
-    [boolean? (opt/pred opt/info #'boolean?)]))
-(define/opter (string? opt/i opt/info stx)
-  (syntax-case stx (string?)
-    [string? (opt/pred opt/info #'string?)]))
-(define/opter (integer? opt/i opt/info stx)
-  (syntax-case stx (integer?)
-    [integer? (opt/pred opt/info #'integer?)]))
-(define/opter (char? opt/i opt/info stx)
-  (syntax-case stx (char?)
-    [char? (opt/pred opt/info #'char?)]))
-(define/opter (number? opt/i opt/info stx)
-  (syntax-case stx (number?)
-    [number? (opt/pred opt/info #'number?)]))
-(define/opter (pair? opt/i opt/info stx)
-  (syntax-case stx (pair?)
-    [pair? (opt/pred opt/info #'pair?)]))
-(define/opter (not opt/i opt/info stx)
-  (syntax-case stx (not)
-    [not (opt/pred opt/info #'not)]))
+(define/opter (null? opt/i opt/info stx) (opt/pred opt/info #'null?))
+(define/opter (boolean? opt/i opt/info stx) (opt/pred opt/info #'boolean?))
+(define/opter (string? opt/i opt/info stx) (opt/pred opt/info #'string?))
+(define/opter (integer? opt/i opt/info stx) (opt/pred opt/info #'integer?))
+(define/opter (char? opt/i opt/info stx) (opt/pred opt/info #'char?))
+(define/opter (number? opt/i opt/info stx) (opt/pred opt/info #'number?))
+(define/opter (pair? opt/i opt/info stx) (opt/pred opt/info #'pair?))
+(define/opter (not opt/i opt/info stx) (opt/pred opt/info #'not))
 
 ;;
 ;; any/c
@@ -78,9 +64,7 @@
 ;;
 ;; false/c
 ;;
-(define/opter (false/c opt/i opt/info stx)
-  (syntax-case stx (false/c)
-    [false/c (opt/pred opt/info #'not)]))
+(define/opter (false/c opt/i opt/info stx) (opt/pred opt/info #'not))
 
 ;;
 ;; flat-contract helper

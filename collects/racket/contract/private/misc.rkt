@@ -178,11 +178,12 @@
 
 (define-struct (chaperone-single-or/c single-or/c) ()
   #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:projection single-or/c-projection
-   #:name single-or/c-name
-   #:first-order single-or/c-first-order
-   #:stronger single-or/c-stronger?))
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:projection single-or/c-projection
+     #:name single-or/c-name
+     #:first-order single-or/c-first-order
+     #:stronger single-or/c-stronger?)))
 
 (define-struct (impersonator-single-or/c single-or/c) ()
   #:property prop:contract
@@ -264,11 +265,12 @@
 
 (define-struct (chaperone-multi-or/c multi-or/c) ()
   #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:projection multi-or/c-proj
-   #:name multi-or/c-name
-   #:first-order multi-or/c-first-order
-   #:stronger multi-or/c-stronger?))
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:projection multi-or/c-proj
+     #:name multi-or/c-name
+     #:first-order multi-or/c-first-order
+     #:stronger multi-or/c-stronger?)))
 
 (define-struct (impersonator-multi-or/c multi-or/c) ()
   #:property prop:contract
@@ -376,11 +378,12 @@
    #:stronger and-stronger?))
 (define-struct (chaperone-and/c base-and/c) ()
   #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:projection and-proj
-   #:name and-name
-   #:first-order and-first-order
-   #:stronger and-stronger?))
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:projection and-proj
+     #:name and-name
+     #:first-order and-first-order
+     #:stronger and-stronger?)))
 (define-struct (impersonator-and/c base-and/c) ()
   #:property prop:contract
   (build-contract-property
@@ -763,10 +766,11 @@
 
 (struct chaperone-list/c generic-list/c ()
   #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:name list/c-name-proc
-   #:first-order list/c-first-order
-   #:projection list/c-chaperone/other-projection))
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:name list/c-name-proc
+     #:first-order list/c-first-order
+     #:projection list/c-chaperone/other-projection)))
 
 (struct higher-order-list/c generic-list/c ()
   #:property prop:contract
