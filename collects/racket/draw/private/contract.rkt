@@ -3,23 +3,23 @@
 ;; Contracts for racket/draw
 
 (require racket/class
-         "private/color.rkt"
-         "private/point.rkt"
-         "private/font.rkt"
-         "private/font-dir.rkt"
-         "private/pen.rkt"
-         "private/brush.rkt"
-         "private/gradient.rkt"
-         "private/region.rkt"
-         "private/bitmap.rkt"
-         "private/dc-path.rkt"
-         "private/dc-intf.rkt"
-         "private/bitmap-dc.rkt"
-         "private/post-script-dc.rkt"
-         "private/ps-setup.rkt"
-         "private/svg-dc.rkt"
-         "private/gl-config.rkt"
-         "private/gl-context.rkt")
+         "color.rkt"
+         "point.rkt"
+         "font.rkt"
+         "font-dir.rkt"
+         "pen.rkt"
+         "brush.rkt"
+         "gradient.rkt"
+         "region.rkt"
+         "bitmap.rkt"
+         "dc-path.rkt"
+         "dc-intf.rkt"
+         "bitmap-dc.rkt"
+         "post-script-dc.rkt"
+         "ps-setup.rkt"
+         "svg-dc.rkt"
+         "gl-config.rkt"
+         "gl-context.rkt")
 
 (provide (all-defined-out))
 

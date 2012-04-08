@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/contract/base
-         "draw/contracts.rkt"
+         "draw/private/contract.rkt"
 	 "draw/private/color.rkt"
          "draw/private/point.rkt"
          "draw/private/font.rkt"

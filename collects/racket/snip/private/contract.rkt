@@ -2,9 +2,9 @@
 
 (require racket/class
          racket/draw
-         "private/snip.rkt"
-         "private/snip-admin.rkt"
-         "private/style.rkt")
+         "snip.rkt"
+         "snip-admin.rkt"
+         "style.rkt")
 
 (provide (all-defined-out))
 

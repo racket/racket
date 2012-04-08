@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract/base
-         "snip/contracts.rkt"
+         "snip/private/contract.rkt"
          "snip/private/snip.rkt"
 	 "snip/private/snip-admin.rkt"
 	 "snip/private/style.rkt")
