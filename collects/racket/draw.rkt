@@ -28,7 +28,7 @@
 	 the-pen-list
          the-brush-list
          dc<%>
-         record-dc% recorded-datum->procedure
+         recorded-datum->procedure
          ps-setup% current-ps-setup
          get-face-list
          get-family-builtin-face
@@ -45,10 +45,11 @@
                   [pen-list%         pen-list%/c]
                   [brush%            brush%/c]
                   [brush-list%       brush-list%/c]
-                  [bitmap-dc%        bitmap-dc%/c]
-                  [post-script-dc%   post-script-dc%/c]
-                  [pdf-dc%           pdf-dc%/c]
-                  [svg-dc%           svg-dc%/c]
+                  [bitmap-dc%        (and/c dc<%>/c bitmap-dc%/c)]
+                  [post-script-dc%   (and/c dc<%>/c post-script-dc%/c)]
+                  [pdf-dc%           (and/c dc<%>/c pdf-dc%/c)]
+                  [svg-dc%           (and/c dc<%>/c svg-dc%/c)]
+                  [record-dc%        (and/c dc<%>/c record-dc%/c)]
                   [linear-gradient%  linear-gradient%/c]
                   [radial-gradient%  radial-gradient%/c]
                   [region%           region%/c]

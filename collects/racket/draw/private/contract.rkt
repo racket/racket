@@ -306,81 +306,76 @@
     [get-stops (->m (listof (list/c real? (is-a?/c color%))))]))
 
 (define bitmap-dc%/c
-  (and/c dc<%>/c
-         (class/c
-           (init [bitmap (or/c (is-a?/c bitmap%) #f)])
-           [draw-bitmap-section-smooth
-             (->*m ((is-a?/c bitmap%)
-                    real? real?
-                    (and/c real? (not/c negative?))
-                    (and/c real? (not/c negative?))
-                    real? real?
-                    (and/c real? (not/c negative?))
-                    (and/c real? (not/c negative?)))
-                   ((or/c 'solid 'opaque 'xor)
-                    (or/c (is-a?/c color%) #f)
-                    (or/c (is-a?/c bitmap%) #f))
-                  boolean?)]
-           [get-argb-pixels
-             (->*m (exact-nonnegative-integer?
-                    exact-nonnegative-integer?
-                    exact-nonnegative-integer?
-                    exact-nonnegative-integer?
-                    (and/c bytes? (not/c immutable?)))
-                   (any/c any/c)
-                   void?)]
-           [get-bitmap (->m (or/c (is-a?/c bitmap%) #f))]
-           [get-pixel (->m real? real? (is-a?/c color%) boolean?)]
-           [set-argb-pixels
-             (->*m (exact-nonnegative-integer?
-                    exact-nonnegative-integer?
-                    exact-nonnegative-integer?
-                    exact-nonnegative-integer?
-                    bytes?)
-                   (any/c any/c)
-                   void?)]
-           [set-bitmap (->m (or/c (is-a?/c bitmap%) #f) void?)]
-           [set-pixel (->m real? real? (is-a?/c color%) void?)])))
+  (class/c
+    (init [bitmap (or/c (is-a?/c bitmap%) #f)])
+    [draw-bitmap-section-smooth
+      (->*m ((is-a?/c bitmap%)
+             real? real?
+             (and/c real? (not/c negative?))
+             (and/c real? (not/c negative?))
+             real? real?
+             (and/c real? (not/c negative?))
+             (and/c real? (not/c negative?)))
+            ((or/c 'solid 'opaque 'xor)
+             (or/c (is-a?/c color%) #f)
+             (or/c (is-a?/c bitmap%) #f))
+           boolean?)]
+    [get-argb-pixels
+      (->*m (exact-nonnegative-integer?
+             exact-nonnegative-integer?
+             exact-nonnegative-integer?
+             exact-nonnegative-integer?
+             (and/c bytes? (not/c immutable?)))
+            (any/c any/c)
+            void?)]
+    [get-bitmap (->m (or/c (is-a?/c bitmap%) #f))]
+    [get-pixel (->m real? real? (is-a?/c color%) boolean?)]
+    [set-argb-pixels
+      (->*m (exact-nonnegative-integer?
+             exact-nonnegative-integer?
+             exact-nonnegative-integer?
+             exact-nonnegative-integer?
+             bytes?)
+            (any/c any/c)
+            void?)]
+    [set-bitmap (->m (or/c (is-a?/c bitmap%) #f) void?)]
+    [set-pixel (->m real? real? (is-a?/c color%) void?)]))
 
 (define post-script-dc%/c
-  (and/c dc<%>/c
-         (class/c
-           (init [interactive any/c]
-                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
-                 [use-paper-bbox any/c]
-                 [as-eps any/c]
-                 [width (or/c (and/c real? (not/c negative?)) #f)]
-                 [height (or/c (and/c real? (not/c negative?)) #f)]
-                 [output (or/c path-string? output-port? #f)]))))
+  (class/c
+    (init [interactive any/c]
+          [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
+          [use-paper-bbox any/c]
+          [as-eps any/c]
+          [width (or/c (and/c real? (not/c negative?)) #f)]
+          [height (or/c (and/c real? (not/c negative?)) #f)]
+          [output (or/c path-string? output-port? #f)])))
 
 (define pdf-dc%/c
-  (and/c dc<%>/c
-         (class/c
-           (init [interactive any/c]
-                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
-                 [use-paper-bbox any/c]
-                 [as-eps any/c]
-                 [width (or/c (and/c real? (not/c negative?)) #f)]
-                 [height (or/c (and/c real? (not/c negative?)) #f)]
-                 [output (or/c path-string? output-port? #f)]))))
+  (class/c
+    (init [interactive any/c]
+          [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
+          [use-paper-bbox any/c]
+          [as-eps any/c]
+          [width (or/c (and/c real? (not/c negative?)) #f)]
+          [height (or/c (and/c real? (not/c negative?)) #f)]
+          [output (or/c path-string? output-port? #f)])))
 
 (define svg-dc%/c
-  (and/c dc<%>/c
-         (class/c
-           (init [width (or/c (and/c real? (not/c negative?)) #f)]
-                 [height (or/c (and/c real? (not/c negative?)) #f)]
-                 [output (or/c path-string? output-port? #f)]
-                 [exists (or/c 'error 'append 'update 'can-update
-                               'replace 'truncate
-                               'must-truncate 'truncate/replace)]))))
+  (class/c
+    (init [width (or/c (and/c real? (not/c negative?)) #f)]
+          [height (or/c (and/c real? (not/c negative?)) #f)]
+          [output (or/c path-string? output-port? #f)]
+          [exists (or/c 'error 'append 'update 'can-update
+                        'replace 'truncate
+                        'must-truncate 'truncate/replace)])))
 
 (define record-dc%/c
-  (and/c dc<%>/c
-         (class/c
-           (init [width (>=/c 0)]
-                 [height (>=/c 0)])
-           [get-recorded-datum (->m any/c)]
-           [get-recorded-procedure (->m ((is-a?/c dc<%>) . -> . void?))])))
+  (class/c
+    (init [width (>=/c 0)]
+          [height (>=/c 0)])
+    [get-recorded-datum (->m any/c)]
+    [get-recorded-procedure (->m ((is-a?/c dc<%>) . -> . void?))]))
 
 (define region%/c
   (class/c
