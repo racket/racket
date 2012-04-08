@@ -1930,6 +1930,21 @@
 
 (err/rt-test (call/cc (lambda (k) (/ 1 2 0))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check slow path on `list-tail', where
+;; index is > 10000:
+
+(test 4.8
+      'list-ref-test
+      (let loop ((line 0))
+        (let* ((numlist (build-list 20004 (lambda (x) 2.4)))
+               (n (length numlist)))
+          (let* ((mid (/ n 2))
+                 (n1 (car numlist))
+                 (n2 (list-ref numlist mid)))
+            (for-each values numlist)
+            (+ n1 n2)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

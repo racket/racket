@@ -2424,6 +2424,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
                || IS_NAMED_PRIM(rator, "list-tail")) {
       generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
 
+      mz_rs_sync();
       if (IS_NAMED_PRIM(rator, "list-ref"))
         (void)jit_calli(sjc.list_ref_code);
       else
