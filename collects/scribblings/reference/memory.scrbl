@@ -175,7 +175,7 @@ value) before Racket starts to disable @tech{garbage collection}.
 
 In Racket 3m (the main variant of Racket), each garbage collection
 logs a message (see @secref["logging"]) at the @racket['debug] level.
-The data portion of the message is an instance of a @racket[gc-info]
+The data portion of the message is an instance of a @indexed-racket[gc-info]
 @tech{prefab} structure type with 10 fields as follows, but future
 versions of Racket may use a @racket[gc-info] @tech{prefab} structure
 with additional fields:
