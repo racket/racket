@@ -207,9 +207,6 @@ to produce:
    '(div ((class "post")) "First post!" (p "This is a first post."))
 ]
 
-@bold{Exercise.} Revise @racket[render-post] to show the number of comments attached
-to a post.
-
 @centerline{------------}
 
 We will sometimes want to embed a list of @|xexpr|s into
