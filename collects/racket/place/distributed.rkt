@@ -13,14 +13,14 @@
          racket/date
          syntax/location)
 
-(define-syntax define/provide                                                                                 
-  (syntax-rules ()                                                                                            
-    [(_ (name x ...) body ...)                                                                                
-     (begin (provide name)                                                                                    
-            (define (name x ...) body ...))]                                                                  
-    [(_ name val)                                                                                             
-     (begin (provide name)                                                                                    
-            (define name val))])) 
+(define-syntax define/provide
+  (syntax-rules ()
+    [(_ (name x ...) body ...)
+     (begin (provide name)
+            (define (name x ...) body ...))]
+    [(_ name val)
+     (begin (provide name)
+            (define name val))]))
 
 (provide ssh-bin-path
          racket-path
@@ -110,7 +110,7 @@
     [(_ path ... )
       (->module-path
         (let ([qmn (quote-module-name)])
-          (cond 
+          (cond
             [(list? qmn) (append (list 'submod) qmn (list path ...))]
             [else (list 'submod qmn path ...)])))]))
 
@@ -503,7 +503,7 @@
            (cond
              [solo
                (add-solo-node (list node-name node-port) node)]
-             [else 
+             [else
                (for ([x (in-hash-values spawned-nodes)])
                  (send x notify-of-new-node node-name node-port))
                (add-spawned-node (list node-name node-port) node)])]
@@ -703,7 +703,7 @@
       (define/public (get-forward-event forwarder)
         (when (equal? out #f) (ensure-connected))
         (wrap-evt in (lambda (e)
-                       (forwarder 
+                       (forwarder
                           (with-handlers ([exn:fail? handle-error])
                             (read in))
                           this))))
@@ -815,13 +815,13 @@
           [else (log-debug (format"received message ~a" it))]))
 
       (define/public (get-log-prefix) (format "PLACE ~a:~a" host-name listen-port))
-      (define/public (tcp-connection-died host port) 
+      (define/public (tcp-connection-died host port)
         (log-debug (format "TCP connection~a:~a died, restarting node/connection" host-name listen-port))
         (and sp (send sp kill))
         (set! sp #f)
         (cond
           [cmdline-list (process-died null)]
-          [restart-on-exit 
+          [restart-on-exit
             (if (equal? restart-on-exit #t)
                 (restart-node)
                 (send restart-on-exit restart restart-node))]
@@ -943,7 +943,7 @@
           (set! rpc pch1)
           (set! pc pch2)])
 
-      (set! psb 
+      (set! psb
         (if place-exec
             (send node spawn-remote-place place-exec rpc)
             (send node spawn-remote-connection name rpc)))
@@ -1038,7 +1038,7 @@
             ((dynamic-require (->module-path place-path) place-func))]
           [(list 'thread place-path place-func)
            (define-values (ch1 ch2) (th-place-channel))
-           (define th 
+           (define th
              (thread
                (lambda ()
                  ((dynamic-require (->module-path place-path) place-func) ch1))))
@@ -1057,8 +1057,8 @@
           [else (void)])) ;send place not running message
 
       (define/public (register es)
-        (let* ([es (if pd (cons (wrap-evt 
-                                  (cond 
+        (let* ([es (if pd (cons (wrap-evt
+                                  (cond
                                     [(place? pd) (place-dead-evt pd)]
                                     [(th-place? pd) (th-place-dead-evt pd)]) on-place-dead)
                                 es) es)]
@@ -1497,8 +1497,8 @@
   (*channel-put mrch (dcgm DCGM-CONTROL-NEW-PLACE dest -1 (list 'dynamic-place path func name))))
 
 (define/provide (mr-connect-to mrch dest name)
-  (define-values (ch1 ch2) 
-    (cond 
+  (define-values (ch1 ch2)
+    (cond
       [(channel? mrch) (make-async-bi-channel)]
       [(place-channel? mrch) (place-channel)]
       [else (raise (format "Unexpected channel type ~a" mrch))]))
@@ -1509,7 +1509,7 @@
                                              #:nodes [nodes null])
   (define ch (make-channel))
   (define mr
-    (thread 
+    (thread
       (lambda ()
         (define listener (tcp-listen listen-port 4 #t))
         (define mrn (new node% [listen-port listener]
@@ -1520,13 +1520,13 @@
 
 (define (spawn-node-at host #:listen-port [listen-port DEFAULT-ROUTER-PORT])
   (define ch (make-channel))
-  (thread 
+  (thread
     (lambda () (channel-put ch (spawn-remote-racket-node host #:listen-port listen-port))))
   ch)
 
 (define/provide (spawn-nodes/join nodes-desc)
   (channels-join
-    (for/list ([n nodes-desc]) 
+    (for/list ([n nodes-desc])
       (match-define (list host listen-port) n)
       (spawn-node-at host #:listen-port listen-port))))
 
