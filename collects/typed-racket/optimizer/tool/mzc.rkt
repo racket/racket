@@ -133,8 +133,7 @@
         (and (equal? path where-path)
              (= col  where-col)
              (= line where-line))]
-       [(hunoz #f) #t] ; we assume it is, to be conservative
-       [(hunoz hukairz) #f])]))
+       [(hunoz hukairz) #f])])) ; we assume it is not, to be conservative
 
 (define (unrolling? l) (and (success? l) (self-inline? l)))
 
