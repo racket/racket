@@ -12,7 +12,7 @@
    (call-with-input-file
      filename
      (lambda (i)
-       (codeblock (port->string i)))))
+       (codeblock0 (port->string i)))))
 
 @(define-runtime-path master-path "../../racket/place/distributed/examples/named/master.rkt")
 @(define-runtime-path tuple-path "../../racket/place/distributed/examples/named/tuple.rkt")
@@ -30,7 +30,8 @@ The example code can also be found in
 @filepath{racket/distributed/examples/named/master.rkt}.
 
 @figure["named-example-master" "examples/named/master.rkt"]{
-@codeblockfromfile[(path->string master-path)]}
+@codeblockfromfile[(path->string master-path)]
+}
 
 The @racket[spawn-remote-racket-vm] primitive connects to
 @tt{"localhost"} and starts a racloud node there that listens on port
@@ -53,7 +54,8 @@ suitiable for invocation by @racket[supervise-named-place-thunk-at].
 
 
 @figure["named-example" "examples/named/tuple.rkt"]{
-@codeblockfromfile[(path->string tuple-path)]}
+@codeblockfromfile[(path->string tuple-path)]
+}
 
 
 
@@ -93,7 +95,7 @@ The @racket[define-rpc] form is similar to the @racket[define-rpc] form
 except there is no reply message from the server to client
 
 @figure["define-named-remote-server-expansion" "Expansion of define-named-remote-server"]{
-@codeblock{
+@codeblock0{
 '(begin
    (require racket/place racket/match)
    (define/provide
@@ -118,7 +120,8 @@ except there is no reply message from the server to client
          (define (log-to-parent-real msg #:severity (severity 'info))
            (place-channel-put ch (log-message severity msg)))
          (syntax-parameterize
-          ((log-to-parent (make-rename-transformer #'log-to-parent-real)))
+          ((log-to-parent (make-rename-transformer 
+                            #'log-to-parent-real)))
           (match
            msg
            ((list (list 'set k v) src)
@@ -131,7 +134,9 @@ except there is no reply message from the server to client
             (loop))
            ((list (list 'hello) src)
             (define result
-              (let () (printf "Hello from define-cast\n") (flush-output)))
+              (let () 
+                (printf "Hello from define-cast\n") 
+                (flush-output)))
             (loop))))
          loop))))
    (void))

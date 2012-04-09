@@ -623,48 +623,52 @@ documented below.
 }
 
 @examples[ #:eval evaler
-(define-named-remote-server
-   tuple-server
+(module example1 racket
+  (require racket/place/define-remote-server)
+  (define-named-remote-server
+     tuple-server
 
-   (define-state h (make-hash))
-   (define-rpc (set k v)
-     (hash-set! h k v)
-     v)
-   (define-rpc (get k)
-     (hash-ref h k #f)))]
+     (define-state h (make-hash))
+     (define-rpc (set k v)
+       (hash-set! h k v)
+       v)
+     (define-rpc (get k)
+       (hash-ref h k #f))))]
 
 @examples[ #:eval evaler
-(define-remote-server
-  bank
+(module example2 racket
+  (require racket/place/define-remote-server)
+  (define-remote-server
+    bank
 
-  (define-state accounts (make-hash))
-  (define-rpc (new-account who)
-     (match (hash-has-key? accounts who)
-       [#t '(already-exists)]
-       [else
-         (hash-set! accounts who 0)
-         (list 'created who)]))
-  (define-rpc (removeM who amount)
-     (cond
-       [(hash-ref accounts who (lambda () #f)) =>
-          (lambda (balance)
-            (cond [(<= amount balance)
-                   (define new-balance (- balance amount))
-                   (hash-set! accounts who new-balance)
-                   (list 'ok new-balance)]
-                  [else
-                    (list 'insufficient-funds balance)]))]
-       [else
-         (list 'invalid-account who)]))
-  (define-rpc (add who amount)
-    (cond
-       [(hash-ref accounts who (lambda () #f)) =>
-          (lambda (balance)
-            (define new-balance (+ balance amount))
-            (hash-set! accounts who new-balance)
-            (list 'ok new-balance))]
-       [else
-         (list 'invalid-account who)])))]
+    (define-state accounts (make-hash))
+    (define-rpc (new-account who)
+       (match (hash-has-key? accounts who)
+         [#t '(already-exists)]
+         [else
+           (hash-set! accounts who 0)
+           (list 'created who)]))
+    (define-rpc (removeM who amount)
+       (cond
+         [(hash-ref accounts who (lambda () #f)) =>
+            (lambda (balance)
+              (cond [(<= amount balance)
+                     (define new-balance (- balance amount))
+                     (hash-set! accounts who new-balance)
+                     (list 'ok new-balance)]
+                    [else
+                      (list 'insufficient-funds balance)]))]
+         [else
+           (list 'invalid-account who)]))
+    (define-rpc (add who amount)
+      (cond
+         [(hash-ref accounts who (lambda () #f)) =>
+            (lambda (balance)
+              (define new-balance (+ balance amount))
+              (hash-set! accounts who new-balance)
+              (list 'ok new-balance))]
+         [else
+           (list 'invalid-account who)]))))]
 
 @defthing[distributed-launch-path path?]{
 Contains the path to the distributed places launcher.
@@ -685,19 +689,7 @@ Returns the path to the currently executing racket binary on the local system.
 (racket-path)
 ]}
 
-@defform[(get-current-module-path)]{
-Returns the path to the current module.
-}
-@examples[ #:eval evaler
-(begin
-  (module my-module racket/base
-    (require racket/place/distributed)
-    (get-current-module-path))
-  (require 'my-module))
-]
-
 @;{
-
 @defproc[(->string) string?]{
 Coerces strings, numbers, symbols, and paths to a string.
 }
