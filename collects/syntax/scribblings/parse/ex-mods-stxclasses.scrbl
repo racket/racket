@@ -6,16 +6,16 @@
           "parse-common.rkt"
           (for-label racket/class))
 
-@title{Modules and Reusable Syntax Classes}
+@title{Phases and Reusable Syntax Classes}
 
 As demonstrated in the @secref{stxparse-intro}, the simplest place to
 define a syntax class is within the macro definition that uses it. But
-this location, of course, limits the scope of the syntax class to the
-one client macro. Creating reusable syntax classes is slightly
-complicated, however, by the Racket @tech[#:doc '(lib
+that limits the scope of the syntax class to the one client macro, and
+it makes for very large macro definitions. Creating reusable syntax
+classes requires some awareness of the Racket @tech[#:doc '(lib
 "scribblings/reference/reference.scrbl")]{phase level} separation. A
-syntax class defined within a module cannot be used by macros in the
-same module; it is defined at the wrong phase.
+syntax class defined immediately within a module cannot be used by
+macros in the same module; it is defined at the wrong phase.
 
 @myinteraction[
 (module phase-mismatch-mod racket
@@ -31,10 +31,29 @@ In the module above, the syntax class @racket[foo] is defined at phase
 level 0. The reference to @racket[foo] within @racket[macro], however,
 is at phase level 1, being the implementation of a macro
 transformer. (Needing to require @racketmodname[syntax/parse] twice,
-once normally and once @racket[for-syntax] is another sign of the
-phase level incompatibility.) The only way to define reusable syntax
-classes that can be used within macros is to define them in a separate
-module and require that module @racket[for-syntax].
+once normally and once @racket[for-syntax] is a common warning sign of
+phase level incompatibility.)
+
+The phase level mismatch is easily remedied by putting the syntax
+class definition within a @racket[begin-for-syntax] block:
+
+@myinteraction[
+(module phase-ok-mod racket
+  (require (for-syntax syntax/parse))
+  (begin-for-syntax
+   (define-syntax-class foo
+     (pattern (a b c))))
+  (define-syntax (macro stx)
+    (syntax-parse stx
+      [(_ f:foo) #'(+ f.a f.b f.c)])))
+]
+
+In the revised module above, @racket[foo] is defined at phase 1, so it
+can be used in the implementation of the macro.
+
+An alternative to @racket[begin-for-syntax] is to define the syntax
+class in a separate module and require that module
+@racket[for-syntax].
 
 @myinteraction[
 (module stxclass-mod racket
@@ -53,10 +72,10 @@ module and require that module @racket[for-syntax].
 (macro (1 2 3))
 ]
 
-If the syntax classes refer to keywords, or if they compute
+If a syntax classes refers to literal identifiers, or if it computes
 expressions via syntax templates, then the module containing the
-syntax classes must generally require the keywords or bindings used in
-the syntax templates @racket[for-template].
+syntax class must generally require @racket[for-template] the bindings
+referred to in the patterns and templates.
 
 @myinteraction[
 (module arith-keywords-mod racket
