@@ -219,7 +219,7 @@
      ;; (printf "Get token for at ~a\n" (position-offset start))
      (cond
        [(token-eof? token)
-        (values token 'eof #f
+        (values eof 'eof #f
                 (position-offset start)
                 (position-offset end)
                 need-backup mode)]
@@ -359,6 +359,12 @@
     (do-parse (cons (make-syntax '%semicolon (car tokens) source) current)
               (cdr tokens)
               table))
+  
+  (define (do-continue current tokens table)
+    (do-parse current (cdr tokens) table))
+
+  (define (parse-error? tokens)
+    (is-first-token token-parse-error? tokens))
 
   (define (semicolon? tokens)
     (is-first-token token-semicolon? tokens))
@@ -407,6 +413,7 @@
                                [list left-parens? do-left-parens]
                                [list left-bracket? do-left-bracket]
                                [list left-brace? do-left-brace]
+                               [list parse-error? do-continue]
                                [list null? do-empty]))
 
   (define (do-parse current tokens table)
@@ -421,6 +428,7 @@
           (error 'parse "error while parsing on line ~a column ~a" line column))))
     ;; (printf "do parse ~a [tokens] ~a table ~a\n" (strip current) (strip tokens) table)
     (let loop ([use table])
+      ;; (printf "Check ~a on ~a null? ~a\n" use (map position-token-token tokens) (null? tokens))
       (cond
         [(null? use) (fail tokens)]
         [(let ([dispatcher (caar use)])
