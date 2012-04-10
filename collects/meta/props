@@ -1988,6 +1988,7 @@ path/s is either such a string or a list of them.
 "collects/tests/stepper/write-display.rktl" drdr:command-line #f
 "collects/tests/stress.rkt" responsible (jay)
 "collects/tests/stxparse" responsible (ryanc)
+"collects/tests/stxparse/stress-template.rkt" drdr:timeout 60
 "collects/tests/stxparse/stxclass.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/syntax" responsible (stamourv mflatt)
 "collects/tests/syntax-color" responsible (mflatt)
