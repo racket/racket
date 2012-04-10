@@ -387,34 +387,40 @@ used to store dictionaries of string--value associations.  This format
 is used by Mac OS X (both the operating system and its applications)
 to store all kinds of data.
 
-A @deftech{plist dictionary} is a value that could be created by an
-expression matching the following @racket[_dict-expr] grammar:
+A @deftech{plist value} is a value that could be created by an
+expression matching the following @racket[_pl-expr] grammar, where a
+value created by a @racket[_dict-expr] is a @deftech{plist dictionary}:
 
 @racketgrammar*[
 #:literals (list quote)
-[dict-expr (list 'dict assoc-pair ...)]
-[assoc-pair (list 'assoc-pair string pl-value)]
-[pl-value string
+[pl-expr string
           (list 'true)
           (list 'false)
           (list 'integer integer)
           (list 'real real)
           dict-expr
-          (list 'array pl-value ...)]
+          (list 'array pl-expr ...)]
+[dict-expr (list 'dict assoc-pair ...)]
+[assoc-pair (list 'assoc-pair string pl-expr)]
 ]
+
+@defproc[(plist-value? [any/c v]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @tech{plist value},
+@racket[#f] otherwise.}
 
 @defproc[(plist-dict? [any/c v]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{plist dictionary},
 @racket[#f] otherwise.}
 
-@defproc[(read-plist [in input-port?]) plist-dict?]{
+@defproc[(read-plist [in input-port?]) plist-value?]{
 
-Reads a plist from a port, and produces a @tech{plist dictionary}.}
+Reads a plist from a port, and produces a @tech{plist value}.}
 
-@defproc[(write-plist [dict plist-dict?] [out output-port?]) void?]{
+@defproc[(write-plist [dict plist-value?] [out output-port?]) void?]{
 
-Write a @tech{plist dictionary} to the given port.}
+Write a @tech{plist value} to the given port.}
 
 @examples[
 #:eval plist-eval

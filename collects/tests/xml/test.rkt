@@ -784,6 +784,22 @@ END
                 (write-plist plist out)
                 (close-output-port out)
                 (test-equal? (format "~S" plist) (read-plist in) plist))]
-        (test-plist-round-trip example))))))
+        (test-plist-round-trip example)
+
+        (let ()
+          (define array '(array "apple" 
+                                (true)
+                                (false)
+                                (integer 5)
+                                (real 5.0)))
+          (test-not-false
+           "plist-value?"
+           (plist-value? array))
+          (test-plist-round-trip array)
+          (for ([v (in-list (cdr array))])
+            (test-not-false
+             "plist-value?"
+             (plist-value? v))
+            (test-plist-round-trip v))))))))
 
 (run-tests xml-tests)

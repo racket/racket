@@ -22,19 +22,21 @@
                       (= 3 (length v))
                       (eq? (car v) 'assoc-pair)
                       (string? (cadr v))
-                      (let pl-value? ([v (caddr v)])
-                        (or (string? v)
-                            (and (pair? v)
-                                 (case (car v)
-                                   [(true) (null? (cdr v))]
-                                   [(false) (null? (cdr v))]
-                                   [(integer) (and (= (length v) 2)
-                                                   (exact-integer? (cadr v)))]
-                                   [(real) (and (= (length v) 2)
-                                                (real? (cadr v)))]
-                                   [(array) (andmap pl-value? (cdr v))]
-                                   [else (plist-dict? v)]))))))
+                      (plist-value? (caddr v))))
                (cdr v))))
+
+(define (plist-value? v)
+  (or (string? v)
+      (and (pair? v)
+           (case (car v)
+             [(true) (null? (cdr v))]
+             [(false) (null? (cdr v))]
+             [(integer) (and (= (length v) 2)
+                             (exact-integer? (cadr v)))]
+             [(real) (and (= (length v) 2)
+                          (real? (cadr v)))]
+             [(array) (andmap plist-value? (cdr v))]
+             [else (plist-dict? v)]))))
 
 
 ; raise-plist-exn : string mark-set xexpr symbol -> ???
@@ -122,18 +124,17 @@
 
 ; write-plist : xexpr port -> (void)
 (define (write-plist xexpr port)
-  (let ([plist-xexpr `(plist ,(expand-dict xexpr))])
-    (write-xml 
-     (make-document (make-prolog (list (make-p-i #f #f 'xml "version=\"1.0\" encoding=\"UTF-8\"")) 
-                                 (make-document-type 'plist
-                                                     (make-external-dtd/system
-                                                      "http://www.apple.com/DTDs/PropertyList-1.0.dtd")
-                                                     #f)
-                                 empty)
-                    (xexpr->xml `(plist ((version "0.9"))
-                                        ,(expand-dict xexpr)))
-                    null)
-     port)))
+  (write-xml 
+   (make-document (make-prolog (list (make-p-i #f #f 'xml "version=\"1.0\" encoding=\"UTF-8\"")) 
+                               (make-document-type 'plist
+                                                   (make-external-dtd/system
+                                                    "http://www.apple.com/DTDs/PropertyList-1.0.dtd")
+                                                   #f)
+                               empty)
+                  (xexpr->xml `(plist ((version "0.9"))
+                                      ,(expand-value xexpr)))
+                  null)
+   port))
 
 
 ; collapse-dict : xexpr -> dict
@@ -166,7 +167,7 @@
 (define tags-without-whitespace
   '(plist dict array))
 
-; read-plist : port -> dict
+; read-plist : port -> value
 (define (read-plist port)
   (let* ([xml-doc (read-xml port)]
          [content (parameterize ([xexpr-drop-empty-attributes #t])
@@ -175,9 +176,12 @@
                       (document-element xml-doc))))])
     (unless (eq? (car content) 'plist)
       (error 'read-plist "xml expression is not a plist: ~a" content))
-    (collapse-dict (caddr content))))
+    (collapse-value (caddr content))))
 
-(provide/contract 
- [plist-dict? (any/c . -> . boolean?)]
- [read-plist (input-port? . -> . plist-dict?)]
- [write-plist (plist-dict? output-port? . -> . void?)])
+(provide
+ (contract-out
+  [plist-dict? (any/c . -> . boolean?)]
+  [plist-value? (any/c . -> . boolean?)]
+  [read-plist (input-port? . -> . plist-value?)]
+  [write-plist (plist-value? output-port? . -> . void?)]))
+
