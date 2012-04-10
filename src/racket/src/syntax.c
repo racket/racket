@@ -2012,7 +2012,8 @@ static Scheme_Object *extract_module_free_id_binding(Scheme_Object *mrn,
                                    &nominal_src_phase,
                                    &lex_env,
                                    _sealed,
-                                   &rename_insp);
+                                   &rename_insp,
+                                   NULL);
  
   if (SCHEME_SYMBOLP(nom2))
     nominal_name = nom2;
@@ -4642,7 +4643,8 @@ Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *free_id_recur,
                                       Scheme_Object **nominal_src_phase, /* phase level of export from nominal modidx */
                                       Scheme_Object **lex_env,
                                       int *_sealed,
-                                      Scheme_Object **insp)
+                                      Scheme_Object **insp,
+                                      int *_binding_marks_skipped)
      /* If module bound, result is module idx, and a is set to source name.
 	If lexically bound, result is scheme_undefined, a is unchanged,
            and nominal_name is NULL or a free_id=? renamed id.
@@ -4660,7 +4662,8 @@ Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *free_id_recur,
     names[5] = NULL;
     names[6] = NULL;
 
-    modname = resolve_env(*a, phase, 1, names, NULL, NULL, _sealed ? &rib_dep : NULL, 0, free_id_recur);
+    modname = resolve_env(*a, phase, 1, names, NULL, _binding_marks_skipped, 
+                          _sealed ? &rib_dep : NULL, 0, free_id_recur);
     
     if (_sealed) *_sealed = !rib_dep;
 
@@ -4694,6 +4697,7 @@ Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *free_id_recur,
   } else {
     if (nominal_name) *nominal_name = NULL;
     if (_sealed) *_sealed = 1;
+    if (_binding_marks_skipped) *_binding_marks_skipped = -1;
     return NULL;
   }
 }
@@ -5150,7 +5154,7 @@ static Scheme_Object *extract_free_id_info(Scheme_Object *id)
   bind = scheme_stx_module_name(free_id_recur, 
                                 &id, phase, &nominal_modidx, &nominal_name,
                                 &mod_phase, &src_phase_index, &nominal_src_phase,
-                                &lex_env, NULL, &insp);
+                                &lex_env, NULL, &insp, NULL);
   release_recur_table(free_id_recur);
 
   if (SCHEME_SYMBOLP(nom2))
@@ -8299,6 +8303,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
 			     &mod_phase,
                              &src_phase_index,
                              &nominal_src_phase,
+                             NULL,
                              NULL,
                              NULL,
                              NULL);

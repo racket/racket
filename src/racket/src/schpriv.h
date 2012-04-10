@@ -1057,7 +1057,8 @@ Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *recur,
                                       Scheme_Object **nominal_src_phase,
                                       Scheme_Object **lex_env,
                                       int *_sealed,
-                                      Scheme_Object **rename_insp);
+                                      Scheme_Object **rename_insp,
+                                      int *_binding_marks_skipped);
 Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 

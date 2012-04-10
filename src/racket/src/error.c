@@ -1709,7 +1709,7 @@ static void do_wrong_syntax(const char *where,
 	    phase = scheme_current_thread->current_local_env->genv->phase;
 	  else phase = 0;
 	  scheme_stx_module_name(0, &first, scheme_make_integer(phase), &mod, &nomwho, 
-                                 NULL, NULL, NULL, NULL, NULL, NULL);
+                                 NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 	}
       }
     } else {

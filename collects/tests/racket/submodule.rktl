@@ -298,6 +298,25 @@
       (struct node (height))
       (node-height 0))))
 
+(expand
+ (expand 
+  #'(module m racket/base
+      (define-syntax-rule (go x)
+        (begin
+          (define other 1)
+          (define-syntax-rule (x) other)))
+      (go f)
+      (module* test #f
+        (f)))))
+
+(expand
+ (expand 
+  #'(module m racket/base
+      (define (f #:opt [opt 3])
+        opt)
+      (module* test #f
+        (f)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 

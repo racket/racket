@@ -9500,7 +9500,7 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
         mod = scheme_stx_module_name(NULL, &id, phase, 
                                      _implicit_nominal_mod, _implicit_nominal_name,
                                      &mod_phase, 
-                                     NULL, NULL, NULL, NULL, &rename_insp);
+                                     NULL, NULL, NULL, NULL, &rename_insp, NULL);
         if (_implicit_mod_phase) *_implicit_mod_phase = mod_phase;
           
         if (mod && SAME_TYPE(SCHEME_TYPE(mod), scheme_module_index_type)) {

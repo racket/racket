@@ -5186,7 +5186,7 @@ int scheme_check_top_identifier_bound(Scheme_Object *c, Scheme_Env *genv, int di
     bad = 0;
   } else {
     modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(genv->phase), NULL, NULL, NULL, 
-                                    NULL, NULL, NULL, NULL, NULL);
+                                    NULL, NULL, NULL, NULL, NULL, NULL);
     if (modidx) {
       /* If it's an access path, resolve it: */
       if (genv->module
