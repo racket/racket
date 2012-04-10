@@ -699,7 +699,7 @@ plt-extras :+= (package: "racklog/")
 plt-extras :+= (package: "datalog/")
 
 ;; -------------------- db
-plt-extras :+= (package: "db/") (lib: "sqlite*")
+mz-extras :+= (package: "db/") (lib: "sqlite*")
 
 ;; ============================================================================
 ;; Readme header
