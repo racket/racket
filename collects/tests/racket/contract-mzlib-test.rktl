@@ -4169,8 +4169,8 @@ so that propagation occurs.
   (test-name 'natural-number/c natural-number/c)
   (test-name #f false/c)
   (test-name 'printable/c printable/c)
-  (test-name '(symbols 'a 'b 'c) (symbols 'a 'b 'c))
-  (test-name '(one-of/c 1 2 3) (one-of/c 1 2 3))
+  (test-name '(or/c 'a 'b 'c) (symbols 'a 'b 'c))
+  (test-name '(or/c 1 2 3) (one-of/c 1 2 3))
   (test-name '(one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)) 
              (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
   
