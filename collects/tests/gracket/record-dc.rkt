@@ -1,7 +1,9 @@
 #lang racket/base
 (require racket/class
          racket/draw
-         racket/draw/private/record-dc)
+         (only-in racket/draw/private/record-dc 
+                  record-dc-mixin
+                  get-recorded-command))
 
 (define bm1 (make-bitmap 100 100))
 (define bm2 (make-bitmap 100 100))
@@ -48,7 +50,7 @@
 
 (define cms (send dc2 get-recorded-command))
 
-(cms dc3)
+(void (cms dc3))
 
 (define post-bytes (get-bytes bm3))
 
