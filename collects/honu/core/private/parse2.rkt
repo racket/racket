@@ -122,13 +122,17 @@
                [rest arguments])
       (if (empty-syntax? rest)
         (reverse used)
-        (let-values ([(parsed unparsed)
-                      ;; FIXME: don't strip all stops, just comma
-                      (parse (strip-stops rest))])
-          (loop (if parsed
-                  (cons parsed used)
-                  used)
-                unparsed))))))
+        (syntax-parse rest #:literal-sets (cruft)
+          [(honu-comma more ...)
+           (loop used #'(more ...))]
+          [else
+            (let-values ([(parsed unparsed)
+                          ;; FIXME: don't strip all stops, just comma
+                          (parse (strip-stops rest))])
+              (loop (if parsed
+                      (cons parsed used)
+                      used)
+                    unparsed))])))))
 
 (define (stopper? what)
   (define-literal-set check (honu-comma semicolon colon))
@@ -311,6 +315,7 @@
                         left re-parse)))))))
   (define (do-parse stream precedence left current)
     (define-syntax-class atom
+      ;; [pattern x:identifier #:when (not (stopper? #'x))]
       [pattern x:identifier]
       [pattern x:str]
       [pattern x:number])
@@ -542,6 +547,10 @@
                                         #'(current parsed-args ...))))
                       #;
                       (error 'parse "function call")]
+                     #;
+                     [else (if (not current)
+                             (error 'what "dont know how to parse ~a" #'head)
+                             (values (left current) stream))]
                      [else (error 'what "dont know how to parse ~a" #'head)])])])])))
 
   (define-values (parsed unparsed)

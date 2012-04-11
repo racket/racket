@@ -35,9 +35,12 @@
     [pattern semicolon]
     [pattern honu-comma]
     [pattern colon])
+  #;
   (syntax-parse code
     [(x:stopper rest ...) (strip-stops #'(rest ...))]
-    [else code]))
+    [else code])
+  code
+  )
 
 (define-syntax repeat$ (lambda (stx) (raise-syntax-error 'repeat$ "dont use this")))
 
