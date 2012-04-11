@@ -29,7 +29,10 @@
                               #:name "#:context keyword")
                    (~optional (~seq #:line-numbers line-numbers:expr)
                               #:defaults ([line-numbers #'#f])
-                              #:name "#:line-numbers keyword"))
+                              #:name "#:line-numbers keyword")
+                   (~optional (~seq #:line-number-sep line-number-sep:expr)
+                              #:defaults ([line-number-sep #'1])
+                              #:name "#:line-number-sep keyword"))
               ...)
         str ...)
      #`(typeset-code str ...
@@ -43,7 +46,8 @@
                                         (and (pair? (syntax-e v))
                                              #`#'#,(car (syntax-e v))))
                                       #'#f))
-                     #:line-numbers line-numbers)]))
+                     #:line-numbers line-numbers
+                     #:line-number-sep line-number-sep)]))
 
 (define-syntax (codeblock stx) #`(code-inset #,(do-codeblock stx)))
 (define-syntax (codeblock0 stx) (do-codeblock stx))
@@ -53,6 +57,7 @@
                       #:indent [indent 2]
                       #:keep-lang-line? [keep-lang-line? #t]
                       #:line-numbers [line-numbers #f]
+                      #:line-number-sep [line-number-sep 1]
                       #:block? [block? #t]
                       . strs)
   (let* ([xstr (apply string-append strs)]
@@ -162,6 +167,7 @@
         (list->lines
          indent
          #:line-numbers line-numbers
+         #:line-number-sep line-number-sep
          #:block? block?
          (let loop ([pos 0]
                     [tokens tokens])
@@ -245,6 +251,7 @@
 
 (define (list->lines indent-amt l 
                      #:line-numbers line-numbers
+                     #:line-number-sep line-number-sep
                      #:block? block?)
   (define indent-elem (if (zero? indent-amt)
                           ""
@@ -265,9 +272,13 @@
     (define ln (format "~a" n))
     (define lnl (string-length ln))
     (define diff (- line-cntl lnl))
-    (define l1 (list (tt ln) (hspace 1)))
-    (cons (make-element 'smaller (make-element 'smaller  
-      (if (not (zero? diff)) (cons (hspace diff) l1) l1))) r))
+    (define l1 (list (tt ln) (hspace line-number-sep)))
+    (cons (make-element 'smaller 
+                        (make-element 'smaller  
+                                      (if (not (zero? diff))
+                                          (cons (hspace diff) l1)
+                                          l1)))
+          r))
 
   (define (make-line accum-line line-number)
     (define rest (cons indent-elem accum-line))

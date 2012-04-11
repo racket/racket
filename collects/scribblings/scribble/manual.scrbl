@@ -72,12 +72,14 @@ and @racket[code] versus @racket[racketbock] and
                        (code:line #:indent indent-expr)
                        (code:line #:expand expand-expr)
                        (code:line #:context context-expr)
-                       (code:line #:line-numbers line-number-expr)])
+                       (code:line #:line-numbers line-number-expr)
+                       (code:line #:line-number-sep line-number-sep-expr)])
               #:contracts ([keep-expr any/c]
                            [indent-expr exact-nonnegative-integer?]
                            [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
                            [context-expr syntax-object?]
-                           [line-number-expr (or/c #f exact-nonnegative-integer?)])]{
+                           [line-number-expr (or/c #f exact-nonnegative-integer?)]
+                           [line-number-sep-expr exact-nonnegative-integer?])]{
 
 Parses the code formed by the strings produced by the
 @racket[str-expr]s as a Racket module (roughly) and produces a
@@ -104,7 +106,9 @@ for-label bindings in the lexical environment of the syntax object
 provided by @racket[context-expr]. The default @racket[context-expr]
 has the same lexical context as the first @racket[str-expr].
 When @racket[line-number-expr] is true, line number is enabled starting 
-from @racket[line-number-expr].
+from @racket[line-number-expr], and @racket[line-number-sep] controls
+the separation (in spaces; defaults to 1) between the line numbers and
+code.
 
 When @racket[expand-expr] produces a procedure, it is used to
 macro-expand the parsed program, and syntax coloring is based on the
