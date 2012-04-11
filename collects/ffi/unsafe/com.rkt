@@ -1400,16 +1400,22 @@
                   _VARIANT))
         (begin
           (set-VARIANT-vt! var VT_ERROR)
-          (variant-set! var _long DISP_E_PARAMNOTFOUND)))]
-   [(and elem-desc (not (eq? 'any scheme-type)))
+          (variant-set! var _ulong DISP_E_PARAMNOTFOUND)))]
+   [(and elem-desc (not (any-type? scheme-type)))
     (set-VARIANT-vt! var (get-var-type-from-elem-desc elem-desc))
     (variant-set! var (to-ctype scheme-type) a)]
    [else
-    (define use-scheme-type (if (eq? scheme-type 'any)
+    (define use-scheme-type (if (any-type? scheme-type)
 				(arg-to-type a)
 				scheme-type))
     (set-VARIANT-vt! var (to-vt use-scheme-type))
     (variant-set! var (to-ctype use-scheme-type) a)]))
+
+(define (any-type? t)
+  (or (eq? t 'any)
+      (and (pair? t)
+           (eq? (car t) 'opt)
+           (any-type? (cadr t)))))
 
 (define _float*
   (make-ctype _float
@@ -1510,7 +1516,7 @@
       [(com-enumeration) _int]
       [else (error 'to-ctype "Internal error: unknown type ~s" type)])]
    [(eq? 'opt (car type))
-    (to-ctype type)]
+    (to-ctype (cadr type))]
    [(eq? 'box (car type))
     (_box/permanent (to-ctype (cadr type)))]
    [(eq? 'array (car type))
@@ -1550,6 +1556,7 @@
      (case (and (pair? type)
 		(car type))
        [(array) (bitwise-ior VT_ARRAY (to-vt (caddr type)))]
+       [(opt) (to-vt (cadr type))]
        [else
 	(error 'to-vt "Internal error: unsupported type ~s" type)])]))
 
