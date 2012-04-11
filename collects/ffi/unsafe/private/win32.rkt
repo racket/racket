@@ -169,17 +169,20 @@
                             [scode _SCODE]))
 
 (define (windows-error str raw-scode)
-  (define size 1024)
-  (define buf (make-bytes size))
-  (define scode (if (negative? raw-scode)
-                    (bitwise-and #xFFFFFFFF raw-scode)
-                    raw-scode))
-  (define len (FormatMessageW FORMAT_MESSAGE_FROM_SYSTEM #f scode 0 buf (quotient size 2)))
-  (if (positive? len)
-      (error (format "~a (~x; ~a)" str scode (regexp-replace #rx"[\r\n]+$" 
-                                                             (cast buf _pointer _string/utf-16)
-                                                             "")))
-      (error (format "~a (~x)" str scode))))
+  (if (zero? raw-scode)
+      (error str)
+      (let ()
+        (define size 1024)
+        (define buf (make-bytes size))
+        (define scode (if (negative? raw-scode)
+                          (bitwise-and #xFFFFFFFF raw-scode)
+                          raw-scode))
+        (define len (FormatMessageW FORMAT_MESSAGE_FROM_SYSTEM #f scode 0 buf (quotient size 2)))
+        (if (positive? len)
+            (error (format "~a (~x; ~a)" str scode (regexp-replace #rx"[\r\n]+$" 
+                                                                   (cast buf _pointer _string/utf-16)
+                                                                   "")))
+            (error (format "~a (~x)" str scode))))))
 
 (define E_NOINTERFACE #x80004002)
 
