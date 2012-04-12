@@ -1121,9 +1121,15 @@
 			  ,(if (zero? (vector-length arg))
 			       'int
 			       (for/fold ([t (arg-to-type (vector-ref arg 0))]) ([v (in-vector arg)])
-				 (if (equal? t (arg-to-type v))
-				     t
-				     'any))))]
+			         (define t2 (arg-to-type v))
+				 (let loop ([t t] [t2 t2])
+				   (cond
+				    [(equal? t t2) t]
+				    [(and (pair? t) (pair? t2) 
+					  (eq? (car t) 'array) (eq? (car t2) 'array)
+					  (equal? (cadr t) (cadr t2)))
+				     `(array ,(cadr t) ,(loop (caddr t) (caddr t2)))]
+				    [else 'any])))))]
    [else (error 'com "cannot infer marshal format for value: ~e" arg)]))
 
 (define (elem-desc-ref func-desc i)
@@ -1442,8 +1448,7 @@
   (VariantInit var)
   var)
 
-(define (extract-variant-pointer var get?)
-  (define vt (VARIANT-vt var))
+(define (extract-variant-pointer var get? [vt (VARIANT-vt var)])
   (define ptr (union-ptr (VARIANT-u var)))
   (switch
    vt
@@ -1456,7 +1461,8 @@
 (define (_safe-array/vectors dims base)
   (make-ctype _pointer
 	      (lambda (v)
-		(define sa (SafeArrayCreate (to-vt base)
+	        (define base-vt (to-vt base))
+		(define sa (SafeArrayCreate base-vt
 					    (length dims)
 					    (for/list ([d (in-list dims)])
 					      (make-SAFEARRAYBOUND d 0))))
@@ -1470,7 +1476,7 @@
 			(let ([var (make-a-VARIANT)])
 			  (scheme-to-variant! var v #f base)
 			  (SafeArrayPutElement sa (reverse idx) 
-					       (extract-variant-pointer var #f)))
+					       (extract-variant-pointer var #f base-vt)))
 			(loop v idx (cdr dims)))))
 		sa)	      
 	      (lambda (_sa)
