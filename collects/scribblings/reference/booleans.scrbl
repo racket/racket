@@ -272,7 +272,7 @@ Returns @racket[(not v)].}
   Checks to be sure that the first
   expression implies the second.
   
-  Same as @racket[(if expr1 expr2 #f)].
+  Same as @racket[(if expr1 expr2 #t)].
   
   @examples[#:eval 
             bool-eval
