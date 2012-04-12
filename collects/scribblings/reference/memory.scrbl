@@ -109,7 +109,9 @@ embedded in an object when the object is no longer used.
 
 Calling the @racket[will-execute] or @racket[will-try-execute]
 procedure executes a will that is ready in the specified will
-executor. Wills are not executed automatically, because certain
+executor. A will executor is also a @tech{synchronizable event}, so @racket[sync]
+or @racket[sync/timeout] can be used to detect when a will executor has
+ready wills. Wills are not executed automatically, because certain
 programs need control to avoid race conditions. However, a program can
 create a thread whose sole job is to execute wills for a particular
 executor.
