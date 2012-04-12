@@ -472,9 +472,16 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      (debug "expanded ~a unexpanded ~a\n"
             (if parsed (syntax->datum parsed) parsed)
             (syntax->datum unparsed))
+     #'(begin
+         (define-syntax (parse-more stx)
+           (syntax-case stx ()
+             [(_ stuff (... ...))
+              (do-parse-rest #'(stuff (... ...)) #'parse-more)]))
+         (parse-more forms ...))
      ;; if parsed is #f then we don't want to expand to anything that will print
      ;; so use an empty form, begin, `parsed' could be #f becuase there was no expression
      ;; in the input such as parsing just ";".
+     #;
      (with-syntax ([parsed (if (not parsed) #'(begin)
                              (remove-repeats parsed)
                              #;

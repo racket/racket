@@ -143,7 +143,9 @@
 
 (provide do-parse-rest)
 (define (do-parse-rest stx parse-more)
-  (syntax-parse stx
+  (syntax-parse stx #:literal-sets (cruft)
+    [(semicolon semicolon ... rest ...)
+     (do-parse-rest #'(rest ...) parse-more)]
     [(stuff ...)
      (debug "Parse rest ~a\n" (syntax->datum #'(stuff ...)))
      (define-values (parsed unparsed)
@@ -431,6 +433,7 @@
            (define-splicing-syntax-class no-left
              [pattern (~seq) #:when (and (= precedence 0) (not current))])
            (syntax-parse #'(head rest ...) #:literal-sets (cruft)
+             #;
              [(semicolon . rest)
               (debug "Parsed a semicolon, finishing up with ~a\n" current)
               (values (left current) #'rest)]
