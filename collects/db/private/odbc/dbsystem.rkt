@@ -5,6 +5,8 @@
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt")
 (provide dbsystem
+         field-dvec->field-info
+         field-dvec->typeid
          supported-typeid?
          classify-odbc-sql)
 
@@ -20,13 +22,28 @@
     (define/public (field-dvecs->typeids dvecs)
       (map (lambda (dvec) (vector-ref dvec 1)) dvecs))
 
-    (define/public (describe-typeids typeids)
+    (define/public (describe-params typeids)
       (map describe-typeid typeids))
+
+    (define/public (describe-fields dvecs)
+      (for/list ([dvec (in-list dvecs)])
+        (describe-typeid (field-dvec->typeid dvec))))
 
     (super-new)))
 
 (define dbsystem
   (new odbc-dbsystem%))
+
+;; ----
+
+(define (field-dvec->field-info dvec)
+  `((name . ,(vector-ref dvec 0))
+    (typeid . ,(vector-ref dvec 1))
+    (size . ,(vector-ref dvec 2))
+    (digits . ,(vector-ref dvec 3))))
+
+(define (field-dvec->typeid dvec)
+  (vector-ref dvec 1))
 
 ;; ----
 

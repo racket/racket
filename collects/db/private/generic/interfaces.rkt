@@ -56,7 +56,8 @@
 
     ;; inspection only
     get-known-types        ;; -> (listof symbol)
-    describe-typeids))     ;; (listof typeid) -> (listof TypeDesc)
+    describe-params        ;; (listof typeid) -> (listof TypeDesc)
+    describe-fields))      ;; (listof field-dvec) -> (listof TypeDesc)
 
 ;; ParameterHandler = (fsym index datum -> ???)
 ;; Each system gets to choose its checked-param representation.
@@ -76,12 +77,12 @@
     get-stmt           ;; -> string/#f
     get-stmt-type      ;; -> symbol/#f
 
-    get-param-count    ;; -> nat or #f
+    get-param-count    ;; -> nat
     get-param-typeids  ;; -> (listof typeid)
 
-    get-result-dvecs   ;; -> (listof vector)
-    get-result-count   ;; -> nat or #f
-    get-result-typeids ;; -> (listof typeid) or #f
+    get-result-dvecs   ;; -> (listof field-dvec)
+    get-result-count   ;; -> nat
+    get-result-typeids ;; -> (listof typeid)
 
     check-owner        ;; symbol connection any -> #t (or error)
     bind               ;; symbol (listof param) -> statement-binding

@@ -176,15 +176,15 @@ with their corresponding Racket representations.
   @racket['double]             @& @racket[real?] @//
   @racket['decimal]            @& @racket[exact?] @//
   @racket['varchar]            @& @racket[string?] @//
-  @racket['var-string]         @& @racket[string?] or @racket[bytes?], but see below @//
   @racket['date]               @& @racket[sql-date?] @//
   @racket['time]               @& @racket[sql-time?] or @racket[sql-day-time-interval?] @//
   @racket['datetime]           @& @racket[sql-timestamp?] @//
 
+  @racket['var-string]         @& @racket[string?] @//
+  @racket['text]               @& @racket[string?] @//
+
+  @racket['var-binary]         @& @racket[bytes?] @//
   @racket['blob]               @& @racket[bytes?] @//
-  @racket['tinyblob]           @& @racket[bytes?] @//
-  @racket['mediumblob]         @& @racket[bytes?] @//
-  @racket['longblob]           @& @racket[bytes?] @//
 
   @racket['bit]                @& @racket[sql-bits?] @//
   @racket['geometry]           @& @racket[geometry2d?]
@@ -192,12 +192,18 @@ with their corresponding Racket representations.
 }
 
 MySQL does not report specific parameter types for prepared queries,
-instead assigning them the type @tt{var-string}. Consequently,
-conversion of Racket values to @tt{var-string} parameters accepts
-strings, numbers (@racket[rational?]---no infinities or NaN), bytes,
-SQL date/time structures (@racket[sql-date?], @racket[sql-time?],
+so they are instead assigned the pseudo-type @racket['any]. Conversion
+of Racket values to parameters accepts strings, numbers
+(@racket[rational?]---no infinities or NaN), bytes, SQL date/time
+structures (@racket[sql-date?], @racket[sql-time?],
 @racket[sql-timestamp?], and @racket[sql-day-time-interval?]), bits
-(@racket[sql-bits?]), and geometric values (@racket[geometry2d?]).
+(@racket[sql-bits?]), and geometric values
+(@racket[geometry2d?]). Numbers are sent as 64-bit signed integers, if
+possible, or as double-precision floating point numbers otherwise.
+
+Fields of type @tt{CHAR} or @tt{VARCHAR} are typically reported as
+@racket['var-string], and fields of type @tt{BINARY} or @tt{VARBINARY}
+are typically reported as @racket['var-binary].
 
 The MySQL @tt{time} type represents time intervals, which may not
 correspond to times of day (for example, the interval may be negative
@@ -234,7 +240,7 @@ constraints (with the exception of @tt{integer primary key}) on
 }
 
 SQLite does not report specific parameter and result types for
-prepared queries. Instead, they are assigned the pseudotype
+prepared queries. Instead, they are assigned the pseudo-type
 @racket['any]. Conversion of Racket values to parameters accepts
 strings, bytes, and real numbers.
 

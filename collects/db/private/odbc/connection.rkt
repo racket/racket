@@ -685,15 +685,6 @@
         ((notice)
          (on-notice sqlstate message))))))
 
-(define (field-dvec->field-info dvec)
-  `((name . ,(vector-ref dvec 0))
-    (typeid . ,(vector-ref dvec 1))
-    (size . ,(vector-ref dvec 2))
-    (digits . ,(vector-ref dvec 3))))
-
-(define (field-dvec->typeid dvec)
-  (vector-ref dvec 1))
-
 #|
 Historical note: I tried using ODBC async execution to avoid blocking
 all Racket threads for a long time.

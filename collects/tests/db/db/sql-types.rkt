@@ -18,9 +18,12 @@
   (type-test-case* types (lambda () . body)))
 
 (define (type-test-case* types proc)
-  (let* ([known-types (send dbsystem get-known-types)]
+  (let* ([known-types
+          (if (ANYFLAGS 'sqlite3)
+              '(bigint double text blob)
+              (send dbsystem get-known-types))]
          [type (for/or ([type types])
-                (and (member type known-types) type))])
+                 (and (member type known-types) type))])
     (when type
       (test-case (format "~s" type)
         (parameterize ((current-type type)) (proc))))))
@@ -164,8 +167,34 @@
        (lambda (c)
          (check-roundtrip c #"this is the time to remember")
          (check-roundtrip c #"that's the way it is")
-         (check-roundtrip c (list->bytes (build-list 256 values))))))
-
+         (check-roundtrip c (list->bytes (build-list 256 values)))
+         (when (ANYFLAGS 'postgresql 'mysql 'sqlite3)
+           (check-roundtrip c (make-bytes #e1e6 (char->integer #\a)))
+           (check-roundtrip c (make-bytes #e1e7 (char->integer #\b)))
+           (check-roundtrip c (make-bytes #e1e8 (char->integer #\c))))
+         (when (ANYFLAGS 'postgresql)
+           (let ([r (query-value c "select cast(repeat('a', 10000000) as bytea)")])
+             (check-pred bytes? r)
+             (check-equal? r (make-bytes 10000000 (char->integer #\a))))
+           (let ([r (query-value c "select cast(repeat('a', 100000000) as bytea)")])
+             (check-pred bytes? r)
+             (check-equal? r (make-bytes 100000000 (char->integer #\a)))))
+         (when (ANYFLAGS 'mysql)
+           ;; Test able to read large blobs
+           ;; (depends on max_allowed_packet, though)
+           (let ([r (query-value c "select cast(repeat('a', 10000000) as binary)")])
+             (check-pred bytes? r)
+             (check-equal? r (make-bytes 10000000 (char->integer #\a))))
+           (let ([r (query-value c "select cast(repeat('a', 100000000) as binary)")])
+             (check-pred bytes? r)
+             (check-equal? r (make-bytes 100000000 (char->integer #\a))))))))
+    (type-test-case '(text)
+      (call-with-connection
+       (lambda (c)
+         (check-roundtrip c "abcde")
+         (check-roundtrip c (make-string #e1e6 #\a))
+         (check-roundtrip c (make-string #e1e7 #\b))
+         (check-roundtrip c (make-string #e1e8 #\c)))))
     (type-test-case '(smallint)
       (call-with-connection
        (lambda (c)

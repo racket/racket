@@ -5,6 +5,7 @@ Based on protocol documentation here:
 
 #lang racket/base
 (require racket/match
+         racket/port
          "../generic/sql-data.rkt"
          "../generic/sql-convert.rkt"
          "../generic/interfaces.rkt"
@@ -29,7 +30,6 @@ Based on protocol documentation here:
          (struct-out row-data-packet)
          (struct-out binary-row-data-packet)
          (struct-out ok-prepared-statement-packet)
-         (struct-out parameter-packet)
          (struct-out long-data-packet)
          (struct-out execute-packet)
          (struct-out fetch-packet)
@@ -39,18 +39,23 @@ Based on protocol documentation here:
          parse-field-dvec
          field-dvec->name
          field-dvec->typeid
+         field-dvec->flags
          field-dvec->field-info)
 
-;; subport : input-port num -> input-port
-;; Reads len bytes from input, then returns input port
-;; containing only those bytes.
-;; Raises error if fewer than len bytes available in input.
-(define (subport in len)
-  (let ([bytes (io:read-bytes-as-bytes in len)])
-    (unless (and (bytes? bytes) (= (bytes-length bytes) len))
-      (error/internal 'subport "truncated input; expected ~s bytes, got ~s"
-                      len (if (bytes? bytes) (bytes-length bytes) 0)))
-    (open-input-bytes bytes)))
+;; MAX-PACKET-SIZE is the largest packet that the MySQL protocol can
+;; transmit. Longer data row "packets" can be split into multiple actual
+;; packets (see comments on data rows, below).
+(define MAX-PACKET-SIZE (sub1 (expt 2 24)))
+
+#|
+Note: There is also a max_allowed_packet server variable (and client connection
+variable???) that controls things like how long a data row can be and how long a
+computed string on the server can be. See also:
+
+  - http://bugs.mysql.com/bug.php?id=22853
+    (note, the "workaround" didn't work for me; data was still truncated)
+  - http://www.perlmonks.org/?node_id=150255
+|#
 
 ;; WRITING FUNCTIONS
 
@@ -171,7 +176,7 @@ Based on protocol documentation here:
           [(= first 252)
            (io:read-le-int16 port)]
           [(= first 253)
-           (io:read-le-int32 port)]
+           (io:read-le-int24 port)]
           [(= first 254)
            (io:read-le-intN port 8)])))
 
@@ -293,17 +298,9 @@ Based on protocol documentation here:
    parameter-count)
   #:transparent)
 
-(define-struct (parameter-packet packet)
-  (type
-   flags
-   decimals
-   length)
-  #:transparent)
-
 (define-struct (long-data-packet packet)
-  (statement-handler-id
+  (statement-id
    parameter-number
-   type
    data)
   #:transparent)
 
@@ -364,11 +361,11 @@ Based on protocol documentation here:
     [(struct command:statement-packet (command arg))
      (io:write-byte out (encode-command command))
      (io:write-le-int32 out arg)]
-    [(struct long-data-packet (statement-handler-id parameter-number type data))
-     (io:write-le-int32 out statement-handler-id)
+    [(struct long-data-packet (statement-id parameter-number data))
+     (io:write-byte out (encode-command 'statement-send-long-data))
+     (io:write-le-int32 out statement-id)
      (io:write-le-int16 out parameter-number)
-     (io:write-le-int16 out type)
-     (io:write-bytes out (string->bytes/utf-8 data))]
+     (io:write-bytes out data)]
     [(struct execute-packet
              (statement-id flags null-map params))
      (io:write-byte out (encode-command 'statement-execute))
@@ -383,74 +380,81 @@ Based on protocol documentation here:
        (for-each (lambda (pt) (io:write-le-int16 out (encode-type pt)))
                  param-types)
        (for-each (lambda (type param)
-                   (unless (sql-null? param)
-                     (write-binary-datum out type param)))
+                   (cond [(sql-null? param) (void)]
+                         [(eq? param 'long-string) (void)]
+                         [(eq? param 'long-binary) (void)]
+                         [else (write-binary-datum out type param)]))
                  param-types params))]
     [(struct fetch-packet (statement-id count))
      (io:write-byte out (encode-command 'statement-fetch))
      (io:write-le-int32 out statement-id)
      (io:write-le-int32 out count)]))
 
+
+;; ----
+
+;; parse-packet : ... -> (values nat packet)
+;; In case of binary data row split over multiple packets, reads all packets for
+;; the data row, returns packet number of last packet as first return value.
 (define (parse-packet in expect field-dvecs)
   (let* ([len (io:read-le-int24 in)]
          [num (io:read-byte in)]
-         ;; [inp (subport in len)]
          [bs (read-bytes len in)]
-         [inp (open-input-bytes bs)]
-         [msg (parse-packet/1 inp expect len field-dvecs)])
-    (when (port-has-bytes? inp)
-      (error/internal 'parse-packet "bytes left over after parsing ~s; bytes were: ~s" 
-                      msg (io:read-bytes-to-eof inp)))
-    (values num msg)))
+         [inp (open-input-bytes bs)])
+    (let-values ([(msg-num msg) (parse-packet/1 num in inp expect len field-dvecs)])
+      (when (and (not (port-closed? inp)) (port-has-bytes? inp))
+        (error/internal 'parse-packet "bytes left over after parsing ~s; bytes were: ~s" 
+                        msg (io:read-bytes-to-eof inp)))
+      (close-input-port inp)
+      (values num msg))))
 
 (define (port-has-bytes? p)
   (not (eof-object? (peek-byte p))))
 
-(define (parse-packet/1 in expect len field-dvecs)
+(define (parse-packet/1 msg-num real-in in expect len field-dvecs)
   (let ([first (peek-byte in)])
     (if (eq? first #xFF)
-        (parse-error-packet in len)
-        (parse-packet/2 in expect len field-dvecs))))
+        (values msg-num (parse-error-packet in len))
+        (parse-packet/2 msg-num real-in in expect len field-dvecs))))
 
-(define (parse-packet/2 in expect len field-dvecs)
+(define (parse-packet/2 msg-num real-in in expect len field-dvecs)
   (case expect
-    ((handshake)
-     (parse-handshake-packet in len))
-    ((auth)
-     (case (peek-byte in)
-       ((#x00) (parse-ok-packet in len))
-       ((#xFE) (parse-change-plugin-packet in len))
-       (else (parse-unknown-packet in len "(expected authentication ok packet)"))))
-    ((ok)
-     (case (peek-byte in)
-       ((#x00) (parse-ok-packet in len))
-       (else (parse-unknown-packet in len "(expected ok packet)"))))
-    ((result)
-     (case (peek-byte in)
-       ((#x00) (parse-ok-packet in len))
-       (else (parse-result-set-header-packet in len))))
-    ((field)
-     (if (and (eq? (peek-byte in) #xFE) (< len 9))
-         (parse-eof-packet in len)
-         (parse-field-packet in len)))
-    ((data)
-     (if (and (eq? (peek-byte in) #xFE) (< len 9))
-         (parse-eof-packet in len)
-         (parse-row-data-packet in len)))
     ((binary-data)
      (if (and (eq? (peek-byte in) #xFE) (< len 9))
-         (parse-eof-packet in len)
-         (parse-binary-row-data-packet in len field-dvecs)))
-    ((prep-ok)
-     (case (peek-byte in)
-       ((#x00) (parse-ok-prepared-statement-packet in len))
-       (else (parse-unknown-packet in len "(expected ok for prepared statement packet)"))))
-    ((prep-params)
-     (if (and (eq? (peek-byte in) #xFE) (< len 9))
-         (parse-eof-packet in len)
-         (parse-parameter-packet in len)))
+         (values msg-num (parse-eof-packet in len))
+         (parse-binary-row-data-packet msg-num real-in in len field-dvecs)))
     (else
-     (error/comm 'parse-packet (format "(bad expected packet type: ~s)" expect)))))
+     (values msg-num
+             (case expect
+               ((handshake)
+                (parse-handshake-packet in len))
+               ((auth)
+                (case (peek-byte in)
+                  ((#x00) (parse-ok-packet in len))
+                  ((#xFE) (parse-change-plugin-packet in len))
+                  (else (parse-unknown-packet in len "(expected authentication ok packet)"))))
+               ((ok)
+                (case (peek-byte in)
+                  ((#x00) (parse-ok-packet in len))
+                  (else (parse-unknown-packet in len "(expected ok packet)"))))
+               ((result)
+                (case (peek-byte in)
+                  ((#x00) (parse-ok-packet in len))
+                  (else (parse-result-set-header-packet in len))))
+               ((field)
+                (if (and (eq? (peek-byte in) #xFE) (< len 9))
+                    (parse-eof-packet in len)
+                    (parse-field-packet in len)))
+               ((data)
+                (if (and (eq? (peek-byte in) #xFE) (< len 9))
+                    (parse-eof-packet in len)
+                    (parse-row-data-packet in len)))
+               ((prep-ok)
+                (case (peek-byte in)
+                  ((#x00) (parse-ok-prepared-statement-packet in len))
+                  (else (parse-unknown-packet in len "(expected ok for prepared statement packet)"))))
+               (else
+                (error/comm 'parse-packet (format "(bad expected packet type: ~s)" expect))))))))
 
 ;; Individual parsers
 
@@ -600,17 +604,7 @@ Based on protocol documentation here:
       (error/comm 'parse-ok-prepared-statement-packet (format "(first byte was ~s)" ok)))
     (make-ok-prepared-statement-packet statement-handler-id columns params)))
 
-(define (parse-parameter-packet in len)
-  (let* ([type (io:read-le-int16 in)]
-         [flags (io:read-le-int16 in)]
-         [decimals (io:read-byte in)]
-         [len (io:read-le-int32 in)])
-    (make-parameter-packet (decode-type type)
-                           (decode-field-flags flags)
-                           decimals
-                           len)))
-
-(define (parse-binary-row-data-packet in len field-dvecs)
+(define (parse-binary-row-data-packet msg-num real-in in len field-dvecs)
   (let* ([first (io:read-byte in)] ;; SKIP? seems to be always zero
          [result-count (length field-dvecs)]
          [null-map-length (quotient (+ 9 result-count) 8)]
@@ -624,18 +618,39 @@ Based on protocol documentation here:
                                              (- 7 biti)
                                              biti))))]
          [field-v (make-vector result-count)])
-    (for ([i (in-range result-count)]
-          [field-dvec (in-list field-dvecs)])
-      (vector-set! field-v i
-                   (if (is-null? i)
-                       sql-null
-                       (read-binary-datum in field-dvec))))
-    (make-binary-row-data-packet field-v)))
+    (let-values ([(msg-num* in*)
+                  (let loop ([len len] [ins null])
+                    ;; A data row is sent as zero or more packets of max length (2^24-1)
+                    ;; followed by one packet of less than max length.
+                    (cond [(= len MAX-PACKET-SIZE) ;; maximum packet length
+                           (let* ([next-len (io:read-le-int24 real-in)]
+                                  [next-num (io:read-byte real-in)]
+                                  [next-bs (read-bytes next-len real-in)]
+                                  [next-in (open-input-bytes next-bs)])
+                             (loop next-len (cons next-in ins)))]
+                          [else
+                           (values (+ msg-num (length ins))
+                                   (if (null? ins)
+                                       in
+                                       (apply input-port-append #t in (reverse ins))))]))])
+      (for ([i (in-range result-count)]
+            [field-dvec (in-list field-dvecs)])
+        (vector-set! field-v i
+                     (if (is-null? i)
+                         sql-null
+                         (read-binary-datum in* field-dvec))))
+      (when (port-has-bytes? in*)
+        (error/internal 'parse-binary-row-data-packet
+                        "bytes left over; bytes were: ~s"
+                        (io:read-bytes-to-eof in*)))
+      (close-input-port in*)
+      (values msg-num* (make-binary-row-data-packet field-v)))))
 
 (define (read-binary-datum in field-dvec)
 
   ;; How to distinguish between character data and binary data?
   ;; (Both are given type var-string.)
+  ;; (Also true for blob vs text; both given as type blob.)
 
   ;; There seem to be two differences:
   ;;  1) character data has charset 33 (utf8_general_ci)
@@ -654,11 +669,10 @@ Based on protocol documentation here:
     ((int24) (io:read-le-int24 in)) ;; FIXME signed/unsigned
     ((long) (io:read-le-int32 in (not (memq 'unsigned flags))))
     ((longlong) (io:read-le-int64 in (not (memq 'unsigned flags))))
-    ((varchar var-string)
+    ((varchar var-string blob tiny-blob medium-blob long-blob)
      (if (memq 'binary flags)
          (io:read-length-coded-bytes in)
          (io:read-length-coded-string in)))
-    ((blob tiny-blob medium-blob long-blob) (io:read-length-coded-bytes in))
 
     ((float)
      (floating-point-bytes->real (io:read-bytes-as-bytes in 4) #f))
@@ -741,7 +755,8 @@ Based on protocol documentation here:
 
 (define (choose-param-type param)
   (cond [(or (string? param)
-             (sql-null? param))
+             (sql-null? param)
+             (eq? param 'long-string))
          'var-string]
         [(int64? param)
          'longlong]
@@ -753,7 +768,8 @@ Based on protocol documentation here:
          'timestamp]
         [(or (sql-time? param) (sql-day-time-interval? param))
          'time]
-        [(bytes? param)
+        [(or (bytes? param)
+             (eq? param 'long-binary))
          'blob]
         [(sql-bits? param)
          'bit]

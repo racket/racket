@@ -1,10 +1,11 @@
 #lang racket/base
 (require racket/class
+         racket/match
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/sql-data.rkt"
          "../../util/private/geometry.rkt"
-         (only-in "message.rkt" field-dvec->typeid))
+         (only-in "message.rkt" field-dvec->typeid field-dvec->flags))
 (provide dbsystem
          classify-my-sql)
 
@@ -31,8 +32,26 @@
     (define/public (field-dvecs->typeids dvecs)
       (map field-dvec->typeid dvecs))
 
-    (define/public (describe-typeids typeids)
-      (map describe-typeid typeids))
+    (define/public (describe-params typeids)
+      (for/list ([_typeid (in-list typeids)])
+        '(#t any #f)))
+
+    (define/public (describe-fields dvecs)
+      (for/list ([dvec (in-list dvecs)])
+        (let ([r (describe-typeid (field-dvec->typeid dvec))])
+          (match r
+            [(list supported? type typeid)
+             (let* ([binary? (memq 'binary (field-dvec->flags dvec))]
+                    [type* (case type
+                             ((tinyblob)   (if binary? type 'tinytext))
+                             ((blob)       (if binary? type 'text))
+                             ((mediumblob) (if binary? type 'mediumtext))
+                             ((longblob)   (if binary? type 'longtext))
+                             ((var-string) (if binary? 'var-binary type))
+                             (else         type))])
+               (if (eq? type* type)
+                   r
+                   (list supported? type* typeid)))]))))
 
     (super-new)))
 
@@ -101,7 +120,7 @@
 
 ;; ========================================
 
-(define-type-table (supported-types
+(define-type-table (supported-types*
                     type-alias->type
                     typeid->type
                     type->typeid
@@ -126,5 +145,10 @@
   (blob        blob        ()    #t)
   (bit         bit         ()    #t)
   (geometry    geometry    ()    #t))
+
+(define supported-types
+  (sort (append '(tinytext text mediumtext longtext var-binary) supported-types*)
+        string<?
+        #:key symbol->string))
 
 ;; decimal, date typeids not used (?)

@@ -6,6 +6,9 @@
          statement:after-exec
          apply-type-handlers)
 
+;; A dvec is an opaque value that describes a parameter or result field's type
+;; information. (Usually a vector, thus "dvec" for "description vector".)
+
 ;; prepared-statement%
 (define prepared-statement%
   (class* object% (prepared-statement<%>)
@@ -13,7 +16,7 @@
     (init-field handle            ;; handle, determined by database system, #f means closed
                 close-on-exec?    ;; boolean
                 param-typeids     ;; (listof typeid)
-                result-dvecs      ;; (listof vector), layout depends on dbsys
+                result-dvecs      ;; (listof dvec)
                 [stmt #f]         ;; string/#f
                 [stmt-type #f])   ;; usually symbol or #f (see classify-*-sql)
 
@@ -42,9 +45,9 @@
     (define/public (get-result-typeids) result-typeids)
 
     (define/public (get-param-types)
-      (send dbsystem describe-typeids param-typeids))
+      (send dbsystem describe-params param-typeids))
     (define/public (get-result-types)
-      (send dbsystem describe-typeids result-typeids))
+      (send dbsystem describe-fields result-dvecs))
 
     ;; checktype is either #f, 'rows, or exact-positive-integer
     (define/public (check-results fsym checktype obj)

@@ -424,7 +424,7 @@ closed.
 
   If @racket[pst] is a rows-returning statement (eg, @tt{SELECT}),
   returns a list of type descriptions as described above, identifying
-  the SQL types (or pseudotypes) of the result columns. If
+  the SQL types (or pseudo-types) of the result columns. If
   @racket[pst] is not a rows-returning statement, the function returns
   the empty list.
 }

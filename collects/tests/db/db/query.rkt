@@ -210,14 +210,14 @@
                [param-types (map cadr (prepared-statement-parameter-types pst))])
           (case dbsys
             ((postgresql) (check-equal? param-types '(integer)))
-            ((mysql) (check-equal? param-types '(var-string)))
+            ((mysql) (check-equal? param-types '(any)))
             ((sqlite3) (check-equal? param-types '(any)))
             ((odbc) (check-equal? (length param-types) 1)))) ;; actual types may vary
         (let* ([pst (prepare c (sql "insert into the_numbers values ($1, $2)"))]
                [param-types (map cadr (prepared-statement-parameter-types pst))])
           (case dbsys
             ((postgresql) (check-equal? param-types '(integer varchar)))
-            ((mysql) (check-equal? param-types '(var-string var-string)))
+            ((mysql) (check-equal? param-types '(any any)))
             ((sqlite3) (check-equal? param-types '(any any)))
             ((odbc) (check-equal? (length param-types) 2))) ;; actual types may vary
           (check-equal? (prepared-statement-result-types pst) '()))))))

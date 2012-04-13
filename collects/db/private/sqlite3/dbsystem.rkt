@@ -19,9 +19,11 @@
       (map (lambda (dvec) (vector-ref dvec 0))
            dvecs))
 
-    (define/public (describe-typeids typeids)
-      (map (lambda _ '(#t any #f))
-           typeids))
+    (define/public (describe-params typeids)
+      (map (lambda _ '(#t any #f)) typeids))
+
+    (define/public (describe-fields dvecs)
+      (map (lambda _ '(#t any #f)) dvecs))
 
     (super-new)))
 

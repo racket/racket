@@ -37,8 +37,12 @@
     (define/public (field-dvecs->typeids dvecs)
       (map field-dvec->typeid dvecs))
 
-    (define/public (describe-typeids typeids)
+    (define/public (describe-params typeids)
       (map describe-typeid typeids))
+
+    (define/public (describe-fields field-dvecs)
+      (for/list ([dvec (in-list field-dvecs)])
+        (describe-typeid (field-dvec->typeid dvec))))
 
     (super-new)))
 

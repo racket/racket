@@ -12,7 +12,7 @@
 (provide connection%
          mysql-password-hash)
 
-(define MAX-PACKET-LENGTH #x1000000)
+(define MAX-ALLOWED-PACKET (expt 2 30))
 
 ;; ========================================
 
@@ -123,7 +123,7 @@
            (advance 'auth)]
           [(? error-packet?)
            (advance)]
-          [(struct result-set-header-packet (field-count _))
+          [(? result-set-header-packet?)
            (advance 'result)]
           [(? field-packet?)
            (advance 'field)]
@@ -131,12 +131,10 @@
            (advance 'data)]
           [(? binary-row-data-packet?)
            (advance 'binary-data)]
-          [(? ok-prepared-statement-packet? result)
+          [(? ok-prepared-statement-packet?)
            (advance 'prep-ok)]
-          [(? parameter-packet? result)
-           (advance 'prep-params)]
           [(? eof-packet?)
-           (advance 'field 'data 'binary-data 'prep-params)]
+           (advance 'field 'data 'binary-data)]
           [(struct unknown-packet (expected contents))
            (error/comm fsym expected)]
           [else
@@ -155,10 +153,10 @@
           (when politely?
             (fresh-exchange)
             (send-message (make-command-packet 'quit "")))
-          (close-output-port outport*)
+          (with-handlers ([exn:fail? void]) (close-output-port outport*))
           (set! outport #f))
         (when inport*
-          (close-input-port inport*)
+          (with-handlers ([exn:fail? void]) (close-input-port inport*))
           (set! inport #f))))
 
     ;; connected? : -> boolean
@@ -209,7 +207,7 @@
       (let loop ([auth-plugin auth-plugin] [scramble scramble] [first? #t])
         (define (auth data)
           (if first?
-              (make-client-auth-packet capabilities MAX-PACKET-LENGTH 'utf8-general-ci
+              (make-client-auth-packet capabilities MAX-ALLOWED-PACKET 'utf8-general-ci
                                        username data dbname auth-plugin)
               (make-auth-followup-packet data)))
         (cond [(equal? auth-plugin "mysql_native_password")
@@ -307,10 +305,53 @@
              (let* ([pst (statement-binding-pst stmt)]
                     [id (send pst get-handle)]
                     [params (statement-binding-params stmt)]
-                    [null-map (map sql-null? params)])
-               (buffer-message
-                (let ([flags (if cursor? '(cursor/read-only) '())])
-                  (make-execute-packet id flags null-map params))))]
+                    [param-count (length params)]
+                    [null-map (map sql-null? params)]
+                    [flags (if cursor? '(cursor/read-only) '())])
+               ;; Assume max_packet_length = 16M = 2^24,
+               ;; overhead of 20 bytes for other packet fields.
+               ;; Oversimplified param size estimate:
+               ;;   - 20 bytes per param (fixed size <= 20, string length code <= 20)
+               ;;   - bytes-length for bytes, 4*string-length for strings
+               ;; Use long data for any param that takes more than its "fair share".
+               (define (param-size p)
+                 (cond [(string? p) (* 4 (string-length p))]
+                       [(bytes? p) (bytes-length p)]
+                       [else 0]))
+               (let* ([space (- (expt 2 24) 20 (* 20 param-count))]
+                      [var-param-size (for/sum ([p (in-list params)]) (param-size p))])
+                 (cond [(and (< var-param-size space))
+                        (buffer-message (make-execute-packet id flags null-map params))]
+                       [else
+                        (let* ([var-param-count
+                                (for/sum ([p (in-list params)]
+                                          #:when (or (string? p) (bytes? p)))
+                                  1)]
+                               [fair-share (floor (/ space (max 1 var-param-count)))]
+                               [param+evict-list
+                                (for/list ([p (in-list params)])
+                                  (cons p (> (param-size p) fair-share)))]
+                               [short-params
+                                (for/list ([p+e (in-list param+evict-list)])
+                                  (let ([p (car p+e)])
+                                    (if (cdr p+e)
+                                        (if (string? p) 'long-string 'long-binary)
+                                        p)))])
+                          (for ([p+e (in-list param+evict-list)]
+                                [param-id (in-naturals)]
+                                #:when (cdr p+e))
+                            (let* ([p (car p+e)]
+                                   [pb (if (string? p) (string->bytes/utf-8 p) p)]
+                                   [pblen (bytes-length pb)]
+                                   [CHUNK #e1e6])
+                              (let chunkloop ([sent 0])
+                                (when (< sent pblen)
+                                  (let ([next (min pblen (+ sent CHUNK))])
+                                    (buffer-message
+                                     (make-long-data-packet id param-id (subbytes pb sent next)))
+                                    (fresh-exchange)
+                                    (chunkloop next))))))
+                          (buffer-message (make-execute-packet id flags null-map short-params)))])))]
             [else ;; string
              (buffer-message (make-command-packet 'query stmt))]))
 
