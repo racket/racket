@@ -47,21 +47,31 @@
 (define (go drracket-tab program-expander selection-start selection-end)
   
   ;; get the language-level:
-  (define language-settings (definitions-text->settings (send drracket-tab get-defs)))
-  (define language-level (drracket:language-configuration:language-settings-language language-settings))
-  (define simple-settings (drracket:language-configuration:language-settings-settings language-settings))
+  (define language-settings 
+    (definitions-text->settings
+      (send drracket-tab get-defs)))
+  
+  (define language-level 
+    (drracket:language-configuration:language-settings-language 
+     language-settings))
+  
+  (define simple-settings
+    (drracket:language-configuration:language-settings-settings
+     language-settings))
   
   ;; VALUE CONVERSION CODE:
   
   ;; render-to-string : TST -> string
   (define (render-to-string val)
     (let ([string-port (open-output-string)])
-      (send language-level render-value val simple-settings string-port)
+      (send language-level render-value 
+            val simple-settings string-port)
       (get-output-string string-port)))
   
   ;; render-to-sexp : TST -> sexp
   (define (render-to-sexp val)
-    (send language-level stepper:render-to-sexp val simple-settings language-level))
+    (send language-level stepper:render-to-sexp
+          val simple-settings language-level))
   
   ;; channel for incoming views
   (define view-channel (make-async-channel))
@@ -78,7 +88,8 @@
   ;; the view in the stepper window
   (define view #f)
   
-  ;; wait for steps to show up on the channel.  When they do, add them to the list.
+  ;; wait for steps to show up on the channel.  
+  ;; When they do, add them to the list.
   (define (start-listener-thread stepper-frame-eventspace)
     (thread
      (lambda ()
@@ -99,15 +110,16 @@
   ;; find-later-step : given a predicate on history-entries, search through
   ;; the history for the first step that satisfies the predicate and whose 
   ;; number is greater than n (or -1 if n is #f), return # of step on success,
-  ;; on failure return (list 'nomatch last-step) or (list 'nomatch/seen-final last-step) 
-  ;; if we went past the final step
+  ;; on failure return (list 'nomatch last-step) or (list 'nomatch/seen-final
+  ;; last-step) if we went past the final step
   (define (find-later-step p n)
     (let* ([n-as-num (or n -1)])
       (let loop ([step 0] 
                  [remaining view-history]
                  [seen-final? #f])
-        (cond [(null? remaining) (cond [seen-final? (list `nomatch/seen-final (- step 1))]
-                                       [else (list `nomatch (- step 1))])]
+        (cond [(null? remaining) 
+               (cond [seen-final? (list `nomatch/seen-final (- step 1))]
+                     [else (list `nomatch (- step 1))])]
               [(and (> step n-as-num) (p (car remaining))) step]
               [else (loop (+ step 1)
                           (cdr remaining)
@@ -117,7 +129,8 @@
   ;; the given step.
   (define (find-earlier-step p n)
     (unless (number? n)
-      (error 'find-earlier-step "can't find earlier step when no step is displayed."))
+      (error 'find-earlier-step 
+             "can't find earlier step when no step is displayed."))
     (let* ([to-search (reverse (take view-history n))])
       (let loop ([step (- n 1)]
                  [remaining to-search])
@@ -152,12 +165,13 @@
   (define (next-of-specified-kind right-kind? msg)
     (next-of-specified-kind/helper right-kind? view msg))
   
-  ;; first-of-specified-kind : similar to next-of-specified-kind, but always start at zero
+  ;; first-of-specified-kind : similar to next-of-specified-kind, but 
+  ;; always start at zero
   (define (first-of-specified-kind right-kind? msg)
     (next-of-specified-kind/helper right-kind? #f msg))
   
-  ;; next-of-specified-kind/helper : if the desired step is already in the list, display
-  ;; it; otherwise, give up.
+  ;; next-of-specified-kind/helper : if the desired step 
+  ;; is already in the list, display it; otherwise, give up.
   (define (next-of-specified-kind/helper right-kind? starting-step msg)
     (match (find-later-step right-kind? starting-step)
       [(? number? n)
@@ -225,7 +239,8 @@
   ;; choice box option
   (define (jump-to-prior-application)
     (prior-of-specified-kind application-step?
-                             (string-constant stepper-no-earlier-application-step)))
+                             (string-constant 
+                              stepper-no-earlier-application-step)))
   
   
   ;; GUI ELEMENTS:
@@ -315,7 +330,8 @@
     (send status-text lock #f)
     (send status-text delete 0 (send status-text last-position))
     ;; updated to yield 1-based step numbering rather than 0-based numbering.
-    (send status-text insert (format "~a/~a" (if view (+ 1 view) "none") (length view-history)))
+    (send status-text insert 
+          (format "~a/~a" (if view (+ 1 view) "none") (length view-history)))
     (send status-text lock #t)
     (send status-text end-edit-sequence))
   
@@ -338,21 +354,24 @@
        (make-step (new x:stepper-text% 
                        [left-side pre-exps]
                        [right-side post-exps]
-                       [show-inexactness? (send language-level stepper:show-inexactness?)])
+                       [show-inexactness? 
+                        (send language-level stepper:show-inexactness?)])
                   kind 
                   (list pre-src post-src))]
       [(struct before-error-result (pre-exps err-msg pre-src))
        (make-step (new x:stepper-text%
                        [left-side pre-exps] 
                        [right-side err-msg]
-                       [show-inexactness? (send language-level stepper:show-inexactness?)])
+                       [show-inexactness?
+                        (send language-level stepper:show-inexactness?)])
                   'finished-or-error 
                   (list pre-src))]
       [(struct error-result (err-msg))
        (make-step (new x:stepper-text% 
                        [left-side null]
                        [right-side err-msg]
-                       [show-inexactness? (send language-level stepper:show-inexactness?)]) 
+                       [show-inexactness?
+                        (send language-level stepper:show-inexactness?)]) 
                   'finished-or-error 
                   (list))]
       [(struct finished-stepping ())
