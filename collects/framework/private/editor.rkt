@@ -598,7 +598,8 @@
                (when (is-a? this text%)
                  (send this set-file-format orig-format))
                (when old-auto-name
-                 (delete-file old-auto-name))
+                 (when (file-exists? old-auto-name)
+                   (delete-file old-auto-name)))
                (set! auto-saved-name auto-name)
                (set! auto-save-out-of-date? #f)
                auto-name))]
