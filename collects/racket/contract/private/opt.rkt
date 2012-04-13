@@ -228,7 +228,8 @@
               (λ () e)
               (λ (this that) #f)
               (vector)
-              (begin-lifted (box #f)))))))]))
+              (begin-lifted (box #f))
+              #,chaperone?)))))]))
 
 ;; this macro optimizes 'e' as a contract,
 ;; using otherwise-id if it does not recognize 'e'.
@@ -320,7 +321,8 @@
                       (λ () e)
                       (λ (this that) #f)
                       (vector)
-                      (begin-lifted (box #f))))))
+                      (begin-lifted (box #f))
+                      #,chaperone?))))
              (values f1 f2))))]))
 
 ;; optimized contracts
@@ -333,13 +335,12 @@
 (define-values (orig-ctc-prop orig-ctc-pred? orig-ctc-get)
   (make-struct-type-property 'original-contract))
 
-(define-struct opt-contract (proj orig-ctc stronger stronger-vars stamp)
+(define-struct opt-contract (proj orig-ctc stronger stronger-vars stamp chaperone?)
   #:property orig-ctc-prop (λ (ctc) ((opt-contract-orig-ctc ctc)))
+  #:property prop:opt-chaperone-contract (λ (ctc) (opt-contract-chaperone? ctc))
   #:property prop:contract
   (build-contract-property
    #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
-   ;; I think provide/contract and contract calls this, so we are in effect allocating
-   ;; the original once
    #:name (λ (ctc) (contract-name ((orig-ctc-get ctc) ctc)))
    #:stronger
    (λ (this that)

@@ -906,7 +906,9 @@
 (define (chaperone-contract? x)
   (let ([c (coerce-contract/f x)])
     (and c
-         (chaperone-contract-struct? c))))
+         (or (chaperone-contract-struct? c)
+             (and (prop:opt-chaperone-contract? c)
+                  ((prop:opt-chaperone-contract-get-test c) c))))))
 
 (define (impersonator-contract? x)
   (let ([c (coerce-contract/f x)])
