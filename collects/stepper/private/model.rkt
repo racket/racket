@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;step collector state machine (not yet implemented):
 ;
@@ -38,10 +38,9 @@
 ;  late-let(x) : ERROR
 
 
-(require scheme/contract
-         scheme/match
-         scheme/class
-         scheme/list
+(require racket/contract
+         racket/match 
+         racket/list 
          (prefix-in a: "annotate.rkt")
          (prefix-in r: "reconstruct.rkt")
          "shared.rkt"

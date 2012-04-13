@@ -345,6 +345,49 @@
   
   (define (print-current-view item evt)
     (send (send canvas get-editor) print))
+  
+  ;; code for dealing with runaway processes:
+  
+  (define runaway-counter-limit 1000)
+  (define disable-runaway-counter #f)
+  (define runaway-counter 0)
+  
+  (define (result-handler result)
+    (when (not disable-runaway-counter)
+      (set! runaway-counter (+ runaway-counter 1)))
+    (when (= runaway-counter runaway-counter-limit)
+      (define runaway-semaphore (make-semaphore 0))
+      (async-channel-put view-channel (list 'runaway-block runaway-semaphore))
+      ;; wait for a signal to continue running:
+      (match (semaphore-wait runaway-semaphore)
+        ['continue-for-now (set! runaway-counter 0)]
+        ['continue-forever (set! runaway-counter 0)
+                           (set! disable-runaway-counter #t)]))
+    (async-channel-put view-channel result))
+  
+  (define keep-running-message
+    (string-append 
+     "The program running in the stepper has taken a whole bunch of steps. "
+     "Do you want to continue running it for now, halt, or let it run "
+     "without asking again?"))
+  
+  (define (confirm-running)
+    (define message-box-result
+      (message-box/custom
+       "Keep Running Program?"
+       keep-running-message
+       "Continue for now"
+       "Halt"
+       "Continue uninterrupted"
+       #f ;; use the stepper window instead?
+       '(stop disallow-close default=1)
+       ))
+    (match message-box-result
+      [1 'continue-for-now]
+      [2 'halt]
+      [3 'continue-forever]))
+  
+  
 
   ;; translates a result into a step
   ;; format-result : result -> step?
@@ -400,7 +443,7 @@
   (model:go
    program-expander-prime 
    ;; what do do with the results:
-   (lambda (result) (async-channel-put view-channel result))
+   result-handler
    (get-render-settings render-to-string
                         render-to-sexp 
                         (send language-level stepper:enable-let-lifting?)
