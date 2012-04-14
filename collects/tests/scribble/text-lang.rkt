@@ -4,10 +4,10 @@
          (prefix-in doc: (lib "scribblings/scribble/text.scrbl")))
 
 (provide text-lang-tests)
-
+(module+ main (text-lang-tests))
 (define (text-lang-tests)
   ;; (sample-file-tests)
-  (in-documentation-tests))
+  (test do (in-documentation-tests)))
 
 ;; unused now
 (define-runtime-path text-dir "text")

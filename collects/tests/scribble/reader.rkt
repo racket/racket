@@ -2,8 +2,6 @@
 
 (require tests/eli-tester (prefix-in scr: scribble/reader) racket/list)
 
-(provide reader-tests)
-
 (define the-tests #<<END-OF-TESTS
 
 ;; format:
@@ -901,7 +899,8 @@ END-OF-TESTS
 (define -\\error->  (mk-error-test read/BS))
 
 ;; running the tests
-
+(provide reader-tests)
+(module+ main (reader-tests))
 (define (reader-tests)
   (define (matching? x y)
     (cond [(equal? x y) #t]

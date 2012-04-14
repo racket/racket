@@ -3,7 +3,7 @@
 (require tests/eli-tester scribble/text/syntax-utils)
 
 (provide begin/collect-tests)
-
+(module+ main (begin/collect-tests))
 (define (begin/collect-tests)
   (test
 
