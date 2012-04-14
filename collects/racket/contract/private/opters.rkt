@@ -475,7 +475,23 @@
        stronger-ribs-dom
        dom-chaperone?)))
   
-  (syntax-case* stx (-> values any) module-or-top-identifier=?
+  (syntax-case* stx (-> values any any/c) module-or-top-identifier=?
+    [(-> any/c ... any)
+     (with-syntax ([n (- (length (syntax->list stx)) 2)])
+       (values
+        (with-syntax ((val (opt/info-val opt/info))
+                      (ctc (opt/info-contract opt/info))
+                      (blame (opt/info-blame opt/info)))
+          (syntax (if (procedure-arity-includes? val n)
+                      val
+                      (raise-flat-arrow-err blame val n))))
+        null
+        null
+        null
+        #'(procedure-arity-includes? val n)
+        #f
+        null
+        #t))]
     [(-> dom ... (values rng ...))
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
@@ -503,6 +519,10 @@
                (values next lift superlift partial flat _ stronger-ribs chaperone?)
                (opt/unknown opt/i opt/info stx))))]))
 
+(define (raise-flat-arrow-err blame val n)
+  (raise-blame-error blame val
+                     "expected a procedure matching the contract ~s"
+                     `(-> ,@(build-list n (λ (x) 'any/c)) any)))
 
 (define (bad-number-of-arguments blame val args dom-len)
   (define num-values (length args))
