@@ -91,7 +91,9 @@ the @rfc for more information about JSON.
          jsexpr?]{
   Parses the JSON bytes string @racket[str] as an immutable @tech{jsexpr}.}
 
-@section{A word about design}
+@section{A Word About Design}
+
+@subsection{The JS-Expression Data Type}
 
 JSON syntactically distinguishes ``@tt{null}'', array literals, and
 object literals, and therefore there is a question of what Racket value
@@ -127,5 +129,12 @@ collection, the introduction states:
 
 In practice, JSON libraries discard the order of object literals in
 parsed JSON text and make no guarantees about the order of generated
-object literals.  This again makes hash tables a good choice for
-representing as JSON object literals.
+object literals, usually using a hash table of some flavor as a natural
+choice.  We therefore use do so as well.
+
+@subsection{Naming Conventions}
+
+Some names in this library use ``jsexpr'' and some use ``json''.  The
+rationale that the first is used for our representation, and the second
+is used as information that is received from or sent to the outside
+world.
