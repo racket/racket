@@ -10549,6 +10549,19 @@ so that propagation occurs.
   (test-name 'c%/c (let ([c%/c (class/c [m (->m integer? integer?)])])
                      c%/c))
   
+  (test-name '(struct/dc s 
+                         [a integer?]
+                         [b #:lazy symbol?]
+                         [c (a b) ...]
+                         [d (a b c) ...])
+             (let ()
+               (struct s (a b c d))
+               (struct/dc s 
+                          [a integer?]
+                          [b #:lazy symbol?]
+                          [c (a b) boolean?]
+                          [d (a b c) integer?])))
+  
   ;; NOT YET RELEASED
   #;
   (test-name '(pr/dc [x integer?]

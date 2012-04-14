@@ -253,7 +253,15 @@
     (((contract-projection ctc) blame) obj)))
 
 (define (struct/dc-name ctc)
-  'struct/dc)
+  (define info (struct/dc-name-info ctc))
+  `(struct/dc ,(vector-ref info 0)
+              ,@(for/list ([x (in-list (vector-ref info 1))]
+                           [subctc (in-list (struct/dc-procs/ctcs ctc))])
+                  `[,@(vector-ref x 1) 
+                    ,(if (vector-ref x 0)
+                         (contract-name subctc)
+                         '...)])))
+
 (define (struct/dc-first-order ctc)
   (struct/dc-pred ctc))
 
@@ -294,7 +302,7 @@
               [else #f])]
            [else #f]))))
          
-(define-struct struct/dc (apply-proj procs/ctcs pred struct-name here)
+(define-struct struct/dc (apply-proj procs/ctcs pred struct-name here name-info)
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -350,7 +358,7 @@
   (syntax-case clause-stx ()
     ;; with caching
     [(sel-id #:lazy (id ...) exp)
-     (with-syntax ([(sel-id ...) (map (λ (x) (id->sel-id struct-id x)) (syntax->list #'(id ...)))])
+     (with-syntax ([(dep-sel-id ...) (map (λ (x) (id->sel-id struct-id x)) (syntax->list #'(id ...)))])
        (with-syntax ([dep-proc (add-prefix #'dep-proc)])
          #`(((define dep-proc (λ (id ...) #,(defeat-inlining #'exp))))
             (begin)
@@ -360,18 +368,20 @@
               (λ (strct fld)
                 (if (eq? cached unique)
                     (begin
-                      (set! cached (un-dep (dep-proc (sel-id strct) ...) fld blame '#,immutable-field))
+                      (set! cached (un-dep (dep-proc (dep-sel-id strct) ...) fld blame '#,immutable-field))
                       cached)
-                    cached))))))]
+                    cached)))
+            #(#f (sel-id #:lazy (id ...))))))]
     [(sel-id (id ...) exp)
-     (with-syntax ([(sel-proc-id ...) (map (λ (x) (id->sel-id struct-id x)) (syntax->list #'(id ...)))])
+     (with-syntax ([(dep-sel-id ...) (map (λ (x) (id->sel-id struct-id x)) (syntax->list #'(id ...)))])
        (with-syntax ([dep-proc (add-prefix #'dep-proc)])
          #`(((define dep-proc (λ (id ...) #,(defeat-inlining #'exp))))
             (begin)
             (begin)
-            (un-dep (dep-proc (sel-proc-id v) ...) (#,(id->sel-id struct-id #'sel-id) v) blame '#,immutable-field)
+            (un-dep (dep-proc (dep-sel-id v) ...) (#,(id->sel-id struct-id #'sel-id) v) blame '#,immutable-field)
             (λ (strct fld)
-              (un-dep (dep-proc (sel-proc-id strct) ...) fld blame '#,immutable-field)))))]
+              (un-dep (dep-proc (dep-sel-id strct) ...) fld blame '#,immutable-field))
+            #(#f (sel-id (id ...))))))]
     [(sel-id #:lazy exp)
      (with-syntax ([ctc (add-prefix #'ctc)]
                    [blame-to-proj (add-prefix #'blame-to-proj)]
@@ -386,7 +396,8 @@
                   (begin
                     (set! cached (proj fld))
                     cached)
-                  cached)))))]
+                  cached)))
+          #(#t (sel-id #:lazy))))]
     [(sel-id exp)
      (with-syntax ([ctc (add-prefix #'ctc)]
                    [blame-to-proj (add-prefix #'blame-to-proj)]
@@ -397,7 +408,8 @@
           (proj (#,(id->sel-id struct-id #'sel-id) v))
           (if (flat-contract? ctc)
               (λ (strct fld) fld)
-              (λ (strct fld) (proj fld)))))]
+              (λ (strct fld) (proj fld)))
+          #(#t (sel-id))))]
     [_ (raise-syntax-error #f "malformed clause" stx clause-stx)]))
 
 (define (check-chaperone-contract immutable-field ctc)
@@ -419,7 +431,7 @@
     [(_ struct-id clause ...)
      (let ()
        (define info (get-struct-info #'struct-id stx))
-       (with-syntax ([(((before-ctc-bound ...) after-ctc-bound after-blame-bound first-order-check chap-proc) ...)
+       (with-syntax ([(((before-ctc-bound ...) after-ctc-bound after-blame-bound first-order-check chap-proc name-info) ...)
                       (for/list ([clause (in-list (syntax->list #'(clause ...)))])
                         (clause->chap-proc #'struct-id info stx clause))])
          (with-syntax ([(id ...) (syntax-case #'((before-ctc-bound ...) ...) ()
@@ -452,7 +464,8 @@
                           (list id ...)
                           #,(list-ref info 2)
                           'struct-id
-                          (quote-module-name))])
+                          (quote-module-name)
+                          '#(struct-id (name-info ...)))])
                  me)))))]))
 
 (define/opter (-struct/dc opt/i opt/info stx)
