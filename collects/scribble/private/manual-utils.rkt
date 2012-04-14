@@ -11,6 +11,7 @@
  [spacer element?]
  [to-flow (content? . -> . flow?)]
  [flow-spacer flow?]
+ [flow-spacer/n (-> exact-nonnegative-integer? flow?)]
  [flow-empty-line flow?]
  [make-table-if-necessary (content? list? . -> . (list/c (or/c omitable-paragraph? table?)))]
  [current-display-width (parameter/c exact-nonnegative-integer?)])
@@ -20,6 +21,7 @@
 (define (to-flow e)
   (make-flow (list (make-omitable-paragraph (list e)))))
 (define flow-spacer (to-flow spacer))
+(define (flow-spacer/n n) (to-flow (hspace n)))
 (define flow-empty-line (to-flow (tt 'nbsp)))
 
 (define (make-table-if-necessary style content)

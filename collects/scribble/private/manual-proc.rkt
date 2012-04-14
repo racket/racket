@@ -363,7 +363,7 @@
                            (list flow-spacer)
                            (list flow-spacer flow-spacer
                                  flow-spacer flow-spacer))]
-                [one-ok? (tagged+arg-width . < . 60)])
+                [one-ok? (and (not (eq? mode 'new)) (tagged+arg-width . < . 60))])
             (list
              (make-table
               "prototype"
@@ -393,7 +393,9 @@
                                              (arg-id (cadr args))))))])
                      (cons
                       (list*
-                       flow-spacer
+                       (if (eq? mode 'new)
+                           (flow-spacer/n 3)
+                           flow-spacer)
                        (if (arg-starts-optional? (car args))
                          (to-flow (make-element #f (list spacer "[")))
                          flow-spacer)
