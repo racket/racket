@@ -391,6 +391,54 @@ MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 
 }
 
+MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= -128) && (v <= 127)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= 0) && (v <= 255)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= -32768) && (v <= 32767)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= 0) && (v <= 65536)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 /* This is related to the section of scheme.h that defines mzlonglong. */
 #ifndef INT64_AS_LONG_LONG
 #ifdef  NO_LONG_LONG_TYPE
@@ -593,15 +641,21 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 @(defctype 'void
    'ctype #f 'pred #f 's->c #f 'c->s (lambda (x) "scheme_void"))
 
-@;  libffi primitive types
-@;     scheme-name  c-type     SCHEME_?P SCHEME_?_VAL scheme_make_
-@(defctype* 'int8   "Tsint8"      "INT"  "INT"        "integer")
+@(defctype* 'int8 "Tsint8"
+   (lambda (x aux) @list{get_byte_val(@x,&@aux)}) #f
+   "integer")
 
-@(defctype* 'uint8  "Tuint8"      "INT"  "UINT"       "integer_from_unsigned")
+@(defctype* 'uint8 "Tuint8"
+   (lambda (x aux) @list{get_ubyte_val(@x,&@aux)}) #f
+   "integer")
 
-@(defctype* 'int16  "Tsint16"     "INT"  "INT"        "integer")
+@(defctype* 'int16 "Tsint16"
+   (lambda (x aux) @list{get_short_val(@x,&@aux)}) #f
+   "integer")
 
-@(defctype* 'uint16 "Tuint16"     "INT"  "UINT"       "integer_from_unsigned")
+@(defctype* 'uint16 "Tuint16"
+   (lambda (x aux) @list{get_ushort_val(@x,&@aux)}) #f
+   "integer")
 
 /* Treats integers properly: */
 @(defctype* 'int32  "Tsint32"

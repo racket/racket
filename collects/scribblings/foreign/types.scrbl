@@ -105,18 +105,35 @@ The basic integer types at various sizes. The @racketidfont{s} or
 @racketidfont{u} prefix specifies a signed or an unsigned integer,
 respectively; the ones with no prefix are signed.}
 
+
 @defthing*[([_byte ctype?]
             [_sbyte ctype?]
-            [_ubyte ctype?]
-            [_short ctype?]
+            [_ubyte ctype?])]{
+
+The @racket[_sbyte] and @racket[_ubyte] types are aliases
+for @racket[_sint8] and @racket[_uint8], respectively.
+The @racket[_byte] type is like @racket[_ubyte], but adds
+256 to a negative Racket value that would work as a @racket[_sbyte]
+(i.e., it casts signed bytes to unsigned bytes).}
+
+
+@defthing*[([_word ctype?]
+            [_sword ctype?]
+            [_uword ctype?]
+            )]{
+
+The @racket[_sword] and @racket[_uword] types are aliases
+for @racket[_sint16] and @racket[_uint16], respectively.
+The @racket[_word] type is like @racket[_uword], but coerces
+negative values in the same way as @racket[_byte].}
+
+
+@defthing*[([_short ctype?]
             [_sshort ctype?]
             [_ushort ctype?]
             [_int ctype?]
             [_sint ctype?]
             [_uint ctype?]
-            [_word ctype?]
-            [_sword ctype?]
-            [_uword ctype?]
             [_long ctype?]
             [_slong ctype?]
             [_ulong ctype?]
@@ -127,13 +144,13 @@ respectively; the ones with no prefix are signed.}
             [_sintptr ctype?]
             [_uintptr ctype?])]{
 
-Aliases for basic integer types. The @racket[_byte] aliases correspond
-to @racket[_int8]. The @racket[_short] and @racket[_word] aliases
+Aliases for basic integer types. The @racket[_short] aliases
 correspond to @racket[_int16]. The @racket[_int] aliases correspond to
 @racket[_int32]. The @racket[_long] aliases correspond to either
 @racket[_int32] or @racket[_int64], depending on the platform. Similarly,
 the @racket[_intptr] aliases correspond to either
 @racket[_int32] or @racket[_int64], depending on the platform.}
+
 
 @defthing*[([_fixnum ctype?]
             [_ufixnum ctype?])]{

@@ -10,6 +10,7 @@
 (test #f malloc 0 _int)
 (test #f malloc _int 0)
 
+;; Check integer-range checking:
 (let ()
   (define (try-int-boundary N _int _uint)
     (test (- (expt 2 N)) cast (- (expt 2 N)) _int _int)
@@ -20,8 +21,14 @@
     (err/rt-test (cast (sub1 (- (expt 2 N))) _int _int))
     (err/rt-test (cast -1 _uint _uint))
     (err/rt-test (cast (- (expt 2 N)) _uint _uint)))
-  ;(try-int-boundary 7 _int8 _uint8)
-  ;(try-int-boundary 15 _int16 _uint16)
+  (try-int-boundary 7 _int8 _uint8)
+  (try-int-boundary 7 _sbyte _ubyte)
+  (test 128 cast -128 _byte _byte)
+  (test 239 cast -17 _byte _byte)
+  (try-int-boundary 15 _int16 _uint16)
+  (try-int-boundary 15 _sword _uword)
+  (try-int-boundary 15 _short _ushort)
+  (test (expt 2 15) cast (- (expt 2 15)) _word _word)
   (try-int-boundary 31 _int32 _uint32)
   (try-int-boundary 63 _int64 _uint64))
 

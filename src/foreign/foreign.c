@@ -472,6 +472,54 @@ MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 
 #endif /* SIXTY_FOUR_BIT_INTEGERS */
 
+MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= -128) && (v <= 127)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= 0) && (v <= 255)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= -32768) && (v <= 32767)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
+{
+  if (SCHEME_INTP(o)) {
+    intptr_t v = SCHEME_INT_VAL(o);
+    if ((v >= 0) && (v <= 65536)) {
+      *_v = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
 /* This is related to the section of scheme.h that defines mzlonglong. */
 #ifndef INT64_AS_LONG_LONG
 #ifdef  NO_LONG_LONG_TYPE
@@ -545,8 +593,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Type Name:   int8
  * LibFfi type: ffi_type_sint8
  * C type:      Tsint8
- * Predicate:   SCHEME_INTP(<Scheme>)
- * Scheme->C:   SCHEME_INT_VAL(<Scheme>)
+ * Predicate:   get_byte_val(<Scheme>,&aux)
+ * Scheme->C:   -none- (set by the predicate)
  * S->C offset: 0
  * C->Scheme:   scheme_make_integer(<C>)
  */
@@ -555,18 +603,18 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Type Name:   uint8
  * LibFfi type: ffi_type_uint8
  * C type:      Tuint8
- * Predicate:   SCHEME_INTP(<Scheme>)
- * Scheme->C:   SCHEME_UINT_VAL(<Scheme>)
+ * Predicate:   get_ubyte_val(<Scheme>,&aux)
+ * Scheme->C:   -none- (set by the predicate)
  * S->C offset: 0
- * C->Scheme:   scheme_make_integer_from_unsigned(<C>)
+ * C->Scheme:   scheme_make_integer(<C>)
  */
 
 #define FOREIGN_int16 (4)
 /* Type Name:   int16
  * LibFfi type: ffi_type_sint16
  * C type:      Tsint16
- * Predicate:   SCHEME_INTP(<Scheme>)
- * Scheme->C:   SCHEME_INT_VAL(<Scheme>)
+ * Predicate:   get_short_val(<Scheme>,&aux)
+ * Scheme->C:   -none- (set by the predicate)
  * S->C offset: 0
  * C->Scheme:   scheme_make_integer(<C>)
  */
@@ -575,10 +623,10 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Type Name:   uint16
  * LibFfi type: ffi_type_uint16
  * C type:      Tuint16
- * Predicate:   SCHEME_INTP(<Scheme>)
- * Scheme->C:   SCHEME_UINT_VAL(<Scheme>)
+ * Predicate:   get_ushort_val(<Scheme>,&aux)
+ * Scheme->C:   -none- (set by the predicate)
  * S->C offset: 0
- * C->Scheme:   scheme_make_integer_from_unsigned(<C>)
+ * C->Scheme:   scheme_make_integer(<C>)
  */
 
 /* Treats integers properly: */
@@ -1496,9 +1544,9 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void: return scheme_void;
     case FOREIGN_int8: return scheme_make_integer(REF_CTYPE(Tsint8));
-    case FOREIGN_uint8: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint8));
+    case FOREIGN_uint8: return scheme_make_integer(REF_CTYPE(Tuint8));
     case FOREIGN_int16: return scheme_make_integer(REF_CTYPE(Tsint16));
-    case FOREIGN_uint16: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint16));
+    case FOREIGN_uint16: return scheme_make_integer(REF_CTYPE(Tuint16));
     case FOREIGN_int32: return scheme_make_realinteger_value(REF_CTYPE(Tsint32));
     case FOREIGN_uint32: return scheme_make_realinteger_value_from_unsigned(REF_CTYPE(Tuint32));
     case FOREIGN_int64: return scheme_make_integer_value_from_long_long(REF_CTYPE(Tsint64));
@@ -1573,65 +1621,17 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
       if (!ret_loc) scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
       break;
     case FOREIGN_int8:
-#     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint8)<sizeof(int) && ret_loc) {
-        ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint8));
-      }
-#     endif /* SCHEME_BIG_ENDIAN */
-      if (SCHEME_INTP(val)) {
-        Tsint8 tmp;
-        tmp = (Tsint8)(SCHEME_INT_VAL(val));
-        (((Tsint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
-      } else {
-        scheme_wrong_type("Scheme->C","int8",0,1,&(val));
-        return NULL; /* hush the compiler */
-      }
+      if (!(get_byte_val(val,&(((Tsint8*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","int8",0,1,&(val));
+      return NULL;
     case FOREIGN_uint8:
-#     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint8)<sizeof(int) && ret_loc) {
-        ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint8));
-      }
-#     endif /* SCHEME_BIG_ENDIAN */
-      if (SCHEME_INTP(val)) {
-        Tuint8 tmp;
-        tmp = (Tuint8)(SCHEME_UINT_VAL(val));
-        (((Tuint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
-      } else {
-        scheme_wrong_type("Scheme->C","uint8",0,1,&(val));
-        return NULL; /* hush the compiler */
-      }
+      if (!(get_ubyte_val(val,&(((Tuint8*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","uint8",0,1,&(val));
+      return NULL;
     case FOREIGN_int16:
-#     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint16)<sizeof(int) && ret_loc) {
-        ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint16));
-      }
-#     endif /* SCHEME_BIG_ENDIAN */
-      if (SCHEME_INTP(val)) {
-        Tsint16 tmp;
-        tmp = (Tsint16)(SCHEME_INT_VAL(val));
-        (((Tsint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
-      } else {
-        scheme_wrong_type("Scheme->C","int16",0,1,&(val));
-        return NULL; /* hush the compiler */
-      }
+      if (!(get_short_val(val,&(((Tsint16*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","int16",0,1,&(val));
+      return NULL;
     case FOREIGN_uint16:
-#     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint16)<sizeof(int) && ret_loc) {
-        ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint16));
-      }
-#     endif /* SCHEME_BIG_ENDIAN */
-      if (SCHEME_INTP(val)) {
-        Tuint16 tmp;
-        tmp = (Tuint16)(SCHEME_UINT_VAL(val));
-        (((Tuint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
-      } else {
-        scheme_wrong_type("Scheme->C","uint16",0,1,&(val));
-        return NULL; /* hush the compiler */
-      }
+      if (!(get_ushort_val(val,&(((Tuint16*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","uint16",0,1,&(val));
+      return NULL;
     case FOREIGN_int32:
       if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","int32",0,1,&(val));
       return NULL;

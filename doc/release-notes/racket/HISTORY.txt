@@ -1,3 +1,6 @@
+Version 5.3.0.1
+ffi/unsafe: integer-type bounds consistently checked
+
 Version 5.2.900.1
 Add submodules, including module*, module-compiled-submodules
 Change resolver protocol so that declaration notify is always issued

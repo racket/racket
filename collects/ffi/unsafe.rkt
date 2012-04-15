@@ -38,13 +38,23 @@
 
 ;; _byte etc is a convenient name for _uint8 & _sint8
 ;; (_byte is unsigned)
-(define* _byte  _uint8)
+(define* _byte  (make-ctype _uint8
+                            (lambda (i) (if (and (exact-integer? i)
+                                                 (<= -128 i -1))
+                                            (+ i 256)
+                                            i))
+                            (lambda (v) v)))
 (define* _ubyte _uint8)
 (define* _sbyte _int8)
 
 ;; _word etc is a convenient name for _uint16 & _sint16
 ;; (_word is unsigned)
-(define* _word  _uint16)
+(define* _word (make-ctype _uint16
+                           (lambda (i) (if (and (exact-integer? i)
+                                                (<= (- (expt 2 15)) i -1))
+                                           (+ i (expt 2 16))
+                                           i))
+                           (lambda (v) v)))
 (define* _uword _uint16)
 (define* _sword _int16)
 
