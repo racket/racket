@@ -406,7 +406,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
     *v = 0;
     return 1;
   } else if (SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] == FIRST_BIT_MASK_LL 
-# ifndef USE_LONG_LONG_FOR_BIGDIG
+# if !defined(USE_LONG_LONG_FOR_BIGDIG) && !defined(SIXTY_FOUR_BIT_INTEGERS)
 	     && !SCHEME_BIGDIG(o)[0]
 # endif
 	     && !SCHEME_BIGPOS(o)) {
