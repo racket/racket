@@ -1091,7 +1091,7 @@ get-transformation] for information about @racket[t].}
 
 
 @defmethod[(start-doc [message string?])
-           boolean?]{
+           void?]{
 
 Starts a document, relevant only when drawing to a printer,
  PostScript, PDF, or SVG device.  For some
