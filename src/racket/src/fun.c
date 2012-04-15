@@ -5264,9 +5264,15 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       /* Only continuation marks can be different. Mostly just re-use sub_cont. */
       intptr_t offset;
       Scheme_Cont_Mark *msaved;
+      Scheme_Cont_Jmp *buf_ptr;
 
       cont = MALLOC_ONE_TAGGED(Scheme_Cont);
       cont->so.type = scheme_cont_type;
+
+      buf_ptr = MALLOC_ONE_RT(Scheme_Cont_Jmp);
+      SET_REQUIRED_TAG(buf_ptr->type = scheme_rt_cont_jmp);
+      cont->buf_ptr = buf_ptr;
+
       cont->buf_ptr->buf.cont = sub_cont;
       cont->escape_cont = sub_cont->escape_cont;
 
