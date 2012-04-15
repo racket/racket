@@ -414,6 +414,18 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
     overflow = p->overflow;
     p->overflow = overflow->prev;
     p->error_buf = overflow->jmp->savebuf;
+    if (p->meta_prompt) {
+      /* When unwinding a stack overflow, we need to fix up
+         the meta prompt to have the restored stack base.
+         (When overflow happens with a meta prompt in place,
+         no fixup is needed, because the overflow is detected 
+         at the point where the meta-prompt's base would be used.) */
+      Scheme_Prompt *meta_prompt;
+      meta_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
+      memcpy(meta_prompt, p->meta_prompt, sizeof(Scheme_Prompt));
+      meta_prompt->stack_boundary = p->stack_start;
+      p->meta_prompt = meta_prompt;
+    }
     if (!overflow->jmp->captured) /* reset if not captured in a continuation */
       scheme_reset_jmpup_buf(&overflow->jmp->cont);
     if (!scheme_overflow_reply) {

@@ -145,5 +145,19 @@
   (test (void) go 100000))
 
 ;; ----------------------------------------
+;; A GC test:
+
+(require racket/control)
+
+(let ()
+  (define (loop n)
+    (shift s (if (zero? n)
+                 (void)
+                 (loop (sub1 n)))))
+  (define (overflow-prompt-go)
+    (reset (loop 50000)))
+  (test (void) overflow-prompt-go))
+
+;; ----------------------------------------
 
 (report-errs)
