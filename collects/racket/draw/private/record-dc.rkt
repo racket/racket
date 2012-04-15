@@ -101,7 +101,7 @@
       (let ([p (make-object pen% color width style cap join)])
         (send p set-stipple (unconvert-bitmap stipple))
         p)
-        (send the-pen-list find-or-create-pen color width style cap join)))
+      (send the-pen-list find-or-create-pen color width style cap join)))
 
 (define (clone-brush b)
   (cond
@@ -401,11 +401,12 @@
                                    [_ #'(values)]))
                                args)])
              #'(define/override (name arg-formal ...)
-                 (super name arg-id ...)
-                 (when (continue-recording?)
-                   (let (arg-bind ...)
-                     (record (lambda (dc) (send dc name arg-id ...))
-                             (lambda () (list 'name (arg-convert ... arg-id) ...))))))))]))
+                 (begin0
+                  (super name arg-id ...)
+                  (when (continue-recording?)
+                    (let (arg-bind ...)
+                      (record (lambda (dc) (send dc name arg-id ...))
+                              (lambda () (list 'name (arg-convert ... arg-id) ...)))))))))]))
 
     (define-syntax (generate-record-unconvert stx)
       (syntax-case stx ()
