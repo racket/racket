@@ -427,7 +427,7 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
                  && SCHEME_CONTP(p->cjs.jumping_to_continuation)) {
         Scheme_Cont *c = (Scheme_Cont *)p->cjs.jumping_to_continuation;
         p->cjs.jumping_to_continuation = NULL;
-        scheme_longjmpup(&c->buf);
+        scheme_longjmpup(&c->buf_ptr->buf);
       } else {
         /* Continue normal escape: */
         scheme_longjmp(scheme_error_buf, 1);
@@ -1512,7 +1512,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     /* This continuation is the same as another, except
        that its mark stack is different. The different part
        of the mark stack won't be visible, so we use the other. */
-    c = c->buf.cont;
+    c = c->buf_ptr->buf.cont;
   }
 
   if (c->composable) {
@@ -1588,7 +1588,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         c->resume_to = thread_end_oflow;
         p->stack_start = c->prompt_stack_start;
       }
-      scheme_longjmpup(&c->buf);
+      scheme_longjmpup(&c->buf_ptr->buf);
     } else if (prompt->id
                && (prompt->id == c->prompt_id)
                && !prompt_mc) {
@@ -1599,7 +1599,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
       if ((!prompt->boundary_overflow_id && !p->overflow)
           || (prompt->boundary_overflow_id
               && (prompt->boundary_overflow_id == p->overflow->id))) {
-        scheme_longjmpup(&c->buf);
+        scheme_longjmpup(&c->buf_ptr->buf);
       } else {
         /* Need to unwind overflows... */
         Scheme_Overflow *overflow;

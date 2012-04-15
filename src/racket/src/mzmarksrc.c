@@ -367,7 +367,7 @@ cont_proc {
   gcMARK2(c->native_trace, gc);
 #endif
 
-  MARK_jmpup(&c->buf, gc);
+  gcMARK2(c->buf_ptr, gc);
   MARK_cjs(&c->cjs, gc);
   MARK_stack_state(&c->ss, gc);
   gcMARK2(c->barrier_prompt, gc);
@@ -389,6 +389,16 @@ cont_proc {
   
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
+}
+
+cont_jmp_proc {
+ mark:
+  Scheme_Cont_Jmp *c = (Scheme_Cont_Jmp *)p;
+
+  MARK_jmpup(&c->buf, gc);
+  
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Jmp));
 }
 
 meta_cont_proc {

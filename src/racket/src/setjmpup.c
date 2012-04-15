@@ -354,16 +354,16 @@ void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, intptr_t *prev)
 
     if (c->cont) {
 #ifdef STACK_GROWS_UP
-      top_delta = (((uintptr_t)c->cont->buf.stack_from
+      top_delta = (((uintptr_t)c->cont->buf_ptr->buf.stack_from
 		    + c->cont->buf.stack_size)
 		   - (uintptr_t)c->stack_from);
 #else
       bottom_delta = ((uintptr_t)c->stack_from 
 		      + c->stack_size
-		      - (uintptr_t)c->cont->buf.stack_from);
+		      - (uintptr_t)c->cont->buf_ptr->buf.stack_from);
       top_delta = bottom_delta;
 #endif
-      c = &c->cont->buf;
+      c = &c->cont->buf_ptr->buf;
     } else
       c = NULL;
   }
@@ -518,12 +518,15 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
          but watch out. */
       intptr_t same_size;
       START_XFORM_SKIP;
-      same_size = find_same(get_copy(c->buf.stack_copy), c->buf.stack_from, c->buf.stack_size);
+      same_size = find_same(get_copy(c->buf_ptr->buf.stack_copy), 
+                            c->buf_ptr->buf.stack_from, 
+                            c->buf_ptr->buf.stack_size);
       b->cont = c;
 #ifdef STACK_GROWS_UP
-      start = (void *)((char *)c->buf.stack_from + same_size);
+      start = (void *)((char *)c->buf_ptr->buf.stack_from + same_size);
 #else
-      start = (void *)((char *)c->buf.stack_from + (c->buf.stack_size - same_size));
+      start = (void *)((char *)c->buf_ptr->buf.stack_from 
+                       + (c->buf_ptr->buf.stack_size - same_size));
 #endif
       /* In 3m-mode, we need `start' on a var-stack boundary: */
       ALIGN_VAR_STACK(__gc_var_stack__, start);

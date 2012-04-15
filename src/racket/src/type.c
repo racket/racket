@@ -590,6 +590,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_rt_overflow_jmp, mark_overflow_jmp);
   GC_REG_TRAV(scheme_rt_meta_cont, meta_cont_proc);
   GC_REG_TRAV(scheme_escaping_cont_type, escaping_cont_proc);
+  GC_REG_TRAV(scheme_rt_cont_jmp, cont_jmp_proc);
 
   GC_REG_TRAV(scheme_char_type, char_obj);
   GC_REG_TRAV(scheme_integer_type, bad_trav);

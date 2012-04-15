@@ -274,6 +274,7 @@ enum {
   scheme_rt_rb_node,                    /* 250 */
   scheme_rt_lightweight_cont,           /* 251 */
   scheme_rt_export_info,                /* 252 */
+  scheme_rt_cont_jmp,                   /* 253 */
 #endif
 
   _scheme_last_type_

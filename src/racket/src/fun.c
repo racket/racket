@@ -4634,6 +4634,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
                                       )
 {
   Scheme_Cont *cont;
+  Scheme_Cont_Jmp *buf_ptr;
   
   cont = MALLOC_ONE_TAGGED(Scheme_Cont);
   cont->so.type = scheme_cont_type;
@@ -4645,8 +4646,12 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
 
   if (composable)
     cont->composable = 1;
+  
+  buf_ptr = MALLOC_ONE_RT(Scheme_Cont_Jmp);
+  SET_REQUIRED_TAG(buf_ptr->type = scheme_rt_cont_jmp);
+  cont->buf_ptr = buf_ptr;
 
-  scheme_init_jmpup_buf(&cont->buf);
+  scheme_init_jmpup_buf(&cont->buf_ptr->buf);
   cont->prompt_tag = prompt_tag;
   if (for_prompt)
     cont->dw = NULL;
@@ -4953,10 +4958,10 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     intptr_t done = cont->runstack_copied->runstack_size, size;
     sub_cont = cont;
     while (sub_cont) {
-      if (sub_cont->buf.cont
-          && (sub_cont->runstack_start == sub_cont->buf.cont->runstack_start)) {
+      if (sub_cont->buf_ptr->buf.cont
+          && (sub_cont->runstack_start == sub_cont->buf_ptr->buf.cont->runstack_start)) {
         /* Copy shared part in: */
-        sub_cont = sub_cont->buf.cont;
+        sub_cont = sub_cont->buf_ptr->buf.cont;
         size = sub_cont->runstack_copied->runstack_size;
         if (size) {
           /* Skip the first item, since that's the call/cc argument,
@@ -5003,7 +5008,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     meta_prompt->boundary_overflow_id = NULL;
     {
       Scheme_Cont *tc;
-      for (tc = cont; tc->buf.cont; tc = tc->buf.cont) {
+      for (tc = cont; tc->buf_ptr->buf.cont; tc = tc->buf_ptr->buf.cont) {
       }
       meta_prompt->mark_boundary = tc->cont_mark_offset;
     }
@@ -5013,9 +5018,9 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
       Scheme_Cont *rs_cont = cont;
       Scheme_Saved_Stack *saved, *actual;
       int delta = 0;
-      while (rs_cont->buf.cont) {
+      while (rs_cont->buf_ptr->buf.cont) {
         delta += rs_cont->runstack_copied->runstack_size;
-        rs_cont = rs_cont->buf.cont;
+        rs_cont = rs_cont->buf_ptr->buf.cont;
         if (rs_cont->runstack_copied->runstack_size) {
           delta -= 1; /* overlap for not-saved call/cc argument */
         }
@@ -5042,14 +5047,14 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
   /* For copying cont marks back in, we need a list of sub_conts,
      deepest to shallowest: */
   copied_cms = cont->cont_mark_offset;
-  for (sub_cont = cont->buf.cont; sub_cont; sub_cont = sub_cont->buf.cont) {
+  for (sub_cont = cont->buf_ptr->buf.cont; sub_cont; sub_cont = sub_cont->buf_ptr->buf.cont) {
     copied_cms = sub_cont->cont_mark_offset;
     sub_conts = scheme_make_raw_pair((Scheme_Object *)sub_cont, sub_conts);
   }
 
   if (!shortcut_prompt) {    
     Scheme_Cont *tc;
-    for (tc = cont; tc->buf.cont; tc = tc->buf.cont) {
+    for (tc = cont; tc->buf_ptr->buf.cont; tc = tc->buf_ptr->buf.cont) {
     }
     p->cont_mark_stack_bottom = tc->cont_mark_offset;
     p->cont_mark_pos_bottom = tc->cont_mark_pos_bottom;
@@ -5262,10 +5267,10 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
       cont = MALLOC_ONE_TAGGED(Scheme_Cont);
       cont->so.type = scheme_cont_type;
-      cont->buf.cont = sub_cont;
+      cont->buf_ptr->buf.cont = sub_cont;
       cont->escape_cont = sub_cont->escape_cont;
 
-      sub_cont = sub_cont->buf.cont;
+      sub_cont = sub_cont->buf_ptr->buf.cont;
 
       /* This mark stack won't be restored, but it may be
 	 used by `continuation-marks'. */
@@ -5349,7 +5354,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   prompt_cont = NULL;
   barrier_cont = NULL;
 
-  if (scheme_setjmpup_relative(&cont->buf, cont, stack_start, sub_cont)) {
+  if (scheme_setjmpup_relative(&cont->buf_ptr->buf, cont->buf_ptr, stack_start, sub_cont)) {
     /* We arrive here when the continuation is applied */
     Scheme_Object *result, *extra_marks;
     Scheme_Overflow *resume;
@@ -5876,7 +5881,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
   cont->resume_to = overflow;
   cont->empty_to_next_mc = (char)empty_to_next_mc;
   scheme_current_thread->stack_start = cont->prompt_stack_start;
-  scheme_longjmpup(&cont->buf);
+  scheme_longjmpup(&cont->buf_ptr->buf);
 
   ESCAPED_BEFORE_HERE;
 }
@@ -6537,9 +6542,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
           if (!cont->runstack_copied) {
             /* Current cont was just a mark-stack variation of
                next cont, so skip the next cont. */
-            cont = cont->buf.cont;
+            cont = cont->buf_ptr->buf.cont;
           }
-          cont = cont->buf.cont;
+          cont = cont->buf_ptr->buf.cont;
           if (cont)
             cdelta = cont->cont_mark_offset;
           else
