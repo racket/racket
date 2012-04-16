@@ -149,13 +149,13 @@
              #'(and/c flonum? positive?)
              (lambda (x) (and (flonum? x) (positive? x)))
              #'-PosFlonum))
-(define -NonNegFlonum (*Un -PosFlonum -FlonumPosZero))
+(define -NonNegFlonum (*Un -PosFlonum -FlonumZero))
 (define -NegFlonum
   (make-Base 'Negative-Float
              #'(and/c flonum? negative?)
              (lambda (x) (and (flonum? x) (negative? x)))
              #'-NegFlonum))
-(define -NonPosFlonum (*Un -NegFlonum -FlonumNegZero))
+(define -NonPosFlonum (*Un -NegFlonum -FlonumZero))
 (define -Flonum (*Un -NegFlonum -FlonumNegZero -FlonumPosZero -PosFlonum -FlonumNan)) ; 64-bit floats
 ;; inexact reals can be flonums (64-bit floats) or 32-bit floats
 (define -SingleFlonumPosZero ; disjoint from Flonum 0s
@@ -187,16 +187,16 @@
              (lambda (x) #f)
 	     #'-PosSingleFlonum))
 (define -PosInexactReal     (*Un -PosSingleFlonum -PosFlonum))
-(define -NonNegSingleFlonum (*Un -PosSingleFlonum -SingleFlonumPosZero))
-(define -NonNegInexactReal  (*Un -PosInexactReal -InexactRealPosZero))
+(define -NonNegSingleFlonum (*Un -PosSingleFlonum -SingleFlonumZero))
+(define -NonNegInexactReal  (*Un -PosInexactReal -InexactRealZero))
 (define -NegSingleFlonum
   (make-Base 'Negative-Single-Flonum
              #'(and/c single-flonum? negative?)
              (lambda (x) #f)
 	     #'-NegSingleFlonum))
 (define -NegInexactReal     (*Un -NegSingleFlonum -NegFlonum))
-(define -NonPosSingleFlonum (*Un -NegSingleFlonum -SingleFlonumNegZero))
-(define -NonPosInexactReal  (*Un -NegInexactReal -InexactRealNegZero))
+(define -NonPosSingleFlonum (*Un -NegSingleFlonum -SingleFlonumZero))
+(define -NonPosInexactReal  (*Un -NegInexactReal -InexactRealZero))
 (define -SingleFlonum       (*Un -NegSingleFlonum -SingleFlonumNegZero -SingleFlonumPosZero -PosSingleFlonum -SingleFlonumNan))
 (define -InexactReal        (*Un -SingleFlonum -Flonum))
 

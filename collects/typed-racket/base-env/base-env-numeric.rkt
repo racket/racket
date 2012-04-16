@@ -473,58 +473,58 @@
   (define fl<-type
     (lambda ()
       (from-cases
-       (-> -FlonumZero -Flonum B : (-FS (-filter -PosFlonum 1) (-filter (Un -NonPosFlonum -FlonumPosZero) 1)))
-       (-> -Flonum -FlonumZero B : (-FS (-filter -NegFlonum 0) (-filter (Un -NonNegFlonum -FlonumNegZero) 0)))
+       (-> -FlonumZero -Flonum B : (-FS (-filter -PosFlonum 1) (-filter -NonPosFlonum 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter -NegFlonum 0) (-filter -NonNegFlonum 0)))
        (-> -PosFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
        (-> -Flonum -PosFlonum B : (-FS -top (-filter -PosFlonum 0)))
        (-> -NonNegFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
-       (-> -Flonum -NonNegFlonum B : (-FS -top (-filter (Un -NonNegFlonum -FlonumNegZero) 0)))
+       (-> -Flonum -NonNegFlonum B : (-FS -top (-filter -NonNegFlonum 0)))
        (-> -NegFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
        (-> -Flonum -NegFlonum B : (-FS (-filter -NegFlonum 0) -top))
-       (-> -NonPosFlonum -Flonum B : (-FS -top (-filter (Un -NonPosFlonum -FlonumPosZero) 1)))
+       (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -NonPosFlonum 1)))
        (-> -Flonum -NonPosFlonum B : (-FS (-filter -NegFlonum 0) -top))
        (comp -Flonum))))
   (define fl>-type
     (lambda ()
       (from-cases
-       (-> -FlonumZero -Flonum B : (-FS (-filter -NegFlonum 1) (-filter (Un -NonNegFlonum -FlonumNegZero) 1)))
-       (-> -Flonum -FlonumZero B : (-FS (-filter -PosFlonum 0) (-filter (Un -NonPosFlonum -FlonumPosZero) 0)))
+       (-> -FlonumZero -Flonum B : (-FS (-filter -NegFlonum 1) (-filter -NonNegFlonum 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter -PosFlonum 0) (-filter -NonPosFlonum 0)))
        (-> -PosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
        (-> -Flonum -PosFlonum B : (-FS (-filter -PosFlonum 0) -top))
-       (-> -NonNegFlonum -Flonum B : (-FS -top (-filter (Un -NonNegFlonum -FlonumNegZero) 1)))
+       (-> -NonNegFlonum -Flonum B : (-FS -top (-filter -NonNegFlonum 1)))
        (-> -Flonum -NonNegFlonum B : (-FS (-filter -PosFlonum 0) -top))
        (-> -NegFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
        (-> -Flonum -NegFlonum B : (-FS -top (-filter -NegFlonum 0)))
        (-> -NonPosFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
-       (-> -Flonum -NonPosFlonum B : (-FS -top (-filter (Un -NonPosFlonum -FlonumPosZero) 0)))
+       (-> -Flonum -NonPosFlonum B : (-FS -top (-filter -NonPosFlonum 0)))
        (comp -Flonum))))
   (define fl<=-type
     (lambda ()
       (from-cases
-       (-> -FlonumZero -Flonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 1) (-filter -NegFlonum 1)))
-       (-> -Flonum -FlonumZero B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) (-filter -PosFlonum 0)))
+       (-> -FlonumZero -Flonum B : (-FS (-filter -NonNegFlonum 1) (-filter -NegFlonum 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter -NonPosFlonum 0) (-filter -PosFlonum 0)))
        (-> -PosFlonum -Flonum B : (-FS (-filter -PosFlonum 1) -top))
        (-> -Flonum -PosFlonum B : (-FS -top (-filter -PosFlonum 0)))
-       (-> -NonNegFlonum -Flonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 1) -top))
+       (-> -NonNegFlonum -Flonum B : (-FS (-filter -NonNegFlonum 1) -top))
        (-> -Flonum -NonNegFlonum B : (-FS -top (-filter -PosFlonum 0)))
        (-> -NegFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
        (-> -Flonum -NegFlonum B : (-FS (-filter -NegFlonum 0) -top))
        (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -NegFlonum 1)))
-       (-> -Flonum -NonPosFlonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) -top))
+       (-> -Flonum -NonPosFlonum B : (-FS (-filter -NonPosFlonum 0) -top))
        (comp -Flonum))))
   (define fl>=-type
     (lambda ()
       (from-cases
-       (-> -FlonumZero -Flonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 1) (-filter -PosFlonum 1)))
-       (-> -Flonum -FlonumZero B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 0) (-filter -NegFlonum 0)))
+       (-> -FlonumZero -Flonum B : (-FS (-filter -NonPosFlonum 1) (-filter -PosFlonum 1)))
+       (-> -Flonum -FlonumZero B : (-FS (-filter -NonNegFlonum 0) (-filter -NegFlonum 0)))
        (-> -PosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
        (-> -Flonum -PosFlonum B : (-FS (-filter -PosFlonum 0) -top))
        (-> -NonNegFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
-       (-> -Flonum -NonNegFlonum B : (-FS (-filter (Un -NonNegFlonum -FlonumNegZero) 0) -top))
+       (-> -Flonum -NonNegFlonum B : (-FS (-filter -NonNegFlonum 0) -top))
        (-> -NegFlonum -Flonum B : (-FS (-filter -NegFlonum 1) -top))
        (-> -Flonum -NegFlonum B : (-FS -top (-filter -NegFlonum 0)))
        (-> -NonPosFlonum -Flonum B : (-FS -top (-filter -PosFlonum 1)))
-       (-> -Flonum -NonPosFlonum B : (-FS (-filter (Un -NonPosFlonum -FlonumPosZero) 0) -top))
+       (-> -Flonum -NonPosFlonum B : (-FS (-filter -NonPosFlonum 0) -top))
        (comp -Flonum))))
   (define flmin-type
     (lambda ()
@@ -556,7 +556,7 @@
                   (unop -Flonum))))
   (define flexp-type
     (lambda ()
-      (from-cases ((Un -NonNegFlonum -FlonumNegZero) . -> . -PosFlonum)
+      (from-cases (-NonNegFlonum . -> . -PosFlonum)
                   (-NegFlonum . -> . -NonNegFlonum)
                   (-Flonum . -> . -Flonum)))) ; nan is the only non nonnegative case (returns nan)
   (define flsqrt-type
@@ -1192,24 +1192,22 @@
              ;; we could add cases to encode that
              (commutative-case -PosFlonum -Flonum)
              (varop -NonNegFlonum)
-             ;; the following case is not guaranteed to return a NonNegFlonum
-             ;; here's an example: (max 0.0 -0.0) -> -0.0
-             (commutative-case (Un -NonNegFlonum -FlonumNegZero) -Flonum)
+             (commutative-case -NonNegFlonum -Flonum)
              (map varop (list -NegFlonum -NonPosFlonum -Flonum
                               -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero))
              (commutative-case -PosSingleFlonum -SingleFlonum)
              (varop -NonNegSingleFlonum)
-             (commutative-case (Un -NonNegSingleFlonum -SingleFlonumNegZero) -SingleFlonum)
+             (commutative-case -NonNegSingleFlonum -SingleFlonum)
              (map varop (list -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
                               -InexactRealPosZero -InexactRealNegZero -InexactRealZero))
              (commutative-case -PosInexactReal -InexactReal)
              (varop -NonNegInexactReal)
-             (commutative-case (Un -NonNegInexactReal -InexactRealNegZero) -InexactReal)
+             (commutative-case -NonNegInexactReal -InexactReal)
              (map varop (list -NegInexactReal -NonPosInexactReal -InexactReal
                               -RealZero))
              (commutative-case -PosReal -Real)
              (varop -NonNegReal)
-             (commutative-case (Un -NonNegReal -RealZero) -InexactReal)
+             (commutative-case -NonNegReal -InexactReal)
              (map varop (list -NegReal -NonPosReal -Real)))]
 [min
  (from-cases (map varop (list -Zero -One))
@@ -1225,24 +1223,24 @@
                               -PosFlonum -NonNegFlonum))
              (commutative-case -NegFlonum -Flonum)
              (varop -NonPosFlonum)
-             (commutative-case (Un -NonPosFlonum -FlonumPosZero) -Flonum)
+             (commutative-case -NonPosFlonum -Flonum)
              (map varop (list -Flonum
                               -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero
                               -PosSingleFlonum -NonNegSingleFlonum))
              (commutative-case -NegSingleFlonum -SingleFlonum)
              (varop -NonPosSingleFlonum)
-             (commutative-case (Un -NonPosSingleFlonum -SingleFlonumPosZero) -SingleFlonum)
+             (commutative-case -NonPosSingleFlonum -SingleFlonum)
              (map varop (list -SingleFlonum
                               -InexactRealPosZero -InexactRealNegZero -InexactRealZero
                               -PosInexactReal -NonNegInexactReal))
              (commutative-case -NegInexactReal -InexactReal)
              (varop -NonPosInexactReal)
-             (commutative-case (Un -NonPosInexactReal -InexactRealPosZero) -InexactReal)
+             (commutative-case -NonPosInexactReal -InexactReal)
              (map varop (list -InexactReal
                               -RealZero -PosReal -NonNegReal))
              (commutative-case -NegReal -Real)
              (varop -NonPosReal)
-             (commutative-case (Un -NonPosReal -RealZero) -Real)
+             (commutative-case -NonPosReal -Real)
              (varop -Real))]
 
 [add1 (from-cases
