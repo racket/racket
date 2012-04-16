@@ -23,4 +23,8 @@
          com-make-event-executor com-event-executor?
 
          com-object-get-iunknown com-iunknown?
-         com-object-get-idispatch com-idispatch?)
+         com-object-get-idispatch com-idispatch?
+
+         type-description? 
+         type-describe type-described?
+         type-described-value type-described-description)

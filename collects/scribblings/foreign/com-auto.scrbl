@@ -161,6 +161,7 @@ the object itself.}
 Returns @racket[#t] if @racket[t1] and @racket[t2] represent the same
 type information, @racket[#f] otherwise.}
 
+
 @; ----------------------------------------
 
 @section{COM Methods}
@@ -174,7 +175,8 @@ type information, @racket[#f] otherwise.}
 
 @defproc[(com-method-type [obj/type (or/c com-object? com-type?)]
                           [method-name string?])
-         (list/c '-> list? any/c)]{
+         (list/c '-> (listof type-description?) 
+                     type-description?)]{
 
   Returns a list indicating the type of the specified method in
   @racket[obj/type]. The list after the @racket['->] represents the
@@ -188,7 +190,14 @@ type information, @racket[#f] otherwise.}
   Invokes @racket[method-name] on @racket[obj] with @racket[v]s as the
   arguments. The special value @racket[com-omit] may be used for
   optional arguments, which useful when values are supplied for
-  arguments after the omitted argument(s).}
+  arguments after the omitted argument(s).
+
+  The types of arguments are determined via @racket[com-method-type],
+  if possible, and @racket[type-describe] wrappers in the @racket[v]s
+  are simply replaced with the values that they wrap. If the types are
+  not available from @racket[com-method-type], then types are inferred
+  for each @racket[v] with attention to descriptions in any
+  @racket[type-describe] wrappers in @racket[v].}
 
 
 @defthing[com-omit any/c]{
@@ -210,7 +219,7 @@ argument.}
 
 @defproc[(com-get-property-type [obj/type (or/c com-object? com-type?)]
                                 [property-name string?])
-         (list/c '-> '() any/c)]{
+         (list/c '-> '() type-description?)]{
 
   Returns a type for @racket[property-name] like a result of
   @racket[com-method], where the result type corresponds to the
@@ -235,7 +244,7 @@ argument.}
 
 @defproc[(com-set-property-type [obj/type (or/c com-object? com-type?)] 
                                 [property-name string?])
-         (list/c '-> (list/c any/c) 'void)]{
+         (list/c '-> (list/c type-description?) 'void)]{
 
   Returns a type for @racket[property-name] like a result of
   @racket[com-method], where the sole argument type corresponds to the
@@ -250,7 +259,15 @@ argument.}
 
    Sets the value of the final property in @racket[obj] to @racket[v]
    by following the @racket[property]s, where the value of each
-   intermediate property must be a COM object.}
+   intermediate property must be a COM object.
+
+   The type of the property is determined via
+   @racket[com-property-type], if possible, and
+   @racket[type-describe] wrappers in @racket[v] are then replaced
+   with the values that they wrap. If the type is not available from
+   @racket[com-property-type], then a type is inferred for @racket[v]
+   with attention to the descriptions in any @racket[type-describe]
+   wrappers in @racket[v].}
 
 @; ----------------------------------------
 
@@ -265,7 +282,7 @@ argument.}
 
 @defproc[(com-event-type [obj/type (or/c com-object? com-type?)]
                          [event-name string?])
-         (list/c '-> list? 'void)]{
+         (list/c '-> (listof type-description?) 'void)]{
 
   Returns a list indicating the type of the specified events in
   @racket[obj/type]. The list after the @racket['->] represents the
@@ -420,7 +437,7 @@ used to represent various atomic types:
 
  @item{@racket['com-enumeration] --- a 32-bit signed integer}
 
- @item{@racket['any] --- any of the above}
+ @item{@racket['any] --- any of the above, or an array when not nested in an array type}
 
  @item{@racket['void] --- no value}
 
@@ -433,6 +450,49 @@ for the argument is updated with a new value when the method returns.
 A type wrapped in a list with @racket['opt], such as @racket['(opt
 (box int))], is an optional argument. The argument can be omitted or
 replaced with @racket[com-omit].
+
+A type wrapped in a list with @racket['array] and a positive exact
+integer, such as @racket['(array 7 int)], represents a vector of
+values to be used as a COM array.  Array types can be nested to
+specify a multidimensional array as represented by nested vectors.
+
+When type information is not available, functions like @racket[com-invoke]
+infer type descriptions from arguments. Inference chooses @racket['boolean]
+for booleans; the first of @racket['int], @racket['unsigned-int], 
+@racket['long-long], @racket['unsigned-long-long] that fits for an exact integer;
+@racket['double] for inexact real numbers; @racket['string] for a string;
+@racket['com-object] and @racket['iunknown] for corresponding COM object references;
+and an @racket['array] type for a vector, where the element type is inferred
+from vector values, resorting to @racket['any] if any two elements have different
+inferred types or if the array is multidimensional.
+
+
+@defproc[(type-description? [v any/c]) boolean?]{
+
+Return @racket[#t] if @racket[v] is a COM argument or result type
+description as above, @racket[#f] otherwise.}
+
+
+@deftogether[(
+@defproc[(type-described? [v any/c]) boolean?]
+@defproc[(type-describe [v any/c] [desc type-description?])
+         type-described?]
+@defproc[(type-described-value [td type-described?]) any/c]
+@defproc[(type-described-description [td type-described?])
+         type-description?]
+)]{
+
+The @racket[type-described?] predicate recognizes wrappers produced
+with @racket[type-describe], and @racket[type-described-value] and
+@racket[type-described-description] extract the value and description
+parts of a @racket[type-describe] value.
+
+A @racket[type-describe] wrapper combines a base value with a type
+description. The description is used instead of an automatically
+inferred COM argument type when no type is available for from COM
+automation a method for @racket[com-invoke] or a property for
+@racket[com-set-property!]. A wrapper can be placed on an immediate
+value, or it can be on a value within a box or vector.}
 
 @; ----------------------------------------
 

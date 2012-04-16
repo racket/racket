@@ -52,6 +52,8 @@
   (test '(-> () void) (com-method-type mzcom "Reset"))
   (test '(-> (string) string) (com-method-type mzcom "Eval"))
   (test "3" (com-invoke mzcom "Eval" "(+ 1 2)"))
+  (test "4" (com-invoke mzcom "Eval" (type-describe "(+ 2 2)" 'string)))
+  (test "5" (com-invoke mzcom "Eval" (type-describe "(+ 3 2)" 'int))) ; description is not used
 
   (test '() (com-get-properties mzcom))
   (test '() (com-get-properties (com-object-type mzcom)))
@@ -131,6 +133,26 @@
   (test '(-> (string) void) (com-set-property-type doc "title"))
 
   (test (void) (com-release ie))
+
+  (test #t (type-description? 'int))
+  (test #t (type-description? 'long-long))
+  (test #t (type-description? 'string))
+  (test #t (type-description? 'any))
+  (test #t (type-description? 'char))
+  (test #f (type-description? 'long))
+  (test #f (type-description? '(int)))
+  (test #t (type-description? '(opt int)))
+  (test #f (type-description? '(opt)))
+  (test #f (type-description? '(opt int int)))
+  (test #t (type-description? '(box int)))
+  (test #f (type-description? '(box)))
+  (test #f (type-description? '(box int int)))
+  (test #f (type-description? '(-> (int) int)))
+  (test #t (type-description? '(array 8 int)))
+  (test #f (type-description? '(array 8)))
+  (test #f (type-description? '(array)))
+  (test #f (type-description? '(array int)))
+  (test #t (type-description? '(array 8 (array 4 any))))
 
   (void))
 

@@ -59,7 +59,11 @@
          com-unregister-event-callback
 
          com-object-get-iunknown com-iunknown?
-         com-object-get-idispatch com-idispatch?)
+         com-object-get-idispatch com-idispatch?
+
+         type-description? 
+         type-describe type-described?
+         type-described-value type-described-description)
 
 ;; FIXME:
 ;;   call args via var-desc (instead of func-dec)
@@ -1106,8 +1110,24 @@
 	`(array ? ,(vt-to-scheme-type (- vt VT_ARRAY)))
 	(string->symbol (format "COM-0x~x" vt)))]))
 
-(define (arg-to-type arg)
+(define (arg-to-type arg [in-array 0])
   (cond
+   [(type-described? arg)
+    (type-described-description arg)]
+   [(vector? arg) `(array ,(vector-length arg)
+			  ,(if (zero? (vector-length arg))
+			       'int
+			       (for/fold ([t (arg-to-type (vector-ref arg 0) (add1 in-array))]) ([v (in-vector arg)])
+			         (define t2 (arg-to-type v (add1 in-array)))
+				 (let loop ([t t] [t2 t2])
+				   (cond
+				    [(equal? t t2) t]
+				    [(and (pair? t) (pair? t2) 
+					  (eq? (car t) 'array) (eq? (car t2) 'array)
+					  (equal? (cadr t) (cadr t2)))
+				     `(array ,(cadr t) ,(loop (caddr t) (caddr t2)))]
+				    [else 'any])))))]
+   [(in-array . > . 1) 'any]
    [(boolean? arg) 'boolean]
    [(signed-int? arg 32) 'int]
    [(unsigned-int? arg 32) 'unsigned-int]
@@ -1117,19 +1137,6 @@
    [(real? arg) 'double]
    [(com-object? arg) 'com-object]
    [(IUnknown? arg) 'iunknown]
-   [(vector? arg) `(array ,(vector-length arg)
-			  ,(if (zero? (vector-length arg))
-			       'int
-			       (for/fold ([t (arg-to-type (vector-ref arg 0))]) ([v (in-vector arg)])
-			         (define t2 (arg-to-type v))
-				 (let loop ([t t] [t2 t2])
-				   (cond
-				    [(equal? t t2) t]
-				    [(and (pair? t) (pair? t2) 
-					  (eq? (car t) 'array) (eq? (car t2) 'array)
-					  (equal? (cadr t) (cadr t2)))
-				     `(array ,(cadr t) ,(loop (caddr t) (caddr t2)))]
-				    [else 'any])))))]
    [else (error 'com "cannot infer marshal format for value: ~e" arg)]))
 
 (define (elem-desc-ref func-desc i)
@@ -1342,6 +1349,8 @@
 
 (define (ok-argument? arg type)
   (cond
+   [(type-described? arg)
+    (ok-argument? (type-described-value arg) type)]
    [(symbol? type)
     (case type
       [(void) (void? arg)]
@@ -1377,6 +1386,55 @@
            (ok-argument? v (caddr type))))]
    [else #f]))
 
+(define (type-description? type)
+  (cond
+   [(symbol? type)
+    (hash-ref
+     #hasheq((void . #t)
+             (char . #t)
+             (unsigned-short . #t)
+             (unsigned-int . #t)
+             (unsigned-long-long . #t)
+             (signed-char . #t)
+             (short-int . #t)
+             (int . #t)
+             (long-long . #t)
+             (float . #t)
+             (double . #t)
+             (string . #t)
+             (currency . #t)
+             (date . #t)
+             (boolean . #t)
+             (scode . #t)
+             (iunknown . #t)
+             (com-object . #t)
+             (any . #t)
+             (com-enumeration . #t))
+     type
+     #f)]
+   [(and (list? type)
+         (pair? type))
+    (cond
+     [(eq? 'opt (car type))
+      (and (= (length type) 2)
+           (type-description? (cadr type)))]
+     [(eq? 'box (car type))
+      (and (= (length type) 2)
+           (type-description? (cadr type)))]
+     [(eq? 'array (car type))
+      (and (= (length type) 3)
+           (exact-positive-integer? (cadr type))
+           (type-description? (caddr type)))]
+     [else #f])]
+   [else #f]))
+
+(struct type-described (value description))
+
+(define (type-describe v desc)
+  (unless (type-description? desc)
+    (raise-type-error 'type-describe "type description" desc))
+  (type-described v desc))
+
 (define (check-argument who method arg type)
   (unless (ok-argument? arg type)
     (raise-type-error (string->symbol method) (format "~s" type) arg)))
@@ -1395,6 +1453,8 @@
 
 (define (scheme-to-variant! var a elem-desc scheme-type)
   (cond
+   [(type-described? a)
+    (scheme-to-variant! var (type-described-value a) elem-desc scheme-type)]
    [(eq? a com-omit)
     (if (and elem-desc
              (elem-desc-has-default? elem-desc))
@@ -1538,7 +1598,7 @@
    [else #f]))
 
 (define (to-vt type)
-  ;; only used for inferred types
+  ;; used for inferred or described types
   (case type
     [(void) VT_VOID]
     [(char) VT_UI1]
