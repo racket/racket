@@ -602,4 +602,15 @@
         r1)
   (test #t equal? r1 r2))
 
+;; ----------------------------------------
+
+;; Backup test for one in "thread.rktl", since this sandbox test
+;; originally exposed it:
+(let ()
+  (define sandbox (make-evaluator 'racket/base))
+  (sandbox "(define result (call/cc (lambda (x) (lambda () (x 5)))))")
+  (sandbox "(if (procedure? result) (result) result)"))
+
+;; ----------------------------------------
+
 (report-errs)

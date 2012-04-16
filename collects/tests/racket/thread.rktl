@@ -531,6 +531,27 @@
 
 (arity-test call-in-nested-thread 1 2)
 
+(test
+ 7
+ 'nested-thread-stack-ownership-test
+ (let ()
+   (define -k #f)
+   (call-in-nested-thread (lambda () 
+                            (call-with-continuation-barrier
+                             (lambda ()
+                               (call-with-continuation-prompt
+                                (lambda ()
+                                  (with-continuation-mark
+                                      'x
+                                      'y
+                                    (let/cc k
+                                      (set! -k k)
+                                      (sync (thread (lambda () (k 5))))))))))))
+   (call-in-nested-thread (lambda ()
+                            (call-with-continuation-prompt
+                             (lambda ()
+                               (-k 7)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test wait-multiple:
 

@@ -3343,6 +3343,11 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   unschedule_in_set((Scheme_Object *)np, np->t_set_parent);
 
+  if (np->cont_mark_stack_owner
+      && ((*np->cont_mark_stack_owner) == np)) {
+    *np->cont_mark_stack_owner = NULL;
+  }
+
   np->running = 0;
 
   *p->runstack_owner = p;

@@ -4729,7 +4729,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
       p->runstack_owner = owner;
       *owner = p;
     }
-    if (p->cont_mark_stack && !p->cont_mark_stack_owner) {
+    if (cont->ss.cont_mark_stack && !p->cont_mark_stack_owner) {
       Scheme_Thread **owner;
       owner = MALLOC_N(Scheme_Thread *, 1);
       p->cont_mark_stack_owner = owner;
