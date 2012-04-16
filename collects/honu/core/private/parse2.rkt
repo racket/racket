@@ -26,6 +26,7 @@
                        racket/splicing
                        (only-in "literals.rkt" %racket)
                        "compile.rkt"
+                       "syntax.rkt"
                        "extra.rkt"))
 
 (provide parse parse-all)
@@ -227,7 +228,13 @@
                               body.result)))])
 
 (define (definition? code)
-  #f)
+  (define (contains-define? code)
+    (syntax-parse code #:literals (define define-honu-syntax)
+      [(define x ...) #t]
+      [(define-honu-syntax x ...) #t]
+      [else #f]))
+  (and (parsed-syntax? code)
+       (contains-define? code)))
 
 ;; E = macro
 ;;   | E operator E
@@ -310,7 +317,7 @@
             (debug "Reparsed output ~a\n" (pretty-format (syntax->datum re-parse)))
             (define terminate (definition? re-parse))
             (debug "Terminate? ~a\n" terminate)
-            (if terminate?
+            (if terminate
               (values (left re-parse)
                       #'rest)
               (do-parse #'rest precedence
@@ -391,7 +398,7 @@
                                         (define output
                                           (if current
                                             (if binary-transformer
-                                              (binary-transformer current right)
+                                              (binary-transformer (parse-all current) right)
                                               (error 'binary "cannot be used as a binary operator in ~a" #'head))
                                             (if unary-transformer
                                               (unary-transformer right)
@@ -622,7 +629,7 @@
         (debug 2 "[~a] Parsed things ~a\n" context (parsed-things stx unparsed))
         (if (parsed-syntax? parsed)
           (list (parsed-things stx unparsed)
-                (parsed-syntax parsed))
+                parsed)
           (list (parsed-things stx unparsed)
                 (parse-all parsed)))))))
 

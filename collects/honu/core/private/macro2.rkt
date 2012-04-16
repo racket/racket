@@ -181,7 +181,7 @@
                                  ;; instead of x_result. x_result is still there, too
                                  (with-syntax ([pattern-variable.name #'pattern-variable.result]
                                                ...)
-                                   (debug "~a = ~a\n" 'pattern-variable.name #'pattern-variable.name) ...
+                                   (debug "~a = ~a\n" 'pattern-variable.name (syntax->datum #'pattern-variable.name)) ...
                                    (parse-stuff action ...))
                                  #'more #t)]
                               [else (raise-syntax-error #f "Could not match macro" stx)]
