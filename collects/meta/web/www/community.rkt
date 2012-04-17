@@ -1,7 +1,7 @@
 #lang meta/web
 
 (require "resources.rkt" "people.rkt" "irc.rkt"
-         "../minis/lists.rkt"
+         "../minis/lists.rkt" "../minis/bugs.rkt"
          "../stubs/blog.rkt" "../stubs/git.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))
 
@@ -17,8 +17,9 @@
       @text{@people — the people behind Racket.}]
     @parlist[@strong{Development}
       @text{@git (also available on
-            @a[href: "http://github.com/plt/racket/"]{GitHub})}
-      @text{@pre:installers and @pre:index{more}.}]
+            @a[href: "http://github.com/plt/racket/"]{GitHub}).}
+      @text{@pre:installers and @pre:index{more}.}
+      @text{@bug-reports — create and query existing reports.}]
     @parlist[@strong{Support}
       @text{
         Thanks to @a[href: "http://www.nsf.gov/"]{the NSF},

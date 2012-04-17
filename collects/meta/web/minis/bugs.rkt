@@ -38,7 +38,7 @@
     [  "Change Request"    change-request]
     [  "Support"           support]))
 
-(require (only-in "../www/all.rkt" download))
+(require (only-in "../www/download.rkt" download))
 
 (define (cgi-link from . to)
   (apply symlink (format "/www/cgi-bin/~a" from) to))
@@ -166,6 +166,7 @@
       opts.focus();
     }})
 
+(provide (rename-out [index bug-reports]))
 (define index
   @page[#:title "Bug Reports" #:extra-headers bugs-script
         #:extra-body-attrs `(onLoad: "initBugData();")]{

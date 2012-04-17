@@ -71,10 +71,17 @@
   (define google-groups-url
     (let ([g (ML-google-name ml)])
       (and g (list "http://groups.google.com/group/" g "/"))))
-  (define (form-cell url #:method [method 'get] . body)
-    @td{@form[action: url method: method
-              style: "display: inline; clear: none;"]{
-          @div{@body}}})
+  (define ((mk-form make) url #:method [method 'get] . body)
+    (make
+     @form[action: url method: method style: "display: inline; clear: none;"]{
+       @div{@body}}))
+  (define (mk-subscribe mk)
+    @(mk-form mk)[(list name "/subscribe") #:method 'post]{
+      @input[type: 'text name: 'email size: 20 value: ""
+             placeholder: "Email to Subscribe"
+             title: @list{Enter your email to subscribe
+                          to the "@name" mailing list.}]})
+  (define form-cell (mk-form td))
   (λ (what)
     (case what
       [(header-cell)
@@ -92,9 +99,7 @@
       [(graph-cell)
        @td{@img[src: (list "http://gmane.org/plot-rate.php?group=" gmane)
                 style: "width: 80%;"]}]
-      [(subscribe-cell)
-       @form-cell[(list name "/subscribe") #:method 'post]{
-         @input[type: 'text name: 'email size: 20 value: ""]}]
+      [(subscribe-cell) (mk-subscribe td)]
       [(google-cell)
        (if google-groups-url
          @form-cell[(list google-groups-url "search")]{
@@ -145,6 +150,7 @@
          @div[style: "margin-left: 2em;"]{
            @description
            @br
+           @div[style: "float: right;"]{@(mk-subscribe values)}
            [@a[href: (list (url-of lists) name "/")]{list page},
             @gmane-link["dir"]{gmane mirror},
             @mail-archive-link[""]{mail-archive}@;
