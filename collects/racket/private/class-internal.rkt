@@ -2777,9 +2777,10 @@
             (for ([m (in-list (class/c-methods ctc))]
                   [c (in-list (class/c-method-contracts ctc))])
               (when c
-                (let ([i (hash-ref method-ht m)]
-                      [p ((contract-projection c) blame)])
-                  (vector-set! methods i (make-method (p (vector-ref methods i)) m))))))
+                (define i (hash-ref method-ht m))
+                (define mp (vector-ref methods i))
+                (define p ((contract-projection c) (blame-add-method-context blame mp)))
+                (vector-set! methods i (make-method (p mp) m)))))
           
           ;; Handle super contracts
           (unless (null? (class/c-supers ctc))
@@ -2789,9 +2790,10 @@
             (for ([m (in-list (class/c-supers ctc))]
                   [c (in-list (class/c-super-contracts ctc))])
               (when c
-                (let ([i (hash-ref method-ht m)]
-                      [p ((contract-projection c) blame)])
-                  (vector-set! super-methods i (make-method (p (vector-ref super-methods i)) m))))))
+                (define i (hash-ref method-ht m))
+                (define mp (vector-ref super-methods i))
+                (define p ((contract-projection c) (blame-add-method-context blame mp)))
+                (vector-set! super-methods i (make-method (p mp) m)))))
           
           ;; Add inner projections
           (unless (null? (class/c-inners ctc))
@@ -2799,10 +2801,10 @@
             (for ([m (in-list (class/c-inners ctc))]
                   [c (in-list (class/c-inner-contracts ctc))])
               (when c
-                (let* ([i (hash-ref method-ht m)]
-                       [p ((contract-projection c) bswap)]
-                       [old-proj (vector-ref inner-projs i)])
-                  (vector-set! inner-projs i (λ (v) (old-proj (p v))))))))
+                (define i (hash-ref method-ht m))
+                (define old-proj (vector-ref inner-projs i))
+                (define p ((contract-projection c) (blame-add-method-context bswap old-proj)))
+                (vector-set! inner-projs i (λ (v) (old-proj (p v)))))))
           
           ;; Handle both internal and external field contracts
           (unless no-field-ctcs?
@@ -2810,8 +2812,8 @@
                   [c (in-list (class/c-field-contracts ctc))])
               (when c
                 (let ([fi (hash-ref field-ht f)]
-                      [p-pos ((contract-projection c) blame)]
-                      [p-neg ((contract-projection c) bswap)])
+                      [p-pos ((contract-projection c) (blame-add-context blame (format "the ~a field in" f)))]
+                      [p-neg ((contract-projection c) (blame-add-context bswap (format "the ~a field in" f)))])
                   (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
             (for ([f (in-list (class/c-inherit-fields ctc))]
                   [c (in-list (class/c-inherit-field-contracts ctc))])
@@ -2861,7 +2863,7 @@
                     [c (in-list (class/c-override-contracts ctc))])
                 (when c
                   (let* ([i (hash-ref method-ht m)]
-                         [p ((contract-projection c) bswap)]
+                         [p ((contract-projection c) (blame-add-method-context bswap i))]
                          [old-idx (vector-ref old-idxs i)]
                          [proj-vec (vector-ref dynamic-projs i)]
                          [old-proj (vector-ref proj-vec old-idx)])
@@ -2878,7 +2880,7 @@
                                         (class/c-augride-contracts ctc)))])
                 (when c
                   (let* ([i (hash-ref method-ht m)]
-                         [p ((contract-projection c) blame)]
+                         [p ((contract-projection c) (blame-add-method-context blame i))]
                          [old-idx (vector-ref old-idxs i)]
                          [new-idx (vector-ref dynamic-idxs i)]
                          [proj-vec (vector-ref dynamic-projs i)]
@@ -2895,7 +2897,7 @@
                     [c (in-list (class/c-inherit-contracts ctc))])
                 (when c
                   (let* ([i (hash-ref method-ht m)]
-                         [p ((contract-projection c) blame)]
+                         [p ((contract-projection c) (blame-add-method-context blame i))]
                          [new-idx (vector-ref dynamic-idxs i)]
                          [int-vec (vector-ref int-methods i)])
                     (vector-set! int-vec new-idx
@@ -2960,6 +2962,16 @@
                      (init the-obj super-go si_c si_inited? init-args init-args))))))
           
           c)))))
+
+(define (blame-add-method-context blame method-proc)
+  (define name (object-name method-proc))
+  (cond
+    [name
+     ;; the procedure name of a method has ' method in ...' in it; trim that away
+     (define method-name (regexp-replace #rx" method in .*%.?$" (symbol->string name) ""))
+     (blame-add-context blame (format "the ~a method in" method-name))]
+    [else
+     (blame-add-context blame "an unnamed method in")]))
 
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts

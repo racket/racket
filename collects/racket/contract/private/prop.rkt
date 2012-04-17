@@ -246,10 +246,12 @@
 (define ((get-first-order-projection get-name get-first-order) c)
   (first-order-projection (get-name c) (get-first-order c)))
 
-(define (((first-order-projection name first-order) b) x)
-  (if (first-order x)
-    x
-    (raise-blame-error b x "expected: ~s, given: ~e" name x)))
+(define (first-order-projection name first-order)
+  (λ (b)
+    (λ (x)
+      (if (first-order x)
+          x
+          (raise-blame-error b x "expected: ~s, given: ~e" name x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

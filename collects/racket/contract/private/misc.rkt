@@ -44,7 +44,8 @@
          flat-named-contract
          
          contract-projection
-         contract-name)
+         contract-name
+         n->th)
 
 (define-syntax (flat-rec-contract stx)
   (syntax-case stx  ()
@@ -146,11 +147,12 @@
   (let ([c-proc (contract-projection (single-or/c-ho-ctc ctc))]
         [pred (single-or/c-pred ctc)])
     (λ (blame)
-      (let ([partial-contract (c-proc blame)])
-        (λ (val)
-          (cond
-            [(pred val) val]
-            [else (partial-contract val)]))))))
+      (define partial-contract
+        (c-proc (blame-add-context blame "a disjunct of")))
+      (λ (val)
+        (cond
+          [(pred val) val]
+          [else (partial-contract val)])))))
 
 (define (single-or/c-name ctc)
   (apply build-compound-type-name 
@@ -199,42 +201,45 @@
          [first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts)]
          [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
     (λ (blame)
-      (let ([partial-contracts (map (λ (c-proc) (c-proc blame)) c-procs)])
-        (λ (val)
-          (cond
-            [(ormap (λ (pred) (pred val)) predicates)
-             val]
-            [else
-             (let loop ([checks first-order-checks]
-                        [procs partial-contracts]
-                        [contracts ho-contracts]
-                        [candidate-proc #f]
-                        [candidate-contract #f])
-               (cond
-                 [(null? checks)
-                  (if candidate-proc
-                      (candidate-proc val)
-                      (raise-blame-error blame val 
-                                         "none of the branches of the or/c matched, given ~e"
-                                         val))]
-                 [((car checks) val)
-                  (if candidate-proc
-                      (raise-blame-error blame val
-                                         "two of the clauses in the or/c might both match: ~s and ~s, given ~e"
-                                         (contract-name candidate-contract)
-                                         (contract-name (car contracts))
-                                         val)
-                      (loop (cdr checks)
-                            (cdr procs)
-                            (cdr contracts)
-                            (car procs)
-                            (car contracts)))]
-                 [else
-                  (loop (cdr checks)
-                        (cdr procs)
-                        (cdr contracts)
-                        candidate-proc
-                        candidate-contract)]))]))))))
+      (define disj-blame (blame-add-context blame "a disjunct of"))
+      (define partial-contracts
+        (for/list ([c-proc (in-list c-procs)])
+          (c-proc disj-blame)))
+      (λ (val)
+        (cond
+          [(ormap (λ (pred) (pred val)) predicates)
+           val]
+          [else
+           (let loop ([checks first-order-checks]
+                      [procs partial-contracts]
+                      [contracts ho-contracts]
+                      [candidate-proc #f]
+                      [candidate-contract #f])
+             (cond
+               [(null? checks)
+                (if candidate-proc
+                    (candidate-proc val)
+                    (raise-blame-error blame val 
+                                       "none of the branches of the or/c matched, given ~e"
+                                       val))]
+               [((car checks) val)
+                (if candidate-proc
+                    (raise-blame-error blame val
+                                       "two of the clauses in the or/c might both match: ~s and ~s, given ~e"
+                                       (contract-name candidate-contract)
+                                       (contract-name (car contracts))
+                                       val)
+                    (loop (cdr checks)
+                          (cdr procs)
+                          (cdr contracts)
+                          (car procs)
+                          (car contracts)))]
+               [else
+                (loop (cdr checks)
+                      (cdr procs)
+                      (cdr contracts)
+                      candidate-proc
+                      candidate-contract)]))])))))
 
 (define (multi-or/c-name ctc)
   (apply build-compound-type-name 
@@ -336,10 +341,13 @@
 (define (and-proj ctc)
   (let ([mk-pos-projs (map contract-projection (base-and/c-ctcs ctc))])
     (lambda (blame)
-      (let ([projs (map (λ (c) (c blame)) mk-pos-projs)])
-        (for/fold ([proj (car projs)])
-          ([p (in-list (cdr projs))])
-          (λ (v) (p (proj v))))))))
+      (define projs 
+        (for/list ([c (in-list mk-pos-projs)]
+                   [n (in-naturals 1)])
+          (c (blame-add-context blame (format "the ~a conjunct of" (n->th n))))))
+      (for/fold ([proj (car projs)])
+        ([p (in-list (cdr projs))])
+        (λ (v) (p (proj v)))))))
 
 (define (first-order-and-proj ctc)
   (λ (blame)
@@ -630,7 +638,7 @@
                  (for/and ([v (in-list x)])
                    (contract-first-order-passes? ctc v))))
           (define ((ho-check check-all) blame)
-            (let ([p-app (proj blame)])
+            (let ([p-app (proj (blame-add-context blame "an element of"))])
               (λ (val)
                 (unless (predicate? val)
                   (raise-blame-error blame val
@@ -675,8 +683,8 @@
              (contract-first-order-passes? ctc-car (car v))
              (contract-first-order-passes? ctc-cdr (cdr v))))
       (define ((ho-check combine) blame)
-        (let ([car-p (car-proj blame)]
-              [cdr-p (cdr-proj blame)])
+        (let ([car-p (car-proj (blame-add-context blame "the car of"))]
+              [cdr-p (cdr-proj (blame-add-context blame "the cdr of"))])
           (λ (v)
             (unless (pair? v)
               (raise-blame-error blame v "expected <cons?>, given: ~e" v))
@@ -729,40 +737,52 @@
    #:first-order list/c-first-order
    #:projection
    (lambda (c)
-     (lambda (b)
+     (lambda (blame)
        (lambda (x)
          (unless (list? x)
-           (raise-blame-error b x "expected a list, got: ~e" x))
+           (raise-blame-error blame x "expected a list, got: ~e" x))
          (let* ([args (generic-list/c-args c)]
                 [expected (length args)]
                 [actual (length x)])
            (unless (= actual expected)
              (raise-blame-error
-              b x
+              blame x
               "expected a list of ~a elements, but got ~a elements in: ~e"
               expected actual x))
-           (for ([arg/c (in-list args)] [v (in-list x)])
-             (((contract-projection arg/c) b) v))
+           (for ([arg/c (in-list args)] [v (in-list x)] [i (in-naturals 1)])
+             (((contract-projection arg/c) 
+               (add-list-context blame i))
+              v))
            x))))))
 
 (define (list/c-chaperone/other-projection c)
   (define args (map contract-projection (generic-list/c-args c)))
   (define expected (length args))
-  (λ (b)
-    (define projs (for/list ([arg/c (in-list args)])
-                    (arg/c b)))
+  (λ (blame)
+    (define projs (for/list ([arg/c (in-list args)]
+                             [i (in-naturals 1)])
+                    (arg/c (add-list-context blame i))))
     (λ (x)
       (unless (list? x)
-        (raise-blame-error b x "expected a list, got: ~e" x))
+        (raise-blame-error blame x "expected a list, got: ~e" x))
       (define actual (length x))
       (unless (= actual expected)
         (raise-blame-error
-         b x
+         blame x
          "expected a list of ~a elements, but got ~a elements in: ~e"
          expected actual x))
       (for/list ([item (in-list x)]
                  [proj (in-list projs)])
         (proj item)))))
+
+(define (add-list-context blame i)
+  (blame-add-context blame (format "the ~a~a element of"
+                                   i
+                                   (case (modulo i 10)
+                                     [(1) "st"]
+                                     [(2) "nd"]
+                                     [(3) "rd"]
+                                     [else "th"]))))
 
 (struct chaperone-list/c generic-list/c ()
   #:property prop:chaperone-contract
@@ -796,7 +816,7 @@
        #:name (build-compound-type-name 'promise/c ctc)
        #:projection
        (λ (blame)
-         (let ([p-app (ctc-proc blame)])
+         (let ([p-app (ctc-proc (blame-add-context blame "the promise from"))])
            (λ (val)
              (unless (promise? val)
                (raise-blame-error
@@ -818,17 +838,18 @@
    (λ (ctc)
       (let ([c-proc (contract-projection (parameter/c-ctc ctc))])
         (λ (blame)
-           (let ([partial-neg-contract (c-proc (blame-swap blame))]
-                 [partial-pos-contract (c-proc blame)])
-             (λ (val)
-                (cond
-                 [(parameter? val)
-                  (make-derived-parameter 
-                   val 
-                   partial-neg-contract
-                   partial-pos-contract)]
-                 [else
-                  (raise-blame-error blame val "expected a parameter")]))))))
+          (define blame/c (blame-add-context blame "the parameter of"))
+          (define partial-neg-contract (c-proc (blame-swap blame/c)))
+          (define partial-pos-contract (c-proc blame/c))
+          (λ (val)
+            (cond
+              [(parameter? val)
+               (make-derived-parameter 
+                val 
+                partial-neg-contract
+                partial-pos-contract)]
+              [else
+               (raise-blame-error blame val "expected a parameter")])))))
 
    #:name
    (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc)))
@@ -970,3 +991,13 @@
           (integer? x)
           (exact? x)
           (x . >= . 0)))))
+
+(define (n->th n)
+  (string-append 
+   (number->string n)
+   (case (modulo n 10)
+     [(1) "st"]
+     [(2) "nd"]
+     [(3) "rd"]
+     [else "th"])))
+

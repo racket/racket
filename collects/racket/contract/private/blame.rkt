@@ -2,7 +2,7 @@
 (require syntax/srcloc racket/pretty setup/path-to-relative)
 
 (provide blame?
-         make-blame
+         (rename-out [-make-blame make-blame])
          blame-source
          blame-positive
          blame-negative
@@ -12,7 +12,9 @@
          blame-swapped?
          blame-swap
          blame-replace-negative ;; used for indy blame
-
+         blame-add-context
+         blame-context 
+         
          raise-blame-error
          current-blame-format
          (struct-out exn:fail:contract:blame))
@@ -34,9 +36,20 @@
                (hash/recur (blame-original? b))))
 
 (define-struct blame
-  [source value build-name positive negative original?]
+  [source value build-name positive negative original? context]
   #:property prop:equal+hash
   (list blame=? blame-hash blame-hash))
+
+(define -make-blame
+  (let ([make-blame
+         (λ (source value build-name positive negative original?)
+           (make-blame source value build-name positive negative original? '()))])
+    make-blame))
+
+(define (blame-add-context b s)
+  (struct-copy
+   blame b
+   [context (cons s (blame-context b))]))
 
 (define (blame-contract b) ((blame-build-name b)))
 
@@ -67,17 +80,33 @@
   (let* ([source-message (source-location->string (blame-source b))]
          [positive-message (show/display (convert-blame-party (blame-positive b)))]
          
-         [contract-message (format "  contract: ~a" (show/write (blame-contract b)))]
-         [contract-message+at (if (regexp-match #rx"\n$" contract-message)
-                                  (string-append contract-message
-                                                 (if (string=? source-message "")
-                                                     ""
-                                                     (format "  at: ~a" source-message)))
-                                  (string-append contract-message
-                                                 "\n"
-                                                 (if (string=? source-message "")
-                                                     ""
-                                                     (format "        at: ~a" source-message))))])
+         [context-message (apply string-append 
+                                 (for/list ([context (in-list (blame-context b))]
+                                            [n (in-naturals)])
+                                   (format (if (zero? n)
+                                               "  in: ~a\n"
+                                               "      ~a\n")
+                                           context)))]
+         [the-contract-str (show/write (blame-contract b))]
+         [contract-message (string-append (if (regexp-match #rx"\n" the-contract-str)
+                                              (string-append (regexp-replace #rx"\n$" context-message "")
+                                                             the-contract-str)
+                                              (string-append context-message
+                                                             (format "      ~a" the-contract-str))))]
+         [contract-message+at
+          (regexp-replace
+           #rx"^\n"
+           (if (regexp-match #rx"\n$" contract-message)
+               (string-append contract-message
+                              (if (string=? source-message "")
+                                  ""
+                                  (format "  at: ~a" source-message)))
+               (string-append contract-message
+                              "\n"
+                              (if (string=? source-message "")
+                                  ""
+                                  (format "  at: ~a" source-message))))
+           "")])
     ;; use (regexp-match #rx"\n" ...) to find out if show/display decided that this
     ;; is a multiple-line message and adjust surrounding formatting accordingly
     (cond
@@ -153,7 +182,7 @@
 (define (show-line-break line port len cols)
   (newline port)
   (if line
-    (begin (display "    " port) 4)
+    (begin (display "      " port) 6)
     0))
 
 (define current-blame-format

@@ -11276,6 +11276,123 @@ so that propagation occurs.
                       values)])
       ((car s) 1)))
   
+  
+;                                                    
+;                                                    
+;                                                    
+;                                                    
+;                            ;                    ;  
+;                          ;;;                  ;;;  
+;    ;;;     ;;;   ;;; ;;  ;;;;   ;;;;  ;;; ;;; ;;;; 
+;   ;;;;;   ;;;;;  ;;;;;;; ;;;;  ;; ;;;  ;; ;;  ;;;; 
+;  ;;;  ;; ;;; ;;; ;;; ;;; ;;;  ;;; ;;;  ;;;;;  ;;;  
+;  ;;;     ;;; ;;; ;;; ;;; ;;;  ;;;;;;;   ;;;   ;;;  
+;  ;;;  ;; ;;; ;;; ;;; ;;; ;;;  ;;;      ;;;;;  ;;;  
+;   ;;;;;   ;;;;;  ;;; ;;; ;;;;  ;;;;;;  ;; ;;  ;;;; 
+;    ;;;     ;;;   ;;; ;;;  ;;;   ;;;;  ;;; ;;;  ;;; 
+;                                                    
+;                                                    
+;                                                    
+;                                                    
+
+  (contract-eval '(define (extract-context-lines thunk num)
+                    (define str
+                      (with-handlers ((exn:fail:contract:blame? exn-message))
+                        (thunk)
+                        "didn't raise an exception"))
+                    (define lines
+                      (regexp-split
+                       #rx"\n      "
+                       (regexp-replace #rx"(.*)\n  in: " str "")))
+                    (for/list ([answer-count (in-range num)]
+                               [msg-str (in-list lines)])
+                      msg-str)))
+  
+  (ctest '("the cdr of" "the 1st argument of") 
+         extract-context-lines 
+         (λ () ((contract (-> (cons/c integer? boolean?) integer? integer?)
+                          (λ (x y) x)
+                          'pos
+                          'neg)
+                (cons 1 2) 1))
+         2)
+  
+  (ctest '("the 3rd element of" "the 2nd argument of") 
+         extract-context-lines 
+         (λ () ((contract (-> integer? (list/c integer? integer? boolean?) integer?)
+                          (λ (x y) x)
+                          'pos
+                          'neg)
+                1 (list 1 2 3)))
+         2)
+  
+  (ctest '("the range of" "the 4th element of") 
+         extract-context-lines 
+         (λ () ((cadddr (contract (list/c integer? integer? boolean? (-> number? number?))
+                                  (list 1 2 #f (λ (x) #f))
+                                  'pos
+                                  'neg))
+                1))
+         2)
+  
+  (ctest '("a disjunct of") 
+         extract-context-lines 
+         (λ () (contract (or/c 1 (-> number? number?))
+                         3
+                         'pos
+                         'neg))
+         1)
+  
+  (ctest '("the range of" "a disjunct of") 
+         extract-context-lines 
+         (λ () ((contract (or/c 1 (-> number? number?) (-> number? boolean? number?))
+                          (λ (x) #f)
+                          'pos
+                          'neg)
+                1))
+         2)
+  
+  (ctest '("the 2nd conjunct of") 
+         extract-context-lines 
+         (λ () (contract (and/c procedure? (-> integer? integer?))
+                         (λ (x y) 1)
+                         'pos
+                         'neg))
+         1)
+  
+  (ctest '("an element of") 
+         extract-context-lines 
+         (λ () (contract (listof number?)
+                         (list #f)
+                         'pos
+                         'neg))
+         1)
+  
+  (ctest '("the promise from") 
+         extract-context-lines 
+         (λ () (force (contract (promise/c number?)
+                                (delay #f)
+                                'pos
+                                'neg)))
+         1)
+  
+  (ctest '("the parameter of") 
+         extract-context-lines 
+         (λ () ((contract (parameter/c number?)
+                          (make-parameter #f)
+                          'pos
+                          'neg)))
+         1)
+  (ctest '("the parameter of") 
+         extract-context-lines 
+         (λ () ((contract (parameter/c number?)
+                          (make-parameter 1)
+                          'pos
+                          'neg)
+                #f))
+         1)
+  
+  
 ;                                                        
 ;                                                        
 ;                                                        
