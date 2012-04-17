@@ -271,7 +271,7 @@ enum {
   scheme_rt_runstack,                   /* 247 */
   scheme_rt_sfs_info,                   /* 248 */
   scheme_rt_validate_clearing,          /* 249 */
-  scheme_rt_rb_node,                    /* 250 */
+  scheme_rt_avl_node,                   /* 250 */
   scheme_rt_lightweight_cont,           /* 251 */
   scheme_rt_export_info,                /* 252 */
   scheme_rt_cont_jmp,                   /* 253 */

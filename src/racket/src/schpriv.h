@@ -708,7 +708,7 @@ struct Scheme_Hash_Tree
 {
   Scheme_Inclhash_Object iso; /* 0x1 flag => equal?-based hashing; 0x2 flag => eqv?-based hashing */
   intptr_t count;
-  struct RBNode *root;
+  struct AVLNode *root;
   Scheme_Object *elems_box; /* vector in a weak box */
 };
 

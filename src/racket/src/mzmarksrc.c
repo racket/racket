@@ -1448,22 +1448,22 @@ hash_tree_val {
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
 }
 
-mark_rb_node {
+mark_avl_node {
  mark:
-  RBNode *rb = (RBNode *)p;
+  AVLNode *avl = (AVLNode *)p;
 
   /* Short-circuit on NULL pointers, which are especially likely */
-  if (rb->left) {
-    gcMARK2(rb->left, gc);
+  if (avl->left) {
+    gcMARK2(avl->left, gc);
   }
-  if (rb->right) {
-    gcMARK2(rb->right, gc);
+  if (avl->right) {
+    gcMARK2(avl->right, gc);
   }
-  gcMARK2(rb->key, gc);
-  gcMARK2(rb->val, gc);
+  gcMARK2(avl->key, gc);
+  gcMARK2(avl->val, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(RBNode));
+  gcBYTES_TO_WORDS(sizeof(AVLNode));
 }
 
 END hash;

@@ -29,46 +29,46 @@ static int hash_tree_val_FIXUP(void *p, struct NewGC *gc) {
 #define hash_tree_val_IS_CONST_SIZE 1
 
 
-static int mark_rb_node_SIZE(void *p, struct NewGC *gc) {
+static int mark_avl_node_SIZE(void *p, struct NewGC *gc) {
   return
-  gcBYTES_TO_WORDS(sizeof(RBNode));
+  gcBYTES_TO_WORDS(sizeof(AVLNode));
 }
 
-static int mark_rb_node_MARK(void *p, struct NewGC *gc) {
-  RBNode *rb = (RBNode *)p;
+static int mark_avl_node_MARK(void *p, struct NewGC *gc) {
+  AVLNode *avl = (AVLNode *)p;
 
   /* Short-circuit on NULL pointers, which are especially likely */
-  if (rb->left) {
-    gcMARK2(rb->left, gc);
+  if (avl->left) {
+    gcMARK2(avl->left, gc);
   }
-  if (rb->right) {
-    gcMARK2(rb->right, gc);
+  if (avl->right) {
+    gcMARK2(avl->right, gc);
   }
-  gcMARK2(rb->key, gc);
-  gcMARK2(rb->val, gc);
+  gcMARK2(avl->key, gc);
+  gcMARK2(avl->val, gc);
 
   return
-  gcBYTES_TO_WORDS(sizeof(RBNode));
+  gcBYTES_TO_WORDS(sizeof(AVLNode));
 }
 
-static int mark_rb_node_FIXUP(void *p, struct NewGC *gc) {
-  RBNode *rb = (RBNode *)p;
+static int mark_avl_node_FIXUP(void *p, struct NewGC *gc) {
+  AVLNode *avl = (AVLNode *)p;
 
   /* Short-circuit on NULL pointers, which are especially likely */
-  if (rb->left) {
-    gcFIXUP2(rb->left, gc);
+  if (avl->left) {
+    gcFIXUP2(avl->left, gc);
   }
-  if (rb->right) {
-    gcFIXUP2(rb->right, gc);
+  if (avl->right) {
+    gcFIXUP2(avl->right, gc);
   }
-  gcFIXUP2(rb->key, gc);
-  gcFIXUP2(rb->val, gc);
+  gcFIXUP2(avl->key, gc);
+  gcFIXUP2(avl->val, gc);
 
   return
-  gcBYTES_TO_WORDS(sizeof(RBNode));
+  gcBYTES_TO_WORDS(sizeof(AVLNode));
 }
 
-#define mark_rb_node_IS_ATOMIC 0
-#define mark_rb_node_IS_CONST_SIZE 1
+#define mark_avl_node_IS_ATOMIC 0
+#define mark_avl_node_IS_CONST_SIZE 1
 
 

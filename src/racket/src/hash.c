@@ -1806,52 +1806,72 @@ intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data)
    ; This is direct port of Jean-Christophe Filliatre's implementation
    ; of red-black trees in Ocaml. */
 
-typedef struct RBNode {
-  Scheme_Inclhash_Object iso; /* 0x1 => red */
+typedef struct AVLNode {
+  MZTAG_IF_REQUIRED
+  char height;
   uintptr_t code;
   Scheme_Object *key; /* NULL => val is list of key-value pairs */
   Scheme_Object *val;
-  struct RBNode *left, *right;
-} RBNode;
-
-#define RB_REDP(rb) (MZ_OPT_HASH_KEY(&(rb)->iso) & 0x1)
+  struct AVLNode *left;  
+  struct AVLNode *right;
+} AVLNode;
 
 #if 0
-# define RB_ASSERT(p) if (p) { } else { scheme_signal_error("hash-tree assert failure %d", __LINE__); }
-# define RB_ASSERT_ONLY(x) x
+# define AVL_ASSERT(p) if (p) { } else { scheme_signal_error("hash-tree assert failure %d", __LINE__); }
+# define AVL_ASSERT_ONLY(x) x
 #else
-# define RB_ASSERT(p) /* empty */
-# define RB_ASSERT_ONLY(x) /* empty */
+# define AVL_ASSERT(p) /* empty */
+# define AVL_ASSERT_ONLY(x) /* empty */
 #endif
 
-static RBNode *make_rb(int red, 
-                       RBNode *left,
-                       uintptr_t code, Scheme_Object *key, Scheme_Object *val,
-                       RBNode *right)
+static AVLNode *make_avl(AVLNode *left,
+                         uintptr_t code, Scheme_Object *key, Scheme_Object *val,
+                         AVLNode *right)
 {
-  RBNode *rb;
+  AVLNode *avl;
 
-  rb = MALLOC_ONE_TAGGED(RBNode);
-  SET_REQUIRED_TAG(rb->iso.so.type = scheme_rt_rb_node);
-  if (red)
-    MZ_OPT_HASH_KEY(&rb->iso) |= 0x1;
-  rb->code = code;
-  rb->key = key;
-  rb->val = val;
-  rb->left = left;
-  rb->right = right;
+  avl = MALLOC_ONE_TAGGED(AVLNode);
+  SET_REQUIRED_TAG(avl->type = scheme_rt_avl_node);
+  avl->code = code;
+  avl->key = key;
+  avl->val = val;
+  avl->left = left;
+  avl->right = right;
 
-  return rb;
+  return avl;
 }
 
-static RBNode *recolor_rb(int red, RBNode *rb)
+static AVLNode *avl_clone(AVLNode *avl)
 {
-  return make_rb(red, rb->left, 
-                 rb->code, rb->key, rb->val,
-                 rb->right);
+  AVLNode *naya;
+  naya = MALLOC_ONE_TAGGED(AVLNode);
+  memcpy(naya, avl, sizeof(AVLNode));
+  return naya;
 }
 
-XFORM_NONGCING static RBNode *rb_find(uintptr_t code, RBNode *s)
+XFORM_NONGCING static int get_height(AVLNode* t)
+{
+  if (t == NULL)
+    return 0;
+  else
+    return t->height;
+}
+
+XFORM_NONGCING static int get_balance(AVLNode* t)
+{
+  return get_height(t->left) - get_height(t->right);
+}
+
+XFORM_NONGCING static void fix_height(AVLNode* t)
+{
+  int h;
+  h = get_height(t->left);
+  if (get_height(t->right) > h)
+    h = get_height(t->right);
+  t->height = h + 1;
+}
+
+XFORM_NONGCING static AVLNode *avl_find(uintptr_t code, AVLNode *s)
 {
   while (1) {
     if (!s)
@@ -1866,424 +1886,175 @@ XFORM_NONGCING static RBNode *rb_find(uintptr_t code, RBNode *s)
   }
 }
 
-static RBNode *RB_CHK(RBNode *rb, uintptr_t code)
+static AVLNode *AVL_CHK(AVLNode *avl, uintptr_t code)
 {
-  RB_ASSERT(rb_find(code, rb));
-  return rb;
+  AVL_ASSERT(avl_find(code, avl));
+  return avl;
 }
   
-/*
-  ;;; INVARIANTS
-  
-  ;  (* Invariants: (1) a red node has no red son, and (2) any path from the
-  ;     root to a leaf has the same number of black nodes *)
-*/
-
-static RBNode *lbalance(RBNode *x1, 
-                        uintptr_t code, Scheme_Object *key, Scheme_Object *val,
-                        RBNode *d)
+AVLNode* check_rotate_right(AVLNode* t)
 {
-  /*
-  (define (lbalance x1 x2 x3)
-    (let ([z x2] [d x3])
-      (match x1
-        [($ R ($ R a x b) y c)  (R- (B- a x b) y (B- c z d))]
-        [($ R a x ($ R b y c))  (R- (B- a x b) y (B- c z d))]
-        [_                      (B- x1 x2 x3)])))
-  */
+  if (get_balance(t) == 2) {
+    /* need to rotate right */
+    AVLNode* left = t->left;
+    left = avl_clone(left);
+    if (get_balance(left) < 0) {
+      /* double right rotation */
+      AVLNode* left_right = left->right;
+      left_right = avl_clone(left_right);
+      left->right = left_right->left;
+      left_right->left = left;
+      fix_height(left);
+      left = left_right;
+    }
+    t = avl_clone(t);
+    t->left = left->right;
+    left->right = t;
+    fix_height(t);
+    fix_height(left);
+    return left;
+  }
+   
+  return t;
+}
 
-  if (x1 && RB_REDP(x1)) {
-    RBNode *left = x1->left;
-    if (left && RB_REDP(left)) {
-      return make_rb(1, 
-                     recolor_rb(0, left),
-                     x1->code, x1->key, x1->val,
-                     make_rb(0, x1->right,
-                             code, key, val,
-                             d));
-                             
+AVLNode* check_rotate_left(AVLNode* t)
+{
+  if (get_balance(t) == -2) {
+    /* need to rotate left */
+    AVLNode* right = t->right;
+    right = avl_clone(right);
+    if (get_balance(right) > 0) {
+      /* double left rotation */
+      AVLNode* right_left = right->left;
+      right_left = avl_clone(right_left);
+      right->left = right_left->right;
+      right_left->right = right;
+      fix_height(right);
+      right = right_left;
+    } else
+      right = avl_clone(right);
+    t = avl_clone(t);
+    t->right = right->left;
+    right->left = t;
+    fix_height(t);
+    fix_height(right);
+    return right;
+  }
+  
+  return t;
+}
+
+static AVLNode *avl_ins(uintptr_t code, Scheme_Object *key, Scheme_Object *val, AVLNode *t)
+{
+  if (t == NULL)
+    return AVL_CHK(make_avl(NULL, code, key, val, NULL), code);
+  else {
+    if (t->code > code) {
+      /* insert on left */
+      AVLNode *left;
+
+      left = avl_ins(code, key, val, t->left);
+      if (left == t->left)
+        return t;
+      
+      t = avl_clone(t);
+      t->left = left;
+      fix_height(t);
+      
+      return check_rotate_right(t);
+    } else if (t->code < code) {
+      /* insert on right */
+      AVLNode *right;
+      
+      right = avl_ins(code, key, val, t->right);
+      if (right == t->right)
+        return t;
+      
+      t = avl_clone(t);
+      t->right = right;
+      fix_height(t);
+      
+      return check_rotate_left(t);
+    } else
+      return t;
+  }
+}
+
+static AVLNode* avl_del(AVLNode* t, uintptr_t code)
+{
+  if (t == NULL)
+    return NULL;
+  else {
+    if (code < t->code) {
+      /* delete on left */
+      AVLNode *new_left;
+      
+      new_left = avl_del(t->left, code);
+      if (new_left == t->left)
+        return t;
+      
+      t = avl_clone(t);
+      t->left = new_left;
+      fix_height(t);
+      return check_rotate_left(t);
+    } else if (code > t->code) {
+      /* delete on right */
+      AVLNode *new_right;
+      
+      new_right = avl_del(t->right, code);
+      if (new_right == t->right)
+        return t;
+      
+      t = avl_clone(t);
+      t->right = new_right;
+      fix_height(t);
+      return check_rotate_right(t);
     } else {
-      RBNode *right = x1->right;
-      if (right && RB_REDP(right)) {
-        return make_rb(1,
-                       make_rb(0, x1->left,
-                               x1->code, x1->key, x1->val,
-                               right->left),
-                       right->code, right->key, right->val,
-                       make_rb(0,
-                               right->right,
-                               code, key, val,
-                               d));
+      if (!t->left)
+        return t->right;
+      else if (!t->right)
+        return t->left;
+      else {
+        AVLNode *lm, *new_left;
+        /* Get the max of the left: */
+        for (lm = t->left; lm->right != NULL; lm = lm->right) {
+        }
+        /* Delete it: */
+        new_left = avl_del(t->left, lm->code);
+        /* Use it in place of t: */
+        lm = avl_clone(lm);
+        lm->left = new_left;
+        lm->right = t->right;
+        fix_height(lm);
 
+        if (get_balance(lm) == -2)
+          return check_rotate_left(lm);
+        else
+          return check_rotate_right(lm);
       }
     }
   }
-
-  return make_rb(0, x1, code, key, val, d);
 }
 
-static RBNode *rbalance(RBNode *a, 
-                        uintptr_t code, Scheme_Object *key, Scheme_Object *val,
-                        RBNode *x3)
+static AVLNode *avl_replace(AVLNode *s, AVLNode *orig, AVLNode *naya)
 {
-  /*
-  (define (rbalance x1 x2 x3)
-    (let ([a x1] [x x2])
-      (match x3
-        [($ R ($ R b y c) z d)  (R- (B- a x b) y (B- c z d))]
-        [($ R b y ($ R c z d))  (R- (B- a x b) y (B- c z d))]
-        [_                      (B- x1 x2 x3)])))
-  */
+  AVLNode *next;
 
-  if (x3 && RB_REDP(x3)) {
-    RBNode *left = x3->left;
-    if (left && RB_REDP(left)) {
-      return make_rb(1,
-                     make_rb(0, a,
-                             code, key, val,
-                             left->left),
-                     left->code, left->key, left->val, 
-                     make_rb(0, left->right,
-                             x3->code, x3->key, x3->val,
-                             x3->right));
-    } else {
-      RBNode *right = x3->right;
-      if (right && RB_REDP(right)) {
-        return make_rb(1,
-                       make_rb(0, a,
-                               code, key, val,
-                               x3->left),
-                       x3->code, x3->key, x3->val,
-                       recolor_rb(0, right));
-      }
-    }
-  }
-
-  return make_rb(0, a, code, key, val, x3);
-}
-
-static RBNode *ins(uintptr_t code, Scheme_Object *key, Scheme_Object *val, RBNode *s)
-{
-  /*
-      (match s
-        [()           (R- empty x empty)]
-        [($ R a y b)  (if3 (cmp x y)
-                           (R- (ins a) y b)
-                           s
-                           (R- a y (ins b)))]
-        [($ B a y b)  (if3 (cmp x y)
-                           (lbalance (ins a) y b)
-                           s
-                           (rbalance a y (ins b)))]))
-  */
-
-  if (!s) {
-    s = RB_CHK(make_rb(1, NULL, code, key, val, NULL), code);
-    return s;
-  } else if (RB_REDP(s)) {
-    if (code < s->code) {
-      return RB_CHK(make_rb(1, ins(code, key, val, s->left),
-                            s->code, s->key, s->val,
-                            s->right),
-                    code);
-    } else if (s->code == code) {
-      return RB_CHK(s, code);
-    } else {
-      return RB_CHK(make_rb(1, s->left,
-                            s->code, s->key, s->val,
-                            ins(code, key, val, s->right)),
-                    code);
-    }
-  } else {
-    if (code < s->code) {
-      return RB_CHK(lbalance(ins(code, key, val, s->left),
-                             s->code, s->key, s->val,
-                             s->right),
-                    code);
-    } else if (s->code == code) {
-      return RB_CHK(s, code);
-    } else {
-      RBNode *r;
-      r = RB_CHK(ins(code, key, val, s->right), code);
-      return RB_CHK(rbalance(s->left,
-                             s->code, s->key, s->val,
-                             r),
-                    code);
-    }
-  }
-}
-
-static RBNode *rb_insert(uintptr_t code, Scheme_Object *key, Scheme_Object *val,
-                         RBNode *s)
-{
-  RBNode *s1;
-
-  s1 = ins(code, key, val, s);
-
-  /* ; color the root black */
-  if (RB_REDP(s1))
-    return recolor_rb(0, s1);
-  else
-    return s1;
-}
-
-static RBNode *rb_replace(RBNode *s, RBNode *orig, RBNode *naya)
-{
   if (SAME_OBJ(s, orig))
     return naya;
-  if (s->code > orig->code)
-    return make_rb(RB_REDP(s),
-                   rb_replace(s->left, orig, naya),
-                   s->code, s->key, s->val,
-                   s->right);
-  else
-    return make_rb(RB_REDP(s),
-                   s->left,
-                   s->code, s->key, s->val,
-                   rb_replace(s->right, orig, naya));
-}
 
-static RBNode *unbalanced_left(RBNode *s, int *_bh_dec)
-{
-  /*
-  ;  (* [unbalanced_left] repares invariant (2) when the black height of the
-  ;     left son exceeds (by 1) the black height of the right son *)
-  ; [original spelling kept -- a quote is a quote ]
+  s = avl_clone(s);
 
-  (define (unbalanced-left s)
-    (match s
-      [($ R ($ B t1 x1 t2) x2 t3)              (values (lbalance (R- t1 x1 t2) x2 t3) #f)]
-      [($ B ($ B t1 x1 t2) x2 t3)              (values (lbalance (R- t1 x1 t2) x2 t3) #t)]
-      [($ B ($ R t1 x1 ($ B t2 x2 t3)) x3 t4)  (values (B- t1 x1 (lbalance (R- t2 x2 t3) x3 t4)) #f)]
-      [_                                       (error 'unbalanced-left
-                                                      (format "Black height of both sons were the same: ~a"
-                                                              (->sexp s)))]))
-  */
-  RBNode *left = s->left;
-  
-  RB_ASSERT(left);
-
-  if (!RB_REDP(left)) {
-    *_bh_dec = !RB_REDP(s);
-    return lbalance(recolor_rb(1, left),
-                    s->code, s->key,s->val,
-                    s->right);
+  if (s->code > orig->code) {
+    next = avl_replace(s->left, orig, naya);
+    s->left = next;
   } else {
-    RBNode *lr = left->right;
-    *_bh_dec = 0;
-    RB_ASSERT(RB_REDP(left));
-    RB_ASSERT(lr && !RB_REDP(lr));
-    return make_rb(0, left->left,
-                   left->code, left->key, left->val, 
-                   lbalance(recolor_rb(1, lr),
-                            s->code, s->key,s->val,
-                            s->right));
+    next = avl_replace(s->right, orig, naya);
+    s->right = next;
   }
-}
 
-static RBNode *unbalanced_right(RBNode *s, int *_bh_dec)
-{
-  /*
-  ;  (* [unbalanced_right] repares invariant (2) when the black height of the
-  ;     right son exceeds (by 1) the black height of the left son *)
-  
-  (define (unbalanced-right s)
-    (match s
-      [($ R t1 x1 ($ B t2 x2 t3))             (values (rbalance t1 x1 (R- t2 x2 t3)) #f)]
-      [($ B t1 x1 ($ B t2 x2 t3))             (values (rbalance t1 x1 (R- t2 x2 t3)) #t)]
-      [($ B t1 x1 ($ R ($ B t2 x2 t3) x3 t4)) (values (B- (rbalance t1 x1 (R- t2 x2 t3)) x3 t4) #f)]
-      [_                                      (error 'unbalanced-right 
-                                                     (format "Black height of both sons were the same: ~a"
-                                                             (->sexp s)))]))
-  
-  */
-  RBNode *right = s->right;
-  
-  RB_ASSERT(right);
-
-  if (!RB_REDP(right)) {
-    *_bh_dec = !RB_REDP(s);
-    return rbalance(s->left,
-                    s->code, s->key,s->val,
-                    recolor_rb(1, right));
-  } else {
-    RBNode *rl = right->left;
-    *_bh_dec = 0;
-    RB_ASSERT(RB_REDP(right));
-    RB_ASSERT(rl && !RB_REDP(rl));
-    return make_rb(0, rbalance(s->left,
-                               s->code, s->key,s->val,
-                               recolor_rb(1, rl)),
-                   right->code, right->key, right->val, 
-                   right->right);
-  }
-}
- 
-static RBNode *remove_min(RBNode *s, RBNode **_m, int *_bh_dec)
-{
-  /*
-  ;  (* [remove_min s = (s',m,b)] extracts the minimum [m] of [s], [s'] being the
-  ;     resulting set, and indicates with [b] whether the black height has
-  ;     decreased *)
-  
-  (define (remove-min s)
-    (match s
-      [()                         (error "remove-min: Called on empty set")]
-      ;  minimum is reached
-      [($ B () x ())           (values empty x #t)]
-      [($ B () x ($ R l y r))  (values (B- l y r) x #f)]
-      [($ B () _ ($ B _ _ _))  (error)]
-      [($ R () x r)            (values r x #f)]
-      ;  minimum is recursively extracted from [l]
-      [($ B l x r)                (let-values ([(l1 m d) (remove-min l)])
-                                    (let ([t (B- l1 x r)])
-                                      (if d
-                                          (let-values ([(t d1) (unbalanced-right t)])
-                                            (values t m d1))
-                                          (values t m #f))))]
-      [($ R l x r)                (let-values ([(l1 m d) (remove-min l)])
-                                    (let ([t (R- l1 x r)])
-                                      (if d
-                                          (let-values ([(t d1) (unbalanced-right t)])
-                                            (values t m d1))
-                                          (values t m #f))))]))
-  */
-
-  RB_ASSERT(s);
-
-  if (!RB_REDP(s) && !s->left) {
-    if (!s->right) {
-      *_bh_dec = 1;
-      *_m = s;
-      return NULL;
-    } else if (RB_REDP(s->right)) {
-      *_bh_dec = 0;
-      *_m = s;
-      return recolor_rb(0, s->right);
-    } else {
-      RB_ASSERT(0);
-      return NULL;
-    }
-  }
-  if (RB_REDP(s) && !s->left) {
-    *_bh_dec = 0;
-    *_m = s;
-    return s->right;
-  }
-  /* covers last two cases of Racket code: */
-  {
-    int left_bh_dec;
-    RBNode *l1, *t;
-    l1 = remove_min(s->left, _m, &left_bh_dec);
-    t = make_rb(RB_REDP(s), l1, s->code, s->key, s->val, s->right);
-    if (left_bh_dec)
-      return unbalanced_right(t, _bh_dec);
-    else {
-      *_bh_dec = 0;
-      return t;
-    }
-  }
-}
-
-static RBNode *remove_aux(RBNode *s, uintptr_t code, int *_bh_dec)
-{
-  /*
-    (define (remove-aux s)
-      (match s
-        [()           (values empty #f)]
-        [($ B l y r)  (if3 (cmp x y)
-                           (let-values ([(l1 d) (remove-aux l)])
-                             (let ([t (B- l1 y r)]) ; [mm: R-]
-                               (if d
-                                   (unbalanced-right t)
-                                   (values t #f))))
-                           (match r
-                             [()    (blackify l)] ; [mm: (values l #f)]
-                             [_     (let-values ([(r1 m d) (remove-min r)])
-                                      (let ([t (B- l m r1)]) ; [mm: R-]
-                                        (if d
-                                            (unbalanced-left t)
-                                            (values t #f))))])
-                           
-                           (let-values ([(r1 d) (remove-aux r)])
-                             (let ([t (B- l y r1)]) ; [mm: R-]
-                               (if d
-                                   (unbalanced-left t)
-                                   (values t #f)))))]
-        [($ R l y r)  ...])) ; the same, with "mm" changes
-  */
-
-  if (!s) {
-    *_bh_dec = 0;
-    return NULL;
-  } else {
-    if (code < s->code) {
-      RBNode *l1, *t;
-      int left_bh_dec;
-      l1 = remove_aux(s->left, code, &left_bh_dec);
-      t = make_rb(RB_REDP(s), l1,
-                  s->code, s->key, s->val,
-                  s->right);
-      if (left_bh_dec)
-        return unbalanced_right(t, _bh_dec);
-      else {
-        *_bh_dec = 0;
-        return t;
-      }
-    } else if (code == s->code) {
-      if (!s->right) {
-        if (!RB_REDP(s)) {
-          RBNode *l = s->left;
-          /* (blackify l) */
-          if (!l) {
-            *_bh_dec = 1;
-            return NULL;
-          } else if (RB_REDP(l)) {
-            *_bh_dec = 0;
-            return recolor_rb(0, l);
-          } else {
-            *_bh_dec = 1;
-            return l;
-          }
-        } else {
-          *_bh_dec = 0;
-          return s->left;
-        }
-      } else {
-        RBNode *r1, *t, *m;
-        int right_bh_dec;
-        r1 = remove_min(s->right, &m, &right_bh_dec);
-        t = make_rb(RB_REDP(s), s->left,
-                    m->code, m->key, m->val,
-                    r1);
-        if (right_bh_dec)
-          return unbalanced_left(t, _bh_dec);
-        else {
-          *_bh_dec = 0;
-          return t;
-        }
-      }
-    } else {
-      RBNode *r1, *t;
-      int right_bh_dec;
-      r1 = remove_aux(s->right, code, &right_bh_dec);
-      t = make_rb(RB_REDP(s), s->left,
-                  s->code, s->key, s->val,
-                  r1);
-      if (right_bh_dec)
-        return unbalanced_left(t, _bh_dec);
-      else {
-        *_bh_dec = 0;
-        return t;
-      }
-    }
-  }
-}
-
-static RBNode *rb_remove(RBNode *s, uintptr_t code)
-{
-  int bh_dec;
-  return remove_aux(s, code, &bh_dec);
+  return s;
 }
 
 Scheme_Hash_Tree *scheme_make_hash_tree(int kind)
@@ -2304,7 +2075,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
 {
   Scheme_Hash_Tree *tree2;
   uintptr_t h;
-  RBNode *root, *added;
+  AVLNode *root, *added;
   int delta;
 
   if (SCHEME_HASHTR_FLAGS(tree) & 0x3) {
@@ -2320,7 +2091,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
 
   if (!val) {
     /* Removing ... */
-    added = rb_find(h, tree->root);
+    added = avl_find(h, tree->root);
     if (!added)
       return tree; /* nothing to remove */
     if (added->key) {
@@ -2331,7 +2102,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
                     : scheme_eqv(added->key, key)))
           || (!kind && SAME_OBJ(added->key, key))) {
         /* remove single item */
-        root = rb_remove(tree->root, h);
+        root = avl_del(tree->root, h);
         
         tree2 = MALLOC_ONE_TAGGED(Scheme_Hash_Tree);
         memcpy(tree2, tree, sizeof(Scheme_Hash_Tree));
@@ -2351,8 +2122,8 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     }
   } else {
     /* Adding/setting: */
-    root = rb_insert(h, NULL, NULL, tree->root);
-    added = rb_find(h, root);
+    root = avl_ins(h, NULL, NULL, tree->root);
+    added = avl_find(h, root);
   }
 
   delta = 0;
@@ -2428,12 +2199,11 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
         delta = 1;
       }
     }
-    root = rb_replace(root,
-                      added,
-                      make_rb(RB_REDP(added),
-                              added->left,
-                              added->code, key, val,
-                              added->right));
+    root = avl_replace(root,
+                       added,
+                       make_avl(added->left,
+                                added->code, key, val,
+                                added->right));
   } else {
     added->key = key;
     added->val = val;
@@ -2454,24 +2224,24 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
 Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
 {
   uintptr_t h;
-  RBNode *rb;
+  AVLNode *avl;
 
   h = PTR_TO_LONG((Scheme_Object *)key);
   h = h >> 2;
 
-  rb = rb_find(h, tree->root);
-  if (rb) {
-    if (!rb->key) {
+  avl = avl_find(h, tree->root);
+  if (avl) {
+    if (!avl->key) {
       /* Have list of keys & vals: */
-      Scheme_Object *prs = rb->val, *a;
+      Scheme_Object *prs = avl->val, *a;
       while (prs) {
         a = SCHEME_CAR(prs);
         if (SAME_OBJ(SCHEME_CAR(a), key))
           return SCHEME_CDR(a);
         prs = SCHEME_CDR(prs);
       }
-    } else if (SAME_OBJ(rb->key, key))
-      return rb->val;
+    } else if (SAME_OBJ(avl->key, key))
+      return avl->val;
   }
 
   return NULL;
@@ -2480,7 +2250,7 @@ Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *ke
 Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
 {
   uintptr_t h;
-  RBNode *rb;
+  AVLNode *avl;
   int kind = (SCHEME_HASHTR_FLAGS(tree) & 0x3);
 
   if (kind) {
@@ -2492,11 +2262,11 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
     return scheme_eq_hash_tree_get(tree, key);
   }
 
-  rb = rb_find(h, tree->root);
-  if (rb) {
-    if (!rb->key) {
+  avl = avl_find(h, tree->root);
+  if (avl) {
+    if (!avl->key) {
       /* Have list of keys & vals: */
-      Scheme_Object *prs = rb->val, *a;
+      Scheme_Object *prs = avl->val, *a;
       while (prs) {
         a = SCHEME_CAR(prs);
         if (kind == 1) {
@@ -2510,11 +2280,11 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
       }
     } else {
       if (kind == 1) {
-        if (scheme_equal(key, rb->key))
-          return rb->val;
+        if (scheme_equal(key, avl->key))
+          return avl->val;
       } else {
-        if (scheme_eqv(key, rb->key))
-          return rb->val;
+        if (scheme_eqv(key, avl->key))
+          return avl->val;
       }
     }
   }
@@ -2533,20 +2303,20 @@ intptr_t scheme_hash_tree_next(Scheme_Hash_Tree *tree, intptr_t pos)
     return -1;
 }
 
-static int fill_elems(RBNode *rb, Scheme_Object *vec, intptr_t pos, intptr_t count)
+static int fill_elems(AVLNode *avl, Scheme_Object *vec, intptr_t pos, intptr_t count)
 {
-  if (!rb)
+  if (!avl)
     return pos;
 
-  if (rb->left)
-    pos = fill_elems(rb->left, vec, pos, count);
+  if (avl->left)
+    pos = fill_elems(avl->left, vec, pos, count);
 
-  if (rb->key) {
-    SCHEME_VEC_ELS(vec)[pos] = rb->val;
-    SCHEME_VEC_ELS(vec)[pos + count] = rb->key;
+  if (avl->key) {
+    SCHEME_VEC_ELS(vec)[pos] = avl->val;
+    SCHEME_VEC_ELS(vec)[pos + count] = avl->key;
     pos++;
   } else {
-    Scheme_Object *prs = rb->val, *a;
+    Scheme_Object *prs = avl->val, *a;
     while (prs) {
       a = SCHEME_CAR(prs);
       SCHEME_VEC_ELS(vec)[pos] = SCHEME_CDR(a);
@@ -2556,8 +2326,8 @@ static int fill_elems(RBNode *rb, Scheme_Object *vec, intptr_t pos, intptr_t cou
     }
   }
 
-  if (rb->right)
-    pos = fill_elems(rb->right, vec, pos, count);
+  if (avl->right)
+    pos = fill_elems(avl->right, vec, pos, count);
 
   return pos;
 }
@@ -2575,10 +2345,10 @@ int scheme_hash_tree_index(Scheme_Hash_Tree *tree, intptr_t pos, Scheme_Object *
   else
     elems = NULL;
   if (!elems) {
-    RB_ASSERT_ONLY(int total_pos);
+    AVL_ASSERT_ONLY(int total_pos);
     elems = scheme_make_vector(tree->count * 2, NULL);
-    RB_ASSERT_ONLY(total_pos = ) fill_elems(tree->root, elems, 0, tree->count);
-    RB_ASSERT(total_pos == tree->count);
+    AVL_ASSERT_ONLY(total_pos = ) fill_elems(tree->root, elems, 0, tree->count);
+    AVL_ASSERT(total_pos == tree->count);
     elems_box = scheme_make_weak_box(elems);
     tree->elems_box = elems_box;
   }
@@ -2629,7 +2399,7 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_hash_tree_type, hash_tree_val);
-  GC_REG_TRAV(scheme_rt_rb_node, mark_rb_node);
+  GC_REG_TRAV(scheme_rt_avl_node, mark_avl_node);
 }
 
 END_XFORM_SKIP;
