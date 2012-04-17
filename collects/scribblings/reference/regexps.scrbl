@@ -402,10 +402,10 @@ bytes. To avoid such interleaving, use @racket[regexp-match-peek]
                         [end-pos (or/c exact-nonnegative-integer? #f) #f]
                         [input-prefix bytes? #""]
                         [#:match-select match-select
-                         (or/c ((listof any?) . -> . (or/c any? (listof any?)))
+                         (or/c (list? . -> . (or/c any/c list?))
                                #f)
                          car]
-                        [#:gap-select gap-select boolean? #f])
+                        [#:gap-select? gap-select any/c #f])
          (if (and (or (string? pattern) (regexp? pattern))
                   (or (string? input) (path? input)))
              (listof (or/c string? (listof (or/c #f string?))))
@@ -462,8 +462,8 @@ return @emph{only} the separators, making such uses equivalent to
 @racket[regexp-split].
 
 @examples[
-(regexp-match* #rx"x(.)" "12x4x6" #:match-select cadr #:gap-select #t)
-(regexp-match* #rx"x(.)" "12x4x6" #:match-select #f #:gap-select #t)
+(regexp-match* #rx"x(.)" "12x4x6" #:match-select cadr #:gap-select? #t)
+(regexp-match* #rx"x(.)" "12x4x6" #:match-select #f #:gap-select? #t)
 ]}
 
 
@@ -528,7 +528,7 @@ positions indicate the number of bytes that were read, including
                                   [end-pos (or/c exact-nonnegative-integer? #f) #f]
                                   [input-prefix bytes? #""]
                                   [#:match-select match-select
-                                   ((listof any?) . -> . (or/c any? (listof any?)))
+                                   (list? . -> . (or/c any/c list?))
                                    car])
          (or/c (listof (cons/c exact-nonnegative-integer?
                                exact-nonnegative-integer?))
@@ -544,7 +544,7 @@ like @racket[regexp-match*].
 ]
 
 Note that unlike @racket[regexp-match*], there is no
-@racket[#:gap-select] input keyword, as this information can be easily
+@racket[#:gap-select?] input keyword, as this information can be easily
 inferred from the resulting matches.
 }
 
@@ -661,11 +661,15 @@ blocking. The match fails if not-yet-available characters might be
 used to match @racket[pattern].}
 
 
-@defproc[(regexp-match-peek-positions* [pattern (or/c string? bytes? regexp? byte-regexp?)]
+@defproc[(regexp-match-peek-positions*
+                            [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
-                            [input-prefix bytes? #""])
+                            [input-prefix bytes? #""]
+                            [#:match-select match-select
+                             (list? . -> . (or/c any/c list?))
+                             car])
          (or/c (listof (cons/c exact-nonnegative-integer?
                                exact-nonnegative-integer?))
                (listof (listof (or/c #f (cons/c exact-nonnegative-integer?

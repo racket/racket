@@ -87,7 +87,7 @@
   (for ([cvt (in-list (list values byte-regexp byte-pregexp))])
     (test '(#"\x80" #"\x80") regexp-match* (cvt #"\x80") #"a\x80z\x80q"))
   ;; --------------------
-  (define (regexp-explode . xs) (apply regexp-match* #:gap-select #t xs))
+  (define (regexp-explode . xs) (apply regexp-match* #:gap-select? #t xs))
   (t regexp-explode)
   (t '(" " "a" " " "b" " " "c" " ")  eof  "[abc]" " a b c ")
   (t '("" "a" "+" "b" " = " "c" " ") eof  "[abc]" "a+b = c ")
@@ -114,10 +114,10 @@
           regexp-explode (cvt #"\x80") #"a\x80z\x80q"))
   ;; --------------------
   (t regexp-match*) ; some tests with a match-select etc
-  ;; (tests with #f for #:match-select and #t for #:gap-select done below with
+  ;; (tests with #f for #:match-select and #t for #:gap-select? done below with
   ;; `regexp-split')
   (err/rt-test (regexp-match* "[abc]" "a b c"
-                              #:match-select #f #:gap-select #f))
+                              #:match-select #f #:gap-select? #f))
   (t '("a" "b" "c") eof
      "<([abc])>" "<a> <b> <c>" #:match-select cadr)
   (t '(("a") ("b") ("c")) eof
@@ -125,11 +125,11 @@
   (t '(("<a>" "a") ("<b>" "b") ("<c>" "c")) eof
      "<([abc])>" "<a> <b> <c>" #:match-select values)
   (t '("" "a" " + " "b" " = " "c" "") eof
-     "<([abc])>" "<a> + <b> = <c>" #:match-select cadr #:gap-select #t)
+     "<([abc])>" "<a> + <b> = <c>" #:match-select cadr #:gap-select? #t)
   (t '("" ("<a>" "a") " + " ("<b>" "b") " = " ("<c>" "c") "") eof
-     "<([abc])>" "<a> + <b> = <c>" #:match-select values #:gap-select #t)
+     "<([abc])>" "<a> + <b> = <c>" #:match-select values #:gap-select? #t)
   (t '("" ("<a" "a" #f) " + " ("<b" "b" #f) " = " ("<c" "c" #f) "") eof
-     "<([abc])(>)?" "<a + <b = <c" #:match-select values #:gap-select #t)
+     "<([abc])(>)?" "<a + <b = <c" #:match-select values #:gap-select? #t)
   ;; --------------------
   (t (list regexp-match-positions*
            ;; also try the generic path
@@ -195,7 +195,7 @@
   (t (list regexp-split
            ;; also via an equivalent `regexp-match*' configuration
            (lambda xs
-             (apply regexp-match* xs #:match-select #f #:gap-select #t))))
+             (apply regexp-match* xs #:match-select #f #:gap-select? #t))))
   (t '("1" "2" "3" "4") eof "[abc]" "1a2b3c4")
   (t '("2" "3" "4") eof     "[abc]" "1a2b3c4" 2)
   (t '("" "3" "4") eof      "[abc]" "1a2b3c4" 3)

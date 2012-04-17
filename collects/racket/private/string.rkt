@@ -240,7 +240,9 @@
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-positions* pattern string [start 0] [end #f] [ipre #""]
                                    #:match-select [match-select car])
-    ;; Note: no need for a #:gap-select, since it is easily inferred from the
+    (unless (procedure? match-select)
+      (raise-type-error 'regexp-match-positions* "procedure" match-select))
+    ;; Note: no need for a #:gap-select?, since it is easily inferred from the
     ;; resulting matches
     (if (eq? match-select car)
       ;; common case
@@ -297,6 +299,8 @@
   (define (regexp-match-peek-positions* pattern string [start 0] [end #f]
                                         [ipre #""]
                                         #:match-select [match-select car])
+    (unless (procedure? match-select)
+      (raise-type-error 'regexp-match-peek-positions* "procedure" match-select))
     (if (eq? match-select car)
       ;; common case
       (regexp-loop regexp-match-peek-positions* loop start end pattern string ipre
@@ -466,7 +470,7 @@
   ;; other submatches and/or gap strings too.
   (define (regexp-match* pattern string [start 0] [end #f] [ipre #""]
                          #:match-select [match-select car]
-                         #:gap-select   [gap-select   #f])
+                         #:gap-select?  [gap-select   #f])
     (cond
       ;; nonsensical case => throw an error
       [(and (not match-select) (not gap-select))
@@ -480,6 +484,8 @@
          (current-continuation-marks)))]
       ;; no match-select => same as `regexp-split'
       [(not match-select) (regexp-split pattern string start end ipre)]
+      [(not (procedure? match-select))
+       (raise-type-error 'regexp-match* "procedure-or-#f" match-select)]
       ;; uncommon case => full code
       [(not (eq? match-select car))
        (define-values [buf sub] (get-buf+sub string pattern))
