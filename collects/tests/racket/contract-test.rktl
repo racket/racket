@@ -3072,8 +3072,11 @@
     #'(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol #'here)
     (lambda (x)
       (and (exn:fail:contract:blame? x)
-        (regexp-match? #px"<collects>"
-          (exn-message x)))))
+           (let ([msg (exn-message x)])
+             (define ans (regexp-match? #px"<collects>" msg))
+             (unless ans
+               (printf "msg: ~s\n" msg))
+             ans))))
   
   ;; make sure that ->i checks its arguments
   (contract-error-test
@@ -3723,6 +3726,13 @@
    (let ([funny/c (or/c (and/c procedure? (-> any)) (listof (-> number?)))])
      (contract (-> funny/c any) void 'pos 'neg)))
 
+  
+  (test/spec-passed
+   'or/c-opt-unknown-flat
+   (let ()
+     (define arr (-> number? number?))
+     ((contract (opt/c (or/c not arr)) (λ (x) x) 'pos 'neg) 1)))
+  
   
   
 ;                                          
@@ -9196,7 +9206,7 @@
       (define-opt/c (f z)
         (struct/dc s
                    [a (>=/c z)]
-                   [b #:lazy (a) (f a)]))
+                   [b (a) #:lazy (f a)]))
       
       (s-a (contract (f 11)
                      (s 12 (s 13 #f))
@@ -9211,7 +9221,7 @@
       (define-opt/c (f z)
         (struct/dc s
                    [a (>=/c z)]
-                   [b #:lazy (a) (f a)]))
+                   [b (a) #:lazy (f a)]))
       
       (s-a (s-b (contract (f 11)
                             (s 12 (s 13 #f))
@@ -9227,7 +9237,7 @@
       (define-opt/c (f z)
         (struct/dc s
                    [a (>=/c z)]
-                   [b #:lazy (a) (f a)]))
+                   [b (a) #:lazy (f a)]))
       (s-b (s-b (contract (f 11)
                           (s 12 (s 13 #f))
                           'pos
@@ -9242,7 +9252,7 @@
       (define-opt/c (g z)
         (struct/dc s
                    [a (>=/c z)]
-                   [b #:lazy (a) (>=/c (+ a 1))]))
+                   [b (a) #:lazy (>=/c (+ a 1))]))
       
       (s-a (contract (g 10)
                      (s 12 (s 14 #f))
@@ -9258,7 +9268,7 @@
       (define-opt/c (g z)
         (struct/dc s
                    [a (>=/c z)]
-                   [b #:lazy (a) (>=/c (+ a 1))]))
+                   [b (a) #:lazy (>=/c (+ a 1))]))
       
       (s-b (contract (g 10)
                      (s 12 14)
@@ -9275,7 +9285,7 @@
       (define-opt/c (g z)
         (struct/dc s
                    [a (>=/c z)]
-                   [b #:lazy (a) (>=/c (+ a 1))]))
+                   [b (a) #:lazy (>=/c (+ a 1))]))
       
       (s-b (contract (g 11)
                      (s 12 10)
@@ -9291,7 +9301,7 @@
         (or/c not
               (struct/dc kons
                          [hd (unknown-function a)]
-                         [tl #:lazy () (or/c #f (f b a))])))
+                         [tl () #:lazy (or/c #f (f b a))])))
       (kons-hd (kons-tl (contract (f 1 2)
                                   (kons 1 (kons 2 #f))
                                   'pos
@@ -9344,7 +9354,7 @@
       (struct s (q a))
       (contract (struct/dc s
                            [q integer?]
-                           [a #:lazy (q) (<=/c a)])
+                           [a (q) #:lazy (<=/c q)])
                 (s 1 #f)
                 'pos
                 'neg)))
@@ -9366,6 +9376,44 @@
       (struct s (a b))
       (struct/dc s [a (new-∃/c 'α)]))
    exn:fail?)
+  
+  (test/pos-blame
+   'struct/dc-new1
+   '(let ()
+      (struct s (a))
+      (contract (struct/dc s [a integer?]) (s #f) 'pos 'neg)))
+  
+  (test/spec-passed
+   'struct/dc-new2
+   '(let ()
+      (struct s (a))
+      (contract (struct/dc s [a #:lazy integer?]) (s #f) 'pos 'neg)))
+  
+  (test/pos-blame
+   'struct/dc-new3
+   '(let ()
+      (struct s (a))
+      (contract (s-a (struct/dc s [a #:lazy integer?])) (s #f) 'pos 'neg)))
+  
+  (test/spec-passed
+   'struct/dc-new4
+   '(let ()
+      (struct s ([a #:mutable]))
+      (contract (struct/dc s [a integer?]) (s #f) 'pos 'neg)))
+  
+  (test/pos-blame
+   'struct/dc-new5
+   '(let ()
+      (struct s ([a #:mutable]))
+      (contract (s-a (struct/dc s [a integer?])) (s #f) 'pos 'neg)))
+  
+  (test/neg-blame
+   'struct/dc-new6
+   '(let ()
+      (struct s ([a #:mutable]))
+      (set-s-a! (contract (struct/dc s [a integer?]) (s 1) 'pos 'neg)
+                #f)))
+  
   
 ;                                                                              
 ;                                                                              
@@ -10552,18 +10600,17 @@ so that propagation occurs.
   (ctest #t chaperone-contract? (let ()
                                   (struct s (a b))
                                   (struct/dc s [a integer?] [b integer?])))
-  (ctest #f flat-contract? (let ()
+  (ctest #t flat-contract? (let ()
                              (struct s (a b))
                              (struct/dc s [a integer?] [b integer?])))
-  (ctest #f flat-contract? (let ()
+  (ctest #t flat-contract? (let ()
                              (struct s (a b))
                              (struct/dc s [a integer?] [b (a) (>=/c a)])))
   (ctest #t chaperone-contract? (let ()
                                   (struct s (a b))
                                   (struct/dc s [a integer?] [b (a) (>=/c a)])))
-  
+    
   (test-flat-contract '(and/c number? integer?) 1 3/2)
-
   (test-flat-contract '(not/c integer?) #t 1)
   (test-flat-contract '(=/c 2) 2 3)
   (test-flat-contract '(>/c 5) 10 5)
@@ -12061,6 +12108,24 @@ so that propagation occurs.
          (λ () (letrec ([ctc (-> integer? (recursive-contract ctc))])
                  (letrec ([f (λ (x) 'not-f)])
                    ((contract ctc f 'pos 'neg) 1)))))
+  
+  (ctest '("the a field of")
+         extract-context-lines
+         (λ () 
+           (struct s (a b))
+           (contract (struct/dc s [a (b) (<=/c b)] [b integer?])
+                     (s 2 1)
+                     'pos
+                     'neg)))
+  
+  (ctest '("the a field of")
+         extract-context-lines
+         (λ ()
+           (struct s (a b))
+           (contract (struct/dc s [a (<=/c 1)] [b integer?])
+                     (s 2 1)
+                     'pos
+                     'neg)))
   
   #;
   (ctest '("an element of" "the 3rd element of")

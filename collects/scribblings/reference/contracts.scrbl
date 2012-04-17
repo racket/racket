@@ -390,20 +390,40 @@ produced.  Otherwise, an impersonator contract is produced.
 
 
 @defform/subs[(struct/dc struct-id field-spec ...)
-              ([field-spec [field-id contract-expr]
-                           [field-id #:lazy contract-expr]
-                           [field-id (dep-field-id ...) contract-expr]
-                           [field-id (dep-field-id ...) #:lazy contract-expr]])]{
+              ([field-spec [field-id maybe-lazy contract-expr]
+                           [field-id (dep-field-id ...) 
+                                     maybe-lazy
+                                     maybe-impersonator
+                                     maybe-flat
+                                     maybe-dep-state
+                                     contract-expr]]
+               [maybe-lazy (code:line) #:lazy]
+               [maybe-impersonator (code:line) #:impersonator]
+               [maybe-flat (code:line) #:flat]
+               [maybe-dep-state (code:line) #:depends-on-state])]{
 Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
 contracts produced by the @racket[field-spec]s.
 
 Each @racket[field-spec] can specify if the field is check lazily 
 (only when a selector is applied) or not via the @racket[#:lazy] 
-keyword. If the @racket[field-spec] lists the names of other fields,
+keyword. 
+
+If the @racket[field-spec] lists the names of other fields,
 then the contract depends on values in those fields, and the @racket[contract-expr]
 expression is evaluated each time a selector is applied, building a new contract
 for the fields based on the values of the @racket[dep-field-id] fields.
+If the field is a dependent field, then it is assumed that the contract is
+always a chaperone contract. If this is not the case, and the contract is
+always flat, or sometimes not a chaperone, then the field must be annotated with
+the @racket[#:flat] or @racket[#:impersonator].
+
+If a dependent contract depends on some mutable state, then use the 
+@racket[#:depends-on-state] keyword argument (if a field's dependent contract
+depends on a mutable field, this keyword is automatically inferred). 
+The presence of this keyword means that the contract expression is evaluated
+each time the corresponding field is accessed (or mutated, if it is a mutable
+field).
 
 Contracts for immutable fields must be either flat or chaperone contracts.
 Contracts for mutable fields may be impersonator contracts.
@@ -412,7 +432,7 @@ to flat contracts, a flat contract is produced.  If all the
 @racket[contract-expr]s are chaperone contracts, a chaperone contract is
 produced.  Otherwise, an impersonator contract is produced.
 
-For example, the function @racket[bst/c] below 
+As an example, the function @racket[bst/c] below 
 returns a contract for binary search trees whose values
 are all between @racket[lo] and @racket[hi].
 

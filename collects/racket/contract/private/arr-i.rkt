@@ -209,6 +209,7 @@
 ;; sorts the arguments according to the dependency order.
 ;; returns them in the reverse of that order, ie expressions that need
 ;; to be evaluted first come later in the list.
+;; BAD: this seem wrong, as it doesn't consider transitive dependencies
 (define-for-syntax (find-ordering args)
   
   (define (comes-before? x y)
