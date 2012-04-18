@@ -2969,7 +2969,10 @@
     [name
      ;; the procedure name of a method has ' method in ...' in it; trim that away
      (define method-name (regexp-replace #rx" method in .*%.?$" (symbol->string name) ""))
-     (blame-add-context blame (format "the ~a method in" method-name))]
+     (blame-add-context blame 
+                        (format "the ~a method in" method-name)
+                        #:important
+                        name)]
     [else
      (blame-add-context blame "an unnamed method in")]))
 

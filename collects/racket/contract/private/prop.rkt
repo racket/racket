@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require "blame.rkt"
-         "generate-base.rkt")
+         "generate-base.rkt"
+         racket/performance-hint)
 
 (provide prop:contract
          contract-struct?
@@ -11,7 +12,7 @@
          contract-struct-stronger?
          contract-struct-generate
          contract-struct-exercise
-
+         
          prop:flat-contract
          flat-contract-struct?
          
@@ -196,9 +197,11 @@
          [get-first-order (or get-first-order get-any?)]
          [get-projection
           (cond
-            [get-projection (if (skip-projection-wrapper?)
-                                get-projection
-                                (projection-wrapper get-projection))]
+            [get-projection 
+             (blame-context-projection-wrapper
+              (if (skip-projection-wrapper?)
+                  get-projection
+                  (projection-wrapper get-projection)))]
             [else (get-first-order-projection
                    get-name get-first-order)])]
          [stronger (or stronger weakest)])
@@ -233,6 +236,12 @@
                 (error 'prop:chaperone-contract (format "expected a chaperone of ~v, got ~v" v v*)))
               v*)))))))
 
+(define (blame-context-projection-wrapper proj)
+  (λ (ctc)
+    (define c-proj (proj ctc))
+    (λ (blame)
+      (c-proj (blame-add-unknown-context blame)))))
+
 (define build-chaperone-contract-property
   (build-property (compose make-chaperone-contract-property make-contract-property)
                   'anonymous-chaperone-contract
@@ -246,12 +255,13 @@
 (define ((get-first-order-projection get-name get-first-order) c)
   (first-order-projection (get-name c) (get-first-order c)))
 
-(define (first-order-projection name first-order)
-  (λ (b)
-    (λ (x)
-      (if (first-order x)
-          x
-          (raise-blame-error b x "expected: ~s, given: ~e" name x)))))
+(begin-encourage-inline
+  (define (first-order-projection name first-order)
+    (λ (b)
+      (λ (x)
+        (if (first-order x)
+            x
+            (raise-blame-error b x "expected: ~s, given: ~e" name x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

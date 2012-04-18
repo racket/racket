@@ -1355,11 +1355,15 @@ We can use this insight to generalize the function contracts
 and build a function that accepts any two contracts and
 returns a contract for functions between them.
 
+This projection also goes further and uses 
+@racket[blame-add-context] to improve the error messages
+when a contract violation is detected.
+
 @racketblock[
 (define (make-simple-function-contract dom-proj range-proj)
   (lambda (blame)
-    (let ([dom (dom-proj (blame-swap blame))]
-          [rng (range-proj blame)])
+    (let ([dom (dom-proj (blame-add-context blame "the argument of" #:swap? #t))]
+          [rng (range-proj (blame-add-context blame "the range of"))])
       (lambda (f)
         (if (and (procedure? f)
                  (procedure-arity-includes? f 1))
@@ -1542,6 +1546,53 @@ contracts.  The error messages assume that the function named by
 This predicate recognizes @tech{blame objects}.
 }
 
+@defproc[(blame-add-context [blame blame?]
+                            [context (or/c string? #f)]
+                            [#:important important (or/c string? #f) #f]
+                            [#:swap? swap? boolean? #f])
+         blame?]{
+  Adds some context information to blame error messages
+  that explicates which portion of the contract failed
+  (and that gets rendered by @racket[raise-blame-error]).
+  
+  The @racket[context] argument describes one layer of the 
+  portion of the contract, typically of the form @racket["the 1st argument of"]
+  (in the case of a function contract)
+  or @racket["a conjunct of"] (in the case of an @racket[and/c] contract).
+  
+  For example, consider this contract violation:
+  @interaction[#:eval (contract-eval)
+(define/contract f
+  (list/c (-> integer? integer?))
+  (list (λ (x) x)))
+
+((car f) #f)
+]
+It shows that the portion of the contract being violated is the first 
+occurrence of @racket[integer?], because the @racket[->] and 
+the @racket[list/c] combinators each internally called
+@racket[blame-add-context] to add the two lines following
+``in'' in the error message.
+
+The @racket[important] argument is used to build the beginning part
+of the contract violation. The last @racket[important] argument that
+gets added to a blame object is used. The @racket[class/c] contract
+adds an important argument, as does the @racket[->] contract (when
+@racket[->] knows the name of the function getting the contract).
+
+The @racket[swap?] argument has the effect of calling @racket[blame-swap]
+while adding the layer of context, but without creating an extra
+blame object.
+
+The context information recorded in blame structs keeps track of
+combinators that do not add information, and add the string @racket["..."]
+for them, so programmers at least see that there was some context 
+they are missing in the error messages. Accordingly, since there are
+combinators that should not add any context (e.g., @racket[recursive-contract]),
+passing @racket[#f] as the context string argument avoids adding the
+@racket["..."] string.
+}
+
 @deftogether[(
 @defproc[(blame-positive [b blame?]) any/c]
 @defproc[(blame-negative [b blame?]) any/c]
@@ -1568,6 +1619,7 @@ source location was provided, all fields of the structure will contain
 
 @defproc[(blame-swap [b blame?]) blame?]{
 This function swaps the positive and negative parties of a @tech{blame object}.
+(See also @racket[blame-add-context].)
 }
 
 @deftogether[(

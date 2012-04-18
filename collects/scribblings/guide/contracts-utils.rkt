@@ -3,13 +3,15 @@
 (require scribble/basic
          (for-syntax racket/port)
          racket/include
+         scribble/eval
          (except-in scribble/manual link))
 
 (provide ctc-section
          ctc-link
          exercise
          solution
-         external-file)
+         external-file
+         contract-eval)
 
 (define (ctc-section #:tag [tag #f] . rest)
   (keyword-apply section
@@ -69,3 +71,6 @@
     [(_ filename)
      #`(include/reader #,(format "contracts-examples/~a.rkt" (syntax-e #'filename))
                        comment-racketmod-reader)]))
+
+(define contract-eval (make-base-eval))
+(contract-eval '(require racket/contract))

@@ -330,14 +330,14 @@ v4 todo:
                        #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
                              (arity-checking-wrapper val blame
-                                                      basic-lambda-name
-                                                      void
-                                                      #,min-method-arity
-                                                      #,max-method-arity
-                                                      #,min-arity
-                                                      #,(if dom-rest #f max-arity)
-                                                      '(req-kwd ...)
-                                                      '(opt-kwd ...))))]
+                                                     basic-lambda-name
+                                                     void
+                                                     #,min-method-arity
+                                                     #,max-method-arity
+                                                     #,min-arity
+                                                     #,(if dom-rest #f max-arity)
+                                                     '(req-kwd ...)
+                                                     '(opt-kwd ...))))]
                       [(pair? req-keywords)
                        #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
@@ -471,23 +471,34 @@ v4 todo:
          [mtd? (base->-mtd? ctc)])
     (λ (orig-blame)
       (define rng-blame (blame-add-context orig-blame "the range of"))
-      (define swapped (blame-swap orig-blame))
-      (define swapped-domain (blame-add-context swapped "the domain of"))
+      (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
       (define partial-doms 
         (for/list ([dom (in-list doms-proj)]
                    [n (in-naturals 1)])
-          (dom (blame-add-context swapped 
+          (dom (blame-add-context orig-blame 
                                   (format "the ~a argument of"
-                                          (n->th n))))))
+                                          (n->th n))
+                                  #:swap? #t))))
       (define partial-optional-doms 
         (for/list ([dom (in-list doms-optional-proj)]
                    [n (in-naturals (+ 1 (length doms-proj)))])
-          (dom (blame-add-context swapped 
+          (dom (blame-add-context orig-blame
                                   (format "the ~a argument of"
-                                          (n->th n))))))
+                                          (n->th n))
+                                  #:swap? #t))))
       (define partial-ranges (map (λ (rng) (rng rng-blame)) rngs-proj))
-      (define partial-mandatory-kwds (map (λ (kwd) (kwd swapped)) mandatory-kwds-proj))
-      (define partial-optional-kwds (map (λ (kwd) (kwd swapped)) optional-kwds-proj))
+      (define partial-mandatory-kwds 
+        (for/list ([kwd-proj (in-list mandatory-kwds-proj)]
+                   [kwd (in-list mandatory-keywords)])
+          (kwd-proj (blame-add-context orig-blame 
+                                       (format "the ~a argument of" kwd)
+                                       #:swap? #t))))
+      (define partial-optional-kwds 
+        (for/list ([kwd-proj (in-list optional-kwds-proj)]
+                   [kwd (in-list optional-keywords)])
+          (kwd-proj (blame-add-context orig-blame
+                                       (format "the ~a argument of" kwd)
+                                       #:swap? #t))))
       (define the-args (append partial-doms partial-optional-doms 
                                partial-mandatory-kwds partial-optional-kwds
                                partial-ranges))
@@ -1192,7 +1203,6 @@ v4 todo:
                  [else
                   (cons (+ mandatory-count i) (loop (+ i 1)))]))])])
     (λ (blame)
-      (let ([blame (blame-add-context blame "the domain of")])
         (λ (val)
           (if (base-->d-rest-ctc ->d-stct)
               (check-procedure/more val
@@ -1274,7 +1284,8 @@ v4 todo:
                                          (invoke-dep-ctc (car result-contracts)
                                                          (if rng-underscore? #f dep-post-args)
                                                          (car results)
-                                                         blame)
+                                                         blame
+                                                         #f)
                                          (loop (cdr results) (cdr result-contracts)))]))))))
                         null))
                   
@@ -1287,7 +1298,7 @@ v4 todo:
                                      [(or (null? building-kwd-args) (null? all-kwds)) '()]
                                      [else (if (eq? (car all-kwds)
                                                     (car building-kwd-args))
-                                               (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) (blame-swap blame))
+                                               (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) blame #t)
                                                      (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
                                                (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))])
                     (if (null? kwd-res) null (list kwd-res)))
@@ -1305,20 +1316,20 @@ v4 todo:
                     (cond
                       [(null? args) 
                        (if (base-->d-rest-ctc ->d-stct)
-                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args '() (blame-swap blame))
+                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args '() blame #t)
                            '())]
                       [(null? non-kwd-ctcs) 
                        (if (base-->d-rest-ctc ->d-stct)
-                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args args (blame-swap blame))
+                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args args blame #t)
                            
                            ;; ran out of arguments, but don't have a rest parameter.
                            ;; procedure-reduce-arity (or whatever the new thing is
                            ;; going to be called) should ensure this doesn't happen.
                            (error 'shouldnt\ happen))]
-                      [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) (blame-swap blame))
+                      [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) blame #t)
                                   (loop (cdr args)
                                         (cdr non-kwd-ctcs)))])))))))
-           impersonator-prop:contracted ->d-stct))))))
+           impersonator-prop:contracted ->d-stct)))))
 
 (define (build-values-string desc dep-pre-args)
   (cond
@@ -1335,11 +1346,16 @@ v4 todo:
                       (loop (cdr lst)))])))]))
 
 ;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
-(define (invoke-dep-ctc dep-ctc dep-args val blame)
+(define (invoke-dep-ctc dep-ctc dep-args val blame dom?)
   (let ([ctc (coerce-contract '->d (if dep-args
                                        (apply dep-ctc dep-args)
                                        dep-ctc))])
-    (((contract-projection ctc) blame) val)))
+    (((contract-projection ctc) 
+      (blame-add-context
+       blame
+       (if dom? "the domain of" "the range of")
+       #:swap? dom?))
+      val)))
 
 ;; build-dep-ctc-args : number (listof any) boolean (listof keyword) (listof keyword) (listof any)
 (define (build-dep-ctc-args non-kwd-ctc-count args rest-arg? all-kwds supplied-kwds supplied-args)
@@ -1627,35 +1643,34 @@ v4 todo:
 
 (define (case->-proj wrapper)
   (λ (ctc)
-    (let* ([dom-ctcs (map contract-projection (get-case->-dom-ctcs ctc))]
-           [rng-ctcs (let ([rngs (get-case->-rng-ctcs ctc)])
-                       (and rngs (map contract-projection (get-case->-rng-ctcs ctc))))]
-           [rst-ctcs (base-case->-rst-ctcs ctc)]
-           [specs (base-case->-specs ctc)])
-      (λ (blame)
-        (define dom-blame (blame-add-context (blame-swap blame) "the domain of"))
-        (define rng-blame (blame-add-context blame "the range of"))
-        (let ([projs (append (map (λ (f) (f dom-blame)) dom-ctcs)
-                             (map (λ (f) (f rng-blame)) rng-ctcs))]
-              [chk
-               (λ (val mtd?) 
-                 (cond
-                   [(null? specs)
-                    (unless (procedure? val)
-                      (raise-blame-error blame val "expected a procedure"))]
-                   [else
-                    (for-each 
-                     (λ (dom-length has-rest?)
-                       (if has-rest?
-                           (check-procedure/more val mtd? dom-length '() '() blame)
-                           (check-procedure val mtd? dom-length 0 '() '() blame)))
-                     specs rst-ctcs)]))])
-          (apply (base-case->-wrapper ctc)
-                 chk
-                 wrapper
-                 blame
-                 ctc
-                 projs))))))
+    (define dom-ctcs (map contract-projection (get-case->-dom-ctcs ctc)))
+    (define rng-ctcs (let ([rngs (get-case->-rng-ctcs ctc)])
+                       (and rngs (map contract-projection (get-case->-rng-ctcs ctc)))))
+    (define rst-ctcs (base-case->-rst-ctcs ctc))
+    (define specs (base-case->-specs ctc))
+    (λ (blame)
+      (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
+      (define rng-blame (blame-add-context blame "the range of"))
+      (define projs (append (map (λ (f) (f dom-blame)) dom-ctcs)
+                            (map (λ (f) (f rng-blame)) rng-ctcs)))
+      (define (chk val mtd?) 
+        (cond
+          [(null? specs)
+           (unless (procedure? val)
+             (raise-blame-error blame val "expected a procedure"))]
+          [else
+           (for-each 
+            (λ (dom-length has-rest?)
+              (if has-rest?
+                  (check-procedure/more val mtd? dom-length '() '() blame)
+                  (check-procedure val mtd? dom-length 0 '() '() blame)))
+            specs rst-ctcs)]))
+      (apply (base-case->-wrapper ctc)
+             chk
+             wrapper
+             blame
+             ctc
+             projs))))
 
 (define (case->-name ctc)
   (apply

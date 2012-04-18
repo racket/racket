@@ -289,7 +289,7 @@ code does the parsing and validation of the syntax.
           (syntax->list #'(ctc-pr ...)))]
     [any #f]
     [[_ ctc]
-     (list (eres #'id #f #'ctc (car (generate-temporaries '(eres)))))]
+     (list (eres #'_ #f #'ctc (car (generate-temporaries '(eres)))))]
     [[id ctc]
      (begin
        (check-id stx #'id)
@@ -370,7 +370,10 @@ code does the parsing and validation of the syntax.
                         (syntax-case #'pre-leftover ()
                           [() (raise-syntax-error 
                                #f
-                               "expected #:pre to be followed by at least three subterms (a sequence of identifiers, the pre-condition, and the range contract), but found only two" 
+                               (string-append
+                                "expected #:pre to be followed by at least three subterms"
+                                " (a sequence of identifiers, the pre-condition, and the"
+                                " range contract), but found only two")
                                stx
                                (car (syntax->list leftover)))]
                           [x (void)])
@@ -387,7 +390,10 @@ code does the parsing and validation of the syntax.
                         (syntax-case #'pre-leftover ()
                           [() (raise-syntax-error 
                                #f
-                               "expected #:pre/name to be followed by at least four subterms (a sequence of identifiers, a name, the pre-condition, and the range contract), but found only three" 
+                               (string-append
+                                "expected #:pre/name to be followed by at least four subterms"
+                                " (a sequence of identifiers, a name, the pre-condition, and the"
+                                " range contract), but found only three")
                                stx
                                (car (syntax->list leftover)))]
                           [x (void)])

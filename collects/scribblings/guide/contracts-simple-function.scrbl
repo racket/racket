@@ -335,28 +335,28 @@ on a value other than an integer, then the server is to blame.
 You wrote your module. You added contracts. You put them into the interface
 so that client programmers have all the information from interfaces. It's a
 piece of art: 
-@racketmod[
-racket
-
-(provide
- (contract-out
-  [deposit (-> (lambda (x)
-                 (and (number? x) (integer? x) (>= x 0)))
-               any)]))
-  
-(define this 0)
-(define (deposit a) ...)
-]
+@interaction[#:eval 
+             contract-eval
+             (module bank-server racket
+               (provide
+                (contract-out
+                 [deposit (-> (λ (x)
+                                (and (number? x) (integer? x) (>= x 0)))
+                              any)]))
+               
+               (define total 0)
+               (define (deposit a) (set! total (+ a total))))]
 
 Several clients used your module. Others used their
 modules in turn. And all of a sudden one of them sees this error
 message:
 
-@inset-flow{@racketerror{bank-client broke the contract (-> ??? any)
-it had with myaccount on deposit; expected <???>, given: -10}}
+@interaction[#:eval 
+             contract-eval
+             (require 'bank-server)
+             (deposit -10)]
 
-Clearly, @racket[bank-client] is a module that uses @racket[myaccount]
-but what is the @racketerror{???} doing there?  Wouldn't it be nice if
+What is the @racketerror{???} doing there?  Wouldn't it be nice if
 we had a name for this class of data much like we have string, number,
 and so on?
 
@@ -368,21 +368,20 @@ by a predicate that consumes all Racket values and produces a
 boolean. The ``named'' part says what we want to do, which is to name
 the contract so that error messages become intelligible:
 
-@racketmod[
-racket
-
-(define (amount? x) (and (number? x) (integer? x) (>= x 0)))
-(define amount (flat-named-contract 'amount amount?))
+@interaction[#:eval 
+             contract-eval
+             (module improved-bank-server racket
+               (define (amount? x) (and (number? x) (integer? x) (>= x 0)))
+               (define amount (flat-named-contract 'amount amount?))
   
-(provide (contract-out [deposit (amount . -> . any)]))
+               (provide (contract-out [deposit (amount . -> . any)]))
   
-(define this 0)
-(define (deposit a) ...)
-]
+               (define total 0)
+               (define (deposit a) (set! total (+ a total))))]
 
-With this little change, the error message becomes all of the
-sudden quite readable:
+With this little change, the error message becomes quite readable:
 
-@inset-flow{@racketerror{bank-client broke the contract (-> amount
-any) it had with myaccount on deposit; expected <amount>, given: -10}}
-
+@interaction[#:eval 
+             contract-eval
+             (require 'improved-bank-server)
+             (deposit -10)]

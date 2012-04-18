@@ -143,10 +143,15 @@
       (define (has-proper-blame? msg)
         (define reg
           (cond
-            [(eq? blame 'pos) #rx"self-contract violation[:,].*blaming: pos"]
+            [(eq? blame 'pos) #rx"self-contract violation[\n:,].*blaming: pos"]
             [(eq? blame 'neg) #rx"blaming: neg"]
             [(string? blame) (string-append "blaming: " (regexp-quote blame))]
             [else #f]))
+        
+        (when reg
+          (unless (regexp-match? reg msg)
+            (eprintf "ACK!! ~s ~s\n" blame msg)
+            (custodian-shutdown-all (current-custodian))))
         (and reg (regexp-match? reg msg)))
       (printf "testing: ~s\n" name)
       (contract-eval
@@ -3041,7 +3046,7 @@
   
   ;; test to make sure the values are in the error messages
   (contract-error-test
-   'contract-error-test1
+   '->i-contract-error-test1
    #'((contract (->i ([x number?]) #:pre (x) #f any)
                 (λ (x) x)
                 'pos
@@ -3051,7 +3056,7 @@
      (and (exn:fail:contract:blame? x)
           (regexp-match #rx"x: 123456789" (exn-message x)))))
   (contract-error-test
-   'contract-error-test2
+   '->i-contract-error-test2
    #'((contract (->i ([|x y| number?]) #:pre (|x y|) #f any)
                 (λ (x) x)
                 'pos
@@ -3063,12 +3068,23 @@
 
   ;; test to make sure the collects directories are appropriately prefixed
   (contract-error-test
-   'contract-error-test3
+   '->i-contract-error-test3
     #'(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol #'here)
     (lambda (x)
       (and (exn:fail:contract:blame? x)
         (regexp-match? #px"<collects>"
           (exn-message x)))))
+  
+  ;; make sure that ->i checks its arguments
+  (contract-error-test
+   '->i-contract-error-test4
+   #'(->i ([x (λ (x y z) #f)]) any)
+   exn:fail?)
+  
+  (contract-error-test
+   '->i-contract-error-test5
+   #'(->i () (values [x (λ (x y z) #f)][y 5]))
+   exn:fail?)
    
   (test/neg-blame
    '->i-protect-shared-state
@@ -11299,18 +11315,38 @@ so that propagation occurs.
 ;                                                    
 ;                                                    
 
-  (contract-eval '(define (extract-context-lines thunk num)
+  (contract-eval '(define (extract-context-lines thunk)
                     (define str
                       (with-handlers ((exn:fail:contract:blame? exn-message))
                         (thunk)
                         "didn't raise an exception"))
-                    (define lines
-                      (regexp-split
-                       #rx"\n      "
-                       (regexp-replace #rx"(.*)\n  in: " str "")))
-                    (for/list ([answer-count (in-range num)]
-                               [msg-str (in-list lines)])
-                      msg-str)))
+                    (define m (regexp-match #rx".*\n +in: (.*)$" str))
+                    (cond
+                      [m 
+                       (define without-prefix (list-ref m 1))
+                       (define m2 (regexp-match #rx"(.*)\n *contract from:" without-prefix))
+                       (cond
+                         [m2
+                          (define lines (regexp-split #rx"\n *" (list-ref m2 1)))
+                          ;; drop the lines with the contract (keep lines beginning with an article)
+                          (let loop ([lines (regexp-split #rx"\n *" (list-ref m2 1))])
+                            (cond
+                              [(null? lines) '()]
+                              [else
+                               (define line (car lines))
+                               (cond
+                                 [(or (regexp-match #rx"^the " line)
+                                      (regexp-match #rx"^an " line)
+                                      (regexp-match #rx"^a " line))
+                                  (cons line (loop (cdr lines)))]
+                                 [else
+                                  (loop (cdr lines))])]))]
+                         [else
+                          (string-append "did not find ``contract from:'', so no context in msg: "
+                                      str)])]
+                      [else
+                       (string-append "did not find ``in:'', so no context in msg: "
+                                      str)])))
   
   (ctest '("the cdr of" "the 1st argument of") 
          extract-context-lines 
@@ -11318,8 +11354,7 @@ so that propagation occurs.
                           (λ (x y) x)
                           'pos
                           'neg)
-                (cons 1 2) 1))
-         2)
+                (cons 1 2) 1)))
   
   (ctest '("the 3rd element of" "the 2nd argument of") 
          extract-context-lines 
@@ -11327,8 +11362,7 @@ so that propagation occurs.
                           (λ (x y) x)
                           'pos
                           'neg)
-                1 (list 1 2 3)))
-         2)
+                1 (list 1 2 3))))
   
   (ctest '("the range of" "the 4th element of") 
          extract-context-lines 
@@ -11336,16 +11370,14 @@ so that propagation occurs.
                                   (list 1 2 #f (λ (x) #f))
                                   'pos
                                   'neg))
-                1))
-         2)
+                1)))
   
   (ctest '("a disjunct of") 
          extract-context-lines 
          (λ () (contract (or/c 1 (-> number? number?))
                          3
                          'pos
-                         'neg))
-         1)
+                         'neg)))
   
   (ctest '("the range of" "a disjunct of") 
          extract-context-lines 
@@ -11353,49 +11385,235 @@ so that propagation occurs.
                           (λ (x) #f)
                           'pos
                           'neg)
-                1))
-         2)
+                1)))
   
   (ctest '("the 2nd conjunct of") 
          extract-context-lines 
          (λ () (contract (and/c procedure? (-> integer? integer?))
                          (λ (x y) 1)
                          'pos
-                         'neg))
-         1)
+                         'neg)))
   
   (ctest '("an element of") 
          extract-context-lines 
          (λ () (contract (listof number?)
                          (list #f)
                          'pos
-                         'neg))
-         1)
+                         'neg)))
   
   (ctest '("the promise from") 
          extract-context-lines 
          (λ () (force (contract (promise/c number?)
                                 (delay #f)
                                 'pos
-                                'neg)))
-         1)
+                                'neg))))
   
   (ctest '("the parameter of") 
          extract-context-lines 
          (λ () ((contract (parameter/c number?)
                           (make-parameter #f)
                           'pos
-                          'neg)))
-         1)
+                          'neg))))
   (ctest '("the parameter of") 
          extract-context-lines 
          (λ () ((contract (parameter/c number?)
                           (make-parameter 1)
                           'pos
                           'neg)
-                #f))
-         1)
+                #f)))
+  (ctest '("the #:x argument of") 
+         extract-context-lines 
+         (λ () ((contract (-> #:x number? #:a char? #:w boolean? any)
+                          (λ (#:x x #:a a #:w w) x)
+                          'pos
+                          'neg)
+                #:a #\a #:w #f #:x 'two)))
   
+  (ctest '("the #:a argument of") 
+         extract-context-lines 
+         (λ () ((contract (-> #:x number? #:a char? #:w boolean? any)
+                          (λ (#:x x #:a a #:w w) x)
+                          'pos
+                          'neg)
+                #:a #f #:w #f #:x 2)))
+  
+    (ctest '("the #:w argument of") 
+         extract-context-lines 
+         (λ () ((contract (-> #:x number? #:a char? #:w boolean? any)
+                          (λ (#:x x #:a a #:w w) x)
+                          'pos
+                          'neg)
+                #:a #\a #:w 'false #:x 2)))
+  
+  (ctest '("the #:x argument of") 
+         extract-context-lines 
+         (λ () ((contract (->* () (#:x number?) any)
+                          (λ (#:x [x 1]) x)
+                          'pos
+                          'neg)
+                #:x #f)))
+  
+  (ctest '("the #:x argument of") 
+         extract-context-lines 
+         (λ () ((contract (->* () (#:x number? #:a char? #:w boolean?) any)
+                          (λ (#:x [x 1] #:a [a #\a] #:w [w #f]) x)
+                          'pos
+                          'neg)
+                #:a #\a #:w #f #:x 'two)))
+  
+  (ctest '("the #:a argument of") 
+         extract-context-lines 
+         (λ () ((contract (->* () (#:x number? #:a char? #:w boolean?) any)
+                          (λ (#:x [x 1] #:a [a #\a] #:w [w #f]) x)
+                          'pos
+                          'neg)
+                #:a #f #:w #f #:x 2)))
+  
+    (ctest '("the #:w argument of") 
+         extract-context-lines 
+         (λ () ((contract (->* () (#:x number? #:a char? #:w boolean?) any)
+                          (λ (#:x [x 1] #:a [a #\a] #:w [w #f]) x)
+                          'pos
+                          'neg)
+                #:a #\a #:w 'false #:x 2)))
+  
+  (ctest '("the x argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([w integer?] [x boolean?] [a char?]) any)
+                          (λ (w x a) x)
+                          'pos
+                          'neg)
+                1 'true #\a)))
+  
+  (ctest '("the x argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([w integer?]) ([x boolean?] [a char?]) any)
+                          (λ (w [x #t] [a #\a]) x)
+                          'pos
+                          'neg)
+                1 'true #\a)))
+  
+  (ctest '("the y result of") 
+         extract-context-lines 
+         (λ () ((contract (->i () (values [x integer?] [y integer?]))
+                          (λ () (values 1 #f))
+                          'pos
+                          'neg))))
+  
+  (ctest '("the x result of") 
+         extract-context-lines 
+         (λ () ((contract (->i () (values [x integer?] [y integer?]))
+                          (λ () (values #f 1))
+                          'pos
+                          'neg))))
+  
+  (ctest '("the a argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([a integer?] #:b [b integer?]) ([c integer?] #:d [d integer?]) any)
+                          (λ (a #:b b [c 1] #:d [d 1]) 1)
+                          'pos
+                          'neg)
+                'one #:b 2 3 #:d 4)))
+  
+  (ctest '("the b argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([a integer?] #:b [b integer?]) ([c integer?] #:d [d integer?]) any)
+                          (λ (a #:b b [c 1] #:d [d 1]) 1)
+                          'pos
+                          'neg)
+                1 #:b 'two 3 #:d 4)))
+  
+  (ctest '("the c argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([a integer?] #:b [b integer?]) ([c integer?] #:d [d integer?]) any)
+                          (λ (a #:b b [c 1] #:d [d 1]) 1)
+                          'pos
+                          'neg)
+                1 #:b 2 'three #:d 4)))
+  
+  (ctest '("the d argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([a integer?] #:b [b integer?]) ([c integer?] #:d [d integer?]) any)
+                          (λ (a #:b b [c 1] #:d [d 1]) 1)
+                          'pos
+                          'neg)
+                1 #:b 2 3 #:d 'four)))
+
+  ;; indy
+  (ctest '("the 2nd argument of" "the x argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([x (-> number? boolean? integer?)] [a (x) (>=/c (x 11 'true))]) any)
+                          (λ (x a) x)
+                          'pos
+                          'neg)
+                (λ (x y) 1) 11)))
+  
+  (ctest '("the 2nd argument of" "the x result of") 
+         extract-context-lines 
+         (λ () ((contract (->i () (values [x (-> number? boolean? integer?)] [a (x) (>=/c (x 11 'true))]))
+                          (λ () (values (λ (x y) x) 1))
+                          'pos
+                          'neg))))
+  
+  (ctest '("the x argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([x () integer?]) any)
+                          (λ (x) x)
+                          'pos
+                          'neg)
+                #f)))
+  
+  (ctest '("the a argument of") 
+         extract-context-lines 
+         (λ () ((contract (->i ([a integer?] [x (a) integer?]) any)
+                          (λ (a x) x)
+                          'pos
+                          'neg)
+                #f 1)))
+  
+  (ctest '("the 1st result of") 
+         extract-context-lines 
+         (λ () ((contract (->i () (values [_ integer?] [_ integer?]))
+                          (λ () (values #f 1))
+                          'pos
+                          'neg))))
+  
+  (ctest '("the result of") 
+         extract-context-lines 
+         (λ () ((contract (->i () [_ integer?])
+                          (λ () (values #f))
+                          'pos
+                          'neg))))
+  
+  (ctest '("the domain of") 
+         extract-context-lines 
+         (λ () ((contract (->d ([x integer?]) [y integer?])
+                          (λ (x) #f)
+                          'pos
+                          'neg)
+                #f)))
+  
+    (ctest '("the range of") 
+         extract-context-lines 
+         (λ () ((contract (->d ([x integer?]) [y integer?])
+                          (λ (x) #f)
+                          'pos
+                          'neg)
+                1)))
+  
+  (ctest '("the range of")
+         extract-context-lines
+         (λ () (letrec ([ctc (-> integer? (recursive-contract ctc))])
+                 (letrec ([f (λ (x) 'not-f)])
+                   ((contract ctc f 'pos 'neg) 1)))))
+  
+  #;
+  (ctest '("an element of" "the 3rd element of")
+         extract-context-lines
+         (λ () (contract (vector/c (vectorof real?) (vectorof number?) (vectorof boolean?))
+                         (vector (vector 1) (vector 1) (vector 1))
+                         'pos
+                         'neg)))
   
 ;                                                        
 ;                                                        

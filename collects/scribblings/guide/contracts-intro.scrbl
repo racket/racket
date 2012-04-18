@@ -204,32 +204,23 @@ parties in a contract, examples involve multiple modules.
 
 To experiment with multiple modules within a single module or within
 DrRacket's @tech{definitions area}, use the
-@racketmodname[racket/load] language. The contents of such a module
-can be other modules (and @racket[require] statements), using the
-longhand parenthesized syntax for a module (see
-@secref["module-syntax"]). For example, try the example earlier in
-this section as follows:
+Racket's submodules. For example, try the example earlier in
+this section like this:
 
 @racketmod[
-racket/load
+racket
 
-(module m racket
+(module+ server
   (provide (contract-out [amount (and/c number? positive?)]))
   (define amount 150))
-
-(module n racket
-  (require 'm)
+ 
+(module+ main
+  (require (submod ".." server))
   (+ amount 10))
-
-(require 'n)]
+]
 
 Each of the modules and their contracts are wrapped in parentheses
-with the @racket[module] keyword at the front. The first form after
+with the @racket[module+] keyword at the front. The first form after
 @racket[module] is the name of the module to be used in a subsequent
 @racket[require] statement (where each reference through a
-@racket[require] prefixes the name with a quote). The second form
-after @racket[module] is the language, and the remaining forms are the
-body of the module. After all of the modules, a @racket[require]
-starts one of the modules plus anything that is @racket[require]s.
-
-
+@racket[require] prefixes the name with @racket[".."]).
