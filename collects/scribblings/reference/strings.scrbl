@@ -369,6 +369,7 @@ allocated string).}
 @; ----------------------------------------
 @section{Additional String Functions}
 
+@margin-note{More string functions are defined in @racketmodname[srfi/13].}
 @note-lib[racket/string]
 @(define string-eval (make-base-eval))
 @(interaction-eval #:eval string-eval (require racket/string racket/list))

@@ -159,6 +159,7 @@ result is the result of @racket[expr].}
 
 @section[#:tag "date-string"]{Date Utilities}
 
+@margin-note{More date and time functions are defined in @racketmodname[srfi/19].}
 @note-lib-only[racket/date]
 
 @defproc[(current-date) date*?]{
