@@ -46,7 +46,7 @@
               for your platform,
            @~ download the @tt{racket-...-full.tgz} file,
            @~ unpack it with GNU Tar (or something compatible to it), for
-              example: "@tt{tar xzf plt-...-full.tgz}".}
+              example: "@tt{tar xzf racket-...-full.tgz}".}
       Note that there are many other @tt{tgz} files that contain various
       subsets of the tree, for example, you can get just the documentation
       part, the clean @tt{plt/src} part, the full tree before any compilation,
@@ -163,30 +163,23 @@
       @pre*{
         cd $BASE
         rm -rf racket
-        curl @url{racket-src.tgz} | tar xzf -}
+        curl @url{racket-clean-tree.tgz} | tar xzf -}
     @~
       This is possible with any of the subsets that are packed as tgz files.
-      For example, to update just the documentation, do this:
+      For example, to update just the binaries for OS X (over an existing
+      @tt{racket} tree):
       @pre*{
         cd $BASE
-        wget @url{docs/racket-docs.tgz} -O - | tar xzf -}
-      (Note that it is not necessary to remove the previous tree for this.)
-    @~
-      To update the binaries for Linux (over an existing @tt{racket} tree):
-      @pre*{
-        cd $BASE
-        rm -rf racket
-        wget @url{binaries/i386-linux/racket-i386-linux-binaries.tgz} -O - \
-          || tar xzf -
-        cd racket}
-      To get a fully built tree for Solaris:
+        wget @url{binaries/i386-osx-mac/racket-i386-osx-mac-binaries.tgz} -O - \
+          || tar xzf -}
+      To get a fully built tree for Windows:
       @pre*{
         cd $BASE
         rm -rf racket
-        wget @url{binaries/sparc-solaris/racket-sparc-solaris-full.tgz} -O - \
+        wget @url{binaries/i386-win32/racket-i386-win32-full.tgz} -O - \
           || tar xzf -
         cd racket}
-      Note that there is no "install" step: the archive contains a ready-to-run
+      Note that there is no “install” step: the archive contains a ready-to-run
       tree.
     @~
       Finally, there is a @tt{stamp} file in the nightly build directory that
@@ -195,7 +188,7 @@
       the same and not fool you into getting the same build.  To demonstrate
       using this, here is an @tt{sh} script that compares a local copy of the
       @tt{stamp} file to the one on the web, and if there is any difference,
-      retrieves and installs the new full FreeBSD build (assuming it is in my
+      retrieves and installs the new full Windows build (assuming it is in my
       home directory):
       @pre*{
         #!/bin/sh
@@ -206,7 +199,7 @@
           curl -s $URL/stamp > stamp # remember the new stamp
           #----------
           rm -rf racket
-          wget $URL/binaries/i386-freebsd/racket-i386-freebsd-full.tgz -O - @;
+          wget $URL/binaries/i386-win32/racket-i386-win32-full.tgz -O - @;
            | tar xzf -
           #----------
         fi}
@@ -264,7 +257,7 @@
         #----------
         mkdir "$MAINDIR/racket-temp-$$"
         cd "$MAINDIR/racket-temp-$$"
-        wget "$URL/binaries/i386-linux/racket-i386-linux-full.tgz" -O - \
+        wget "$URL/binaries/i386-win32/racket-i386-win32-full.tgz" -O - \
         | tar xzf - \
         || exit 1
         cd "$MAINDIR"
