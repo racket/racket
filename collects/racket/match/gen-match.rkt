@@ -10,6 +10,7 @@
 ;; go : syntax syntax syntax -> syntax
 (define (go/one parse stx expr clauses)
   (define-syntax-class cl
+    #:description "a clause with a pattern and a result"
     (pattern [p . rhs]
              #:with res (syntax/loc this-syntax [(p) . rhs])))
   (syntax-parse clauses
