@@ -337,25 +337,6 @@
   (t " 12 34 " #f "" " 12 34 ")
   )
 
-;; ---------- string-append* ----------
-(let ()
-  (test ""           string-append* '())
-  (test ""           string-append* '(""))
-  (test ""           string-append* '("" ""))
-  (test "0123456789" string-append* '("0123456789"))
-  (test "0123456789" string-append* "0123456789" '())
-  (test "0123456789" string-append* "0123456789" '(""))
-  (test "0123456789" string-append* "0123456789" '("" ""))
-  (test "0123456789" string-append* "01234567" '("8" "9")))
-
-;; ---------- string-join ----------
-(let ()
-  (test ""    string-join '() " ")
-  (test ""    string-join '("") " ")
-  (test " "   string-join '("" "") " ")
-  (test "x y" string-join '("x" "y") " ")
-  (test "x"   string-join '("x") " "))
-
 ;; String splitting can take longer than byte-string splitting,
 ;;  but it should have the same computational complexity.
 (let ()
@@ -373,5 +354,57 @@
         (and ((* 100 (- bcpu bgc)) . < . (- scpu sgc))
              "suspiciously long time for regexp string split")))
 
+;; ---------- string-append* ----------
+(let ([t (λ (x . xs) (test ))])
+  (test ""           string-append* '())
+  (test ""           string-append* '(""))
+  (test ""           string-append* '("" ""))
+  (test "0123456789" string-append* '("0123456789"))
+  (test "0123456789" string-append* "0123456789" '())
+  (test "0123456789" string-append* "0123456789" '(""))
+  (test "0123456789" string-append* "0123456789" '("" ""))
+  (test "0123456789" string-append* "01234567" '("8" "9")))
+
+;; ---------- string-join ----------
+(let ()
+  (test ""      string-join '()            " ")
+  (test ""      string-join '("")          " ")
+  (test " "     string-join '("" "")       " ")
+  (test "x"     string-join '("x")         " ")
+  (test "x y"   string-join '("x" "y")     " ")
+  (test "x y z" string-join '("x" "y" "z") " ")
+  (test "x,y,z" string-join '("x" "y" "z") ","))
+
+;; ---------- string-trim & string-normalize-spaces ----------
+(let ()
+  (define spaces '("" " " "  " "\r" "\r\n\t "))
+  (define ++ string-append)
+  (define-syntax-rule (with-spaces id E ...)
+    (for ([id (in-list spaces)]) E ...))
+  (define (both result arg)
+    (test result string-trim arg)
+    (test result string-normalize-spaces arg))
+  (define (norm s) (if (equal? "" s) s " "))
+  (with-spaces s1
+    (both "" s1)
+    (with-spaces s2
+      (both "x" (++ s1 "x" s2))
+      (both "xx" (++ s1 "xx" s2))
+      (with-spaces s3
+        (test (++ "x" s3 "x") string-trim (++ s1 "x" s3 "x" s2))
+        (test (++ "x" (norm s3) "x")
+              string-normalize-spaces (++ s1 "x" s3 "x" s2))
+        (test (++ (norm s1) "x" (norm s3) "x" (norm s2))
+              string-normalize-spaces (++ s1 "x" s3 "x" s2) #:trim? #f)
+        (with-spaces s4
+          (test (++ "x" (norm s3) "y" (norm s4) "z")
+                string-normalize-spaces (++ s1 "x" s3 "y" s4 "z" s2))
+          (test (++ (norm s1) "x" (norm s3) "y" (norm s4) "z" (norm s2))
+                string-normalize-spaces (++ s1 "x" s3 "y" s4 "z" s2)
+                                        #:trim? #f)))))
+  (test "\t x \t" string-trim " \t x \t " #px" +")
+  (test "  x"     string-trim "  x  " #:left? #f)
+  (test "x  "     string-trim "  x  " #:right? #f)
+  (test "  x  "   string-trim "  x  " #:left? #f #:right? #f))
 
 (report-errs)

@@ -398,4 +398,38 @@ each pair of strings in @racket[strs].
  (string-join '("one" "two" "three" "four") " potato ")
 ]}
 
+@defproc[(string-trim [str string?] [rx regexp? #px"\\s+"]
+                      [#:left? left? any/c #t] [#:right? right? any/c #t])
+         string?]{
+
+Trims the input @racket[str] by removing prefix and suffix matches of
+@racket[rx].  Use @racket[#:left?] or @racket[#:right?] to suppress
+trimming one of these sides.
+
+The @racket[rx] regexp should match a whole (non-empty) sequence of
+spaces and should not rely on surrounding context.  This means that it
+should usually end with a @litchar{+}, and that it should not use
+@litchar{^}, @litchar{$}, or other lookaheads and lookbacks.  (The
+regexp is expected to both identify a whole sequence of spaces, and
+match on a non-empty part of such a sequence.)
+
+@mz-examples[#:eval string-eval
+ (string-trim "  foo bar  baz \r\n\t")
+]}
+
+@defproc[(string-normalize-spaces
+          [str string?] [rx regexp? #px"\\s+"]
+          [#:space space string? " "] [#:trim? trim? any/c #t])
+         string?]{
+
+Normalizes spaces (matching @racket[rx]) in the input @racket[str] by
+replacing them with @racket[space].  In the default configuration, this
+will replace any sequence of whitespaces by a single space character.
+In addition, prefix and suffix spaces are trimmed if @racket[trim?] is
+true, otherwise they get normalized too.
+
+@mz-examples[#:eval string-eval
+ (string-normalize-spaces "  foo bar  baz \r\n\t")
+]}
+
 @close-eval[string-eval]
