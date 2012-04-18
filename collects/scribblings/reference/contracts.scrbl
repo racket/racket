@@ -796,7 +796,7 @@ For example, the contract
                         (lambda (p) 
                           (procedure-arity-includes? p size)))])
           ()
-          number?)]))
+          [_ number?])]))
 ]
 
 says that the function @racket[f] accepts a natural number
