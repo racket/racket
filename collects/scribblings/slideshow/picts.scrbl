@@ -325,7 +325,8 @@ argument for consistency with the other functions.}
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
-                                               'xor-dot-dash)]
+                                               'xor-dot-dash)
+                               'solid]
                       [#:under? under? any/c #f])
             pict?]
            [(pin-arrow-line [arrow-size real?] [pict pict?]
@@ -342,7 +343,8 @@ argument for consistency with the other functions.}
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
-                                               'xor-dot-dash)]
+                                               'xor-dot-dash)
+                               'solid]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]
 		      [#:hide-arrowhead? any/c #f])
