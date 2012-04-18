@@ -44,6 +44,7 @@ v4 todo:
          (rename-out [-predicate/c predicate/c])
          unsupplied-arg?
          making-a-method
+         method-contract?
          procedure-accepts-and-more?
          check-procedure
          check-procedure/more
@@ -55,6 +56,7 @@ v4 todo:
          bad-number-of-results)
 
 (define-syntax-parameter making-a-method #f)
+(define-syntax-parameter method-contract? #f)
 (define-for-syntax (make-this-parameters id)
   (if (syntax-parameter-value #'making-a-method)
       (list id)
@@ -436,6 +438,8 @@ v4 todo:
 ;; optional-kwds : (listof keyword) -- must be sorted by keyword<
 ;; rngs : (listof contract) -- may be ignored by the wrapper function in the case of any
 ;; rng-any? : boolean
+;; mtd? : contract is for a method (implicit this in first position)
+;; mctc? : contract was formed with ->m or ->*m (so print out same way)
 ;; func : the wrapper function maker. It accepts a procedure for
 ;;        checking the first-order properties and the contracts
 ;;        and it produces a wrapper-making function.
@@ -444,7 +448,7 @@ v4 todo:
                        mandatory-kwds/c mandatory-kwds
                        optional-kwds/c optional-kwds
                        rngs/c rng-any?
-                       mtd?
+                       mtd? mctc?
                        func))
 
 (define ((->-proj wrapper) ctc) 
@@ -517,7 +521,8 @@ v4 todo:
    (base->-rng-any? ctc)
    (base->-rngs/c ctc)
    (base->-pre ctc)
-   (base->-post ctc)))
+   (base->-post ctc)
+   (base->-mctc? ctc)))
 
 (define (->-first-order ctc)
   (λ (x)
@@ -606,7 +611,7 @@ v4 todo:
                   doms/c-or-p optional-doms/c-or-p doms-rest/c-or-p-or-f 
                   mandatory-kwds/c-or-p mandatory-kwds optional-kwds/c-or-p optional-kwds
                   rngs/c-or-p
-                  rng-any? mtd? func)
+                  rng-any? mtd? ->m-ctc? func)
   (let ([cc (λ (c-or-p) (coerce-contract name c-or-p))])
     (let ([doms/c (map cc doms/c-or-p)]
           [opt-doms/c (map cc optional-doms/c-or-p)]
@@ -622,18 +627,19 @@ v4 todo:
                (or rng-any? (andmap chaperone-contract? rngs/c)))
           (make-chaperone-> pre post doms/c opt-doms/c rest/c
                             kwds/c mandatory-kwds opt-kwds/c optional-kwds
-                            rngs/c rng-any? mtd? func)
+                            rngs/c rng-any? mtd? ->m-ctc? func)
           (make-impersonator-> pre post doms/c opt-doms/c rest/c
                                kwds/c mandatory-kwds opt-kwds/c optional-kwds
-                               rngs/c rng-any? mtd? func)))))
+                               rngs/c rng-any? mtd? ->m-ctc? func)))))
 
-(define (single-arrow-name-maker doms/c optional-doms/c doms-rest kwds/c kwds optional-kwds/c optional-kwds rng-any? rngs pre post)
+(define (single-arrow-name-maker doms/c optional-doms/c doms-rest kwds/c kwds optional-kwds/c optional-kwds rng-any? rngs pre post ->m-ctc?)
   (cond
     [(or doms-rest 
          (not (null? optional-kwds))
          (not (null? optional-doms/c))
          pre post)
-     (let ([range
+     (let ([name (if ->m-ctc? '->*m '->*)]
+           [range
             (cond
               [rng-any? 'any]
               [(and (pair? rngs)
@@ -642,7 +648,7 @@ v4 todo:
               [else (apply build-compound-type-name 'values rngs)])])
        (apply
         build-compound-type-name 
-        '->*
+        name
         (apply build-compound-type-name (append doms/c (apply append (map list kwds kwds/c))))
         (append (let ([opts
                        (apply build-compound-type-name (append optional-doms/c (apply append (map list optional-kwds optional-kwds/c))))])
@@ -660,14 +666,15 @@ v4 todo:
                     (list '#:post '...)
                     (list)))))]
     [else
-     (let ([rng-name
+     (let ([name (if ->m-ctc? '->m '->)]
+           [rng-name
             (cond
               [rng-any? 'any]
               [(null? rngs) '(values)]
               [(null? (cdr rngs)) (car rngs)]
               [else (apply build-compound-type-name 'values rngs)])])
        (apply build-compound-type-name 
-              '->
+              name
               (append doms/c
                       (apply append (map list kwds kwds/c))
                       (list rng-name))))]))
@@ -745,6 +752,7 @@ v4 todo:
                   [(kwds ...) kwds]
                   [use-any? use-any?])
       (with-syntax ([mtd? (and (syntax-parameter-value #'making-a-method) #t)]
+                    [->m-ctc? (and (syntax-parameter-value #'method-contract?) #t)]
                     [outer-lambda
                      #`(lambda (blame val dom-names ... kwd-names ... rng-names ...)
                          #,(create-chaperone 
@@ -762,7 +770,7 @@ v4 todo:
                     (list dom-ctcs ...) '() #f
                     (list kwd-ctcs ...) '(kwds ...) '() '()
                     (list rng-ctcs ...) use-any?
-                    mtd?
+                    mtd? ->m-ctc?
                     outer-lambda))
          'racket/contract:contract
          (vector this->
@@ -888,6 +896,7 @@ v4 todo:
                
                
                (with-syntax ([mtd? (and (syntax-parameter-value #'making-a-method) #t)]
+                             [->m-ctc? (and (syntax-parameter-value #'method-contract?) #t)]
                              [(rng-proj ...) (generate-temporaries (or rng-ctc '()))]
                              [(rng ...) (generate-temporaries (or rng-ctc '()))]
                              [(this-parameter ...)
@@ -908,7 +917,7 @@ v4 todo:
                             #'(list rng-ctc ...))
                           #''())
                     #,(if rng-ctc #f #t)
-                    mtd?
+                    mtd? ->m-ctc?
                     (λ (blame f
                         mandatory-dom-proj ...  
                         #,@(if rest-ctc
@@ -1087,7 +1096,8 @@ v4 todo:
                               [any #'(() #f)]
                               [[id ctc] #'((id) (ctc))]
                               [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])]
-                           [mtd? (and (syntax-parameter-value #'making-a-method) #t)])
+                           [mtd? (and (syntax-parameter-value #'making-a-method) #t)]
+                           [->m-ctc? (and (syntax-parameter-value #'method-contract?) #t)])
                (let ([rng-underscores? 
                       (let ([is-underscore?
                              (λ (x) 
@@ -1128,7 +1138,7 @@ v4 todo:
                                             #'body)])))])
                      (syntax-parameterize 
                       ((making-a-method #f)) 
-                      (build-->d mtd? 
+                      (build-->d mtd? ->m-ctc?
                                  (list (λ (dom-params ...)
                                          (parameterize-this this-parameter ... mandatory-doms)) ...)
                                  (list (λ (dom-params ...) 
@@ -1361,7 +1371,7 @@ v4 todo:
 (define-struct unsupplied-arg ())
 (define the-unsupplied-arg (make-unsupplied-arg))
 
-(define (build-->d mtd?
+(define (build-->d mtd? mctc?
                    mandatory-dom-ctcs optional-dom-ctcs
                    mandatory-kwd-dom-ctcs optional-kwd-dom-ctcs
                    rest-ctc pre-cond range post-cond
@@ -1372,7 +1382,7 @@ v4 todo:
                              (append mandatory-kwds optional-kwds)
                              (append mandatory-kwd-dom-ctcs optional-kwd-dom-ctcs))
                         (λ (x y) (keyword<? (car x) (car y))))])
-    (make-impersonator-->d mtd?
+    (make-impersonator-->d mtd? mctc?
                            mandatory-dom-ctcs optional-dom-ctcs
                            (map cdr kwd/ctc-pairs)
                            rest-ctc pre-cond range post-cond
@@ -1382,7 +1392,8 @@ v4 todo:
                            name-wrapper)))
 
 (define (->d-name ctc) 
-  (let* ([counting-id 'x]
+  (let* ([name (if (base-->d-mctc? ctc) '->dm '->d)]
+         [counting-id 'x]
          [ids '(x y z w)]
          [next-id
           (λ ()
@@ -1398,7 +1409,7 @@ v4 todo:
                (begin0 
                  (string->symbol (format "~a~a" counting-id ids))
                  (set! ids (+ ids 1)))]))])
-    `(->d (,@(map (λ (x) `(,(next-id) ...)) (base-->d-mandatory-dom-ctcs ctc))
+    `(,name (,@(map (λ (x) `(,(next-id) ...)) (base-->d-mandatory-dom-ctcs ctc))
            ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (base-->d-mandatory-keywords ctc))))
           (,@(map (λ (x) `(,(next-id) ...)) (base-->d-optional-dom-ctcs ctc))
            ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (base-->d-optional-keywords ctc))))
@@ -1447,6 +1458,7 @@ v4 todo:
 ;; both the domain and the range from those that depend only on the domain (and thus, those
 ;; that can be applied early)
 (define-struct base-->d (mtd?                ;; boolean; indicates if this is a contract on a method, for error reporing purposes.
+                         mctc?               ;; boolean; indicates if this contract was constructed with ->dm (from racket/class)
                          mandatory-dom-ctcs  ;; (listof (-> d??? ctc))
                          optional-dom-ctcs   ;; (listof (-> d??? ctc))
                          keyword-ctcs        ;; (listof (-> d??? ctc))
@@ -1570,13 +1582,15 @@ v4 todo:
                         (rng-proj-x ...)
                         formals
                         body) ...)
-                      (map (λ (x) (parse-out-case stx x)) (syntax->list #'(cases ...)))])
+                      (map (λ (x) (parse-out-case stx x)) (syntax->list #'(cases ...)))]
+                     [mctc? (and (syntax-parameter-value #'method-contract?) #t)])
          #`(syntax-parameterize 
             ((making-a-method #f)) 
             (build-case-> (list (list dom-proj ...) ...)
                           (list rst-proj ...)
                           (list rng-proj ...)
                           '(spec ...)
+                          mctc?
                           (λ (chk
                               wrapper
                               blame
@@ -1607,8 +1621,9 @@ v4 todo:
 ;; rst-ctcs : (listof contract)
 ;; rng-ctcs : (listof (listof contract))
 ;; specs : (listof (list boolean exact-positive-integer)) ;; indicates the required arities of the input functions
+;; mctc? : was created with case->m
 ;; wrapper : (->* () () (listof contract?) (-> procedure? procedure?)) -- generates a wrapper from projections
-(define-struct base-case-> (dom-ctcs rst-ctcs rng-ctcs specs wrapper))
+(define-struct base-case-> (dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))
 
 (define (case->-proj wrapper)
   (λ (ctc)
@@ -1645,7 +1660,7 @@ v4 todo:
 (define (case->-name ctc)
   (apply
    build-compound-type-name
-   'case->
+   (if (base-case->-mctc? ctc) 'case->m 'case->)
    (map (λ (dom rst range)
           (apply 
            build-compound-type-name 
@@ -1684,15 +1699,15 @@ v4 todo:
    #:first-order case->-first-order
    #:stronger case->-stronger?))
 
-(define (build-case-> dom-ctcs rst-ctcs rng-ctcs specs wrapper)
+(define (build-case-> dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper)
   (let ([dom-ctcs (map (λ (l) (map (λ (x) (coerce-contract 'case-> x)) l)) dom-ctcs)]
         [rst-ctcs (map (λ (x) (and x (coerce-contract 'case-> x))) rst-ctcs)]
         [rng-ctcs (map (λ (l) (and l (map (λ (x) (coerce-contract 'case-> x)) l))) rng-ctcs)])
     (if (and (andmap (λ (l) (andmap chaperone-contract? l)) dom-ctcs)
              (andmap (λ (c) (or (not c) (chaperone-contract? c))) rst-ctcs)
              (andmap (λ (l) (or (not l) (andmap chaperone-contract? l))) rng-ctcs))
-        (make-chaperone-case-> dom-ctcs rst-ctcs rng-ctcs specs wrapper)
-        (make-impersonator-case-> dom-ctcs rst-ctcs rng-ctcs specs wrapper))))
+        (make-chaperone-case-> dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper)
+        (make-impersonator-case-> dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))))
 
 (define (get-case->-dom-ctcs ctc)
   (apply append

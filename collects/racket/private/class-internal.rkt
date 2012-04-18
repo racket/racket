@@ -4,7 +4,7 @@
          mzlib/etc
          racket/contract/base
          racket/contract/combinator
-         (only-in racket/contract/private/arrow making-a-method)
+         (only-in racket/contract/private/arrow making-a-method method-contract?)
          racket/stxparam
          racket/unsafe/ops
          "class-events.rkt"
@@ -2554,16 +2554,16 @@
 ;; Shorthand contracts that treat the implicit object argument as if it were
 ;; contracted with any/c.
 (define-syntax-rule (->m . stx)
-  (syntax-parameterize ([making-a-method #t]) (-> . stx)))
+  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (-> . stx)))
 
 (define-syntax-rule (->*m . stx)
-  (syntax-parameterize ([making-a-method #t]) (->* . stx)))
+  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->* . stx)))
 
 (define-syntax-rule (case->m . stx)
-  (syntax-parameterize ([making-a-method #t]) (case-> . stx)))
+  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (case-> . stx)))
 
 (define-syntax-rule (->dm . stx)
-  (syntax-parameterize ([making-a-method #'this-param]) (->d . stx)))
+  (syntax-parameterize ([making-a-method #'this-param] [method-contract? #t]) (->d . stx)))
 
 (define (class/c-check-first-order ctc cls fail)
   (unless (class? cls)

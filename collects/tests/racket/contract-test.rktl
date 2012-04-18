@@ -10546,6 +10546,10 @@ so that propagation occurs.
   (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
   
   (test-name '(class/c [m (->m integer? integer?)]) (class/c [m (->m integer? integer?)]))
+  (test-name '(class/c [m (->*m (integer?) (integer?) integer?)]) (class/c [m (->*m (integer?) (integer?) integer?)]))
+  (test-name '(class/c [m (case->m (-> integer? integer?) (-> integer? integer? integer?))])
+             (class/c [m (case->m (-> integer? integer?) (-> integer? integer? integer?))]))
+  (test-name '(class/c [m (->dm ((x ...)) () (y ...))]) (class/c [m (->dm ([d integer?]) () [r integer?])]))
   (test-name 'c%/c (let ([c%/c (class/c [m (->m integer? integer?)])])
                      c%/c))
   
