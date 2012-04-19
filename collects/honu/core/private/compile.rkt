@@ -121,12 +121,17 @@
   (provide compress-dollars)
   (define (compress-dollars stx)
     (define-literal-set local-literals (honu-$ repeat$))
+    (define-splicing-syntax-class not-dollar
+                                  #:literal-sets (local-literals)
+      [pattern x #:when (and (identifier? #'x)
+                             (not (free-identifier=? #'honu-$ #'x)))
+                 #:with out #'x])
     (syntax-parse stx #:literal-sets (local-literals)
-      [(honu-$ x ... honu-$ rest ...)
+      [(honu-$ x:not-dollar ... honu-$ rest ...)
        (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
-         (datum->syntax stx (syntax->list #'((repeat$ x ...) rest* ...))
+         (datum->syntax stx (syntax->list #'((repeat$ x.out ...) rest* ...))
                         stx stx))]
-      [(x rest ...)
+      [(x:not-dollar rest ...)
        (with-syntax ([x* (compress-dollars #'x)]
                      [(rest* ...) (compress-dollars #'(rest ...))])
          (datum->syntax stx

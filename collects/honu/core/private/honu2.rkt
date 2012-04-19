@@ -341,12 +341,20 @@
 (provide (rename-out [honu-with-syntax withSyntax]))
 (define-honu-syntax honu-with-syntax
   (lambda (code context)
+    (define-splicing-syntax-class clause
+                                  #:literal-sets (cruft)
+                                  #:literals [(ellipses ...) honu-equal]
+      [pattern (~seq name:id honu-equal data:honu-expression)
+               #:with out #'(name data.result)]
+      [pattern (~seq (#%parens name:id ellipses) honu-equal data:honu-expression)
+               #:with out #'((name ellipses) data.result)])
     (syntax-parse code #:literal-sets (cruft)
-                       #:literals (honu-->)
-      [(_ (~seq name:id honu--> data:honu-expression (~optional honu-comma)) ...
+                       #:literals (honu-equal)
+      [(_ (~seq all:clause (~optional honu-comma)) ...
           (#%braces code ...) . rest)
-       (define out (racket-syntax (with-syntax ([name data.result] ...)
-                                (parse-body code ...))))
+       (define out (racket-syntax
+                     (with-syntax (all.out ...)
+                       (parse-body code ...))))
        (values out #'rest #t)])))
 
 (provide true false)
