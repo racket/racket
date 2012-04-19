@@ -3,11 +3,15 @@ ffi/unsafe: integer-type bounds consistently checked
 
 Version 5.2.900.1
 Add submodules, including module*, module-compiled-submodules
-Change resolver protocol so that declaration notify is always issued
-Change load/use-compiled handler to work with submodules
+Changed module-path? to report #t for paths
+Changed resolved module paths to allow lists that represent
+ submodule paths; see the revised contract on resolve-module-path-name
+Changed the module name resolver protocol so that a module declaration
+ always triggers a notifification
+Changed the load/use-compiled handler protocol to subpport a submodule
+ module
 compiler/zo-struct: added pre-submodules and post-submodules field to
  mod, changed name field to allow a list of symbols
-Changed module-path? to report #t for paths
 
 Version 5.2.1.7
 racket/sandbox: added sandbox-gui-enabled and sandbox-make-namespace;
