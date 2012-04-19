@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for 5.3:
+
+None.
+
 Changes for v5.2.1:
 
 Fix occasional race condition bug on startup, lovely new icon work by
