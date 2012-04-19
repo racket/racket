@@ -2244,7 +2244,7 @@ for use in combination with other libraries that operate on picts
 The primary difference between these functions is that the former list
 sets @racket[dc-for-text-size] and the latter does not.
 
-@defproc[(render-term [lang compiled-lang?] [term any/c] [file (or/c #f path-string?)]) 
+@defproc[(render-term [lang compiled-lang?] [term any/c] [file (or/c #f path-string?) #f])
          (if file void? pict?)]{
   Renders the term @racket[term]. If @racket[file] is @racket[#f],
   it produces a pict; if @racket[file] is a path, it saves
