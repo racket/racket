@@ -38,7 +38,7 @@
 (define-lex-abbrev string (:: #\" (:* string-character) #\"))
 (define-lex-abbrev operator (:or "+=" "-=" "*=" "/="
                                  "+" "!=" "=>" "=" "==" "*" "/" "-" "^" "||" "|" "&&" "<="
-                                 ">=" "<-" "<" ">" "!" "::" ":=" "%" "$"))
+                                 ">=" "<-" "<" ">" "!" "::" ":=" "%"))
 (define-lex-abbrev block-comment (:: "/*"
                                      (complement (:: any-string "*/" any-string))
                                      "*/"))
@@ -71,6 +71,7 @@
     ["/*" (token-block-comment)]
     ["..." (token-identifier '...)]
     ["." (token-identifier '%dot)]
+    ["$" (token-identifier 'honu-$)]
     ["," (token-identifier 'honu-comma)]
     [":" (token-identifier '%colon)]
     ["'" (token-identifier 'quote)]

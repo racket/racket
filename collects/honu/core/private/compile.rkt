@@ -123,15 +123,19 @@
     (define-literal-set local-literals (honu-$ repeat$))
     (define-splicing-syntax-class not-dollar
                                   #:literal-sets (local-literals)
-      [pattern x #:when (and (identifier? #'x)
-                             (not (free-identifier=? #'honu-$ #'x)))
+      [pattern x #:when (or (not (identifier? #'x))
+                            (not (free-identifier=? #'honu-$ #'x)))
                  #:with out #'x])
+    (debug 2 "Compress dollars ~a\n" stx)
     (syntax-parse stx #:literal-sets (local-literals)
       [(honu-$ x:not-dollar ... honu-$ rest ...)
+       (debug 2 "Compressing ~a\n" #'(x.out ...))
        (with-syntax ([(rest* ...) (compress-dollars #'(rest ...))])
          (datum->syntax stx (syntax->list #'((repeat$ x.out ...) rest* ...))
                         stx stx))]
-      [(x:not-dollar rest ...)
+      [(honu-$ rest ...)
+       (error 'compress-dollars "unmatched $ ~a" (syntax->datum stx))]
+      [(x rest ...)
        (with-syntax ([x* (compress-dollars #'x)]
                      [(rest* ...) (compress-dollars #'(rest ...))])
          (datum->syntax stx
