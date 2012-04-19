@@ -28,7 +28,7 @@ Returns @racket[#f] if @racket[v] is a @tech{resolved module path},
                                                 (and/c path? complete-path?)
                                                 (cons/c (or/c symbol?
                                                               (and/c path? complete-path?))
-                                                        (listof symbol?)))])
+                                                        (cons/c symbol? (listof symbol?))))])
          resolved-module-path?]{
 
 Returns a @tech{resolved module path} that encapsulates @racket[path],
@@ -47,7 +47,7 @@ A @tech{resolved module path} is interned. That is, if two
                (and/c path? complete-path?)
                (cons/c (or/c symbol?
                              (and/c path? complete-path?))
-                       (listof symbol?)))]{
+                       (cons/c symbol? (listof symbol?))))]{
 
 Returns the path or symbol encapsulated by a @tech{resolved module path}.
 A list result corresponds to a @tech{submodule} path.}
@@ -262,9 +262,9 @@ declaration, @racket[#f] otherwise. See also
 
 
 @defproc*[([(module-compiled-name [compiled-module-code compiled-module-expression?])
-            (or/c symbol? (cons/c symbol? (listof symbol?)))]
+            (or/c symbol? (cons/c symbol? (cons/c symbol? (listof symbol?))))]
            [(module-compiled-name [compiled-module-code compiled-module-expression?]
-                                  [name (or/c symbol? (cons/c symbol? (listof symbol?)))])
+                                  [name (or/c symbol? (cons/c symbol? (cons/c symbol? (listof symbol?))))])
             compiled-module-expression?])]{
 
 Takes a module declaration in compiled form and either gets the
