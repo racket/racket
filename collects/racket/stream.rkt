@@ -152,12 +152,15 @@
       (make-do-stream (lambda () (force!) empty?)
                       (lambda () (force!) fst)
                       (lambda () (force!) rst)))]))
-  
+
 (define (stream-add-between s e)
   (unless (stream? s)
     (raise-type-error 'stream-add-between "stream" s))
-  (let loop ([s s])
-    (cond
-     [(stream-empty? s) empty-stream]
-     [else (stream-cons (stream-first s)
-                        (stream-cons e (loop (stream-rest s))))])))
+  (if (stream-empty? s)
+      empty-stream
+      (stream-cons
+       (stream-first s)
+       (let loop ([s (stream-rest s)])
+         (cond [(stream-empty? s) empty-stream]
+               [else (stream-cons e (stream-cons (stream-first s)
+                                                 (loop (stream-rest s))))])))))

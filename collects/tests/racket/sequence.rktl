@@ -1,4 +1,3 @@
-
 (load-relative "loadtest.rktl")
 
 (Section 'sequence)
@@ -108,6 +107,8 @@
         (sequence-ref (sequence-add-between (in-naturals) #t) 2))
   (test #t 'sequence-add-between
         (sequence-ref (sequence-add-between (in-naturals) #t) 3))
+  (test 3 'sequence-add-between
+        (sequence-length (sequence-add-between (in-range 2) #t)))
 
   (arity-test sequence-count 2 2)
   (test 0 'sequence-count (sequence-count even? empty-sequence))
