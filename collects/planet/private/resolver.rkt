@@ -174,7 +174,7 @@ See the scribble documentation on the planet/resolver module.
 (define resolver
   (case-lambda
     [(name) (void)]
-    [(spec module-path stx load? orig-paramz)
+    [(spec module-path stx load? submod orig-paramz)
      ;; ensure these directories exist
      (try-make-directory* (PLANET-DIR))
      (try-make-directory* (CACHE-DIR))
@@ -183,6 +183,7 @@ See the scribble documentation on the planet/resolver module.
                      (current-module-declare-name)
                      stx
                      load?
+                     submod
                      orig-paramz)]))
 
 (require racket/tcp
@@ -335,7 +336,7 @@ See the scribble documentation on the planet/resolver module.
 ;; planet-resolve : PLANET-REQUEST (resolved-module-path | #f) syntax[PLANET-REQUEST] -> symbol
 ;; resolves the given request. Returns a name corresponding to the module in
 ;; the correct environment
-(define (planet-resolve spec rmp stx load? orig-paramz)
+(define (planet-resolve spec rmp stx load? submod orig-paramz)
   ;; install various parameters that can affect the compilation of a planet package back to their original state
   (parameterize ([current-compile (call-with-parameterization orig-paramz current-compile)]
                  [current-eval (call-with-parameterization orig-paramz current-eval)]
@@ -345,7 +346,7 @@ See the scribble documentation on the planet/resolver module.
                  [powerful-security-guard (call-with-parameterization orig-paramz current-security-guard)])
     (let-values ([(path pkg) (get-planet-module-path/pkg/internal spec rmp stx load?)])
       (when load? (add-pkg-to-diamond-registry! pkg stx))
-      (do-require path (pkg-path pkg) rmp stx load?))))
+      (do-require path (pkg-path pkg) rmp stx load? submod))))
 
 ;; resolve-planet-path : planet-require-spec -> path
 ;; retrieves the path to the given file in the planet package. downloads and
@@ -833,9 +834,11 @@ See the scribble documentation on the planet/resolver module.
 
 ;; do-require : path path symbol syntax -> symbol
 ;; requires the given filename, which must be a module, in the given path.
-(define (do-require file-path package-path module-path stx load?)
+(define (do-require file-path package-path module-path stx load? submod)
   (parameterize ([current-load-relative-directory package-path])
-    ((current-module-name-resolver) file-path module-path stx load?)))
+    ((current-module-name-resolver) 
+     (if submod `(submod ,file-path . ,submod) file-path)
+     module-path stx load?)))
 
 (define *package-search-chain*
   (make-parameter

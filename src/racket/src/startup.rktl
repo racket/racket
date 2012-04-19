@@ -921,6 +921,13 @@
   (define-values (standard-module-name-resolver)
     (let-values ()
       (define-values (planet-resolver) #f)
+      (define-values (prep-planet-resolver!)
+        (lambda ()
+          (unless planet-resolver
+            (with-continuation-mark
+                parameterization-key
+                orig-paramz
+              (set! planet-resolver (dynamic-require '(lib "planet/resolver.rkt") 'planet-module-name-resolver))))))
       (define-values (standard-module-name-resolver)
         (case-lambda 
          [(s) 
@@ -996,21 +1003,14 @@
                                                                (append (cdr rp) r)
                                                                r))))]
            [(and (pair? s) (eq? (car s) 'planet))
-            (unless planet-resolver
-              (with-continuation-mark
-                  parameterization-key
-                  orig-paramz
-                (set! planet-resolver (dynamic-require '(lib "planet/resolver.rkt") 'planet-module-name-resolver))))
-            (planet-resolver s relto stx load? orig-paramz)]
+            (prep-planet-resolver!)
+            (planet-resolver s relto stx load? #f orig-paramz)]
            [(and (pair? s)
                  (eq? (car s) 'submod)
                  (pair? (cadr s))
                  (eq? (caadr s) 'planet))
-            (define p (standard-module-name-resolver (cadr s) relto stx load?))
-            (let ([p (resolved-module-path-name relto)])
-              (if (pair? p)
-                  (flatten-sub-path (car p) (append (cdr p) (cddr s)))
-                  (flatten-sub-path p (cddr s))))]
+            (prep-planet-resolver!)
+            (planet-resolver (cadr s) relto stx load? (cddr s) orig-paramz)]
            [else
             (let ([get-dir (lambda ()
                              (or (and relto

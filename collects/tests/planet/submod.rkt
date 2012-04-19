@@ -1,0 +1,38 @@
+#lang racket
+(require setup/dirs)
+
+(define planet (build-path (find-console-bin-dir)
+                           (if (eq? 'windows (system-type))
+                               "planet.exe"
+                               "planet")))
+
+(void
+ (system* planet "link" "racket-tester" "p1.plt" "1" "0"
+          (path->string (collection-path "tests" "racket" "embed-planet-1"))))
+
+(define (test expected got)
+  (unless (equal? expected got)
+    (error "failed")))
+
+(define-syntax-rule (test/exn e)
+  (test 'exn
+        (with-handlers ([exn:fail? (lambda (exn) 'exn)])
+          e)))
+
+(test #f (module-declared? `(submod (planet racket-tester/p1) reader) #f))
+(test #f (module-declared? `(planet racket-tester/p1) #f))
+(test #f (module-declared? `(planet racket-tester/p1/none) #f))
+
+(test/exn (module-declared? `(planet racket-tester/p1/none) #t))
+(test #f (module-declared? `(submod (planet racket-tester/p1/none) reader) #t))
+
+
+(test #f (module-declared? `(submod (planet racket-tester/p1) reader) #t))
+(test #t (module-declared? `(planet racket-tester/p1) #f))
+
+(test #f (module-declared? `(submod (planet racket-tester/p1/has-sub) the-sub) #f))
+(test #t (module-declared? `(submod (planet racket-tester/p1/has-sub) the-sub) #t))
+
+(void
+ (system* planet "unlink" "racket-tester" "p1.plt" "1" "0"))
+
