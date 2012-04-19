@@ -140,7 +140,8 @@
     (memq c '(module top-level))))
 
 (define-for-syntax (argcount-error-message/stx arity stx [at-least #f])
-  (argcount-error-message arity (sub1 (length (syntax->list stx))) at-least))
+  (define ls (syntax->list stx))
+  (argcount-error-message arity (if ls (sub1 (length ls)) 0) at-least))
 
 ;; check-expect
 (define-syntax (check-expect stx)
