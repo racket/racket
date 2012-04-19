@@ -32,219 +32,6 @@
  
  #;[top-level-rewrite (-> syntax? syntax?)])
 
-;  ;;                                              ;;;;                          ;
-; ;  ;                                     ;       ;                         ;
-; ;     ;   ;  ; ;;;   ; ;;;    ;;;   ; ;;;;;;     ;     ;   ;  ; ;;    ;;; ;;;; ;   ;;;   ; ;;    ;;;
-; ;     ;   ;  ;;   ;  ;;   ;  ;   ;  ;;   ;       ;     ;   ;  ;;  ;  ;     ;   ;  ;   ;  ;;  ;  ;
-;  ;;   ;   ;  ;    ;  ;    ;  ;   ;  ;    ;       ;;;;  ;   ;  ;   ;  ;     ;   ;  ;   ;  ;   ;  ;
-;    ;  ;   ;  ;    ;  ;    ;  ;   ;  ;    ;       ;     ;   ;  ;   ;  ;     ;   ;  ;   ;  ;   ;   ;;
-;    ;  ;   ;  ;    ;  ;    ;  ;   ;  ;    ;       ;     ;   ;  ;   ;  ;     ;   ;  ;   ;  ;   ;     ;
-; ;  ;  ;  ;;  ;;   ;  ;;   ;  ;   ;  ;    ;       ;     ;  ;;  ;   ;  ;     ;   ;  ;   ;  ;   ;     ;
-;  ;;    ;; ;  ; ;;;   ; ;;;    ;;;   ;     ;;     ;      ;; ;  ;   ;   ;;;   ;; ;   ;;;   ;   ;  ;;;
-;              ;       ;
-;              ;       ;                                                                               
-; 
-; wrap-struct-form
-
-;  (define (wrap-struct-form names annotated)
-;    (let* ([arg-temps (build-list (length names) get-arg-var)]
-;           [struct-proc-names (cdr names)]
-;           [closure-records (map (lambda (proc-name) (make-closure-record
-;                                                      proc-name 
-;                                                      (lambda () #f)
-;                                                      (eq? proc-name (car struct-proc-names))
-;                                                      #f))
-;                                 struct-proc-names)]
-;           [proc-arg-temp-syms (cdr arg-temp-syms)]
-;           [setters (map (lambda (arg-temp-sym closure-record)
-;                           `(,closure-table-put! ,arg-temp-sym ,closure-record))
-;                         proc-arg-temp-syms
-;                         closure-records)]
-;           [full-body (append setters (list `(values ,@arg-temp-syms)))])
-;      `(#%let-values ((,arg-temp-syms ,annotated)) ,@full-body)))
-
-
-
-; test exps:
-;  (andmap (lambda (arg-list)
-;            (let* ([stx (car arg-list)]
-;                   [elaborated (cadr arg-list)]
-;                   [eval-result (caddr arg-list)]
-;                   [collapsed (collapse-let-values (expand stx))])
-;              (printf "~a\n~a\n~a\n~a\n" (syntax->datum collapsed)
-;                      elaborated
-;                      (eval collapsed)
-;                      eval-result)
-;              (and (equal? (syntax->datum collapsed) elaborated)
-;                   (equal? (eval collapsed) eval-result))))
-;          (list (list #'(let ([a 3] [b 9]) (+ a b)) '(let-values ([(a) (#%datum . 3)] [(b) (#%datum . 9)]) (#%app (#%top . +) a b)) 12)
-;                (list #'(let* ([a 9] [b a] [c b]) c) '(let*-values ([(a) (#%datum . 9)] [(b) a] [(c) b]) c) 9)
-;                (list #'(let ([a 3] [b 9]) (let ([b 14]) b)) '(let*-values ([(a) (#%datum . 3)] [(b) (#%datum . 9)] [(b) (#%datum . 14)]) b) 14)))
-;
-;  ;                         ;                      ;                                ;            
-;  ;                         ;                      ;                                   ;         
-; ;;;;  ;;;   ; ;;;          ;   ;;;  ;   ;   ;;;   ;      ; ;;  ;;;  ;   ;   ; ; ;; ; ;;;;  ;;;  
-;  ;   ;   ;  ;;   ;         ;  ;   ; ;   ;  ;   ;  ;      ;;   ;   ; ;   ;   ; ;;   ;  ;   ;   ; 
-;  ;   ;   ;  ;    ;         ;  ;   ;  ; ;   ;   ;  ;      ;    ;   ;  ; ; ; ;  ;    ;  ;   ;   ; 
-;  ;   ;   ;  ;    ;  ;;;;;  ;  ;;;;;  ; ;   ;;;;;  ;      ;    ;;;;;  ; ; ; ;  ;    ;  ;   ;;;;; 
-;  ;   ;   ;  ;    ;         ;  ;      ; ;   ;      ;      ;    ;      ; ; ; ;  ;    ;  ;   ;     
-;  ;   ;   ;  ;;   ;         ;  ;      ;;    ;      ;      ;    ;      ; ; ; ;  ;    ;  ;   ;     
-;   ;;  ;;;   ; ;;;          ;   ;;;;   ;     ;;;;  ;      ;     ;;;;   ;   ;   ;    ;   ;;  ;;;; 
-;             ;                                                                                   
-;             ;                                                                                   
-;                                                                                                 
-
-
-; top-level-rewrite : (SYNTAX-OBJECT -> SYNTAX-OBJECT)
-
-; top-level-rewrite performs several tasks; it labels variables with their types 
-; (let-bound, lambda-bound, or non-lexical), it flags if's which could come from 
-; cond's, it labels the begins in conds with 'stepper-skip annotations
-
-; label-var-types returns a syntax object which is identical to the 
-; original except that the variable references are labeled with the 
-; stepper-syntax-property 'stepper-binding-type, which is set to either 
-; let-bound, lambda-bound, or non-lexical. (It can also be 'macro-bound, set
-; earlier during macro expansion.)
-
-(define (top-level-rewrite stx)
-  (let loop ([stx stx]
-             [let-bound-bindings null]
-             [cond-test (lx #f)])
-    (define (recur-regular stx)
-      (loop stx let-bound-bindings (lx #f)))
-    
-    (define (recur-with-bindings exp vars)
-      (loop exp (append vars let-bound-bindings) (lx #f)))
-    
-    (define (recur-in-cond stx new-cond-test)
-      (loop stx let-bound-bindings new-cond-test))
-    
-    (define (do-let/rec stx rec?)
-      (with-syntax ([(label ((vars rhs) ...) . bodies) stx])
-        (let* ([vars-list 
-                (apply append
-                       (map syntax->list
-                            (syntax->list (syntax (vars ...)))))]
-               [labelled-vars-list 
-                (map (lambda (var-list)
-                       (map (lambda (exp)
-                              (recur-with-bindings exp vars-list))
-                            (syntax->list var-list)))
-                     (syntax->list (syntax (vars ...))))]
-               [rhs-list 
-                (if rec?
-                    (map (lambda (exp)
-                           (recur-with-bindings exp vars-list))
-                         (syntax->list #'(rhs ...)))
-                    (map recur-regular (syntax->list #'(rhs ...))))]
-               [new-bodies 
-                (map (lambda (exp)
-                       (recur-with-bindings exp vars-list))
-                     (syntax->list #'bodies))]
-               [new-bindings (map list labelled-vars-list rhs-list)])
-          (datum->syntax
-           stx
-           `(,#'label ,new-bindings ,@new-bodies) stx stx))))
-    
-    
-    ; evaluated at runtime, using 3D code:
-    (define (put-into-xml-table val)
-      (hash-set! finished-xml-box-table val #t)
-      val)
-    
-    (cond 
-      [(or (stepper-syntax-property stx 'stepper-skip-completely)
-           (stepper-syntax-property stx 'stepper-black-box-expr))
-       stx]
-      [else
-       (define rewritten
-         (let ([stx (syntax-disarm stx saved-code-inspector)])
-           (kernel:kernel-syntax-case 
-          stx
-          #f
-          ; cond :
-          [(if test (let-values () then) else-stx)
-           (let ([origin (syntax-property stx 'origin)]
-                 [rebuild-if
-                  (lambda (new-cond-test)
-                    (let* ([new-then (recur-regular (syntax then))]
-                           [rebuilt 
-                            (stepper-syntax-property
-                             (rebuild-stx 
-                              `(if ,(recur-regular (syntax test))
-                                   ,new-then
-                                   ,(recur-in-cond (syntax else-stx)
-                                                   new-cond-test))
-                                          stx)
-                             'stepper-hint
-                             'comes-from-cond)])
-                      ; move the stepper-else mark to the if, if it's present:
-                      (if (stepper-syntax-property (syntax test) 'stepper-else)
-                          (stepper-syntax-property rebuilt 'stepper-else #t)
-                          rebuilt)))])
-             (cond [(cond-test stx) ; continuing an existing 'cond'
-                    (rebuild-if cond-test)]
-                   [(and origin (pair? origin) 
-                         (eq? (syntax-e (car origin)) 'cond)) ; starting a new 'cond'
-                    (rebuild-if (lambda (test-stx) 
-                                  (and (eq? (syntax-source stx)
-                                            (syntax-source test-stx))
-                                       (eq? (syntax-position stx)
-                                            (syntax-position test-stx)))))]
-                   [else ; not from a 'cond' at all.
-                    (rebuild-stx `(if ,@(map recur-regular (list (syntax test) (syntax (begin then)) (syntax else-stx)))) stx)]))]
-          [(begin body) ; else clauses of conds; ALWAYS AN ERROR CALL
-           (cond-test stx)
-           (stepper-syntax-property stx 'stepper-skip-completely #t)]
-          
-          ; wrapper on a local.  This is necessary because 
-          ; teach.rkt expands local into a trivial let wrapping a bunch of
-          ; internal defines, and therefore the letrec-values on 
-          ; which I want to hang the 'stepper-hint doesn't yet
-          ; exist.  So we patch it up after expansion.  And we 
-          ; discard the outer 'let' at the same time.
-          [(let-values () expansion-of-local)
-           (eq? (stepper-syntax-property stx 'stepper-hint) 'comes-from-local)
-           (syntax-case #`expansion-of-local (letrec-values)
-             [(letrec-values (bogus-clause clause ...) . bodies)
-              (recur-regular
-               (stepper-syntax-property #`(letrec-values (clause ...) . bodies) 'stepper-hint 'comes-from-local))]
-             [else (error 'top-level-rewrite "expected a letrec-values inside a local, given: ~e" 
-                          (syntax->datum #`expansion-of-local))])]
-          
-          ; let/letrec :
-          [(let-values x ...) (do-let/rec stx #f)]
-          [(letrec-values x ...) (do-let/rec stx #t)]
-          
-          ; varref :
-          [var
-           (identifier? (syntax var))
-           (stepper-syntax-property 
-            (syntax var) 
-            'stepper-binding-type
-            (if (eq? (identifier-binding (syntax var)) 'lexical)
-                (cond [(ormap (lx (bound-identifier=? _ (syntax var)))
-                              let-bound-bindings)
-                       'let-bound]
-                      [else
-                       'lambda-bound])
-                'non-lexical))]
-          
-          [else
-           (let ([content (syntax-e stx)])
-             (if (pair? content)
-                 (rebuild-stx (syntax-pair-map content recur-regular) stx)
-                 stx))])))
-       
-       (if (eq? (stepper-syntax-property stx 'stepper-xml-hint) 'from-xml-box)
-           (stepper-syntax-property #`(#%plain-app 
-                                       #,put-into-xml-table
-                                       #,rewritten) 
-                                    'stepper-skipto
-                                    (list syntax-e cdr car))
-           (stepper-recertify rewritten stx))])))
-
 
 ;                                               
 ; ;                         ;          ;         
@@ -287,7 +74,9 @@
 ;
 
 
-
+;; given an expression to annotate, and a 'break' expression to call 
+;; when a breakpoint occurs, and a boolean indicating whether
+;; lambdas are to be displayed as lambdas, return an annotated expression.
 (define (annotate main-exp break show-lambdas-as-lambdas?)
   
   #;(define _ (>>> main-exp #;(syntax->datum main-exp)))
@@ -316,6 +105,13 @@
   
   (define (double-break)
     (break (current-continuation-marks) 'double-break))
+  
+  (define ((make-opaque-exp-break exp))
+    (exp-finished-break 
+     (list (list (lambda () exp) 
+                 #f 
+                 (lambda () (error 'make-define-struct-break
+                                   "no getter for a define-struct"))))))
   
   ; wcm-pre-break-wrap : call wcm-wrap with a pre-break on the expr
   (define (wcm-pre-break-wrap debug-info exp)
@@ -350,13 +146,6 @@
   ;; wrap a normal-break/values around exp
   (define normal-break/values-wrap
     (return-value-wrap-maker normal-break/values))
-  
-  (define (make-define-struct-break exp)
-    (lambda ()
-      (break #f 'expr-finished-break (list (list (lambda () exp) 
-                                                 #f 
-                                                 (lambda () (error 'make-define-struct-break
-                                                                   "no getter for a define-struct")))))))
   
   (define (top-level-annotate/inner exp source-exp defined-name)
     (match-let* 
@@ -511,7 +300,7 @@
                 (let ([non-skipped-bodies
                        (filter 
                         (lambda (clause)
-                          (not (skipped? clause)))
+                          (not (to-be-skipped? clause)))
                         (syntax->list (syntax bodies)))])
                   (if (> (length non-skipped-bodies) 1)
                       (lambda-body-recur (syntax (begin . bodies)))
@@ -887,7 +676,7 @@
              (dont-annotate 'rebuild)]
             [(stepper-syntax-property exp 'stepper-skipto/discard)
              (dont-annotate 'discard)]
-            [(stepper-syntax-property exp 'stepper-skip-completely)
+            [(to-be-skipped? exp)
              (vector (wcm-wrap 13 exp) null)]
             
             [else
@@ -1239,15 +1028,15 @@
   
   
   
-  
+  ;; annotate expressions at the top level within a module.
   (define (annotate/module-top-level exp)
     (cond [(stepper-syntax-property exp 'stepper-replace)]
-          [(stepper-syntax-property exp 'stepper-skip-completely) exp]
+          [(to-be-skipped? exp) exp]
           ;; for kathy's test engine:
           [(syntax-property exp 'test-call) exp]
           [(stepper-syntax-property exp 'stepper-black-box-expr)
            #`(begin #,exp
-                    (#%plain-app #,(make-define-struct-break exp)))]
+                    (#%plain-app #,(make-opaque-exp-break exp)))]
           [(stepper-syntax-property exp 'stepper-skipto)
            (skipto/auto exp 'rebuild annotate/module-top-level)] 
           [else 
@@ -1371,9 +1160,177 @@
   ; body of local
   (annotate/top-level main-exp))
 
+;
+;  ;                         ;                      ;                                ;            
+;  ;                         ;                      ;                                   ;         
+; ;;;;  ;;;   ; ;;;          ;   ;;;  ;   ;   ;;;   ;      ; ;;  ;;;  ;   ;   ; ; ;; ; ;;;;  ;;;  
+;  ;   ;   ;  ;;   ;         ;  ;   ; ;   ;  ;   ;  ;      ;;   ;   ; ;   ;   ; ;;   ;  ;   ;   ; 
+;  ;   ;   ;  ;    ;         ;  ;   ;  ; ;   ;   ;  ;      ;    ;   ;  ; ; ; ;  ;    ;  ;   ;   ; 
+;  ;   ;   ;  ;    ;  ;;;;;  ;  ;;;;;  ; ;   ;;;;;  ;      ;    ;;;;;  ; ; ; ;  ;    ;  ;   ;;;;; 
+;  ;   ;   ;  ;    ;         ;  ;      ; ;   ;      ;      ;    ;      ; ; ; ;  ;    ;  ;   ;     
+;  ;   ;   ;  ;;   ;         ;  ;      ;;    ;      ;      ;    ;      ; ; ; ;  ;    ;  ;   ;     
+;   ;;  ;;;   ; ;;;          ;   ;;;;   ;     ;;;;  ;      ;     ;;;;   ;   ;   ;    ;   ;;  ;;;; 
+;             ;                                                                                   
+;             ;                                                                                   
+;                                                                                                 
+
+
+; top-level-rewrite : (SYNTAX-OBJECT -> SYNTAX-OBJECT)
+
+; top-level-rewrite performs several tasks; it labels variables with their types 
+; (let-bound, lambda-bound, or non-lexical), it flags if's which could come from 
+; cond's, it labels the begins in conds with 'stepper-skip annotations
+
+; label-var-types returns a syntax object which is identical to the 
+; original except that the variable references are labeled with the 
+; stepper-syntax-property 'stepper-binding-type, which is set to either 
+; let-bound, lambda-bound, or non-lexical. (It can also be 'macro-bound, set
+; earlier during macro expansion.)
+
+(define (top-level-rewrite stx)
+  (let loop ([stx stx]
+             [let-bound-bindings null]
+             [cond-test (lx #f)])
+    (define (recur-regular stx)
+      (loop stx let-bound-bindings (lx #f)))
+    
+    (define (recur-with-bindings exp vars)
+      (loop exp (append vars let-bound-bindings) (lx #f)))
+    
+    (define (recur-in-cond stx new-cond-test)
+      (loop stx let-bound-bindings new-cond-test))
+    
+    (define (do-let/rec stx rec?)
+      (with-syntax ([(label ((vars rhs) ...) . bodies) stx])
+        (let* ([vars-list 
+                (apply append
+                       (map syntax->list
+                            (syntax->list (syntax (vars ...)))))]
+               [labelled-vars-list 
+                (map (lambda (var-list)
+                       (map (lambda (exp)
+                              (recur-with-bindings exp vars-list))
+                            (syntax->list var-list)))
+                     (syntax->list (syntax (vars ...))))]
+               [rhs-list 
+                (if rec?
+                    (map (lambda (exp)
+                           (recur-with-bindings exp vars-list))
+                         (syntax->list #'(rhs ...)))
+                    (map recur-regular (syntax->list #'(rhs ...))))]
+               [new-bodies 
+                (map (lambda (exp)
+                       (recur-with-bindings exp vars-list))
+                     (syntax->list #'bodies))]
+               [new-bindings (map list labelled-vars-list rhs-list)])
+          (datum->syntax
+           stx
+           `(,#'label ,new-bindings ,@new-bodies) stx stx))))
+    
+    
+    ; evaluated at runtime, using 3D code:
+    (define (put-into-xml-table val)
+      (hash-set! finished-xml-box-table val #t)
+      val)
+    
+    (cond 
+      [(or (to-be-skipped? stx)
+           (stepper-syntax-property stx 'stepper-black-box-expr))
+       stx]
+      [else
+       (define rewritten
+         (let ([stx (syntax-disarm stx saved-code-inspector)])
+           (kernel:kernel-syntax-case 
+          stx
+          #f
+          ; cond :
+          [(if test (let-values () then) else-stx)
+           (let ([origin (syntax-property stx 'origin)]
+                 [rebuild-if
+                  (lambda (new-cond-test)
+                    (let* ([new-then (recur-regular (syntax then))]
+                           [rebuilt 
+                            (stepper-syntax-property
+                             (rebuild-stx 
+                              `(if ,(recur-regular (syntax test))
+                                   ,new-then
+                                   ,(recur-in-cond (syntax else-stx)
+                                                   new-cond-test))
+                                          stx)
+                             'stepper-hint
+                             'comes-from-cond)])
+                      ; move the stepper-else mark to the if, if it's present:
+                      (if (stepper-syntax-property (syntax test) 'stepper-else)
+                          (stepper-syntax-property rebuilt 'stepper-else #t)
+                          rebuilt)))])
+             (cond [(cond-test stx) ; continuing an existing 'cond'
+                    (rebuild-if cond-test)]
+                   [(and origin (pair? origin) 
+                         (eq? (syntax-e (car origin)) 'cond)) ; starting a new 'cond'
+                    (rebuild-if (lambda (test-stx) 
+                                  (and (eq? (syntax-source stx)
+                                            (syntax-source test-stx))
+                                       (eq? (syntax-position stx)
+                                            (syntax-position test-stx)))))]
+                   [else ; not from a 'cond' at all.
+                    (rebuild-stx `(if ,@(map recur-regular (list (syntax test) (syntax (begin then)) (syntax else-stx)))) stx)]))]
+          [(begin body) ; else clauses of conds; ALWAYS AN ERROR CALL
+           (cond-test stx)
+           (stepper-syntax-property stx 'stepper-skip-completely #t)]
+          
+          ; wrapper on a local.  This is necessary because 
+          ; teach.rkt expands local into a trivial let wrapping a bunch of
+          ; internal defines, and therefore the letrec-values on 
+          ; which I want to hang the 'stepper-hint doesn't yet
+          ; exist.  So we patch it up after expansion.  And we 
+          ; discard the outer 'let' at the same time.
+          [(let-values () expansion-of-local)
+           (eq? (stepper-syntax-property stx 'stepper-hint) 'comes-from-local)
+           (syntax-case #`expansion-of-local (letrec-values)
+             [(letrec-values (bogus-clause clause ...) . bodies)
+              (recur-regular
+               (stepper-syntax-property #`(letrec-values (clause ...) . bodies) 'stepper-hint 'comes-from-local))]
+             [else (error 'top-level-rewrite "expected a letrec-values inside a local, given: ~e" 
+                          (syntax->datum #`expansion-of-local))])]
+          
+          ; let/letrec :
+          [(let-values x ...) (do-let/rec stx #f)]
+          [(letrec-values x ...) (do-let/rec stx #t)]
+          
+          ; varref :
+          [var
+           (identifier? (syntax var))
+           (stepper-syntax-property 
+            (syntax var) 
+            'stepper-binding-type
+            (if (eq? (identifier-binding (syntax var)) 'lexical)
+                (cond [(ormap (lx (bound-identifier=? _ (syntax var)))
+                              let-bound-bindings)
+                       'let-bound]
+                      [else
+                       'lambda-bound])
+                'non-lexical))]
+          
+          [else
+           (let ([content (syntax-e stx)])
+             (if (pair? content)
+                 (rebuild-stx (syntax-pair-map content recur-regular) stx)
+                 stx))])))
+       
+       (if (eq? (stepper-syntax-property stx 'stepper-xml-hint) 'from-xml-box)
+           (stepper-syntax-property #`(#%plain-app 
+                                       #,put-into-xml-table
+                                       #,rewritten) 
+                                    'stepper-skipto
+                                    (list syntax-e cdr car))
+           (stepper-recertify rewritten stx))])))
+
+
+
+;; recertify the output of the stepper, to allow it to run:
 (define (stepper-recertify new-stx old-stx)
   (syntax-rearm new-stx old-stx #t))
 
 ;; does this stx have the 'stepper-skip-completely property?
-(define (skipped? stx)
+(define (to-be-skipped? stx)
   (stepper-syntax-property stx 'stepper-skip-completely))
