@@ -6615,10 +6615,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       fm = scheme_add_rename(fm, rn);
       mb_ctx = scheme_add_rename(form, rn);
     } else {
-      /* phase shift to replace self_modidx of previous expansion: */
       if (!SCHEME_STXP(fm))
         fm = scheme_datum_to_syntax(fm, scheme_false, scheme_false, 0, 0);
-      fm = scheme_stx_phase_shift(fm, NULL, empty_self_modidx, self_modidx, NULL, m->insp);      
     }
     /* there must be a `#%module-begin' in the enclosing module, right? */
     saw_mb = 1;
@@ -6660,6 +6658,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     fm = scheme_stx_phase_shift(fm, NULL, empty_self_modidx, self_modidx, NULL, m->insp);
 
     fm = scheme_add_rename(fm, rn_set);
+  } else if (skip_strip) {
+    /* phase shift to replace self_modidx of previous expansion: */
+    fm = scheme_stx_phase_shift(fm, NULL, empty_self_modidx, self_modidx, NULL, m->insp);      
   }
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);

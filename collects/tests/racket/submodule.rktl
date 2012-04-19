@@ -317,6 +317,14 @@
       (module* test #f
         (f)))))
 
+(expand
+ (expand
+  '(module m racket/base
+     (define (print-cake n) n)
+     (module* main2 #f
+       (module* inner-main #f
+         (print-cake 20))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 
