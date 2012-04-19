@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-          "syntax.rkt")
+#lang racket/base
+(require racket/class
+         "syntax.rkt")
 
 (provide gl-config%)
 

@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/struct-info
+(require racket/struct-info
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
          (for-template (only-in "runtime.rkt" matchable?)
-                       scheme/base))
+                       racket/base))
 
 (provide parse)
 

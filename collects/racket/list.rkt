@@ -317,7 +317,7 @@
                [(f l1 l2) (apply append (map f l1 l2))]
                [(f l . ls) (apply append (apply map f l ls))]))
 
-;; this is an exact copy of `filter' in scheme/private/list, with the
+;; this is an exact copy of `filter' in racket/private/list, with the
 ;; `if' branches swapped.
 (define (filter-not f list)
   (unless (and (procedure? f)

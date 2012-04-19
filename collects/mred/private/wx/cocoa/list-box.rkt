@@ -2,7 +2,7 @@
 (require ffi/unsafe/objc
          ffi/unsafe
          racket/class
-         (only-in scheme/list take drop)
+         (only-in racket/list take drop)
           "../../syntax.rkt"
           "../../lock.rkt"
          "item.rkt"

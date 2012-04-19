@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require syntax/stx
-         (for-syntax scheme/base)
-         (for-template scheme/base "class-events.rkt"))
+         (for-syntax racket/base)
+         (for-template racket/base "class-events.rkt"))
 
 (define insp (variable-reference->module-declaration-inspector
               (#%variable-reference)))

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          "private.rkt"
          racket/snip/private/private
          racket/snip/private/snip

@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/file
+#lang racket/base
+(require racket/class
+         racket/file
          "../syntax.rkt"
          "editor.rkt"
          "editor-admin.rkt"

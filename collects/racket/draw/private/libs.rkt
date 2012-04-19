@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
          racket/runtime-path
-	 ffi/winapi
+         ffi/winapi
          (for-syntax racket/base
-		     ffi/winapi))
+                     ffi/winapi))
 
 (provide define-runtime-lib
-	 win64?
-	 (for-syntax win64?))
+         win64?
+         (for-syntax win64?))
 
 (define-syntax define-runtime-lib
   ;; the ids macosx unix windows don't appear to be bound here, but I added win32 and win64 anyways

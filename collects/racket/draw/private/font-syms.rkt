@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide family-symbol? style-symbol? weight-symbol? 
          smoothing-symbol? hinting-symbol?)

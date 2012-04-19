@@ -1,7 +1,7 @@
 #lang racket/base
 (require ffi/unsafe/objc
          ffi/unsafe
-         scheme/class
+         racket/class
          "pool.rkt"
          "utils.rkt"
          "const.rkt"

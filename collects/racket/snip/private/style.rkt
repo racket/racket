@@ -1,10 +1,10 @@
-#lang scheme/base
-(require scheme/class
-         scheme/file
-         (for-syntax scheme/base)         
+#lang racket/base
+(require racket/class
+         racket/file
+         (for-syntax racket/base)
          racket/draw
          racket/draw/private/syntax
-	 racket/draw/private/font-syms
+         racket/draw/private/font-syms
          racket/snip/private/private
          "prefs.rkt")
 

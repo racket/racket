@@ -6,7 +6,7 @@
   (case-lambda [(strs) (apply bytes-append strs)] ; optimize common case
                [(str . strss) (apply bytes-append (apply list* str strss))]))
 
-(require (only-in scheme/list add-between))
+(require (only-in racket/list add-between))
 
 (define (bytes-join strs sep)
   (cond [(not (and (list? strs) (andmap bytes? strs)))

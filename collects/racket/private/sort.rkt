@@ -19,7 +19,7 @@ code.
 
 Note that there is no error checking on the arguments -- the `sort' function
 that this module provide is then wrapped up by a keyworded version in
-"scheme/private/list.rkt", and that's what everybody sees.  The wrapper is
+"racket/private/list.rkt", and that's what everybody sees.  The wrapper is
 doing these checks.
 
 |#

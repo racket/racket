@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require scheme/class
-         scheme/file file/convertible
+(require racket/class
+         racket/file file/convertible
          "../syntax.rkt"
          "private.rkt"
          racket/snip/private/snip-flags

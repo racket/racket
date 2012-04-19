@@ -1,9 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (provide define-require-syntax)
 
-(require (for-syntax racket/base
-                     "require-transform.rkt"))
+(require (for-syntax racket/base "require-transform.rkt"))
 
 (define-for-syntax orig-insp (variable-reference->module-declaration-inspector
                               (#%variable-reference)))

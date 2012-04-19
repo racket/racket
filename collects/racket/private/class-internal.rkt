@@ -25,8 +25,8 @@
 ;;  spec for external interface
 ;;--------------------------------------------------------------------
 
-(provide provide-public-names 
-         ;; needed for Typed Scheme
+(provide provide-public-names
+         ;; needed for Typed Racket
          (protect-out do-make-object find-method/who))
 (define-syntax-rule (provide-public-names)
   (provide class class* class/derived
@@ -317,9 +317,9 @@
       (let* ([stop-forms
               (append
                (kernel-form-identifier-list)
-               (list 
-                (quote-syntax #%app) ; scheme/base app, as opposed to #%plain-app
-                (quote-syntax lambda) ; scheme/base lambda, as opposed to #%plain-lambda
+               (list
+                (quote-syntax #%app) ; racket/base app, as opposed to #%plain-app
+                (quote-syntax lambda) ; racket/base lambda, as opposed to #%plain-lambda
                 (quote-syntax -init)
                 (quote-syntax -init-rest)
                 (quote-syntax -field)
@@ -4892,4 +4892,3 @@
          (struct-out exn:fail:object)
          make-primitive-class
          class/c ->m ->*m ->dm case->m object/c instanceof/c)
-

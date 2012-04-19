@@ -1,11 +1,11 @@
 (module path-dialog mzscheme
   (require mzlib/class mzlib/list mzlib/string mzlib/file
            (prefix wx: "kernel.rkt")
-	   (prefix wx: racket/snip/private/style)
+           (prefix wx: racket/snip/private/style)
            racket/snip/private/prefs
            "helper.rkt" "mrtop.rkt" "mritem.rkt" "mrpanel.rkt"
            "mrtextfield.rkt" "messagebox.rkt" "mrmenu.rkt"
-           (only scheme/base compose))
+           (only racket/base compose1))
   (provide path-dialog%)
 
   (define last-visted-directory #f)
@@ -46,9 +46,9 @@
       (lambda (p . more)
         (apply simplify-path (expand-path* p) more))))
 
-  (define directory-exists*? (compose directory-exists? expand-path*))
-  (define file-exists*?      (compose file-exists? expand-path*))
-  (define absolute-path*?    (compose absolute-path? expand-path*))
+  (define directory-exists*? (compose1 directory-exists? expand-path*))
+  (define file-exists*?      (compose1 file-exists? expand-path*))
+  (define absolute-path*?    (compose1 absolute-path? expand-path*))
 
   (define (build-path* dir path)
     (cond [(absolute-path*? path) (if (string? path) (string->path path) path)]

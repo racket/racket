@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/class
-         scheme/port
-         scheme/file
-         (for-syntax scheme/base)
+#lang racket/base
+(require racket/class
+         racket/port
+         racket/file
+         (for-syntax racket/base)
          "../syntax.rkt"
          "const.rkt"
          "mline.rkt"

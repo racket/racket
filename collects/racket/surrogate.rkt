@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class
-         (for-syntax scheme/base))
+(require racket/class
+         (for-syntax racket/base))
 
 (provide surrogate)
 

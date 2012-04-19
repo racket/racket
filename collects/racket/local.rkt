@@ -1,5 +1,6 @@
-#lang scheme/base
-(require (for-syntax scheme/base)
+#lang racket/base
+
+(require (for-syntax racket/base)
          "private/local.rkt")
 (provide local)
 

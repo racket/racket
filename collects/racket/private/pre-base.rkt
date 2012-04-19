@@ -1,5 +1,4 @@
-
-;; A sane "core" for finishing up the "scheme/base" library
+;; A sane "core" for finishing up the "racket/base" library
 
 (module pre-base '#%kernel
   (#%require (for-syntax '#%kernel))

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require '#%flfxnum
          "private/vector-wraps.rkt"

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          ffi/unsafe
          ffi/unsafe/atomic
          "../unsafe/cairo.rkt"

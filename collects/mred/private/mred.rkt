@@ -3,7 +3,7 @@
                  define-namespace-anchor
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
-           scheme/class
+           racket/class
            racket/draw racket/snip
            file/resource
            mzlib/etc

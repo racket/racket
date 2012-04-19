@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "../kernel.rkt" racket/draw/private/font-syms)
 
 (define the-clipboard (get-the-clipboard))

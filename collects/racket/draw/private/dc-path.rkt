@@ -1,16 +1,14 @@
-#lang scheme/base
+#lang racket/base
 
 (require "syntax.rkt"
-         scheme/math
-         scheme/class
+         racket/math
+         racket/class
          "../unsafe/cairo.rkt"
          "fmod.rkt"
          "point.rkt"
          "transform.rkt"
          "font.rkt"
-         (only-in scheme/base 
-                  [append s:append]
-                  [reverse s:reverse]))
+         (only-in racket/base [append r:append] [reverse r:reverse]))
 
 (provide dc-path%
          (protect-out do-path
@@ -46,12 +44,12 @@
 
     (define/private (flatten-open!)
       (unless (null? rev-open-points)
-        (set! open-points (s:append open-points (s:reverse rev-open-points)))
+        (set! open-points (r:append open-points (r:reverse rev-open-points)))
         (set! rev-open-points null)))
 
     (define/private (flatten-closed!)
       (unless (null? rev-closed-points)
-        (set! closed-points (s:append closed-points (s:reverse rev-closed-points)))
+        (set! closed-points (r:append closed-points (r:reverse rev-closed-points)))
         (set! rev-closed-points null)))
     
     (define/public (get-closed-points) (flatten-closed!) closed-points)
@@ -112,8 +110,8 @@
     (define/public (append path)
       (flatten-closed!)
       (flatten-open!)
-      (set! closed-points (s:append closed-points (send path get-closed-points)))
-      (set! open-points (s:append open-points (send path get-open-points))))
+      (set! closed-points (r:append closed-points (send path get-closed-points)))
+      (set! open-points (r:append open-points (send path get-open-points))))
 
     (def/public (reset)
       (set! open-points null)
@@ -131,8 +129,8 @@
                                   (vector (vector-ref p 2) (vector-ref p 3)
                                           (vector-ref p 0) (vector-ref p 1))))
                             l))])
-        (set! open-points (rev-one (s:reverse open-points)))
-        (set! closed-points (map rev-one (map s:reverse closed-points)))))
+        (set! open-points (rev-one (r:reverse open-points)))
+        (set! closed-points (map rev-one (map r:reverse closed-points)))))
 
     (def/public (close)
       (flatten-open!)
@@ -291,7 +289,7 @@
                                    pts))
                             (loop (+ start angle)
                                   (- delta angle)))))))))
-              (for ([v (in-list (if ccw? (s:reverse pts) pts))])
+              (for ([v (in-list (if ccw? (r:reverse pts) pts))])
                 (if (or (pair? open-points)
                         (pair? rev-open-points))
                     (do-line-to (vector-ref v 0) (vector-ref v 1))

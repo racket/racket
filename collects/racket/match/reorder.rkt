@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require "patterns.rkt"
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (provide reorder-columns)
 

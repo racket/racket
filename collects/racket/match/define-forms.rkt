@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base
+(require (for-syntax racket/base
                      racket/syntax
                      (only-in racket/list append* remove-duplicates)
                      unstable/sequence

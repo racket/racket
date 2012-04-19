@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          racket/draw/private/syntax
          "snip.rkt")
 

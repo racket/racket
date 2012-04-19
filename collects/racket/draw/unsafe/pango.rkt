@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
@@ -7,29 +7,29 @@
          "../private/utils.rkt"
          "../private/libs.rkt")
 
-(define-runtime-lib pango-lib 
+(define-runtime-lib pango-lib
   [(unix) (ffi-lib "libpango-1.0" '("0" ""))]
   [(macosx) (ffi-lib "libpango-1.0.0.dylib")]
   [(windows) (ffi-lib "libpango-1.0-0.dll")])
 
-(define-runtime-lib pangowin32-lib 
+(define-runtime-lib pangowin32-lib
   [(unix) #f]
   [(macosx)]
-  [(windows) 
+  [(windows)
    (ffi-lib "libpangowin32-1.0-0.dll")])
 
-(define-runtime-lib pangocairo-lib 
+(define-runtime-lib pangocairo-lib
   [(unix) (ffi-lib "libpangocairo-1.0" '("0" ""))]
   [(macosx)
    (ffi-lib "libpangocairo-1.0.0.dylib")]
-  [(win32) 
+  [(win32)
    (ffi-lib "libpangowin32-1.0-0.dll")
    (ffi-lib "libexpat-1.dll")
    (ffi-lib "freetype6.dll")
    (ffi-lib "libfontconfig-1.dll")
    (ffi-lib "libpangoft2-1.0-0.dll")
    (ffi-lib "libpangocairo-1.0-0.dll")]
-  [(win64) 
+  [(win64)
    (ffi-lib "libintl-8.dll")
    (ffi-lib "libpangowin32-1.0-0.dll")
    (ffi-lib "libexpat-1.dll")
@@ -287,9 +287,9 @@
                                                       (g_free faces))))
 (define-pango pango_font_face_get_face_name (_pfun PangoFontFace -> _string))
 
-(define-pango pango_font_description_free (_pfun PangoFontDescription -> _void) 
+(define-pango pango_font_description_free (_pfun PangoFontDescription -> _void)
   #:wrap (deallocator))
-(define-pango pango_font_description_new (_pfun -> PangoFontDescription) 
+(define-pango pango_font_description_new (_pfun -> PangoFontDescription)
   #:wrap (allocator pango_font_description_free))
 (define-pango pango_font_description_from_string (_pfun _string -> PangoFontDescription)
   #:wrap (allocator pango_font_description_free))

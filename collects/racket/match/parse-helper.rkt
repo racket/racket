@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-template scheme/base)
+(require (for-template racket/base)
          syntax/boundmap
-         scheme/struct-info
+         racket/struct-info
          ;macro-debugger/emit
          "patterns.rkt")
 
@@ -181,7 +181,7 @@
                           'match "invalid number for ..k pattern"
                           s*)]))))))
 
-;; parse-literal : scheme-val -> pat option
+;; parse-literal : racket-val -> pat option
 ;; is v is a literal, return a pattern matching it
 ;; otherwise, return #f
 (define (parse-literal v)

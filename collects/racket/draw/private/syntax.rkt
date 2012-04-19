@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         scheme/stxparam
-         (for-syntax scheme/base))
+#lang racket/base
+(require racket/class
+         racket/stxparam
+         (for-syntax racket/base))
 
 (provide defclass defclass*
          def/public def/pubment def/public-final def/override def/override-final define/top case-args

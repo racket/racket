@@ -1,4 +1,4 @@
-#lang scheme/signature
+#lang racket/signature
 
 add-color<%>
 add-editor-keymap-functions

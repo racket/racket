@@ -3,7 +3,7 @@
 ;; math.rkt: some extra math routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#lang scheme/base
+#lang racket/base
 (provide pi
          sqr
          sgn conjugate
@@ -62,7 +62,7 @@
 #|
 ;; Timing tests below provided by Jos Koot for the order-of-magnitude function
 
-#lang scheme
+#lang racket
 
 ;;; Tests and timings of order-of-magnitude
 

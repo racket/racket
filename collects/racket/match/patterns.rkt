@@ -79,7 +79,7 @@
 (define-struct (GSeq Pat) (headss mins maxs onces? tail mutable?) #:transparent)
 
 ;; match with equal?
-;; v is a quotable scheme value
+;; v is a quotable racket value
 (define-struct (Exact Pat) (v) #:transparent)
 
 ;; pats is a Listof Pat

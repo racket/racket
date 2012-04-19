@@ -1,7 +1,6 @@
-#lang scheme/base
-(require (for-syntax scheme/base)
-         scheme/foreign)
-(unsafe!)
+#lang racket/base
+(require (for-syntax racket/base)
+         ffi/unsafe)
 
 (provide define-definer
          define-private-definer

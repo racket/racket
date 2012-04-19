@@ -1,6 +1,6 @@
-#lang scheme/base
-(require (for-syntax scheme/base
-                     scheme/list
+#lang racket/base
+(require (for-syntax racket/base
+                     racket/list
                      syntax/kerncase
                      syntax/boundmap
                      syntax/define

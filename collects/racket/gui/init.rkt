@@ -1,4 +1,3 @@
-
 (module init scheme/gui
   (require scheme/init)
 

@@ -4,14 +4,14 @@
          "prop.rkt"
          "misc.rkt"
          racket/private/class-internal
-         scheme/stxparam)
+         racket/stxparam)
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (provide mixin-contract
          make-mixin-contract
-         is-a?/c 
-         subclass?/c 
+         is-a?/c
+         subclass?/c
          implementation?/c
          object-contract)
 

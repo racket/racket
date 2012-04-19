@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base scheme/provide-transform scheme/list
+(require (for-syntax racket/base racket/provide-transform racket/list
                      (only-in racket/syntax syntax-local-eval)))
 
 (provide matching-identifiers-out)

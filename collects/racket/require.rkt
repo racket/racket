@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base scheme/require-transform scheme/list
+(require (for-syntax racket/base racket/require-transform racket/list
                      (only-in racket/syntax syntax-local-eval))
          "require-syntax.rkt")
 

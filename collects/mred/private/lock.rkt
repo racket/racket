@@ -15,7 +15,7 @@
 ;;   The `atomically' form is ok for that if no exceptions will
 ;;   be raised. Otherwise, use the more heavyweight `as-entry'.
 ;;
-;; * The scheme/gui classes have internal-consistency requirements.
+;; * The racket/gui classes have internal-consistency requirements.
 ;;   When the user creates an object or calls a method, or when the
 ;;   system invokes a callback, many steps may be required to
 ;;   initialize or reset fields to maintain invariants. To ensure that

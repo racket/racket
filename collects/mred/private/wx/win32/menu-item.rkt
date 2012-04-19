@@ -1,6 +1,6 @@
 #lang racket/base
 (require ffi/unsafe
-         scheme/class
+         racket/class
          "utils.rkt"
          "types.rkt"
          "const.rkt"

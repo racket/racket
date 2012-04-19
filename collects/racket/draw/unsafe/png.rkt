@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
@@ -6,15 +6,15 @@
          "../private/utils.rkt"
          "../private/libs.rkt")
 
-(define-runtime-lib png-lib 
-  [(unix) 
+(define-runtime-lib png-lib
+  [(unix)
    ;; Most Linux distros supply "libpng12", while other Unix
    ;; variants often have just "libpng":
    (with-handlers ([exn:fail:filesystem?
                     (lambda (exn) (ffi-lib "libpng"))])
      (ffi-lib "libpng12" '("0" "")))]
   [(macosx) (ffi-lib "libpng15.15.dylib")]
-  [(windows) 
+  [(windows)
    (ffi-lib "zlib1.dll")
    (ffi-lib "libpng14-14.dll")])
 
@@ -27,7 +27,7 @@
 ;;  assume that other versions are also ok
 (define PNG_LIBPNG_VER_STRING (string->bytes/latin-1
                                (let ([v (png_access_version_number)])
-                                 (format "~s.~s" 
+                                 (format "~s.~s"
                                          (quotient v 10000)
                                          (quotient (remainder v 10000) 100)))))
 
@@ -43,8 +43,8 @@
                                [gray _uint16]))
 
 (define-png png_create_read_struct
-  (_fun _bytes 
-        _pointer 
+  (_fun _bytes
+        _pointer
         (_fun _png_structp _string -> _void)
         (_fun _png_structp _string -> _void)
         -> _png_structp))
@@ -65,8 +65,8 @@
                      -> _void)))
 
 (define-png png_create_write_struct
-  (_fun _bytes 
-        _pointer 
+  (_fun _bytes
+        _pointer
         (_fun _png_structp _string -> _void)
         (_fun _png_structp _string -> _void)
         -> _png_structp))
@@ -100,10 +100,10 @@
                                (compression-type : (_ptr o _int))
                                (filter-type : (_ptr o _int))
                                -> _void
-                               -> (values w h depth 
-                                          color-type 
-                                          interlace-type 
-                                          compression-type 
+                               -> (values w h depth
+                                          color-type
+                                          interlace-type
+                                          compression-type
                                           filter-type)))
 
 (define-png png_set_IHDR (_fun _png_structp
@@ -141,7 +141,7 @@
 (define-png png_get_valid (_fun _png_structp _png_infop _uint32 -> _uint32))
 (define-png png_get_bKGD (_fun _png_structp _png_infop (p : (_ptr o _png_color_16-pointer/null)) -> (r : _bool) -> (and r p)))
 (define-png png_set_background (_fun _png_structp _png_color_16-pointer _int _int _double* -> _bool))
-(define-png png_get_gAMA (_fun _png_structp _png_infop (g : (_ptr o _double)) 
+(define-png png_get_gAMA (_fun _png_structp _png_infop (g : (_ptr o _double))
                                -> (ok? : _bool)
                                -> (and ok? g)))
 (define-png png_set_gamma (_fun _png_structp _double* _double* -> _void))
@@ -214,7 +214,7 @@
          [ib (make-cell in)])
     (png_set_read_fn png ib read-png-bytes)
     (png_read_info png info)
-    (let-values ([(w h depth color-type 
+    (let-values ([(w h depth color-type
                      interlace-type compression-type filter-type)
                   (png_get_IHDR png info)])
       (let* ([tRNS? (positive? (png_get_valid png info PNG_INFO_tRNS))]
@@ -252,9 +252,9 @@
              [else (let ([c (png_get_bKGD png info)])
                      (when c
                        (memcpy bg c (ctype-sizeof _png_color_16))))])
-            (png_set_background png bg 
+            (png_set_background png bg
                                 (if bg-rgb
-                                    PNG_BACKGROUND_GAMMA_SCREEN 
+                                    PNG_BACKGROUND_GAMMA_SCREEN
                                     PNG_BACKGROUND_GAMMA_FILE)
                                 0 1.0)))
         (let ([gamma (png_get_gAMA png info)])
@@ -307,12 +307,12 @@
          (scheme_make_sized_byte_string p row-bytes 1))))))
 
 (define (destroy-png-reader reader)
-  (when (reader-png reader) 
-    (png_destroy_read_struct2 (reader-png reader) 
+  (when (reader-png reader)
+    (png_destroy_read_struct2 (reader-png reader)
                               (reader-info reader))
     (free-cell (reader-ib reader))
     (set-reader-png! reader #f)))
-  
+
 ;; ----------------------------------------
 ;; Writing
 

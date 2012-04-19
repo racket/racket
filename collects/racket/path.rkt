@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide find-relative-path
          explode-path

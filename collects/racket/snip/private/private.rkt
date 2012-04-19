@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class)
+#lang racket/base
+(require racket/class)
 
 (provide (all-defined-out))
 

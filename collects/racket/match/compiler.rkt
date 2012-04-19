@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-template scheme/base "runtime.rkt" scheme/stxparam racket/unsafe/ops)
+(require (for-template racket/base "runtime.rkt" racket/stxparam racket/unsafe/ops)
          syntax/boundmap
          syntax/stx
          "patterns.rkt"
          "split-rows.rkt"
          "reorder.rkt"
-         scheme/stxparam
+         racket/stxparam
          scheme/nest
          racket/syntax)
 

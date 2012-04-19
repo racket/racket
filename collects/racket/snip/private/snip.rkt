@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/file file/convertible
+#lang racket/base
+(require racket/class
+         racket/file file/convertible
          "snip-flags.rkt"
          "load-one.rkt"
          "style.rkt"

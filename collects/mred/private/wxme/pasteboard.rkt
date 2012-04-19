@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         scheme/port
-         scheme/file
+#lang racket/base
+(require racket/class
+         racket/port
+         racket/file
          "../syntax.rkt"
          "const.rkt"
          "private.rkt"

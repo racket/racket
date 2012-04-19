@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require launcher compiler/embed)
 (provide post-installer)

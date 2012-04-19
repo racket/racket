@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "syntax.rkt"
          ffi/unsafe/atomic
