@@ -27,18 +27,21 @@
          integer
          cos sin
          random
+         hash
          filter
          append
          values
          regexp
-         (racket:rename-out [honu-cond cond]
-                     [null empty]
-                     [current-inexact-milliseconds currentMilliseconds]
-                     [string-length string_length]
-                     [string-append string_append]
-                     [current-command-line-arguments commandLineArguments]
-                     [racket:find-files find_files]
-                     [racket:empty? empty?]
-                     [regexp-match regexp_match]
-                     [racket:first first]
-                     [racket:rest rest]))
+         (racket:rename-out
+           [honu-cond cond]
+           [null empty]
+           [hash-set! hash_update]
+           [current-inexact-milliseconds currentMilliseconds]
+           [string-length string_length]
+           [string-append string_append]
+           [current-command-line-arguments commandLineArguments]
+           [racket:find-files find_files]
+           [racket:empty? empty?]
+           [regexp-match regexp_match]
+           [racket:first first]
+           [racket:rest rest]))

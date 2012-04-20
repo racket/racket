@@ -83,6 +83,12 @@
                                    [literal:#%brackets #%brackets]
                                    [literal:#%braces #%braces]
                                    [literal:#%parens #%parens])
+                       (rename-out
+                         [datum->syntax datum_to_syntax]
+                         [syntax->datum syntax_to_datum]
+                         [syntax->list syntax_to_list]
+                         [symbol->string symbol_to_string]
+                         [string-append string_append])
                        print printf
                        true false
                        withSyntax

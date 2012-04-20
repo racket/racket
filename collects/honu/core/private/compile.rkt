@@ -52,9 +52,10 @@
     [(out ... ((~literal repeat$) stuff ...) rest ...)
      (debug 2 " Found a repeat\n")
      (with-syntax ([(out* ...) (map remove-repeats (syntax->list #'(out ...)))]
+                   [(stuff* ...) (map remove-repeats (syntax->list #'(stuff ...)))]
                    [(rest* ...) (map remove-repeats (syntax->list #'(rest ...)))])
        (remove-repeats (datum->syntax input
-                                      (syntax->list #'(out* ... stuff ... rest* ...))
+                                      (syntax->list #'(out* ... stuff* ... rest* ...))
                                       input input)))]
     [(normal ...) (with-syntax ([(normal* ...) (map remove-repeats (syntax->list #'(normal ...)))])
                     (datum->syntax input
@@ -104,7 +105,7 @@
 (define parsed-property 'honu-parsed)
 
 (define (parsed-syntax syntax)
-  (debug "Add parsed syntax property to ~a\n" syntax)
+  (debug "Add parsed syntax property to ~a\n" (syntax->datum syntax))
   (if syntax
     (syntax-property syntax parsed-property #t)
     syntax))

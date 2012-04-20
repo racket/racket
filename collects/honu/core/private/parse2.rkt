@@ -292,8 +292,8 @@
             #;
             (do-parse #'(parsed ... rest ...)
                       precedence left current)
-            (debug "Remove repeats from ~a\n" #'parsed)
-            (define re-parse #'parsed
+            ;; (debug "Remove repeats from ~a\n" #'parsed)
+            (define re-parse (remove-repeats #'parsed)
               #;
               (with-syntax ([(x ...) #'parsed])
                 (debug "Properties on parsed ~a\n" (syntax-property-symbol-keys #'parsed))
@@ -325,7 +325,7 @@
   (define (do-parse stream precedence left current)
     (define-syntax-class atom
       ;; [pattern x:identifier #:when (not (stopper? #'x))]
-      [pattern x:identifier]
+      [pattern x:identifier #:when (not (free-identifier=? #'#%braces #'x))]
       [pattern x:str]
       [pattern x:number])
 
@@ -444,6 +444,10 @@
              [(semicolon . rest)
               (debug "Parsed a semicolon, finishing up with ~a\n" current)
               (values (left current) #'rest)]
+             [body:honu-body
+               (if current
+                 (values (left current) stream)
+                 (do-parse #'(rest ...) precedence left #'body.result))]
              #;
              [((semicolon more ...) . rest)
               #;
@@ -659,7 +663,7 @@
 (provide identifier-comma-list)
 (define-splicing-syntax-class identifier-comma-list
                               #:literal-sets (cruft)
-  [pattern (~seq (~seq name:id (~optional honu-comma)) ...)]) 
+  [pattern (~seq (~seq name:id (~optional honu-comma) ...) ...)]) 
 
 (provide honu-expression/comma)
 (define-splicing-syntax-class honu-expression/comma

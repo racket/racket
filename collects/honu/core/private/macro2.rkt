@@ -212,6 +212,14 @@
 (define-honu-syntax honu-syntax
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
+      [(_ (#%parens single) . rest)
+       (define context #'single)
+       (define compressed (phase0:compress-dollars #'single))
+       (values
+         (with-syntax ([stuff* (datum->syntax context compressed context context)])
+           (phase1:racket-syntax #'stuff*))
+         #'rest
+         #f)]
       [(_ (#%parens stuff ...) . rest)
        (define context (stx-car #'(stuff ...)))
        (define compressed (phase0:compress-dollars #'(stuff ...)))

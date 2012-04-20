@@ -18,11 +18,11 @@
 
 (define-for-syntax (make-accessors name fields)
   (for/list ([field fields])
-    (format-unique-id field "~a-~a" name field)))
+    (format-unique-id name "~a-~a" name field)))
 
 (define-for-syntax (make-mutators name fields)
   (for/list ([field fields])
-    (format-unique-id field "set-~a-~a!" name field)))
+    (format-unique-id name "set-~a-~a!" name field)))
 
 (provide honu-struct-set!)
 (define (honu-struct-set! instance name value)

@@ -347,7 +347,7 @@
       [pattern (~seq name:id honu-equal data:honu-expression)
                #:with out #'(name data.result)]
       [pattern (~seq (#%parens name:id ellipses) honu-equal data:honu-expression)
-               #:with out #'((name ellipses) data.result)])
+               #:with out #'((name (... ...)) data.result)])
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-equal)
       [(_ (~seq all:clause (~optional honu-comma)) ...
