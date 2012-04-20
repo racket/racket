@@ -93,7 +93,7 @@
                         (lambda ()
                           (close-output-port (open-output-file lock-file 'error)))
                         (lambda ()
-                          (namespace-require 'scheme/base)
+                          (namespace-require 'racket/base)
                           (load (build-path here-dir "setup.rkt"))
                           void)
                         (lambda ()

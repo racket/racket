@@ -101,7 +101,7 @@
     (namespace-attach-module old-namespace ''#%builtin)
     (parameterize ([use-compiled-file-paths (list "compiled")])
       (parameterize ([current-load/use-compiled (mk-cm)])
-        (namespace-require 'scheme/base)
+        (namespace-require 'racket/base)
         
         (dynamic-require 'xform/xform-mod (void))))))
 
