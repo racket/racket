@@ -49,7 +49,7 @@
 
 (define db-folder (launder folder))
 (define mach-folder (launder folder))
-(define db-listing 
+(define mach-listing 
   (listing
    (vc-append
     GAP
@@ -57,7 +57,7 @@
     (hc-append (* 2 GAP)
                (lbl file "sensors.rkt")
                (lbl file "actuators.rkt")))))
-(define mach-listing
+(define db-listing
   (listing
    (vc-append
     GAP
