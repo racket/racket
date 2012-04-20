@@ -27,14 +27,15 @@
          integer
          cos sin
          random
-         hash
          filter
          append
          values
+         hash
          regexp
          (racket:rename-out
            [honu-cond cond]
            [null empty]
+           [make-hash mutable_hash]
            [hash-set! hash_update]
            [current-inexact-milliseconds currentMilliseconds]
            [string-length string_length]

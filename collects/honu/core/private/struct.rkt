@@ -7,6 +7,7 @@
                      "literals.rkt"
                      "compile.rkt"
                      syntax/parse
+                     racket/syntax
                      unstable/syntax))
 
 (provide honu-struct honu-struct? honu-struct-get)
@@ -18,11 +19,11 @@
 
 (define-for-syntax (make-accessors name fields)
   (for/list ([field fields])
-    (format-unique-id name "~a-~a" name field)))
+    (format-id name "~a-~a" name field)))
 
 (define-for-syntax (make-mutators name fields)
   (for/list ([field fields])
-    (format-unique-id name "set-~a-~a!" name field)))
+    (format-id name "set-~a-~a!" name field)))
 
 (provide honu-struct-set!)
 (define (honu-struct-set! instance name value)
