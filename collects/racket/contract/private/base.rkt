@@ -1,16 +1,7 @@
 #lang racket/base
 
-#|
-
-improve method arity mismatch contract violation error messages?
-  (abstract out -> and friends even more?)
-
-|#
-
-
-
 (provide contract
-         recursive-contract
+         (rename-out [-recursive-contract recursive-contract])
          current-contract-region)
 
 (require (for-syntax racket/base syntax/name)
@@ -68,43 +59,76 @@ improve method arity mismatch contract violation error messages?
                (procedure-rename new-val vs-name)]))
           new-val))))
 
-(define-syntax (recursive-contract stx)
+(define-syntax (-recursive-contract stx)
+  (define (do-recursive-contract arg type name)
+    (with-syntax ([maker
+                   (case (syntax-e type)
+                     [(#:impersonator) #'impersonator-recursive-contract]
+                     [(#:chaperone) #'chaperone-recursive-contract]
+                     [(#:flat) #'flat-recursive-contract]
+                     [else (raise-syntax-error 'recursive-contract
+                                               "type must be one of #:impersonator, #:chaperone, or #:flat"
+                                               stx
+                                               type)])])
+      #`(maker '#,name (λ () #,arg) #f)))
   (syntax-case stx ()
     [(_ arg type)
      (keyword? (syntax-e #'type))
-     (with-syntax ([maker
-                    (case (syntax-e #'type)
-                      [(#:impersonator) #'make-contract]
-                      [(#:chaperone) #'make-chaperone-contract]
-                      [(#:flat) #'make-flat-contract]
-                      [else (raise-syntax-error 'recursive-contract
-                                                "type must be one of #:impersonator, #:chaperone, or #:flat"
-                                                #'type)])]
-                   [coerce
-                    (case (syntax-e #'type)
-                      [(#:impersonator) #'coerce-contract]
-                      [(#:chaperone) #'coerce-chaperone-contract]
-                      [(#:flat) #'coerce-flat-contract]
-                      [else (raise-syntax-error 'recursive-contract
-                                                "type must be one of #:impersonator, #:chaperone, or #:flat"
-                                                #'type)])]
-                   [(type ...)
-                    (if (eq? (syntax-e #'type) '#:impersonator)
-                        null
-                        (list #'type))])
-       (syntax
-        (maker
-         #:name '(recursive-contract arg type ...)
-         #:first-order
-         (λ (val)
-           (let ([ctc (coerce 'recursive-contract arg)])
-             (contract-first-order-passes? ctc val)))
-         #:projection
-         (λ (blame)
-           (let ([ctc (coerce 'recursive-contract arg)])
-             (let ([f (contract-projection ctc)])
-               (λ (val)
-                 ((f blame) val))))))))]
+     (do-recursive-contract #'arg #'type #'(recursive-contract arg type))]
     [(_ arg)
-     (syntax/loc stx
-       (recursive-contract arg #:impersonator))]))
+     (do-recursive-contract #'arg #'#:impersonator #'(recursive-contract arg))]))
+
+(define (force-recursive-contract ctc)
+  (define current (recursive-contract-ctc ctc))
+  (cond
+    [current current]
+    [else
+     (define thunk (recursive-contract-thunk ctc))
+     (define forced-ctc
+       (cond
+         [(flat-recursive-contract? ctc)
+          (coerce-flat-contract 'recursive-contract (thunk))]
+         [(chaperone-recursive-contract? ctc)
+          (coerce-chaperone-contract 'recursive-contract (thunk))]
+         [(impersonator-recursive-contract? ctc)
+          (coerce-contract 'recursive-contract (thunk))]))
+     (set-recursive-contract-ctc! ctc forced-ctc)
+     forced-ctc]))
+(define ((recursive-contract-projection ctc) blame)
+  (define r-ctc (force-recursive-contract ctc))
+  (define f (contract-projection r-ctc))
+  (define blame-known (blame-add-context blame #f))
+  (λ (val)
+    ((f blame-known) val)))
+
+(define (recursive-contract-stronger this that)
+  (and (recursive-contract? that)
+       (procedure-closure-contents-eq? (recursive-contract-thunk this)
+                                       (recursive-contract-thunk that))))
+
+(define ((recursive-contract-first-order ctc) val)
+  (contract-first-order-passes? (force-recursive-contract ctc)
+                                val))
+
+(struct recursive-contract (name thunk [ctc #:mutable]))
+(struct flat-recursive-contract recursive-contract ()
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name recursive-contract-name
+   #:first-order recursive-contract-first-order
+   #:projection recursive-contract-projection
+   #:stronger recursive-contract-stronger))
+(struct chaperone-recursive-contract recursive-contract ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:name recursive-contract-name
+   #:first-order recursive-contract-first-order
+   #:projection recursive-contract-projection
+   #:stronger recursive-contract-stronger))
+(struct impersonator-recursive-contract recursive-contract ()
+  #:property prop:contract
+  (build-contract-property
+   #:name recursive-contract-name
+   #:first-order recursive-contract-first-order
+   #:projection recursive-contract-projection
+   #:stronger recursive-contract-stronger))
