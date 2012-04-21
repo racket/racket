@@ -45,6 +45,7 @@
 (define/opter (number? opt/i opt/info stx) (opt/pred opt/info #'number?))
 (define/opter (pair? opt/i opt/info stx) (opt/pred opt/info #'pair?))
 (define/opter (not opt/i opt/info stx) (opt/pred opt/info #'not))
+(define/opter (real? opt/i opt/info stx) (opt/pred opt/info #'real?))
 
 ;;
 ;; any/c

@@ -312,9 +312,9 @@
              (with-syntax ((val (opt/info-val opt/info))
                            (flat-hdp flat-hdp)
                            (flat-tlp flat-tlp))
-               (syntax (if (and check
-                                (let ((val (car val))) flat-hdp)
-                                (let ((val (cdr val))) flat-tlp)) #t #f)))
+               (syntax (and check
+                            (let ((val (car val))) flat-hdp)
+                            (let ((val (cdr val))) flat-tlp))))
              #f)
          #f
          (append stronger-ribs-hd stronger-ribs-tl)
@@ -322,6 +322,58 @@
   
   (syntax-case stx (cons/c)
     [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
+
+(define-for-syntax (opt/listof-ctc content non-empty? opt/i opt/info)
+  (let-values ([(next lifts superlifts partials flat unknown stronger-ribs chaperone?)
+                (opt/i opt/info content)])
+    (with-syntax ([check (with-syntax ((val (opt/info-val opt/info)))
+                           (if non-empty?
+                               #'(and (list? val) (pair? val))
+                               #'(list? val)))]
+                  [val (opt/info-val opt/info)])
+                     
+      (values
+       (with-syntax ([blame (opt/info-blame opt/info)]
+                     [next next])
+         (with-syntax ([(non-empty-check ...) (if non-empty?
+                                                  (list #'(pair? val))
+                                                  (list))])
+           #`(if check
+                 (for/list ([val (in-list val)])
+                   next)
+                 (raise-blame-error
+                  blame
+                  val
+                  #,(if non-empty?
+                        "expected a non-empty list"
+                        "expected a list")))))
+       lifts
+       superlifts
+       partials
+       (if flat
+           (with-syntax ((val (opt/info-val opt/info))
+                         (flat flat))
+             #`(and check
+                    #,@(if non-empty? (list #'(pair? val)) '())
+                    (let loop ([lst val])
+                      (cond
+                        [(null? lst) #t]
+                        [else 
+                         (let ([val (car lst)])
+                           (and flat
+                                (loop (cdr lst))))]))))
+           #f)
+       #f
+       stronger-ribs
+       chaperone?))))
+
+(define/opter (listof opt/i opt/info stx)
+  (syntax-case stx ()
+    [(_ content) (opt/listof-ctc #'content #f opt/i opt/info)]))
+
+(define/opter (non-empty-listof opt/i opt/info stx)
+  (syntax-case stx ()
+    [(_ content) (opt/listof-ctc #'content #t opt/i opt/info)]))
 
 
 ;;
