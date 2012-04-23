@@ -48,12 +48,17 @@
          mpi-list->module-path)
 
 ;; get-module-derivation : module-path -> (values compiled Deriv)
-(define (get-module-code/trace path)
-  (get-module-code (resolve-module-path path #f)
-                   #:choose (lambda _ 'src)
-                   #:compile (lambda (stx)
-                               (let-values ([(stx deriv) (trace/result stx expand)])
-                                 (values (compile stx) deriv)))))
+(define (get-module-code/trace modpath)
+  (let-values ([(path subs)
+                (match (resolve-module-path modpath #f)
+                  [`(submod ,path . ,subs) (values path subs)]
+                  [path (values path null)])])
+    (get-module-code path
+                     #:submodule-path subs
+                     #:choose (lambda _ 'src)
+                     #:compile (lambda (stx)
+                                 (let-values ([(stx deriv) (trace/result stx expand)])
+                                   (values (compile stx) deriv))))))
 
 ;; here-mpi? : any -> boolean
 (define (here-mpi? x)
@@ -96,19 +101,22 @@
                             (collapse-module-path mod (lambda () (loop base)))]
                            [else (build-path 'same)]))]
                   [else (build-path 'same)]))])
-    (match collapsed
-      [(list 'lib str)
-       (cond [(regexp-match? #rx"\\.rkt$" str)
-              (let* ([no-suffix (path->string (path-replace-suffix str ""))]
-                     [no-main
-                      (cond [(regexp-match #rx"^([^/]+)/main$" no-suffix)
-                             => cadr]
-                            [else no-suffix])])
-                (string->symbol no-main))]
-             [else collapsed])]
-      [(? path?)
-       (path->string (simplify-path collapsed #f))] ;; to get rid of "./" at beginning
-      [_ collapsed])))
+    (let simplify ([collapsed collapsed])
+      (match collapsed
+        [(list* 'submod base subs)
+         (list* 'submod (simplify base) subs)]
+        [(list 'lib str)
+         (cond [(regexp-match? #rx"\\.rkt$" str)
+                (let* ([no-suffix (path->string (path-replace-suffix str ""))]
+                       [no-main
+                        (cond [(regexp-match #rx"^([^/]+)/main$" no-suffix)
+                               => cadr]
+                              [else no-suffix])])
+                  (string->symbol no-main))]
+               [else collapsed])]
+        [(? path?)
+         (path->string (simplify-path collapsed #f))] ;; to get rid of "./" at beginning
+        [_ collapsed]))))
 
 ;; --------
 

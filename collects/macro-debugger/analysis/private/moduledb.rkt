@@ -32,10 +32,11 @@
     (cond [(symbol? name) 'no-bypass]
           [(hash-ref module-db name #f)
            => values]
-          [else
+          [(path? name)
            (let ([str (path->relative-string/library name)])
              (for/or ([rx (in-list no-bypass-rxs)])
-               (and (regexp-match? rx str) 'no-bypass)))])))
+               (and (regexp-match? rx str) 'no-bypass)))]
+          [else #f])))
 
 ;; module-db : ModuleDB
 (define module-db
