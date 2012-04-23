@@ -418,24 +418,25 @@
 
                                     #f)])
               (do-parse unparsed precedence left parsed))
-
-            #;
-            (do-parse #'(rest ...) new-precedence
-                      (lambda (stuff)
-                        (if current
-                          (if binary-transformer
-                            (left (binary-transformer current stuff))
-                            (error '#'head "cannot be used as a binary operator"))
-                          (if unary-transformer
-                            (left (unary-transformer stuff))
-                            (error '#'head "cannot be used as a unary operator"))))
-                      #f)
-            (values (left current) stream)
-            #;
-            (do-parse #'(head rest ...)
-                      0
-                      (lambda (x) x)
-                      (left final)))]
+            ;; if we have a unary transformer then we have to keep parsing
+            (if unary-transformer
+              (if current
+                (values (left current) stream)
+                (do-parse #'(rest ...) new-precedence
+                                      (lambda (stuff)
+                                        (define right (parse-all stuff))
+                                        (define output (unary-transformer right))
+                                        ;; apply the left function because
+                                        ;; we just went ahead with parsing without
+                                        ;; caring about precedence
+                                        (with-syntax ([out (left (parse-all output))])
+                                          #'out))
+                                    #f))
+              ;; otherwise we have a binary transformer (or no transformer..??)
+              ;; so we must have made a recursive call to parse, just return the
+              ;; left hand
+              (values (left current) stream))
+            )]
          
          #;
          [(stopper? #'head)
