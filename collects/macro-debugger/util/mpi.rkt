@@ -10,10 +10,9 @@
 (define (mpi->list mpi)
   (cond [(module-path-index? mpi)
          (let-values ([(path relto) (module-path-index-split mpi)])
-           (cond [(not path) null]
+           (cond [(not path) #| relto = #f |# null]
                  [(not relto) (list path)]
                  [else (cons path (mpi->list relto))]))]
-        [(not mpi) null]
         [else (list mpi)]))
 
 ;; mpi->string : module-path-index -> string
@@ -34,9 +33,7 @@
 ;; --
 
 (provide mpi->mpi-sexpr
-         mpi-sexpr->mpi
-         rmp->rmp-sexpr
-         rmp-sexpr->rmp)
+         mpi-sexpr->mpi)
 
 ;; mp = module-path
 ;; mpi = module-path-index
@@ -88,14 +85,7 @@
 ;; ----
 
 (provide mpi-sexpr->expanded-mpi-sexpr
-         expanded-mpi-sexpr->mpi-sexpr
-
-         mpi-frame->expanded-mpi-frame
-         expanded-mpi-frame->mpi-frame
-
-         expanded-mpi-sexpr->library
-         absolute-expanded-mpi-frame?
-         library-expanded-mpi-frame?)
+         expanded-mpi-sexpr->library)
 
 ;; An expanded-mpi-sexpr is (listof expanded-mpi-frame)
 
@@ -107,6 +97,7 @@
 ;;   (list 'QUOTE symbol)
 ;;   (list 'SELF)
 ;;   (list 'REL (listof string))
+;;   (list 'SUBMOD (U module-path ".") (listof (U ".." symbol)))
 ;; The first 5 variants are considered "absolute" frames.
 ;; The first 2 variants are consider "library" frames.
 
@@ -146,7 +137,13 @@
     [`(resolved ,(? path? path))
      `(FILE ,path)]
     [`(resolved ,(? symbol? symbol))
-     `(QUOTE ,symbol)]))
+     `(QUOTE ,symbol)]
+    [`(submod ,base . ,elems)
+     (cond [(equal? base "..")
+            `(SUBMOD "." ,(cons ".." elems))]
+           [else
+            `(SUBMOD ,base ,@elems)])]
+    ))
 
 ;; expanded-mpi-sexpr->mpi-sexpr
 (define (expanded-mpi-sexpr->mpi-sexpr sexpr)
@@ -166,7 +163,9 @@
     [`(FILE ,path)
      `(file ,path)]
     [`(REL ,paths)
-     (apply string-append (intersperse "/" paths))]))
+     (apply string-append (intersperse "/" paths))]
+    [`(SUBMOD ,base ,elems)
+     `(submod ,base ,@elems)]))
 
 (define (parse-planet-spec spec-sym)
   (define spec (symbol->string spec-sym))
@@ -236,45 +235,3 @@
   (cond [(and (pair? items) (pair? (cdr items)))
          (cons (car items) (cons sep (intersperse sep (cdr items))))]
         [else items]))
-
-
-
-#|
-(provide mpi->path-list
-         path-list->library-module)
-
-(define (mpi->path-list mpi)
-  (reverse-to-abs (mpi->mpi-sexpr mpi) null))
-
-(define (reverse-to-abs paths acc)
-  (match paths
-    ['() 
-     acc]
-    [#f
-     (cons (list 'SELF) acc)]
-    [(cons `(quote ,mod) rest)
-     (cons `(QUOTE ,mod) acc)]
-    [(cons `(lib ,path) rest)
-     (cond [(symbol? path)
-            (reverse-to-abs (cons path rest) acc)]
-           [(regexp-match? #rx"/" path)
-            (cons `(LIB ,(split-mods path)) acc)]
-           [else
-            (cons `(LIB ,(list "mzlib" path)) acc)])]
-    [(cons `(lib ,path . ,more) rest)
-     (cons `(LIB ,(split-mods path more)) acc)]
-    [(cons `(planet ,(? symbol? spec)) rest)
-     (reverse-to-abs (cons (parse-planet-spec spec) rest) acc)]
-    [(cons `(planet ,path ,package . ,more) rest)
-     (cons `(PLANET ,(split-mods path more) ,package) acc)]
-    [(cons (? symbol? mod) rest)
-     (cons `(LIB ,(split-mods* (symbol->string mod))) acc)]
-    [(cons `(file ,path) rest)
-     (cond [(absolute-path? path)
-            (cons `(FILE ,(split-mods path)) acc)]
-           [else (reverse-to-abs rest (cons (split-mods path) acc))])]
-    [(cons (? string? path) rest)
-     (reverse-to-abs rest (cons (split-mods path) acc))]))
-
-(provide parse-planet-spec)
-|#
