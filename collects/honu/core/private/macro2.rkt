@@ -212,6 +212,7 @@
 (define-honu-syntax honu-syntax
   (lambda (code context)
     (syntax-parse code #:literal-sets (cruft)
+      #;
       [(_ (#%parens single) . rest)
        (define context #'single)
        (define compressed (phase0:compress-dollars #'single))

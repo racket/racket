@@ -5,6 +5,7 @@
     (require (for-meta meta-level
                        racket/base
                        racket/class
+                       (prefix-in list: racket/list)
                        "private/macro2.rkt"
                        "private/class.rkt"
                        "private/operator.rkt"
@@ -87,6 +88,7 @@
                          [datum->syntax datum_to_syntax]
                          [syntax->datum syntax_to_datum]
                          [syntax->list syntax_to_list]
+                         [list:first first]
                          [symbol->string symbol_to_string]
                          [string-append string_append])
                        print printf

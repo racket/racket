@@ -32,11 +32,13 @@
          values
          hash
          regexp
+         error
          (racket:rename-out
            [honu-cond cond]
            [null empty]
            [make-hash mutable_hash]
            [hash-set! hash_update]
+           [hash-ref hash_lookup]
            [current-inexact-milliseconds currentMilliseconds]
            [string-length string_length]
            [string-append string_append]
@@ -44,5 +46,4 @@
            [racket:find-files find_files]
            [racket:empty? empty?]
            [regexp-match regexp_match]
-           [racket:first first]
            [racket:rest rest]))

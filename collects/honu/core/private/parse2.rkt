@@ -166,12 +166,18 @@
        (if (null? (syntax->datum #'(unparsed-out ...)))
          (if (parsed-syntax? #'output)
            #'output
+           #;
+           #'(parse-more output)
            (with-syntax ([(out ...) #'output])
              #'(parse-more out ...)))
+         #;
+         #'(begin (parse-more output unparsed-out ...))
          (if (parsed-syntax? #'output)
            #'(begin output (parse-more unparsed-out ...))
+           #;
+           #'(parse-more output unparsed-out ...)
            (with-syntax ([(out ...) #'output])
-             #'(parse-more out ... unparsed-out ...)))))]
+             #'(begin (parse-more out ...) (parse-more unparsed-out ...))))))]
     [() #'(begin)]))
 
 (define (do-parse-rest/local stx)
@@ -398,7 +404,7 @@
                                         (define output
                                           (if current
                                             (if binary-transformer
-                                              (binary-transformer (parse-all current) right)
+                                              (binary-transformer (parse-all-expression current) right)
                                               (error 'binary "cannot be used as a binary operator in ~a" #'head))
                                             (if unary-transformer
                                               (unary-transformer right)
@@ -447,6 +453,8 @@
              [body:honu-body
                (if current
                  (values (left current) stream)
+                 (values (left #'body.result) #'())
+                 #;
                  (do-parse #'(rest ...) precedence left #'body.result))]
              #;
              [((semicolon more ...) . rest)
@@ -581,6 +589,16 @@
 (provide parse-one)
 (define (parse-one code)
   (parse (strip-stops code)))
+
+;; keep parsing some expression until only a parsed term remains
+(define (parse-all-expression code)
+  (define-values (parsed unparsed)
+                 (parse code))
+  (when (not (empty-syntax? unparsed))
+    (raise-syntax-error 'parse-all-expression "expected no more syntax" code))
+  (if (parsed-syntax? parsed)
+    parsed
+    (parse-all-expression parsed)))
 
 (define (parse-all code)
   (let loop ([all '()]
