@@ -7,7 +7,8 @@
 
 @defproc[(resolve-module-path [module-path-v module-path?] 
                               [rel-to-path-v (or/c path-string? (-> any) false/c)])
-         path?]{
+         (or/c path? symbol?
+               (cons/c 'submod (cons/c (or/c path? symbol?) (listof symbol?))))]{
 
 Resolves a module path to filename path. The module path is resolved
 relative to @racket[rel-to-path-v] if it is a path string (assumed to
@@ -16,7 +17,8 @@ a thunk, or to the current directory otherwise.}
 
 @defproc[(resolve-module-path-index [module-path-index module-path-index?] 
                                     [rel-to-path-v (or/c path-string? (-> any) false/c)])
-         path?]{
+         (or/c path? symbol?
+               (cons/c 'submod (cons/c (or/c path? symbol?) (listof symbol?))))]{
 
 Like @racket[resolve-module-path] but the input is a @techlink[#:doc
 refman]{module path index}; in this case, the @racket[rel-to-path-v]

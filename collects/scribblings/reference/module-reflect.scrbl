@@ -294,7 +294,7 @@ the module starting with the top-level module's declared name.}
 
 @defproc*[([(module-compiled-submodules [compiled-module-code compiled-module-expression?]
                                         [non-star? any/c])
-            symbol?]
+            (listof compiled-module-expression?)]
            [(module-compiled-submodules [compiled-module-code compiled-module-expression?]
                                         [non-star? any/c]
                                         [submodules (listof compiled-module-expression?)])
