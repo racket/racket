@@ -1,5 +1,4 @@
 #lang racket/base
-
 (require (for-syntax racket/base)
          mzlib/etc
          racket/contract/base
@@ -2129,7 +2128,7 @@
                  [method-names (append (reverse public-names) super-method-ids)]
                  [field-names (append public-field-names super-field-ids)]
                  [super-interfaces (cons (class-self-interface super) interfaces)]
-                 [i (interface-make name super-interfaces #f method-names #f null)]
+                 [i (interface-make name super-interfaces #f method-names (make-immutable-hash) #f null)]
                  [methods (if no-method-changes?
                               (class-methods super)
                               (make-vector method-width))]
@@ -3339,16 +3338,19 @@
   (lambda (stx m-stx)
     (syntax-case m-stx ()
       [((interface-expr ...) ([prop prop-val] ...) var ...)
-       (let ([vars (syntax->list (syntax (var ...)))]
-             [name (syntax-local-infer-name stx)])
-         (for-each
-          (lambda (v)
-            (unless (identifier? v)
-              (raise-syntax-error #f
-                                  "not an identifier"
-                                  stx
-                                  v)))
-          vars)
+       (let ([name (syntax-local-infer-name stx)])
+         (define-values (vars ctcs)
+           (for/fold ([vars '()] [ctcs '()])
+                     ([v (syntax->list #'(var ...))])
+             (syntax-case v ()
+               [id
+                (identifier? #'id)
+                (values (cons #'id vars) (cons #f ctcs))]
+               [(id ctc)
+                (identifier? #'id)
+                (values (cons #'id vars) (cons #'ctc ctcs))]
+               [_ (raise-syntax-error #f "not an identifier or identifier-contract pair"
+                                      stx v)])))
          (let ([dup (check-duplicate-identifier vars)])
            (when dup
              (raise-syntax-error #f
@@ -3356,13 +3358,15 @@
                                  stx
                                  dup)))
          (with-syntax ([name (datum->syntax #f name #f)]
-                       [(var ...) (map localize vars)])
+                       [(var ...) (map localize vars)]
+                       [((v c) ...) (filter (λ (p) (cadr p)) (map list vars ctcs))])
            (syntax/loc
                stx
              (compose-interface
               'name
               (list interface-expr ...)
               `(var ...)
+              (make-immutable-hash (list (cons 'v c) ...))
               (list prop ...)
               (list prop-val ...)))))])))
 
@@ -3396,12 +3400,13 @@
    [all-implemented ; hash-table: interface -> #t
     #:mutable]
    public-ids       ; (listof symbol) (in any order?!?)
+   contracts        ; (hashof symbol? contract?)
    [class           ; (union #f class) -- means that anything implementing
        #:mutable]      ; this interface must be derived from this class
    properties)      ; (listof (vector gensym prop val))
   #:inspector insp)
 
-(define (compose-interface name supers vars props vals)
+(define (compose-interface name supers vars ctcs props vals)
   (for-each
    (lambda (intf)
      (unless (interface? intf)
@@ -3428,7 +3433,8 @@
      (lambda (super)
        (for-each
         (lambda (var)
-          (when (hash-ref ht var #f)
+          (when (and (hash-ref ht var #f)
+                     (not (hash-ref ctcs var #f)))
             (obj-error 'interface "variable already in superinterface: ~a~a~a" 
                        var
                        (for-intf name)
@@ -3438,7 +3444,12 @@
                              "")))))
         (interface-public-ids super)))
      supers)
-    ;; Merge properties:
+    ;; Check that ctcs are contracts
+    (for ([(k v) (in-hash ctcs)])
+      (unless (contract? v)
+        (obj-error 'interface "contract expression for ~a not a contract: ~a"
+                   k v)))
+    ;; merge properties:
     (let ([prop-ht (make-hash)])
       ;; Hash on gensym to avoid providing the same property multiple
       ;; times when it originated from a single interface.
@@ -3466,8 +3477,8 @@
             (interface-public-ids super)))
          supers)
         ;; Done
-        (let ([i (interface-make name supers #f (hash-map ht (lambda (k v) k)) class 
-                                 (hash-map prop-ht (lambda (k v) v)))])
+        (let ([i (interface-make name supers #f (hash-map ht (lambda (k v) k))
+                                 ctcs class (hash-map prop-ht (lambda (k v) v)))])
           (setup-all-implemented! i)
           i)))))
 
@@ -3513,7 +3524,7 @@
     make-))
 
 (define object<%> ((make-naming-constructor struct:interface 'interface:object%)
-                   'object% null #f null #f null))
+                   'object% null #f null (make-immutable-hash) #f null))
 (setup-all-implemented! object<%>)
 (define object% ((make-naming-constructor struct:class 'class:object%)
                  'object%

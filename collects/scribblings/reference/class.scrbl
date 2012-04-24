@@ -159,7 +159,10 @@ interface is not an object (i.e., there are no ``meta-classes'' or
 
 @guideintro["classes"]{classes, objects, and interfaces}
 
-@defform[(interface (super-interface-expr ...) id ...)]{
+@defform/subs[(interface (super-interface-expr ...) name-clause ...)
+              ([name-clause
+                id
+                (id contract-expr)])]{
 
 Produces an interface. The @racket[id]s must be mutually distinct.
 
@@ -177,7 +180,8 @@ includes all of the specified @racket[id]s, plus all identifiers from
 the superinterfaces. Duplicate identifier names among the
 superinterfaces are ignored, but if a superinterface contains one of
 the @racket[id]s in the @racket[interface] expression, the
-@exnraise[exn:fail:object].
+@exnraise[exn:fail:object]. A given @racket[id] may be paired with
+a corresponding @racket[contract-expr].
 
 If no @racket[super-interface-expr]s are provided, then the derivation
 requirement of the resulting interface is trivial: any class that
@@ -195,9 +199,12 @@ superinterfaces specify inconsistent derivation requirements, the
   (interface (file-interface) file-list parent-directory))
 ]}
 
-@defform[(interface* (super-interface-expr ...) 
-                     ([property-expr val-expr] ...)
-           id ...)]{
+@defform/subs[(interface* (super-interface-expr ...)
+                          ([property-expr val-expr] ...)
+                name-clause ...)
+              ([name-clause
+                id
+                (id contract-expr)])]{
 
 Like @racket[interface], but also associates to the interface the
 structure-type properties produced by the @racket[property-expr]s with

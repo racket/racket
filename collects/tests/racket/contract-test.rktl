@@ -8437,6 +8437,47 @@
           (regexp-match #rx"additional info" (exn-message x))
           (regexp-match #rx"blaming: neg" (exn-message x)))))
 
+;; interface contracts
+
+  (test/spec-passed
+    'interface-1
+    '(interface () [x number?]))
+
+  (test/spec-passed
+    'interface-2
+    '(interface () [x number?] [y number?]))
+
+  (test/spec-passed
+    'interface-3
+    '(interface () [get-x (-> integer?)]))
+
+  (contract-syntax-error-test
+    'interface-4
+    '(interface () [x number?] [x symbol?]))
+    
+  (contract-error-test
+   'interface-5
+   '(interface () [x (λ (x y) x)])
+   exn:fail?)
+   
+  (contract-error-test
+   'interface-6
+   '(interface ((interface () x)) x)
+   exn:fail?)
+   
+  (test/spec-passed
+    'interface-7
+    '(interface ((interface () x)) [x integer?]))
+    
+  (test/spec-passed
+    'interface-8
+    '(interface ((interface () [x number?])) [x integer?]))
+
+  (contract-error-test
+   'interface-9
+    '(interface ((interface () [x number?])) x)
+   exn:fail?)
+    
 ;                                                                                    
 ;                                                                                    
 ;                                                                                    
