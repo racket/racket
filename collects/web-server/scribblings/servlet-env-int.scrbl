@@ -12,6 +12,7 @@
                      web-server/configuration/configuration-table
                      web-server/configuration/responders
                      web-server/dispatchers/dispatch-log
+                     net/url
                      racket/serialize
                      web-server/stuffers
                      racket/list))
@@ -26,7 +27,15 @@ These functions optimize the construction of dispatchers and launching of server
           [#:stateless? stateless? boolean? #f]
           [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
           [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
-          [#:current-directory servlet-current-directory path-string? (current-directory)])
+          [#:current-directory servlet-current-directory path-string? (current-directory)]
+          [#:responders-servlet-loading
+           responders-servlet-loading
+           (url? any/c . -> . can-be-response?)
+           servlet-loading-responder]
+          [#:responders-servlet
+           responders-servlet
+           (url? any/c . -> . can-be-response?)
+           servlet-error-responder])
          dispatcher/c]{
  @racket[serve/servlet] starts a server and uses a particular dispatching sequence. For some applications, this
  nails down too much, but users are conflicted, because the interface is so convenient. For those users, @racket[dispatch/servlet]
@@ -42,6 +51,8 @@ These functions optimize the construction of dispatchers and launching of server
  deals with memory pressure as discussed in the @racket[make-threshold-LRU-manager] documentation.)
  
  The servlet is run in the @racket[(current-namespace)].
+
+ If a servlet fails to load, @racket[responders-servlet-loading] is used. If a servlet errors during its operation, @racket[responders-servlet] is used.
 }
 
 @defproc[(serve/launch/wait

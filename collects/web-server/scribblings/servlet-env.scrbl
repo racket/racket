@@ -12,6 +12,7 @@
                      web-server/configuration/configuration-table
                      web-server/configuration/responders
                      web-server/dispatchers/dispatch-log
+                     net/url
                      racket/serialize
                      web-server/stuffers
                      web-server/servlet/servlet-structs
@@ -159,6 +160,14 @@ Like always, you don't even need to save the file.
                                                       server-root-path
                                                       "conf"
                                                       "not-found.html"))]
+                        [#:servlet-loading-responder
+                         responders-servlet-loading
+                         (url? any/c . -> . can-be-response?)
+                         servlet-loading-responder]
+                        [#:servlet-responder
+                         responders-servlet
+                         (url? any/c . -> . can-be-response?)
+                         servlet-error-responder]
                         [#:mime-types-path mime-types-path path-string?
                                            ....]
                         [#:ssl? ssl? boolean? #f]
@@ -201,8 +210,8 @@ Like always, you don't even need to save the file.
  The modules specified by @racket[servlet-namespace] are shared between servlets found in @racket[servlets-root] and the current namespace (and therefore
  the @racket[start] procedure.)
  
- If a file cannot be found, @racket[file-not-found-responder] is used to generate an error response.
- 
+ If a file cannot be found, @racket[file-not-found-responder] is used to generate an error response. If a servlet fails to load, @racket[responders-servlet-loading] is used. If a servlet errors during its operation, @racket[responders-servlet] is used.
+
  If @racket[banner?] is true, then an informative banner is printed. You may want to use this when
  running from the command line, in which case the @racket[command-line?] option controls similar options.
  
