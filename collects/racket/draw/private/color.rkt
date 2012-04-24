@@ -12,7 +12,7 @@
          color->immutable-color)
 
 (define-local-member-name
-  r g b)
+  r g b a)
 
 (defclass color% object%
   (field [r 0]

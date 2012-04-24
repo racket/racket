@@ -5,6 +5,8 @@
 (provide point% point-x point-y
          list-of-pair-of-real?)
 
+(define-local-member-name x y)
+
 (define point%
   (class object%
     (init-field [x 0.0]
