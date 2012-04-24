@@ -14,6 +14,7 @@
 	 (all-from-out 2htdp/universe)
 	 show-it)
 
+(provide provide)
 
 (define (show-it img)
   (check-arg 'show-it (image? img) "image" "first" img)
