@@ -114,6 +114,7 @@ define_ts_l_s(scheme_jit_make_vector, FSRC_OTHER)
 # endif
 define_ts_ss_i(scheme_equal, FSRC_MARKS)
 define_ts_sss_s(extract_one_cc_mark_to_tag, FSRC_MARKS)
+define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 #endif
 
 #ifdef JIT_APPLY_TS_PROCS
@@ -179,6 +180,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_make_complex scheme_make_complex
 # define ts_scheme_unbox scheme_unbox
 # define ts_scheme_set_box scheme_set_box
+# define ts_scheme_box_cas scheme_box_cas
 # define ts_scheme_vector_length scheme_vector_length
 # define ts_scheme_flvector_length scheme_flvector_length
 # define ts_scheme_fxvector_length scheme_fxvector_length

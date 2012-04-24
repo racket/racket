@@ -2824,7 +2824,81 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     jit_retval(JIT_R0);
     return 1;
   } else if (!for_branch) {
-    if (IS_NAMED_PRIM(rator, "vector-set!")
+    if   (IS_NAMED_PRIM(rator, "box-cas!") || (IS_NAMED_PRIM(rator, "unsafe-box*-cas!"))) { 
+
+      GC_CAN_IGNORE jit_insn *ref, *ref3, *refr, *reffalse, *reftrue;
+      int unsafe = 0; // unused so far
+
+      if (IS_NAMED_PRIM(rator, "unsafe-box*-cas!")) {
+        unsafe = 1;
+      }
+
+      // generate code to evaluate the arguments
+      scheme_generate_app(app, NULL, 3, jitter, 0, 0, 2);
+      CHECK_LIMIT();
+      mz_rs_sync();
+
+      mz_rs_ldr(JIT_R1);
+
+      __START_TINY_JUMPS__(1);
+
+      if (!unsafe) {
+        // Fail if this isn't a pointer (0x1 is the integer tag)
+        ref3 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
+        // Get the type tag, fail if it isn't a box
+        ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_box_type, JIT_R2);
+        // jump to here if it wasn't a pointer
+        mz_patch_branch(ref3);
+        
+        // call scheme_box_cas to raise the exception
+        // we use mz_finish_lwe because it will capture the stack
+        // and the ts_ version because we may be in a future
+        JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+        jit_movi_l(JIT_R0, 3);
+        mz_prepare(2);
+        jit_pusharg_p(JIT_RUNSTACK);
+        jit_pusharg_l(JIT_R0);
+        CHECK_LIMIT();      
+        (void)mz_finish_lwe(ts_scheme_box_cas, refr); /* doesn't return */
+        
+        // jump to here if the type tag tests succeed
+        mz_patch_branch(ref);
+      }
+
+      /* box is in JIT_R1 */
+      jit_addi_l(JIT_R1, JIT_R1, (intptr_t)&SCHEME_BOX_VAL(0x0));
+      mz_rs_ldxi(JIT_R0, 1); /* old val */
+      mz_rs_ldxi(JIT_V1, 2); /* new val */
+
+#ifdef MZ_USE_FUTURES
+      if (scheme_is_multiprocessor(0)) {
+        jit_lock_cmpxchgr_l(JIT_R1, JIT_V1); /* implicitly uses JIT_R0 */
+        reffalse = (JNEm(jit_forward(), 0,0,0), _jit.x.pc);
+      } else
+#endif
+        {
+          jit_ldr_p(JIT_R2, JIT_R1);
+          reffalse = jit_bner_p(jit_forward(), JIT_R2, JIT_R0);
+          jit_str_p(JIT_R1, JIT_V1);
+        }
+      
+      jit_movi_p(JIT_R0, scheme_true);
+      reftrue = jit_jmpi(jit_forward());
+      
+      mz_patch_branch(reffalse);
+      jit_movi_p(JIT_R0, scheme_false);
+      
+      mz_patch_branch(reftrue);
+
+      __END_TINY_JUMPS__(1);
+
+      // pop off 3 arguments
+      mz_rs_inc(3);
+      mz_runstack_popped(jitter, 3);
+
+      return 1;
+
+    } else if (IS_NAMED_PRIM(rator, "vector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-vector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-vector*-set!")
         || IS_NAMED_PRIM(rator, "flvector-set!")

@@ -271,4 +271,6 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object *argv[]);
 
+Scheme_Object *scheme_box_cas(int argc, Scheme_Object *argv[]);
+
 #endif

@@ -213,6 +213,10 @@ Unsafe versions of @racket[unbox] and @racket[set-box!], where the
 @schemeidfont{box*} variants can be faster but do not work on
 @tech{impersonators}.}
 
+@defproc[(unsafe-box*-cas! [loc box?] [old any/c] [new any/c]) boolean?]{
+  Unsafe version of @racket[box-cas!].  Like @racket[unsafe-set-box*!], it does
+  not work on impersonators.
+}
 
 @deftogether[(
 @defproc[(unsafe-vector-length [v vector?]) fixnum?]

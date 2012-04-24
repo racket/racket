@@ -702,8 +702,13 @@ XFORM_NONGCING static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) ||
 # define jit_sti_i(id, rs) _jit_sti_i(id, rs)
 #endif
 
-# define jit_lock_cmpxchgr_i(rd, rs) LOCK_PREFIX(CMPXCHGr(rd, rs))
-# define jit_lock_cmpxchgr_s(rd, rs) LOCK_PREFIX(CMPXCHGWr(rd, rs))
+#define jit_lock_cmpxchgr_i(rd, rs) LOCK_PREFIX(CMPXCHGr(rd, rs))
+#define jit_lock_cmpxchgr_s(rd, rs) LOCK_PREFIX(CMPXCHGWr(rd, rs))
+#ifdef JIT_X86_64
+# define jit_lock_cmpxchgr_l(rd, rs) LOCK_PREFIX(CMPXCHGQr(rd, rs))
+#else
+# define jit_lock_cmpxchgr_l(rd, rs) jit_lock_cmpxchgr_i(rd, rs)
+#endif
 
 /* Extra */
 #define jit_nop()			NOP_()

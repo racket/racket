@@ -748,8 +748,102 @@ We should also test deep continuations.
    0
    (touch
     (for/fold ([t (func (lambda () 0))]) ([i (in-range 10000)])
-      (func (lambda () (touch t))))))
-  
+      (func (lambda () (touch t))))))  
+
+  ;; box-cas! tests
+
+  ;; successful cas
+  (let ()
+    (define b (box #f))
+    (check-equal? (box-cas! b #f #true) #true)
+    (check-equal? (unbox b) #true))
+
+  ;; unsuccessful cas
+  (let ()
+    (define b (box #f))
+    (check-equal? (box-cas! b #true #f) #f)
+    (check-equal? (unbox b) #f))
+
+  ;; cas using allocated data
+  (let ()
+    (define b (box '()))
+    (define x (cons 1 (unbox b)))
+    (check-equal? (box-cas! b '() x) #true)
+    (check-equal? (unbox b) x)
+    (check-equal? (box-cas! b x '()) #true)
+    (check-equal? (unbox b) '())
+    (check-equal? (box-cas! b x '()) #f)
+    (check-equal? (unbox b) '()))
+
+  ;; failure tests
+  (let ()
+    (define (f x) (box-cas! x 1 2))    
+    (define (g x y) y)
+
+    (define b (box 1))
+    
+    (check-equal? (with-handlers ([exn:fail? (lambda _ 'num)]) 
+                    (touch (future (lambda () (f 2))))) 
+                  'num)
+    (check-equal? (with-handlers ([exn:fail? (lambda _ 'list)]) 
+                    (touch (future (lambda () (f (list 1))))))
+                  'list)
+    
+    (check-equal? (with-handlers ([exn:fail? (lambda _ 'chap)]) 
+                    (touch (future (lambda () (f (chaperone-box b g g))))))
+                  'chap)
+    
+    (check-equal? (with-handlers ([exn:fail? (lambda _ 'imp)]) 
+                    (touch (future (lambda () (f (impersonate-box b g g))))))
+                  'imp)
+    (check-equal? (unbox b) 1))
+
+  (let ()
+    (define b (box 0))
+    ;; inc and dec, with retry loops
+    (define (inc) 
+      (let loop ()
+	(define cur (unbox b))
+	(unless (box-cas! b cur (+ cur 1))
+	  (loop))))
+    (define (dec) 
+      (let loop ()
+	(define cur (unbox b))
+	(unless (box-cas! b cur (- cur 1))
+	  (loop))))
+    (define (inc-dec-loop)
+      (for ([i (in-range 100000000)])
+	   (inc)
+	   (dec)))
+    (define t1 (func inc-dec-loop))
+    (define t2 (func inc-dec-loop))
+    (touch t1)
+    (touch t2)
+    (check-equal? (unbox b) 0))
+
+  (let ()
+    (define b1 (box #true))
+    (define (neg-bad)
+      (let loop ()
+        (unless (box-cas! b1 #true #false)
+          (unless (box-cas! b1 #false #true)
+            (loop)))))
+    (define b2 (box #true))
+    (define (neg-good)
+      (unless (box-cas! b2 #true #false)
+        (box-cas! b2 #false #true)))
+
+    (check-equal? (unbox b1) #true)
+    (neg-bad)
+    (check-equal? (unbox b1) #false)
+    (neg-bad)
+    (check-equal? (unbox b1) #true)
+
+    (check-equal? (unbox b2) #true)
+    (neg-good)
+    (check-equal? (unbox b2) #false)
+    (neg-good)
+    (check-equal? (unbox b2) #true))
   )
 
 (run-tests future)

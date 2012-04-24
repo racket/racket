@@ -115,7 +115,28 @@ For any @racket[v], @racket[(unbox (box v))] returns @racket[v].
 @defproc[(set-box! [box (and/c box? (not/c immutable?))]
                    [v any/c]) void?]{
 
-Sets the content of @racket[box] to @racket[v].}
+Sets the content of @racket[box] to @racket[v].
+
+@defproc[(box-cas! [loc box?] [old any/c] [new any/c]) boolean?]{
+  Atomically updates the contents of @racket[loc] to @racket[new], provided
+  that @racket[loc] currently contains a value that is @racket[eq?] to
+  @racket[old].  When Racket is compiled with support for @tech{futures},
+  this uses a hardware @emph{compare and set} operation.
+
+  If no other @tech{threads} or @tech{futures} attempt to access
+  @racket[loc], this is equivalent to 
+  @racketblock[
+  (and (eq? old (unbox loc)) (set-box! loc new) #t)]
+  
+  Uses of @racket[box-cas!] be performed safely in parallel with other
+  operations. In contrast, other atomic operations are not safe to perform in
+  parallel, and they therefore prevent a computation from continuing in
+  parallel. 
+
+  If @racket[loc] is a @tech{chaperone} or @tech{impersonator} of a box, the
+  @exnraise[exn:fail:contract].}
+
+}
 
 @; ----------------------------------------------------------------------
 @include-section["hashes.scrbl"]

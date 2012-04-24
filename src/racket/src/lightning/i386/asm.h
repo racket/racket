@@ -459,6 +459,7 @@ typedef _uc		jit_insn;
 
 /* Above variants don't seem to work */
 #define CMPXCHGr(RS, RD)          	(_jit_B(0xF), _O_r_X(0xb1 	     ,_r4(RD)		,0,RS,0,0		))
+#define CMPXCHGQr(RS, RD)          	(_REX(0, 0, 0), _jit_B(0xF), _O_r_X(0xb1 ,_r4(RD)	,0,RS,0,0		))
 #define CMPXCHGWr(RS, RD)          	(_d16(), _jit_B(0xF), _O_r_X(0xb1    ,_r4(RD)		,0,RS,0,0		))
 
 #define LOCK_PREFIX(i) (_jit_B(0xf0), i)

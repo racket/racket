@@ -88,6 +88,7 @@ static Scheme_Object *immutable_box (int argc, Scheme_Object *argv[]);
 static Scheme_Object *box_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unbox (int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_box (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_box_cas (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_box(int argc, Scheme_Object **argv);
 
@@ -448,6 +449,10 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;  
   scheme_add_global_constant(SETBOX, p, env);
 
+  p = scheme_make_immed_prim(scheme_box_cas, "box-cas!", 3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;  
+  scheme_add_global_constant("box-cas!", p, env);
+
   scheme_add_global_constant("chaperone-box",
                              scheme_make_prim_w_arity(chaperone_box,
                                                       "chaperone-box",
@@ -792,6 +797,11 @@ scheme_init_unsafe_list (Scheme_Env *env)
   p = scheme_make_immed_prim(unsafe_set_box_star, "unsafe-set-box*!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-set-box*!", p, env);
+
+  p = scheme_make_prim_w_arity(scheme_box_cas, "unsafe-box*-cas!", 3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-box*-cas!", p, env);
+
 }
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -1609,6 +1619,51 @@ Scheme_Object *scheme_unbox(Scheme_Object *obj)
 
   return (Scheme_Object *)SCHEME_BOX_VAL(obj);
 }
+
+#ifndef MZ_USE_FUTURES
+
+Scheme_Object *scheme_box_cas(int argc, Scheme_Object *argv[])
+XFORM_SKIP_PROC
+/* For cooperative threading, no atomicity required */
+{
+  Scheme_Object *box = argv[0];
+  Scheme_Object *ov = argv[1];
+  Scheme_Object *nv = argv[2];
+
+  if (!SCHEME_MUTABLE_BOXP(box)) || (SCHEME_NP_CHAPERONEP(box)) {
+    scheme_wrong_type("cas!", "unchaperoned mutable box", 0, 1, &box);
+  }
+
+  if (SCHEME_BOX_VAL(box) == ov) {
+    SCHEME_BOX_VAL(box) = nv;
+    return scheme_true;
+  } else {
+    return scheme_false;
+  }
+}
+
+#else
+
+Scheme_Object *scheme_box_cas(int argc, Scheme_Object *argv[])
+XFORM_SKIP_PROC
+{
+  Scheme_Object *box = argv[0];
+  Scheme_Object *ov = argv[1];
+  Scheme_Object *nv = argv[2];
+
+  /* This procedure is used for both the safe and unsafe version, but
+   * the JIT elides the checking for the unsafe version.
+   */
+  if ((!SCHEME_MUTABLE_BOXP(box)) || (SCHEME_NP_CHAPERONEP(box))) {
+    scheme_wrong_type("box-cas!", "unchaperoned mutable box", 0, 1, &box);
+  }
+
+  return mzrt_cas((volatile size_t *)(&SCHEME_BOX_VAL(box)), 
+		  (size_t)ov, (size_t)nv)
+    ? scheme_true : scheme_false;
+}
+
+#endif
 
 static void chaperone_set_box(Scheme_Object *obj, Scheme_Object *v)
 {
