@@ -6,14 +6,6 @@
 (require (for-syntax scheme/base syntax/boundmap scheme/list
                      syntax/strip-context))
 
-;; --- MF: bad hack for getting rid of comments
-(provide code:comment)
-(define-syntax (code:comment stx)
-  (if (eq? (syntax-local-context) 'expression)
-      (syntax (void))
-      (syntax (define (f x) x))))
-;; --- MF
-
 (begin-for-syntax
   (define first-id #f)
   (define main-id #f)
