@@ -4,6 +4,7 @@
          racket/contract/base
          racket/contract/combinator
          (only-in racket/contract/private/arrow making-a-method method-contract?)
+         (only-in racket/list remove-duplicates)
          racket/stxparam
          racket/unsafe/ops
          "serialize-structs.rkt"
@@ -1859,6 +1860,7 @@
                       method-width   ; total number of methods
                       method-ht      ; maps public names to vector positions
                       method-ids     ; reverse-ordered list of public method names
+                      method-ictcs   ; list of indices of methods to fix for interface ctcs
                       
                       methods        ; vector of methods (for external dynamic dispatch)
                       super-methods  ; vector of methods (for subclass super calls)
@@ -2159,7 +2161,7 @@
                                 i
                                 (let-values ([(struct: make- ? -ref -set) (make-struct-type 'insp #f 0 0 #f null inspector)])
                                   make-)
-                                method-width method-ht method-names
+                                method-width method-ht method-names (interfaces->contracted-methods (list i))
                                 methods super-methods int-methods beta-methods meth-flags
                                 inner-projs dynamic-idxs dynamic-projs
                                 field-width field-pub-width field-ht field-names
@@ -2485,6 +2487,15 @@
                                                        ((class-fixup c) o o2))))))))
                           c))))))))))))
 
+;; (listof interface?) -> (listof symbol?)
+;; traverse the interfaces and figure out contracted methods
+(define (interfaces->contracted-methods loi)
+  (define immediate-methods
+    (map (λ (ifc) (hash-keys (interface-contracts ifc))) loi))
+  (define super-methods
+    (map (λ (ifc) (interfaces->contracted-methods (interface-supers ifc))) loi))
+  (remove-duplicates (apply append (append immediate-methods super-methods)) eq?))
+
 (define (check-still-unique name syms what)
   (let ([ht (make-hasheq)])
     (for-each (lambda (s)
@@ -2698,6 +2709,7 @@
                               method-width
                               method-ht
                               (class-method-ids cls)
+                              (class-method-ictcs cls)
                               
                               methods
                               super-methods
@@ -3532,7 +3544,7 @@
                  object<%>
                  void ; never inspectable
                  
-                 0 (make-hasheq) null
+                 0 (make-hasheq) null null
                  (vector) (vector) (vector) (vector) (vector)
 
                  (vector) (vector) (vector)
@@ -4463,6 +4475,7 @@
                         method-width
                         method-ht
                         (class-method-ids cls)
+                        (class-method-ictcs cls)
                         
                         meths
                         (class-super-methods cls)
