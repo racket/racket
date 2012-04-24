@@ -9,6 +9,7 @@
 
 @include-section["batch-io.scrbl"]
 @include-section["image.scrbl"]
+@include-section["image-guide.scrbl"]
 @include-section["universe.scrbl"]
 @include-section["planetcute.scrbl"]
 @include-section["port.scrbl"]
