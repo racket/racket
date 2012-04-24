@@ -485,5 +485,13 @@
 (test 10 dynamic-require '(submod 'subm-all-defined-1 main) 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check submodule resolution of relative paths:
+
+(parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
+  (define p (collection-file-path "has-submod.rkt" "tests" "racket"))
+  (dynamic-require p #f)
+  (test 'for-submod dynamic-require `(submod ,p main) 'has-submod))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

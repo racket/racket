@@ -1017,11 +1017,12 @@
                                       (if (eq? relto -prev-relto)
                                           -prev-relto-dir
                                           (let ([p (resolved-module-path-name relto)])
-                                            (and (path? p)
-                                                 (let-values ([(base n d?) (split-path p)])
-                                                   (set! -prev-relto relto)
-                                                   (set! -prev-relto-dir base)
-                                                   base)))))
+                                            (let ([p (if (pair? p) (car p) p)])
+                                              (and (path? p)
+                                                   (let-values ([(base n d?) (split-path p)])
+                                                     (set! -prev-relto relto)
+                                                     (set! -prev-relto-dir base)
+                                                     base))))))
                                  (current-load-relative-directory)
                                  (current-directory)))]
                   [show-collection-err (lambda (s)
