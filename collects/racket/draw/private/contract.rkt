@@ -197,6 +197,7 @@
 
 (define color%/c
   (class/c
+    (alpha (->m (real-in 0 1)))
     (red  (->m (integer-in 0 255)))
     (blue (->m (integer-in 0 255)))
     (green (->m (integer-in 0 255)))
@@ -219,6 +220,7 @@
     (get-family (->m (or/c 'default 'decorative 'roman 'script
                            'swiss 'modern 'symbol 'system)))
     (get-font-id (->m exact-integer?))
+    (get-hinting (->m (or/c 'aligned 'unaligned)))
     (get-point-size (->m (integer-in 1 255)))
     (get-size-in-pixels (->m boolean?))
     (get-smoothing (->m (or/c 'default 'partly-smoothed
