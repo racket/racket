@@ -2496,6 +2496,78 @@
     (map (λ (ifc) (interfaces->contracted-methods (interface-supers ifc))) loi))
   (remove-duplicates (apply append (append immediate-methods super-methods)) eq?))
 
+#|
+An example
+
+(define (c1 x) #t)
+(define (c2 x) #t)
+(define (c3 x) #t)
+(define (c4 x) #t)
+(define (c5 x) #t)
+(define (c6 x) #t)
+(define (c7 x) #t)
+(define (c8 x) #t)
+
+(define i1
+  (interface () [x c1]))
+(define i2
+  (interface (i1) [x c2]))
+(define i3
+  (interface (i1) [x c3]))
+(define i4
+  (interface (i2 i3) [x c4]))
+(define i5
+  (interface (i3) [x c5]))
+(define i6
+  (interface (i2) [x c6]))
+(define i7
+  (interface (i4 i5) [x c7]))
+(define i8
+  (interface (i6 i7) [x c8]))
+
+(get-interface-contract-info i8 'x)
+
+ '((#<procedure:c8> i8 #f i6) (#<procedure:c6> i6 i8 i2)
+   (#<procedure:c2> i2 i6 i1) (#<procedure:c1> i1 i2 #f)
+
+   (#<procedure:c7> i7 i8 i4) (#<procedure:c4> i4 i7 i2)
+
+   (#<procedure:c3> i3 i4 i1)
+
+   (#<procedure:c5> i5 i7 i3))
+|#
+;; interface symbol -> (listof (list contract name (or blame #f) (or blame #f)))
+;; traverse hierarchy to find ctc/blame info for a given method
+(define (get-interface-contract-info ifc meth)
+  ;; recur on hierarchy
+  (define super-infos
+    (apply append (map (λ (ifc) (get-interface-contract-info ifc meth))
+                       (interface-supers ifc))))
+  ;; deduplicate the infos we get
+  (define dedup-infos
+    (let loop ([infos super-infos])
+     (if (null? infos)
+         '()
+         (cons (car infos)
+               (loop (remove* (list (car infos))
+                         (cdr infos)
+                         (λ (i1 i2) (eq? (car i1) (car i2)))))))))
+  (define our-ctc (hash-ref (interface-contracts ifc) meth #f))
+  (define our-ctcs (hash-keys (interface-contracts ifc)))
+  (define our-name (interface-name ifc))
+  (cond ;; if we don't have the contract, the parent's info is fine
+        [(not our-ctc) dedup-infos]
+        ;; if the parent's don't contract it, then it's just our ctc
+        [(null? dedup-infos) (list (list our-ctc our-name #f #f))]
+        ;; our ctc should have a negative party of the first parent
+        [else (cons (list our-ctc our-name #f (cadr (car dedup-infos)))
+                    ;; replace occurrences of #f positive blame with this interface
+                    (map (λ (info)
+                            (if (not (caddr info))
+                                (list (car info) (cadr info) our-name (cadddr info))
+                                info))
+                         dedup-infos))]))
+
 (define (check-still-unique name syms what)
   (let ([ht (make-hasheq)])
     (for-each (lambda (s)
