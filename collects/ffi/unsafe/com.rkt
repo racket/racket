@@ -1137,6 +1137,7 @@
    [(real? arg) 'double]
    [(com-object? arg) 'com-object]
    [(IUnknown? arg) 'iunknown]
+   [(eq? com-omit arg) 'any]
    [else (error 'com "cannot infer marshal format for value: ~e" arg)]))
 
 (define (elem-desc-ref func-desc i)
