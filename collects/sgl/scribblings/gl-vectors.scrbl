@@ -9,9 +9,9 @@ The @racketmodname[sgl/gl-vectors] module supports OpenGL programming
 with @racket[cvector]s.  In this document and in the error messages, a
 ``gl-vector'' is just a @racket[cvector], while a
 ``gl-@nonterm{type}-vector'' is a @racket[cvector] with an appropriate
-type. Using the @racketmodname[sgl/gl-vectors] module instead of using
-@racket[cvector] directly because these functions are specialized to
-handling the OpenGL types correctly.
+type. Use the @racketmodname[sgl/gl-vectors] module vectors instead of
+a Racket @racket[cvector] directly, because they are specialized to
+handle the OpenGL types correctly.
 
 @deftogether[(
 @defproc[(gl-vector? [v any/c]) boolean?]
