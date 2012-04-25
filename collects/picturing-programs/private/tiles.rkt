@@ -34,6 +34,9 @@
 ; Modified 12/13/2010: Added flip-main and flip-other (formerly known as
 ; reflect-main-diag and reflect-other-diag, which had been disabled for
 ; a while).
+; Modified 8/??/2011: reworded a bunch of error messages in accordance
+; with Guillaume & Kathi's research.
+; Modified 10/??/2011: fixed error messages in crop functions.
 
   (require
    2htdp/image
