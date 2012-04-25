@@ -118,8 +118,11 @@
     (if path
         (resolve-module-path path (resolve-possible-module-path-index base relto))
         (let ()
+          (define sm (module-path-index-submodule mpi))
           (define-values (dir submod) (force-relto relto #f))
-          (combine-submod (path-ss->rkt dir) submod)))))
+          (combine-submod (path-ss->rkt dir) (if (and sm submod)
+                                                 (append submod sm)
+                                                 (or sm submod)))))))
 
 (define (resolve-possible-module-path-index base relto)
   (cond [(module-path-index? base)

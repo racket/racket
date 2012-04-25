@@ -345,11 +345,21 @@ Use syntax/modcollapse instead.
              (collapse-module-path-index base relto-mp)]
             [(resolved-module-path? base)
              (let ([n (resolved-module-path-name base)])
-               (if (path? n)
-                   n
-                   (force-relto relto-mp)))]
+               (if (pair? n)
+                   (if (path? (car n))
+                       (cons 'submod n)
+                       (list* 'submod `(quote ,(car n)) (cdr n)))
+                   (if (path? n)
+                       n
+                       `(quote ,n))))]
             [else (force-relto relto-mp)])))
-        (force-relto relto-mp))))
+        (let ([r (force-relto relto-mp)]
+              [sm (module-path-index-submodule mpi)])
+          (if sm
+              (if (and (pair? r) (eq? (car r) 'submod))
+                  (append r sm)
+                  (list* 'submod r sm))
+              r)))))
 
 (provide collapse-module-path
          collapse-module-path-index)

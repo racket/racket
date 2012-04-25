@@ -28,7 +28,7 @@ Returns @racket[#f] if @racket[v] is a @tech{resolved module path},
                                                 (and/c path? complete-path?)
                                                 (cons/c (or/c symbol?
                                                               (and/c path? complete-path?))
-                                                        (cons/c symbol? (listof symbol?))))])
+                                                        (non-empty-listof symbol?)))])
          resolved-module-path?]{
 
 Returns a @tech{resolved module path} that encapsulates @racket[path],
@@ -47,7 +47,7 @@ A @tech{resolved module path} is interned. That is, if two
                (and/c path? complete-path?)
                (cons/c (or/c symbol?
                              (and/c path? complete-path?))
-                       (cons/c symbol? (listof symbol?))))]{
+                       (non-empty-listof symbol?)))]{
 
 Returns the path or symbol encapsulated by a @tech{resolved module path}.
 A list result corresponds to a @tech{submodule} path.}
@@ -196,8 +196,9 @@ path index}. If the identifier is instead defined in a module that is
 imported via a module path (as opposed to a literal module name), then
 the identifier's source module will be reported using a @tech{module
 path index} that contains the @racket[require]d module path and the
-``self'' @tech{module path index}.
-
+``self'' @tech{module path index}. A ``self'' @tech{module path index}
+has a submodule path when the module that it refers to is a
+@tech{submodule}.
 
 A @tech{module path index} has state. When it is @deftech{resolved} to
 a @tech{resolved module path}, then the @tech{resolved module path} is
@@ -234,8 +235,9 @@ resolved name can depend on the value of
          (values (or/c module-path? #f)
                  (or/c module-path-index? resolved-module-path? #f))]{
 
-Returns two values: a module path, and a base @tech{module path index}
-or @racket[#f] to which the module path is relative.
+Returns two values: a module path, and a base path---either a
+@tech{module path index}, @tech{resolved module path}, or
+@racket[#f]---to which the first path is relative.
 
 A @racket[#f] second result means that the path is relative to an
 unspecified directory (i.e., its resolution depends on the value of
@@ -244,15 +246,29 @@ unspecified directory (i.e., its resolution depends on the value of
 
 A @racket[#f] for the first result implies a @racket[#f] for the
 second result, and means that @racket[mpi] represents ``self'' (see
-above).}
+above). Such a @tech{module path index} may have a non-@racket[#f]
+submodule path as reported by @racket[module-path-index-submodule].}
+
+
+@defproc[(module-path-index-submodule [mpi module-path-index?])
+         (or/c #f (non-empty-listof symbol?))]{
+
+Returns a non-empty list of symbols if @racket[mpi] is a ``self'' (see
+above) @tech{module path index} that refers to a @tech{submodule}. The
+result is always @racket[#f] if either result of
+@racket[(module-path-index-split mpi)] is non-@racket[#f].}
+
 
 @defproc[(module-path-index-join [path (or/c module-path? #f)]
-                                 [mpi (or/c module-path-index? resolved-module-path? #f)])
+                                 [base (or/c module-path-index? resolved-module-path? #f)]
+                                 [submod (or/c #f (non-empty-listof symbol?)) #f])
          module-path-index?]{
 
-Combines @racket[path] and @racket[mpi] to create a new @tech{module
-path index}. The @racket[path] argument can @racket[#f] only if
-@racket[mpi] is also @racket[#f].}
+Combines @racket[path], @racket[base], and @racket[submod] to create a
+new @tech{module path index}. The @racket[path] argument can
+@racket[#f] only if @racket[base] is also @racket[#f]. The
+@racket[submod] argument can be a list only when @racket[path] and
+@racket[base] are both @racket[#f].}
 
 @defproc[(compiled-module-expression? [v any/c]) boolean?]{
 
@@ -262,9 +278,9 @@ declaration, @racket[#f] otherwise. See also
 
 
 @defproc*[([(module-compiled-name [compiled-module-code compiled-module-expression?])
-            (or/c symbol? (cons/c symbol? (cons/c symbol? (listof symbol?))))]
+            (or/c symbol? (cons/c symbol? (non-empty-listof symbol?)))]
            [(module-compiled-name [compiled-module-code compiled-module-expression?]
-                                  [name (or/c symbol? (cons/c symbol? (cons/c symbol? (listof symbol?))))])
+                                  [name (or/c symbol? (cons/c symbol? (non-empty-listof symbol?)))])
             compiled-module-expression?])]{
 
 Takes a module declaration in compiled form and either gets the

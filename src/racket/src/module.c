@@ -71,6 +71,7 @@ static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_split(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_path_index_submodule(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *is_module_path(int argc, Scheme_Object **argv);
 
@@ -227,6 +228,7 @@ READ_ONLY static Scheme_Object *empty_self_modname;
 
 THREAD_LOCAL_DECL(static Scheme_Object *empty_self_shift_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *submodule_empty_modidx_table);
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *place_local_modpath_table);
 #endif
@@ -320,6 +322,8 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv);
 static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps, int *exets,
                            Scheme_Object **exsnoms,
 			   int start, int count, int do_uninterned);
+
+static Scheme_Object *get_submodule_empty_self_modidx(Scheme_Object *submodule_path);
 
 #define MODCHAIN_TABLE(p) ((Scheme_Hash_Table *)(SCHEME_VEC_ELS(p)[0]))
 #define MODCHAIN_AVAIL(p, n) (SCHEME_VEC_ELS(p)[3+n])
@@ -426,7 +430,8 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("module-path-index?",               module_path_index_p,        1, 1, 1, env); 
   GLOBAL_PRIM_W_ARITY("module-path-index-resolve",        module_path_index_resolve,  1, 1, env); 
   GLOBAL_PRIM_W_ARITY2("module-path-index-split",         module_path_index_split,    1, 1, 2, 2, env); 
-  GLOBAL_PRIM_W_ARITY("module-path-index-join",           module_path_index_join,     2, 2, env);
+  GLOBAL_PRIM_W_ARITY("module-path-index-submodule",      module_path_index_submodule,1, 1, env); 
+  GLOBAL_PRIM_W_ARITY("module-path-index-join",           module_path_index_join,     2, 3, env);
   GLOBAL_FOLDING_PRIM("resolved-module-path?",            resolved_module_path_p,     1, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-resolved-module-path",        make_resolved_module_path,  1, 1, env);
   GLOBAL_PRIM_W_ARITY("resolved-module-path-name",        resolved_module_path_name,  1, 1, env);
@@ -3296,7 +3301,50 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
                           argv[1]);
   }
 
+  if (argc > 2) {
+    Scheme_Object *l = argv[2];
+    if (SCHEME_TRUEP(l)) {
+      if (SCHEME_PAIRP(l)) {
+        while (SCHEME_PAIRP(l)) {
+          if (!SCHEME_SYMBOLP(SCHEME_CAR(l)))
+            break;
+          l = SCHEME_CDR(l);
+        }
+      } else
+        l = scheme_false;
+      if (!SCHEME_NULLP(l))
+        scheme_wrong_type("module-path-index-join", "non-empty list of symbols", 2, argc, argv);
+      if (SCHEME_TRUEP(argv[0]) || SCHEME_TRUEP(argv[1]))
+        scheme_arg_mismatch("module-path-index-join", 
+                            "first or second non-#f argument results a #f third argument, given: ",
+                            argv[2]);
+      return get_submodule_empty_self_modidx(argv[2]);
+    }
+  }
+
   return scheme_make_modidx(argv[0], argv[1], scheme_false);
+}
+
+static Scheme_Object *module_path_index_submodule(int argc, Scheme_Object *argv[])
+{
+  Scheme_Modidx *modidx;
+  Scheme_Object *a;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
+    scheme_wrong_type("module-path-index-submodule", "module-path-index", 0, argc, argv);
+
+  modidx = (Scheme_Modidx *)argv[0];
+  a = modidx->resolved;
+  if (SCHEME_TRUEP(modidx->path)
+      || SCHEME_TRUEP(modidx->base)
+      || SCHEME_FALSEP(a))
+    return scheme_false;
+
+  a = scheme_resolved_module_path_value(a);
+  if (!SCHEME_PAIRP(a))
+    return scheme_false;
+
+  return SCHEME_CDR(a);
 }
 
 void scheme_init_module_path_table()
@@ -3555,6 +3603,33 @@ int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
     b = scheme_module_resolve(b, 1);
 
   return scheme_equal(a, b);
+}
+
+static Scheme_Object *get_submodule_empty_self_modidx(Scheme_Object *submodule_path)
+{
+  Scheme_Bucket *b;
+
+  if (SCHEME_NULLP(submodule_path))
+    return empty_self_modidx;
+
+  if (!submodule_empty_modidx_table) {
+    REGISTER_SO(submodule_empty_modidx_table);
+    submodule_empty_modidx_table = scheme_make_weak_equal_table();
+  }
+
+  scheme_start_atomic();
+  b = scheme_bucket_from_table(submodule_empty_modidx_table, (const char *)submodule_path);
+  if (!b->val) {
+    submodule_path = make_resolved_module_path_obj(scheme_make_pair(scheme_resolved_module_path_value(empty_self_modname),
+                                                                    submodule_path));
+    submodule_path = scheme_make_modidx(scheme_false, 
+                                        scheme_false,
+                                        submodule_path);
+    b->val = submodule_path;
+  }
+  scheme_end_atomic_no_swap();
+
+  return b->val;
 }
 
 static Scheme_Object *_module_resolve_k(void);
@@ -6399,6 +6474,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Comp_Env *benv;
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
+  Scheme_Object *this_empty_self_modidx;
   int saw_mb, check_mb = 0, skip_strip = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
@@ -6653,14 +6729,18 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
 
+  this_empty_self_modidx = get_submodule_empty_self_modidx(submodule_path);
+
   if (ii) {
     /* phase shift to replace self_modidx of previous expansion (if any): */
-    fm = scheme_stx_phase_shift(fm, NULL, empty_self_modidx, self_modidx, NULL, m->insp);
+    fm = scheme_stx_phase_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);
 
     fm = scheme_add_rename(fm, rn_set);
-  } else if (skip_strip) {
-    /* phase shift to replace self_modidx of previous expansion: */
-    fm = scheme_stx_phase_shift(fm, NULL, empty_self_modidx, self_modidx, NULL, m->insp);      
+  } else {
+    if (skip_strip) {
+      /* phase shift to replace self_modidx of previous expansion: */
+      fm = scheme_stx_phase_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);      
+    }
   }
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
@@ -6768,17 +6848,17 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 			       SCHEME_CAR(hints));
       fm = scheme_stx_property(fm, 
 			       scheme_intern_symbol("module-self-path-index"),
-			       empty_self_modidx);
+			       this_empty_self_modidx);
     }
 
     /* for future expansion, shift away from self_modidx: */
     if (m->pre_submodules) /* non-NULL => some submodules, even if it's '() */
-      fm = phase_shift_skip_submodules(fm, self_modidx, empty_self_modidx, -1);
+      fm = phase_shift_skip_submodules(fm, self_modidx, this_empty_self_modidx, -1);
     else
-      fm = scheme_stx_phase_shift(fm, NULL, self_modidx, empty_self_modidx, NULL, NULL);
+      fm = scheme_stx_phase_shift(fm, NULL, self_modidx, this_empty_self_modidx, NULL, NULL);
 
     /* make self_modidx like the empty modidx */
-    ((Scheme_Modidx *)self_modidx)->resolved = empty_self_modname;
+    ((Scheme_Modidx *)self_modidx)->resolved = ((Scheme_Modidx *)this_empty_self_modidx)->resolved;
   }
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {

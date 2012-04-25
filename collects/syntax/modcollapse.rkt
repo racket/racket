@@ -18,7 +18,7 @@
                            (cons/c 'file any/c)
                            (cons/c 'planet any/c)
                            (cons/c 'quote any/c))
-                          (listof symbol?))))))
+                          (cons/c symbol? (listof symbol?)))))))
 
 (define rel-to-module-path-v/c
   (or/c simple-rel-to-module-path-v/c 

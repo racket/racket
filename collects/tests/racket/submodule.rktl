@@ -325,6 +325,37 @@
        (module* inner-main #f
          (print-cake 20))))))
 
+(syntax-case (parameterize ([current-namespace (make-base-namespace)])
+               (expand
+                '(module m racket/base
+                   (define x 0)
+                   (module* sub #f
+                     (+ x 1))))) ()
+  [(_ name lang (mb (def (x1) _) (mod sub #f
+                                      (mb_ (app cwv (lam () (app_ + x2 _))
+                                                _)))))
+   (begin
+     (test #t free-identifier=? #'x1 #'x2)
+     (let ([mpi (car (identifier-binding #'x2))])
+       (define-values (a b) (module-path-index-split mpi))
+       (test '(submod "..") values a)
+       (test #t module-path-index? b)
+       (define-values (ba bb) (module-path-index-split b))
+       (test #f values ba)
+       (test #f values bb)
+       (test '(sub) module-path-index-submodule b)))])
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   (expand
+    '(module m racket
+       (module X racket
+         (define x 1)
+         (provide x))
+       (module Y racket
+         (require (submod ".." X))
+         (define y (add1 x)))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 

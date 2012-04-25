@@ -171,6 +171,7 @@ typedef struct Thread_Local_Variables {
   void *retry_alloc_r1_;
   double scheme_jit_save_fp_;
   struct Scheme_Bucket_Table *starts_table_;
+  struct Scheme_Bucket_Table *submodule_empty_modidx_table_;
   struct Scheme_Modidx *modidx_caching_chain_;
   struct Scheme_Object *global_shift_cache_;
   struct mz_proc_thread *proc_thread_self_;
@@ -526,6 +527,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define retry_alloc_r1 XOA (scheme_get_thread_local_variables()->retry_alloc_r1_)
 #define scheme_jit_save_fp XOA (scheme_get_thread_local_variables()->scheme_jit_save_fp_)
 #define starts_table XOA (scheme_get_thread_local_variables()->starts_table_)
+#define submodule_empty_modidx_table XOA (scheme_get_thread_local_variables()->submodule_empty_modidx_table_)
 #define modidx_caching_chain XOA (scheme_get_thread_local_variables()->modidx_caching_chain_)
 #define global_shift_cache XOA (scheme_get_thread_local_variables()->global_shift_cache_)
 #define proc_thread_self XOA (scheme_get_thread_local_variables()->proc_thread_self_)

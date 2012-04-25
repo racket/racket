@@ -86,6 +86,19 @@
 (when (eq? (system-path-convention-type) 'unix)
   (test (expand-user-path "~/x.rkt") resolve-module-path '(file "~/x.rkt") #f))
 
+(test `(submod ,(build-path (current-directory) "x.rkt") sub2)
+      resolve-module-path-index
+      (module-path-index-join `(submod ".." sub2)
+                              (module-path-index-join #f #f '(sub1)))
+      (build-path (current-directory) "x.rkt"))
+
+(test `(submod ,(build-path (current-directory) "x.rkt") sub3 sub2)
+      resolve-module-path-index
+      (module-path-index-join `(submod ".." sub2)
+                              (module-path-index-join #f #f '(sub1)))
+      `(submod ,(build-path (current-directory) "x.rkt") sub3))
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; collapse-module-path[-index]
 
@@ -306,6 +319,26 @@
 (err/rt-test (collapse-module-path "apple.ss" '(no)))
 (err/rt-test (collapse-module-path "/apple.ss" (current-directory)))
 (err/rt-test (collapse-module-path-index "apple.ss" (current-directory)))
+
+(test '(submod 'z sub2) 
+      collapse-module-path-index
+      (module-path-index-join `(submod ".." sub2)
+                              (make-resolved-module-path
+                               '(z sub1)))
+      ''a)
+
+(test `(submod ,(build-path (find-system-path 'temp-dir) "z") sub2)
+      collapse-module-path-index
+      (module-path-index-join `(submod ".." sub2)
+                              (make-resolved-module-path
+                               (list (build-path (find-system-path 'temp-dir) "z") 'sub1)))
+      ''a)
+
+(test `(submod 'a sub2)
+      collapse-module-path-index
+      (module-path-index-join `(submod ".." sub2)
+                              (module-path-index-join #f #f '(sub1)))
+      ''a)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
