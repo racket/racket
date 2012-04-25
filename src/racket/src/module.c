@@ -8616,7 +8616,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   if (phase == 0) {
     Scheme_Object *expanded_provides;
 
-    expanded_provides = expand_all_provides(form, cenv, rec, drec, self_modidx,
+    expanded_provides = expand_all_provides(form, cenv, 
+                                            (erec ? erec : rec), (erec ? derec : drec),
+                                            self_modidx,
                                             bxs, !!erec);
   
     if (erec) {
