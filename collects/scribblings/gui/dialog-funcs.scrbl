@@ -196,7 +196,9 @@ See also @racket[path-dialog%] for a richer interface.
 @defproc[(message-box [title label-string?]
                       [message string?]
                       [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
-                      [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)]
+                      [style (listof (or/c 'ok 'ok-cancel 'yes-no 
+                                           'caution 'stop 'no-icon))
+                             '(ok)]
                       [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (or/c 'ok 'cancel 'yes 'no)]{
 
@@ -231,9 +233,10 @@ The style must include exactly one of the following:
 
 In addition, @racket[style] can contain @racket['caution] to make the
  dialog use a caution icon instead of the application (or generic
- ``info'') icon. Alternately, it can contain @racket['stop] to make the
- dialog use a stop icon. If @racket[style] contains both @racket['caution]
- and @racket['stop], then @racket['caution] is ignored.
+ ``info'') icon, @racket['stop] to make the dialog use a stop icon, or
+ @racket['no-icon] to suppress the icon. If @racket[style] contains
+ multiple of @racket['caution], @racket['stop], and @racket['no-icon],
+ then @racket['no-icon] takes precedence followed by @racket['stop].
 
 The class that implements the dialog provides a @racket[get-message]
  method that takes no arguments and returns the text of the message as
@@ -255,7 +258,7 @@ before the dialog is created.
                              [button2-label (or/c label-string? (is-a?/c bitmap%) #f)]
                              [button3-label (or/c label-string? (is-a?/c bitmap%) #f)]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
-                             [style (listof (or/c 'stop 'caution 'number-order 
+                             [style (listof (or/c 'stop 'caution 'no-icon 'number-order 
                                                   'disallow-close 'no-default 
                                                   'default=1 'default=2 'default=3))
                                    '(no-default)]
@@ -319,11 +322,9 @@ The @racket[style] list must contain exactly one of @racket['default=1],
  is supplied but button @racket[n] has no label, then it is equivalent to
  @racket['no-default].
 
-In addition, @racket[style] can contain @racket['caution] to make the
- dialog use a caution icon instead of the application (or generic
- ``info'') icon. Alternately, it can contain @racket['stop] to make the
- dialog use a stop icon. If @racket[style] contains both @racket['caution]
- and @racket['stop], then @racket['caution] is ignored.
+In addition, @racket[style] can contain @racket['caution],
+ @racket['stop], or @racket['no-icon] to adjust the icon that appears
+ n the dialog, the same for @racket[message-box].
 
 The class that implements the dialog provides a @racket[get-message]
  method that takes no arguments and returns the text of the message as
@@ -344,7 +345,7 @@ before the dialog is created.
                             [check-label label-string?]
                             [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                             [style (listof (or/c 'ok 'ok-cancel 'yes-no 
-                                                 'caution 'stop 'checked))
+                                                 'caution 'stop 'no-icon 'checked))
                               '(ok)]
                             [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values])
          (values (or/c 'ok 'cancel 'yes 'no) boolean?)]{
@@ -368,7 +369,7 @@ Like @racket[message-box], except that
                                    [button2-label (or/c label-string? (is-a?/c bitmap%) #f)]
                                    [button3-label (or/c label-string? (is-a?/c bitmap%) #f)]
                                    [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
-                                   [style (listof (or/c 'stop 'caution 'number-order 
+                                   [style (listof (or/c 'stop 'caution 'no-icon 'number-order 
                                                         'disallow-close 'no-default 
                                                         'default=1 'default=2 'default=3))
                                           '(no-default)]

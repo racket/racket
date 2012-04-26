@@ -35,7 +35,7 @@
       (check-top-level-parent/false who parent)
       (check-style who 
 		   '(default=1 default=2 default=3 no-default) 
-		   (let ([l '(disallow-close number-order caution stop)])
+		   (let ([l '(disallow-close number-order caution stop no-icon)])
 		     (if check?
 			 (cons 'checked l)
 			 l))
@@ -115,6 +115,7 @@
                                   (super-init title parent box-width)))))]
 	     [result close-result]
 	     [icon-id (cond
+                       [(memq 'no-icon style) #f]
 		       [(memq 'stop style) 'stop]
 		       [(memq 'caution style) 'caution]
 		       [else 'app])])
@@ -123,9 +124,10 @@
 			[(macosx) (let ([p (make-object horizontal-pane% f)])
 				    (send f min-width 300)
 				    (send p set-alignment 'center 'top)
-				    (let ([m (make-object message% icon-id p)])
-				      (send m horiz-margin 16)
-				      (send m vert-margin 16))
+                                    (when icon-id
+                                      (let ([m (make-object message% icon-id p)])
+                                        (send m horiz-margin 16)
+                                        (send m vert-margin 16)))
 				    (let* ([rhs-pnl (make-object vertical-pane% p)]
 					   [msg-pnl (make-object vertical-pane% rhs-pnl)]
 					   [btn-pnl (make-object vertical-pane% rhs-pnl)])
@@ -138,13 +140,15 @@
 				      (send btn-pnl stretchable-height #f)
 				      (values msg-pnl btn-pnl btn-pnl 96 'right 'left 'top)))]
 			[else (let ([p (new horizontal-pane% [parent f] [alignment '(center top)])])
-				(let ([icon-msg (make-object message% icon-id p)]
+				(let ([icon-msg (and icon-id (make-object message% icon-id p))]
 				      [msg-pnl (new vertical-pane% [parent p])])
 				  (values (if (= 1 (length strings))
 					      (new horizontal-pane% 
 						   [parent msg-pnl]
 						   [alignment '(center top)]
-						   [min-height (send icon-msg min-height)])
+						   [min-height (if icon-msg
+                                                                   (send icon-msg min-height)
+								   1)])
 					      msg-pnl)
 					  f msg-pnl 0 'center 'center 'center)))])])
 	  (if single?
@@ -249,7 +253,7 @@
       (check-top-level-parent/false who parent)
       (check-style who
 		   '(ok ok-cancel yes-no) 
-		   (let ([l '(caution stop)])
+		   (let ([l '(caution stop no-icon)])
 		     (if check?
 			 (cons 'checked l)
 			 l))
@@ -273,6 +277,7 @@
 					       [(memq 'checked style) '(checked)]
 					       [else null])
 					      (cond
+					       [(memq 'no-icon style) '(no-icon)]
 					       [(memq 'stop style) '(stop)]
 					       [(memq 'caution style) '(caution)]
 					       [else null])
