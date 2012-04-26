@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+	 racket/draw
          racket/draw/private/local
          racket/draw/unsafe/pango)
 
@@ -15,9 +16,19 @@
 (define font-cache (pango_win32_font_cache_new))
 
 (define (font->hfont f)
-  (let* ([pfont (pango_font_map_load_font display-font-map
-                                          display-context
-                                          (send f get-pango))]
+  (let* ([pfont (or (pango_font_map_load_font display-font-map
+					      display-context
+					      (send f get-pango))
+		    ;; font load failed, so fall back to default
+		    ;; font with the same size and style:
+		    (pango_font_map_load_font display-font-map
+					      display-context
+					      (send (make-font 
+						     #:size (send f get-point-size)
+						     #:style (send f get-style)
+						     #:weight (send f get-weight)
+						     #:size-in-pixels? (send f get-size-in-pixels))
+						    get-pango)))]
          [logfont (and pfont
 		       (pango_win32_font_logfont pfont))])
     (and logfont
