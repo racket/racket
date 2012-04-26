@@ -96,6 +96,7 @@
                        withSyntax
                        mergeSyntax
                        this
+                       error
                        #%top
                        #%datum
                        (... ...)
