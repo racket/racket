@@ -61,6 +61,7 @@
                               [else "Helvetica"])]
         [(script) (case (system-type)
                     [(macosx) "Apple Chancery, Italic"]
+		    [(windows) "Palatino Linotype, Italic"]
                     [else "Chancery"])]
         [(symbol) "Symbol"]
         [else (case (system-type)
