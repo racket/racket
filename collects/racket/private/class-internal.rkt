@@ -3,6 +3,7 @@
          mzlib/etc
          racket/contract/base
          racket/contract/combinator
+         (only-in racket/contract/region current-contract-region)
          (only-in racket/contract/private/arrow making-a-method method-contract?)
          (only-in racket/list remove-duplicates)
          racket/stxparam
@@ -1538,7 +1539,7 @@
                                                           (syntax-case stx () 
                                                             [(_ (arg (... ...)) (kw kwarg) (... ...))
                                                              (with-syntax ([stx stx])
-                                                               (syntax (-instantiate super-go stx (the-obj si_c si_inited? 
+                                                               (syntax (-instantiate super-go stx #f (the-obj si_c si_inited? 
                                                                                                            si_leftovers)
                                                                                      (list arg (... ...)) 
                                                                                      (kw kwarg) (... ...))))]))]
@@ -1547,7 +1548,7 @@
                                                           (syntax-case stx () 
                                                             [(_ (kw kwarg) (... ...))
                                                              (with-syntax ([stx stx])
-                                                               (syntax (-instantiate super-go stx (the-obj si_c si_inited? 
+                                                               (syntax (-instantiate super-go stx #f (the-obj si_c si_inited? 
                                                                                                            si_leftovers)
                                                                                      null
                                                                                      (kw kwarg) (... ...))))]))]
@@ -3673,30 +3674,51 @@ An example
           [else (raise-syntax-error 'new "expected name and value binding" stx pr)]))
       (syntax->list (syntax (pr ...))))]))
 
+#;
 (define make-object 
   (lambda (class . args)
     (do-make-object class args null)))
+
+(define ((make-object/proc blame) class . args)
+  (do-make-object blame class args null))
+
+(define-syntax make-object
+  (make-set!-transformer
+   (lambda (stx)
+     (syntax-case stx ()
+             [id
+              (identifier? #'id)
+              (quasisyntax/loc stx
+                (make-object/proc (current-contract-region)))]
+             [(_ class arg ...)
+              (quasisyntax/loc stx
+                (do-make-object
+                 (current-contract-region)
+                 class (list arg ...) (list)))]
+             [(_) (raise-syntax-error 'make-object "expected class" stx)]))))
 
 (define-syntax (instantiate stx)
   (syntax-case stx ()
     [(form class (arg ...) . x)
      (with-syntax ([orig-stx stx])
        (quasisyntax/loc stx 
-         (-instantiate do-make-object orig-stx (class) (list arg ...) . x)))]))
+         (-instantiate do-make-object orig-stx #t (class) (list arg ...) . x)))]))
 
 ;; Helper; used by instantiate and super-instantiate
 (define-syntax -instantiate
   (lambda (stx)
     (syntax-case stx ()
-      [(_ do-make-object orig-stx (maker-arg ...) args (kw arg) ...)
+      [(_ do-make-object orig-stx first? (maker-arg ...) args (kw arg) ...)
        (andmap identifier? (syntax->list (syntax (kw ...))))
-       (with-syntax ([(kw ...) (map localize (syntax->list (syntax (kw ...))))])
+       (with-syntax ([(kw ...) (map localize (syntax->list (syntax (kw ...))))]
+                     [(blame ...) (if (syntax-e #'first?) #'((current-contract-region)) null)])
          (syntax/loc stx
-           (do-make-object maker-arg ...
+           (do-make-object blame ...
+                           maker-arg ...
                            args
                            (list (cons `kw arg)
                                  ...))))]
-      [(_ super-make-object orig-stx (make-arg ...) args kwarg ...)
+      [(_ super-make-object orig-stx first? (make-arg ...) args kwarg ...)
        ;; some kwarg must be bad:
        (for-each (lambda (kwarg)
                    (syntax-case kwarg ()
@@ -3720,10 +3742,17 @@ An example
 (define (alist->sexp alist)
   (map (lambda (pair) (list (car pair) (cdr pair))) alist))
 
-(define (do-make-object class by-pos-args named-args)
+;; class blame -> class
+;; takes a class and concretize interface ctc methods
+(define (fetch-concrete-class cls blame)
+  cls)
+
+(define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)
     (raise-type-error 'instantiate "class" class))
-  (let ([o ((class-make-object class))])
+  ;; Generate correct class by concretizing methods w/interface ctcs
+  (let* ([class (fetch-concrete-class class blame)]
+         [o ((class-make-object class))])
     (continue-make-object o class by-pos-args named-args #t)
     o))
 

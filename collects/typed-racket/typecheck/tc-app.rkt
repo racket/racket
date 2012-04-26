@@ -9,7 +9,7 @@
          ;; fixme - don't need to be bound in this phase - only to make tests work
          scheme/bool
          racket/unsafe/ops
-         (only-in racket/private/class-internal make-object do-make-object)
+         (only-in racket/private/class-internal do-make-object)
          (only-in syntax/location module-name-fixup)
          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
          ;; end fixme
@@ -26,7 +26,7 @@
           racket/unsafe/ops racket/fixnum racket/flonum
           (only-in '#%kernel [apply k:apply] [reverse k:reverse])
           "internal-forms.rkt" scheme/base scheme/bool '#%paramz
-          (only-in racket/private/class-internal make-object do-make-object)
+          (only-in racket/private/class-internal do-make-object)
           (only-in syntax/location module-name-fixup)))
 
 (import tc-expr^ tc-lambda^ tc-let^ tc-apply^)
@@ -163,7 +163,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Objects
 
-(define (check-do-make-object cl pos-args names named-args)
+;; do-make-object now takes blame as its first argument, which isn't checked
+;; (it's just an s-expression)
+(define (check-do-make-object b cl pos-args names named-args)
   (let* ([names (map syntax-e (syntax->list names))]
          [name-assoc (map list names (syntax->list named-args))])
     (let loop ([t (tc-expr cl)])
@@ -264,7 +266,7 @@
 (define (tc/app/internal form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
-                values apply k:apply not false? list list* call-with-values do-make-object make-object module-name-fixup cons
+                values apply k:apply not false? list list* call-with-values do-make-object module-name-fixup cons
                 map andmap ormap reverse k:reverse extend-parameterization
                 vector-ref unsafe-vector-ref unsafe-vector*-ref
                 vector-set! unsafe-vector-set! unsafe-vector*-set!
@@ -598,10 +600,10 @@
     [(#%plain-app module-name-fixup src path)
      (ret Univ)]
     ;; special cases for classes
-    [(#%plain-app make-object cl . args)
-     (check-do-make-object #'cl #'args #'() #'())]
-    [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
-     (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
+    [(#%plain-app do-make-object b cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
+     (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...))]
+    [(#%plain-app do-make-object args ...)
+     (int-err "unexpected arguments to do-make-object")]
     [(#%plain-app (~and map-expr (~literal map)) f arg0 arg ...)
      (match* ((single-value #'arg0) (map single-value (syntax->list #'(arg ...))))
        ;; if the argument is a ListDots
