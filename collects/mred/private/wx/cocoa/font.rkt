@@ -26,7 +26,8 @@
                                find-family-default-font-id
                                (send f get-family))
                          weight
-                         style))])
+                         style))]
+         [name (regexp-replace #rx",.*" name "")])
     (atomically
      (with-autorelease
       (let ([f (tell NSFont 

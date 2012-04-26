@@ -60,7 +60,7 @@
                               [(windows) "Arial"]
                               [else "Helvetica"])]
         [(script) (case (system-type)
-                    [(macosx) "Apple Chancery"]
+                    [(macosx) "Apple Chancery, Italic"]
                     [else "Chancery"])]
         [(symbol) "Symbol"]
         [else (case (system-type)
