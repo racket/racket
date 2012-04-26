@@ -1,11 +1,14 @@
-(module bnf mzscheme
+(module bnf racket
   (require "struct.rkt"
            "decode.rkt"
+           (only-in "core.rkt" 
+                    make-style
+                    make-table-columns)
            mzlib/kw)
 
   (provide BNF 
            nonterm
-           BNF-seq
+           BNF-seq BNF-seq-lines
            BNF-alt  BNF-alt/close ; single-line alternatives
            BNF-etc
            BNF-group
@@ -15,11 +18,19 @@
   (define equals (make-element 'tt (list spacer "::=" spacer)))
   (define alt (make-element 'tt (list spacer spacer "|" spacer spacer)))
 
-  (define (as-flow i) (make-flow (list (make-paragraph (list i)))))
+  (define (as-flow i) (make-flow (list (if (block? i)
+                                           i
+                                           (make-paragraph (list i))))))
+
+
+  (define baseline (make-style #f '(baseline)))
 
   (define (BNF . defns)
     (make-table
-     #f
+     (make-style #f
+                 (list
+                  (make-table-columns
+                   (list baseline baseline baseline baseline))))
      (apply
       append
       (map (lambda (defn)
@@ -41,6 +52,10 @@
     (if (null? l)
         ""
         (interleave l spacer)))
+
+  (define (BNF-seq-lines . l)
+    (make-table #f (map (lambda (row) (list (as-flow (apply BNF-seq row))))
+                        l)))
 
   (define (BNF-alt . l)
     (interleave l alt))

@@ -43,7 +43,7 @@ produces the output
 
 See also @racket[racketgrammar].
 
-@defproc[(BNF [prod (cons element? (listof element?))] ...) table?]{
+@defproc[(BNF [prod (cons element? (listof (or/c block? element?)))] ...) table?]{
 
 Typesets a grammar table. Each production starts with an element
 (typically constructed with @racket[nonterm]) for the non-terminal
@@ -57,6 +57,11 @@ Typesets a non-terminal: italic in angle brackets.}
 @defproc[(BNF-seq [elem element?] ...) element?]{
 
 Typesets a sequence.}
+
+@defproc[(BNF-seq-lines [elems (listof element?)] ...) block?]{
+
+Typesets a sequence that is broken into multiple lines, where each
+@racket[elems] is one line.}
 
 @defproc[(BNF-group [pre-content any/c] ...) element?]{
 
