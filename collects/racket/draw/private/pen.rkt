@@ -164,6 +164,7 @@
                     (ephemeron-value e))
                (let* ([f (make-object pen% col w s c j)]
                       [e (make-ephemeron key f)])
+                 (send f set-immutable)
                  (send f s-set-key key)
                  (hash-set! pens key e)
                  f)))

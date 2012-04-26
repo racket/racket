@@ -212,6 +212,7 @@
                      (ephemeron-value e))
                 (let* ([f (make-object brush% col s)]
                        [e (make-ephemeron key f)])
+                  (send f set-immutable)
                   (send f s-set-key key)
                   (hash-set! brushes key e)
                   f)))

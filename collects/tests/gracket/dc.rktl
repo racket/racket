@@ -507,4 +507,17 @@
 
 ;; ----------------------------------------
 
+(define (check-immutable v)
+  (test 'immutable 'immutable
+        (with-handlers ([exn:fail? (lambda (x) 
+                                     (if (regexp-match #rx"immutable" (exn-message x))
+                                         'immutable
+                                         x))])
+          (send v set-color "red"))))
+
+(check-immutable (send the-brush-list find-or-create-brush "white" 'solid))
+(check-immutable (send the-pen-list find-or-create-pen "white" 1 'solid))
+
+;; ----------------------------------------
+
 (report-errs)
