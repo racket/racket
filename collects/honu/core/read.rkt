@@ -212,7 +212,7 @@
     [(position-token token start end)
      ;; (printf "Lexed ~a\n" token)
      (define (encloser kind)
-       (values token 'parens kind
+       (values token 'parenthesis kind
                (position-offset start)
                (position-offset end)
                need-backup mode))
