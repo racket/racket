@@ -8477,6 +8477,55 @@
    'interface-9
     '(interface ((interface () [x number?])) x)
    exn:fail?)
+
+  (test/spec-passed
+   'interface-first-order-1
+   '(let* ([i<%> (interface () [m (->m number? number?)])]
+           [c% (class* object% (i<%>) (super-new) (define/public (m x) x))])
+      (new c%)))
+
+  (test/spec-failed
+   'interface-first-order-2
+   '(let* ([i<%> (interface () [m (->m number? number?)])]
+           [c% (class* object% (i<%>) (super-new) (define/public (m) x))])
+      (new c%))
+   "c%")
+
+  (test/spec-passed
+   'interface-higher-order-1
+   '(let* ([i<%> (interface () [m (->m number? number?)])]
+           [c% (class* object% (i<%>) (super-new) (define/public (m x) x))])
+      (send (new c%) m 3)))
+
+  (test/spec-failed
+   'interface-higher-order-2
+   '(let* ([i<%> (interface () [m (->m number? number?)])]
+           [c% (class* object% (i<%>) (super-new) (define/public (m x) x))])
+      (send (new c%) m "wrong"))
+   "top-level")
+
+  (test/spec-failed
+   'interface-higher-order-3
+   '(let* ([i<%> (interface () [m (->m number? number?)])]
+           [c% (class* object% (i<%>) (super-new) (define/public (m x) "bad"))])
+      (send (new c%) m 3))
+   "c%")
+
+  (test/spec-failed
+   'interface-higher-order-4
+   '(let* ([i1<%> (interface () [m (->m number? number?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (class* object% (i2<%>) (super-new) (define/public (m x) x))])
+      (send (new c%) m 3.14))
+   "i1<%>")
+
+  (test/spec-failed
+   'interface-higher-order-5
+   '(let* ([i1<%> (interface () [m (->m number? number?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (class* object% (i2<%>) (super-new) (define/public (m x) 3.14))])
+      (send (new c%) m 3))
+   "c%")
     
 ;                                                                                    
 ;                                                                                    

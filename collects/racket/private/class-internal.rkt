@@ -2422,6 +2422,17 @@
                                   (let ([index (hash-ref method-ht id)])
                                     (vector-set! meth-flags index 'final)))
                                 final-names)
+                      ;; Handle interface contracted methods:
+                      (for-each (lambda (id)
+                                  (let ([index (hash-ref method-ht id)])
+                                    ;; Store blame information that will be instantiated later
+                                    (define ictc-infos (get-interface-contract-info
+                                                         (class-self-interface c) id))
+                                    (vector-set! methods index
+                                                 (list (vector-ref methods index)
+                                                       ;; Make positive parties this class
+                                                       (replace-ictc-blame ictc-infos #t name)))))
+                                (class-method-ictcs c))
                       
                       ;; --- Install serialize info into class --
                       (set-class-serializer!
@@ -2568,6 +2579,15 @@ An example
                                 (list (car info) (cadr info) our-name (cadddr info))
                                 info))
                          dedup-infos))]))
+
+;; infos bool blame -> infos
+;; replace either positive or negative parties that are #f with blame
+(define (replace-ictc-blame infos pos? blame)
+  (if pos?
+      (for/list ([info infos])
+        (list (car info) (cadr info) (or (caddr info) blame) (cadddr info)))
+      (for/list ([info infos])
+        (list (car info) (cadr info) (caddr info) (or (cadddr info) blame)))))
 
 (define (check-still-unique name syms what)
   (let ([ht (make-hasheq)])
@@ -3745,7 +3765,95 @@ An example
 ;; class blame -> class
 ;; takes a class and concretize interface ctc methods
 (define (fetch-concrete-class cls blame)
-  cls)
+  (if (null? (class-method-ictcs cls))
+      cls
+      ;; if there are contracted methods to concretize, do so
+      (let* ([name (class-name cls)]
+             [method-width (class-method-width cls)]
+             [method-ht (class-method-ht cls)]
+             [meths (class-methods cls)]
+             [ictc-meths (class-method-ictcs cls)]
+             [field-pub-width (class-field-pub-width cls)]
+             [field-ht (class-field-ht cls)]
+             [class-make (if name
+                             (make-naming-constructor
+                              struct:class
+                              (string->symbol (format "class:~a" name)))
+                             make-class)]
+             [c (class-make name
+                            (class-pos cls)
+                            (list->vector (vector->list (class-supers cls)))
+                            (class-self-interface cls)
+                            void ;; No inspecting
+
+                            method-width
+                            method-ht
+                            (class-method-ids cls)
+                            null
+
+                            meths
+                            (class-super-methods cls)
+                            (class-int-methods cls)
+                            (class-beta-methods cls)
+                            (class-meth-flags cls)
+
+                            (class-inner-projs cls)
+                            (class-dynamic-idxs cls)
+                            (class-dynamic-projs cls)
+
+                            (class-field-width cls)
+                            field-pub-width
+                            field-ht
+                            (class-field-ids cls)
+
+                            'struct:object 'object? 'make-object
+                            'field-ref 'field-set!
+
+                            (class-init-args cls)
+                            (class-init-mode cls)
+                            (class-init cls)
+
+                            (class-orig-cls cls)
+                            #f #f       ; serializer is never set
+                            #f)]
+             [obj-name (if name
+                           (string->symbol (format "wrapper-object:~a" name))
+                           'object)])
+
+        (vector-set! (class-supers c) (class-pos c) c)
+
+        ;; --- Make the new object struct ---
+        (let-values ([(struct:object object-make object? object-field-ref object-field-set!)
+                      (make-struct-type obj-name
+                                        (class-struct:object cls)
+                                        0 ;; No init fields
+                                        0 ;; No new fields in this class replacement
+                                        undefined
+                                        ;; Map object property to class:
+                                        (list (cons prop:object c)))])
+          (set-class-struct:object! c struct:object)
+          (set-class-object?! c object?)
+          (set-class-make-object! c object-make)
+          (set-class-field-ref! c object-field-ref)
+          (set-class-field-set!! c object-field-set!))
+
+        ;; then apply the projections to get the concrete method
+        (vector-copy! meths 0 (class-methods cls))
+        (for ([m (in-list ictc-meths)])
+          (define index (hash-ref method-ht m))
+          (define entry (vector-ref meths index))
+          (define meth (car entry))
+          (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
+          (define wrapped-meth
+            (for/fold ([meth meth])
+                      ([info ictc-infos])
+              (define ctc (car info))
+              (define ifc-name (cadr info))
+              (define pos-blame (caddr info))
+              (define neg-blame (cadddr info))
+              (contract ctc meth pos-blame neg-blame)))
+          (vector-set! meths index wrapped-meth))
+        c)))
 
 (define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)
