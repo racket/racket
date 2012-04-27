@@ -1836,7 +1836,7 @@ static int compare_modules(const void *_am, const void *_bm)
   bs = SCHEME_BYTE_STR_VAL(b);
 
   for (i = 0; (i < alen) && (i < blen); i++) {
-    if (as[i] != bs[1])
+    if (as[i] != bs[i])
       return as[i] - bs[i];
   }
   

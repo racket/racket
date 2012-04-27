@@ -524,5 +524,30 @@
   (test 'for-submod dynamic-require `(submod ,p main) 'has-submod))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try various submodule combinations to test sorting:
+
+(let ()
+  (define (try-submods l)
+    (define e `(module e racket/base
+                 ,@(for/list ([n l])
+                     `(module+ ,n
+                        (define name ',n)
+                        (provide name)))))
+    (define fn (build-path (find-system-path 'temp-dir)
+                           "has-submod.rkt"))
+    (define dir (build-path (find-system-path 'temp-dir)
+                            "compiled"))
+    (define fn-zo (build-path dir "has-submod_rkt.zo"))
+    (unless (directory-exists? dir) (make-directory dir))
+    (with-output-to-file fn-zo
+      #:exists 'truncate
+      (lambda () (write (compile e))))
+    (for ([n l])
+      (test n dynamic-require `(submod ,fn ,n) 'name)))
+  (try-submods '(a b))
+  (try-submods '(xa xb))
+  (try-submods '(test main)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
