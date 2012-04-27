@@ -840,7 +840,12 @@
                        (eq? cpt-tag 'let-one-unused))]
         [(branch)
          (make-branch (read-compact cp) (read-compact cp) (read-compact cp))]
-        [(module-index) (module-path-index-join (read-compact cp) (read-compact cp))]
+        [(module-index) 
+         (define name (read-compact cp))
+         (define base (read-compact cp))
+         (if (or name base)
+             (module-path-index-join name base)
+             (module-path-index-join #f #f (read-compact cp)))]
         [(module-var)
          (let ([mod (read-compact cp)]
                [var (read-compact cp)]

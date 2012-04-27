@@ -895,7 +895,9 @@
         (out-byte CPT_MODULE_INDEX out)
         (let-values ([(name base) (module-path-index-split v)])
           (out-anything name out)
-          (out-anything base out))]
+          (out-anything base out)
+          (unless (or name base)
+            (out-anything (module-path-index-submodule v) out)))]
        [(stx encoded)
         (out-byte CPT_STX out)
         (out-anything encoded out)]
