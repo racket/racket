@@ -3049,11 +3049,13 @@
     (syntax-case stx ()
       [x
        (identifier? #'x)
-       (values #'(quote x) #f)]
+       (with-syntax ([id (localize #'x)])
+         (values #'`id #f))]
       [(x ctc)
        (identifier? #'x)
-       (values #'(quote x) 
-               #`(coerce-contract '#,form-name (let ([x ctc]) x)))]
+       (with-syntax ([id (localize #'x)])
+         (values #'`id
+                 #`(coerce-contract '#,form-name (let ([x ctc]) x))))]
       [_
        (raise-syntax-error form-name "expected identifier or (id contract)" stx)]))
   (define (parse-names-ctcs stx)
@@ -3071,11 +3073,13 @@
          (let ([symbols (for/list ([id (in-list (syntax->list #'(f-id ...)))])
                           (unless (identifier? id)
                             (raise-syntax-error 'class/c "expected identifier" stx))
-                          #`(quote #,id))])
+                          (with-syntax ([id (localize id)])
+                            #'`id))])
            (values meths (append (reverse symbols) fields)))]
         [id
          (identifier? #'id)
-         (values (cons #'(quote id) meths) fields)]
+         (with-syntax ([id (localize #'id)])
+           (values (cons #'`id meths) fields))]
         [_
          (raise-syntax-error 'class/c "expected identifier or (field id ...)" stx)])))
   (define (parse-spec stx)

@@ -6491,6 +6491,33 @@
               'neg))
 
   (test/spec-passed
+   'class/c-first-order-local-method-1
+   '(let ()
+     (define-local-member-name m)
+     (contract (class/c [m (->m number? number?)])
+               (class object% (super-new) (define/public (m x) 3))
+               'pos
+               'neg)))
+
+  (test/pos-blame
+   'class/c-first-order-local-method-2
+   '(let ()
+     (define-local-member-name m)
+     (contract (class/c [m (->m number? number? number?)])
+               (class object% (super-new) (define/public (m x) 3))
+               'pos
+               'neg)))
+
+  (test/pos-blame
+   'class/c-first-order-local-method-3
+   '(let ()
+     (define-local-member-name m)
+     (contract (class/c [m (->m number? number? number?)])
+               (class object% (super-new))
+               'pos
+               'neg)))
+
+  (test/spec-passed
    'class/c-first-order-opaque-method-1
    '(contract (class/c #:opaque [m (-> any/c number? number?)])
               (class object% (super-new) (define/public (m x) 3))
@@ -6524,6 +6551,25 @@
       'neg))
 
   (test/pos-blame
+   'class/c-first-order-opaque-method-5
+   '(contract
+      (class/c #:opaque [m (-> any/c number? number?)] [n (-> any/c number?)])
+      (let ()
+        (define-local-member-name n)
+        (class object% (super-new) (define/public (m x) 3) (define/public (n) 4)))
+      'pos
+      'neg))
+
+  (test/spec-passed
+   'class/c-first-order-opaque-method-6
+   '(let ()
+      (define-local-member-name n)
+      (contract (class/c #:opaque [m (-> any/c number? number?)] [n (-> any/c number?)])
+                (class object% (super-new) (define/public (m x) 3) (define/public (n) 4))
+                'pos
+                'neg)))
+
+  (test/pos-blame
    'class/c-first-order-field-1
    '(contract (class/c (field [n number?]))
               object%
@@ -6550,6 +6596,33 @@
               (class object% (super-new) (field [n 3]))
               'pos
               'neg))
+
+  (test/spec-passed
+   'class/c-first-order-local-field-1
+   '(let ()
+      (define-local-member-name n)
+      (contract (class/c (field n))
+                (class object% (super-new) (field [n 3]))
+                'pos
+                'neg)))
+
+  (test/spec-passed
+   'class/c-first-order-local-field-2
+   '(let ()
+      (define-local-member-name n)
+      (contract (class/c (field [n integer?]))
+                (class object% (super-new) (field [n 3]))
+                'pos
+                'neg)))
+
+  (test/pos-blame
+   'class/c-first-order-local-field-3
+   '(let ()
+      (define-local-member-name n)
+      (contract (class/c (field [n integer?]))
+                (class object% (super-new))
+                'pos
+                'neg)))
  
   (test/spec-passed
    'class/c-first-order-opaque-field-1
@@ -6807,6 +6880,25 @@
                 (class c% (super-new) (define/augride (m x) (add1 x))))
               'pos
               'neg))
+
+  (test/spec-passed
+   'class/c-first-order-local-inner-1
+   '(let ()
+      (define-local-member-name m)
+      (contract (class/c (inner m) m)
+                (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
+                  (class c% (super-new) (define/augride (m x) (add1 x))))
+                'pos
+                'neg)))
+
+  (test/pos-blame
+   'class/c-first-order-local-inner-2
+   '(let ()
+      (define-local-member-name m)
+      (contract (class/c (inner m))
+                object%
+                'pos
+                'neg)))
               
   (test/pos-blame
    'class/c-first-order-override-1
@@ -6894,6 +6986,25 @@
               'neg))
 
   (test/pos-blame
+   'class/c-first-order-local-override-1
+   '(let ()
+     (define-local-member-name m)
+     (contract (class/c (override m))
+               object%
+               'pos
+               'neg)))
+
+  (test/spec-passed
+   'class/c-first-order-local-override-2
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c (override m))
+                           (class object% (super-new) (define/public (m) 3))
+                           'pos
+                           'neg))
+      (class c% (super-new) (define/override (m) 5))))
+
+  (test/pos-blame
    'class/c-first-order-augment-1
    '(contract (class/c (augment [m (-> any/c number? number?)]))
               object%
@@ -6975,6 +7086,25 @@
               (class object% (super-new) (define/pubment (m x) (add1 x)))
               'pos
               'neg))
+
+  (test/pos-blame
+   'class/c-first-order-local-augment-1
+   '(let ()
+      (define-local-member-name m)
+      (contract (class/c (augment m))
+                object%
+                'pos
+                'neg)))
+
+  (test/spec-passed
+   'class/c-first-order-local-augment-2
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c (augment m))
+                           (class object% (super-new) (define/pubment (m) 3))
+                           'pos
+                           'neg))
+      (class c% (super-new) (inherit m))))
   
   (test/pos-blame
    'class/c-first-order-augride-1
@@ -7062,6 +7192,26 @@
                 (class c% (super-new) (define/augride (m x) (add1 x))))
               'pos
               'neg))
+
+  (test/pos-blame
+   'class/c-first-order-local-augride-1
+   '(let ()
+      (define-local-member-name m)
+      (contract (class/c (augride m))
+                object%
+                'pos
+                'neg)))
+
+  (test/spec-passed
+   'class/c-first-order-local-augride-2
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c (augride m))
+                           (class (class object% (super-new) (define/pubment (m) 3))
+                             (super-new) (define/augride (m) 4))
+                           'pos
+                           'neg))
+      (class c% (super-new) (inherit m))))
   
   (test/pos-blame
    'class/c-first-order-inherit-1
@@ -7107,6 +7257,28 @@
                          'neg)]
            [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
       (send (new d%) f)))
+
+  (test/pos-blame
+   'class/c-first-order-local-inherit-1
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                           object%
+                           'pos
+                           'neg))
+      (define d% (class c% (super-new) (inherit m) (define/public (f) (m 5))))
+      (send (new d%) f)))
+
+  (test/spec-passed
+   'class/c-first-order-local-inherit-2
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                           (class object% (super-new) (define/public (m x) x))
+                           'pos
+                           'neg))
+      (define d% (class c% (super-new) (inherit m) (define/public (f) (m 5))))
+      (send (new d%) f)))
   
   (test/spec-passed
    'class/c-first-order-absent-1
@@ -7129,6 +7301,21 @@
               (class object% (super-new) (field [f 3]))
               'pos
               'neg))
+
+  (test/spec-passed
+   'class/c-first-order-local-absent-1
+   '(let ()
+      (define-local-member-name f)
+      (contract (class/c (absent (field f))) object% 'pos 'neg)))
+
+  (test/pos-blame
+   'class/c-first-order-local-absent-2
+   '(let ()
+      (define-local-member-name f)
+      (contract (class/c (absent (field f)))
+                (class object% (super-new) (field [f 3]))
+                'pos
+                'neg)))
               
   (test/spec-passed
    'class/c-first-order-opaque-absent-1
@@ -7286,6 +7473,26 @@
                          'neg)]
            [d% (class c% (super-new) (define/override (m) (super m 5)))])
       (send (new d%) m)))
+
+  (test/spec-passed
+   'class/c-higher-order-local-method-1
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c [m (-> any/c number? number?)])
+                           (class object% (super-new) (define/public (m x) (add1 x)))
+                           'pos
+                           'neg))
+      (send (new c%) m 3)))
+
+  (test/neg-blame
+   'class/c-higher-order-local-method-2
+   '(let ()
+      (define-local-member-name m)
+      (define c% (contract (class/c [m (-> any/c number? number?)])
+                           (class object% (super-new) (define/public (m x) (add1 x)))
+                           'pos
+                           'neg))
+      (send (new c%) m #f)))
 
   (test/spec-passed
    'class/c-higher-order-super-1
@@ -7936,6 +8143,24 @@
               (new (class object% (super-new) (define/public (m x) (add1 x))))
               'pos
               'neg))
+
+  (test/pos-blame
+   'object/c-first-order-local-method-1
+   '(let ()
+      (define-local-member-name m)
+      (contract (object/c [m (-> any/c number? number?)])
+                (new object%)
+                'pos
+                'neg)))
+
+  (test/spec-passed
+   'object/c-first-order-local-method-2
+   '(let ()
+      (define-local-member-name m)
+      (contract (object/c [m (-> any/c number? number?)])
+                (new (class object% (super-new) (define/public (m x) (add1 x))))
+                'pos
+                'neg)))
   
   (test/pos-blame
    'object/c-first-order-field-1
@@ -7950,7 +8175,25 @@
               (new (class object% (super-new) (field [n 3])))
               'pos
               'neg))
-  
+
+  (test/pos-blame
+   'object/c-first-order-local-field-1
+   '(let ()
+      (define-local-member-name n)
+      (contract (object/c (field [n number?]))
+                (new object%)
+                'pos
+                'neg)))
+
+  (test/spec-passed
+   'object/c-first-order-local-field-2
+   '(let ()
+      (define-local-member-name n)
+      (contract (object/c (field [n number?]))
+                (new (class object% (super-new) (field [n 3])))
+                'pos
+                'neg)))
+
   (test/spec-passed/result
    'object/c-higher-order-field-1
    '(get-field
