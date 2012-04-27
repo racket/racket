@@ -323,8 +323,6 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
                            Scheme_Object **exsnoms,
 			   int start, int count, int do_uninterned);
 
-static Scheme_Object *get_submodule_empty_self_modidx(Scheme_Object *submodule_path);
-
 #define MODCHAIN_TABLE(p) ((Scheme_Hash_Table *)(SCHEME_VEC_ELS(p)[0]))
 #define MODCHAIN_AVAIL(p, n) (SCHEME_VEC_ELS(p)[3+n])
 
@@ -3318,7 +3316,7 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
         scheme_arg_mismatch("module-path-index-join", 
                             "first or second non-#f argument results a #f third argument, given: ",
                             argv[2]);
-      return get_submodule_empty_self_modidx(argv[2]);
+      return scheme_get_submodule_empty_self_modidx(argv[2]);
     }
   }
 
@@ -3327,13 +3325,19 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *module_path_index_submodule(int argc, Scheme_Object *argv[])
 {
-  Scheme_Modidx *modidx;
-  Scheme_Object *a;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
     scheme_wrong_type("module-path-index-submodule", "module-path-index", 0, argc, argv);
+  
+  return scheme_modidx_submodule(argv[0]);
+}
 
-  modidx = (Scheme_Modidx *)argv[0];
+Scheme_Object *scheme_modidx_submodule(Scheme_Object *_modidx)
+{
+  Scheme_Modidx *modidx;
+  Scheme_Object *a;
+
+  modidx = (Scheme_Modidx *)_modidx;
   a = modidx->resolved;
   if (SCHEME_TRUEP(modidx->path)
       || SCHEME_TRUEP(modidx->base)
@@ -3605,7 +3609,7 @@ int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
   return scheme_equal(a, b);
 }
 
-static Scheme_Object *get_submodule_empty_self_modidx(Scheme_Object *submodule_path)
+Scheme_Object *scheme_get_submodule_empty_self_modidx(Scheme_Object *submodule_path)
 {
   Scheme_Bucket *b;
 
@@ -6729,7 +6733,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
 
-  this_empty_self_modidx = get_submodule_empty_self_modidx(submodule_path);
+  this_empty_self_modidx = scheme_get_submodule_empty_self_modidx(submodule_path);
 
   if (ii) {
     /* phase shift to replace self_modidx of previous expansion (if any): */

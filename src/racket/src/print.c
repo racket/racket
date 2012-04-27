@@ -2840,6 +2840,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_MODULE_INDEX);
 	print(((Scheme_Modidx *)obj)->path, notdisplay, 1, ht, mt, pp);
 	print(((Scheme_Modidx *)obj)->base, notdisplay, 1, ht, mt, pp);
+        if (SCHEME_FALSEP(((Scheme_Modidx *)obj)->path)
+            && SCHEME_FALSEP(((Scheme_Modidx *)obj)->base))
+          print(scheme_modidx_submodule(obj), notdisplay, 1, ht, mt, pp);
         symtab_set(pp, mt, obj);
       }
     }

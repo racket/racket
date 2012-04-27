@@ -161,7 +161,8 @@
 (define (mpi->string modidx)
   (cond
    [(symbol? modidx) modidx]
-   [else (collapse-module-path-index modidx (current-directory))]))
+   [else 
+    (collapse-module-path-index modidx (current-directory))]))
 
 (define (decompile-module mod-form orig-stack stx-ht mod-name)
   (match mod-form
