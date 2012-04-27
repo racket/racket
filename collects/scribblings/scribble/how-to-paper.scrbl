@@ -530,7 +530,7 @@ the @hash-lang[] line that starts the document.  The
 @racketmodname[scribble/base], @racketmodname[scribble/manual], and
 @racketmodname[scribble/sigplan] languages all use the same
 @racket[decode] operation.  The @racketmodname[scribble/text] language,
-however, acts more like a plain-text genrator and preprocessor, and it
+however, acts more like a plain-text generator and preprocessor, and it
 does not perform any such decoding rules.  (For more on
 @racketmodname[scribble/text], see @secref["text"].)
 
