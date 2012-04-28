@@ -56,6 +56,8 @@
 ;(provide-higher-order-primitive build-masked-image (_ _ f))
 (provide-higher-order-primitive build-image/extra (_ _ f _))
 (provide-higher-order-primitive map-image/extra (f _ _))
+(provide-higher-order-primitive fold-image (f _ _))
+(provide-higher-order-primitive fold-image/extra (f _ _ _))
 
 ; check-procedure-arity : alleged-function nat-num symbol string
 ; Note: if you invoke these things from a BSL or BSLL program, the syntax checker will
@@ -386,4 +388,43 @@
                       (bfunc x y (color-red c) (color-green c) (color-blue c) (color-alpha c))
                       (afunc x y (color-red c) (color-green c) (color-blue c) (color-alpha c))))
       pic))
+
+; fold-image : ([x y] c X -> X) X image -> X
+; fold-image-internal : (nat nat color X -> X) X image -> image
+(define (fold-image-internal f init img)
+  (define w (image-width img))
+  (define h (image-height img))
+  (define bm (make-bitmap w h))
+  (define bdc (make-object bitmap-dc% bm))
+  (render-image img bdc 0 0)
+  (send bdc set-bitmap #f)
+  (define bytes (make-bytes (* w h 4)))
+  (send bm get-argb-pixels 0 0 w h bytes)
+  (define answer init)
+  (for* ((y (in-range 0 h))
+         (x (in-range 0 w)))
+        (set! answer  (f x y (get-px x y w h bytes) answer)))
+  answer)
+
+(define (fold-image f init img)
+  (unless (image? img)
+    (error 'fold-image
+	(format "Expected an image as third argument, but received ~v" img)))
+  (cond [(procedure-arity-includes? f 4)
+         (fold-image-internal f init img)]
+        [(procedure-arity-includes? f 2)            ; allow f : color X->X as a simple case
+         (fold-image-internal (lambda (x y c old-value) (f c old-value)) init img)]
+        [else (error 'fold-image "Expected a function of two or four parameters as first argument")]))
+
+; fold-image/extra : ([x y] c X Y -> X) X image Y -> X
+(define (fold-image/extra f init img extra)
+  (unless (image? img)
+    (error 'fold-image/extra
+	(format "Expected an image as third argument, but received ~v" img)))
+  (cond [(procedure-arity-includes? f 5)
+         (fold-image-internal (lambda (x y c old-value) (f x y c old-value extra)) init img)]
+        [(procedure-arity-includes? f 3)
+         (fold-image-internal (lambda (x y c old-value) (f c old-value extra)) init img)]
+        [else (error 'fold-image/extra "Expected a function taking three or five parameters as first argument")]
+        ))
 

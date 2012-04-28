@@ -463,3 +463,51 @@ pic:bloch
 (clip-picture-colors 200 pic:bloch)
 (clip-picture-colors 150 pic:bloch)
 (clip-picture-colors 100 pic:bloch)
+; another-white : color number -> number
+(define (another-white c old)
+  (+ old (if (color=? c "white") 1 0)))
+; count-white-pixels : image -> number
+(define (count-white-pixels pic)
+  (fold-image another-white 0 pic))
+(check-expect (count-white-pixels (rectangle 15 10 "solid" "blue")) 0)
+(check-expect (count-white-pixels (rectangle 15 10 "solid" "white")) 150)
+
+; another-color : color number color -> number
+(define (another-color c old color-to-count)
+  (+ old (if (color=? c color-to-count) 1 0)))
+; count-colored-pixels : image color -> number
+(define (count-colored-pixels pic color-to-count)
+  (fold-image/extra another-color 0 pic color-to-count))
+(check-expect (count-colored-pixels (rectangle 15 10 "solid" "blue") "blue") 150)
+(check-expect (count-colored-pixels (overlay (rectangle 5 10 "solid" "blue") (ellipse 15 30 "solid" "green"))
+                                    "blue")
+              50)
+(check-expect (count-colored-pixels (overlay (rectangle 5 10 "solid" "blue") (ellipse 20 30 "solid" "green"))
+                                    "blue")
+              40) ; because the overlaid rectangle is offset by half a pixel, so the top and bottom rows aren't "blue"
+
+(define-struct rgba (red green blue alpha))
+; like "color" but without bounds-checking
+; accumulate-color : color rgba -> rgba
+(define (accumulate-color c old)
+  (make-rgba (+ (color-red c) (rgba-red old))
+             (+ (color-green c) (rgba-green old))
+             (+ (color-blue c) (rgba-blue old))
+             (+ (color-alpha c) (rgba-alpha old))))
+
+; scale-rgba : number rgba -> rgba
+(define (scale-rgba factor old)
+  (make-rgba (* factor (rgba-red old))
+             (* factor (rgba-green old))
+             (* factor (rgba-blue old))
+             (* factor (rgba-alpha old))))
+
+; average-color : image -> rgba
+(define (average-color pic)
+  (scale-rgba (/ 1 (* (image-width pic) (image-height pic)))
+              (fold-image accumulate-color (make-rgba 0 0 0 0) pic)))
+(check-expect (average-color (rectangle 5 10 "solid" "blue"))
+              (make-rgba 0 0 255 255))
+(check-expect (average-color (overlay (rectangle 5 10 "solid" "blue")
+                                      (rectangle 25 10 "solid" "black")))
+              (make-rgba 0 0 51 255))
