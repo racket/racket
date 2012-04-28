@@ -12,19 +12,9 @@
 
 @defmodule[#:require-form beginner-require htdp/world #:use-sources (htdp/image)]
 
-@(make-table (make-with-attributes 'centered
-	       `((cellspacing . "6")
-		 (height . "600")
-		 (width . "70%")))
-             (list (list (list (make-paragraph
-                                (list "This teachpack is deprecated. Use "
-                                      (racketmodname 2htdp/universe)
-                                      " instead. See the"
-                                      " " (secref "htdp-port"
-                                                  #:tag-prefixes '("2htdp")
-                                                  ;#:doc '(lib "teachpack/teachpack.scrbl")
-                                                  )
-                                      " section for information on how to adapt old code to the new teachpack."))))))
+@deprecated[@racketmodname[2htdp/universe]]{
+  For guidance on how to convert your @racketmodname[htdp/world] programs
+  to use @racketmodname[2htdp/universe], see @secref[#:tag-prefixes '("2htdp")]{htdp-port}}
 
 @emph{Note}: For a quick and educational introduction to the teachpack, see
 @link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How

@@ -6,8 +6,8 @@
 
 @defmodule[#:require-form beginner-require htdp/image]
 
-@italic{This teachpack is deprecated. Please use @racketmodname[2htdp/image] for
-any new code.}
+@deprecated[@racketmodname[2htdp/image]]{For the foreseeable time, we will
+  continue to support the teachpack for your existing programs.}
 
 The teachpack provides functions for constructing and manipulating
 images. Basic, colored images are created as outlines or solid

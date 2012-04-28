@@ -11,9 +11,10 @@
 The teachpack provides two sets of functions: one for drawing into a canvas
 and one for reacting to canvas events. 
 
-@bold{Warning:} @emph{This teachpack is deprecated. Unless you're solving exercises
-taken from @emph{How To Design Programs}, we strongly encourage
-you to use the world teachpack instead; see @secref{world}.}
+@deprecated[(list @racketmodname[2htdp/image] " (probably in conjunction with " @racketmodname[2htdp/universe] ")")]{
+  You may continue to use the library for solving exercises 
+  from @emph{How To Design Programs, First Edition} but do consider
+  switching to @link["http://www.ccs.neu.edu/home/matthias/HtDP2e/"]{How To Design Programs, Second Edition} instead.}
 
 @section[#:tag "drawing"]{Drawing on a Canvas}
 
