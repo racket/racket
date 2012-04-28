@@ -63,7 +63,10 @@
                                  [(#\;) "semicolon"]
                                  [(#\:) "colon"]
                                  [(#\space) "space"]
-                                 [else (string short-cut)]))))])
+                                 [else 
+                                  (cond
+                                    [(symbol? short-cut) (symbol->string short-cut)]
+                                    [(char? short-cut) (string short-cut)])]))))])
                        (hash-set! name-ht keyname (send item get-plain-label))))))
                (when (is-a? item menu-item-container<%>)
                  (loop item)))
