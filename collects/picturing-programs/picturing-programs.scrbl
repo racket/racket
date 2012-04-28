@@ -418,6 +418,48 @@ dithered are still dithered.
 produces a @racket[my-picture]-shaped "window" on a color-gradient.
 }
 
+@defproc*[([(fold-image [f (-> color? any/c any/c)] [init any/c] [img image?]) any/c]
+           [(fold-image [f (-> natural-number/c natural-number/c color? any/c any/c)] [init any/c] [img image?]) any/c])]{
+Summarizes information from all the pixels of an image.
+The result is computed by applying f successively to each pixel, starting with @racket[init].
+If @racket[f] accepts four parameters, it is called with the coordinates and color of each
+pixel as well as the previously-accumulated result; if it accepts two parameters, it is
+given just the color of each pixel and the previously-accumulated result.
+You may not assume anything about the order in which the pixels are visited, only
+that each pixel will be visited exactly once.
+
+An example with a 2-parameter function:
+@codeblock|{
+; another-white : color number -> number
+(define (another-white c old-total)
+   (+ old (if (color=? c "white") 1 0)))
+
+; count-white-pixels : image -> number
+(define (count-white-pixels pic)
+   (fold-image another-white 0 pic))}|
+
+Note that the accumulator isn't restricted to be a number: it could be a structure or a list,
+enabling you to compute the average color, or a histogram of colors, etc.
+}
+
+@defproc*[([(fold-image/extra [f (-> color? any/c any/c any/c)] [init any/c] [img image?] [extra any/c]) any/c]
+	  [(fold-image/extra [f (-> natural-number/c natural-number/c color? any/c any/c any/c)] [init any/c] [img image?] [extra any/c]) any/c])]{
+Like @racket[fold-image], but passes the @racket[extra] argument in as an additional argument in each call
+to @racket[f].  This allows students who haven't learned closures yet to call @racket[fold-image] on an
+operation that depends on a parameter to a containing function.
+
+For example,
+@codeblock|{
+; another-of-color : color number color -> number
+(define (another-of-color c old color-to-count)
+   (+ old (if (color=? c color-to-count) 1 0)))
+
+; count-pixels-of-color : image color -> number
+(define (count-pixels-of-color pic color-to-count)
+   (fold-image/extra count-pixels-of-color 0 pic))
+}|
+}
+
 @defproc[(real->int [num real?])
          integer?]{
 Not specific to colors, but useful if you're building colors by arithmetic.
