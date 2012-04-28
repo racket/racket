@@ -20,8 +20,8 @@
                  (list (make-background-color-property "yellow")))
                 content))
 
-(define (deprecated)
-  @para{@yellow{@bold{WARNING:}} All bindings in this section are scheduled for removal
-        after version 5.2.1.})
+(define (deprecated2)
+  @para{@yellow{@bold{WARNING:}}
+         All bindings in this section are scheduled for removal after version 5.2.1.})
 
 

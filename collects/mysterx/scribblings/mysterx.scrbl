@@ -10,10 +10,11 @@ component can be scripted in MysterX if it supports OLE Automation via
 the @tt{IDispatch} interface, and if it publishes type information
 using the @tt{ITypeInfo} interface.
 
-@yellow{@bold{NOTE:}} MysterX is supported but depracated; use
-@racketmodname[ffi/com] or @racketmodname[ffi/unsafe/com], instead. 
-MysterX formerly provided @as-index{ActiveX}
-support, but ActiveX support has been discontinued.
+@deprecated[(list @racketmodname[ffi/com] " or " @racketmodname[ffi/unsafe/com])]{
+ MysterX formerly provided @as-index{ActiveX} support. We no longer support
+ the ActiveX functionality.}
+
+@;MysterX is supported but deprecated; MysterX formerly provided @as-index{ActiveX} support, but ActiveX support has been discontinued.
 
 @defmodule[mysterx]
 
