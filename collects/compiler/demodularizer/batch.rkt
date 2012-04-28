@@ -115,6 +115,7 @@ Here's the idea:
                 #:multi
                 [("-e" "--exclude-modules") path "Exclude <path> from flattening"
                  (current-excluded-modules (set-add (current-excluded-modules) path))]
+                #:once-each
                 [("-o") dest-filename "Write output as <dest-filename>"
                  (output-file (string->path dest-filename))]
                 #:args (filename) 
