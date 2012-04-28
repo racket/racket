@@ -660,6 +660,14 @@ per section, since the declaration applies to the entire section,
 although overriding @racket[declare-exporting] forms can appear in
 sub-sections.}
 
+@defform/subs[(deprecated replacement additional-notes ...)
+              ([replacement pre-content]
+               [additional-notes pre-content])]{
+ produces a warning for deprecated modules. Requires a replacement suggestion; 
+ additional notes are welcome. 
+}
+
+
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}
 

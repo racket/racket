@@ -15,6 +15,28 @@
          defmodule*/no-declare defmodulelang*/no-declare defmodulereader*/no-declare
          declare-exporting)
 
+;; ---------------------------------------------------------------------------------------------------
+(provide deprecated)
+
+(require (only-in scribble/core make-style make-background-color-property)
+         (only-in scribble/base para nested))
+
+;; @deprecated[Precontent]{Precontent ... }
+;; produces a nested paragraph with a yellow NOTE label to warn readers of deprecated modules 
+(define-syntax-rule
+  (deprecated replacement-library additional-notes ...)
+  ;; ==> 
+  (nested #:style 'inset
+          (para (yellow (bold "NOTE:"))
+                " This library is deprecated. Use "
+                replacement-library
+                " instead. "
+                additional-notes ...)))
+
+(define (yellow . content)
+  (make-element (make-style #f (list (make-background-color-property "yellow"))) content))
+;; ---------------------------------------------------------------------------------------------------
+
 (define spacer (hspace 1))
 
 (define-syntax defmodule*/no-declare
@@ -62,20 +84,20 @@
 (define-syntax defmodulelang*
   (syntax-rules ()
     [(_ (name ...) #:module-paths (modpath ...)
-                   #:use-sources (pname ...)
-                   . content)
+        #:use-sources (pname ...)
+        . content)
      (begin (declare-exporting modpath ... #:use-sources (pname ...))
             (defmodulelang*/no-declare (name ...)
-                                       #:module-paths (modpath ...)
-                                       . content))]
+              #:module-paths (modpath ...)
+              . content))]
     [(_ (name ...) #:module-paths (modpath ...) . content)
      (defmodulelang* (name ...)
-                     #:module-paths (modpath ...)
-                     #:use-sources () . content)]
+       #:module-paths (modpath ...)
+       #:use-sources () . content)]
     [(_ (name ...) #:use-sources (pname ...) . content)
      (defmodulelang* ((racketmodname name) ...)
-                     #:module-paths (name ...)
-                     #:use-sources (pname ...) . content)]
+       #:module-paths (name ...)
+       #:use-sources (pname ...) . content)]
     [(_ (name ...) . content)
      (defmodulelang* (name ...) #:use-sources () . content)]))
 
