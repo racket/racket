@@ -2428,9 +2428,13 @@
                                     ;; Store blame information that will be instantiated later
                                     (define ictc-infos (get-interface-contract-info
                                                          (class-self-interface c) id))
+                                    (define meth-entry (vector-ref methods index))
+                                    (define meth (if (pair? meth-entry)
+                                                     (car meth-entry)
+                                                     meth-entry))
                                     (vector-set! methods index
-                                                 (list (vector-ref methods index)
-                                                       ;; Make positive parties this class
+                                                 (list meth
+                                                       ;; Replace #f positive parties w/ this class
                                                        (replace-ictc-blame ictc-infos #t name)))))
                                 (class-method-ictcs c))
                       
@@ -2802,7 +2806,7 @@ An example
                               method-width
                               method-ht
                               (class-method-ids cls)
-                              (class-method-ictcs cls)
+                              null
                               
                               methods
                               super-methods
@@ -2858,11 +2862,18 @@ An example
             (set-class-make-object! c object-make)
             (set-class-field-ref! c object-field-ref)
             (set-class-field-set!! c object-field-set!))
-          
+
           ;; Handle public method contracts
           (unless (null? (class/c-methods ctc))
             ;; First, fill in from old methods
             (vector-copy! methods 0 (class-methods cls))
+            ;; Concretize any interface contracts first
+            (unless (null? (class-method-ictcs cls))
+              (for ([m (in-list (class-method-ictcs cls))])
+                (define i (hash-ref method-ht m))
+                (define entry (vector-ref methods i))
+                (define info (replace-ictc-blame (cadr entry) #f (blame-negative blame)))
+                (vector-set! methods i (concretize-ictc-method (car entry) info))))
             ;; Now apply projections
             (for ([m (in-list (class/c-methods ctc))]
                   [c (in-list (class/c-method-contracts ctc))])
@@ -3844,16 +3855,19 @@ An example
           (define entry (vector-ref meths index))
           (define meth (car entry))
           (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
-          (define wrapped-meth
-            (for/fold ([meth meth])
-                      ([info ictc-infos])
-              (define ctc (car info))
-              (define ifc-name (cadr info))
-              (define pos-blame (caddr info))
-              (define neg-blame (cadddr info))
-              (contract ctc meth pos-blame neg-blame)))
+          (define wrapped-meth (concretize-ictc-method meth ictc-infos))
           (vector-set! meths index wrapped-meth))
         c)))
+
+;; method info -> method
+;; appropriately wraps the method with interface contracts
+(define (concretize-ictc-method meth info)
+  (for/fold ([meth meth])
+            ([info (in-list info)])
+    (define ctc (car info))
+    (define pos-blame (caddr info))
+    (define neg-blame (cadddr info))
+    (contract ctc meth pos-blame neg-blame)))
 
 (define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)
