@@ -192,7 +192,7 @@ Instructions:
 (pack-plt archive-filename
           archive-name
           files
-          #:requires `((("rackeg") ()) (("gracket") ()))
+          #:requires `((("racket") ()) (("gracket") ()))
           #:file-mode 'file-replace
           #:plt-relative? #t
           #:at-plt-home? #t
