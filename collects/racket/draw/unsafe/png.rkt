@@ -10,9 +10,13 @@
   [(unix)
    ;; Most Linux distros supply "libpng12", while other Unix
    ;; variants often have just "libpng":
-   (with-handlers ([exn:fail:filesystem?
-                    (lambda (exn) (ffi-lib "libpng"))])
-     (ffi-lib "libpng12" '("0" "")))]
+   (let loop ([libs '(("libpng15" ("15" ""))
+                      ("libpng12" ("0" ""))
+                      ("libpng"))])
+     (apply ffi-lib (car libs)
+            #:fail (let ([rest (cdr libs)])
+                     (and (pair? rest)
+                          (lambda () (loop rest))))))
   [(macosx) (ffi-lib "libpng15.15.dylib")]
   [(windows)
    (ffi-lib "zlib1.dll")
