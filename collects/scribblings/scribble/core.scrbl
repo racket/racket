@@ -342,7 +342,8 @@ The recognized @tech{style properties} are as follows:
        normally shows only the top-level sections).}
 
  @item{@racket['hidden] --- The part title is not shown in rendered
-       HTML output. The @racket['toc-hidden] style usually should be
+       HTML output, and the part title is not shown in Latex output if it
+       is empty. The @racket['toc-hidden] style usually should be
        included with @racket['hidden].}
 
  @item{@racket['toc-hidden] --- The part title is not shown in tables

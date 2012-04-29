@@ -130,7 +130,10 @@
           (printf "\n\n\\postDoc\n\\end{document}\n"))))
 
     (define/override (render-part-content d ri)
-      (let ([number (collected-info-number (part-collected-info d ri))])
+      (let ([number (collected-info-number (part-collected-info d ri))]
+            [completely-hidden?
+             (and (part-style? d 'hidden)
+                  (equal? "" (content->string (part-title-content d))))])
         (when (and (part-title-content d) 
                    (or (pair? number)
                        (let ([d (render-part-depth)])
@@ -141,30 +144,35 @@
             (for ([pre (in-list pres)])
               (printf "\n\n")
               (do-render-paragraph pre d ri #t #f)))
-          (let ([no-number? (and (pair? number) 
-                                 (or (not (car number))
-                                     ((length number) . > . 3)))])
-            (printf "\n\n\\~a~a~a"
-                    (case (+ (length number) (or (render-part-depth) 0))
-                      [(0 1) "sectionNewpage\n\n\\section"]
-                      [(2) "subsection"]
-                      [(3) "subsubsection"]
-                      [else "subsubsection"])
-                    (if (and (part-style? d 'hidden) (not no-number?))
-                      "hidden" "")
-                    (if no-number? "*" ""))
-            (when (not (or (part-style? d 'hidden) no-number?))
-              (printf "[")
-              (parameterize ([disable-images #t]
-                             [escape-brackets #t])
-                (render-content (part-title-content d) d ri))
-              (printf "]")))
-          (printf "{")
-          (render-content (part-title-content d) d ri)
-          (printf "}")
-          (when (eq? (style-name (part-style d)) 'index) (printf "\n\n")))
+          (cond
+           [completely-hidden?
+            (printf "\n\n\\notitlesection")]
+           [else
+            (let ([no-number? (and (pair? number) 
+                                   (or (not (car number))
+                                       ((length number) . > . 3)))])
+              (printf "\n\n\\~a~a~a"
+                      (case (+ (length number) (or (render-part-depth) 0))
+                        [(0 1) "sectionNewpage\n\n\\section"]
+                        [(2) "subsection"]
+                        [(3) "subsubsection"]
+                        [else "subsubsection"])
+                      (if (and (part-style? d 'hidden) (not no-number?))
+                          "hidden" "")
+                      (if no-number? "*" ""))
+              (when (not (or (part-style? d 'hidden) no-number?))
+                (printf "[")
+                (parameterize ([disable-images #t]
+                               [escape-brackets #t])
+                  (render-content (part-title-content d) d ri))
+                (printf "]")))
+            (printf "{")
+            (render-content (part-title-content d) d ri)
+            (printf "}")
+            (when (eq? (style-name (part-style d)) 'index) (printf "\n\n"))]))
         (for ([t (part-tags d)])
-          (printf "\\label{t:~a}\n\n" (t-encode (add-current-tag-prefix (tag-key t ri)))))
+          (printf "\\label{t:~a}~a" (t-encode (add-current-tag-prefix (tag-key t ri)))
+                  (if completely-hidden? "" "\n\n")))
         (render-flow (part-blocks d) d ri #f)
         (for ([sec (part-parts d)]) (render-part sec ri))
         (when (eq? (style-name (part-style d)) 'index) (printf "\\onecolumn\n\n"))
