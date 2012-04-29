@@ -44,7 +44,7 @@
                     ;pixel-visible?
                     ; change-to-color
                     color=?
-                    show-cache
+;                    show-cache
                     )
 (provide-higher-order-primitive map-image (f _))
 (provide-higher-order-primitive map3-image (rfunc gfunc bfunc _))
