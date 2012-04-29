@@ -282,6 +282,27 @@ To plot histograms side-by-side, pass the appropriate @(racket #:x-min) value to
                                                     #:x-min 8
                                                     #:color 2 #:line-color 2
                                                     #:label "Numbers per number")))]
+
+Using the @racket[#:gap] argument, a discrete hisogram can be used to show
+benchmark results where each configuration has a specific color, but
+the runs on a specific benchmark are grouped together. For example,
+
+@interaction[#:eval 
+             plot-eval
+             (parameterize ([discrete-histogram-gap 1/32])
+               (plot (list (discrete-histogram '(#(aa 1.5) #(ab 2.5) #(ac 3.5))
+                                               #:x-min 0 #:color 0 #:line-color 0
+                                               #:skip 5)
+                           (discrete-histogram '(#(ba 1.4) #(bb 2.4) #(bc 3.4))
+                                               #:x-min 1 #:color 1 #:line-color 1
+                                               #:skip 5)
+                           (discrete-histogram '(#(ca 1.3) #(cb 2.3) #(cc 3.3))
+                                               #:x-min 2 #:color 2 #:line-color 2
+                                               #:skip 5)
+                           (discrete-histogram '(#(da 1.2) #(db 2.2) #(dc 3.2))
+                                               #:x-min 3 #:color 3 #:line-color 3
+                                               #:skip 5))))]
+
 }
 
 @doc-apply[stacked-histogram]{
