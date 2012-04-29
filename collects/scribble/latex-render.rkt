@@ -745,9 +745,9 @@
                                 "{\\char`\\_}"
                                 "$\\_$")]
                      [(#\^) "{\\char'136}"]
-                     [(#\>) (if (rendering-tt) "{\\texttt >}" "$>$")]
-                     [(#\<) (if (rendering-tt) "{\\texttt <}" "$<$")]
-                     [(#\|) (if (rendering-tt) "{\\texttt |}" "$|$")]
+                     [(#\>) (if (rendering-tt) "{\\Stttextmore}" "$>$")]
+                     [(#\<) (if (rendering-tt) "{\\Stttextless}" "$<$")]
+                     [(#\|) (if (rendering-tt) "{\\Stttextbar}" "$|$")]
                      [(#\-) "{-}"] ;; avoid en- or em-dash
                      [(#\`) "{`}"] ;; avoid double-quotes
                      [(#\') "{'}"] ;; avoid double-quotes

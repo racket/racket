@@ -54,6 +54,12 @@
 \newcommand{\planetName}[1]{PLane\hspace{-0.1ex}T}
 \newcommand{\slant}[1]{{\textsl{#1}}}
 
+% Used for <, >, and | in tt mode. For some fonts and installations,
+% there seems to be an encoding issue, so pick T1 explicitly:
+\newcommand{\Stttextmore}{{\fontencoding{T1}\selectfont>}}
+\newcommand{\Stttextless}{{\fontencoding{T1}\selectfont<}}
+\newcommand{\Stttextbar}{{\fontencoding{T1}\selectfont|}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tables
 
