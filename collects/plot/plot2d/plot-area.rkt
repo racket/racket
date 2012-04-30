@@ -228,29 +228,37 @@
     (define x-far-tick-label-offset (vneg x-tick-label-offset))
     (define y-far-tick-label-offset (vneg y-tick-label-offset))
     
-    (define (get-tick-label-params ticks tick-label-offset tick-value->dc anchor)
+    (define (get-tick-label-params ticks tick-label-offset tick-value->dc anchor angle)
       (for/list ([t  (in-list ticks)] #:when (pre-tick-major? t))
         (match-define (tick p _ label) t)
-        (list label (v+ (tick-value->dc p) tick-label-offset) anchor)))
+        (list label (v+ (tick-value->dc p) tick-label-offset) anchor (degrees->radians angle))))
     
     (define (get-x-tick-label-params)
       (if (plot-x-axis?)
-          (get-tick-label-params x-ticks x-tick-label-offset x-tick-value->dc 'top)
+          (get-tick-label-params x-ticks x-tick-label-offset x-tick-value->dc
+                                 (plot-x-tick-label-anchor)
+                                 (plot-x-tick-label-angle))
           empty))
     
     (define (get-y-tick-label-params)
       (if (plot-y-axis?)
-          (get-tick-label-params y-ticks y-tick-label-offset y-tick-value->dc 'right)
+          (get-tick-label-params y-ticks y-tick-label-offset y-tick-value->dc
+                                 (plot-y-tick-label-anchor)
+                                 (plot-y-tick-label-angle))
           empty))
     
     (define (get-x-far-tick-label-params)
       (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
-          (get-tick-label-params x-far-ticks x-far-tick-label-offset x-far-tick-value->dc 'bottom)
+          (get-tick-label-params x-far-ticks x-far-tick-label-offset x-far-tick-value->dc
+                                 (plot-x-far-tick-label-anchor)
+                                 (plot-x-far-tick-label-angle))
           empty))
     
     (define (get-y-far-tick-label-params)
       (if (and (plot-y-far-axis?) draw-y-far-tick-labels?)
-          (get-tick-label-params y-far-ticks y-far-tick-label-offset y-far-tick-value->dc 'left)
+          (get-tick-label-params y-far-ticks y-far-tick-label-offset y-far-tick-value->dc
+                                 (plot-y-far-tick-label-anchor)
+                                 (plot-y-far-tick-label-angle))
           empty))
     
     ;; -----------------------------------------------------------------------------------------------
@@ -267,22 +275,35 @@
     (define max-x-far-tick-offset (if (plot-x-far-axis?) (max-tick-offset x-far-ticks) 0))
     (define max-y-far-tick-offset (if (plot-y-far-axis?) (max-tick-offset y-far-ticks) 0))
     
-    (define (max-tick-label-height ts)
-      (if (ormap pre-tick-major? ts) char-height 0))
+    (define (get-relative-corners params)
+      (append* (map (match-lambda
+                      [(list label _ anchor angle)
+                       (send pd get-text-corners label #(0 0) anchor angle)])
+                    params)))
     
-    (define (max-tick-label-width ts)
-      (apply max 0 (for/list ([t  (in-list ts)] #:when (pre-tick-major? t))
-                     (send pd get-text-width (tick-label t)))))
+    (define max-x-tick-label-height
+      (if (plot-x-axis?)
+          (apply max 0 (map (λ (corner) (vector-ref corner 1))
+                            (get-relative-corners (get-x-tick-label-params))))
+          0))
     
-    (define max-x-tick-label-height (if (plot-x-axis?) (max-tick-label-height x-ticks) 0))
-    (define max-y-tick-label-width (if (plot-y-axis?) (max-tick-label-width y-ticks) 0))
+    (define max-y-tick-label-width
+      (if (plot-y-axis?)
+          (- (apply min 0 (map (λ (corner) (vector-ref corner 0))
+                               (get-relative-corners (get-y-tick-label-params)))))
+          0))
     
-    (define max-x-far-tick-label-height (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
-                                            (max-tick-label-height x-far-ticks)
-                                            0))
-    (define max-y-far-tick-label-width (if (and (plot-y-far-axis?) draw-y-far-tick-labels?)
-                                           (max-tick-label-width y-far-ticks)
-                                           0))
+    (define max-x-far-tick-label-height
+      (if (and (plot-x-far-axis?) draw-x-far-tick-labels?)
+          (- (apply min 0 (map (λ (corner) (vector-ref corner 1))
+                               (get-relative-corners (get-x-far-tick-label-params)))))
+          0))
+    
+    (define max-y-far-tick-label-width
+      (if (and (plot-y-far-axis?) draw-y-far-tick-labels?)
+          (apply max 0 (map (λ (corner) (vector-ref corner 0))
+                            (get-relative-corners (get-y-far-tick-label-params))))
+          0))
     
     (define (get-x-label-params)
       (define offset (vector 0 (+ max-x-tick-offset max-x-tick-label-height half-char-height)))
@@ -293,7 +314,8 @@
       (list (plot-y-label) (v- (view->dc (vector x-min y-mid)) offset) 'bottom (/ pi 2)))
     
     (define (get-x-far-label-params)
-      (define offset (vector 0 (+ max-x-far-tick-offset max-x-far-tick-label-height half-char-height)))
+      (define offset (vector 0 (+ max-x-far-tick-offset max-x-far-tick-label-height
+                                  half-char-height)))
       (list (plot-x-far-label) (v- (view->dc (vector x-mid y-max)) offset) 'bottom))
     
     (define (get-y-far-label-params)

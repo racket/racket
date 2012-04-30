@@ -40,6 +40,16 @@
 (defparam plot-y-far-axis? boolean? #t)
 (defparam plot-z-far-axis? boolean? #t)
 
+(defparam plot-x-tick-label-angle angle real? 0)
+(defparam plot-y-tick-label-angle angle real? 0)
+(defparam plot-x-far-tick-label-angle angle real? 0)
+(defparam plot-y-far-tick-label-angle angle real? 0)
+
+(defparam plot-x-tick-label-anchor anchor anchor/c 'top)
+(defparam plot-y-tick-label-anchor anchor anchor/c 'right)
+(defparam plot-x-far-tick-label-anchor anchor anchor/c 'bottom)
+(defparam plot-y-far-tick-label-anchor anchor anchor/c 'left)
+
 (defparam plot-decorations? boolean? #t)
 
 (define-parameter-group plot-axes?
@@ -47,6 +57,16 @@
    plot-y-axis? plot-y-far-axis?
    plot-z-axis? plot-z-far-axis?)
   #:struct list)
+
+(define-parameter-group plot-tick-labels
+  (plot-x-tick-label-anchor
+   plot-x-tick-label-angle
+   plot-x-far-tick-label-anchor
+   plot-x-far-tick-label-angle
+   plot-y-tick-label-anchor
+   plot-y-tick-label-angle
+   plot-y-far-tick-label-anchor
+   plot-y-far-tick-label-angle))
 
 (define-parameter-group plot-appearance
    (plot-width
@@ -56,7 +76,8 @@
     plot-line-width plot-tick-size
     plot-font-size plot-font-family
     plot-legend-anchor plot-legend-box-alpha
-    plot-axes? plot-decorations?
+    plot-axes? plot-tick-labels
+    plot-decorations?
     plot-animating?))
 
 (defproc (pen-gap) real? #:document-body

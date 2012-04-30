@@ -101,10 +101,11 @@
 ;; an exact rational function and a floating-point function
 ;; the plot of the exact rational function's graph should be smooth
 (time
- (plot (list (function (λ (x) x) #:label "Exact")
-             (function (λ (x) (exact->inexact x)) #:color 2 #:label "Inexact"))
-       #:x-min #e100000000000000.0 #:x-max #e100000000000000.1
-       #:width 450))
+ (parameterize ([plot-x-tick-label-angle 15])
+   (plot (list (function (λ (x) x) #:label "Exact")
+               (function (λ (x) (exact->inexact x)) #:color 2 #:label "Inexact"))
+         #:x-min #e100000000000000.0 #:x-max #e100000000000000.1
+         #:width 450)))
 
 (time
  (plot (function cos 0 0.0000001)

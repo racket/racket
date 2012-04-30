@@ -57,7 +57,28 @@ See @(racket ->pen-color) and @(racket ->brush-color) for details on how PLoT in
 @doc-apply[plot-x-far-label]
 @doc-apply[plot-y-far-label]
 @doc-apply[plot-z-far-label]{
-The tick labels for ``far'' axes. See @racket[plot-x-ticks] for a discussion of near and far axes.
+The axis labels for ``far'' axes. See @racket[plot-x-ticks] for a discussion of near and far axes.
+}
+
+@doc-apply[plot-x-tick-label-anchor]
+@doc-apply[plot-x-tick-label-angle]
+@doc-apply[plot-y-tick-label-anchor]
+@doc-apply[plot-y-tick-label-angle]
+@doc-apply[plot-x-far-tick-label-anchor]
+@doc-apply[plot-x-far-tick-label-angle]
+@doc-apply[plot-y-far-tick-label-anchor]
+@doc-apply[plot-y-far-tick-label-angle]{
+Anchor and angles for axis tick labels (2D only).
+Angles are in degrees.
+The anchor refers to the part of the label attached to the end of the tick line.
+
+Set these when labels would otherwise overlap; for example, in histograms with long category names.
+@interaction[#:eval plot-eval
+                    (parameterize ([plot-x-tick-label-anchor  'top-right]
+                                   [plot-x-tick-label-angle   30])
+                      (plot (discrete-histogram '(#(really-long-category-name-1 2)
+                                                  #(long-category-name-2 1.75)
+                                                  #(long-category-name-3 2.5)))))]
 }
 
 @doc-apply[plot-x-axis?]

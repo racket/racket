@@ -9,6 +9,14 @@
   ;; General plot parameters
   plot-x-axis? plot-y-axis? plot-z-axis?
   plot-x-far-axis? plot-y-far-axis? plot-z-far-axis?
+  plot-x-tick-label-anchor
+  plot-y-tick-label-anchor
+  plot-x-far-tick-label-anchor
+  plot-y-far-tick-label-anchor
+  plot-x-tick-label-angle
+  plot-y-tick-label-angle
+  plot-x-far-tick-label-angle
+  plot-y-far-tick-label-angle
   plot-width plot-height
   plot-foreground plot-foreground-alpha
   plot-background plot-background-alpha
@@ -71,6 +79,7 @@
  ;; Parameter groups
  plot-parameters
  plot-axes?
+ plot-tick-labels
  plot-appearance
  plot3d-appearance
  plot-output
