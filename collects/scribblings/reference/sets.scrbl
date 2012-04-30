@@ -27,8 +27,8 @@ unpredictable when keys are mutated.
 @defproc[(seteq [v any/c] ...) set?]
 )]{
 
-Creates a set that uses @racket[equal?], @racket[eq?], or
-@racket[eqv?], respectively, to compare elements.  The given
+Creates a set that uses @racket[equal?], @racket[eqv?], or
+@racket[eq?], respectively, to compare elements.  The given
 @racket[v]s are added to the set. The elements are added in the order
 that they appear as @racket[v]s, so in the first two cases, an earlier
 element that is @racket[equal?] or @racket[eqv?] but not @racket[eq?]
