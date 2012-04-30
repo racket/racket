@@ -130,14 +130,13 @@
     [else
      (define n (length cats))
      (let* ([x-min  (if x-min x-min 0)]
-            [x-max  (if x-max x-max (+ x-min (* n skip)))]
+            [x-max  (if x-max x-max (max x-min (+ x-min (* (- n 1) skip) 1)))]
             [y-min  (if y-min y-min (apply min* rys))]
             [y-max  (if y-max y-max (apply max* rys))])
-       (define xs (linear-seq x-min x-max (add1 n)))
-       (define x-ivls (for/list ([x1  (in-list xs)] [x2  (in-list (rest xs))])
-                        (define 1/2-gap-size (+ (* 1/2 (- skip 1)) (* 1/2 gap (- x2 x1))))
-                        (ivl (+ x1 1/2-gap-size) (- x2 1/2-gap-size))))
-       (define tick-xs (linear-seq x-min x-max n #:start? #f #:end? #f))
+       (define xs (build-list n (λ (i) (+ x-min (* i skip)))))
+       (define x-ivls (for/list ([x  (in-list xs)])
+                        (ivl (+ x (* 1/2 gap)) (- (+ x 1) (* 1/2 gap)))))
+       (define tick-xs (for/list ([x  (in-list xs)]) (+ x 1/2)))
        (define y-ivls (map (λ (y) (if (ivl? y) y (ivl 0 y))) ys))
        (define maybe-invert (if invert? (λ (x y) (vector y x)) vector))
        (renderer2d
