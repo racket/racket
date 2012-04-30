@@ -140,6 +140,9 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check namespace-attach-module:
 
+(require (only-in scheme/base)
+         (only-in mzscheme))
+
 (let* ([n (make-empty-namespace)]
        [l null]
        [here (lambda (v)
