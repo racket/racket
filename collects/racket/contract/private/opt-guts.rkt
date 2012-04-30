@@ -184,9 +184,7 @@
                           (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
                                              lift-var
                                              x)))))))
-     (with-syntax ([val (opt/info-val opt/info)]
-                   [partial-flat-var partial-flat-var])
-       #'(partial-flat-var val))
+     #f
      lift-var
      null
      #f)))
