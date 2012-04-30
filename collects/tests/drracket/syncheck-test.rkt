@@ -1,12 +1,5 @@
 #lang racket/base
 
-#|
-
-tests involving object% are commented out, since they
-trigger runtime errors in check syntax.
-
-|#
-
   (require "private/drracket-test-util.rkt"
            drracket/private/syncheck/local-member-names
            string-constants/string-constant
@@ -17,7 +10,8 @@ trigger runtime errors in check syntax.
            racket/file
            mred
            framework
-           mrlib/text-string-style-desc)
+           mrlib/text-string-style-desc
+           (for-syntax racket/base))
   
   (provide main)
   
@@ -25,14 +19,32 @@ trigger runtime errors in check syntax.
   ;; type test = (make-test string
   ;;                        (listof str/ann)
   ;;                        (listof (cons (list number number) (listof (list number number)))))
-  (define-struct test (input expected arrows) #:transparent)
+  (define-struct test (line input expected arrows) #:transparent)
   (define-struct (dir-test test) () #:transparent)
   
-  (define-struct rename-test (input pos old-name new-name output) #:transparent)
+  (define-struct rename-test (line input pos old-name new-name output) #:transparent)
   
-  (define build-test
-    (λ (input expected [arrow-table '()])
-      (make-test input expected arrow-table)))
+  (define build-test/proc
+    (λ (line input expected [arrow-table '()])
+      (make-test line input expected arrow-table)))
+  
+  (define-syntax (build-test stx)
+    (syntax-case stx ()
+      [(_ args ...)
+       (with-syntax ([line (syntax-line stx)])
+         #'(build-test/proc line args ...))]))
+  
+  (define-syntax (build-rename-test stx)
+    (syntax-case stx ()
+      [(_ args ...)
+       (with-syntax ([line (syntax-line stx)])
+         #'(rename-test line args ...))]))
+  
+  (define-syntax (build-dir-test stx)
+    (syntax-case stx ()
+      [(_ args ...)
+       (with-syntax ([line (syntax-line stx)])
+         #'(make-dir-test line args ...))]))
   
   ;; tests : (listof test)
   (define tests
@@ -846,19 +858,19 @@ trigger runtime errors in check syntax.
                        '((77 79) (210 212))
                        '((73 76) (41 44))))
      
-     (make-dir-test "(module m mzscheme (require \"~a/list.rkt\") foldl foldl)"
-                    '(("("             default-color)
-                      ("module"        imported-syntax)
-                      (" m mzscheme (" default-color)
-                      ("require"       imported-syntax)
-                      (" \""           default-color)
-                      (relative-path   default-color)
-                      ("/list.rkt\") " default-color)
-                      ("foldl"         imported-variable)
-                      (" "             default-color)
-                      ("foldl"         imported-variable)
-                      (")"             default-color))
-                    #f)
+     (build-dir-test "(module m mzscheme (require \"~a/list.rkt\") foldl foldl)"
+                     '(("("             default-color)
+                       ("module"        imported-syntax)
+                       (" m mzscheme (" default-color)
+                       ("require"       imported-syntax)
+                       (" \""           default-color)
+                       (relative-path   default-color)
+                       ("/list.rkt\") " default-color)
+                       ("foldl"         imported-variable)
+                       (" "             default-color)
+                       ("foldl"         imported-variable)
+                       (")"             default-color))
+                     #f)
      
      (build-test "#lang scheme/base\n(require scheme)\n(define-syntax m (lambda (x) #'1))"
                  '(("#lang scheme/base\n(" default-color)
@@ -924,118 +936,118 @@ trigger runtime errors in check syntax.
                        '((61 63) (65 67))
                        '((6 12) (14 21) (40 43) (49 54) (74 80))))
 
-     (rename-test "(lambda (x) x)"
-                  9
-                  "x"
-                  "y"
-                  "(lambda (y) y)")
+     (build-rename-test "(lambda (x) x)"
+                        9
+                        "x"
+                        "y"
+                        "(lambda (y) y)")
      
-     (rename-test "(lambda (x) x)"
-                  9
-                  "x"
-                  "yy"
-                  "(lambda (yy) yy)")
+     (build-rename-test "(lambda (x) x)"
+                        9
+                        "x"
+                        "yy"
+                        "(lambda (yy) yy)")
      
-     (rename-test "(lambda (x) x)"
-                  9
-                  "x"
-                  "yxy"
-                  "(lambda (yxy) yxy)")
-     (rename-test "(lambda (x) x x)"
-                  9
-                  "x"
-                  "yxy"
-                  "(lambda (yxy) yxy yxy)")
-     (rename-test "(lambda (x) x x)"
-                  12
-                  "x"
-                  "yxy"
-                  "(lambda (yxy) yxy yxy)")
-     (rename-test "(lambda (x) x x)"
-                  14
-                  "x"
-                  "yxy"
-                  "(lambda (yxy) yxy yxy)")
+     (build-rename-test "(lambda (x) x)"
+                        9
+                        "x"
+                        "yxy"
+                        "(lambda (yxy) yxy)")
+     (build-rename-test "(lambda (x) x x)"
+                        9
+                        "x"
+                        "yxy"
+                        "(lambda (yxy) yxy yxy)")
+     (build-rename-test "(lambda (x) x x)"
+                        12
+                        "x"
+                        "yxy"
+                        "(lambda (yxy) yxy yxy)")
+     (build-rename-test "(lambda (x) x x)"
+                        14
+                        "x"
+                        "yxy"
+                        "(lambda (yxy) yxy yxy)")
      
-     (rename-test "(define-syntax-rule (m x) (λ (x) x))(m z)"
-                  39
-                  "z"
-                  "qq"
-                  "(define-syntax-rule (m x) (λ (x) x))(m qq)")
+     (build-rename-test "(define-syntax-rule (m x) (λ (x) x))(m z)"
+                        39
+                        "z"
+                        "qq"
+                        "(define-syntax-rule (m x) (λ (x) x))(m qq)")
      
-     (rename-test (string-append
-                   "#lang racket/base\n"
-                   "(require (for-syntax racket/base))\n"
-                   "(define-syntax-rule (m x)\n"
-                   "  (begin (λ (x) x) (define x 1) (λ (x) x)))\n"
-                   "(m x)\n"
-                   "x\n")
-                  126
-                  "x"
-                  "y"
-                  (string-append
-                   "#lang racket/base\n"
-                   "(require (for-syntax racket/base))\n"
-                   "(define-syntax-rule (m x)\n"
-                   "  (begin (λ (x) x) (define x 1) (λ (x) x)))\n"
-                   "(m y)\n"
-                   "y\n"))
+     (build-rename-test (string-append
+                         "#lang racket/base\n"
+                         "(require (for-syntax racket/base))\n"
+                         "(define-syntax-rule (m x)\n"
+                         "  (begin (λ (x) x) (define x 1) (λ (x) x)))\n"
+                         "(m x)\n"
+                         "x\n")
+                        126
+                        "x"
+                        "y"
+                        (string-append
+                         "#lang racket/base\n"
+                         "(require (for-syntax racket/base))\n"
+                         "(define-syntax-rule (m x)\n"
+                         "  (begin (λ (x) x) (define x 1) (λ (x) x)))\n"
+                         "(m y)\n"
+                         "y\n"))
      
-     (rename-test (string-append
-                   "#lang racket"
-                   "\n"
-                   "(define player%\n"
-                   " (class object%\n"
-                   "   (init-field strategy player# tiles)\n"
-                   "   (field [score (set)])\n"
-                   "\n"
-                   "   (super-new)\n"
-                   "\n"
-                   "   (define/private (put t pl)\n"
-                   "     (set! tiles(remove t tiles)))))\n")
-                  80
-                  "tiles"
-                  "*tiles"
-                  (string-append
-                   "#lang racket"
-                   "\n"
-                   "(define player%\n"
-                   " (class object%\n"
-                   "   (init-field strategy player# *tiles)\n"
-                   "   (field [score (set)])\n"
-                   "\n"
-                   "   (super-new)\n"
-                   "\n"
-                   "   (define/private (put t pl)\n"
-                   "     (set! *tiles(remove t *tiles)))))\n"))
+     (build-rename-test (string-append
+                         "#lang racket"
+                         "\n"
+                         "(define player%\n"
+                         " (class object%\n"
+                         "   (init-field strategy player# tiles)\n"
+                         "   (field [score (set)])\n"
+                         "\n"
+                         "   (super-new)\n"
+                         "\n"
+                         "   (define/private (put t pl)\n"
+                         "     (set! tiles(remove t tiles)))))\n")
+                        80
+                        "tiles"
+                        "*tiles"
+                        (string-append
+                         "#lang racket"
+                         "\n"
+                         "(define player%\n"
+                         " (class object%\n"
+                         "   (init-field strategy player# *tiles)\n"
+                         "   (field [score (set)])\n"
+                         "\n"
+                         "   (super-new)\n"
+                         "\n"
+                         "   (define/private (put t pl)\n"
+                         "     (set! *tiles(remove t *tiles)))))\n"))
      
-     (rename-test (string-append
-                   "#lang racket"
-                   "\n"
-                   "(define player%\n"
-                   " (class object%\n"
-                   "   (init-field strategy player# *tiles)\n"
-                   "   (field [score (set)])\n"
-                   "\n"
-                   "   (super-new)\n"
-                   "\n"
-                   "   (define/private (put t pl)\n"
-                   "     (set! *tiles(remove t *tiles)))))\n")
-                  80
-                  "*tiles"
-                  "tiles"
-                  (string-append
-                   "#lang racket"
-                   "\n"
-                   "(define player%\n"
-                   " (class object%\n"
-                   "   (init-field strategy player# tiles)\n"
-                   "   (field [score (set)])\n"
-                   "\n"
-                   "   (super-new)\n"
-                   "\n"
-                   "   (define/private (put t pl)\n"
-                   "     (set! tiles(remove t tiles)))))\n"))))
+     (build-rename-test (string-append
+                         "#lang racket"
+                         "\n"
+                         "(define player%\n"
+                         " (class object%\n"
+                         "   (init-field strategy player# *tiles)\n"
+                         "   (field [score (set)])\n"
+                         "\n"
+                         "   (super-new)\n"
+                         "\n"
+                         "   (define/private (put t pl)\n"
+                         "     (set! *tiles(remove t *tiles)))))\n")
+                        80
+                        "*tiles"
+                        "tiles"
+                        (string-append
+                         "#lang racket"
+                         "\n"
+                         "(define player%\n"
+                         " (class object%\n"
+                         "   (init-field strategy player# tiles)\n"
+                         "   (field [score (set)])\n"
+                         "\n"
+                         "   (super-new)\n"
+                         "\n"
+                         "   (define/private (put t pl)\n"
+                         "     (set! tiles(remove t tiles)))))\n"))))
                   
   
   (define (main)
