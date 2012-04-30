@@ -76,39 +76,48 @@
       [else
        (make-impersonator-hash/c dom-ctc rng-ctc immutable)])))
 
-(define (check-hash/c ctc) 
-  (let ([dom-ctc (base-hash/c-dom ctc)]
-        [rng-ctc (base-hash/c-rng ctc)]
-        [immutable (base-hash/c-immutable ctc)]
-        [flat? (flat-hash/c? ctc)])
-    (λ (val fail [first-order? #f])
-      (unless (hash? val)
-        (fail "expected a hash, got ~a" val))
-      (when (and (not flat?)
-                 (not (flat-contract? dom-ctc))
-                 (not (hash-equal? val)))
-        (fail "expected equal?-based hash table due to higher-order domain contract, got ~a" val))
-      (case immutable
-        [(#t) 
-         (unless (immutable? val) 
-           (fail "expected an immutable hash, got ~a" val))]
-        [(#f)
-         (when (immutable? val)
-           (fail "expected an mutable hash, got ~a" val))]
-        [(dont-care) (void)])
-      (when first-order?
-        (for ([(k v) (in-hash val)])
-          (unless (contract-first-order-passes? dom-ctc k)
-            (fail "expected: ~s for key, got ~v" (contract-name dom-ctc) k))
-          (unless (contract-first-order-passes? rng-ctc v)
-            (fail "expected: ~s for value, got ~v" (contract-name rng-ctc) v))))
-        #t)))
+(define (check-hash/c ctc val blame) 
+  (define dom-ctc (base-hash/c-dom ctc))
+  (define rng-ctc (base-hash/c-rng ctc))
+  (define immutable (base-hash/c-immutable ctc))
+  (define flat? (flat-hash/c? ctc))
+  (unless (hash? val)
+    (raise-blame-error blame val "expected a hash, ~a: ~e" (given/produced blame) val))
+  (when (and (not flat?)
+             (not (flat-contract? dom-ctc))
+             (not (hash-equal? val)))
+    (raise-blame-error blame val 
+                       "expected equal?-based hash table due to higher-order domain contract, ~a: ~e"
+                       (given/produced blame)
+                       val))
+  (case immutable
+    [(#t) 
+     (unless (immutable? val) 
+       (raise-blame-error blame val
+                          "expected an immutable hash, ~a: ~e" (given/produced blame) val))]
+    [(#f)
+     (when (immutable? val)
+       (raise-blame-error blame val
+                          "expected an mutable hash, ~a: ~e" (given/produced blame) val))]
+    [(dont-care) (void)]))
 
 (define (hash/c-first-order ctc)
-  (let ([check (check-hash/c ctc)])
-    (λ (val)
-      (let/ec return
-        (check val (λ _ (return #f)) #t)))))
+  (define dom-ctc (base-hash/c-dom ctc))
+  (define rng-ctc (base-hash/c-rng ctc))
+  (define immutable (base-hash/c-immutable ctc))
+  (define flat? (flat-hash/c? ctc))
+  (λ (val)
+    (and (hash? val)
+         (or flat?
+             (flat-contract? dom-ctc)
+             (hash-equal? val))
+         (case immutable
+           [(#t) (immutable? val)]
+           [(#f) (not (immutable? val))]
+           [else #t])
+         (for/and ([(k v) (in-hash val)])
+           (and (contract-first-order-passes? dom-ctc k)
+                (contract-first-order-passes? rng-ctc v))))))
 
 (define (hash/c-name ctc)
   (apply 
@@ -139,7 +148,7 @@
    (λ (ctc)
      (λ (blame)
        (λ (val)
-         ((check-hash/c ctc) val (λ args (apply raise-blame-error blame val args)))
+         (check-hash/c ctc val blame)
          (let ([dom-proj ((contract-projection (base-hash/c-dom ctc)) blame)]
                [rng-proj ((contract-projection (base-hash/c-rng ctc)) blame)])
            (for ([(k v) (in-hash val)])
@@ -158,8 +167,7 @@
               [pos-rng-proj (rng-proc blame)]
               [neg-rng-proj (rng-proc (blame-swap blame))])
           (λ (val)
-            ((check-hash/c ctc) val (λ args (apply raise-blame-error blame val args)))
-            
+            (check-hash/c ctc val blame)
             (if (immutable? val)
                 (let ([hash-maker
                        (cond

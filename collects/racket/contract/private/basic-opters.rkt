@@ -92,8 +92,9 @@
                       (raise-blame-error
                        blame
                        val
-                       "expected: ~s, given: ~e"
+                       "expected: ~s, ~a: ~e"
                        (contract-name ctc)
+                       (given/produced blame)
                        val)))
           (interleave-lifts
            lift-vars

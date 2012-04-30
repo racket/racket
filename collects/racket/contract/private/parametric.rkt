@@ -30,23 +30,23 @@
            '...))
    #:projection
    (lambda (c)
-     (lambda (b)
+     (lambda (blame)
 
        (define (wrap p)
          ;; values in polymorphic types come in from negative position,
          ;; relative to the poly/c contract
-         (define negative? (blame-swapped? b))
+         (define negative? (blame-swapped? blame))
          (define barrier/c (polymorphic-contract-barrier c))
          (define instances
            (for/list ([var (in-list (polymorphic-contract-vars c))])
              (barrier/c negative? var)))
          (define protector
            (apply (polymorphic-contract-body c) instances))
-         (((contract-projection protector) b) p))
+         (((contract-projection protector) blame) p))
 
        (lambda (p)
          (unless (procedure? p)
-           (raise-blame-error b p "expected a procedure; got: ~e" p))
+           (raise-blame-error blame p "expected a procedure; ~a: ~e" (given/produced blame) p))
          (make-keyword-procedure
           (lambda (keys vals . args) (keyword-apply (wrap p) keys vals args))
           (case-lambda
@@ -73,12 +73,14 @@
    #:name (lambda (c) (barrier-contract-name c))
    #:projection
    (lambda (c)
-     (lambda (b)
-       (if (equal? (blame-original? b) (barrier-contract-positive? c))
+     (lambda (blame)
+       (if (equal? (blame-original? blame) (barrier-contract-positive? c))
          (lambda (x)
            ((barrier-contract-make c) x))
          (lambda (x)
            (if ((barrier-contract-pred c) x)
              ((barrier-contract-get c) x)
-             (raise-blame-error b x "expected a(n) ~a; got: ~e"
-                                (barrier-contract-name c) x))))))))
+             (raise-blame-error blame x "expected a(n) ~a; ~a: ~e"
+                                (barrier-contract-name c)
+                                (given/produced blame)
+                                x))))))))

@@ -180,8 +180,9 @@
   (raise-blame-error
    blame
    val
-   "expected a number between ~a and ~a, given: ~e"
+   "expected a number between ~a and ~a, ~a: ~e"
    lo hi
+   (given/produced blame)
    val))
 
 (define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg)
@@ -216,8 +217,9 @@
   (raise-blame-error
    blame
    val
-   "expected a number ~a ~a, given: ~e"
+   "expected a number ~a ~a, ~a: ~e"
    (object-name comparison) m
+   (given/produced blame)
    val))
 
 
@@ -302,8 +304,9 @@
                        (raise-blame-error
                         blame
                         val
-                        "expected: ~s, given: ~e"
+                        "expected: ~s, ~a: ~e"
                         (contract-name ctc)
+                        (given/produced blame)
                         val))))        
          (append lifts-hdp lifts-tlp) 
          (append superlifts-hdp superlifts-tlp)
@@ -579,6 +582,7 @@
 (define (bad-number-of-arguments blame val args dom-len)
   (define num-values (length args))
   (raise-blame-error (blame-swap blame) val 
-                     "expected ~a argument~a, got ~a argument~a"
+                     "expected ~a argument~a, ~a ~a argument~a"
                      dom-len (if (= dom-len 1) "" "s")
+                     (given/produced blame)
                      num-values (if (= num-values 1) "" "s")))

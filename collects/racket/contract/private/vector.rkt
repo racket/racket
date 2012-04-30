@@ -178,38 +178,48 @@
                 (list '#:immutable immutable)
                 null)))))
 
-(define (check-vector/c c) 
-  (let ([elem-ctcs (base-vector/c-elems c)]
-        [immutable (base-vector/c-immutable c)]
-        [flat? (flat-vector/c? c)])
-    (λ (val fail [first-order? #f])
-      (unless (vector? val)
-        (fail "expected a vector, got ~a" val))
-      (cond
-        [(eq? immutable #t)
-         (unless (immutable? val)
-           (fail "expected an immutable vector, got ~a" val))]
-        [(eq? immutable #f)
-         (when (immutable? val)
-           (fail "expected an mutable vector, got ~a" val))]
-        [else (void)])
-      (let ([elem-count (length elem-ctcs)])
-          (unless (= (vector-length val) elem-count)
-            (fail "expected a vector of ~a element~a, got ~a"
-                  elem-count (if (= elem-count 1) "" "s") val)))
-      (when first-order?
-        (for ([e (in-vector val)]
-              [n (in-naturals)]
-              [c (in-list elem-ctcs)])
-          (unless (contract-first-order-passes? c e)
-            (fail "expected: ~s for element ~v, got ~v" (contract-name c) n val))))
-      #t)))
+(define (check-vector/c ctc val blame)
+  (define elem-ctcs (base-vector/c-elems ctc))
+  (define immutable (base-vector/c-immutable ctc))
+  (unless (vector? val)
+    (raise-blame-error blame val "expected a vector, ~a: ~e" 
+                       (given/produced blame)
+                       val))
+  (cond
+    [(eq? immutable #t)
+     (unless (immutable? val)
+       (raise-blame-error blame val 
+                          "expected an immutable vector, ~a: ~e"
+                          (given/produced blame)
+                          val))]
+    [(eq? immutable #f)
+     (when (immutable? val)
+       (raise-blame-error blame val 
+                          "expected an mutable vector, ~a: ~e" 
+                          (given/produced blame)
+                          val))]
+    [else (void)])
+  (define elem-count (length elem-ctcs))
+  (unless (= (vector-length val) elem-count)
+    (raise-blame-error blame val "expected a vector of ~a element~a, ~a: ~e"
+                       elem-count
+                       (if (= elem-count 1) "" "s") 
+                       (given/produced blame)
+                       val)))
 
 (define (vector/c-first-order ctc)
-  (let ([check (check-vector/c ctc)])
-    (λ (val)
-      (let/ec return
-        (check val (λ _ (return #f)) #t)))))
+  (define elem-ctcs (base-vector/c-elems ctc))
+  (define immutable (base-vector/c-immutable ctc))
+  (λ (val)
+    (and (vector? val)
+         (cond
+           [(eq? immutable #t) (immutable? val)]
+           [(eq? immutable #f) (not (immutable? val))]
+           [else #t])
+         (= (vector-length val) (length elem-ctcs))
+         (for/and ([e (in-vector val)]
+                   [c (in-list elem-ctcs)])
+           (contract-first-order-passes? c e)))))
 
 (define-struct (flat-vector/c base-vector/c) ()
   #:property prop:flat-contract
@@ -220,7 +230,7 @@
    (λ (ctc) 
      (λ (blame) 
        (λ (val)
-         ((check-vector/c ctc) val (λ args (apply raise-blame-error blame val args)))
+         (check-vector/c ctc val blame)
          (for ([e (in-vector val)]
                [c (in-list (base-vector/c-elems ctc))])
            (((contract-projection c) blame) e))
@@ -236,7 +246,7 @@
                [elem-neg-projs (apply vector-immutable
                                       (map (λ (c) ((contract-projection c) (blame-swap blame))) elem-ctcs))])
            (λ (val)
-             ((check-vector/c ctc) val (λ args (apply raise-blame-error blame val args)))
+             (check-vector/c ctc val blame)
              (if (immutable? val)
                  (apply vector-immutable
                         (for/list ([e (in-vector val)]

@@ -14,31 +14,30 @@
 
 (define-struct base-box/c (content immutable))
 
-(define (check-box/c ctc)
-  (let ([elem-ctc (base-box/c-content ctc)]
-        [immutable (base-box/c-immutable ctc)]
-        [flat? (flat-box/c? ctc)])
-    (λ (val fail [first-order? #f])
-      (unless (box? val)
-        (fail "expected a box, got ~a" val))
-      (case immutable
-        [(#t)
-         (unless (immutable? val)
-           (fail "expected an immutable box, got ~a" val))]
-        [(#f)
-         (when (immutable? val)
-           (fail "expected a mutable box, got ~a" val))]
-        [(dont-care) (void)])
-      (when first-order?
-        (unless (contract-first-order-passes? elem-ctc (unbox val))
-          (fail "expected: ~s, got ~v" (contract-name elem-ctc) val)))
-      #t)))
+(define (check-box/c ctc val blame)
+  (define elem-ctc (base-box/c-content ctc))
+  (define immutable (base-box/c-immutable ctc))
+  (unless (box? val)
+    (raise-blame-error blame val "expected a box, ~a: ~a" (given/produced blame) val))
+  (case immutable
+    [(#t)
+     (unless (immutable? val)
+       (raise-blame-error blame val "expected an immutable box, ~a: ~a" (given/produced blame) val))]
+    [(#f)
+     (when (immutable? val)
+       (raise-blame-error blame val "expected a mutable box, ~a: ~a" (given/produced blame) val))]
+    [(dont-care) (void)]))
 
 (define (box/c-first-order ctc)
-  (let ([check (check-box/c ctc)])
-    (λ (val)
-      (let/ec return
-        (check val (λ _ (return #f)) #t)))))
+  (define elem-ctc (base-box/c-content ctc))
+  (define immutable (base-box/c-immutable ctc))
+  (λ (val)
+    (and (box? val)
+         (case immutable
+           [(#t) (immutable? val)]
+           [(#f) (not (immutable? val))]
+           [(dont-care) #t])
+         (contract-first-order-passes? elem-ctc (unbox val)))))
 
 (define (box/c-name ctc)
   (let ([elem-name (contract-name (base-box/c-content ctc))]
@@ -66,7 +65,7 @@
    (λ (ctc)
      (λ (blame)
        (λ (val)
-         ((check-box/c ctc) val (λ args (apply raise-blame-error blame val args)))
+         (check-box/c ctc val blame)
          (((contract-projection (base-box/c-content ctc)) blame) (unbox val))
          val)))))
 
@@ -78,7 +77,7 @@
         (let ([pos-elem-proj ((contract-projection elem-ctc) blame)]
               [neg-elem-proj ((contract-projection elem-ctc) (blame-swap blame))])
           (λ (val)
-            ((check-box/c ctc) val (λ args (apply raise-blame-error blame val args)))
+            (check-box/c ctc val blame)
             (if (immutable? val)
                 (box-immutable (pos-elem-proj (unbox val)))
                 (box-wrapper val

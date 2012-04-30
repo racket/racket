@@ -15,6 +15,7 @@
          blame-add-context
          blame-add-unknown-context
          blame-context 
+         given/produced
          
          raise-blame-error
          current-blame-format
@@ -200,3 +201,9 @@
 
 (define current-blame-format
   (make-parameter default-blame-format))
+
+
+(define (given/produced blame)
+  (if (blame-original? blame)
+      "produced"
+      "given"))

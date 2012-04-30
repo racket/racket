@@ -113,7 +113,7 @@ v4 todo:
                           [res-checker (λ (res-x ...) (values (p-app-x res-x) ...))])
                      (λ (val)
                        (unless (procedure? val)
-                         (raise-blame-error orig-blame val "expected a procedure, got ~v" val))
+                         (raise-blame-error orig-blame val "expected a procedure, ~a ~v" (given/produced orig-blame) val))
                        (wrapper
                         val
                         (make-keyword-procedure
@@ -1873,7 +1873,7 @@ v4 todo:
        (raise-blame-error
         blame
         val
-        "expected a ~a that accepts ~a~a~a argument~a~a~a, given: ~e"
+        "expected a ~a that accepts ~a~a~a argument~a~a~a, ~a: ~e"
         (if mtd? "method" "procedure")
         (if (zero? dom-length) "no" dom-length)
         (if (null? optionals) "" " mandatory")
@@ -1882,6 +1882,7 @@ v4 todo:
         (if (zero? optionals) ""
             (format " and up to ~a optional argument~a" optionals (if (= 1 optionals) "" "s")))
         (keyword-error-text mandatory-kwds optional-keywords)
+        (given/produced blame)
         val))]
     [else
      passes?]))
@@ -1948,13 +1949,14 @@ v4 todo:
        (raise-blame-error
         blame
         val
-        "expected a ~a that accepts ~a argument~a and arbitrarily more~a, given: ~e"
+        "expected a ~a that accepts ~a argument~a and arbitrarily more~a, ~a: ~e"
         (if mtd? "method" "procedure")
         (cond
           [(zero? dom-length) "no"]
           [else dom-length])
         (if (= 1 dom-length) "" "s")
         (keyword-error-text mandatory-kwds optional-kwds)
+        (given/produced blame)
         val))]
     [else
      passes?]))

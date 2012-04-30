@@ -14,7 +14,8 @@
         (lambda (x)
           (unless (struct-type-property? x)
             (raise-blame-error blame x
-                               "expected struct-type-property, given ~e"
+                               "expected struct-type-property, ~a: ~e"
+                               (given/produced blame)
                                x))
           (let-values ([(nprop _pred _acc)
                         (make-struct-type-property
