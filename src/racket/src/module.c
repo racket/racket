@@ -6862,7 +6862,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       fm = scheme_stx_phase_shift(fm, NULL, self_modidx, this_empty_self_modidx, NULL, NULL);
 
     /* make self_modidx like the empty modidx */
-    ((Scheme_Modidx *)self_modidx)->resolved = ((Scheme_Modidx *)this_empty_self_modidx)->resolved;
+    if (SAME_OBJ(this_empty_self_modidx, empty_self_modidx))
+      ((Scheme_Modidx *)self_modidx)->resolved = empty_self_modname;
+    else
+      ((Scheme_Modidx *)self_modidx)->resolved = ((Scheme_Modidx *)this_empty_self_modidx)->resolved;
   }
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {

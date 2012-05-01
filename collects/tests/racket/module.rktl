@@ -685,6 +685,24 @@
   
   (q go))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check modidx for 'origin items
+
+(syntax-case (parameterize ([current-namespace (make-base-namespace)])
+               (expand
+                '(module m racket/base
+                   (define-syntax-rule (m x) 1)
+                   (m x)))) ()
+  [(_ name lang (mb ds (app cwv (lam () (qt one)) pnt)))
+   (begin
+     (test 1 syntax-e #'one)
+     (test #t identifier? (car (syntax-property #'one 'origin)))
+     (test #t symbol? 
+           (resolved-module-path-name
+            (module-path-index-resolve
+             (car (identifier-binding (car (syntax-property #'one 'origin))))))))])
+
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
