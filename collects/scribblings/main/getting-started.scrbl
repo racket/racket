@@ -7,7 +7,8 @@ To get started with Racket,
 @link["http://www.racket-lang.org/download/"]{download it} from the webpage and
 install it. If you are a beginner or would like to use a graphical environment
 to run programs, run the @tt{DrRacket} executable. Otherwise, the @tt{racket}
-executable will run a command-line Read-Eval-Print-Loop (@tech{REPL}).
+executable will run a command-line Read-Eval-Print-Loop
+(@tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{REPL}).
 
 On Windows, you can access Racket through the Start menu. By default it is
 installed in @onscreen{Program Files} → @onscreen{Racket} →
