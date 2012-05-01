@@ -63,6 +63,7 @@
                         [else
                          (let-values ([(next lift superlift partial flat _ this-stronger-ribs this-chaperone?)
                                        (opt/i opt/info (car ps))])
+                           (define next-chaperone? (combine-two-chaperone?s chaperone? this-chaperone?))
                            (if flat
                                (loop (cdr ps)
                                      (cons flat next-ps)
@@ -72,7 +73,7 @@
                                      (append this-stronger-ribs stronger-ribs)
                                      hos
                                      ho-ctc
-                                     (and chaperone? this-chaperone?))
+                                     next-chaperone?)
                                (if (< (length hos) 1)
                                    (loop (cdr ps)
                                          next-ps
@@ -82,7 +83,7 @@
                                          (append this-stronger-ribs stronger-ribs)
                                          (cons (car ps) hos)
                                          next
-                                         (and chaperone? this-chaperone?))
+                                         next-chaperone?)
                                    (loop (cdr ps)
                                          next-ps
                                          lift-ps
@@ -91,7 +92,7 @@
                                          stronger-ribs
                                          (cons (car ps) hos)
                                          ho-ctc
-                                         (and chaperone? this-chaperone?)))))]))])
+                                         next-chaperone?))))]))])
         (with-syntax ((next-ps
                        (with-syntax (((opt-p ...) (reverse opt-ps)))
                          (syntax (or opt-p ...)))))
@@ -321,7 +322,7 @@
              #f)
          #f
          (append stronger-ribs-hd stronger-ribs-tl)
-         (and hd-chaperone? tl-chaperone?)))))
+         (combine-two-chaperone?s hd-chaperone? tl-chaperone?)))))
   
   (syntax-case stx (cons/c)
     [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
@@ -553,7 +554,7 @@
          (let-values ([(next lift superlift partial flat _ stronger-ribs chaperone?)
                        (opt/arrow-ctc (syntax->list (syntax (dom ...)))
                                       (syntax->list (syntax (rng ...))))])
-           (if chaperone?
+           (if (eq? chaperone? #t)
                (values next lift superlift partial flat _ stronger-ribs chaperone?)
                (opt/unknown opt/i opt/info stx))))]
     [(-> dom ... any)
@@ -561,7 +562,7 @@
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
          (let-values ([(next lift superlift partial flat _ stronger-ribs chaperone?)
                        (opt/arrow-any-ctc (syntax->list (syntax (dom ...))))])
-           (if chaperone?
+           (if (eq? chaperone? #t)
                (values next lift superlift partial flat _ stronger-ribs chaperone?)
                (opt/unknown opt/i opt/info stx))))]
     [(-> dom ... rng)
@@ -570,7 +571,7 @@
          (let-values ([(next lift superlift partial flat _ stronger-ribs chaperone?)
                        (opt/arrow-ctc (syntax->list (syntax (dom ...)))
                                       (list #'rng))])
-           (if chaperone?
+           (if (eq? chaperone? #t)
                (values next lift superlift partial flat _ stronger-ribs chaperone?)
                (opt/unknown opt/i opt/info stx))))]))
 

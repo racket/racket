@@ -58,7 +58,7 @@
 (struct subcontract (field-name ref depended-on?) #:transparent)
 
 (struct indep subcontract (ctc) #:transparent)
-(struct dep   subcontract (dep-proc kind) #:transparent)
+(struct dep   subcontract (dep-proc flat?) #:transparent)
 
 (struct immutable          indep ()    #:transparent)
 (struct lazy-immutable     indep ()    #:transparent)
@@ -74,46 +74,12 @@
 (begin-for-syntax
   ;; exp : syntax
   ;; lazy? : boolean
-  ;; type : (or/c '#:impersonator '#:chaperone '#:flat)
+  ;; type : (or/c '#:chaperone '#:flat)
   ;; sel-id : identifier?
   ;; deps : (listof identifier?)
   (struct clause (exp lazy? sel-id))
   (struct dep-clause clause (type deps))
   (struct indep-clause clause ()))
-
-(define-syntax (struct/c stx)
-  (syntax-case stx ()
-    [(_ . args) 
-     (with-syntax ([x (syntax/loc stx (do-struct/c . args))])
-       (syntax/loc stx (#%expression x)))]))
-
-(define (struct/c-name ctc)
-  '(let ([ctcs (map second
-                   (sort (append (base-struct/c-immutables ctc) (base-struct/c-mutables ctc))
-                         < #:key first))])
-    (apply build-compound-type-name 'struct/c (base-struct/c-name ctc) ctcs)))
-
-(define (check-struct/c ctc)
-  '(let ([name (base-struct/c-name ctc)]
-        [pred? (base-struct/c-predicate ctc)]
-        [ctc/ref-pairs (map (λ (l) (cons (second l) (third l)))
-                            (append (base-struct/c-immutables ctc) (base-struct/c-mutables ctc)))])
-    (λ (val fail [first-order? #f])
-      (unless (pred? val)
-        (fail "expected: ~s, got ~e" name val))
-      (when first-order?
-        (for ([p (in-list ctc/ref-pairs)])
-          (let ([c (car p)] [v ((cdr p) val)])
-            (unless (contract-first-order-passes? c v)
-              (fail "expected: ~s, got ~e" (contract-name c) v)))))
-      #t)))
-
-(define (struct/c-first-order ctc)
-  (let ([f (check-struct/c ctc)])
-    (λ (val)
-      (let/ec fail
-        (f val (λ args (fail #f)) #t)))))
-
 
 (define-syntax-rule
   (cache-λ (id ...) e)
@@ -123,230 +89,6 @@
              (set! cached e)
              cached]
             [else cached]))))
- 
-(define (struct/c-proj ctc)
-  (define sub-contracts (base-struct/c-sub-contracts ctc))
-  (λ (blame) 
-    (define swapped-blame (blame-swap blame))
-    
-    (define immutable-proj+refs
-      (for/list ([sub-contract (in-list sub-contracts)]
-                 #:when (immutable? sub-contract))
-        (cons 
-         (subcontract-ref sub-contract)
-         ((contract-struct-projection (indep-ctc immutable)) 
-          blame))))
-    
-    (define init-chaperone-args 
-      (list struct/c-imp-prop-desc
-            ctc))
-    (define init-impersonator-args '())
-    
-    (for ([subcontract (in-list sub-contracts)])
-      (cond
-        [(lazy-immutable? subcontract)
-         (define proj ((contract-struct-projection (indep-ctc subcontract)) blame))
-         (set! init-chaperone-args (list* (subcontract-ref subcontract)
-                                          (cache-λ (strct fld) (proj fld))
-                                          init-chaperone-args))]
-        [(mutable? subcontract)
-         (define mk-proj (indep-ctc subcontract))
-         (define get-proj (mk-proj blame))
-         (define set-proj (mk-proj swapped-blame))
-         (set! init-impersonator-args (list* (subcontract-ref subcontract)
-                                             (λ (strct fld) (get-proj fld))
-                                             (mutable-set subcontract)
-                                             (λ (strct fld) (set-proj fld))
-                                             init-impersonator-args))]))
-    
-    (λ (val)
-      (cond
-        [(and (struct/c-imp-prop-pred? val)
-              (eq? (struct/c-imp-prop-get val) ctc))
-         val]
-        [else
-         ;; need to check val is an instance of the right struct
-         ;(checker val (λ args (apply raise-blame-error blame val args)))
-         
-         (define chaperone-args init-chaperone-args)
-         (define impersonator-args init-impersonator-args)
-         
-         (for ([immutable-proj+ref (in-list immutable-proj+refs)])
-           (define sel (car immutable-proj+ref))
-           (define immutable-proj (cdr immutable-proj+ref))
-           (define nv (immutable-proj (sel val)))
-           (set! chaperone-args (list* sel
-                                       (λ (strct fld) nv)
-                                       chaperone-args)))
-         
-         (for ([sub-contract (in-list sub-contracts)])
-           (cond
-             [(dep-immutable? sub-contract)
-              (define ctc ((dep-dep-proc sub-contract) val))
-              (define ref (subcontract-ref sub-contract))
-              (define proj ((contract-struct-projection ctc) blame))
-              (cond
-                [(flat-contract? ctc)
-                 (proj (ref val))]
-                [else
-                 (define projected (proj (ref val)))
-                 (cond
-                   [(chaperone-contract? ctc)
-                    (set! chaperone-args (list* ref
-                                                (λ (strct fld) projected)
-                                                chaperone-args))]
-                   [else ;; impersonator contract
-                    (error 'struct/dc 
-                           "got an impersonator contract for the field ~a, but it is an immutable field"
-                           (object-name ref))])])]
-             [(dep-lazy-immutable? sub-contract)
-              (define ctc ((dep-dep-proc sub-contract) val))
-              (define ref (subcontract-ref sub-contract))
-              (define proj ((contract-struct-projection ctc) blame))
-              (cond
-                [(chaperone-contract? ctc)
-                 (set! chaperone-args (list* ref
-                                             (cache-λ (strct fld) (proj fld))
-                                             chaperone-args))]
-                [else ;; impersonator contract
-                 (error 'struct/dc 
-                        "got an impersonator contract for the field ~a, but it is an immutable field"
-                        (object-name ref))])]
-             [(dep-mutable? sub-contract)
-              (define ctc ((dep-dep-proc sub-contract) val))
-              (define ref (subcontract-ref sub-contract))
-              (define set (dep-mutable-set sub-contract))
-              (define get-proj ((contract-struct-projection ctc) blame))
-              (define set-proj ((contract-struct-projection ctc) swapped-blame))
-              (cond
-                [(chaperone-contract? ctc)
-                 (set! chaperone-args (list* ref
-                                             (λ (strct fld) (get-proj fld))
-                                             set
-                                             (λ (strct fld) (set-proj fld))
-                                             chaperone-args))]
-                [else ;; impersonator contract
-                 (set! impersonator-args (list* ref
-                                                (λ (strct fld) (get-proj fld))
-                                                set
-                                                (λ (strct fld) (set-proj fld))
-                                                impersonator-args))])]))
-         
-         (define chaperoned-val
-           (if (null? (cddr chaperone-args))
-               val
-               (apply chaperone-struct val chaperone-args)))
-         (apply impersonate-struct
-                chaperoned-val
-                (if (and (null? (cddr chaperone-args))
-                         (not (null? impersonator-args)))
-                    (append impersonator-args
-                            (list struct/c-imp-prop-desc ctc))
-                    impersonator-args))]))))
-  
-;; name is symbol
-;; predicate is (-> any bool)
-;; immutables is (listof (list natural contract selector-proc))
-;; mutables is (listof (list natural contract selector-proc mutator-proc))
-(define-struct base-struct/c (name predicate sub-contracts))
-
-(define-struct (flat-struct/c base-struct/c) ()
-  #:property prop:flat-contract
-  (build-flat-contract-property
-   #:name struct/c-name
-   #:first-order struct/c-first-order
-   #:projection struct/c-proj))
-
-(define-struct (chaperone-struct/c base-struct/c) ()
-  #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:name struct/c-name
-     #:first-order struct/c-first-order
-     #:projection struct/c-proj)))
-
-(define-struct (impersonator-struct/c base-struct/c) ()
-  #:property prop:contract
-  (build-contract-property
-   #:name struct/c-name
-   #:first-order struct/c-first-order
-   #:projection struct/c-proj))
-
-(define-syntax (do-struct/c stx)
-  (syntax-case stx ()
-    [(_ struct-name args ...)
-     (and (identifier? (syntax struct-name))
-          (struct-info? (syntax-local-value (syntax struct-name) (λ () #f))))
-     (let* ([si (extract-struct-info (syntax-local-value (syntax struct-name)))]
-            [predicate-id (third si)]
-            [selector-ids (reverse (fourth si))]
-            [mutator-ids (reverse (fifth si))]
-            [ctcs (syntax->list #'(args ...))]
-            [ctc-names (generate-temporaries #'(args ...))])
-       (unless (= (length selector-ids) (length ctcs))
-         (raise-syntax-error 'struct/c 
-                             (format "expected ~a contracts because struct ~a has ~a fields"
-                                     (length selector-ids)
-                                     (syntax-e #'struct-name)
-                                     (length selector-ids))
-                             stx))
-       (unless predicate-id
-         (raise-syntax-error 'struct/c 
-                             (format "could not determine predicate for ~s" (syntax-e #'struct-name))
-                             stx))
-       (unless (andmap values selector-ids)
-         (raise-syntax-error 'struct/c
-                             (format "could not determine selectors for ~s" (syntax-e #'struct-name))
-                             stx))
-       
-       (let ([combined-ids (for/list ([n (in-naturals)]
-                                      [ctc-name (in-list ctc-names)]
-                                      [ref-name (in-list selector-ids)]
-                                      [mut-name (in-list mutator-ids)])
-                             (list n ctc-name ref-name mut-name))])
-         (let-values ([(mutables immutables) (partition (λ (l) (fourth l)) combined-ids)])
-           (with-syntax ([(ctc-x ...) ctc-names]
-                         [predicate-id predicate-id]
-                         [((imm-count imm-ctc-x imm-ref _) ...) immutables]
-                         [((mut-count mut-ctc-x mut-ref mut-set) ...) mutables])
-             (syntax
-              (let ([ctc-x (coerce-contract 'struct/c args)] ...)
-                (let ([immutables (list (immutable imm-count imm-ctc-x imm-ref) ...)]
-                      [mutables (list (mutable mut-count mut-ctc-x mut-ref mut-set) ...)])
-                  (struct/c/proc 'struct-name predicate-id immutables mutables))))))))]
-    [(_ struct-name anything ...)
-     (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
-
-(define (struct/c/proc struct-name predicate sub-contracts)
-  (for ([sub-contract (in-list sub-contracts)]
-        #:when (or (immutable? sub-contract)
-                   (lazy-immutable? sub-contract)))
-    (define imm-ctc (indep-ctc sub-contract))
-    (unless (chaperone-contract? imm-ctc)
-      (error 'struct/c
-             "expected a chaperone contract for immutable field ~a, got ~e"
-             (subcontract-field-name sub-contract)
-             imm-ctc)))
-  (cond
-    [(and (not (ormap dep-mutable? sub-contracts))
-          (not (ormap mutable? sub-contracts))
-          (andmap flat-subcontract? sub-contracts))
-     (make-flat-struct/c struct-name predicate sub-contracts)]
-    [(andmap chaperone-subcontract? sub-contracts)
-     (make-chaperone-struct/c struct-name predicate sub-contracts)]
-    [else
-     (make-impersonator-struct/c struct-name predicate sub-contracts)]))
-
-(define (flat-subcontract? sc)
-  (cond
-    [(indep? sc) (flat-contract? (indep-ctc sc))]
-    [(dep? sc) (eq? (dep-kind sc) 'flat)]))
-
-(define (chaperone-subcontract? sc)
-  (cond
-    [(indep? sc) (chaperone-contract? (indep-ctc sc))]
-    [(dep? sc) (or (eq? (dep-kind sc) 'chaperone)
-                   (eq? (dep-kind sc) 'flat))]))
 
 (define unique (box #f))
 (define (un-dep ctc obj blame immutable-field)
@@ -356,7 +98,7 @@
     (((contract-projection ctc) blame) obj)))
 
 (define (struct/dc-name ctc)
-  (define info (struct/dc-name-info ctc))
+  (define info (base-struct/dc-name-info ctc))
   `(struct/dc ,(vector-ref info 0)
               #;
               ,@(for/list ([x (in-list (vector-ref info 1))]
@@ -367,31 +109,31 @@
                          '...)])))
 
 (define (struct/dc-first-order ctc)
-  (struct/dc-pred ctc))
+  (base-struct/dc-pred ctc))
 
 
 (define (struct/dc-proj ctc)
-  (define pred? (struct/dc-pred ctc))
+  (define pred? (base-struct/dc-pred ctc))
   (λ (blame)
     (define blames
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))])
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
         (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)))))
     (define mut-blames
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))])
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
         (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)) #:swap? #t)))
     (define indy-blames 
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))])
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
         (blame-replace-negative
          (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract)))
-         (struct/dc-here ctc))))
+         (base-struct/dc-here ctc))))
     (define mut-indy-blames 
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))])
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
         (blame-replace-negative
          (blame-add-context blame (format "the ~a field of" (subcontract-field-name subcontract))
                             #:swap? #t)
-         (struct/dc-here ctc))))
+         (base-struct/dc-here ctc))))
     (define projs
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))]
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
                  [blame+ctxt (in-list blames)])
         (cond
           [(indep? subcontract)
@@ -399,7 +141,7 @@
            ((contract-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define mut-projs
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))]
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
                  [blame+ctxt (in-list mut-blames)])
         (cond
           [(and (indep? subcontract) (mutable? subcontract))
@@ -407,7 +149,7 @@
            ((contract-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define indy-projs
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))]
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
                  [blame+ctxt (in-list indy-blames)])
         (cond
           [(indep? subcontract)
@@ -415,7 +157,7 @@
            ((contract-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define mut-indy-projs
-      (for/list ([subcontract (in-list (struct/dc-subcontracts ctc))]
+      (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
                  [blame+ctxt (in-list mut-indy-blames)])
         (cond
           [(and (indep? subcontract) (mutable? subcontract))
@@ -430,8 +172,8 @@
         [else
          (unless (pred? v)
            (raise-blame-error blame v "expected a ~a"
-                              (struct/dc-struct-name ctc)))
-         (let loop ([subcontracts (struct/dc-subcontracts ctc)]
+                              (base-struct/dc-struct-name ctc)))
+         (let loop ([subcontracts (base-struct/dc-subcontracts ctc)]
                     [projs projs]
                     [mut-projs mut-projs]
                     [indy-projs indy-projs]
@@ -456,12 +198,17 @@
               (define mut-blame (car mut-blames))
               (define indy-blame (car indy-blames))
               (define mut-indy-blame (car mut-indy-blames))
-              (define dep-ctc
+              (define dep-ctc 
                 (and (dep? subcontract)
-                     (contract-projection 
-                      (coerce-contract 
-                       'struct/dc 
-                       (apply (dep-dep-proc subcontract) dep-args)))))
+                     (coerce-contract 
+                      'struct/dc 
+                      (apply (dep-dep-proc subcontract) dep-args))))
+              (when dep-ctc
+                (unless (chaperone-contract? dep-ctc)
+                  (error 'struct/dc "expected a chaperone contract for the immutable field ~a, got ~e" 
+                         (subcontract-field-name subcontract)
+                         dep-ctc)))
+              (define dep-ctc-blame-proj (and dep-ctc (contract-projection dep-ctc)))
               (define new-chaperone-args
                 (cond
                   [(immutable? subcontract)
@@ -471,13 +218,7 @@
                           chaperone-args)]
                   [(lazy-immutable? subcontract)
                    (list* sel
-                          (let ([cache unique])
-                            (λ (fld v) 
-                              (cond
-                                [(eq? cache unique)
-                                 (set! cache (proj v))
-                                 cache]
-                                [else cache])))
+                          (cache-λ (fld v) (proj v))
                           chaperone-args)]
                   [(mutable? subcontract)
                    (list* sel
@@ -486,7 +227,7 @@
                           (λ (fld v) (mut-proj v))
                           chaperone-args)]
                   [else
-                   (define proj (dep-ctc blame))
+                   (define proj (dep-ctc-blame-proj blame))
                    (cond
                      [(dep-immutable? subcontract)
                       (list* sel
@@ -495,17 +236,10 @@
                              chaperone-args)]
                      [(dep-lazy-immutable? subcontract)
                       (list* sel
-                             (let ([cached unique])
-                               (λ (fld v) 
-                                 (cond
-                                   [(eq? cached unique)
-                                    (set! cached (proj v))
-                                    cached]
-                                   [else
-                                    cached])))
+                             (cache-λ (fld v) (proj v))
                              chaperone-args)]
                      [(dep-mutable? subcontract)
-                      (define mut-proj (dep-ctc mut-blame))
+                      (define mut-proj (dep-ctc-blame-proj mut-blame))
                       (list* sel
                              (λ (fld v) (proj v))
                              (mutable-set subcontract)
@@ -516,16 +250,16 @@
                     (cdr blames) (cdr mut-blames) (cdr indy-blames) (cdr mut-indy-blames)
                     new-chaperone-args
                     (if (subcontract-depended-on? subcontract)
-                        (cons (if dep-ctc 
-                                  ((dep-ctc indy-blame) ((subcontract-ref subcontract) v))
+                        (cons (if dep-ctc-blame-proj 
+                                  ((dep-ctc-blame-proj indy-blame) ((subcontract-ref subcontract) v))
                                   (indy-proj ((subcontract-ref subcontract) v)))
                               dep-args)
                         dep-args))]))])))
   
   #;
   (begin
-     (define pred? (struct/dc-pred ctc))
-     (define mk-proj ((struct/dc-apply-proj ctc) ctc))
+     (define pred? (base-struct/dc-pred ctc))
+     (define mk-proj ((base-struct/dc-apply-proj ctc) ctc))
      (λ (blame)
        (define proj (mk-proj blame))
        (λ (v)
@@ -536,14 +270,14 @@
            [else
             (unless (pred? v)
               (raise-blame-error blame v "expected a ~a"
-                                 (struct/dc-struct-name ctc)))
+                                 (base-struct/dc-struct-name ctc)))
             (proj v)])))))
 
 (define (struct/dc-stronger? this that)
   (and (struct/dc? that)
-       (eq? (struct/dc-pred this) (struct/dc-pred that))
-       (for/and ([this-subcontract (in-list (struct/dc-subcontracts this))]
-                 [that-subcontract (in-list (struct/dc-subcontracts that))])
+       (eq? (base-struct/dc-pred this) (base-struct/dc-pred that))
+       (for/and ([this-subcontract (in-list (base-struct/dc-subcontracts this))]
+                 [that-subcontract (in-list (base-struct/dc-subcontracts that))])
          (cond
            [(and (indep? this-subcontract)
                  (indep? that-subcontract))
@@ -565,8 +299,10 @@
                   (dep-dep-proc this-subcontract)
                   (dep-dep-proc that-subcontract)))]
            [else #t]))))
-         
-(define-struct struct/dc (subcontracts pred struct-name here name-info)
+
+(define-struct base-struct/dc (subcontracts pred struct-name here name-info))
+
+(define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -574,6 +310,32 @@
      #:first-order struct/dc-first-order
      #:projection struct/dc-proj
      #:stronger struct/dc-stronger?)))
+
+(define-struct (flat-struct/dc base-struct/dc) ()
+  #:property prop:flat-contract
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-flat-contract-property
+     #:name struct/dc-name
+     #:first-order struct/dc-first-order
+     #:projection struct/dc-proj
+     #:stronger struct/dc-stronger?)))
+
+(define (build-struct/dc subcontracts pred struct-name here name-info)
+  (for ([subcontract (in-list subcontracts)])
+    (when (indep? subcontract)
+      (unless (chaperone-contract? (indep-ctc subcontract))
+        (error 'struct/dc "expected chaperone contracts, but field ~a has ~e"
+               (subcontract-field-name subcontract)
+               (indep-ctc subcontract)))))
+  (define (flat-subcontract? subcontract)
+    (cond
+      [(indep? subcontract) (flat-contract? (indep-ctc subcontract))]
+      [(dep? subcontract) (dep-flat? subcontract)]))
+  ((if (andmap flat-subcontract? subcontracts)
+       make-flat-struct/dc
+       make-struct/dc)
+   subcontracts pred struct-name here name-info))
+   
 
 (define-for-syntax (get-struct-info id stx)
   (unless (identifier? id)
@@ -825,7 +587,7 @@
          (define indep/dep-args
            (if (dep-clause? clause)
                (list #`(λ (#,@dep-args) #,(clause-exp clause))
-                     #`'#,(dep-clause-type clause))
+                     (eq? (dep-clause-type clause) '#:flat))
                (list #`(coerce-contract 'struct/dc #,(clause-exp clause)))))
          (cons #`(#,subcontract-constructor #,@subcontract-args
                                             #,@indep/dep-args
@@ -837,11 +599,11 @@
                          '())
                      (cdr clauses)))])))
   
-  #`(make-struct/dc (list #,@structs)
-                    #,(list-ref info 2)
-                    'struct-id
-                    (quote-module-name)
-                    '#(struct-id 'missing-name-information-in-struct/dc))
+  #`(build-struct/dc (list #,@structs)
+                     #,(list-ref info 2)
+                     'struct-id
+                     (quote-module-name)
+                     '#(struct-id 'missing-name-information-in-struct/dc))
                     
   
   #;
@@ -887,18 +649,21 @@
                           )])
                  me)))))]))
 
-#;
 (define/opter (-struct/dc opt/i opt/info stx)
   (syntax-case stx ()
     [(_ struct-id clause ...)
-     (let ()
+     (let/ec k
        (define info (get-struct-info #'struct-id stx))
+       (define (give-up) 
+         (call-with-values (λ () (opt/unknown opt/i opt/info stx)) 
+                           k))
        (cond
          [(ormap values (list-ref info 4))
-          ;; any mutable struct, just give up (could generate impersonator code, but
-          ;; would have to check that the compiled subcontracts are all chaperones/flats)
-          (opt/unknown opt/i opt/info stx)]
+          ;; any mutable struct, just give up
+          (give-up)]
          [else
+          (define depended-on-fields (make-free-identifier-mapping))
+          (define flat-fields (make-free-identifier-mapping))
           (define-values (s-chap-code s-flat-code s-lifts s-super-lifts s-partially-applied can-be-optimized? stronger-ribs chaperone?)
             (for/fold ([s-chap-code '()]
                        [s-flat-code '()]
@@ -914,14 +679,24 @@
                 (syntax-case clause ()
                   [(sel-id #:lazy exp) (values #'sel-id #t #f #'exp)]
                   [(sel-id exp) (values #'sel-id #f #f #'exp)]
-                  [(sel-id #:lazy (dep-id ...) exp) (values #'sel-id #t #'(dep-id ...) #'exp)]
-                  [(sel-id (dep-id ...) exp) (values #'sel-id #f #'(dep-id ...) #'exp)]))
+                  [(sel-id (dep-id ...) #:lazy exp)
+                   (andmap identifier? (syntax->list #'(dep-id ...)))
+                   (values #'sel-id #t #'(dep-id ...) #'exp)]
+                  [(sel-id (dep-id ...) exp)
+                   (andmap identifier? (syntax->list #'(dep-id ...)))
+                   (values #'sel-id #f #'(dep-id ...) #'exp)]
+                  [other (give-up)]))
               
               (define-values (this-code 
                               this-lifts this-super-lifts this-partially-applied 
                               this-flat? this-can-be-optimized? this-stronger-ribs
                               this-chaperone?)
                 (opt/i opt/info exp))
+              
+              (when dep-vars
+                (for ([dep-var (in-list (syntax->list dep-vars))])
+                  (free-identifier-mapping-put! depended-on-fields dep-var #t)))
+              (free-identifier-mapping-put! flat-fields sel-id this-flat?)
               
               (values (cond
                         [(and this-flat? (not lazy?) (not dep-vars))
@@ -1000,6 +775,15 @@
                       (and this-can-be-optimized? can-be-optimized?)
                       (append this-stronger-ribs stronger-ribs)
                       (and this-chaperone? chaperone?))))
+          
+          ;; to avoid having to deal with indy-ness, just give up if any
+          ;; of the fields that are depended on aren't flat
+          (free-identifier-mapping-for-each
+           depended-on-fields
+           (λ (depended-on-id flat?)
+             (unless (free-identifier-mapping-get flat-fields depended-on-id)
+               (give-up))))
+          
           (with-syntax ([(stronger-prop-desc stronger-prop-pred? stronger-prop-get)
                          (syntax-local-lift-values-expression
                           3

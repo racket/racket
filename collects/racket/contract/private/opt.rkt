@@ -46,7 +46,10 @@
 ;;    else the symbol of the lifted variable
 ;;    This is used for contracts with subcontracts (like cons) doing checks.
 ;;  - a list of stronger-ribs
-;;  - a boolean indicating if this contract is a chaperone contract
+;;  - a boolean or a syntax object; if it is a boolean,
+;;    the boolean indicaties if this contract is a chaperone contract
+;;    if it is a syntax object, then evaluating its contents determines
+;;    if this is a chaperone contract
 (define-syntax (define/opter stx)
   (syntax-case stx ()
     [(_ (for opt/i opt/info stx) expr ...)

@@ -9374,7 +9374,16 @@
    'struct/dc-19
    '(let ()
       (struct s (a b))
-      (struct/dc s [a (new-∃/c 'α)]))
+      (struct/dc s [a (new-∃/c 'α)] [b integer?]))
+   exn:fail?)
+  
+  (contract-error-test
+   'struct/dc-20
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s [a (b) (new-∃/c 'α)] [b integer?])
+                (s 1 2)
+                'pos 'neg))
    exn:fail?)
   
   (test/pos-blame
@@ -10476,6 +10485,10 @@ so that propagation occurs.
                         (define alpha (new-∃/c 'alpha))
                         (struct/c s alpha)))
   
+  (ctest #t (chaperone-contract?
+             (let ([x (struct/dc s [a integer?] [b integer?])])
+               (opt/c x))))
+
   (ctest #t flat-contract? (set/c integer?))
   (ctest #f flat-contract? (set/c (-> integer? integer?)))
   (ctest #t chaperone-contract? (set/c (-> integer? integer?)))

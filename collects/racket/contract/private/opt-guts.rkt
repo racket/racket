@@ -22,7 +22,8 @@
          opt/info-swap-blame
          opt/info-change-val
          
-         opt/unknown)
+         opt/unknown
+         combine-two-chaperone?s)
 
 ;; a hash table of opters
 (define opters-table
@@ -187,4 +188,17 @@
      #f
      lift-var
      null
-     #f)))
+     #`(chaperone-contract? #,lift-var))))
+
+;; combine-two-chaperone?s : (or/c boolean? syntax?) (or/c boolean? syntax?) -> (or/c boolean? syntax?)
+(define (combine-two-chaperone?s chaperone-a? chaperone-b?)
+  (cond
+    [(and (boolean? chaperone-a?) (boolean? chaperone-b?))
+     (and chaperone-a? chaperone-b?)]
+    [(boolean? chaperone-a?)
+     (and chaperone-a? chaperone-b?)]
+    [(boolean? chaperone-b?)
+     (and chaperone-b? chaperone-a?)]
+    [else
+     #`(and #,chaperone-a? #,chaperone-b?)]))
+

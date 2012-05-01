@@ -393,12 +393,10 @@ produced.  Otherwise, an impersonator contract is produced.
               ([field-spec [field-id maybe-lazy contract-expr]
                            [field-id (dep-field-id ...) 
                                      maybe-lazy
-                                     maybe-impersonator
                                      maybe-flat
                                      maybe-dep-state
                                      contract-expr]]
                [maybe-lazy (code:line) #:lazy]
-               [maybe-impersonator (code:line) #:impersonator]
                [maybe-flat (code:line) #:flat]
                [maybe-dep-state (code:line) #:depends-on-state])]{
 Produces a contract that recognizes instances of the structure
