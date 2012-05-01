@@ -372,8 +372,10 @@
                     (syntax-case s (module)
                       [(module . _rest) (syntax->datum s)]
                       [_else s])]
-                   [(bytes? s) `(begin ,s)]
-                   [(string? s) `(begin ,s)]
+                   ;; a sandbox treats strings and byte strings as code
+                   ;; streams, so protect them as syntax objects:
+                   [(string? s) (datum->syntax #f s)]
+                   [(bytes? s) (datum->syntax #f s)]
                    [else s]))))
         list)))
 
