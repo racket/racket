@@ -52,7 +52,10 @@
             "Finds the (first) element of the list that maximizes the output of the function.")
     
     (memf ((X -> any) (listof X) -> (union false (listof X)))
-	  "Produces true if the function given as the first argument produces a non-false value for any item in the second argument.")
+	  "Produces false if the predicate given as the first argument
+	  produces false for all items on the given list. If the
+	  given predicate produces true for any of the items on the list,
+          memf returns the sub-list starting from that element.")
     (apply ((X-1 ... X-N -> Y) X-1 ... X-i (list X-i+1 ... X-N) -> Y)
 	      "Applies a function using items from a list as the arguments.")
     (compose ((Y-1 -> Z) ... (Y-N -> Y-N-1) (X-1 ... X-N -> Y-N) -> (X-1 ... X-N -> Z))
