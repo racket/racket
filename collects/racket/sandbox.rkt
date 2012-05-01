@@ -503,6 +503,12 @@
 
 (define (add-location x loc)
   (cond [(null? x) null]
+        [(list? x)
+         ;; For a list, generate a syntax-object wrapper consistent with 
+         ;; an absence of `.'s in the reader's input:
+         (make-orig (for/list ([i (in-list x)])
+                      (add-location i loc))
+                    loc)]
         [(pair? x) (make-orig (cons (add-location (car x) loc) 
                                     (add-location (cdr x) loc))
                               loc)]
