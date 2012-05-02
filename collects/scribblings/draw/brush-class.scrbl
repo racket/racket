@@ -88,6 +88,8 @@ To avoid creating multiple brushes with the same characteristics, use
  @indexed-racket[the-brush-list], or provide a color and style to
  @xmethod[dc<%> set-brush].
 
+See also @racket[make-brush].
+
 
 @defconstructor[([color (or/c string? (is-a?/c color%)) "black"]
                  [style (or/c 'transparent 'solid 'opaque 
@@ -113,29 +115,6 @@ Creates a brush with the given color, @tech{brush style}, @tech{brush
  case that the color is specified using a name, see
  @racket[color-database<%>] for information about color names; if the
  name is not known, the brush's color is black.}
-
-@defproc[(make-immutable-brush
-          [color (or/c string? (is-a?/c color%)) "black"]
-          [style (or/c 'transparent 'solid 'opaque
-                       'xor 'hilite 'panel
-                       'bdiagonal-hatch 'crossdiag-hatch
-                       'fdiagonal-hatch 'cross-hatch
-                       'horizontal-hatch 'vertical-hatch)
-                  'solid]
-          [stipple (or/c #f (is-a?/c bitmap%))
-                   #f]
-          [gradient (or/c #f
-                          (is-a?/c linear-gradient%)
-                          (is-a?/c radial-gradient%))
-                    #f]
-          [transformation (or/c #f (vector/c (vector/c real? real? real?
-                                                       real? real? real?)
-                                              real? real? real? real? real?))
-                          #f])
-         (is-a?/c brush%)]{
-
-Creates a new immutable brush with the given initialization values.
-}
 
 @defmethod[(get-color)
            (is-a?/c color%)]{

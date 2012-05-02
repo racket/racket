@@ -520,4 +520,51 @@
 
 ;; ----------------------------------------
 
+(let ([color (new color%)])
+  (test #f 'color (send color is-immutable?))
+  (test 0 'color (send color red))
+  (test 0 'color (send color green))
+  (test 0 'color (send color blue))
+  (test 1.0 'color (send color alpha)))
+
+(let ([color (make-color 101 102 103 0.9)])
+  (test #t 'color (send color is-immutable?))
+  (test 101 'color (send color red))
+  (test 102 'color (send color green))
+  (test 103 'color (send color blue))
+  (test 0.9 'color (send color alpha)))
+
+(let ([color (make-color 0 0 0)])
+  (test #t 'color (send color is-immutable?))
+  (test 0 'color (send color red))
+  (test 0 'color (send color green))
+  (test 0 'color (send color blue))
+  (test 1.0 'color (send color alpha)))
+
+;; ----------------------------------------
+
+(let ([brush (new brush%)])
+  (test #f 'brush (send brush is-immutable?)))
+
+(let ([brush (make-brush)])
+  (test #t 'brush (send brush is-immutable?))
+  (test #t 'brush (eq? brush (send the-brush-list find-or-create-brush "black" 'solid))))
+
+(let ([brush (make-brush #:immutable? #f)])
+  (test #f 'brush (send brush is-immutable?)))
+
+;; ----------------------------------------
+
+(let ([pen (new pen%)])
+  (test #f 'pen (send pen is-immutable?)))
+
+(let ([pen (make-pen)])
+  (test #t 'pen (send pen is-immutable?))
+  (test #t 'pen (eq? pen (send the-pen-list find-or-create-pen "black" 0 'solid))))
+
+(let ([pen (make-pen #:immutable? #f)])
+  (test #f 'pen (send pen is-immutable?)))
+
+;; ----------------------------------------
+
 (report-errs)

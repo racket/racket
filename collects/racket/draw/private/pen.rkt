@@ -7,7 +7,7 @@
          "bitmap.rkt")
 
 (provide pen%
-         make-immutable-pen
+         make-pen
          pen-list% the-pen-list
          pen-width?
          pen-style-symbol?)
@@ -134,15 +134,20 @@
 
 ;; color width style cap join stipple -> pen%
 ;; produce an immutable pen% object
-(define (make-immutable-pen [color "black"]
-                            [width 0]
-                            [style 'solid]
-                            [cap 'round]
-                            [join 'round]
-                            [stipple #f])
-  (define pen (make-object pen% color width style cap join stipple))
-  (send pen set-immutable)
-  pen)
+(define (make-pen #:color [color black]
+                  #:width [width 0]
+                  #:style [style 'solid]
+                  #:cap [cap 'round]
+                  #:join [join 'round]
+                  #:stipple [stipple #f]
+                  #:immutable? [immutable? #t])
+  (or (and (not (or stipple (not immutable?)))
+           (send the-pen-list find-or-create-pen color width style cap join))
+      (let ()
+        (define pen (make-object pen% color width style cap join stipple))
+        (when immutable?
+          (send pen set-immutable))
+        pen)))
 
 ;; ----------------------------------------
 

@@ -4,7 +4,7 @@
                      2htdp/image
                      (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image?)
                      lang/posn
-                     racket/gui/base
+                     (except-in racket/gui/base make-color make-pen)
                      (only-in racket/base path-string?))
           lang/posn
           "shared.rkt"

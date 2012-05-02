@@ -4,7 +4,7 @@
          racket/draw
          ffi/unsafe/alloc
          (except-in racket/draw/private/color
-                    color% make-immutable-color)
+                    color% make-color)
          racket/draw/private/local
          "../common/backing-dc.rkt"
          "../common/canvas-mixin.rkt"

@@ -8,7 +8,7 @@
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 
   (require
-   mred
+   (except-in mred make-color)
    mzlib/class
    htdp/error
    "image.rkt"

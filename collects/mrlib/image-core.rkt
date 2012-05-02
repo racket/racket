@@ -28,7 +28,8 @@ has been moved out).
 |#
 
 (require racket/class
-         racket/draw
+         (except-in racket/draw 
+                    make-pen make-color)
          (for-syntax racket/base)
          file/convertible
          racket/math

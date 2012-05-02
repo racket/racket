@@ -48,6 +48,58 @@ more useful way.
 See also @racket[make-platform-bitmap] and @secref["Portability"].
 }
 
+
+@defproc[(make-brush
+          [#:color color (or/c string? (is-a?/c color%))  (make-color 0 0 0)]
+          [#:style style (or/c 'transparent 'solid 'opaque
+                               'xor 'hilite 'panel
+                               'bdiagonal-hatch 'crossdiag-hatch
+                               'fdiagonal-hatch 'cross-hatch
+                               'horizontal-hatch 'vertical-hatch)
+                   'solid]
+          [#:stipple stipple (or/c #f (is-a?/c bitmap%))
+                     #f]
+          [#:gradient gradient (or/c #f
+                                    (is-a?/c linear-gradient%)
+                                    (is-a?/c radial-gradient%))
+                      #f]
+          [#:transformation
+           transformation (or/c #f (vector/c (vector/c real? real? real?
+                                                       real? real? real?)
+                                              real? real? real? real? real?))
+                          #f]
+          [#:immutable? immutable? any/c #t])
+         (is-a?/c brush%)]{
+
+Creates a @racket[brush%] instance. This procedure provides a
+nearly equivalent interface compared to using
+@racket[make-object] with @racket[brush%], but it also supports
+the creation of immutable brushes (and creates immutable burshes by default).
+
+When @racket[stipple] is @racket[#f], @racket[gradient] is
+@racket[#f], @racket[transformation] is @racket[#f],
+@racket[immutable?] is true, and @racket[color] is either a
+@racket[color%] object or a string in @racket[the-color-database], the
+result brush is created via @method[brush-list% find-or-create-brush] of
+@racket[the-brush-list].}
+
+
+@defproc[(make-color
+          [red (integer-in 0 255)]
+          [green (integer-in 0 255)]
+          [blue (integer-in 0 255)]
+          [alpha (real-in 0 1) 1.0])
+         (is-a?/c color%)]{
+
+Creates a @racket[color%] instance. This procedure provides a
+nearly equivalent interface compared to using
+@racket[make-object] with @racket[color%], but it creates
+an immutable @racket[color%] object.
+
+To create an immutable color based on a color string, use @method[color-database<%> find-color]
+or @racket[the-color-database].}
+
+
 @defproc[(make-font [#:size size (integer-in 1 1024) 12]
                     [#:face face (or/c string? #f) #f]
                     [#:family family (or/c 'default 'decorative 'roman 'script 
@@ -79,6 +131,34 @@ Returns @racket[(make-object bitmap% width height #t)] if
 width height)] otherwise. This procedure is preferred to using
 @racket[make-object] on @racket[bitmap%] because it is less
 overloaded.}
+
+
+@defproc[(make-pen
+          [#:color color (or/c string? (is-a?/c color%)) (make-color 0 0 0)]
+          [#:width width (real-in 0 255) 0]
+          [#:style style (or/c 'transparent 'solid 'xor 'hilite
+                               'dot 'long-dash 'short-dash 'dot-dash
+                               'xor-dot 'xor-long-dash 'xor-short-dash
+                               'xor-dot-dash)
+                   'solid]
+          [#:cap cap (or/c 'round 'projecting 'butt)
+                     'round]
+          [#:join join (or/c 'round 'bevel 'miter)
+                  'round]
+          [#:stipple stipple (or/c #f (is-a?/c bitmap%))
+                     #f]
+          [#:immutable? immutable? any/c #t])
+         (is-a?/c pen%)]{
+
+Creates a @racket[pen%] instance. This procedure provides a
+nearly equivalent interface compared to using
+@racket[make-object] with @racket[pen%], but it also supports
+the creation of immutable pens (and creates immutable pens by default).
+
+When @racket[stipple] is @racket[#f], @racket[immutable?] is true, and
+@racket[color] is either a @racket[color%] object or a string in
+@racket[the-color-database], the result pen is created via
+@method[pen-list% find-or-create-pen] of @racket[the-pen-list].}
 
 
 @defproc[(make-platform-bitmap [width exact-positive-integer?]

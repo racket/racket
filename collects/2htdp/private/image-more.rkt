@@ -5,7 +5,8 @@
          racket/match
          racket/contract
          racket/class
-         racket/draw
+         (except-in racket/draw
+                    make-pen make-color)
          ;(only-in racket/gui/base frame% canvas% slider% horizontal-panel% button%)
          htdp/error
          racket/math

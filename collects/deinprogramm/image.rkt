@@ -7,7 +7,8 @@ collects/tests/deinprogramm/image.rkt
 
 |#
 
-(require mred
+(require (except-in mred
+                    make-color)
 	   mzlib/class
            mrlib/cache-image-snip
            mzlib/math

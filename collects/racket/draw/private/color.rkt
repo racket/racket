@@ -3,7 +3,7 @@
          "syntax.rkt")
 
 (provide color%
-         make-immutable-color
+         make-color
          color-red
          color-green
          color-blue
@@ -83,7 +83,7 @@
 
 ;; byte byte byte real -> color%
 ;; produce an immutable color% object
-(define (make-immutable-color [r 0] [g 0] [b 0] [a 1.0])
+(define (make-color r g b [a 1.0])
   (define color (make-object color% r g b a))
   (send color set-immutable)
   color)

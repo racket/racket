@@ -1,3 +1,6 @@
+Version 5.3.0.4
+racket/draw: added make-color, make-brush, make-pen
+
 Version 5.3.0.3
 Added module-path-index-submodule
 Changed module-path-index-join to support a submodule argument

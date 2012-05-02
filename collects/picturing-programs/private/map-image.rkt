@@ -22,7 +22,7 @@
 ; render seems to take about a ms).
 ; Apr 28, 2012: added fold-image and fold-image/extra.
 
-(require racket/draw
+(require (except-in racket/draw make-color make-pen)
         racket/snip
         racket/class
         2htdp/image

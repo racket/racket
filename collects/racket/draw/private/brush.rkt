@@ -11,7 +11,7 @@
          "transform.rkt")
 
 (provide brush%
-         make-immutable-brush
+         make-brush
          brush-list% the-brush-list
          brush-style-symbol?)
 
@@ -135,14 +135,19 @@
 
 ;; color style stipple gradient transformation -> brush%
 ;; produce an immutable brush% object
-(define (make-immutable-brush [color "black"]
-                              [style 'solid]
-                              [stipple #f]
-                              [gradient #f]
-                              [transformation #f])
-  (define brush (make-object brush% color style stipple gradient transformation))
-  (send brush set-immutable)
-  brush)
+(define (make-brush #:color [color black]
+                    #:style [style 'solid]
+                    #:stipple [stipple #f]
+                    #:gradient [gradient #f]
+                    #:transformation [transformation #f]
+                    #:immutable? [immutable? #t])
+  (or (and (not (or stipple gradient transformation (not immutable?)))
+           (send the-brush-list find-or-create-brush color style))
+      (let ()
+        (define brush (make-object brush% color style stipple gradient transformation))
+        (when immutable?
+          (send brush set-immutable))
+        brush)))
 
 ;; unsafe (and so exported by `racket/draw/unsafe/brush'):
 (provide (protect-out make-handle-brush))

@@ -49,33 +49,34 @@
   (vector/c (vector/c real? real? real? real? real? real?)
             real? real? real? real? real?))
 
-(define make-immutable-color/c
-  (->* ()
-       ((integer-in 0 255)
+(define make-color/c
+  (->* ((integer-in 0 255)
         (integer-in 0 255)
-        (integer-in 0 255)
-        (real-in 0 1))
+        (integer-in 0 255))
+       ((real-in 0 1))
        (is-a?/c color%)))
 
-(define make-immutable-brush/c
+(define make-brush/c
   (->* ()
-       ((or/c string? (is-a?/c color%))
-        brush-style/c
-        (or/c #f (is-a?/c bitmap%))
-        (or/c #f
-              (is-a?/c linear-gradient%)
-              (is-a?/c radial-gradient%))
-        (or/c #f transformation-vector/c))
+       (#:color (or/c string? (is-a?/c color%))
+        #:style brush-style/c
+        #:stipple (or/c #f (is-a?/c bitmap%))
+        #:gradient (or/c #f
+                         (is-a?/c linear-gradient%)
+                         (is-a?/c radial-gradient%))
+        #:transformation (or/c #f transformation-vector/c)
+        #:immutable? any/c)
        (is-a?/c brush%)))
 
-(define make-immutable-pen/c
+(define make-pen/c
   (->* ()
-       ((or/c string? (is-a?/c color%))
-        (real-in 0 255)
-        pen-style/c
-        pen-cap-style/c
-        pen-join-style/c
-        (or/c #f (is-a?/c bitmap%)))
+       (#:color (or/c string? (is-a?/c color%))
+        #:width (real-in 0 255)
+        #:style pen-style/c
+        #:cap pen-cap-style/c
+        #:join pen-join-style/c
+        #:stipple (or/c #f (is-a?/c bitmap%))
+        #:immutable? any/c)
        (is-a?/c pen%)))
 
 (define dc<%>/c

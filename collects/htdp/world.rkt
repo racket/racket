@@ -68,7 +68,7 @@ Matthew
 (require scheme/class
          scheme/local
          scheme/bool
-         mred
+         (except-in mred make-color)
          htdp/error
          htdp/image
          mrlib/cache-image-snip

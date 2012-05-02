@@ -8,7 +8,8 @@ plt/collects/tests/mzscheme/htdp-image.rkt
 |#
 
 
-(require mred
+(require (except-in mred
+                    make-color)
          mzlib/class
          mrlib/cache-image-snip
          mzlib/math

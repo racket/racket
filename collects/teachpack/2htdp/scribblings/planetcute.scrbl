@@ -6,7 +6,7 @@
           scribble/eval
           2htdp/image
           racket/runtime-path
-          racket/draw
+          (except-in racket/draw make-color make-pen)
           racket/class
           (for-syntax racket/base)
           (for-label 2htdp/image
