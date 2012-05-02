@@ -8,7 +8,7 @@
          (types numeric-tower type-table)
          (optimizer utils numeric-utils logging fixnum))
 
-(provide float-opt-expr float-arg-expr)
+(provide float-opt-expr float-arg-expr int-expr)
 
 
 (define (mk-float-tbl generic)

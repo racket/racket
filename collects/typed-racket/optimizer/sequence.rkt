@@ -6,7 +6,8 @@
          "../utils/utils.rkt" "../utils/tc-utils.rkt"
          (rep type-rep)
          (types abbrev type-table utils)
-         (optimizer utils logging string))
+         (optimizer utils logging string
+                    float)) ; for int-expr
 
 (provide sequence-opt-expr)
 
@@ -85,5 +86,17 @@
                               (lambda (x) (unsafe-fx+ 1 x))
                               0
                               (lambda (x) (unsafe-fx< x len))
+                              (lambda (x) #t)
+                              (lambda (x y) #t)))))
+  (pattern (#%plain-app op:id _ s) ; one-arg in-range
+           #:when (id-from? #'op 'make-sequence 'racket/private/for)
+           #:with s*:int-expr #'s
+           #:with opt
+           (begin (log-optimization "in-range" seq-opt-msg this-syntax)
+                  #'(let* ((end s*.opt))
+                      (values (lambda (x) x)
+                              (lambda (x) (unsafe-fx+ 1 x))
+                              0
+                              (lambda (x) (unsafe-fx< x end))
                               (lambda (x) #t)
                               (lambda (x y) #t))))))
