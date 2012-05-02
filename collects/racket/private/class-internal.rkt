@@ -7,7 +7,6 @@
          (only-in racket/contract/private/arrow making-a-method method-contract?)
          racket/stxparam
          racket/unsafe/ops
-         "class-events.rkt"
          "serialize-structs.rkt"
          (for-syntax racket/stxparam
                      syntax/kerncase
@@ -308,8 +307,7 @@
 ;;  class macros
 ;;--------------------------------------------------------------------
 
-(define-syntaxes (class* _class class/derived
-                   class*-traced class-traced class/derived-traced)
+(define-syntaxes (class* _class class/derived)
   (let ()
     ;; Start with Helper functions
     
@@ -644,7 +642,7 @@
     ;; --------------------------------------------------------------------------------
     ;; Start here:
     
-    (define (main stx trace-flag super-expr deserialize-id-expr name-id interface-exprs defn-and-exprs)
+    (define (main stx super-expr deserialize-id-expr name-id interface-exprs defn-and-exprs)
       (let-values ([(this-id) #'this-id]
                    [(the-obj) (datum->syntax (quote-syntax here) (gensym 'self))]
                    [(the-finder) (datum->syntax (quote-syntax here) (gensym 'find-self))])
@@ -1265,8 +1263,7 @@
                                ;; make-XXX-map is supplied by private/classidmap.rkt
                                (with-syntax ([the-obj the-obj]
                                              [the-finder the-finder]
-                                             [this-id this-id]
-                                             [trace-flag (if trace-flag (syntax #t) (syntax #f))])
+                                             [this-id this-id])
                                  (syntax 
                                   ([(inherit-field-name ...
                                      local-field ...
@@ -1277,16 +1274,14 @@
                                      public-final-name ...
                                      pubment-name ...)
                                     (values
-                                     (make-field-map trace-flag
-                                                     (quote-syntax the-finder)
+                                     (make-field-map (quote-syntax the-finder)
                                                      (quote the-obj)
                                                      (quote-syntax inherit-field-name)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
                                                      (quote-syntax inherit-field-mutator))
                                      ...
-                                     (make-field-map trace-flag
-                                                     (quote-syntax the-finder)
+                                     (make-field-map (quote-syntax the-finder)
                                                      (quote the-obj)
                                                      (quote-syntax local-field)
                                                      (quote-syntax local-field-localized)
@@ -1580,58 +1575,43 @@
                                    ;; Not primitive:
                                    #f))))))))))))))))
     
-    (define (core-class* trace-flag)
-      (lambda (stx)
+    ;; The class* and class entry points:
+    (values
+     ;; class*
+     (lambda (stx)
         (syntax-case stx ()
           [(_  super-expression (interface-expr ...)
                defn-or-expr
                ...)
-           (main stx trace-flag
+           (main stx
                  #'super-expression 
                  #f #f
                  (syntax->list #'(interface-expr ...))
-                 (syntax->list #'(defn-or-expr ...)))])))
-    
-    (define (core-class trace-flag)
-      (lambda (stx)
+                 (syntax->list #'(defn-or-expr ...)))]))
+     ;; class
+     (lambda (stx)
         (syntax-case stx ()
           [(_ super-expression
               defn-or-expr
               ...)
-           (main stx trace-flag
+           (main stx
                  #'super-expression 
                  #f #f
                  null
-                 (syntax->list #'(defn-or-expr ...)))])))
-    
-    (define (core-class/derived trace-flag)
-      (lambda (stx)
+                 (syntax->list #'(defn-or-expr ...)))]))
+     ;; class/derived
+     (lambda (stx)
         (syntax-case stx ()
           [(_  orig-stx
                [name-id super-expression (interface-expr ...) deserialize-id-expr]
                defn-or-expr
                ...)
-           (main #'orig-stx trace-flag
+           (main #'orig-stx
                  #'super-expression 
                  #'deserialize-id-expr 
                  (and (syntax-e #'name-id) #'name-id)
                  (syntax->list #'(interface-expr ...))
-                 (syntax->list #'(defn-or-expr ...)))])))
-    
-    ;; The class* and class entry points:
-    (values
-     ;; class*
-     (core-class* #f)
-     ;; class
-     (core-class #f)
-     ;; class/derived
-     (core-class/derived #f)
-     ;; class*-traced
-     (core-class* #t)
-     ;; class-traced
-     (core-class #t)
-     ;; class/derived-traced
-     (core-class/derived #t)
+                 (syntax->list #'(defn-or-expr ...)))]))
      )))
 
 (define-syntax (-define-serializable-class stx)
@@ -3579,56 +3559,35 @@
 ;;  instantiation
 ;;--------------------------------------------------------------------
 
-(define-syntaxes (new new-traced)
-  
-  (let* ([core-new
-          (lambda (instantiate-stx stx)
-            (syntax-case stx ()
-              [(_ cls (id arg) ...)
-               (andmap identifier? (syntax->list (syntax (id ...))))
-               (quasisyntax/loc stx
-                 ((unsyntax instantiate-stx) cls () (id arg) ...))]
-              [(_ cls (id arg) ...)
-               (for-each (lambda (id)
-                           (unless (identifier? id)
-                             (raise-syntax-error 'new "expected identifier" stx id)))
-                         (syntax->list (syntax (id ...))))]
-              [(_ cls pr ...)
-               (for-each
-                (lambda (pr)
-                  (syntax-case pr ()
-                    [(x y) (void)]
-                    [else (raise-syntax-error 'new "expected name and value binding" stx pr)]))
-                (syntax->list (syntax (pr ...))))]))])
-    
-    (values
-     (lambda (stx) (core-new (syntax/loc stx instantiate) stx))
-     (lambda (stx) (core-new (syntax/loc stx instantiate-traced) stx)))))
+(define-syntax (new stx)
+  (syntax-case stx ()
+    [(_ cls (id arg) ...)
+     (andmap identifier? (syntax->list (syntax (id ...))))
+     (quasisyntax/loc stx
+       (instantiate cls () (id arg) ...))]
+    [(_ cls (id arg) ...)
+     (for-each (lambda (id)
+                 (unless (identifier? id)
+                   (raise-syntax-error 'new "expected identifier" stx id)))
+               (syntax->list (syntax (id ...))))]
+    [(_ cls pr ...)
+     (for-each
+      (lambda (pr)
+        (syntax-case pr ()
+          [(x y) (void)]
+          [else (raise-syntax-error 'new "expected name and value binding" stx pr)]))
+      (syntax->list (syntax (pr ...))))]))
 
 (define make-object 
   (lambda (class . args)
     (do-make-object class args null)))
 
-(define make-object-traced
-  (lambda (class . args)
-    (do-make-object-traced class args null)))
-
-(define-syntaxes (instantiate instantiate-traced)
-  
-  (let* ([core-instantiate
-          (lambda (do-make-object-stx stx)
-            (syntax-case stx ()
-              [(form class (arg ...) . x)
-               (with-syntax ([orig-stx stx])
-                 (quasisyntax/loc stx 
-                   (-instantiate (unsyntax do-make-object-stx)
-                                 orig-stx (class) (list arg ...) . x)))]))])
-    
-    (values
-     (lambda (stx)
-       (core-instantiate (syntax/loc stx do-make-object) stx))
-     (lambda (stx)
-       (core-instantiate (syntax/loc stx do-make-object-traced) stx)))))
+(define-syntax (instantiate stx)
+  (syntax-case stx ()
+    [(form class (arg ...) . x)
+     (with-syntax ([orig-stx stx])
+       (quasisyntax/loc stx 
+         (-instantiate do-make-object orig-stx (class) (list arg ...) . x)))]))
 
 ;; Helper; used by instantiate and super-instantiate
 (define-syntax -instantiate
@@ -3666,19 +3625,12 @@
 (define (alist->sexp alist)
   (map (lambda (pair) (list (car pair) (cdr pair))) alist))
 
-(define-traced (do-make-object class by-pos-args named-args)
+(define (do-make-object class by-pos-args named-args)
   (unless (class? class)
     (raise-type-error 'instantiate "class" class))
   (let ([o ((class-make-object class))])
-    (trace-begin
-     ;; Initialize it:
-     (trace (new-event class o (alist->sexp (get-field-alist o))))
-     (trace (initialize-call-event
-             o (string->symbol "(constructor)")
-             (cons (alist->sexp named-args) by-pos-args)))
-     (continue-make-object o class by-pos-args named-args #t)
-     (trace (finalize-call-event o))
-     o)))
+    (continue-make-object o class by-pos-args named-args #t)
+    o))
 
 (define (get-field-alist obj)
   (map (lambda (id) (cons id (get-field/proc id obj)))
@@ -3843,10 +3795,10 @@
 ;;  methods and fields
 ;;--------------------------------------------------------------------
 
-(define-syntaxes (send send/apply send-traced send/apply-traced send/keyword-apply)
+(define-syntaxes (send send/apply send/keyword-apply)
   (let ()
     
-    (define (do-method traced? stx form obj name args rest-arg? kw-args)
+    (define (do-method stx form obj name args rest-arg? kw-args)
       (with-syntax ([(sym method receiver)
                      (generate-temporaries (syntax (1 2 3)))])
         (quasisyntax/loc stx
@@ -3855,7 +3807,6 @@
                         [(method) (find-method/who '(unsyntax form) receiver sym)])
             (unsyntax
              (make-method-call
-              traced?
               stx
               (syntax/loc stx receiver)
               (syntax/loc stx method)
@@ -3864,14 +3815,14 @@
               rest-arg?
               kw-args))))))
     
-    (define (core-send traced? apply? kws?)
+    (define (core-send apply? kws?)
       (lambda (stx)
         (syntax-case stx ()
           [(form obj name . args)
            (identifier? (syntax name))
            (if (stx-list? (syntax args))
                ;; (send obj name arg ...) or (send/apply obj name arg ...)
-               (do-method traced? stx #'form #'obj #'name 
+               (do-method stx #'form #'obj #'name 
                           (if kws? (cddr (syntax->list #'args)) #'args)
                           apply? 
                           (and kws? 
@@ -3882,7 +3833,7 @@
                    (raise-syntax-error
                     #f "bad syntax (illegal use of `.')" stx)
                    ;; (send obj name arg ... . rest)
-                   (do-method traced? stx #'form #'obj #'name
+                   (do-method stx #'form #'obj #'name
                               (flatten-args #'args) #t #f)))]
           [(form obj name . args)
            (raise-syntax-error
@@ -3899,17 +3850,13 @@
         [(form obj name a)
          (identifier? (syntax name))
          (raise-syntax-error #f "missing expression for list of keyword arguments" stx)]
-        [else ((core-send #f #t #t) stx)]))
+        [else ((core-send #t #t) stx)]))
     
     (values
      ;; send
-     (core-send #f #f #f)
+     (core-send #f #f)
      ;; send/apply
-     (core-send #f #t #f)
-     ;; send-traced
-     (core-send #t #f #f)
-     ;; send/apply-traced
-     (core-send #t #t #f)
+     (core-send #t #f)
      ;; send/keyword-apply
      send/keyword-apply)))
 
@@ -3920,28 +3867,21 @@
      (unless (symbol? method-name) (raise-type-error 'dynamic-send "symbol" method-name))
      (keyword-apply (find-method/who 'dynamic-send obj method-name) kws kw-vals obj args))))
 
-(define-syntaxes (send* send*-traced)
-  (let* ([core-send*
-          (lambda (traced?)
-            (lambda (stx)
-              (syntax-case stx ()
-                [(form obj clause ...)
-                 (quasisyntax/loc stx
-                   (let* ([o obj])
-                     (unsyntax-splicing
-                      (map
-                       (lambda (clause-stx)
-                         (syntax-case clause-stx ()
-                           [(meth . args)
-                            (quasisyntax/loc stx
-                              ((unsyntax (if traced?
-                                             (syntax/loc stx send-traced)
-                                             (syntax/loc stx send)))
-                               o meth . args))]
-                           [_ (raise-syntax-error
-                               #f "bad method call" stx clause-stx)]))
-                       (syntax->list (syntax (clause ...)))))))])))])
-    (values (core-send* #f) (core-send* #t))))
+(define-syntax (send* stx)
+  (syntax-case stx ()
+    [(form obj clause ...)
+     (quasisyntax/loc stx
+       (let* ([o obj])
+         (unsyntax-splicing
+          (map
+           (lambda (clause-stx)
+             (syntax-case clause-stx ()
+               [(meth . args)
+                (quasisyntax/loc stx
+                  (send o meth . args))]
+               [_ (raise-syntax-error
+                   #f "bad method call" stx clause-stx)]))
+           (syntax->list (syntax (clause ...)))))))]))
 
 ;; find-method/who : symbol[top-level-form/proc-name]
 ;;                   any[object] 
@@ -4035,31 +3975,26 @@
                       dynamic-generic)))))])
     make-generic))
 
-(define-syntaxes (send-generic send-generic-traced)
-  (let ()
-    (define (core-send-generic traced?)
-      (lambda (stx)
-        (syntax-case stx ()
-          [(_ object generic . args)
-           (let* ([args-stx (syntax args)]
-                  [proper? (stx-list? args-stx)]
-                  [flat-stx (if proper? args-stx (flatten-args args-stx))])
-             (with-syntax ([(gen obj)
-                            (generate-temporaries (syntax (generic object)))])
-               (quasisyntax/loc stx
-                 (let* ([obj object]
-                        [gen generic])
-                   (unsyntax
-                    (make-method-call
-                     traced?
-                     stx
-                     (syntax obj)
-                     (syntax/loc stx ((generic-applicable gen) obj))
-                     (syntax/loc stx (generic-name gen))
-                     flat-stx
-                     (not proper?)
-                     #f))))))])))
-    (values (core-send-generic #f) (core-send-generic #t))))
+(define-syntax (send-generic stx)
+  (syntax-case stx ()
+    [(_ object generic . args)
+     (let* ([args-stx (syntax args)]
+            [proper? (stx-list? args-stx)]
+            [flat-stx (if proper? args-stx (flatten-args args-stx))])
+       (with-syntax ([(gen obj)
+                      (generate-temporaries (syntax (generic object)))])
+         (quasisyntax/loc stx
+           (let* ([obj object]
+                  [gen generic])
+             (unsyntax
+              (make-method-call
+               stx
+               (syntax obj)
+               (syntax/loc stx ((generic-applicable gen) obj))
+               (syntax/loc stx (generic-name gen))
+               flat-stx
+               (not proper?)
+               #f))))))]))
 
 (define-syntaxes (class-field-accessor class-field-mutator generic/form)
   (let ([mk
@@ -4088,51 +4023,24 @@
      (mk (quote-syntax make-class-field-mutator) "class")
      (mk (quote-syntax make-generic/proc) "class or interface"))))
 
-(define-syntax (class-field-accessor-traced stx)
+(define-syntax (set-field! stx)
   (syntax-case stx ()
-    [(form class name)
-     (syntax/loc stx
-       (let* ([accessor (class-field-accessor class name)])
-         (lambda (obj)
-           (begin0 (accessor obj)
-                   (get-event obj 'name)))))]))
+    [(_ name obj val)
+     (identifier? #'name)
+     (with-syntax ([localized (localize #'name)])
+       (syntax/loc stx (set-field!/proc `localized obj val)))]
+    [(_ name obj val)
+     (raise-syntax-error
+      'set-field! "expected a field name as first argument"
+      stx #'name)]))
 
-(define-syntax (class-field-mutator-traced stx)
-  (syntax-case stx ()
-    [(form class name)
-     (syntax/loc stx
-       (let* ([mutator (class-field-mutator class name)])
-         (lambda (obj value)
-           (begin0 (mutator obj value)
-                   (set-event obj 'name value)))))]))
-
-(define-syntaxes (set-field! set-field!-traced)
-  (let ()
-    (define (core-set-field! traced?)
-      (λ (stx)
-        (syntax-case stx ()
-          [(_ name obj val)
-           (identifier? #'name)
-           (with-syntax ([set (if traced?
-                                  #'set-field!/proc-traced
-                                  #'set-field!/proc)]
-                         [localized (localize #'name)])
-             (syntax/loc stx (set `localized obj val)))]
-          [(_ name obj val)
-           (raise-syntax-error
-            'set-field! "expected a field name as first argument"
-            stx #'name)])))
-    (values (core-set-field! #f) (core-set-field! #t))))
-
-(define-traced (set-field!/proc id obj val)
+(define (set-field!/proc id obj val)
   (unless (object? obj)
     (raise-mismatch-error
      'set-field!
      "expected an object, got "
      obj))
-  (trace-begin
-   (trace (set-event obj id val))
-   (let* ([cls (object-ref obj)]
+  (let* ([cls (object-ref obj)]
           [field-ht (class-field-ht cls)]
           [fi (hash-ref field-ht id #f)])
      (if fi
@@ -4140,35 +4048,26 @@
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
-          obj)))))
+          obj))))
 
-(define-syntaxes (get-field get-field-traced)
-  (let ()
-    (define (core-get-field traced?)
-      (lambda (stx)
-        (syntax-case stx ()
-          [(_ name obj)
-           (identifier? (syntax name))
-           (with-syntax ([get (if traced?
-                                  (syntax get-field/proc-traced)
-                                  (syntax get-field/proc))]
-                         [localized (localize (syntax name))])
-             (syntax (get `localized obj)))]
-          [(_ name obj)
-           (raise-syntax-error
-            'get-field "expected a field name as first argument"
-            stx (syntax name))])))
-    (values (core-get-field #f) (core-get-field #t))))
+(define-syntax (get-field stx)
+  (syntax-case stx ()
+    [(_ name obj)
+     (identifier? (syntax name))
+     (with-syntax ([localized (localize (syntax name))])
+       (syntax (get-field/proc `localized obj)))]
+    [(_ name obj)
+     (raise-syntax-error
+      'get-field "expected a field name as first argument"
+      stx (syntax name))]))
 
-(define-traced (get-field/proc id obj)
+(define (get-field/proc id obj)
   (unless (object? obj)
     (raise-mismatch-error 
      'get-field
      "expected an object, got "
      obj))
-  (trace-begin
-   (trace (get-event obj id))
-   (let* ([cls (object-ref obj)]
+  (let* ([cls (object-ref obj)]
           [field-ht (class-field-ht cls)]
           [fi (hash-ref field-ht id #f)])
      (if fi
@@ -4176,144 +4075,120 @@
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
-          obj)))))
+          obj))))
 
-(define-syntaxes (field-bound? field-bound?-traced)
-  (let ()
-    (define (core-field-bound? traced?)
-      (lambda (stx)
-        (syntax-case stx ()
-          [(_ name obj)
-           (identifier? (syntax name))
-           (with-syntax ([localized (localize (syntax name))]
-                         [bound? (if traced?
-                                     (syntax field-bound?/proc-traced)
-                                     (syntax field-bound?/proc))])
-             (syntax (bound? `localized obj)))]
-          [(_ name obj)
-           (raise-syntax-error
-            'field-bound? "expected a field name as first argument"
-            stx (syntax name))])))
-    (values (core-field-bound? #f) (core-field-bound? #t))))
+(define-syntax (field-bound? stx)
+  (syntax-case stx ()
+    [(_ name obj)
+     (identifier? (syntax name))
+     (with-syntax ([localized (localize (syntax name))])
+       (syntax (field-bound?/proc `localized obj)))]
+    [(_ name obj)
+     (raise-syntax-error
+      'field-bound? "expected a field name as first argument"
+      stx (syntax name))]))
 
-(define-traced (field-bound?/proc id obj)
+(define (field-bound?/proc id obj)
   (unless (object? obj)
     (raise-mismatch-error 
      'field-bound?
      "expected an object, got "
      obj))
-  (trace-begin
-   (trace (inspect-event obj))
-   (let loop ([obj obj])
+  (let loop ([obj obj])
      (let* ([cls (object-ref obj)]
             [field-ht (class-field-ht cls)])
        (and (hash-ref field-ht id #f)
-            #t))))) ;; ensure that only #t and #f leak out, not bindings in ht
+            #t)))) ;; ensure that only #t and #f leak out, not bindings in ht
 
-(define-traced (field-names obj)
+(define (field-names obj)
   (unless (object? obj)
     (raise-mismatch-error 
      'field-names
      "expected an object, got "
      obj))
-  (trace-begin
-   (trace (inspect-event obj))
-   (let loop ([obj obj])
+  (let loop ([obj obj])
      (let* ([cls (object-ref obj)]
             [field-ht (class-field-ht cls)]
             [flds (filter interned? (hash-map field-ht (lambda (x y) x)))])
-       flds))))
+       flds)))
 
-(define-syntaxes (with-method with-method-traced)
-  (let ()
-    (define (core-with-method traced?)
-      (lambda (stx)
-        (syntax-case stx ()
-          [(_ ([id (obj-expr name)] ...) body0 body1 ...)
-           (let ([ids (syntax->list (syntax (id ...)))]
-                 [names (syntax->list (syntax (name ...)))])
-             (for-each (lambda (id name)
-                         (unless (identifier? id)
-                           (raise-syntax-error #f
-                                               "not an identifier for binding"
-                                               stx
-                                               id))
-                         (unless (identifier? name)
-                           (raise-syntax-error #f
-                                               "not an identifier for method name"
-                                               stx
-                                               name)))
-                       ids names)
-             (with-syntax ([(method ...) (generate-temporaries ids)]
-                           [(method-obj ...) (generate-temporaries ids)]
-                           [(name ...) (map localize names)]
-                           [trace-flag (if traced? (syntax/loc stx #t) (syntax/loc stx #f))])
-               (syntax/loc stx (let-values ([(method method-obj)
-                                             (let ([obj obj-expr])
-                                               (values (find-method/who 'with-method obj `name)
-                                                       obj))]
-                                            ...)
-                                 (letrec-syntaxes+values ([(id) (make-with-method-map
-                                                                 trace-flag
-                                                                 (quote-syntax set!)
-                                                                 (quote-syntax id)
-                                                                 (quote-syntax method)
-                                                                 (quote-syntax method-obj))]
-                                                          ...)
-                                   ()
-                                   body0 body1 ...)))))]
-          ;; Error cases:
-          [(_ (clause ...) . body)
-           (begin
-             (for-each (lambda (clause)
-                         (syntax-case clause ()
-                           [(id (obj-expr name))
-                            (and (identifier? (syntax id))
-                                 (identifier? (syntax name)))
-                            'ok]
-                           [_else
-                            (raise-syntax-error 
-                             #f
-                             "binding clause is not of the form (identifier (object-expr method-identifier))"
-                             stx
-                             clause)]))
-                       (syntax->list (syntax (clause ...))))
-             ;; If we get here, the body must be bad
-             (if (stx-null? (syntax body))
-                 (raise-syntax-error 
-                  #f
-                  "empty body"
-                  stx)
-                 (raise-syntax-error 
-                  #f
-                  "bad syntax (illegal use of `.')"
-                  stx)))]
-          [(_ x . rest)
+(define-syntax (with-method stx)
+  (syntax-case stx ()
+    [(_ ([id (obj-expr name)] ...) body0 body1 ...)
+     (let ([ids (syntax->list (syntax (id ...)))]
+           [names (syntax->list (syntax (name ...)))])
+       (for-each (lambda (id name)
+                   (unless (identifier? id)
+                     (raise-syntax-error #f
+                                         "not an identifier for binding"
+                                         stx
+                                         id))
+                   (unless (identifier? name)
+                     (raise-syntax-error #f
+                                         "not an identifier for method name"
+                                         stx
+                                         name)))
+                 ids names)
+       (with-syntax ([(method ...) (generate-temporaries ids)]
+                     [(method-obj ...) (generate-temporaries ids)]
+                     [(name ...) (map localize names)])
+         (syntax/loc stx (let-values ([(method method-obj)
+                                       (let ([obj obj-expr])
+                                         (values (find-method/who 'with-method obj `name)
+                                                 obj))]
+                                      ...)
+                           (letrec-syntaxes+values ([(id) (make-with-method-map
+                                                           (quote-syntax set!)
+                                                           (quote-syntax id)
+                                                           (quote-syntax method)
+                                                           (quote-syntax method-obj))]
+                                                    ...)
+                             ()
+                             body0 body1 ...)))))]
+    ;; Error cases:
+    [(_ (clause ...) . body)
+     (begin
+       (for-each (lambda (clause)
+                   (syntax-case clause ()
+                     [(id (obj-expr name))
+                      (and (identifier? (syntax id))
+                           (identifier? (syntax name)))
+                      'ok]
+                     [_else
+                      (raise-syntax-error 
+                       #f
+                       "binding clause is not of the form (identifier (object-expr method-identifier))"
+                       stx
+                       clause)]))
+                 (syntax->list (syntax (clause ...))))
+       ;; If we get here, the body must be bad
+       (if (stx-null? (syntax body))
            (raise-syntax-error 
             #f
-            "not a binding sequence"
-            stx
-            (syntax x))])))
-    
-    (values
-     ;; with-method
-     (core-with-method #f)
-     ;; with-method-traced
-     (core-with-method #t))))
+            "empty body"
+            stx)
+           (raise-syntax-error 
+            #f
+            "bad syntax (illegal use of `.')"
+            stx)))]
+    [(_ x . rest)
+     (raise-syntax-error 
+      #f
+      "not a binding sequence"
+      stx
+      (syntax x))]))
 
 
 ;;--------------------------------------------------------------------
 ;;  class, interface, and object properties
 ;;--------------------------------------------------------------------
 
-(define-traced (is-a? v c)
-  (trace-begin
-   (trace (when (object? v) (inspect-event v)))
-   (cond
-     [(not (object? v)) #f]
-     [(class? c) ((class-object? (class-orig-cls c)) v)]
-     [(interface? c) (implementation? (object-ref v) c)]
-     [else (raise-type-error 'is-a? "class or interface" 1 v c)])))
+(define (is-a? v c)
+  (cond
+    [(not (object? v)) #f]
+    [(class? c) ((class-object? (class-orig-cls c)) v)]
+    [(interface? c) (implementation? (object-ref v) c)]
+    [else (raise-type-error 'is-a? "class or interface" 1 v c)]))
 
 (define (subclass? v c)
   (unless (class? c)
@@ -4325,14 +4200,12 @@
          (and (<= p (class-pos v))
               (eq? c (vector-ref (class-supers v) p))))))
 
-(define-traced (object-interface o)
+(define (object-interface o)
   (unless (object? o)
     (raise-type-error 'object-interface "object" o))
-  (trace-begin
-   (trace (inspect-event o))
-   (class-self-interface (object-ref o))))
+  (class-self-interface (object-ref o)))
 
-(define-traced (object-method-arity-includes? o name cnt)
+(define (object-method-arity-includes? o name cnt)
   (unless (object? o)
     (raise-type-error 'object-method-arity-includes? "object" o))
   (unless (symbol? name)
@@ -4341,15 +4214,13 @@
                (exact? cnt)
                (not (negative? cnt)))
     (raise-type-error 'object-method-arity-includes? "non-negative exact integer" cnt))
-  (trace-begin
-   (trace (inspect-event o))
-   (let loop ([o o])
+  (let loop ([o o])
      (let* ([c (object-ref o)]
             [pos (hash-ref (class-method-ht c) name #f)])
        (cond
          [pos (procedure-arity-includes? (vector-ref (class-methods c) pos) 
                                          (add1 cnt))]
-         [else #f])))))
+         [else #f]))))
 
 (define (implementation? v i)
   (unless (interface? i)
@@ -4384,20 +4255,18 @@
   (filter interned? (interface-public-ids i)))
 
 
-(define-traced (object-info o)
+(define (object-info o)
   (unless (object? o)
     (raise-type-error 'object-info "object" o))
-  (trace-begin
-   (trace (inspect-event o))
-   (let ([o* (if (has-original-object? o) (original-object o) o)])
-     (let loop ([c (object-ref o*)]
-                [skipped? #f])
-       (if (struct? ((class-insp-mk c)))
-           ;; current objec can inspect this object
-           (values c skipped?)
-           (if (zero? (class-pos c))
-               (values #f #t)
-               (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t)))))))
+  (let ([o* (if (has-original-object? o) (original-object o) o)])
+    (let loop ([c (object-ref o*)]
+               [skipped? #f])
+      (if (struct? ((class-insp-mk c)))
+          ;; current objec can inspect this object
+          (values c skipped?)
+          (if (zero? (class-pos c))
+              (values #f #t)
+              (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t))))))
 
 (define (to-sym s)
   (if (string? s)
@@ -4424,33 +4293,31 @@
                   (loop (vector-ref (class-supers next) (sub1 (class-pos next))) #t)))))
       (raise-mismatch-error 'class-info "current inspector cannot inspect class: " c)))
 
-(define-traced object->vector
+(define object->vector
   (opt-lambda (in-o [opaque-v '...])
     (unless (object? in-o)
       (raise-type-error 'object->vector "object" in-o))
-    (trace-begin
-     (trace (inspect-event in-o))
-     (let ([o in-o])
-       (list->vector
-        (cons
-         (string->symbol (format "object:~a" (class-name (object-ref o))))
-         (reverse
-          (let-values ([(c skipped?) (object-info o)])
-            (let loop ([c c][skipped? skipped?])
-              (cond
-                [(not c) (if skipped? (list opaque-v) null)]
-                [else (let-values ([(name num-fields field-ids field-ref
-                                          field-set next next-skipped?)
-                                    (class-info c)])
-                        (let ([rest (loop next next-skipped?)]
-                              [here (let loop ([n num-fields])
-                                      (if (zero? n)
-                                          null
-                                          (cons (field-ref o (sub1 n))
-                                                (loop (sub1 n)))))])
-                          (append (if skipped? (list opaque-v) null)
-                                  here
-                                  rest)))]))))))))))
+    (let ([o in-o])
+      (list->vector
+       (cons
+        (string->symbol (format "object:~a" (class-name (object-ref o))))
+        (reverse
+         (let-values ([(c skipped?) (object-info o)])
+           (let loop ([c c][skipped? skipped?])
+             (cond
+               [(not c) (if skipped? (list opaque-v) null)]
+               [else (let-values ([(name num-fields field-ids field-ref
+                                         field-set next next-skipped?)
+                                   (class-info c)])
+                       (let ([rest (loop next next-skipped?)]
+                             [here (let loop ([n num-fields])
+                                     (if (zero? n)
+                                         null
+                                         (cons (field-ref o (sub1 n))
+                                               (loop (sub1 n)))))])
+                         (append (if skipped? (list opaque-v) null)
+                                 here
+                                 rest)))])))))))))
 
 (define (object=? o1 o2)
   (unless (object? o1)
@@ -4841,36 +4708,6 @@
                                  (lambda (obj base-hash2-code)
                                    (send obj equal-secondary-hash-code-of base-hash2-code)))])
               equal-to? equal-hash-code-of equal-secondary-hash-code-of))
-
-;; Providing traced versions:
-(provide class-traced
-         class*-traced
-         class/derived-traced
-         (rename-out [define-serializable-class define-serializable-class-traced]
-                     [define-serializable-class* define-serializable-class*-traced]
-                     [mixin mixin-traced])
-         new-traced
-         make-object-traced
-         instantiate-traced
-         send-traced
-         send/apply-traced
-         send*-traced
-         class-field-accessor-traced
-         class-field-mutator-traced
-         with-method-traced
-         get-field-traced
-         set-field!-traced
-         field-bound?-traced
-         field-names-traced
-         (rename-out [generic/form generic-traced]
-                     [make-generic/proc make-generic-traced])
-         send-generic-traced
-         is-a?-traced
-         object-interface-traced
-         object-info-traced
-         object->vector-traced
-         object-method-arity-includes?-traced
-         )
 
 ;; Providing normal functionality:
 (provide (protect-out make-wrapper-object

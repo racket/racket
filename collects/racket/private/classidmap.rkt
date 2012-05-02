@@ -2,7 +2,7 @@
 
 (require syntax/stx
          (for-syntax racket/base)
-         (for-template racket/base "class-events.rkt"))
+         (for-template racket/base))
 
 (define insp (variable-reference->module-declaration-inspector
               (#%variable-reference)))
@@ -64,7 +64,7 @@
          [(f . args)
           (quasisyntax/loc stx (#,replace-stx . args))])))))
 
-(define (make-field-map trace-flag the-finder the-obj the-binder the-binder-localized
+(define (make-field-map the-finder the-obj the-binder the-binder-localized
                         field-accessor field-mutator)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
@@ -76,28 +76,19 @@
             [(set! id expr)
              (free-identifier=? (syntax set!) set!-stx)
              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
-                           [trace (syntax/loc stx (set-event obj (quote id) id))]
                            [set (quasisyntax/loc stx
                                   ((unsyntax field-mutator) obj id))])
-               (if trace-flag
-                   (syntax/loc stx (let* bindings trace set))
-                   (syntax/loc stx (let* bindings set))))]
+               (syntax/loc stx (let* bindings set)))]
             [(id . args)
              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
-                           [trace (syntax/loc stx (get-event obj (quote id)))]
                            [call (quasisyntax/loc stx
                                    (((unsyntax field-accessor) obj) . args))])
-               (if trace-flag
-                   (syntax/loc stx (let* bindings trace call))
-                   (syntax/loc stx (let* bindings call))))]
+               (syntax/loc stx (let* bindings call)))]
             [id
              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
-                           [trace (syntax/loc stx (get-event obj (quote id)))]
                            [get (quasisyntax/loc stx
                                   ((unsyntax field-accessor) obj))])
-               (if trace-flag
-                   (syntax/loc stx (let* bindings trace get))
-                   (syntax/loc stx (let* bindings get))))])))))))
+               (syntax/loc stx (let* bindings get)))])))))))
 
 (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
@@ -276,7 +267,7 @@
      "cannot use superclass initialization form in a method"
      stx)))
 
-(define (make-with-method-map trace-flag set!-stx id-stx
+(define (make-with-method-map set!-stx id-stx
                               method-stx method-obj-stx)
   (make-set!-transformer
    (lambda (stx)
@@ -292,7 +283,6 @@
                 [proper? (stx-list? args-stx)]
                 [flat-args-stx (if proper? args-stx (flatten-args args-stx))])
            (make-method-call
-            trace-flag
             stx
             method-obj-stx
             method-stx
@@ -354,7 +344,7 @@
   (and (pair? ctx)
        (class-context? (car ctx))))
 
-(define (make-method-call traced? source-stx object-stx
+(define (make-method-call source-stx object-stx
                           method-proc-stx method-name-stx args-stx 
                           rest-arg? kw-args)
   
@@ -372,20 +362,7 @@
                           (qstx #%app))]
                  [(kw-arg ...) (or kw-args'())]
                  [args args-stx])
-     (if traced?
-         (with-syntax ([(mth obj) (generate-temporaries
-                                   (list object-stx method-proc-stx))]
-                       [name method-name-stx]
-                       [(arg ...) (qstx args)]
-                       [(var ...) (generate-temporaries (qstx args))])
-           (qstx (let ([mth method]
-                       [obj object]
-                       [var arg] ...)
-                   (initialize-call-event
-                    obj name (app list var ...))
-                   (call-with-values (lambda () (app mth obj var ...))
-                     finalize-call-event))))
-         (qstx (app method kw-arg ... object . args))))))
+     (qstx (app method kw-arg ... object . args)))))
 
 (provide (protect-out make-this-map make-this%-map make-field-map make-method-map 
                       make-direct-method-map 
