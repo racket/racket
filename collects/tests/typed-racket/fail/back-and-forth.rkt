@@ -1,5 +1,5 @@
 #;
-(exn-pred exn:fail:contract? #rx".*contract violation.*contract.*f.*\\(-> Number Number\\).*")
+(exn-pred exn:fail:contract? #rx".*contract violation.*\\(-> Number Number\\).*contract.*f.*")
 
 #lang scheme/load
 
