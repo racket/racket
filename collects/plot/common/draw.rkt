@@ -71,21 +71,15 @@
 ;; Returns an immutable instance of color%. Immutable colors are faster because they don't have to
 ;; have immutable copies made when they're used in a dc.
 (define (make-color% r g b)
-  (define color (make-object color% r g b))
-  (send color set-immutable)
-  color)
+  (make-immutable-color r g b))
 
 ;; Returns an immutable instance of pen%. Same reasoning as for make-color%.
 (define (make-pen% r g b w s)
-  (define pen (make-object pen% (make-color% r g b) w s))
-  (send pen set-immutable)
-  pen)
+  (make-immutable-pen (make-color% r g b) w s))
 
 ;; Returns an immutable instance of brush%. Same reasoning as for make-color%.
 (define (make-brush% r g b s)
-  (define brush (make-object brush% (make-color% r g b) s))
-  (send brush set-immutable)
-  brush)
+  (make-immutable-brush (make-color% r g b) s))
 
 (define (color%? c) (is-a? c color%))
 
