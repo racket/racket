@@ -49,6 +49,34 @@
   (vector/c (vector/c real? real? real? real? real? real?)
             real? real? real? real? real?))
 
+(define make-immutable-color/c
+  (->* ()
+       ((integer-in 0 255)
+        (integer-in 0 255)
+        (integer-in 0 255)
+        (real-in 0 1))
+       (is-a?/c color%)))
+
+(define make-immutable-brush/c
+  (->* ()
+       ((or/c string? (is-a?/c color%))
+        brush-style/c
+        (or/c #f (is-a?/c bitmap%))
+        (or/c #f
+              (is-a?/c linear-gradient%)
+              (is-a?/c radial-gradient%))
+        (or/c #f transformation-vector/c))
+       (is-a?/c brush%)))
+
+(define make-immutable-pen/c
+  (->* ()
+       ((or/c string? (is-a?/c color%))
+        (real-in 0 255)
+        pen-style/c
+        pen-cap-style/c
+        pen-join-style/c
+        (or/c #f (is-a?/c bitmap%)))
+       (is-a?/c pen%)))
 
 (define dc<%>/c
   (class/c

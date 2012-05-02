@@ -104,7 +104,8 @@ To avoid creating multiple brushes with the same characteristics, use
                            #f]
                  [transformation (or/c #f (vector/c (vector/c real? real? real? 
                                                               real? real? real?)
-                                                     real? real? real? real? real?))])]{
+                                                     real? real? real? real? real?))
+                                 #f])]{
 
 Creates a brush with the given color, @tech{brush style}, @tech{brush
  stipple}, @tech{gradient}, and @tech{brush transformation} (which is
@@ -113,6 +114,28 @@ Creates a brush with the given color, @tech{brush style}, @tech{brush
  @racket[color-database<%>] for information about color names; if the
  name is not known, the brush's color is black.}
 
+@defproc[(make-immutable-brush
+          [color (or/c string? (is-a?/c color%)) "black"]
+          [style (or/c 'transparent 'solid 'opaque
+                       'xor 'hilite 'panel
+                       'bdiagonal-hatch 'crossdiag-hatch
+                       'fdiagonal-hatch 'cross-hatch
+                       'horizontal-hatch 'vertical-hatch)
+                  'solid]
+          [stipple (or/c #f (is-a?/c bitmap%))
+                   #f]
+          [gradient (or/c #f
+                          (is-a?/c linear-gradient%)
+                          (is-a?/c radial-gradient%))
+                    #f]
+          [transformation (or/c #f (vector/c (vector/c real? real? real?
+                                                       real? real? real?)
+                                              real? real? real? real? real?))
+                          #f])
+         (is-a?/c brush%)]{
+
+Creates a new immutable brush with the given initialization values.
+}
 
 @defmethod[(get-color)
            (is-a?/c color%)]{
@@ -161,6 +184,14 @@ If a brush with a stipple or gradient also has a transformation, then the
 transformation applies to the stipple or gradient's coordinates instead of the
 target drawing context's transformation; otherwise, the target drawing
 context's transformation applies to stipple and gradient coordinates.}
+
+
+@defmethod[(is-immutable?)
+           boolean?]{
+
+Returns @racket[#t] if the brush object is immutable.
+
+}
 
 
 @defmethod*[([(set-color [color (is-a?/c color%)])

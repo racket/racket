@@ -3,6 +3,7 @@
          "syntax.rkt")
 
 (provide color%
+         make-immutable-color
          color-red
          color-green
          color-blue
@@ -12,7 +13,8 @@
          color->immutable-color)
 
 (define-local-member-name
-  r g b a)
+  r g b a
+  set-immutable)
 
 (defclass color% object%
   (field [r 0]
@@ -64,9 +66,9 @@
           (set! b rb)
           (set! a (exact->inexact ra)))))
 
-  (def/public (ok?) #t)
-  (def/public (is-immutable?) immutable?)
-  (def/public (set-immutable) (set! immutable? #t))
+  (define/public (ok?) #t)
+  (define/public (is-immutable?) immutable?)
+  (define/public (set-immutable) (set! immutable? #t))
   
   (define/public (copy-from c)
     (if immutable?
@@ -78,6 +80,13 @@
 (define color-green (class-field-accessor color% g))
 (define color-blue (class-field-accessor color% b))
 (define color-alpha (class-field-accessor color% a))
+
+;; byte byte byte real -> color%
+;; produce an immutable color% object
+(define (make-immutable-color [r 0] [g 0] [b 0] [a 1.0])
+  (define color (make-object color% r g b a))
+  (send color set-immutable)
+  color)
 
 (define (color->immutable-color c)
   (if (send c is-immutable?)

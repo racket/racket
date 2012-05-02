@@ -55,4 +55,7 @@
                   [region%           region%/c]
                   [dc-path%          dc-path%/c]
                   [gl-config%        gl-config%/c]
-                  [bitmap%           bitmap%/c])
+                  [bitmap%           bitmap%/c]
+                  [make-immutable-color  make-immutable-color/c]
+                  [make-immutable-pen    make-immutable-pen/c]
+                  [make-immutable-brush  make-immutable-brush/c])

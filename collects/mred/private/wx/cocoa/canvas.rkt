@@ -4,7 +4,8 @@
          racket/class
          racket/draw
          racket/draw/private/gl-context
-         (except-in racket/draw/private/color color%)
+         (except-in racket/draw/private/color
+                    color% make-immutable-color)
          (only-in racket/draw/private/bitmap quartz-bitmap%)
          "pool.rkt"
          "utils.rkt"

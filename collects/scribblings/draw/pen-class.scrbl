@@ -87,6 +87,25 @@ Creates a pen with the given color, width, @tech{pen style}, @tech{cap style}, @
 
 }
 
+@defproc[(make-immutable-pen
+          [color (or/c string? (is-a?/c color%)) "black"]
+          [width (real-in 0 255) 0]
+          [style (or/c 'transparent 'solid 'xor 'hilite
+                       'dot 'long-dash 'short-dash 'dot-dash
+                       'xor-dot 'xor-long-dash 'xor-short-dash
+                       'xor-dot-dash)
+                 'solid]
+          [cap (or/c 'round 'projecting 'butt)
+               'round]
+          [join (or/c 'round 'bevel 'miter)
+                'round]
+          [stipple (or/c #f (is-a?/c bitmap%))
+                   #f])
+         (is-a?/c pen%)]{
+
+Creates a new immutable pen with the given initialization values.
+}
+
 @defmethod[(get-cap)
            (or/c 'round 'projecting 'butt)]{
 
@@ -217,6 +236,13 @@ possible styles.
            (real-in 0 255)]{
 
 Returns the pen width.
+
+}
+
+@defmethod[(is-immutable?)
+           boolean?]{
+
+Returns @racket[#t] if the pen object is immutable.
 
 }
 

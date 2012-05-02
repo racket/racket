@@ -29,6 +29,16 @@ Creates a new color with the given RGB values and alpha, or matching
 
 }
 
+@defproc[(make-immutable-color
+          [red (integer-in 0 255)]
+          [green (integer-in 0 255)]
+          [blue (integer-in 0 255)]
+          [alpha (real-in 0 1) 1.0])
+         (is-a?/c color%)]{
+
+Creates a new immutable color with the given RGB values and alpha.
+}
+
 @defmethod[(alpha)
            (real-in 0 1)]{
 
@@ -55,6 +65,13 @@ Copies the RGB values of another color object to this one, returning
            (integer-in 0 255)]{
 
 Returns the green component of the color.
+
+}
+
+@defmethod[(is-immutable?)
+           boolean?]{
+
+Returns @racket[#t] if the color object is immutable.
 
 }
 
