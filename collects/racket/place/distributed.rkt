@@ -86,6 +86,12 @@
          *channel-put
          send-new-place-channel-to-named-dest
 
+         mr-spawn-remote-node
+         mr-supervise-named-dynamic-place-at
+         mr-connect-to
+         start-message-router/thread
+         spawn-nodes/join
+ 
          ;classes
          event-container<%>
          spawned-process%
@@ -103,10 +109,16 @@
 
          ;re-provides
          quote-module-path
+
+         named-place-typed-channel%
+         tc-get
          )
 
 (define-runtime-path distributed-launch-path "distributed/launch.rkt")
-(define (build-distributed-launch-path path) (path->string (build-path path "collects/racket/place/distributed/launch.rkt")))
+(define (build-distributed-launch-path [collects-path
+                                         (simplify-path (find-executable-path (find-system-path 'exec-file) 
+                                                                              (find-system-path 'collects-dir)))])
+   (path->string (build-path collects-path "racket/place/distributed/launch.rkt")))
 
 (define DEFAULT-ROUTER-PORT 6340)
 
@@ -258,7 +270,7 @@
 
 (define (send-new-place-channel-to-named-dest ch src-id dest-list)
   (define-values (e1 e2) (place-channel))
-  (place-channel-put ch (dcgm DCGM-NEW-PLACE-CHANNEL src-id dest-list e2))
+  (place-channel-put ch (dcgm DCGM-NEW-PLACE-CHANNEL (list 'new-place-channel src-id) dest-list e2))
   e1)
 
 
@@ -1557,14 +1569,16 @@
   ((cond
     [(place-channel? ch) place-channel-put]
     [(async-bi-channel? ch) async-bi-channel-put]
-    [(channel? ch) channel-put])
+    [(channel? ch) channel-put]
+    [else (raise (format "unknown channel type ~a" ch))])
     ch msg))
 
 (define (*channel-get ch)
   ((cond
     [(place-channel? ch) place-channel-get]
     [(async-bi-channel? ch) async-bi-channel-get]
-    [(channel? ch) channel-get])
+    [(channel? ch) channel-get]
+    [else (raise (format "unknown channel type ~a" ch))])
     ch))
 
 (define/provide (mr-spawn-remote-node mrch host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
@@ -1618,3 +1632,29 @@
 (define build-node-args
   (make-keyword-procedure (lambda (kws kw-args . rest)
                             (list kws kw-args rest))))
+
+
+(define named-place-typed-channel%
+  (class*
+    object% ()
+    (init-field ch)
+    (field [msgs null])
+    (define/public (get type)
+      (let loop ([l msgs]
+                 [nl null])
+        (cond
+          [(null? l)
+           (define nm (place-channel-get ch))
+           ;(printf/f "NM ~a ~a\n" type nm)
+           (set! msgs (append msgs (list nm)))
+           (loop msgs null)]
+          [(equal? type (caaar l))
+           (set! msgs (append (reverse nl) (cdr l)))
+           (car l)]
+          [else
+           (loop (cdr l) (cons (car l) nl))])))
+    (super-new)
+    ))
+
+(define (tc-get type ch) (send ch get type))
+

@@ -3,7 +3,8 @@
 (require racket/place/distributed
          racket/match
          racket/list
-         racket/place)
+         racket/place
+         racket/class)
 
 (provide RMPI-init
          RMPI-send
@@ -27,8 +28,9 @@
 (define (RMPI-recv comm src) (place-channel-get (vector-ref (RMPI-COMM-channels comm) src)))
 
 (define (RMPI-init ch)
-  (match-define (list (list id config) return-ch) (place-channel-get ch))
-  (match-define (list args src-ch)  (place-channel-get ch))
+  (define tc (new named-place-typed-channel% [ch ch]))
+  (match-define (list (list 'mpi-id id config) return-ch) (tc-get 'mpi-id tc))
+  (match-define (list (list 'args args) src-ch) (tc-get 'args tc))
   (define mpi-comm-vector
     (for/vector #:length (length config) ([c config])
       (match-define (list dest dest-port dest-name dest-id) c)
@@ -40,13 +42,14 @@
   (for ([i (length config)])
     (cond
       [(> id i)
-        (match-define (list src-id src-ch) (place-channel-get ch))
+        (match-define (list (list 'new-place-channel src-id) src-ch) (tc-get 'new-place-channel tc))
         ;(printf/f "received connect from id ~a ~a" src-id src-ch)
         (vector-set! mpi-comm-vector src-id src-ch)]
       [else null]))
   (values
     (RMPI-COMM id (length config) mpi-comm-vector)
     args
+    tc
     ))
 
 
@@ -215,22 +218,20 @@
   (for ([c config])
     (match-define (list-rest host port name id rest) c)
     (define npch (mr-connect-to ch (list host port) name))
-    (*channel-put npch (list id config))
-    (*channel-put npch (or (lookup-config-value rest "mpi-args") null)))
+    (*channel-put npch (list 'mpi-id id config))
+    (*channel-put npch (list 'args (or (lookup-config-value rest "mpi-args") null))))
 
   (for/first ([c config])
     (match-define (list-rest host port name id rest) c)
     (define npch (mr-connect-to ch (list host port) name))
-    (*channel-put npch 'done?)
-
+    (*channel-put npch (list 'done?))
     ;Wait for 'done message from mpi node id 0
-    (*channel-get npch))
-  )
+    (*channel-get npch)))
 
 
-(define (RMPI-finish comm ch)
+(define (RMPI-finish comm tc)
   (when (= (RMPI-id comm) 0)
-        (place-channel-put (second (place-channel-get ch)) 'done)))
+        (place-channel-put (second (tc-get 'done? tc)) 'done)))
 
 (module+ bcast-print-test
   (RMPI-BCast (RMPI-COMM 0 8 (vector 0 1 2 3 4 5 6 7)) 0 "Hi")
