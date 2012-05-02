@@ -30,6 +30,8 @@
 (define ((format-sub-report-entry pane) s)
   (match-define (sub-report-entry stx msg) s)
 
+  (define usable-width (- popup-width 20)) ; minus the scrollbar
+
   ;; the location, the syntax and the message are in separate editors
   (define location-text (new text:basic% [auto-wrap #t]))
   (define location (format "~a:~a:" (syntax-line stx) (syntax-column stx)))
@@ -56,7 +58,7 @@
       ;; located version of irritants available, this is the best we can do
       (send syntax-text highlight-range
             start (+ start len) "pink" #f 'high 'rectangle)))
-  (send syntax-text set-max-width (- popup-width 20)) ; minus the scrollbar
+  (send syntax-text set-max-width usable-width)
   (send syntax-text auto-wrap #t)
   (send syntax-text lock #t)
   (send pane insert
@@ -67,7 +69,7 @@
   (define message-text (new text:basic% [auto-wrap #t]))
   (send message-text insert-port (open-input-string msg))
   ;; adjust display
-  (send message-text set-max-width (- popup-width 20)) ; minus the scrollbar
+  (send message-text set-max-width usable-width)
   (send message-text auto-wrap #t)
   (send message-text lock #t)
   (send pane insert
@@ -75,6 +77,11 @@
              [with-border? #f] [top-margin 10] [bottom-margin 15]))
 
   ;; to place the next sub-entry below
+  (send pane insert-port (open-input-string "\n\n"))
+  (define line-bitmap (make-object bitmap% usable-width 5))
+  (define bitmap-dc (make-object bitmap-dc% line-bitmap))
+  (send bitmap-dc draw-line 0 2.5 usable-width 2.5)
+  (send pane insert (make-object image-snip% line-bitmap))
   (send pane insert-port (open-input-string "\n\n")))
 
 (define lowest-badness-color  (make-object color% "pink"))
