@@ -10,7 +10,4 @@ typed-scheme
 
 (define (make-info key default use-default)
   (case key
-    [(drscheme:toolbar-buttons)
-     (list (dynamic-require 'typed-racket/optimizer/tool/tool
-                            'performance-report-drracket-button))]
     [else (use-default key default)]))
