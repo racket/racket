@@ -4,7 +4,7 @@
           scribble/struct
           racket/sandbox
           "config.rkt"
-          (for-label db db/util/datetime db/util/geometry db/util/postgresql))
+          (for-label db db/util/datetime db/util/geometry db/util/postgresql db/util/testing))
 
 @title[#:tag "util"]{Utilities}
 
@@ -202,4 +202,34 @@ types that have no appropriate analogue in the OpenGIS model:
 
 Note: PostgreSQL's built-in geometric types are distinct from those
 provided by the PostGIS extension library (see @secref["geometry"]).
+}
+
+@;{========================================}
+
+@section[#:tag "util-testing"]{Testing Database Programs}
+
+@defmodule[db/util/testing]
+
+This module provides utilities for testing programs that use database
+connections.
+
+@defproc[(high-latency-connection [connection connection?]
+                                  [latency (>=/c 0)]
+                                  [#:sleep-atomic? sleep-atomic? any/c #f])
+         connection?]{
+
+Returns a proxy connection for @racket[connection] that introduces
+@racket[latency] additional seconds of latency before operations that
+require communicating with the database back end---@racket[prepare],
+@racket[query], @racket[start-transaction], etc.
+
+Use this function in performance testing to roughly simulate
+environments with high-latency communication with a database back
+end.
+
+If @racket[sleep-atomic?] is true, then the proxy enters atomic mode
+before sleeping, to better simulate the effect of a long-running FFI
+call (see @secref["ffi-concurrency"]). Even so, it may not accurately
+simulate an ODBC connection that internally uses cursors to fetch data
+on demand, as each fetch would introduce additional latency.
 }

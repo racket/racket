@@ -421,12 +421,33 @@
              dprintf)
     (super-new)
 
-    (field [max-cache-size 50])
-
     ;; Statement Cache
     ;; updated by prepare; potentially invalidated by query (via check/invalidate-cache)
 
-    (define pst-cache '#hash())
+    (field [pst-cache '#hash()]
+           [cache-mode 'in-transaction]
+           [cache-flush-next? #f]  ;; flush cache on next query
+           [max-cache-size 20])
+
+    (define/private (use-cache?)
+      (and (not cache-flush-next?)
+           (case cache-mode
+             ((always) #t)
+             ((never) #f)
+             ((in-transaction) (eq? (get-tx-status) #t)))))
+
+    (define/public (stmt-cache-ctl who mode)
+      (case mode
+        ((get) cache-mode)
+        ((flush) (begin (set! cache-flush-next? #t) cache-mode))
+        (else (unless (eq? mode cache-mode)
+                (call-with-lock who
+                  (lambda ()
+                    (set! cache-mode mode)
+                    (set! cache-flush-next? #t)
+                    cache-mode))))))
+
+    ;; --
 
     (define/public (get-cached-statement stmt)
       (let ([cached-pst (hash-ref pst-cache stmt #f)])
@@ -447,12 +468,6 @@
             (dprintf "  ** caching statement\n")
             (set! pst-cache (hash-set pst-cache sql pst))))))
 
-    (define/private (use-cache?)
-      (case cache-statements
-        ((always) #t)
-        ((never) #f)
-        ((in-transaction) (eq? (get-tx-status) #t))))
-
     ;; check/invalidate-cache : statement/pst -> hash/#f
     ;; Returns old cache on invalidation, or #f if stmt is safe.
     ;; May also return part of old cache (excluding pst) when cache gets too big.
@@ -463,7 +478,11 @@
       unsafe, because they're usually transactional SQL.
       |#
       (define (invalidate! except)
-        (dprintf "  ** invalidating statement cache~a\n" (if except " (too big)" ""))
+        ;; FIXME: smarter cache ejection (LRU?)
+        (dprintf "  ** invalidating statement cache~a\n"
+                 (cond [except " (too big)"]
+                       [cache-flush-next? " (mode changed)"]
+                       [else ""]))
         (let ([cache pst-cache])
           (set! pst-cache '#hash())
           (cond [except
@@ -471,7 +490,9 @@
                  (hash-remove cache (send except get-stmt))]
                 [else
                  cache])))
-      (cond [(statement-binding? x)
+      (cond [cache-flush-next?
+             (invalidate! #f)]
+            [(statement-binding? x)
              (check/invalidate-cache (statement-binding-pst x))]
             [(prepared-statement? x)
              (let ([stmt-type (send x get-stmt-type)])

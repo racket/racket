@@ -10,6 +10,12 @@
 (define (tech/reference . pre-flows)
   (apply tech #:doc '(lib "scribblings/reference/reference.scrbl") pre-flows))
 
+(define (parheading . pre-flows)
+  (elem (apply bold pre-flows) (hspace 1)))
+
+(define (wplink path . pre-flows)
+  (apply hyperlink (string-append "http://en.wikipedia.org/wiki/" path) pre-flows))
+
 ;; ----
 
 (define the-eval (make-base-eval))

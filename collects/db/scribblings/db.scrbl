@@ -50,7 +50,7 @@ and Doug Orleans for contributions to @tt{spgsql}, the PostgreSQL-only
 predecessor of this library. The SQLite support is based in part on
 code from Jay McCarthy's @tt{sqlite} package.
 
-@include-section["introduction.scrbl"]
+@include-section["using-db.scrbl"]
 @include-section["connect.scrbl"]
 @include-section["query.scrbl"]
 @include-section["sql-types.scrbl"]

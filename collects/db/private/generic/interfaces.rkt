@@ -29,7 +29,9 @@
 ;; connection<%>
 (define connection<%>
   (interface ()
+    ;; connected? method must return promptly (eg, without acquiring lock)
     connected?    ;; -> boolean
+
     disconnect    ;; -> void
     get-dbsystem  ;; -> dbsystem<%>
     query         ;; symbol statement -> QueryResult

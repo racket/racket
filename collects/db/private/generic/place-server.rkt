@@ -68,8 +68,8 @@ where <connect-spec> ::= (list 'sqlite3 path/sym mode-sym delay-num limit-num)
 Connection methods protocol
 
 client -> server: (list '<method-name> arg ...)
-server -> client: (or (list 'values result ...)
-                      (list 'error string))
+server -> client: (or (list boolean 'values result ...)
+                      (list boolean 'error string))
 |#
 
 (define proxy-server%
@@ -86,10 +86,12 @@ server -> client: (or (list 'values result ...)
       (serve1)
       (when connection (serve)))
 
+    (define/private (still-connected?) (and connection (send connection connected?)))
+
     (define/private (serve1)
       (with-handlers ([exn?
                        (lambda (e)
-                         (pchan-put channel (list 'error (exn-message e))))])
+                         (pchan-put channel (list (still-connected?) 'error (exn-message e))))])
         (call-with-values
             (lambda ()
               (match (pchan-get channel)
@@ -117,7 +119,7 @@ server -> client: (or (list 'values result ...)
                                   (transaction-status w))]))
           (lambda results
             (let ([results (for/list ([result (in-list results)]) (result->sexpr result))])
-              (pchan-put channel (cons 'values results)))))))
+              (pchan-put channel (cons (still-connected?) (cons 'values results))))))))
 
     (define/private (sexpr->statement x)
       (match x

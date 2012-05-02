@@ -96,6 +96,21 @@ package in Red Hat.}
 ]
 
 
+@section[#:tag "ffi-concurrency"]{FFI-Based Connections and Concurrency}
+
+@tech{Wire-based connections} communicate using
+@tech/reference{ports}, which do not cause other Racket threads to
+block. In contrast, an FFI call causes all Racket threads to block
+until it completes, so @tech{FFI-based connections} can degrade the
+interactivity of a Racket program, particularly if long-running
+queries are performed using the connection. This problem can be
+avoided by creating the FFI-based connection in a separate
+@tech/reference{place} using the @racket[#:use-place] keyword
+argument. Such a connection will not block all Racket threads during
+queries; the disadvantage is the cost of creating and communicating
+with a separate @tech/reference{place}.
+
+
 @section[#:tag "odbc-requirements"]{ODBC Requirements}
 
 ODBC requires the appropriate driver manager native library as well as

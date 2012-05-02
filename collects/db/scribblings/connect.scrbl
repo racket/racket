@@ -19,18 +19,8 @@ administrative functions for managing connections.
 There are four kinds of base connection, and they are divided into two
 groups: @deftech{wire-based connections} and @deftech{FFI-based
 connections}. PostgreSQL and MySQL connections are wire-based, and
-SQLite and ODBC connections are FFI-based.
-
-Wire-based connections communicate using @tech/reference{ports}, which
-do not cause other Racket threads to block. In contrast, an FFI call
-causes all Racket threads to block until it completes, so FFI-based
-connections can degrade the interactivity of a Racket program,
-particularly if long-running queries are performed using the
-connection. This problem can be avoided by creating the FFI-based
-connection in a separate @tech/reference{place} using the
-@racket[#:use-place] keyword argument. Such a connection will not
-block all Racket threads during queries; the disadvantage is the cost
-of creating and communicating with a separate @tech/reference{place}.
+SQLite and ODBC connections are FFI-based. See also
+@secref["ffi-concurrency"].
 
 Base connections are made using the following functions.
 
@@ -240,7 +230,7 @@ Base connections are made using the following functions.
 
   If @racket[use-place] is true, the actual connection is created in
   a distinct @tech/reference{place} for database connections and a
-  proxy is returned.
+  proxy is returned; see @secref["ffi-concurrency"].
 
   If the connection cannot be made, an exception is raised.
 
@@ -289,7 +279,7 @@ Base connections are made using the following functions.
 
   If @racket[use-place] is true, the actual connection is created in
   a distinct @tech/reference{place} for database connections and a
-  proxy is returned.
+  proxy is returned; see @secref["ffi-concurrency"].
 
   If the connection cannot be made, an exception is raised.
 }
@@ -436,14 +426,13 @@ connection associated with the current thread, one is obtained by
 calling @racket[connect]. An actual connection is disconnected when
 its associated thread dies.
 
-@;{or if @racket[timeout] seconds elapse since the actual connection was last used.}
-
 Virtual connections are especially useful in contexts such as web
-servlets, where each request is handled in a fresh thread. A single
-global virtual connection can be defined, freeing each servlet request
-from explicitly opening and closing its own connections. In
-particular, a @tech{virtual connection} backed by a @tech{connection
-pool} combines convenience with efficiency:
+servlets (see @secref["intro-servlets"]), where each request is
+handled in a fresh thread. A single global virtual connection can be
+defined, freeing each servlet request from explicitly opening and
+closing its own connections. In particular, a @tech{virtual
+connection} backed by a @tech{connection pool} combines convenience
+with efficiency:
 
 @examples/results[
 [(define the-connection

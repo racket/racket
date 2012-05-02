@@ -1,5 +1,10 @@
 #lang racket/base
-(require racket/contract/base)
+(require (for-syntax racket/base
+                     syntax/parse
+                     syntax/parse/experimental/template)
+         racket/dict
+         syntax/location
+         racket/contract/base)
 
 ;; ============================================================
 
@@ -74,6 +79,56 @@
 
 (require "private/generic/functions.rkt")
 
+(define fetch-size/c
+  (or/c exact-positive-integer? +inf.0))
+
+(define grouping-field/c (or/c string? exact-nonnegative-integer?))
+(define group/c (or/c grouping-field/c (vectorof grouping-field/c)))
+(define grouping/c (or/c group/c (listof group/c)))
+
+(define group-mode/c
+  (listof (or/c 'list 'preserve-null)))
+
+(define in-query/c
+  (->* (connection? statement?)
+       (#:fetch fetch-size/c
+        #:group grouping/c
+        #:group-mode group-mode/c)
+       #:rest list?
+       sequence?))
+
+(define here-mod-path (quote-module-path))
+
+(define-syntax contracted-in-query
+  (make-provide/contract-transformer
+   (quote-syntax in-query/c)
+   (quote-syntax in-query)
+   (quote-syntax in-query)
+   (quote-syntax here-mod-path)))
+
+(define-sequence-syntax in-query*
+  (lambda () #'contracted-in-query)
+  (lambda (stx)
+    (syntax-parse stx
+      [[(var ...) (~and form
+                        (in-query (~or (~optional (~seq #:fetch fetch-size))
+                                       (~optional (~seq #:group grouping-fields))
+                                       (~optional (~seq #:group-mode group-mode))
+                                       (~between arg:expr 2 +inf.0))
+                                  ...))]
+       #:declare fetch-size (expr/c #'fetch-size/c #:context #'form) #:role "fetch size argument"
+       #:declare grouping-fields (expr/c #'grouping/c #:context #'form) #:role "grouping fields argument"
+       #:declare group-mode (expr/c #'group-mode/c #:context #'form) #:role "group mode argument"
+       #:with (c stmt q-arg ...) #'(arg ...)
+       #:declare c (expr/c #'connection? #:context #'form) #:role "connection argument"
+       #:declare stmt (expr/c #'statement? #:context #'form) #:role "statement argument"
+       (template
+        [(var ...) (in-query-helper (length '(var ...)) c.c stmt.c q-arg ...
+                                    (?? (?@ #:fetch fetch-size.c))
+                                    (?? (?@ #:group grouping-fields.c))
+                                    (?? (?@ #:group-mode group-mode.c)))])]
+      [_ #f])))
+
 (provide (rename-out [in-query* in-query]))
 
 (provide/contract
@@ -105,7 +160,8 @@
   (->* (connection? statement?) () #:rest list? any)]
  [query-rows
   (->* (connection? statement?)
-       (#:group (or/c (vectorof string?) (listof (vectorof string?))))
+       (#:group grouping/c
+        #:group-mode group-mode/c)
        #:rest list? (listof vector?))]
  [query-list
   (->* (connection? statement?) () #:rest list? list?)]
@@ -165,9 +221,15 @@
 
  [group-rows
   (->* (rows-result?
-        #:group (or/c (vectorof string?) (listof (vectorof string?))))
-       (#:group-mode (listof (or/c 'preserve-null-rows 'list)))
-       rows-result?)])
+        #:group grouping/c)
+       (#:group-mode (listof (or/c 'list 'preserve-null #|deprecated:|# 'preserve-null-rows)))
+       rows-result?)]
+
+ [rows->dict
+  (->* (rows-result? #:key grouping/c #:value grouping/c)
+       (#:value-mode group-mode/c)
+       dict?)]
+ )
 
 ;; ============================================================
 

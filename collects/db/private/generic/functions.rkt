@@ -146,9 +146,7 @@
          [result (query/rows c 'query-rows sql #f)]
          [result
           (cond [(not (null? group-fields-list))
-                 (group-rows-result* 'query-rows result group-fields-list
-                                     (not (memq 'preserve-null-rows group-mode))
-                                     (memq 'list group-mode))]
+                 (group-rows-result* 'query-rows result group-fields-list group-mode)]
                 [else result])])
     (rows-result-rows result)))
 
@@ -204,34 +202,38 @@
 
 ;; ========================================
 
-(define (in-query c stmt #:fetch [fetch-size +inf.0] . args)
-  (apply in-query-helper #f c stmt #:fetch fetch-size args))
-
-(define-sequence-syntax in-query*
-  (lambda () #'in-query)
-  (lambda (stx)
-    (syntax-case stx ()
-      [[(var ...) (in-query c stmt arg ...)]
-       #'[(var ...)
-          (in-query-helper (length '(var ...)) c stmt arg ...)]]
-      [_ #f])))
+(define (in-query c stmt
+                  #:fetch [fetch-size +inf.0]
+                  #:group [grouping-fields null]
+                  #:group-mode [group-mode null]
+                  . args)
+  (apply in-query-helper #f c stmt
+         #:fetch fetch-size
+         #:group grouping-fields
+         #:group-mode group-mode
+         args))
 
 (define (in-query-helper vars c stmt
                          #:fetch [fetch-size +inf.0]
+                         #:group [grouping-fields null]
+                         #:group-mode [group-mode null]
                          . args)
-  ;; Not protected by contract
-  (unless (connection? c)
-    (apply raise-type-error 'in-query "connection" 0 c stmt args))
-  (unless (statement? stmt)
-    (apply raise-type-error 'in-query "statement" 1 c stmt args))
-  (unless (or (exact-positive-integer? fetch-size) (eqv? fetch-size +inf.0))
-    (raise-type-error 'in-query "positive integer or +inf.0" fetch-size))
-  (let* ([check (or vars 'rows)]
+  (when (and (not (null? grouping-fields))
+             (< fetch-size +inf.0))
+    (error 'in-query "cannot apply grouping to cursor (finite fetch-size)"))
+  (let* ([check
+          ;; If grouping, can't check expected arity.
+          ;; FIXME: should check header includes named fields
+          (cond [(null? grouping-fields) (or vars 'rows)]
+                [else 'rows])]
          [stmt (compose-statement 'in-query c stmt args check)])
     (cond [(eqv? fetch-size +inf.0)
            (in-list/vector->values
             (rows-result-rows
-             (query/rows c 'in-query stmt vars)))]
+             (let ([result (query/rows c 'in-query stmt vars)])
+               (if (null? grouping-fields)
+                   result
+                   (group-rows-result* 'in-query result grouping-fields group-mode)))))]
           [else
            (let ([cursor (query/cursor c 'in-query stmt vars)])
              (in-list-generator/vector->values
@@ -333,62 +335,38 @@
 
 ;; ========================================
 
+;; FIXME: add 'assume-sorted optimization option?
+
 (define (group-rows result
                     #:group key-fields-list
                     #:group-mode [group-mode null])
   (when (null? key-fields-list)
     (error 'group-rows "expected at least one grouping field set"))
-  (group-rows-result* 'group-rows
-                      result
-                      key-fields-list
-                      (not (memq 'preserve-null-rows group-mode))
-                      (memq 'list group-mode)))
+  (group-rows-result* 'group-rows result key-fields-list group-mode))
 
-(define (group-rows-result* fsym result key-fields-list invert-outer? as-list?)
-  (let* ([key-fields-list
-          (if (list? key-fields-list) key-fields-list (list key-fields-list))]
-         [total-fields (length (rows-result-headers result))]
-         [name-map
-          (for/hash ([header (in-list (rows-result-headers result))]
-                     [i (in-naturals)]
-                     #:when (assq 'name header))
-            (values (cdr (assq 'name header)) i))]
+(define (group-rows-result* fsym result key-fields-list group-mode)
+  (let* ([invert-outer? (not (or (memq 'preserve-null group-mode)
+                                 ;; old flag, deprecated:
+                                 (memq 'preserve-null-rows group-mode)))]
+         [as-list? (memq 'list group-mode)]
+         [headers (rows-result-headers result)]
+         [total-fields (length headers)]
+         [name-map (headers->name-map headers)]
          [fields-used (make-vector total-fields #f)]
          [key-indexes-list
-          (for/list ([key-fields (in-list key-fields-list)])
-            (for/vector ([key-field (in-vector key-fields)])
-              (let ([key-index
-                     (cond [(string? key-field)
-                            (hash-ref name-map key-field #f)]
-                           [else key-field])])
-                (when (string? key-field)
-                  (unless key-index
-                    (error fsym "grouping field ~s not found" key-field)))
-                (when (exact-integer? key-field)
-                  (unless (< key-index total-fields)
-                    (error fsym "grouping index ~s out of range [0, ~a]"
-                           key-index (sub1 total-fields))))
-                (when (vector-ref fields-used key-index)
-                  (error fsym "grouping field ~s~a used multiple times"
-                         key-field
-                         (if (string? key-field)
-                             (format " (index ~a)" key-index)
-                             "")))
-                (vector-set! fields-used key-index #t)
-                key-index)))]
+          (group-list->indexes fsym name-map total-fields fields-used key-fields-list)]
          [residual-length
-          (for/sum ([x (in-vector fields-used)])
-            (if x 0 1))])
+          (for/sum ([x (in-vector fields-used)]) (if x 0 1))])
     (when (= residual-length 0)
       (error fsym "cannot group by all fields"))
     (when (and (> residual-length 1) as-list?)
       (error fsym
-             "exactly one residual field expected for #:group-mode 'list, got ~a"
+             "expected exactly one residual field for #:group-mode 'list, got ~a"
              residual-length))
     (let* ([initial-projection
             (for/vector #:length total-fields ([i (in-range total-fields)]) i)]
            [headers
-            (group-headers (list->vector (rows-result-headers result))
+            (group-headers (list->vector headers)
                            initial-projection
                            key-indexes-list)]
            [rows
@@ -399,6 +377,46 @@
                          invert-outer?
                          as-list?)])
       (rows-result headers rows))))
+
+(define (headers->name-map headers)
+  (for/hash ([header (in-list headers)]
+             [i (in-naturals)]
+             #:when (assq 'name header))
+    (values (cdr (assq 'name header)) i)))
+
+(define (group-list->indexes fsym name-map total-fields fields-used key-fields-list)
+  (let ([key-fields-list (if (list? key-fields-list) key-fields-list (list key-fields-list))])
+    (for/list ([key-fields (in-list key-fields-list)])
+      (group->indexes fsym name-map total-fields fields-used key-fields))))
+
+(define (group->indexes fsym name-map total-fields fields-used key-fields)
+  (let ([key-fields (if (vector? key-fields) key-fields (vector key-fields))])
+    (for/vector ([key-field (in-vector key-fields)])
+      (grouping-field->index fsym name-map total-fields fields-used key-field))))
+
+(define (grouping-field->index fsym name-map total-fields fields-used key-field)
+  (let ([key-index
+         (cond [(string? key-field)
+                (hash-ref name-map key-field #f)]
+               [else key-field])])
+    (when (string? key-field)
+      (unless key-index
+        (error fsym "expected grouping field in ~s, got: ~e"
+               (sort (hash-keys name-map) string<?)
+               key-field)))
+    (when (exact-integer? key-field)
+      (unless (< key-index total-fields)
+        (error fsym "grouping index ~s out of range [0, ~a]"
+               key-index (sub1 total-fields))))
+    (when fields-used
+      (when (vector-ref fields-used key-index)
+        (error fsym "grouping field ~s~a used multiple times"
+               key-field
+               (if (string? key-field)
+                   (format " (index ~a)" key-index)
+                   "")))
+      (vector-set! fields-used key-index #t))
+    key-index))
 
 (define (group-headers headers projection key-indexes-list)
   (define (get-headers vec)
@@ -414,7 +432,7 @@
                 [residual-headers
                  (group-headers headers residual-projection (cdr key-indexes-list))])
            (append (get-headers key-indexes)
-                   (list `((grouped . ,residual-headers)))))]))
+                   (list `((name . "grouped") (grouped . ,residual-headers)))))]))
 
 (define (group-rows* fsym rows projection key-indexes-list invert-outer? as-list?)
   ;; projection is vector of indexes (actually projection and permutation)
@@ -443,17 +461,14 @@
            (define residual-projection
              (vector-filter-not (lambda (index) (vector-member index key-indexes))
                                 projection))
-
            (define key-row-length (vector-length key-indexes))
            (define (row->key-row row)
              (for/vector #:length key-row-length
                          ([i (in-vector key-indexes)])
                          (vector-ref row i)))
-
            (define (residual-all-null? row)
              (for/and ([i (in-vector residual-projection)])
                       (sql-null? (vector-ref row i))))
-
            (let* ([key-table (make-hash)]
                   [r-keys
                    (for/fold ([r-keys null])
@@ -476,3 +491,55 @@
                                    invert-outer?
                                    as-list?)])
                  (vector-append key (vector residuals))))))]))
+
+;; ========================================
+
+(define not-given (gensym 'not-given))
+
+(define (rows->dict result
+                    #:key key-field/s
+                    #:value value-field/s
+                    #:value-mode [value-mode null])
+  (let* ([who 'rows->dict]
+         [headers (rows-result-headers result)]
+         [total-fields (length headers)]
+         [name-map (headers->name-map headers)]
+         [preserve-null? (memq 'preserve-null value-mode)]
+         [value-list? (memq 'list value-mode)])
+    (define (make-project field/s)
+      (if (vector? field/s)
+          (let* ([indexes (group->indexes who name-map total-fields #f field/s)]
+                 [indexes-length (vector-length indexes)])
+            (lambda (v)
+              (for/vector #:length indexes-length ([i (in-vector indexes)])
+                (vector-ref v i))))
+          (let ([index (grouping-field->index who name-map total-fields #f field/s)])
+            (lambda (v) (vector-ref v index)))))
+    (define get-key (make-project key-field/s))
+    (define get-value (make-project value-field/s))
+    (define ok-value?
+      (cond [preserve-null? (lambda (v) #t)]
+            [(vector? value-field/s)
+             (lambda (v) (not (for/or ([e (in-vector v)]) (sql-null? e))))]
+            [else (lambda (v) (not (sql-null? v)))]))
+    (for/fold ([table '#hash()]) ([row (in-list (if value-list?
+                                                    (reverse (rows-result-rows result))
+                                                    (rows-result-rows result)))])
+      (let* ([key (get-key row)]
+             [value (get-value row)]
+             [old-value (hash-ref table key (if value-list? '() not-given))])
+        (unless (or value-list?
+                    (eq? (hash-ref table key not-given) not-given)
+                    ;; FIXME: okay to coalesce values if equal?
+                    (equal? value old-value))
+          (error who "duplicate value for key: ~e; values are ~e and ~e"
+                 key old-value value))
+        (if value-list?
+            (hash-set table key
+                      (if (ok-value? value)
+                          (cons value old-value)
+                          ;; If all-NULL value, still enter key => '() into dict
+                          old-value))
+            (if (ok-value? value)
+                (hash-set table key value)
+                table))))))

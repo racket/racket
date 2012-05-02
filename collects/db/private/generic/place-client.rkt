@@ -49,18 +49,20 @@
     (define/private (call* method-name args need-connected?)
       (cond [channel
              (pchan-put channel (cons method-name args))
-             (match (pchan-get channel)
-               [(cons 'values vals)
-                (apply values (for/list ([val (in-list vals)]) (sexpr->result val)))]
-               [(list 'error message)
-                (raise (make-exn:fail message (current-continuation-marks)))])]
+             (let* ([response (pchan-get channel)]
+                    [still-connected? (car response)])
+               (when (not still-connected?) (set! channel #f))
+               (match (cdr response)
+                 [(cons 'values vals)
+                  (apply values (for/list ([val (in-list vals)]) (sexpr->result val)))]
+                 [(list 'error message)
+                  (raise (make-exn:fail message (current-continuation-marks)))]))]
             [need-connected?
              (unless channel
                (error/not-connected method-name))]
             [else (void)]))
 
     (define/override (connected?)
-      ;; FIXME: can underlying connection disconnect w/o us knowing?
       (and channel #t))
 
     (define/public (disconnect)

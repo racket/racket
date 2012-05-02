@@ -28,8 +28,9 @@
             (but this could also be done by two locks: outer "ownership" lock 
             and inner "invariant-protecting" lock)
 
-- audit code for break-safety, disable breaks as needed
-
 - make implementation notes section of docs
-  - explain cursor impl (& rationale)
   - explain nested tx impl
+
+- invalidate statement cache on query error
+
+- 2 call-with-transactions from separate threads can conflict

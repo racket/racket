@@ -13,33 +13,49 @@
   (class object%
     ;; other-evt : (-> evt)
     ;; generates other evt to sync on besides req-channel, eg timeouts
-    (init-field (other-evt (lambda () never-evt)))
+    (init-field (other-evt (lambda () never-evt))
+                (alt-enabled? (lambda () #t)))
     (super-new)
 
     (define req-channel (make-channel))
+    (define alt-req-channel (make-channel))
+
     (define mthread
       (thread/suspend-to-kill
        (lambda ()
          (let loop ()
            (sync (wrap-evt req-channel (lambda (p) (p)))
+                 (if (alt-enabled?)
+                     (wrap-evt alt-req-channel (lambda (p) (p)))
+                     never-evt)
                  (other-evt))
            (loop)))))
 
     (define/public (call proc)
+      (call* proc req-channel #f))
+    (define/public (alt-call-evt proc)
+      (call* proc alt-req-channel #t))
+
+    (define/private (call* proc chan as-evt?)
       (thread-resume mthread (current-thread))
-      (let ([result #f]
-            [sema (make-semaphore 0)])
-        (channel-put req-channel
-                     (lambda ()
-                       (set! result
-                             (with-handlers ([(lambda (e) #t)
-                                              (lambda (e) (cons 'exn e))])
-                               (cons 'values (call-with-values proc list))))
-                       (semaphore-post sema)))
-        (semaphore-wait sema)
-        (case (car result)
-          ((values) (apply values (cdr result)))
-          ((exn) (raise (cdr result))))))))
+      (let* ([result #f]
+             [sema (make-semaphore 0)]
+             [proc (lambda ()
+                     (set! result
+                           (with-handlers ([(lambda (e) #t)
+                                            (lambda (e) (cons 'exn e))])
+                             (cons 'values (call-with-values proc list))))
+                     (semaphore-post sema))]
+             [handler
+              (lambda (_evt)
+                (semaphore-wait sema)
+                (case (car result)
+                  ((values) (apply values (cdr result)))
+                  ((exn) (raise (cdr result)))))])
+        (if as-evt?
+            (wrap-evt (channel-put-evt chan proc) handler)
+            (begin (channel-put chan proc)
+                   (handler #f)))))))
 
 ;; ----
 
@@ -53,14 +69,20 @@
     (init-private connection)
 
     (define mgr (new manager%))
+    (define last-connected? #t)
 
     (define-syntax-rule (define-forward (method arg ...) ...)
       (begin
         (define/public (method arg ...)
-          (send mgr call (lambda () (send connection method arg ...)))) ...))
+          (send mgr call (lambda ()
+                           (begin0
+                               (send connection method arg ...)
+                             (set! last-connected? (send connection connected?))))))
+        ...))
+
+    (define/public (connected?) last-connected?)
 
     (define-forward
-      (connected?)
       (disconnect)
       (get-dbsystem)
       (query fsym stmt cursor?)
@@ -88,8 +110,7 @@
 (define virtual-connection%
   (class* object% (connection<%>)
     (init-private connector     ;; called from client thread
-                  get-key       ;; called from client thread
-                  timeout)
+                  get-key)      ;; called from client thread
     (super-new)
 
     (define custodian (current-custodian))
@@ -99,36 +120,17 @@
     ;; key=>conn : hasheq[key => connection]
     (define key=>conn (make-hasheq))
 
-    ;; alarms : hasheq[connection => evt] (alarm wrapped to return key)
-    (define alarms (make-hasheq))
-
-    (define/private (get key) ;; also refreshes alarm
-      (let ([c (hash-ref key=>conn key #f)])
-        (when c (hash-set! alarms c (fresh-alarm-for key)))
-        c))
+    (define/private (get key)      ;; also called by client thread for connected?
+      (hash-ref key=>conn key #f))
 
     (define/private (put! key c)
-      (hash-set! key=>conn key c)
-      (hash-set! alarms c (fresh-alarm-for key)))
+      (hash-set! key=>conn key c))
 
-    (define/private (fresh-alarm-for key)
-      (wrap-evt (alarm-evt (+ (current-inexact-milliseconds) timeout))
-                (lambda (a) key)))
-
-    (define/private (remove! key timeout?)
-      ;; timeout? = if connection open, then wait longer
-      (let* ([c (hash-ref key=>conn key #f)]
-             [in-trans? (with-handlers ([exn:fail? (lambda (e) #f)])
-                          (and c
-                               (send c connected?)
-                               (send c transaction-status 'virtual-connection)))])
-        (cond [(not c) (void)]
-              [(and timeout? in-trans?)
-               (hash-set! alarms c (fresh-alarm-for key))]
-              [else
-               (hash-remove! key=>conn key)
-               (hash-remove! alarms c)
-               (send c disconnect)])))
+    (define/private (remove! key)
+      (let ([c (get key)])
+        (when c
+          (hash-remove! key=>conn key)
+          (send c disconnect))))
 
     (define mgr
       (new manager%
@@ -137,16 +139,10 @@
               (choice-evt
                (let ([keys (hash-map key=>conn (lambda (k v) k))])
                  (handle-evt (apply choice-evt keys)
-                             ;; Assignment to key has expired: move to idle or disconnect.
+                             ;; Assignment to key has expired
                              (lambda (key)
                                (dbdebug "virtual-connection: key expiration: ~e" key)
-                               (remove! key #f))))
-               (let ([alarm-evts (hash-map alarms (lambda (k v) v))])
-                 (handle-evt (apply choice-evt alarm-evts)
-                             ;; Disconnect idle connection.
-                             (lambda (key)
-                               (dbdebug "virtual-connection: timeout")
-                               (remove! key #t)))))))))
+                               (remove! key)))))))))
 
     ;; == methods called in client thread ==
 
@@ -159,12 +155,12 @@
                            (connector))])
                  (send mgr call
                        (lambda ()
-                         (when c (remove! key #f))
+                         (when c (remove! key))
                          (put! key c*)))
                  c*)]
               [else
                (when c ;; got a disconnected connection
-                 (send mgr call (lambda () (remove! key #f))))
+                 (send mgr call (lambda () (remove! key))))
                #f])))
 
     ;; ----
@@ -178,24 +174,27 @@
              ...))
 
     (define-forward
-      (#f #f     (connected?))
       (#t '_     (get-dbsystem))
       (#t '_     (query fsym stmt cursor?))
       (#t '_     (fetch/cursor fsym stmt fetch-size))
       (#t '_     (start-transaction fsym isolation cwt?))
       (#f (void) (end-transaction fsym mode cwt?))
-      (#t '_     (transaction-status fsym))
+      (#f #f     (transaction-status fsym))
       (#t '_     (list-tables fsym schema)))
 
     (define/public (get-base)
       (get-connection #t))
+
+    (define/public (connected?)
+      (let ([c (get (get-key))])
+        (and c (send c connected?))))
 
     (define/public (disconnect)
       (let ([c (get-connection #f)]
             [key (get-key)])
         (when c
           (send c disconnect)
-          (send mgr call (lambda () (remove! key #f)))))
+          (send mgr call (lambda () (remove! key)))))
       (void))
 
     (define/public (prepare fsym stmt close-on-exec?)
@@ -210,8 +209,7 @@
 
 ;; ----
 
-(define (virtual-connection connector
-                            #:timeout [timeout +inf.0])
+(define (virtual-connection connector)
   (let ([connector
          (cond [(connection-pool? connector)
                 (lambda () (connection-pool-lease connector))]
@@ -219,8 +217,7 @@
         [get-key (lambda () (thread-dead-evt (current-thread)))])
     (new virtual-connection%
          (connector connector)
-         (get-key (lambda () (thread-dead-evt (current-thread))))
-         (timeout (* 1000 timeout)))))
+         (get-key get-key))))
 
 ;; ========================================
 
@@ -233,19 +230,14 @@
                   max-idle-connections)
     (super-new)
 
-    ;; max-connections is either in [1, 10000] or +inf.0,
-    ;; if leave-evt is sema, then counter = (max-connections - assigned connections)
-    ;; ie, includes idle connections
-    (define lease-evt
-      (if (= max-connections +inf.0)
-          always-evt
-          (make-semaphore max-connections)))
-
     (define proxy-counter 1) ;; for debugging
     (define actual-counter 1) ;; for debugging
     (define actual=>number (make-weak-hasheq))
 
     ;; == methods called in manager thread ==
+
+    ;; assigned-connections : nat
+    (define assigned-connections 0)
 
     ;; proxy=>evt : hasheq[proxy-connection => evt]
     (define proxy=>evt (make-hasheq))
@@ -266,7 +258,8 @@
                  proxy-number
                  (if take-idle? "idle" "new")
                  (hash-ref actual=>number raw-c "???"))
-        (hash-set! proxy=>evt c key)
+        (hash-set! proxy=>evt c (wrap-evt key (lambda (_e) c)))
+        (set! assigned-connections (add1 assigned-connections))
         c))
 
     (define/private (release* proxy raw-c why)
@@ -279,11 +272,14 @@
       (hash-remove! proxy=>evt proxy)
       (when raw-c
         (with-handlers ([exn:fail? void])
-          (send raw-c end-transaction 'connection-pool 'rollback))
-        (cond [(< (length idle-list) max-idle-connections)
+          ;; If in tx, just disconnect (for simplicity; else must loop for nested txs)
+          (when (send raw-c transaction-status 'connection-pool)
+            (send raw-c disconnect)))
+        (cond [(and (< (length idle-list) max-idle-connections)
+                    (send raw-c connected?))
                (set! idle-list (cons raw-c idle-list))]
               [else (send raw-c disconnect)])
-        (when (semaphore? lease-evt) (semaphore-post lease-evt))))
+        (set! assigned-connections (sub1 assigned-connections))))
 
     (define/private (new-connection)
       (let ([c (connector)]
@@ -299,19 +295,18 @@
       (new manager%
            (other-evt
             (lambda ()
-              (let ([evts (hash-map proxy=>evt (lambda (k v) (wrap-evt v (lambda (e) k))))])
+              (let ([evts (hash-values proxy=>evt)])
                 (handle-evt (apply choice-evt evts)
                             (lambda (proxy)
                               (release* proxy
                                         (send proxy release-connection)
-                                        "release-evt"))))))))
+                                        "release-evt"))))))
+           (alt-enabled? (lambda () (< assigned-connections max-connections)))))
 
     ;; == methods called in client thread ==
 
-    (define/public (lease key)
-      (wrap-evt lease-evt
-                (lambda (_e)
-                  (send mgr call (lambda () (lease* key))))))
+    (define/public (lease-evt key)
+      (send mgr alt-call-evt (lambda () (lease* key))))
 
     (define/public (release proxy)
       (let ([raw-c (send proxy release-connection)])
@@ -350,8 +345,7 @@
       (end-transaction fsym mode cwt?)
       (list-tables fsym schema))
 
-    ;; (define-forward define/override (connected?))
-    (define/override (connected?) (and connection #t))
+    (define/override (connected?) (and connection (send connection connected?)))
 
     (define/public (disconnect)
       (send pool release this))
@@ -380,7 +374,7 @@
           (cond [(thread? key) (thread-dead-evt key)]
                 [(custodian? key) (make-custodian-box key #t)]
                 [else key])]
-         [result (sync/timeout 0.1 (send pool lease key))])
+         [result (sync/timeout 0.1 (send pool lease-evt key))])
     (unless result
       (uerror 'connection-pool-lease
               "cannot obtain connection; connection pool limit reached"))

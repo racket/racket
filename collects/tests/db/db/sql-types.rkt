@@ -171,7 +171,7 @@
          (when (ANYFLAGS 'postgresql 'mysql 'sqlite3)
            (check-roundtrip c (make-bytes #e1e6 (char->integer #\a)))
            (check-roundtrip c (make-bytes #e1e7 (char->integer #\b)))
-           (check-roundtrip c (make-bytes #e1e8 (char->integer #\c))))
+           #| (check-roundtrip c (make-bytes #e1e8 (char->integer #\c))) |#)
          (when (ANYFLAGS 'postgresql)
            (let ([r (query-value c "select cast(repeat('a', 10000000) as bytea)")])
              (check-pred bytes? r)

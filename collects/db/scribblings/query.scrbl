@@ -5,7 +5,7 @@
           racket/sandbox
           "config.rkt"
           "tabbing.rkt"
-          (for-label db db/util/geometry db/util/postgresql))
+          (for-label db db/util/geometry db/util/postgresql racket/dict))
 
 @title[#:tag "query-api"]{Queries}
 
@@ -19,7 +19,7 @@ raises an exception. Different query functions impose different
 constraints on the query results and offer different mechanisms for
 processing the results.
 
-@bold{Errors} In most cases, a query error does not cause the
+@parheading{Errors} In most cases, a query error does not cause the
 connection to be disconnected. Specifically, the following kinds of
 errors should never cause a connection to be disconnected:
 @itemize[
@@ -43,7 +43,7 @@ disconnected:
 See @secref["transactions"] for information on how errors can affect
 the transaction status.
 
-@bold{Character encoding} This library is designed to interact with
+@parheading{Character encoding} This library is designed to interact with
 database systems using the UTF-8 character encoding. The connection
 functions attempt to negotiate UTF-8 communication at the beginning of
 every connection, but some systems also allow the character encoding
@@ -53,13 +53,12 @@ and data might get corrupted in transmission. Avoid changing a
 connection's character encoding. When possible, the connection will
 observe the change and automatically disconnect with an error.
 
-@bold{Synchronization} Connections are internally synchronized: it is
-safe to perform concurrent queries on the same connection object from
-different threads. Connections are not kill-safe: killing a thread
-that is using a connection---or shutting down the connection's
-managing custodian---may leave the connection locked, causing future
-operations to block indefinitely. See @secref["kill-safe"] for a
-way to make kill-safe connections.
+@parheading{Synchronization} Connections are internally synchronized:
+it is safe to use a connection from different threads
+concurrently. Most connections are not kill-safe: killing a thread
+that is using a connection may leave the connection locked, causing
+future operations to block indefinitely. See also
+@secref["kill-safe"].
 
 
 @section{Statements}
@@ -77,16 +76,14 @@ All query functions require both a connection and a
 ]
 
 A SQL statement may contain parameter placeholders that stand for SQL
-scalar values. The parameter values must be supplied when the
-statement is executed; the parameterized statement and parameter
-values are sent to the database back end, which combines them
-correctly and safely.
+scalar values; such statements are called @deftech{parameterized
+queries}. The parameter values must be supplied when the statement is
+executed; the parameterized statement and parameter values are sent to
+the database back end, which combines them correctly and safely.
 
 Use parameters instead of Racket string interpolation (eg,
 @racket[format] or @racket[string-append]) to avoid
-@hyperlink["http://xkcd.com/327/"]{SQL injection}, where a string
-intended to represent a SQL scalar value is interpreted as---possibly
-malicious---SQL code instead.
+@secref["dbsec-sql-injection"].
 
 The syntax of placeholders varies depending on the database
 system. For example:
@@ -140,11 +137,13 @@ The types of parameters and returned fields are described in
 @defproc[(query-rows [connection connection?]
                      [stmt statement?]
                      [arg any/c] ...
-                     [#:group grouping-fields
-                      (or/c (vectorof string?) (listof (vectorof string?)))
+                     [#:group groupings
+                      (let* ([field/c (or/c string? exact-nonnegative-integer?)]
+                             [grouping/c (or/c field/c (vectorof field/c))])
+                        (or/c grouping/c (listof grouping/c)))
                       null]
                      [#:group-mode group-mode
-                      (listof (or/c 'preserve-null-rows 'list))
+                      (listof (or/c 'preserve-null 'list))
                       null])
          (listof vector?)]{
 
@@ -158,7 +157,7 @@ The types of parameters and returned fields are described in
  (list (vector 17))]
 ]
 
-  If @racket[grouping-fields] is not empty, the result is the same as if
+  If @racket[groupings] is not empty, the result is the same as if
   @racket[group-rows] had been called on the result rows.
 }
 
@@ -245,7 +244,15 @@ The types of parameters and returned fields are described in
 @defproc[(in-query [connection connection?]
                    [stmt statement?]
                    [arg any/c] ...
-                   [#:fetch fetch-size (or/c exact-positive-integer? +inf.0) +inf.0])
+                   [#:fetch fetch-size (or/c exact-positive-integer? +inf.0) +inf.0]
+                   [#:group groupings
+                    (let* ([field/c (or/c string? exact-nonnegative-integer?)]
+                           [grouping/c (or/c field/c (vectorof field/c))])
+                      (or/c grouping/c (listof grouping/c)))
+                    null]
+                   [#:group-mode group-mode
+                    (listof (or/c 'preserve-null 'list))
+                    null])
          sequence?]{
 
   Executes a SQL query, which must produce rows, and returns a
@@ -259,6 +266,11 @@ The types of parameters and returned fields are described in
   some database systems, ending a transaction implicitly closes all
   open cursors; attempting to fetch more rows may fail. On PostgreSQL,
   a cursor can be opened only within a transaction.
+
+  If @racket[groupings] is not empty, the result is the same as
+  if @racket[group-rows] had been called on the result rows. If
+  @racket[groupings] is not empty, then @racket[fetch-size] must
+  be @racket[+inf.0]; otherwise, an exception is raised.
 
 @examples/results[
 [(for/list ([n (in-query pgc "select n from the_numbers where n < 2")])
@@ -329,24 +341,28 @@ future version of this library (even new minor versions).
 }
 
 @defproc[(group-rows [result rows-result?]
-                     [#:group grouping-fields
-                      (or/c (vectorof string?) (listof (vectorof string?)))]
+                     [#:group groupings
+                      (let* ([field/c (or/c string? exact-nonnegative-integer?)]
+                             [grouping/c (or/c field/c (vectorof field/c))])
+                        (or/c grouping/c (listof grouping/c)))]
                      [#:group-mode group-mode
-                      (listof (or/c 'preserve-null-rows 'list))
+                      (listof (or/c 'preserve-null 'list))
                       null])
          rows-result?]{
 
-If @racket[grouping-fields] is a vector, the elements must be names of
+If @racket[groupings] is a vector, the elements must be names of
 fields in @racket[result], and @racket[result]'s rows are regrouped
 using the given fields. Each grouped row contains N+1 fields; the
-first N fields are the @racket[grouping-fields], and the final field
+first N fields are the @racket[groupings], and the final field
 is a list of ``residual rows'' over the rest of the fields. A residual
 row of all NULLs is dropped (for convenient processing of @tt{OUTER
 JOIN} results) unless @racket[group-mode] includes
-@racket['preserve-null-rows]. If @racket[group-mode] contains
+@racket['preserve-null]. If @racket[group-mode] contains
 @racket['list], there must be exactly one residual field, and its
 values are included without a vector wrapper (similar to
 @racket[query-list]).
+
+See also @secref["dbperf-n+1"].
 
 @examples[#:eval the-eval
 (define vehicles-result
@@ -361,7 +377,9 @@ values are included without a vector wrapper (similar to
             #:group '(#("type")))
 ]
 
-The @racket[grouping-fields] argument may also be a list of vectors;
+The grouped final column is given the name @racket["grouped"].
+
+The @racket[groupings] argument may also be a list of vectors;
 in that case, the grouping process is repeated for each set of
 grouping fields. The grouping fields must be distinct.
 
@@ -369,6 +387,38 @@ grouping fields. The grouping fields must be distinct.
 (group-rows vehicles-result
             #:group '(#("type") #("maker"))
             #:group-mode '(list))
+]
+}
+
+@defproc[(rows->dict [result rows-result?]
+                     [#:key key-field/s
+                      (let ([field/c (or/c string? exact-nonnegative-integer?)])
+                        (or/c field/c (vectorof field/c)))]
+                     [#:value value-field/s
+                      (let ([field/c (or/c string? exact-nonnegative-integer?)])
+                        (or/c field/c (vectorof field/c)))]
+                     [#:value-mode value-mode
+                      (listof (or/c 'list 'preserve-null))
+                      null])
+         dict?]{
+         
+Creates a dictionary mapping @racket[key-field/s] to
+@racket[value-field/s]. If @racket[key-field/s] is a single field name
+or index, the keys are the field values; if @racket[key-field/s] is a
+vector, the keys are vectors of the field values. Likewise for
+@racket[value-field/s].
+
+If @racket[value-mode] contains @racket['list], a list of values is
+accumulated for each key; otherwise, there must be at most one value
+for each key. Values consisting of all @racket[sql-null?] values are
+dropped unless @racket[value-mode] contains
+@racket['preserve-null].
+
+@examples[#:eval the-eval
+(rows->dict vehicles-result 
+            #:key "model" #:value '#("type" "maker"))
+(rows->dict vehicles-result
+            #:key "maker" #:value "model" #:value-mode '(list))
 ]
 }
 
@@ -533,7 +583,7 @@ statement implicitly commits the current transaction. These statements
 also must not be used within @tech{managed transactions}. (In
 contrast, PostgreSQL and SQLite both support transactional DDL.)
 
-@bold{Errors} Query errors may affect an open transaction in one of
+@parheading{Errors} Query errors may affect an open transaction in one of
 three ways:
 @itemlist[#:style 'ordered
 @item{the transaction remains open and unchanged}
