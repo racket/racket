@@ -14,7 +14,9 @@
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
       @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
             — random racket bits.}
-      @text{@people — the people behind Racket.}]
+      @text{@people — the people behind Racket.}
+      @text{@a[href: "http://con.racket-lang.org/"]{RacketCon}
+            — our annual conference.}]
     @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub}).}
