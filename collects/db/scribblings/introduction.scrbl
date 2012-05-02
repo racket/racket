@@ -165,7 +165,7 @@ times with different parameter values.
  (void)]
 [(query-list pgc get-less-than-pst 1)
  (list 0)]
-[(query-list pgc (bind-prepared-statement get-less-than-pst 2))
+[(query-list pgc (bind-prepared-statement get-less-than-pst '(2)))
  (list 0 1)]
 ]
 
