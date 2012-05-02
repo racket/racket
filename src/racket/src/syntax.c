@@ -4626,6 +4626,11 @@ int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
   return scheme_stx_module_eq3(a, b, scheme_make_integer(phase), scheme_make_integer(phase), NULL);
 }
 
+int scheme_stx_module_eq_x(Scheme_Object *a, Scheme_Object *b, intptr_t b_phase)
+{
+  return scheme_stx_module_eq3(a, b, scheme_make_integer(0), scheme_make_integer(b_phase), NULL);
+}
+
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase)
 {
   if (SCHEME_STXP(a))

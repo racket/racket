@@ -114,14 +114,6 @@ THREAD_LOCAL_DECL(static Scheme_Prompt *available_cws_prompt);
 THREAD_LOCAL_DECL(static Scheme_Prompt *available_regular_prompt);
 THREAD_LOCAL_DECL(static Scheme_Dynamic_Wind *available_prompt_dw);
 THREAD_LOCAL_DECL(static Scheme_Meta_Continuation *available_prompt_mc);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_beg_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_modstar_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_bfs_stx);
-THREAD_LOCAL_DECL(static int cached_stx_phase);
 THREAD_LOCAL_DECL(static Scheme_Cont *offstack_cont);
 THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
 
@@ -625,13 +617,6 @@ scheme_init_fun (Scheme_Env *env)
 void
 scheme_init_fun_places()
 {
-  REGISTER_SO(cached_beg_stx);
-  REGISTER_SO(cached_mod_stx);
-  REGISTER_SO(cached_modstar_stx);
-  REGISTER_SO(cached_mod_beg_stx);
-  REGISTER_SO(cached_dv_stx);
-  REGISTER_SO(cached_ds_stx);
-  REGISTER_SO(cached_bfs_stx);
   REGISTER_SO(offstack_cont);
   REGISTER_SO(offstack_overflow);
 }
@@ -1634,63 +1619,18 @@ cert_with_specials(Scheme_Object *code,
         name = scheme_stx_taint_disarm(code, NULL);
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  Scheme_Object *beg_stx, *mod_stx, *modstar_stx, *mod_beg_stx, *dv_stx, *ds_stx, *bfs_stx;
-
-	  if (!phase) {
-            mod_stx = scheme_module_stx;
-            modstar_stx = scheme_modulestar_stx;
-	    beg_stx = scheme_begin_stx;
-	    mod_beg_stx = scheme_module_begin_stx;
-	    dv_stx = scheme_define_values_stx;
-	    ds_stx = scheme_define_syntaxes_stx;
-	    bfs_stx = scheme_begin_for_syntax_stx;
-	  } else if (phase == cached_stx_phase) {
-	    beg_stx = cached_beg_stx;
-	    mod_stx = cached_mod_stx;
-	    modstar_stx = cached_modstar_stx;
-	    mod_beg_stx = cached_mod_beg_stx;
-	    dv_stx = cached_dv_stx;
-	    ds_stx = cached_ds_stx;
-	    bfs_stx = cached_bfs_stx;
-	  } else {
-            Scheme_Object *sr;
-            sr = scheme_sys_wraps_phase(scheme_make_integer(phase));
-	    beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_begin_stx), scheme_false, 
-					     sr, 0, 0);
-	    mod_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_stx), scheme_false, 
-					     sr, 0, 0);
-	    modstar_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_modulestar_stx), scheme_false, 
-                                                sr, 0, 0);
-	    mod_beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_begin_stx), scheme_false, 
-                                                 sr, 0, 0);
-	    dv_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_values_stx), scheme_false, 
-					    sr, 0, 0);
-	    ds_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_syntaxes_stx), scheme_false, 
-					    sr, 0, 0);
-	    bfs_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_begin_for_syntax_stx), scheme_false, 
-                                             sr, 0, 0);
-	    cached_beg_stx = beg_stx;
-	    cached_mod_stx = mod_stx;
-	    cached_modstar_stx = modstar_stx;
-	    cached_mod_beg_stx = mod_beg_stx;
-	    cached_dv_stx = dv_stx;
-	    cached_ds_stx = ds_stx;
-	    cached_bfs_stx = bfs_stx;
-	    cached_stx_phase = phase;
-	  }
-
-	  if (scheme_stx_module_eq(beg_stx, name, phase)
-              || scheme_stx_module_eq(mod_stx, name, phase)
-              || scheme_stx_module_eq(modstar_stx, name, phase)
-              || scheme_stx_module_eq(mod_beg_stx, name, phase)) {
+	  if (scheme_stx_module_eq_x(scheme_begin_stx, name, phase)
+              || scheme_stx_module_eq_x(scheme_module_stx, name, phase)
+              || scheme_stx_module_eq_x(scheme_modulestar_stx, name, phase)
+              || scheme_stx_module_eq_x(scheme_module_begin_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
-	  } else if (scheme_stx_module_eq(bfs_stx, name, phase)) {
+	  } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
             phase_delta = 1;
-	  } else if (scheme_stx_module_eq(dv_stx, name, phase)
-		     || scheme_stx_module_eq(ds_stx, name, phase)) {
+	  } else if (scheme_stx_module_eq_x(scheme_define_values_stx, name, phase)
+		     || scheme_stx_module_eq_x(scheme_define_syntaxes_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }
