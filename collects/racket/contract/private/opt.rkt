@@ -7,7 +7,7 @@
          (for-syntax "opt-guts.rkt")
          (for-syntax racket/stxparam))
 
-(provide opt/c define-opt/c define/opter opt-stronger-vars-ref
+(provide opt/c define-opt/c define/opter
          opt/direct
          begin-lifted)
 
@@ -338,6 +338,9 @@
 (define-values (orig-ctc-prop orig-ctc-pred? orig-ctc-get)
   (make-struct-type-property 'original-contract))
 
+;; the stronger-vars don't seem to be used anymore for stronger; probably
+;; they should be folded into the lifts and then there should be a separate
+;; setup for consolidating stronger checks
 (define-struct opt-contract (proj orig-ctc stronger stronger-vars stamp chaperone?)
   #:property orig-ctc-prop (λ (ctc) ((opt-contract-orig-ctc ctc)))
   #:property prop:opt-chaperone-contract (λ (ctc) (opt-contract-chaperone? ctc))
@@ -350,8 +353,3 @@
       (and (opt-contract? that)
            (eq? (opt-contract-stamp this) (opt-contract-stamp that))
            ((opt-contract-stronger this) this that)))))
-
-;; opt-stronger-vars-ref : int opt-contract -> any
-(define (opt-stronger-vars-ref i ctc)
-  (let ((v (opt-contract-stronger-vars ctc)))
-    (vector-ref v i)))

@@ -3,7 +3,7 @@
 ;; top-sort : (listof α) (α -> (listof α)) -> (listof α) or #f
 ;; returns #f if there is a cycle in the graph
 ;; (α needs hashing)
-(define (top-sort elements neighbors)
+(define (top-sort elements neighbors fail)
   (define parents (make-hash))
   (define children (make-hash))
   (define ids (make-hash))
@@ -54,6 +54,6 @@
          (cons best (loop))])))
   
   (cond
-    [(zero? (hash-count pending)) sorted]
-    [else #f]))
+    [(= (length sorted) (length elements)) sorted]
+    [else (fail (remove* sorted elements))]))
 

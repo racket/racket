@@ -393,35 +393,39 @@ produced.  Otherwise, an impersonator contract is produced.
               ([field-spec [field-id maybe-lazy contract-expr]
                            [field-id (dep-field-id ...) 
                                      maybe-lazy
-                                     maybe-flat
+                                     maybe-flat-or-impersonator
                                      maybe-dep-state
                                      contract-expr]]
                [maybe-lazy (code:line) #:lazy]
-               [maybe-flat (code:line) #:flat]
+               [maybe-flat-or-impersonator (code:line) #:flat #:impersonator]
                [maybe-dep-state (code:line) #:depends-on-state])]{
 Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
 contracts produced by the @racket[field-spec]s.
-
-Each @racket[field-spec] can specify if the field is check lazily 
-(only when a selector is applied) or not via the @racket[#:lazy] 
-keyword. 
 
 If the @racket[field-spec] lists the names of other fields,
 then the contract depends on values in those fields, and the @racket[contract-expr]
 expression is evaluated each time a selector is applied, building a new contract
 for the fields based on the values of the @racket[dep-field-id] fields.
 If the field is a dependent field, then it is assumed that the contract is
-always a chaperone contract. If this is not the case, and the contract is
-always flat, or sometimes not a chaperone, then the field must be annotated with
-the @racket[#:flat] or @racket[#:impersonator].
+a chaperone, but not always a flat contract (and theus the entire @racket[struct/dc] 
+contract is not a flat contract). 
+If this is not the case, and the contract is
+always flat then the field must be annotated with
+the @racket[#:flat], or the field must be annotated with
+@racket[#:chaperone] (in which case, it must be a mutable field).
+
+If the @racket[#:lazy] keyword appears, then the contract
+on the field is check lazily (only when a selector is applied);
+@racket[#:lazy] contracts cannot be put on mutable fields.
 
 If a dependent contract depends on some mutable state, then use the 
 @racket[#:depends-on-state] keyword argument (if a field's dependent contract
 depends on a mutable field, this keyword is automatically inferred). 
 The presence of this keyword means that the contract expression is evaluated
 each time the corresponding field is accessed (or mutated, if it is a mutable
-field).
+field). Otherwise, the contract expression for a dependent field contract
+is evaluated when the contract is applied to a value.
 
 Contracts for immutable fields must be either flat or chaperone contracts.
 Contracts for mutable fields may be impersonator contracts.
@@ -433,14 +437,17 @@ produced.  Otherwise, an impersonator contract is produced.
 As an example, the function @racket[bst/c] below 
 returns a contract for binary search trees whose values
 are all between @racket[lo] and @racket[hi].
+The lazy annotations ensure that this contract does not
+change the running time of operations that do not
+inspect the entire tree.
 
 @racketblock[(struct bt (val left right))
              (define (bst/c lo hi)
                (or/c #f
                      (struct/dc bt
                                 [val (between/c lo hi)]
-                                [left (val) (bst lo val)]
-                                [right (val) (bst val hi)])))]
+                                [left (val) #:lazy (bst lo val)]
+                                [right (val) #:lazy (bst val hi)])))]
 
 }
 

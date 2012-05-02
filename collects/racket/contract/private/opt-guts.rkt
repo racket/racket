@@ -158,37 +158,30 @@
 ;; opt/unknown : opt/i id id syntax
 ;;
 (define (opt/unknown opt/i opt/info uctc)
-  (let* ((lift-var (car (generate-temporaries (syntax (lift)))))
-         (partial-var (car (generate-temporaries (syntax (partial)))))
-         (partial-flat-var (car (generate-temporaries (syntax (partial-flat))))))
+  (with-syntax ([(lift-var partial-var partial-flat-var)
+                 (generate-temporaries '(lift partial partial-flat))]
+                [val (opt/info-val opt/info)]
+                [uctc uctc]
+                [blame (opt/info-blame opt/info)])
     (values
-     (with-syntax ((partial-var partial-var)
-                   (lift-var lift-var)
-                   (uctc uctc)
-                   (val (opt/info-val opt/info)))
-       (syntax (partial-var val)))
-     (list (cons lift-var 
-                 ;; FIXME needs to get the contract name somehow
-                 (with-syntax ((uctc uctc))
-                   (syntax (coerce-contract 'opt/c uctc)))))
+     #'(partial-var val)
+     (list (cons #'lift-var 
+                 #'(coerce-contract 'opt/c uctc)))
      null
      (list (cons
-            partial-var
-            (with-syntax ((lift-var lift-var)
-                          (blame (opt/info-blame opt/info)))
-              (syntax ((contract-projection lift-var) blame))))
+            #'partial-var
+            #'((contract-projection lift-var) blame))
            (cons
-            partial-flat-var
-            (with-syntax ((lift-var lift-var))
-              (syntax (if (flat-contract? lift-var)
-                          (flat-contract-predicate lift-var)
-                          (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
-                                             lift-var
-                                             x)))))))
+            #'partial-flat-var
+            #'(if (flat-contract? lift-var)
+                  (flat-contract-predicate lift-var)
+                  (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
+                                     lift-var
+                                     x)))))
      #f
-     lift-var
+     #'lift-var
      null
-     #`(chaperone-contract? #,lift-var))))
+     #'(chaperone-contract? lift-var))))
 
 ;; combine-two-chaperone?s : (or/c boolean? syntax?) (or/c boolean? syntax?) -> (or/c boolean? syntax?)
 (define (combine-two-chaperone?s chaperone-a? chaperone-b?)

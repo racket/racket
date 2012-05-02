@@ -63,7 +63,6 @@
                         [else
                          (let-values ([(next lift superlift partial flat _ this-stronger-ribs this-chaperone?)
                                        (opt/i opt/info (car ps))])
-                           (define next-chaperone? (combine-two-chaperone?s chaperone? this-chaperone?))
                            (if flat
                                (loop (cdr ps)
                                      (cons flat next-ps)
@@ -73,7 +72,7 @@
                                      (append this-stronger-ribs stronger-ribs)
                                      hos
                                      ho-ctc
-                                     next-chaperone?)
+                                     (combine-two-chaperone?s chaperone? this-chaperone?))
                                (if (< (length hos) 1)
                                    (loop (cdr ps)
                                          next-ps
@@ -83,7 +82,7 @@
                                          (append this-stronger-ribs stronger-ribs)
                                          (cons (car ps) hos)
                                          next
-                                         next-chaperone?)
+                                         (combine-two-chaperone?s chaperone? this-chaperone?))
                                    (loop (cdr ps)
                                          next-ps
                                          lift-ps
@@ -92,7 +91,7 @@
                                          stronger-ribs
                                          (cons (car ps) hos)
                                          ho-ctc
-                                         next-chaperone?))))]))])
+                                         chaperone?))))]))])
         (with-syntax ((next-ps
                        (with-syntax (((opt-p ...) (reverse opt-ps)))
                          (syntax (or opt-p ...)))))
@@ -409,14 +408,15 @@
                           (loop (cdr vars)
                                 (cdr doms)
                                 (cons (with-syntax ((next next)
-                                                    (car-vars (car vars)))
+                                                    (car-vars (car vars))
+                                                    (val (opt/info-val opt/info)))
                                         (syntax (let ((val car-vars)) next)))
                                       next-doms)
                                 (append lifts-doms lift)
                                 (append superlifts-doms superlift)
                                 (append partials-doms partial)
                                 (append this-stronger-ribs stronger-ribs)
-                                (and chaperone? this-chaperone?)))]))]
+                                (combine-two-chaperone?s chaperone? this-chaperone?)))]))]
                   [(next-rngs lifts-rngs superlifts-rngs partials-rngs stronger-ribs-rng rng-chaperone?)
                    (let loop ([vars rng-vars]
                               [rngs rngs]
@@ -439,16 +439,18 @@
                           (loop (cdr vars)
                                 (cdr rngs)
                                 (cons (with-syntax ((next next)
-                                                    (car-vars (car vars)))
+                                                    (car-vars (car vars))
+                                                    (val (opt/info-val opt/info)))
                                         (syntax (let ((val car-vars)) next)))
                                       next-rngs)
                                 (append lifts-rngs lift)
                                 (append superlifts-rngs superlift)
                                 (append partials-rngs partial)
                                 (append this-stronger-ribs stronger-ribs)
-                                (and chaperone? this-chaperone?)))]))])
+                                (combine-two-chaperone?s chaperone? this-chaperone?)))]))])
       (values
-       (with-syntax ((blame (opt/info-blame opt/info))
+       (with-syntax ((val (opt/info-val opt/info))
+                     (blame (opt/info-blame opt/info))
                      ((dom-arg ...) dom-vars)
                      ((rng-arg ...) rng-vars)
                      ((next-dom ...) next-doms)
@@ -476,7 +478,7 @@
        #f
        #f
        (append stronger-ribs-dom stronger-ribs-rng)
-       (and dom-chaperone? rng-chaperone?))))
+       (combine-two-chaperone?s dom-chaperone? rng-chaperone?))))
   
   (define (opt/arrow-any-ctc doms)
     (let*-values ([(dom-vars) (generate-temporaries doms)]
@@ -509,7 +511,7 @@
                                 (append superlifts-doms superlift)
                                 (append partials-doms partial)
                                 (append this-stronger-ribs stronger-ribs)
-                                (and chaperone? this-chaperone?)))]))])
+                                (combine-two-chaperone?s chaperone? this-chaperone?)))]))])
       (values
        (with-syntax ((blame (opt/info-blame opt/info))
                      ((dom-arg ...) dom-vars)

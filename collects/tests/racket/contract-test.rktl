@@ -9402,7 +9402,7 @@
    'struct/dc-new3
    '(let ()
       (struct s (a))
-      (contract (s-a (struct/dc s [a #:lazy integer?])) (s #f) 'pos 'neg)))
+      (s-a (contract (struct/dc s [a #:lazy integer?]) (s #f) 'pos 'neg))))
   
   (test/spec-passed
    'struct/dc-new4
@@ -9414,7 +9414,7 @@
    'struct/dc-new5
    '(let ()
       (struct s ([a #:mutable]))
-      (contract (s-a (struct/dc s [a integer?])) (s #f) 'pos 'neg)))
+      (s-a (contract (struct/dc s [a integer?]) (s #f) 'pos 'neg))))
   
   (test/neg-blame
    'struct/dc-new6
@@ -9423,6 +9423,460 @@
       (set-s-a! (contract (struct/dc s [a integer?]) (s 1) 'pos 'neg)
                 #f)))
   
+  (test/spec-passed
+   'struct/dc-new7
+   '(let ()
+      (struct s (a b c))
+      (s-c (contract (struct/dc s [a any/c] [b (a) (non-empty-listof real?)] [c (b) (<=/c (car b))])
+                     (s 3 '(2) 1)
+                     'pos
+                     'neg))))
+  
+  
+  (test/spec-passed
+   'struct/dc-new8
+   '(let ()
+      (struct s (a b c))
+      (s-c (contract (struct/dc s [a any/c] [b (a) (non-empty-listof real?)] [c (a b) (and/c (<=/c a) (<=/c (car b)))])
+                     (s 3 '(2) 1)
+                     'pos
+                     'neg))))
+  
+  (test/spec-passed
+   'struct/dc-new9
+   '(let ()
+      (struct s (a b c))
+      (s-c (contract (struct/dc s [a any/c] [b (a) (non-empty-listof real?)] [c (b a) (and/c (<=/c a) (<=/c (car b)))])
+                     (s 3 '(2) 1)
+                     'pos
+                     'neg))))
+  
+  
+  (test/spec-passed
+   'struct/dc-new10
+   '(let ()
+      (struct s (a b c))
+      (s-c (contract (struct/dc s [a (b) (<=/c (car b))] [b (c) (non-empty-listof real?)] [c real?])
+                     (s 1 '(2) 3)
+                     'pos
+                     'neg))))
+  
+  (test/spec-passed
+   'struct/dc-new11
+   '(let ()
+      (struct s (a b c))
+      (s-c (contract (struct/dc s [a (b c) (and/c (<=/c (car b)) (<=/c c))] [b (c) (non-empty-listof real?)] [c real?])
+                     (s 1 '(2) 3)
+                     'pos
+                     'neg))))
+  
+  (test/spec-passed
+   'struct/dc-new12
+   '(let ()
+      (struct s (a b c))
+      (s-c (contract (struct/dc s [a (c b) (and/c (<=/c (car b)) (<=/c c))] [b (c) (non-empty-listof real?)] [c real?])
+                     (s 1 '(2) 3)
+                     'pos
+                     'neg))))
+
+  
+  (test/pos-blame 
+   'struct/dc-new13
+   '(let ()
+      (struct s (f b))
+      (contract (struct/dc s [f (-> integer? integer?)] [b (f) (<=/c (f 1))])
+                (s (λ (x) #f) 123)
+                'pos
+                'neg)))
+
+  (test/spec-failed 
+   'struct/dc-new14
+   '(let ()
+        (struct s (f b))
+        (contract (struct/dc s [f (-> integer? integer?)] [b (f) (<=/c (f #f))])
+                  (s (λ (x) 1) 123)
+                  'pos
+                  'neg))
+   "top-level")
+
+  (test/pos-blame 
+   'struct/dc-new15
+   '(let ()
+        (struct s (f b))
+        (contract (struct/dc s [f (-> integer? integer?)] [b (f) #:lazy (<=/c (f 1))])
+                  (s (λ (x) #f) 123)
+                  'pos
+                  'neg)))
+
+  (test/spec-failed 
+   'struct/dc-new16
+   '(let ()
+      (struct s (f b))
+      (contract (struct/dc s [f (-> integer? integer?)] [b (f) #:lazy (<=/c (f #f))])
+                (s (λ (x) 1) 123)
+                'pos
+                'neg))
+   "top-level")
+
+  (test/pos-blame 
+   'struct/dc-new17
+   '(let ()
+      (struct s (f b))
+      (contract (struct/dc s [f #:lazy (-> integer? integer?)] [b (f) #:lazy (<=/c (f 1))])
+                (s (λ (x) #f) 123)
+                'pos
+                'neg)))
+
+  (test/spec-failed 
+   'struct/dc-new18
+   '(let ()
+        (struct s (f b))
+        (contract (struct/dc s [f #:lazy (-> integer? integer?)] [b (f) #:lazy (<=/c (f #f))])
+                  (s (λ (x) 1) 123)
+                  'pos
+                  'neg))
+   "top-level")
+  
+  (test/spec-passed 
+   'struct/dc-new19
+   '(let ()
+      (struct s (a b c d))
+      (contract (struct/dc s 
+                           [a integer?]
+                           [b #:lazy symbol?]
+                           [c (a) boolean?]
+                           [d (a c) integer?])
+                (s 1 'x #t 5)
+                'pos 'neg)))
+  
+  (test/spec-passed 
+   'struct/dc-new20
+   '(let ()
+      (struct s (a [b #:mutable] c [d #:mutable]))
+      (contract (struct/dc s 
+                           [a integer?]
+                           [b symbol?]
+                           [c (a) boolean?]
+                           [d (a c) integer?])
+                (s 1 'x #t 5)
+                'pos 'neg)))
+  
+  (test/spec-passed
+   'struct/dc-new21
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s [a integer?] [b boolean?])
+                             (s 1 #f)
+                             'pos 'neg))
+      (set-s-a! an-s 2)))
+  
+  (test/neg-blame
+   'struct/dc-new22
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s [a integer?] [b boolean?])
+                             (s 1 #f)
+                             'pos 'neg))
+      (set-s-a! an-s #f)))
+  
+  (test/spec-passed
+   'struct/dc-new22
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (contract (struct/dc s [a integer?] [b boolean?])
+                (s 'one #f)
+                'pos 'neg)))
+  
+  (test/pos-blame
+   'struct/dc-new23
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (s-a (contract (struct/dc s [a integer?] [b boolean?])
+                     (s 'one #f)
+                     'pos 'neg))))
+  
+  (test/pos-blame
+   'struct/dc-new24
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s [a (-> integer? integer?)] [b boolean?])
+                             (s (λ (x) #f) #f)
+                             'pos 'neg))
+      ((s-a an-s) 1)))
+  
+  (test/neg-blame
+   'struct/dc-new25
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s [a (-> integer? integer?)] [b boolean?])
+                             (s (λ (x) #f) #f)
+                             'pos 'neg))
+      (set-s-a! an-s (λ (x) #f))
+      ((s-a an-s) 1)))
+  
+  (test/pos-blame
+   'struct/dc-new26
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (contract (struct/dc s [a (-> integer? integer?)] [b (a) (<=/c (a 1))])
+                (s (λ (x) #f) #f)
+                'pos 'neg)))
+  
+  (test/pos-blame
+   'struct/dc-new27
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s [a (-> integer? integer?)] [b (a) (<=/c (a 1))])
+                             (s (λ (x) 1) 1)
+                             'pos 'neg))
+      (set-s-a! an-s (λ (x) -2))
+      (s-b an-s)))
+  
+  (test/neg-blame
+   'struct/dc-new28
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s [a (-> integer? integer?)] [b (a) (<=/c (a 1))])
+                             (s (λ (x) 1) 1)
+                             'pos 'neg))
+      (set-s-a! an-s (λ (x) #f))
+      (s-b an-s)))
+  
+  (test/pos-blame
+   'struct/dc-new29
+   '(let ()
+      (struct s ([a #:mutable] b c))
+      (define an-s (contract (struct/dc s 
+                                        [a (-> integer? integer?)]
+                                        [b (a) (<=/c (a 1))]
+                                        [c (b) (<=/c b)])
+                             (s (λ (x) 1) -11 1)
+                             'pos 'neg))
+      (set-s-a! an-s (λ (x) -2))
+      (s-c an-s)))
+  
+  (test/pos-blame
+   'struct/dc-new30
+   '(let ()
+      (struct s ([a #:mutable] b c))
+      (define an-s (contract (struct/dc s 
+                                        [a (-> integer? integer?)]
+                                        [b (a) (<=/c (a 1))]
+                                        [c (b) (<=/c b)])
+                             (s (λ (x) 1) 1 -2)
+                             'pos 'neg))
+      (set-s-a! an-s (λ (x) -2))
+      (s-c an-s)))
+  
+  (test/neg-blame
+   'struct/dc-new31
+   '(let ()
+      (struct s ([a #:mutable] [b #:mutable]))
+      (define an-s (contract (struct/dc s 
+                                        [a (-> integer? integer?)]
+                                        [b (a) (<=/c (a 1))])
+                             (s (λ (x) 1) 1)
+                             'pos 'neg))
+      (set-s-b! an-s 3)))
+  
+  (test/pos-blame
+   'struct/dc-new32
+   '(let ()
+      (struct s ([a #:mutable] [b #:mutable]))
+      (define an-s (contract (struct/dc s 
+                                        [a (-> integer? integer?)]
+                                        [b (a) (<=/c (a 1))])
+                             (s (λ (x) 1) 1)
+                             'pos 'neg))
+      (set-s-a! an-s (λ (x) -1))
+      (s-b an-s)))
+
+  (test/spec-failed 
+   'struct/dc-new33
+   '(let ()
+      (struct s (a [b #:mutable] [c #:mutable]))
+      (define an-s (contract (struct/dc s 
+                                        [a (-> integer? integer?)]
+                                        [b any/c]
+                                        [c (a b) (<=/c (a b))])
+                             (s (λ (x) 1) 1 1)
+                             'pos 'neg))
+      (set-s-b! an-s #f)
+      (s-c an-s))
+   "top-level")
+  
+  (contract-error-test
+   'struct/dc-new-34
+   '(let ()
+      (struct s ([a #:mutable] [b #:mutable]))
+      (contract (struct/dc s
+                           [a boolean?]
+                           [b (a) 
+                              #:flat
+                              (if a
+                                  (<=/c 1)
+                                  (-> integer? integer?))])
+                (s #f 1)
+                'pos 
+                'neg))
+   (λ (x) (regexp-match #rx"struct/dc: .*flat" (exn-message x))))
+  
+  (contract-error-test
+   'struct/dc-new-35
+   '(let ()
+      (struct s ([a #:mutable] [b #:mutable]))
+      (define an-s (contract (struct/dc s
+                                        [a boolean?]
+                                        [b (a) 
+                                           #:flat
+                                           (if a
+                                               (<=/c 1)
+                                               (-> integer? integer?))])
+                             (s #t 1)
+                             'pos 
+                             'neg))
+      (set-s-a! an-s #f)
+      (s-b an-s))
+   (λ (x) (regexp-match #rx"struct/dc: .*flat" (exn-message x))))
+  
+  (contract-error-test
+   'struct/dc-new-36
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (contract (struct/dc s
+                           [a boolean?]
+                           [b (a) 
+                              (if a
+                                  (<=/c 1)
+                                  (new-∃/c 'α))])
+                (s #f 1)
+                'pos 
+                'neg))
+   (λ (x) (regexp-match #rx"struct/dc: .*chaperone" (exn-message x))))
+  
+  (contract-error-test
+   'struct/dc-new-37
+   '(let ()
+      (struct s ([a #:mutable] b))
+      (define an-s (contract (struct/dc s
+                                        [a boolean?]
+                                        [b (a) 
+                                           (if a
+                                               (<=/c 1)
+                                               (new-∃/c 'α))])
+                             (s #t 1)
+                             'pos 
+                             'neg))
+      (set-s-a! an-s #f)
+      (s-b an-s))
+   (λ (x) (regexp-match #rx"struct/dc: .*chaperone" (exn-message x))))
+  
+  (contract-error-test
+   'struct/dc-new-38
+   '(let ()
+      (struct s ([a #:mutable] b [c #:mutable]))
+      (define an-s (contract (struct/dc s
+                                        [a boolean?]
+                                        [b (a) 
+                                           (if a
+                                               (<=/c 1)
+                                               (new-∃/c 'α))]
+                                        [c (b) integer?])
+                             (s #t 1 1)
+                             'pos 
+                             'neg))
+      (set-s-a! an-s #f)
+      (s-c an-s))
+   (λ (x) (regexp-match #rx"struct/dc: .*chaperone" (exn-message x))))
+  
+  (test/spec-passed
+   'struct/dc-new-39
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s [a integer?] [b integer?]) (s 1 2) 'pos 'neg)))
+  
+  (test/spec-passed
+   'struct/dc-new40
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s [a (-> integer? integer?)] [b (-> integer? integer?)])
+                (s (λ (x) x) (λ (y) y))
+                'pos
+                'neg)))
+  
+  (test/spec-passed/result
+   'struct/dc-new41
+   '(let ()
+      (struct s (a [b #:mutable]))
+      (define α (new-∀/c 'α))
+      (s-b ((contract (-> α (struct/dc s [b α]))
+                      (λ (x) (s 11 x))
+                      'pos
+                      'neg) 1)))
+   1)
+  
+  (test/spec-passed/result
+   'struct/dc-new42
+   '(let ()
+      (struct s (a [b #:mutable]))
+      (define α (new-∀/c 'α))
+      (s-b ((contract (-> α (struct/dc s [a integer?] [b (a) #:impersonator α]))
+                      (λ (x) (s 11 x))
+                      'pos
+                      'neg) 1)))
+   1)
+  
+  (test/spec-passed
+   'struct/dc-new42
+   '(let ()
+      (struct s (a [b #:mutable]))
+      (contract (struct/dc s [a (-> integer? integer?)] [b (new-∀/c 'α)])
+                (s (λ (x) x) 1)
+                'pos 
+                'neg)))
+  
+  (contract-error-test
+   'struct/dc-not-a-field
+   #'(eval '(let ()
+              (struct s (a b))
+              (struct/dc s [a integer?] [y integer?])))
+   exn:fail:syntax?)
+  
+  (contract-error-test
+   'struct/dc-circular-dependecies1
+   #'(eval '(let ()
+              (struct s (a b))
+              (struct/dc s [a (a) integer?] [b (a) integer?])))
+   exn:fail:syntax?)
+  
+  (contract-error-test
+   'struct/dc-circular-dependecies2
+   #'(eval '(let ()
+              (struct s (a b c))
+              (struct/dc s [a (b) integer?] [b (a) integer?] [c integer?])))
+   exn:fail:syntax?)
+  
+  (contract-error-test
+   'struct/dc-dep-on-lazy
+   #'(eval '(let ()
+              (struct s (a b))
+              (struct/dc s [a #:lazy integer?] [b (a) integer?])))
+   exn:fail:syntax?)
+  
+  (contract-error-test
+   'struct/dc-lazy-mutable
+   #'(eval '(let ()
+              (struct s (a [b #:mutable]))
+              (struct/dc s [a integer?] [b #:lazy integer?])))
+   exn:fail:syntax?)
+  
+  (contract-error-test
+   'struct/dc-immutable-impersonator
+   #'(eval '(let ()
+              (struct s (a b))
+              (struct/dc s [a integer?] [b (a) #:impersonator (<=/c a)])))
+   (λ (x) (and (exn:fail:syntax? x) (regexp-match #rx"immutable" (exn-message x)))))
+
   
 ;                                                                              
 ;                                                                              
@@ -10485,9 +10939,11 @@ so that propagation occurs.
                         (define alpha (new-∃/c 'alpha))
                         (struct/c s alpha)))
   
-  (ctest #t (chaperone-contract?
-             (let ([x (struct/dc s [a integer?] [b integer?])])
-               (opt/c x))))
+  (ctest #t chaperone-contract?
+         (let ()
+           (struct s (a b))
+           (let ([x (struct/dc s [a integer?] [b integer?])])
+             (opt/c x))))
 
   (ctest #t flat-contract? (set/c integer?))
   (ctest #f flat-contract? (set/c (-> integer? integer?)))
@@ -10618,7 +11074,16 @@ so that propagation occurs.
                              (struct/dc s [a integer?] [b integer?])))
   (ctest #t flat-contract? (let ()
                              (struct s (a b))
-                             (struct/dc s [a integer?] [b (a) (>=/c a)])))
+                             (struct/dc s [a integer?] [b (a) #:flat (>=/c a)])))
+  (contract-error-test
+   'struct/dc-not-really-flat-dep-field
+   #'(let ()
+       (struct s (a b))
+       (contract (struct/dc s [a integer?] [b (a) #:flat (-> integer? integer?)])
+                 (s 1 (λ (x) x))
+                 'pos
+                 'neg))
+   exn:fail?)
   (ctest #t chaperone-contract? (let ()
                                   (struct s (a b))
                                   (struct/dc s [a integer?] [b (a) (>=/c a)])))
@@ -11086,16 +11551,29 @@ so that propagation occurs.
   
   (test-name '(struct/dc s 
                          [a integer?]
-                         [b #:lazy symbol?]
+                         [b symbol?]
                          [c (a b) ...]
                          [d (a b c) ...])
              (let ()
                (struct s (a b c d))
                (struct/dc s 
                           [a integer?]
-                          [b #:lazy symbol?]
+                          [b symbol?]
                           [c (a b) boolean?]
                           [d (a b c) integer?])))
+  
+  (test-name '(struct/dc s 
+                         [a integer?]
+                         [b #:lazy symbol?]
+                         [c (a) ...]
+                         [d (a c) ...])
+             (let ()
+               (struct s (a b c d))
+               (struct/dc s 
+                          [a integer?]
+                          [b #:lazy symbol?]
+                          [c (a) boolean?]
+                          [d (a c) integer?])))
   
   ;; NOT YET RELEASED
   #;
