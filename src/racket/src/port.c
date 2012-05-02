@@ -789,7 +789,7 @@ void scheme_alloc_global_fdset() {
 #ifdef USE_FAR_MZ_FDCALLS
   scheme_semaphore_fd_set = (struct mz_fd_set *)scheme_alloc_fdset_array(3, 0);
 #else
-  scheme_semaphore_fd_set = (struct mz_fd_set *)scheme_malloc_atomic(sizeof(struct mz_fd_set));
+  scheme_semaphore_fd_set = (struct mz_fd_set *)scheme_malloc_atomic(3 * sizeof(fd_set));
 #endif
   scheme_fdzero(MZ_GET_FDSET(scheme_semaphore_fd_set, 0));
   scheme_fdzero(MZ_GET_FDSET(scheme_semaphore_fd_set, 1));
@@ -1254,10 +1254,12 @@ void *scheme_merge_fd_sets(void *fds, void *src_fds)
   for (j = 0; j < 3; j++) {
     p = scheme_get_fdset(fds, j);
     sp = scheme_get_fdset(src_fds, j);
+# ifdef STORED_ACTUAL_FDSET_LIMIT
     if (FDSET_LIMIT(sp) > FDSET_LIMIT(p)) {
       i = FDSET_LIMIT(sp);
       FDSET_LIMIT(p) = i;
     }
+# endif
 # if defined(USE_DYNAMIC_FDSET_SIZE)
     i = dynamic_fd_size;
 # else
