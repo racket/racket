@@ -3,7 +3,8 @@
 (require racket/string racket/class racket/gui/base racket/match racket/port
          framework syntax/to-string
          "report.rkt"
-         unstable/sequence unstable/pretty)
+         unstable/sequence unstable/pretty
+         images/icons/symbol)
 
 (provide popup-callback make-color-table)
 
@@ -67,7 +68,12 @@
   (send pane insert-port (open-input-string "\n"))
 
   (define message-text (new text:basic% [auto-wrap #t]))
-  (send message-text insert-port (open-input-string msg))
+  (send message-text insert
+        (make-object image-snip% (if (missed-opt-report-entry? s)
+                                     (x-icon "red" 20)
+                                     (check-icon "green" 20))))
+  (send message-text insert-port
+        (open-input-string (string-append "  " msg)))
   ;; adjust display
   (send message-text set-max-width usable-width)
   (send message-text auto-wrap #t)
