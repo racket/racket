@@ -15,8 +15,8 @@
                                               'expression
                                               null #;(list #'define-values))
        (begin define-values)
-       [(begin (define-values (n) e) e*)
-        #`(begin (define-values (n) e)
+       [(begin (define-values (n) e) ... e*)
+        #`(begin (define-values (n) e) ...
                  (define name #,(syntax-property #'e*
                                                  'inferred-name
                                                  (syntax-e #'name))))]
