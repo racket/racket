@@ -2827,13 +2827,13 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     if   (IS_NAMED_PRIM(rator, "box-cas!") || (IS_NAMED_PRIM(rator, "unsafe-box*-cas!"))) { 
 
       GC_CAN_IGNORE jit_insn *ref, *ref3, *refr, *reffalse, *reftrue;
-      int unsafe = 0; // unused so far
+      int unsafe = 0;
 
       if (IS_NAMED_PRIM(rator, "unsafe-box*-cas!")) {
         unsafe = 1;
       }
 
-      // generate code to evaluate the arguments
+      /* generate code to evaluate the arguments */
       scheme_generate_app(app, NULL, 3, jitter, 0, 0, 2);
       CHECK_LIMIT();
       mz_rs_sync();
@@ -2843,16 +2843,16 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       __START_TINY_JUMPS__(1);
 
       if (!unsafe) {
-        // Fail if this isn't a pointer (0x1 is the integer tag)
+        /* Fail if this isn't a pointer (0x1 is the integer tag) */
         ref3 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
-        // Get the type tag, fail if it isn't a box
+        /* Get the type tag, fail if it isn't a box */
         ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_box_type, JIT_R2);
-        // jump to here if it wasn't a pointer
+        /* jump to here if it wasn't a pointer */
         mz_patch_branch(ref3);
         
-        // call scheme_box_cas to raise the exception
-        // we use mz_finish_lwe because it will capture the stack
-        // and the ts_ version because we may be in a future
+        /* call scheme_box_cas to raise the exception
+           we use mz_finish_lwe because it will capture the stack
+           and the ts_ version because we may be in a future */
         JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
         jit_movi_l(JIT_R0, 3);
         mz_prepare(2);
@@ -2861,7 +2861,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         CHECK_LIMIT();      
         (void)mz_finish_lwe(ts_scheme_box_cas, refr); /* doesn't return */
         
-        // jump to here if the type tag tests succeed
+        /* jump to here if the type tag tests succeed */
         mz_patch_branch(ref);
       }
 
@@ -2892,7 +2892,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       __END_TINY_JUMPS__(1);
 
-      // pop off 3 arguments
+      /* pop off 3 arguments */
       mz_rs_inc(3);
       mz_runstack_popped(jitter, 3);
 

@@ -7090,9 +7090,6 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
           super_name = super_required->keys[j];
           super_vec = super_required->vals[j];
 
-          // iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-          // iname = scheme_tl_id_sym(name_env, iname, scheme_false, skip_rename ? 3 : 2, to_phase, NULL);
-
           name = super_name;
 
           vec = scheme_make_vector(9, NULL);
