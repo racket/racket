@@ -1,7 +1,8 @@
 #lang racket/base
 (require syntax/srcloc
          (for-syntax racket/base syntax/srcloc setup/path-to-relative))
-(provide quote-srcloc
+(provide (protect-out module-name-fixup)
+         quote-srcloc
          quote-source-file
          quote-line-number
          quote-column-number

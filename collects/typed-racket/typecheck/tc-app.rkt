@@ -10,6 +10,7 @@
          scheme/bool
          racket/unsafe/ops
          (only-in racket/private/class-internal make-object do-make-object)
+         (only-in syntax/location module-name-fixup)
          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
@@ -25,7 +26,8 @@
           racket/unsafe/ops racket/fixnum racket/flonum
           (only-in '#%kernel [apply k:apply] [reverse k:reverse])
           "internal-forms.rkt" scheme/base scheme/bool '#%paramz
-          (only-in racket/private/class-internal make-object do-make-object)))
+          (only-in racket/private/class-internal make-object do-make-object)
+          (only-in syntax/location module-name-fixup)))
 
 (import tc-expr^ tc-lambda^ tc-let^ tc-apply^)
 (export tc-app^)
@@ -262,7 +264,7 @@
 (define (tc/app/internal form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
-                values apply k:apply not false? list list* call-with-values do-make-object make-object cons
+                values apply k:apply not false? list list* call-with-values do-make-object make-object module-name-fixup cons
                 map andmap ormap reverse k:reverse extend-parameterization
                 vector-ref unsafe-vector-ref unsafe-vector*-ref
                 vector-set! unsafe-vector-set! unsafe-vector*-set!
@@ -589,6 +591,12 @@
      #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
      #:fail-unless (free-identifier=? #'lp #'lp*) #f
      (let-loop-check form #'lam #'lp #'actuals #'args #'body expected)]
+    ;; special case for (current-contract-region)'s default expansion
+    ;; just let it through without any typechecking, since module-name-fixup
+    ;; is a private function from syntax/location, so this must have been
+    ;; (quote-module-name) originally.
+    [(#%plain-app module-name-fixup src path)
+     (ret Univ)]
     ;; special cases for classes
     [(#%plain-app make-object cl . args)
      (check-do-make-object #'cl #'args #'() #'())]
