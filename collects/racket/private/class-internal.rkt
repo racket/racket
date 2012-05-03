@@ -2547,14 +2547,14 @@ An example
 
 (get-interface-contract-info i8 'x)
 
- '((#<procedure:c8> i8 #f i6) (#<procedure:c6> i6 i8 i2)
-   (#<procedure:c2> i2 i6 i1) (#<procedure:c1> i1 i2 #f)
+ '((#<procedure:c8> i8 #f i8) (#<procedure:c6> i6 i8 i6)
+   (#<procedure:c2> i2 i6 i2) (#<procedure:c1> i1 i2 #f)
 
-   (#<procedure:c7> i7 i8 i4) (#<procedure:c4> i4 i7 i2)
+   (#<procedure:c7> i7 i8 i7) (#<procedure:c4> i4 i7 i4)
 
-   (#<procedure:c3> i3 i4 i1)
+   (#<procedure:c3> i3 i4 i3)
 
-   (#<procedure:c5> i5 i7 i3))
+   (#<procedure:c5> i5 i7 i5))
 |#
 ;; interface symbol -> (listof (list contract name (or blame #f) (or blame #f)))
 ;; traverse hierarchy to find ctc/blame info for a given method
@@ -2579,8 +2579,8 @@ An example
         [(not our-ctc) dedup-infos]
         ;; if the parent's don't contract it, then it's just our ctc
         [(null? dedup-infos) (list (list our-ctc our-name #f #f))]
-        ;; our ctc should have a negative party of the first parent
-        [else (cons (list our-ctc our-name #f (cadr (car dedup-infos)))
+        ;; our ctc should have a negative party of ourself (for behav. subtyping)
+        [else (cons (list our-ctc our-name #f our-name)
                     ;; replace occurrences of #f positive blame with this interface
                     (map (λ (info)
                             (if (not (caddr info))
