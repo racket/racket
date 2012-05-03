@@ -1800,12 +1800,6 @@ intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data)
 /*                        functional hash tables                          */
 /*========================================================================*/
 
-/* Direct port of red-black trees in Jens Axel Soegaard's "galore" package,
-   which implemented in Racket (5th may 2006 version) and says:
-   
-   ; This is direct port of Jean-Christophe Filliatre's implementation
-   ; of red-black trees in Ocaml. */
-
 typedef struct AVLNode {
   MZTAG_IF_REQUIRED
   char height;
