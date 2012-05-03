@@ -3,9 +3,7 @@
          setup/variant)
 (provide find-exe)
 
-;; Find executable relative to the "mzlib"
-;; collection.
-(define (find-exe mred? [variant (system-type 'gc)])
+(define (find-exe [mred? #f] [variant (system-type 'gc)])
   (let* ([base (if mred?
                    (find-gui-bin-dir)
                    (find-console-bin-dir))]

@@ -203,41 +203,57 @@
     (setup-printf "WARNING" "~a" (exn->string exn))
     v)
 
-  ;; collection->cc : listof path -> cc/#f
-  (define collection->cc-table (make-hash))
-  (define (collection->cc collection-p 
+  ;; Maps a colletion name to a list of `cc's:
+  (define collection-ccs-table (make-hash))
+
+  ;; collection-cc! : listof-path .... -> cc
+  (define (collection-cc! collection-p 
+                          #:path [dir (apply collection-path collection-p)]
                           #:omit-root [omit-root #f]
                           #:info-root [given-info-root #f]
                           #:info-path [info-path #f]
                           #:info-path-mode [info-path-mode 'relative])
-    (hash-ref! collection->cc-table collection-p
-      (lambda ()
-        (define info-root
-          (or given-info-root
-              (ormap (lambda (p)
-                       (parameterize ([current-library-collection-paths (list p)]
-                                      ;; to disable collection links file:
-                                      [use-user-specific-search-paths #f])
-                         (and (with-handlers ([exn:fail? (lambda (x) #f)])
-                                (apply collection-path collection-p))
-                              p)))
-                     (current-library-collection-paths))))
-        (let ([dir (apply collection-path collection-p)])
-          (unless (directory-exists? dir)
-            (error name-sym "directory does not exist for collection: ~s"
-                   (string-join (map path->string collection-p) "/")))
-          (make-cc* collection-p
+    (define info-root
+      (or given-info-root
+          (ormap (lambda (p)
+                   (parameterize ([current-library-collection-paths (list p)]
+                                  ;; to disable collection links file:
+                                  [use-user-specific-search-paths #f])
+                     (and (with-handlers ([exn:fail? (lambda (x) #f)])
+                            (apply collection-path collection-p))
+                          p)))
+                 (current-library-collection-paths))))
+    (unless (directory-exists? dir)
+      (error name-sym "directory: ~e does not exist for collection: ~s"
+             dir
+             (string-join (map path->string collection-p) "/")))
+    (unless info-root
+      (error name-sym "cannot find info root for collection: ~s and path: ~e"
+             (string-join (map path->string collection-p) "/")
+             dir))
+    (define new-cc
+      (make-cc* collection-p
+                dir
+                (if (eq? omit-root 'dir)
                     dir
-                    (if (eq? omit-root 'dir)
-                        dir
-                        omit-root) ; #f => `omitted-paths' can reconstruct it
-                    info-root
-                    (or info-path
-                        (build-path info-root "info-domain" "compiled" "cache.rktd"))
-                    info-path-mode
-                    ;; by convention, all collections have "version" 1 0. This
-                    ;; forces them to conflict with each other.
-                    (list (cons 'lib (map path->string collection-p)) 1 0))))))
+                    omit-root) ; #f => `omitted-paths' can reconstruct it
+                info-root
+                (or info-path
+                    (build-path info-root "info-domain" "compiled" "cache.rktd"))
+                info-path-mode
+                ;; by convention, all collections have "version" 1 0. This
+                ;; forces them to conflict with each other.
+                (list (cons 'lib (map path->string collection-p)) 1 0)))
+    (when new-cc
+      (hash-update! collection-ccs-table 
+                    collection-p 
+                    (lambda (lst) (cons new-cc lst))
+                    null))
+    new-cc)
+
+  ;; collection->ccs : listof-path -> listof-cc
+  (define (collection->ccs collection-p)
+    (hash-ref collection-ccs-table collection-p null))
 
   ;; planet-spec->planet-list : (list string string nat nat) -> (list path string string (listof string) nat nat) | #f
   ;; converts a planet package spec into the information needed to create a cc structure
@@ -257,9 +273,9 @@
                     owner pkg-name maj min))))]
       [_ spec]))
 
-  (define (planet->cc path #:omit-root [omit-root path] owner pkg-file extra-path maj min)
+  (define (planet-cc! path #:omit-root [omit-root path] owner pkg-file extra-path maj min)
     (unless (path? path)
-      (error 'planet->cc "non-path when building package ~e" pkg-file))
+      (error 'planet-cc! "non-path when building package ~e" pkg-file))
     (and (directory-exists? path)
          (make-cc* #f
                    path
@@ -275,7 +291,7 @@
   (define (planet-cc->sub-cc cc subdir)
     (match-let ([(list (list 'planet owner pkg-file extra-path ...) maj min)
                  (cc-shadowing-policy cc)])
-      (planet->cc (apply build-path (cc-path cc) (map bytes->path subdir))
+      (planet-cc! (apply build-path (cc-path cc) (map bytes->path subdir))
                   #:omit-root (cc-omit-root cc)
                   owner
                   pkg-file
@@ -283,47 +299,52 @@
                   maj
                   min)))
 
-  (define all-collections
-    (let ([ht (make-hash)])
-      (define (maybe collection ->cc)
-        (hash-ref ht collection
-                  (lambda ()
-                    (let ([cc (->cc collection)])
-                      (when cc (hash-set! ht collection cc))))))
-      (for ([cp (current-library-collection-paths)]
+  ;; Add in all non-planet collections:
+  (for ([cp (current-library-collection-paths)]
+        #:when (directory-exists? cp)
+        [collection (directory-list cp)]
+        #:when (directory-exists? (build-path cp collection)))
+    (collection-cc! (list collection)
+                    #:path (build-path cp collection)))
+  (let ([main-collects (find-collects-dir)])
+    (define (cc! col #:path path)
+      (collection-cc! col
+                      #:path path
+                      #:info-root main-collects
+                      #:info-path-mode 'abs-in-relative
+                      #:omit-root 'dir))
+    (for ([c+p (in-list (links #:user? #f #:with-path? #t))])
+      (cc! (list (string->path (car c+p)))
+           #:path (cdr c+p)))
+    (for ([cp (in-list (links #:root? #t #:user? #f))]
+          #:when (directory-exists? cp)
+          [collection (directory-list cp)]
+          #:when (directory-exists? (build-path cp collection)))
+      (cc! (list collection)
+           #:path (build-path cp collection))))
+  (when (make-user)
+    (let ([user-collects (find-user-collects-dir)])
+      (define (cc! col #:path path)
+        (unless user-collects
+          (error name-sym "cannot setup linked collection without a user-collection root"))
+        (collection-cc! col
+                        #:path path
+                        #:info-root user-collects
+                        #:info-path-mode 'abs-in-relative
+                        #:omit-root 'dir))
+      (for ([c+p (in-list (links #:with-path? #t))])
+        (cc! (list (string->path (car c+p)))
+             #:path (cdr c+p)))
+      (for ([cp (in-list (links #:root? #t))]
             #:when (directory-exists? cp)
             [collection (directory-list cp)]
             #:when (directory-exists? (build-path cp collection)))
-        (maybe (list collection) collection->cc))
-      (let ([main-collects (find-collects-dir)])
-        (define (->cc col)
-          (collection->cc col
-                          #:info-root main-collects
-                          #:info-path-mode 'abs-in-relative
-                          #:omit-root 'dir))
-        (for ([c (in-list (links #:user? #f))])
-          (maybe (list (string->path c)) ->cc))
-        (for ([cp (in-list (links #:root? #t #:user? #f))]
-              #:when (directory-exists? cp)
-              [collection (directory-list cp)]
-              #:when (directory-exists? (build-path cp collection)))
-          (maybe (list collection) ->cc)))
-      (when (make-user)
-        (let ([user-collects (find-user-collects-dir)])
-          (define (->cc col)
-            (collection->cc col
-                            #:info-root user-collects
-                            #:info-path-mode 'abs-in-relative
-                            #:omit-root 'dir))
-          (for ([c (in-list (links))])
-            (maybe (list (string->path c)) ->cc))
-          (for ([cp (in-list (links #:root? #t))]
-                #:when (directory-exists? cp)
-                [collection (directory-list cp)]
-                #:when (directory-exists? (build-path cp collection)))
-            (maybe (list collection) ->cc))))
-      (hash-map ht (lambda (k v) v))))
+        (cc! (list collection)
+             #:path (build-path cp collection)))))
 
+  ;; `all-collections' lists all top-level collections (not from Planet):
+  (define all-collections (apply append (hash-map collection-ccs-table (lambda (k v) v))))
+  
   ;; Close over sub-collections
   (define (collection-closure collections-to-compile make-subs)
     (define (get-subs cc)
@@ -363,7 +384,7 @@
       
     (define (build-collection-tree cc)
       (define (make-child-cc parent-cc name) 
-        (collection->cc (append (cc-collection parent-cc) (list name))
+        (collection-cc! (append (cc-collection parent-cc) (list name))
                         #:info-root (cc-info-root cc)
                         #:info-path (cc-info-path cc)
                         #:info-path-mode (cc-info-path-mode cc)
@@ -394,27 +415,37 @@
                                null))])
               (list cc srcs children-ccs)))))
     (map build-collection-tree collections-to-compile))
-      
-
-    
+  
   (define (plt-collection-closure collections-to-compile)
     (define (make-children-ccs cc children)
       (map (lambda (child)
-           (collection->cc (append (cc-collection cc) (list child))
-                           #:info-root (cc-info-root cc)
-                           #:info-path (cc-info-path cc)
-                           #:info-path-mode (cc-info-path-mode cc)
-                           #:omit-root (cc-omit-root cc)))
+             (collection-cc! (append (cc-collection cc) (list child))
+                             #:path (build-path (cc-path cc) child)
+                             #:info-root (cc-info-root cc)
+                             #:info-path (cc-info-path cc)
+                             #:info-path-mode (cc-info-path-mode cc)
+                             #:omit-root (cc-omit-root cc)))
            children))
     (collection-closure collections-to-compile make-children-ccs))
 
-  (define (check-again-all given-ccs)
+  (define (lookup-collection-closure collections-to-compile)
+    (define (lookup-children-ccs cc children)
+      (apply
+       append
+       (map (lambda (child)
+              (collection->ccs (append (cc-collection cc) (list child))))
+            children)))
+    (collection-closure collections-to-compile lookup-children-ccs))
+
+  (define all-collections-closure (plt-collection-closure all-collections))
+
+  (define (check-against-all given-ccs)
     (define (cc->name cc)
       (string-join (map path->string (cc-collection cc)) "/"))
     (define (cc->cc+name+id cc)
       (list cc (cc->name cc) (file-or-directory-identity (cc-path cc))))
     (define all-ccs+names+ids
-      (map cc->cc+name+id (plt-collection-closure all-collections)))
+      (map cc->cc+name+id all-collections-closure))
     ;; given collections
     (define given-ccs+names+ids (map cc->cc+name+id given-ccs))
     ;; descendants of given collections
@@ -422,7 +453,7 @@
       (remove-duplicates
        (append-map
         (lambda (cc)
-          (map cc->name (remq cc (plt-collection-closure (list cc)))))
+          (map cc->name (remq cc (lookup-collection-closure (list cc)))))
         given-ccs)))
     ;; given collections without duplicates and without ones that are already
     ;; descendants
@@ -431,7 +462,8 @@
        (filter (lambda (cc+name+id)
                  (not (member (cadr cc+name+id) descendants-names)))
                given-ccs+names+ids)
-       (lambda (x y) (equal? (cadr x) (cadr y)))))
+       (lambda (x y) (and (equal? (cadr x) (cadr y))
+                          (equal? (cc-path (car x)) (cc-path (car y)))))))
     ;; check that there are no bad duplicates in the given list
     (for ([given-cc+name+id (in-list given*-ccs+names+ids)])
       (cond
@@ -455,18 +487,32 @@
   (define top-level-plt-collects
     (if no-specific-collections?
       all-collections
-      (check-again-all
-       (filter-map
-        (lambda (c)
-          (collection->cc (append-map (lambda (s)
-                                        (map string->path
-                                             (regexp-split #rx"/" s)))
-                                      c)))
-        x-specific-collections))))
+      (check-against-all
+       (apply
+        append
+        (map
+         (lambda (c)
+           (define elems (append-map (lambda (s) 
+                                       (map string->path
+                                            (regexp-split #rx"/" s)))
+                                     c))
+           (define ccs
+             (collection->ccs elems))
+           (when (null? ccs)
+             ;; let `collection-path' complain about the name, if that's the problem:
+             (apply collection-path elems)
+             ;; otherwise, it must be an issue with different ways to
+             ;; spell the name
+             (error name-sym
+                    (error name-sym
+                     "given collection path: \"~a\" is not in canonical form (e.g., wrong case on a case-insensitive filesystem)"
+                     (string-join c "/"))))
+           ccs)
+         x-specific-collections)))))
 
   (define planet-collects
     (if (make-planet)
-      (filter-map (lambda (spec) (apply planet->cc spec))
+      (filter-map (lambda (spec) (apply planet-cc! spec))
                   (if no-specific-collections?
                     (get-all-planet-packages)
                     (filter-map planet-spec->planet-list
@@ -482,7 +528,7 @@
 
   (define ccs-to-compile 
     (append
-      (sort-collections (plt-collection-closure top-level-plt-collects))
+      (sort-collections (lookup-collection-closure top-level-plt-collects))
       planet-dirs-to-compile))
 
 
@@ -761,7 +807,8 @@
     (setup-printf #f "--- compiling collections ---")
     (match (parallel-workers)
       [(? (lambda (x) (x . > . 1)))
-        (compile-cc (collection->cc (list (string->path "racket"))) 0)
+        (for/fold ([gcs 0]) ([cc (in-list (collection->ccs (list (string->path "racket"))))])
+          (compile-cc cc 0))
         (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
         (with-specified-mode
          (lambda ()

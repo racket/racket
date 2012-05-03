@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/bnf 
           "common.rkt"
-          (for-label racket/base))
+          (for-label racket/base
+                     racket/contract))
 
 @title[#:tag "link"]{@exec{raco link}: Library Collection Links}
 
@@ -111,7 +112,7 @@ Full command-line options:
 @defmodule[setup/link]
 
 @defproc[(links [dir path?] ...
-                [#:user? user? #t]
+                [#:user? user? any/c #t]
                 [#:file file (or/c path-string? #f) #f]
                 [#:name name (or/c string? #f) #f]
                 [#:root? root? any/c #f]
@@ -119,7 +120,8 @@ Full command-line options:
                 [#:error error-proc (symbol? string? any/c ... . -> . any) error]
                 [#:remove? remove? any/c #f]
                 [#:show? show? any/c #f]
-                [#:repair? repair? any/c #f])
+                [#:repair? repair? any/c #f]
+                [#:with-path? with-path? any/c #f])
           list?]{
 
 A function version of the @exec{raco link} command that always works
@@ -132,9 +134,11 @@ The @racket[error-proc] argument is called to raise exceptions that
 would be fatal to the @exec{raco link} command.
 
 If @racket[remove?] is true, the result is a list of entries that were
-removed from the file.  If @racket[remove?] is false but
+removed from the file.  If @racket[remove?] is @racket[#f] but
 @racket[root?] is true, the result is a list of paths for collection
-roots. If @racket[remove?] and @racket[root?] are both false, the
-result is a list of top-level collection names (as strings) that are
-mapped by @racket[file] and that apply to the running version of
-Racket.}
+roots. If @racket[remove?] and @racket[root?] are both @racket[#f],
+the result is a list for top-level collections that are mapped by
+@racket[file] and that apply to the running version of Racket; the
+list is a list of strings for collection names if @racket[with-path?]
+is @racket[#f], or it is a list of pairs of collection-name strings
+and complete paths if @racket[with-path?] is true.}

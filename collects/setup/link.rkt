@@ -14,6 +14,7 @@
                #:remove? [remove? #f]
                #:show? [show? #f]
                #:repair? [repair? #f]
+               #:with-path? [with-path? #f]
                . dirs)
   (define (check-name name)
     (unless (and (regexp-match #rx"^[a-zA-z0-9+_%-]+$" name)
@@ -203,6 +204,9 @@
               (when (and (string? (car e))
                          (or (null? (cddr e))
                              (regexp-match? (caddr e) (version))))
-                (hash-set! ht (car e) #t)))
-            (hash-map ht (lambda (k e) k))))))
+                (hash-set! ht (car e) (cadr e))))
+            (hash-map ht (lambda (k p) 
+                           (if with-path?
+                               (cons k (simplify p))
+                               k)))))))
 

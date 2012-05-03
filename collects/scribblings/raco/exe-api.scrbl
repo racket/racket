@@ -14,7 +14,8 @@
                      compiler/embed-sig
                      compiler/embed-unit
                      racket/runtime-path
-                     launcher/launcher))
+                     launcher/launcher
+                     compiler/find-exe))
 
 @title{API for Creating Executables}
 
@@ -450,14 +451,13 @@ Includes the identifiers provided by @racketmodname[compiler/embed].}
 
 A unit that imports nothing and exports @racket[compiler:embed^].}
 
-@section{Finding the name of the executable}
+@section{Finding the Racket Executable}
 
 @defmodule[compiler/find-exe]
 
-@defproc[(find-exe [gracket? boolean?]
+@defproc[(find-exe [gracket? any/c #f]
                    [variant (or/c 'cgc '3m) (system-type 'gc)])
          path?]{
 
-  Finds the path to the racket (or gracket) executable.
-}
-               
+  Finds the path to the @exec{racket} or @exec{gracket} (when
+  @racket[gracket?] is true) executable.}
