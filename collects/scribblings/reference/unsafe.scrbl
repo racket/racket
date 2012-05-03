@@ -215,7 +215,7 @@ Unsafe versions of @racket[unbox] and @racket[set-box!], where the
 
 @defproc[(unsafe-box*-cas! [loc box?] [old any/c] [new any/c]) boolean?]{
   Unsafe version of @racket[box-cas!].  Like @racket[unsafe-set-box*!], it does
-  not work on impersonators.
+  not work on @tech{impersonators}.
 }
 
 @deftogether[(

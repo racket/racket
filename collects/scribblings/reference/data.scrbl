@@ -112,31 +112,28 @@ Returns the content of @racket[box].}
 For any @racket[v], @racket[(unbox (box v))] returns @racket[v].
 
 
-@defproc[(set-box! [box (and/c box? (not/c immutable?))]
+@defproc[(set-box! [box (and/c box? (not/c immutable?) (not/c impersonator?))]
                    [v any/c]) void?]{
 
-Sets the content of @racket[box] to @racket[v].
+Sets the content of @racket[box] to @racket[v].}
 
-@defproc[(box-cas! [loc box?] [old any/c] [new any/c]) boolean?]{
-  Atomically updates the contents of @racket[loc] to @racket[new], provided
-  that @racket[loc] currently contains a value that is @racket[eq?] to
-  @racket[old].  When Racket is compiled with support for @tech{futures},
-  this uses a hardware @emph{compare and set} operation.
+
+@defproc[(box-cas! [box box?] [old any/c] [new any/c]) boolean?]{
+  Atomically updates the contents of @racket[box] to @racket[new], provided
+  that @racket[box] currently contains a value that is @racket[eq?] to
+  @racket[old], and returns @racket[#t] in that case.  If @racket[box] 
+  does not contain @racket[old], then the result is @racket[#f].
 
   If no other @tech{threads} or @tech{futures} attempt to access
-  @racket[loc], this is equivalent to 
+  @racket[box], the operation is equivalent to 
+
   @racketblock[
   (and (eq? old (unbox loc)) (set-box! loc new) #t)]
-  
-  Uses of @racket[box-cas!] be performed safely in parallel with other
-  operations. In contrast, other atomic operations are not safe to perform in
-  parallel, and they therefore prevent a computation from continuing in
-  parallel. 
 
-  If @racket[loc] is a @tech{chaperone} or @tech{impersonator} of a box, the
-  @exnraise[exn:fail:contract].}
-
-}
+  When Racket is compiled with support for @tech{futures},
+  @racket[box-cas!] uses a hardware @emph{compare and set} operation.
+  Uses of @racket[box-cas!] be performed safely in a @tech{future} (i.e.,
+  allowing the future thunk to continue in parallel). }
 
 @; ----------------------------------------------------------------------
 @include-section["hashes.scrbl"]
