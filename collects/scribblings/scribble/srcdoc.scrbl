@@ -68,9 +68,10 @@ to get core Racket forms and basic Scribble functions to use in
 documentation expressions.}
 
 @defform*/subs[#:literals (-> ->* case->)
-               [(proc-doc/names id contract ((arg-id ...) ((arg-id default-expr) ...))
-                                desc-expr)]
-               ([contract (-> arg ... result)
+               [(proc-doc/names id contract arg-specs desc-expr)]
+               ([arg-specs ((arg-id ...) ((arg-id default-expr) ...))
+                           (arg-id ...)]
+                [contract (-> arg ... result)
                           (->* (mandatory ...) (optional ...) result)
                           (case-> (-> arg ... result) ...)]
                 [mandatory contract-expr
@@ -82,11 +83,14 @@ When used in @racket[provide/doc], exports @racket[id] with the
 contract described by @racket[contract]
 just like using @racket[provide/contract].
 
-The @racket[arg-id]s specify the names of arguments, which are not
+The @racket[arg-spec] specifies the names of arguments and the 
+default values, which are not
 normally written as part of a contract. They are combined with the
 contract expression to generate the description of the binding in the
 documentation via @racket[defproc]. The @racket[(arg-id default-expr)]
 pairs specify the names and default values of the optional arguments.
+If the contract supports optional arguments, then the first
+@racket[arg-spec]s form must be used, otherwise the second must be used.
 
 The @racket[desc-expr] is a documentation-time expression that
 produces prose to describe the exported binding---that is, the last
