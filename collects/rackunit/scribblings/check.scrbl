@@ -68,7 +68,7 @@ The following check fails:
 @defproc[(check-= (v1 any) (v2 any) (epsilon number?) (message string? ""))
          void?]{
 
-Checks that @racket[v1] and @racket[v2] are within
+Checks that @racket[v1] and @racket[v2] are numbers within
 @racket[epsilon] of one another.  The optional
 @racket[message] is included in the output if the check
 fails.

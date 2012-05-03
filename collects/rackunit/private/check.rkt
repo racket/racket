@@ -251,7 +251,7 @@
   (equal? expr1 expr2))
 
 (define-simple-check (check-= expr1 expr2 epsilon)
-  (<= (abs (- expr1 expr2)) epsilon))
+  (<= (magnitude (- expr1 expr2)) epsilon))
 
 (define-simple-check (check-true expr)
   (eq? expr #t))
