@@ -192,7 +192,7 @@ Unsafe variants of @racket[car], @racket[cdr], @racket[mcar],
 
 
 @deftogether[(
-@defproc[(unsafe-list-ref [lst any/c] [pos (and/c exact-nonnegative-integer? fixnum?)]) any/c]
+@defproc[(unsafe-list-ref [lst pair?] [pos (and/c exact-nonnegative-integer? fixnum?)]) any/c]
 @defproc[(unsafe-list-tail [lst any/c] [pos (and/c exact-nonnegative-integer? fixnum?)]) any/c]
 )]{
 

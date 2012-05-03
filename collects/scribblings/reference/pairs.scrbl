@@ -206,7 +206,7 @@ Returns the number of elements in @racket[lst].
 ]}
 
 
-@defproc[(list-ref [lst any/c] [pos exact-nonnegative-integer?])
+@defproc[(list-ref [lst pair?] [pos exact-nonnegative-integer?])
          any/c]{
 
 Returns the element of @racket[lst] at position @racket[pos], where

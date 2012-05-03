@@ -743,7 +743,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-cdr", p, env);
 
-  p = scheme_make_folding_prim(unsafe_list_ref, "unsafe-list-tail", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_list_ref, "unsafe-list-ref", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-list-ref", p, env);
@@ -1291,19 +1291,23 @@ do_list_ref(char *name, int takecar, int argc, Scheme_Object *argv[])
   intptr_t i, k;
   Scheme_Object *lst, *index, *bnindex;
 
-  if (SCHEME_BIGNUMP(argv[1])) {
-    bnindex = argv[1];
+  lst = argv[0];
+  index = argv[1];
+
+  if (!SCHEME_PAIRP(lst) && takecar) {
+    scheme_wrong_type(name, "pair", 0, argc, argv);;
+  }
+
+  if (SCHEME_BIGNUMP(index)) {
+    bnindex = index;
     k = 0;
-  } else if (!SCHEME_INTP(argv[1])) {
+  } else if (!SCHEME_INTP(index)) {
     scheme_wrong_type(name, "non-negative exact integer", 1, argc, argv);
     return NULL;
   } else {
     bnindex = NULL;
-    k = SCHEME_INT_VAL(argv[1]);
+    k = SCHEME_INT_VAL(index);
   }
-
-  lst = argv[0];
-  index = argv[1];
 
   if ((bnindex && !SCHEME_BIGPOS(bnindex))
       || (!bnindex && (k < 0))) {
