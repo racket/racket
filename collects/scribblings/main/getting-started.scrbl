@@ -10,10 +10,10 @@ to run programs, run the @tt{DrRacket} executable. Otherwise, the @tt{racket}
 executable will run a command-line Read-Eval-Print-Loop
 (@tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{REPL}).
 
-On Windows, you can access Racket through the Start menu. In Windows Vista or
-newer, use the search feature to find the @tt{DrRacket} shortcut. On older
-versions of Windows, the shortcut can be found by default in @onscreen{Program
-Files} → @onscreen{Racket} → @onscreen{DrRacket}.
+On Windows, you can start DrRacket from the @onscreen{Racket} entry in the
+Start menu, in Windows Vista or newer you can just type @tt{DrRacket}.  You can
+also run it from its folder, which you can find in @onscreen{Program Files} →
+@onscreen{Racket} → @onscreen{DrRacket}.
 
 On Mac OS, double click on the @tt{DrRacket} icon. It may be in your
 Applications folder, or in the @tt{.dmg} that you downloaded.
