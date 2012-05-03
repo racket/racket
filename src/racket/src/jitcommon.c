@@ -512,6 +512,22 @@ static int common1b(mz_jit_state *jitter, void *_data)
   mz_epilog(JIT_R2);
   scheme_jit_register_sub_func(jitter, sjc.set_box_code, scheme_false);
 
+  /* *** box_cas_fail_code *** */
+  /* Arguments are on runstack; */
+  /* call scheme_box_cas to raise the exception,
+     we use mz_finish_lwe because it will capture the stack,
+     and the ts_ version because we may be in a future */
+  sjc.box_cas_fail_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  jit_movi_l(JIT_R0, 3);
+  mz_prepare(2);
+  jit_pusharg_p(JIT_RUNSTACK);
+  jit_pusharg_l(JIT_R0);
+  CHECK_LIMIT();      
+  (void)mz_finish_lwe(ts_scheme_box_cas, ref); /* doesn't return */
+  scheme_jit_register_sub_func(jitter, sjc.box_cas_fail_code, scheme_false);
+
   /* *** bad_vector_length_code *** */
   /* R0 is argument */
   sjc.bad_vector_length_code = jit_get_ip().ptr;

@@ -140,7 +140,11 @@
 		   (test v name ((eval `(lambda (y) ,(wrap `(,op (,get-arg1) _arg2 y)))) arg3))
                    (check-effect)
 		   (test v name ((eval `(lambda (x y z) ,(wrap `(,op x y z)))) (get-arg1) arg2 arg3))
-		   (check-effect)))]
+		   (check-effect)
+		   (when (boolean? v)
+		     ;; (printf " for branch...\n")
+		     (test (if v 'yes 'no) name ((eval `(lambda (x y z) (if ,(wrap `(,op x y z)) 'yes 'no))) (get-arg1) arg2 arg3))
+                     (check-effect))))]
          [tri (lambda (v op get-arg1 arg2 arg3 check-effect #:wrap [wrap values])
                 (define (e->i n) (if (number? n) (exact->inexact n) n))
                 (tri0 v op get-arg1 arg2 arg3 check-effect #:wrap wrap)
@@ -665,6 +669,16 @@
       (tri0 (void) '(lambda (b i v) (set-box! b v))
             (lambda () v) 0 "other"
             (lambda () (test "other" unbox v))))
+
+    (let ([v (box 10)])
+      (check-error-message 'box-cas! (eval `(lambda (x) (box-cas! x 10 11))))
+      (tri0 #t '(lambda (b i v) (box-cas! b (unbox b) v))
+            (lambda () v) 0 "other"
+            (lambda () (test "other" unbox v)))
+      (set-box! v 77)
+      (tri0 #f '(lambda (b i v) (box-cas! b (gensym) v))
+            (lambda () v) 0 "other"
+            (lambda () (test 77 unbox v))))
 
     (bin-exact #t 'procedure-arity-includes? cons 2)
     (bin-exact #f 'procedure-arity-includes? cons 1)

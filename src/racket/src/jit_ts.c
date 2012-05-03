@@ -90,6 +90,7 @@ define_ts_iS_s(scheme_checked_list_ref, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_list_tail, FSRC_MARKS)
 define_ts_iSs_s(scheme_struct_getter, FSRC_MARKS)
 define_ts_iSs_s(scheme_struct_setter, FSRC_MARKS)
+define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 #endif
 
 #ifdef JITCALL_TS_PROCS
@@ -114,7 +115,6 @@ define_ts_l_s(scheme_jit_make_vector, FSRC_OTHER)
 # endif
 define_ts_ss_i(scheme_equal, FSRC_MARKS)
 define_ts_sss_s(extract_one_cc_mark_to_tag, FSRC_MARKS)
-define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 #endif
 
 #ifdef JIT_APPLY_TS_PROCS

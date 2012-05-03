@@ -1178,5 +1178,31 @@
       (choice-evt (wrap-evt always-evt (lambda (x) i)) e)))))
 
 ;; ----------------------------------------
+ ;; box-cas! tests
+
+;; successful cas
+(let ()
+  (define b (box #f))
+  (test #true box-cas! b #f #true)
+  (test #true unbox b))
+
+;; unsuccessful cas
+(let ()
+  (define b (box #f))
+  (test #f box-cas! b #true #f)
+  (test #f unbox b))
+
+;; cas using allocated data
+(let ()
+  (define b (box '()))
+  (define x (cons 1 (unbox b)))
+  (test #true box-cas! b '() x)
+  (test x unbox b)
+  (test #true box-cas! b x '())
+  (test '() unbox b)
+  (test #f box-cas! b x '())
+  (test '() unbox b))
+
+;; ----------------------------------------
 
 (report-errs)

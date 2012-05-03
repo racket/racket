@@ -234,7 +234,7 @@ struct scheme_jit_common_record {
   void *bad_set_mcar_code, *bad_set_mcdr_code;
   void *imag_part_code, *real_part_code, *make_rectangular_code;
   void *bad_flimag_part_code, *bad_flreal_part_code, *bad_make_flrectangular_code;
-  void *unbox_code, *set_box_code;
+  void *unbox_code, *set_box_code, *box_cas_fail_code;
   void *bad_vector_length_code;
   void *bad_flvector_length_code;
   void *bad_fxvector_length_code;

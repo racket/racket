@@ -750,32 +750,7 @@ We should also test deep continuations.
     (for/fold ([t (func (lambda () 0))]) ([i (in-range 10000)])
       (func (lambda () (touch t))))))  
 
-  ;; box-cas! tests
-
-  ;; successful cas
-  (let ()
-    (define b (box #f))
-    (check-equal? (box-cas! b #f #true) #true)
-    (check-equal? (unbox b) #true))
-
-  ;; unsuccessful cas
-  (let ()
-    (define b (box #f))
-    (check-equal? (box-cas! b #true #f) #f)
-    (check-equal? (unbox b) #f))
-
-  ;; cas using allocated data
-  (let ()
-    (define b (box '()))
-    (define x (cons 1 (unbox b)))
-    (check-equal? (box-cas! b '() x) #true)
-    (check-equal? (unbox b) x)
-    (check-equal? (box-cas! b x '()) #true)
-    (check-equal? (unbox b) '())
-    (check-equal? (box-cas! b x '()) #f)
-    (check-equal? (unbox b) '()))
-
-  ;; failure tests
+  ;; box-cas failure tests
   (let ()
     (define (f x) (box-cas! x 1 2))    
     (define (g x y) y)
