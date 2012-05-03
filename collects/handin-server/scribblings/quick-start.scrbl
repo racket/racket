@@ -29,7 +29,7 @@
   @racketblock[((active-dirs ("test")))]}
 
 @item{In your new directory, run
-  @commandline{gracket-text -l handin-server}}
+  @commandline{racket -l handin-server}}
 
 @item{In the @filepath{handin-client} collection, edit
   @filepath{info.rkt} and uncomment the lines that define
