@@ -14,8 +14,19 @@
          "arrow.rkt"
          "misc.rkt")
 
+(define-for-syntax lifted-ccrs (make-hasheq))
+
 (define-syntax-parameter current-contract-region
-  (λ (stx) #'(quote-module-name)))
+  (λ (stx)
+     (if (eq? (syntax-local-context) 'expression)
+         (let* ([ctxt (syntax-local-lift-context)]
+                [id (hash-ref lifted-ccrs ctxt #f)])
+           (with-syntax ([id (or id
+                                 (let ([id (syntax-local-lift-expression (syntax/loc stx (quote-module-name)))])
+                                   (hash-set! lifted-ccrs ctxt (syntax-local-introduce id))
+                                   id))])
+             #'id))
+         (quasisyntax/loc stx (#%expression #,stx)))))
 
 (define-syntax (contract stx)
   (syntax-case stx ()
