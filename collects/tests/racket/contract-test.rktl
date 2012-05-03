@@ -8489,7 +8489,7 @@
    '(let* ([i<%> (interface () [m (->m number? number?)])]
            [c% (class* object% (i<%>) (super-new) (define/public (m) x))])
       (new c%))
-   "c%")
+   "(class c%)")
 
   (test/spec-passed
    'interface-higher-order-1
@@ -8509,7 +8509,7 @@
    '(let* ([i<%> (interface () [m (->m number? number?)])]
            [c% (class* object% (i<%>) (super-new) (define/public (m x) "bad"))])
       (send (new c%) m 3))
-   "c%")
+   "(class c%)")
 
   (test/spec-failed
    'interface-higher-order-4
@@ -8517,7 +8517,7 @@
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (class* object% (i2<%>) (super-new) (define/public (m x) x))])
       (send (new c%) m 3.14))
-   "i1<%>")
+   "(interface i1<%>)")
 
   (test/spec-failed
    'interface-higher-order-5
@@ -8525,7 +8525,7 @@
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (class* object% (i2<%>) (super-new) (define/public (m x) 3.14))])
       (send (new c%) m 3))
-   "c%")
+   "(class c%)")
     
 ;                                                                                    
 ;                                                                                    

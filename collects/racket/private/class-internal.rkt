@@ -2427,7 +2427,8 @@
                                 final-names)
                       ;; Handle interface contracted methods:
                       (for-each (lambda (id)
-                                  (let ([index (hash-ref method-ht id)])
+                                  (let ([index (hash-ref method-ht id)]
+                                        [blame `(class ,name)])
                                     ;; Store blame information that will be instantiated later
                                     (define ictc-infos (get-interface-contract-info
                                                          (class-self-interface c) id))
@@ -2438,7 +2439,7 @@
                                     (vector-set! methods index
                                                  (list meth
                                                        ;; Replace #f positive parties w/ this class
-                                                       (replace-ictc-blame ictc-infos #t name)))))
+                                                       (replace-ictc-blame ictc-infos #t blame)))))
                                 (class-method-ictcs c))
                       
                       ;; --- Install serialize info into class --
@@ -2573,7 +2574,7 @@ An example
                          (λ (i1 i2) (eq? (car i1) (car i2)))))))))
   (define our-ctc (hash-ref (interface-contracts ifc) meth #f))
   (define our-ctcs (hash-keys (interface-contracts ifc)))
-  (define our-name (interface-name ifc))
+  (define our-name `(interface ,(interface-name ifc)))
   (cond ;; if we don't have the contract, the parent's info is fine
         [(not our-ctc) dedup-infos]
         ;; if the parent's don't contract it, then it's just our ctc
@@ -2877,7 +2878,10 @@ An example
               (for ([m (in-list (class-method-ictcs cls))])
                 (define i (hash-ref method-ht m))
                 (define entry (vector-ref methods i))
-                (define info (replace-ictc-blame (cadr entry) #f (blame-negative blame)))
+                ;; we're passing through a contract boundary, so the positive blame (aka
+                ;; value server) is taking responsibility for any interface-contracted
+                ;; methods)
+                (define info (replace-ictc-blame (cadr entry) #f (blame-positive blame)))
                 (vector-set! methods i (concretize-ictc-method (car entry) info))))
             ;; Now apply projections
             (for ([m (in-list (class/c-methods ctc))]
@@ -3783,7 +3787,7 @@ An example
 ;; takes a class and concretize interface ctc methods
 (define (fetch-concrete-class cls blame)
   (cond [(null? (class-method-ictcs cls)) cls]
-        [(hash-ref (class-ictc-classes cls) blame (λ () #f)) => values]
+        [(hash-ref (class-ictc-classes cls) blame #f) => values]
         [else
          ;; if there are contracted methods to concretize, do so
          (let* ([name (class-name cls)]
