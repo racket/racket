@@ -1298,6 +1298,29 @@ Finally, here is how to use @racket[new-post-formlet] in @racket[render-blog-pag
     (send/suspend/dispatch response-generator)))
 ]
 
+@bold{Alternative.} The formlet shown above uses the
+@racket[input-string] combinator, which combines a bunch of other
+formlets into one container with sensible defaults. Sometimes it is
+useful to break it apart to provide different arguments to the
+subpieces. For example, suppose we wanted to add a CSS class to the
+form elements? Here's how we'd do that:
+
+@racketblock[
+(define new-post-formlet
+  (formlet
+   (#%# ,((to-string 
+           (required 
+            (text-input
+             #:attributes '([class "form-text"]))))
+          . => . title)
+        ,((to-string
+           (required
+            (text-input
+             #:attributes '([class "form-text"]))))
+          . => . body))
+   (values title body)))
+]
+
 @bold{Exercise.} Write a @formlet and use it in @racket[render-post-detail-page].
 
 @centerline{------------}
