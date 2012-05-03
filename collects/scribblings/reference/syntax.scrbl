@@ -362,7 +362,8 @@ Legal only in a @tech{module begin context}, and handled by the
                              (for-label require-spec ...)
                              (for-meta phase-level require-spec ...)
                              derived-require-spec]
-               [module-path (submod root-module-path submod-path-element ...)
+               [module-path root-module-path
+                            (submod root-module-path submod-path-element ...)
                             (submod "." submod-path-element ...)
                             (submod ".." submod-path-element ...)]
                [root-module-path (#,(racket quote) id)
