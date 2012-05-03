@@ -153,11 +153,6 @@
           (loop (add1 i)
                 (+ w (if (eq? 9 (bytes-ref bs i)) (- 8 (modulo w 8)) 1))))))))
 
-;; a unique eol string
-(define at-exp-prop (gensym 'at-exp-eol))
-(define (eol-syntax? x) 
-  (and (syntax? x) (syntax-property x at-exp-prop)))
-
 ;; A syntax object that has the "original?" property:
 (define orig-stx (read-syntax #f (open-input-string "dummy")))
 
@@ -206,6 +201,11 @@
                  (if (eof-object? x)
                    (read-error line col pos 'eof "expected a '~a'" end-ch)
                    (loop (if (special-comment? x) r (cons x r))))))))))
+
+  ;; identifies newlines in text
+  (define (eol-syntax? x)
+    (let ([p (and (syntax? x) (syntax-property x 'scribble))])
+      (and (pair? p) (eq? 'newline (car p)))))
 
   ;; gets an accumulated (reversed) list of syntaxes and column markers, and
   ;; sorts things out (remove prefix and suffix newlines, adds indentation if
@@ -316,7 +316,7 @@
                 (loop lvl (list* ; no merge needed
                            (bytes-width m (cdr n))
                            (syntax-property
-                            (syntax-property (make-stx "\n") at-exp-prop #t)
+                            (make-stx "\n")
                             'scribble `(newline ,(bytes->string/utf-8 m)))
                            (maybe-drop-marker r)))))]
         [(if re:cmd-pfx
