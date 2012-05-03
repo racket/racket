@@ -1862,6 +1862,8 @@
                       method-ht      ; maps public names to vector positions
                       method-ids     ; reverse-ordered list of public method names
                       method-ictcs   ; list of indices of methods to fix for interface ctcs
+
+                      ictc-classes   ; concretized versions of this class keyed by blame
                       
                       methods        ; vector of methods (for external dynamic dispatch)
                       super-methods  ; vector of methods (for subclass super calls)
@@ -2163,6 +2165,7 @@
                                 (let-values ([(struct: make- ? -ref -set) (make-struct-type 'insp #f 0 0 #f null inspector)])
                                   make-)
                                 method-width method-ht method-names (interfaces->contracted-methods (list i))
+                                (make-weak-hasheq)
                                 methods super-methods int-methods beta-methods meth-flags
                                 inner-projs dynamic-idxs dynamic-projs
                                 field-width field-pub-width field-ht field-names
@@ -2807,6 +2810,8 @@ An example
                               method-ht
                               (class-method-ids cls)
                               null
+
+                              (make-weak-hasheq)
                               
                               methods
                               super-methods
@@ -3649,6 +3654,7 @@ An example
                  void ; never inspectable
                  
                  0 (make-hasheq) null null
+                 (make-weak-hasheq)
                  (vector) (vector) (vector) (vector) (vector)
 
                  (vector) (vector) (vector)
@@ -3776,88 +3782,93 @@ An example
 ;; class blame -> class
 ;; takes a class and concretize interface ctc methods
 (define (fetch-concrete-class cls blame)
-  (if (null? (class-method-ictcs cls))
-      cls
-      ;; if there are contracted methods to concretize, do so
-      (let* ([name (class-name cls)]
-             [method-width (class-method-width cls)]
-             [method-ht (class-method-ht cls)]
-             [meths (class-methods cls)]
-             [ictc-meths (class-method-ictcs cls)]
-             [field-pub-width (class-field-pub-width cls)]
-             [field-ht (class-field-ht cls)]
-             [class-make (if name
-                             (make-naming-constructor
-                              struct:class
-                              (string->symbol (format "class:~a" name)))
-                             make-class)]
-             [c (class-make name
-                            (class-pos cls)
-                            (list->vector (vector->list (class-supers cls)))
-                            (class-self-interface cls)
-                            void ;; No inspecting
+  (cond [(null? (class-method-ictcs cls)) cls]
+        [(hash-ref (class-ictc-classes cls) blame (λ () #f)) => values]
+        [else
+         ;; if there are contracted methods to concretize, do so
+         (let* ([name (class-name cls)]
+                [method-width (class-method-width cls)]
+                [method-ht (class-method-ht cls)]
+                [meths (class-methods cls)]
+                [ictc-meths (class-method-ictcs cls)]
+                [field-pub-width (class-field-pub-width cls)]
+                [field-ht (class-field-ht cls)]
+                [class-make (if name
+                                (make-naming-constructor
+                                 struct:class
+                                 (string->symbol (format "class:~a" name)))
+                                make-class)]
+                [c (class-make name
+                               (class-pos cls)
+                               (list->vector (vector->list (class-supers cls)))
+                               (class-self-interface cls)
+                               void ;; No inspecting
 
-                            method-width
-                            method-ht
-                            (class-method-ids cls)
-                            null
+                               method-width
+                               method-ht
+                               (class-method-ids cls)
+                               null
 
-                            meths
-                            (class-super-methods cls)
-                            (class-int-methods cls)
-                            (class-beta-methods cls)
-                            (class-meth-flags cls)
+                               (make-weak-hasheq)
 
-                            (class-inner-projs cls)
-                            (class-dynamic-idxs cls)
-                            (class-dynamic-projs cls)
+                               meths
+                               (class-super-methods cls)
+                               (class-int-methods cls)
+                               (class-beta-methods cls)
+                               (class-meth-flags cls)
 
-                            (class-field-width cls)
-                            field-pub-width
-                            field-ht
-                            (class-field-ids cls)
+                               (class-inner-projs cls)
+                               (class-dynamic-idxs cls)
+                               (class-dynamic-projs cls)
 
-                            'struct:object 'object? 'make-object
-                            'field-ref 'field-set!
+                               (class-field-width cls)
+                               field-pub-width
+                               field-ht
+                               (class-field-ids cls)
 
-                            (class-init-args cls)
-                            (class-init-mode cls)
-                            (class-init cls)
+                               'struct:object 'object? 'make-object
+                               'field-ref 'field-set!
 
-                            (class-orig-cls cls)
-                            #f #f       ; serializer is never set
-                            #f)]
-             [obj-name (if name
-                           (string->symbol (format "wrapper-object:~a" name))
-                           'object)])
+                               (class-init-args cls)
+                               (class-init-mode cls)
+                               (class-init cls)
 
-        (vector-set! (class-supers c) (class-pos c) c)
+                               (class-orig-cls cls)
+                               #f #f    ; serializer is never set
+                               #f)]
+                [obj-name (if name
+                              (string->symbol (format "wrapper-object:~a" name))
+                              'object)])
 
-        ;; --- Make the new object struct ---
-        (let-values ([(struct:object object-make object? object-field-ref object-field-set!)
-                      (make-struct-type obj-name
-                                        (class-struct:object cls)
-                                        0 ;; No init fields
-                                        0 ;; No new fields in this class replacement
-                                        undefined
-                                        ;; Map object property to class:
-                                        (list (cons prop:object c)))])
-          (set-class-struct:object! c struct:object)
-          (set-class-object?! c object?)
-          (set-class-make-object! c object-make)
-          (set-class-field-ref! c object-field-ref)
-          (set-class-field-set!! c object-field-set!))
+           (vector-set! (class-supers c) (class-pos c) c)
 
-        ;; then apply the projections to get the concrete method
-        (vector-copy! meths 0 (class-methods cls))
-        (for ([m (in-list ictc-meths)])
-          (define index (hash-ref method-ht m))
-          (define entry (vector-ref meths index))
-          (define meth (car entry))
-          (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
-          (define wrapped-meth (concretize-ictc-method meth ictc-infos))
-          (vector-set! meths index wrapped-meth))
-        c)))
+           ;; --- Make the new object struct ---
+           (let-values ([(struct:object object-make object? object-field-ref object-field-set!)
+                         (make-struct-type obj-name
+                                           (class-struct:object cls)
+                                           0 ;; No init fields
+                                           0 ;; No new fields in this class replacement
+                                           undefined
+                                           ;; Map object property to class:
+                                           (list (cons prop:object c)))])
+             (set-class-struct:object! c struct:object)
+             (set-class-object?! c object?)
+             (set-class-make-object! c object-make)
+             (set-class-field-ref! c object-field-ref)
+             (set-class-field-set!! c object-field-set!))
+
+           ;; then apply the projections to get the concrete method
+           (vector-copy! meths 0 (class-methods cls))
+           (for ([m (in-list ictc-meths)])
+             (define index (hash-ref method-ht m))
+             (define entry (vector-ref meths index))
+             (define meth (car entry))
+             (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
+             (define wrapped-meth (concretize-ictc-method meth ictc-infos))
+             (vector-set! meths index wrapped-meth))
+
+           (hash-set! (class-ictc-classes cls) blame c)
+           c)]))
 
 ;; method info -> method
 ;; appropriately wraps the method with interface contracts
@@ -4699,6 +4710,8 @@ An example
                         method-ht
                         (class-method-ids cls)
                         (class-method-ictcs cls)
+
+                        (class-ictc-classes cls)
                         
                         meths
                         (class-super-methods cls)
