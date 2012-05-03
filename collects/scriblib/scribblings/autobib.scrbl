@@ -8,6 +8,33 @@
 
 @defmodule[scriblib/autobib]
 
+This library provides support for bibliography management in a Scribble
+document. The @racket[define-cite] form is used to bind procedures
+that create in-line citations and generate the bibilography in the
+document.
+
+Individual bibliography entries are created with the @racket[make-bib]
+function. See below for an example.
+
+@codeblock|{
+  #lang scribble/base
+
+  @(require scriblib/autobib)
+
+  @(define-cite ~cite citet generate-bibliography)
+
+  @(define plt-tr1
+     (make-bib
+      #:title    "Reference: Racket"
+      #:author   (authors "Matthew Flatt" "PLT")
+      #:date     "2010"
+      #:location (techrpt-location #:institution "PLT Inc." #:number "PLT-TR-2010-1")
+      #:url      "http://racket-lang.org/tr1/"))
+
+  Racket is fun@~cite[plt-tr1].
+
+  @(generate-bibliography)
+}|
 
 @defform[(define-cite ~cite-id citet-id generate-bibliography-id
                       [#:disambiguate disambiguator]
