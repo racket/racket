@@ -2825,7 +2825,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     return 1;
   } else if (IS_NAMED_PRIM(rator, "box-cas!") || (IS_NAMED_PRIM(rator, "unsafe-box*-cas!"))) { 
 
-    GC_CAN_IGNORE jit_insn *ref, *ref3, *reffalse, *reftrue;
+    GC_CAN_IGNORE jit_insn *ref, *reffail, *reffalse, *reftrue;
     int unsafe = 0;
 
     if (IS_NAMED_PRIM(rator, "unsafe-box*-cas!")) {
@@ -2842,11 +2842,8 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     if (!unsafe) {
       __START_TINY_JUMPS__(1);
       /* Fail if this isn't a pointer (0x1 is the integer tag) */
-      ref3 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
-      /* Get the type tag, fail if it isn't a box */
-      ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_box_type, JIT_R2);
-      /* jump to here if it wasn't a pointer */
-      mz_patch_branch(ref3);
+      ref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
+      reffail = _jit.x.pc;
       __END_TINY_JUMPS__(1);
 
       (void)jit_calli(sjc.box_cas_fail_code);
@@ -2854,8 +2851,15 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       __START_TINY_JUMPS__(1);
       /* jump to here if the type tag tests succeed */
       mz_patch_branch(ref);
+
+      /* Get the type tag, fail if it isn't a box */
+      (void)mz_bnei_t(reffail, JIT_R1, scheme_box_type, JIT_R2);
+      /* fail if immutable: */
+      jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0));
+      (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
       __END_TINY_JUMPS__(1);
     }
+    CHECK_LIMIT();
 
     /* box is in JIT_R1 */
     jit_addi_l(JIT_R1, JIT_R1, (intptr_t)&SCHEME_BOX_VAL(0x0));

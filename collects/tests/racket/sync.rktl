@@ -1203,6 +1203,11 @@
   (test #f box-cas! b x '())
   (test '() unbox b))
 
+(let ([g (lambda (x y) y)])
+  (err/rt-test (box-cas! (impersonate-box (box 1) g g) 1 2))
+  (err/rt-test (box-cas! (chaperone-box (box 1) g g) 1 2))
+  (err/rt-test (box-cas! (box-immutable 1) 1 2)))
+
 ;; ----------------------------------------
 
 (report-errs)

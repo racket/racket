@@ -112,13 +112,16 @@ Returns the content of @racket[box].}
 For any @racket[v], @racket[(unbox (box v))] returns @racket[v].
 
 
-@defproc[(set-box! [box (and/c box? (not/c immutable?) (not/c impersonator?))]
+@defproc[(set-box! [box (and/c box? (not/c immutable?))]
                    [v any/c]) void?]{
 
 Sets the content of @racket[box] to @racket[v].}
 
 
-@defproc[(box-cas! [box box?] [old any/c] [new any/c]) boolean?]{
+@defproc[(box-cas! [box (and/c box? (not/c immutable?) (not/c impersonator?))]
+                   [old any/c] 
+                   [new any/c]) 
+         boolean?]{
   Atomically updates the contents of @racket[box] to @racket[new], provided
   that @racket[box] currently contains a value that is @racket[eq?] to
   @racket[old], and returns @racket[#t] in that case.  If @racket[box] 

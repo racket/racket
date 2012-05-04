@@ -1620,30 +1620,6 @@ Scheme_Object *scheme_unbox(Scheme_Object *obj)
   return (Scheme_Object *)SCHEME_BOX_VAL(obj);
 }
 
-#ifndef MZ_USE_FUTURES
-
-Scheme_Object *scheme_box_cas(int argc, Scheme_Object *argv[])
-XFORM_SKIP_PROC
-/* For cooperative threading, no atomicity required */
-{
-  Scheme_Object *box = argv[0];
-  Scheme_Object *ov = argv[1];
-  Scheme_Object *nv = argv[2];
-
-  if (!SCHEME_MUTABLE_BOXP(box)) || (SCHEME_NP_CHAPERONEP(box)) {
-    scheme_wrong_type("cas!", "unchaperoned mutable box", 0, 1, &box);
-  }
-
-  if (SCHEME_BOX_VAL(box) == ov) {
-    SCHEME_BOX_VAL(box) = nv;
-    return scheme_true;
-  } else {
-    return scheme_false;
-  }
-}
-
-#else
-
 Scheme_Object *scheme_box_cas(int argc, Scheme_Object *argv[])
 XFORM_SKIP_PROC
 {
@@ -1654,16 +1630,25 @@ XFORM_SKIP_PROC
   /* This procedure is used for both the safe and unsafe version, but
    * the JIT elides the checking for the unsafe version.
    */
-  if ((!SCHEME_MUTABLE_BOXP(box)) || (SCHEME_NP_CHAPERONEP(box))) {
-    scheme_wrong_type("box-cas!", "unchaperoned mutable box", 0, 1, &box);
+
+  if (!SCHEME_MUTABLE_BOXP(box)) {
+    scheme_wrong_type("cas!", "non-impersonated mutable box", 0, 1, &box);
   }
 
+#ifdef MZ_USE_FUTURES
   return mzrt_cas((volatile size_t *)(&SCHEME_BOX_VAL(box)), 
 		  (size_t)ov, (size_t)nv)
     ? scheme_true : scheme_false;
-}
-
+#else
+  /* For cooperative threading, no atomicity required */
+  if (SCHEME_BOX_VAL(box) == ov) {
+    SCHEME_BOX_VAL(box) = nv;
+    return scheme_true;
+  } else {
+    return scheme_false;
+  }
 #endif
+}
 
 static void chaperone_set_box(Scheme_Object *obj, Scheme_Object *v)
 {
