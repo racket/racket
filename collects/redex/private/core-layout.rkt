@@ -594,17 +594,18 @@
   (define (split-token offset tok new-token)
     (cond
       [(string-token? tok)
+       (define len (string-length (string-token-string tok)))
        (list (make-string-token (token-column tok)
                                 offset
                                 (substring (string-token-string tok)
-                                           0 offset)
+                                           0 (min len offset))
                                 (string-token-style tok))
              new-token
              (make-string-token (+ (token-column tok) offset)
                                 (- (token-span tok) offset)
                                 (substring (string-token-string tok)
-                                           offset 
-                                           (string-length (string-token-string tok)))
+                                           (min offset len)
+                                           len)
                                 (string-token-style tok)))]
       [(pict-token? tok)
        (list new-token)]))
