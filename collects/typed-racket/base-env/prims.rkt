@@ -56,8 +56,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; dynamically loaded b/c they're only used at the top-level, so we save a lot
 ;; of loading by not having them when we're in a module
 (define-for-syntax (parse-type stx) ((dynamic-require 'typed-racket/private/parse-type 'parse-type) stx))
-(define-for-syntax (type->contract stx) ((dynamic-require 'typed-racket/private/type-contract 'type->contract) stx))
-
+(define-for-syntax type->contract
+  (make-keyword-procedure
+   (lambda (kws kw-args . rest)
+     (keyword-apply
+      (dynamic-require 'typed-racket/private/type-contract 'type->contract)
+      kws kw-args rest))))
 
 (define-syntaxes (require/typed-legacy require/typed)
  (let ()
