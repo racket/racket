@@ -11,6 +11,7 @@
          racket/udp
          racket/runtime-path
          racket/date
+         racket/contract
          syntax/location)
 
 (define-syntax define/provide
@@ -48,20 +49,16 @@
          spawn-remote-racket-node
          node-send-exit
          node-get-first-place
-         dplace-put
-         dplace-get
 
          ;; low-level API
-
-         ll-channel-get
-         ll-channel-put
          write-flush
          printf/f
          displayln/f
          log-message
-         start-spawned-node-router
+         start-spawned-node-router ;not documented
 
          ;; Old Design Pattern 1 API
+         ;; not documented
          dcg-get-cg
          dcg-send
          dcg-send-type
@@ -81,7 +78,7 @@
 
          ;v3 api
          build-distributed-launch-path
-         build-node-args
+         #;build-node-args
          *channel-get
          *channel-put
          send-new-place-channel-to-named-dest
@@ -99,7 +96,6 @@
          node%
          socket-connection%
          remote-node%
-         remote-place%
          remote-connection%
          place%
          connection%
@@ -110,8 +106,13 @@
          ;re-provides
          quote-module-path
 
+         ;named-place-typed-channel
          named-place-typed-channel%
          tc-get
+
+         ;contracts
+         *channel?
+         port-no?
          )
 
 (define-runtime-path distributed-launch-path "distributed/launch.rkt")
@@ -291,11 +292,8 @@
 (define (total-node-count conf) (reduce-sum conf item (node-config-proc-count item)))
 
 ;; Contract: start-node-router : VectorOf[ (or/c place-channel socket-connection)] -> (void)
-;;
 ;; Purpose: Forward messages between channels and build new point-to-point subchannels
-;;
 ;; Example:
-
 (define (start-spawned-node-router listener)
   (define nc (new node% [listen-port listener]))
   (send nc sync-events))
@@ -965,16 +963,6 @@
 (define (node-send-exit node) (send node send-exit))
 (define (node-get-first-place node) (send node get-first-place))
 
-(define (dplace-get dest)
-  (cond
-    [(place-channel? dest) (place-channel-get dest)]
-    [else (send dest get-msg)]))
-
-(define (dplace-put dest msg)
-  (cond
-    [(place-channel? dest) (place-channel-put dest msg)]
-    [else (send dest put-msg msg)]))
-
 (define remote-connection%
   (backlink
     (class*
@@ -1070,8 +1058,6 @@
 
       (super-new)
       )))
-
-(define remote-place% remote-connection%)
 
 (define place%
   (backlink
@@ -1178,10 +1164,6 @@
 
       (super-new)
       )))
-
-
-(define (ll-channel-put ch msg) (send ch put-msg msg))
-(define (ll-channel-get ch) (send ch get-raw-msg))
 
 (define respawn-and-fire%
   (backlink
@@ -1341,8 +1323,7 @@
                             #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:restart-on-exit [restart-on-exit #f]
                             . command-line-list)
-  (void)
-  )
+  (new spawned-process% [cmdline-list command-line-list]))
 
 (define (supervise-named-place-thunk-at node name place-path place-func
                             #:initial-message [initial-message #f]
@@ -1565,21 +1546,27 @@
 ;;;                                     [chan-vec (vector ch)]))
 ;;;              (send mrn sync-events)])))
 ;;;  (place-channel-put mr (list listen-port)))
+(define (*channel? ch)
+  (or (place-channel? ch)
+      (async-bi-channel? ch)
+      (channel? ch)
+      (is-a? ch remote-connection%)))
+
 (define (*channel-put ch msg)
-  ((cond
-    [(place-channel? ch) place-channel-put]
-    [(async-bi-channel? ch) async-bi-channel-put]
-    [(channel? ch) channel-put]
-    [else (raise (format "unknown channel type ~a" ch))])
-    ch msg))
+  (cond
+    [(place-channel? ch) (place-channel-put ch msg)]
+    [(async-bi-channel? ch) (async-bi-channel-put ch msg)]
+    [(channel? ch) (channel-put ch msg)]
+    [(is-a? ch remote-connection%) (send ch put-msg msg)]
+    [else (raise (format "unknown channel type ~a" ch))]))
 
 (define (*channel-get ch)
-  ((cond
-    [(place-channel? ch) place-channel-get]
-    [(async-bi-channel? ch) async-bi-channel-get]
-    [(channel? ch) channel-get]
-    [else (raise (format "unknown channel type ~a" ch))])
-    ch))
+  (cond
+    [(place-channel? ch) (place-channel-get ch)]
+    [(async-bi-channel? ch) (async-bi-channel-get ch)]
+    [(channel? ch) (channel-get ch)]
+    [(is-a? ch remote-connection%) (send ch get-msg)]
+    [else (raise (format "unknown channel type ~a" ch))]))
 
 (define/provide (mr-spawn-remote-node mrch host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                                       #:solo [solo #f])
@@ -1596,6 +1583,10 @@
       [else (raise (format "Unexpected channel type6 ~a" mrch))]))
   (*channel-put mrch (dcgm DCGM-CONTROL-NEW-CONNECTION dest -1 (list name ch2)))
   ch1)
+
+(define (port-no? x)  
+  (and (exact-nonnegative-integer? x)
+                ((integer-in 0 65535) x)))
 
 (define/provide (start-message-router/thread #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                                              #:nodes [nodes null])
@@ -1623,13 +1614,13 @@
                                                               #:distributed-launch-path distributedlaunchpath))))
   ch)
 
-(define/provide (spawn-nodes/join nodes-desc)
+(define/provide (spawn-nodes/join nodes-descs)
   (for/list ([x
-               (for/list ([n nodes-desc])
+               (for/list ([n nodes-descs])
                  (apply keyword-apply spawn-node-at n))])
     (channel-get x)))
 
-(define build-node-args
+#;(define build-node-args
   (make-keyword-procedure (lambda (kws kw-args . rest)
                             (list kws kw-args rest))))
 

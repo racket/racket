@@ -16,8 +16,8 @@
          RMPI-id
          RMPI-cnt
          RMPI-partition
-         RMPI-BuildDefaultConfig
-         RMPI-Launch
+         RMPI-build-default-config
+         RMPI-launch
          RMPI-finish)
 
 (struct RMPI-COMM (id cnt channels) #:transparent)
@@ -153,14 +153,14 @@
   (define cnt (RMPI-cnt comm))
   (partit num cnt id))
 
-(define RMPI-BuildDefaultConfig
+(define RMPI-build-default-config
   (make-keyword-procedure (lambda (kws kw-args . rest)
     (for/hash ([kw kws]
                [kwa kw-args])
 ;      (displayln (keyword? kw))
       (values kw kwa)))))
 
-(define (RMPI-Launch default config)
+(define (RMPI-launch default config)
   (define (lookup-config-value rest key-str)
     (define key
       (string->keyword key-str))

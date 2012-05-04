@@ -21,8 +21,8 @@
   (message-router
     node
     (after-seconds 2
-      (dplace-put pl "Hello")
-      (printf "message-router received: ~a\n" (dplace-get pl)))
+      (*channel-put pl "Hello")
+      (printf "message-router received: ~a\n" (*channel-get pl)))
 
     (after-seconds 6 
       (exit 0))))
