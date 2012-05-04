@@ -48,7 +48,9 @@
          racket/runtime-path
          racket/class
          racket/file
-         racket/gui/base
+         (except-in racket/gui/base
+                    make-color
+                    make-pen)
          racket/port
          wxme
          rackunit

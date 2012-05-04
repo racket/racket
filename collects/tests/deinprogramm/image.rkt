@@ -5,7 +5,7 @@
 (require rackunit
 	 deinprogramm/image
          (only-in lang/private/imageeq image=?)
-	 mred
+	 (except-in mred make-color make-pen)
 	 mzlib/class
 	 mrlib/cache-image-snip
 	 lang/posn
