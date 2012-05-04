@@ -284,7 +284,7 @@ Pick a rule for consistently naming and ordering the parameters of your
  an abstract data type (ADT), all functions on the ADT should consume the
  ADT-argument first or last.
 
-@subsection{Sections}
+@subsection{Sections and Sub-modules}
 
 Finally, a module consists of sections. It is good practice to separate the
  sections with comment lines. You may want to write down purpose statements
@@ -296,6 +296,45 @@ With @racketmodname[rackunit], test suites can be defined within the
  module using @racket[define/provide-test-suite]. If you do so, locate the
  test section at the end of the module and @racket[require] the necessary
  pieces for testing specifically for the test suites.
+
+As of version 5.3, Racket supports sub-modules. Use sub-modules to
+ formulate sections, especially test sections. With sub-modules it is now
+ possible to break up sections into distinct parts (labeled with the same
+ name) and leave it to the language to stitch pieces together.
+
+@;%
+@codebox[
+@(begin
+#reader scribble/comment-reader
+ (racketmod #:file
+ @tt{fahrenheit.rkt}
+ racket
+
+(module+ test
+  (require rackunit))
+
+(provide/contract
+  (code:comment #, @t{convert a fahrenheit temperature to a celsius temperature})
+  [fahrenheit->celsius (-> number? number?)])
+
+(define (fahrenheit->celsius f)
+  (/ (* 5 (- f 32)) 9))
+
+(module+ test
+  (check-equal? (fahrenheit->celsius -40) -40)
+  (check-equal? (fahrenheit->celsius 32) 0)
+  (check-equal? (fahrenheit->celsius 212) 100))
+))]
+@;%
+ If you develop your code in DrRacket, it will run the test sub-module
+ every time you click ``run'' unless you explicitly disable this
+ functionality in the language selection menu. If you have a file and you
+ just wish to run the tests, use @tt{raco} to do so:
+@verbatim[#:indent 2]{
+$ raco test fahrenheit.rkt
+}
+ Running this command in a shell will require and evaluate the test
+ sub-module from the @tt{fahrenheit.rkt}.
 
 @; -----------------------------------------------------------------------------
 @section{Classes & Units}
