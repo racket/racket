@@ -3715,11 +3715,6 @@ An example
           [else (raise-syntax-error 'new "expected name and value binding" stx pr)]))
       (syntax->list (syntax (pr ...))))]))
 
-#;
-(define make-object 
-  (lambda (class . args)
-    (do-make-object class args null)))
-
 (define ((make-object/proc blame) class . args)
   (do-make-object blame class args null))
 
