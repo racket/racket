@@ -1632,7 +1632,7 @@ XFORM_SKIP_PROC
    */
 
   if (!SCHEME_MUTABLE_BOXP(box)) {
-    scheme_wrong_type("cas!", "non-impersonated mutable box", 0, 1, &box);
+    scheme_wrong_type("box-cas!", "non-impersonated mutable box", 0, 1, &box);
   }
 
 #ifdef MZ_USE_FUTURES
