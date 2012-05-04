@@ -572,7 +572,7 @@
                       [m (and m (regexp-match #rx"^(lang/[^/.]+).ss$" m))]
                       [m (and m (cadr m))])
                  (if m
-                   (format "O:{ L:~a T:teachpack }" m)
+                   (format "O:{ L:~a T:teachpack T:picturing-programs }" m)
                    (error 'drscheme:help-context-term
                           "internal error: unexpected module spec")))]
               [(tests:test-menu tests:dock-menu) #t]
