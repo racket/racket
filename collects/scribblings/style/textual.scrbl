@@ -363,7 +363,12 @@ may relax this constraint.
 
 @section{Spaces}
 
-Don't pollute your code with spaces at the end of lines and extraneous blank lines.
+Don't pollute your code with spaces at the end of lines.
+
+If you find yourself breaking long blocks of code with blank lines to aid
+readability, consider refactoring your program to introduce auxiliary
+functions so that you can shorten these long blocks of code. If nothing
+else helps, consider using (potentially) empty comment lines.
 
 @; -----------------------------------------------------------------------------
 @section{End of File}
