@@ -1,6 +1,5 @@
 #lang racket/base
-(require "../private/sc.rkt"
-         "../private/lib.rkt"
+(require syntax/parse/pre
          "provide.rkt"
          unstable/wrapc
          (only-in syntax/parse/private/residual ;; keep abs. path

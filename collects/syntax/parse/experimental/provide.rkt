@@ -5,9 +5,8 @@
          (for-syntax racket/base
                      racket/syntax
                      "../private/minimatch.rkt"
-                     "../private/sc.rkt"
-                     "../private/lib.rkt"
-                     "../private/rep-data.rkt"
+                     syntax/parse/pre
+                     syntax/parse/private/residual-ct ;; keep abs. path
                      "../private/kws.rkt"
                      unstable/wrapc))
 (provide provide-syntax-class/contract
