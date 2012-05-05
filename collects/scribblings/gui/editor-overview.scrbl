@@ -735,7 +735,7 @@ An editor supports certain concurrent patterns
 @itemize[
 
  @item{When an editor's @method[editor<%> refresh] method is
- called during an edit sequence (which is started by
+ called during an @deftech{edit sequence} (which is started by
  @method[editor<%> begin-edit-sequence] and ended with
  @method[editor<%> end-edit-sequence]), the requested refresh
  region is recorded, but the refresh is not performed. Instead, the

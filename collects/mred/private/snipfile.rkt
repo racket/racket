@@ -10,7 +10,7 @@
   (provide open-input-text-editor
            open-input-graphical-file
            text-editor-load-handler
-           open-output-text-editor )
+           open-output-text-editor)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -312,7 +312,8 @@
       p))
 
   (define open-output-text-editor 
-    (lambda (text [start 'end] [special-filter values] [port-name text])
+    (lambda (text [start 'end] [special-filter values] [port-name text]
+                  #:eventspace [eventspace (wx:current-eventspace)])
       (define pos (if (eq? start 'end)
 		      (send text last-position)
 		      (min start
@@ -322,9 +323,16 @@
       (define raw-buffer (make-bytes 128))
       (define utf8-buffer (make-bytes 128))
       (define (show s)
-        (send text begin-edit-sequence)
-	(send text insert s pos)
-        (send text end-edit-sequence)
+        (define (insert)
+          (send text begin-edit-sequence)
+          (send text insert s pos)
+          (send text end-edit-sequence))
+        (if (and eventspace
+                 (and (not (eq? (current-thread) 
+                                (wx:eventspace-handler-thread eventspace)))))
+            (parameterize ([wx:current-eventspace eventspace])
+              (wx:queue-callback insert #f))
+            (insert))
 	(set! pos (+ (string-length s) pos)))
       (define (flush-text)
 	(let ([cnt (peek-bytes-avail!* raw-buffer 0 #f in)])
