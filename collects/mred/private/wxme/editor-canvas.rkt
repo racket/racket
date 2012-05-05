@@ -294,12 +294,14 @@
     (unless noloop?
       (unless (and media
                    (send media get-printing))
+        (begin-refresh-sequence)
         (let-boxes ([w 0]
                     [h 0])
             (get-size w h)
           (unless (and (= w lastwidth)
                        (= h lastheight))
-            (reset-size))))))
+            (reset-size)))
+        (end-refresh-sequence))))
 
   (define/private (reset-size)
     (reset-visual #f)
@@ -514,9 +516,7 @@
     (set! need-refresh? #f)
     (if media
         (when (not (send media get-printing))
-          (let-boxes ([x 0][y 0][w 0][h 0])
-              (get-view x y w h)
-            (redraw x y w h #f)))
+          (redraw 'view 'view 'view 'view #f))
         (let ([bg (get-canvas-background)])
           (when bg
             (let ([adc (get-dc)])
@@ -607,44 +607,50 @@
     (when (and media
                (not (send media get-printing)))
       (begin-refresh-sequence)
-      (when clear?
-        (let ([bg (get-canvas-background)])
-          (when bg
-            (let ([adc (get-dc)])
-              (let ([b (send adc get-brush)]
-                    [p (send adc get-pen)])
-                (send adc set-brush bg 'solid)
-                (send adc set-pen bg 1 'transparent)
-                (send adc draw-rectangle localx localy fw fh)
-                (send adc set-brush b)
-                (send adc set-pen p))))))
-      (let ([x (box 0)]
-            [y (box 0)]
-            [w (box 0)]
-            [h (box 0)])
-        (get-view x y w h)        
-        (let ([x (unbox x)]
-              [y (unbox y)]
-              [w (unbox w)]
-              [h (unbox h)])
-          (let ([right (+ x w)]
-                [bottom (+ y h)])
-            (let ([x (max x localx)]
-                  [y (max y localy)]
-                  [right (min right (+ localx fw))]
-                  [bottom (min bottom (+ localy fh))])
-              (let ([w (max 0 (- right x))]
-                    [h (max 0 (- bottom y))])
-                (when (or (positive? w)
-                          (positive? h))
-                  (using-admin
-                   (when media
-                     (send media refresh
-                           x y w h
-                           (if (or focuson? focusforcedon?)
-                               'show-caret
-                               'show-inactive-caret)
-                           (get-canvas-background))))))))))
+      (let-values ([(localx localy fw fh)
+                    (if (eq? localx 'view)
+                        (let-boxes ([x 0][y 0][w 0][h 0])
+                            (get-view x y w h)
+                          (values x y w h))
+                        (values localx localy fw fh))])
+        (when clear?
+          (let ([bg (get-canvas-background)])
+            (when bg
+              (let ([adc (get-dc)])
+                (let ([b (send adc get-brush)]
+                      [p (send adc get-pen)])
+                  (send adc set-brush bg 'solid)
+                  (send adc set-pen bg 1 'transparent)
+                  (send adc draw-rectangle localx localy fw fh)
+                  (send adc set-brush b)
+                  (send adc set-pen p))))))
+        (let ([x (box 0)]
+              [y (box 0)]
+              [w (box 0)]
+              [h (box 0)])
+          (get-view x y w h)        
+          (let ([x (unbox x)]
+                [y (unbox y)]
+                [w (unbox w)]
+                [h (unbox h)])
+            (let ([right (+ x w)]
+                  [bottom (+ y h)])
+              (let ([x (max x localx)]
+                    [y (max y localy)]
+                    [right (min right (+ localx fw))]
+                    [bottom (min bottom (+ localy fh))])
+                (let ([w (max 0 (- right x))]
+                      [h (max 0 (- bottom y))])
+                  (when (or (positive? w)
+                            (positive? h))
+                    (using-admin
+                     (when media
+                       (send media refresh
+                             x y w h
+                             (if (or focuson? focusforcedon?)
+                                 'show-caret
+                                 'show-inactive-caret)
+                             (get-canvas-background)))))))))))
       (end-refresh-sequence)))
 
 

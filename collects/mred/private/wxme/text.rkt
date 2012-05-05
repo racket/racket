@@ -66,6 +66,8 @@
 
 (define-struct clickback (start end f call-on-down? delta hilited? unhilite) #:mutable)
 
+(define in-delayed-refresh (make-parameter #f))
+
 (defclass text% editor%
   (inherit-field s-admin
                  s-offscreen
@@ -290,6 +292,8 @@
   (define refresh-t 0.0)
   (define refresh-r 0.0) ; can be 'display-end
   (define refresh-b 0.0) ; can be 'display-end
+
+  (define refresh-box-lock (make-semaphore 1)) ; protects refresh-{l,t,r,b} and refresh-box-unset?
 
   (define last-draw-l 0.0)
   (define last-draw-t 0.0)
@@ -729,7 +733,7 @@
   ;; ----------------------------------------
 
   (def/override (begin-edit-sequence [any? [undoable? #t]] [any? [interrupt-seqs? #t]])
-    (wait-sequence-lock)
+    (define ready! (wait-sequence-lock))
 
     (when (and (zero? delay-refresh)
                (not interrupt-seqs?))
@@ -747,34 +751,38 @@
             (set! need-x-copy? #t))
           (set! delay-refresh 1)
           (on-edit-sequence))
-        (set! delay-refresh (add1 delay-refresh))))
+        (set! delay-refresh (add1 delay-refresh)))
+    
+    (ready!))
 
   (def/override (end-edit-sequence)
     (if (zero? delay-refresh)
         (log-error "end-edit-sequence without begin-edit-sequence")
-        (begin
-          (set! delay-refresh (sub1 delay-refresh))
-          (when (zero? delay-refresh)
+        (let ([new-delay-refresh (sub1 delay-refresh)])
+          (when (zero? new-delay-refresh)
             (end-streaks null)
             (pop-streaks)
-            (redraw)
+            (parameterize ([in-delayed-refresh #t])
+              (redraw))
             (when ALLOW-X-STYLE-SELECTION?
               (set! need-x-copy? #f))
-            (after-edit-sequence))
-          (when (positive? s-noundomode)
-            (set! s-noundomode (sub1 s-noundomode)))
-          (when (and (zero? delay-refresh)
-                     s-need-on-display-size?)
-            (set! s-need-on-display-size? #f)
-            (on-display-size)))))
+            (after-edit-sequence)
+            (when (positive? s-noundomode)
+              (set! s-noundomode (sub1 s-noundomode)))
+            (when s-need-on-display-size?
+              (set! s-need-on-display-size? #f)
+              (on-display-size)))
+          (set! delay-refresh new-delay-refresh))))
 
   (def/override (refresh-delayed?)
-    (or (delay-refresh . > . 0)
+    (or (and (delay-refresh . > . 0)
+             (not (in-delayed-refresh)))
         (not s-admin)
         (send s-admin refresh-delayed?)))
 
   (def/override-final (in-edit-sequence?)
-    (delay-refresh . > . 0))
+    (and (delay-refresh . > . 0)
+         (not (in-delayed-refresh))))
 
   (def/override (locations-computed?)
     (not graphic-maybe-invalid?))
@@ -850,7 +858,8 @@
                       (when (or (= end start)
                                 (not (eq? editor-x-selection-allowed this))
                                 (eq? 'local seltype))
-                        (when (or (zero? delay-refresh) need-x-copy?)
+                        (when (or (not (in-edit-sequence?))
+                                  need-x-copy?)
                           (set! need-x-copy? #f)
                           (copy-out-x-selection))))
                     
@@ -931,7 +940,7 @@
      (not flow-locked?)
      (let ([end (if (eq? end 'same) start (max start end))])
        (cond
-        [(positive? delay-refresh)
+        [(in-edit-sequence?)
          (when s-admin
            (set! delayedscrollbox? #f)
            (set! delayedscroll start)
@@ -1282,13 +1291,13 @@
                              (start . < . end)
                              (begin
                                (when ALLOW-X-STYLE-SELECTION?
-                                 (when (zero? delay-refresh)
+                                 (when (not (in-edit-sequence?))
                                    (set! need-x-copy? #t)))
                                (when (or isnip str snipsl)
                                  (begin-edit-sequence))
                                (delete start end scroll-ok?)
                                (when ALLOW-X-STYLE-SELECTION?
-                                 (when (zero? delay-refresh)
+                                 (when (not (in-edit-sequence?))
                                    (set! need-x-copy? #f)))
                                #t))])
           (when (or isnip str snipsl)
@@ -1310,7 +1319,7 @@
                                          insert-force-streak?
                                          (not s-modified?))
                                      startpos endpos)))
-                     (when (positive? delay-refresh)
+                     (when (in-edit-sequence?)
                        (set! delayed-streak? #t))
 
                      (let ([scroll? (= start startpos)])
@@ -1335,7 +1344,8 @@
 
                        (when (and scroll? scroll-ok?)
                          (set! delay-refresh (add1 delay-refresh))
-                         (scroll-to-position/refresh startpos)
+                         (parameterize ([in-delayed-refresh #f])
+                           (scroll-to-position/refresh startpos))
                          (set! delay-refresh (sub1 delay-refresh)))
 
                        (set! changed? #t)
@@ -1808,7 +1818,8 @@
           (let ([end (min end len)])
             (when ALLOW-X-STYLE-SELECTION?
               (when (and (start . <= . startpos) (end . >= . endpos))
-                (when (or (zero? delay-refresh) need-x-copy?)
+                (when (or (not (in-edit-sequence?))
+                          need-x-copy?)
                   (set! need-x-copy? #f)
                   (copy-out-x-selection))))
 
@@ -1949,7 +1960,7 @@
 
                         (when with-undo?
                           (add-undo-rec rec)
-                          (when (positive? delay-refresh)
+                          (when (in-edit-sequence?)
                             (set! delayed-streak? #t)))
 
                         (let ([dellen (- end start)])
@@ -1990,7 +2001,8 @@
 
                           (when (and scroll-ok? (= start startpos))
                             (set! delay-refresh (add1 delay-refresh))
-                            (scroll-to-position/refresh startpos)
+                            (parameterize ([in-delayed-refresh #f])
+                              (scroll-to-position/refresh startpos))
                             (set! delay-refresh (sub1 delay-refresh)))
 
                           (set! changed? #t)
@@ -3780,7 +3792,7 @@
                                       (add-undo-rec (make-object unmodify-record% delayed-streak?)))
                                     (when rec
                                       (add-undo-rec rec))
-                                    (when (positive? delay-refresh)
+                                    (when (in-edit-sequence?)
                                       (set! delayed-streak? #t))
                                     
                                     (check-merge-snips start)
@@ -3902,7 +3914,7 @@
   (define/private (do-scroll-to snip localx localy w h refresh? [bias 'none])
     (cond
      [flow-locked? #f]
-     [(positive? delay-refresh)
+     [(in-edit-sequence?)
       (when s-admin
         (set! delayedscroll -1)
         (set! delayedscrollbox? #t)
@@ -3962,7 +3974,8 @@
         (set! changed? #t)
 
         (unless redraw-now? (set! delay-refresh (add1 delay-refresh)))
-        (refresh-by-line-demand)
+        (parameterize ([in-delayed-refresh #f])
+          (refresh-by-line-demand))
         (unless redraw-now? (set! delay-refresh (sub1 delay-refresh))))))
 
   (def/override (recounted [snip% snip] [any? redraw-now?])
@@ -3990,30 +4003,35 @@
              #t))))
   
   (define/public (refresh-box L T w h)
-    (let ([B (if (eq? h 'display-end) h (+ T h))]
-          [R (if (eq? w 'display-end) w (+ L w))])
-      (if refresh-box-unset?
-          (begin
-            (set! refresh-l L)
-            (set! refresh-r R)
-            (set! refresh-t T)
-            (set! refresh-b B)
-            (set! refresh-box-unset? #f))
-          (begin
-            (when (L . < . refresh-l)
-              (set! refresh-l L))
-            (unless (eq? refresh-r 'display-end)
-              (when (or (eq? R 'display-end)
-                        (R . > . refresh-r))
-                (set! refresh-r R)))
-            (when (T . < . refresh-t)
-              (set! refresh-t T))
-            (unless (eq? refresh-b 'display-end)
-              (when (or (eq? B 'display-end)
-                        (B . > . refresh-b))
-                (set! refresh-b B)))))
-      
-      (set! draw-cached-in-bitmap? #f)))
+    ;; This method can be called while updating is locked out,
+    ;; possibly because another thread is in an edit sequence.
+    (call-with-semaphore
+     refresh-box-lock
+     (lambda ()
+       (let ([B (if (eq? h 'display-end) h (+ T h))]
+             [R (if (eq? w 'display-end) w (+ L w))])
+         (if refresh-box-unset?
+             (begin
+               (set! refresh-l L)
+               (set! refresh-r R)
+               (set! refresh-t T)
+               (set! refresh-b B)
+               (set! refresh-box-unset? #f))
+             (begin
+               (when (L . < . refresh-l)
+                 (set! refresh-l L))
+               (unless (eq? refresh-r 'display-end)
+                 (when (or (eq? R 'display-end)
+                           (R . > . refresh-r))
+                   (set! refresh-r R)))
+               (when (T . < . refresh-t)
+                 (set! refresh-t T))
+               (unless (eq? refresh-b 'display-end)
+                 (when (or (eq? B 'display-end)
+                           (B . > . refresh-b))
+                   (set! refresh-b B)))))
+         
+         (set! draw-cached-in-bitmap? #f)))))
 
   (def/override (needs-update [snip% snip]
                               [real? localx] [real? localy]
@@ -4024,7 +4042,7 @@
         (set-box! ok? (get-snip-location snip x y))
       (when ok?
         (refresh-box (+ x localx) (+ y localy) w h)
-        (when (zero? delay-refresh)
+        (unless (in-edit-sequence?)
           (redraw)))))
 
   (def/override (invalidate-bitmap-cache [real? [x 0.0]] 
@@ -4035,7 +4053,7 @@
           [h (if (eq? h 'end) (- (+ total-height padding-t padding-b) y) h)])
 
       (refresh-box x y w h)
-      (when (zero? delay-refresh)
+      (unless (in-edit-sequence?)
         (redraw))))
 
   (def/public (hide-caret [any? hide?])
@@ -4522,7 +4540,7 @@
   (define/override (setting-admin admin) (void))
 
   (define/override (init-new-admin)
-    (when (and (zero? delay-refresh)
+    (when (and (not (in-edit-sequence?))
                (or (not s-admin) (not (send s-admin refresh-delayed?))))
       (redraw)))
 
@@ -4897,20 +4915,24 @@
                     [left x]
                     [right (+ x w)])
                 (let-values ([(left right top bottom)
-                              (if refresh-all?
-                                  (values left right top bottom)
-                                  (values
-                                   (max refresh-l left)
-                                   (if (eq? refresh-r 'display-end)
-                                       right
-                                       (min refresh-r right))
-                                   (max refresh-t top)
-                                   (if (eq? refresh-b 'display-end)
-                                       bottom
-                                       (min refresh-b bottom))))])
-                  (set! refresh-unset? #t)
-                  (set! refresh-box-unset? #t)
-                  (set! refresh-all? #f)
+                              (call-with-semaphore
+                               refresh-box-lock
+                               (lambda ()
+                                 (begin0
+                                  (if refresh-all?
+                                      (values left right top bottom)
+                                      (values
+                                       (max refresh-l left)
+                                       (if (eq? refresh-r 'display-end)
+                                           right
+                                           (min refresh-r right))
+                                       (max refresh-t top)
+                                       (if (eq? refresh-b 'display-end)
+                                           bottom
+                                           (min refresh-b bottom))))
+                                  (set! refresh-unset? #t)
+                                  (set! refresh-box-unset? #t)
+                                  (set! refresh-all? #f))))])
                   (let ([height (- bottom top)]
                         [width (- right left)])
                     (when (and (width . > . 0) (height . > . 0))
@@ -4958,42 +4980,45 @@
                       ;; both; if neither is specified, we have to assume that everything
                       ;; needs to be refreshed
                       (let-values ([(left top right bottom needs-update?)
-                                    (if (and (not refresh-all?)
-                                             (or (not refresh-unset?) (not refresh-box-unset?)))
-                                        (if (not refresh-unset?)
-                                            (let ([top (if (refresh-start . > . -1)
-                                                           (let-boxes ([fy 0.0])
-                                                               (position-location refresh-start #f fy #t #t #t)
-                                                             (max top fy))
-                                                           top)]
-                                                  [bottom (if (refresh-end . > . -1)
-                                                              (let-boxes ([fy 0.0])
-                                                                  (position-location refresh-end #f fy #f #f #t)
-                                                                (min bottom fy))
-                                                              bottom)])
-                                              (values left (if (not refresh-box-unset?)
-                                                               (min refresh-t top)
-                                                               top)
-                                                      right (if (not refresh-box-unset?)
-                                                                (if (eq? refresh-b 'display-end)
-                                                                    bottom
-                                                                    (max bottom refresh-b))
-                                                                bottom)
-                                                      #t))
-                                            (values (max refresh-l left)
-                                                    (max top refresh-t)
-                                                    (if (eq? refresh-r 'display-end)
-                                                        right
-                                                        (min right refresh-r))
-                                                    (if (eq? refresh-b 'display-end)
-                                                        bottom
-                                                        (min bottom refresh-b))
-                                                    #t))
-                                        (values left top right bottom refresh-all?))])
-                        
-                        (set! refresh-unset? #t)
-                        (set! refresh-box-unset? #t)
-                        (set! refresh-all? #f)
+                                    (call-with-semaphore
+                                     refresh-box-lock
+                                     (lambda ()
+                                       (begin0
+                                        (if (and (not refresh-all?)
+                                                 (or (not refresh-unset?) (not refresh-box-unset?)))
+                                            (if (not refresh-unset?)
+                                                (let ([top (if (refresh-start . > . -1)
+                                                               (let-boxes ([fy 0.0])
+                                                                   (position-location refresh-start #f fy #t #t #t)
+                                                                 (max top fy))
+                                                               top)]
+                                                      [bottom (if (refresh-end . > . -1)
+                                                                  (let-boxes ([fy 0.0])
+                                                                      (position-location refresh-end #f fy #f #f #t)
+                                                                    (min bottom fy))
+                                                                  bottom)])
+                                                  (values left (if (not refresh-box-unset?)
+                                                                   (min refresh-t top)
+                                                                   top)
+                                                          right (if (not refresh-box-unset?)
+                                                                    (if (eq? refresh-b 'display-end)
+                                                                        bottom
+                                                                        (max bottom refresh-b))
+                                                                    bottom)
+                                                          #t))
+                                                (values (max refresh-l left)
+                                                        (max top refresh-t)
+                                                        (if (eq? refresh-r 'display-end)
+                                                            right
+                                                            (min right refresh-r))
+                                                        (if (eq? refresh-b 'display-end)
+                                                            bottom
+                                                            (min bottom refresh-b))
+                                                        #t))
+                                            (values left top right bottom refresh-all?))
+                                        (set! refresh-unset? #t)
+                                        (set! refresh-box-unset? #t)
+                                        (set! refresh-all? #f))))])
 
                         (let ([height (- bottom top)]
                               [width (- right left)])
@@ -5017,7 +5042,7 @@
   (define/private (too-busy-to-refresh?)
     (or graphic-maybe-invalid?
         flow-locked?
-        (positive? delay-refresh)))
+        (in-edit-sequence?)))
 
   ;; called by the administrator to trigger a redraw
   (def/override (refresh [real? left] [real? top] [nonnegative-real? width] [nonnegative-real? height]
@@ -5030,7 +5055,10 @@
       ;; (probably in the middle of a begin-/end-edit-sequnce);
       ;; add the given region to our own invalid-region tracking, and
       ;; we'll get back to it when we're done with whatever
-      (refresh-box left top width height)]
+      (refresh-box left top width height)
+      ;; Double-check that we didn't finish being busy while
+      ;; setting the box:
+      (unless (too-busy-to-refresh?) (redraw))]
      [(not s-admin)
       (void)]
      [else
@@ -5483,12 +5511,12 @@
     (continue-refresh))
 
   (define/private (continue-refresh)
-    (if (and (zero? delay-refresh)
+    (if (and (not (in-edit-sequence?))
              (not (super is-printing?))
              (or (not s-admin) (not (send s-admin refresh-delayed?))))
         (redraw)
         (begin
-          (when (and (zero? delay-refresh)
+          (when (and (not (in-edit-sequence?))
                      (or (= delayedscroll -1) 
                          delayedscrollbox?))
             (if (and (not (super is-printing?)) s-admin)

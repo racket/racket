@@ -1380,9 +1380,12 @@
     (semaphore-post seq-lock))
 
   (def/public (wait-sequence-lock)
-    (when seq-lock
+    (cond
+     [seq-lock
       (sync seq-lock)
-      (semaphore-post seq-lock)))
+      (lambda ()
+        (semaphore-post seq-lock))]
+     [else void]))
 
   (def/public (get-file [(make-or-false path-string?) path])
     (editor-get-file "choose a file" (extract-parent) #f path))

@@ -1986,14 +1986,15 @@
   ;; ----------------------------------------
 
   (def/override (begin-edit-sequence [any? [undoable? #t]] [any? [interrupt-seqs? #t]])
-    (wait-sequence-lock)
+    (define ready! (wait-sequence-lock))
     (when (or (positive? s-noundomode)
               (not undoable?))
       (set! s-noundomode (add1 s-noundomode)))
     (when (and (zero? sequence)
                (zero? write-locked))
       (on-edit-sequence))
-    (set! sequence (add1 sequence)))
+    (set! sequence (add1 sequence))
+    (ready!))
 
   (def/override (end-edit-sequence)
     (set! sequence (sub1 sequence))

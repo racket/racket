@@ -719,8 +719,8 @@ Methods that report @techlink{location}-independent information about an
 
 An editor is not tied to any particular thread or eventspace, except
  to the degree that it is displayed in a canvas (which has an
- eventspace). Concurrent access of an editor is always safe, in the
- sense that the editor will not become corrupted. However, because
+ eventspace). Concurrent access of an editor is always safe in the
+ weak sense that the editor will not become corrupted. However, because
  editor access can trigger locks, concurrent access can produce 
  contract failures or unexpected results.
 
