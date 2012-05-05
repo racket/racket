@@ -9,10 +9,10 @@
 (define-runtime-lib png-lib
   [(unix)
    ;; Most Linux distros supply "libpng12", while other Unix
-   ;; variants often have just "libpng":
-   (ffi-lib "libpng12" '("0" "")
+   ;; variants often have just "libpng", etc.
+   (ffi-lib "libpng15" '("15" "")
 	    #:fail (lambda ()
-		     (ffi-lib "libpng15" '("15" "")
+		     (ffi-lib "libpng12" '("0" "")
 			      #:fail (lambda ()
 				       (ffi-lib "libpng")))))]
   [(macosx) (ffi-lib "libpng15.15.dylib")]
