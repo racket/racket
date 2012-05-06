@@ -103,10 +103,7 @@
          (loop (read-byte in))]))))
 
 (define (warning msg . args)
-  (when #f
-    (fprintf (current-error-port)
-             (apply format msg args))
-    (newline (current-error-port))))
+  (when #f (eprintf "~a\n" (apply format msg args))))
 
 (define (hex-digit? i)
   (vector-ref hex-values i))
