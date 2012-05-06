@@ -6,12 +6,11 @@
 (define toplevel-prefix       (make-parameter "-")) ; when not in a module
 (define saved-values-number   (make-parameter 5))
 (define saved-values-patterns (make-parameter '("^" "$~a")))
-(define wrap-column           (make-parameter 79))
 ;; TODO: when there's a few more of these, make them come from the prefs
 
 ;; ----------------------------------------------------------------------------
 
-(require racket/list racket/match)
+(require racket/list racket/match scribble/text/wrap)
 
 ;; ----------------------------------------------------------------------------
 ;; utilities
@@ -165,41 +164,52 @@
   (set-port-next-location! last-output-port line 0 pos))
 
 ;; wrapped output
-(define-syntax-rule (wrapped-output body ...)
-  (do-wrapped-output (λ () body ...)))
-(define (append-two-spaces s) (string-append s "  "))
-(define (do-wrapped-output thunk [prefix-rx #rx#"^; *"]
-                           [make-soft-prefix append-two-spaces])
+(define-syntax-rule (with-wrapped-output body ...)
+  (do-xrepl-wrapped-output (λ () body ...)))
+(define (do-xrepl-wrapped-output thunk)
+  (do-wrapped-output thunk #:indent-first -2 #:line-prefix #rx"^;+ *"))
+;; maybe move this into scribble/text/wrap
+(define (do-wrapped-output thunk
+                           #:wrap-width   [width (wrap-width)]
+                           #:line-prefix  [prefix-rx #f] ; not including spaces
+                           #:indent-first [fst-indent 0] ; can be negative
+                           #:split-word   [split-word #f])
   (define-values [ip op] (make-pipe))
-  (define th (thread (λ () (parameterize ([current-output-port op]) (thunk))
-                           (close-output-port op))))
-  (define o    (current-output-port))
-  (define wcol (wrap-column))
-  (let loop ()
-    (define prefix (let ([m (regexp-try-match prefix-rx ip)])
-                     (if m (bytes->string/utf-8 (car m)) "")))
-    (write-string prefix o)
-    (define soft-prefix #f)
-    (define (soft-newline)
-      (unless soft-prefix (set! soft-prefix (make-soft-prefix prefix)))
-      (newline) (write-string soft-prefix o) (string-length soft-prefix))
-    (let line-loop ([col (string-length prefix)])
-      (define m (regexp-match #rx#"^( +)?(\n|[^ \n]+)" ip))
-      (when m ; #f => at end
-        (define spaces (and (cadr m) (bytes->string/utf-8 (cadr m))))
-        (define str (bytes->string/utf-8 (caddr m)))
-        (if (equal? "\n" str)
-          (begin (newline o) (loop))
-          (let* ([strlen (string-length str)]
-                 [spclen (if spaces (string-length spaces) 0)]
-                 [nextcol (+ col strlen spclen)])
-            (line-loop
-             (if (nextcol . > . wcol)
-               (let ([col (soft-newline)]) (write-string str o) (+ col strlen))
-               (begin (when spaces (write-string spaces o))
-                      (write-string str o) nextcol)))))))
-    (unless (eof-object? (peek-char ip)) (loop)))
-  (thread-wait th)) ; just in case
+  (define widths
+    (cond [(fst-indent . > . 0) (cons (- width fst-indent) width)]
+          [(fst-indent . < . 0) (cons width (+ width fst-indent))]
+          [else (cons width width)]))
+  (define indents
+    (let ([spaces (make-bytes (abs fst-indent) (char->integer #\space))])
+      (cond [(fst-indent . > . 0) (cons spaces #"")]
+            [(fst-indent . < . 0) (cons #"" spaces)]
+            [else (cons #"" #"")])))
+  (define out (current-output-port))
+  (define (wrapper)
+    (define m (cond [(regexp-match #rx#"^(?:\n|[^\n]+)" ip) => car] [else #f]))
+    (when m ; #f => we're at the end
+      (if (equal? #"\n" m)
+        (newline out)
+        (let* ([i (cdar (regexp-match-positions #rx#"^ *" m))]
+               [p (regexp-match-positions prefix-rx m i)]
+               [i (if (and p (= (caar p) i)) (cdar p) i)]
+               [j (caar (regexp-match-positions #rx" *$" m))]
+               [widths (cons (- (car widths) i) (- (cdr widths) i))]
+               [lines  (wrap-line (bytes->string/utf-8 (subbytes m i j))
+                                  widths split-word)])
+          (write-bytes m out 0 i)
+          (write-bytes (car indents) out)
+          (write-string (car lines) out)
+          (for ([l (in-list (cdr lines))])
+            (newline out)
+            (write-bytes m out 0 i)
+            (write-bytes (cdr indents) out)
+            (write-string l out))))
+      (wrapper)))
+  (define th (thread wrapper))
+  (parameterize ([current-output-port op]) (thunk))
+  (close-output-port op)
+  (thread-wait th))
 
 ;; ----------------------------------------------------------------------------
 ;; toplevel "," commands management
@@ -337,7 +347,7 @@
     (printf "~a~s" indent (car names))
     (when (pair? (cdr names)) (printf " ~s" (cdr names)))
     (printf ": ~a\n" (command-blurb cmd)))
-  (wrapped-output
+  (with-wrapped-output
     (if cmd
       (begin (show-cmd cmd "; ")
              (printf ";   usage: ,~a" arg)
@@ -576,7 +586,7 @@
          [syms (if look (filter (λ (s) (look (cdr s))) syms) syms)]
          [syms (sort syms string<? #:key cdr)]
          [syms (map car syms)])
-    (wrapped-output
+    (with-wrapped-output
       (if (null? syms)
         (printf "; No matches found")
         (begin (printf "; Matches: ~s" (car syms))
@@ -594,7 +604,7 @@
       (if (and (pair? xs) (number? (syntax-e (car xs))))
         (values #f (syntax-e (car xs)) (cdr xs))
         (values #t 0 xs))))
-  (wrapped-output
+  (with-wrapped-output
     (for ([id/mod (in-list ids/mods)])
       (define dtm (syntax->datum id/mod))
       (define mod (and try-mods? (known-module dtm 'path/sym)))
@@ -1136,16 +1146,16 @@
    "information."]
   (define mod (getarg 'module #:default here-mod-or-eof))
   (define rs (show-requires mod))
-  (wrapped-output
-   (for ([decision (in-list '(keep bypass drop))])
-     (define all (filter (λ (x) (eq? decision (car x))) rs))
-     (unless (null? all)
-       (define names (map cadr all))
-       ;; doesn't print the phase number (third element of all members)
-       (printf "; ~a: ~a"
-               (string-titlecase (symbol->string decision)) (car names))
-       (for ([n (in-list (cdr names))]) (printf ", ~a" n))
-       (printf ".\n")))))
+  (with-wrapped-output
+    (for ([decision (in-list '(keep bypass drop))])
+      (define all (filter (λ (x) (eq? decision (car x))) rs))
+      (unless (null? all)
+        (define names (map cadr all))
+        ;; doesn't print the phase number (third element of all members)
+        (printf "; ~a: ~a"
+                (string-titlecase (symbol->string decision)) (car names))
+        (for ([n (in-list (cdr names))]) (printf ", ~a" n))
+        (printf ".\n")))))
 
 ;; ----------------------------------------------------------------------------
 ;; dynamic log output control
@@ -1452,7 +1462,7 @@
              (begin (set! last-backtrace s) #t)))))
   (define msg "[,bt for context]")
   (parameterize ([current-output-port (current-error-port)])
-    (wrapped-output
+    (with-wrapped-output
       (if backtrace? (printf "; ~a ~a\n" str msg) (printf "; ~a\n" str)))))
 
 ;; ----------------------------------------------------------------------------

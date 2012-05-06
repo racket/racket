@@ -22,7 +22,7 @@
                 (dynamic-require 'xrepl #f)
                 (parameterize ([current-namespace
                                 (module->namespace 'xrepl/xrepl)])
-                  ((namespace-variable-value 'wrap-column) 77))
+                  ((namespace-variable-value 'wrap-width) 77))
                 (read-eval-print-loop)))))
   (define (repl-> expected)
     (define output (read-string (string-length expected) Oi))
@@ -36,7 +36,7 @@
       [(and (pair? strs) (equal? "" (car strs)))
        (loop (cdr strs) input?)]
       [(and (thread-dead? repl-thread) (null? strs))
-       (printf "~a interaction tests passed.\n" tests-num)]
+       (printf "~a interaction tests passed\n" tests-num)]
       [(thread-dead? repl-thread)
        (error 'xrepl "test failure, repl thread died unexpectedly")]
       [(null? strs)
