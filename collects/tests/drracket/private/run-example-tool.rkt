@@ -77,7 +77,6 @@
        (queue-callback/res (λ () (send (send drs get-definitions-text) get-text))))
      (define expected (apply string (reverse (string->list "easter egg\n1\n2\n3"))))
      (unless (equal? content expected)
-       (fprintf (current-error-port) 
-                "example-tool.rkt: test failed;\nexpected ~s\n but got ~s"
+       (eprintf "example-tool.rkt: test failed;\nexpected ~s\n but got ~s"
                 expected
                 content)))))

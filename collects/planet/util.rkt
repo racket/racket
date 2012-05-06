@@ -434,9 +434,8 @@
            
            (for-each display (reverse announcements))
            (newline)
-           (for-each
-            (λ (s) (fprintf (current-error-port) "WARNING:\n\t~a\n" s))
-            (reverse warnings))))
+           (for-each (λ (s) (eprintf "WARNING:\n\t~a\n" s))
+                     (reverse warnings))))
        
        (simple-form-path archive-name))]))
 
@@ -800,8 +799,7 @@
   (unless (directory-exists? path)
     (if (file-exists? path)
         (error 'add-hard-link "Hard links must point to directories, not files")
-        (fprintf (current-error-port) 
-                 "Warning: directory ~a does not exist\n"
+        (eprintf "Warning: directory ~a does not exist\n"
                  (path->string path))))
   (add-hard-link! pkg-name (list owner) maj min path))
 

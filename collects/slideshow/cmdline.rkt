@@ -52,7 +52,7 @@
     (define screen-set? #f)
     
     (define (die name . args)
-      (fprintf (current-error-port) "~a: ~a\n" name (apply format args))
+      (eprintf "~a: ~a\n" name (apply format args))
       (exit -1))
     
     (define file-to-load

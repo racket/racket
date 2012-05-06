@@ -942,7 +942,7 @@
         (define/public (print-to-console v)
           ;; ==drscheme eventspace thread==
           ;; only when a user thread is suspended
-          (do-in-user-thread (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~s\n" v))))
+          (do-in-user-thread (lambda () (eprintf " ### DEBUGGER: ~s\n" v))))
         
         (define (frame->end-breakpoint-status frame)
           (let/ec k

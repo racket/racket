@@ -651,9 +651,9 @@
                                                        (ibitmap-angle bitmap))])
          (values l t r b)))]
     [else
-     (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
+     (eprintf "using bad bounding box for ~s\n" atomic-shape)
      (values 0 0 100 100)]))
-  
+
 (define (rotated-rectangular-bounding-box w h θ)
   (let*-values ([(ax ay) (rotate-xy (- (/ w 2)) (- (/ h 2)) θ)]
                 [(bx by) (rotate-xy (- (/ w 2)) (/ h 2) θ)]

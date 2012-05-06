@@ -2222,13 +2222,12 @@
 (define (message-boxes parent)
   (define (check expected got)
     (unless (eq? expected got)
-      (fprintf (current-error-port) "bad result: - expected ~e, got ~e\n"
-	       expected got)))
+      (eprintf "bad result: - expected ~e, got ~e\n" expected got)))
   (define (big s)
     (format "~a\n~a\n~a\n~a\n" s
-	    (make-string 500 #\x)
-	    (make-string 500 #\x)
-	    (make-string 500 #\x)))
+            (make-string 500 #\x)
+            (make-string 500 #\x)
+            (make-string 500 #\x)))
 
   (check 'ok (message-box "Title" "Message OK!" parent '(ok)))
   (check 'ok (message-box "Title" (big "Message OK!") parent '(ok)))

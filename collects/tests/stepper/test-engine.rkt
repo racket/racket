@@ -100,7 +100,7 @@
   (let ([error-has-occurred-box (box #f)])
     (test-sequence/many models exp-str expected-steps extra-files error-has-occurred-box)
     (if (unbox error-has-occurred-box)
-        (begin (fprintf (current-error-port) "...Error has occurred during test: ~v\n" name)
+        (begin (eprintf "...Error has occurred during test: ~v\n" name)
                #f)
         #t)))
 
@@ -230,7 +230,7 @@
 
 (define (warn error-box who fmt . args)
   (set-box! error-box #t)
-  (fprintf (current-error-port) "~a: ~a\n" who (apply format fmt args)))
+  (eprintf "~a: ~a\n" who (apply format fmt args)))
 
 
 ;; (-> step-result? sexp? boolean?)

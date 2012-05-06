@@ -61,8 +61,7 @@
          [cpaths (append-map (λ (x) (if (symbol? x) default (list x)))
                              (prefab-module-settings-collection-paths settings))])
     (when (null? cpaths)
-      (fprintf (current-error-port)
-               "WARNING: your collection paths are empty!\n"))
+      (eprintf "WARNING: your collection paths are empty!\n"))
     (current-library-collection-paths cpaths))
   
   (compile-context-preservation-enabled (prefab-module-settings-full-trace? settings))

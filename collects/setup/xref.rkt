@@ -41,8 +41,7 @@
   (map (lambda (dest)
          (lambda ()
            (with-handlers ([exn:fail? (lambda (exn)
-                                        (fprintf (current-error-port)
-                                                 "WARNING: ~a\n"
+                                        (eprintf "WARNING: ~a\n"
                                                  (if (exn? exn)
                                                    (exn-message exn)
                                                    (format "~e" exn)))

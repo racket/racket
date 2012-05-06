@@ -164,9 +164,7 @@
      [(enter-prim (? Prim) exit-prim return)
       (begin
         (unless (eq? $3 $4)
-          (fprintf (current-error-port)
-                   "warning: exit-prim and return differ:\n~s\n~s\n"
-                   $3 $4))
+          (eprintf "warning: exit-prim and return differ:\n~s\n~s\n" $3 $4))
         ($2 $1 $3 rs))]
      [((? MacroStep) (? EE))
       ($1 e1 rs $2)])

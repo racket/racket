@@ -46,8 +46,7 @@ Of course, other (similar) things can go wrong, too.
          [(equal? output first-line-output)
           (try-interaction-test drs-frame)]
          [else
-          (fprintf (current-error-port)
-                   "teaching-lang-sharing-modules.rkt: got bad output from execute: ~s"
+          (eprintf "teaching-lang-sharing-modules.rkt: got bad output from execute: ~s"
                    output)])))))
 
 (define (try-interaction-test drs-frame)

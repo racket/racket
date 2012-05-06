@@ -9,8 +9,8 @@
 ;; string to print in one shot, and flushes the output)
 (provide log-line)
 (define (log-line fmt . args)
-  (let ([line (format "~a\n" (apply format fmt args))])
-    (display line (current-error-port))))
+  (define line (format "~a\n" (apply format fmt args)))
+  (display line (current-error-port)))
 
 (define (prefix)
   (parameterize ([date-display-format 'iso-8601])

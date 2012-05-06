@@ -451,7 +451,7 @@
                     old-tries
                     (let* ([least-difficult
                             (apply min unmemoized)])
-                      ;(fprintf (current-error-port) "guessed tries: ~v\n" least-difficult)
+                      ;(eprintf "guessed tries: ~v\n" least-difficult)
                       (map (lambda (old-try-set block-list board-row)
                              (cond [(and (number? old-try-set) (= old-try-set least-difficult))
                                     (let ([spaces (spare-spaces block-list line-length)]

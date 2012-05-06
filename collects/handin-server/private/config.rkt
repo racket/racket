@@ -37,9 +37,7 @@
             ;; write anything if this is the first read, since the logger
             ;; is not initialized yet (and if there's an error at this
             ;; stage, the server will exit)
-            (fprintf (current-error-port)
-                     (format "reloading configuration from ~a\n"
-                             config-file)))
+            (eprintf (format "reloading configuration from ~a\n" config-file)))
           (let ([c (with-input-from-file config-file read)])
             (if (and (list? c)
                      (andmap (lambda (x)

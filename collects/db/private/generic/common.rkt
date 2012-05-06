@@ -87,7 +87,7 @@
       (set! DEBUG? debug?))
 
     (define/public (dprintf fmt . args)
-      (when DEBUG? (apply fprintf (current-error-port) fmt args)))
+      (when DEBUG? (apply eprintf fmt args)))
     ))
 
 ;; ----------------------------------------

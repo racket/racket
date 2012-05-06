@@ -285,12 +285,10 @@
            ;; But for now, just drop it to avoid macro stepper error.
            ;; Only bad effect should be missed subterms (usually at phase1).
            (STRICT-CHECKS
-            (fprintf (current-error-port)
-                     "from:\n~.s\n\nto:\n~.s\n\n"
+            (eprintf "from:\n~.s\n\nto:\n~.s\n\n"
                      (stx->datum from)
                      (stx->datum to))
-            (fprintf (current-error-port)
-                     "original from:\n~.s\n\noriginal to:\n~.s\n\n"
+            (eprintf "original from:\n~.s\n\noriginal to:\n~.s\n\n"
                      (stx->datum from0)
                      (stx->datum to0))
             (error 'add-to-renames-table))

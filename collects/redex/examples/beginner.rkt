@@ -472,11 +472,11 @@ reflects the (broken) spec).
     (let* ([failed
             (lambda (msg)
               (set! failed-tests (+ failed-tests 1))
-              (fprintf (current-error-port) "FAILED: ~a\n" msg)
+              (eprintf "FAILED: ~a\n" msg)
               (k (void)))]
            [got (normalize in failed)])
       (unless (equal? got out)
-        (fprintf (current-error-port) "FAILED:   ~s\ngot:      ~s\nexpected: ~s\n" in got out)
+        (eprintf "FAILED:   ~s\ngot:      ~s\nexpected: ~s\n" in got out)
         (set! failed-tests (+ failed-tests 1))))))
 
 (define (test-all step . steps)
@@ -488,7 +488,7 @@ reflects the (broken) spec).
         [(null? rest)
          (unless (null? nexts)
            (set! failed-tests (+ failed-tests 1))
-           (fprintf (current-error-port) "FAILED: ~s\n  last step: ~s\n  reduced to: ~s\n"
+           (eprintf "FAILED: ~s\n  last step: ~s\n  reduced to: ~s\n"
                     step
                     this
                     nexts))]
@@ -502,16 +502,14 @@ reflects the (broken) spec).
                         (cdr rest))
                   (begin
                     (set! failed-tests (+ failed-tests 1))
-                    (fprintf (current-error-port) 
-                             "FAILED: ~s\n     step: ~s\n expected: ~s\n      got: ~s\n"
+                    (eprintf "FAILED: ~s\n     step: ~s\n expected: ~s\n      got: ~s\n"
                              step
                              this
                              (car rest)
                              next))))]
            [else
             (set! failed-tests (+ failed-tests 1))
-            (fprintf (current-error-port)
-                     "FAILED: ~s\n  step: ~s\n  not single step: ~s\n"
+            (eprintf "FAILED: ~s\n  step: ~s\n  not single step: ~s\n"
                      step
                      this
                      nexts)])]))))
@@ -550,7 +548,7 @@ reflects the (broken) spec).
     [(= failed-tests 0) 
      (fprintf (current-output-port) "passed all ~a tests\n" total-tests)]
     [else
-     (fprintf (current-error-port) "failed ~a out of ~a tests\n" failed-tests total-tests)]))
+     (eprintf "failed ~a out of ~a tests\n" failed-tests total-tests)]))
 
 (define-syntax (tests stx)
   (syntax-case stx ()

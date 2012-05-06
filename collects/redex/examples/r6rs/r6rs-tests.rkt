@@ -1971,8 +1971,7 @@ of digits with deconv-base
   (let ([got (tc)])
     (unless (equal? got expected)
       (set! failed-tests (+ failed-tests 1))
-      (fprintf (current-error-port)
-               "line ~s failed\nexpected ~s\n     got ~s\n"
+      (eprintf "line ~s failed\nexpected ~s\n     got ~s\n"
                line
                expected
                got))))
@@ -2099,7 +2098,7 @@ of digits with deconv-base
         
         (if (= 0 failed-tests)
             (printf "~a tests, all passed\n" test-count)
-            (fprintf (current-error-port) "~a tests, ~a tests failed\n" test-count failed-tests))
+            (eprintf "~a tests, ~a tests failed\n" test-count failed-tests))
         (printf "verified that ~a terms are p*\n" verified-terms)))
      (when verbose?
        (collect-garbage) (collect-garbage) (collect-garbage)

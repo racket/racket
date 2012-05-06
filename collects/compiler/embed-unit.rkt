@@ -364,7 +364,7 @@
          [else
           ;; First use of the module. Get code and then get code for imports.
           (when verbose?
-            (fprintf (current-error-port) "Getting ~s as ~s\n" module-path filename))
+            (eprintf "Getting ~s as ~s\n" module-path filename))
           (let* ([submod-path (if (pair? filename)
                                   (cddr filename)
                                   null)]
@@ -412,7 +412,7 @@
               (cond
                [(extension? code)
                 (when verbose?
-                  (fprintf (current-error-port) " using extension: ~s\n" (extension-path code)))
+                  (eprintf " using extension: ~s\n" (extension-path code)))
                 (set-box! codes
                           (cons (make-mod filename module-path code 
                                           name prefix full-name
@@ -504,7 +504,7 @@
                                   (append sub-paths normalized-extra-paths))
                         (when verbose?
                           (unless (null? runtime-paths)
-                            (fprintf (current-error-port) "Runtime paths for ~s: ~s\n"
+                            (eprintf "Runtime paths for ~s: ~s\n"
                                      filename
                                      runtime-paths)))
                         (if (and collects-dest
@@ -934,7 +934,7 @@
                               (quote ,(map (lambda (m)
                                              (let ([p (extension-path (mod-code m))])
                                                (when verbose?
-                                                 (fprintf (current-error-port) "Recording extension at ~s\n" p))
+                                                 (eprintf "Recording extension at ~s\n" p))
                                                (list (path->bytes p)
                                                      (mod-full-name m)
                                                      ;; The program name isn't used. It just helps ensures that
@@ -1040,7 +1040,7 @@
              (unless (or (extension? (mod-code nc))
                          (eq? nc table-mod))
                (when verbose?
-                 (fprintf (current-error-port) "Writing module from ~s\n" (mod-file nc)))
+                 (eprintf "Writing module from ~s\n" (mod-file nc)))
                (write (compile-using-kernel
                        `(current-module-declare-name 
                          (make-resolved-module-path
@@ -1067,7 +1067,7 @@
                      outp))))
         (for-each (lambda (f)
                     (when verbose?
-                      (fprintf (current-error-port) "Copying from ~s\n" f))
+                      (eprintf "Copying from ~s\n" f))
                     (call-with-input-file* f
                       (lambda (i)
                         (copy-port i outp))))
@@ -1173,7 +1173,7 @@
       (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
       (let ([exe (find-exe mred? variant)])
         (when verbose?
-          (fprintf (current-error-port) "Copying to ~s\n" dest))
+          (eprintf "Copying to ~s\n" dest))
         (let-values ([(dest-exe orig-exe osx?)
                       (cond
                         [(and mred? (eq? 'macosx (system-type)))
@@ -1347,12 +1347,12 @@
                                                                   #:exists 'append))
                                         (values start decl-end (file-size dest-exe) #f)))))])
                 (when verbose?
-                  (fprintf (current-error-port) "Setting command line\n"))
-		(let ()
+                  (eprintf "Setting command line\n"))
+                (let ()
                   (let ([full-cmdline (make-full-cmdline start decl-end end)])
                     (when collects-path-bytes
                       (when verbose?
-                        (fprintf (current-error-port) "Setting collection path\n"))
+                        (eprintf "Setting collection path\n"))
                       (set-collects-path dest-exe collects-path-bytes))
                     (cond
                       [(and use-starter-info? osx?)

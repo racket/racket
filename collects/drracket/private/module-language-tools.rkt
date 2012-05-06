@@ -166,11 +166,13 @@
           ; sometimes I get eof here, but I don't know why and can't seem to 
           ;; make it happen outside of DrRacket
           (when (eof-object? info-result)
-            (fprintf (current-error-port) "file ~s produces eof from read-language\n"
+            (eprintf "file ~s produces eof from read-language\n"
                      (send this get-filename))
-            (fprintf (current-error-port) "  port-next-location ~s\n" (call-with-values (λ () (port-next-location port)) list))
-            (fprintf (current-error-port) "  str ~s\n" (let ([s (send this get-text)])
-                                                         (substring s 0 (min 100 (string-length s)))))
+            (eprintf "  port-next-location ~s\n"
+                     (call-with-values (λ () (port-next-location port)) list))
+            (eprintf "  str ~s\n"
+                     (let ([s (send this get-text)])
+                       (substring s 0 (min 100 (string-length s)))))
             (set! info-result #f))
           (let-values ([(line col pos) (port-next-location port)])
             (unless (equal? (get-text 0 pos) hash-lang-language)

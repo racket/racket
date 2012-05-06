@@ -172,8 +172,7 @@
            (when (and yacc-output (not (string=? yacc-output "")))
              (with-handlers [(exn:fail:filesystem?
                               (lambda (e)
-                                (fprintf 
-                                 (current-error-port)
+                                (eprintf
                                  "Cannot write yacc-output to file \"~a\"\n"
                                  yacc-output)))]
                (call-with-output-file yacc-output

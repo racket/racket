@@ -555,7 +555,7 @@
              [proc-k (lambda (evt) (proc emit suspend evt) (set! proc-k #f))])
       (let ([thunk (lambda ()
                      (when (ormap undefined? streams)
-                       ;(fprintf (current-error-port) "had an undefined stream\n")
+                       ;(eprintf "had an undefined stream\n")
                        (set! streams (fix-streams streams args)))
                      (let loop ([streams streams])
                        (extract (lambda (the-event strs)
@@ -776,7 +776,7 @@
                                               (syntax->list #'(exp ...)))])
               #'(tag new-exp ...))]
            [x (begin
-                (fprintf (current-error-port) "snapshot-unbound: fell through on ~a\n" #'x)
+                (eprintf "snapshot-unbound: fell through on ~a\n" #'x)
                 '())]))))
   
   (syntax-case stx ()

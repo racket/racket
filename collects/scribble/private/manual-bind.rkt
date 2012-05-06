@@ -142,8 +142,7 @@
              ;; Call raise-syntax-error to capture error message:
              (with-handlers ([exn:fail:syntax?
                               (lambda (exn)
-                                (fprintf (current-error-port)
-                                         "~a\n" (exn-message exn)))])
+                                (eprintf "~a\n" (exn-message exn)))])
                (raise-syntax-error
                 'WARNING
                 "no declared exporting libraries for definition" id)))

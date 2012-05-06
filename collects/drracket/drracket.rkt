@@ -132,7 +132,7 @@
                                 (printf "~a\n" msg)
                                 (printf "stdout from compiling ~a:\n~a\n" path out)
                                 (flush-output)
-                                (fprintf (current-error-port) "stderr from compiling ~a:\n~a\n" path err)])))
+                                (eprintf "stderr from compiling ~a:\n~a\n" path err)])))
    (flprintf "PLTDRPAR: installing compilation manager\n")
    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))])
 

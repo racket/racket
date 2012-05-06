@@ -5,15 +5,14 @@
 
 (when (equal? (vector) argv)
   (error 'build-rows-cols.rkt
-	 "expected an image file on the command-line"))
-	 
+         "expected an image file on the command-line"))
+
 (define image (vector-ref argv 0))
-(fprintf (current-error-port) "processing ~a\n" image)
+(eprintf "processing ~a\n" image)
 
 (define bitmap (make-object bitmap% image))
 (when (send bitmap is-color?)
-  (fprintf (current-error-port)
-	   "expected a monochrome bitmap -- all non-black spaces will be considered white\n"))
+  (eprintf "expected a monochrome bitmap -- all non-black spaces will be considered white\n"))
 
 (newline (current-error-port))
 

@@ -760,7 +760,7 @@
 
 ;; lift-error
 (define (lift-error sym . args)
-  (apply fprintf (current-error-port) args)
+  (apply eprintf args)
   (newline (current-error-port))
   (when #f
     (apply error sym args)))

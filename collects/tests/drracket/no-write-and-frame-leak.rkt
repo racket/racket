@@ -46,13 +46,13 @@
          (cond
            [(zero? n) 
             (when (weak-box-value drs-tabb)
-              (fprintf (current-error-port) "frame leak!\n"))
+              (eprintf "frame leak!\n"))
             (when (weak-box-value drs-frame2b)
-              (fprintf (current-error-port) "tab leak!\n"))
+              (eprintf "tab leak!\n"))
             (when (weak-box-value tab-nsb)
-              (fprintf (current-error-port) "tab namespace leak!\n"))
+              (eprintf "tab namespace leak!\n"))
             (when (weak-box-value frame2-nsb)
-              (fprintf (current-error-port) "frame namespace leak!\n"))]
+              (eprintf "frame namespace leak!\n"))]
            [else
             (collect-garbage) (sync (system-idle-evt))
             (when (ormap weak-box-value 

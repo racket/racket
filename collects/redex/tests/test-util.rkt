@@ -148,9 +148,8 @@
     (unless (and (not (exn? got))
                  (matches? got expected))
       (set! failures (+ 1 failures))
-      (fprintf (current-error-port)
-               "test: file ~a line ~a:\n     got ~s\nexpected ~s\n\n" 
-               filename 
+      (eprintf "test: file ~a line ~a:\n     got ~s\nexpected ~s\n\n"
+               filename
                line
                got
                expected))))

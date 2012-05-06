@@ -158,8 +158,7 @@
                       (prod-index (reduce-prod current-guess))))
               (loop (car rest) (cdr rest)))
              ((accept? (car rest))
-              (fprintf (current-error-port) 
-                       "accept/reduce or accept/shift conflicts.  Check the grammar for useless cycles of productions\n")
+              (eprintf "accept/reduce or accept/shift conflicts.  Check the grammar for useless cycles of productions\n")
               (loop current-guess (cdr rest)))
              (else (loop current-guess (cdr rest)))))))))
   
@@ -179,13 +178,11 @@
                    grouped-table)))
       (unless suppress
         (when (> SR-conflicts 0)
-          (fprintf (current-error-port) 
-                   "~a shift/reduce conflict~a\n" 
+          (eprintf "~a shift/reduce conflict~a\n"
                    SR-conflicts
                    (if (= SR-conflicts 1) "" "s")))
         (when (> RR-conflicts 0)
-          (fprintf (current-error-port)
-                   "~a reduce/reduce conflict~a\n"
+          (eprintf "~a reduce/reduce conflict~a\n"
                    RR-conflicts
                    (if (= RR-conflicts 1) "" "s"))))
       table))
@@ -281,8 +278,7 @@
         (unless (string=? file "")
           (with-handlers [(exn:fail:filesystem?
                            (lambda (e)
-                             (fprintf 
-                              (current-error-port)
+                             (eprintf
                               "Cannot write debug output to file \"~a\": ~a\n"
                               file
                               (exn-message e))))]

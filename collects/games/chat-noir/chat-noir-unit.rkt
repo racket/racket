@@ -59,8 +59,7 @@
                       [parent f]
                       [callback (λ (x y) (show-help))]
                       [label (string-constant help)]))]))]
-         [else
-          (fprintf (current-error-port) "never found a window\n")]))))
+         [else (eprintf "never found a window\n")]))))
   
   
   ;; start up the game

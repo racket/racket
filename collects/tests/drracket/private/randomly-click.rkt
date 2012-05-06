@@ -105,8 +105,7 @@
                 (cond
                   [action
                    (with-handlers ((exn:fail? (λ (x) 
-                                                (fprintf (current-error-port)
-                                                         "\nExecution fail: transcript of ~a clicking follows with seed ~s\n"
+                                                (eprintf "\nExecution fail: transcript of ~a clicking follows with seed ~s\n"
                                                          (send window get-label)
                                                          the-seed)
                                                 (apply show-log (cons action actions))
@@ -119,17 +118,14 @@
                      (action))
                    (loop (- n 1) (cons action actions))]
                   [else
-                   (fprintf (current-error-port) 
-                            "\nExists/Meets window with no button: Bug? seed ~s\n"
+                   (eprintf "\nExists/Meets window with no button: Bug? seed ~s\n"
                             the-seed)
                    (apply show-log actions)
                    (error 'randomly-click.rkt "giving up")]))]))]))))
 
 (define (show-log . actions)
-  (for ((action (in-list actions)))
-    (fprintf (current-error-port) 
-             "   ~a\n" 
-             (action 'ignored))))
+  (for ([action (in-list actions)])
+    (eprintf "   ~a\n" (action 'ignored))))
 
 ;; the splash screen is in a separate eventspace so wont' show up.
 (define (wait-for-first-frame)
@@ -163,7 +159,7 @@
    (λ (x)
      (if (exn? x)
          (orig-display-handler (exn-message x) x)
-         (fprintf (current-error-port) "uncaught exception ~s\n" x))
+         (eprintf "uncaught exception ~s\n" x))
      (exit 1)))
   
   (void

@@ -212,7 +212,7 @@ profile todo:
   ;         (for-each loop (syntax->list stx))]
   ;        [exp
   ;         (set! exps (+ exps 1))]))
-  ;    (fprintf (current-error-port) "exps: ~v\nwcms: ~v\n" exps wcms))
+  ;    (eprintf "exps: ~v\nwcms: ~v\n" exps wcms))
   ;  stx)
   
   ;; make-debug-eval-handler : (sexp -> value) -> sexp -> value
@@ -459,8 +459,8 @@ profile todo:
                               (current-error-port))]
                     [else
                      (display "<unsaved editor>" (current-error-port))]))]
-               [do-line/col (λ () (fprintf (current-error-port) ":~a:~a" line col))]
-               [do-pos (λ () (fprintf (current-error-port) "::~a" pos))]
+               [do-line/col (λ () (eprintf ":~a:~a" line col))]
+               [do-pos (λ () (eprintf "::~a" pos))]
                [src-loc-in-defs/ints?
                 (let ([rep (drracket:rep:current-rep)])
                   (and rep

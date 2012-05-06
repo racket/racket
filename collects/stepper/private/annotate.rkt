@@ -1023,7 +1023,7 @@
         [else (annotate/module-top-level exp)]
         
         #;[else (begin
-                  (fprintf (current-error-port) "~v\n" (syntax->datum exp))
+                  (eprintf "~v\n" (syntax->datum exp))
                   (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax->datum exp)))])))
   
   

@@ -93,7 +93,7 @@
            [mark1       #f]
            [mark2       #f])
       (when (zip-verbose)
-        (fprintf (current-error-port) "zip: compressing ~a...\n" filename))
+        (eprintf "zip: compressing ~a...\n" filename))
       ;; write the contents to the output stream:
       (write-int *local-file-header*    4)  ; signature
       (write-int *required-version*     2)  ; version
@@ -254,10 +254,10 @@
                      (zip-one-entry (build-metadata file) seekable?))
                    files)])
         (when (zip-verbose)
-          (fprintf (current-error-port) "zip: writing headers...\n"))
+          (eprintf "zip: writing headers...\n"))
         (write-central-directory headers))
       (when (zip-verbose)
-        (fprintf (current-error-port) "zip: done.\n"))))
+        (eprintf "zip: done.\n"))))
 
   ;; zip : output-file paths ->
   (provide zip)

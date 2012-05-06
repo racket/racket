@@ -17,8 +17,7 @@
   (let ([ht (collect-info-ht ci)])
     (let ([old-val (hash-ref ht key #f)])
       (when old-val
-        (fprintf (current-error-port)
-                 "WARNING: collected information for key multiple times: ~e; values: ~e ~e\n"
+        (eprintf "WARNING: collected information for key multiple times: ~e; values: ~e ~e\n"
                  key old-val val))
     (hash-set! ht key val))))
 

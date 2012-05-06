@@ -1319,8 +1319,7 @@ TODO
                                          (set! raised-exn? #t))))
                    (drracket:language:setup-setup-values))))
               (when raised-exn?
-                (fprintf 
-                 (current-error-port)
+                (eprintf
                  (string-append
                   "copied exn raised when setting up snip values"
                   " (thunk passed as third argume to drracket:language:add-snip-value)\n"))

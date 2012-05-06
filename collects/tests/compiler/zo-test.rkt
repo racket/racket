@@ -137,9 +137,9 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
      
      (unless (and (not (care-about-nonserious?)) (not serious?))
        (when (or (verbose-mode) (stop-on-first-error))
-         (fprintf (current-error-port) "~a -- ~a: ~a\n" p phase exn-msg))
+         (eprintf "~a -- ~a: ~a\n" p phase exn-msg))
        (when (stop-on-first-error)
-         (stop!)))]))     
+         (stop!)))]))
 
 (define timing-thread
   (thread

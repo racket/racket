@@ -23,8 +23,7 @@
                      (real? (list-ref entry 3))))
             (let ([p (hash-ref tools (car entry) #f)])
               (when p
-                    (fprintf
-                     (current-error-port)
+                    (eprintf
                      "warning: tool ~s registered twice: ~e and ~e\n"
                      (car entry)
                      (car p)
@@ -44,9 +43,7 @@
                                entry))])
               (hash-set! tools (car entry) entry))]
            [else
-            (fprintf
-             (current-error-port)
-             "warning: ~s provided bad `raco-commands' spec: ~e\n"
-             d
-             entry)]))))
+            (eprintf "warning: ~s provided bad `raco-commands' spec: ~e\n"
+                     d
+                     entry)]))))
     tools))

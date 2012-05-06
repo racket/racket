@@ -47,8 +47,7 @@
                (rename-file-or-directory file new)
                (set! file new)))]
           [(regexp-match-positions xxxs dfile)
-           (fprintf (current-error-port)
-                    "Warning: ~a was not renamed!\n" (full-path))]))
+           (eprintf "Warning: ~a was not renamed!\n" (full-path))]))
   (let-values ([(i o) (open-input-output-file file #:exists 'update)])
     (define print? verbose?)
     (for ([subst (in-list substitutions)])
@@ -66,8 +65,7 @@
                  (loop (+ pos (cdar m))))])))
     (file-position i 0)
     (when (regexp-match-positions xxxs i)
-      (fprintf (current-error-port)
-               "Warning: ~a still has \"~a\"!\n" (full-path) xxxs))
+      (eprintf "Warning: ~a still has \"~a\"!\n" (full-path) xxxs))
     (close-input-port i)
     (close-output-port o)))
 

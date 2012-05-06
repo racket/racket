@@ -165,7 +165,7 @@
               [blank-line (read-line ispell-out 'any)]
               [_ (debug "< ~s\n" blank-line)])
          (unless (equal? blank-line "")
-           (fprintf (current-error-port) "expected blank line from ispell, got (word ~s):\n~a\nrestarting ispell\n\n" 
+           (eprintf "expected blank line from ispell, got (word ~s):\n~a\nrestarting ispell\n\n" 
                     word
                     blank-line)
            (close-output-port ispell-in)

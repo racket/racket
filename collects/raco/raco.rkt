@@ -36,7 +36,7 @@
               (equal? (car cmdline) "-h"))
           #t]
          [(regexp-match? #rx"^-" (car cmdline))
-          (fprintf (current-error-port) "~a: A flag must follow a command: ~a\n\n"
+          (eprintf "~a: A flag must follow a command: ~a\n\n"
                    (find-system-path 'run-file)
                    (car cmdline))
           #f]
@@ -45,7 +45,7 @@
           => (lambda (tool)
                (if (eq? 'ambiguous tool)
                    (begin
-                     (fprintf (current-error-port) "~a: Ambiguous command prefix: ~a\n\n"
+                     (eprintf "~a: Ambiguous command prefix: ~a\n\n"
                               (find-system-path 'run-file)
                               (car cmdline))
                      #f)
@@ -56,16 +56,15 @@
                      (exit))))]
          [(equal? (car cmdline) "help") #t]
          [else
-          (fprintf (current-error-port) "~a: Unrecognized command: ~a\n\n"
+          (eprintf "~a: Unrecognized command: ~a\n\n"
                    (find-system-path 'run-file)
                    (car cmdline))
           #f])])
-  (fprintf (current-error-port) "Usage: raco <command> <option> ... <arg> ...\n")
+  (eprintf "Usage: raco <command> <option> ... <arg> ...\n")
   (for-each
    (lambda (show-all?)
-     (fprintf (current-error-port) "\n~a commands:\n" (if show-all? 
-                                                          "All available"
-                                                          "Frequently used"))
+     (eprintf "\n~a commands:\n"
+              (if show-all? "All available" "Frequently used"))
      (let ([l (sort (hash-map tools (lambda (k v) v))
                     (if show-all?
                         (lambda (a b) (string<? (car a) (car b)))
@@ -73,8 +72,7 @@
        (let ([largest (apply max 0 (map (lambda (v) (string-length (car v))) l))])
          (for ([i (in-list l)])
            (when (or show-all? (cadddr i))
-             (fprintf (current-error-port)
-                      "  ~a~a~a\n"
+             (eprintf "  ~a~a~a\n"
                       (car i)
                       (make-string (- largest -3 (string-length (car i))) #\space)
                       (caddr i)))))))

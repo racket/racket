@@ -127,7 +127,7 @@
                        input
                        #f)))])
     (unless (set-same? got expecteds (test-suite-equal? test-suite))
-      (fprintf (current-error-port) "line ~a of ~a ~a\n    test: ~s\n     got: ~s\nexpected: ~s\n\n"
+      (eprintf "line ~a of ~a ~a\n    test: ~s\n     got: ~s\nexpected: ~s\n\n"
                line
                file
                name
@@ -152,7 +152,7 @@
                              mv-wrap))])
         (unless (same-mz? mz-got mz-expected)
           (parameterize ([print-struct #t])
-            (fprintf (current-error-port) "line ~s of ~a ~a\nMZ  test: ~s\n     got: ~s\nexpected: ~s\n\n" 
+            (eprintf "line ~s of ~a ~a\nMZ  test: ~s\n     got: ~s\nexpected: ~s\n\n" 
                      line
                      file
                      name

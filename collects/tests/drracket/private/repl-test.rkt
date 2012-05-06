@@ -1206,13 +1206,11 @@ This produces an ACK message
            (cond
              [(eq? source-location 'definitions)
               (unless defs-focus?
-                (fprintf (current-error-port)
-                         "FAILED execute test for ~s\n  expected definitions to have the focus\n"
+                (eprintf "FAILED execute test for ~s\n  expected definitions to have the focus\n"
                          program))]
              [(eq? source-location 'interactions)
               (unless ints-focus?
-                (fprintf (current-error-port)
-                         "FAILED execute test for ~s\n  expected interactions to have the focus\n"
+                (eprintf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
                          program))]
              [defs-focus?
               (let ([start (car source-location)]
@@ -1225,8 +1223,7 @@ This produces an ACK message
                                (= (+ (srcloc-position error-range) -1) (loc-offset start))
                                (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
                                   (loc-offset finish)))
-                    (fprintf (current-error-port)
-                             "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
+                    (eprintf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
                              program
                              (and error-range
                                   (list (+ (srcloc-position error-range) -1)
@@ -1243,8 +1240,7 @@ This produces an ACK message
                    (regexp-match execute-answer received-execute)]
                   [else #f])
           (failure)
-          (fprintf (current-error-port)
-                   "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
+          (eprintf "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
                    program
                    language-cust
                    execute-answer received-execute))
@@ -1300,8 +1296,7 @@ This produces an ACK message
                                 (regexp-match load-answer received-load)]
                                [else #f])
                        (failure)
-                       (fprintf (current-error-port)
-                                "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
+                       (eprintf "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
                                 short-filename
                                 program load-answer received-load)))))])
           (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
@@ -1314,7 +1309,7 @@ This produces an ACK message
         
         ; check for edit-sequence
         (when (repl-in-edit-sequence?)
-          (fprintf (current-error-port) "FAILED: repl in edit-sequence")
+          (eprintf "FAILED: repl in edit-sequence")
           (escape)))))
   
   (define tests 0)
@@ -1325,7 +1320,7 @@ This produces an ACK message
   (define (final-report)
     (if (= 0 failures)
         (printf "tests finished: all ~a tests passed\n" tests)
-        (fprintf (current-error-port) "tests finished: ~a failed out of ~a total\n" failures tests)))
+        (eprintf "tests finished: ~a failed out of ~a total\n" failures tests)))
   
   (define (run-main-tests language-cust)
     (random-seed-test)
@@ -1399,7 +1394,7 @@ This produces an ACK message
              [expected #rx"reference to undefined identifier: x"])
         (unless (regexp-match expected output)
           (failure)
-          (fprintf (current-error-port) "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
+          (eprintf "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
   
   (define (random-seed-test)
     (define expression (format "~s" '(pseudo-random-generator->vector (current-pseudo-random-generator))))
@@ -1420,8 +1415,7 @@ This produces an ACK message
           (let ([output2 (fetch-output drscheme-frame start2 (- (get-int-pos) 1))])
             (unless (equal? output1 output2)
               (failure)
-              (fprintf (current-error-port)
-                       "random-seed-test: expected\n  ~s\nand\n  ~s\nto be the same"
+              (eprintf "random-seed-test: expected\n  ~s\nand\n  ~s\nto be the same"
                        output1
                        output2)))))))
   

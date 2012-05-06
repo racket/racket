@@ -3,10 +3,10 @@
 (use-compiled-file-paths null)
 
 (require mzlib/restart
-	 mzlib/process)
+         mzlib/process)
 
 (define (system- s)
-  (fprintf (current-error-port) "~a\n" s)
+  (eprintf "~a\n" s)
   (system s))
 
 (define backtrace-gc? #f)
@@ -86,9 +86,7 @@
 
 (define (check-timestamp t2 dep)
   (when (t2 . > . (current-seconds))
-    (fprintf (current-error-port)
-	     "WARNING: timestamp is in the future: ~e\n" 
-	     dep)))
+    (eprintf "WARNING: timestamp is in the future: ~e\n" dep)))
 
 (define (try src deps dest objdest includes use-precomp extra-compile-flags expand-extra-flags msvc-pch indirect?)
   (when (or (not re:only) (regexp-match re:only dest))
@@ -108,8 +106,7 @@
 			      (if (file-exists? deps)
 				  (with-input-from-file deps read)
 				  null))))))
-      (unless (parameterize
-	       ([use-compiled-file-paths (list "compiled")])
+      (unless (parameterize ([use-compiled-file-paths (list "compiled")])
 	       (restart-mzscheme #() (lambda (x) x)
 				 (list->vector 
 				  (append

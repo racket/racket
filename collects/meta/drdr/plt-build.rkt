@@ -137,7 +137,7 @@
           (the-process _stdout stdin _stderr)
           (parameterize ([subprocess-group-enabled #t])
             (apply subprocess
-                   (current-error-port) 
+                   (current-error-port)
                    #f
                    (current-error-port)
                    new-command new-args)))

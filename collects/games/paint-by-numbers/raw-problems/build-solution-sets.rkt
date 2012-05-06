@@ -205,10 +205,8 @@ The col and row type specs are in sig.rkt and the solution type is:
                                        (semaphore-wait kill)
                                        (set! sucessful? #f)
                                        (kill-thread k)
-                                       (fprintf (current-error-port) "\nsolver raised an exception\n~a\n"
-                                                (if (exn? x)
-                                                    (exn-message x)
-                                                    x))
+                                       (eprintf "\nsolver raised an exception\n~a\n"
+                                                (if (exn? x) (exn-message x) x))
                                        (semaphore-post done))])
                       (solve:solve rows cols set-entry
                                    (lambda (max)
@@ -235,7 +233,7 @@ The col and row type specs are in sig.rkt and the solution type is:
                                      (void))))))
                   (semaphore-wait kill)
                   (kill-thread t)
-                  (fprintf (current-error-port) "\n memory limit expired.\n")
+                  (eprintf "\n memory limit expired.\n")
                   (collect-garbage)(collect-garbage)(collect-garbage)(collect-garbage)(collect-garbage)
                   (update-memory-display)
                   (semaphore-post done)))])

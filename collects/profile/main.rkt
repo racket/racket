@@ -28,8 +28,7 @@
                        (loop)))))))
   (define (run) (for ([i (in-range rpt)]) (thunk)))
   (with-handlers ([void (lambda (e)
-                          (fprintf (current-error-port)
-                                   "profiled thunk error: ~a\n"
+                          (eprintf "profiled thunk error: ~a\n"
                                    (if (exn? e)
                                      (exn-message e)
                                      (format "~e" e))))])

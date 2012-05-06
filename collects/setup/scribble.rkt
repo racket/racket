@@ -645,7 +645,7 @@
                              (not (equal? (any-order defs) (any-order (deserialize (caddr out-v)))))
                              (info-out-time . > . (current-seconds)))])
                    (when (and (verbose) need-out-write?)
-                     (fprintf (current-error-port) " [New out ~a]\n" (doc-src-file doc)))
+                     (eprintf " [New out ~a]\n" (doc-src-file doc)))
                    (gc-point)
                    (let ([info
                           (make-info doc

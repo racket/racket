@@ -27,8 +27,7 @@
   
   (let ([err (queue-callback/res (λ () (send drs syncheck:get-error-report-contents)))]) 
     (when err
-      (fprintf (current-error-port)
-               "FAILED ~s\n   error report window is visible:\n   ~a\n"
+      (eprintf "FAILED ~s\n   error report window is visible:\n   ~a\n"
                test
                err))))
 (define (click-check-syntax-button drs)

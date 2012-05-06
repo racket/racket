@@ -69,8 +69,7 @@
             (set! thems (/ thems 2)))
           
           '(when (= depth 2)
-             (fprintf (current-error-port)
-                      "us: ~a them: ~a  u-m:~a t-m: ~a u-l: ~a t-l: ~a u-c: ~a t-c: ~a\n"
+             (eprintf "us: ~a them: ~a  u-m:~a t-m: ~a u-l: ~a t-l: ~a u-c: ~a t-c: ~a\n"
                       usses thems
                       middle-usses middle-thems
                       us-in-line them-in-line

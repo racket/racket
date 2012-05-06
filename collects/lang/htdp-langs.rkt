@@ -996,8 +996,8 @@
       (define (teaching-languages-error-display-handler msg exn)
           (if (exn? exn)
               (display (get-rewriten-error-message exn) (current-error-port))
-              (fprintf (current-error-port) "uncaught exception: ~e" exn))
-          (fprintf (current-error-port) "\n")
+              (eprintf "uncaught exception: ~e" exn))
+          (eprintf "\n")
 
           ;; need to flush here so that error annotations inserted in next line
           ;; don't get erased if this output were to happen after the insertion

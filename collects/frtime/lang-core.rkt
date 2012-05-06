@@ -91,10 +91,10 @@
     (opt-lambda (obj [mem empty])
       (with-handlers ((exn:fail?
                        (lambda (e)
-                         (fprintf
-                          (current-error-port)
+                         (eprintf
                           "you've encountered a bug in frtime.  please send a report to the Racket mailing list.\nexn: ~a\n"
-                          e) #f)))
+                          e)
+                         #f)))
         (cond
           [(memq obj mem) #f]
           [(behavior? obj) #t]

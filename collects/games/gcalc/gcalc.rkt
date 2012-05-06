@@ -105,9 +105,6 @@
 (define 3rd caddr)
 (define 4th cadddr)
 
-(define (eprintf . args)
-  (apply fprintf (current-error-port) args))
-
 (define (read-from-string str)
   (with-handlers ([void (lambda (x) #f)])
     (let ([obj (read (open-input-string (string-append "(" str ")")))])

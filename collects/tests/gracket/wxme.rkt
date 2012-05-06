@@ -30,8 +30,7 @@
   (set! test-cnt (add1 test-cnt))
   (unless (equal? v v2)
     (set! wrong-cnt (add1 wrong-cnt))
-    (fprintf (current-error-port)
-             "FAILED: line ~a\nexpected: ~s\n     got: ~s\n" 
+    (eprintf "FAILED: line ~a\nexpected: ~s\n     got: ~s\n" 
              line
              v2
              v)))
@@ -40,7 +39,7 @@
   (printf "\n~a tests\n" test-cnt)
   (if (zero? wrong-cnt)
       (printf "all passed\n")
-      (fprintf (current-error-port) "~s FAILED\n" wrong-cnt)))
+      (eprintf "~s FAILED\n" wrong-cnt)))
 
 ;; ----------------------------------------
 ;; String snips and lines

@@ -426,8 +426,7 @@
 				    [color (or requested-color 
 					       (send the-color-database find-color "BLACK"))])
 			       (unless requested-color
-				 (fprintf (current-error-port)
-					  "WARNING: couldn't find color: ~s\n" (cadr x)))
+				 (eprintf "WARNING: couldn't find color: ~s\n" (cadr x)))
                                (set-pen (find-or-create-pen color (send p get-width) (send p get-style)))
 			       (set-brush (find-or-create-brush color 'solid))
 			       (set-text-foreground color))

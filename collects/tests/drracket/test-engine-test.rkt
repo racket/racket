@@ -238,10 +238,9 @@
     (clear-definitions drs)
     (type-in-definitions drs expression)
     (do-execute drs)
-    (let* ([got (fetch-output/should-be-tested drs)])
+    (let ([got (fetch-output/should-be-tested drs)])
       (unless (string=? result got)
-        (fprintf (current-error-port)
-                 "FAILED: ~s ~s ~s test\n expected: ~s\n      got: ~s\n"
+        (eprintf "FAILED: ~s ~s ~s test\n expected: ~s\n      got: ~s\n"
                  (language) setting-name expression result got)))))
 
 (define (fetch-output/should-be-tested . args)

@@ -448,8 +448,7 @@
       (if 1st?
         (begin
           (unless (equal? version v)
-            (fprintf (current-error-port)
-                     "\nNOTE: bundling a different version from ~a\n\n"
+            (eprintf "\nNOTE: bundling a different version from ~a\n\n"
                      "running process"))
           (set! version v)
           (set! 1st? #f))

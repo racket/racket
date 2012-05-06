@@ -270,8 +270,7 @@
                (if dest
                    (if (list? number)
                        (format-number number null)
-                       (begin (fprintf (current-error-port)
-                                       "Internal tag error: ~s -> ~s\n"
+                       (begin (eprintf "Internal tag error: ~s -> ~s\n"
                                        (link-element-tag e)
                                        dest)
                               '("!!!")))

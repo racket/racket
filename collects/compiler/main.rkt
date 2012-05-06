@@ -376,8 +376,7 @@
   (begin (link-variant 'cgc) (compile-variant 'cgc)))
 
 (define (compiler-warning)
-  (fprintf (current-error-port)
-           "Warning: ~a\n         ~a\n"
+  (eprintf "Warning: ~a\n         ~a\n"
            "compilation to C is usually less effective for performance"
            "than relying on the bytecode just-in-time compiler."))
 

@@ -619,7 +619,7 @@
 		    (λ (x)
 		       (if (exn? x)
 			   (orig-display-handler (exn-message x) x)
-			   (fprintf (current-error-port) "uncaught exception ~s\n" x))
+			   (eprintf "uncaught exception ~s\n" x))
 		       (exit 1))))
 		 (run-test)
 		 (exit)))

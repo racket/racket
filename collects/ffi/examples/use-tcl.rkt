@@ -5,14 +5,11 @@
 (require "tcl.rkt")
 
 (define (tcldemo . strs)
-  (for-each (lambda (s)
-              (printf "> ~a\n" s)
-              (with-handlers ([void (lambda (e)
-                                      (display (if (exn? e) (exn-message e) e)
-                                               (current-error-port))
-                                      (newline (current-error-port)))])
-                (printf "~a\n" (eval-tcl s))))
-            strs))
+  (for ([s (in-list strs)])
+    (printf "> ~a\n" s)
+    (with-handlers ([void (lambda (e)
+                            (eprintf "~a\n" (if (exn? e) (exn-message e) e)))])
+      (printf "~a\n" (eval-tcl s)))))
 
 (tcldemo "puts 123"
          "puts $a"

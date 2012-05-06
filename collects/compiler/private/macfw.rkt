@@ -44,8 +44,7 @@
       (if v
 	  (bytes->string/utf-8 v)
 	  (begin
-	    (fprintf (current-error-port)
-		     "warning: cannot find existing link for ~a in ~a\n"
-		     p dest)
-	    #f)))))
+            (eprintf "warning: cannot find existing link for ~a in ~a\n"
+                     p dest)
+            #f)))))
 

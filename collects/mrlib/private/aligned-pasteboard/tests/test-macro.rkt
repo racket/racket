@@ -13,5 +13,5 @@
                 actual)])
          (unless (and (not (exn? result))
                       (test result expected))
-           (fprintf (current-error-port) "test failed: ~s != ~s\n" result expected))))))
+           (eprintf "test failed: ~s != ~s\n" result expected))))))
   )

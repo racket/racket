@@ -459,7 +459,7 @@
                     (let loop ()
                       (let ([l (read-bytes-line (list-ref proc 3) 'any)])
                         (unless (eof-object? l)
-                          (fprintf (current-error-port) "~a\n" l)
+                          (eprintf "~a\n" l)
                           (loop))))
                     (close-input-port (list-ref proc 3)))))
         
@@ -569,8 +569,8 @@
         (define exit-with-error? #f)
         
         (define (log-error format . args)
-          (fprintf (current-error-port) "Error ")
-          (apply fprintf (current-error-port) format args)
+          (eprintf "Error ")
+          (apply eprintf format args)
           (newline (current-error-port))
           (set! exit-with-error? #t))
         
@@ -2472,8 +2472,7 @@
 				  name))
 		     (unless saw-gcing-call
 		       '
-		       (fprintf (current-error-port)
-				"[SUGGEST] Consider declaring ~a as __xform_nongcing__.\n"
+		       (eprintf "[SUGGEST] Consider declaring ~a as __xform_nongcing__.\n"
 				name)))
                  (if (and (not important-conversion?)
                           (not (and function-name
@@ -3463,15 +3462,13 @@
                                                 ;; local vars taken in the function.
                                                 (not (or (ormap (lambda (var)
                                                                   (and (array-type? (cdr var))
-                                                                       '(fprintf (current-error-port)
-                                                                                 "Optwarn [return] ~a in ~a: tail-push blocked by ~s[].\n"
+                                                                       '(eprintf "Optwarn [return] ~a in ~a: tail-push blocked by ~s[].\n"
                                                                                  (tok-line (car func)) (tok-file (car func))
                                                                                  (car var))))
                                                                 (live-var-info-vars live-vars))
                                                          (ormap (lambda (&-var)
                                                                   (and (assq &-var vars)
-                                                                       '(fprintf (current-error-port)
-                                                                                 "Optwarn [return] ~a in ~a: tail-push blocked by &~s.\n"
+                                                                       '(eprintf "Optwarn [return] ~a in ~a: tail-push blocked by &~s.\n"
                                                                                  (tok-line (car func)) (tok-file (car func))
                                                                                  &-var)))
                                                                 &-vars))))]

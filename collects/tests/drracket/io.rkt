@@ -32,10 +32,9 @@ add this test:
                                   (or (equal? (cadr exp) (cadr got))
                                       (and (procedure? (cadr exp))
                                            ((cadr exp) (cadr got))))))
-                           expected 
+                           expected
                            got))
-        (fprintf (current-error-port)
-                 "expected ~s\n     got ~s\nfor ~s\n\n"
+        (eprintf "expected ~s\n     got ~s\nfor ~s\n\n"
                  expected
                  got
                  expression)))))
@@ -141,8 +140,7 @@ add this test:
                               (send interactions-text paragraph-end-position
                                     (- (send interactions-text last-paragraph) 1)))))])
         (unless (equal? got-value expected-transcript)
-          (fprintf (current-error-port)
-                   "FAILED: expected: ~s\n             got: ~s\n         program: ~s\n           input: ~s\n"
+          (eprintf "FAILED: expected: ~s\n             got: ~s\n         program: ~s\n           input: ~s\n"
                    expected-transcript got-value program input)))))
   
   (clear-definitions drs-frame)

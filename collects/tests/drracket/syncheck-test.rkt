@@ -1142,8 +1142,7 @@
                 [menu-item
                  menu-item]
                 [else
-                 (fprintf (current-error-port)
-                          "syncheck-test.rkt: rename test ~s didn't find menu item named ~s in ~s"
+                 (eprintf "syncheck-test.rkt: rename test ~s didn't find menu item named ~s in ~s"
                           test
                           item-name
                           (map (λ (x) (and (is-a? x labelled-menu-item<%>) (send x get-label)))
@@ -1160,8 +1159,7 @@
                                    (define defs (send drs get-definitions-text))
                                    (send defs get-text 0 (send defs last-position)))))
            (unless (equal? result (rename-test-output test))
-             (fprintf (current-error-port)
-                      "syncheck-test.rkt FAILED\n   test ~s\n  got ~s\n" 
+             (eprintf "syncheck-test.rkt FAILED\n   test ~s\n  got ~s\n" 
                       test
                       result)))])))
   
@@ -1233,8 +1231,7 @@
                  (hash-set! already-checked frm #t)
                  (let ([ht-ent (hash-ref ht frm (lambda () 'nothing-there))])
                    (unless (equal? ht-ent to)
-                     (fprintf (current-error-port)
-                              (if expected? 
+                     (eprintf (if expected?
                                   "FAILED arrow test ~s from ~s\n  expected ~s\n    actual ~s\n"
                                   "FAILED arrow test ~s from ~s\n    actual ~s\n  expected ~s\n")
                              test-exp
@@ -1251,8 +1248,7 @@
         [(equal? got expected)
          (compare-arrows input arrows arrows-got)]
         [else
-         (fprintf (current-error-port)
-                  "FAILED: ~s\n      expected: ~s\n           got: ~s\n"
+         (eprintf "FAILED: ~s\n      expected: ~s\n           got: ~s\n"
                   input expected got)])))
   
   ;; get-annotate-output : drscheme-frame -> (listof str/ann)
@@ -1267,12 +1263,11 @@
     
     (let ([err (queue-callback/res (λ () (send drs syncheck:get-error-report-contents)))]) 
       (when err
-        (fprintf (current-error-port)
-                 "FAILED ~s\n   error report window is visible:\n   ~a\n"
+        (eprintf "FAILED ~s\n   error report window is visible:\n   ~a\n"
                  test
                  err))))
   
   (define (click-check-syntax-button drs)
     (test:run-one (lambda () (send (send drs syncheck:get-button) command))))
-    
+
   (main)

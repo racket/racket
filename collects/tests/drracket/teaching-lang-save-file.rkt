@@ -26,9 +26,9 @@
        (unless (call-with-input-file fn
                  (λ (p) (regexp-match #rx";;[^\n]*metadata" p)))
          
-         (fprintf (current-error-port) "---- saved file, cut here ----\n")
+         (eprintf "---- saved file, cut here ----\n")
          (call-with-input-file fn (λ (p) (copy-port p (current-error-port))))
-         (fprintf (current-error-port) "---- saved file, cut here ----\n")
+         (eprintf "---- saved file, cut here ----\n")
          (error 'save-teaching-lang-file.rkt
                 "expected the saved file to contain the word 'metadata' in a comment"))
        (do-execute drr-frame)

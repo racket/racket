@@ -113,7 +113,7 @@
           ((error-display-handler)
            (format "~a\n" (exn->string exn))
            exn)
-          (fprintf (current-error-port) "~a\n" (exn->string exn)))
+          (eprintf "~a\n" (exn->string exn)))
       (append-error cc desc exn out err type))
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
@@ -137,8 +137,7 @@
       (setup-printf #f "")
       (show-errors (current-error-port))
       (when (pause-on-errors)
-        (fprintf (current-error-port)
-                 "INSTALLATION FAILED.\nPress Enter to continue...\n")
+        (eprintf "INSTALLATION FAILED.\nPress Enter to continue...\n")
         (read-line))
       (exit 1))
     (exit 0))

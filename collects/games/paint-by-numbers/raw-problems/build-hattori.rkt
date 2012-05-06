@@ -9,15 +9,12 @@
 (define (main-n n)
   (let ([grid (calculate-grid (build-path 'up "hattori" (format "~a.gif" n)))])
     (display-grid grid)
-    (pretty-print
-     (build-problem 
-      n grid))
+    (pretty-print (build-problem n grid))
     (newline)
-    (newline (current-error-port))
-    (newline (current-error-port))))
+    (eprintf "\n\n")))
 
 (define (calculate-grid filename)
-  (fprintf (current-error-port) "reading ~a\n" filename)
+  (eprintf "reading ~a\n" filename)
   (let* ([bitmap (make-object bitmap% filename)]
 	 [_ (unless (send bitmap ok?)
 	      (error 'bad-bitmap "name: ~a" filename))]
@@ -34,12 +31,10 @@
 	 [new-bitmap-height (floor (/ (- puzzle-height 1) pixel-size))])
 
     (begin
-    (fprintf (current-error-port) "size of picture: ~a x ~a\n" raw-width raw-height)
-    (fprintf (current-error-port) "  size of image: ~a x ~a\n" image-width image-height)
-    (fprintf (current-error-port) "grid-start (~a, ~a)\n" grid-x-start grid-y-start)
-    (fprintf (current-error-port) "size of puzzle: ~a x ~a\n"
-	    puzzle-width
-	    puzzle-height))
+    (eprintf "size of picture: ~a x ~a\n" raw-width raw-height)
+    (eprintf "  size of image: ~a x ~a\n" image-width image-height)
+    (eprintf "grid-start (~a, ~a)\n" grid-x-start grid-y-start)
+    (eprintf "size of puzzle: ~a x ~a\n" puzzle-width puzzle-height))
     (reverse
      (let loop ([j new-bitmap-height])
        (cond
@@ -62,7 +57,7 @@
 			       (* pixel-size (+ j -1 1/2)))))
 			  'x
 			  'o)])
-		 ;(fprintf (current-error-port) "(~a, ~a) is ~a\n" i j pixel-value)
+		 ;(eprintf "(~a, ~a) is ~a\n" i j pixel-value)
 		 (cons pixel-value
 		       (loop (- i 1))))])))
 	  (loop (- j 1)))])))))

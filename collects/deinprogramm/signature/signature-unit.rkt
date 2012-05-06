@@ -135,7 +135,7 @@
   (make-signature
    name
    (lambda (self obj)
-     ;;(write (list 'list obj) (current-error-port)) (newline (current-error-port))
+     ;;(eprintf "~s\n" (list 'list obj))
      (let recur ((l obj))
 
        (define (go-on)
@@ -153,7 +153,7 @@
 	 obj)
 	((hash-ref lists-table l #f)
 	 => (lambda (seen)
-	      ;;(write (list 'seen seen (eq? self (car seen))) (current-error-port)) (newline (current-error-port))
+	      ;;(eprintf "~s\n" (list 'seen seen (eq? self (car seen))))
 	      (if (eq? self (car seen))
 		  (cdr seen)
 		  (go-on))))

@@ -13,7 +13,7 @@
      (error 'slatex "pdf-slatex not supported under Mac OS Classic")]
     [(windows unix macosx)
      (when (equal? (vector) argv)
-       (fprintf (current-error-port) "pdf-slatex: expected a file on the command line\n")
+       (eprintf "pdf-slatex: expected a file on the command line\n")
        (exit 1))
      (let* ([filename
              (command-line

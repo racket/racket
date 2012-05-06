@@ -613,9 +613,7 @@
                         (list (hash-ref named-dependents sym (lambda () dummy)) val))
                        (loop)]
                       [msg
-                       (fprintf (current-error-port)
-                                "frtime engine: msg not understood: ~a\n"
-                                msg)
+                       (eprintf "frtime engine: msg not understood: ~a\n" msg)
                        (loop)]))
            
            ;; enqueue expired timers for execution

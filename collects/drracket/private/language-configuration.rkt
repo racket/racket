@@ -1636,7 +1636,7 @@
         
         (define/override (first-opened) 
           (not-a-language-message)
-          (fprintf (current-error-port) "\n"))
+          (eprintf "\n"))
         
         (define/override (front-end/interaction input settings)
           (not-a-language-message)
@@ -1720,13 +1720,9 @@
       
       (define o
         (case-lambda
-          [(arg)
-           (cond
-             [(string? arg)
-              (fprintf (current-error-port) arg)]
-             [(is-a? arg snip%)
-              (write-special arg (current-error-port))])]
-          [args (apply fprintf (current-error-port) args)]))
+          [(arg) (cond [(string? arg) (eprintf arg)]
+                       [(is-a? arg snip%) (write-special arg (current-error-port))])]
+          [args (apply eprintf args)]))
       
       (define arrow-cursor (make-object cursor% 'arrow))
       

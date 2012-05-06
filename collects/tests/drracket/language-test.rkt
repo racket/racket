@@ -1116,8 +1116,7 @@ the settings above should match r5rs
     (do-execute drs)
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (string=? result got)
-        (fprintf (current-error-port)
-                 "FAILED: ~s ~s ~s test\n expected: ~s\n      got: ~s\n"
+        (eprintf "FAILED: ~s ~s ~s test\n expected: ~s\n      got: ~s\n"
                  (language) setting-name expression result got)))))
 
 (define (test-hash-bang)
@@ -1130,8 +1129,7 @@ the settings above should match r5rs
     (do-execute drs)
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (string=? "1" got)
-        (fprintf (current-error-port)
-                 "FAILED: ~s ~a test\n expected: ~s\n     got: ~s\n"
+        (eprintf "FAILED: ~s ~a test\n expected: ~s\n     got: ~s\n"
                  (language) expression result got)))))
 
 (define (fetch-output/should-be-tested . args)
@@ -1172,8 +1170,7 @@ the settings above should match r5rs
                                                          (min (string-length line1-expect)
                                                               (string-length line1-got))))
                        (regexp-match line1-expect line1-got)))
-        (fprintf (current-error-port)
-                 "expected lines: \n  ~a\n  ~a\ngot lines:\n  ~a\n  ~a\n" 
+        (eprintf "expected lines: \n  ~a\n  ~a\ngot lines:\n  ~a\n  ~a\n" 
                  line0-expect line1-expect
                  line0-got line1-got)
         (error 'language-test.rkt "failed get top of repl test")))))
@@ -1255,8 +1252,7 @@ the settings above should match r5rs
               (unless (if (procedure? answer)
                           (answer got)
                           (whitespace-string=? answer got))
-                (fprintf (current-error-port)
-                         "FAILED ~s ~a, sharing ~a pretty? ~a\n            got ~s\n       expected ~s\n"
+                (eprintf "FAILED ~s ~a, sharing ~a pretty? ~a\n            got ~s\n       expected ~s\n"
                          (language) option show-sharing pretty?
                          (shorten got)
                          (if (procedure? answer) (answer) answer)))))])
@@ -1326,8 +1322,7 @@ the settings above should match r5rs
                  (send interactions-text paragraph-end-position
                        (- (send interactions-text last-paragraph) 1)))))])
         (unless (equal? got "0")
-          (fprintf (current-error-port)
-                   "FAILED: test-error-after-definition failed, expected 0, got ~s\n" got))))))
+          (eprintf "FAILED: test-error-after-definition failed, expected 0, got ~s\n" got))))))
 
 
 ;; test-expression : (union string 'xml 'image (listof (union string 'xml 'image)))
@@ -1388,8 +1383,7 @@ the settings above should match r5rs
       (when (regexp-match re:out-of-sync got)
         (error 'text-expression "got out of sync message"))
       (unless (check-expectation defs-expected got)
-        (fprintf (current-error-port)
-                 (make-err-msg defs-expected) 
+        (eprintf (make-err-msg defs-expected)
                  'definitions (language) expression defs-expected got)))
     
     (let ([dp (defs-prefix)])
@@ -1422,8 +1416,7 @@ the settings above should match r5rs
         (when (regexp-match re:out-of-sync got)
           (error 'text-expression "got out of sync message"))
         (unless (check-expectation repl-expected got)
-          (fprintf (current-error-port)
-                   (make-err-msg repl-expected)
+          (eprintf (make-err-msg repl-expected)
                    'interactions
                    (language)
                    expression repl-expected got))))))

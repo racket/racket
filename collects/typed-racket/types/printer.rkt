@@ -260,7 +260,7 @@
 
     #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
     [(Poly-names: names body)
-     #;(fprintf (current-error-port) "POLY SEQ: ~a\n" (Type-seq body))
+     #;(eprintf "POLY SEQ: ~a\n" (Type-seq body))
      (fp "(All ~a ~a)" names body)]
     #;
     [(PolyDots-unsafe: n b) (fp "(unsafe-polydots ~a ~a ~a)" (Type-seq c) n b)]

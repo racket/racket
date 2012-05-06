@@ -9,9 +9,9 @@
   (define (test-results)
     (cond
       [(= 0 (unbox failure-count))
-       (fprintf (current-error-port) "All ~a tests passed." (unbox test-count))]
+       (eprintf "All ~a tests passed." (unbox test-count))]
       [else
-       (fprintf (current-error-port) "~a tests failed, ~a tests total" 
+       (eprintf "~a tests failed, ~a tests total"
                 (unbox failure-count)
                 (unbox test-count))]))
   
@@ -23,8 +23,7 @@
           (with-handlers ([pred (lambda (x) (void))])
             (when show-tests? (printf "> running test ~s\n" line))
             (set-box! test-count (+ (unbox test-count) 1))
-            (fprintf (current-error-port)
-                     "test ~a ~s:\n expected error, got ~a\n\n"
+            (eprintf "test ~a ~s:\n expected error, got ~a\n\n"
                      line
                      'actual
                      (flatten-list (call-with-values (lambda () actual) list)))
@@ -46,9 +45,9 @@
               (set-box! test-count (+ (unbox test-count) 1))
               (unless (equal? actual-xs expect-xs)
                 (set-box! failure-count (+ (unbox failure-count) 1))
-                (fprintf (current-error-port) "test ~a ~s:\ngot:\n" line 'actual)
+                (eprintf "test ~a ~s:\ngot:\n" line 'actual)
                 (for-each (lambda (x) (pretty-print x (current-error-port))) actual-xs)
-                (fprintf (current-error-port) "expected:\n")
+                (eprintf "expected:\n")
                 (for-each (lambda (x) (pretty-print x (current-error-port))) expect-xs))))))]))
   
   (define-syntax (test-list stx)
@@ -63,11 +62,8 @@
                   [show-err
                    (lambda (in not-in val)
                      (set-box! failure-count (+ (unbox failure-count) 1))
-                     (fprintf (current-error-port) "test ~a ~s found in ~a but not in ~a:\n" 
-                              line
-                              'actual
-                              in 
-                              not-in)
+                     (eprintf "test ~a ~s found in ~a but not in ~a:\n"
+                              line 'actual in not-in)
                      (pretty-print val (current-error-port)))])
               (set-box! test-count (+ (unbox test-count) 1))
               (for-each (lambda (one-actual)

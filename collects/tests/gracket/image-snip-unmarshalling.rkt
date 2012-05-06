@@ -37,8 +37,7 @@ and compares a bunch of properties of them
   (define copy-is (send t2 find-first-snip))
   
   (define (warn . args)
-    (fprintf (current-error-port)
-             (string-append (format "FAILED test-wxme-image-snip-reader.rkt line ~a: " line)
+    (eprintf (string-append (format "FAILED test-wxme-image-snip-reader.rkt line ~a: " line)
                             (apply format args))))
   
   (define-syntax-rule (cmp mtd) (cmp/proc (λ (x) (send x mtd)) 'mtd))
@@ -92,7 +91,7 @@ and compares a bunch of properties of them
   (cond
     [(equal? a b) #t]
     [else 
-     ;(fprintf (current-error-port) "checking ~s, doesn't match\n~s\nvs\n~s\n\n" what a b)
+     ;(eprintf "checking ~s, doesn't match\n~s\nvs\n~s\n\n" what a b)
      #f]))
 
 (define (bitmap->bytes bmp alpha?)

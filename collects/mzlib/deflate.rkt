@@ -64,7 +64,7 @@
     (make-gzbytes (gzbytes-bytes v) (+ (gzbytes-offset v) o)))
 
   (define (Trace stderr str . args)
-    (apply fprintf (current-error-port) str args))
+    (apply eprintf str args))
   (define Tracevv Trace)
   (define Tracev Trace)
   (define (Tracec test . args)

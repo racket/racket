@@ -61,8 +61,7 @@
   (define notify
     (if (or (memq '#:verbose flags) (and re? (memq '#:verbose-reload flags)))
       (lambda (path)
-        (fprintf (current-error-port)
-                 "  [~aloading ~a]\n" (if re? "re-" "") path))
+        (eprintf "  [~aloading ~a]\n" (if re? "re-" "") path))
       void))
   (lambda (path name)
     (if name

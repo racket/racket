@@ -11,10 +11,8 @@
     (hash-ref! warnings name
                (λ ()
                  (if replacement-name
-                     (fprintf (current-error-port)
-                              "~a is deprecated and may be removed in the future; use ~a instead~n"
+                     (eprintf "~a is deprecated and may be removed in the future; use ~a instead~n"
                               name replacement-name)
-                     (fprintf (current-error-port)
-                              "~a is deprecated and may be removed in the future"
+                     (eprintf "~a is deprecated and may be removed in the future"
                               name))
                  #t))))

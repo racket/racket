@@ -133,7 +133,7 @@ This command does not unpack or install the named .plt file."
 
   (define (verify-package-name pkg)
     (unless (regexp-match #rx"\\.plt$" pkg)
-      (fprintf (current-error-port) "Expected package name to end with '.plt', got: ~a\n" pkg)
+      (eprintf "Expected package name to end with '.plt', got: ~a\n" pkg)
       (exit 1)))
   
   

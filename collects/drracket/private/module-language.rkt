@@ -506,7 +506,7 @@
     ;; raise the exception as normal.  (It can happen in some rare cases like
     ;; having a single empty scheme box in the definitions.)
     (unless rep (if exn (raise exn) (error "\nInteractions disabled")))
-    (when prefix (fprintf (current-error-port) "Module Language: ~a\n" prefix))
+    (when prefix (eprintf "Module Language: ~a\n" prefix))
     (when exn ((error-display-handler) (exn-message exn) exn))
     ;; these are needed, otherwise the warning can appear before the output
     (flush-output (current-output-port))
