@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require "mzrl.rkt" scheme/list scheme/file)
+(require "mzrl.rkt" racket/list racket/file)
 
 ;; --------------------------------------------------------------------------
 ;; Configuration
@@ -27,11 +27,11 @@
 (define get-namespace-bstrings
   (let ([last-syms #f] [last-bstrs #f])
     (lambda ()
-      (let ([syms (namespace-mapped-symbols)])
-        (unless (equal? syms last-syms)
-          (set! last-syms syms)
-          (set! last-bstrs (sort (map symbol->bstring syms) bytes<?)))
-        last-bstrs))))
+      (define syms (namespace-mapped-symbols))
+      (unless (equal? syms last-syms)
+        (set! last-syms syms)
+        (set! last-bstrs (sort (map symbol->bstring syms) bytes<?)))
+      last-bstrs)))
 
 (define (namespace-completion pat)
   (let* ([pat (if (string? pat) (string->bytes/utf-8 pat) pat)]
@@ -69,14 +69,14 @@
   (when (and (bytes? s) (or (keep-blanks) (not (zero? (bytes-length s)))))
     ;; remove duplicate (keep-blanks determines how we search)
     (unless (or (null? local-history) (eq? #t keep))
-      (let ([dup (let loop ([n -1] [h local-history] [r '()])
-                   (cond [(null? h) #f]
-                         [(equal? (car h) s) `(,n ,@(reverse r) ,@(cdr h))]
-                         [(eq? keep 'unconsecutive) #f] ; no loop
-                         [else (loop (sub1 n) (cdr h) (cons (car h) r))]))])
-        (when dup
-          (set! local-history (cdr dup))
-          (history-delete (car dup)))))
+      (define dup (let loop ([n -1] [h local-history] [r '()])
+                    (cond [(null? h) #f]
+                          [(equal? (car h) s) `(,n ,@(reverse r) ,@(cdr h))]
+                          [(eq? keep 'unconsecutive) #f] ; no loop
+                          [else (loop (sub1 n) (cdr h) (cons (car h) r))])))
+      (when dup
+        (set! local-history (cdr dup))
+        (history-delete (car dup))))
     (add-history-bytes s)
     (let loop ()
       (when ((history-length) . > . (max-history)) (history-delete 0) (loop)))
@@ -99,8 +99,8 @@
 
 (define (readline-bytes/hist p force-keep?)
   (when (eq? readline-output-port (current-output-port))
-    (let-values ([(line col pos) (port-next-location readline-output-port)])
-      (when (and col (positive? col)) (newline readline-output-port))))
+    (define-values [line col pos] (port-next-location readline-output-port))
+    (when (and col (positive? col)) (newline readline-output-port)))
   (let ([s (readline-bytes p)]) (add-to-history s force-keep?) s))
 
 (exit-handler
@@ -135,43 +135,44 @@
         state)))
 
 (define (do-multiline-chunk state)
-  (let ([chunk (readline-state-multiline-chunk state)])
-    (when (pair? chunk)
-      (drop-from-history chunk)
-      (add-to-history (apply bytes-append (reverse chunk)) #f)
-      (set-readline-state-multiline-chunk! state '()))))
+  (define chunk (readline-state-multiline-chunk state))
+  (when (pair? chunk)
+    (drop-from-history chunk)
+    (add-to-history (apply bytes-append (reverse chunk)) #f)
+    (set-readline-state-multiline-chunk! state '())))
 
 (define (readline-bytes/multiline-chunk prompt state)
-  (let ([line (readline-bytes/hist prompt #t)])
-    (when (and (bytes? line) (not (zero? (bytes-length line))))
-      (let ([c (readline-state-multiline-chunk state)])
-        (set-readline-state-multiline-chunk!
-         state
-         (if (pair? c)
-             (list* line (readline-state-prompt-spaces state) #"\n" c)
-             (cons line c)))))
-    line))
+  (define line (readline-bytes/hist prompt #t))
+  (when (and (bytes? line) (not (zero? (bytes-length line))))
+    (define c (readline-state-multiline-chunk state))
+    (set-readline-state-multiline-chunk!
+     state
+     (if (pair? c)
+       (list* line (readline-state-prompt-spaces state) #"\n" c)
+       (cons line c))))
+  line)
 
 (define (do-one-line state k)
-  (let ([p (readline-prompt)])
-    (case p
-      [(#f) (thread (lambda ()
-                      (do-multiline-chunk state) 
-                      (k (readline-bytes/hist #"" #f))))]
-      [(space) (thread
-                (lambda ()
-                  (k (readline-bytes/multiline-chunk (readline-state-prompt-spaces state)
-                                                     state))))]
-      [else (readline-prompt 'space) ; use spaces next time
-            (thread
-             (lambda ()
-               (do-multiline-chunk state)
-               (unless (= (bytes-length (readline-state-prompt-spaces state))
-                          (bytes-length p))
-                 (set-readline-state-prompt-spaces! 
-                  state
-                  (make-bytes (bytes-length p) 32)))
-               (k (readline-bytes/multiline-chunk p state))))])))
+  (define p (readline-prompt))
+  (case p
+    [(#f) (thread (lambda ()
+                    (do-multiline-chunk state)
+                    (k (readline-bytes/hist #"" #f))))]
+    [(space) (thread
+              (lambda ()
+                (k (readline-bytes/multiline-chunk
+                    (readline-state-prompt-spaces state)
+                    state))))]
+    [else (readline-prompt 'space) ; use spaces next time
+          (thread
+           (lambda ()
+             (do-multiline-chunk state)
+             (unless (= (bytes-length (readline-state-prompt-spaces state))
+                        (bytes-length p))
+               (set-readline-state-prompt-spaces!
+                state
+                (make-bytes (bytes-length p) 32)))
+             (k (readline-bytes/multiline-chunk p state))))]))
 
 (provide readline-input)
 (define readline-input
@@ -195,31 +196,30 @@
                        (lambda (buf)
                          (if (eof-object? buf)
                              (save-history)
-                             (begin 
-                               (set! skip 0)
-                               (set! blen (bytes-length buf))))
+                             (begin (set! skip 0)
+                                    (set! blen (bytes-length buf))))
                          (set! buffer buf)
                          (set! evt #f)))
                       (lambda (v) 0)))
                evt]
               [else
                ;; copy bytes
-               (let ([tgtlen (bytes-length tgt)]
-                     [left (- blen skip)])
-                 (cond [(< tgtlen left) ; not enough target space
-                        (let ([end (+ skip tgtlen)])
-                          (bytes-copy! tgt 0 buffer skip end)
-                          (set! skip end)
-                          tgtlen)]
-                       [(= tgtlen left) ; enough room for text but no newline
-                        (bytes-copy! tgt 0 buffer skip blen)
-                        (set! skip blen)
-                        left]
-                       [else ; enough room for text with newline
-                        (bytes-copy! tgt 0 buffer skip blen)
-                        (bytes-set! tgt left LF)
-                        (set! buffer #f)
-                        (add1 left)]))])))
+               (define tgtlen (bytes-length tgt))
+               (define left   (- blen skip))
+               (cond [(< tgtlen left) ; not enough target space
+                      (let ([end (+ skip tgtlen)])
+                        (bytes-copy! tgt 0 buffer skip end)
+                        (set! skip end)
+                        tgtlen)]
+                     [(= tgtlen left) ; enough room for text but no newline
+                      (bytes-copy! tgt 0 buffer skip blen)
+                      (set! skip blen)
+                      left]
+                     [else ; enough room for text with newline
+                      (bytes-copy! tgt 0 buffer skip blen)
+                      (bytes-set! tgt left LF)
+                      (set! buffer #f)
+                      (add1 left)])])))
     (make-input-port 'readline-input reader #f close!)))
 
 ;; --------------------------------------------------------------------------
@@ -232,12 +232,11 @@
   (flush-output)
   ;; needs to set `readline-prompt' to get a prompt when reading
   (parameterize ([readline-prompt prompt])
-    (let ([in ((current-get-interaction-input-port))])
-      (unless (eq? 'readline-input (object-name in))
-        ;; not the readline port -- print the prompt (changing the
-        ;; readline-prompt and using read-complete-syntax below should still
-        ;; work fine)
-        (display prompt) (flush-output))
-      (begin0 ((current-read-interaction) (object-name in) in)
-              (do-multiline-chunk (get-readline-state))))))
-
+    (define in ((current-get-interaction-input-port)))
+    (unless (eq? 'readline-input (object-name in))
+      ;; not the readline port -- print the prompt (changing the
+      ;; readline-prompt and using read-complete-syntax below should still
+      ;; work fine)
+      (display prompt) (flush-output))
+    (begin0 ((current-read-interaction) (object-name in) in)
+      (do-multiline-chunk (get-readline-state)))))
