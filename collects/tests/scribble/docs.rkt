@@ -23,9 +23,9 @@
 (define (docs-tests)
   (when (or (file-exists? work-dir) (directory-exists? work-dir))
     (delete-directory/files work-dir))
-  (make-directory work-dir)
-  (dynamic-wind void
-    (lambda ()
+  (dynamic-wind
+    (λ() (make-directory work-dir))
+    (λ()
       (define files (map path-element->string (directory-list source-dir)))
       (test do
         (for ([scrbl (in-list files)]
@@ -44,4 +44,4 @@
                  "mismatch for: \"~a\", expected text in: \"~a\", got:\n~a"
                  scrbl txt (contents generated-file))
                 (string=? (contents expect-file) (contents generated-file))))))
-    (lambda () (delete-directory/files work-dir))))
+    (λ() (delete-directory/files work-dir))))

@@ -1,8 +1,6 @@
 #lang racket/base
-(require "core.rkt"
-         racket/class
-         racket/port
-         racket/list)
+(require "core.rkt" racket/class racket/port racket/list racket/string
+         scribble/text/wrap)
 (provide render-mixin)
 
 (define current-preserve-spaces (make-parameter #f))
@@ -16,13 +14,6 @@
 (define (indented-newline)
   (newline)
   (indent))
-
-(define indent-pxs (make-hash))
-(define (indent->paragraph-px amt)
-  (or (hash-ref indent-pxs amt #f)
-      (let ([px (pregexp (format "^ *(.{1,~a}(?<! ))(?: |$)" (- 72 amt)))])
-        (hash-set! indent-pxs amt px)
-        px)))
 
 (define (render-mixin %)
   (class %
@@ -134,26 +125,12 @@
       (define o (open-output-string))
       (parameterize ([current-output-port o])
         (super render-paragraph p part ri))
-      (define i (open-input-string
-                 (regexp-replace* #rx"\n" (get-output-string o) " ")))
-      (define px (indent->paragraph-px (current-indent)))
-      (let loop ([indent? #f])
-        (cond
-          [(or (regexp-try-match px i)
-               (regexp-try-match #px"^ *(.+(?<! ))(?: |$)" i))
-           => (lambda (m)
-                (when indent? (indent))
-                (write-bytes (cadr m))
-                (newline)
-                (loop #t))]
-          [else
-           (regexp-try-match "^ +" i)
-           (define b (read-byte i))
-           (unless (eof-object? b)
-             (when indent? (indent))
-             (write-byte b)
-             (copy-port i (current-output-port))
-             (newline))]))
+      (define to-wrap (regexp-replace* #rx"\n" (get-output-string o) " "))
+      (define lines (wrap-line (string-trim to-wrap) (- 72 (current-indent))))
+      (write-string (car lines))
+      (for ([line (in-list (cdr lines))])
+        (newline) (indent) (write-string line))
+      (newline)
       null)
 
     (define/override (render-content i part ri)

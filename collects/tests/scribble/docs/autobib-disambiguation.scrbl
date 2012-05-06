@@ -12,7 +12,7 @@
                      #:location (dissertation-location #:institution "NEU")
                      #:author (authors "Little" "Bo" "Peep")
                      #:date "2012"))
-According to the following morons,
+According to the following people,
 @cite[a]
 @cite[b]
 @citet[a]
