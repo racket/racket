@@ -759,20 +759,23 @@
     (if (zero? delay-refresh)
         (log-error "end-edit-sequence without begin-edit-sequence")
         (let ([new-delay-refresh (sub1 delay-refresh)])
-          (when (zero? new-delay-refresh)
+          (cond
+           [(zero? new-delay-refresh)
             (end-streaks null)
             (pop-streaks)
             (parameterize ([in-delayed-refresh #t])
               (redraw))
-            (when ALLOW-X-STYLE-SELECTION?
-              (set! need-x-copy? #f))
-            (after-edit-sequence)
-            (when (positive? s-noundomode)
-              (set! s-noundomode (sub1 s-noundomode)))
             (when s-need-on-display-size?
               (set! s-need-on-display-size? #f)
-              (on-display-size)))
-          (set! delay-refresh new-delay-refresh))))
+              (on-display-size))
+            (set! delay-refresh 0)
+            (when ALLOW-X-STYLE-SELECTION?
+              (set! need-x-copy? #f))
+            (after-edit-sequence)]
+           [else
+            (set! delay-refresh new-delay-refresh)])
+          (when (positive? s-noundomode)
+            (set! s-noundomode (sub1 s-noundomode))))))
 
   (def/override (refresh-delayed?)
     (or (and (delay-refresh . > . 0)
