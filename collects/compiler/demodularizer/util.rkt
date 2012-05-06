@@ -9,9 +9,6 @@
   (define total-stxs (length (prefix-stxs pre)))
   (+ syntax-start total-stxs (if (zero? total-stxs) 0 1)))
 
-(define (eprintf . args)
-  (apply fprintf (current-error-port) args))
-
 (struct nothing ())
 
 (define-syntax-rule (eprintf* . args) (void))
