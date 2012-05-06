@@ -516,9 +516,17 @@
 (test 10 dynamic-require '(submod 'subm-all-defined-1 main) 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Directory for testing
+
+(define temp-dir
+  (build-path (find-system-path 'temp-dir)
+              (format "submodule-tests-~s" (current-seconds))))
+(make-directory temp-dir)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check submodule resolution of relative paths:
 
-(parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
+(parameterize ([current-load-relative-directory temp-dir])
   (define p (collection-file-path "has-submod.rkt" "tests" "racket"))
   (dynamic-require p #f)
   (test 'for-submod dynamic-require `(submod ,p main) 'has-submod))
@@ -533,10 +541,8 @@
                      `(module+ ,n
                         (define name ',n)
                         (provide name)))))
-    (define fn (build-path (find-system-path 'temp-dir)
-                           "has-submod.rkt"))
-    (define dir (build-path (find-system-path 'temp-dir)
-                            "compiled"))
+    (define fn (build-path temp-dir "has-submod.rkt"))
+    (define dir (build-path temp-dir "compiled"))
     (define fn-zo (build-path dir "has-submod_rkt.zo"))
     (unless (directory-exists? dir) (make-directory dir))
     (with-output-to-file fn-zo
@@ -547,6 +553,15 @@
   (try-submods '(a b))
   (try-submods '(xa xb))
   (try-submods '(test main)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Delete the temp-dir
+
+(let loop ([x temp-dir])
+  (cond [(file-exists? x) (delete-file x)]
+        [(directory-exists? x) (parameterize ([current-directory x])
+                                 (for-each loop (directory-list)))
+                               (delete-directory x)]))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
