@@ -2,21 +2,22 @@
 (require scribble/render
          scribble/text-render
          scribble/core
-         racket/file)
+         racket/file
+         tests/eli-tester)
 
-(render (list (part #f
-                    null
-                    (list "Render")
-                    (style #f null)
-                    null
-                    (list (paragraph (style #f null) "The content."))
-                    null))
-        (list "example")
-        #:render-mixin render-mixin)
-
-(unless (string=? "Render\n\nThe content.\n"
-                  (file->string "example.txt"))
-  (error "render test failed"))
-
-(delete-file "example.txt")
-
+(provide render-tests)
+(module+ main (render-tests))
+(define (render-tests)
+  (dynamic-wind
+    (λ() (render (list (part #f
+                             null
+                             (list "Render")
+                             (style #f null)
+                             null
+                             (list (paragraph (style #f null) "The content."))
+                             null))
+                 (list "example-for-render-test")
+                 #:render-mixin render-mixin))
+    (λ() (test (file->string "example-for-render-test.txt")
+               => "Render\n\nThe content.\n"))
+    (λ() (delete-file "example-for-render-test.txt"))))
