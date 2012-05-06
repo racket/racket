@@ -21,7 +21,7 @@
 ;; element is used for the rest.  For example, (cons 72 70) indicates a width
 ;; of 72 characters for the first line, and 70 for the rest.
 ;;
-;; `split-word' controls what happens when a word is split: it is ivoked with
+;; `split-word' controls what happens when a word is split: it is invoked with
 ;; the word that is to be split, and an integer indicating how many characters
 ;; could fit on the first line.  In most cases the string will be just a word,
 ;; but if it was the first/last word with only spaces before/after it, then the
@@ -36,13 +36,13 @@
 ;; words; spaces between a word that moves to the next line and the preceding
 ;; word are usually dropped, but they can be preserved too if the first result
 ;; is "" rather than #f (and same for the space between a word that stays on
-;; the same line when the following word moves doen).  If the first result is
+;; the same line when the following word moves down).  If the first result is
 ;; `#f' and it was the only word on the line, then the line that would
 ;; otherwise be empty is dropped.  Note that depending on what `split-word'
 ;; chooses to do, the result may still have lines that are longer than `width'
 ;; characters.  The default `split-word' returns (values #f the-word #t).
 ;;
-;; Sidenote: never returns an empty list.
+;; Side note: never returns an empty list.
 ;;
 ;; Caveats: considers only spaces as whitespace; not too efficient since it
 ;; constructs intermediate strings for its processing; the need for the third

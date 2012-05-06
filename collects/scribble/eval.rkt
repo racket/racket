@@ -6,7 +6,8 @@
          racket/pretty ;; attached into new namespace via anchor
          racket/sandbox racket/promise racket/port
          racket/gui/dynamic
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         scribble/text/wrap)
 
 (provide interaction
          interaction0
@@ -102,19 +103,12 @@
          (loop #f (cons v (or (add-string string-accum line-accum) null))
                flow-accum)]))))
 
-;; This is probably good to make into some library function at some
-;; point (but in that case will need to improve, eg, wrapped lines
-;; should start at the same indentation level, etc)
 (define (string->wrapped-lines str)
-  (define (wrap-line str)
-    (if ((string-length str) . <= . maxlen)
-      (if (equal? str "") '() (list str))
-      (let* ([m (cond [(regexp-match-positions #px"^.*\\S(\\s+).*" str 0 maxlen)
-                       => cadr]
-                      [else (cons maxlen maxlen)])]
-             [r (wrap-line (substring str (cdr m)))])
-        (if (= 0 (car m)) r (cons (substring str 0 (car m)) r)))))
-  (append-map wrap-line (regexp-split #px"\\s*\n" str)))
+  (wrap-line str maxlen
+             (λ (word fits)
+               (if ((string-length word) . > . maxlen)
+                 (values (substring word 0 fits) (substring word fits) #f)
+                 (values #f word #f)))))
 
 (define (interleave inset? title expr-paras val-list+outputs)
   (let ([lines
