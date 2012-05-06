@@ -64,8 +64,8 @@ grammar of @racket[_info-module]:
 
 For example, the following declaration could be the @filepath{info.rkt}
 library of the @filepath{games} collection. It contains definitions for
-three info tags, @racket[name], @racket[racket-launcher-libraries], and
-@racket[racket-launcher-names].
+three info tags, @racket[name], @racket[gracket-launcher-libraries], and
+@racket[gracket-launcher-names].
 
 @racketmod[
 setup/infotab
