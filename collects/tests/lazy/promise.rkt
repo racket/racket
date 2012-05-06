@@ -183,6 +183,7 @@
           (format "~a" p) => "#<promise!99>")))
 
 (provide promise-tests)
+(module+ main (promise-tests))
 (define (promise-tests)
   (test do (test-syntax)
         do (test-types)

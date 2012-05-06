@@ -45,6 +45,7 @@
      => "#0=#s(foo 1 #0#)")))
 
 (provide forcer-tests)
+(module+ main (forcer-tests))
 (define (forcer-tests)
   (test do (test-lazy/force)
         do (test-!list)
