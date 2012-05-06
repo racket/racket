@@ -1225,7 +1225,8 @@
   (define expr  "(require xrepl)")
   (define dexpr "(dynamic-require 'xrepl #f)")
   (define contents (if (file-exists? init-file) (file->string init-file) ""))
-  (read-line) ; discard the newline for further input
+  ;; discard the newline for further input
+  (let loop () (when (byte-ready?) (read-byte)))
   (define (look-for comment-rx expr)
     (let ([m (regexp-match-positions
               (format "(?<=\r?\n|^) *;+ *~a *\r?\n *~a *(?=\r?\n|$)"
@@ -1236,16 +1237,16 @@
   (define existing-readline?
     (look-for "load readline support[^\r\n]*" "(require readline/rep)"))
   (define (yes? question)
-    (define qtext (format "; ~a? " question))
+    (define qtext (string->bytes/utf-8 (format "; ~a? " question)))
     (define inp
       (case (object-name (current-input-port))
         [(readline-input)
          (parameterize ([(dynamic-require
                           (collection-file-path "pread.rkt" "readline")
-                          'current-prompt)
+                          'readline-prompt)
                          qtext])
            (read-line))]
-        [else (display qtext) (flush-output) (read-line)]))
+        [else (write-bytes qtext) (flush-output) (read-line)]))
     (and (string? inp) (regexp-match? #px"^[[:space:]]*[yY]" inp)))
   (cond
     [existing?
@@ -1273,10 +1274,10 @@
      (if (yes? "OK to continue")
        (begin
          (call-with-output-file* init-file #:exists 'truncate
-           (λ (o) (write-string
-                   (string-append (regexp-replace #rx"(?:\r?\n)+$" contents "")
-                                  (format "\n\n;; ~a\n~a\n" comment expr))
-                   o)))
+           (λ (o) (define new (regexp-replace #rx"(?:\r?\n)+$" contents ""))
+                  (write-string new o)
+                  (unless (equal? "" new) (write-string "\n\n" o))
+                  (fprintf o ";; ~a\n~a\n" comment expr)))
          (printf "; new contents written to ~a\n" init-file))
        (printf "; ~a was not updated\n" init-file))])
   (void))
