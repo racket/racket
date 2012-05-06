@@ -1304,7 +1304,7 @@ do_list_ref(char *name, int takecar, int argc, Scheme_Object *argv[])
   lst = argv[0];
   index = argv[1];
 
-  if (!SCHEME_PAIRP(lst) && takecar) {
+  if (takecar && !SCHEME_PAIRP(lst)) {
     scheme_wrong_type(name, "pair", 0, argc, argv);;
   }
 
