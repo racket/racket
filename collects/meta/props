@@ -968,7 +968,6 @@ path/s is either such a string or a list of them.
 "collects/htdp/world.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/html" responsible (jay)
 "collects/icons" responsible (ntoronto)
-"collects/icons/private/mkheart.rkt" drdr:command-line #f
 "collects/icons/private/svg/render-png.rkt" drdr:command-line #f
 "collects/images" responsible (ntoronto)
 "collects/images/tests/effects-tests.rkt" drdr:command-line #f
@@ -1016,6 +1015,7 @@ path/s is either such a string or a list of them.
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
+"collects/meta/images/mkheart.rkt" drdr:command-line #f
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
