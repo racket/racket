@@ -7304,7 +7304,7 @@ static Scheme_Object *package_require_data(Scheme_Object *base_modidx,
 {
   void **vals;
 
-  vals = MALLOC_N(void*, 9);
+  vals = MALLOC_N(void*, 10);
   vals[0] = NULL; /* this slot is available */
   vals[1] = base_modidx;
   vals[2] = env;
