@@ -1163,6 +1163,9 @@ web-server/insta
 ....
 ]
 
+See @secref[#:doc '(lib "db/scribblings/db.scrbl") "intro-servlets"]
+for more information on writing database-backed web servlets.
+
 @section{Using Formlets}
 
 @(require (for-label web-server/formlets))
