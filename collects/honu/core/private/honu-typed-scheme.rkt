@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (rename-in typed-scheme (#%module-begin #%module-begin-typed-scheme)))
+;; (require (rename-in typed-scheme (#%module-begin #%module-begin-typed-scheme)))
 (require (for-syntax scheme/base
                      syntax/stx
                      syntax/name
