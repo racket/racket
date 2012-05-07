@@ -158,6 +158,12 @@
 ;; opt/unknown : opt/i id id syntax
 ;;
 (define (opt/unknown opt/i opt/info uctc)
+  (log-info (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
+                    (syntax-source uctc)
+                    (if (syntax-line uctc)
+                        (format "~a:~a" (syntax-line uctc) (syntax-column uctc))
+                        (format ":~a" (syntax-position uctc)))
+                    (syntax->datum uctc)))
   (with-syntax ([(lift-var partial-var partial-flat-var)
                  (generate-temporaries '(lift partial partial-flat))]
                 [val (opt/info-val opt/info)]

@@ -172,12 +172,6 @@
      (coerecable-constant? #'konst)
      (opt-constant-contract (syntax->datum #'konst) opt/info)]
     [else
-     (log-info (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
-                       (syntax-source stx)
-                       (if (syntax-line stx)
-                           (format "~a:~a" (syntax-line stx) (syntax-column stx))
-                           (format ":~a" (syntax-position stx)))
-                       (syntax->datum stx)))
      (opt/unknown opt/i opt/info stx)]))
 
 ;; top-level-unknown? : syntax -> boolean
