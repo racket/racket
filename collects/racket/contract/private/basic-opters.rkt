@@ -12,20 +12,21 @@
 ;;
 (define-for-syntax (opt/pred opt/info pred)
   (with-syntax ((pred pred))
-    (values
+    (build-optres
+     #:exp
      (with-syntax ((val (opt/info-val opt/info))
                    (ctc (opt/info-contract opt/info))
                    (blame (opt/info-blame opt/info)))
        (syntax (if (pred val)
                    val
                    (raise-opt/pred-error blame val 'pred))))
-     null
-     null
-     null
-     (syntax (pred val))
-     #f
-     null
-     #t)))
+     #:lifts null
+     #:superlifts null
+     #:partials null
+     #:flat (syntax (pred val))
+     #:opt #f
+     #:stronger-ribs null
+     #:chaperone #t)))
 
 (define (raise-opt/pred-error blame val pred-name)
   (raise-blame-error
@@ -52,15 +53,15 @@
 ;;
 (define/opter (any/c opt/i opt/info stx)
   (syntax-case stx (any/c)
-    [any/c (values
-            (opt/info-val opt/info)
-            null
-            null
-            null
-            #'#t
-            #f
-            null
-            #t)]))
+    [any/c 
+     (build-optres #:exp (opt/info-val opt/info)
+                   #:lifts null
+                   #:superlifts null
+                   #:partials null
+                   #:flat #'#t
+                   #:opt #f
+                   #:stronger-ribs null
+                   #:chaperone #t)]))
 
 ;;
 ;; false/c
@@ -86,26 +87,27 @@
                      (ctc (opt/info-contract opt/info))
                      (blame (opt/info-blame opt/info))
                      (lift-pred lift-pred))
-         (values
-          (syntax (if (lift-pred val)
-                      val
-                      (raise-blame-error
-                       blame
-                       val
-                       "expected: ~s, ~a: ~e"
-                       (contract-name ctc)
-                       (given/produced blame)
-                       val)))
+         (build-optres
+          #:exp (syntax (if (lift-pred val)
+                            val
+                            (raise-blame-error
+                             blame
+                             val
+                             "expected: ~s, ~a: ~e"
+                             (contract-name ctc)
+                             (given/produced blame)
+                             val)))
+          #:lifts
           (interleave-lifts
            lift-vars
            (list #'pred (cond [(eq? checker 'check-flat-contract) #'(check-flat-contract lift-pred)]
                               [(eq? checker 'check-flat-named-contract) #'(check-flat-named-contract lift-pred)])))
-          null
-          null
-          (syntax (lift-pred val))
-          #f
-          null
-          #t)))]))
+          #:superlifts null
+          #:partials null
+          #:flat (syntax (lift-pred val))
+          #:opt #f
+          #:stronger-ribs null
+          #:chaperone #t)))]))
 
 ;;
 ;; flat-contract and friends

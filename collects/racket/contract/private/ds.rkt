@@ -427,7 +427,8 @@ it around flattened out.
                                       (cons contract/info-var
                                             (syntax 
                                              (make-opt-contract/info ctc enforcer-id id))))])
-                           (values
+                           (build-optres
+                            #:exp
                             (syntax 
                              (cond
                                [(opt-wrap-predicate val)
@@ -462,15 +463,13 @@ it around flattened out.
                                  (contract-name ctc)
                                  (given/produced blame)
                                  val)]))
-                            lifts
-                            superlifts
-                            partials
-                            #f
-                            #f
-                            stronger-ribs
-                            ;; opt'd struct contracts don't use chaperones yet
-                            #f)))))))]))
-          )))))
+                            #:lifts lifts
+                            #:superlifts superlifts
+                            #:partials partials
+                            #:flat #f
+                            #:opt #f
+                            #:stronger-ribs stronger-ribs
+                            #:chaperone #f)))))))])))))))
 
 (define-syntax (define-contract-struct stx)
   (syntax-case stx ()

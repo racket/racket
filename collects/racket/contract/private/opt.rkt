@@ -11,45 +11,6 @@
          opt/direct
          begin-lifted)
 
-;; (define/opter (<contract-combinator> opt/i opt/info stx) body)
-;;
-;; An opter is to a function with the following signature: 
-;;
-;; opter : (syntax opt/info -> <opter-results>) opt/info list-of-ids ->
-;;         (values syntax syntax-list syntax-list
-;;                 syntax-list (union syntax #f) (union syntax #f) syntax)
-;;
-;; The first argument can be used to recursively process sub-contracts
-;; It returns what an opter returns and its results should be accumulated
-;; into the opter's results.
-;;
-;; The opt/info struct has a number of identifiers that get used to build
-;; contracts; see opt-guts.rkt for the selectors.
-;;
-;; The last argument is a list of free-variables if the calling context
-;; was define/opt otherwise it is null.
-;;
-;; Every opter needs to return:
-;;  - the optimized syntax
-;;  - lifted variables: a list of (id, sexp) pairs
-;;  - super-lifted variables: functions or the such defined at the toplevel of the
-;;                            calling context of the opt routine.
-;;                            Currently this is only used for struct contracts.
-;;  - partially applied contracts: a list of (id, sexp) pairs
-;;  - if the contract being optimized is flat,
-;;    then an sexp that evals to bool,
-;;    else #f
-;;    This is used in conjunction with optimizing flat contracts into one boolean
-;;    expression when optimizing or/c.
-;;  - if the contract can be optimized,
-;;    then #f (that is, it is not unknown)
-;;    else the symbol of the lifted variable
-;;    This is used for contracts with subcontracts (like cons) doing checks.
-;;  - a list of stronger-ribs
-;;  - a boolean or a syntax object; if it is a boolean,
-;;    the boolean indicaties if this contract is a chaperone contract
-;;    if it is a syntax object, then evaluating its contents determines
-;;    if this is a chaperone contract
 (define-syntax (define/opter stx)
   (syntax-case stx ()
     [(_ (for opt/i opt/info stx) expr ...)
@@ -66,23 +27,20 @@
 ;;
 ;; opt/recursive-call
 ;;
-;; BUG: currently does not try to optimize the arguments, this requires changing
-;;      every opter to keep track of bound variables.
-;;
 (define-for-syntax (opt/recursive-call opt/info stx)
-  (values
-   (with-syntax ((stx stx)
-                 (val (opt/info-val opt/info))
-                 (blame (opt/info-blame opt/info)))
-     (syntax (let ((ctc stx))
-               (((contract-projection ctc) blame) val))))
-   null
-   null
-   null
-   #f
-   #f
-   null
-   null))
+  (build-optres
+   #:exp (with-syntax ((stx stx)
+                       (val (opt/info-val opt/info))
+                       (blame (opt/info-blame opt/info)))
+           (syntax (let ((ctc stx))
+                     (((contract-projection ctc) blame) val))))
+   #:lifts null
+   #:superlifts null
+   #:partials null
+   #:flat #f
+   #:opt #f
+   #:stronger-ribs null
+   #:chaperone null))
 
 ;; make-stronger : list-of-(union syntax #f) -> syntax
 (define-for-syntax (make-stronger strongers)
@@ -122,17 +80,18 @@
       [(number? konst)
        (values #`(and (number? #,v) (= #,konst #,v))
                "=")]))
-  (values
+  (build-optres
+   #:exp
    #`(if #,predicate
          #,v
          (opt-constant-contract-failure #,(opt/info-blame opt/info) #,v #,word #,konst))
-   null
-   null
-   null
-   predicate
-   #f
-   null
-   #t))
+   #:lifts null
+   #:superlifts null
+   #:partials null
+   #:flat predicate
+   #:opt #f
+   #:stronger-ribs null
+   #:chaperone #t))
 
 (define (opt-constant-contract-failure blame val compare should-be)
   (raise-blame-error blame val "expected a value ~a to ~e" compare should-be))
@@ -144,7 +103,7 @@
 ;; opt/i : id opt/info syntax ->
 ;;         syntax syntax-list syntax-list (union syntax #f) (union syntax #f)
 (define-for-syntax (opt/i opt/info stx)
-  ;; the case dispatch here must match what top-level-unknown? is doing
+  ;; te case dispatch here must match what top-level-unknown? is doing
   (syntax-case stx ()
     [(ctc arg ...)
      (and (identifier? #'ctc) (opter #'ctc))
@@ -155,19 +114,20 @@
     [(f arg ...)
      (and (identifier? #'f) 
           (define-opt/recursive-fn? (syntax-local-value #'f (λ () #f))))
-     (values
+     (build-optres
+      #:exp
       #`(#,(define-opt/recursive-fn-internal-fn (syntax-local-value #'f))
          #,(opt/info-contract opt/info)
          #,(opt/info-blame opt/info)
          #,(opt/info-val opt/info)
          arg ...)
-      null
-      null
-      null
-      #f
-      #f
-      null
-      #t)]
+      #:lifts null
+      #:superlifts null
+      #:partials null
+      #:flat #f
+      #:opt #f
+      #:stronger-ribs null
+      #:chaperone #t)]
     [konst
      (coerecable-constant? #'konst)
      (opt-constant-contract (syntax->datum #'konst) opt/info)]
@@ -201,32 +161,24 @@
 (define-syntax (opt/c stx)  
   (syntax-case stx ()
     [(_ e)
-     (let*-values ([(info) (make-opt/info #'ctc
-                                          #'val
-                                          #'blame
-                                          #f
-                                          '()
-                                          #f
-                                          #f
-                                          #'this
-                                          #'that)]
-                   [(next lifts superlifts partials _ __ stronger-ribs chaperone?) (opt/i info #'e)])
-       (with-syntax ([next next])
-         (bind-superlifts
-          superlifts
-          (bind-lifts
-           lifts
-           #`(make-opt-contract
-              (λ (ctc)
-                (λ (blame)
-                  #,(bind-superlifts
-                     partials
-                     #`(λ (val) next))))
-              (λ () e)
-              (λ (this that) #f)
-              (vector)
-              (begin-lifted (box #f))
-              #,chaperone?)))))]))
+     (let ()
+       (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
+       (define an-optres (opt/i info #'e))
+       (bind-superlifts
+        (optres-superlifts an-optres)
+        (bind-lifts
+         (optres-lifts an-optres)
+         #`(make-opt-contract
+            (λ (ctc)
+              (λ (blame)
+                #,(bind-superlifts
+                   (optres-partials an-optres)
+                   #`(λ (val) #,(optres-exp an-optres)))))
+            (λ () e)
+            (λ (this that) #f)
+            (vector)
+            (begin-lifted (box #f))
+            #,(optres-chaperone an-optres)))))]))
 
 ;; this macro optimizes 'e' as a contract,
 ;; using otherwise-id if it does not recognize 'e'.
@@ -234,28 +186,21 @@
   (syntax-case stx ()
     [(_ e val-e blame-e otherwise-id)
      (identifier? #'otherwise-id)
-     (if (top-level-unknown? #'e)
-         #'(otherwise-id e val-e blame-e)
-         (let*-values ([(info) (make-opt/info #'ctc
-                                              #'val
-                                              #'blame
-                                              #f
-                                              '()
-                                              #f
-                                              #f
-                                              #'this
-                                              #'that)]
-                       [(next lifts superlifts partials _ __ stronger-ribs) (opt/i info #'e)])
-           #`(let ([ctc e] ;;; hm... what to do about this?!
-                   [val val-e]
-                   [blame blame-e])
-               #,(bind-superlifts
-                  superlifts
-                  (bind-lifts
-                   lifts
-                   (bind-superlifts
-                    partials
-                    next))))))]))
+     (cond
+       [(top-level-unknown? #'e) #'(otherwise-id e val-e blame-e)]
+       [else
+        (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
+        (define an-optres (opt/i info #'e))
+        #`(let ([ctc e] ;;; hm... what to do about this?!
+                [val val-e]
+                [blame blame-e])
+            #,(bind-superlifts
+               (optres-superlifts an-optres)
+               (bind-lifts
+                (optres-lifts an-optres)
+                (bind-superlifts
+                 (optres-partials an-optres)
+                 (optres-exp an-optres)))))])]))
 
 (define-syntax (begin-lifted stx)
   (syntax-case stx ()
@@ -285,42 +230,34 @@
 (define-syntax (opt/c-helper stx)
   (syntax-case stx ()
     [(_ f1 f2 (id args ...) e)
-     (let*-values ([(info) (make-opt/info #'ctc
-                                          #'val
-                                          #'blame
-                                          #f
-                                          (syntax->list #'(args ...))
-                                          #f
-                                          #f
-                                          #'this
-                                          #'that)]
-                   [(next lifts superlifts partials _ __ stronger-ribs chaperone?) (opt/i info #'e)])
-       (with-syntax ([next next])
-         #`(let ()
-             (define (f2 ctc blame val args ...)
-               #,(bind-superlifts
-                  superlifts
-                  (bind-lifts
-                   lifts
-                   (bind-superlifts
-                    partials
-                    #'next))))
-             (define (f1 args ...)
-               #,(bind-superlifts
-                  superlifts
-                  (bind-lifts
-                   lifts
-                   #`(make-opt-contract
-                      (λ (ctc)
-                        (λ (blame)
-                          (λ (val) 
-                            (f2 ctc blame val args ...))))
-                      (λ () e)
-                      (λ (this that) #f)
-                      (vector)
-                      (begin-lifted (box #f))
-                      #,chaperone?))))
-             (values f1 f2))))]))
+     (let ()
+       (define info (make-opt/info #'ctc #'val #'blame #f (syntax->list #'(args ...)) #f #f #'this #'that))
+       (define an-optres (opt/i info #'e))
+       #`(let ()
+           (define (f2 ctc blame val args ...)
+             #,(bind-superlifts
+                (optres-superlifts an-optres)
+                (bind-lifts
+                 (optres-lifts an-optres)
+                 (bind-superlifts
+                  (optres-partials an-optres)
+                  (optres-exp an-optres)))))
+           (define (f1 args ...)
+             #,(bind-superlifts
+                (optres-superlifts an-optres)
+                (bind-lifts
+                 (optres-lifts an-optres)
+                 #`(make-opt-contract
+                    (λ (ctc)
+                      (λ (blame)
+                        (λ (val) 
+                          (f2 ctc blame val args ...))))
+                    (λ () e)
+                    (λ (this that) #f)
+                    (vector)
+                    (begin-lifted (box #f))
+                    #,(optres-chaperone an-optres)))))
+           (values f1 f2)))]))
 
 ;; optimized contracts
 ;;

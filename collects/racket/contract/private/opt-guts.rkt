@@ -23,7 +23,81 @@
          opt/info-change-val
          
          opt/unknown
-         combine-two-chaperone?s)
+         combine-two-chaperone?s
+         
+         
+         optres-exp
+         optres-lifts
+         optres-superlifts
+         optres-partials
+         optres-flat
+         optres-opt
+         optres-stronger-ribs
+         optres-chaperone
+         build-optres)
+
+;; (define/opter (<contract-combinator> opt/i opt/info stx) body)
+;;
+;; An opter is to a function with the following signature: 
+;;
+;; opter : (syntax opt/info -> <opter-results>) opt/info list-of-ids -> opt-res
+;;
+;; The first argument can be used to recursively process sub-contracts
+;; It returns what an opter returns and its results should be accumulated
+;; into the opter's results.
+;;
+;; The opt/info struct has a number of identifiers that get used to build
+;; contracts; see opt-guts.rkt for the selectors.
+;;
+;; The last argument is a list of free-variables if the calling context
+;; was define/opt, otherwise it is null.
+;;
+;; The fields of the optres struct are:
+;;  - the optimized syntax
+;;  - lifted variables: a list of (id, sexp) pairs
+;;  - super-lifted variables: functions or the such defined at the toplevel of the
+;;                            calling context of the opt routine.
+;;                            Currently this is only used for struct contracts.
+;;  - partially applied contracts: a list of (id, sexp) pairs
+;;  - if the contract being optimized is flat,
+;;    then an sexp that evals to bool, indicating if the contract passed or not,
+;;    else #f
+;;    This is used in conjunction with optimizing flat contracts into one boolean
+;;    expression when optimizing or/c.
+;;  - if the contract can be optimized,
+;;    then #f (that is, it is not unknown)
+;;    else the symbol of the lifted variable
+;;    This is used for contracts with subcontracts (like cons) doing checks.
+;;  - a list of stronger-ribs
+;;  - a boolean or a syntax object; if it is a boolean,
+;;    the boolean indicaties if this contract is a chaperone contract
+;;    if it is a syntax object, then evaluating its contents determines
+;;    if this is a chaperone contract
+
+(struct optres (exp 
+                lifts
+                superlifts
+                partials
+                flat
+                opt
+                stronger-ribs
+                chaperone))
+(define (build-optres #:exp exp
+                      #:lifts lifts
+                      #:superlifts superlifts
+                      #:partials partials
+                      #:flat flat
+                      #:opt opt
+                      #:stronger-ribs stronger-ribs
+                      #:chaperone chaperone)
+  (optres exp 
+          lifts
+          superlifts
+          partials
+          flat
+          opt
+          stronger-ribs
+          chaperone))
 
 ;; a hash table of opters
 (define opters-table
@@ -169,7 +243,7 @@
                 [val (opt/info-val opt/info)]
                 [uctc uctc]
                 [blame (opt/info-blame opt/info)])
-    (values
+    (optres
      #'(partial-var val)
      (list (cons #'lift-var 
                  #'(coerce-contract 'opt/c uctc)))
@@ -200,4 +274,3 @@
      (and chaperone-b? chaperone-a?)]
     [else
      #`(and #,chaperone-a? #,chaperone-b?)]))
-

@@ -795,17 +795,12 @@
               
               (define sub-val (car (generate-temporaries '(struct/dc))))
               
-              (define-values (this-code 
-                              this-lifts this-super-lifts this-partially-applied 
-                              this-flat? this-can-be-optimized? this-stronger-ribs
-                              this-chaperone?)
-                (opt/i (opt/info-change-val sub-val opt/info)
-                       exp))
+              (define this-optres (opt/i (opt/info-change-val sub-val opt/info) exp))
               
               (when dep-vars
                 (for ([dep-var (in-list (syntax->list dep-vars))])
                   (free-identifier-mapping-put! depended-on-fields dep-var #t)))
-              (free-identifier-mapping-put! flat-fields sel-id this-flat?)
+              (free-identifier-mapping-put! flat-fields sel-id (optres-flat this-optres))
               
               (define this-body-code 
                 (cond
@@ -815,17 +810,17 @@
                                  [(dep-var ...) dep-vars])
                      #`(let ([dep-var (sel #,(opt/info-val opt/info))] ...)
                          #,(bind-superlifts
-                            this-super-lifts
+                            (optres-superlifts this-optres)
                             (bind-lifts
-                             this-lifts
+                             (optres-lifts this-optres)
                              (bind-lifts
-                              this-partially-applied
-                              this-code)))))]
-                  [else this-code]))
+                              (optres-partials this-optres)
+                              (optres-exp this-optres))))))]
+                  [else (optres-exp this-optres)]))
                 
               
               (define this-chap-code
-                (and (or (not this-flat?)
+                (and (or (not (optres-flat this-optres))
                          lazy?)
                      (with-syntax ([proc-name (string->symbol
                                                (format "~a-~a-chap" 
@@ -844,7 +839,7 @@
                                  proc-name))))))
 
               (define this-fo-code 
-                (and (and this-flat?
+                (and (and (optres-flat this-optres)
                           (not lazy?))
                      #`(let ([#,sub-val 
                               (#,(id->sel-id #'struct-id sel-id)
@@ -857,12 +852,12 @@
                       (if this-chap-code 
                           (list* this-chap-code (id->sel-id #'struct-id sel-id) s-chap-code)
                           s-chap-code)
-                      (if dep-vars s-lifts (append this-lifts s-lifts))
-                      (if dep-vars s-super-lifts (append this-super-lifts s-super-lifts))
-                      (if dep-vars s-partially-applied (append this-partially-applied s-partially-applied))
-                      (and this-can-be-optimized? can-be-optimized?)
-                      (if dep-vars stronger-ribs (append this-stronger-ribs stronger-ribs))
-                      (combine-two-chaperone?s chaperone? this-chaperone?))))
+                      (if dep-vars s-lifts (append (optres-lifts this-optres) s-lifts))
+                      (if dep-vars s-super-lifts (append (optres-superlifts this-optres) s-super-lifts))
+                      (if dep-vars s-partially-applied (append (optres-partials this-optres) s-partially-applied))
+                      (and (optres-opt this-optres) can-be-optimized?)
+                      (if dep-vars stronger-ribs (append (optres-stronger-ribs this-optres) stronger-ribs))
+                      (combine-two-chaperone?s chaperone? (optres-chaperone this-optres)))))
           
           ;; to avoid having to deal with indy-ness, just give up if any
           ;; of the fields that are depended on aren't flat
@@ -879,33 +874,37 @@
                         [(free-var ...) (opt/info-free-vars opt/info)]
                         [(index ...) (build-list (length (opt/info-free-vars opt/info)) values)]
                         [pred? (list-ref info 2)])
-            (values (if (null? s-chap-code) ;; if this is #t, when we have to avoid putting the property on here.
-                        #`(if (pred? #,(opt/info-val opt/info))
-                              (begin
-                                #,@s-fo-code
-                                #,(opt/info-val opt/info))
-                              (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))
-                        #`(if (and (stronger-prop-pred? #,(opt/info-val opt/info))
-                                   (let ([v (stronger-prop-get #,(opt/info-val opt/info))])
-                                     (and (eq? (vector-ref v index) free-var) ...)))
+            (build-optres
+             #:exp
+             (if (null? s-chap-code) ;; if this is #t, when we have to avoid putting the property on here.
+                 #`(if (pred? #,(opt/info-val opt/info))
+                       (begin
+                         #,@s-fo-code
+                         #,(opt/info-val opt/info))
+                       (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))
+                 #`(if (and (stronger-prop-pred? #,(opt/info-val opt/info))
+                            (let ([v (stronger-prop-get #,(opt/info-val opt/info))])
+                              (and (eq? (vector-ref v index) free-var) ...)))
+                       #,(opt/info-val opt/info)
+                       (if (pred? #,(opt/info-val opt/info))
+                           (begin
+                             #,@s-fo-code
+                             (chaperone-struct
                               #,(opt/info-val opt/info)
-                              (if (pred? #,(opt/info-val opt/info))
-                                  (begin
-                                    #,@s-fo-code
-                                    (chaperone-struct
-                                     #,(opt/info-val opt/info)
-                                     #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
-                                     stronger-prop-desc
-                                     (vector free-var ...)))
-                                  (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))))
-                    s-lifts
-                    s-super-lifts
-                    s-partially-applied
-                    #f  ;; flat sexp
-                    can-be-optimized?
-                    stronger-ribs
-                    #t  ;;chaperone?
-                    ))]))]))
+                              #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
+                              stronger-prop-desc
+                              (vector free-var ...)))
+                           (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))))
+             #:lifts
+             s-lifts
+             #:superlifts
+             s-super-lifts
+             #:partials
+             s-partially-applied
+             #:flat #f  
+             #:opt can-be-optimized?
+             #:stronger-ribs stronger-ribs
+             #:chaperone #t))]))]))
 
 (define (struct/dc-error blame obj what)
   (raise-blame-error blame obj 
