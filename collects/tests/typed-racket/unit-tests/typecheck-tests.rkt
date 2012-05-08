@@ -185,6 +185,9 @@
         (tc-e (expt 0.5 0.3) -PosFlonum)
         (tc-e (expt 0.5 2) -PosFlonum)
         (tc-e (expt 0.5 0) -PosReal)
+        (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
+        (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
+        (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]

@@ -566,8 +566,11 @@
                                   -Flonum))))) ; anything negative returns nan
   (define flexpt-type
     (lambda ()
-      ;; could be more precise...
-      (from-cases (-Flonum -Flonum . -> . -Flonum))))
+      (from-cases (-FlonumZero -Flonum . -> . -FlonumZero) ; (flexpt -0.0 0.1) -> 0.0 ; not sign preserving
+                  (-Flonum -FlonumZero . -> . -PosFlonum) ; always returns 1.0
+                  (-NonNegFlonum -Flonum . -> . -NonNegFlonum) ; can underflow, so not closed on positives
+                  (-NonPosFlonum -NonNegFlonum . -> . -NonPosFlonum) ; if we allow negative exponents, can return NaN, which is not NonPos
+                  (-Flonum -Flonum . -> . -Flonum))))
 
   (define fx->fl-type
     (lambda ()
