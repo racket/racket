@@ -278,7 +278,7 @@ information about @|PLaneT| packages.}
 Another approach is to distribute your language as a @|PLaneT|
 package. A drawback of using a @|PLaneT| package is that users must
 type @racket[@#,hash-lang[] @#,racketmodname[planet]] followed by a
-@|PLaneT| path to access the language. The great advantages are that the
+@|PLaneT| path to access the language. The advantages are that the
 @|PLaneT| package can be installed automatically, it can be versioned,
 and it co-exists more easily with other packages.
 
