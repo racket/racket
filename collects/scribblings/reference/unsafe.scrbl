@@ -97,11 +97,11 @@ constrained to consume @tech{fixnums}.}
 
 
 @deftogether[(
-@defproc[(unsafe-fl+   [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(unsafe-fl-   [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(unsafe-fl*   [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(unsafe-fl/   [a inexact-real?] [b inexact-real?]) inexact-real?]
-@defproc[(unsafe-flabs [a inexact-real?]) inexact-real?]
+@defproc[(unsafe-fl+   [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-fl-   [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-fl*   [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-fl/   [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-flabs [a flonum?]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[fl+], @racket[fl-],
@@ -109,13 +109,13 @@ For @tech{flonums}: Unchecked versions of @racket[fl+], @racket[fl-],
 
 
 @deftogether[(
-@defproc[(unsafe-fl=   [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(unsafe-fl<   [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(unsafe-fl>   [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(unsafe-fl<=  [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(unsafe-fl>=  [a inexact-real?] [b inexact-real?]) boolean?]
-@defproc[(unsafe-flmin [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flmax [a inexact-real?]) inexact-real?]
+@defproc[(unsafe-fl=   [a flonum?] [b flonum?]) boolean?]
+@defproc[(unsafe-fl<   [a flonum?] [b flonum?]) boolean?]
+@defproc[(unsafe-fl>   [a flonum?] [b flonum?]) boolean?]
+@defproc[(unsafe-fl<=  [a flonum?] [b flonum?]) boolean?]
+@defproc[(unsafe-fl>=  [a flonum?] [b flonum?]) boolean?]
+@defproc[(unsafe-flmin [a flonum?]) flonum?]
+@defproc[(unsafe-flmax [a flonum?]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[fl=], @racket[fl<],
@@ -124,10 +124,10 @@ For @tech{flonums}: Unchecked versions of @racket[fl=], @racket[fl<],
 
 
 @deftogether[(
-@defproc[(unsafe-flround [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flfloor [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flceiling [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-fltruncate [a inexact-real?]) inexact-real?]
+@defproc[(unsafe-flround [a flonum?]) flonum?]
+@defproc[(unsafe-flfloor [a flonum?]) flonum?]
+@defproc[(unsafe-flceiling [a flonum?]) flonum?]
+@defproc[(unsafe-fltruncate [a flonum?]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked (potentially) versions of
@@ -137,29 +137,30 @@ the corresponding safe bindings.}
 
 
 @deftogether[(
-@defproc[(unsafe-flsin [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flcos [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-fltan [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flasin [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flacos [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flatan [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-fllog [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flexp [a inexact-real?]) inexact-real?]
-@defproc[(unsafe-flsqrt [a inexact-real?]) inexact-real?]
+@defproc[(unsafe-flsin [a flonum?]) flonum?]
+@defproc[(unsafe-flcos [a flonum?]) flonum?]
+@defproc[(unsafe-fltan [a flonum?]) flonum?]
+@defproc[(unsafe-flasin [a flonum?]) flonum?]
+@defproc[(unsafe-flacos [a flonum?]) flonum?]
+@defproc[(unsafe-flatan [a flonum?]) flonum?]
+@defproc[(unsafe-fllog [a flonum?]) flonum?]
+@defproc[(unsafe-flexp [a flonum?]) flonum?]
+@defproc[(unsafe-flsqrt [a flonum?]) flonum?]
+@defproc[(unsafe-flexpt [a flonum?] [b flonum?]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked (potentially) versions of
 @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
-@racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp], and
-@racket[flsqrt]. Currently, some of these bindings are simply aliases
-for the corresponding safe bindings.}
+@racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp],
+@racket[flsqrt], and @racket[flexpt]. Currently, some of these
+bindings are simply aliases for the corresponding safe bindings.}
 
 
 @deftogether[(
-@defproc[(unsafe-make-flrectangular [a inexact-real?] [b inexact-real?]) 
+@defproc[(unsafe-make-flrectangular [a flonum?] [b flonum?]) 
          (and/c complex? inexact? (not/c real?))]
-@defproc[(unsafe-flreal-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
-@defproc[(unsafe-flimag-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
+@defproc[(unsafe-flreal-part [a (and/c complex? inexact? (not/c real?))]) flonum?]
+@defproc[(unsafe-flimag-part [a (and/c complex? inexact? (not/c real?))]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[make-flrectangular],
@@ -167,8 +168,8 @@ For @tech{flonums}: Unchecked versions of @racket[make-flrectangular],
 
 
 @deftogether[(
-@defproc[(unsafe-fx->fl [a fixnum?]) inexact-real?]
-@defproc[(unsafe-fl->fx [a inexact-real?]) fixnum?]
+@defproc[(unsafe-fx->fl [a fixnum?]) flonum?]
+@defproc[(unsafe-fl->fx [a flonum?]) fixnum?]
 )]{
 Unchecked conversion of a fixnum to an integer flonum and vice versa.
 These are similar to the safe bindings @racket[->fl] and @racket[fl->exact-integer],
@@ -264,7 +265,7 @@ fixnum).}
 @deftogether[(
 @defproc[(unsafe-flvector-length [v flvector?]) fixnum?]
 @defproc[(unsafe-flvector-ref [v flvector?] [k fixnum?]) any/c]
-@defproc[(unsafe-flvector-set! [v flvector?] [k fixnum?] [x inexact-real?]) void?]
+@defproc[(unsafe-flvector-set! [v flvector?] [k fixnum?] [x flonum?]) void?]
 )]{
 
 Unsafe versions of @racket[flvector-length], @racket[flvector-ref], and
@@ -274,8 +275,8 @@ fixnum).}
 
 
 @deftogether[(
-@defproc[(unsafe-f64vector-ref [vec f64vector?] [k fixnum?]) inexact-real?]
-@defproc[(unsafe-f64vector-set! [vec f64vector?] [k fixnum?] [n inexact-real?]) void?]
+@defproc[(unsafe-f64vector-ref [vec f64vector?] [k fixnum?]) flonum?]
+@defproc[(unsafe-f64vector-set! [vec f64vector?] [k fixnum?] [n flonum?]) void?]
 )]{
 
 Unsafe versions of @racket[f64vector-ref] and

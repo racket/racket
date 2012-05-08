@@ -361,6 +361,11 @@ DECL_FP_GLUE(ceiling)
 DECL_FP_GLUE(truncate)
 DECL_FP_GLUE(round)
 typedef void (*call_fp_proc)(void);
+
+#define DECL_BIN_FP_GLUE(op) static void call_ ## op(void) XFORM_SKIP_PROC {  \
+    scheme_jit_save_fp = scheme_double_ ## op(scheme_jit_save_fp, scheme_jit_save_fp2); }
+DECL_BIN_FP_GLUE(expt)
+typedef void (*call_fp_bin_proc)(void);
 # endif
 #endif
 
@@ -624,6 +629,20 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
           mz_prepare(0);
           (void)mz_finish(f);
           (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);
+        }
+        break;
+      case ARITH_EXPT: /* flexpt */
+        {
+          if (!reversed) {
+            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp2, JIT_FPR0, JIT_R2);
+            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR1, JIT_R2);
+          } else {
+            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp, JIT_FPR0, JIT_R2);
+            (void)mz_tl_sti_d_fppop(tl_scheme_jit_save_fp2, JIT_FPR1, JIT_R2);
+          }
+          mz_prepare(0);
+          (void)mz_finish(call_expt);
+          (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_scheme_jit_save_fp, JIT_R2);          
         }
         break;
 # endif

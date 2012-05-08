@@ -2097,6 +2097,7 @@ double scheme_double_acos(double x);
 double scheme_double_atan(double x);
 double scheme_double_log(double x);
 double scheme_double_exp(double x);
+double scheme_double_expt(double x, double y);
 
 /*========================================================================*/
 /*                     read, eval, print                                  */

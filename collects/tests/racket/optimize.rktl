@@ -390,6 +390,26 @@
       (test-trig atan 'flatan)
       (test-trig log 'fllog)
       (test-trig exp 'flexp))
+
+    (for-each
+     (lambda (v)
+       (define (once v)
+         (un-exact (round v) 'flround v #t)
+         (un-exact (ceiling v) 'flceiling v #t)
+         (un-exact (floor v) 'flfloor v #t)
+         (un-exact (truncate v) 'fltruncate v #t))
+       (once v)
+       (once (- v)))
+     '(3.0 3.1 3.5 3.8 4.0 4.1 4.5 4.8 0.0))
+
+    (bin-exact 9.0 'flexpt 3.0 2.0 #t)
+    (bin-exact (expt 3.1 2.5) 'flexpt 3.1 2.5 #t)
+    (bin-exact -1.0 'flexpt -1.0 3.0 #t)
+    (bin-exact -0.125 'flexpt -2.0 -3.0 #t)
+    (bin-exact +nan.0 'flexpt -1.0 3.1 #t)
+    (bin-exact 0.0 'flexpt 0.0 10.0 #t)
+    (bin-exact +nan.0 'flexpt 0.0 -1.0 #t)
+    (bin-exact +nan.0 'flexpt 0.0 0.0 #t)
     
     (un 1.0 'exact->inexact 1)
     (un 1073741823.0 'exact->inexact (sub1 (expt 2 30)))

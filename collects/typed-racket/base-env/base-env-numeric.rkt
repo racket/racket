@@ -564,6 +564,11 @@
       (from-cases (map unop (list -FlonumPosZero -FlonumNegZero -FlonumZero
                                   -NonNegFlonum ; we don't have positive case, possible underflow
                                   -Flonum))))) ; anything negative returns nan
+  (define flexpt-type
+    (lambda ()
+      ;; could be more precise...
+      (from-cases (-Flonum -Flonum . -> . -Flonum))))
+
   (define fx->fl-type
     (lambda ()
       (fx-from-cases
@@ -645,7 +650,8 @@
                        [unsafe-flasin     flasin ]
                        [unsafe-flacos     flacos]
                        [unsafe-fllog      fllog]
-                       [unsafe-flexp      flexp])))
+                       [unsafe-flexp      flexp]
+                       [unsafe-flexpt     flexpt])))
    (define phase (namespace-base-phase (namespace-anchor->namespace anchor)))
 
    (for-each
@@ -1881,6 +1887,7 @@
 [fllog (fllog-type)]
 [flexp (flexp-type)]
 [flsqrt (flsqrt-type)]
+[flexpt (flexpt-type)]
 [->fl (fx->fl-type)]
 [fx->fl (fx->fl-type)]
 [fl->fx (fl->fx-type)]

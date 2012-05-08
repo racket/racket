@@ -1,3 +1,7 @@
+Version 5.3.0.6
+racket/flonum: added flexpt
+racket/unsafe/ops: added unsafe-flexpt
+
 Version 5.3.0.5
 Added box-cas!
 racket/gui: changed open-output-text-editor to by default deliver 

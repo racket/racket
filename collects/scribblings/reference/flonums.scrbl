@@ -76,6 +76,14 @@ the range @racket[-1.0] to @racket[1.0] is given to @racket[flasin] or
 @racket[flacos], or when a negative number is given to @racket[fllog]
 or @racket[flsqrt].}
 
+@defproc[(flexpt  [a flonum?] [b flonum?])
+         flonum?]{
+
+Like @racket[expt], but constrained to consume and produce
+@tech{flonums}. The result is @racket[+nan.0] when @racket[a] is
+negative and @racket[b] is not an integer or when @racket[a] is zero
+and @racket[b] is not positive.}
+
 
 @defproc[(->fl [a exact-integer?]) flonum?]{
 

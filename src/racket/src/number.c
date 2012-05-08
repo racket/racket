@@ -133,6 +133,7 @@ static Scheme_Object *fl_acos (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_atan (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_exp (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_log (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_expt (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_fx_and (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_or (int argc, Scheme_Object *argv[]);
@@ -802,6 +803,13 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   scheme_add_global_constant("flexp", p, env);
+
+  p = scheme_make_folding_prim(fl_expt, "flexpt", 2, 2, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  else
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+  scheme_add_global_constant("flexpt", p, env);
 
   p = scheme_make_folding_prim(scheme_checked_make_rectangular, "make-flrectangular", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
@@ -2715,6 +2723,14 @@ scheme_expt(int argc, Scheme_Object *argv[])
   return r;
 }
 
+double scheme_double_expt(double x, double y) {
+  if ((x < 0) && (floor(y) != y))
+    return not_a_number_val;
+  else if ((x == 0.0) && (y <= 0))
+    return not_a_number_val;
+  else
+    return sch_pow(x, y);
+}
 
 Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[])
 {
@@ -3817,6 +3833,19 @@ SAFE_FL(acos)
 SAFE_FL(atan)
 SAFE_FL(exp)
 SAFE_FL(log)
+
+#define SAFE_BIN_FL(op) \
+  static Scheme_Object * fl_ ## op (int argc, Scheme_Object *argv[])    \
+  {                                                                     \
+    double v;                                                           \
+    if (!SCHEME_DBLP(argv[0])) scheme_wrong_type("fl" #op, "flonum", 0, argc, argv); \
+    if (!SCHEME_DBLP(argv[1])) scheme_wrong_type("fl" #op, "flonum", 1, argc, argv); \
+    v = scheme_double_ ## op (SCHEME_DBL_VAL(argv[0]), SCHEME_DBL_VAL(argv[1]));     \
+    return scheme_make_double(v);                                        \
+  }
+
+SAFE_BIN_FL(expt)
+
 
 #define UNSAFE_FX(name, op, fold)                            \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \

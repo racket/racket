@@ -123,10 +123,6 @@
          (values (+ x-mid (+ (* x cos-θ) (* y sin-θ)))
                  (+ y-mid (- (* y cos-θ) (* x sin-θ)))))))))
 
-(: flexpt (Flonum Flonum -> Flonum))
-(define (flexpt b x)
-  (exp (* x (fllog b))))
-
 (: whirl-and-pinch-function (Real Real Real Integer Integer
                                   -> (Flonum Flonum -> (values Flonum Flonum))))
 (define (whirl-and-pinch-function θ pinch radius w h)

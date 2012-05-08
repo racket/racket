@@ -173,6 +173,7 @@ extern int scheme_direct_call_count, scheme_indirect_call_count;
 extern int scheme_jit_malloced;
 #ifdef JIT_USE_FP_OPS
 THREAD_LOCAL_DECL(extern double scheme_jit_save_fp);
+THREAD_LOCAL_DECL(extern double scheme_jit_save_fp2);
 #endif
 
 typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy EXTRA_NATIVE_ARGUMENT_TYPE);
@@ -396,6 +397,7 @@ typedef struct {
 # define tl_fixup_runstack_base            tl_delta(fixup_runstack_base)
 # define tl_fixup_already_in_place         tl_delta(fixup_already_in_place)
 # define tl_scheme_jit_save_fp             tl_delta(scheme_jit_save_fp)
+# define tl_scheme_jit_save_fp2            tl_delta(scheme_jit_save_fp2)
 # define tl_scheme_fuel_counter            tl_delta(scheme_fuel_counter)
 # define tl_scheme_jit_stack_boundary      tl_delta(scheme_jit_stack_boundary)
 # define tl_jit_future_storage             tl_delta(jit_future_storage)
@@ -1331,7 +1333,8 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #define ARITH_FLUNOP   14
 /*  inexact->exact, unsafe-fl->fx, fl->exact-integer, fl->fx */
 #define ARITH_INEX_EX  15
-
+/*  flexpt */
+#define ARITH_EXPT     16
 
 /* Comparison codes. Used in jitarith.c and jitinline.c. */
 

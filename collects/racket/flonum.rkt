@@ -8,7 +8,7 @@
 (provide fl+ fl- fl* fl/
          flabs flsqrt flexp fllog
          flsin flcos fltan flasin flacos flatan
-         flfloor flceiling flround fltruncate
+         flfloor flceiling flround fltruncate flexpt
          fl= fl< fl<= fl> fl>= flmin flmax
          ->fl fl->exact-integer
          flvector? flvector make-flvector 
