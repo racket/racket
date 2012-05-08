@@ -2084,18 +2084,6 @@ Produces the name used to describe the contract in error messages.
 Produces the projection defining a contract's behavior on protected values.
 }
 
-@defproc[(contract-add-context [contract contract?]
-                               [context (or/c string? #f)]
-                               [#:important important (or/c string? #f) #f]
-                               [#:swap? swap? any/c #f])
-         contract?]{
-  Produces a new contract that checks like @racket[contract], but
-  adds the context information @racket[context] to the resulting blame error
-  messages. The arguments are similar to those of @racket[blame-add-context].
-
-  See also @racket[blame-add-context].
-}
-
 @defproc[(make-none/c [sexp-name any/c]) contract?]{
 
 Makes a contract that accepts no values, and reports the

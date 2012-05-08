@@ -8401,52 +8401,6 @@
            [o (contract (instanceof/c (or/c c%/c d%/c)) (new c%) 'pos 'neg)])
       (send o m #t)))
 
-;; contract-add-context tests
-
-  (contract-error-test
-   'contract-add-context-1
-   #'((contract
-       (contract-add-context (-> integer? integer?)
-                             "additional info")
-       (λ (x) "bad")
-       'pos
-       'neg)
-      5)
-   (λ (x)
-     (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"additional info" (exn-message x)))))
-
-  (contract-error-test
-   'contract-add-context-2
-   #'((contract
-       (contract-add-context (-> integer? integer?)
-                             "additional info"
-                             #:important "starts with")
-       (λ (x) "bad")
-       'pos
-       'neg)
-      5)
-   (λ (x)
-     (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"additional info" (exn-message x))
-          (regexp-match #rx"^starts with:" (exn-message x))
-          (regexp-match #rx"blaming: pos" (exn-message x)))))
-
-  (contract-error-test
-   'contract-add-context-3
-   #'((contract
-       (contract-add-context (-> integer? integer?)
-                             "additional info"
-                             #:swap? #t)
-       (λ (x) "bad")
-       'pos
-       'neg)
-      5)
-   (λ (x)
-     (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"additional info" (exn-message x))
-          (regexp-match #rx"blaming: neg" (exn-message x)))))
-
 ;; interface contracts
 
   (test/spec-passed

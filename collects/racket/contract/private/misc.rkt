@@ -45,9 +45,7 @@
          
          contract-projection
          contract-name
-         n->th
-
-         contract-add-context)
+         n->th)
 
 (define-syntax (flat-rec-contract stx)
   (syntax-case stx  ()
@@ -1015,69 +1013,3 @@
      [(3) "rd"]
      [else "th"])))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Adding blame context information to a contract
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; contract (or/c string #f) (or/c string #f) any -> contract
-;; Wrap the given contract, adding blame context information
-(define (contract-add-context contract context
-                              #:important [important #f]
-                              #:swap? [swap #f])
-  (define ctc (coerce-contract 'contract-add-context contract))
-  (unless (or (string? context) (not context))
-    (raise-type-error 'contract-add-context "string or #f" context))
-  (unless (or (string? important) (not important))
-    (raise-type-error 'contract-add-context "string or #f" important))
-  (cond [(flat-contract? ctc)
-         (flat-wrapper/c ctc context important swap)]
-        [(chaperone-contract? ctc)
-         (chaperone-wrapper/c ctc context important swap)]
-        [else
-         (impersonator-wrapper/c ctc context important swap)]))
-
-;; utilities for wrapping
-(define (wrapper/c-name ctc)
-  (contract-name (wrapper/c-ctc ctc)))
-
-(define ((wrapper/c-first-order ctc) v)
-  (contract-first-order-passes? (wrapper/c-ctc ctc) v))
-
-(define (wrapper/c-projection ctc)
-  (define proj (contract-projection (wrapper/c-ctc ctc)))
-  (λ (blame)
-    (define new-blame (construct-new-blame blame ctc))
-    (proj new-blame)))
-
-;; use blade-add-context to construct a new blame object
-(define (construct-new-blame blame ctc)
-  (define ctx (wrapper/c-context ctc))
-  (define imp? (wrapper/c-important ctc))
-  (define swap? (wrapper/c-swap? ctc))
-  (blame-add-context blame ctx #:important imp? #:swap? swap?))
-
-;; wrappers that track the extra context info to be added
-(struct wrapper/c (ctc context important swap?))
-
-(struct flat-wrapper/c wrapper/c ()
-        #:property prop:flat-contract
-        (build-flat-contract-property
-         #:name wrapper/c-name
-         #:first-order wrapper/c-first-order
-         #:projection wrapper/c-projection))
-
-(struct chaperone-wrapper/c wrapper/c ()
-        #:property prop:chaperone-contract
-        (build-chaperone-contract-property
-         #:name wrapper/c-name
-         #:first-order wrapper/c-first-order
-         #:projection wrapper/c-projection))
-
-(struct impersonator-wrapper/c wrapper/c ()
-        #:property prop:contract
-        (build-contract-property
-         #:name wrapper/c-name
-         #:first-order wrapper/c-first-order
-         #:projection wrapper/c-projection))
