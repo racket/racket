@@ -123,7 +123,7 @@ predicate:
 
 When an exception is raised, control escapes out of an arbitrary deep
 evaluation context to the point where the exception is caught---or all
-the way out if the expression is never caught:
+the way out if the exception is never caught:
 
 @interaction[
 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (/ 1 0)))))))
@@ -202,7 +202,7 @@ changing @racket[0] to grab the continuation before returning 0:
 (define (save-it!)
   (call-with-composable-continuation
    (lambda (k) (code:comment @#,t{@racket[k] is the captured continuation})
-     (set! saved-k k) 
+     (set! saved-k k)
      0)))
 (+ 1 (+ 1 (+ 1 (save-it!))))
 ]
