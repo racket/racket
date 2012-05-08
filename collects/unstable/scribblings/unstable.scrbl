@@ -86,7 +86,6 @@ Keep documentation and tests up to date.
 @include-section["flonum.scrbl"]
 @include-section["future.scrbl"]
 @include-section["function.scrbl"]
-@include-section["generics.scrbl"]
 @include-section["hash.scrbl"]
 @include-section["class-iop.scrbl"] ;; Interface-oriented Programming
 @include-section["lazy-require.scrbl"]

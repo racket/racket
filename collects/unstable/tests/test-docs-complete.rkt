@@ -10,7 +10,6 @@
 (check-docs (quote unstable/markparam) #:skip #rx"^deserialize-info:")
 (check-docs (quote unstable/list))
 (check-docs (quote unstable/hash))
-(check-docs (quote unstable/generics))
 (check-docs (quote unstable/function))
 (check-docs (quote unstable/find))
 (check-docs (quote unstable/file))

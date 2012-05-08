@@ -1,11 +1,10 @@
 #lang scribble/manual
-@(require "utils.rkt" (for-label racket/base unstable/generics))
+@(require (for-label racket/base generics))
 
 @title{Generics}
-@unstable["Eli Barzilay"
-          @author+email["Jay McCarthy" "jay@racket-lang.org"]]
+@author["Eli Barzilay" @author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
-@defmodule[unstable/generics]
+@defmodule[generics]
 
 @defform/subs[(define-generics (name prop:name name?)
                 [method . kw-formals*]
@@ -103,7 +102,7 @@ Syntactically an error when used outside @racket[define-methods].
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
      (e '(require (for-syntax racket/base)
-                  unstable/generics))
+                  generics))
      e))
 
 @(define evaluator (new-evaluator))
