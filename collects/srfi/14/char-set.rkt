@@ -1,12 +1,11 @@
 ;; Since Matthew implemented this module, tests are in
-;;  collects/tests/mzscheme/char-set.rkt.
+;;  collects/tests/racket/char-set.rktl.
 ;; Since Mike Sperber looked carefully at this module,
 ;;  the code and tests are a lot better than they would be.
 
 (module char-set mzscheme
   (require mzlib/integer-set
-           (all-except mzlib/contract union)
-           (rename mzlib/contract union/c union))
+           racket/contract)
 
   ;; Data defn ----------------------------------------
     
@@ -375,49 +374,46 @@
 
   ;; Contracts and provides ----------------------------------------
 
-  (define-syntax (char-sets0/c stx)
-    #'(case-> (char-set? char-set? . -> . any)
-	      (() (listof char-set?) . ->* . any)))
+  (define char-sets0/c
+    (->* () #:rest (listof char-set?) any))
 
-  (define-syntax (char-sets/c stx)
-    #'(case-> (char-set? char-set? . -> . any)
-	      ((char-set?) (listof char-set?) . ->* . any)))
+  (define char-sets/c
+    (->* (char-set?) #:rest (listof char-set?) any))
 
-  (define-syntax (char-sets+/c stx)
-    #'(case-> (char-set? char-set? . -> . any)
-	      ((char-set? char-set?) (listof char-set?) . ->* . any)))
+  (define char-sets+/c
+    (->* (char-set? char-set?) #:rest (listof char-set?) any))
 
   (define ei/c (and/c number? integer? exact?))
 
-  (define-syntax (char-set-char/c stx)
-    #'((char-set?) (listof char?) . ->* . (char-set?)))
+  (define char-set-char/c
+    (->* (char-set?) #:rest (listof char?) char-set?))
 
   (provide
    char-set?)
   (provide/contract
    [char-set= char-sets0/c]
    [char-set<= char-sets0/c]
-   [char-set-hash ((char-set?) (integer?) . opt-> . integer?)]
+   [char-set-hash (->* (char-set?) (integer?) integer?)]
    [char-set-cursor (char-set? . -> . any)]
    [char-set-ref (char-set? any/c . -> . char?)]
    [char-set-cursor-next (char-set? any/c . -> . any)]
    [end-of-char-set? (any/c . -> . boolean?)]
    [char-set-fold ((char? any/c . -> . any) any/c char-set? . -> . any)]
-   [char-set-unfold (((any/c . -> . any) (any/c . -> . char?) (any/c . -> . any) any/c) (char-set?) . opt-> . char-set?)]
+   [char-set-unfold (->* ((any/c . -> . any) (any/c . -> . char?) (any/c . -> . any) any/c) (char-set?)  char-set?)]
    [char-set-unfold! ((any/c . -> . any) (any/c . -> . char?) (any/c . -> . any) any/c char-set? . -> . char-set?)]
    [char-set-for-each ((char? . -> . any) char-set? . -> . any)]
    [char-set-map ((char? . -> . any) char-set? . -> . char-set?)]
    [char-set-copy (char-set? . -> . char-set?)]
-   [rename mk-char-set char-set (() (listof char?) . ->* . (char-set?))]
-   [list->char-set (((listof char?)) (char-set?) . opt-> . char-set?)]
+   [rename mk-char-set char-set (->* () #:rest (listof char?) char-set?)]
+   [list->char-set (->* ((listof char?)) (char-set?) char-set?)]
    [list->char-set! ((listof char?) char-set? . -> . char-set?)]
-   [string->char-set ((string?) (char-set?) . opt-> . char-set?)]
+   [string->char-set (->* (string?) (char-set?) char-set?)]
    [string->char-set! (string? char-set? . -> . char-set?)]
-   [char-set-filter (((char? . -> . any) char-set?) (char-set?) . opt-> . char-set?)]
+   [char-set-filter (->* ((char? . -> . any) char-set?) (char-set?) char-set?)]
    [char-set-filter! ((char? . -> . any) char-set? char-set? . -> . char-set?)]
-   [ucs-range->char-set ((ei/c ei/c) (any/c char-set?) . opt-> . char-set?)]
+   [ucs-range->char-set (->* (ei/c ei/c) (any/c char-set?) char-set?)]
    [ucs-range->char-set! (ei/c ei/c any/c char-set? . -> . char-set?)]
-   [->char-set ((union/c string? char? char-set?) . -> . char-set?)]
+   [->char-set ((or/c string? char? char-set?) . -> . char-set?)]
    [char-set->list (char-set? . -> . any)]
    [char-set->string (char-set? . -> . any)]
    [char-set-size (char-set? . -> . any)]
