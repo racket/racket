@@ -42,6 +42,7 @@ THREAD_LOCAL_DECL(static void *retry_alloc_r1); /* set by prepare_retry_alloc() 
 
 #ifdef JIT_USE_FP_OPS
 THREAD_LOCAL_DECL(double scheme_jit_save_fp);
+THREAD_LOCAL_DECL(double scheme_jit_save_fp2);
 #endif
 
 static void *prepare_retry_alloc(void *p, void *p2)

@@ -467,6 +467,7 @@ void *scheme_jit_get_threadlocal_table();
 # define tl_fixup_runstack_base (&fixup_runstack_base)
 # define tl_fixup_already_in_place (&fixup_already_in_place)
 # define tl_scheme_jit_save_fp (&scheme_jit_save_fp)
+# define tl_scheme_jit_save_fp2 (&scheme_jit_save_fp2)
 # define tl_scheme_fuel_counter (&scheme_fuel_counter)
 # define tl_scheme_jit_stack_boundary (&scheme_jit_stack_boundary)
 #endif
@@ -902,7 +903,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
      (Other JIT constraints imply that it isn't a pointer to GCable memory.)
 
    * Relevant thread-local state is confined to the C stack, runstack,
-     mark stack, and tl_save_fp.
+     mark stack, and tl_save_fp[2].
 
    * A pointer to the runstack can be used as a Scheme_Object** argument, but
      only when it points to MZ_RUNSTACK.
