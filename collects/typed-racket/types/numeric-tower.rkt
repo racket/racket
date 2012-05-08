@@ -13,9 +13,9 @@
          -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum -Fixnum
          -PosInt -Nat -NegInt -NonPosInt -Int
          -PosRat -NonNegRat -NegRat -NonPosRat -Rat
-         -FlonumPosZero -FlonumNegZero -FlonumZero -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum
-         -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
-         -InexactRealPosZero -InexactRealNegZero -InexactRealZero -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
+         -FlonumPosZero -FlonumNegZero -FlonumZero -FlonumNan -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum
+         -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -SingleFlonumNan -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+         -InexactRealPosZero -InexactRealNegZero -InexactRealZero -InexactRealNan -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
          -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
          -ExactNumber -FloatComplex -SingleFlonumComplex -InexactComplex -Number
          (rename-out (-Int -Integer)))
@@ -180,7 +180,9 @@
 				  #'-SingleFlonumNan))
 (define -InexactRealPosZero (*Un -SingleFlonumPosZero -FlonumPosZero))
 (define -InexactRealNegZero (*Un -SingleFlonumNegZero -FlonumNegZero))
-(define -InexactRealZero    (*Un -InexactRealPosZero -InexactRealNegZero))
+(define -InexactRealZero    (*Un -InexactRealPosZero
+                                 -InexactRealNegZero))
+(define -InexactRealNan     (*Un -FlonumNan -SingleFlonumNan))
 (define -PosSingleFlonum
   (make-Base 'Positive-Single-Flonum
              #'(and/c single-flonum? positive?)
