@@ -23,10 +23,16 @@
 (provide define-generics)
 (define-syntax (define-generics stx)
   (syntax-case stx ()
-    [(_ (name prop:name name?) (generic . generic-args) ...)
+    ;; defined-table binding is optional, so if it's not provided just
+    ;; hygienically generate some name to bind it to.
+    [(_ (name prop:name name?) (generic . generics-args) ...)
+     #'(define-generics (name prop:name name? defined-table)
+         (generic . generics-args) ...)]
+    [(_ (name prop:name name? defined-table) (generic . generic-args) ...)
      (and (identifier? #'name)
           (identifier? #'prop:name)
           (identifier? #'name?)
+          (identifier? #'defined-table)
           (let ([generics (syntax->list #'(generic ...))])
             (and (pair? generics) (andmap identifier? generics))))
      (let ([idxs (for/list ([i (in-naturals 0)]
@@ -85,7 +91,7 @@
                              #'id]
                             [()
                              #'()])))])
-         #'(begin
+         #`(begin
              (define-syntax name (list #'generic ...))
              ; XXX optimize no kws or opts
              (define generic-arity-coerce
@@ -113,6 +119,14 @@
                             (and mthd-generic
                                  (generic-arity-coerce mthd-generic)))
                           ...))))
+             ;; Hash table mapping method name symbols to
+             ;; whether the given method is implemented
+             (define (defined-table this)
+               (unless (name? this)
+                 (raise-type-error 'defined-table name-str this))
+               (for/hash ([name (in-list '(#,@(map syntax->datum generics)))]
+                          [gen (in-vector (get-generics this))])
+                 (values name (not (not gen)))))
              (define generic
                (generic-arity-coerce
                 (make-keyword-procedure
