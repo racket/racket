@@ -1928,6 +1928,7 @@
 ;[unsafe-flacos (fl-unop)]
 ;[unsafe-fllog (fllog-type)]
 ;[unsafe-flexp (flexp-type)]
+;[unsafe-flexpt (flexpt-type)]
 ;
 [unsafe-flsqrt (flsqrt-type)]
 [unsafe-fx->fl (fx->fl-type)]
