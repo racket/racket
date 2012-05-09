@@ -2,11 +2,14 @@
 @(require (for-label racket/base generics))
 
 @title{Generics}
-@author["Eli Barzilay" @author+email["Jay McCarthy" "jay@racket-lang.org"]]
+@author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
+        @author+email["Jay McCarthy" "jay@racket-lang.org"]
+	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
+	@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
 @defmodule[generics]
 
-@defform/subs[(define-generics (name prop:name name?)
+@defform/subs[(define-generics (name prop:name name? [defined-table])
                 [method . kw-formals*]
                 ...)
               ([kw-formals* (arg* ...)
@@ -42,6 +45,14 @@ corresponding method on values where @racket[name?] is true. Each method
 must have a required by-position argument that is
 @racket[free-identifier=?] to @racket[name]. This argument is used in
 the generic definition to locate the specialization.
+
+The optional @racket[defined-table] argument should be an identifier.
+@racket[define-generics] will bind it to a procedure that takes an instance of
+the generics and returns an immutable hash-table that maps symbols
+corresponding to method names to booleans representing whether or not that
+method is implemented by that instance. The intended use case for this table is
+to allow higher-level APIs to adapt their behavior depending on method
+availability.
 
 }
 
