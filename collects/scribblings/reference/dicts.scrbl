@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/eval)
+@(require "mz.rkt" scribble/eval (for-label generics))
 
 @(define dict-eval (make-base-eval))
-@(interaction-eval #:eval dict-eval (require racket/dict))
+@(interaction-eval #:eval dict-eval (require racket/dict generics))
 
 @title[#:tag "dicts"]{Dictionaries}
 
@@ -18,8 +18,9 @@ values. The following datatypes are all dictionaries:
  @item{@techlink{lists} of @techlink{pairs} (an @deftech{association
        list} using @racket[equal?] to compare keys); and}
 
- @item{@techlink{structures} whose types have the @racket[prop:dict]
-       property.}
+ @item{@techlink{structures} whose types implement the @racket[dict]
+       generic interface, with methods attached to the @racket[prop:dict]
+       struct property.}
 
 ]
 
@@ -527,57 +528,75 @@ Returns a list of the associations from
 (dict->list h)
 ]}
 
-@defthing[prop:dict struct-type-property?]{
+@deftogether[[
+@defthing[dict any/c]
+@defthing[prop:dict struct-type-property?]]]{
 
 A @tech{structure type property} (see @secref["structprops"]) that
-supplies dictionary-operation implementations for a structure
-type. The property value must be a vector of ten procedures (some
-optional) that are applied only to instances of the structure type
-that has the property:
-     
+supplies dictionary method implementations for a structure type.
+To supply method implementations, the @racket[methods] form should be used.
+The provided implementations are applied only to instances of the structure
+type. The following methods can be implemented:
+
 @itemize[
 
- @item{@racket[_ref] : a procedure like @racket[dict-ref] that accepts
-       either two or three arguments}
+ @item{@racket[dict-ref] : accepts either two or three arguments}
 
- @item{@racket[_set!] : a procedure like @racket[dict-set!] that accepts
-       three arguments, or @racket[#f] if mutation is not supported}
+ @item{@racket[dict-set!] : accepts three arguments, left unimplemented if
+       mutation is not supported}
 
- @item{@racket[_set] : a procedure like @racket[dict-set] that accepts
-       three arguments and returns an updated dictionary, or
-       @racket[#f] if functional update is not supported}
+ @item{@racket[dict-set] : accepts three arguments and returns an updated
+       dictionary, left unimplemented if functional update is not supported}
 
- @item{@racket[_remove!] : a procedure like @racket[dict-remove!] that
-       accepts two arguments, or @racket[#f] if mutation is not
-       supported or if key removal is not supported}
+ @item{@racket[dict-remove!] : accepts two arguments, left unimplemented if
+       mutation is not supported or if key removal is not supported}
 
- @item{@racket[_remove] : a procedure like @racket[dict-remove] that
-       accepts two arguments and returns an updated dictionary, or
-       @racket[#f] if functional update or key removal is not
-       supported}
+ @item{@racket[dict-remove] : accepts two arguments and returns an updated
+       dictionary, left unimplemented if functional update or key removal is
+       not supported}
 
- @item{@racket[_count] : a procedure like @racket[dict-count] that accepts
-       one argument}
+ @item{@racket[dict-count] : accepts one argument}
 
- @item{@racket[_iterate-first] : a procedure like
-       @racket[dict-iterate-first] that accepts one argument}
+ @item{@racket[dict-iterate-first] : accepts one argument}
 
- @item{@racket[_iterate-next] : a procedure like
-       @racket[dict-iterate-next] that accepts two arguments; the
+ @item{@racket[dict-iterate-next] : accepts two arguments; the
        procedure is responsible for checking that the second argument
        is a valid position for the first argument}
 
- @item{@racket[_iterate-key] : a procedure like
-       @racket[dict-iterate-key] that accepts two arguments; the
+ @item{@racket[dict-iterate-key] : accepts two arguments; the
        procedure is responsible for checking that the second argument
        is a valid position for the first argument}
 
- @item{@racket[_iterate-value] : a procedure like
-       @racket[dict-iterate-value] that accepts two arguments; the
+ @item{@racket[dict-iterate-value] : accepts two arguments; the
        procedure is responsible for checking that the second argument
        is a valid position for the first argument}
+]
 
-]}
+@examples[#:eval dict-eval
+(struct alist (v)
+  #:property prop:dict
+  (methods dict
+    (define (dict-ref dict key
+                      [default (lambda () (error "key not found" key))])
+      (cond [(assoc key (alist-v dict)) => cdr]
+            [else (if (procedure? default) (default) default)]))
+    (define (dict-set dict key val)
+      (alist (cons (cons key val) (alist-v dict))))
+    (define (dict-remove dict key)
+      (define al (alist-v dict))
+      (remove* (assoc key al) al))
+    (define (dict-count dict #:default [x #f])
+      (or x
+          (length (remove-duplicates (alist-v dict) #:key car))))
+    (code:comment "etc. other methods")
+    ))
+
+  (define d1 '((1 . a) (2 . b)))
+  (dict? d1)
+  (dict-ref d1 1)
+]
+
+}
 
 @defthing[prop:dict/contract struct-type-property?]{
 
