@@ -369,7 +369,6 @@ allocated string).}
 @; ----------------------------------------
 @section{Additional String Functions}
 
-@margin-note{More string functions are defined in @racketmodname[srfi/13].}
 @note-lib[racket/string]
 @(define string-eval (make-base-eval))
 @(interaction-eval #:eval string-eval (require racket/string racket/list))
@@ -432,5 +431,7 @@ true, otherwise they get normalized too.
 @mz-examples[#:eval string-eval
  (string-normalize-spaces "  foo bar  baz \r\n\t")
 ]}
+
+You can find additional string functions in @racketmodname[srfi/13].
 
 @close-eval[string-eval]

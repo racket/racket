@@ -2,7 +2,7 @@
 @(require "mz.rkt" (for-label racket/date))
 
 @title[#:tag "time"]{Time}
- 
+
 @defproc[(current-seconds) exact-integer?]{
 
 Returns the current time in seconds. This time is always an exact
@@ -159,7 +159,6 @@ result is the result of @racket[expr].}
 
 @section[#:tag "date-string"]{Date Utilities}
 
-@margin-note{More date and time functions are defined in @racketmodname[srfi/19].}
 @note-lib-only[racket/date]
 
 @defproc[(current-date) date*?]{
@@ -221,3 +220,6 @@ calculations.}
 
 Converts a Julian number (Scalinger's off-by-one version) into a
 string.}
+
+You can find additional date and time functions in
+@racketmodname[srfi/19].
