@@ -217,7 +217,8 @@
   (->i ([d dict?])
        [_r (d) (listof (cons/c (dict-key-contract d) (dict-value-contract d)))])])
 
-(provide prop:dict
+(provide dict
+         prop:dict
 
          make-custom-hash
          make-immutable-custom-hash
