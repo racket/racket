@@ -315,10 +315,10 @@
 
     ("Posns"
       (posn signature "Signature for posns.")
-      (make-posn (number number -> posn) "Constructs a posn.")
-      (posn? (anything -> boolean) "Determines if its input is a posn.")
-      (posn-x (posn -> number) "Extracts the x component of a posn.")
-      (posn-y (posn -> number) "Extracts the y component of a posn."))
+      (make-posn (any any -> posn) "Constructs a posn from two arbitrary values.")
+      (posn? (any -> boolean) "Determines if its input is a posn.")
+      (posn-x (posn -> any) "Extracts the x component of a posn.")
+      (posn-y (posn -> any) "Extracts the y component of a posn."))
 
     ("Characters"
       (char? (any -> boolean)

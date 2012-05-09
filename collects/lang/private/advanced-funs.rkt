@@ -79,8 +79,8 @@
     (void? (any -> boolean) "Determines if a value is void."))
    
    ("Posns"
-    (set-posn-x! (posn number -> void) "Updates the x component of a posn.")
-    (set-posn-y! (posn number -> void) "Updates the x component of a posn."))
+    (set-posn-x! (posn any -> void) "Updates the x component of a posn.")
+    (set-posn-y! (posn any -> void) "Updates the y component of a posn."))
    
    ("Vectors"
     (vector (X ... -> (vector X ...)) "Constructs a vector.")
