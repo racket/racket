@@ -755,22 +755,47 @@
                      (quote-module-name)
                      '#,struct-id))
 
+(define-for-syntax (traverse-no-neg-blame-identifiers no-neg-blame)
+  (for/and ([id (in-list no-neg-blame)])
+    (let loop ([parent-id id]
+               [path '()])
+      (define x (syntax-local-value parent-id))
+      (define box-id (define-opt/recursive-fn-neg-blame?-id x))
+      (define bx (syntax-local-value box-id))
+      (define content (unbox bx))
+      (cond
+        [(boolean? content) content]
+        [(eq? content 'unknown) #f] ;; have to give up here
+        [else
+         (define ans
+           (for/and ([id (in-list content)])
+             (cond
+               [(ormap (λ (y) (free-identifier=? id y)) path)
+                ;; if we have a loop, then we know there is
+                ;; no refutation of 'no-neg-blame' just cyclic
+                ;; dependencies in define-opt/c, so we can 
+                ;; conclude 'no-neg-blame' holds
+                #t]
+               [else
+                (loop id (cons parent-id path))])))
+         (set-box! bx ans) 
+         ans]))))
+       
 (define/opter (-struct/dc opt/i opt/info stx)
   (syntax-case stx ()
     [(_ struct-id clause ...)
      (let/ec k
        (define-values (info _1 _2) (parse-struct/dc stx))
-       (define (give-up) 
-         (call-with-values (λ () (opt/unknown opt/i opt/info stx)) 
-                           k))
+       (define (give-up [extra ""]) (k (opt/unknown opt/i opt/info stx extra)))
        (cond
          [(ormap values (list-ref info 4))
           ;; any mutable fields, just give up
           (give-up)]
          [else
           (define depended-on-fields (make-free-identifier-mapping))
-          (define flat-fields (make-free-identifier-mapping))
-          (define-values (s-fo-code s-chap-code s-lifts s-super-lifts s-partially-applied can-be-optimized? stronger-ribs chaperone?)
+          (define no-negative-blame-fields (make-free-identifier-mapping))
+          (define-values (s-fo-code s-chap-code s-lifts s-super-lifts 
+                                    s-partially-applied can-be-optimized? stronger-ribs chaperone? no-negative-blame)
             (for/fold ([s-fo-code '()]
                        [s-chap-code '()]
                        [s-lifts '()]
@@ -778,7 +803,8 @@
                        [s-partially-applied '()]
                        [can-be-optimized? #t]
                        [stronger-ribs '()]
-                       [chaperone? #t])
+                       [chaperone? #t]
+                       [no-negative-blame #t])
                       ([clause (in-list (syntax->list #'(clause ...)))])
               
               (define-values (sel-id lazy? dep-vars exp)
@@ -799,8 +825,8 @@
               
               (when dep-vars
                 (for ([dep-var (in-list (syntax->list dep-vars))])
-                  (free-identifier-mapping-put! depended-on-fields dep-var #t)))
-              (free-identifier-mapping-put! flat-fields sel-id (optres-flat this-optres))
+                  (free-identifier-mapping-put! depended-on-fields dep-var sel-id)))
+              (free-identifier-mapping-put! no-negative-blame-fields sel-id (optres-no-negative-blame? this-optres))
               
               (define this-body-code 
                 (cond
@@ -817,7 +843,6 @@
                               (optres-partials this-optres)
                               (optres-exp this-optres))))))]
                   [else (optres-exp this-optres)]))
-                
               
               (define this-chap-code
                 (and (or (not (optres-flat this-optres))
@@ -845,7 +870,7 @@
                               (#,(id->sel-id #'struct-id sel-id)
                                #,(opt/info-val opt/info))])
                          #,this-body-code)))
-              
+
               (values (if this-fo-code
                           (cons this-fo-code s-fo-code)
                           s-fo-code)
@@ -857,15 +882,23 @@
                       (if dep-vars s-partially-applied (append (optres-partials this-optres) s-partially-applied))
                       (and (optres-opt this-optres) can-be-optimized?)
                       (if dep-vars stronger-ribs (append (optres-stronger-ribs this-optres) stronger-ribs))
-                      (combine-two-chaperone?s chaperone? (optres-chaperone this-optres)))))
+                      (combine-two-chaperone?s chaperone? (optres-chaperone this-optres))
+                      (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? this-optres)))))
           
           ;; to avoid having to deal with indy-ness, just give up if any
-          ;; of the fields that are depended on aren't flat
+          ;; of the fields that are depended on can possibly raise negative blame
           (free-identifier-mapping-for-each
            depended-on-fields
-           (λ (depended-on-id flat?)
-             (unless (free-identifier-mapping-get flat-fields depended-on-id)
-               (give-up))))
+           (λ (depended-on-id field-doing-the-depending)
+             (define no-neg-blame (free-identifier-mapping-get no-negative-blame-fields depended-on-id))
+             (define dep-answer (cond
+                                  [(boolean? no-neg-blame) no-neg-blame]
+                                  [else (traverse-no-neg-blame-identifiers no-neg-blame)]))
+             (unless no-neg-blame
+               (give-up 
+                (format " because the contract on field: ~a depends on: ~a and its contract may have negative blame"
+                        (syntax-e field-doing-the-depending)
+                        (syntax-e depended-on-id))))))
           
           (with-syntax ([(stronger-prop-desc stronger-prop-pred? stronger-prop-get)
                          (syntax-local-lift-values-expression
@@ -874,6 +907,7 @@
                         [(free-var ...) (opt/info-free-vars opt/info)]
                         [(index ...) (build-list (length (opt/info-free-vars opt/info)) values)]
                         [pred? (list-ref info 2)])
+            
             (build-optres
              #:exp
              (if (null? s-chap-code) ;; if this is #t, when we have to avoid putting the property on here.
@@ -904,7 +938,8 @@
              #:flat #f  
              #:opt can-be-optimized?
              #:stronger-ribs stronger-ribs
-             #:chaperone #t))]))]))
+             #:chaperone #t
+             #:no-negative-blame? no-negative-blame))]))]))
 
 (define (struct/dc-error blame obj what)
   (raise-blame-error blame obj 

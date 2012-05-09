@@ -1,7 +1,7 @@
 #lang racket/base
 (require syntax/private/boundmap ;; needs to be the private one, since the public one has contracts
-         (for-template racket/base)
-         (for-template "guts.rkt"
+         (for-template racket/base
+                       "guts.rkt"
                        "blame.rkt"
                        "misc.rkt")
          (for-syntax racket/base))
@@ -23,8 +23,6 @@
          opt/info-change-val
          
          opt/unknown
-         combine-two-chaperone?s
-         
          
          optres-exp
          optres-lifts
@@ -34,7 +32,11 @@
          optres-opt
          optres-stronger-ribs
          optres-chaperone
-         build-optres)
+         optres-no-negative-blame?
+         build-optres
+         
+         combine-two-chaperone?s
+         combine-two-no-negative-blame)
 
 ;; (define/opter (<contract-combinator> opt/i opt/info stx) body)
 ;;
@@ -73,6 +75,12 @@
 ;;    the boolean indicaties if this contract is a chaperone contract
 ;;    if it is a syntax object, then evaluating its contents determines
 ;;    if this is a chaperone contract
+;;  - #f -- indicating that negative blame is impossible
+;;    #t -- indicating that negative blame may be possible
+;;    (listof identifier) -- indicating that negative blame is possible 
+;;        if it is possible in any of the identifiers in the list
+;;        each identifier is expected to be an identifier bound by
+;;        the define-opt/c 
 
 (struct optres (exp 
                 lifts
@@ -81,7 +89,8 @@
                 flat
                 opt
                 stronger-ribs
-                chaperone))
+                chaperone
+                no-negative-blame?))
 (define (build-optres #:exp exp
                       #:lifts lifts
                       #:superlifts superlifts
@@ -89,7 +98,8 @@
                       #:flat flat
                       #:opt opt
                       #:stronger-ribs stronger-ribs
-                      #:chaperone chaperone)
+                      #:chaperone chaperone
+                      #:no-negative-blame? [no-negative-blame? (syntax? flat)])
   (optres exp 
           lifts
           superlifts
@@ -97,7 +107,8 @@
           flat
           opt
           stronger-ribs
-          chaperone))
+          chaperone
+          no-negative-blame?))
 
 ;; a hash table of opters
 (define opters-table
@@ -231,23 +242,25 @@
 ;;
 ;; opt/unknown : opt/i id id syntax
 ;;
-(define (opt/unknown opt/i opt/info uctc)
-  (log-info (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
-                    (syntax-source uctc)
-                    (if (syntax-line uctc)
-                        (format "~a:~a" (syntax-line uctc) (syntax-column uctc))
-                        (format ":~a" (syntax-position uctc)))
-                    (syntax->datum uctc)))
+(define (opt/unknown opt/i opt/info uctc [extra-warning ""])
+  (log-warning (string-append (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
+                                      (syntax-source uctc)
+                                      (if (syntax-line uctc)
+                                          (format "~a:~a" (syntax-line uctc) (syntax-column uctc))
+                                          (format ":~a" (syntax-position uctc)))
+                                      (syntax->datum uctc))
+                              extra-warning))
   (with-syntax ([(lift-var partial-var partial-flat-var)
                  (generate-temporaries '(lift partial partial-flat))]
                 [val (opt/info-val opt/info)]
                 [uctc uctc]
                 [blame (opt/info-blame opt/info)])
-    (optres
-     #'(partial-var val)
-     (list (cons #'lift-var 
-                 #'(coerce-contract 'opt/c uctc)))
-     null
+    (build-optres
+     #:exp #'(partial-var val)
+     #:lifts (list (cons #'lift-var 
+                         #'(coerce-contract 'opt/c uctc)))
+     #:superlifts null
+     #:partials
      (list (cons
             #'partial-var
             #'((contract-projection lift-var) blame))
@@ -258,10 +271,10 @@
                   (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
                                      lift-var
                                      x)))))
-     #f
-     #'lift-var
-     null
-     #'(chaperone-contract? lift-var))))
+     #:flat #f
+     #:opt #'lift-var
+     #:stronger-ribs null
+     #:chaperone #'(chaperone-contract? lift-var))))
 
 ;; combine-two-chaperone?s : (or/c boolean? syntax?) (or/c boolean? syntax?) -> (or/c boolean? syntax?)
 (define (combine-two-chaperone?s chaperone-a? chaperone-b?)
@@ -274,3 +287,11 @@
      (and chaperone-b? chaperone-a?)]
     [else
      #`(and #,chaperone-a? #,chaperone-b?)]))
+
+(define (combine-two-no-negative-blame a b)
+  (cond
+    [(eq? a #t) b]
+    [(eq? a #f) #f]
+    [(eq? b #t) a]
+    [(eq? b #f) #f]
+    [else (append a b)]))

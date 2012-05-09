@@ -10622,6 +10622,86 @@
       (contract (f 11) 11 'pos 'neg))
    11)
   
+  ;; try-one : syntax -> number
+  ;; evaluates the exp and returns the number of opt/c warnings found
+  (contract-eval
+   '(define (eval-and-count-log-messages exp)
+      (define my-logger (make-logger))
+      (parameterize ([current-logger my-logger])
+        (define ans (make-channel))
+        (define recv (make-log-receiver my-logger 'warning))
+        (thread
+         (λ () 
+           (let loop ([opt/c-msgs 0])
+             (define res (sync recv))
+             (cond
+               [(equal? "done" (vector-ref res 1))
+                (channel-put ans opt/c-msgs)]
+               [else
+                (define opt/c-msg? (regexp-match? #rx"opt/c" (vector-ref res 1)))
+                (loop (if opt/c-msg?
+                          (+ opt/c-msgs 1)
+                          opt/c-msgs))]))))
+        (let/ec k
+          (parameterize ([error-escape-handler k])
+            (eval exp)))
+        (log-warning "done")
+        (channel-get ans))))
+  
+  (ctest 1 eval-and-count-log-messages
+         '(let ()
+            (struct s (a b))
+            (opt/c (struct/dc s [a (-> integer? integer?)] [b (a) integer?]))))
+  
+  (ctest 1 eval-and-count-log-messages
+         '(let ()
+            (struct s (a b))
+            (define-opt/c (f x)
+              (-> integer? integer?))
+            (define-opt/c (g x)
+              (struct/dc s [a (f 1)] [b (a) integer?]))
+            1))
+  
+  (ctest 0 eval-and-count-log-messages
+         '(let ()
+            (struct s (a b))
+            (define-opt/c (f x) integer?)
+            (opt/c (struct/dc s [a (f 1)] [b (a) integer?]))))
+  
+  (ctest 0 eval-and-count-log-messages
+         '(let ()
+            (define-struct h:kons (hd tl) #:transparent)
+            (define-struct h:node (rank val obj children) #:transparent)
+            
+            (define-opt/c (binomial-tree-rank=/sco r v)
+              (or/c #f
+                    (struct/dc h:node
+                               [rank (=/c r)]
+                               [val (>=/c v)]
+                               [children (rank val) #:lazy (heap-ordered/desc/sco (- rank 1) val)])))
+            
+            (define-opt/c (binomial-tree-rank>/sco r)
+              (or/c #f
+                    (struct/dc h:node
+                               [rank (>=/c r)]
+                               [val any/c]
+                               [children (rank val) #:lazy (heap-ordered/desc/sco (- rank 1) val)])))
+            
+            (define-opt/c (heap-ordered/desc/sco rank val)
+              (or/c #f
+                    (struct/dc h:kons
+                               [hd #:lazy (binomial-tree-rank=/sco rank val)]
+                               [tl () #:lazy (heap-ordered/desc/sco (- rank 1) val)])))
+            
+            (define-opt/c (binomial-trees/asc/sco rank)
+              (or/c #f
+                    (struct/dc h:kons
+                               [hd #:lazy (binomial-tree-rank>/sco rank)]
+                               [tl (hd) #:lazy (binomial-trees/asc/sco (h:node-rank hd))])))
+            
+            (define binomial-heap/sco (binomial-trees/asc/sco -inf.0))
+            1))
+  
   
   ;;
   ;;  end of define-opt/c

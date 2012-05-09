@@ -32,97 +32,103 @@
                 (syntax ((contract-projection lift-var) blame))))))))
   
   (define (opt/or-ctc ps)
-    (let ((lift-from-hos null)
-          (superlift-from-hos null)
-          (partial-from-hos null))
-      (let-values ([(opt-ps lift-ps superlift-ps partial-ps stronger-ribs hos ho-ctc chaperone?)
-                    (let loop ([ps ps]
-                               [next-ps null]
-                               [lift-ps null]
-                               [superlift-ps null]
-                               [partial-ps null]
-                               [stronger-ribs null]
-                               [hos null]
-                               [ho-ctc #f]
-                               [chaperone? #t])
-                      (cond
-                        [(null? ps) (values next-ps
-                                            lift-ps
-                                            superlift-ps
-                                            partial-ps
-                                            stronger-ribs
-                                            (reverse hos)
-                                            ho-ctc
-                                            chaperone?)]
-                        [else
-                         (define ps-optres (opt/i opt/info (car ps)))
-                         (if (optres-flat ps-optres)
-                             (loop (cdr ps)
-                                   (cons (optres-flat ps-optres) next-ps)
-                                   (append lift-ps (optres-lifts ps-optres))
-                                   (append superlift-ps (optres-superlifts ps-optres))
-                                   (append partial-ps (optres-partials ps-optres))
-                                   (append (optres-stronger-ribs ps-optres) stronger-ribs)
-                                   hos
-                                   ho-ctc
-                                   (combine-two-chaperone?s chaperone? (optres-chaperone ps-optres)))
-                             (if (< (length hos) 1)
-                                 (loop (cdr ps)
-                                       next-ps
-                                       (append lift-ps (optres-lifts ps-optres))
-                                       (append superlift-ps (optres-superlifts ps-optres))
-                                       (append partial-ps (optres-partials ps-optres))
-                                       (append (optres-stronger-ribs ps-optres) stronger-ribs)
-                                       (cons (car ps) hos)
-                                       (optres-exp ps-optres)
-                                       (combine-two-chaperone?s chaperone? (optres-chaperone ps-optres)))
-                                 (loop (cdr ps)
-                                       next-ps
-                                       lift-ps
-                                       superlift-ps
-                                       partial-ps
-                                       stronger-ribs
-                                       (cons (car ps) hos)
-                                       ho-ctc
-                                       chaperone?)))]))])
-        (with-syntax ((next-ps
-                       (with-syntax (((opt-p ...) (reverse opt-ps)))
-                         (syntax (or opt-p ...)))))
-          (build-optres
-           #:exp
-           (cond
-             [(null? hos) 
-              (with-syntax ([val (opt/info-val opt/info)]
-                            [blame (opt/info-blame opt/info)])
-                (syntax
-                 (if next-ps 
-                     val
-                     (raise-blame-error blame
-                                        val
-                                        "none of the branches of the or/c matched"))))]
-             [(= (length hos) 1)
-              (with-syntax ([ho-ctc ho-ctc]
-                            [val (opt/info-val opt/info)])
-                (syntax
-                 (if next-ps val ho-ctc)))]
-             ;; FIXME something's not right with this case.
-             [(> (length hos) 1)
-              (define-values (exp new-lifts new-superlifts new-partials) (opt/or-unknown stx))
-              (set! lift-from-hos new-lifts)
-              (set! superlift-from-hos new-superlifts)
-              (set! partial-from-hos new-partials)
-              #`(if next-ps val #,exp)])
-           #:lifts
-           (append lift-ps lift-from-hos)
-           #:superlifts
-           (append superlift-ps superlift-from-hos)
-           #:partials
-           (append partial-ps partial-from-hos)
-           #:flat
-           (if (null? hos) (syntax next-ps) #f)
-           #:opt #f
-           #:stronger-ribs stronger-ribs
-           #:chaperone chaperone?)))))
+    (define lift-from-hos null)
+    (define superlift-from-hos null)
+    (define partial-from-hos null)
+    (define-values (opt-ps lift-ps superlift-ps partial-ps stronger-ribs hos ho-ctc chaperone? no-negative-blame)
+      (let loop ([ps ps]
+                 [next-ps null]
+                 [lift-ps null]
+                 [superlift-ps null]
+                 [partial-ps null]
+                 [stronger-ribs null]
+                 [hos null]
+                 [ho-ctc #f]
+                 [chaperone? #t]
+                 [no-negative-blame #t])
+        (cond
+          [(null? ps) (values next-ps
+                              lift-ps
+                              superlift-ps
+                              partial-ps
+                              stronger-ribs
+                              (reverse hos)
+                              ho-ctc
+                              chaperone?
+                              no-negative-blame)]
+          [else
+           (define ps-optres (opt/i opt/info (car ps)))
+           (if (optres-flat ps-optres)
+               (loop (cdr ps)
+                     (cons (optres-flat ps-optres) next-ps)
+                     (append lift-ps (optres-lifts ps-optres))
+                     (append superlift-ps (optres-superlifts ps-optres))
+                     (append partial-ps (optres-partials ps-optres))
+                     (append (optres-stronger-ribs ps-optres) stronger-ribs)
+                     hos
+                     ho-ctc
+                     (combine-two-chaperone?s chaperone? (optres-chaperone ps-optres))
+                     (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? ps-optres)))
+               (if (null? hos)
+                   (loop (cdr ps)
+                         next-ps
+                         (append lift-ps (optres-lifts ps-optres))
+                         (append superlift-ps (optres-superlifts ps-optres))
+                         (append partial-ps (optres-partials ps-optres))
+                         (append (optres-stronger-ribs ps-optres) stronger-ribs)
+                         (cons (car ps) hos)
+                         (optres-exp ps-optres)
+                         (combine-two-chaperone?s chaperone? (optres-chaperone ps-optres))
+                         (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? ps-optres)))
+                   (loop (cdr ps)
+                         next-ps
+                         lift-ps
+                         superlift-ps
+                         partial-ps
+                         stronger-ribs
+                         (cons (car ps) hos)
+                         ho-ctc
+                         chaperone?
+                         no-negative-blame)))])))
+    (with-syntax ((next-ps
+                   (with-syntax (((opt-p ...) (reverse opt-ps)))
+                     (syntax (or opt-p ...)))))
+      (build-optres
+       #:exp
+       (cond
+         [(null? hos) 
+          (with-syntax ([val (opt/info-val opt/info)]
+                        [blame (opt/info-blame opt/info)])
+            (syntax
+             (if next-ps 
+                 val
+                 (raise-blame-error blame
+                                    val
+                                    "none of the branches of the or/c matched"))))]
+         [(= (length hos) 1)
+          (with-syntax ([ho-ctc ho-ctc]
+                        [val (opt/info-val opt/info)])
+            (syntax
+             (if next-ps val ho-ctc)))]
+         ;; FIXME something's not right with this case.
+         [(> (length hos) 1)
+          (define-values (exp new-lifts new-superlifts new-partials) (opt/or-unknown stx))
+          (set! lift-from-hos new-lifts)
+          (set! superlift-from-hos new-superlifts)
+          (set! partial-from-hos new-partials)
+          #`(if next-ps val #,exp)])
+       #:lifts
+       (append lift-ps lift-from-hos)
+       #:superlifts
+       (append superlift-ps superlift-from-hos)
+       #:partials
+       (append partial-ps partial-from-hos)
+       #:flat
+       (if (null? hos) (syntax next-ps) #f)
+       #:opt #f
+       #:stronger-ribs stronger-ribs
+       #:chaperone chaperone?
+       #:no-negative-blame? no-negative-blame)))
   
   (syntax-case stx (or/c)
     [(or/c p ...)

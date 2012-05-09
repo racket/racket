@@ -9,7 +9,10 @@
 
 (provide opt/c define-opt/c define/opter
          opt/direct
-         begin-lifted)
+         begin-lifted
+         (for-syntax
+          define-opt/recursive-fn?
+          define-opt/recursive-fn-neg-blame?-id))
 
 (define-syntax (define/opter stx)
   (syntax-case stx ()
@@ -97,13 +100,13 @@
   (raise-blame-error blame val "expected a value ~a to ~e" compare should-be))
 
 (begin-for-syntax
-  (define-struct define-opt/recursive-fn (transformer internal-fn)
+  (define-struct define-opt/recursive-fn (transformer internal-fn neg-blame?-id)
     #:property prop:procedure 0))
 
 ;; opt/i : id opt/info syntax ->
 ;;         syntax syntax-list syntax-list (union syntax #f) (union syntax #f)
 (define-for-syntax (opt/i opt/info stx)
-  ;; te case dispatch here must match what top-level-unknown? is doing
+  ;; the case dispatch here must match what top-level-unknown? is doing
   (syntax-case stx ()
     [(ctc arg ...)
      (and (identifier? #'ctc) (opter #'ctc))
@@ -114,20 +117,28 @@
     [(f arg ...)
      (and (identifier? #'f) 
           (define-opt/recursive-fn? (syntax-local-value #'f (λ () #f))))
-     (build-optres
-      #:exp
-      #`(#,(define-opt/recursive-fn-internal-fn (syntax-local-value #'f))
-         #,(opt/info-contract opt/info)
-         #,(opt/info-blame opt/info)
-         #,(opt/info-val opt/info)
-         arg ...)
-      #:lifts null
-      #:superlifts null
-      #:partials null
-      #:flat #f
-      #:opt #f
-      #:stronger-ribs null
-      #:chaperone #t)]
+     (let ([d-o/r-f (syntax-local-value #'f)])
+       (build-optres
+        #:exp
+        #`(#,(define-opt/recursive-fn-internal-fn (syntax-local-value #'f))
+           #,(opt/info-contract opt/info)
+           #,(opt/info-blame opt/info)
+           #,(opt/info-val opt/info)
+           arg ...)
+        #:lifts null
+        #:superlifts null
+        #:partials null
+        #:flat #f
+        #:opt #f
+        #:stronger-ribs null
+        #:chaperone #t
+        #:no-negative-blame? 
+        (let ([bx (syntax-local-value (define-opt/recursive-fn-neg-blame?-id d-o/r-f)
+                                      (λ () #f))])
+          (and (box? bx)
+               (cond
+                 [(eq? 'unknown (unbox bx)) (list #'f)]
+                 [else (unbox bx)])))))]
     [konst
      (coerecable-constant? #'konst)
      (opt-constant-contract (syntax->datum #'konst) opt/info)]
@@ -210,9 +221,10 @@
 (define-syntax (define-opt/c stx)
   (syntax-case stx ()
     [(_ (id args ...) e)
-     (with-syntax ([(f1 f2)
-                    (generate-temporaries (list (format "~a-f1" (syntax-e #'id))
-                                                (format "~a-f2" (syntax-e #'id))))])
+     (with-syntax ([(f1 f2 no-neg-blame?)
+                    (generate-temporaries (list (format "~a-external" (syntax-e #'id))
+                                                (format "~a-internal" (syntax-e #'id))
+                                                (format "~a-no-neg-blame?" (syntax-e #'id))))])
        #`(begin
            (define-syntax id
              (define-opt/recursive-fn
@@ -224,15 +236,23 @@
                    [(f . call-args)
                     (with-syntax ([app (datum->syntax stx '#%app)])
                       #'(app f1 . call-args))]))
-               #'f2))
-           (define-values (f1 f2) (opt/c-helper f1 f2 (id args ...) e))))]))
+               #'f2
+               #'no-neg-blame?))
+           (define-syntax no-neg-blame? (box 'unknown))
+           (define-values (f1 f2) (opt/c-helper f1 f2 no-neg-blame? (id args ...) e))))]))
 
 (define-syntax (opt/c-helper stx)
   (syntax-case stx ()
-    [(_ f1 f2 (id args ...) e)
+    [(_ f1 f2 no-neg-blame? (id args ...) e)
      (let ()
-       (define info (make-opt/info #'ctc #'val #'blame #f (syntax->list #'(args ...)) #f #f #'this #'that))
+       (define info (make-opt/info #'ctc #'val #'blame #f 
+                                   (syntax->list #'(args ...)) 
+                                   #f #f #'this #'that))
+       ;; it seems like this syntax-local-value can fail when expand-once
+       ;; is called, but otherwise I think it shouldn't fail
+       (define bx (syntax-local-value #'no-neg-blame? (λ () #f)))
        (define an-optres (opt/i info #'e))
+       (when bx (set-box! bx (optres-no-negative-blame? an-optres)))
        #`(let ()
            (define (f2 ctc blame val args ...)
              #,(bind-superlifts
