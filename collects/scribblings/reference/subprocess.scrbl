@@ -328,6 +328,15 @@ See also @racket[current-subprocess-custodian-mode] and
 @racket[subprocess-group-enabled], which affect the subprocess used to
 implement @racket[system].}
 
+The resulting process writes to @racket[(current-output-port)], reads from
+@racket[(current-input-port)], and logs errors to @racket[(current-error-port)].
+This means that processes show output to the screen and read from the keyboard by default.
+If you just want to gather the process's output to a string, for example, use:
+
+@racketblock[
+(with-output-to-string (lambda () (system "date")))
+]
+
 
 @defproc*[([(system* [command path-string?] [arg (or/c path? string? bytes?)] ...) boolean?]
            [(system* [command path-string?] [exact 'exact] [arg string?]) boolean?])]{
