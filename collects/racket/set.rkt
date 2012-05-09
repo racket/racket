@@ -9,6 +9,7 @@
          set? set-eq? set-eqv? set-equal?
          set-empty? set-count
          set-member? set-add set-remove
+         set-get-one set-get-one/rest
          set-union set-intersect set-subtract set-symmetric-difference
          subset? proper-subset?
          set-map set-for-each 
@@ -146,6 +147,15 @@
 (define (set-remove set v)
   (unless (set? set) (raise-type-error 'set-remove "set" 0 set v))
   (make-set (hash-remove (set-ht set) v)))
+
+(define (set-get-one set)
+  (unless (set? set) (raise-type-error 'set-some-element "set" 0 set))
+  (for/first ([e (set-ht set)]) e))
+
+(define (set-get-one/rest set)
+  (unless (set? set) (raise-type-error 'set-some-element "set" 0 set))
+  (let ((element (for/first ([e (set-ht set)]) e)))
+    (values element (set-remove set element))))
 
 (define set-union
   (case-lambda
