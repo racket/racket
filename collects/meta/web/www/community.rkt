@@ -26,11 +26,14 @@
       @text{
         Thanks to @a[href: "http://www.nsf.gov/"]{the NSF},
         @a[href: "http://www.darpa.mil/"]{DARPA},
-        the @a[href: "http://www.ed.gov/FIPSE/"]{Fund for the Improvement of Postsecondary Education (FIPSE)}
-          at the @a[href: "http://www.ed.gov/"]{US Department of Education},
-        the @a[href: "http://www.exxonmobil.com/Corporate/community_foundation.aspx"]{Exxon Foundation},
-        CORD,
-        partners of the Academy of Information Technology,
+        the
+        @a[href: "http://www.ed.gov/FIPSE/"]{
+          Fund for the Improvement of Postsecondary Education (FIPSE)}
+        at the @a[href: "http://www.ed.gov/"]{US Department of Education},
+        the @a[href: '("http://www.exxonmobil.com/Corporate/"
+                       "community_foundation.aspx")]{Exxon Foundation},
+        CORD,partners of the Academy of Information Technology,
         @a[href: "http://microsoft.com"]{Microsoft},
         @a[href: "http://mozilla.org"]{Mozilla},
-        and @a[href: "http://google.com"]{Google} for their generous support over the years.}]})
+        and @a[href: "http://google.com"]{Google}
+        for their generous support over the years.}]})

@@ -72,11 +72,11 @@
     (let ([g (ML-google-name ml)])
       (and g (list "http://groups.google.com/group/" g "/"))))
   (define ((mk-form make) url #:method [method 'get] . body)
-    (make
-     @form[action: url method: method style: "display: inline; clear: none;"]{
-       @div{@body}}))
+    (make @form[action: url method: method
+                style: "display: inline; clear: none;"]{
+            @div{@body}}))
   (define (mk-subscribe mk)
-    @(mk-form mk)[(list name "/subscribe") #:method 'post]{
+    @(mk-form mk)[(list (url-of lists #t) name "/subscribe") #:method 'post]{
       @input[type: 'text name: 'email size: 20 value: ""
              placeholder: "Email to Subscribe"
              title: @list{Enter your email to subscribe
@@ -155,8 +155,7 @@
             @gmane-link["dir"]{gmane mirror},
             @mail-archive-link[""]{mail-archive}@;
             @(and google-groups-url
-                  @text{,
-                        @a[href: google-groups-url]{google group mirror}})]}}]
+                  @text{, @a[href: google-groups-url]{google group mirror}})]}}]
       [else (error 'list-cell "internal error")])))
 
 (define list-renderers (map list-renderer MLs))
