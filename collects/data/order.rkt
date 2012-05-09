@@ -2,15 +2,21 @@
 (require racket/dict
          racket/contract/base
          racket/string
-         ffi/unsafe/atomic)
+         ffi/unsafe/atomic
+         generics)
 
 (define ordering/c
   (or/c '= '< '>))
 
 (provide ordering/c)
 
-(define-values (prop:ordered-dict ordered-dict? ordered-dict-ref)
-  (make-struct-type-property 'ordered-dict #f))
+(define-generics (ordered-dict prop:ordered-dict ordered-dict?)
+  (dict-iterate-least ordered-dict)
+  (dict-iterate-greatest ordered-dict)
+  (dict-iterate-least/>? ordered-dict key)
+  (dict-iterate-least/>=? ordered-dict key)
+  (dict-iterate-greatest/<? ordered-dict key)
+  (dict-iterate-greatest/<=? ordered-dict key))
 
 (define extreme-contract
   (->i ([d ordered-dict?])
@@ -22,34 +28,19 @@
        [_r (d) (or/c #f (dict-iter-contract d))]))
 
 (define prop:ordered-dict-contract
-  (let ([e extreme-contract]
-        [s search-contract])
-    (vector-immutable/c e   ;; iterate-least
-                        e   ;; iterate-greatest
-                        s   ;; iterate-least/>?
-                        s   ;; iterate-least/>=?
-                        s   ;; iterate-greatest/<?
-                        s)));; iterate-greatest/<=?
+  (let ([e (or/c extreme-contract #f)] ;; generics initializes with #f,
+                                        ; then sets the methods
+        [s (or/c search-contract #f)])
+    (vector/c e   ;; iterate-least
+              e   ;; iterate-greatest
+              s   ;; iterate-least/>?
+              s   ;; iterate-least/>=?
+              s   ;; iterate-greatest/<?
+              s)));; iterate-greatest/<=?
 
 ;; --------
 
-(define-syntax-rule (appd d offset arg ...)
-  (let ([dv d])
-    ((vector-ref (ordered-dict-ref dv) offset) dv arg ...)))
-
-(define (dict-iterate-least d)
-  (appd d 0))
-(define (dict-iterate-greatest d)
-  (appd d 1))
-(define (dict-iterate-least/>? d k)
-  (appd d 2 k))
-(define (dict-iterate-least/>=? d k)
-  (appd d 3 k))
-(define (dict-iterate-greatest/<? d k)
-  (appd d 4 k))
-(define (dict-iterate-greatest/<=? d k)
-  (appd d 5 k))
-
+(provide ordered-dict)
 (provide/contract
  [prop:ordered-dict
   (struct-type-property/c prop:ordered-dict-contract)]

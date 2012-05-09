@@ -3,7 +3,8 @@
           (for-label data/order
                      racket/contract
                      racket/dict
-                     racket/base))
+                     racket/base
+		     generics))
 
 @title{Orders and Ordered Dictionaries}
 
@@ -23,15 +24,19 @@ Contract for orderings, represented by the symbols @racket['=],
 @racket['<], and @racket['>].
 }
 
+@deftogether[[
+@defthing[ordered-dict any/c]
 @defthing[prop:ordered-dict
           (struct-type-property/c
-           (vector-immutableof _e/c _e/c _s/c _s/c _s/c _s/c))]{
+           (vectorof _e/c _e/c _s/c _s/c _s/c _s/c))]
+]]{
 
-Struct-type property for defining new ordered dictionary types. The
-value associated with @racket[prop:ordered-dict] should be an
-immutable vector of six procedures, two ``extrema'' procedures and
-four ``search'' procedures. The extrema procedures must satisfy
-@racket[_e/c] and the search procedures must satisfy @racket[_s/c]:
+Struct-type property for defining new ordered dictionary types.
+Methods can be attached to the @racket[prop:ordered-dict] struct property
+using the @racket[methods] form and the @racket[ordered-dict] generic
+interface. Two ``extrema'' methods and four ``search'' methods should be
+implemented. The extrema methods must satisfy @racket[_e/c] and the search
+methods must satisfy @racket[_s/c]:
 
 @racketblock[
 _e/c = (->i ([d ordered-dict?])
@@ -41,7 +46,7 @@ _s/c = (->i ([d ordered-dict?]
             [_ (d) (or/c #f (dict-iter-contract d))])
 ]
 
-The procedures are implementations of the following generic functions:
+The methods are implementations of the following generic functions:
 
 @itemize[
 @item{@racket[dict-iterate-least]}

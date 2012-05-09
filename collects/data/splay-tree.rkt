@@ -4,6 +4,7 @@
          racket/match
          racket/dict
          racket/contract/base
+	 generics
          "order.rkt")
 
 #|
@@ -514,14 +515,6 @@ Options
                     n:splay-tree-iterate-key
                     n:splay-tree-iterate-value))
 
-(define n:ordered-dict-methods
-  (vector-immutable n:splay-tree-iterate-least
-                    n:splay-tree-iterate-greatest
-                    n:splay-tree-iterate-least/>?
-                    n:splay-tree-iterate-least/>=?
-                    n:splay-tree-iterate-greatest/<?
-                    n:splay-tree-iterate-greatest/<=?))
-
 (struct node-splay-tree ([root #:mutable] [size #:mutable])
         #:property prop:dict/contract
         (list n:dict-methods
@@ -530,7 +523,13 @@ Options
                                 splay-tree-iter?
                                 #f #f #f))
         #:property prop:ordered-dict
-        n:ordered-dict-methods)
+	(methods ordered-dict
+	  (define dict-iterate-least n:splay-tree-iterate-least)
+	  (define dict-iterate-greatest n:splay-tree-iterate-greatest)
+	  (define dict-iterate-least/>? n:splay-tree-iterate-least/>?)
+	  (define dict-iterate-least/>=? n:splay-tree-iterate-least/>=?)
+	  (define dict-iterate-greatest/<? n:splay-tree-iterate-greatest/<?)
+	  (define dict-iterate-greatest/<=? n:splay-tree-iterate-greatest/<=?)))
 
 (struct node-splay-tree* node-splay-tree (key-c value-c)
         #:property prop:dict/contract
@@ -542,7 +541,13 @@ Options
                                 (lambda (s) (node-splay-tree*-value-c s))
                                 #f))
         #:property prop:ordered-dict
-        n:ordered-dict-methods)
+        (methods ordered-dict
+	  (define dict-iterate-least n:splay-tree-iterate-least)
+	  (define dict-iterate-greatest n:splay-tree-iterate-greatest)
+	  (define dict-iterate-least/>? n:splay-tree-iterate-least/>?)
+	  (define dict-iterate-least/>=? n:splay-tree-iterate-least/>=?)
+	  (define dict-iterate-greatest/<? n:splay-tree-iterate-greatest/<?)
+	  (define dict-iterate-greatest/<=? n:splay-tree-iterate-greatest/<=?)))
 
 
 
