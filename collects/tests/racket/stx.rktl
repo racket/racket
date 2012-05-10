@@ -516,6 +516,22 @@
     (test '(lib "lang/htdp-intermediate.rkt") values nominal)
     (test 'cons cadddr b)))
 
+(let ()
+  (define (check wrap)
+    (test #f identifier-binding (wrap (datum->syntax #f 'lambda)))
+    (test #f identifier-template-binding (wrap #'lambda))
+    (test (identifier-binding #'lambda) identifier-template-binding (wrap (syntax-shift-phase-level #'lambda -1)))
+    (test #f identifier-label-binding (wrap #'lambda))
+    (test (identifier-binding #'lambda) identifier-label-binding (wrap (syntax-shift-phase-level #'lambda #f)))
+    (test #f identifier-binding (wrap (syntax-shift-phase-level #'lambda #f)))
+    (test #f identifier-template-binding (wrap (syntax-shift-phase-level #'lambda #f))))
+  (check values)
+  (check (lambda (s)
+           (define-values (i o) (make-pipe))
+           (write (compile-syntax #`(quote-syntax #,s)) o)
+           (parameterize ([read-accept-compiled #t])
+             (eval (read i))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; eval versus eval-syntax, etc.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

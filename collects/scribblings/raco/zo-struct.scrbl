@@ -529,7 +529,7 @@ structures that are produced by @racket[zo-parse] and consumed by
 
 
 @defstruct+[(phase-shift wrap)
-            ([amt exact-integer?]
+            ([amt (or/c exact-integer? #f)]
              [src module-path-index?]
              [dest module-path-index?])]{
   Shifts module bindings later in the wrap set.}

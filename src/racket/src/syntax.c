@@ -271,8 +271,8 @@ XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
          simple lexical renames (not ribs) and marks, only, and it's
          inserted into a chain heuristically
 
-   - A wrap-elem (box (vector <num> <midx> <midx> <export-registry> <insp>))
-         is a phase shift by <num>, remapping the first <midx> to the 
+   - A wrap-elem (box (vector <num-or #f> <midx> <midx> <export-registry> <insp>))
+         is a phase shift by <num-or-#f>, remapping the first <midx> to the 
          second <midx>; the <export-registry> part is for finding
          modules to unmarshal import renamings
 
@@ -1178,7 +1178,8 @@ static int same_phase(Scheme_Object *a, Scheme_Object *b)
   if (SAME_OBJ(a, b))
     return 1;
   else if (SCHEME_INTP(a) || SCHEME_INTP(b)
-           || SCHEME_FALSEP(a) || SCHEME_FALSEP(b))
+           || SCHEME_FALSEP(a) || SCHEME_FALSEP(b)
+           || SCHEME_VOIDP(a) || SCHEME_VOIDP(b))
     return 0;
   else
     return scheme_eqv(a, b);
@@ -2193,8 +2194,8 @@ static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_type("syntax-shift-phase-level", "syntax", 0, argc, argv);
-  if (!scheme_exact_p(argv[1]))
-    scheme_wrong_type("syntax-shift-phase-level", "exact integer", 0, argc, argv);
+  if (SCHEME_TRUEP(argv[1]) && !scheme_exact_p(argv[1]))
+    scheme_wrong_type("syntax-shift-phase-level", "exact integer or #f", 0, argc, argv);
 
   if (SCHEME_INTP(argv[1]) && !SCHEME_INT_VAL(argv[1]))
     return argv[0];
@@ -3121,6 +3122,21 @@ XFORM_NONGCING static int is_from_rib(Scheme_Object *other_env)
     return 1;
   else
     return 0;
+}
+
+static Scheme_Object *reverse_phase_shift(Scheme_Object *phase, Scheme_Object *n)
+{
+  if (SCHEME_TRUEP(n) && !SCHEME_VOIDP(phase)) {
+    if (SCHEME_TRUEP(phase))
+      phase = scheme_bin_minus(phase, n);
+  } else {
+    /* phase shift to #f shifts only phase-0 bindings: */
+    if (SCHEME_FALSEP(phase))
+      phase = scheme_make_integer(0);
+    else
+      phase = scheme_void; /* don't match any phase */
+  }
+  return phase;
 }
 
 static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env)
@@ -4055,8 +4071,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 
       EXPLAIN(fprintf(stderr, "%d phase shift by %d\n", depth, SCHEME_INT_VAL(n)));
 
-      if (SCHEME_TRUEP(phase))
-        phase = scheme_bin_minus(phase, n);
+      phase = reverse_phase_shift(phase, n);
      
       src = SCHEME_VEC_ELS(vec)[1];
       dest = SCHEME_VEC_ELS(vec)[2];
@@ -4454,8 +4469,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
       Scheme_Object *n, *vec;
       vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(wraps));
       n = SCHEME_VEC_ELS(vec)[0];
-      if (SCHEME_TRUEP(phase))
-        phase = scheme_bin_minus(phase, n);
+      phase = reverse_phase_shift(phase, n);
     } else if (!no_lexical
                && (SCHEME_VECTORP(WRAP_POS_FIRST(wraps))
                    || SCHEME_RIBP(WRAP_POS_FIRST(wraps)))) {
@@ -6064,11 +6078,8 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
                   redundant = 1;
                   break;
                 }
-              } else if (SCHEME_BOXP(la)) {
-                if (SCHEME_TRUEP(phase))
-                  phase = scheme_bin_minus(phase,
-                                           SCHEME_VEC_ELS(SCHEME_PTR_VAL(WRAP_POS_FIRST(l)))[0]);
-              }
+              } else if (SCHEME_BOXP(la))
+                phase = reverse_phase_shift(phase, SCHEME_VEC_ELS(SCHEME_BOX_VAL(la))[0]);
             }
           }
 

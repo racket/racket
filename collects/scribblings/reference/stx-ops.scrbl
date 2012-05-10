@@ -265,13 +265,14 @@ if a former representative becomes otherwise unreachable, then
 
 
 @defproc[(syntax-shift-phase-level [stx syntax?]
-                                   [shift exact-integer?])
+                                   [shift (or/c exact-integer? #f)])
          syntax?]{
 
 Returns a syntax object that is like @racket[stx], but with all of its
 top-level and module binding shifted by @racket[shift] @tech{phase
-levels}. If @racket[shift] is @racket[0], then the result is
-@racket[stx].}
+levels}. If @racket[shift] is @racket[#f], then only bindings
+at @tech{phase level} 0 are shifted to the @tech{label phase level}.
+If @racket[shift] is @racket[0], then the result is @racket[stx].}
 
 
 @defproc[(generate-temporaries [stx-pair (or syntax? list?)]) 

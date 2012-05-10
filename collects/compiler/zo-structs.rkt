@@ -193,7 +193,7 @@
                                                              (or/c
                                                               (cons/c symbol? (or/c symbol? #f))
                                                               free-id-info?)))))])) 
-(define-form-struct (phase-shift wrap) ([amt exact-integer?] [src (or/c module-path-index? #f)] [dest (or/c module-path-index? #f)]))
+(define-form-struct (phase-shift wrap) ([amt (or/c exact-integer? #f)] [src (or/c module-path-index? #f)] [dest (or/c module-path-index? #f)]))
 (define-form-struct (wrap-mark wrap) ([val exact-integer?]))
 (define-form-struct (prune wrap) ([sym any/c]))
 
