@@ -1,5 +1,7 @@
-#lang racket
-(require db)
+#lang racket/base
+(require racket/list
+         racket/local
+         db)
 
 ;; A blog is a (make-blog db)
 ;; where db is an sqlite connection

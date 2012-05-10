@@ -1,5 +1,7 @@
-#lang racket
-(require net/url)
+#lang racket/base
+(require racket/contract
+         racket/list
+         net/url)
 (require web-server/managers/manager
          web-server/private/util
          web-server/private/servlet

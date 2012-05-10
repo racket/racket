@@ -1,5 +1,8 @@
-#lang racket
-(require racket/serialize)
+#lang racket/base
+(require racket/contract
+         racket/match
+         racket/local
+         racket/serialize)
 
 (define-serializable-struct soft-state-record (thnk))
 (define-struct some (value))

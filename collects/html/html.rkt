@@ -1,9 +1,10 @@
-#lang racket
+#lang racket/base
 ;; copyright by Paul Graunke June 2000 AD
 
 (require "html-structs.rkt"
          "html-spec.rkt"
          "sgml-reader.rkt"
+         racket/contract
          xml)
 
 (provide (all-from-out "html-structs.rkt")

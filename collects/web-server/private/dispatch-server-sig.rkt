@@ -1,5 +1,7 @@
-#lang racket
-(require racket/async-channel
+#lang racket/base
+(require racket/unit
+         racket/contract
+         racket/async-channel
          web-server/private/util
          unstable/contract
          web-server/private/connection-manager)

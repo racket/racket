@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 ;; Written by Don Felgar, edited by Greg Pettyjohn
 ;;
 ;; Multiple-choice quiz Racket servlet sample.
@@ -13,7 +13,9 @@
 ;; correct-answer = integer, index into choices
 ;;
 ;; Configuration
-(require racket/runtime-path)
+(require racket/runtime-path
+         racket/file
+         (for-syntax racket/base))
 (define-runtime-path *data-file*
   (list 'lib 
         "web-server/default-web-root/htdocs/servlets/examples/english-measure-questions.rkt"))

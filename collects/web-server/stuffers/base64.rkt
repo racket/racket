@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/stuffers/stuffer
+#lang racket/base
+(require racket/contract
+         web-server/stuffers/stuffer
          net/base64)
 
 (define base64-stuffer

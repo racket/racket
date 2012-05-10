@@ -1,5 +1,8 @@
-#lang racket
-(require net/base64
+#lang racket/base
+(require racket/port
+         racket/match
+         racket/contract
+         net/base64
          file/md5
          web-server/http/request-structs)
 

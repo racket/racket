@@ -1,5 +1,7 @@
-#lang racket
-(require "structures.rkt"
+#lang racket/base
+(require racket/contract
+         racket/list
+         "structures.rkt"
          "reader.rkt"
          "xexpr.rkt")
 

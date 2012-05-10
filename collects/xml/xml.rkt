@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "private/structures.rkt"
          "private/reader.rkt"
          "private/space.rkt"

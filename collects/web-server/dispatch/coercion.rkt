@@ -1,4 +1,7 @@
-#lang racket
+#lang racket/base
+(require racket/contract
+         racket/match
+         (for-syntax racket/base))
 
 (define (make-coerce-safe? coerce)
   (lambda (x)

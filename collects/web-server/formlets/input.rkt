@@ -1,5 +1,7 @@
-#lang racket
-(require web-server/http
+#lang racket/base
+(require racket/contract
+         racket/list
+         web-server/http
          web-server/private/xexpr
          (only-in "lib.rkt"
                   formlet/c

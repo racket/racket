@@ -1,5 +1,6 @@
-#lang racket
-(require xml)
+#lang racket/base
+(require racket/contract
+         xml)
 
 (define-struct html-element (attributes))
 (define-struct (html-full html-element) (content))

@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/servlet)
+#lang racket/base
+(require racket/match
+         web-server/servlet)
 (provide (all-defined-out))
 (define interface-version 'v1)
 (define timeout +inf.0)

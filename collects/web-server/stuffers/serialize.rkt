@@ -1,5 +1,6 @@
-#lang racket
-(require racket/serialize
+#lang racket/base
+(require racket/contract
+         racket/serialize
          web-server/stuffers/stuffer
          web-server/private/util
          web-server/private/mod-map)

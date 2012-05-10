@@ -1,5 +1,8 @@
-#lang racket
-(require racket/pretty
+#lang racket/base
+(require racket/contract
+         racket/list
+         (for-syntax racket/base)
+         racket/pretty
          racket/runtime-path
          "configuration-table-structs.rkt"
          web-server/http/bindings)

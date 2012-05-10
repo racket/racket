@@ -1,5 +1,7 @@
-#lang racket
-(require web-server/http/request-structs
+#lang racket/base
+(require racket/port
+         racket/match
+         web-server/http/request-structs
          net/cookie
          web-server/private/util         
          racket/contract)

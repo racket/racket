@@ -1,7 +1,9 @@
-#lang racket
-(require (for-syntax racket 
+#lang racket/base
+(require (for-syntax racket/base
                      syntax/parse)
          racket/stxparam
+         racket/match
+         racket/list
          "lib.rkt"
          (for-syntax "lib.rkt"))
 

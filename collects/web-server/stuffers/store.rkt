@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+(require racket/contract)
+
 (define-struct store (write read))
 
 (define (dir-store home)

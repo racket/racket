@@ -1,9 +1,11 @@
-#lang racket
-(require web-server/http
+#lang racket/base
+(require racket/list
+         racket/contract
+         racket/function
+         web-server/http
          web-server/private/xexpr)
 
 ; Combinators
-(define (const x) (lambda _ x))
 (define (id x) x)
 
 ; Formlets

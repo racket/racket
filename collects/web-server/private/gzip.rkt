@@ -1,5 +1,6 @@
-#lang racket
-(require file/gzip
+#lang racket/base
+(require racket/contract
+         file/gzip
          file/gunzip)
 
 (provide/contract

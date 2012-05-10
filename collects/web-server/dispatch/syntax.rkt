@@ -1,10 +1,13 @@
-#lang racket
-(require racket/stxparam
+#lang racket/base
+(require racket/list
+         racket/match
+         racket/stxparam
          net/url
          web-server/dispatchers/dispatch
          web-server/dispatch/http-expanders
          web-server/dispatch/bidi-match
-         (for-syntax web-server/dispatch/pattern))
+         (for-syntax racket/base
+                     web-server/dispatch/pattern))
 
 (define (default-else req)
   (next-dispatcher))

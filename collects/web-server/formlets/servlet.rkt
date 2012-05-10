@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/servlet
+#lang racket/base
+(require racket/contract
+         web-server/servlet
          web-server/private/xexpr
          "lib.rkt")
 

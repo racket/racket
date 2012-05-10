@@ -1,5 +1,7 @@
-#lang racket
-(require xml)
+#lang racket/base
+(require racket/list
+         racket/contract
+         xml)
 
 ; a dict is (list 'dict assoc-pair ...)
 ; an assoc-pair is (list 'assoc-pair key value)

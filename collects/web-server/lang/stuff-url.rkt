@@ -1,5 +1,7 @@
-#lang racket
-(require net/url
+#lang racket/base
+(require racket/contract
+         racket/list
+         net/url
          racket/serialize
          web-server/private/servlet
          web-server/stuffers/stuffer

@@ -1,9 +1,10 @@
 ;; copyright by Paul Graunke June 2000 AD
 ;; warning - this was copied from the XML collection.
 ;; It needs to be abstracted back in.
-#lang racket
+#lang racket/base
 (require xml
-         (prefix-in racket: racket))
+         racket/contract
+         (prefix-in racket: racket/base))
 
 ;; Kid-lister : (Symbol -> (U (listof Symbol) #f))
 (define kid-lister/c

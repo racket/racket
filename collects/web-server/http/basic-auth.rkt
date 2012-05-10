@@ -1,5 +1,7 @@
-#lang racket
-(require net/base64
+#lang racket/base
+(require racket/contract
+         racket/match
+         net/base64
          web-server/http/request-structs)
 
 (define (request->basic-credentials req)

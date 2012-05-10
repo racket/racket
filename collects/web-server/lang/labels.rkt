@@ -1,5 +1,6 @@
-#lang racket
-(require file/md5)
+#lang racket/base
+(require racket/contract
+         file/md5)
 (provide/contract
  [make-labeling (bytes? . -> . (-> symbol?))])
 

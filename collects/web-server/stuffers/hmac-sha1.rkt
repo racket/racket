@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/stuffers/stuffer
+#lang racket/base
+(require racket/contract
+         web-server/stuffers/stuffer
          racket/runtime-path
          openssl/libcrypto
          (rename-in ffi/unsafe

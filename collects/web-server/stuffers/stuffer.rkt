@@ -1,4 +1,7 @@
-#lang racket
+#lang racket/base
+(require racket/contract
+         racket/match)
+
 (define-struct stuffer (in out))
 (define (stuffer/c dom rng)
   (define in (dom . -> . rng))

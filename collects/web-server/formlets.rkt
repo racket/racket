@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require web-server/formlets/syntax
          web-server/formlets/dyn-syntax
          web-server/formlets/input

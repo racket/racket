@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require web-server/servlet
          web-server/formlets)
 (provide (all-defined-out))

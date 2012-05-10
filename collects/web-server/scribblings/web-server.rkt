@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 (require scribble/manual
          scribble/eval
+         (for-syntax racket/base)
          (for-label racket/base
                     racket/contract
                     racket/unit))

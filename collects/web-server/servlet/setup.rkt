@@ -1,5 +1,7 @@
-#lang racket
-(require racket/serialize
+#lang racket/base
+(require racket/contract
+         racket/match
+         racket/serialize
          web-server/managers/manager
          web-server/managers/timeouts
          web-server/managers/none

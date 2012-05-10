@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/private/gzip
+#lang racket/base
+(require racket/contract
+         web-server/private/gzip
          web-server/stuffers/stuffer)
 
 (define gzip-stuffer

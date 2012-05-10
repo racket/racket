@@ -1,5 +1,7 @@
-#lang racket
-(require web-server/private/util
+#lang racket/base
+(require racket/unit
+         racket/contract
+         web-server/private/util
          web-server/configuration/namespace
          web-server/configuration/configuration-table-structs)
 

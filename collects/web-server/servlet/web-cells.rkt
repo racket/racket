@@ -1,6 +1,8 @@
-#lang racket
+#lang racket/base
 ;; Implementation: Have a distinguished frame variable that is read and captured by send/suspend, 
 ;; installed on invocations of continuations by the server (and NOT from other continuation invocations)
+(require racket/list
+         racket/contract)
 
 ;; Data types
 (define-struct primitive-wc (id))

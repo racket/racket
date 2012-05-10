@@ -1,5 +1,8 @@
-#lang racket
-(require racket/serialize
+#lang racket/base
+(require racket/contract
+         racket/list
+         racket/match
+         racket/serialize
          web-server/private/servlet
          web-server/managers/manager
          web-server/private/define-closure

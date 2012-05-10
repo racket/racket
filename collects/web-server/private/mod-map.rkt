@@ -1,4 +1,7 @@
-#lang racket
+#lang racket/base
+(require racket/contract
+         racket/list
+         racket/match)
 (provide/contract
  [compress-serial (list? . -> . list?)]
  [decompress-serial (list? . -> . list?)])

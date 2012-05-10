@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+(require racket/local
+         racket/list)
 
 ;; A blog is a (make-blog home posts)
 ;; where home is a string, posts is a (listof post)

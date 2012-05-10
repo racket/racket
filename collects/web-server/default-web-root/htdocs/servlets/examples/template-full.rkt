@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/templates
+#lang racket/base
+(require racket/list
+         web-server/templates
          web-server/http)
 (provide (all-defined-out))
 (define interface-version 'v1)

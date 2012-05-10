@@ -1,5 +1,6 @@
-#lang racket
-(require syntax/free-vars
+#lang racket/base
+(require racket/list
+         syntax/free-vars
          racket/syntax
          (for-template
           racket/base

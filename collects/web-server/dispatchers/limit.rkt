@@ -1,5 +1,7 @@
-#lang racket
-(require web-server/dispatchers/dispatch)
+#lang racket/base
+(require racket/contract
+         racket/list
+         web-server/dispatchers/dispatch)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make ((number? dispatcher/c) (#:over-limit (symbols 'block 'kill-new 'kill-old)) . ->* . dispatcher/c)])

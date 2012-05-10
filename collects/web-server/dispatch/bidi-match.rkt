@@ -1,5 +1,7 @@
-#lang racket
-(require racket/stxparam)
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/match
+         racket/stxparam)
 
 (define-syntax-parameter bidi-match-going-in? #t)
 

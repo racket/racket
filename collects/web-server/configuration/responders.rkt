@@ -1,5 +1,7 @@
-#lang racket
-(require racket/runtime-path
+#lang racket/base
+(require racket/contract
+         (for-syntax racket/base)
+         racket/runtime-path
          net/url
          web-server/private/xexpr
          web-server/http/xexpr

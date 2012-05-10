@@ -1,5 +1,6 @@
-#lang racket
-(require net/url
+#lang racket/base
+(require racket/match
+         net/url
          web-server/http)
 
 (define-match-expander url/path

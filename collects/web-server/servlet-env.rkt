@@ -1,10 +1,11 @@
 ; Derived from plai/web/server, which was based on an older version of this
 ; Also derived from planet/untyped/instaservlet
-#lang racket
+#lang racket/base
 (require racket/contract
          racket/list
          racket/serialize
-         racket/runtime-path)
+         racket/runtime-path
+         (for-syntax racket/base))
 (require net/url
          web-server/managers/lru
          web-server/managers/manager

@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 (require web-server/lang/abort-resume
-         (for-syntax racket))
+         (for-syntax racket/base))
 
 (define-syntax (define-native stx)
   (syntax-case stx ()

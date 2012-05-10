@@ -1,6 +1,8 @@
-#lang racket
-(require racket/serialize
-         (for-syntax racket
+#lang racket/base
+(require racket/contract
+         racket/list
+         racket/serialize
+         (for-syntax racket/base
                      web-server/lang/closure
                      web-server/lang/labels))
 

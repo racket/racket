@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/servlet-env
+#lang racket/base
+(require racket/contract
+         web-server/servlet-env
          web-server/servlet/servlet-structs
          web-server/http)
 

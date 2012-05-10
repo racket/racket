@@ -1,5 +1,8 @@
-#lang racket
-(require "structures.rkt")
+#lang racket/base
+(require racket/contract
+         racket/list
+         racket/match
+         "structures.rkt")
 
 (provide/contract
  [read-xml (() (input-port?) . ->* . document?)]

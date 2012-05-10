@@ -1,5 +1,7 @@
-#lang racket
-(require racket/runtime-path)
+#lang racket/base
+(require racket/contract
+         racket/list
+         racket/runtime-path)
 
 (define-runtime-module-path racket-module-spec racket)
 (define mred-module-spec 'mred)

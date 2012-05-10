@@ -1,5 +1,6 @@
-#lang racket
-(require net/url
+#lang racket/base
+(require racket/match
+         net/url
          racket/contract
          racket/serialize
          web-server/servlet/servlet-structs

@@ -1,5 +1,7 @@
-#lang racket
-(require "../dummy-sqlite.rkt")
+#lang racket/base
+(require racket/list
+         racket/local
+         "../dummy-sqlite.rkt")
 
 ;; A blog is a (make-blog db)
 ;; where db is an sqlite database handle

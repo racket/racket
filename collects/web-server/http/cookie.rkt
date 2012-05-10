@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require net/cookie
          web-server/http/request-structs
          web-server/http/response-structs

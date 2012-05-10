@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require web-server/templates
          web-server/http
          web-server/compat/0/coerce)

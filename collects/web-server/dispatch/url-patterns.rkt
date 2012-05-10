@@ -1,5 +1,6 @@
-#lang racket
-(require web-server/dispatch/coercion
+#lang racket/base
+(require racket/match
+         web-server/dispatch/coercion
          web-server/dispatch/bidi-match)
 
 (define-syntax define-bidi-match-expander/coercions

@@ -1,5 +1,8 @@
-#lang racket
-(require racket/pretty
+#lang racket/base
+(require racket/contract
+         racket/match
+         racket/list
+         racket/pretty
          xml)
 
 (define-struct (exn:pretty exn) (xexpr))

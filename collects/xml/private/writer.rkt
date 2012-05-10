@@ -1,5 +1,6 @@
-#lang racket
-(require "structures.rkt")
+#lang racket/base
+(require racket/contract
+         "structures.rkt")
 
 (provide/contract
  [write-xml ((document?) (output-port?) . ->* . void?)]

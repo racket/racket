@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 (require scribble/basic
-         (for-syntax racket/port)
+         (for-syntax racket/base
+                     racket/port)
          racket/include
          (except-in scribble/manual link))
 (provide external-file)

@@ -1,4 +1,7 @@
-#lang racket
+#lang racket/base
+(require racket/list
+         racket/contract)
+
 ; A dispatch pattern is either
 ; - a string
 ; - a bidi match expander
