@@ -2,9 +2,7 @@
 (require racket/match
          racket/place/define-remote-server)
 
-(define-remote-server
-  bank
-
+(define-remote-server bank
   (define-state accounts (make-hash))
   (define-rpc (new-account who)
      (match (hash-has-key? accounts who)

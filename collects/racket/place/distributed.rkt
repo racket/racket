@@ -88,6 +88,7 @@
          mr-connect-to
          start-message-router/thread
          spawn-nodes/join
+         spawn-nodes/join/local
  
          ;classes
          event-container<%>
@@ -113,6 +114,8 @@
          ;contracts
          *channel?
          port-no?
+         place-channel-get
+         place-channel-put
          )
 
 (define-runtime-path distributed-launch-path "distributed/launch.rkt")
@@ -713,7 +716,7 @@
                   [port #f]
                   [retry-times 30]
                   [delay 1]
-                  [background-connect #t]
+                  [background-connect? #t]
                   [in #f]
                   [out #f]
                   [remote-node #f])
@@ -777,7 +780,7 @@
         (raise "Not-implemented/needed")
         (cons (wrap-evt in void) nes))
 
-      (when (and host port background-connect)
+      (when (and host port background-connect?)
         (set! connecting #t)
         (set! ch (make-channel))
         (thread
@@ -789,7 +792,7 @@
                                                         (raise (format "socket error connecting to ~a:~a" host port)))])
                              (tcp-connect/retry host port #:times retry-times #:delay delay)))
                 list)))))
-      (when (and host port (not background-connect))
+      (when (and host port (not background-connect?))
         (tcp-connect/retry host port #:times retry-times #:delay delay))
       (super-new)
   )))
@@ -1016,9 +1019,10 @@
       (define/public (place-died)
         (cond
           [restart-on-exit
-                (if (equal? restart-on-exit #t)
-                  (restart-place)
-                  (send restart-on-exit restart restart-place))]
+                (cond 
+                  [(equal? restart-on-exit #t) (restart-place)]
+                  [(procedure? restart-on-exit) (restart-on-exit)]
+                  [else (send restart-on-exit restart restart-place)])]
           [else
             (log-debug (format "No restart condition for ~a:~a"
                     (send node get-log-prefix)
@@ -1042,7 +1046,8 @@
                                                on-channel-event])) es) es)]
                [es (send psb register es)]
                [es (if (and restart-on-exit
-                            (not (equal? restart-on-exit #t)))
+                            (not (equal? restart-on-exit #t))
+                            (not (procedure? restart-on-exit)))
                        (send restart-on-exit register es)
                        es)])
           es))
@@ -1233,6 +1238,14 @@
             (set! thunk (lambda () (restart restart-func)))
             (set! fire-time (+ (current-inexact-milliseconds) (* seconds 1000)))]))
       ))
+
+(define on-exit%
+  (class*
+    object% ()
+    (init-field thunk)
+    (define/public (restart restart-func)
+      (thunk))))
+
 
 
 (define (startup-config conf conf-idx)
@@ -1460,6 +1473,9 @@
   (new restarter% [seconds seconds] [retry retry]
        [on-final-fail on-final-fail]))
 
+(define (on-place-exit thunk)
+  (new (on-exit% [thunk thunk])))
+
 (define (log-message severity msg)
   (dcgm DCGM-TYPE-LOG-TO-PARENT -1 -1 (list severity msg)))
 
@@ -1624,6 +1640,33 @@
   (make-keyword-procedure (lambda (kws kw-args . rest)
                             (list kws kw-args rest))))
 
+(define/provide (spawn-nodes/join/local nodes-descs)
+    (spawn-nodes/join
+      (for/list ([c nodes-descs])
+        (match-define (list-rest host port _rest) c)
+        (define rest 
+          (cond 
+            [(null? _rest)
+             (list (make-immutable-hash (list (cons "listen-port" port))))]
+            [else
+              (list
+                (hash-set (car _rest) "listen-port" port))]))
+        (define-values (k v) 
+          (let loop ([keys (list "racket-path" "listen-port" "distributed-launch-path")]
+                     [k null]
+                     [v null])
+            (cond 
+             [(pair? keys)
+              (cond
+                [(hash-ref (car rest) (car keys) #f) => (lambda (x) 
+                  (loop (cdr keys)
+                        (cons (string->keyword (car keys)) k)
+                        (cons x v)))]
+                [else
+                  (loop (cdr keys) k v)])]
+             [else
+               (values k v)])))
+        (list k v (list host)))))
 
 (define named-place-typed-channel%
   (class*
@@ -1636,7 +1679,6 @@
         (cond
           [(null? l)
            (define nm (place-channel-get ch))
-           ;(printf/f "NM ~a ~a\n" type nm)
            (set! msgs (append msgs (list nm)))
            (loop msgs null)]
           [(equal? type (caaar l))

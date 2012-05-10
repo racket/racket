@@ -152,8 +152,9 @@ x)]))
 
 (define-define-remote-server define-remote-server)
 (define-define-remote-server define-named-remote-server)
-(provide define-remote-server)
-(provide define-named-remote-server)
-(provide log-to-parent)
+
+(provide define-remote-server
+         define-named-remote-server
+         log-to-parent)
 
 

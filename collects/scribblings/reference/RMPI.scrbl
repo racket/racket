@@ -7,13 +7,14 @@
           racket/place/distributed/RMPI
           racket/sandbox
           racket/class)
-@(require (for-label racket/place/distributed/RMPI racket/class))
+@(require (for-label racket/base
+                     racket/place/distributed/RMPI))
 
 
 @(define evaler (make-base-eval))
 @(interaction-eval #:eval evaler (require racket/place/distributed
                                           racket/class
-                                          racket/place/define-remote-server))
+                                          #;racket/place/distributed/RMPI))
 
 @(define output-evaluator
   (parameterize ([sandbox-output 'string]
@@ -27,11 +28,11 @@
           (interaction #:eval evaluator e)
           (printf "K ~a\n" (get-output evaluator)))]))
 
-@title[#:tag "distributed-places-MPI"]{Racket Distributed Places MPI}
+@title[#:tag "distributed-places-MPI"]{Distributed Places MPI}
 
 @defmodule[racket/place/distributed/RMPI]
 
-@defproc[(RMPI-id [comm RMPI-COMM?]) non-negative-integer? ]{
+@defproc[(RMPI-id [comm RMPI-COMM?]) exact-nonnegative-integer? ]{
   Takes a RMPI communicator structure, @racket[comm], and returns the node id of the RMPI
   process.
 }
@@ -41,28 +42,28 @@
   processes in the communicator group.
 }
 
-@defproc[(RMPI-send [comm RMPI-COMM?] [dest non-negative-integer?] [val any?]) void?]{
+@defproc[(RMPI-send [comm RMPI-COMM?] [dest exact-nonnegative-integer?] [val any]) void?]{
   Sends @racket[val] to destination RMPI process number @racket[dest] using the RMPI communicator structure @racket[comm].
 }
 
-@defproc[(RMPI-recv [comm RMPI-COMM?] [src non-negative-integer?]) any?]{
+@defproc[(RMPI-recv [comm RMPI-COMM?] [src exact-nonnegative-integer?]) any]{
   Receives a message from source RMPI process number @racket[src] using the RMPI communicator structure @racket[comm].
 }
 
-@defproc[(RMPI-init [ch place-channel?]) (values RMPI-COMM? (listof any?) named-place-type-channel%?)]{
+@defproc[(RMPI-init [ch place-channel?]) (values RMPI-COMM? (listof any) (is-a?/c named-place-type-channel%))]{
   Creates the @racket[RMPI-COMM] structure instance using the named place's original place-channel @racket[ch].
   In addition to the communicator structure, @racket[RMPI-init] returns a list of initial arguments and the original place-channel
   @racket[ch] wrapped in a @racket[named-place-type-channel%].  The @racket[named-place-type-channel%] wrapper allows for
   the reception of list messages typed by an initial symbol.
 }
 
-@defproc*[([(RMPI-BCast [comm RMPI-COMM?] [src non-negative-integer?]) any?]
-           [(RMPI-BCast [comm RMPI-COMM?] [src non-negative-integer?] [val any?]) any?])]{
+@defproc*[([(RMPI-BCast [comm RMPI-COMM?] [src exact-nonnegative-integer?]) any]
+           [(RMPI-BCast [comm RMPI-COMM?] [src exact-nonnegative-integer?] [val any]) any])]{
   Broadcasts @racket[val] from @racket[src] to all RMPI processes in the communication group using a hypercube algorithm.
   Receiving processes call @racket[(RMPI-BCast comm src)].
 }
 
-@defproc[(RMPI-Reduce [comm RMPI-COMM?] [dest non-negative-integer?] [op procedure?] [val any?]) any?]{
+@defproc[(RMPI-Reduce [comm RMPI-COMM?] [dest exact-nonnegative-integer?] [op procedure?] [val any]) any]{
   Reduces @racket[val] using the @racket[op] operator to @racket[dest] RMPI node using a hypercube algorithm.
 }
 
@@ -70,7 +71,7 @@
   Introduces a synchronization barrier for all RMPI processes in the communcication group @racket[comm].
 }
 
-@defproc[(RMPI-AllReduce [comm RMPI-COMM?] [op procedure?] [val any?]) any?]{
+@defproc[(RMPI-AllReduce [comm RMPI-COMM?] [op procedure?] [val any]) any]{
   Reduces @racket[val] using the @racket[op] operator to RMPI node @racket[0] and then broadcasts the reduced value to all nodes in the  communication group.
 }
 
@@ -84,17 +85,17 @@
           [#:distributed-launch-path distributed-launch-path string?]
           [#:mpi-module mpi-module string?]
           [#:mpi-func mpi-func symbol?]
-          [#:mpi-args mpi-args (listof any?)]) hash?]{
+          [#:mpi-args mpi-args (listof any)]) hash?]{
 
   Builds a hash from keywords to keyword arguments for use with the @racket[RMPI-launch function].
 }
 
-@defproc[(RMPI-launch [default-node-config hash?] [config (listof (listof string? port-no? symbol? non-negative-integer?))]) void?]{
+@defproc[(RMPI-launch [default-node-config hash?] [config (listof (listof string? port-no? symbol? exact-nonnegative-integer?))]) void?]{
   Launches distributed places nodes running @racket[#:mpi-func] in @racket[#:mpi-module] with @racket[#:mpi-args].
-  The config is a list of node configs, where each node config consists of a hostname, port, named place symbol and RMPI id number, followed by optional keyword arguments @racket[#:racket-path], @racket[#:distributed-launch-path], @racket[#:mpi-module], @racket[#:mpi-func], and @racket[#:mpi-args].  Missing optional keyword arguments will be taken from the @racket[default-node-config] hash of keyword arguments.
+  The config is a list of node configs, where each node config consists of a hostname, port, named place symbol and RMPI id number, followed by and optional hash of keyword @racket[#:racket-path], @racket[#:distributed-launch-path], @racket[#:mpi-module], @racket[#:mpi-func], and @racket[#:mpi-args] to keyword arguments.  Missing optional keyword arguments will be taken from the @racket[default-node-config] hash of keyword arguments.
 }
 
-@defproc[(RMPI-finish [comm RMPI-COMM?] [tc named-place-type-channel%?]) void?]{
+@defproc[(RMPI-finish [comm RMPI-COMM?] [tc (is-a?/c named-place-type-channel%)]) void?]{
   Rendezvous with the @racket[RMPI-launch], using the @racket[tc] returned by @racket[RMPI-launch], to indicate that the RMPI module is done executing and that @racket[RMPI-launch] can return control to its caller.
 }
 
