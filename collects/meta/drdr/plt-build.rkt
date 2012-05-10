@@ -320,9 +320,10 @@
   ; And go
   (define top-sema (make-semaphore 0))
   (notify! "Starting testing")
-  (test-directory collects-pth top-sema)
-  (notify! "All testing scheduled... waiting for completion")
-  (semaphore-wait top-sema)
+  (when (directory-exists? collects-pth)
+    (test-directory collects-pth top-sema)
+    (notify! "All testing scheduled... waiting for completion")
+    (semaphore-wait top-sema))
   (notify! "Stopping testing")
   (stop-job-queue! test-workers))
 

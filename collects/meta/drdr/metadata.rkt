@@ -68,11 +68,12 @@
                    tmp-file)
                   ; Dynamic require it
                   (begin0
-                    (dynamic-require `(file ,(path->string tmp-file))
-                                     'get-prop)
+                    (with-handlers ([exn? (λ (x) #f)])
+                      (dynamic-require `(file ,(path->string tmp-file))
+                                       'get-prop))
                     (delete-file tmp-file))))))
-  (unless props:get-prop
-    (error 'get-prop "Could not load props file for ~e" (current-rev)))
+  #;(unless props:get-prop
+     (error 'get-prop "Could not load props file for ~e" (current-rev)))
   ; XXX get-prop is stupid and errors when a-path is invalid rather than returning def
   (with-handlers ([exn? (lambda (x) def)])
     (props:get-prop a-path prop def
