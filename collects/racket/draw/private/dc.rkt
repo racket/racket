@@ -312,6 +312,15 @@
               (set! x-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* effective-scale-x w))))) 2.0))
               (set! y-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* effective-scale-y w))))) 2.0))))))
 
+    (define/private (sub1w w)
+      (if (aligned? smoothing)
+          (max 0.0 (- w (/ effective-scale-x)))
+          w))
+    (define/private (sub1h h)
+      (if (aligned? smoothing)
+          (max 0.0 (- h (/ effective-scale-y)))
+          h))
+
     (def/public (set-font [font% f])
       (set! font f))
 
@@ -994,15 +1003,15 @@
       (with-cr 
        (check-ok who)
        cr
-       (let ([draw-one (lambda (align-x align-y brush? pen? d)
+       (let ([draw-one (lambda (align-x align-y brush? pen? sub1w sub1h)
                          (let* ([orig-x x]
                                 [orig-y y]
                                 [x (align-x x)]
                                 [y (align-y y)]
                                 [width (- (align-x (+ orig-x width)) x)]
-                                [width (if (width . >= . d) (- width d) width)]
+                                [width (sub1w width)]
                                 [height (- (align-y (+ orig-y height)) y)]
-                                [height (if (height . >= . d) (- height d) height)]
+                                [height (sub1h height)]
                                 [radius-x (/ width 2)]
                                 [radius-y (/ height 2)]
                                 [center-x (+ x radius-x)]
@@ -1024,9 +1033,10 @@
                              (cairo_restore cr)
                              (draw cr brush? pen?))))])
          (when (brush-draws?)
-           (draw-one (lambda (x) x) (lambda (y) y) #t #f 0.0))
+           (draw-one (lambda (x) x) (lambda (y) y) #t #f (lambda (x) x) (lambda (x) x)))
          (when (pen-draws?)
-           (draw-one (lambda (x) (align-x x)) (lambda (y) (align-y y)) #f #t 1.0)))))
+           (draw-one (lambda (x) (align-x x)) (lambda (y) (align-y y)) #f #t 
+                     (lambda (x) (sub1w x)) (lambda (x) (sub1h x)))))))
 
     (def/public (draw-arc [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height]
                           [real? start-radians] [real? end-radians])
@@ -1100,8 +1110,8 @@
          (cairo_new_path cr)
          (cairo_rectangle cr x y width height)
          (draw cr #t #f)
-         (let ([w2 (- (align-x (+ x (sub1 width))) ax)]
-               [h2 (- (align-y (+ y (sub1 height))) ay)])
+         (let ([w2 (- (align-x (+ x (sub1w width))) ax)]
+               [h2 (- (align-y (+ y (sub1h height))) ay)])
            (when (and (positive? w2)
                       (positive? h2))
              (cairo_new_path cr)
@@ -1125,7 +1135,7 @@
            (rounded-rect x y width height (lambda (x) x) (lambda (y) y))
            (draw cr #t #f))
          (when (pen-draws?)
-           (rounded-rect x y (sub1 width) (sub1 height)
+           (rounded-rect x y (sub1w width) (sub1h height)
                          (lambda (x) (align-x x)) (lambda (y) (align-y y)))
            (draw cr #f #t)))))
 

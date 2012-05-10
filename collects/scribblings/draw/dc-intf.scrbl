@@ -66,14 +66,16 @@ Draws a counter-clockwise circular arc, a part of the ellipse
 The current pen is used for the arc. If the current brush is not
  transparent, it is used to fill the wedge bounded by the arc plus
  lines (not drawn) extending to the center of the inscribed ellipse.
+ If both the pen and brush are non-transparent, the wedge is filled
+ with the brush before the arc is drawn with the pen. 
 
-If both the pen and brush are non-transparent, the wedge is filled
- with the brush before the arc is drawn with the pen. The wedge and
- arc meet so that no space is left between them, but the precise
- overlap between the wedge and arc is platform- and size-specific.
- Typically, the regions drawn by the brush and pen overlap.  More
- generally, the pen is centered over the outline of the arc, rounding
- toward the center in unsmoothed mode.
+The wedge and arc meet so that no space is left between them, but the
+ precise overlap between the wedge and arc is platform- and
+ size-specific.  Typically, the regions drawn by the brush and pen
+ overlap.  In unsmoothed or aligned mode, the path for the outline is
+ adjusted by shrinking the bounding ellipse width and height by one
+ drawing unit after scaling.
+
 
 @|DrawSizeNote|
 
@@ -179,15 +181,16 @@ See @method[dc<%> draw-bitmap] for information about @racket[dest-x],
 
 Draws an ellipse contained in a rectangle with the given top-left
  corner and size. The current pen is used for the outline, and the
- current brush is used for filling the shape.
+ current brush is used for filling the shape. If both the pen and
+ brush are non-transparent, the ellipse is filled with the brush
+ before the outline is drawn with the pen.
 
-If both the pen and brush are non-transparent, the ellipse is filled
- with the brush before the outline is drawn with the pen. The filling
- and outline meet so that no space is left between them, but the
- precise overlap between the filling and outline is platform- and
- size-specific.  Typically, the regions drawn by the brush and pen
- overlap.  More generally, the pen is centered over the outline of the
- ellipse, rounding toward the center in unsmoothed mode.
+Brush filling and pen outline meet so that no space is left between
+ them, but the precise overlap between the filling and outline is
+ platform- and size-specific.  Thus, the regions drawn by the brush
+ and pen may partially overlap. In unsmoothed or aligned mode, the
+ path for the outline is adjusted by shrinking the ellipse width and
+ height by one drawing unit after scaling.
 
 @|DrawSizeNote|
 
@@ -324,17 +327,15 @@ See also @method[dc<%> set-smoothing] for information on the
 
 Draws a rectangle with the given top-left corner and size.  The
  current pen is used for the outline and the current brush for filling
- the shape.
+ the shape. If both the pen and brush are non-transparent, the
+ rectangle is filled with the brush before the outline is drawn with
+ the pen.
 
-If both the pen and brush are non-transparent, the rectangle is filled
- with the brush before the outline is drawn with the pen. In
- unsmoothed mode, when the pen is size 0 or 1, the filling precisely
- overlaps the entire outline. As a result, if a rectangle is drawn
- with a size-0 or size-1 @racket['xor] @racket[pen%] and an
- @racket['xor] @racket[brush%], the outline is xored twice (first by
- the brush, then by the pen), leaving it unchanged. More generally,
- the pen is centered over the outline of the rectangle, rounding
- toward the center in unsmoothed mode.
+In unsmoothed or aligned mode, when the pen is size 0 or 1, the
+ filling precisely overlaps the entire outline. More generally, in
+ unsmoothed or aligned mode, the path for the outline is adjusted by
+ shrinking the rectangle width and height by one drawing unit after
+ scaling.
 
 See also @method[dc<%> set-smoothing] for information on the
 @racket['aligned] smoothing mode.
@@ -354,7 +355,8 @@ See also @method[dc<%> set-smoothing] for information on the
 Draws a rectangle with the given top-left corner, and with the given
  size. The corners are quarter-circles using the given radius.  The
  current pen is used for the outline and the current brush for filling
- the shape.
+ the shape. If both the pen and brush are non-transparent, the rectangle is filled
+ with the brush before the outline is drawn with the pen.
 
 If @racket[radius] is positive, the value is used as the radius of the
  rounded corner. If @racket[radius] is negative, the absolute value is
@@ -364,14 +366,12 @@ If @racket[radius] is positive, the value is used as the radius of the
 If @racket[radius] is less than @racket[-0.5] or more than half of
  @racket[width] or @racket[height], @|MismatchExn|.
 
-If both the pen and brush are non-transparent, the rectangle is filled
- with the brush before the outline is drawn with the pen. The filling
- and outline meet so that no space is left between them, but the
- precise overlap between the filling and outline is platform- and
- size-specific.  Thus, the regions drawn by the brush and pen may
- partially overlap. More generally, the pen is centered over the
- outline of the rounded rectangle, rounding toward the center in
- unsmoothed mode.
+Brush filling and pen outline meet so that no space is left between
+ them, but the precise overlap between the filling and outline is
+ platform- and size-specific.  Thus, the regions drawn by the brush
+ and pen may partially overlap. In unsmoothed or aligned mode, the
+ path for the outline is adjusted by shrinking the rectangle width and
+ height by one drawing unit after scaling.
 
 See also @method[dc<%> set-smoothing] for information on the
 @racket['aligned] smoothing mode.
