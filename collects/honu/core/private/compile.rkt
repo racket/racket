@@ -116,6 +116,7 @@
 (define-syntax (racket-syntax stx)
   (syntax-case stx ()
     [(_ form)
+     (debug 2 "Racket syntax ~a\n" #'form)
      #'(parsed-syntax #'form)]))
 
 (begin-for-syntax
