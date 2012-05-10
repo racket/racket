@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
-(provide (except-out (all-from-out scheme/base) #%module-begin)
+(provide (except-out (all-from-out racket/base) #%module-begin)
          (rename-out [module-begin #%module-begin]))
 
-(require (for-syntax scheme/base syntax/boundmap scheme/list
+(require (for-syntax racket/base syntax/boundmap racket/list
                      syntax/strip-context))
 
 (begin-for-syntax
