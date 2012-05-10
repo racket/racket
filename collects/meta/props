@@ -874,6 +874,7 @@ path/s is either such a string or a list of them.
 "collects/games/show-help.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/games/slidey/slidey.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/games/spider/spider.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/generics" responsible (asumu stamourv)
 "collects/graphics" responsible (mflatt robby)
 "collects/graphics/graphics-posn-less-unit.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/graphics/graphics-unit.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1495,6 +1496,7 @@ path/s is either such a string or a list of them.
 "collects/tests/future" responsible (jamesswaine mflatt robby)
 "collects/tests/future/future.rkt" drdr:timeout 200
 "collects/tests/future/random-future.rkt" drdr:timeout 480
+"collects/tests/generics" responsible (asumu stamourv)
 "collects/tests/gracket" responsible (mflatt)
 "collects/tests/gracket/auto.rktl" drdr:command-line #f
 "collects/tests/gracket/blits.rkt" drdr:command-line (gracket "-f" *)
