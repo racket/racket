@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/local
          (for-syntax racket/base
-                     racket/local))
+                     racket/local
+                     racket/syntax))
 
 (define-for-syntax (keyword-stx? v)
   (keyword? (syntax->datum v)))
@@ -22,13 +23,41 @@
 
 (provide define-generics)
 (define-syntax (define-generics stx)
-  (syntax-case stx ()
+  (syntax-case stx () ; can't use syntax-parse, since it depends on us
     ;; defined-table binding is optional, so if it's not provided just
     ;; hygienically generate some name to bind it to.
     [(_ (name prop:name name?) (generic . generics-args) ...)
-     #'(define-generics (name prop:name name? defined-table)
+     #'(define-generics (name prop:name name?
+                              #:defined-table defined-table
+                              #:coerce-method-table #f)
          (generic . generics-args) ...)]
-    [(_ (name prop:name name? defined-table) (generic . generic-args) ...)
+    [(_ (name prop:name name? #:defined-table defined-table)
+        (generic . generics-args) ...)
+     #'(define-generics (name prop:name name?
+                              #:defined-table defined-table
+                              #:coerce-method-table #f)
+         (generic . generics-args) ...)]
+    [(_ (name prop:name name? #:coerce-method-table coerce-method-table)
+        (generic . generics-args) ...)
+     #'(define-generics (name prop:name name?
+                              #:defined-table defined-table ; fresh
+                              #:coerce-method-table coerce-method-table)
+         (generic . generics-args) ...)]
+    [(_ (name prop:name name?
+              ;; TODO is there a better way to handle optional kw args in s-c?
+              ;; allow out of order kw args
+              #:coerce-method-table coerce-method-table
+              #:defined-table defined-table)
+        (generic . generic-args) ...)
+     #'(define-generics (name prop:name name?
+                              #:defined-table defined-table
+                              #:coerce-method-table coerce-method-table)
+         (generic . generics-args) ...)]
+    [(_ (name prop:name name?
+              #:defined-table defined-table
+              ;; use of coercion functions is explained below
+              #:coerce-method-table coerce-method-table)
+        (generic . generic-args) ...)
      (and (identifier? #'name)
           (identifier? #'prop:name)
           (identifier? #'name?)
@@ -39,7 +68,8 @@
                             [_ (syntax->list #'(generic ...))])
                    i)]
            [name-str (symbol->string (syntax-e #'name))]
-           [generics (syntax->list #'(generic ...))])
+           [generics (syntax->list #'(generic ...))]
+           [need-coercion? (syntax->datum #'coerce-method-table)])
        (with-syntax ([name-str name-str]
                      [how-many-generics (length idxs)]
                      [(generic-arity-coerce ...) (generate-temporaries #'(generic ...))]
@@ -90,7 +120,14 @@
                              (identifier? #'id)
                              #'id]
                             [()
-                             #'()])))])
+                             #'()])))]
+                     [prop:method-table
+                      ;; if we need to coerce what's at prop:name into a
+                      ;; method table, we need to generate a new struct
+                      ;; property for the method table
+                      (if need-coercion?
+                          (generate-temporary (syntax->datum #'prop:name))
+                          #'prop:name)])
          #`(begin
              (define-syntax name (list #'generic ...))
              ; XXX optimize no kws or opts
@@ -101,17 +138,17 @@
                  (lambda (f)
                    (procedure-reduce-keyword-arity f generic-arity-spec generic-required-kws generic-allowed-kws))))
              ...
-             (define-values (prop:name name? get-generics)
+             (define-values (prop:method-table name? get-generics)
                (make-struct-type-property
                 'name
                 (lambda (generic-vector si)
                   (unless (vector? generic-vector)
-                    (error 'name 
+                    (error 'name
                            "bad generics table, expecting a vector, got ~e"
                            generic-vector))
                   (unless (= (vector-length generic-vector)
                              how-many-generics)
-                    (error 'name 
+                    (error 'name
                            "bad generics table, expecting a vector of length ~e, got ~e"
                            how-many-generics
                            (vector-length generic-vector)))
@@ -119,6 +156,47 @@
                             (and mthd-generic
                                  (generic-arity-coerce mthd-generic)))
                           ...))))
+                          ;; Use case for method table coercion: retrofitting a generics-
+             ;; based API on top of a struct property that uses its own ad-hoc
+             ;; extension mechanism.
+             ;; If coercion is used, prop:method-table and prop:name are
+             ;; distinct. We define prop:name (e.g. prop:equals+hash-code,
+             ;; the user-facing name) to "push" its method table to
+             ;; prop:method-table, calling the coercion function if necessary.
+             ;; prop:method-table is then used for dispatch and all.
+             ;; That way, existing code can use prop:name using its old
+             ;; extension API, and new code can use the generics-based
+             ;; interface.
+             ;; The coercion function should take whatever lives at prop:name
+             ;; according to its old extension API, and produce a vector of
+             ;; methods in the defined order.
+             #,@(if need-coercion?
+                    (list
+                     #'(define-values (prop:name unused unused2)
+                         (make-struct-type-property
+                          'front-facing-name
+                          #f ; no guard, we accept anything;
+                          ;; prop:method-table does the checking
+                          (list
+                           (cons prop:method-table
+                                 (lambda (maybe-method-table)
+                                   ;; if we get a valid method table, (methods
+                                   ;; was used, not the old API provided for
+                                   ;; prop:name) we just use it. otherwise, we
+                                   ;; call the coercion function
+                                   (if (and (vector? maybe-method-table)
+                                            (= (vector-length
+                                                maybe-method-table)
+                                               how-many-generics)
+                                            (for/and ([g (in-vector
+                                                          maybe-method-table)])
+                                              (procedure? g)))
+                                       ;; valid method table
+                                       maybe-method-table
+                                       (coerce-method-table
+                                        maybe-method-table))))))))
+                    ;; no need for coercions, methods are stored at prop:name
+                    '())
              ;; Hash table mapping method name symbols to
              ;; whether the given method is implemented
              (define (defined-table this)
@@ -150,7 +228,7 @@
              ...)))]))
 
 (require racket/stxparam)
-(define-syntax-parameter define/generic 
+(define-syntax-parameter define/generic
   (lambda (stx)
     (raise-syntax-error 'define/generic "only allowed inside methods" stx)))
 (provide define/generic)

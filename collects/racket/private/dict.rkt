@@ -3,7 +3,7 @@
 (require generics
          (for-syntax racket/base))
 
-(define-generics (dict prop:dict dict? dict-def-table)
+(define-generics (dict prop:dict dict? #:defined-table dict-def-table)
   (dict-ref  dict key [default])
   (dict-set! dict key val)
   (dict-set  dict key val)
