@@ -36,17 +36,45 @@ are used as @tech{content}. Otherwise, when the default
 @racket[current-print] is in place, result values are typeset using
 @racket[to-element/no-color].
 
-Uses of @racket[code:comment] and @racketidfont{code:blank} are
-stipped from each @racket[datum] before evaluation.
+Certain patterns in @racket[datum] are treated specially:
 
-If a @racket[datum] has the form @racket[(@#,indexed-racket[eval:alts]
-#,(svar show-datum) #,(svar eval-datum))], then @svar[show-datum] is
-typeset, while @svar[eval-datum] is evaluated.
+@itemlist[
 
-If a @racket[datum] has the form
-@racket[(@#,indexed-racket[eval:check] #,(svar eval-datum) #,(svar
-expect-datum))], then both @svar[eval-datum] and @svar[check-datum]
-are evaluated, and an error is raised if they are not @racket[equal?].
+ @item{A @racket[datum] of the form 
+       @racket[(@#,indexed-racket[code:line] _code-datum (@#,racketidfont{code:comment} _comment-datum ...))]
+       is treated as @racket[_code-datum] for evaluation.}
+
+ @item{Other uses of @racketidfont{code:comment} and
+       @racketidfont{code:blank} are stripped from each @racket[datum]
+       before evaluation.}
+
+ @item{A @racket[datum] of the form 
+       @racket[(@#,indexed-racket[eval:alts] #,(svar show-datum) #,(svar eval-datum))]
+       is treated as @svar[show-datum] for typesetting and @svar[eval-datum] for evaluation.}
+
+ @item{A @racket[datum] of the form 
+       @racket[(@#,indexed-racket[eval:check] #,(svar eval-datum) #,(svar expect-datum))]
+       is treated like @racket[_eval-datum], but @svar[check-datum] is also
+       evaluated, and an error is raised if they are not @racket[equal?].}
+
+ @item{A @racket[datum] of the form 
+       @racket[(@#,indexed-racket[eval:result] _content-expr _out-expr _err-expr)]
+       involves no sandboxed evaluation; instead, the @tech{content} result of @racket[_content-expr] is used as the
+       typeset form of the result, @racket[_out-expr] is treated as output printed
+       by the expression, and @racket[_err-expr] is error output printed by the
+       expression. The @racket[_out-expr] and/or @racket[_err-expr] can be omitted,
+       in which case they default to empty strings.
+
+       Normally, @racketidfont{eval:result}
+       is used in the second part of an @racketidfont{eval:alts} combination.}
+
+ @item{A @racket[datum] of the form 
+       @racket[(@#,indexed-racket[eval:results] _content-list-expr _out-expr _err-expr)]
+       is treated like an @racketidfont{eval:result} form, except that @racket[_content-list-expr]
+       should produce a list of @tech{content} for multiple results of evaluation. As
+       with @racketidfont{eval:result}, @racket[_out-expr] and @racket[_err-expr] are optional.}
+
+]
 
 As an example,
 

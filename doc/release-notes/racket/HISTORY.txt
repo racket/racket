@@ -1,6 +1,7 @@
 Version 5.3.0.6
 racket/flonum: added flexpt
 racket/unsafe/ops: added unsafe-flexpt
+scribble/eval: added eval:result and eval:results
 
 Version 5.3.0.5
 Added box-cas!
