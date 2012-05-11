@@ -57,7 +57,8 @@ Emacs-style key bindings (especially on windows or some linux installations
 where the control key is, by default, for the menu shortcuts), 
 you should uncheck the @onscreen{Enable
 keybindings in menus} preference. Many of the keybindings below are
-inspired by Emacs.
+inspired by Emacs. See also @secref["defining-shortcuts"] for suggestions
+on how to bind keys to menu items on a selective basis.
 
 @section{Moving Around}
 
@@ -274,10 +275,59 @@ s-exp framework/keybinding-lang
   (keybinding
    key
    (λ (ed evt)
-     (send (send ed get-keymap) call-function command ed evt #t))))
+     (send (send ed get-keymap) call-function
+           command ed evt #t))))
 
 (rebind "c:w" "backward-kill-word")
 ]
+
+This example shows how to bind a menu item (based on its name) to a particular key.
+The call at the end of the example binds ``control-a'' to the @onscreen{Run}
+menu item.
+
+@racketmod[
+s-exp framework/keybinding-lang
+
+(define (menu-bind key menu-item)
+  (keybinding
+   key
+   (λ (ed evt)
+     (define canvas (send ed get-canvas))
+     (when canvas
+       (define menu-bar (find-menu-bar canvas))
+       (when menu-bar
+         (define item (find-item menu-bar menu-item))
+         (when item
+           (define evt
+             (new control-event% 
+                  [event-type 'menu]
+                  [time-stamp 
+                   (send evt get-time-stamp)]))
+           (send item command evt)))))))
+
+(define/contract (find-menu-bar c)
+  (-> (is-a?/c area<%>) (or/c #f (is-a?/c menu-bar%)))
+  (let loop ([c c])
+    (cond
+      [(is-a? c frame%) (send c get-menu-bar)]
+      [(is-a? c area<%>) (loop (send c get-parent))]
+      [else #f])))
+
+(define/contract (find-item menu-bar label)
+  (-> (is-a?/c menu-bar%)
+      string?
+      (or/c (is-a?/c selectable-menu-item<%>) #f))
+  (let loop ([o menu-bar])
+    (cond
+      [(is-a? o selectable-menu-item<%>)
+       (and (equal? (send o get-plain-label) label)
+            o)]
+      [(is-a? o menu-item-container<%>)
+       (for/or ([i (in-list (send o get-items))])
+         (loop i))]
+      [else #f])))
+
+(menu-bind "c:a" "Run")]
 
 Note that DrRacket does not reload keybindings files automatically when you
 make changes, so you'll need to restart DrRacket to see changes to
