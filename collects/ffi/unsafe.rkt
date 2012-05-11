@@ -996,11 +996,11 @@
 (define-struct array (ptr type length))
 (define array-ref
   (case-lambda
-   [(a i) 
-    (let ([len (array-length a)])
-      (if (< -1 i len)
-          (ptr-ref (array-ptr a) (array-type a) i)
-          (raise-mismatch-error 'array-ref "index out of bounds: " i)))]
+   [(a i)
+    (define len (array-length a))
+    (if (< -1 i len)
+        (ptr-ref (array-ptr a) (array-type a) i)
+        (raise-mismatch-error 'array-ref "index out of bounds: " i))]
    [(a . is)
     (let loop ([a a] [is is])
       (if (null? is)
@@ -1009,15 +1009,15 @@
 (define array-set!
   (case-lambda
    [(a i v)
-    (let ([len (array-length a)])
-      (if (< -1 i len)
-          (ptr-set! (array-ptr a) (array-type a) i v)
-          (raise-mismatch-error 'array-ref "index out of bounds: " i)))]
+    (define len (array-length a))
+    (if (< -1 i len)
+        (ptr-set! (array-ptr a) (array-type a) i v)
+        (raise-mismatch-error 'array-ref "index out of bounds: " i))]
    [(a i i1 . is+v)
     (let ([is+v (reverse (list* i i1 is+v))])
       (define v (car is+v))
       (define i (cadr is+v))
-      (let loop ([a a] [is (cddr is+v)])
+      (let loop ([a a] [is (reverse (cddr is+v))])
         (if (null? is)
             (array-set! a i v)
             (loop (array-ref a (car is)) (cdr is)))))]))

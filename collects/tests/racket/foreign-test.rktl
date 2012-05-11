@@ -430,6 +430,14 @@
                                              0))
     (test 44 values (cast d _gcpointer _intptr))))
 
+;; test multi-dimension arrays
+(let ([_t (_array _int 20 10 5)])
+  (define ar (ptr-ref (malloc _t) _t))
+  (define (t n)
+    (test (void) array-set! ar 19 9 4 n)
+    (test n      array-ref ar 19 9 4))
+  (for-each t '(1 2 3)))
+
 (delete-test-files)
 
 (report-errs)
