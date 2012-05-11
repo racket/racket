@@ -73,7 +73,7 @@
                      (unless (syntax? v)
                        (raise-syntax-error
                         #f
-                        "result from provide pre-transformer is not a list of exports"
+                        "result from provide pre-transformer is not a syntax object"
                         stx))
                      v)
                    stx))]
