@@ -121,12 +121,21 @@
       (t (string-append (indent) (apply format fmt args))))))
 
 (define (get-deps code path)
-  (filter-map (lambda (x)
-                (let* ([r (resolve-module-path-index x path)]
-                       [r (if (pair? r) (cadr r) r)])
-                  (and (path? r) 
-                       (path->bytes r))))
-              (append-map cdr (module-compiled-imports code))))
+  (define ht
+    (let loop ([code code] [ht (hash)])
+      (define new-ht
+        (for*/fold ([ht ht]) ([imports (in-list (module-compiled-imports code))]
+                              [x (in-list (cdr imports))])
+          (let* ([r (resolve-module-path-index x path)]
+                 [r (if (pair? r) (cadr r) r)])
+            (if (and (path? r) 
+                     (not (equal? path r)))
+                (hash-set ht (path->bytes r) #t)
+                ht))))
+      (for*/fold ([ht new-ht]) ([non-star? (in-list '(#f #t))]
+                                [subcode (in-list (module-compiled-submodules code non-star?))])
+        (loop subcode ht))))
+  (for/list ([k (in-hash-keys ht)]) k))
 
 (define (get-compilation-dir+name mode path)
   (let-values ([(base name must-be-dir?) (split-path path)])

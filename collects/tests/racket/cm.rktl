@@ -85,12 +85,13 @@
        ("f.rkt" "(module f scheme/base (provide (all-from-out scheme/base)))" #t)
        ("g.rkt" "(module g scheme/base (require (for-syntax scheme/base scheme/include \"i.rkt\")) (define-syntax (f stx) (include \"h.sch\")))" #t)
        ("h.sch" "(quote-syntax 12)" #f)
-       ("i.rkt" "(module i scheme/base)" #t))
+       ("i.rkt" "(module i scheme/base)" #t)
+       ("j.rkt" "(module j racket/base (module+ main (require \"b.rkt\")))" #t))
      '([("a.rkt") ("a.rkt") ("a.rkt")]
-       [("b.rkt") ("a.rkt") ("a.rkt" "b.rkt")]
-       [("b.rkt") ("b.rkt") ("b.rkt")]
+       [("b.rkt") ("a.rkt") ("a.rkt" "b.rkt" "j.rkt")]
+       [("b.rkt") ("b.rkt") ("b.rkt" "j.rkt")]
        [() ("a.rkt") ("a.rkt")]
-       [("c.sch") ("a.rkt") ("a.rkt" "b.rkt")]
+       [("c.sch") ("a.rkt") ("a.rkt" "b.rkt" "j.rkt")]
        [("f.rkt") ("a.rkt") ("a.rkt" "d.rkt" "f.rkt")]
        [("e.rkt") ("e.rkt") ("e.rkt")]
        [() ("a.rkt") ("a.rkt" "d.rkt")]
