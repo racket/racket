@@ -439,6 +439,8 @@
   (define all-collections-closure (plt-collection-closure all-collections))
 
   (define (check-against-all given-ccs)
+    (when (null? given-ccs)
+      (raise-user-error name-sym "nothing to do"))
     (define (cc->name cc)
       (string-join (map path->string (cc-collection cc)) "/"))
     (define (cc->cc+name+id cc)
@@ -466,16 +468,16 @@
               (equal? (cc-path (car x)) (cc-path (car y)))))))
     ;; check that there are no bad duplicates in the given list
     (for ([given-cc+name+id (in-list given*-ccs+names+ids)])
-      (cond
-        [(ormap (lambda (cc+name+id)
-                  (and (not (equal? (cadr cc+name+id) (cadr given-cc+name+id)))
-                       (equal? (caddr cc+name+id) (caddr given-cc+name+id))
-                       (cadr cc+name+id)))
-                all-ccs+names+ids)
-         => (lambda (bad)
-              (error name-sym
-                     "given collection path: \"~a\" refers to the same directory as another given collection path, \"~a\""
-                     (cadr given-cc+name+id) bad))]))
+      (define bad
+        (ormap (lambda (cc+name+id)
+                 (and (not (equal? (cadr cc+name+id) (cadr given-cc+name+id)))
+                      (equal? (caddr cc+name+id) (caddr given-cc+name+id))
+                      (cadr cc+name+id)))
+               all-ccs+names+ids))
+      (when bad
+        (error name-sym
+               "given collection path: \"~a\" refers to the same directory as another given collection path, \"~a\""
+               (cadr given-cc+name+id) bad)))
     (map car given*-ccs+names+ids))
 
   (define (sort-collections ccs)
@@ -488,26 +490,23 @@
     (if no-specific-collections?
       all-collections
       (check-against-all
-       (apply
-        append
-        (map
-         (lambda (c)
-           (define elems
-             (append-map (lambda (s)
-                           (map string->path (regexp-split #rx"/" s)))
-                         c))
-           (define ccs (collection->ccs elems))
-           (when (null? ccs)
-             ;; let `collection-path' complain about the name, if that's the problem:
-             (apply collection-path elems)
-             ;; otherwise, it must be an issue with different ways to
-             ;; spell the name
-             (error name-sym
-                    (error name-sym
-                     "given collection path: \"~a\" is not in canonical form (e.g., wrong case on a case-insensitive filesystem)"
-                     (string-join c "/"))))
-           ccs)
-         x-specific-collections)))))
+       (append-map
+        (lambda (c)
+          (define elems
+            (append-map (lambda (s) (map string->path (regexp-split #rx"/" s)))
+                        c))
+          (define ccs (collection->ccs elems))
+          (when (null? ccs)
+            ;; let `collection-path' complain about the name, if that's the problem:
+            (with-handlers ([exn? (compose1 raise-user-error exn-message)])
+              (apply collection-path elems))
+            ;; otherwise, it's probably a collection with nothing to compile
+            ;; spell the name
+            (setup-printf "WARNING"
+                          "nothing to compile in a given collection path: \"~a\""
+                          (string-join c "/")))
+          ccs)
+        x-specific-collections))))
 
   (define planet-collects
     (if (make-planet)
