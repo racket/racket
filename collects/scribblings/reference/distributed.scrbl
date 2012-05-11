@@ -909,4 +909,4 @@ except there is no reply message from the server to client
 }
 
 @(close-eval evaler)
-@include-section["RMPI.scrbl"]
+@include-section["rmpi.scrbl"]

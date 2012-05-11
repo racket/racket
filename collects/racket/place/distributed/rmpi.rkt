@@ -6,28 +6,28 @@
          racket/place
          racket/class)
 
-(provide RMPI-init
-         RMPI-send
-         RMPI-recv
-         RMPI-BCast
-         RMPI-Reduce
-         RMPI-AllReduce
-         RMPI-Barrier
-         RMPI-id
-         RMPI-cnt
-         RMPI-partition
-         RMPI-build-default-config
-         RMPI-launch
-         RMPI-finish)
+(provide rmpi-init
+         rmpi-send
+         rmpi-recv
+         rmpi-broadcast
+         rmpi-reduce
+         rmpi-allreduce
+         rmpi-barrier
+         rmpi-id
+         rmpi-cnt
+         rmpi-partition
+         rmpi-build-default-config
+         rmpi-launch
+         rmpi-finish)
 
-(struct RMPI-COMM (id cnt channels) #:transparent)
+(struct rmpi-comm (id cnt channels) #:transparent)
 
-(define (RMPI-id comm) (RMPI-COMM-id comm))
-(define (RMPI-cnt comm) (RMPI-COMM-cnt comm))
-(define (RMPI-send comm dest val) (place-channel-put (vector-ref (RMPI-COMM-channels comm) dest) val))
-(define (RMPI-recv comm src) (place-channel-get (vector-ref (RMPI-COMM-channels comm) src)))
+(define (rmpi-id comm) (rmpi-comm-id comm))
+(define (rmpi-cnt comm) (rmpi-comm-cnt comm))
+(define (rmpi-send comm dest val) (place-channel-put (vector-ref (rmpi-comm-channels comm) dest) val))
+(define (rmpi-recv comm src) (place-channel-get (vector-ref (rmpi-comm-channels comm) src)))
 
-(define (RMPI-init ch)
+(define (rmpi-init ch)
   (define tc (new named-place-typed-channel% [ch ch]))
   (match-define (list (list 'mpi-id id config) return-ch) (tc-get 'mpi-id tc))
   (match-define (list (list 'args args) src-ch) (tc-get 'args tc))
@@ -47,18 +47,18 @@
         (vector-set! mpi-comm-vector src-id src-ch)]
       [else null]))
   (values
-    (RMPI-COMM id (length config) mpi-comm-vector)
+    (rmpi-comm id (length config) mpi-comm-vector)
     args
     tc
     ))
 
 
-(define RMPI-BCast 
+(define rmpi-broadcast 
   (case-lambda
     [(comm src)
-     (RMPI-BCast comm src (void))]
+     (rmpi-broadcast comm src (void))]
     [(comm src val)
-     (match-define (RMPI-COMM real-id cnt chs) comm)
+     (match-define (rmpi-comm real-id cnt chs) comm)
      (define offset (- cnt src))
      (define id (modulo (+ real-id (- cnt src)) cnt))
      (let loop ([i 0]
@@ -97,8 +97,8 @@
        (fancy-reducer op a b))]
     [else (raise (format "fancy-reducer error on ~a ~a ~a" op recv-val val))]))
 
-(define (RMPI-Reduce comm dest op val)
-  (match-define (RMPI-COMM real-id cnt chs) comm)
+(define (rmpi-reduce comm dest op val)
+  (match-define (rmpi-comm real-id cnt chs) comm)
   (define i
     (let loop ([i 0])
       (if (>= (arithmetic-shift 1 i) cnt)
@@ -135,32 +135,32 @@
                 (fancy-reducer op recv-val val)])]))]
       [else val])))
 
-(define (RMPI-Barrier comm)
-  (RMPI-Reduce comm 0 + 1)
-  (RMPI-BCast comm 0 1))
+(define (rmpi-barrier comm)
+  (rmpi-reduce comm 0 + 1)
+  (rmpi-broadcast comm 0 1))
 
-(define (RMPI-AllReduce comm op val)
-  (define rv (RMPI-Reduce comm 0 op val))
-  (RMPI-BCast comm 0 rv))
+(define (rmpi-allreduce comm op val)
+  (define rv (rmpi-reduce comm 0 op val))
+  (rmpi-broadcast comm 0 rv))
 
 (define (partit num cnt id)
   (define-values (quo rem) (quotient/remainder num cnt))
   (values (+ (* id quo) (if (< id rem) id 0))
           (+ quo (if (< id rem) 1 0))))
 
-(define (RMPI-partition comm num)
-  (define id (RMPI-id comm))
-  (define cnt (RMPI-cnt comm))
+(define (rmpi-partition comm num)
+  (define id (rmpi-id comm))
+  (define cnt (rmpi-cnt comm))
   (partit num cnt id))
 
-(define RMPI-build-default-config
+(define rmpi-build-default-config
   (make-keyword-procedure (lambda (kws kw-args . rest)
     (for/hash ([kw kws]
                [kwa kw-args])
 ;      (displayln (keyword? kw))
       (values kw kwa)))))
 
-(define (RMPI-launch default config)
+(define (rmpi-launch default config)
   (define (lookup-config-value rest key-str)
     (define key
       (string->keyword key-str))
@@ -229,20 +229,20 @@
     (*channel-get npch)))
 
 
-(define (RMPI-finish comm tc)
-  (when (= (RMPI-id comm) 0)
+(define (rmpi-finish comm tc)
+  (when (= (rmpi-id comm) 0)
         (place-channel-put (second (tc-get 'done? tc)) 'done)))
 
 (module+ bcast-print-test
-  (RMPI-BCast (RMPI-COMM 0 8 (vector 0 1 2 3 4 5 6 7)) 0 "Hi")
-  (RMPI-BCast (RMPI-COMM 3 8 (vector 0 1 2 3 4 5 6 7)) 0)
-  (RMPI-BCast (RMPI-COMM 0 8 (vector 0 1 2 3 4 5 6 7)) 3)
+  (rmpi-broadcast (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 0 "Hi")
+  (rmpi-broadcast (rmpi-comm 3 8 (vector 0 1 2 3 4 5 6 7)) 0)
+  (rmpi-broadcast (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 3)
   )
 
 (module+ reduce-print-test
-  (RMPI-Reduce (RMPI-COMM 0 8 (vector 0 1 2 3 4 5 6 7)) 0 + 7)
-  (RMPI-Reduce (RMPI-COMM 3 8 (vector 0 1 2 3 4 5 6 7)) 0 + 7)
-  (RMPI-Reduce (RMPI-COMM 0 8 (vector 0 1 2 3 4 5 6 7)) 3 + 7)
+  (rmpi-reduce (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 0 + 7)
+  (rmpi-reduce (rmpi-comm 3 8 (vector 0 1 2 3 4 5 6 7)) 0 + 7)
+  (rmpi-reduce (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 3 + 7)
   )
 
 (module+ test
