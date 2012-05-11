@@ -3,7 +3,7 @@
 (require string-constants racket/gui/base
          racket/contract/base racket/class)
 (require scribble/srcdoc)
-(require/doc scheme/base scribble/manual)
+(require/doc racket/base scribble/manual)
 
 (define (trim-string str size)
   (let ([str-size (string-length str)])

@@ -6,6 +6,7 @@
          scribble/srcdoc
          (for-syntax racket/base)
          (prefix-in :: framework/private/focus-table))
+(generate-delayed-documents) ; enables for-doc--for-label import of `framework'
 (require/doc scheme/base scribble/manual
              (for-label framework))
 

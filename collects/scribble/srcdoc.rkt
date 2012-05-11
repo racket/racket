@@ -1,56 +1,122 @@
-#lang scheme/base
+#lang racket/base
 (require racket/contract/base
-         (for-syntax scheme/base)
-         "provide-doc-transform.rkt")
+         (for-syntax racket/base
+                     racket/require-transform
+                     racket/provide-transform))
 
-(provide require/doc
-         provide/doc
+(provide for-doc require/doc
+         provide/doc ; not needed anymore
          thing-doc
          parameter-doc
          proc-doc
-         proc-doc/names)
+         proc-doc/names
+         generate-delayed-documents)
 
-(define-syntax-rule (require/doc spec ...)
-  (void (quote-syntax (require/doc spec ...))))
+(begin-for-syntax
+ (define requires null)
+ (define doc-body null)
+ (define generated? #f)
+ (define delayed? #f)
 
-(define-syntax (provide/doc stx)
+ (define (add-requires!/decl specs)
+   (unless delayed?
+     (syntax-local-lift-module-end-declaration
+      #`(begin-for-syntax (add-requires! (quote-syntax #,specs)))))
+   (add-requires! (syntax-local-introduce specs)))
+
+ (define (add-requires! specs)
+   (set! requires (cons specs requires)))
+ 
+ (define (generate-doc-submodule!)
+   (unless generated?
+     (set! generated? #t)
+     (syntax-local-lift-module-end-declaration #'(doc-submodule)))))
+
+(define-syntax for-doc
+  (make-require-transformer
+   (lambda (stx)
+     (syntax-case stx ()
+       [(_ spec ...)
+        (add-requires!/decl #'(spec ...))])
+     (values null null))))
+
+(define-syntax (doc-submodule stx)
+  (with-syntax ([((req ...) ...)
+                 (map syntax-local-introduce (reverse requires))]
+                [doc-body
+                 (map (lambda (s) (syntax-local-introduce
+                                   (syntax-shift-phase-level s #f)))
+                      (reverse doc-body))])
+    ;; This module will be required `for-template':
+    (if delayed?
+        ;; delayed mode: return syntax objects to drop into context:
+        #'(begin-for-syntax
+           (module* srcdoc #f
+             (require (for-syntax racket/base syntax/quote))
+             (begin-for-syntax
+              (provide get-docs)
+              (define (get-docs)
+                (list (quote-syntax (req ... ...))
+                      (quote-syntax/keep-srcloc doc-body))))))
+        ;; normal mode: return an identifier that holds the document:
+        (with-syntax ([((id d) ...) #'doc-body])
+          #'(begin-for-syntax
+             (module* srcdoc #f
+               (require req ... ...)
+               (define docs (list (cons 'id d) ...))
+               (require (for-syntax racket/base))
+               (begin-for-syntax
+                (provide get-docs)
+                (define (get-docs)
+                  #'docs))))))))
+
+(define-syntax (require/doc stx)
   (syntax-case stx ()
-    [(_ form ...)
-     (let ([forms (syntax->list #'(form ...))])
-       (with-syntax ([((for-provide/contract for-docs id) ...)
-                      (map (lambda (form)
-                             (syntax-case form ()
-                               [(id . _)
-                                (identifier? #'id)
-                                (let ([t (syntax-local-value #'id (lambda () #f))])
-                                  (unless (provide/doc-transformer? t)
-                                    (raise-syntax-error
-                                     #f
-                                     "not bound as a provide/doc transformer"
-                                     stx
-                                     #'id))
-                                  (let* ([i (make-syntax-introducer)]
-                                         [i2 (lambda (x) (syntax-local-introduce (i x)))])
-                                    (let-values ([(p/c d req/d id)
-                                                  ((provide/doc-transformer-proc t)
-                                                   (i (syntax-local-introduce form)))])
-                                      (list (i2 p/c) (list (i2 req/d) (i2 d) (i2 (quote-syntax tag))) (i2 id)))))]
-                               [_
-                                (raise-syntax-error
-                                 #f
-                                 "not a provide/doc sub-form"
-                                 stx
-                                 form)]))
-                           forms)])
-         (with-syntax ([(p/c ...)
-                        (map (lambda (form f)
-                               (quasisyntax/loc form
-                                 (provide/contract #,f)))
-                             forms
-                             (syntax->list #'(for-provide/contract ...)))])
-           #'(begin
-               p/c ...
-               (void (quote-syntax (provide/doc (for-docs id) ...)))))))]))
+    [(_ spec ...)
+     (add-requires!/decl #'(spec ...))
+     #'(begin)]))
+
+(define-for-syntax (do-provide/doc stx modes)
+  (let ([forms (list stx)])
+    (with-syntax ([((for-provide/contract (req ...) d id) ...)
+                   (map (lambda (form)
+                          (syntax-case form ()
+                            [(id . _)
+                             (identifier? #'id)
+                             (let ([t (syntax-local-value #'id (lambda () #f))])
+                               (unless (provide/doc-transformer? t)
+                                 (raise-syntax-error
+                                  #f
+                                  "not bound as a provide/doc transformer"
+                                  stx
+                                  #'id))
+                               (let* ([i (make-syntax-introducer)]
+                                      [i2 (lambda (x) (syntax-local-introduce (i x)))])
+                                 (let-values ([(p/c d req/d id)
+                                               ((provide/doc-transformer-proc t)
+                                                (i (syntax-local-introduce form)))])
+                                   (list (i2 p/c) (i req/d) (i d) (i id)))))]
+                            [_
+                             (raise-syntax-error
+                              #f
+                              "not a provide/doc sub-form"
+                              stx
+                              form)]))
+                        forms)])
+      (with-syntax ([(p/c ...)
+                     (map (lambda (form f)
+                            (quasisyntax/loc form
+                              (contract-out #,f)))
+                          forms
+                          (syntax->list #'(for-provide/contract ...)))])
+        (generate-doc-submodule!)
+        (set! doc-body (append (reverse (syntax->list #'((id d) ...)))
+                               doc-body))
+        (set! requires (cons #'(req ... ...) requires))
+        (pre-expand-export #'(combine-out p/c ...) modes)))))
+
+(define-syntax-rule (provide/doc form ...)
+  (provide form ...))
 
 (define-for-syntax (remove->i-deps stx)
   (syntax-case stx ()
@@ -60,6 +126,24 @@
      #'(id ctc)]
     [else
      (error 'remove->i-deps "unknown thing ~s" stx)]))
+
+(provide define-provide/doc-transformer
+         (for-syntax
+          provide/doc-transformer?
+          provide/doc-transformer-proc))
+
+(begin-for-syntax
+ (define-struct provide/doc-transformer (proc)
+   #:property 
+   prop:provide-pre-transformer
+   (lambda (self)
+     (lambda (stx mode)
+       (do-provide/doc stx mode)))))
+
+(define-syntax-rule (define-provide/doc-transformer id rhs)
+  (define-syntax id
+    (make-provide/doc-transformer rhs)))
+
 
 (define-provide/doc-transformer proc-doc
   (lambda (stx)
@@ -144,7 +228,8 @@
          (values
           #'[id contract]
           #'(defproc header result body-stuff ... . desc)
-          #'(scribble/manual)
+          #'(scribble/manual
+             racket/base) ; for `...'
           #'id))])))
 
 (define-provide/doc-transformer proc-doc/names
@@ -310,3 +395,10 @@
           #'(defthing id contract . desc)
           #'((only-in scribble/manual defthing))
           #'id))])))
+
+(define-syntax (generate-delayed-documents stx)
+  (syntax-case stx () 
+    [(_) 
+     (begin
+       (set! delayed? #t)
+       #'(begin))]))

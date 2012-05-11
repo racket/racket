@@ -26,15 +26,13 @@ all of the names in the tools library, for use defining keybindings
 
 (require (for-syntax racket/base))
 
-(require/doc drracket/private/ts ;; probably this also has to be an absolute require
-             racket/base scribble/manual
-             scribblings/tools/doc-util)
-
-(require/doc (for-label errortrace/errortrace-key
-                        racket/pretty 
-                        mzlib/pconvert
-                        syntax/toplevel
-                        ))
+(require (for-doc drracket/private/ts
+                  racket/base scribble/manual
+                  scribblings/tools/doc-util
+                  (for-label errortrace/errortrace-key
+                             racket/pretty 
+                             mzlib/pconvert
+                             syntax/toplevel)))
 
 (define-values/invoke-unit/infer drracket@)
 (provide-signature-elements drracket:tool-cm^) ;; provide all of the classes & interfaces

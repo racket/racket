@@ -18,16 +18,15 @@
 
 (require racket/contract
          scribble/srcdoc
-         (prefix-in octree: file/private/octree-quantize))
-
-(require/doc racket/base
-             scribble/manual)
+         (prefix-in octree: file/private/octree-quantize)
+         (for-doc racket/base
+                  scribble/manual))
 
 (define LZ_MAX_CODE 4095)
 
 (define GifVersionPrefix #"GIF89a")
 
-(provide/doc
+(provide
  (proc-doc/names gif-stream?
                  (-> any/c boolean?)
                  (v)
@@ -57,7 +56,7 @@
                            @racket[#f] otherwise.  A colormap is a list whose size is a power
                            of @math{2} between @math{2^1} and @math{2^8}, and whose elements
                            are vectors of size 3 containing colors (i.e., exact integers
-                           between @math{0} and @math{255} inclusive).})
+                                                                          between @math{0} and @math{255} inclusive).})
  (proc-doc/names color?
                  (-> any/c boolean?)
                  (v)
@@ -564,14 +563,12 @@
 ;; * color quantization utility
 ;; *****************************************************************************/
 
-(define (argb-bytes? b)
-  (and (bytes? b)
-       (zero? (remainder (bytes-length b) 4))))
-
 (provide/doc
  (proc-doc/names
   quantize
-  (-> argb-bytes?
+  (-> (and/c bytes?
+             (lambda (bstr)
+               (zero? (remainder (bytes-length bstr) 4))))
       (values bytes? gif-colormap? (or/c color? #f)))
   (bstr)
   @{Each image in a GIF stream is limited to 256 colors, including the

@@ -344,8 +344,8 @@ the state transitions / contracts are:
   @{See also @racket[preferences:set-default].
         
         @racket[preferences:get] returns the value for the preference
-        @racket[symbol]. It raises
-        @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
+        @racket[symbol]. It raises an exception matching
+        @racket[exn:unknown-preference?]
         if the preference's default has not been set.})
 
  (proc-doc/names
@@ -357,8 +357,8 @@ the state transitions / contracts are:
     users requests a change to a preference.
     
     @racket[preferences:set] immediately writes the preference value to disk.    
-    It raises
-    @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
+    It raises an exception matching
+    @racket[exn:unknown-preference?]
     if the preference's default has not been set.
     
     See also @racket[preferences:set-default].})
@@ -391,9 +391,8 @@ the state transitions / contracts are:
     unmarshalling functions by calling
     @racket[preferences:set-un/marshall] before adding a callback.
     
-    This function raises
-    @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
-    @racket[exn:unknown-preference]
+    This function raises an exception matching
+    @racket[exn:unknown-preference?]
     if the preference has not been set.})
  (proc-doc/names
   preferences:set-default

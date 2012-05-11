@@ -19,6 +19,8 @@
 
 @include-section["srcloc.scrbl"]
 
+@include-section["quote.scrbl"]
+
 @include-section["toplevel.scrbl"]
 
 @include-section["trusted-xforms.scrbl"]

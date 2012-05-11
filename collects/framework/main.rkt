@@ -28,7 +28,7 @@
                        framework/decorated-editor-snip
                        framework/private/decorated-editor-snip))
 
-(require/doc scheme/base scribble/manual framework/private/mapdesc)
+(require (for-doc scheme/base scribble/manual framework/private/mapdesc))
 
 (provide-signature-elements
  (prefix application: framework:application-class^)
@@ -62,7 +62,7 @@
   (export framework^)
   (link standard-mred@ framework@))
 
-(provide/doc
+(provide
 
  (proc-doc
   color:get-parenthesis-colors-table 
