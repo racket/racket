@@ -122,15 +122,18 @@ are effectively @racket[cons]ed onto the argument list:
 (anti-sum '(1 2 3))
 ]
 
-The @racket[apply] function supports keyword arguments too:
+The @racket[apply] function accepts keyword arguments, too, and it
+passes them along to the called function:
 
 @racketblock[
 (apply go #:mode 'fast '("super.rkt"))
 (apply go '("super.rkt") #:mode 'fast)
 ]
 
-But since the keyword arguments are specified as usual, this form
-cannot be used with a list holding keywords and values.  For this, use
+Keywords that are included in @racket[apply]'s list argument do not
+count as keyword arguments for the called function; instead, all arguments in
+this list are treated as by-position arguments. To pass a list of
+keyword arguments to a function, use
 the @racket[keyword-apply] function, which accepts a function to apply
 and three lists. The first two lists are in parallel, where the first
 list contains keywords (sorted by @racket[keyword<]), and the second

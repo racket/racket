@@ -330,9 +330,10 @@ implement @racket[system].
 
 The resulting process writes to @racket[(current-output-port)], reads
 from @racket[(current-input-port)], and logs errors to
-@racket[(current-error-port)].  This means that processes usually
-interact with the user like regular code.  If you just want to gather
-the process's output to a string, for example, use:
+@racket[(current-error-port)]. To gather the process's non-error
+output to a string, for example, use @racket[with-output-to-string],
+which sets @racket[current-output-port] while calling the given
+function:
 
 @racketblock[
 (with-output-to-string (lambda () (system "date")))
