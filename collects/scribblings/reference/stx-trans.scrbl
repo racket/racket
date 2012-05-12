@@ -856,7 +856,8 @@ transformer.}
 @defthing[prop:require-transformer struct-type-property?]{
 
 A property to identify @tech{require transformers}. The property
-value must be a procedure that takes a syntax object and returns
+value must be a procedure that takes the structure and returns a transformer
+procedure; the returned transformer procedure takes a syntax object and returns
 import and import-source lists.}
 
 
@@ -1018,14 +1019,16 @@ Like @racket[make-provide-transformer], but for a value that is a
 @defthing[prop:provide-transformer struct-type-property?]{
 
 A property to identify @tech{provide transformers}. The property
-value must be a procedure that takes a syntax object and mode list and
+value must be a procedure that takes the structure and returns a transformer
+procedure; the returned transformer procedure takes a syntax object and mode list and
 returns an export list.}
 
 
 @defthing[prop:provide-pre-transformer struct-type-property?]{
 
 A property to identify @tech{provide pre-transformers}. The property
-value must be a procedure that takes a syntax object and mode list and
+value must be a procedure that takes the structure and returns a transformer
+procedure; the returned transformer procedure takes a syntax object and mode list and
 returns a syntax object.}
 
 
