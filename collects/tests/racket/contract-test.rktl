@@ -9790,6 +9790,15 @@
                 'neg)))
   
   (contract-error-test
+   'struct/dc-imp-nondep-runtime-error
+   #'(let ()
+       (struct s (ernie bert))
+       (struct/dc s [ernie integer?] [bert (new-∀/c 'α)]))
+   (λ (x) 
+     (and (exn:fail? x) 
+          (regexp-match #rx"expected chaperone" (exn-message x)))))
+  
+  (contract-error-test
    'struct/dc-not-a-field
    #'(eval '(let ()
               (struct s (a b))
