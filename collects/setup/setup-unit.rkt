@@ -543,8 +543,8 @@
       (when (and (pair? deps) (list? deps))
         (for ([s (in-list (cddr deps))])
           (unless (and (pair? s) (eq? 'ext (car s)))
-            (define s (main-collects-relative->path s))
-            (when (path-string? s) (hash-set! dependencies s #t))))))
+            (define new-s (main-collects-relative->path s))
+            (when (path-string? new-s) (hash-set! dependencies new-s #t))))))
     (delete-file path))
 
   (define (delete-files-in-directory path printout dependencies)
