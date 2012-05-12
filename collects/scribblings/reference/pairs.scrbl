@@ -1028,8 +1028,6 @@ the result of @racket[proc]. Signals an error on an empty list.
 (range 10 15 1.5)
 ]}
 
-You can find additional list functions in @racketmodname[srfi/1].
-
 
 @close-eval[list-eval]
 

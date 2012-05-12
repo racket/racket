@@ -432,6 +432,5 @@ true, otherwise they get normalized too.
  (string-normalize-spaces "  foo bar  baz \r\n\t")
 ]}
 
-You can find additional string functions in @racketmodname[srfi/13].
 
 @close-eval[string-eval]

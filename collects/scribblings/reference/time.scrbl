@@ -220,6 +220,3 @@ calculations.}
 
 Converts a Julian number (Scalinger's off-by-one version) into a
 string.}
-
-You can find additional date and time functions in
-@racketmodname[srfi/19].
