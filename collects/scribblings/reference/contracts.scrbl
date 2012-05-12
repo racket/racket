@@ -953,6 +953,12 @@ if they do not, a contract violation is signaled.
 
 @defform[(contract-struct id (field-id ...))]{
 
+  @deprecated[@racket[struct]]{Lazy struct contracts no longer require a separate
+              struct declaration; instead @racket[struct/dc]
+              and @racket[struct/c] work directly with
+              @racket[struct] and @racket[define-struct]. 
+  }
+                                              
 Like @racket[struct], but with two differences: 
 they do not
 define field mutators, and they define two contract constructors:
@@ -987,56 +993,15 @@ indicate which fields it depends on; these dependencies can only be to
 earlier fields.}}
  
 @defform[(define-contract-struct id (field-id ...))]{
+  @deprecated[@racket[struct]]{Lazy struct contracts no longer require a separate
+              struct declaration; instead @racket[struct/dc]
+              and @racket[struct/c] work directly with
+              @racket[struct] and @racket[define-struct]. 
+  }
+                                                     
   Like @racket[contract-struct], but where the constructor's name is
   @racketidfont["make-"]@racket[id], much like @racket[define-struct].
 }
-
-As an example of lazy contract checking, consider the following module:
-
-@(begin
-#reader scribble/comment-reader
-[racketmod
-racket
-
-(contract-struct kons (hd tl))
-  
-;; @racket[sorted-list/gt : number -> contract]
-;; produces a contract that accepts
-;; sorted kons-lists whose elements
-;; are all greater than @racket[num].
-(define (sorted-list/gt num)
-  (or/c null?
-        (kons/dc [hd (>=/c num)]
-                 [tl (hd) (sorted-list/gt hd)])))
-  
-;; @racket[product : kons-list -> number]
-;; computes the product of the values
-;; in the list. if the list contains
-;; zero, it avoids traversing the rest
-;; of the list.
-(define (product l)
-  (cond
-    [(null? l) 1]
-    [else
-     (if (zero? (kons-hd l))
-         0
-         (* (kons-hd l) 
-            (product (kons-tl l))))]))
- 
-(provide kons? kons kons-hd kons-tl)
-(provide
- (contract-out [product (-> (sorted-list/gt -inf.0) number?)]))
-])
-
-The module provides a single function, @racket[product] whose contract
-indicates that it accepts sorted lists of numbers and produces
-numbers. Using an ordinary flat contract for sorted lists, the product
-function cannot avoid traversing having its entire argument be
-traversed, since the contract checker will traverse it before the
-function is called. As written above, however, when the product
-function aborts the traversal of the list, the contract checking also
-stops, since the @racket[kons/dc] contract constructor generates a
-lazy contract.
 
 @; ------------------------------------------------------------------------
 
