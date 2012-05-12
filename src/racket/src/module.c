@@ -767,6 +767,7 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
                                           scheme_make_integer(p),
                                           scheme_make_integer(0),
                                           scheme_null,
+                                          NULL,
                                           1);
 
   scheme_seal_module_rename(rn, STX_SEAL_ALL);
@@ -2530,6 +2531,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
                                             marshal_phase_index, 
                                             scheme_make_integer(0), 
                                             scheme_null,
+                                            NULL,
                                             1);
   }
 
@@ -6287,24 +6289,24 @@ static Scheme_Object *annotate_existing_submodules(Scheme_Object *orig_fm)
   return orig_fm;
 }
 
-static Scheme_Object *phase_shift_tail(Scheme_Object *v, Scheme_Object *old_midx, Scheme_Object *new_midx)
+static Scheme_Object *phase_shift_tail(Scheme_Object *v, Scheme_Object *ps)
 {
   if (!SCHEME_STXP(v))
     v = scheme_datum_to_syntax(v, scheme_false, scheme_false, 0, 0);
 
-  return scheme_stx_phase_shift(v, NULL, old_midx, new_midx, NULL, NULL);
+  return scheme_add_rename(v, ps);
 }
 
 static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Object *a, Scheme_Object *d, 
-                                               Scheme_Object *old_midx, Scheme_Object *new_midx)
+                                               Scheme_Object *ps)
 {
   if (!a) {
     a = SCHEME_STX_CAR(orig);
-    a = scheme_stx_phase_shift(a, NULL, old_midx, new_midx, NULL, NULL);
+    a = scheme_add_rename(a, ps);
   }
   if (!d) {
     d = SCHEME_STX_CDR(orig);
-    d = phase_shift_tail(d, old_midx, new_midx);
+    d = phase_shift_tail(d, ps);
   }
 
   a = scheme_make_pair(a, d);
@@ -6312,15 +6314,13 @@ static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Objec
   if (SCHEME_PAIRP(orig))
     return a;
 
-  orig = scheme_stx_phase_shift(orig, NULL, old_midx, new_midx, NULL, NULL);
+  orig = scheme_add_rename(orig, ps);
   return scheme_datum_to_syntax(a, orig, orig, 0, 2);
 }
 
 static Scheme_Object *phase_shift_skip_submodules_k(void);
 
-static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, 
-                                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                                  int phase)
+static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, Scheme_Object *ps, int phase)
 {
   Scheme_Object *v0, *v1, *v2, *v3, *v4, *naya;
 
@@ -6329,8 +6329,7 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm,
   {
     Scheme_Thread *p = scheme_current_thread;
     p->ku.k.p1 = (void *)fm;
-    p->ku.k.p2 = (void *)old_midx;
-    p->ku.k.p3 = (void *)new_midx;
+    p->ku.k.p2 = (void *)ps;
     p->ku.k.i1 = phase;
     return scheme_handle_stack_overflow(phase_shift_skip_submodules_k);
   }
@@ -6344,15 +6343,15 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm,
     v3 = SCHEME_STX_CAR(v2);
     v4 = SCHEME_STX_CDR(v3);
 
-    naya = phase_shift_skip_submodules(v4, old_midx, new_midx, 0);
+    naya = phase_shift_skip_submodules(v4, ps, 0);
     if (SAME_OBJ(naya, v4)) {
-      return scheme_stx_phase_shift(fm, NULL, old_midx, new_midx, NULL, NULL);
+      return scheme_add_rename(fm, ps);
     } else {
-      v3 = rebuild_with_phase_shift(v3, NULL, naya, old_midx, new_midx);
-      v2 = rebuild_with_phase_shift(v2, v3, NULL, old_midx, new_midx);
-      v1 = rebuild_with_phase_shift(v1, NULL, v2, old_midx, new_midx);
-      v0 = rebuild_with_phase_shift(v0, NULL, v1, old_midx, new_midx);
-      return rebuild_with_phase_shift(fm, NULL, v0, old_midx, new_midx);
+      v3 = rebuild_with_phase_shift(v3, NULL, naya, ps);
+      v2 = rebuild_with_phase_shift(v2, v3, NULL, ps);
+      v1 = rebuild_with_phase_shift(v1, NULL, v2, ps);
+      v0 = rebuild_with_phase_shift(v0, NULL, v1, ps);
+      return rebuild_with_phase_shift(fm, NULL, v0, ps);
     }
   } else if (SCHEME_STX_NULLP(fm)) {
     return fm;
@@ -6366,33 +6365,33 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm,
             || scheme_stx_module_eq_x(scheme_modulestar_stx, v2, phase)) {
           /* found a submodule */
           v2 = SCHEME_STX_CDR(fm);
-          naya = phase_shift_skip_submodules(v2, old_midx, new_midx, phase);
+          naya = phase_shift_skip_submodules(v2, ps, phase);
           if (SAME_OBJ(naya, v2))
-            naya = phase_shift_tail(naya, old_midx, new_midx);
-          return rebuild_with_phase_shift(fm, v1, naya, old_midx, new_midx);
+            naya = phase_shift_tail(naya, ps);
+          return rebuild_with_phase_shift(fm, v1, naya, ps);
         } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, v2, phase)) {
           /* found `begin-for-syntax': */
-          naya = phase_shift_skip_submodules(v1, old_midx, new_midx, phase+1);
+          naya = phase_shift_skip_submodules(v1, ps, phase+1);
           v2 = SCHEME_STX_CDR(fm);
-          v3 = phase_shift_skip_submodules(v2, old_midx, new_midx, phase+1);
+          v3 = phase_shift_skip_submodules(v2, ps, phase+1);
           if (SAME_OBJ(naya, v1) && SAME_OBJ(v2, v3))
             return fm;
           else {
             if (SAME_OBJ(v2, v3))
-              v3 = phase_shift_tail(v3, old_midx, new_midx);
-            return rebuild_with_phase_shift(fm, naya, v3, old_midx, new_midx);
+              v3 = phase_shift_tail(v3, ps);
+            return rebuild_with_phase_shift(fm, naya, v3, ps);
           }
         }
       }
     }
 
     v3 = SCHEME_STX_CDR(fm);
-    v4 = phase_shift_skip_submodules(v3, old_midx, new_midx, phase);
+    v4 = phase_shift_skip_submodules(v3, ps, phase);
     if (SAME_OBJ(v3, v4))
       return fm;
     else {
-      v1 = scheme_stx_phase_shift(v1, NULL, old_midx, new_midx, NULL, NULL);
-      return rebuild_with_phase_shift(fm, v1, v4, old_midx, new_midx);
+      v1 = scheme_add_rename(v1, ps);
+      return rebuild_with_phase_shift(fm, v1, v4, ps);
     }
   }
 }
@@ -6401,14 +6400,12 @@ static Scheme_Object *phase_shift_skip_submodules_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *fm = (Scheme_Object *)p->ku.k.p1;
-  Scheme_Object *old_midx = (Scheme_Object *)p->ku.k.p2;
-  Scheme_Object *new_midx = (Scheme_Object *)p->ku.k.p3;
+  Scheme_Object *ps = (Scheme_Object *)p->ku.k.p2;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
-  p->ku.k.p3 = NULL;
 
-  return phase_shift_skip_submodules(fm, old_midx, new_midx, p->ku.k.i1);
+  return phase_shift_skip_submodules(fm, ps, p->ku.k.i1);
 }
 
 static Scheme_Env *find_env(Scheme_Env *env, intptr_t ph)
@@ -6618,7 +6615,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     rn = scheme_stx_phase_shift_as_rename(super_phase_shift, 
                                           top_env->module->self_modidx, iidx, 
                                           menv->module_registry->exports,
-                                          env->insp);
+                                          env->insp, NULL);
     
     super_bxs_info = MALLOC_N(void*, 6);
     super_bxs_info[0] = super_bxs;
@@ -6730,13 +6727,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (ii) {
     /* phase shift to replace self_modidx of previous expansion (if any): */
-    fm = scheme_stx_phase_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);
+    fm = scheme_stx_phase_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp, NULL);
 
     fm = scheme_add_rename(fm, rn_set);
   } else {
     if (skip_strip) {
       /* phase shift to replace self_modidx of previous expansion: */
-      fm = scheme_stx_phase_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp);      
+      fm = scheme_stx_phase_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL, m->insp, NULL);
     }
   }
 
@@ -6800,7 +6797,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     fm = (Scheme_Object *)m;
   } else {
-    Scheme_Object *hints, *formname;
+    Scheme_Object *hints, *formname, *ps;
 
     fm = scheme_expand_expr(fm, benv, rec, drec);
 
@@ -6849,10 +6846,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     }
 
     /* for future expansion, shift away from self_modidx: */
+    ps = scheme_stx_phase_shift_as_rename(NULL, self_modidx, this_empty_self_modidx,
+                                          NULL, NULL, scheme_rename_set_identity(rn_set));
     if (m->pre_submodules) /* non-NULL => some submodules, even if it's '() */
-      fm = phase_shift_skip_submodules(fm, self_modidx, this_empty_self_modidx, -1);
+      fm = phase_shift_skip_submodules(fm, ps, -1);
     else
-      fm = scheme_stx_phase_shift(fm, NULL, self_modidx, this_empty_self_modidx, NULL, NULL);
+      fm = scheme_add_rename(fm, ps);
 
     /* make self_modidx like the empty modidx */
     if (SAME_OBJ(this_empty_self_modidx, empty_self_modidx))
@@ -10534,7 +10533,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   Scheme_Object **exs, **exsns, **exss, *context_marks = scheme_null;
   int *exets;
   int has_context, save_marshal_info = 0;
-  Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name, *rn, *ename = orig_ename;
+  Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name, *rn, *ename = orig_ename, *bdg;
   Scheme_Hash_Table *orig_onlys;
   int k, skip_rename, do_copy_vars;
   Scheme_Env *name_env;
@@ -10543,12 +10542,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
     /* Check whether there's context for this import (which
        leads to generated local names). */
     context_marks = scheme_stx_extract_marks(mark_src);
-    has_context = !SCHEME_NULLP(context_marks);
-    if (!has_context) {
-      if (SCHEME_TRUEP(scheme_stx_moduleless_env(mark_src))) {
-        has_context = 1;
-      }
-    }
+    bdg = scheme_stx_moduleless_env(mark_src);
+    has_context = !SCHEME_NULLP(context_marks) || !SCHEME_FALSEP(bdg);
     if (has_context) {
       if (all_simple)
 	*all_simple = 0;
@@ -10638,7 +10633,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         /* Simple "import everything" whose mappings can be shared via the exporting module: */
         if (!pt->src_modidx && me->src_modidx)
           pt->src_modidx = me->src_modidx;
-        scheme_extend_module_rename_with_shared(rn, idx, pt, pt->phase_index, src_phase_index, context_marks, 1);
+        scheme_extend_module_rename_with_shared(rn, idx, pt, pt->phase_index, src_phase_index, context_marks, bdg, 1);
         skip_rename = 1;
       } else
         skip_rename = 0;
@@ -10663,7 +10658,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           {
             Scheme_Object *l;
             l = scheme_stx_extract_marks(mark_src);
-            has_context = !SCHEME_NULLP(l);
+            bdg = scheme_stx_moduleless_env(mark_src);
+            has_context = !SCHEME_NULLP(l) || !SCHEME_FALSEP(bdg);
           }
           /* Remove to indicate that it's been imported: */
           scheme_hash_set(onlys, exs[j], NULL);
@@ -10711,7 +10707,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           /* The `require' expression has a set of marks in its
              context, which means that we need to generate a name. */
           iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-          iname = scheme_tl_id_sym(name_env, iname, scheme_false, skip_rename ? 3 : 2, to_phase, NULL);
+          iname = scheme_tl_id_sym(name_env, iname, bdg, skip_rename ? 3 : 2, to_phase, NULL);
           if (all_simple)
             *all_simple = 0;
         }
@@ -10809,7 +10805,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
 				       Scheme_Hash_Table *export_registry)
 {
-  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name, *pt_phase, *src_phase_index, *marks;
+  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name, *pt_phase, *src_phase_index, *marks, *bdg;
   Scheme_Module_Exports *me;
   Scheme_Env *env;
   int share_all;
@@ -10820,11 +10816,18 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
   pt_phase = SCHEME_CAR(info);
   info = SCHEME_CDR(info);
 
-  if (SCHEME_PAIRP(info) && SCHEME_PAIRP(SCHEME_CAR(info))) {
+  if (SCHEME_PAIRP(info) && (SCHEME_PAIRP(SCHEME_CAR(info))
+                             || SCHEME_VECTORP(SCHEME_CAR(info)))) {
     marks = SCHEME_CAR(info);
     info = SCHEME_CDR(info);
   } else
     marks = scheme_null;
+
+  if (SCHEME_VECTORP(marks)) {
+    bdg = SCHEME_VEC_ELS(marks)[1];
+    marks = SCHEME_VEC_ELS(marks)[0];
+  } else
+    bdg = scheme_false;
 
   if (SCHEME_INTP(info)
       || SCHEME_FALSEP(info)) {
@@ -10893,11 +10896,11 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
     if (pt) {
       if (!pt->src_modidx && me->src_modidx)
         pt->src_modidx = me->src_modidx;
-      scheme_extend_module_rename_with_shared(rn, orig_idx, pt, pt->phase_index, src_phase_index, marks, 0);
+      scheme_extend_module_rename_with_shared(rn, orig_idx, pt, pt->phase_index, src_phase_index, marks, bdg, 0);
     }
   } else {
-    if (!SCHEME_NULLP(marks))
-      scheme_signal_error("internal error: unexpected marks");
+    if (!SCHEME_NULLP(marks) || SCHEME_TRUEP(bdg))
+      scheme_signal_error("internal error: unexpected marks/bdg");
 
     add_single_require(me, pt_phase, src_phase_index, orig_idx, NULL,
                        NULL, NULL, rn,

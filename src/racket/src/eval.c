@@ -3733,7 +3733,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
   if (genv->rename_set) {
     form = scheme_add_rename(form, genv->rename_set);
     /* this "phase shift" just attaches the namespace's module registry: */
-    form = scheme_stx_phase_shift(form, NULL, NULL, NULL, genv->module_registry->exports, NULL);
+    form = scheme_stx_phase_shift(form, NULL, NULL, NULL, genv->module_registry->exports, NULL, NULL);
   }
 
   return form;
@@ -3811,7 +3811,7 @@ static void *compile_k(void)
 				    genv->module->me->src_modidx, 
 				    genv->module->self_modidx,
 				    genv->module_registry->exports,
-                                    NULL);
+                                    NULL, NULL);
     }
   }
 
@@ -4246,7 +4246,7 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
 
     for (i = 0; i < len - 1; i++) {
       s = scheme_stx_phase_shift(SCHEME_VEC_ELS(expr)[i], scheme_make_integer(shift), orig, modidx, 
-                                 env->module_registry->exports, NULL);
+                                 env->module_registry->exports, NULL, NULL);
       SCHEME_VEC_ELS(result)[i] = s;
     }
     
@@ -5446,7 +5446,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       v = scheme_stx_phase_shift_as_rename(scheme_make_integer(now_phase - src_phase), 
                                            src_modidx, now_modidx, 
 					   genv ? genv->module_registry->exports : NULL,
-                                           insp);
+                                           insp, NULL);
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in pf->a[i]: */
         Scheme_Object **ls;

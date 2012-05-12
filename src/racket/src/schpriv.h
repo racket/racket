@@ -1019,7 +1019,7 @@ void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *m
                                              struct Scheme_Module_Phase_Exports *pt, 
                                              Scheme_Object *unmarshal_phase_index,
                                              Scheme_Object *src_phase_index, 
-                                             Scheme_Object *marks,
+                                             Scheme_Object *marks, Scheme_Object *bdg,
                                              int save_unmarshal);
 void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
 void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
@@ -1038,6 +1038,7 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, Scheme_Object *old_mi
 Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *mrns, Scheme_Object *old_midx, Scheme_Object *new_midx,
                                            Scheme_Object *new_insp);
 Scheme_Hash_Table *scheme_module_rename_marked_names(Scheme_Object *rn);
+Scheme_Object *scheme_rename_set_identity(Scheme_Object *rn_set);
 
 Scheme_Object *scheme_stx_content(Scheme_Object *o);
 Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
@@ -1079,11 +1080,13 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, Scheme_Object *shift,
 				      Scheme_Object *old_midx, Scheme_Object *new_midx,
 				      Scheme_Hash_Table *export_registry,
-                                      Scheme_Object *insp);
+                                      Scheme_Object *insp,
+                                      Scheme_Object *ignore_old_identity);
 Scheme_Object *scheme_stx_phase_shift_as_rename(Scheme_Object *shift,
 						Scheme_Object *old_midx, Scheme_Object *new_midx,
 						Scheme_Hash_Table *export_registry,
-                                                Scheme_Object *insp);
+                                                Scheme_Object *insp,
+                                                Scheme_Object *ignore_old_identity);
 
 int scheme_stx_list_length(Scheme_Object *list);
 int scheme_stx_proper_list_length(Scheme_Object *list);

@@ -1683,5 +1683,34 @@
   (eval 10))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check handling of module context
+
+(module mm-context-m1 racket/base
+  (require (for-syntax racket/base))
+  (provide m1)
+  (define-syntax (m1 stx)
+    #`(begin
+        (define #,(syntax-local-introduce #'x) 1)
+        #,(syntax-local-introduce #'x))))
+
+(module mm-context-m2 racket/base
+  (require (for-syntax racket/base))
+  (provide m2)
+  (define-syntax (m2 stx)
+    #`(begin
+        (define #,(syntax-local-introduce #'x) 2)
+        #,(syntax-local-introduce #'x))))
+
+(module mm-context-m3 racket/base
+  (require 'mm-context-m1 'mm-context-m2)
+  (m1)
+  (m2))
+
+(let ([o (open-output-bytes)])
+  (parameterize ([current-output-port o])
+    (dynamic-require ''mm-context-m3 #f))
+  (test #"1\n2\n" get-output-bytes o))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

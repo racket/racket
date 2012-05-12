@@ -1085,63 +1085,76 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
     marks = SCHEME_CAR(marks);
   }
 
-  /* Treat #f and void values of bdg the same, since a void value is
-     the same #f, but ensure that we get this far: */
-  if (SCHEME_FALSEP(bdg) || SCHEME_VOIDP(bdg))
+  if (SCHEME_FALSEP(bdg))
     bdg = NULL;
 
-  /* Find a mapping that matches the longest tail of marks */
-  for (l = map; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    a = SCHEME_CAR(l);
-    amarks = SCHEME_CAR(a);
+  /* Find a mapping that matches the longest tail of marks
+     in the first matching tail of bdg */
+  while (1) {
+    for (l = map; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      a = SCHEME_CAR(l);
+      amarks = SCHEME_CAR(a);
 
-    if (SCHEME_VECTORP(amarks)) {
-      abdg = SCHEME_VEC_ELS(amarks)[1];
-      amarks = SCHEME_VEC_ELS(amarks)[0];
-    } else
-      abdg = NULL;
+      if (SCHEME_VECTORP(amarks)) {
+        abdg = SCHEME_VEC_ELS(amarks)[1];
+        amarks = SCHEME_VEC_ELS(amarks)[0];
+      } else
+        abdg = NULL;
 
-    if (SAME_OBJ(abdg, bdg)) {
-      if (mode > 0) {
-	if (scheme_equal(amarks, marks)) {
-	  best_match = SCHEME_CDR(a);
-	  break;
-	}
-      } else {
-        if (SCHEME_NULLP(amarks)) {
-          /* can always match empty marks */
-          best_match = SCHEME_CDR(a);
-          best_match_skipped = 0;
-        } else if (!SCHEME_PAIRP(marks)) {
-	  /* To be better than nothing, could only match exactly: */
-	  if (scheme_equal(amarks, marks)) {
-	    best_match = SCHEME_CDR(a);
-	    best_match_skipped = 0;
-	  }
-	} else {
-	  /* amarks can match a tail of marks: */
-	  for (m = marks, ms = 0; 
-	       SCHEME_PAIRP(m) && (ms < best_match_skipped);
-	       m = SCHEME_CDR(m), ms++) {
+      if (SAME_OBJ(abdg, bdg) 
+          || (bdg && abdg && scheme_equal(abdg, bdg))) {
+        if (mode > 0) {
+          if (scheme_equal(amarks, marks)) {
+            best_match = SCHEME_CDR(a);
+            break;
+          }
+        } else {
+          if (SCHEME_NULLP(amarks)) {
+            /* can always match empty marks */
+            best_match = SCHEME_CDR(a);
+            best_match_skipped = 0;
+          } else if (!SCHEME_PAIRP(marks)) {
+            /* To be better than nothing, could only match exactly: */
+            if (scheme_equal(amarks, marks)) {
+              best_match = SCHEME_CDR(a);
+              best_match_skipped = 0;
+            }
+          } else {
+            /* amarks can match a tail of marks: */
+            for (m = marks, ms = 0; 
+                 SCHEME_PAIRP(m) && (ms < best_match_skipped);
+                 m = SCHEME_CDR(m), ms++) {
 
-	    cm = m;
-	    if (!SCHEME_PAIRP(amarks)) {
-	      /* If we're down to the last element
-		 of marks, then extract it to try to
-		 match the symbol amarks. */
-	      if (SCHEME_NULLP(SCHEME_CDR(m)))
-		cm = SCHEME_CAR(m);
-	    }
+              cm = m;
+              if (!SCHEME_PAIRP(amarks)) {
+                /* If we're down to the last element
+                   of marks, then extract it to try to
+                   match the symbol amarks. */
+                if (SCHEME_NULLP(SCHEME_CDR(m)))
+                  cm = SCHEME_CAR(m);
+              }
   
-	    if (scheme_equal(amarks, cm)) {
-	      best_match = SCHEME_CDR(a);
-	      best_match_skipped = ms;
-	      break;
-	    }
-	  }
-	}
+              if (scheme_equal(amarks, cm)) {
+                best_match = SCHEME_CDR(a);
+                best_match_skipped = ms;
+                break;
+              }
+            }
+          }
+        }
       }
     }
+
+    if (!best_match && (mode <= 1) && bdg && (SCHEME_PAIRP(bdg) || SCHEME_INTP(bdg) || SCHEME_BIGNUMP(bdg))) {
+      /* try lookup with less bdg context */
+      if (SCHEME_PAIRP(bdg)) {
+        bdg = SCHEME_CDR(bdg);
+        if (SCHEME_PAIRP(bdg) && SCHEME_NULLP(SCHEME_CDR(bdg)))
+          bdg = SCHEME_CAR(bdg);
+      } else
+        bdg = NULL;
+    } else
+      break;
   }
 
   if (!best_match) {
