@@ -61,7 +61,7 @@ In more detail, patterns match as follows:
        (match '(1 2 3)
          [(list a b a) (list a b)]
          [(list a b c) (list c b a)])
-       (match '(1 '(x y z) 1)
+       (match '(1 (x y z) 1)
          [(list a b a) (list a b)]
          [(list a b c) (list c b a)])
        ]}
