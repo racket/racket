@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label racket)
-          (for-label web-server/servlet)
-          (for-label db)
+          (for-label racket
+                     (except-in web-server/servlet make-url)
+                     db)
           "tutorial-util.rkt")
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
@@ -1179,14 +1179,14 @@ element in the rendering code, and the name used for it in the extracting code:
 @code:comment{Send an HTML page of the content of the}
 @code:comment{blog.}
 (define (render-blog-page a-blog request)
-  (local [(define (response-generator make-url) 
+  (local [(define (response-generator embed/url) 
             (response/xexpr
              `(html (head (title "My Blog"))
                     (body 
                      (h1 "My Blog")
-                     ,(render-posts a-blog make-url)
+                     ,(render-posts a-blog embed/url)
                      (form ((action 
-                             ,(make-url insert-post-handler)))
+                             ,(embed/url insert-post-handler)))
                            @code:comment{"title" is used here}
                            (input ((name "title")))
                            (input ((name "body")))
@@ -1281,14 +1281,14 @@ Finally, here is how to use @racket[new-post-formlet] in @racket[render-blog-pag
 @code:comment{Sends an HTML page of the content of the}
 @code:comment{blog.}
 (define (render-blog-page a-blog request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             (response/xexpr
              `(html (head (title "My Blog"))
                     (body 
                      (h1 "My Blog")
-                     ,(render-posts a-blog make-url)
+                     ,(render-posts a-blog embed/url)
                      (form ([action 
-                             ,(make-url insert-post-handler)])
+                             ,(embed/url insert-post-handler)])
                            ,@(formlet-display new-post-formlet)
                            (input ([type "submit"])))))))
           

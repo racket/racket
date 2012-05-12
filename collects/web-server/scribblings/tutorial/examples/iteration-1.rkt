@@ -1,14 +1,14 @@
 #lang web-server/insta
 
 ;; A blog is a (listof post)
-;; and a post is a (make-post title body)
+;; and a post is a (post title body)
 (struct post (title body))
 
 ;; BLOG: blog
 ;; The static blog.
 (define BLOG 
-  (list (post "First Post" "This is my first post")
-        (post "Second Post" "This is another post")))
+  (list (post "Second Post" "This is another post")
+        (post "First Post" "This is my first post")))
 
 ;; start: request -> response
 ;; Consumes a request, and produces a page that displays all of the

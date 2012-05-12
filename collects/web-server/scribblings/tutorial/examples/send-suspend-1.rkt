@@ -3,12 +3,12 @@
 ;; start: request -> response
 (define (start request)
   (send/suspend/dispatch
-   (lambda (make-url)
+   (lambda (embed/url)
      (response/xexpr
       `(html 
         (body 
-         (a ((href ,(make-url link-1))) "Link 1")
-         (a ((href ,(make-url link-2))) "Link 2")))))))
+         (a ((href ,(embed/url link-1))) "Link 1")
+         (a ((href ,(embed/url link-2))) "Link 2")))))))
 
 
 ;; link-1: request -> response

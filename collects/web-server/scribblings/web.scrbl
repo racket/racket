@@ -60,7 +60,7 @@ functions of interest for the servlet developer.
                   
 @defproc[(send/suspend/dispatch [make-response (((request? . -> . any) . -> . string?) . -> . can-be-response?)])
          any]{
- Calls @racket[make-response] with a function (@racket[embed/url]) that, when called with a procedure from
+ Calls @racket[make-response] with a function (often named @racket[embed/url]) that, when called with a procedure from
  @racket[request?] to @racket[any/c] will generate a URL, that when invoked will call
  the function with the @racket[request?] object and return the result to the caller of
  @racket[send/suspend/dispatch]. Therefore, if you pass @racket[embed/url] the identity function,

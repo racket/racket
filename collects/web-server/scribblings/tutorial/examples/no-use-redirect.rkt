@@ -1,6 +1,6 @@
 #lang web-server/insta
 
-;; A roster is a (make-roster names)
+;; A roster is a (roster names)
 ;; where names is a list of string.
 (struct roster (names) #:mutable)
 
@@ -20,14 +20,14 @@
 
 ;; show-roster: request -> doesn't return
 (define (show-roster request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             (response/xexpr
              `(html (head (title "Roster"))
                     (body (h1 "Roster")
                           ,(render-as-itemized-list
                             (roster-names ROSTER))
                           (form ((action
-                                  ,(make-url add-name-handler)))
+                                  ,(embed/url add-name-handler)))
                                 (input ((name "a-name")))
                                 (input ((type "submit"))))))))
           (define (parse-name bindings)

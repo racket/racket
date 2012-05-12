@@ -1,10 +1,10 @@
 #lang web-server/insta
 
-;; A blog is a (make-blog posts)
+;; A blog is a (blog posts)
 ;; where posts is a (listof post)
 (struct blog (posts) #:mutable)
 
-;; and post is a (make-post title body)
+;; and post is a (post title body)
 ;; where title is a string, and body is a string
 (struct post (title body))
 
@@ -12,8 +12,8 @@
 ;; The initial BLOG.
 (define BLOG 
   (blog
-   (list (post "First Post" "This is my first post")
-         (post "Second Post" "This is another post"))))
+   (list (post "Second Post" "This is another post")
+         (post "First Post" "This is my first post"))))
 
 ;; blog-insert-post!: blog post -> void
 ;; Consumes a blog and a post, adds the post at the top of the blog.
@@ -36,14 +36,14 @@
 ;; render-blog-page: request -> doesn't return
 ;; Produces an HTML page of the content of the BLOG.
 (define (render-blog-page request)
-  (local [(define (response-generator make-url)  
+  (local [(define (response-generator embed/url)  
             (response/xexpr
              `(html (head (title "My Blog"))
                     (body 
                      (h1 "My Blog")
                      ,(render-posts)
                      (form ((action 
-                             ,(make-url insert-post-handler)))
+                             ,(embed/url insert-post-handler)))
                            (input ((name "title")))
                            (input ((name "body")))
                            (input ((type "submit"))))))))

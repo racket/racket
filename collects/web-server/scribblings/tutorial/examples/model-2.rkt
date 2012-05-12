@@ -2,11 +2,11 @@
 (require racket/local
          racket/list)
 
-;; A blog is a (make-blog home posts)
+;; A blog is a (blog home posts)
 ;; where home is a string, posts is a (listof post)
 (struct blog (home posts) #:mutable #:prefab)
 
-;; and post is a (make-post blog title body comments)
+;; and post is a (post blog title body comments)
 ;; where title is a string, body is a string,
 ;; and comments is a (listof string)
 (struct post (title body comments) #:mutable #:prefab)
@@ -17,12 +17,12 @@
   (local [(define (log-missing-exn-handler exn)
             (blog
              (path->string home)
-             (list (post "First Post"
-                         "This is my first post"
-                         (list "First comment!"))
-                   (post "Second Post"
+             (list (post "Second Post"
                          "This is another post"
-                         (list)))))
+                         (list))
+                   (post "First Post"
+                         "This is my first post"
+                         (list "First comment!")))))
           (define the-blog
             (with-handlers ([exn? log-missing-exn-handler])
               (with-input-from-file home read)))]

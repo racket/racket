@@ -16,14 +16,14 @@
 ;; Produces an HTML page of the content of the
 ;; blog.
 (define (render-blog-page a-blog request)
-  (local [(define (response-generator make-url)   
+  (local [(define (response-generator embed/url)   
             (response/xexpr
              `(html (head (title "My Blog"))
                     (body 
                      (h1 "My Blog")
-                     ,(render-posts a-blog make-url)
+                     ,(render-posts a-blog embed/url)
                      (form ((action 
-                             ,(make-url insert-post-handler)))
+                             ,(embed/url insert-post-handler)))
                            (input ((name "title")))
                            (input ((name "body")))
                            (input ((type "submit"))))))))          
@@ -43,7 +43,7 @@
 ;; The user will be able to either insert new comments
 ;; or go back to render-blog-page.
 (define (render-post-detail-page a-blog a-post request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             (response/xexpr
              `(html (head (title "Post Details"))
                     (body
@@ -53,10 +53,10 @@
                      ,(render-as-itemized-list
                        (post-comments a-post))
                      (form ((action 
-                             ,(make-url insert-comment-handler)))
+                             ,(embed/url insert-comment-handler)))
                            (input ((name "comment")))
                            (input ((type "submit"))))
-                     (a ((href ,(make-url back-handler)))
+                     (a ((href ,(embed/url back-handler)))
                         "Back to the blog")))))
           
           (define (parse-comment bindings)
@@ -82,7 +82,7 @@
 ;; the detail page of the post.
 (define (render-confirm-add-comment-page a-blog a-comment
                                          a-post request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             (response/xexpr
              `(html (head (title "Add a Comment"))
                     (body
@@ -91,9 +91,9 @@
                      "will be added to "                    
                      (div ,(post-title a-post))
                      
-                     (p (a ((href ,(make-url yes-handler)))
+                     (p (a ((href ,(embed/url yes-handler)))
                            "Yes, add the comment."))
-                     (p (a ((href ,(make-url cancel-handler)))
+                     (p (a ((href ,(embed/url cancel-handler)))
                            "No, I changed my mind!"))))))
           
           (define (yes-handler request)
@@ -108,24 +108,24 @@
 ;; render-post: post (handler -> string) -> xexpr
 ;; Consumes a post, produces an xexpr fragment of the post.
 ;; The fragment contains a link to show a detailed view of the post.
-(define (render-post a-blog a-post make-url)
+(define (render-post a-blog a-post embed/url)
   (local [(define (view-post-handler request)
             (render-post-detail-page a-blog a-post request))]
     `(div ((class "post")) 
-          (a ((href ,(make-url view-post-handler)))
+          (a ((href ,(embed/url view-post-handler)))
              ,(post-title a-post))
           (p ,(post-body a-post))        
           (div ,(number->string (length (post-comments a-post)))
                " comment(s)"))))
 
 ;; render-posts: blog (handler -> string) -> xexpr
-;; Consumes a make-url, produces an xexpr fragment
+;; Consumes a embed/url, produces an xexpr fragment
 ;; of all its posts.
-(define (render-posts a-blog make-url)
-  (local [(define (render-post/make-url a-post)
-            (render-post a-blog a-post make-url))]
+(define (render-posts a-blog embed/url)
+  (local [(define (render-post/embed/url a-post)
+            (render-post a-blog a-post embed/url))]
     `(div ((class "posts"))
-          ,@(map render-post/make-url (blog-posts a-blog)))))
+          ,@(map render-post/embed/url (blog-posts a-blog)))))
 
 ;; render-as-itemized-list: (listof xexpr) -> xexpr
 ;; Consumes a list of items, and produces a rendering as
