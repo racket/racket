@@ -8,6 +8,10 @@
 (define (bibtex-parse ip)
   (define STRING-DB (make-hash))
   (define ENTRY-DB (make-hash))
+
+  (define (perror ip sym fmt . args)
+    (define loc (call-with-values (λ () (port-next-location ip)) list))
+    (apply error sym (string-append fmt " @ line ~a column ~a byte ~a") (append args loc)))
   
   (define (read-while pred ip)
     (list->string
@@ -37,13 +41,17 @@
       [(? eof-object?)
        (void)]
       [c
-       (error 'read-entries "Expected % or @, got ~v" c)]))
+       (perror ip 'read-entries "Expected % or @, got ~v" c)]))
   
   (define (read-entry ip)
     (match (read-until (λ (c) (char=? c #\{)) ip)
       [(app string-downcase "string")
        (slurp-whitespace ip)
-       (read-char ip)
+       (match (read-char ip)
+         [#\{
+          (void)]
+         [c
+          (perror ip 'read-entry "Parsing entry, expected {, got ~v" c)])
        (define tag (read-tag ip))
        (slurp-whitespace ip)
        (match (read-char ip)
@@ -55,9 +63,9 @@
             [#\}
              (hash-set! STRING-DB tag string)]
             [c
-             (error 'read-entry "Parsing string, expected }, got ~v" c)])]
+             (perror ip 'read-entry "Parsing string, expected }, got ~v; tag is ~v; string is ~v" c tag string)])]
          [c
-          (error 'read-entry "Parsing string, expected =, got ~v" c)])]
+          (perror ip 'read-entry "Parsing string, expected =, got ~v; tag is ~v" c tag)])]
       [(app string-downcase "comment")
        (read-char ip)
        (let loop ()
@@ -87,15 +95,19 @@
                 [#\}
                  (hash atag aval)]
                 [c
-                 (error 'read-entry "Parsing entry, expected , or }, got ~v" c)])]
+                 (perror ip 'read-entry "Parsing entry, expected , or }, got ~v; label is ~v; atag is ~v; aval is ~v" c label atag aval)])]
              [c
-              (error 'read-entry "Parsing entry, expected =, got ~v" c)])))
+              (perror ip 'read-entry "Parsing entry tag, expected =, got ~v; label is ~v; atag is ~v" c label atag)])))
        (hash-set! ENTRY-DB label
                   (hash-set alist 'type typ))]))
   
   (define (read-tag ip)
     (slurp-whitespace ip)
-    (string-downcase (read-until char-whitespace? ip)))
+    (string-downcase 
+     (read-until 
+      (λ (c) (or (char-whitespace? c)
+                 (char=? c #\=)))
+      ip)))
   
   (define (read-value ip)
     (slurp-whitespace ip)
@@ -118,7 +130,7 @@
        (hash-ref STRING-DB string-tag
                  (λ () string-tag))]
       [c
-       (error 'read-value "Parsing value, expected {, got ~v" c)]))
+       (perror ip 'read-value "Parsing value, expected {, got ~v" c)]))
   
   (read-entries ip)
   
@@ -129,6 +141,7 @@
     (with-input-from-file
         pth
       (λ ()
+        (port-count-lines! (current-input-port))
         (bibtex-parse (current-input-port)))))
   bibdb)
 
