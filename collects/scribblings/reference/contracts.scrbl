@@ -35,7 +35,7 @@ constraints.
        racket/contract/private/box
        racket/contract/private/hash
        racket/contract/private/vector
-       racket/contract/private/struct)))
+       racket/contract/private/struct-dc)))
 
 @(define-syntax-rule
    (declare-exporting-ctc mod)
