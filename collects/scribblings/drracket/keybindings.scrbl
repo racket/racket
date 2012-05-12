@@ -298,12 +298,12 @@ s-exp framework/keybinding-lang
        (when menu-bar
          (define item (find-item menu-bar menu-item))
          (when item
-           (define evt
+           (define menu-evt
              (new control-event% 
                   [event-type 'menu]
                   [time-stamp 
                    (send evt get-time-stamp)]))
-           (send item command evt)))))))
+           (send item command menu-evt)))))))
 
 (define/contract (find-menu-bar c)
   (-> (is-a?/c area<%>) (or/c #f (is-a?/c menu-bar%)))
