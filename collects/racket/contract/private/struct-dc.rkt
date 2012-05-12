@@ -1,6 +1,7 @@
 #lang racket/base
 
-(provide (rename-out [-struct/dc struct/dc]))
+(provide (rename-out [-struct/dc struct/dc])
+         struct/c)
 
 (require (for-syntax racket/base
                      racket/list
@@ -100,25 +101,31 @@
 (define unique (box #f))
 
 (define (struct/dc-name ctc)
-  `(struct/dc ,(base-struct/dc-name-info ctc)
-              ,@(for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
-                  (cond
-                    [(indep? subcontract)
-                     `[,(subcontract-field-name subcontract)
-                       ,@(if (lazy-immutable? subcontract)
-                             '(#:lazy)
-                             '())
-                       ,(contract-name (indep-ctc subcontract))]]
-                    [else
-                     `[,(subcontract-field-name subcontract) 
-                       ,(dep-dep-names subcontract)
-                       ,@(if (dep-lazy-immutable? subcontract)
-                             '(#:lazy)
-                             '())
-                       ,@(if (eq? '#:chaperone (dep-type subcontract))
-                             '()
-                             (list (dep-type subcontract)))
-                       ...]]))))
+  (define struct/c? (base-struct/dc-struct/c? ctc))
+  `(,(if struct/c?
+         'struct/c
+         'struct/dc)
+    ,(base-struct/dc-name-info ctc)
+    ,@(for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
+        (cond
+          [(indep? subcontract)
+           (if struct/c?
+               (contract-name (indep-ctc subcontract))
+               `[,(subcontract-field-name subcontract)
+                 ,@(if (lazy-immutable? subcontract)
+                       '(#:lazy)
+                       '())
+                 ,(contract-name (indep-ctc subcontract))])]
+          [else
+           `[,(subcontract-field-name subcontract) 
+             ,(dep-dep-names subcontract)
+             ,@(if (dep-lazy-immutable? subcontract)
+                   '(#:lazy)
+                   '())
+             ,@(if (eq? '#:chaperone (dep-type subcontract))
+                   '()
+                   (list (dep-type subcontract)))
+             ...]]))))
 
 (define (struct/dc-first-order ctc)
   (base-struct/dc-pred ctc))
@@ -401,7 +408,7 @@
                   (dep-dep-proc that-subcontract)))]
            [else #t]))))
 
-(define-struct base-struct/dc (subcontracts pred struct-name here name-info))
+(define-struct base-struct/dc (subcontracts pred struct-name here name-info struct/c?))
 
 (define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract
@@ -422,15 +429,15 @@
      #:stronger struct/dc-stronger?)))
 
 (define-struct (impersonator-struct/dc base-struct/dc) ()
-  #:property prop:flat-contract
+  #:property prop:contract
   (parameterize ([skip-projection-wrapper? #t])
-    (build-flat-contract-property
+    (build-contract-property
      #:name struct/dc-name
      #:first-order struct/dc-first-order
      #:projection struct/dc-proj
      #:stronger struct/dc-stronger?)))
 
-(define (build-struct/dc subcontracts pred struct-name here name-info)
+(define (build-struct/dc subcontracts pred struct-name here name-info struct/c?)
   (for ([subcontract (in-list subcontracts)])
     (when (and (indep? subcontract)
                (not (mutable? subcontract)))
@@ -442,18 +449,20 @@
     (cond
       [(indep? subcontract) (flat-contract? (indep-ctc subcontract))]
       [(dep? subcontract) (eq? '#:flat (dep-type subcontract))]))
+  
   (define (impersonator-subcontract? subcontract)
     (cond
       [(indep? subcontract) (impersonator-contract? (indep-ctc subcontract))]
       [(dep? subcontract) (eq? '#:impersonator (dep-type subcontract))]))
   ((cond
-     [(andmap flat-subcontract? subcontracts)
+     [(and (andmap flat-subcontract? subcontracts)
+           (not (ormap subcontract-mutable-field? subcontracts)))
       make-flat-struct/dc]
      [(ormap impersonator-subcontract? subcontracts)
       make-impersonator-struct/dc]
      [else
       make-struct/dc])
-   subcontracts pred struct-name here name-info))
+   subcontracts pred struct-name here name-info struct/c?))
    
 
 (define-for-syntax (get-struct-info id stx)
@@ -635,7 +644,7 @@
               (raise-syntax-error #f "found cyclic dependencies"
                                   stx))))
 
-(define-syntax (-struct/dc stx)
+(define-for-syntax (do-struct/dc struct/c? stx)
   (define-values (info struct-id clauses) (parse-struct/dc stx))
   (define sorted-clauses (top-sort/clauses stx clauses))
   
@@ -753,7 +762,10 @@
                      #,(list-ref info 2)
                      'struct-id
                      (quote-module-name)
-                     '#,struct-id))
+                     '#,struct-id
+                     #,struct/c?))
+
+(define-syntax (-struct/dc stx) (do-struct/dc #f stx))
 
 (define-for-syntax (traverse-no-neg-blame-identifiers no-neg-blame)
   (for/and ([id (in-list no-neg-blame)])
@@ -945,3 +957,48 @@
   (raise-blame-error blame obj 
                      "expected a struct of type ~a"
                      what))
+
+(define-syntax (struct/c stx)
+  (syntax-case stx ()
+    [(_ . args) 
+     (with-syntax ([x (syntax/loc stx (do-struct/c . args))])
+       (syntax/loc stx (#%expression x)))]))
+
+(define-syntax (do-struct/c stx)
+  (syntax-case stx ()
+    [(_ struct-name args ...)
+     (and (identifier? (syntax struct-name))
+          (struct-info? (syntax-local-value (syntax struct-name) (λ () #f))))
+     (let* ([si (extract-struct-info (syntax-local-value (syntax struct-name)))]
+            [predicate-id (third si)]
+            [selector-ids (reverse (fourth si))]
+            [mutator-ids (reverse (fifth si))]
+            [ctcs (syntax->list #'(args ...))]
+            [ctc-names (generate-temporaries #'(args ...))])
+       (unless (= (length selector-ids) (length ctcs))
+         (raise-syntax-error 'struct/c 
+                             (format "expected ~a contracts because struct ~a has ~a fields"
+                                     (length selector-ids)
+                                     (syntax-e #'struct-name)
+                                     (length selector-ids))
+                             stx))
+       (unless predicate-id
+         (raise-syntax-error 'struct/c 
+                             (format "could not determine predicate for ~s" (syntax-e #'struct-name))
+                             stx))
+       (unless (andmap values selector-ids)
+         (raise-syntax-error 'struct/c
+                             (format "could not determine selectors for ~s" (syntax-e #'struct-name))
+                             stx))
+       
+       (define strip-reg (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e #'struct-name))))))
+       (define (selector-id->field sel)
+         (datum->syntax #'struct-name
+                        (string->symbol (regexp-replace strip-reg (symbol->string (syntax-e sel)) ""))))
+       
+       (do-struct/dc
+        #t
+        (with-syntax ([(fields ...) (map selector-id->field selector-ids)])
+          #`(-struct/dc struct-name [fields args] ...))))]
+    [(_ struct-name anything ...)
+     (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
