@@ -245,6 +245,7 @@
   (rmpi-reduce (rmpi-comm 0 8 (vector 0 1 2 3 4 5 6 7)) 3 + 7)
   )
 
+#;
 (module+ test
   (require tests/eli-tester)
   (test 
