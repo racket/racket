@@ -1,3 +1,6 @@
+Version 5.3.0.7
+compiler/zo-struct: added cancel-id field to phase-shift
+
 Version 5.3.0.6
 racket/flonum: added flexpt
 racket/unsafe/ops: added unsafe-flexpt

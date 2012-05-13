@@ -689,7 +689,8 @@
          [`#(,amt ,src ,dest #f #f ,cancel-id) 
           (make-phase-shift amt 
                             (parse-module-path-index cp src)
-                            (parse-module-path-index cp dest))]
+                            (parse-module-path-index cp dest)
+                            cancel-id)]
          [else (error 'parse "bad phase shift: ~e" a)])]
       [else (error 'decode-wraps "bad wrap element: ~e" a)])))
 

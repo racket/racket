@@ -416,8 +416,8 @@
 (define (encode-wraps wraps)
   (for/list ([wrap (in-list wraps)])
     (match wrap
-      [(struct phase-shift (amt src dest))
-       (box (vector amt src dest #f #f))]
+      [(struct phase-shift (amt src dest cancel-id))
+       (box (vector amt src dest #f #f cancel-id))]
       [(struct module-rename (phase kind set-id unmarshals renames mark-renames plus-kern?))
        (define encoded-kind (eq? kind 'marked))
        (define encoded-unmarshals (map encode-all-from-module unmarshals))

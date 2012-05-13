@@ -531,7 +531,8 @@ structures that are produced by @racket[zo-parse] and consumed by
 @defstruct+[(phase-shift wrap)
             ([amt (or/c exact-integer? #f)]
              [src module-path-index?]
-             [dest module-path-index?])]{
+             [dest module-path-index?]
+             [cancel-id (or/c exact-integer? #f)])]{
   Shifts module bindings later in the wrap set.}
 
 @defstruct+[(module-rename wrap)
