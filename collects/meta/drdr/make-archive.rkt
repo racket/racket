@@ -20,11 +20,11 @@
       (printf "r~a is already archived\n" rev)
       (local [(define tmp-path (make-temporary-file))]
         (printf "Archiving r~a\n" rev)
+        (safely-delete-directory (revision-trunk.tgz rev))
         (create-archive tmp-path (revision-dir rev))
         (rename-file-or-directory tmp-path archive-path)
-        (archive-directory (revision-log-dir rev))
-        (archive-directory (revision-analyze-dir rev))
-        (safely-delete-directory (revision-trunk.tgz rev)))))
+        (safely-delete-directory (revision-log-dir rev))
+        (safely-delete-directory (revision-analyze-dir rev)))))
 
 (define mode (make-parameter 'single))
 
