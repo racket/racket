@@ -686,7 +686,7 @@
       [(box? a)
        (match (unbox a)
          [(list (? symbol?) ...) (make-prune (unbox a))]
-         [`#(,amt ,src ,dest #f #f) 
+         [`#(,amt ,src ,dest #f #f ,cancel-id) 
           (make-phase-shift amt 
                             (parse-module-path-index cp src)
                             (parse-module-path-index cp dest))]
