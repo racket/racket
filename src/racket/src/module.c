@@ -10548,8 +10548,10 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       if (all_simple)
 	*all_simple = 0;
     }
-  } else
+  } else {
     has_context = 0; /* computed later */
+    bdg = NULL;
+  }
 
   if (iname || ename || onlys || for_unmarshal || unpack_kern)
     can_save_marshal = 0;
