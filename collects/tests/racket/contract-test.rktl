@@ -12664,13 +12664,65 @@ so that propagation occurs.
                      'pos
                      'neg)))
   
-  #;
-  (ctest '("an element of" "the 3rd element of")
+  (ctest '("an element of" "the 2nd element of")
          extract-context-lines
-         (λ () (contract (vector/c (vectorof real?) (vectorof number?) (vectorof boolean?))
-                         (vector (vector 1) (vector 1) (vector 1))
-                         'pos
-                         'neg)))
+         (λ () (vector-ref
+                (vector-ref 
+                 (contract (vector/c (vectorof real?) (vectorof number?) (vectorof boolean?))
+                           (vector (vector 1) (vector 1) (vector 1))
+                           'pos
+                           'neg)
+                 2)
+                0)))
+  
+  (ctest '("the 0th element of")
+         extract-context-lines
+         (λ () (vector-ref (contract (vector/c integer?)
+                                     (vector #f)
+                                     'pos
+                                     'neg)
+                           0)))
+  
+  (ctest '("the 0th element of")
+         extract-context-lines
+         (λ () (vector-ref (contract (vector/c (-> integer? integer?))
+                                     (vector #f)
+                                     'pos
+                                     'neg)
+                           0)))
+  
+  (ctest '("the 0th element of")
+         extract-context-lines
+         (λ () (vector-ref (contract (vector/c (new-∀/c 'α))
+                                     (vector #f)
+                                     'pos
+                                     'neg)
+                           0)))
+  
+  (ctest '("an element of")
+         extract-context-lines
+         (λ () (vector-ref 
+                (contract (vectorof integer?)
+                          (vector #f)
+                          'pos
+                          'neg)
+                0)))
+  
+  (ctest '("an element of")
+         extract-context-lines
+         (λ () (vector-ref (contract (vectorof (-> integer? integer?))
+                                     (vector #f)
+                                     'pos
+                                     'neg)
+                           0)))
+  
+  (ctest '("an element of")
+         extract-context-lines
+         (λ () (vector-ref (contract (vectorof (new-∀/c 'α))
+                                     (vector #f)
+                                     'pos
+                                     'neg)
+                           0)))
   
 ;                                                        
 ;                                                        

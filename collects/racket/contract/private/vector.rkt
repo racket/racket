@@ -96,8 +96,8 @@
            [immutable (base-vectorof-immutable ctc)]
            [check (check-vectorof ctc)])
        (λ (blame)
-         (let ([elem-pos-proj ((contract-projection elem-ctc) blame)]
-               [elem-neg-proj ((contract-projection elem-ctc) (blame-swap blame))])
+         (let ([elem-pos-proj ((contract-projection elem-ctc) (blame-add-context blame "an element of"))]
+               [elem-neg-proj ((contract-projection elem-ctc) (blame-add-context blame "an element of" #:swap? #t))])
            (define checked-ref (λ (vec i val) (elem-pos-proj val)))
            (define checked-set (λ (vec i val) (elem-neg-proj val)))
            (define raise-blame (λ (val . args)
@@ -229,11 +229,12 @@
    #:projection 
    (λ (ctc) 
      (λ (blame) 
+       (define blame+ctxt (blame-add-context blame "an element of"))
        (λ (val)
          (check-vector/c ctc val blame)
          (for ([e (in-vector val)]
                [c (in-list (base-vector/c-elems ctc))])
-           (((contract-projection c) blame) e))
+           (((contract-projection c) blame+ctxt) e))
          val)))))
 
 (define (vector/c-ho-projection vector-wrapper)
@@ -241,10 +242,16 @@
      (let ([elem-ctcs (base-vector/c-elems ctc)]
            [immutable (base-vector/c-immutable ctc)])
        (λ (blame)
-         (let ([elem-pos-projs (apply vector-immutable
-                                      (map (λ (c) ((contract-projection c) blame)) elem-ctcs))]
-               [elem-neg-projs (apply vector-immutable
-                                      (map (λ (c) ((contract-projection c) (blame-swap blame))) elem-ctcs))])
+         (let ([elem-pos-projs (for/vector #:length (length elem-ctcs)
+                                 ([c (in-list elem-ctcs)]
+                                  [i (in-naturals)])
+                                 ((contract-projection c) 
+                                  (blame-add-context blame (format "the ~a element of" (n->th i)))))]
+               [elem-neg-projs (for/vector #:length (length elem-ctcs)
+                                 ([c (in-list elem-ctcs)]
+                                  [i (in-naturals)])
+                                 ((contract-projection c)
+                                  (blame-add-context blame (format "the ~a element of" (n->th i)) #:swap? #t)))])
            (λ (val)
              (check-vector/c ctc val blame)
              (if (immutable? val)
