@@ -26,6 +26,7 @@ all of the names in the tools library, for use defining keybindings
 
 (require (for-syntax racket/base))
 
+(generate-delayed-documents) ; avoids a distribution dependency on `scribblings/tools/doc-util'
 (require (for-doc drracket/private/ts
                   racket/base scribble/manual
                   scribblings/tools/doc-util
