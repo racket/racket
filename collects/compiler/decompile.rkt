@@ -144,8 +144,8 @@
                                   ignored
                                   alist)
                   `(,(if has-free-id-renames? 'lexical/free-id=? 'lexical) . ,alist)]
-                 [(phase-shift amt src dest)
-                  `(phase-shift ,amt ,src ,dest)]
+                 [(phase-shift amt src dest cancel-id)
+                  `(phase-shift ,amt ,src ,dest, cancel-id)]
                  [(wrap-mark val)
                   val]
                  [(prune sym)
