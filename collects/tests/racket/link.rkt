@@ -1,6 +1,7 @@
 #lang racket
 (require setup/link
-         compiler/find-exe)
+         compiler/find-exe
+         racket/sandbox)
 
 (define-syntax-rule (test expect expr)
   (do-test expect expr 'expr))
@@ -222,6 +223,23 @@
 (test #t (file-exists? (build-path c1/s1-dir "compiled" "n1_rkt.zo")))
 (run-setup "c1/s2")
 (test #t (file-exists? (build-path c1/s2-dir "compiled" "n2_rkt.zo")))
+
+;; ----------------------------------------
+;; sandbox:
+
+(test-racket "#f" '("-l" "racket/base" "-l" "racket/sandbox" "-e" "(void? (make-evaluator 'racket/base))"))
+(test-racket "'mz1" '("-l" "racket/base" "-l" "racket/sandbox" 
+                      "-e" "(sandbox-output current-output-port)"
+                      "-e" "(define e (make-evaluator 'racket/base))" 
+                      "-e" "(e '(require mzlib/m1))"))
+(test-racket "'m2" '("-l" "racket/base" "-l" "racket/sandbox" 
+                     "-e" "(sandbox-output current-output-port)"
+                     "-e" "(define e (make-evaluator 'racket/base))" 
+                     "-e" "(e '(require c1/m2))"))
+(test-racket "'n1" '("-l" "racket/base" "-l" "racket/sandbox" 
+                     "-e" "(sandbox-output current-output-port)"
+                     "-e" "(define e (make-evaluator 'racket/base))" 
+                     "-e" "(e '(require c1/s1/n1))"))
 
 ;; ----------------------------------------
 ;; docs in a linked collection:

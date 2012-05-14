@@ -7,7 +7,8 @@
          syntax/moddep
          racket/gui/dynamic
          planet/config
-         setup/dirs)
+         setup/dirs
+         setup/link)
 
 (provide gui?
          sandbox-gui-available
@@ -897,7 +898,12 @@
                      (current-library-collection-paths)))]
     [sandbox-path-permissions
      `(,@(map (lambda (p) `(read-bytecode ,p))
-              (current-library-collection-paths))
+              (append
+               (current-library-collection-paths)
+               (links #:root? #t #:user? #f)
+               (links #:root? #t #:user? #t)
+               (map cdr (links #:user? #f #:with-path? #t))
+               (map cdr (links #:user? #t #:with-path? #t))))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        (read ,(find-system-path 'links-file))
