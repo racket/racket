@@ -1390,7 +1390,13 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
                        break;
                       }]
                 [(not s->c)
-                 @list{if (!(@(if ptr? "ret_loc" (pred "val" x)))) @;
+                 @list{
+                       @@IFDEF{SCHEME_BIG_ENDIAN}{
+                       if (sizeof(@ctype)<sizeof(int) && ret_loc) {
+                         ((int*)W_OFFSET(dst,delta))[0] = 0;
+                         delta += (sizeof(int)-sizeof(@ctype));
+                       }}
+                       if (!(@(if ptr? "ret_loc" (pred "val" x)))) @;
                          @wrong-type["val" stype];
                        @(if ptr? "break" "return NULL");}]
                 [else

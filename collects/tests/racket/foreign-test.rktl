@@ -151,16 +151,23 @@
   (t 12 'decimal_int_byte_byte  (_fun _int  _byte -> _byte) 1 2)
   (t 12 'decimal_byte_byte_byte (_fun _byte _byte -> _byte) 1 2)
   ;; ---
-  (t  9 'callback3_int_int_int    (_fun (_fun _int  -> _int ) -> _int ) sqr)
-  (t  79 'callback3_int_int_int   (_fun (_fun _int  -> _int ) -> _int ) #f) ; NULL allowed as function pointer
-  (t  9 'callback3_int_int_int    (_fun _pointer -> _int ) (function-ptr sqr (_fun _int  -> _int ))) ; callback allowed as pointer
-  (t  9 'callback3_byte_int_int   (_fun (_fun _byte -> _int ) -> _int ) sqr)
-  (t  9 'callback3_int_byte_int   (_fun (_fun _int  -> _byte) -> _int ) sqr)
-  (t  9 'callback3_byte_byte_int  (_fun (_fun _byte -> _byte) -> _int ) sqr)
-  (t  9 'callback3_int_int_byte   (_fun (_fun _int  -> _int ) -> _byte) sqr)
-  (t  9 'callback3_byte_int_byte  (_fun (_fun _byte -> _int ) -> _byte) sqr)
-  (t  9 'callback3_int_byte_byte  (_fun (_fun _int  -> _byte) -> _byte) sqr)
-  (t  9 'callback3_byte_byte_byte (_fun (_fun _byte -> _byte) -> _byte) sqr)
+  (t  9 'callback3_int_int_int     (_fun (_fun _int  -> _int ) -> _int ) sqr)
+  (t  79 'callback3_int_int_int    (_fun (_fun _int  -> _int ) -> _int ) #f) ; NULL allowed as function pointer
+  (t  9 'callback3_int_int_int     (_fun _pointer -> _int ) (function-ptr sqr (_fun _int  -> _int ))) ; callback allowed as pointer
+  (t  9 'callback3_byte_int_int    (_fun (_fun _byte -> _int ) -> _int ) sqr)
+  (t  9 'callback3_short_int_int   (_fun (_fun _short -> _int ) -> _int ) sqr)
+  (t  9 'callback3_int_byte_int    (_fun (_fun _int  -> _byte) -> _int ) sqr)
+  (t  9 'callback3_int_short_int   (_fun (_fun _int  -> _short) -> _int ) sqr)
+  (t  9 'callback3_byte_byte_int   (_fun (_fun _byte -> _byte) -> _int ) sqr)
+  (t  9 'callback3_short_short_int (_fun (_fun _short -> _short) -> _int ) sqr)
+  (t  9 'callback3_int_int_byte    (_fun (_fun _int  -> _int ) -> _byte) sqr)
+  (t  9 'callback3_int_int_short   (_fun (_fun _int  -> _int ) -> _short) sqr)
+  (t  9 'callback3_byte_int_byte   (_fun (_fun _byte -> _int ) -> _byte) sqr)
+  (t  9 'callback3_short_int_short (_fun (_fun _short -> _int ) -> _short) sqr)
+  (t  9 'callback3_int_byte_byte   (_fun (_fun _int  -> _byte) -> _byte) sqr)
+  (t  9 'callback3_int_short_short (_fun (_fun _int  -> _short) -> _short) sqr)
+  (t  9 'callback3_byte_byte_byte  (_fun (_fun _byte -> _byte) -> _byte) sqr)
+  (t  9 'callback3_short_short_short (_fun (_fun _short -> _short) -> _short) sqr)
   ;; ---
   (tc 3 'curry_int_int_int    (_fun _int  -> (_fun _int  -> _int )) 1 2)
   (tc 3 'curry_byte_int_int   (_fun _byte -> (_fun _int  -> _int )) 1 2)

@@ -21,14 +21,21 @@ X byte decimal_byte_int_byte  (byte x, int  y) { return 10*x + y; }
 X byte decimal_int_byte_byte  (int  x, byte y) { return 10*x + y; }
 X byte decimal_byte_byte_byte (byte x, byte y) { return 10*x + y; }
 
-X int  callback3_int_int_int    (int(*f)(int))   { if (f) return f(3); else return 79; }
-X int  callback3_byte_int_int   (int(*f)(byte))  { return f(3); }
-X int  callback3_int_byte_int   (byte(*f)(int))  { return f(3); }
-X int  callback3_byte_byte_int  (byte(*f)(byte)) { return f(3); }
-X byte callback3_int_int_byte   (int(*f)(int))   { return f(3); }
-X byte callback3_byte_int_byte  (int(*f)(byte))  { return f(3); }
-X byte callback3_int_byte_byte  (byte(*f)(int))  { return f(3); }
-X byte callback3_byte_byte_byte (byte(*f)(byte)) { return f(3); }
+X int   callback3_int_int_int     (int(*f)(int))   { if (f) return f(3); else return 79; }
+X int   callback3_byte_int_int    (int(*f)(byte))  { return f(3); }
+X int   callback3_short_int_int   (int(*f)(short)) { return f(3); }
+X int   callback3_int_byte_int    (byte(*f)(int))  { return f(3); }
+X int   callback3_int_short_int   (short(*f)(int)) { return f(3); }
+X int   callback3_byte_byte_int   (byte(*f)(byte)) { return f(3); }
+X int   callback3_short_short_int (short(*f)(short)) { return f(3); }
+X byte  callback3_int_int_byte    (int(*f)(int))   { return f(3); }
+X short callback3_int_int_short   (int(*f)(int))   { return f(3); }
+X byte  callback3_byte_int_byte   (int(*f)(byte))  { return f(3); }
+X short callback3_short_int_short (int(*f)(short))  { return f(3); }
+X byte  callback3_int_byte_byte   (byte(*f)(int))  { return f(3); }
+X short callback3_int_short_short (short(*f)(int))  { return f(3); }
+X byte  callback3_byte_byte_byte  (byte(*f)(byte)) { return f(3); }
+X short  callback3_short_short_short(short(*f)(short)) { return f(3); }
 
 X int g1;
 X int  curry_ret_int_int   (int  x) { return g1 + x; }
