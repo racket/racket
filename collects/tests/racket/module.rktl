@@ -276,7 +276,6 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test `require' scoping
 
-
 (module fake-prefix-in scheme
   (require scheme/require-syntax)
   (define-require-syntax (pseudo-+ stx)
@@ -702,6 +701,14 @@
             (module-path-index-resolve
              (car (identifier-binding (car (syntax-property #'one 'origin))))))))])
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that set! of an unbound for-syntax variable is a syntax error
+
+(err/rt-test (expand '(module m racket/base
+                        (require (for-syntax racket/base))
+                        (begin-for-syntax
+                         (lambda () (set! x 6)))))
+             exn:fail:syntax?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
