@@ -1624,16 +1624,20 @@
 
   (define ch (make-channel))
   (thread
-    (lambda () (channel-put ch (spawn-remote-racket-node host #:listen-port listen-port
-                                                              #:racket-path racketpath
-                                                              #:ssh-bin-path sshpath
-                                                              #:distributed-launch-path distributedlaunchpath))))
+    (lambda () 
+      (with-handlers ([exn:fail? (lambda (e) (channel-put #f))])
+        (channel-put ch (spawn-remote-racket-node host #:listen-port listen-port
+                                                       #:racket-path racketpath
+                                                       #:ssh-bin-path sshpath
+                                                       #:distributed-launch-path distributedlaunchpath)))))
   ch)
 
 (define/provide (spawn-nodes/join nodes-descs)
   (for/list ([x
                (for/list ([n nodes-descs])
                  (apply keyword-apply spawn-node-at n))])
+    (unless x
+      (raise "Failed to connect to a remotely spawned node"))
     (channel-get x)))
 
 #;(define build-node-args

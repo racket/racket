@@ -8,10 +8,12 @@
           racket/class
           (for-label (except-in racket/base log-message))
           (for-label
-                     racket/place
+                     racket/place/define-remote-server
                      racket/place/distributed 
                      racket/class
-                     racket/contract))
+                     racket/contract
+                     racket/place
+                     racket/place/private/async-bi-channel))
 
 
 @(define evaler (make-base-eval))
@@ -93,13 +95,21 @@ The use of Distributed Places is predicated on a couple assumptions:
 (require 'hello-world-example)
 ]
 
-@defproc[(message-router [ec events-container<%>?] ...+) void?]{
+@definterface[events-container<%> ()]{
+  Every event container must implement the @racket[register] method.
+  @defmethod[(register [rl (listof evt?)]) (listof evt?)]{
+    Event containers should @racket[cons] on their events to the supplied list of events, @racket[rl],
+    and return the resulting list.
+  } 
+}
+
+@defproc[(message-router [ec (is-a?/c events-container<%>)] ...+) void?]{
   Waits in an endless loop for one of many events to become ready.  The
   @racket[message-router] procedure constructs a @racket[node%]
   instance to serve as the message router for the node. The
   @racket[message-router] procedure then adds all the declared
   @racket[events-container<%>]s to the @racket[node%] and finally calls
-  the never ending loop @racket[sync-events] method, which handles
+  the never ending loop @method[node% sync-events] method, which handles
   events for the node.
 }
 
@@ -107,8 +117,8 @@ The use of Distributed Places is predicated on a couple assumptions:
 @(define spawn-node-note
     (make-splice
      (list
-      @p{This function returns a @racket[remote-node%] instance not a @racket[remote-place%]
-      Call @racket[(send node get-first-place)] to obtain the @racket[remote-place%] instance.})) )
+      @p{This function returns a @racket[remote-node%] instance not a @racket[remote-connection%]
+      Call @racket[(send node get-first-place)] to obtain the @racket[remote-connection%] instance.})) )
 
 @(define spawn-node-dynamic-note
    (make-splice
@@ -116,7 +126,7 @@ The use of Distributed Places is predicated on a couple assumptions:
        @p{
 Spawns a new remote node at @racket[hostname] with one instance place specified by
 the @racket[instance-module-path] and @racket[instance-place-function-name]
-parameters. This procedure constructs the new remote-place by calling
+parameters. This procedure constructs the new remote-connection by calling
 @racket[(dynamic-place instance-module-path instance-place-function-name)].
        })))
 
@@ -128,8 +138,8 @@ parameters. This procedure constructs the new remote-place by calling
            [#:initial-message initial-message any #f]
            [#:racket-path racketpath string-path? (racket-path)]
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
-           [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) remote-place?]{
+           [#:distributed-launch-path launcherpath string-path? (path->string distributed-launch-path)]
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 @|spawn-node-dynamic-note|
 @|spawn-node-note|
 }
@@ -142,10 +152,10 @@ parameters. This procedure constructs the new remote-place by calling
            [#:initial-message initial-message any #f]
            [#:racket-path racketpath string-path? (racket-path)]
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
-           [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (values  (is-a?/c remote-node%) (is-a?/c remote-place%))]{
+           [#:distributed-launch-path launcherpath string-path? (path->string distributed-launch-path)]
+           [#:restart-on-exit restart-on-exit any/c #f]) (values  (is-a?/c remote-node%) (is-a?/c remote-connection%))]{
 @|spawn-node-dynamic-note|
-The new @racket[remote-node%] and @racket[remote-place%] instances make up the two return values.
+The new @racket[remote-node%] and @racket[remote-connection%] instances make up the two return values.
 }
 
 @(define place-thunk-function
@@ -166,7 +176,7 @@ accomplish this by calling either @racket[dynamic-place] or
        @p{
 Spawns a new remote node at @racket[hostname] with one instance place.
 the @racket[instance-module-path] and @racket[instance-thunk-function-name]
-parameters. This procedure constructs the new remote-place by calling
+parameters. This procedure constructs the new remote-connection by calling
 dynamically requiring the
 @racket[instance-thunk-function-name] and invoking the
 @racket[instance-thunk-function-name].
@@ -182,8 +192,8 @@ dynamically requiring the
            [#:initial-message initial-message any #f]
            [#:racket-path racketpath string-path? (racket-path)]
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
-           [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-place%)]{
+           [#:distributed-launch-path launcherpath string-path? (path->string distributed-launch-path)]
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 @|spawn-node-thunk-note|
 @|place-thunk-function|
 @|spawn-node-note|
@@ -196,11 +206,11 @@ dynamically requiring the
            [#:initial-message initial-message any #f]
            [#:racket-path racketpath string-path? (racket-path)]
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
-           [#:launcher-path launcherpath string-path? (->string distributed-launch-path)]
-           [#:restart-on-exit restart-on-exit any/c #f]) (values  (is-a?/c remote-node%) (is-a?/c remote-place%))]{
+           [#:distributed-launch-path launcherpath string-path? (path->string distributed-launch-path)]
+           [#:restart-on-exit restart-on-exit any/c #f]) (values  (is-a?/c remote-node%) (is-a?/c remote-connection%))]{
 @|spawn-node-thunk-note|
 @|place-thunk-function|
-The new @racket[remote-node%] and @racket[remote-place%] instances make up the two return values.
+The new @racket[remote-node%] and @racket[remote-connection%] instances make up the two return values.
 }
 
 @defproc[(spawn-remote-racket-node
@@ -208,14 +218,14 @@ The new @racket[remote-node%] and @racket[remote-place%] instances make up the t
            [#:listen-port port port-no? DEFAULT-ROUTER-PORT]
            [#:racket-path racketpath string-path? (racket-path)]
            [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
-           [#:launcher-path launcherpath string-path? (->string distributed-launch-path)])  (is-a?/c remote-node%)]{
+           [#:distributed-launch-path launcherpath string-path? (path->string distributed-launch-path)])  (is-a?/c remote-node%)]{
 Spawns a new remote node at @racket[hostname] and returns a @racket[remote-node%] handle.
 }
 @defproc[(supervise-dynamic-place-at
            [remote-node (is-a?/c remote-node%)]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-place%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 Creates a new place on the @racket[remote-node] by using
 @racket[dynamic-place] to invoke
 @racket[instance-place-function-name] from the module
@@ -226,7 +236,7 @@ Creates a new place on the @racket[remote-node] by using
            [remote-node (is-a?/c remote-node%)]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-place%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 Creates a new place on the @racket[remote-node] by executing the thunk
 @racket[instance-thunk-function-name] from the module
 @racket[instance-module-path].
@@ -246,7 +256,7 @@ Spawns an attached external process at host @racket[hostname].
            [place-name symbol?]
            [instance-module-path module-path?]
            [instance-place-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-place%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 Creates a new place on the @racket[remote-node] by using
 @racket[dynamic-place] to invoke
 @racket[instance-place-function-name] from the module
@@ -259,7 +269,7 @@ is used to establish later connections to the named place.
            [place-name symbol?]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-place%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 Creates a new place on the @racket[remote-node] by executing the thunk
 @racket[instance-thunk-function-name] from the module
 @racket[instance-module-path].  The @racket[place-name] symbol
@@ -273,7 +283,7 @@ is used to establish later connections to the named place.
            [remote-node (is-a?/c remote-node%)]
            [instance-module-path module-path?]
            [instance-thunk-function-name symbol?]
-           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-place%)]{
+           [#:restart-on-exit restart-on-exit any/c #f]) (is-a?/c remote-connection%)]{
 Creates a new threadon the @racket[remote-node] by using
 @racket[dynamic-require] to invoke
 @racket[instance-place-function-name] from the module
@@ -320,7 +330,7 @@ Connects to a named place on the @racket[node] named @racket[name] and returns a
 The following classes all implement @racket[event-container<%>] and
 can be supplied to a @racket[message-router]:
 @racket[spawned-process%], @racket[place-socket-bridge%],
-@racket[node%], @racket[remote-node%], @racket[remote-place%],
+@racket[node%], @racket[remote-node%], @racket[remote-connection%],
 @racket[place%] @racket[connection%], @racket[respawn-and-fire%], and
 @racket[after-seconds%].
 
@@ -436,7 +446,7 @@ node's message router.
     (make-splice
      (list
       @p{The @racket[#:restart-on-exit] boolean argument instructs the
-      remote-place% instance to respawn the place on the remote node
+      remote-connection% instance to respawn the place on the remote node
       should it exit or terminate at any time.  This boolean needs to
       be expanded to a restart criteria object in the future.})))
 
@@ -461,8 +471,8 @@ node's message router.
     dies.
   }
 
-  @defmethod[(get-first-place) (is-a?/c remote-place%)]{
-    Returns the @racket[remote-place%] object instance for the first place spawned on this node.
+  @defmethod[(get-first-place) (is-a?/c remote-connection%)]{
+    Returns the @racket[remote-connection%] object instance for the first place spawned on this node.
   }
   @defmethod[(get-first-place-channel) place-channel?]{
     Returns the communication channel for the first place spawned on this node.
@@ -474,7 +484,7 @@ node's message router.
   @defmethod[(launch-place
                [place-exec list?]
                [#:restart-on-exit restart-on-exit any/c #f]
-               [#:one-sided-place? one-sided-place? any/c #f]) (is-a?/c remote-place%)]{
+               [#:one-sided-place? one-sided-place? any/c #f]) (is-a?/c remote-connection%)]{
     Launches a place on the remote node represented by this @racket[remote-node%] instance.
     @|place-exec-note|
     @|one-sided-note|
@@ -494,8 +504,8 @@ node's message router.
 @defproc[(node-send-exit [remote-node% node]) void?]{
 Sends @racket[node] a message telling it to exit immediately.
 }
-@defproc[(node-get-first-place [remote-node% node]) (is-a?/c remote-place%)]{
-Returns the @racket[remote-place%] instance of the first place spawned at this node
+@defproc[(node-get-first-place [remote-node% node]) (is-a?/c remote-connection%)]{
+Returns the @racket[remote-connection%] instance of the first place spawned at this node
 }
 
 
@@ -533,12 +543,12 @@ places or connects to a named place and routes inter-node place messages to the 
   distributed places node at that node. It launches a compute places and
   routes inter-node place messages to the place.
 
-  @defconstructor[([node (is-a?/c remote-place%)]
+  @defconstructor[([node (is-a?/c remote-connection%)]
                  [place-exec list?]
                  [ch-id exact-positive-integer?]
                  [sc (is-a?/c socket-connection%)]
                  [on-place-dead (-> event void?) default-on-place-dead])]{
-    Constructs a @racket[remote-place%] instance.
+    Constructs a @racket[remote-connection%] instance.
     @|place-exec-note|
     The @racket[ch-id] and @racket[sc] arguments are internally used to
     establish routing between the remote node spawning this place and the
@@ -561,7 +571,7 @@ place messages to the named place.
                  [name string?]
                  [ch-id exact-positive-integer?]
                  [sc (is-a?/c socket-connection%)])]{
- Constructs a @racket[remote-place%] instance.
+ Constructs a @racket[remote-connection%] instance.
  @|place-exec-note|
  The @racket[ch-id] and @racket[sc] arguments are internally used to
  establish routing between the remote node and this named-place.
@@ -638,6 +648,15 @@ The function can take an optional argument specifying the path to the collects d
 Takes all the positional and keyword arguments pass to it and builds a 
 @racket[(list (list keywords ...) (list keyword-arguments ...) (list positional-args ...))] 
 suitable as an argument to  @racket[(lambda (x) (apply keyword-apply spawn-node-at x))].}
+}
+
+@defproc[(spawn-node-at [hostname string?] 
+           [#:listen-port port port-no? DEFAULT-ROUTER-PORT]
+           [#:racket-path racketpath string-path? (racket-path)]
+           [#:ssh-bin-path sshpath string-path? (ssh-bin-path)]
+           [#:distributed-launch-path launcherpath string-path? (path->string distributed-launch-path)]) channel?]{
+  Spawns a node in the background using a Racket thread and returns a channel that becomes ready with a @racket[remote-node%]
+  once the node has spawned successfully 
 }
 
 @defproc[(spawn-nodes/join [nodes-descs list?]) void?]{
@@ -794,7 +813,7 @@ list of custom expressions as its arguments.  From the identifier a
 function is created by prepending the @tt{make-} prefix. This
 procedure takes a single argument a @racket[place-channel]. In the
 example below, the @racket[make-tuple-server] identifier is the
-@racket{place-function-name} given to the
+@racket[place-function-name] given to the
 @racket[supervise-named-dynamic-place-at] form to spawn an rpc server.
 The server created by the @racket[make-tuple-server] procedure sits in
 a loop waiting for rpc requests from the @racket[define-rpc] functions
@@ -878,7 +897,7 @@ except there is no reply message from the server to client
          [else
            (hash-set! accounts who 0)
            (list 'created who)]))
-    (define-rpc (removeM who amount)
+    (define-rpc (remove who amount)
        (cond
          [(hash-ref accounts who (lambda () #f)) =>
             (lambda (balance)
@@ -906,6 +925,25 @@ except there is no reply message from the server to client
   The @racket[log-to-parent] procedure can be used inside a
   @racket[define-remote-server] or @racket[define-named-remote-server] form to
   send a logging message to the remote owner of the rpc server.
+}
+@section{Async Bidirectional Channels}
+
+@defmodule[racket/place/private/async-bi-channel]
+
+@defproc[(make-async-bi-channel) async-bi-channel?]{
+Creates and returns a opaque structure, which is the async bidirectional channel.
+}
+
+@defproc[(async-bi-channel? [ch any]) boolean?]{
+A predicate that returns @racket[#t] for async bidirectional channels.
+}
+
+@defproc[(async-bi-channel-get [ch async-bi-channel?]) any]{
+Returns the next available message from the async bidirectional channel @racket[ch].
+}
+
+@defproc[(async-bi-channel-put [ch async-bi-channel?] [msg any]) void?]{
+Sends message @racket[msg] to the remote end of the async bidirectional channel @racket[ch].
 }
 
 @(close-eval evaler)

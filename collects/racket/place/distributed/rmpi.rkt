@@ -18,7 +18,8 @@
          rmpi-partition
          rmpi-build-default-config
          rmpi-launch
-         rmpi-finish)
+         rmpi-finish
+         (struct-out rmpi-comm))
 
 (struct rmpi-comm (id cnt channels) #:transparent)
 
@@ -29,7 +30,7 @@
 
 (define (rmpi-init ch)
   (define tc (new named-place-typed-channel% [ch ch]))
-  (match-define (list (list 'mpi-id id config) return-ch) (tc-get 'mpi-id tc))
+  (match-define (list (list 'rmpi-id id config) return-ch) (tc-get 'rmpi-id tc))
   (match-define (list (list 'args args) src-ch) (tc-get 'args tc))
   (define mpi-comm-vector
     (for/vector #:length (length config) ([c config])
@@ -186,19 +187,20 @@
                 (hash-set (car _rest) (string->keyword "listen-port") port))]))
 ;        (printf/f "~a\n" rest)
         (define-values (k v) 
-          (let loop ([keys (list "racket-path" "listen-port" "distributed-launch-path")]
+          (let loop ([keys (map string->keyword 
+                                (sort (list "racket-path" "listen-port" "distributed-launch-path")))]
                      [k null]
                      [v null])
-            (cond 
-             [(pair? keys)
+            (match keys
+             [(cons head tail)
               (cond
-                [(lookup-config-value rest (car keys)) => (lambda (x) 
-                  (loop (cdr keys)
-                        (cons (string->keyword (car keys)) k)
+                [(lookup-config-value rest head) => (lambda (x) 
+                  (loop tail
+                        (cons head k)
                         (cons x v)))]
                 [else
                   (loop (cdr keys) k v)])]
-             [else
+             [(list)
                (values k v)])))
 ;        (printf/f "~a\n" (list k v (list host)))
         (list k v (list host)))))
@@ -208,18 +210,23 @@
     (match-define (list-rest host port name id rest) c)
     (supervise-named-dynamic-place-at n 
                                       name 
-                                      (lookup-config-value rest "mpi-module")
-                                      (lookup-config-value rest "mpi-func")))
+                                      (lookup-config-value rest "rmpi-module")
+                                      (lookup-config-value rest "rmpi-func")))
 
   (define-values (mrth ch)
     (start-message-router/thread
       #:nodes nodes))
 
+  (define simple-config 
+    (for/list ([c config])
+      (match-define (list-rest host port name id rest) c)
+      (list host port name id)))
+
   (for ([c config])
     (match-define (list-rest host port name id rest) c)
     (define npch (mr-connect-to ch (list host port) name))
-    (*channel-put npch (list 'mpi-id id config))
-    (*channel-put npch (list 'args (or (lookup-config-value rest "mpi-args") null))))
+    (*channel-put npch (list 'rmpi-id id simple-config))
+    (*channel-put npch (list 'args (or (lookup-config-value rest "rmpi-args") null))))
 
   (for/first ([c config])
     (match-define (list-rest host port name id rest) c)

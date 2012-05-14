@@ -24,9 +24,9 @@
 The @racketmodname[racket/place/distributed] library provides support for
 distributed programming.
 
-The example bellow demonstrates how to launch a remote racket vm instance,
-launch remote places on the new remote vm instance, and start an
-event loop that monitors the remote vm instance.
+The example bellow demonstrates how to launch a remote racket node instance,
+launch remote places on the new remote node instance, and start an
+event loop that monitors the remote node instance.
 
 The example code can also be found in
 @filepath{racket/distributed/examples/named/master.rkt}.
@@ -39,14 +39,14 @@ The example code can also be found in
 
 
 
-The @racket[spawn-remote-racket-vm] primitive connects to
+The @racket[spawn-remote-racket-node] primitive connects to
 @tt{"localhost"} and starts a racloud node there that listens on port
 6344 for further instructions.  The handle to the new racloud node is
-assigned to the @racket[remote-vm] variable. Localhost is used so that
+assigned to the @racket[remote-node] variable. Localhost is used so that
 the example can be run using only a single machine.  However localhost
 can be replaced by any host with ssh publickey access and racket.  The
 @racket[supervise-named-dynamic-place-at] creates a new place on the
-@racket[remote-vm].  The new place will be identified in the future by
+@racket[remote-node].  The new place will be identified in the future by
 its name symbol @racket['tuple-server].  A place descriptor is
 expected to be returned by invoking @racket[dynamic-place] with the
 @racket[tuple-path] module path and the @racket['make-tuple-server]
