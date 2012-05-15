@@ -13,6 +13,7 @@
         (namespace-require 'scheme/contract)
         (namespace-require 'scheme/set)
         (namespace-require '(only racket/contract/private/arrow procedure-accepts-and-more?))
+        (namespace-require '(only racket/contract/private/blame blame-fmt->-string make-blame))
         (namespace-require 'scheme/class)
         (namespace-require 'scheme/promise)
         (namespace-require 'scheme/match))
@@ -143,7 +144,7 @@
       (define (has-proper-blame? msg)
         (define reg
           (cond
-            [(eq? blame 'pos) #rx"self-contract violation[\n:,].*blaming: pos"]
+            [(eq? blame 'pos) #rx"broke it's contract[\n:,].*blaming: pos"]
             [(eq? blame 'neg) #rx"blaming: neg"]
             [(string? blame) (string-append "blaming: " (regexp-quote blame))]
             [else #f]))
@@ -12741,6 +12742,12 @@ so that propagation occurs.
                  0)
                 1)))
   
+  (let* ([blame-pos (contract-eval '(make-blame #'here #f (λ () 'integer?) 'positive 'negative #t))]
+         [blame-neg (contract-eval `(blame-swap ,blame-pos))])
+    (ctest "something ~a" blame-fmt->-string ,blame-neg "something ~a")
+    (ctest "promised: ~s; produced: ~e" blame-fmt->-string ,blame-pos '(expected: "~s;" given: "~e"))
+    (ctest "expected: ~s; given: ~e" blame-fmt->-string ,blame-neg '(expected: "~s;" given: "~e")))
+  
 ;                                                        
 ;                                                        
 ;                                                        
@@ -13581,7 +13588,7 @@ so that propagation occurs.
        (eval '(require 'pce1-bug)))
    (λ (x)
      (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"the-defined-variable1: self-contract violation" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable1: broke it's contract" (exn-message x)))))
   
   (contract-error-test
    'contract-error-test9

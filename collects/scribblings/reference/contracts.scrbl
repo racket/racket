@@ -1273,7 +1273,7 @@ use in the contract system:
         (raise-blame-error
          blame
          val
-         "expected <integer>, given: ~e"
+         '(expected "<integer>," given: "~e")
          val))))
 ]
 The new argument specifies who is to be blamed for
@@ -1304,7 +1304,7 @@ Compare that to the projection for our function contract:
           (raise-blame-error
            blame
            val
-           "expected a procedure of one argument, given: ~e"
+           '(expected "a procedure of one argument," given: "~e")
            val)))))
 ]
 
@@ -1362,7 +1362,7 @@ when a contract violation is detected.
             (raise-blame-error
              blame
              val
-             "expected a procedure of one argument, given: ~e"
+             '(expected "a procedure of one argument," given: "~e")
              val))))))
 ]
 
@@ -1380,7 +1380,9 @@ the contract library primitives below.
                (if (test x)
                  x
                  (raise-blame-error
-                  b x "expected <~a>, given: ~e" name x))))]
+                  b x
+                  '(expected "<~a>," given: "~e")
+                  name x))))]
           [#:stronger stronger (-> contract? contract? boolean?)])
          contract?]
 @defproc[(make-chaperone-contract
@@ -1392,7 +1394,9 @@ the contract library primitives below.
                (if (test x)
                  x
                  (raise-blame-error
-                  b x "expected <~a>, given: ~e" name x))))]
+                  b x
+                  '(expected "<~a>," given: "~e")
+                  name x))))]
           [#:stronger stronger (-> contract? contract? boolean?)])
          chaperone-contract?]
 @defproc[(make-flat-contract
@@ -1404,7 +1408,9 @@ the contract library primitives below.
                (if (test x)
                  x
                  (raise-blame-error
-                  b x "expected <~a>, given: ~e" name x))))]
+                  b x
+                  '(expected "<~a>," given: "~e")
+                  name x))))]
           [#:stronger stronger (-> contract? contract? boolean?)])
          flat-contract?]
 )]{
@@ -1468,7 +1474,7 @@ was passed as the second argument to @racket[contract-stronger?].
            (λ (x) (range (f (domain x))))
            (raise-blame-error
             b f
-            "expected a function of one argument, got: ~e"
+            '(expected "a function of one argument," 'given: "~e")
             f)))))))
 (contract int->int/c "not fun" 'positive 'negative)
 (define halve 
@@ -1630,16 +1636,31 @@ the other; both are provided for convenience and clarity.
              position @racket[b] has.
 }
   
-@defproc[(raise-blame-error [b blame?] [x any/c] [fmt string?] [v any/c] ...)
+@defproc[(raise-blame-error [b blame?] 
+                            [x any/c] 
+                            [fmt (or/c string?
+                                       (listof (or/c string?
+                                                     'given 'given:
+                                                     'expected 'expected:)))]
+                            [v any/c] ...)
          none/c]{
 
 Signals a contract violation.  The first argument, @racket[b], records the
 current blame information, including positive and negative parties, the name of
 the contract, the name of the value, and the source location of the contract
 application.  The second argument, @racket[x], is the value that failed to
-satisfy the contract.  The remaining arguments are a format string,
+satisfy the contract.  
+
+The remaining arguments are a format string,
 @racket[fmt], and its arguments, @racket[v ...], specifying an error message
 specific to the precise violation.
+
+If @racket[fmt] is a list, then the elements are concatenated together 
+(with spaces added, unless there are already spaces at the ends of the strings),
+after first replacing symbols with either their string counterparts, or
+replacing @racket['given] with @racket["produced"] and 
+@racket['expected] with @racket["promised"], depending on whether or not
+the @racket[b] argument has been swapped or not (see @racket[blame-swap]).
 
 }
 

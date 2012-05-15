@@ -32,7 +32,7 @@
   (raise-blame-error
    blame
    val
-   "expected ~a"
+   '(expected: "~a")
    pred-name))
 
 ;;
@@ -93,9 +93,8 @@
                             (raise-blame-error
                              blame
                              val
-                             "expected: ~s, ~a: ~e"
+                             '(expected: "~s," given: "~e")
                              (contract-name ctc)
-                             (given/produced blame)
                              val)))
           #:lifts
           (interleave-lifts

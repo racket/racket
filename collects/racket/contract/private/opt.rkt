@@ -97,7 +97,7 @@
    #:chaperone #t))
 
 (define (opt-constant-contract-failure blame val compare should-be)
-  (raise-blame-error blame val "expected a value ~a to ~e" compare should-be))
+  (raise-blame-error blame val '(expected "a value ~a to ~e") compare should-be))
 
 (begin-for-syntax
   (define-struct define-opt/recursive-fn (transformer internal-fn neg-blame?-id)

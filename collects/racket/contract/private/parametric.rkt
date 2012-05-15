@@ -46,7 +46,7 @@
 
        (lambda (p)
          (unless (procedure? p)
-           (raise-blame-error blame p "expected a procedure; ~a: ~e" (given/produced blame) p))
+           (raise-blame-error blame p '(expected "a procedure;" given: "~e") p))
          (make-keyword-procedure
           (lambda (keys vals . args) (keyword-apply (wrap p) keys vals args))
           (case-lambda
@@ -80,7 +80,6 @@
          (lambda (x)
            (if ((barrier-contract-pred c) x)
              ((barrier-contract-get c) x)
-             (raise-blame-error blame x "expected a(n) ~a; ~a: ~e"
+             (raise-blame-error blame x '(expected "a(n) ~a;" given: "~e")
                                 (barrier-contract-name c)
-                                (given/produced blame)
                                 x))))))))

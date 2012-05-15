@@ -189,7 +189,7 @@
          v]
         [else
          (unless (pred? v)
-           (raise-blame-error blame v "expected a ~a"
+           (raise-blame-error blame v '(expected: "~a")
                               (base-struct/dc-struct-name ctc)))
          (let loop ([subcontracts (base-struct/dc-subcontracts ctc)]
                     [projs projs]
@@ -955,7 +955,7 @@
 
 (define (struct/dc-error blame obj what)
   (raise-blame-error blame obj 
-                     "expected a struct of type ~a"
+                     '(expected "a struct of type ~a")
                      what))
 
 (define-syntax (struct/c stx)

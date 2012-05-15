@@ -183,10 +183,8 @@
   (raise-blame-error
    blame
    val
-   "expected a number between ~a and ~a, ~a: ~e"
-   lo hi
-   (given/produced blame)
-   val))
+   '(expected "a number between ~a and ~a," given: "~e")
+   lo hi val))
 
 (define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg)
   (with-syntax ([comparison comparison])
@@ -222,10 +220,8 @@
   (raise-blame-error
    blame
    val
-   "expected a number ~a ~a, ~a: ~e"
-   (object-name comparison) m
-   (given/produced blame)
-   val))
+   '(expected "a number ~a ~a," given: "~e")
+   (object-name comparison) m val))
 
 
 (define/opter (=/c opt/i opt/info stx)
@@ -308,9 +304,8 @@
                      (raise-blame-error
                       blame
                       val
-                      "expected: ~s, ~a: ~e"
+                      '(expected: "~s," given: "~e")
                       (contract-name ctc)
-                      (given/produced blame)
                       val))))
        #:lifts
        (append (optres-lifts optres-hd) (optres-lifts optres-tl))
@@ -358,8 +353,8 @@
                 blame
                 val
                 #,(if non-empty?
-                      "expected a non-empty list"
-                      "expected a list")))))
+                      #''(expected "a non-empty list")
+                      #''(expected "a list"))))))
      #:lifts (optres-lifts optres-ele)
      #:superlifts (optres-superlifts optres-ele)
      #:partials (optres-partials optres-ele)
@@ -589,13 +584,12 @@
 
 (define (raise-flat-arrow-err blame val n)
   (raise-blame-error blame val
-                     "expected a procedure matching the contract ~s"
+                     '(expected "a procedure matching the contract ~s")
                      `(-> ,@(build-list n (λ (x) 'any/c)) any)))
 
 (define (bad-number-of-arguments blame val args dom-len)
   (define num-values (length args))
   (raise-blame-error (blame-swap blame) val 
-                     "expected ~a argument~a, ~a ~a argument~a"
+                     '(expected "~a argument~a," given "~a argument~a")
                      dom-len (if (= dom-len 1) "" "s")
-                     (given/produced blame)
                      num-values (if (= num-values 1) "" "s")))

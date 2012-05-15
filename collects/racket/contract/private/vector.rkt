@@ -49,20 +49,20 @@
         [flat? (flat-vectorof? c)])
     (λ (val fail first-order?)
       (unless (vector? val)
-        (fail val "expected a vector, got ~a" val))
+        (fail val '(expected "a vector," given: "~e") val))
       (cond
         [(eq? immutable #t)
          (unless (immutable? val)
-           (fail val "expected an immutable vector, got ~a" val))]
+           (fail val '(expected "an immutable vector," given: "~e") val))]
         [(eq? immutable #f)
          (when (immutable? val)
-           (fail val "expected an mutable vector, got ~a" val))]
+           (fail val '(expected "an mutable vector," given: "~e" val)))]
         [else (void)])
       (when first-order?
         (for ([e (in-vector val)]
               [n (in-naturals)])
           (unless (contract-first-order-passes? elem-ctc e)
-            (fail val "expected: ~s for element ~v, got ~v" (contract-name elem-ctc) n e))))
+            (fail val '(expected: "~s for element ~s," given "~e") (contract-name elem-ctc) n e))))
       #t)))
 
 (define (vectorof-first-order ctc)
@@ -182,29 +182,24 @@
   (define elem-ctcs (base-vector/c-elems ctc))
   (define immutable (base-vector/c-immutable ctc))
   (unless (vector? val)
-    (raise-blame-error blame val "expected a vector, ~a: ~e" 
-                       (given/produced blame)
-                       val))
+    (raise-blame-error blame val '(expected "a vector," given: "~e") val))
   (cond
     [(eq? immutable #t)
      (unless (immutable? val)
        (raise-blame-error blame val 
-                          "expected an immutable vector, ~a: ~e"
-                          (given/produced blame)
+                          '(expected "an immutable vector," given: "~e")
                           val))]
     [(eq? immutable #f)
      (when (immutable? val)
        (raise-blame-error blame val 
-                          "expected an mutable vector, ~a: ~e" 
-                          (given/produced blame)
+                          '(expected "a mutable vector," given: "~e")
                           val))]
     [else (void)])
   (define elem-count (length elem-ctcs))
   (unless (= (vector-length val) elem-count)
-    (raise-blame-error blame val "expected a vector of ~a element~a, ~a: ~e"
+    (raise-blame-error blame val '(expected "a vector of ~a element~a," given: "~e")
                        elem-count
                        (if (= elem-count 1) "" "s") 
-                       (given/produced blame)
                        val)))
 
 (define (vector/c-first-order ctc)

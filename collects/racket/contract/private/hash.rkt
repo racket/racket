@@ -82,23 +82,22 @@
   (define immutable (base-hash/c-immutable ctc))
   (define flat? (flat-hash/c? ctc))
   (unless (hash? val)
-    (raise-blame-error blame val "expected a hash, ~a: ~e" (given/produced blame) val))
+    (raise-blame-error blame val '(expected "a hash," given: "~e") val))
   (when (and (not flat?)
              (not (flat-contract? dom-ctc))
              (not (hash-equal? val)))
     (raise-blame-error blame val 
-                       "expected equal?-based hash table due to higher-order domain contract, ~a: ~e"
-                       (given/produced blame)
+                       '(expected "equal?-based hash table due to higher-order domain contract," given: "~e")
                        val))
   (case immutable
     [(#t) 
      (unless (immutable? val) 
        (raise-blame-error blame val
-                          "expected an immutable hash, ~a: ~e" (given/produced blame) val))]
+                          '(expected "an immutable hash," given: "~e") val))]
     [(#f)
      (when (immutable? val)
        (raise-blame-error blame val
-                          "expected an mutable hash, ~a: ~e" (given/produced blame) val))]
+                          '(expected "a mutable hash," given: "~e") val))]
     [(dont-care) (void)]))
 
 (define (hash/c-first-order ctc)

@@ -15,11 +15,11 @@
          blame-add-context
          blame-add-unknown-context
          blame-context 
-         given/produced
          
          raise-blame-error
          current-blame-format
-         (struct-out exn:fail:contract:blame))
+         (struct-out exn:fail:contract:blame)
+         blame-fmt->-string)
 
 (define (blame=? a b equal?/recur)
   (and (equal?/recur (blame-source a) (blame-source b))
@@ -86,13 +86,62 @@
 (define-struct (exn:fail:contract:blame exn:fail:contract) [object]
   #:transparent)
 
-(define (raise-blame-error b x fmt . args)
+(define (raise-blame-error blame x fmt . args)
   (raise
    (make-exn:fail:contract:blame
-    ((current-blame-format) b x (apply format fmt args))
+    ((current-blame-format) 
+     blame x 
+     (apply format (blame-fmt->-string blame fmt) args))
     (current-continuation-marks)
-    b)))
+    blame)))
 
+(define (blame-fmt->-string blame fmt)
+  (cond
+    [(string? fmt) fmt]
+    [else
+     (let loop ([strs fmt]
+                [so-far '()]
+                [last-ended-in-whitespace? #t])
+       (cond
+         [(null? strs)
+          (apply string-append (reverse so-far))]
+         [else
+          (define fst (car strs))
+          (define nxt
+            (cond
+              [(eq? 'given: fst) (if (blame-original? blame)
+                                     "produced:"
+                                     "given:")]
+              [(eq? 'given fst) (if (blame-original? blame)
+                                    "produced"
+                                    "given")]
+              [(eq? 'expected: fst) (if (blame-original? blame)
+                                        "promised:"
+                                        "expected:")]
+              [(eq? 'expected fst) (if (blame-original? blame)
+                                       "promised"
+                                       "expected")]
+              [else fst]))
+          (define new-so-far
+            (if (or last-ended-in-whitespace?
+                    (regexp-match #rx"^ " nxt))
+                (cons nxt so-far)
+                (list* nxt " " so-far)))
+          (loop (cdr strs)
+                new-so-far
+                (regexp-match #rx" $" nxt))]))]))
+                
+
+(define (given/produced blame)
+  (if (blame-original? blame)
+      "produced"
+      "given"))
+
+(define (expected/promised blame)
+  (if (blame-original? blame)
+      "expected"
+      "promised"))
+              
 (define (default-blame-format blme x custom-message)
   (define source-message (source-location->string (blame-source blme)))
   (define positive-message (show/display (convert-blame-party (blame-positive blme))))
@@ -113,7 +162,7 @@
                       (format "  at: ~a" source-message)))
   
   (define self-or-not (if (blame-original? blme)
-                          "self-contract violation"
+                          "broke it's contract"
                           "contract violation"))
   
   (define start-of-message
@@ -202,8 +251,3 @@
 (define current-blame-format
   (make-parameter default-blame-format))
 
-
-(define (given/produced blame)
-  (if (blame-original? blame)
-      "produced"
-      "given"))

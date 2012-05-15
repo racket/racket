@@ -253,7 +253,7 @@ it around flattened out.
                     (raise-blame-error
                      blame
                      val
-                     "expected: ~s, ~a ~e" 'name (given/produced blame) val))
+                     '(expected: "~s," given: "~e") 'name val))
                   (cond
                     [(already-there? contract/info val lazy-depth-to-look)
                      val]
@@ -459,9 +459,8 @@ it around flattened out.
                                 (raise-blame-error
                                  blame
                                  val
-                                 "expected: ~s, ~a ~e"
+                                 '(expected: "~s," given: "~e")
                                  (contract-name ctc)
-                                 (given/produced blame)
                                  val)]))
                             #:lifts lifts
                             #:superlifts superlifts
@@ -536,7 +535,8 @@ it around flattened out.
     (raise-blame-error
      (contract/info-blame contract/info)
      stct
-     "failed `and' clause, ~a ~e" (given/produced (contract/info-blame contract/info)) stct)))
+     '("failed `and' clause," given: "~e")
+     stct)))
 
 (define-values (evaluate-attr-prop evaluate-attr-prop-predicate evaluate-attr-prop-accessor)
   (make-struct-type-property 'evaluate-attr-prop))

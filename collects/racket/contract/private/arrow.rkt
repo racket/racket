@@ -113,7 +113,7 @@ v4 todo:
                           [res-checker (λ (res-x ...) (values (p-app-x res-x) ...))])
                      (λ (val)
                        (unless (procedure? val)
-                         (raise-blame-error orig-blame val "expected a procedure, ~a ~v" (given/produced orig-blame) val))
+                         (raise-blame-error orig-blame val '(expected: "a procedure," given: "~v") val))
                        (wrapper
                         val
                         (make-keyword-procedure
@@ -389,12 +389,12 @@ v4 todo:
        (if (and (null? req-kwd) (null? opt-kwd))
            (λ (kwds kwd-args . args)
              (raise-blame-error (blame-swap blame) val
-                                "expected no keywords"))
+                                '(expected: "no keywords")))
            (λ (kwds kwd-args . args)
              (define args-len (length args))
              (unless (valid-number-of-args? args)
                (raise-blame-error (blame-swap blame) val
-                                  "received ~a argument~a, expected ~a"
+                                  '("received ~a argument~a," expected: "~a")
                                   args-len (if (= args-len 1) "" "s") arity-string))
              
              ;; these two for loops are doing O(n^2) work that could be linear 
@@ -402,7 +402,7 @@ v4 todo:
              (for ([req-kwd (in-list req-kwd)])
                (unless (memq req-kwd kwds)
                  (raise-blame-error (blame-swap blame) val
-                                    "expected keyword argument ~a"
+                                    '(expected "keyword argument ~a")
                                     req-kwd)))
              (for ([k (in-list kwds)])
                (unless (memq k all-kwds)
@@ -416,7 +416,7 @@ v4 todo:
              (unless (valid-number-of-args? args)
                (define args-len (length args))
                (raise-blame-error (blame-swap blame) val
-                                  "received ~a argument~a, expected ~a"
+                                  '("received ~a argument~a," expected: "~a")
                                   args-len (if (= args-len 1) "" "s") arity-string))
              (apply basic-lambda args))
            (λ args
@@ -1873,7 +1873,7 @@ v4 todo:
        (raise-blame-error
         blame
         val
-        "expected a ~a that accepts ~a~a~a argument~a~a~a, ~a: ~e"
+        '(expected" a ~a that accepts ~a~a~a argument~a~a~a," given: "~e")
         (if mtd? "method" "procedure")
         (if (zero? dom-length) "no" dom-length)
         (if (null? optionals) "" " mandatory")
@@ -1882,7 +1882,6 @@ v4 todo:
         (if (zero? optionals) ""
             (format " and up to ~a optional argument~a" optionals (if (= 1 optionals) "" "s")))
         (keyword-error-text mandatory-kwds optional-keywords)
-        (given/produced blame)
         val))]
     [else
      passes?]))
@@ -1949,14 +1948,13 @@ v4 todo:
        (raise-blame-error
         blame
         val
-        "expected a ~a that accepts ~a argument~a and arbitrarily more~a, ~a: ~e"
+        '(expected "a ~a that accepts ~a argument~a and arbitrarily more~a," given: "~e")
         (if mtd? "method" "procedure")
         (cond
           [(zero? dom-length) "no"]
           [else dom-length])
         (if (= 1 dom-length) "" "s")
         (keyword-error-text mandatory-kwds optional-kwds)
-        (given/produced blame)
         val))]
     [else
      passes?]))
