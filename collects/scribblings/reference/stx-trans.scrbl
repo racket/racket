@@ -603,14 +603,12 @@ being expanded. Otherwise, the result is @racket[0].}
 
 
 @defproc[(syntax-local-module-exports [mod-path module-path?]) 
-         (values (listof symbol?) (listof symbol?) (listof symbol?))]{
+         (listof (cons/c (or/c exact-integer? #f) (listof symbol?)))]{
 
-Returns three lists of symbols that represent the @racket[provide]d
-bindings of the module named by @racket[mod-path]. The first list
-corresponds to the @tech{phase level} 0 exports of the module, the
-second list corresponds to the @tech{phase level} -1 exports of the
-module, and the last list corresponds to the @tech{label phase level}
-exports of the module.
+Returns an association list from @tech{phase-level} numbers (or
+@racket[#f] for the @tech{label phase level}) to lists of symbols,
+where the symbols are the names of @racket[provide]d
+bindings at the corresponding @tech{phase level}.
 
 @transform-time[]}
 
