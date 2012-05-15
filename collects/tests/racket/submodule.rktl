@@ -516,6 +516,26 @@
 (test 10 dynamic-require '(submod 'subm-all-defined-1 main) 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `syntax-local-submodules':
+
+(test '() 'local-submodules
+      (let ()
+        (define-syntax (m stx) #`(quote #,(syntax-local-submodules)))
+        (m)))
+                                                  
+(module check-submodule-list racket/base
+  (require (for-syntax racket/base))
+  (provide x)
+  (define-syntax (m stx) #`(quote #,(syntax-local-submodules)))
+  (module m1 racket/base)
+  (module m2 racket/base)
+  (module* m3 racket/base)
+  (define x (m)))
+
+(test '(m1 m2) dynamic-require ''check-submodule-list 'x)
+                                                  
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Directory for testing
 
 (define temp-dir

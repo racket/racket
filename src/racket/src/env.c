@@ -100,6 +100,7 @@ static Scheme_Object *local_module_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_get_shadower(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_definitions(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_submodules(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_imports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_expanding_provides(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_expr(int argc, Scheme_Object *argv[]);
@@ -684,6 +685,7 @@ static void make_kernel_env(void)
 
   GLOBAL_PRIM_W_ARITY("syntax-local-module-exports", local_module_exports, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-module-defined-identifiers", local_module_definitions, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-submodules", local_submodules, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-module-required-identifiers", local_module_imports, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-transforming-module-provides?", local_module_expanding_provides, 0, 0, env);
 
@@ -2433,6 +2435,34 @@ local_module_exports(int argc, Scheme_Object *argv[])
 		     "syntax-local-module-exports: not currently transforming");
 
   return scheme_module_exported_list(argv[0], env->genv);
+}
+
+static Scheme_Object *local_submodules(int argc, Scheme_Object *argv[])
+{
+  Scheme_Comp_Env *env;
+  Scheme_Object *l, *r = scheme_null, *n;
+
+  env = scheme_current_thread->current_local_env;
+  
+  if (!env)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-submodules: not currently transforming");
+
+  if (env->genv->module) {
+    l = env->genv->module->pre_submodules;
+    if (l) {
+      while (!SCHEME_NULLP(l)) {
+        n = scheme_resolved_module_path_value(((Scheme_Module *)SCHEME_CAR(l))->modname);
+        while (SCHEME_PAIRP(SCHEME_CDR(n))) {
+          n = SCHEME_CDR(n);
+        }
+        r = scheme_make_pair(SCHEME_CAR(n), r);
+        l = SCHEME_CDR(l);
+      }
+    }
+  }
+   
+  return r;
 }
 
 static Scheme_Object *

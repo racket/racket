@@ -615,6 +615,15 @@ exports of the module.
 @transform-time[]}
 
 
+@defproc[(syntax-local-submodules) (listof symbol?)]{
+
+Returns a list of submodule names that are declared via
+@racket[module] (as opposed to @racket[module*]) in the current
+expansion context.
+
+@transform-time[]}
+
+
 @defproc[(syntax-local-get-shadower [id-stx identifier?]) identifier?]{
 
 Returns @racket[id-stx] if no binding in the current expansion context
