@@ -40,13 +40,25 @@
                  [(file . _) 'file]
                  [(submod . _) 'submod])]
               [d (syntax->datum stx)])
-          (if (eq? (car d) kw)
-              stx
-              (datum->syntax
-               stx
-               (cons kw (cdr d))
-               stx
-               stx)))
+          (cond
+           [(eq? kw 'submod)
+            (syntax-case stx ()
+              [(_ mp . rest)
+               (let ([new-mp (xlate-path #'mp)])
+                 (if (and (eq? new-mp #'mp)
+                          (eq? (car d) 'submod))
+                     stx
+                     (datum->syntax
+                      stx
+                      (list* kw new-mp #'rest)
+                      stx
+                      stx)))])]
+           [(eq? (car d) kw) stx]
+           [else (datum->syntax
+                  stx
+                  (cons kw (cdr d))
+                  stx
+                  stx)]))
         stx))
   
   (define-for-syntax (check-lib-form stx)
@@ -59,7 +71,8 @@
   (define-syntaxes (lib file planet submod)
     (let ([t (lambda (stx)
                (check-lib-form stx)
-               (let* ([mod-path (syntax->datum stx)]
+               (let* ([stx (xlate-path stx)]
+                      [mod-path (syntax->datum stx)]
                       [namess (syntax-local-module-exports stx)])
                  (values
                   (apply

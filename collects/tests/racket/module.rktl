@@ -595,7 +595,8 @@
   (map 
    eval
    '((module service racket
-       (#%module-begin))
+       (#%module-begin
+        (module s racket/base)))
      
      (module good-client racket
        (#%module-begin
@@ -615,7 +616,24 @@
          (rename-in racket/base
                     [quote dynamic-in]))
         (require
-         (rename-in (dynamic-in service))))))))
+         (rename-in (dynamic-in service)))))
+     
+     (module submodule-good-client racket
+       (#%module-begin
+        (require
+         (rename-in racket/base
+                    [quote dynamic-in]))
+        (require
+         (rename-in (submod (dynamic-in service) s)))))
+     
+     (module another-submodule-good-client racket
+       (#%module-begin
+        (require
+         (rename-in racket/base
+                    [quote dynamic-in]
+                    [submod alt:submod]))
+        (require
+         (rename-in (alt:submod (dynamic-in service) s))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check phase-1 syntax used via for-template
