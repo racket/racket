@@ -710,6 +710,21 @@
                          (lambda () (set! x 6)))))
              exn:fail:syntax?)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that an exception during a `provide' expansion
+;; doesn't leave the thread in the during-expansion state:
+
+(with-handlers ([exn? void])
+  (eval '(module m racket
+           (require (for-syntax racket/provide-transform))
+           (define-syntax ex
+             (make-provide-transformer
+              (lambda args
+                (/ 0))))
+           (provide (ex)))))
+
+(err/rt-test (eval '(define-syntax m (syntax-local-module-defined-identifiers))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -9967,8 +9967,10 @@ static Scheme_Object *expand_provide(Scheme_Object *e, int at_phase,
                                      Scheme_Comp_Env *cenv, Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Expand_Info erec1;
+  Scheme_Thread *p;
   Scheme_Object *b, *stop;
   Scheme_Comp_Env *xenv;
+  mz_jmp_buf newbuf, * volatile savebuf;
   
   xenv = scheme_new_compilation_frame(0, (SCHEME_CAPTURE_WITHOUT_RENAME 
 					  | SCHEME_FOR_STOPS), 
@@ -9984,18 +9986,34 @@ static Scheme_Object *expand_provide(Scheme_Object *e, int at_phase,
                                                       0, 0), 
                             stop, xenv);
 
-  b = scheme_make_pair((Scheme_Object *)tables, (Scheme_Object *)all_defs);
-  scheme_current_thread->current_local_bindings = b;
-  
   scheme_init_expand_recs(rec, drec, &erec1, 1);
   erec1.value_name = scheme_false;
   erec1.depth = -1;
 
-  e = scheme_expand_expr(e, xenv, &erec1, 0);
-  
-  scheme_current_thread->current_local_bindings = NULL;
+  p = scheme_current_thread;
 
-  return e;
+  b = scheme_make_pair((Scheme_Object *)tables, (Scheme_Object *)all_defs);
+  p->current_local_bindings = b;
+  
+  savebuf = p->error_buf;
+  p->error_buf = &newbuf;
+
+  if (scheme_setjmp(newbuf)) {
+    Scheme_Thread *p2;
+    p2 = scheme_current_thread;
+    p2->current_local_bindings = NULL;
+    p2->error_buf = savebuf;
+    scheme_longjmp(*savebuf, 1);    
+    return NULL;
+  } else {  
+    e = scheme_expand_expr(e, xenv, &erec1, 0);
+  
+    p = scheme_current_thread;
+    p->current_local_bindings = NULL;
+    p->error_buf = savebuf;
+    
+    return e;
+  }
 }
 
 void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e, 
