@@ -22,7 +22,8 @@
                    #'(xwrap (... ...) id))
                  ;; delayed:
                  (with-syntax ([(_ xwrap (... ...)) stx]
-                               [(reqs ((id d) (... ...))) (get-docs)])
+                               [(reqs ((id d) (... ...))) (syntax-local-introduce
+                                                           (datum->syntax #f (get-docs)))])
                    #`(begin
                        (require . reqs)
                        (xwrap (... ...) (list (cons 'id d) (... ...)))))))

@@ -76,7 +76,7 @@ all of the names in the tools library, for use defining keybindings
                                   [_
                                    (raise-syntax-error 'provide/dr/doc "unknown thing" case)])])
                    (with-syntax ([mid (munge-id #'id)])
-                     #'(thing-doc mid ctc ("This is provided for backwards compatibility; new code should use " (racket id) " instead.")))))
+                     #`(thing-doc mid ctc (@undefined-const "This is provided for backwards compatibility; new code should use " (racket id) " instead.")))))
                (syntax->list #'(case ...)))])])
     (syntax-case stx ()
       [(_  rst ...)

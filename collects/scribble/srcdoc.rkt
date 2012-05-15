@@ -2,7 +2,8 @@
 (require racket/contract/base
          (for-syntax racket/base
                      racket/require-transform
-                     racket/provide-transform))
+                     racket/provide-transform
+                     syntax/private/modcollapse-noctc))
 
 (provide for-doc require/doc
          provide/doc ; not needed anymore
@@ -21,8 +22,23 @@
  (define (add-requires!/decl specs)
    (unless delayed?
      (syntax-local-lift-module-end-declaration
-      #`(begin-for-syntax (add-requires! (quote-syntax #,specs)))))
+      #`(begin-for-syntax (add-relative-requires! (#%variable-reference)
+                                                  (quote-syntax #,specs)))))
    (add-requires! (syntax-local-introduce specs)))
+
+ (define (add-relative-requires! varref specs)
+   (define mpi (variable-reference->module-path-index varref))
+   (define-values (name base) (module-path-index-split mpi))
+   (if name
+       (add-requires!
+        (with-syntax ([(spec ...) specs]
+                      [rel-to (collapse-module-path-index 
+                               mpi
+                               (build-path (or (current-load-relative-directory)
+                                               (current-directory))
+                                           "here.rkt"))])
+          #'((relative-in rel-to spec) ...)))
+       (add-requires! specs)))
 
  (define (add-requires! specs)
    (set! requires (cons specs requires)))
