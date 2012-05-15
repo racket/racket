@@ -12724,6 +12724,23 @@ so that propagation occurs.
                                      'neg)
                            0)))
   
+  (ctest '("the keys of")
+         extract-context-lines
+         (λ () (contract (hash/c integer? (-> integer? integer?))
+                         (hash #f (λ (x) #f))
+                         'pos
+                         'neg)))
+  
+  (ctest '("the range of" "the values of")
+         extract-context-lines
+         (λ () ((hash-ref
+                 (contract (hash/c integer? (-> integer? integer?))
+                           (hash 0 (λ (x) #f))
+                           'pos
+                           'neg)
+                 0)
+                1)))
+  
 ;                                                        
 ;                                                        
 ;                                                        
