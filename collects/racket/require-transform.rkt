@@ -8,7 +8,8 @@
              (for-syntax '#%kernel))
   
   (#%provide expand-import 
-             syntax-local-require-certifier 
+             current-require-module-path convert-relative-module-path
+             syntax-local-require-certifier
              make-require-transformer prop:require-transformer require-transformer?
              ;; the import struct type:
              import struct:import make-import import?
@@ -72,6 +73,193 @@
   (define orig-insp (variable-reference->module-declaration-inspector
                      (#%variable-reference)))
 
+  (define current-require-module-path 
+    (make-parameter #f
+                    (lambda (v)
+                      (unless (or (not v)
+                                  (module-path-index? v))
+                        (raise-type-error 'current-require-module-path 
+                                          "#f or module path index"
+                                          v))
+                      v)))
+
+  ;; a simplified version of `collapse-module-path-index', where
+  ;; we don't have to normalize:
+  (define (collapse-mpi mpi)
+    (define-values (a b) (module-path-index-split mpi))
+    (define (recur b)
+      (cond
+       [(not b) (collapse-mpi (module-path-index-join #f #f))]
+       [(resolved-module-path? b)
+        (let ([n (resolved-module-path-name b)])
+          (if (pair? n)
+              (cons 'submod n)
+              n))]
+       [else (collapse-mpi b)]))
+    (define (extract-root bc)
+      (if (and (pair? bc) (eq? 'submod (car bc)))
+          (cadr bc)
+          bc))
+    (define (replace-last s a)
+      ;; replace last path element, and also eliminate "." and "..":
+      (regexp-replace* #rx"(?<=^|/)[.]/"
+                       (regexp-replace* #rx"(?<=^|/)[-+_%a-zA-Z0-9]*/[.][.]/"
+                                        (regexp-replace #rx"[^/]*$" s a)
+                                        "")
+                       ""))
+    (define (string->path* s)
+      ;; for now, module-path strings all works as paths
+      (string->path s))
+    (cond
+     [(and (not a) (not b))
+      (build-path (or (current-load-relative-directory)
+                      (current-directory))
+                  "here.rkt")]
+     [(path? a) a]
+     [(symbol? a) a]
+     [(string? a)
+      (define bc (extract-root (recur b)))
+      (let loop ([bc bc])
+        (cond
+         [(path? bc)
+          (define-values (base name dir?) (split-path bc))
+          (if (eq? base 'relative)
+              (string->path* a)
+              (build-path base (string->path* a)))]
+         [(symbol? bc)
+          (loop `(lib ,(symbol->string bc)))]
+         [(eq? (car bc) 'quote) 
+          (build-path (or (current-load-relative-directory)
+                          (current-directory))
+                      (string->path* a))]
+         [(eq? (car bc) 'file)
+          (loop (string->path (cadr bc)))]
+         [(eq? (car bc) 'lib)
+          (cond
+           [(and (null? (cddr bc))
+                 (regexp-match? #rx"[/]" (cadr bc)))
+            `(lib ,(replace-last (cadr bc) a))]
+           [(and (null? (cddr bc))
+                 (not (regexp-match? #rx"[/.]" (cadr bc))))
+            (loop `(lib ,(string-append (cadr bc) "/main.rkt")))]
+           [(and (null? (cddr bc))
+                 (not (regexp-match? #rx"[/]" (cadr bc))))
+            (loop `(lib ,(string-append "mzlib/" (cadr bc))))]
+           [else
+            (loop `(lib ,(apply
+                          string-append 
+                          (let loop ([l (cddr bc)])
+                            (if (null? l)
+                                (list (cadr bc))
+                                (list* (car l) "/" (loop (cdr l))))))))])]
+         [(eq? (car bc) 'planet)
+          (cond
+           [(symbol? (cadr bc))
+            (loop `(planet ,(symbol->string (cadr bc))))]
+           [(null? (cddr bc))
+            (define s (cadr bc))
+            (cond
+             [(regexp-match? #rx"/.*/" s)
+              `(planet ,(replace-last s a))]
+             [else
+              `(planet ,(string-append s "/" a))])]
+           [else
+            (define s (cadr bc))
+            `(planet ,(if (regexp-match? #rx"/" s)
+                          (replace-last s a)
+                          a)
+                     ,@(cddr bc))])]
+         [else (error "collapse-mpi failed on recur shape: " bc)]))]
+     [(eq? (car a) 'submod)
+      (define (add bc l)
+        (if (and (pair? bc) (eq? 'submod (car bc)))
+            (append bc l)
+            (list* 'submod bc l)))
+      (cond
+       [(equal? (cadr a) ".")
+        (add (recur b) (cddr a))]
+       [(equal? (cadr a) "..")
+        (add (recur b) (cdr a))]
+       [else
+        (add (collapse-mpi (module-path-index-join (cadr a) b))
+             (cddr a))])]
+     [else a]))
+  
+  (define (convert-relative-module-path mp/stx)
+    (define rmp (current-require-module-path))
+    (cond
+     [(not rmp) mp/stx]
+     [else
+      (define mp (if (syntax? mp/stx)
+                     (syntax->datum mp/stx)
+                     mp/stx))
+      (define (d->s d)
+        (if (syntax? mp/stx)
+            (datum->syntax mp/stx d mp/stx mp/stx)
+            d))
+      (cond
+       [(not (module-path? mp)) mp/stx]
+       [(string? mp)
+        ;; collapse a relative reference to an absolute one:
+        (d->s (collapse-mpi (module-path-index-join mp rmp)))]
+       [(symbol? mp) mp/stx]
+       [(eq? (car mp) 'quote)
+        ;; maybe a submodule...
+        (define r (module-path-index-resolve rmp))
+        (if (module-declared? (append '(submod)
+                                      (if (list? r)
+                                          r
+                                          (list r))
+                                      (cddr mp))
+                              #t)
+            ;; Yes, a submodule:
+            (let ([rmp-mod (collapse-mpi rmp)])
+              (if (and (pair? rmp-mod)
+                       (eq? (car rmp-mod 'submod)))
+                  (d->s (append rmp-mod (cadr mp)))
+                  (d->s `(submod ,rmp-mod . ,(cddr mp)))))
+            mp/stx)]
+       [(eq? (car mp) 'file)
+        (define base-path (resolved-module-path-name
+                           (module-path-index-resolve rmp)))
+        (define path (if (pair? base-path)
+                         (car base-path)
+                         base-path))
+        (if (path? path) 
+            (let-values ([(base name dir?) (split-path path)])
+              (if (eq? base 'relative)
+                  mp/stx
+                  (d->s (build-path base (cadr mp)))))
+            mp/stx)]
+       [(eq? (car mp) 'submod)
+        (define sub/stx (if (syntax? mp/stx)
+                            (syntax-case mp/stx ()
+                              [(_ sub . _) #'sub])
+                            (cadr mp)))
+        (define sub (if (syntax? sub/stx) (syntax->datum sub/stx) sub/stx))
+        (define new-sub/stx
+          (cond
+           [(equal? sub ".") (d->s (collapse-mpi rmp))]
+           [(equal? sub "..")
+            (define old (collapse-mpi rmp))
+            (if (and (pair? old)
+                     (eq? (car old) 'submod))
+                (d->s (append old ".."))
+                sub/stx)]
+           [else
+            (convert-relative-module-path sub/stx)]))
+        (cond
+         [(eq? sub/stx new-sub/stx) mp/stx]
+         [else
+          (define new-sub (if (syntax? new-sub/stx)
+                              (syntax->datum new-sub/stx)
+                              new-sub/stx))
+          (if (and (pair? new-sub)
+                   (eq? (car new-sub 'submod)))
+              (d->s (append new-sub (cddr sub)))
+              (d->s `(submod ,new-sub/stx . ,(cddr sub))))])]
+       [else mp/stx])]))
+
   ;; expand-import : stx bool -> (listof import)
   (define (expand-import stx)
     (let ([disarmed-stx (syntax-disarm stx orig-insp)])
@@ -91,7 +279,8 @@
               #f
               "invalid module-path form"
               stx))
-           (let ([namess (syntax-local-module-exports mod-path)])
+           (let* ([mod-path (convert-relative-module-path mod-path)]
+                  [namess (syntax-local-module-exports mod-path)])
              (values
               (apply
                append

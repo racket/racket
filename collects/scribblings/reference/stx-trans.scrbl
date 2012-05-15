@@ -602,13 +602,16 @@ by the expander, the result is the @tech{phase level} of the form
 being expanded. Otherwise, the result is @racket[0].}
 
 
-@defproc[(syntax-local-module-exports [mod-path module-path?]) 
+@defproc[(syntax-local-module-exports [mod-path (or/c module-path?
+                                                      (and/c syntax?
+                                                             (lambda (stx)
+                                                               (module-path? (syntax->datum stx)))))])
          (listof (cons/c (or/c exact-integer? #f) (listof symbol?)))]{
 
 Returns an association list from @tech{phase-level} numbers (or
 @racket[#f] for the @tech{label phase level}) to lists of symbols,
 where the symbols are the names of @racket[provide]d
-bindings at the corresponding @tech{phase level}.
+bindings from @racket[mod-path] at the corresponding @tech{phase level}.
 
 @transform-time[]}
 
@@ -927,6 +930,44 @@ into a module.
  @item{@racket[mode] --- the @tech{phase level} shift of the import.}
 
 ]}
+
+
+@defparam[current-require-module-path module-path (or/c #f module-path-index?)]{
+
+A parameter that determines how relative @racket[require]-level module
+paths are expanded to @racket[#%require]-level module paths by
+@racket[convert-relative-module-path] (which is used implicitly by all
+built-in @racket[require] sub-forms).
+
+When the value of @racket[current-require-module-path] is @racket[#f],
+relative module paths are left as-is, which means that the
+@racket[require] context determines the resolution of the module
+path.
+
+The @racket[require] form @racket[parameterize]s
+@racket[current-require-module-path] as @racket[#f] while invoking
+sub-form transformers, while @racket[relative-in] @racket[parameterize]s
+to a given module path.}
+
+
+@defproc[(convert-relative-module-path [module-path
+                                        (or/c module-path?
+                                              (and/c syntax?
+                                                     (lambda (stx)
+                                                       (module-path? (syntax-e stx)))))])
+          (or/c module-path?
+                (and/c syntax?
+                       (lambda (stx)
+                         (module-path? (syntax-e stx)))))]{
+
+Converts @racket[module-path] according to @racket[current-require-module-path].
+
+If @racket[module-path] is not relative or if the value of
+@racket[current-require-module-path] is @racket[#f], then
+@racket[module-path] is returned. Otherwise, @racket[module-path] is
+converted to an absolute module path that is equivalent to
+@racket[module-path] relative to the value of
+@racket[current-require-module-path].}
 
 
 @defproc[(syntax-local-require-certifier)

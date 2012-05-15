@@ -471,6 +471,27 @@
 (test #t module-path? '(planet "foo%2e.rkt" ("robby%2e" "redex%2e.plt") "sub%2e" "%2edeeper"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check `relative-in'
+
+(let ([check
+       (lambda (path)
+         (parameterize ([current-namespace (make-base-namespace)])
+           (eval
+            `(module relative-in-test racket/base
+               (require ,path)
+               (provide x)
+               (define x (string-join '("a" "b" "c") "."))))
+           (test "a.b.c" dynamic-require ''relative-in-test 'x)))])
+  (check 'racket/string)
+  (check '(relative-in racket/delay "string.rkt"))
+  (check '(relative-in racket "string.rkt"))
+  (check '(relative-in (lib "racket/main.rkt") "string.rkt"))
+  (check '(relative-in (lib "racket") "string.rkt"))
+  (check '(relative-in (lib "main.rkt" "racket") "string.rkt"))
+  (check `(relative-in ,(collection-file-path "delay.rkt" "racket") "string.rkt"))
+  (check '(relative-in racket (relative-in "private/reqprov.rkt" "../string.rkt"))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check collection-path details
 
 (test-values '(not there) (lambda ()

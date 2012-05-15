@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.rkt" scribble/bnf scribble/core
           (for-label (only-in racket/require-transform
-                              make-require-transformer)
+                              make-require-transformer
+                              current-require-module-path)
                      racket/require-syntax
                      racket/require
                      (only-in racket/provide-transform
@@ -348,7 +349,8 @@ Legal only in a @tech{module begin context}, and handled by the
 @guideintro["module-require"]{@racket[require]}
 
 @defform/subs[#:literals (only-in prefix-in except-in rename-in lib file planet submod + - =
-                          for-syntax for-template for-label for-meta only-meta-in combine-in quote)
+                          for-syntax for-template for-label for-meta only-meta-in combine-in 
+                          relative-in quote)
               (require require-spec ...)
               ([require-spec module-path
                              (only-in require-spec id-maybe-renamed ...)
@@ -356,6 +358,7 @@ Legal only in a @tech{module begin context}, and handled by the
                              (prefix-in prefix-id require-spec)
                              (rename-in require-spec [orig-id bind-id] ...)
                              (combine-in require-spec ...)
+                             (relative-in module-path require-spec ...)
                              (only-meta-in phase-level require-spec ...)
                              (for-syntax require-spec ...)
                              (for-template require-spec ...)
@@ -490,6 +493,16 @@ bindings of each @racket[require-spec] are visible for expanding later
     tcp-accept
     tcp-listen
   ]}
+
+ @defsubform[(relative-in module-path require-spec ...)]{
+  Like the union of the @racket[require-spec]s, but each
+  relative module path in a @racket[require-spec] is treated
+  as relative to @racket[module-path] instead of the enclosing
+  context.
+
+  The @tech{require transformer} that implements @racket[relative-in]
+  sets @racket[current-require-module-path] to adjust module paths
+  in the @racket[require-spec]s.}
 
  @defsubform[(only-meta-in phase-level require-spec ...)]{
   Like the combination of @racket[require-spec]s, but removing any
