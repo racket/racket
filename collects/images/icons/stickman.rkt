@@ -177,7 +177,7 @@
              (send dc set-pen (icon-color->outline-color head-color) line-width 'solid)
              (send dc set-brush head-color 'solid)
              (match-define (cons x y) standing-head-point)
-             (draw-ellipse/smoothed dc (- x 3.5) (- y 3.5) 8 8))
+             (send dc draw-ellipse (- x 3.5) (- y 3.5) 7 7))
      (/ height 32)
      material))))
 
@@ -273,7 +273,7 @@
             (send dc set-pen (icon-color->outline-color color) line-width 'solid)
             (send dc set-brush color 'solid)
             (match-define (cons x y) (running-head-point t))
-            (draw-ellipse/smoothed dc (- x 3.5) (- y 3.5) 8 8))
+            (send dc draw-ellipse (- x 3.5) (- y 3.5) 7 7))
     (/ height 32)
     material)))
 

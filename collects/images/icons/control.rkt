@@ -85,7 +85,7 @@
     32 32 (λ (dc)
             (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
             (send dc set-brush color 'solid)
-            (draw-ellipse/smoothed dc 0 0 32 32))
+            (send dc draw-ellipse 0 0 31 31))
     (/ height 32)
     material)))
 

@@ -87,16 +87,6 @@
     [(? string?)  (send the-color-database find-color c)]
     [else  (raise-type-error '->color% "list, color% or string" c)]))
 
-(define (draw-ellipse/smoothed dc x y w h)
-  (define pen (send dc get-pen))
-  (define brush (send dc get-brush))
-  (send dc set-pen "black" 1 'transparent)
-  (send dc draw-ellipse x y (- w 1) (- h 1))
-  (send dc set-pen pen)
-  (send dc set-brush "black" 'transparent)
-  (send dc draw-ellipse x y w h)
-  (send dc set-brush brush))
-
 (define (apply-path-commands p cmds)
   (let loop ([x 0] [y 0] [cmds cmds])
     (cond

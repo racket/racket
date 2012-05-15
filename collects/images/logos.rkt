@@ -153,10 +153,10 @@
                  32 32 (λ (dc)
                          (send dc set-pen lambda-outline-color 1/2 'solid)
                          (send dc set-brush "white" 'solid)
-                         (draw-ellipse/smoothed dc -0.25 -0.25 32.5 32.5)
+                         (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
                          (send dc set-pen "lightblue" 1/2 'solid)
                          (send dc set-brush "white" 'transparent)
-                         (draw-ellipse/smoothed dc 0.5 0.5 31 31))
+                         (send dc draw-ellipse 0.5 0.5 30 30))
                  (/ height 32))
                 fm)])
      fm)))
@@ -271,7 +271,7 @@
                         32 32 (λ (dc)
                                 (send dc set-pen logo-water-color 1/2 'solid)
                                 (send dc set-brush logo-water-color 'solid)
-                                (draw-ellipse/smoothed dc 0.75 0.75 30.5 30.5))
+                                (send dc draw-ellipse 0.75 0.75 29.5 29.5))
                         scale)]
             [earth-dfm  (flomap->deep-flomap earth-fm)]
             [earth-dfm  (deep-flomap-bulge-spheroid earth-dfm (* 16 scale))]
@@ -291,10 +291,10 @@
      32 32 (λ (dc)
              (send dc set-pen lambda-outline-color 1/2 'solid)
              (send dc set-brush "white" 'solid)
-             (draw-ellipse/smoothed dc -0.25 -0.25 32.5 32.5)
+             (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
              (send dc set-pen "lightblue" 1/2 'solid)
              (send dc set-brush "white" 'transparent)
-             (draw-ellipse/smoothed dc 0.5 0.5 31 31))
+             (send dc draw-ellipse 0.5 0.5 30 30))
      scale)
     earth-fm
     land-fm)))
@@ -368,12 +368,12 @@
                                  
                                  (send dc set-pen logo-blue-color 1/2 'solid)
                                  (send dc set-brush logo-blue-color 'solid)
-                                 (draw-ellipse/smoothed dc 0.75 0.75 30.5 30.5)
+                                 (send dc draw-ellipse 0.75 0.75 29.5 29.5)
                                  
                                  (send dc set-clipping-region top-rgn)
                                  (send dc set-pen logo-red-color 1/2 'solid)
                                  (send dc set-brush logo-red-color 'solid)
-                                 (draw-ellipse/smoothed dc 0.75 0.75 30.5 30.5))
+                                 (send dc draw-ellipse 0.75 0.75 29.5 29.5))
                          scale)]
             [sphere-dfm  (flomap->deep-flomap sphere-fm)]
             [sphere-dfm  (deep-flomap-bulge-spheroid sphere-dfm (* 14 scale))]
@@ -392,10 +392,10 @@
      32 32 (λ (dc)
              (send dc set-pen racket-r-outline-color 1/2 'solid)
              (send dc set-brush "white" 'solid)
-             (draw-ellipse/smoothed dc -0.25 -0.25 32.5 32.5)
+             (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
              (send dc set-pen "lightblue" 1/2 'solid)
              (send dc set-brush "white" 'transparent)
-             (draw-ellipse/smoothed dc 0.5 0.5 31 31))
+             (send dc draw-ellipse 0.5 0.5 30 30))
      scale)
     sphere-fm
     r-fm)))

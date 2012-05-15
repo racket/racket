@@ -86,12 +86,12 @@
     32 32 (λ (dc)
             (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
             (send dc set-brush color 'solid)
-            (draw-ellipse/smoothed dc 4 8 24 24)
-            (draw-ellipse/smoothed dc 0 10 5 4.5)
-            (draw-ellipse/smoothed dc 3 4.5 5.5 5.5)
-            (draw-ellipse/smoothed dc 8.75 1 6.25 6.25)
-            (draw-ellipse/smoothed dc 16 0 7 7)
-            (draw-ellipse/smoothed dc 23.5 1.5 8.5 10))
+            (send dc draw-ellipse 4 8 23 23)
+            (send dc draw-ellipse 0 10 4 3.5)
+            (send dc draw-ellipse 3 4.5 4.5 4.5)
+            (send dc draw-ellipse 8.75 1 5.25 5.25)
+            (send dc draw-ellipse 16 0 6 6)
+            (send dc draw-ellipse 23.5 1.5 7.5 9))
     (/ height 32)
     material)))
 
@@ -118,7 +118,7 @@
                   18 18 (λ (dc)
                           (set-icon-pen dc (icon-color->outline-color "azure") 1 'solid)
                           (send dc set-brush "azure" 'solid)
-                          (draw-ellipse/smoothed dc 0 0 18 18))
+                          (send dc draw-ellipse 0 0 17 17))
                   scale)]
             [dfm  (flomap->deep-flomap fm)]
             [dfm  (deep-flomap-bulge-spheroid dfm (* 4 scale))]
@@ -131,16 +131,16 @@
                           (define outline-color (icon-color->outline-color frame-color))
                           (send dc set-pen outline-color 3 'solid)
                           (send dc set-brush outline-color 'solid)
-                          (draw-ellipse/smoothed dc 1 1 26 26)
+                          (send dc draw-ellipse 1 1 25 25)
                           (send dc set-pen frame-color 1 'solid)
                           (send dc set-brush frame-color 'solid)
-                          (draw-ellipse/smoothed dc 1 1 26 26))
+                          (send dc draw-ellipse 1 1 25 25))
                   scale)]
             [indent-fm  (draw-icon-flomap
                          28 28 (λ (dc)
                                  (send dc set-pen frame-color 1 'solid)
                                  (send dc set-brush frame-color 'solid)
-                                 (draw-ellipse/smoothed dc 5 5 18 18))
+                                 (send dc draw-ellipse 5 5 17 17))
                          scale)]
             [indent-dfm  (flomap->deep-flomap indent-fm)]
             [indent-dfm  (deep-flomap-raise indent-dfm (* -4 scale))]
@@ -235,7 +235,7 @@
                          30 30 (λ (dc)
                                  (set-icon-pen dc (icon-color->outline-color bomb-color) 1 'solid)
                                  (send dc set-brush bomb-color 'solid)
-                                 (draw-ellipse/smoothed dc 0 0 30 30))
+                                 (send dc draw-ellipse 0 0 29 29))
                          scale)]
             [cap-fm  (bomb-cap-flomap cap-color)]
             [cap-dfm  (flomap->deep-flomap cap-fm)]
@@ -284,7 +284,7 @@
                (set-icon-pen dc (icon-color->outline-color (icon-color->outline-color face-color))
                              1 'solid)
                (send dc set-brush face-color 'solid)
-               (draw-ellipse/smoothed dc 0 0 32 32)
+               (send dc draw-ellipse 0 0 31 31)
                (set-icon-pen dc "black" 1 'solid)
                (for ([i  (in-range 60)]
                      [r  (in-cycle (list 1.5 .5 .5 .5 .5
@@ -341,7 +341,7 @@
       32 32 (λ (dc)
               (set-icon-pen dc "white" 1 'solid)
               (send dc set-brush "white" 'solid)
-              (draw-ellipse/smoothed dc 1 1 30 30))
+              (send dc draw-ellipse 1 1 29 29))
       scale))
    
    (let* ([dfm  (flomap->deep-flomap shell-fm)]
@@ -431,10 +431,10 @@
             (draw-path-commands dc right-metal-commands 0 0)
             (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
             (send dc set-brush metal-icon-color 'solid)
-            (draw-ellipse/smoothed dc 21.25 21.25 11 11)
+            (send dc draw-ellipse 21.25 21.25 10 10)
             (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
             (send dc set-brush light-metal-icon-color 'solid)
-            (draw-ellipse/smoothed dc 22.25 22.25 9 9))
+            (send dc draw-ellipse 22.25 22.25 8 8))
     scale
     metal-icon-material)))
 
@@ -478,10 +478,10 @@
             (draw-path-commands dc right-metal-commands 3 0)
             (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
             (send dc set-brush metal-icon-color 'solid)
-            (draw-ellipse/smoothed dc 21.25 15.25 11 11)
+            (send dc draw-ellipse 21.25 15.25 10 10)
             (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
             (send dc set-brush light-metal-icon-color 'solid)
-            (draw-ellipse/smoothed dc 22.25 16.25 9 9)
+            (send dc draw-ellipse 22.25 16.25 8 8)
             )
     scale
     metal-icon-material)))
