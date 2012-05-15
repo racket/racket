@@ -102,7 +102,7 @@
                 (parameterize ([current-security-guard drracket:init:system-security-guard])
                   (((dynamic-require mp name) val) key default)))))]
           [else default]))
-      (define (init-sandbox)
+      (define/private (init-sandbox)
         (unless sandbox
           (when language-info
             ;; creating a sanbox can fail in strange ways so we just
