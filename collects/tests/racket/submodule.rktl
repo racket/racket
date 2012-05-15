@@ -533,7 +533,19 @@
   (define x (m)))
 
 (test '(m1 m2) dynamic-require ''check-submodule-list 'x)
-                                                  
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `syntax-local-module-exports' uses submodules:
+
+(module check-submodule-exports racket/base
+  (require (for-syntax racket/base))
+  (provide x)
+  (define-syntax (m stx) 
+    #`(quote #,(cdr (assoc 0 (syntax-local-module-exports ''m1)))))
+  (module m1 racket/base (provide s) (define s 10))
+  (define x (m)))
+
+(test '(s) dynamic-require ''check-submodule-exports 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Directory for testing

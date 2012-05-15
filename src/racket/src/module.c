@@ -10459,6 +10459,73 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
   }
 }
 
+typedef int (*Convert_Submodule_Proc)(Scheme_Object *mp, Scheme_Object *data);
+
+static int check_in_hash(Scheme_Object *mp, Scheme_Object *data)
+{
+  Scheme_Object *v;
+  v = scheme_hash_get((Scheme_Hash_Table *)data, mp);
+  return v && SAME_OBJ(v, scheme_true);
+}
+
+static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv)
+{
+  Scheme_Env *genv = (Scheme_Env *)_genv;
+  Scheme_Object *l, *n;
+
+  if (genv->module) {
+    l = genv->module->pre_submodules;
+    if (l) {
+      while (!SCHEME_NULLP(l)) {
+        n = scheme_resolved_module_path_value(((Scheme_Module *)SCHEME_CAR(l))->modname);
+        while (SCHEME_PAIRP(SCHEME_CDR(n))) {
+          n = SCHEME_CDR(n);
+        }
+        n = SCHEME_CAR(n);
+        if (SAME_OBJ(n, modname))
+          return 1;
+        l = SCHEME_CDR(l);
+      }
+    }
+  }
+
+  return 0;
+}
+
+static Scheme_Object *convert_submodule_path(Scheme_Object *name, 
+                                             Convert_Submodule_Proc check,
+                                             Scheme_Object *check_data) 
+{
+  Scheme_Object *mp, *v;
+          
+  if (SAME_OBJ(SCHEME_CAR(name), submod_symbol)
+      && SCHEME_PAIRP(SCHEME_CDR(name))
+      && SCHEME_PAIRP(SCHEME_CDR(SCHEME_CDR(name)))
+      && scheme_is_list(name))
+    mp = SCHEME_CADR(name);
+  else
+    mp = name;
+
+  if (SCHEME_PAIRP(mp)
+      && SAME_OBJ(SCHEME_CAR(mp), quote_symbol)
+      && SCHEME_PAIRP(SCHEME_CDR(mp))
+      && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(mp)))) {
+    mp = SCHEME_CADR(mp);
+    if (check(mp, check_data)) {
+      /* convert to `submod' format */
+      if (SAME_OBJ(SCHEME_CAR(name), submod_symbol))
+        v = SCHEME_CDR(SCHEME_CDR(name));
+      else
+        v = scheme_null;
+      name = scheme_make_pair(submod_symbol,
+                              scheme_make_pair(scheme_make_utf8_string("."),
+                                               scheme_make_pair(mp, v)));
+    }
+  }
+
+  return name;
+}
+
 Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *genv)
 {
   Scheme_Object *modname, *l, *modidx, *stx, *phase, *result;
@@ -10472,6 +10539,9 @@ Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *g
   } else
     stx = NULL;
 
+  modpath = convert_submodule_path(modpath, check_is_submodule, 
+                                   (Scheme_Object *)genv);
+  
   modidx = scheme_make_modidx(modpath, 
                               (genv->module ? genv->module->self_modidx : scheme_false), 
                               scheme_false);
@@ -11260,33 +11330,8 @@ void parse_requires(Scheme_Object *form, int at_phase,
 
         if (submodule_names && SCHEME_PAIRP(name)) {
           /* check for 'x where x is a submodule name */
-          Scheme_Object *mp, *v;
-          
-          if (SAME_OBJ(SCHEME_CAR(name), submod_symbol)
-              && SCHEME_PAIRP(SCHEME_CDR(name))
-              && SCHEME_PAIRP(SCHEME_CDR(SCHEME_CDR(name)))
-              && scheme_is_list(name))
-            mp = SCHEME_CADR(name);
-          else
-            mp = name;
-
-          if (SCHEME_PAIRP(mp)
-              && SAME_OBJ(SCHEME_CAR(mp), quote_symbol)
-              && SCHEME_PAIRP(SCHEME_CDR(mp))
-              && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(mp)))) {
-            mp = SCHEME_CADR(mp);
-            v = scheme_hash_get(submodule_names, mp);
-            if (v && SAME_OBJ(v, scheme_true)) {
-              /* convert to `submod' format */
-              if (SAME_OBJ(SCHEME_CAR(name), submod_symbol))
-                v = SCHEME_CDR(SCHEME_CDR(name));
-              else
-                v = scheme_null;
-              name = scheme_make_pair(submod_symbol,
-                                      scheme_make_pair(scheme_make_utf8_string("."),
-                                                       scheme_make_pair(mp, v)));
-            }
-          }
+          name = convert_submodule_path(name, check_in_hash, 
+                                        (Scheme_Object *)submodule_names);
         }
 
         if (modidx_cache)
