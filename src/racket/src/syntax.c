@@ -3362,6 +3362,10 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id,
     } else
       bdg1 = scheme_false;
 
+    EXPLAIN(fprintf(stderr, "%d       %s vs. %s\n", depth,
+                    scheme_write_to_string(bdg1, NULL),
+                    scheme_write_to_string(bdg2, NULL)));
+
     /* check that bdg1 is a tail of bdg2, first */
     while (1) {
       if (SAME_OBJ(bdg1, bdg2)
@@ -3406,6 +3410,7 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id,
       return -1; /* no match */
   } else {
     if (_skipped) *_skipped = -1;
+    if (_bdg_skipped) *_bdg_skipped = 0;
     return 0; /* match empty mark set */
   }
 }
@@ -3456,8 +3461,8 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
       int mark_len;
       EXPLAIN(fprintf(stderr, "%d     found %p\n", depth, pos));
       mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, bdg, depth, &skip, &bdg_skip);
-      if (best_match_bdg_skip == -1) best_match_bdg_skip = bdg_skip;
-      if ((bdg_skip < best_match_bdg_skip)
+      if ((best_match_bdg_skip == -1) && (mark_len >= 0)) best_match_bdg_skip = bdg_skip + 1;
+      if (((bdg_skip < best_match_bdg_skip) && (mark_len >= 0))
           || ((bdg_skip == best_match_bdg_skip) && (mark_len > best_match_len))) {
         /* Marks and bdg match and improve on previously found match. Build suitable rename: */
         best_match_len = mark_len;
@@ -3881,8 +3886,6 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
       Module_Renames *mrn;
       int skipped;
 
-      EXPLAIN(fprintf(stderr, "%d Rename/set\n", depth));
-	
       if (SCHEME_RENAMESP(WRAP_POS_FIRST(wraps))) {
         mrn = (Module_Renames *)WRAP_POS_FIRST(wraps);
       } else {
@@ -3894,6 +3897,10 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 
         mrn = extract_renames(mrns, phase);
       }
+
+      EXPLAIN(fprintf(stderr, "%d Rename/set %d %d\n", depth,
+                      mrn ? SCHEME_INT_VAL(mrn->set_identity) : -1,
+                      mrn ? mrn->kind : -1));
 
       if (mrn && (!is_in_module || (mrn->kind != mzMOD_RENAME_TOPLEVEL)) 
           && !skip_other_mods) {
@@ -3919,10 +3926,14 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 	      bdg = resolve_env(a, orig_phase, 0, NULL, recur_skip_ribs, NULL, NULL, depth+1, NULL);
               if (SCHEME_FALSEP(bdg))
                 bdg = get_old_module_env(a);
+              EXPLAIN(fprintf(stderr, "%d    is %s\n", depth,
+                              scheme_write_to_string(bdg, NULL)));
             }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL, &skipped);
-	  
+            EXPLAIN(fprintf(stderr, "%d  is sym %s\n", depth,
+                            scheme_write_to_string(glob_id, NULL)));
+            
 	    if (SCHEME_TRUEP(bdg)
 		&& !SAME_OBJ(glob_id, SCHEME_STX_VAL(a))) {
 	      /* Even if this module doesn't match, the lex-renamed id
@@ -3967,6 +3978,8 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
 	      bdg = resolve_env(a, orig_phase, 0, NULL, recur_skip_ribs, NULL, NULL, depth+1, NULL);
               if (SCHEME_FALSEP(bdg))
                 bdg = get_old_module_env(a);
+              EXPLAIN(fprintf(stderr, "%d    is %s\n", depth,
+                              scheme_write_to_string(bdg, NULL)));
             }
             rename = search_shared_pes(mrn->shared_pes, glob_id, a, bdg, get_names, 0, depth, &skipped);
             if (rename)
@@ -4476,7 +4489,6 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 
           if (!rename) {
             if (!bdg) {
-              EXPLAIN(fprintf(stderr, "%d   get bdg\n", depth));
               bdg = resolve_env(a, orig_phase, 0, NULL, NULL, NULL, NULL, 0, NULL);
               if (SCHEME_FALSEP(bdg))
                 bdg = get_old_module_env(a);
