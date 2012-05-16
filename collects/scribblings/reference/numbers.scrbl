@@ -487,7 +487,7 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
  the arguments in the given order are strictly decreasing,
  @racket[#f] otherwise.
 
-@mz-examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (< +nan.0 1)]}
+@mz-examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (> +nan.0 1)]}
 
 
 @defproc[(>= [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t]
