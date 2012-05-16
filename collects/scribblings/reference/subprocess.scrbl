@@ -28,9 +28,11 @@ Creates a new process in the underlying operating system to execute
 @racket[process] from @racketmodname[racket/system].
 
 The @racket[command] argument is a path to a program executable, and
-the @racket[arg]s are command-line arguments for the program. On
+the @racket[arg]s are command-line arguments for the program. See
+@racket[find-executable-path] for locating an executable based on
+the @envvar{PATH} environment variable. On
 Unix and Mac OS X, command-line arguments are passed as byte strings,
-and string @racket[args] are converted using the current locale's
+and string @racket[arg]s are converted using the current locale's
 encoding (see @secref["encodings"]). On Windows, command-line
 arguments are passed as strings, and bytes strings are converted using
 UTF-8.
@@ -344,7 +346,9 @@ function:
            [(system* [command path-string?] [exact 'exact] [arg string?]) boolean?])]{
 
 Like @racket[system], except that @racket[command] is a filename that
-is executed directly (instead of through a shell command), and the
+is executed directly (instead of through a shell command; see
+@racket[find-executable-path] for locating an executable based on
+the @envvar{PATH} environment variable), and the
 @racket[arg]s are the arguments. The executed file is passed the
 specified string arguments (which must contain no nul
 characters).
@@ -440,7 +444,7 @@ of a single process.}
            [(process* [command path-string?] [exact 'exact] [arg string?]) list?])]{
 
 Like @racket[process], except that @racket[command] is a filename that
-is executed directly, and the @racket[arg]s are the arguments. On
+is executed directly like @racket[system*], and the @racket[arg]s are the arguments. On
 Windows, as for @racket[system*], the first @racket[arg] can be
 replaced with @racket['exact].}
 
