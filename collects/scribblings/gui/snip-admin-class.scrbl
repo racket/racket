@@ -78,8 +78,8 @@ Fills all boxes with @racket[0.0].
 
 }}
 
-@defmethod[(get-view-size [h (or/c (box/c (and/c real? (not/c negative?))) #f)]
-                          [w (or/c (box/c (and/c real? (not/c negative?))) #f)])
+@defmethod[(get-view-size [w (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                          [h (or/c (box/c (and/c real? (not/c negative?))) #f)])
            void?]{
 
 @methspec{
