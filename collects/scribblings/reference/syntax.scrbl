@@ -232,7 +232,11 @@ module, whose full name depends both on @racket[id] or
 
 A module body is executed only when the module is explicitly
 @techlink{instantiate}d via @racket[require] or
-@racket[dynamic-require]. On invocation, expressions and definitions
+@racket[dynamic-require]. On invocation, imported modules are
+instantiated in the order in which they are @racket[require]d
+into the module (although earlier instantiations or transitive
+@racket[require]s can trigger the instantiation of a module before
+its order within a given module). Then, expressions and definitions
 are evaluated in order as they appear within the module. Each
 evaluation of an expression or definition is wrapped with a
 continuation prompt (see @racket[call-with-continuation-prompt]) for

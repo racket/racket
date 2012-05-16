@@ -2766,7 +2766,6 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 
           if (l) {
             /* Do initial import first to get shadowing right: */
-            l = scheme_reverse(l);
             for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
               idx = SCHEME_CAR(l);
               name = scheme_module_resolve(idx, 0);
@@ -4497,7 +4496,7 @@ static void show_done(const char *what, Scheme_Env *menv, int v1, int v2, int i,
 static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase, 
                                   Scheme_Env *load_env, Scheme_Object *syntax_idx)
 {
-  Scheme_Object *np, *midx, *l, *reqs, *req_names;
+  Scheme_Object *np, *np_first, *np_last, *midx, *l, *reqs, *req_names;
 
   if (SAME_OBJ(phase, scheme_make_integer(0))) {
     req_names = menv->require_names;
@@ -4532,7 +4531,8 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
   if (req_names && !SCHEME_NULLP(req_names))
     return;
 
-  np = scheme_null;
+  np_first = scheme_null;
+  np_last = NULL;
 
   for (l = reqs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     midx = do_modidx_shift(SCHEME_CAR(l), 
@@ -4543,8 +4543,15 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
     if (load_env)
       module_load(scheme_module_resolve(midx, 1), load_env, NULL);
     
-    np = cons(midx, np);
+    np = cons(midx, scheme_null);
+    if (np_last)
+      SCHEME_CDR(np_last) = np;
+    else
+      np_first = np;
+    np_last = np;
   }
+
+  np = np_first;
 
   if (!SAME_OBJ(np, req_names)) {
     if (SAME_OBJ(phase, scheme_make_integer(0))) {

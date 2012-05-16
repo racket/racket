@@ -182,7 +182,7 @@
     (test '(d b c) values l)
     (eval `(module f mzscheme
 	     (,here 'f)
-	     (require 'b 'e)))
+	     (require 'e 'b)))
     (test '(d b d b c) values l)
     (eval `(require 'f))
     (let ([finished '(f b e  a d b  d b d b c)])
@@ -763,6 +763,18 @@
            (provide (ex)))))
 
 (err/rt-test (eval '(define-syntax m (syntax-local-module-defined-identifiers))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that invocation order matches `require' order:
+
+(module order-check-module-a racket/base 'a)
+(module order-check-module-b racket/base 'b)
+(module order-check-module racket/base (require 'order-check-module-a
+                                                'order-check-module-b))
+(let ([o (open-output-string)])
+  (parameterize ([current-output-port o])
+    (dynamic-require ''order-check-module #f))
+  (test "'a\n'b\n" get-output-string o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
