@@ -7,18 +7,18 @@
 
 (define (match-blame re msg)
   (or (regexp-match? (format "blaming: ~a" re) msg)
-      (regexp-match? (format "self-contract violation:.*blaming: ~a" re) msg)))
+      (regexp-match? (format "broke it's contract:.*blaming: ~a" re) msg)))
 
 (define (match-obj re msg)
   (or (regexp-match? (format "~a: contract violation" re) msg)
-      (regexp-match? (format "~a: self-contract violation" re) msg)))
+      (regexp-match? (format "~a: broke it's contract" re) msg)))
 
 (define (get-ctc-err msg)
   (cond
     [(regexp-match  #rx"contract violation\n *([^\n]*)\n" msg)
      =>
      (λ (x) (cadr x))]
-    [(regexp-match #rx"self-contract violation\n *([^\n]*)\n" msg)
+    [(regexp-match #rx"broke it's contract\n *([^\n]*)\n" msg)
      =>
      (lambda (x) (cadr x))]
     [else (error 'test-contract-error
