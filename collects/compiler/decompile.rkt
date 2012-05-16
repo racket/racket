@@ -4,7 +4,8 @@
          racket/port
          racket/match
          racket/list
-         racket/set)
+         racket/set
+         racket/path)
 
 (provide decompile)
 
@@ -162,7 +163,10 @@
   (cond
    [(symbol? modidx) modidx]
    [else 
-    (collapse-module-path-index modidx (current-directory))]))
+    (collapse-module-path-index modidx (build-path
+                                        (or (current-load-relative-directory)
+                                            (current-directory))
+                                        "here.rkt"))]))
 
 (define (decompile-module mod-form orig-stack stx-ht mod-name)
   (match mod-form
@@ -172,6 +176,28 @@
                   [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
        `(,mod-name ,(if (symbol? name) name (last name)) ....
+           ,@(let ([l (apply
+                       append
+                       (for/list ([req (in-list requires)]
+                                  #:when (pair? (cdr req)))
+                         (define l (for/list ([mpi (in-list (cdr req))])
+                                     (define p (mpi->string mpi))
+                                     (if (path? p)
+                                         (let ([d (current-load-relative-directory)])
+                                           (path->string (if d
+                                                             (find-relative-path d p #:more-than-root? #t)
+                                                             p)))
+                                         p)))
+                         (if (eq? 0 (car req))
+                             l
+                             `((,@(case (car req)
+                                    [(#f) `(for-label)]
+                                    [(1) `(for-syntax)]
+                                    [else `(for-meta ,(car req))])
+                                ,@l)))))])
+               (if (null? l)
+                   null
+                   `((require ,@l))))
           ,@defns
           ,@(for/list ([submod (in-list pre-submodules)])
               (decompile-module submod orig-stack stx-ht 'module))
