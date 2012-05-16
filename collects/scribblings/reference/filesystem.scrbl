@@ -432,13 +432,17 @@ directory is not deleted successfully, the
 @exnraise[exn:fail:filesystem].}
 
 
-@defproc[(directory-list [path path-string? (current-directory)]) 
+@defproc[(directory-list [path path-string? (current-directory)]
+                         [#:build? build? any/c #f])
          (listof path?)]{
 
 @margin-note{See also the @racket[in-directory] sequence constructor.}
 
 Returns a list of all files and directories in the directory specified
-by @racket[path]. On Windows, an element of the list may start with
+by @racket[path]. If @racket[build?] is @racket[#f], the resulting
+paths are all @tech{path elements}; otherwise, the individual results
+are combined with @racket[path] using @racket[build-path].
+On Windows, an element of the result list may start with
 @litchar{\\?\REL\\}.}
 
 

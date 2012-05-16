@@ -11,7 +11,9 @@
             [with-input-from-file   -with-input-from-file]
             [with-output-to-file    -with-output-to-file])
            call-with-input-file*
-           call-with-output-file*)
+           call-with-output-file*
+           (rename-out
+            [directory-list -directory-list]))
 
   (define exists-syms
     '(error append update can-update replace truncate must-truncate truncate/replace))
@@ -124,4 +126,11 @@
         (dynamic-wind
             void
             (lambda () (proc p))
-            (lambda () (close-output-port p))))))
+            (lambda () (close-output-port p)))))
+
+  (define (directory-list [dir (current-directory)] #:build? [build? #f])
+    (unless (path-string? dir)
+      (raise-type-error 'directory-list "path or string" dir))
+    (if build?
+        (map (lambda (i) (build-path dir i)) (k:directory-list dir))
+        (k:directory-list dir))))

@@ -21,6 +21,7 @@
                               call-with-output-file
                               with-input-from-file
                               with-output-to-file
+                              directory-list
                               regexp-replace*
                               new-apply-proc)
              struct
@@ -43,5 +44,6 @@
              (rename -call-with-output-file call-with-output-file)
              (rename -with-input-from-file with-input-from-file)
              (rename -with-output-to-file with-output-to-file)
+             (rename -directory-list directory-list)
              call-with-input-file*
              call-with-output-file*))

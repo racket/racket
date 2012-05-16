@@ -65,7 +65,7 @@ Beware that the current locale might not encode every string, in which
 case @racket[string->path] can produce the same path for different
 @racket[str]s. See also @racket[string->path-element], which should be
 used instead of @racket[string->path] when a string represents a
-single path element.
+single @tech{path element}.
 
 See also @racket[string->some-system-path].}
 
@@ -77,7 +77,7 @@ Produces a path (for some platform) whose byte-string name is
 @racket[bstr]. The optional @racket[type] specifies the convention to
 use for the path.
 
-For converting relative path elements from literals, use instead
+For converting relative @tech{path elements} from literals, use instead
 @racket[bytes->path-element], which applies a suitable encoding for
 individual elements.}
 
@@ -95,7 +95,7 @@ re-creating a path (possibly modified) via @racket[string->path],
 since decoding and re-encoding the path's byte string may lose
 information.
 
-Furthermore, for display and sorting based on individual path elements
+Furthermore, for display and sorting based on individual @tech{path elements}
 (such as pathless file names), use @racket[path-element->string],
 instead, to avoid special encodings use to represent some relative
 paths. See @secref["windowspaths"] for specific information about
@@ -116,7 +116,7 @@ unmarshaling paths, but manipulating the byte form of a path is
 generally a mistake. In particular, the byte string may start with a
 @litchar{\\?\REL} encoding for Windows paths. Instead of
 @racket[path->bytes], use @racket[split-path] and
-@racket[path-element->bytes] to manipulate individual path elements.}
+@racket[path-element->bytes] to manipulate individual @tech{path elements}.}
 
 @defproc[(string->path-element [str string?]) path?]{
 
@@ -127,7 +127,7 @@ on the conversion for @|AllUnix| paths, and see
 @secref["windowspaths"] for more information on the conversion for
 Windows paths.
 
-If @racket[str] does not correspond to any path element
+If @racket[str] does not correspond to any @tech{path element}
 (e.g., it is an absolute path, or it can be split), or if it
 corresponds to an up-directory or same-directory indicator on
 @|AllUnix|, then @exnraise[exn:fail:contract].
@@ -148,8 +148,8 @@ restrictions on @racket[bstr], @racket[bytes->path-element] is like
 The @racket[bytes->path-element] procedure is generally the best
 choice for reconstructing a path based on another path (where the
 other path is deconstructed with @racket[split-path] and
-@racket[path-element->bytes]) when ASCII-level manipulation of path
-elements is necessary.}
+@racket[path-element->bytes]) when ASCII-level manipulation of
+@tech{path elements} is necessary.}
 
 
 @defproc[(path-element->string [path path-element?]) string?]{
@@ -384,7 +384,7 @@ up-directory indicators are removed taking into account soft links (so
 that the resulting path refers to the same directory as before).
 
 When @racket[use-filesystem?] is @racket[#f], up-directory indicators
-are removed by deleting a preceding path element, and the result can
+are removed by deleting a preceding @tech{path element}, and the result can
 be a relative path with up-directory indicators remaining at the
 beginning of the path; up-directory indicators are dropped when they
 refer to the parent of a root directory. Similarly, the result can be
@@ -486,7 +486,7 @@ suffix for the last element of the path is changed to
 @racket[suffix]. If the last element of @racket[path] has no suffix,
 then @racket[suffix] is added to the path. A suffix is defined as a
 @litchar{.} followed by any number of non-@litchar{.} characters/bytes
-at the end of the path element, as long as the path element is not
+at the end of the @tech{path element}, as long as the path element is not
 @racket[".."] or @racket["."]. The @racket[path] argument can be a
 path for any platform, and the result is for the same platform. If
 @racket[path] represents a root, the @exnraise[exn:fail:contract].}
@@ -497,7 +497,7 @@ path for any platform, and the result is for the same platform. If
 
 Similar to @racket[path-replace-suffix], but any existing suffix on
 @racket[path] is preserved by replacing every @litchar{.} in the last
-path element with @litchar{_}, and then the @racket[suffix] is added
+@tech{path element} with @litchar{_}, and then the @racket[suffix] is added
 to the end.}
 
 @;------------------------------------------------------------------------
@@ -508,7 +508,7 @@ to the end.}
 @defproc[(explode-path [path (or/c path-string? path-for-some-system?)]) 
          (listof (or/c path-for-some-system? 'up 'same))]{
 
-Returns the list of path element that constitute @racket[path].  If
+Returns the list of @tech{path elements} that constitute @racket[path].  If
 @racket[path] is simplified in the sense of @racket[simple-form-path],
 then the result is always a list of paths, and the first element of
 the list is a root.}
@@ -572,8 +572,8 @@ or if an infinite cycle of soft links is detected.}
 
 @defproc[(path-element? [path any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[path] is a path value for some
-platform (see @racket[path-for-some-system?]) such that
+Returns @racket[#t] if @racket[path] is a @deftech{path element}: 
+a path value for some platform (see @racket[path-for-some-system?]) such that
 @racket[split-path] applied to @racket[path] would return
 @racket['relative] as its first result and a path as its second
 result. Otherwise, the result is @racket[#f].}

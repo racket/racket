@@ -170,6 +170,10 @@
       (let ([l (directory-list "down")])
 	(or (equal? l (map bytes->path '(#"deep" #"tmp8x")))
 	    (equal? l (map bytes->path '(#"tmp8x" #"deep"))))))
+(test #t 'directory-list 
+      (let ([l (directory-list "down" #:build? #t)])
+	(or (equal? l (map bytes->path '(#"down/deep" #"down/tmp8x")))
+	    (equal? l (map bytes->path '(#"down/tmp8x" #"down/deep"))))))
 (test (list (bytes->path #"tmp7x")) directory-list deepdir)
 
 (test #f delete-directory/tf deepdir)
