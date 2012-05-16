@@ -2695,6 +2695,11 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
 
 void scheme_prep_namespace_rename(Scheme_Env *menv)
 {
+  while (menv->mod_phase > 0) {
+    scheme_prepare_template_env(menv);
+    menv = menv->template_env;
+  }
+
   scheme_prepare_exp_env(menv);
   start_module(menv->module, menv, 0, NULL, -1, 1, menv->phase, scheme_null, 1);
 

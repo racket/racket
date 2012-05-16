@@ -777,5 +777,17 @@
   (test "'a\n'b\n" get-output-string o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check phase-shifted, compile-time use of `variable-reference->namespace'
+
+(module uses-variable-reference->namespace racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+   (variable-reference->namespace (#%variable-reference))))
+(module uses-uses-variable-reference->namespace racket/base
+  (require (for-template 'uses-variable-reference->namespace)))
+
+(require 'uses-uses-variable-reference->namespace)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
