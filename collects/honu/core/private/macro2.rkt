@@ -21,7 +21,7 @@
          "literals.rkt"
          "syntax.rkt"
          "debug.rkt"
-         (for-meta -1 "literals.rkt" "compile.rkt" "parse-helper.rkt" "parse2.rkt")
+         (for-meta -1 "literals.rkt" "compile.rkt" "parse2.rkt" "parse-helper.rkt")
          #;
          (for-syntax "honu-typed-scheme.rkt")
          syntax/parse)
