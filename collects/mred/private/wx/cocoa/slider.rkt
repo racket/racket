@@ -21,7 +21,7 @@
 
 (import-class NSSlider NSTextField NSView)
 
-(define-objc-class MySlider NSSlider
+(define-objc-class RacketSlider NSSlider
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (changed: [_id sender])
@@ -51,7 +51,7 @@
 
   (define slider-cocoa
     (let ([cocoa (as-objc-allocation
-                  (tell (tell MySlider alloc) init))])
+                  (tell (tell RacketSlider alloc) init))])
       (tellv cocoa setMinValue: #:type _double* lo)
       (tellv cocoa setMaxValue: #:type _double* hi)
       (tellv cocoa setDoubleValue: #:type _double* (flip val))

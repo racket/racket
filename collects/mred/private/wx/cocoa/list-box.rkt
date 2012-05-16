@@ -21,7 +21,7 @@
 (import-class NSScrollView NSTableView NSTableColumn NSCell NSIndexSet)
 (import-protocol NSTableViewDataSource)
 
-(define-objc-class MyTableView NSTableView
+(define-objc-class RacketTableView NSTableView
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   [-a _id (preparedCellAtColumn: [_NSInteger column] row: [_NSInteger row])
@@ -44,7 +44,7 @@
       (let ([wx (->wx wxb)])
         (when wx (send wx reset-column-order)))])
 
-(define-objc-class MyDataSource NSObject
+(define-objc-class RacketDataSource NSObject
   #:protocols (NSTableViewDataSource)
   [wxb]
   [-a _NSInteger (numberOfRowsInTableView: [_id view])
@@ -73,7 +73,7 @@
            register-as-child)
 
   (define source (as-objc-allocation
-                  (tell (tell MyDataSource alloc) init)))
+                  (tell (tell RacketDataSource alloc) init)))
   (set-ivar! source wxb (->wxb this))
 
   (define itemss (cons choices
@@ -89,7 +89,7 @@
   (define-values (content-cocoa column-cocoas)
     (let ([content-cocoa 
            (as-objc-allocation
-            (tell (tell MyTableView alloc) init))])
+            (tell (tell RacketTableView alloc) init))])
       (tellv content-cocoa setDelegate: content-cocoa)
       (tellv content-cocoa setDataSource: source)
       (define cols

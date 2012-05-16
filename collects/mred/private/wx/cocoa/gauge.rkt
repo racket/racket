@@ -17,7 +17,7 @@
 
 (import-class NSProgressIndicator)
 
-(define-objc-class MyProgressIndicator NSProgressIndicator
+(define-objc-class RacketProgressIndicator NSProgressIndicator
   #:mixins (KeyMouseResponder CursorDisplayer)
   [wxb])
 
@@ -34,7 +34,7 @@
              [cocoa (let ([cocoa (as-objc-allocation
                                   ;; Beware that a gauge may be finally deallocated in 
                                   ;; a separate OS-level thread
-                                  (tell (tell MyProgressIndicator alloc) init))])
+                                  (tell (tell RacketProgressIndicator alloc) init))])
                       (tellv cocoa setIndeterminate: #:type _BOOL #f)
                       (tellv cocoa setMaxValue: #:type _double* rng)
                       (tellv cocoa setDoubleValue: #:type _double* 0.0)

@@ -14,7 +14,7 @@
 (provide 
  (protect-out button%
               core-button%
-              MyButton))
+              RacketButton))
 
 ;; ----------------------------------------
 
@@ -26,7 +26,7 @@
 (define NSSmallControlSize 1)
 (define NSMiniControlSize 2)
 
-(define-objc-class MyButton NSButton
+(define-objc-class RacketButton NSButton
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (clicked: [_id sender])
@@ -47,7 +47,7 @@
   (define button-cocoa
     (let ([cocoa 
            (as-objc-allocation
-            (tell (tell MyButton alloc) 
+            (tell (tell RacketButton alloc) 
                   initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                              (make-NSSize w h))))])
       (when button-type

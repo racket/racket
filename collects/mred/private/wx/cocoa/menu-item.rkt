@@ -13,7 +13,7 @@
 
 (import-class NSMenuItem)
 
-(define-objc-class MyMenuItem NSMenuItem
+(define-objc-class RacketMenuItem NSMenuItem
   [wxb]
   (-a _void (selected: [_id sender]) 
       (let ([wx (->wx wxb)])
@@ -60,7 +60,7 @@
     (if submenu
         (send submenu install menu label enabled?)
         (let ([item (as-objc-allocation
-                     (tell (tell MyMenuItem alloc) 
+                     (tell (tell RacketMenuItem alloc) 
                            initWithTitle: #:type _NSString (clean-menu-label (regexp-replace #rx"\t.*" label ""))
                            action: #:type _SEL #f
                            keyEquivalent: #:type _NSString ""))])

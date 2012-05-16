@@ -22,7 +22,7 @@
 (define NSRadioModeMatrix 0)
 (define NSListModeMatrix 2)
 
-(define-objc-class MyMatrix NSMatrix
+(define-objc-class RacketMatrix NSMatrix
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (clicked: [_id sender])
@@ -31,7 +31,7 @@
       (tellv self setAllowsEmptySelection: #:type _BOOL #f)
       (queue-window*-event wxb (lambda (wx) (send wx clicked)))))
 
-(define-objc-class MyImageButtonCell NSButtonCell
+(define-objc-class RacketImageButtonCell NSButtonCell
   [img]
   [-a _NSSize (cellSize)
       (let ([s (super-tell #:type _NSSize cellSize)])
@@ -74,13 +74,13 @@
              [cocoa
               (let ([cocoa
                      (as-objc-allocation
-                      (tell (tell MyMatrix alloc) 
+                      (tell (tell RacketMatrix alloc) 
                             initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                        (make-NSSize w h))
                             mode: #:type _int NSRadioModeMatrix
                             cellClass: (if (andmap string? labels)
                                            NSButtonCell
-                                           MyImageButtonCell)
+                                           RacketImageButtonCell)
                             numberOfRows: #:type _NSInteger (if horiz? 1 (length labels))
                             numberOfColumns: #:type _NSInteger (if horiz? (length labels) 1)))])
                 (for ([label (in-list labels)]

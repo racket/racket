@@ -37,7 +37,7 @@
 (define the-apple-menu #f)
 (define recurring-for-command (make-parameter #f))
 
-(define-objc-class MyBarMenu NSMenu
+(define-objc-class RacketBarMenu NSMenu
   []
   ;; Disable automatic handling of keyboard shortcuts, except for
   ;;  the Apple menu
@@ -66,7 +66,7 @@
                                  (tell r keyUp: evt)])))
                            #t)))))))))
 
-(define cocoa-mb (tell (tell MyBarMenu alloc) init))
+(define cocoa-mb (tell (tell RacketBarMenu alloc) init))
 (define current-mb #f)
 
 ;; Used to detect mouse click on the menu bar:

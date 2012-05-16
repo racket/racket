@@ -9,7 +9,7 @@
 
 (import-class NSSound)
 
-(define-objc-class MySound NSSound
+(define-objc-class RacketSound NSSound
   [result
    sema]
   [-a _void (sound: [_id sound] didFinishPlaying: [_BOOL ok?])
@@ -19,7 +19,7 @@
 
 (define (play-sound path async?)
   (let ([s (as-objc-allocation
-            (tell (tell MySound alloc)
+            (tell (tell RacketSound alloc)
                   initWithContentsOfFile: #:type _NSString (path->string 
                                                             (path->complete-path path))
                   byReference: #:type _BOOL #t))]

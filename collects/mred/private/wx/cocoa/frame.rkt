@@ -41,7 +41,7 @@
 ;;  problems.
 (define all-windows (make-hash))
 
-(define-objc-mixin (MyWindowMethods Superclass)
+(define-objc-mixin (RacketWindowMethods Superclass)
   [wxb]
   [-a _scheme (getEventspace)
       (let ([wx (->wx wxb)])
@@ -147,12 +147,12 @@
                                 (lambda () (send wx on-toolbar-click))))))
       (void)])
 
-(define-objc-class MyWindow NSWindow
-  #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
+(define-objc-class RacketWindow NSWindow
+  #:mixins (FocusResponder KeyMouseResponder RacketWindowMethods)
   [wxb])
 
-(define-objc-class MyPanel NSPanel
-  #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
+(define-objc-class RacketPanel NSPanel
+  #:mixins (FocusResponder KeyMouseResponder RacketWindowMethods)
   [wxb])
 
 (set-front-hook! (lambda () 
@@ -173,8 +173,8 @@
                                    ;; eventspace:
                                    (not (ptr-equal? w (send root-fake-frame get-cocoa)))
                                    (is-mouse-or-key?))
-                               (or (objc-is-a? w MyWindow)
-                                   (objc-is-a? w MyPanel))
+                               (or (objc-is-a? w RacketWindow)
+                                   (objc-is-a? w RacketPanel))
                                (tell #:type _scheme w getEventspace))]
                          [front (send front get-eventspace)]
                          [root-fake-frame 
@@ -211,8 +211,8 @@
                                                                 h)))])
                   (let ([c (as-objc-allocation
                             (tell (tell (if (or is-sheet? (memq 'float style))
-                                            MyPanel
-                                            MyWindow)
+                                            RacketPanel
+                                            RacketWindow)
                                         alloc)
                                   initWithContentRect: #:type _NSRect init-rect
                                   styleMask: #:type _int (if (memq 'no-caption style)

@@ -17,7 +17,7 @@
 
 (import-class NSPopUpButton)
 
-(define-objc-class MyPopUpButton NSPopUpButton 
+(define-objc-class RacketPopUpButton NSPopUpButton 
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (clicked: [_id sender])
@@ -33,7 +33,7 @@
              [cocoa 
               (let ([cocoa 
                      (as-objc-allocation
-                      (tell (tell MyPopUpButton alloc) 
+                      (tell (tell RacketPopUpButton alloc) 
                             initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                        (make-NSSize w h))
                             pullsDown: #:type _BOOL #f))])

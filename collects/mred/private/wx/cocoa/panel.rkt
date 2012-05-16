@@ -16,7 +16,7 @@
 
 (import-class NSView NSGraphicsContext)
 
-(define-objc-class MyPanelView NSView
+(define-objc-class RacketPanelView NSView
   #:mixins (KeyMouseTextResponder CursorDisplayer)
   [wxb])
 
@@ -118,7 +118,7 @@
   (super-new [parent parent]
              [cocoa
               (as-objc-allocation
-               (tell (tell (if has-border? FrameView MyPanelView) alloc)
+               (tell (tell (if has-border? FrameView RacketPanelView) alloc)
                      initWithFrame: #:type _NSRect (make-NSRect (make-init-point x y)
                                                                 (make-NSSize (max (if has-border? 3 1) w) 
                                                                              (max (if has-border? 3 1) h)))))]
@@ -129,7 +129,7 @@
          (let* ([c (get-cocoa)]
                 [f (tell #:type _NSRect c frame)])
            (as-objc-allocation
-            (tell (tell MyPanelView alloc)
+            (tell (tell RacketPanelView alloc)
                   initWithFrame: #:type _NSRect (make-NSRect (make-init-point 1 1)
                                                              (let ([s (NSRect-size f)])
                                                                (make-NSSize (max 1 (- (NSSize-width s) 2))

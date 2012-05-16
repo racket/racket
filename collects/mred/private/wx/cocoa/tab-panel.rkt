@@ -41,7 +41,7 @@
 (define order_content_first (function-ptr order-content-first
                                           (_fun #:atomic? #t _id _id _id -> _int)))
 
-(define-objc-class MyTabView NSTabView
+(define-objc-class RacketTabView NSTabView
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
@@ -49,7 +49,7 @@
         (when (and wx (send wx callbacks-enabled?))
           (queue-window*-event wxb (lambda (wx) (send wx do-callback)))))))
 
-(define-objc-class MyPSMTabBarControl PSMTabBarControl
+(define-objc-class RacketPSMTabBarControl PSMTabBarControl
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
   (-a _void (tabView: [_id cocoa] didSelectTabViewItem: [_id item-cocoa])
@@ -66,7 +66,7 @@
            block-mouse-events)
 
   (define tabv-cocoa (as-objc-allocation
-                      (tell (tell MyTabView alloc) init)))
+                      (tell (tell RacketTabView alloc) init)))
   (define cocoa (if (not (memq 'border style))
                     (as-objc-allocation
                      (tell (tell NSView alloc) init))
@@ -75,7 +75,7 @@
   (define control-cocoa
     (and (not (memq 'border style))
          (let ([i (as-objc-allocation
-                   (tell (tell MyPSMTabBarControl alloc)
+                   (tell (tell RacketPSMTabBarControl alloc)
                          initWithFrame: #:type _NSRect (make-NSRect (make-NSPoint 0 0)
                                                                     (make-NSSize 200 22))))])
            (tellv cocoa addSubview: i)

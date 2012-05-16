@@ -62,11 +62,11 @@
 
 ;; ----------------------------------------
 
-(define-objc-class MyTextField NSTextField
+(define-objc-class RacketTextField NSTextField
   #:mixins (KeyMouseResponder CursorDisplayer)
   [wxb])
 
-(define-objc-class MyImageView NSImageView
+(define-objc-class RacketImageView NSImageView
   #:mixins (KeyMouseResponder CursorDisplayer)
   [wxb])
 
@@ -84,9 +84,9 @@
                            [cocoa
                             (if (string? label)
                                 (as-objc-allocation
-                                 (tell (tell MyTextField alloc) init))
+                                 (tell (tell RacketTextField alloc) init))
                                 (as-objc-allocation
-                                 (tell (tell MyImageView alloc) init)))])
+                                 (tell (tell RacketImageView alloc) init)))])
                       (cond
                        [(string? label)
                         (init-font cocoa font)

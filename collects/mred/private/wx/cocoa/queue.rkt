@@ -49,7 +49,7 @@
 
 (define got-file? #f)
 
-(define-objc-class MyApplicationDelegate NSObject #:protocols (NSApplicationDelegate)
+(define-objc-class RacketApplicationDelegate NSObject #:protocols (NSApplicationDelegate)
   []
   [-a _NSUInteger (applicationShouldTerminate: [_id app])
       (queue-quit-event)
@@ -113,7 +113,7 @@
     (unless (zero? v)
       (log-error (format "error from TransformProcessType: ~a" v)))))
 
-(define app-delegate (tell (tell MyApplicationDelegate alloc) init))
+(define app-delegate (tell (tell RacketApplicationDelegate alloc) init))
 (tellv app setDelegate: app-delegate)
 (unless (scheme_register_process_global "Racket-GUI-no-front" #f)
   (tellv app activateIgnoringOtherApps: #:type _BOOL #t))

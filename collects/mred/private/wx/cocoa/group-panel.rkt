@@ -13,7 +13,7 @@
 
 (import-class NSBox)
 
-(define-objc-class MyBox NSBox
+(define-objc-class RacketBox NSBox
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb])
 
@@ -27,7 +27,7 @@
   (super-new [parent parent]
              [cocoa
               (let ([cocoa (as-objc-allocation
-                            (tell (tell MyBox alloc) init))])
+                            (tell (tell RacketBox alloc) init))])
                 (when label
                   (tellv cocoa setTitle: #:type _NSString label)
                   (tellv cocoa sizeToFit))
