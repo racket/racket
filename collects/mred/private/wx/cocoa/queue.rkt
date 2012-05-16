@@ -269,7 +269,7 @@
 (import-class NSDate)
 (define distantFuture (tell NSDate distantFuture))
 
-(define eventspace-hook (lambda (e) #f))
+(define eventspace-hook (lambda (e v) #f))
 (define (set-eventspace-hook! proc) (set! eventspace-hook proc))
 
 (define front-hook (lambda () (values #f #f)))
