@@ -173,7 +173,8 @@
                                    ;; eventspace:
                                    (not (ptr-equal? w (send root-fake-frame get-cocoa)))
                                    (is-mouse-or-key?))
-                               (objc-is-a? w MyWindow)
+                               (or (objc-is-a? w MyWindow)
+                                   (objc-is-a? w MyPanel))
                                (tell #:type _scheme w getEventspace))]
                          [front (send front get-eventspace)]
                          [root-fake-frame 
