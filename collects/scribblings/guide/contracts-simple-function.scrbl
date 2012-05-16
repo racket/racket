@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval "guide-utils.rkt" "contracts-utils.rkt"
+@(require scribble/manual scribble/eval
+          scribble/core racket/list 
+          scribble/racket
+          "guide-utils.rkt" "contracts-utils.rkt"
           (for-label racket/contract))
 
 @title[#:tag "contract-func"]{Simple Contracts on Functions}
@@ -385,3 +388,33 @@ With this little change, the error message becomes quite readable:
              contract-eval
              (require 'improved-bank-server)
              (deposit -10)]
+
+@; not sure why, but if I define str directly to be the
+@; expression below, then it gets evaluated before the 
+@; expressions above it.
+@(define str "huh?")
+
+@(begin
+   (set! str
+         (with-handlers ((exn:fail? exn-message))
+           (contract-eval '(deposit -10))))
+   "")
+
+@ctc-section[#:tag "dissecting-contract-errors"]{Dissecting a contract error message}
+
+@(define (lines a b)
+   (define lines (regexp-split #rx"\n" str))
+   (table (style #f '())
+          (map (λ (x) (list (paragraph error-color x)))
+               (take (drop lines a) b))))
+
+In general, each contract error message consists of six sections:
+@itemize[@item{a name for the function or method associated with the contract
+               and either the phrase ``contract violation'' or ``violated it's contract'' 
+               depending on whether the contract was violated by the server or the
+               client; e.g. in the previous example: @lines[0 1]}
+          @item{a description of the precise aspect of the contract that was violated, @lines[1 1]}
+          @item{the complete contract plus a path into it showing which aspect was violated, @lines[2 2]} 
+          @item{the module where the contract was put (or, more generally, the boundary that the contract mediates), @lines[4 1]}
+          @item{who was blamed, @lines[5 1]}
+          @item{and the source location where the contract appears. @lines[6 1]}]

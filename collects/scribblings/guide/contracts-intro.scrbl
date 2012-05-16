@@ -181,20 +181,6 @@ the module boundary for a second time.
 </question>
 }
 
-@;{
-
-@ctc-section[#:tag "obligations"]{Imposing Obligations on a Module's Clients}
-
-On occasion, a module may want to enter a contract with
-another module only if the other module abides by certain
-rules. In other words, the module isn't just promising some
-services, it also demands the client to deliver
-something. That situation may happen when a module exports
-a function, an object, a class, or some other construct that enables
-values to flow in both directions.
-
-}
-
 @ctc-section{Experimenting with Contracts and Modules}
 
 All of the contracts and modules in this chapter (excluding those just
@@ -203,7 +189,7 @@ describing modules. Since modules serve as the boundary between
 parties in a contract, examples involve multiple modules.
 
 To experiment with multiple modules within a single module or within
-DrRacket's @tech{definitions area}, use the
+DrRacket's @tech{definitions area}, use
 Racket's submodules. For example, try the example earlier in
 this section like this:
 
