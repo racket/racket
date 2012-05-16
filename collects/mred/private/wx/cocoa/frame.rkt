@@ -267,6 +267,8 @@
     (define is-a-dialog? is-dialog?)
     (define/public (frame-is-dialog?) is-a-dialog?)
 
+    (define not-sheet? (and (memq 'no-sheet style) #t))
+
     (define/public (frame-relative-dialog-status win) #f)
     (define/override (get-dialog-level) 0)
 
@@ -301,6 +303,7 @@
           (hide-children))
       (if on?
           (if (and is-a-dialog?
+                   (not not-sheet?)
                    (let ([p (get-parent)])
                      (and p 
                           (send p can-have-sheet?)
