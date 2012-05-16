@@ -162,7 +162,7 @@
                       (format "  at: ~a" source-message)))
   
   (define self-or-not (if (blame-original? blme)
-                          "broke it's contract"
+                          "broke its contract"
                           "contract violation"))
   
   (define start-of-message

@@ -144,7 +144,7 @@
       (define (has-proper-blame? msg)
         (define reg
           (cond
-            [(eq? blame 'pos) #rx"broke it's contract[\n:,].*blaming: pos"]
+            [(eq? blame 'pos) #rx"broke its contract[\n:,].*blaming: pos"]
             [(eq? blame 'neg) #rx"blaming: neg"]
             [(string? blame) (string-append "blaming: " (regexp-quote blame))]
             [else #f]))
@@ -13588,7 +13588,7 @@ so that propagation occurs.
        (eval '(require 'pce1-bug)))
    (λ (x)
      (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"the-defined-variable1: broke it's contract" (exn-message x)))))
+          (regexp-match #rx"the-defined-variable1: broke its contract" (exn-message x)))))
   
   (contract-error-test
    'contract-error-test9
