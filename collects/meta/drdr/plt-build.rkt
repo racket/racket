@@ -72,7 +72,7 @@
    #:timeout (current-make-install-timeout-seconds)
    #:env (current-env)
    (build-path log-dir "src" "build" "archive")
-   (tar-path) 
+   (tar-path)
    (list "-czvf" 
          (path->string (revision-trunk.tgz rev))
          "-C" (path->string rev-dir)

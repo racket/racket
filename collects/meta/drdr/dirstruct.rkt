@@ -64,6 +64,8 @@
   (build-path (revision-dir rev) "trunk"))
 (define (revision-trunk.tgz rev)
   (build-path (revision-dir rev) "trunk.tgz"))
+(define (revision-trunk.tar.7z rev)
+  (build-path (revision-dir rev) "trunk.tar.7z"))
 
 (define (revision-commit-msg rev)
   (build-path (revision-dir rev) "commit-msg"))
@@ -126,5 +128,6 @@
  [revision-analyze-dir (exact-nonnegative-integer? . -> . path-string?)]
  [revision-trunk-dir (exact-nonnegative-integer? . -> . path?)]
  [revision-trunk.tgz (exact-nonnegative-integer? . -> . path?)]
+ [revision-trunk.tar.7z (exact-nonnegative-integer? . -> . path?)]
  [revision-archive (exact-nonnegative-integer? . -> . path?)]
  [path->revision (path-string? . -> . exact-nonnegative-integer?)])

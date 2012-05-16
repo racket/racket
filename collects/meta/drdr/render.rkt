@@ -146,6 +146,15 @@
                                    (current-rev))])
                         "trunk.tgz"))))
              `())
+       ,@(if (file-exists? (revision-trunk.tar.7z (current-rev)))
+             `((tr ([class "date"])
+                   (td "Archive") 
+                   (td (a 
+                        ([href
+                          ,(format "/builds/~a/trunk.tar.7z" 
+                                   (current-rev))])
+                        "trunk.tar.7z"))))
+             `())
        (tr ([class "hash"]) 
            (td "Diff:") 
            (td (a ([href ,(log->url gp)]) 
