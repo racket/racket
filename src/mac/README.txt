@@ -26,22 +26,14 @@ Patches:
    #if defined(USE_LIBICONV_GNU) && !defined (_LIBICONV_H)
  pango/pango/modules.c:573: change to
    // read_modules ();
- pango/modules/basic/basic-atsui.c:60: add
-   if (!glyph) { glyph = PANGO_GET_UNKNOWN_GLYPH(glyph); }
- pango/modules/basic/basic-coretext.c:
-   apply "coretext.patch"
- pango/pangocairo-atsuifont.c:141: add
-  metrics->underline_position = -metrics->underline_position;
-  pango_quantize_line_geometry (&metrics->underline_thickness,
-                                &metrics->underline_position);
-  metrics->underline_position = -(metrics->underline_position 
-                                  + metrics->underline_thickness);
- pango/pangocairo-coretextfont.c:150: add
-  metrics->underline_position = -metrics->underline_position;
-  pango_quantize_line_geometry (&metrics->underline_thickness,
-                                &metrics->underline_position);
-  metrics->underline_position = -(metrics->underline_position 
-                                  + metrics->underline_thickness);
+ pango/modules/basic/basic-atsui.c,
+   pango/pangocairo-atsuifont.c,
+   pango/pangoatsui.h,
+   pango/pangoatsui.c:
+     apply "atsui.patch" (32-bit only)
+ pango/modules/basic/basic-coretext.c,
+   pango/pangocairo-coretextfont.c:
+     apply "coretext.patch" (64-bit only)
  gettext/gettext-tools/gnulib-lib/stpncpy.c:28: may need to comment out
      // # define __stpncpy stpncpy
  PSMTabBarControl/PSMTabBarControl.m:216: change to

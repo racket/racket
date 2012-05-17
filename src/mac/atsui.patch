@@ -1,0 +1,129 @@
+diff -r -u pango-1.29.5-orig/modules/basic/basic-atsui.c pango-1.29.5/modules/basic/basic-atsui.c
+--- pango-1.29.5-orig/modules/basic/basic-atsui.c	2011-08-15 19:11:08.000000000 -0600
++++ pango-1.29.5/modules/basic/basic-atsui.c	2012-05-17 15:06:09.000000000 -0600
+@@ -53,10 +53,13 @@
+ 	   PangoGlyphString *glyphs,
+ 	   int               i,
+ 	   int               offset,
+-	   PangoGlyph        glyph)
++	   PangoGlyph        glyph,
++           ATSUTextLayout    text_layout)
+ {
+   PangoRectangle logical_rect;
+ 
++  if (!glyph) { glyph = PANGO_GET_UNKNOWN_GLYPH(glyph); }
++
+   glyphs->glyphs[i].glyph = G_UNLIKELY (glyph == kATSDeletedGlyphcode) ?
+ 			    PANGO_GLYPH_EMPTY : glyph;
+ 
+@@ -64,9 +67,30 @@
+   glyphs->glyphs[i].geometry.y_offset = 0;
+ 
+   glyphs->log_clusters[i] = offset;
+-  pango_font_get_glyph_extents (font, glyphs->glyphs[i].glyph, NULL, &logical_rect);
+-  glyphs->glyphs[i].geometry.width = logical_rect.width;
+-}
++  if (text_layout) {
++    ATSTrapezoid bounds;
++    ItemCount actual;
++    double w;
++
++    ATSUGetGlyphBounds(text_layout,
++                       0, 0,
++                       i,
++                       1,
++                       kATSUseFractionalOrigins,
++                       1,
++                       &bounds,
++                       &actual);
++    w = (Fix2X(bounds.upperRight.x) - Fix2X(bounds.upperLeft.x));
++    glyphs->glyphs[i].geometry.width = w * PANGO_SCALE;
++  } else {
++    pango_font_get_glyph_extents (font, glyphs->glyphs[i].glyph, NULL, &logical_rect);
++    glyphs->glyphs[i].geometry.width = logical_rect.width;
++  }
++}
++
++#ifndef DoubleToFixed
++# define DoubleToFixed(a) ((Fixed)((double) (a) * fixed1)) 
++#endif
+ 
+ static void
+ basic_engine_shape (PangoEngineShape    *engine,
+@@ -87,9 +111,10 @@
+   PangoATSUIFont *afont = PANGO_ATSUI_FONT (font);
+   ATSUStyle style;
+   ATSUFontID fontID;
+-  ATSUAttributeTag styleTags[] = { kATSUFontTag };
+-  ATSUAttributeValuePtr styleValues[] = { &fontID };
+-  ByteCount styleSizes[] = { sizeof (ATSUFontID) };
++  Fixed fontSize;
++  ATSUAttributeTag styleTags[] = { kATSUFontTag, kATSUSizeTag };
++  ATSUAttributeValuePtr styleValues[] = { &fontID, &fontSize };
++  ByteCount styleSizes[] = { sizeof (ATSUFontID), sizeof(Fixed) };
+ 
+   utf16 = g_utf8_to_utf16 (text, length, NULL, &n16, NULL);
+ 
+@@ -101,6 +126,7 @@
+ 
+   err = ATSUCreateStyle(&style);
+   fontID = pango_atsui_font_get_atsfont (afont);
++  fontSize = DoubleToFixed((double)pango_atsui_font_get_size(afont) / PANGO_SCALE);
+ 
+   err = ATSUSetAttributes(style,
+ 			  (ItemCount)(sizeof(styleTags) / sizeof(styleTags[0])),
+@@ -133,11 +159,11 @@
+ 
+       if (pango_is_zero_width (wc))
+ 	{
+-	  set_glyph (font, glyphs, i, p - text, PANGO_GLYPH_EMPTY);
++	  set_glyph (font, glyphs, i, p - text, PANGO_GLYPH_EMPTY, NULL);
+ 	}
+       else
+ 	{
+-	  set_glyph (font, glyphs, i, p - text, layout_records[i].glyphID);
++	  set_glyph (font, glyphs, i, p - text, layout_records[i].glyphID, text_layout);
+ 
+ 	  if (g_unichar_type (wc) == G_UNICODE_NON_SPACING_MARK)
+ 	    {
+diff -r -u pango-1.29.5-orig/pango/pangoatsui.c pango-1.29.5/pango/pangoatsui.c
+--- pango-1.29.5-orig/pango/pangoatsui.c	2011-08-15 19:11:08.000000000 -0600
++++ pango-1.29.5/pango/pangoatsui.c	2012-05-17 15:06:23.000000000 -0600
+@@ -229,3 +229,10 @@
+ 
+   return priv->font_ref;
+ }
++
++int pango_atsui_font_get_size (PangoATSUIFont *font)
++{
++  PangoATSUIFontPrivate *priv = font->priv;
++
++  return pango_font_description_get_size(priv->desc);
++}
+diff -r -u pango-1.29.5-orig/pango/pangoatsui.h pango-1.29.5/pango/pangoatsui.h
+--- pango-1.29.5-orig/pango/pangoatsui.h	2011-08-15 19:11:08.000000000 -0600
++++ pango-1.29.5/pango/pangoatsui.h	2012-05-17 15:06:27.000000000 -0600
+@@ -71,6 +71,8 @@
+ CGFontRef  pango_atsui_font_get_cgfont  (PangoATSUIFont *font);
+ ATSFontRef pango_atsui_font_get_atsfont (PangoATSUIFont *font);
+ 
++int pango_atsui_font_get_size (PangoATSUIFont *font);
++
+ #endif /* PANGO_ENABLE_ENGINE || PANGO_ENABLE_BACKEND */
+ 
+ GType      pango_atsui_font_get_type         (void) G_GNUC_CONST;
+diff -r -u pango-1.29.5-orig/pango/pangocairo-atsuifont.c pango-1.29.5/pango/pangocairo-atsuifont.c
+--- pango-1.29.5-orig/pango/pangocairo-atsuifont.c	2011-08-15 19:11:08.000000000 -0600
++++ pango-1.29.5/pango/pangocairo-atsuifont.c	2012-02-13 09:33:45.000000000 -0700
+@@ -136,6 +136,12 @@
+   metrics->strikethrough_position = metrics->ascent / 3;
+   metrics->strikethrough_thickness = ats_metrics.underlineThickness * cafont->size * PANGO_SCALE;
+ 
++  metrics->underline_position = -metrics->underline_position;
++  pango_quantize_line_geometry (&metrics->underline_thickness,
++                                &metrics->underline_position);
++  metrics->underline_position = -(metrics->underline_position 
++                                  + metrics->underline_thickness);
++
+   return metrics;
+ }

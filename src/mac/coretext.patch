@@ -1,6 +1,13 @@
+diff -r -u pango-1.29.5-orig/modules/basic/basic-coretext.c pango-1.29.5/modules/basic/basic-coretext.c
 --- pango-1.29.5-orig/modules/basic/basic-coretext.c	2011-08-15 19:11:08.000000000 -0600
-+++ pango-1.29.5/modules/basic/basic-coretext.c	2012-02-13 10:09:51.000000000 -0700
-@@ -58,6 +58,8 @@
++++ pango-1.29.5/modules/basic/basic-coretext.c	2012-05-17 14:04:39.000000000 -0600
+@@ -54,18 +54,26 @@
+ 	   PangoGlyphString *glyphs,
+ 	   int               i,
+ 	   int               offset,
+-	   PangoGlyph        glyph)
++	   PangoGlyph        glyph,
++           const CGSize      *adv)
  {
    PangoRectangle logical_rect;
  
@@ -9,13 +16,30 @@
    glyphs->glyphs[i].glyph = glyph;
  
    glyphs->glyphs[i].geometry.x_offset = 0;
-@@ -87,15 +89,15 @@
+   glyphs->glyphs[i].geometry.y_offset = 0;
+ 
+   glyphs->log_clusters[i] = offset;
+-  pango_font_get_glyph_extents (font, glyphs->glyphs[i].glyph, NULL, &logical_rect);
+-  glyphs->glyphs[i].geometry.width = logical_rect.width;
++  if (adv) {
++    /* by using the advances array, we get kerning */
++    glyphs->glyphs[i].geometry.width = adv->width * PANGO_SCALE;
++  } else {
++    pango_font_get_glyph_extents (font, glyphs->glyphs[i].glyph, NULL, &logical_rect);
++    glyphs->glyphs[i].geometry.width = logical_rect.width;
++  }
+ }
+ 
+ static void
+@@ -87,15 +95,17 @@
    CFArrayRef runs;
    CTRunRef run;
    CTRunStatus run_status;
 -  CFIndex i, glyph_count;
 +  CFIndex i, glyph_count, num_runs, run_index, run_offset, run_glyph_count;
    const CGGlyph *cgglyphs;
++  const CGSize *cgadvs;
++  int free_cgglyphs = 0, free_cgadvs = 0;
  
    CFTypeRef keys[] = {
 -      (CFTypeRef) kCTFontAttributeName
@@ -28,7 +52,16 @@
    };
  
    attributes = CFDictionaryCreate (kCFAllocatorDefault,
-@@ -120,13 +122,20 @@
+@@ -110,8 +120,6 @@
+ 
+   cstr = CFStringCreateWithCString (kCFAllocatorDefault, copy,
+                                     kCFStringEncodingUTF8);
+-  g_free (copy);
+-
+   attstr = CFAttributedStringCreate (kCFAllocatorDefault,
+                                      cstr,
+                                      attributes);
+@@ -120,13 +128,22 @@
  
    runs = CTLineGetGlyphRuns (line);
  
@@ -48,6 +81,8 @@
 +    run = CFArrayGetValueAtIndex (runs, i);
 +    glyph_count += CTRunGetGlyphCount (run);
 +  }
++
++  g_free (copy);
 +  
 +  run_offset = 0;
 +  run_index = 0;
@@ -55,7 +90,7 @@
  
    p = text;
    pango_glyph_string_set_size (glyphs, glyph_count);
-@@ -135,10 +144,18 @@
+@@ -135,10 +152,41 @@
  
    for (i = 0; i < glyph_count; i++)
      {
@@ -69,13 +104,36 @@
 +        run = CFArrayGetValueAtIndex (runs, run_index++);
 +        run_glyph_count = CTRunGetGlyphCount (run);
 +        run_status = CTRunGetStatus (run);
++
++        if (free_cgglyphs) {
++          free((void*)cgglyphs);
++          free_cgglyphs = 0;
++        }
 +        cgglyphs = CTRunGetGlyphsPtr (run);
++        if (!cgglyphs) {
++          CFRange range = { 0, 0 };
++          cgglyphs = (CGGlyph *)malloc(run_glyph_count * sizeof(CGGlyph));
++          free_cgglyphs = 1;
++          CTRunGetGlyphs (run, range, (CGGlyph *)cgglyphs);
++        }
++
++        if (free_cgadvs) {
++          free((void*)cgadvs);
++          free_cgadvs = 0;
++        }
++        cgadvs = CTRunGetAdvancesPtr (run);
++        if (!cgadvs) {
++          CFRange range = { 0, 0 };
++          cgadvs = (CGSize *)malloc(run_glyph_count * sizeof(CGSize));
++          free_cgadvs = 1;
++          CTRunGetAdvances (run, range, (CGSize *)cgadvs);
++        }
 +      }
 +
        wc = g_utf8_get_char (p);
  
        if (analysis->level % 2)
-@@ -147,11 +164,13 @@
+@@ -147,11 +195,13 @@
  
        if (run_status & kCTRunStatusRightToLeft)
          {
@@ -89,12 +147,57 @@
            real_i = i;
            prev_i = real_i - 1;
          }
-@@ -171,7 +190,7 @@
+@@ -161,7 +211,7 @@
+ 
+       if (pango_is_zero_width (wc))
+ 	{
+-	  set_glyph (font, glyphs, real_i, p - text, PANGO_GLYPH_EMPTY);
++	  set_glyph (font, glyphs, real_i, p - text, PANGO_GLYPH_EMPTY, NULL);
+ 	}
+       else
+ 	{
+@@ -171,7 +221,7 @@
  
            if (result != PANGO_COVERAGE_NONE)
              {
 -              set_glyph (font, glyphs, real_i, p - text, cgglyphs[real_i]);
-+              set_glyph (font, glyphs, real_i, p - text, cgglyphs[run_real_i]);
++              set_glyph (font, glyphs, real_i, p - text, cgglyphs[run_real_i], cgadvs + run_real_i);
  
                if (g_unichar_type (wc) == G_UNICODE_NON_SPACING_MARK)
                  {
+@@ -196,13 +246,18 @@
+           else
+             {
+               set_glyph (font, glyphs, real_i, p - text,
+-                         PANGO_GET_UNKNOWN_GLYPH (wc));
++                         PANGO_GET_UNKNOWN_GLYPH (wc), NULL);
+             }
+         }
+ 
+       p = g_utf8_next_char (p);
+     }
+ 
++  if (free_cgglyphs)
++    free((void *)cgglyphs);
++  if (free_cgadvs)
++    free((void *)cgadvs);
++
+   CFRelease (line);
+   CFRelease (attstr);
+   CFRelease (cstr);
+diff -r -u pango-1.29.5-orig/pango/pangocairo-coretextfont.c pango-1.29.5/pango/pangocairo-coretextfont.c
+--- pango-1.29.5-orig/pango/pangocairo-coretextfont.c	2011-08-15 19:11:08.000000000 -0600
++++ pango-1.29.5/pango/pangocairo-coretextfont.c	2012-02-17 14:18:18.000000000 -0700
+@@ -147,6 +147,12 @@
+   metrics->strikethrough_position = metrics->ascent / 3;
+   metrics->strikethrough_thickness = CTFontGetUnderlineThickness (ctfont) * PANGO_SCALE;
+ 
++  metrics->underline_position = -metrics->underline_position;
++  pango_quantize_line_geometry (&metrics->underline_thickness,
++                                &metrics->underline_position);
++  metrics->underline_position = -(metrics->underline_position 
++                                  + metrics->underline_thickness);
++
+   layout = pango_layout_new (context);
+   font_desc = pango_font_describe_with_absolute_size ((PangoFont *) font);
+   pango_layout_set_font_description (layout, font_desc);
