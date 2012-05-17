@@ -128,9 +128,12 @@
             (lambda () (proc p))
             (lambda () (close-output-port p)))))
 
-  (define (directory-list [dir (current-directory)] #:build? [build? #f])
-    (unless (path-string? dir)
-      (raise-type-error 'directory-list "path or string" dir))
-    (if build?
-        (map (lambda (i) (build-path dir i)) (k:directory-list dir))
-        (k:directory-list dir))))
+  ;; Using `define-values' to avoid the inlining expansion for keyword
+  ;; arguments, because that expansion confuses Typed Racket:
+  (define-values (directory-list)
+    (lambda ([dir (current-directory)] #:build? [build? #f])
+      (unless (path-string? dir)
+        (raise-type-error 'directory-list "path or string" dir))
+      (if build?
+          (map (lambda (i) (build-path dir i)) (k:directory-list dir))
+          (k:directory-list dir)))))
