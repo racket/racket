@@ -13,7 +13,10 @@
   [(macosx)
    (ffi-lib "libintl.8.dylib")
    (ffi-lib "libglib-2.0.0.dylib")]
-  [(windows) (ffi-lib "libglib-2.0-0.dll")])
+  [(win32) (ffi-lib "libglib-2.0-0.dll")]
+  [(win64) 
+   (ffi-lib "libintl-8.dll")
+   (ffi-lib "libglib-2.0-0.dll")])
 
 (define-runtime-lib gmodule-lib
   [(unix) (ffi-lib "libgmodule-2.0" '("0" ""))]
