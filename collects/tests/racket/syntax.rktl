@@ -1439,5 +1439,63 @@
 (test #\[ syntax-property (syntax/loc #'a [b c]) 'paren-shape)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that inlining expansion of keyword-argument calls
+;; attaches 'alias-of and 'converted-arguments-variant-of
+;; syntax properties:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base
+                              racket/keyword-transform)))
+  (eval '(module m racket/base (provide f) (define (f #:x [x 2]) x)))
+  (eval '(require 'm))
+  (eval '(define-syntax (extract stx)
+           (syntax-case stx ()
+             [(_ form pattern var alias?)
+              (with-syntax ([e (local-expand #'form 'top-level '())])
+                #'(let-syntax ([m (lambda (stx)
+                                    (syntax-case (quote-syntax e) ()
+                                      [pattern
+                                       #`(quote-syntax (var
+                                                        .
+                                                        #,((if alias?
+                                                               syntax-procedure-alias-property
+                                                               syntax-procedure-converted-arguments-property)
+                                                           #'var)))]))])
+                    (define p (m))
+                    (and (free-identifier=? (car (syntax-e p))
+                                            (cdr (syntax-e (cdr (syntax-e p)))))
+                         (car (syntax-e (cdr (syntax-e p)))))))])))
+  (define f-id (eval '(quote-syntax f)))
+  (test
+   #t
+   free-identifier=?
+   f-id
+   (eval '(extract (f #:x 8)
+                   (lv ([(proc) f2] . _) (if const? (app f3 . _) . _))
+                   f3
+                   #f)))
+  (test
+   #t
+   free-identifier=?
+   f-id
+   (eval '(extract (f #:x 8)
+                   (lv ([(proc) f2] . _) (if const? (app f3 . _) . _))
+                   f2
+                   #t)))
+  (test
+   #t
+   free-identifier=?
+   f-id
+   (eval '(extract (f #:y 9)
+                   (lv ([(proc) f2] . _) . _)
+                   f2
+                   #t)))
+  (test
+   #t
+   free-identifier=?
+   f-id
+   (eval '(extract f f2 f2 #t))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

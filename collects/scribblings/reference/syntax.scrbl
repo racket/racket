@@ -7,6 +7,7 @@
                      racket/require
                      (only-in racket/provide-transform
                               make-provide-transformer)
+                     racket/keyword-transform
                      racket/provide-syntax
                      racket/provide
                      racket/package
@@ -1708,7 +1709,29 @@ will hide the first argument, if one was provided. (Hiding the first
 argument is useful when the procedure implements a method, where the
 first argument is implicit in the original source). The property
 affects only the format of @racket[exn:fail:contract:arity]
-exceptions, not the result of @racket[procedure-arity].}
+exceptions, not the result of @racket[procedure-arity].
+
+When a keyword-accepting procedure is bound to an identifier in
+certain ways, and when the identifier is used in the function position
+of an application form, then the application form may be expanded in
+such a way that the original binding is obscured as the target of the
+application. To help expose the connection between the function
+application and function declaration, an identifier in the expansion
+of the function application is tagged with a @tech{syntax property}
+accessible via @racket[syntax-procedure-alias-property] if it is effectively an alias
+for the original identifier. An identifier in the expansion is tagged with a
+a @tech{syntax property} accessible via @racket[syntax-procedure-converted-arguments-property] if it
+is like the original identifier except that the arguments are converted to a
+flattened form: keyword arguments, required by-position arguments,
+by-position optional arguments, and rest arguments---all as required,
+by-position arguments; the keyword arguments are sorted by keyword
+name, each optional keyword argument is preceded by a boolean to
+indicate whether a value is provided, and @racket[#f] is used for an
+optional keyword argument whose value is not provided; optional
+by-position arguments include @racket[#f] for each non-provided
+argument, and then the sequence of optional-argument values is
+followed by a parallel sequence of booleans to indicate whether each
+optional-argument value was provided.}
 
 
 @defform/subs[(case-lambda [formals body ...+] ...)

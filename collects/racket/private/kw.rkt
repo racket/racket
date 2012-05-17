@@ -24,7 +24,9 @@
              new:procedure-rename
              new:chaperone-procedure
              new:impersonate-procedure
-             (for-syntax kw-expander? kw-expander-impl kw-expander-proc))
+             (for-syntax kw-expander? kw-expander-impl kw-expander-proc
+                         syntax-procedure-alias-property 
+                         syntax-procedure-converted-arguments-property))
 
   ;; ----------------------------------------
 
@@ -967,6 +969,16 @@
   (define-for-syntax kw-expander-impl (make-struct-field-accessor kw-expander-ref 1 'impl))
   (define-for-syntax kw-expander-proc (make-struct-field-accessor kw-expander-ref 2 'proc))
 
+  (define-for-syntax kw-alias-of (gensym 'alias-of))
+  (define-for-syntax kw-converted-arguments-variant-of (gensym 'converted-arguments-variant-of))
+
+  (define-for-syntax (syntax-procedure-alias-property stx)
+    (unless (syntax? stx) (raise-type-error 'syntax-procedure-alias "syntax" stx))
+    (syntax-property stx kw-alias-of))
+  (define-for-syntax (syntax-procedure-converted-arguments-property stx) 
+    (unless (syntax? stx) (raise-type-error 'syntax-procedure-converted-arguments "syntax" stx))
+    (syntax-property stx kw-converted-arguments-variant-of))
+
   (define-for-syntax (make-keyword-syntax get-ids n-req n-opt rest? req-kws all-kws)
     (make-kw-expander
      (lambda (stx)
@@ -994,7 +1006,15 @@
                                       ""))
                                 msg
                                 (syntax-e #'self))
-                        (current-continuation-marks)))))])
+                        (current-continuation-marks)))))]
+                [impl-id/prop
+                 (syntax-property impl-id kw-converted-arguments-variant-of 
+                                  (cons (syntax-taint (syntax-local-introduce #'self))
+                                        (syntax-taint (syntax-local-introduce impl-id))))]
+                [wrap-id/prop
+                 (syntax-property wrap-id kw-alias-of 
+                                  (cons (syntax-taint (syntax-local-introduce #'self))
+                                        (syntax-taint (syntax-local-introduce wrap-id))))])
             (if (free-identifier=? #'new-app (datum->syntax stx '#%app))
                 (parse-app (datum->syntax #f (cons #'new-app stx) stx)
                            (lambda (n)
@@ -1053,7 +1073,7 @@
                                        (lambda (args)
                                          (quasisyntax/loc stx
                                            (if (variable-reference-constant? (#%variable-reference #,wrap-id))
-                                               (#,impl-id 
+                                               (#,impl-id/prop
                                                 ;; keyword arguments:
                                                 #,@(let loop ([kw-args kw-args] [req-kws req-kws] [all-kws all-kws])
                                                      (cond
@@ -1097,10 +1117,12 @@
                                                        null))
                                                #,(if lifted?
                                                      orig
-                                                     (quasisyntax/loc stx (#%app #,wrap-id . #,args)))))))))
+                                                     (quasisyntax/loc stx (#%app #,wrap-id/prop . #,args)))))))))
                                 orig))))
-                (datum->syntax stx (cons wrap-id #'(arg ...)) stx stx)))]
-         [_ wrap-id]))
+                (datum->syntax stx (cons wrap-id/prop #'(arg ...)) stx stx)))]
+         [self
+          (syntax-property wrap-id kw-alias-of (cons (syntax-taint (syntax-local-introduce #'self))
+                                                     (syntax-taint (syntax-local-introduce wrap-id))))]))
      (lambda () (define-values (impl-id wrap-id) (get-ids)) impl-id)
      (lambda () (define-values (impl-id wrap-id) (get-ids)) wrap-id)))
 

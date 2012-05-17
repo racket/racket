@@ -1128,4 +1128,36 @@ first argument.}
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "keyword-trans"]{Keyword-Argument Conversion Introspection}
+
+@note-lib-only[racket/keyword-transform]
+
+@deftogether[(
+@defproc[(syntax-procedure-alias-property [stx syntax?])
+         (or/c #f 
+               (letrec ([val? (recursive-contract
+                               (or/c (cons/c identifier? identifier?)
+                                     (cons/c val? val?)))])
+                 val?))]
+@defproc[(syntax-procedure-converted-arguments-property [stx syntax?])
+         (or/c #f 
+               (letrec ([val? (recursive-contract
+                               (or/c (cons/c identifier? identifier?)
+                                     (cons/c val? val?)))])
+                 val?))]
+)]{
+
+At expansion time, reports the value of a syntax property that can be
+attached to an identifier by the expansion of a keyword-application
+form during the same expansion time. See @racket[lambda] for more
+information about the property.
+
+The property value is normally a pair consisting of the original
+identifier and an identifier that appears in the
+expansion. Property-value merging via @racket[syntax-track-origin] can make
+the value a pair of such values, and so on.}
+
+
+@; ----------------------------------------------------------------------
+
 @close-eval[stx-eval]
