@@ -232,7 +232,7 @@
 (begin-for-syntax
   (define-syntax (create-honu-macro stx)
     (syntax-parse stx
-      [(_ (literal ...) (pattern ...) (action ...))
+      [(_ name (literal ...) (pattern ...) (action ...))
        (define pattern-variables (find-pattern-variables #'(pattern ...)))
 
        ;; only need a 1-to-1 mapping here
@@ -285,15 +285,21 @@
        (values (phase1:racket-syntax
                  ;; trampoline to phase 1
                  (splicing-let-syntax ([make (lambda (stx)
+                                               #;
+                                               (create-honu-macro name
+                                                                  (literal ...)
+                                                                  (pattern ...)
+                                                                  (action ...))
                                                (syntax-parse stx
-                                                 [(_ name)
+                                                 [(_ new-name)
                                                   (define output 
-                                                    (create-honu-macro (literal ...)
+                                                    (create-honu-macro name
+                                                                       (literal ...)
                                                                        (pattern ...)
                                                                        (action ...)))
                                                   (debug "Output from create macro ~a\n" output)
                                                   (with-syntax ([output output])
-                                                    #'(define-honu-syntax name output))]))])
+                                                    #'(define-honu-syntax new-name output))]))])
                    (make name)))
                #'rest
                #t)])))
