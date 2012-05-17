@@ -62,9 +62,9 @@
   (define-values (? o) (strange-fun/ctc (λ (x) x)))
   (test
    (o 4) => 4
-   (o "string") =error> "contract violation"
+   (o "string") =error> "broke"
    
-   (bad-strange-fun/ctc (λ (x) x)) =error> "contract violation"))
+   (bad-strange-fun/ctc (λ (x) x)) =error> "broke"))
 
 (test
  ; ->i doesn't work
