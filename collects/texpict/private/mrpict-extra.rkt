@@ -281,7 +281,7 @@
 	 [(string style) (caps-text string style 12)]
 	 [(string style size)
 	  (let ([strings
-		 (let loop ([l (string->list string)][this null][results null][up? #f])
+		 (let loop ([l (string->list string)] [this null] [results null] [up? #f])
 		   (if (null? l)
 		       (reverse (cons (reverse this) results))
 		       (if (eq? up? (char-upper-case? (car l)))
@@ -302,14 +302,36 @@
 		    [else s]))]
 		[cap-size (floor (* 8/10 size))])
 	    (let ([picts
-		   (let loop ([l strings][up? #f])
+		   (let loop ([l strings] [up? #f])
 		     (if (null? l)
 			 null
-			 (cons (not-caps-text (list->string (map char-upcase (car l)))
-                                              (if up? style cap-style)
-                                              (if up? size cap-size)
-                                              0)
-			       (loop (cdr l) (not up?)))))])
+                         (let* ([first-string (list->string (map char-upcase (car l)))]
+                                [first
+                                 (not-caps-text first-string
+                                                (if up? style cap-style)
+                                                (if up? size cap-size)
+                                                0)]
+                               [rest (loop (cdr l) (not up?))])
+                           (if (and up? (pair? (cdr l)))
+                               ;; kern capital followed by non-captial
+                               (let ([plain-first (not-caps-text first-string
+                                                                 cap-style
+                                                                 cap-size
+                                                                 0)]
+                                     [together (not-caps-text (string-append
+                                                               first-string
+                                                               (list->string (map char-upcase (cadr l))))
+                                                              cap-style
+                                                              cap-size
+                                                              0)])
+                                 (cons (hbl-append (- (pict-width together)
+                                                      (+ (pict-width plain-first)
+                                                         (pict-width (car rest))))
+                                                   first
+                                                   (car rest))
+                                       (cdr rest)))
+                               ;; no kerning needed:
+                               (cons first rest)))))])
 	      (apply hbl-append 0 picts)))]))
 
       (define (linewidth n p) (line-thickness n p))
