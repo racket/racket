@@ -16,8 +16,8 @@
 (define-syntax-rule (with-env ([env-expr val-expr] ...) expr ...)
   (parameterize ([current-env
                   (for/fold ([env (current-env)])
-                    ([k (in-list (list env-expr ...))]
-                     [v (in-list (list val-expr ...))])
+                      ([k (in-list (list env-expr ...))]
+                       [v (in-list (list val-expr ...))])
                     (hash-set env k v))])
     expr ...))
 
@@ -39,11 +39,11 @@
      (notify! "Removing checkout directory: ~a" co-dir)
      (safely-delete-directory co-dir)
      (local [(define repo (plt-repository))
-             (define to-dir 
+             (define to-dir
                (path->string co-dir))]
-       (notify! "Checking out ~a@~a into ~a"
-                repo rev to-dir)
-       (scm-export-repo rev repo to-dir))))
+            (notify! "Checking out ~a@~a into ~a"
+                     repo rev to-dir)
+            (scm-export-repo rev repo to-dir))))
   ;; Make the build directory
   (make-directory* build-dir)
   ;; Run Configure, Make, Make Install
@@ -58,22 +58,22 @@
      #:timeout (current-make-timeout-seconds)
      #:env (current-env)
      (build-path log-dir "src" "build" "make")
-     (make-path) 
+     (make-path)
      (list "-j" (number->string (number-of-cpus))))
-    (with-env 
-        (["PLT_SETUP_OPTIONS" (format "-j ~a" (number-of-cpus))])
-      (run/collect/wait/log
-       #:timeout (current-make-install-timeout-seconds)
-       #:env (current-env)
-       (build-path log-dir "src" "build" "make-install")
-       (make-path) 
-       (list "-j" (number->string (number-of-cpus)) "install"))))
+    (with-env
+     (["PLT_SETUP_OPTIONS" (format "-j ~a" (number-of-cpus))])
+     (run/collect/wait/log
+      #:timeout (current-make-install-timeout-seconds)
+      #:env (current-env)
+      (build-path log-dir "src" "build" "make-install")
+      (make-path)
+      (list "-j" (number->string (number-of-cpus)) "install"))))
   (run/collect/wait/log
    #:timeout (current-make-install-timeout-seconds)
    #:env (current-env)
    (build-path log-dir "src" "build" "archive")
    (tar-path)
-   (list "-czvf" 
+   (list "-czvf"
          (path->string (revision-trunk.tgz rev))
          "-C" (path->string rev-dir)
          "trunk")))
@@ -81,96 +81,101 @@
 (define (call-with-temporary-directory thunk)
   (define tempdir (symbol->string (gensym 'tmpdir)))
   (dynamic-wind
-   (lambda ()
-     (make-directory* tempdir))
-   (lambda ()
-     (parameterize ([current-directory tempdir])
-       (thunk)))
-   (lambda ()
-     (delete-directory/files tempdir))))
+      (lambda ()
+        (make-directory* tempdir))
+      (lambda ()
+        (parameterize ([current-directory tempdir])
+          (thunk)))
+      (lambda ()
+        (delete-directory/files tempdir))))
 (define-syntax-rule (with-temporary-directory e)
   (call-with-temporary-directory (lambda () e)))
 
-(define (call-with-temporary-planet-directory thunk)
-  (define tempdir 
-    (build-path (current-directory)
-                (symbol->string (gensym 'planetdir))))
-  (dynamic-wind
-   (lambda ()
-     (make-directory* tempdir))
-   (lambda ()
-     (with-env (["PLTPLANETDIR" (path->string tempdir)])
-               (thunk)))
-   (lambda ()
-     (delete-directory/files tempdir))))
-(define-syntax-rule (with-temporary-planet-directory e)
-  (call-with-temporary-planet-directory (lambda () e)))
+(define-syntax-rule
+  (define-with-temporary-planet-directory with-temporary-planet-directory env-str)
+  (begin
+    (define (call-with-temporary-planet-directory thunk)
+      (define tempdir
+        (build-path (current-directory)
+                    (symbol->string (gensym 'planetdir))))
+      (dynamic-wind
+          (lambda ()
+            (make-directory* tempdir))
+          (lambda ()
+            (with-env ([env-str (path->string tempdir)])
+                      (thunk)))
+          (lambda ()
+            (delete-directory/files tempdir))))
+    (define-syntax-rule (with-temporary-planet-directory e)
+      (call-with-temporary-planet-directory (lambda () e)))))
+(define-with-temporary-planet-directory with-temporary-planet-directory "PLTPLANETDIR")
+(define-with-temporary-planet-directory with-temporary-tmp-directory "TMPDIR")
 
 (define (call-with-temporary-home-directory thunk)
-  (define new-dir 
+  (define new-dir
     (make-temporary-file
      "home~a"
      'directory
      (current-temporary-directory)))
   (dynamic-wind
-   (lambda ()
-     (with-handlers ([exn:fail? void])
-       (copy-directory/files
-        (hash-ref (current-env) "HOME")
-        new-dir)))
-   (lambda ()
-     (with-env (["HOME" (path->string new-dir)])
-       (thunk)))
-   (lambda ()
-     (delete-directory/files new-dir))))
+      (lambda ()
+        (with-handlers ([exn:fail? void])
+          (copy-directory/files
+           (hash-ref (current-env) "HOME")
+           new-dir)))
+      (lambda ()
+        (with-env (["HOME" (path->string new-dir)])
+                  (thunk)))
+      (lambda ()
+        (delete-directory/files new-dir))))
 (define-syntax-rule (with-temporary-home-directory e)
   (call-with-temporary-home-directory (lambda () e)))
 
 (define (with-running-program command args thunk)
   (if command
-      (let ()
-        (define-values (new-command new-args)
-          (command+args+env->command+args
-           #:env (current-env)
-           command args))
-        (define-values
-          (the-process _stdout stdin _stderr)
-          (parameterize ([subprocess-group-enabled #t])
-            (apply subprocess
-                   (current-error-port)
-                   #f
-                   (current-error-port)
-                   new-command new-args)))
-        ; Die if this program does
-        (define parent
-          (current-thread))
-        (define waiter
-          (thread
-           (lambda ()
-             (subprocess-wait the-process)
-             (printf "Killing parent because wrapper is dead...\n")
-             (kill-thread parent))))
-        
-        ; Run without stdin
-        (close-output-port stdin)
-        
-        (dynamic-wind
-         void
-         ; Run the thunk
-         thunk
-         (λ ()
-           ; Close the output ports
-           #;(close-input-port stdout)
-           #;(close-input-port stderr)
-           
-           ; Kill the guard
-           (kill-thread waiter)
-           
-           ; Kill the process
-           (subprocess-kill the-process #f)
-           (sleep)
-           (subprocess-kill the-process #t))))
-      (thunk)))
+    (let ()
+      (define-values (new-command new-args)
+        (command+args+env->command+args
+         #:env (current-env)
+         command args))
+      (define-values
+        (the-process _stdout stdin _stderr)
+        (parameterize ([subprocess-group-enabled #t])
+          (apply subprocess
+                 (current-error-port)
+                 #f
+                 (current-error-port)
+                 new-command new-args)))
+      ;; Die if this program does
+      (define parent
+        (current-thread))
+      (define waiter
+        (thread
+         (lambda ()
+           (subprocess-wait the-process)
+           (printf "Killing parent because wrapper is dead...\n")
+           (kill-thread parent))))
+
+      ;; Run without stdin
+      (close-output-port stdin)
+
+      (dynamic-wind
+          void
+          ;; Run the thunk
+          thunk
+          (λ ()
+            ;; Close the output ports
+            #;(close-input-port stdout)
+            #;(close-input-port stderr)
+
+            ;; Kill the guard
+            (kill-thread waiter)
+
+            ;; Kill the process
+            (subprocess-kill the-process #f)
+            (sleep)
+            (subprocess-kill the-process #t))))
+    (thunk)))
 
 (define-runtime-path package-list "pkgs")
 (define (planet-packages)
@@ -188,14 +193,14 @@
     (path->string (build-path trunk-dir "bin" "racket")))
   (define raco-path
     (path->string (build-path trunk-dir "bin" "raco")))
-  ; XXX Remove
+  ;; XXX Remove
   (define mzc-path
     (path->string (build-path trunk-dir "bin" "mzc")))
   (define gracket-path
     (path->string (build-path trunk-dir "bin" "gracket")))
   (define collects-pth
     (build-path trunk-dir "collects"))
-  ; XXX Use a single GUI thread so that other non-GUI apps can run in parallel
+  ;; XXX Use a single GUI thread so that other non-GUI apps can run in parallel
   (define gui-lock (make-semaphore 1))
   (define test-workers (make-job-queue (number-of-cpus)))
   (define (test-directory dir-pth upper-sema)
@@ -211,8 +216,8 @@
          (sort files/unsorted <
                #:key (λ (p)
                        (if (bytes=? #"tests" (path->bytes p))
-                           0
-                           1))
+                         0
+                         1))
                #:cache-keys? #t))
        (for ([sub-pth (in-list files)])
          (define pth (build-path dir-pth sub-pth))
@@ -226,7 +231,7 @@
               [(file-exists? log-pth)
                (semaphore-post dir-sema)]
               [else
-               (define pth-timeout 
+               (define pth-timeout
                  (or (path-timeout pth)
                      (current-subprocess-timeout-seconds)))
                (define pth-cmd/general
@@ -236,7 +241,7 @@
                    [#f
                     #f]
                    [(list-rest (or 'mzscheme 'racket) rst)
-                    (lambda (k) 
+                    (lambda (k)
                       (k (list* racket-path rst)))]
                    [(list-rest 'mzc rst)
                     (lambda (k) (k (list* mzc-path rst)))]
@@ -246,47 +251,48 @@
                                    'gracket 'gracket-text)
                                rst)
                     (if (on-unix?)
-                        (lambda (k) 
-                          (call-with-semaphore 
-                           gui-lock
-                           (λ ()
-                             (k
-                              (list* gracket-path 
-                                     "-display" 
-                                     (format
-                                      ":~a"
-                                      (cpu->child
-                                       (current-worker)))
-                                     rst)))))
-                        #f)]
+                      (lambda (k)
+                        (call-with-semaphore
+                         gui-lock
+                         (λ ()
+                           (k
+                            (list* gracket-path
+                                   "-display"
+                                   (format
+                                    ":~a"
+                                    (cpu->child
+                                     (current-worker)))
+                                   rst)))))
+                      #f)]
                    [_
-                    #f]))               
+                    #f]))
                (cond
                  [pth-cmd
                   (submit-job!
                    test-workers
                    (lambda ()
                      (dynamic-wind
-                      void
-                      (λ ()
-                        (pth-cmd
-                         (λ (l)
-                           (with-env 
-                               (["DISPLAY" 
-                                 (format ":~a" 
+                         void
+                         (λ ()
+                           (pth-cmd
+                            (λ (l)
+                              (with-env
+                               (["DISPLAY"
+                                 (format ":~a"
                                          (cpu->child
                                           (current-worker)))])
-                               (with-temporary-planet-directory
-                                (with-temporary-home-directory
-                                 (with-temporary-directory
-                                  (run/collect/wait/log
-                                   log-pth 
-                                   #:timeout pth-timeout
-                                   #:env (current-env)
-                                   (first l)
-                                   (rest l)))))))))
-                      (λ ()
-                        (semaphore-post dir-sema)))))]
+                               (with-temporary-tmp-directory
+                                (with-temporary-planet-directory
+                                 (with-temporary-home-directory
+                                  (with-temporary-directory
+                                   (run/collect/wait/log
+                                    log-pth
+                                    #:timeout pth-timeout
+                                    #:env (current-env)
+                                    (first l)
+                                    (rest l))))))))))
+                         (λ ()
+                           (semaphore-post dir-sema)))))]
                  [else
                   (semaphore-post dir-sema)])])]))
        (thread
@@ -296,28 +302,28 @@
           (notify! "Done with dir: ~a" dir-pth)
           (write-cache! dir-log (current-seconds))
           (semaphore-post upper-sema)))]))
-  ; Some setup
+  ;; Some setup
   (for ([pp (in-list (planet-packages))])
     (match pp
       [`(,auth ,pkg ,majn ,minn ,ver)
        (define maj (number->string majn))
        (define min (number->string minn))
-       (run/collect/wait/log 
-        ; XXX Give it its own timeout
+       (run/collect/wait/log
+        ;; XXX Give it its own timeout
         #:timeout (current-make-install-timeout-seconds)
         #:env (current-env)
         (build-path log-dir "planet" auth pkg maj min)
-        raco-path 
+        raco-path
         (list "planet" "install" auth pkg maj min))]))
-  (run/collect/wait/log 
+  (run/collect/wait/log
    #:timeout (current-subprocess-timeout-seconds)
    #:env (current-env)
    (build-path log-dir "src" "build" "set-browser.rkt")
-   racket-path 
-   (list "-t" 
+   racket-path
+   (list "-t"
          (path->string*
           (build-path (drdr-directory) "set-browser.rkt"))))
-  ; And go
+  ;; And go
   (define top-sema (make-semaphore 0))
   (notify! "Starting testing")
   (when (directory-exists? collects-pth)
@@ -329,9 +335,9 @@
 
 (define (recur-many i r f)
   (if (zero? i)
-      (f)
-      (r (sub1 i) (lambda ()
-                    (recur-many (sub1 i) r f)))))
+    (f)
+    (r (sub1 i) (lambda ()
+                  (recur-many (sub1 i) r f)))))
 
 (define XSERVER-OFFSET 20)
 (define ROOTX XSERVER-OFFSET)
@@ -342,7 +348,7 @@
 
 (define (remove-X-locks tmp-dir i)
   (for ([dir (in-list (list "/tmp" tmp-dir))])
-    (safely-delete-directory 
+    (safely-delete-directory
      (build-path dir (format ".X~a-lock" i)))
     (safely-delete-directory
      (build-path dir ".X11-unix" (format ".X~a-lock" i)))
@@ -367,7 +373,7 @@
      (make-directory* planet-dir)
      (make-directory* home-dir)
      (make-directory* tmp-dir)
-     ; We are running inside of a test directory so that random files are stored there
+     ;; We are running inside of a test directory so that random files are stored there
      (parameterize ([current-directory test-dir]
                     [current-temporary-directory tmp-dir]
                     [current-rev rev])
@@ -375,41 +381,41 @@
                   ["GIT_DIR" (path->string (plt-repository))]
                   ["TMPDIR" (path->string tmp-dir)]
                   ["PLTDRDR" "yes"]
-                  ["PATH" 
+                  ["PATH"
                    (format "~a:~a"
-                           (path->string 
+                           (path->string
                             (build-path trunk-dir "bin"))
                            (getenv "PATH"))]
                   ["PLTPLANETDIR" (path->string planet-dir)]
                   ["HOME" (path->string home-dir)])
-         (unless (read-cache* (revision-commit-msg rev))
-           (write-cache! (revision-commit-msg rev)
-                         (get-scm-commit-msg rev (plt-repository))))
-         (when (build?)
-           (build-revision rev))
-         
-         (define (start-x-server i inner)
-           (notify! "Starting X server #~a" i)
-           (remove-X-locks tmp-dir i)
-           (with-running-program
-               "/usr/bin/Xorg" (list (format ":~a" i))
-             (lambda ()
-               (sleep 2)
-               (notify! "Starting fluxbox #~a" i)
-               (with-running-program
-                   (fluxbox-path) 
-                 (list "-display"
-                       (format ":~a" i)
-                       "-rc" "/home/pltdrdr/.fluxbox/init")
-                 inner))))
-         
-         (start-x-server 
-          ROOTX 
-          (lambda ()
-            (sleep 2)
-            (notify! "Starting test of rev ~a" rev)
-            (test-revision rev)))))
-     ; Remove the test directory
+                 (unless (read-cache* (revision-commit-msg rev))
+                   (write-cache! (revision-commit-msg rev)
+                                 (get-scm-commit-msg rev (plt-repository))))
+                 (when (build?)
+                   (build-revision rev))
+
+                 (define (start-x-server i inner)
+                   (notify! "Starting X server #~a" i)
+                   (remove-X-locks tmp-dir i)
+                   (with-running-program
+                    "/usr/bin/Xorg" (list (format ":~a" i))
+                    (lambda ()
+                      (sleep 2)
+                      (notify! "Starting fluxbox #~a" i)
+                      (with-running-program
+                       (fluxbox-path)
+                       (list "-display"
+                             (format ":~a" i)
+                             "-rc" "/home/pltdrdr/.fluxbox/init")
+                       inner))))
+
+                 (start-x-server
+                  ROOTX
+                  (lambda ()
+                    (sleep 2)
+                    (notify! "Starting test of rev ~a" rev)
+                    (test-revision rev)))))
+     ;; Remove the test directory
      (safely-delete-directory test-dir))))
 
 (provide/contract
