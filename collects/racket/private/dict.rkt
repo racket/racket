@@ -1,9 +1,11 @@
 #lang racket/base
 
-(require racket/generics
+(require racket/private/generics ; to avoid circular dependencies
          (for-syntax racket/base))
 
-(define-generics (dict prop:dict dict? #:defined-table dict-def-table)
+(define-generics (dict prop:dict dict? #:defined-table dict-def-table
+                       ;; private version needs all kw args, in order
+                       #:coerce-method-table #f)
   (dict-ref  dict key [default])
   (dict-set! dict key val)
   (dict-set  dict key val)
