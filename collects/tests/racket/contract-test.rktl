@@ -8508,7 +8508,7 @@
       (send (new c%) m 3)))
 
   (test/spec-failed
-   'interface-higher-order-7
+   'interface-higher-order-8
    '(let* ([i1<%> (interface () [m (->m integer? number?)])]
            [i2<%> (interface (i1<%>) [m (->m number? integer?)])]
            [c% (class* object% (i2<%>) (super-new) (define/public (m x) x))])
@@ -8516,7 +8516,7 @@
    "top-level")
  
   (test/spec-failed
-   'interface-higher-order-7
+   'interface-higher-order-9
    '(let* ([i1<%> (interface () [m (->m integer? number?)])]
            [i2<%> (interface (i1<%>) [m (->m number? integer?)])]
            [c% (class* object% (i2<%>) (super-new) (define/public (m x) 3.14))])
@@ -8524,7 +8524,7 @@
    "(class c%)")
 
   (test/spec-passed
-   'interface-higher-order-8
+   'interface-higher-order-10
    '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (class* object% (i2<%>) (super-new) (define/public (m x) x))]
@@ -8532,7 +8532,7 @@
       (send (new c2%) m 3)))
 
   (test/spec-passed
-   'interface-higher-order-10
+   'interface-higher-order-11
    '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (contract (class/c)
@@ -8542,7 +8542,7 @@
       (send (new c%) m 3)))
 
   (test/neg-blame
-   'interface-higher-order-11
+   'interface-higher-order-12
    '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (contract (class/c [m (->m integer? integer?)])
@@ -8552,7 +8552,7 @@
       (send (new c%) m 5.14)))
 
   (test/spec-failed
-   'interface-higher-order-11
+   'interface-higher-order-13
    '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (contract (class/c m)
@@ -8563,7 +8563,7 @@
    "pos")
 
   (test/spec-failed
-   'interface-higher-order-12
+   'interface-higher-order-14
    '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
            [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
            [c% (contract (class/c)
@@ -8572,6 +8572,51 @@
                          'neg)])
       (send (new c%) m 5.14))
    "top-level")
+
+  (test/spec-passed
+   'interface-internal-name-1
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (class* object% (i2<%>)
+                 (super-new)
+                 (public [n m])
+                 (define n (λ (x) x)))])
+      (send (new c%) m 3)))
+
+  (test/spec-passed
+   'interface-internal-name-2
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (contract
+                 (class/c [m (->m integer? integer?)])
+                 (class* object% (i2<%>)
+                   (super-new)
+                   (public [n m])
+                   (define n (λ (x) x)))
+                 'pos
+                 'neg)])
+      (send (new c%) m 3)))
+
+  (test/spec-passed
+   'interface-mixin-1
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [mixin (λ (cls)
+                    (class* cls (i2<%>)
+                      (super-new)
+                      (define/public (m x) x)))])
+      (send (new (mixin object%)) m 3)))
+
+  (test/spec-passed
+   'interface-bad-concretization-1
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (class* object% (i2<%>) (super-new) (define/public (m x) x))]
+           [c2% (class c% (super-new))])
+      (send (new c2%) m 3)
+      (with-contract region
+        #:result integer?
+        (send (new c2%) m 3))))
 
 ;                                                                                    
 ;                                                                                    

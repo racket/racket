@@ -3790,10 +3790,12 @@ An example
         [else
          ;; if there are contracted methods to concretize, do so
          (let* ([name (class-name cls)]
+                [ictc-meths (class-method-ictcs cls)]
                 [method-width (class-method-width cls)]
                 [method-ht (class-method-ht cls)]
-                [meths (class-methods cls)]
-                [ictc-meths (class-method-ictcs cls)]
+                [meths (if (null? ictc-meths)
+                           (class-methods cls)
+                           (make-vector method-width))]
                 [field-pub-width (class-field-pub-width cls)]
                 [field-ht (class-field-ht cls)]
                 [class-make (if name
@@ -3860,15 +3862,18 @@ An example
              (set-class-field-ref! c object-field-ref)
              (set-class-field-set!! c object-field-set!))
 
-           ;; then apply the projections to get the concrete method
-           (vector-copy! meths 0 (class-methods cls))
-           (for ([m (in-list ictc-meths)])
-             (define index (hash-ref method-ht m))
-             (define entry (vector-ref meths index))
-             (define meth (car entry))
-             (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
-             (define wrapped-meth (concretize-ictc-method meth ictc-infos))
-             (vector-set! meths index wrapped-meth))
+           ;; Don't concretize if all concrete
+           (unless (null? ictc-meths)
+             ;; First, fill up since we're empty
+             (vector-copy! meths 0 (class-methods cls))
+             ;; Then apply the projections to get the concrete methods
+             (for ([m (in-list ictc-meths)])
+               (define index (hash-ref method-ht m))
+               (define entry (vector-ref meths index))
+               (define meth (car entry))
+               (define ictc-infos (replace-ictc-blame (cadr entry) #f blame))
+               (define wrapped-meth (concretize-ictc-method meth ictc-infos))
+               (vector-set! meths index wrapped-meth)))
 
            (hash-set! (class-ictc-classes cls) blame c)
            c)]))
