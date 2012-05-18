@@ -30,12 +30,14 @@
     [(_ (name prop:name name?) (generic . generics-args) ...)
      #'(define-generics/pre (name prop:name name?
                                   #:defined-table defined-table
-                                  ;; coerce-method-table is not public
-                                  #:coerce-method-table #f)
+                                  ;; the following are not public
+                                  #:coerce-method-table #f
+                                  #:prop-defined-already? #f)
          (generic . generics-args) ...)]
     [(_ (name prop:name name? #:defined-table defined-table)
         (generic . generics-args) ...)
      #'(define-generics/pre (name prop:name name?
                                   #:defined-table defined-table
-                                  #:coerce-method-table #f)
+                                  #:coerce-method-table #f
+                                  #:prop-defined-already? #f)
          (generic . generics-args) ...)]))

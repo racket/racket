@@ -15,7 +15,11 @@
     [(_ (name prop:name name?
               #:defined-table defined-table
               ;; use of coercion functions is explained below
-              #:coerce-method-table coerce-method-table)
+              #:coerce-method-table coerce-method-table
+              ;; are we being passed an existing struct property? If so,
+              ;; this kw arg is bound to the struct property accessor, and
+              ;; we don't define the struct property
+              #:prop-defined-already? defined-already?)
         (generic . generic-args) ...)
      (and (identifier? #'name)
           (identifier? #'prop:name)
@@ -28,7 +32,8 @@
                     i)]
             [name-str (symbol->string (syntax-e #'name))]
             [generics (syntax->list #'(generic ...))]
-            [need-coercion? (syntax->datum #'coerce-method-table)])
+            [need-coercion? (syntax->datum #'coerce-method-table)]
+            [prop-defined-already? (syntax-e #'defined-already?)])
        (with-syntax ([name-str name-str]
                      [how-many-generics (length idxs)]
                      [(generic-arity-coerce ...) (generate-temporaries #'(generic ...))]
@@ -86,7 +91,14 @@
                       ;; property for the method table
                       (if need-coercion?
                           (generate-temporary (syntax->datum #'prop:name))
-                          #'prop:name)])
+                          #'prop:name)]
+                     ;; if we're the ones defining the struct property,
+                     ;; generate a new id, otherwise use the struct property
+                     ;; accessor that we were passed
+                     [get-generics
+                      (if prop-defined-already?
+                          #'defined-already?
+                          (generate-temporary 'get-generics))])
          #`(begin
              (define-syntax name (list #'generic ...))
              ; XXX optimize no kws or opts
@@ -97,25 +109,29 @@
                  (lambda (f)
                    (procedure-reduce-keyword-arity f generic-arity-spec generic-required-kws generic-allowed-kws))))
              ...
-             (define-values (prop:method-table name? get-generics)
-               (make-struct-type-property
-                'name
-                (lambda (generic-vector si)
-                  (unless (vector? generic-vector)
-                    (error 'name
-                           "bad generics table, expecting a vector, got ~e"
-                           generic-vector))
-                  (unless (= (vector-length generic-vector)
-                             how-many-generics)
-                    (error 'name
-                           "bad generics table, expecting a vector of length ~e, got ~e"
-                           how-many-generics
-                           (vector-length generic-vector)))
-                  (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
-                            (and mthd-generic
-                                 (generic-arity-coerce mthd-generic)))
-                          ...))))
-                          ;; Use case for method table coercion: retrofitting a generics-
+             #,@(if prop-defined-already?
+                    '() ; we don't need to define it
+                    (list
+                     #'(define-values (prop:method-table name? get-generics)
+                         (make-struct-type-property
+                          'name
+                          (lambda (generic-vector si)
+                            (unless (vector? generic-vector)
+                              (error 'name
+                                     "bad generics table, expecting a vector, got ~e"
+                                     generic-vector))
+                            (unless (= (vector-length generic-vector)
+                                       how-many-generics)
+                              (error 'name
+                                     "bad generics table, expecting a vector of length ~e, got ~e"
+                                     how-many-generics
+                                     (vector-length generic-vector)))
+                            (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
+                                      (and mthd-generic
+                                           (generic-arity-coerce mthd-generic)))
+                                    ...))))))
+
+             ;; Use case for method table coercion: retrofitting a generics-
              ;; based API on top of a struct property that uses its own ad-hoc
              ;; extension mechanism.
              ;; If coercion is used, prop:method-table and prop:name are

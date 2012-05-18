@@ -5,7 +5,8 @@
 
 (define-generics (dict prop:dict dict? #:defined-table dict-def-table
                        ;; private version needs all kw args, in order
-                       #:coerce-method-table #f)
+                       #:coerce-method-table #f
+                       #:prop-defined-already? #f)
   (dict-ref  dict key [default])
   (dict-set! dict key val)
   (dict-set  dict key val)
