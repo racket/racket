@@ -2761,6 +2761,8 @@ An example
                         (class-pos cls))]
                [method-width (class-method-width cls)]
                [method-ht (class-method-ht cls)]
+               [method-ictcs (class-method-ictcs cls)]
+               [ctc-methods (class/c-methods ctc)]
                [dynamic-features
                 (append (class/c-overrides ctc)
                         (class/c-augments ctc)
@@ -2771,7 +2773,7 @@ An example
                         (class/c-augment-contracts ctc)
                         (class/c-augride-contracts ctc)
                         (class/c-inherit-contracts ctc))]
-               [methods (if (null? (class/c-methods ctc))
+               [methods (if (null? ctc-methods)
                             (class-methods cls)
                             (make-vector method-width))]
                [super-methods (if (null? (class/c-supers ctc))
@@ -2810,7 +2812,7 @@ An example
                               method-width
                               method-ht
                               (class-method-ids cls)
-                              null
+                              (remq* ctc-methods method-ictcs)
 
                               (make-weak-hasheq)
                               
@@ -2870,21 +2872,23 @@ An example
             (set-class-field-set!! c object-field-set!))
 
           ;; Handle public method contracts
-          (unless (null? (class/c-methods ctc))
+          (unless (null? ctc-methods)
             ;; First, fill in from old methods
             (vector-copy! methods 0 (class-methods cls))
-            ;; Concretize any interface contracts first
+            ;; Concretize any interface contracts handled by this ctc
             (unless (null? (class-method-ictcs cls))
               (for ([m (in-list (class-method-ictcs cls))])
-                (define i (hash-ref method-ht m))
-                (define entry (vector-ref methods i))
-                ;; we're passing through a contract boundary, so the positive blame (aka
-                ;; value server) is taking responsibility for any interface-contracted
-                ;; methods)
-                (define info (replace-ictc-blame (cadr entry) #f (blame-positive blame)))
-                (vector-set! methods i (concretize-ictc-method (car entry) info))))
+                ;; only concretize if class/c takes responsibility for it
+                (when (memq m ctc-methods)
+                  (define i (hash-ref method-ht m))
+                  (define entry (vector-ref methods i))
+                  ;; we're passing through a contract boundary, so the positive blame (aka
+                  ;; value server) is taking responsibility for any interface-contracted
+                  ;; methods)
+                  (define info (replace-ictc-blame (cadr entry) #f (blame-positive blame)))
+                  (vector-set! methods i (concretize-ictc-method (car entry) info)))))
             ;; Now apply projections
-            (for ([m (in-list (class/c-methods ctc))]
+            (for ([m (in-list ctc-methods)]
                   [c (in-list (class/c-method-contracts ctc))])
               (when c
                 (define i (hash-ref method-ht m))

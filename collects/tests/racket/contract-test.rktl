@@ -8523,6 +8523,56 @@
       (send (new c%) m 3))
    "(class c%)")
 
+  (test/spec-passed
+   'interface-higher-order-8
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (class* object% (i2<%>) (super-new) (define/public (m x) x))]
+           [c2% (class c% (super-new))])
+      (send (new c2%) m 3)))
+
+  (test/spec-passed
+   'interface-higher-order-10
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (contract (class/c)
+                         (class* object% (i2<%>) (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)])
+      (send (new c%) m 3)))
+
+  (test/neg-blame
+   'interface-higher-order-11
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (contract (class/c [m (->m integer? integer?)])
+                         (class* object% (i2<%>) (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)])
+      (send (new c%) m 5.14)))
+
+  (test/spec-failed
+   'interface-higher-order-11
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (contract (class/c m)
+                         (class* object% (i2<%>) (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)])
+      (send (new c%) m 5.14))
+   "pos")
+
+  (test/spec-failed
+   'interface-higher-order-12
+   '(let* ([i1<%> (interface () [m (->m integer? integer?)])]
+           [i2<%> (interface (i1<%>) [m (->m integer? integer?)])]
+           [c% (contract (class/c)
+                         (class* object% (i2<%>) (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)])
+      (send (new c%) m 5.14))
+   "top-level")
+
 ;                                                                                    
 ;                                                                                    
 ;                                                                                    
