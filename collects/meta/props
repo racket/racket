@@ -874,7 +874,6 @@ path/s is either such a string or a list of them.
 "collects/games/show-help.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/games/slidey/slidey.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/games/spider/spider.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/generics" responsible (asumu stamourv)
 "collects/graphics" responsible (mflatt robby)
 "collects/graphics/graphics-posn-less-unit.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/graphics/graphics-unit.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1174,6 +1173,7 @@ path/s is either such a string or a list of them.
 "collects/racket/contract/private/ds.rkt" responsible (robby)
 "collects/racket/contract/private/guts.rkt" responsible (robby)
 "collects/racket/contract/private/helpers.rkt" responsible (robby)
+"collects/racket/generics.rkt" responsible (asumu stamourv)
 "collects/racket/gui/base.rkt" drdr:command-line (gracket "-t" *)
 "collects/racket/gui/init.rkt" drdr:command-line (gracket "-t" *)
 "collects/racket/gui.rkt" drdr:command-line (gracket "-t" *)
@@ -1181,6 +1181,7 @@ path/s is either such a string or a list of them.
 "collects/racket/match.rkt" responsible (samth)
 "collects/racket/place" responsible (tewk)
 "collects/racket/place/distributed/examples/hello-world.rkt" drdr:command-line #f
+"collects/racket/private/generics.rkt" responsible (asumu stamourv)
 "collects/racket/slice.rkt" responsible (jay)
 "collects/racklog" responsible (jay)
 "collects/rackunit" responsible (jay noel ryanc)
@@ -1285,6 +1286,7 @@ path/s is either such a string or a list of them.
 "collects/scribblings/guide/read.scrbl" drdr:command-line #f
 "collects/scribblings/raco" responsible (jay mflatt)
 "collects/scribblings/reference/distributed.scrbl" responsible (tewk)
+"collects/scribblings/reference/generics.scrbl" responsible (asumu stamourv)
 "collects/scriblib" responsible (mflatt)
 "collects/setup" responsible (mflatt)
 "collects/setup/main.rkt" drdr:command-line #f
@@ -2021,7 +2023,6 @@ path/s is either such a string or a list of them.
 "collects/tests/unstable" responsible (jay samth cce ryanc)
 "collects/tests/unstable/automata" responsible (jay)
 "collects/tests/unstable/byte-counting-port.rkt" responsible (jay)
-"collects/tests/unstable/generics.rkt" responsible (jay)
 "collects/tests/unstable/list.rkt" responsible (jay)
 "collects/tests/unstable/logging.rkt" responsible (stamourv)
 "collects/tests/unstable/srcloc.rktl" responsible (cce) drdr:command-line (racket "-f" *)
