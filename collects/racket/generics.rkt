@@ -25,11 +25,12 @@
            (define-generics (name prop:name name?)
              (generic . generic-args) ...))))]))
 
-(define-syntax (define-generics stx) ; allows out-of-order kw args
+(define-syntax (define-generics stx) ; allows out-of-order / optional kw args
   (syntax-case stx () ; can't use syntax-parse, since it depends on us
     [(_ (name prop:name name?) (generic . generics-args) ...)
      #'(define-generics/pre (name prop:name name?
                                   #:defined-table defined-table
+                                  ;; coerce-method-table is not public
                                   #:coerce-method-table #f)
          (generic . generics-args) ...)]
     [(_ (name prop:name name? #:defined-table defined-table)
@@ -37,27 +38,4 @@
      #'(define-generics/pre (name prop:name name?
                                   #:defined-table defined-table
                                   #:coerce-method-table #f)
-         (generic . generics-args) ...)]
-    [(_ (name prop:name name? #:coerce-method-table coerce-method-table)
-        (generic . generics-args) ...)
-     #'(define-generics/pre (name prop:name name?
-                                  #:defined-table defined-table ; fresh
-                                  #:coerce-method-table coerce-method-table)
-         (generic . generics-args) ...)]
-    [(_ (name prop:name name?
-              #:coerce-method-table coerce-method-table
-              #:defined-table defined-table)
-        (generic . generic-args) ...)
-     #'(define-generics/pre (name prop:name name?
-                                  #:defined-table defined-table
-                                  #:coerce-method-table coerce-method-table)
-         (generic . generics-args) ...)]
-    [(_ (name prop:name name?
-              #:defined-table defined-table
-              ;; use of coercion functions is explained below
-              #:coerce-method-table coerce-method-table)
-        (generic . generic-args) ...)
-     #'(define-generics/pre (name prop:name name?
-                                  #:defined-table defined-table
-                                  #:coerce-method-table coerce-method-table)
-         (generic . generic-args) ...)]))
+         (generic . generics-args) ...)]))

@@ -10,8 +10,7 @@
 @defmodule[racket/generics]
 
 @defform/subs[(define-generics (name prop:name name?
-                                [#:defined-table defined-table]
-				[#:coerce-method-table coerce-method-table])
+                                [#:defined-table defined-table])
                 [method . kw-formals*]
                 ...)
               ([kw-formals* (arg* ...)
@@ -55,16 +54,6 @@ corresponding to method names to booleans representing whether or not that
 method is implemented by that instance. The intended use case for this table is
 to allow higher-level APIs to adapt their behavior depending on method
 availability.
-
-The optional @racket[coerce-method-table] argument is used when implementing a
-generics-based extension API for a syntax property that already has its own
-extension API, while preserving backwards compatibility. This functionality is
-intended for library writers updating their extension APIs to use generics.
-@racket[coerce-method-table] should be bound to a coercion function that
-accepts valid values for @racket[prop:name] under its old extension API, and
-produces a vector of method implementations ordered as in the generics
-definition. This allows implementations that were defined under the old
-extension API to coexist with those defined using the generics-based API.
 
 }
 
