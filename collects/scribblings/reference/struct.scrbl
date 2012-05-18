@@ -287,6 +287,9 @@ For examples, see @racket[make-struct-type].}
 @;------------------------------------------------------------------------
 @section[#:tag "structprops"]{Structure Type Properties}
 
+@margin-note{@secref{struct-generics} provide a high-level API on top of
+structure type properties.}
+
 A @deftech{structure type property} allows per-type information to be
  associated with a structure type (as opposed to per-instance
  information associated with a structure value). A property value is
