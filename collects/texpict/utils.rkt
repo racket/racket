@@ -40,6 +40,7 @@
 	   angel-wing
 	   desktop-machine
 	   standard-fish
+           thermometer
            
 	   add-line
 	   add-arrow-line
@@ -389,6 +390,92 @@
 	   (send dc set-brush b)
 	   (send dc set-pen p)))
        w h)]))
+  
+  (define (thermometer #:height-% [height-% 1]
+                       #:color-% [color-% height-%]
+                       #:ticks [ticks 4]
+                       #:start-color [_start-color "lightblue"]
+                       #:end-color [_end-color "lightcoral"]
+                       #:top-circle-diameter [top-circle-diameter 40]
+                       #:bottom-circle-diameter [bottom-circle-diameter 80]
+                       #:stem-height [stem-height 180]
+                       #:mercury-inset [mercury-inset 8])
+    (define (to-color s)
+      (if (string? s)
+          (or (send the-color-database find-color s) 
+              (send the-color-database find-color "white"))
+          s))
+    (define start-color (to-color _start-color))
+    (define end-color (to-color _end-color))
+    (define (between lo hi) (round (+ lo (* (- hi lo) color-%))))
+    (define fill-color (make-object color%
+                         (between (send start-color red) (send end-color red))
+                         (between (send start-color green) (send end-color green))
+                         (between (send start-color blue) (send end-color blue))))
+    (define tw bottom-circle-diameter)
+    (define th
+      (+ stem-height 
+         (/ top-circle-diameter 2)
+         (/ bottom-circle-diameter 2)))
+    
+    (define (make-region dc dx dy offset %)
+      (define top (new region% [dc dc]))
+      (define bottom (new region% [dc dc]))
+      (define middle (new region% [dc dc]))
+      (send top set-ellipse 
+            (+ dx 
+               (/ (- bottom-circle-diameter top-circle-diameter) 2)
+               offset)
+            (+ dy offset (* (- 1 %) stem-height))
+            (- top-circle-diameter offset offset)
+            (- top-circle-diameter offset offset))
+      (send middle set-rectangle 
+            (+ dx 
+               (/ (- bottom-circle-diameter top-circle-diameter) 2)
+               offset)
+            (+ dy (/ top-circle-diameter 2) (* (- 1 %) stem-height))
+            (- top-circle-diameter offset offset)
+            (* % stem-height))
+      (send bottom set-ellipse 
+            (+ dx offset)
+            (+ dy (+ (/ top-circle-diameter 2) 
+                     stem-height
+                     (- (/ bottom-circle-diameter 2)))
+               offset)
+            (- bottom-circle-diameter offset offset)
+            (- bottom-circle-diameter offset offset))
+      (send top union middle)
+      (send top union bottom)
+      top)
+    
+    (dc
+     (λ (dc dx dy)
+       (define old-pen (send dc get-pen))
+       (define old-brush (send dc get-brush))
+       (define boundary (make-region dc dx dy 0 1))
+       (define fill (make-region dc dx dy mercury-inset height-%))
+       (define old-rgn (send dc get-clipping-region))
+       (send dc set-clipping-region boundary)
+       (send dc set-brush "black" 'solid)
+       (send dc draw-rectangle dx dy tw th)
+       (send dc set-clipping-region fill)
+       (send dc set-brush fill-color 'solid)
+       (send dc draw-rectangle dx dy tw th)
+       (send dc set-pen "black" mercury-inset 'solid)
+       (for ([x (in-range ticks)])
+         (define y (+ (/ top-circle-diameter 2)
+                      (* (/ (+ x 1/2) ticks) 
+                         (- stem-height (/ bottom-circle-diameter 3)))))
+         (send dc draw-line 
+               dx
+               (+ dy y)
+               (+ dx (/ tw 2))
+               (+ dy y)))
+       
+       (send dc set-clipping-region old-rgn)
+       (send dc set-brush old-brush)
+       (send dc set-pen old-pen))
+     tw th))
 
   (define file-icon
     (lambda (w h gray [fancy? #f])

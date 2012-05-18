@@ -805,6 +805,34 @@ The @racket[style] can include any of the following:
                            horns and a tail}
 
 ]}
+               
+@defproc[(thermometer [#:height-% height-% (between/c 0 1) 1]
+                      [#:color-% color-% (between/c 0 1) height-%]
+                      [#:ticks ticks non-exact-negative-integer? 4]
+                      [#:start-color start-color (or/c string? (is-a?/c color%)) "lightblue"]
+                      [#:end-color end-color (or/c string? (is-a?/c color%)) "lightcoral"]
+                      [#:top-circle-diameter top-circle-diameter positive-real? 40]
+                      [#:bottom-circle-diameter bottom-circle-diameter positive-real? 80]
+                      [#:stem-height stem-height positive-real? 180]
+                      [#:mercury-inset mercury-inset positive-real? 8])
+         pict?]{
+  Produces a thermometer that consists of a semi-circle on top of a rectangle on
+  top of a circle. The sizes of the three components are controlled via the
+  @racket[top-circle-diameter], @racket[stem-height], and @racket[bottom-circle-diameter]
+  arguments. 
+  
+  The mercury is drawn the same way, but by creating the three components inset from the
+  versions that draw the boundary of the thermometer. This inset is conrolled by the
+  @racket[mercury-inset] argument.
+  
+  The height of the mercury in the thermometer is controlled by the @racket[height-%] argument.
+  Its color is interpolated between the @racket[start-color] and @racket[end-color], as 
+  determined by the @racket[color-%] argument. 
+  
+  Finally, some number of ticks are drawn, basd on the @racket[ticks] argument.
+  
+  
+}
 
 @; ----------------------------------------
 
