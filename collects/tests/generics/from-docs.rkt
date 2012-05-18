@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require generics racket/port)
+(require racket/generics racket/port)
 
 (define-generics (printable prop:printable printable?)
   (gen-print printable [port])

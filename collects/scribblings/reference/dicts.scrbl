@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/eval (for-label generics))
+@(require "mz.rkt" scribble/eval (for-label racket/generics))
 
 @(define dict-eval (make-base-eval))
-@(interaction-eval #:eval dict-eval (require racket/dict generics))
+@(interaction-eval #:eval dict-eval (require racket/dict racket/generics))
 
 @title[#:tag "dicts"]{Dictionaries}
 

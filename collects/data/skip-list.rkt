@@ -2,7 +2,7 @@
 (require racket/match
          racket/contract/base
          racket/dict
-         generics
+         racket/generics
          "order.rkt")
 ;; owned by ryanc
 

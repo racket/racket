@@ -4,7 +4,7 @@
          racket/match
          racket/dict
          racket/contract/base
-	 generics
+	 racket/generics
          "order.rkt")
 
 #|

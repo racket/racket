@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require generics racket/dict racket/list)
+(require racket/generics racket/dict racket/list)
 
 (define-struct alist (v)
   #:property prop:dict

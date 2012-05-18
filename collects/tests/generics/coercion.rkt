@@ -1,8 +1,11 @@
 #lang racket
 
-(require generics)
+(require racket/private/generics)
 
-(define-generics (echoable prop:echo echo? #:coerce-method-table list->vector)
+(define-generics (echoable prop:echo echo?
+                           #:defined-table dummy
+                           #:coerce-method-table list->vector
+                           #:prop-defined-already? #f)
   (echo echoable))
 
 (struct echo1 (s)

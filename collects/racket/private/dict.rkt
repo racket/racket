@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require generics
+(require racket/generics
          (for-syntax racket/base))
 
 (define-generics (dict prop:dict dict? #:defined-table dict-def-table)

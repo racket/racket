@@ -1,13 +1,13 @@
 #lang scribble/manual
-@(require (for-label racket/base generics))
+@(require (for-label racket/base racket/generics))
 
-@title{Generics}
-@author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
-        @author+email["Jay McCarthy" "jay@racket-lang.org"]
-	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
-	@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
+@title[#:tag "struct-generics"]{Generics}
+@; @author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
+@;         @author+email["Jay McCarthy" "jay@racket-lang.org"]
+@; 	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
+@; 	@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
-@defmodule[generics]
+@defmodule[racket/generics]
 
 @defform/subs[(define-generics (name prop:name name?
                                 [#:defined-table defined-table]
@@ -125,7 +125,7 @@ Syntactically an error when used outside @racket[methods].
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
      (e '(require (for-syntax racket/base)
-                  generics))
+                  racket/generics))
      e))
 
 @(define evaluator (new-evaluator))

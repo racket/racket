@@ -402,6 +402,9 @@ Returns @racket[#t] if @racket[v] is an accessor procedure produced
 by @racket[make-struct-type-property], @racket[#f] otherwise.}
 
 @;------------------------------------------------------------------------
+@include-section["generics.scrbl"]
+
+@;------------------------------------------------------------------------
 @section[#:tag "struct-copy"]{Copying and Updating Structures}
 
 @defform/subs[(struct-copy id struct-expr fld-id ...)
