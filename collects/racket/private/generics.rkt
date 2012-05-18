@@ -145,6 +145,12 @@
              ;; The coercion function should take whatever lives at prop:name
              ;; according to its old extension API, and produce a vector of
              ;; methods in the defined order.
+             ;;
+             ;; Note: this feature turned out to be less useful than we
+             ;;       expected, because most of the backwards compatibility
+             ;;       examples we found were much more complicated. It would
+             ;;       have been useful for equal+hash were it not defined
+             ;;       in the C code.
              #,@(if need-coercion?
                     (list
                      #'(define-values (prop:name unused unused2)
