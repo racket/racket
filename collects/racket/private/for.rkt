@@ -65,6 +65,7 @@
              stream-first
              stream-rest
              prop:stream
+             stream-ref ; only provided for racket/stream
              sequence->stream
              empty-stream make-do-stream
 

@@ -1,6 +1,11 @@
 #lang racket/base
 
-(require "private/for.rkt"
+(require racket/private/generics
+         (rename-in "private/for.rkt"
+                    [stream-ref    stream-get-generics]
+                    [stream-empty? -stream-empty]
+                    [stream-first  -stream-first]
+                    [stream-rest   -stream-rest])
          "private/sequence.rkt"
          (only-in "private/stream-cons.rkt"
                   stream-cons))
@@ -8,9 +13,14 @@
 (provide empty-stream
          stream-cons
          stream?
-         stream-empty?
-         stream-first
-         stream-rest
+         generic-stream
+         ;; we don't need the generics versions of these because
+         ;; the original sequence functions will work fine
+         ;; for the dispatch. (the method table layout is
+         ;; identical)
+         (rename-out [-stream-empty stream-empty?]
+                     [-stream-first stream-first]
+                     [-stream-rest  stream-rest])
          prop:stream
          in-stream
 
@@ -28,6 +38,16 @@
          stream-filter
          stream-add-between
          stream-count)
+
+(define-generics (generic-stream prop:stream stream?
+                                 #:defined-table defined-table
+                                 #:coerce-method-table #f
+                                 #:prop-defined-already? stream-get-generics)
+  ;; These three are never used for the reasons explained above.
+  ;; We still need the headers for clients who extend racket/stream.
+  (stream-empty? generic-stream)
+  (stream-first generic-stream)
+  (stream-rest generic-stream))
 
 (define-syntax stream
   (syntax-rules ()

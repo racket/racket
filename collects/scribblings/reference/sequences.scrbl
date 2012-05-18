@@ -701,16 +701,22 @@ A shorthand for nested @racket[stream-cons]es ending with
   but with @racket[e] between each pair of elements in @racket[s].
   The new stream is constructed lazily.}
 
-@defthing[prop:stream struct-type-property?]{
+@deftogether[[
+@defthing[generic-stream any/c]
+@defthing[prop:stream struct-type-property?]]]{
 
   Associates three procedures to a structure type to implement stream
-  operations for instances of the structure type.
+  methods for instances of the stream generics.
 
-  The property value must be a vector of three procedures: a
-  @racket[stream-empty?] implementation, a @racket[stream-first]
-  implementation, and a @racket[stream-rest] implementation. The
-  procedures are applied only to instances of the structure type that
-  has the property value.}
+  To supply method implementations, the @racket[methods] form should be used.
+  The methods are applied only to instances of the structure type that has
+  the property value. The following three methods should be implemented:
+  
+@itemize[
+  @item{@racket[stream-empty?] : accepts one argument}
+  @item{@racket[stream-first] : accepts one argument}
+  @item{@racket[stream-rest] : accepts one argument}
+]}
 
 @; ======================================================================
 @section{Generators}
