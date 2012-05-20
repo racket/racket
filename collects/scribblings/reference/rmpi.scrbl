@@ -102,7 +102,9 @@ the group.
 }
 
 @defproc[(rmpi-launch [default-node-config hash?] 
-                      [config (listof (listof string? port-no? symbol? exact-nonnegative-integer?))]) void?]{
+                      [config (listof (list/c string? port-no? symbol? 
+                                              exact-nonnegative-integer?))]) 
+         void?]{
   Launches distributed places nodes running @racket[#:mpi-func] in
   @racket[#:mpi-module] with @racket[#:mpi-args].  The config is a
   list of node configs, where each node config consists of a hostname,
@@ -127,10 +129,12 @@ the group.
 (rmpi-launch
     (rmpi-build-default-config
       #:racket-path "/tmp/mplt/bin/racket"
-      #:distributed-launch-path (build-distributed-launch-path "/tmp/mplt/collects")
+      #:distributed-launch-path (build-distributed-launch-path 
+                                 "/tmp/mplt/collects")
       #:mpi-module "/tmp/mplt/kmeans.rkt"
       #:mpi-func   'kmeans-place
-      #:mpi-args    (list "/tmp/mplt/color100.bin" #t 100 9 10 0.0000001))
+      #:mpi-args    (list "/tmp/mplt/color100.bin" #t 100 
+                          9 10 0.0000001))
 
     (list (list "nodea.example.com" 6340 'kmeans_0 0)
           (list "nodeb.example.com" 6340 'kmeans_1 1)

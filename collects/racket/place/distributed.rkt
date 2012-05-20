@@ -27,6 +27,8 @@
          racket-path
          distributed-launch-path
 
+         DEFAULT-ROUTER-PORT
+
          ;; New Design Pattern 2 API
          message-router
          spawn-node-supervise-dynamic-place-at
@@ -87,6 +89,7 @@
          mr-supervise-named-dynamic-place-at
          mr-connect-to
          start-message-router/thread
+         spawn-node-at
          spawn-nodes/join
          spawn-nodes/join/local
  
@@ -207,9 +210,9 @@
       (tcp-connect rname (->number rport)))))
 
 (define (format-log-message severity msg)
-  (log-info (format "~a ~a ~a\n" (date->string (current-date) #t) severity msg))
-  (flush-output))
-
+  (define l (current-logger))
+  (when (log-level? l severity)
+    (log-message l severity (format "~a ~a" (date->string (current-date) #t) msg) #f)))
 
 ;node configuration
 (struct node-config (node-name node-port proc-count ssh-path racket-path distributed-path mod-path func-name conf-path conf-name) #:prefab)
