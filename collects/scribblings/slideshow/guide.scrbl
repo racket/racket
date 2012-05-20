@@ -74,9 +74,9 @@ Alt-q (or Meta-q) to end the slides. Here are more controls:
 
 The @racket[slide] function accepts any number of arguments. Each
 argument is a pict to be centered on the slide. The picts are stacked
-vertically with @racket[gap-size] separation between each pict, and
+vertically with @racket[(current-gap-size)] separation between each pict, and
 the total result is centered (as long as there's a gap of at least
-@racket[(* 2 gap-size)] between the title and content).
+@racket[(* 2 (current-gap-size))] between the title and content).
 
 @racketmod[
 slideshow

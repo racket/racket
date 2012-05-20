@@ -23,6 +23,7 @@
 @defproc[(slide [#:title title (or/c #f string? pict?) #f]
                 [#:name  name (or/c #f string?) title]
                 [#:layout layout (or/c 'auto 'center 'top 'tall) 'auto]
+                [#:gap-size sep-gap-size real? (current-gap-size)]
                 [#:inset inset slide-inset? (make-slide-inset 0 0 0 0)]
                 [#:timeout secs (or/c #f real?) #f]
                 [#:condense? condense? any/c (and timeout #t)]
@@ -33,8 +34,9 @@
                                 (listof (listof elem/c))))] ...)
           void?]{
 
-Creates and registers a slide. See @secref["staging"] for information
-about @racket[element]s.
+Creates and registers a slide. See @secref["staging"] for
+information about @racket[element]s. Multiple @racket[element] picts are
+separated by @racket[sep-gap-size] vertical space.
 
 When this function is first called in non-printing mode, then the
 viewer window is opened. Furthermore, each call to the function
@@ -46,13 +48,13 @@ slide. The @racket[name] is used in the slide-navigation dialog, and
 it defaults to @racket[title].
 
 If @racket[layout] is @racket['top], then the content is top-aligned,
-with @racket[(* 2 gap-size)] space between the title and the
+with @racket[(* 2 sep-gap-size)] space between the title and the
 content. The @racket['tall] layout is similar, but with only
-@racket[gap-size]. The @racket['center] mode centers the content
+@racket[sep-gap-size] space. The @racket['center] mode centers the content
 (ignoring space consumed by the title). The @racket['auto] mode is
 like @racket['center], except when @racket[title] is non-@racket[#f]
 and when the space between the title and content would be less than
-@racket[(* 2 gap-size)], in which case it behaves like @racket['top].
+@racket[(* 2 sep-gap-size)], in which case it behaves like @racket['top].
 
 The @racket[inset] argument supplies an inset that makes the
 slide-viewing window smaller when showing the slide. See
@@ -143,7 +145,8 @@ See the spacing between lines is determined by the
 
 
 @defproc[(item [#:width width real? (current-para-width)]
-               [#:bullet blt pict? bullet]
+               [#:gap-size sep-gap-size real? (current-gap-size)]
+               [#:bullet blt pict? (scale bullet (/ sep-gap-size gap-size))]
                [#:align align (or/c 'left 'center 'right) 'left]
                [#:fill? fill? any/c #t]
                [#:decode? decode? any/c #t]
@@ -152,14 +155,15 @@ See the spacing between lines is determined by the
          pict?]{
 
 Like @racket[para], but with @racket[blt] followed by @racket[(/
-gap-size 2)] space appended horizontally to the resulting paragraph,
+sep-gap-size 2)] space appended horizontally to the resulting paragraph,
 aligned with the top line. The paragraph width of @racket[blt] plus
-@racket[(/ gap-size 2)] is subtracted from the maximum width of the
+@racket[(/ sep-gap-size 2)] is subtracted from the maximum width of the
 paragraph.}
 
 
 @defproc[(subitem [#:width width real? (current-para-width)]
-                  [#:bullet blt pict? o-bullet]
+                  [#:gap-size sep-gap-size real? (current-gap-size)]
+                  [#:bullet blt pict? (scale o-bullet (/ sep-gap-size gap-size))]
                   [#:align align (or/c 'left 'center 'right) 'left]
                   [#:fill? fill? any/c #t]
                   [#:decode? decode? any/c #t]
@@ -167,7 +171,7 @@ paragraph.}
                              (or/c string? pict? (listof elem/c)))] ...)
          pict?]{
 
-Like @racket[item], but an additional @racket[(* 2 gap-size)] is
+Like @racket[item], but an additional @racket[(* 2 sep-gap-size)] is
 subtracted from the paragraph width and added as space to the left of
 the pict. Also, @racket[o-bullet] is the default bullet, instead of
 @racket[bullet].}
@@ -312,6 +316,14 @@ argument.
 @defthing[gap-size 24]{
 
 A width commonly used for layout.}
+
+
+@defparam[current-gap-size sep-gap-size real?]{
+
+A parameter whose value is a width used for the separation between
+items by @racket[slide], the size and spacing of a bullet for
+@racket[item], the space between a slide title and content in
+@racket['tall] mode, etc.  The default value is @racket[gap-size].}
 
 
 @defthing[bullet pict?]{

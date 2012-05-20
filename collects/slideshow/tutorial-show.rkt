@@ -111,8 +111,9 @@
  #:title "Spacing"
  (para "The" (tt "slide") "functions insert space"
             "between each body pict")
- (para "The amount of space is" (number->string gap-size)
-            ", which is the value of" (tt "gap-size")))
+ (para "The amount of space is" (number->string (current-gap-size))
+            ", which is the value of" (tt "(current-gap-size)")
+            ", which defaults to" (tt "gap-size")))
 
 (slide
  #:title "Controlling Space"
