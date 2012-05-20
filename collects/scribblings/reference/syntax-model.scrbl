@@ -185,7 +185,7 @@ expanded program may not match the symbolic names in the grammar. Only
 the binding (according to @racket[free-identifier=?]) matters.}
 
 @racketgrammar*[
-#:literals (#%expression module #%plain-module-begin begin #%provide
+#:literals (#%expression module module* #%plain-module-begin begin #%provide
             define-values define-syntaxes begin-for-syntax
             #%require
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
@@ -201,9 +201,12 @@ the binding (according to @racket[free-identifier=?]) matters.}
 [module-level-form general-top-level-form
                    (#%provide raw-provide-spec ...)
                    (begin-for-syntax module-level-form ...)
-                   (module id module-path module-level-form ...)
-                   (module* id module-path module-level-form ...)
-                   (module* id #f module-level-form ...)]
+                   (module id module-path 
+                     module-level-form ...)
+                   (module* id module-path 
+                     module-level-form ...)
+                   (module* id #f 
+                     module-level-form ...)]
 [general-top-level-form expr
                         (define-values (id ...) expr)
                         (define-syntaxes (id ...) expr)
