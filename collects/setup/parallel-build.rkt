@@ -26,11 +26,15 @@
 (define lock-manager% 
   (class object%
     (field (locks (make-hash)))
+    (define depends (make-hash))
     (define/public (lock fn wrkr)
       (let ([v (hash-ref locks fn #f)])
         (hash-set! locks fn
           (if v
-            (match v [(list w waitlst) (list w (append waitlst (list wrkr)))])
+            (match v [(list w waitlst) 
+                      (hash-set! depends wrkr (cons w fn))
+                      (check-cycles wrkr (hash) null)
+                      (list w (append waitlst (list wrkr)))])
             (begin
               (wrkr/send wrkr (list 'locked))
               (list wrkr null))))
@@ -39,8 +43,18 @@
       (match (hash-ref locks fn)
         [(list w waitlst)
           (for ([x (second (hash-ref locks fn))])
+            (hash-remove! depends x)
             (wrkr/send x (list 'compiled)))
           (hash-remove! locks fn)]))
+    (define/private (check-cycles w seen fns)
+      (cond
+       [(hash-ref seen w #f)
+        (error 'setup "dependency cycle: ~s"
+               (cons (car fns) (reverse fns)))]
+       [(hash-ref depends w #f)
+        => (lambda (d)
+             (check-cycles (car d) (hash-set seen w #t) (cons (cdr d) fns)))]
+       [else (void)]))
     (super-new)))
 
 (define/class/generics lock-manager%
