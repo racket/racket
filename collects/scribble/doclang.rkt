@@ -54,6 +54,8 @@
                                               define-values
                                               define-syntaxes
                                               begin-for-syntax
+                                              module
+                                              module*
                                               #%require
                                               #%provide))))
                  #`(begin #,expanded (doc-begin m-id post-process exprs . body))]
