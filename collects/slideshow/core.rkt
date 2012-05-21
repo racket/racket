@@ -560,6 +560,12 @@
 	    null
             (sliderec-timeout s)))
 	  (set! page-number (+ page-number 1))))
+      
+      (define (slide->pict s)
+        (unless (sliderec? s)
+          (raise-type-error 'slide->pict "slide" s))
+        (let ([orig (sliderec-drawer s)])
+          (dc orig client-w client-h)))
 
       (define (start-at-recent-slide)
 	(viewer:set-init-page! (max 0 (- page-number 2))))

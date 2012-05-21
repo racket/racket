@@ -24,7 +24,7 @@
                        [sliderec? slide?]
                        [just-a-comment? comment?])
            comment
-           most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
+           most-recent-slide retract-most-recent-slide re-slide slide->pict start-at-recent-slide
 	   make-outline
 	   (rename-out [item/kw item]
                        [subitem/kw subitem]

@@ -239,10 +239,16 @@ Returns @racket[#t] if @racket[v] is a comment produced by
 
 @section{Slide Registration}
 
+@defproc[(slide? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a slide produced by
+@racket[most-recent-slide] or @racket[retract-most-recent-slide].}
+
 @defproc[(most-recent-slide) slide?]{
 
 Returns a slide structure that be supplied @racket[re-slide] to make a
-copy of the slide.}
+copy of the slide or @racket[slide->pict] to re-extract the entire
+slide as a pict.}
 
 @defproc[(retract-most-recent-slide) slide?]{
 
@@ -256,10 +262,11 @@ structure that be supplied to @racket[re-slide] to restore the slide
 Re-inserts a slide, @racket[lt-superimpose]ing the given additional
 @racket[pict].}
 
-@defproc[(slide? [v any/c]) boolean?]{
+@defproc[(slide->pict [slide slide?])
+         pict?]{
 
-Returns @racket[#t] if @racket[v] is a slide produced by
-@racket[most-recent-slide] or @racket[retract-most-recent-slide].}
+Converts a complete slide to a @racket[pict]. The bounding box of the
+result corresponds to the slide within its margins.}
 
 @; ------------------------------------------------------------------------
 

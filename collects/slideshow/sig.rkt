@@ -55,7 +55,7 @@
      slide/center/timeout
      slide/title/center/timeout
      
-     most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
+     most-recent-slide retract-most-recent-slide re-slide slide->pict start-at-recent-slide
      scroll-transition pause-transition
      comment make-outline
      item/kw item item* page-item page-item*

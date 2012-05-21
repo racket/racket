@@ -102,7 +102,7 @@
                     [rt (string? . -> . pict?)]
                     [tt* (() () #:rest (listof string?) . ->* . pict?)])
   (provide slide/kw
-           most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
+           most-recent-slide retract-most-recent-slide re-slide slide->pict start-at-recent-slide
 	   scroll-transition pause-transition
 	   make-outline
 	   item item* page-item page-item*
