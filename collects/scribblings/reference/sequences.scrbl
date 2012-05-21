@@ -1,7 +1,9 @@
 #lang scribble/doc
 @(require "mz.rkt" scribble/scheme
           (for-syntax racket/base)
-          (for-label racket/generator racket/mpair))
+          (for-label racket/generator
+                     racket/generics
+                     racket/mpair))
 
 @(define (info-on-seq where what)
    @margin-note{See @secref[where] for information on using @|what| as
@@ -9,16 +11,24 @@
 
 @title[#:style 'toc #:tag "sequences+streams"]{Sequences and Streams}
 
-@tech{Sequences} and @tech{streams} abstract over iteration of
-elements in a collection. Streams are functional sequences that can be
-used either in a generic way or a stream-specific
-way. @tech{Generators} are closely related stateful objects that can
-be converted to a sequence and vice-versa.
+@tech{Sequences} and @tech{streams} abstract over iteration of elements in a
+collection. Sequences allow iteration with @racket[for] macros or with sequence
+operations such as @racket[sequence-map]. Streams are functional sequences that
+can be used either in a generic way or a stream-specific way. @tech{Generators}
+are closely related stateful objects that can be converted to a sequence and
+vice-versa.
 
 @local-table-of-contents[]
 
 @; ======================================================================
 @section[#:tag "sequences"]{Sequences}
+
+@(define stream-evaluator
+   (let ([evaluator (make-base-eval)])
+     (evaluator '(require racket/generics))
+     (evaluator '(require racket/list))
+     (evaluator '(require racket/stream))
+     evaluator))
 
 @guideintro["sequences"]{sequences}
 
@@ -61,6 +71,55 @@ An @tech{exact number} @racket[_k] that is a non-negative
 @tech{integer} acts as a sequence similar to @racket[(in-range _k)],
 except that @racket[_k] by itself is not a @tech{stream}.
 
+Custom sequences can be defined using structure type properties.
+The easiest method to define a custom sequence is to use the
+@racket[prop:stream] property and the @racket[generic-stream]
+extension interface. Streams are a suitable abstraction for data
+structures that are directly iterable. For example, a list is directly
+iterable with @racket[first] and @racket[rest]. On the other hand,
+vectors are not directly iterable: iteration has to go through an
+index. For data structures that are not directly iterable, the
+@deftech{iterator} for the data structure can be defined to be a
+stream (e.g., a structure containing the index of a vector).
+
+For example, unrolled linked lists (represented as a list of vectors)
+themeselves do not fit the stream abstraction, but have index-based iterators
+that can be represented as streams:
+
+@examples[#:eval stream-evaluator
+  (struct unrolled-list-iterator (idx lst)
+    #:property prop:stream
+    (methods generic-stream
+      (define (stream-empty? iter)
+        (define lst (unrolled-list-iterator-lst iter))
+        (or (null? lst)
+            (and (>= (unrolled-list-iterator-idx iter)
+                     (vector-length (first lst)))
+                 (null? (rest lst)))))
+      (define (stream-first iter)
+        (vector-ref (first (unrolled-list-iterator-lst iter))
+                    (unrolled-list-iterator-idx iter)))
+      (define (stream-rest iter)
+        (define idx (unrolled-list-iterator-idx iter))
+        (define lst (unrolled-list-iterator-lst iter))
+        (if (>= idx (sub1 (vector-length (first lst))))
+            (unrolled-list-iterator 0 (rest lst))
+            (unrolled-list-iterator (add1 idx) lst)))))
+
+  (define (make-unrolled-list-iterator ul)
+    (unrolled-list-iterator 0 (unrolled-list-lov ul)))
+
+  (struct unrolled-list (lov)
+    #:property prop:sequence
+    make-unrolled-list-iterator)
+ 
+  (define ul1 (unrolled-list '(#(cracker biscuit) #(cookie scone))))
+  (for/list ([x ul1]) x)
+]
+
+The @racket[prop:sequence] property provides more flexibility in
+specifying iteration, such as when a pre-processing step is needed
+to prepare the data for iteration.
 The @racket[make-do-sequence] function creates a sequence given a
 thunk that returns procedures to implement a sequence, and the
 @racket[prop:sequence] property can be associated with a structure
@@ -393,6 +452,21 @@ in the sequence.
   a structure type with this property, then @racket[(sequence? v)]
   produces @racket[#t].
 
+  Using a pre-existing sequence:
+
+  @examples[
+    (struct my-set (table)
+      #:property prop:sequence
+      (lambda (s)
+        (in-hash-keys (my-set-table s))))
+    (define (make-set . xs)
+      (my-set (for/hash ([x (in-list xs)])
+                (values x #t))))
+    (for/list ([c (make-set 'celeriac 'carrot 'potato)])
+      c)]
+
+  Using @racket[make-do-sequence]:
+
   @let-syntax[([car (make-element-id-transformer
                      (lambda (id) #'@racketidfont{car}))])
     @examples[
@@ -716,6 +790,22 @@ A shorthand for nested @racket[stream-cons]es ending with
   @item{@racket[stream-empty?] : accepts one argument}
   @item{@racket[stream-first] : accepts one argument}
   @item{@racket[stream-rest] : accepts one argument}
+]
+
+@examples[#:eval stream-evaluator
+  (define-struct list-stream (v)
+    #:property prop:stream
+    (methods generic-stream
+      (define (stream-empty? generic-stream)
+        (empty? (list-stream-v generic-stream)))
+      (define (stream-first generic-stream)
+        (first (list-stream-v generic-stream)))
+      (define (stream-rest generic-stream)
+        (rest (list-stream-v generic-stream)))))
+
+  (define l1 (list-stream '(1 2)))
+  (stream? l1)
+  (stream-first l1)
 ]}
 
 @; ======================================================================
