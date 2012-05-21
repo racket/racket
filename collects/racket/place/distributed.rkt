@@ -109,6 +109,8 @@
 
          ;re-provides
          quote-module-path
+         place-channel-get
+         place-channel-put
 
          ;named-place-typed-channel
          named-place-typed-channel%
@@ -117,8 +119,6 @@
          ;contracts
          *channel?
          port-no?
-         place-channel-get
-         place-channel-put
          )
 
 (define-runtime-path distributed-launch-path "distributed/launch.rkt")

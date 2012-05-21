@@ -6,6 +6,7 @@
           racket/place/distributed
           racket/sandbox
           racket/class
+          (except-in "mz.rkt" log-message)
           (for-label (except-in racket/base log-message)
                      racket/place/define-remote-server
                      racket/place/distributed 
@@ -23,6 +24,7 @@
 
 
 @title[#:tag "distributed-places"]{Distributed Places}
+@guidealso["distributed-places"]
 
 @defmodule[racket/place/distributed]
 
@@ -44,17 +46,22 @@ The distributed places implementation relies on two assumptions:
 @item{The user's @filepath{.ssh/config} and
  @filepath{.ssh/authorized_keys} files are configured correctly to
  allow passwordless connection to remote hosts via public key authentication.}
-@item{The same user account is used across all nodes in the
- distributed network.}
-@item{All machines run the same version of Racket.}
+@item{Distributed places does not support the specification of ssh usernames.
+ If a non-default ssh username is required the @filepath{.ssh/config} file
+ should be used to specifiy the username.}
+@item{All machines run the same version of Racket.  Futures versions of distributed
+ places may use the zo binary data format for serialization.}
 ]
 
 The following example illustrates a configuration and use of
 distributed places that starts a new node on the current machine and
 passes it a @racket["Hello World"] string:
 
-@racketmod[
-  racket/base
+
+@(begin
+#reader scribble/comment-reader
+[examples
+(module hello-world-example racket/base
   (require racket/place/distributed
            racket/place)
 
@@ -63,17 +70,30 @@ passes it a @racket["Hello World"] string:
   (define (hello-world)
     (place ch
       (printf "hello-world received: ~a\n" (place-channel-get ch))
-      (define HW "Hello World")
-      (place-channel-put ch (format "~a\n" HW))
-      (printf "hello-world sent: ~a\n" HW)))
+      (place-channel-put ch "Hello World\n")
+      (printf "hello-world sent: Hello World\n" )))
 
 
   (module+ main
+    ;; 1) spawns a node running at "localhost" and listenting on port
+    ;; 6344 for incomming connections.
+    ;; 2) connects to the node running at localhost:6344 and creates a
+    ;; place on that node by calling the hello-world procedure from
+    ;; the current module.
+    ;; 3) returns a remote-node% instance (node) and a
+    ;; remote-connection% instance (pl) for communicating with the
+    ;; new node and place
     (define-values (node pl)
       (spawn-node-supervise-place-thunk-at "localhost"
                                            #:listen-port 6344
                                            (quote-module-path "..")
                                            'hello-world))
+
+    ;; starts a message router which adds three event-container<%>s to
+    ;; its list of events to handle: the node and two after-seconds
+    ;; event containers . Two seconds after the launch of the message-router, a
+    ;; message will be sent to the pl place.  After six seconds, the
+    ;; program and all spawned nodes and places will terminate.
     (message-router
       node
       (after-seconds 2
@@ -81,8 +101,9 @@ passes it a @racket["Hello World"] string:
         (printf "message-router received: ~a\n" (*channel-get pl)))
 
       (after-seconds 6
-        (exit 0))))
+        (exit 0)))))
 ]
+)
 
 @defproc[(message-router [ec (is-a?/c event-container<%>)] ...+) void?]{
   Waits in an endless loop for one of many events to become ready.  The
