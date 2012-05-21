@@ -2577,3 +2577,264 @@
 
 ;; reader graphs
 [make-reader-graph (-> Univ Univ)]
+
+;; keyword functions moved back to here:
+
+[file->string
+ (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -String)]
+(file->bytes (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Bytes))
+(file->value (->key -Pathlike #:mode (one-of/c 'binary 'text) #f Univ))
+(file->lines
+ (->key
+  -Pathlike
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  #:line-mode
+  (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)
+  #f
+  (-lst -String)))
+(file->bytes-lines
+ (->key
+  -Pathlike
+  #:line-mode
+  (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)
+  #f
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  (-lst -Bytes)))
+(display-to-file
+ (->key
+  Univ
+  -Pathlike
+  #:exists
+  (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace)
+  #f
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  -Void))
+(display-lines-to-file
+ (->key
+  (-lst Univ)
+  -Pathlike
+  #:separator
+  Univ
+  #f
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  #:exists
+  (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace)
+  #f
+  -Void))
+(write-to-file
+ (->key
+  Univ
+  -Pathlike
+  #:exists
+  (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace)
+  #f
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  -Void))
+(file->list
+ (-poly (a)
+  (cl->*
+   (->optkey -Pathlike [(-> -Input-Port (Un))] #:mode (one-of/c 'binary 'text) #f (-lst Univ))
+   (->optkey -Pathlike [(-> -Input-Port a)] #:mode (one-of/c 'binary 'text) #f (-lst a)))))
+(get-preference
+ (let ((use-lock-type Univ)
+       (timeout-lock-there-type (-opt (-> -Path Univ)))
+       (lock-there-type (-opt (-> -Path Univ))))
+   (cl->*
+    (->key
+     -Symbol
+     #:use-lock?
+     use-lock-type
+     #f
+     #:timeout-lock-there
+     timeout-lock-there-type
+     #f
+     #:lock-there
+     lock-there-type
+     #f
+     Univ)
+    (->key
+     -Symbol
+     (-> Univ)
+     #:use-lock?
+     use-lock-type
+     #f
+     #:timeout-lock-there
+     timeout-lock-there-type
+     #f
+     #:lock-there
+     lock-there-type
+     #f
+     Univ)
+    (->key
+     -Symbol
+     (-> Univ)
+     Univ
+     #:use-lock?
+     use-lock-type
+     #f
+     #:timeout-lock-there
+     timeout-lock-there-type
+     #f
+     #:lock-there
+     lock-there-type
+     #f
+     Univ)
+    (->key
+     -Symbol
+     (-> Univ)
+     Univ
+     (-opt -Pathlike)
+     #:use-lock?
+     use-lock-type
+     #f
+     #:timeout-lock-there
+     timeout-lock-there-type
+     #f
+     #:lock-there
+     lock-there-type
+     #f
+     Univ))))
+(make-handle-get-preference-locked
+ (let ((lock-there-type (-opt (-> -Path Univ)))
+       (max-delay-type -Real))
+   (->optkey -Real -Symbol [(-> Univ) Univ (-opt -Pathlike)]
+             #:lock-there lock-there-type #f #:max-delay max-delay-type #f 
+             (-> -Pathlike Univ))))
+(call-with-file-lock/timeout
+ (-poly
+  (a)
+  (->key
+   (-opt -Pathlike)
+   (one-of/c 'shared 'exclusive)
+   (-> a)
+   (-> a)
+   #:lock-file
+   (-opt -Pathlike)
+   #f
+   #:delay
+   -Real
+   #f
+   #:max-delay
+   -Real
+   #f
+   a)))
+(sort
+ (-poly
+  (a b)
+  (cl->*
+   (->key (-lst a) (-> a a -Boolean) #:key (-> a a) #f #:cache-keys? -Boolean #f (-lst a))
+   (->key (-lst a) (-> b b -Boolean) #:key (-> a b) #f #:cache-keys? -Boolean #f (-lst a)))))
+(remove-duplicates
+ (-poly
+  (a b)
+  (cl->*
+   (->optkey (-lst a) ((-> a a Univ)) #:key (-> a a) #f (-lst a))
+   (->optkey (-lst a) ((-> b b Univ)) #:key (-> a b) #f (-lst a)))))
+(open-input-file (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Input-Port))
+(open-output-file
+ (->key
+  -Pathlike
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  #:exists
+  (one-of/c 'error 'append 'update 'can-update 'replace 'truncate 'must-truncate 'truncate/replace)
+  #f
+  -Output-Port))
+(open-input-output-file
+ (->key
+  -Pathlike
+  #:mode
+  (one-of/c 'binary 'text)
+  #f
+  #:exists
+  (one-of/c 'error 'append 'update 'can-update 'replace 'truncate 'must-truncate 'truncate/replace)
+  #f
+  (-values (list -Input-Port -Output-Port))))
+(call-with-input-file
+    (-poly (a) (->key -Pathlike (-> -Input-Port a) #:mode (Un (-val 'binary) (-val 'text)) #f a)))
+(call-with-output-file    
+    (-poly (a)
+     (->key
+      -Pathlike
+      (-> -Output-Port a)
+      #:exists
+      (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace 'can-update 'must-truncate)
+      #f
+      #:mode
+      (one-of/c 'binary 'text)
+      #f
+      a)))
+(call-with-input-file* (-poly (a) (->key -Pathlike (-> -Input-Port a) #:mode (Un (-val 'binary) (-val 'text)) #f a)))
+(call-with-output-file*
+ (-poly
+  (a)
+  (->key
+   -Pathlike
+   (-> -Output-Port a)
+   #:exists
+   (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace 'can-update 'must-truncate)
+   #f
+   #:mode
+   (one-of/c 'binary 'text)
+   #f
+   a)))
+(with-input-from-file (-poly (a) (->key -Pathlike (-> a) #:mode (Un (-val 'binary) (-val 'text)) #f a)))
+(with-output-to-file
+    (-poly
+     (a)
+     (->key
+      -Pathlike
+      (-> a)
+      #:exists
+      (one-of/c 'error 'append 'update 'can-update 'replace 'truncate 'must-truncate 'truncate/replace)
+      #f
+      #:mode
+      (one-of/c 'binary 'text)
+      #f
+      a)))
+(port->lines  
+ (->optkey [-Input-Port] #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -String)))
+(port->bytes-lines
+  (->optkey [-Input-Port] #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f (-lst -Bytes)))
+(display-lines
+ (->optkey (-lst Univ) [-Output-Port] #:separator Univ #f -Void))
+(find-relative-path (->key -SomeSystemPathlike -SomeSystemPathlike #:more-than-root? Univ #f -SomeSystemPath))
+(regexp-match*
+ (let ((N -Integer)
+       (?N (-opt -Integer))
+       (-StrRx (Un -String -Regexp))
+       (-BtsRx (Un -Bytes -Byte-Regexp))
+       (-StrInput (Un -String -Path))
+       (-BtsInput (Un -Input-Port -Bytes))
+       (sel (λ (t) (-opt (-> (-lst t) t)))))
+   (cl->*
+    (->optkey -StrRx -StrInput (N ?N -Bytes)
+              #:match-select (sel -String) #f #:gap-select Univ #f
+              (-lst -String))
+    (->optkey -BtsRx (Un -StrInput -BtsInput) (N ?N -Bytes) 
+              #:match-select (sel -Bytes) #f #:gap-select Univ #f
+              (-lst -Bytes))
+    (->optkey -Pattern -BtsInput (N ?N -Bytes)
+              #:match-select (sel -Bytes) #f #:gap-select Univ #f
+              (-lst -Bytes)))))
+(regexp-match-positions*
+ (let* ((?outp (-opt -Output-Port))
+        (B -Boolean)
+        (N -Integer)
+        (?N (-opt -Integer))
+        (ind-pair (-pair -Index -Index))
+        (sel (-> (-lst (-opt ind-pair)) (-opt ind-pair)))
+        (output (-opt (-pair ind-pair (-lst (-opt ind-pair)))))
+        (-Input (Un -String -Input-Port -Bytes -Path)))
+   (->optkey -Pattern -Input (N ?N -Bytes) #:match-select sel #f output)))

@@ -14,7 +14,7 @@
          racket/udp
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
-         (for-syntax racket/base syntax/parse)
+         (for-syntax racket/base syntax/parse racket/list)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
          racket/pretty racket/udp racket/place
          ;; for base type predicates
@@ -399,7 +399,25 @@
                     (list
                      (make-arr* (list ty ...)
                                 rng
-                                #:kws (list (make-Keyword 'k kty opt) ...))))]))
+                                #:kws (sort #:key (match-lambda [(Keyword: kw _ _) kw])
+                                            (list (make-Keyword 'k kty opt) ...)
+                                            keyword<?))))]))
+
+(define-syntax (->optkey stx)
+  (syntax-parse stx
+                [(_ ty:expr ... [oty:expr ...] (~seq k:keyword kty:expr opt:boolean) ... rng)
+                 (let ([l (syntax->list #'(oty ...))])
+                   (with-syntax ([((extra ...) ...)
+                                  (for/list ([i (in-range (add1 (length l)))])
+                                    (take l i))])
+                   #'(make-Function
+                      (list
+                       (make-arr* (list ty ... extra ...)
+                                  rng
+                                  #:kws (sort #:key (match-lambda [(Keyword: kw _ _) kw])
+                                              (list (make-Keyword 'k kty opt) ...)
+                                              keyword<?))
+                       ...))))]))
 
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))

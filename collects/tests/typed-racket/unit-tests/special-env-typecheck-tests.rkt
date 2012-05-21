@@ -33,7 +33,7 @@
     [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]    
     [(_ a #:ret b)
      (quasisyntax/loc stx
-       (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'expr)
+       (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'a)
                                #,(let ([ex (local-expand #'a 'expression null)])
                                    (parameterize ([mutated-vars (find-mutated-vars ex)])
                                      (tc-expr ex))) 
@@ -41,7 +41,7 @@
 
 (define (typecheck-special-tests)
   (test-suite
-   "Typechecker tests"
+   "Special Typechecker tests"
    ;; should work but don't -- need expected type
    #|
 [tc-e (for/list ([(k v) (in-hash #hash((1 . 2)))]) 0) (-lst -Zero)]
