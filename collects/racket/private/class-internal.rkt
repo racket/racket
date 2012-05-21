@@ -3573,11 +3573,6 @@ An example
                              "")))))
         (interface-public-ids super)))
      supers)
-    ;; Check that ctcs are contracts
-    (for ([(k v) (in-hash ctcs)])
-      (unless (contract? v)
-        (obj-error 'interface "contract expression for ~a not a contract: ~a"
-                   k v)))
     ;; merge properties:
     (let ([prop-ht (make-hash)])
       ;; Hash on gensym to avoid providing the same property multiple
@@ -3606,8 +3601,10 @@ An example
             (interface-public-ids super)))
          supers)
         ;; Done
-        (let ([i (interface-make name supers #f (hash-map ht (lambda (k v) k))
-                                 ctcs class (hash-map prop-ht (lambda (k v) v)))])
+        (let* ([new-ctcs (for/hash ([(k v) (in-hash ctcs)])
+                           (values k (coerce-contract 'interface v)))]
+               [i (interface-make name supers #f (hash-map ht (lambda (k v) k))
+                                  new-ctcs class (hash-map prop-ht (lambda (k v) v)))])
           (setup-all-implemented! i)
           i)))))
 
