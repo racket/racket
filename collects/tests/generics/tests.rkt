@@ -6,4 +6,5 @@
          (submod "coercion.rkt" test)
          (submod "stream.rkt" test)
          (submod "iterator.rkt" test)
-         (submod "struct-form.rkt" test))
+         (submod "struct-form.rkt" test)
+         "from-unstable.rkt")
