@@ -15,7 +15,7 @@
                     (provide (for-label (all-from-out mod))))]
     [(_ mod ...) (begin (bounce-for-label mod) ...)]))
 
-(bounce-for-label (all-except racket (link) ())
+(bounce-for-label (all-except racket (abstract link) ())
                   scribble/core
                   scribble/base-render
                   scribble/decode
