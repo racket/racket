@@ -25,7 +25,7 @@ Contract for orderings, represented by the symbols @racket['=],
 }
 
 @deftogether[[
-@defthing[ordered-dict any/c]
+@defthing[gen:ordered-dict any/c]
 @defthing[prop:ordered-dict
           (struct-type-property/c
            (vectorof _e/c _e/c _s/c _s/c _s/c _s/c))]
@@ -33,7 +33,7 @@ Contract for orderings, represented by the symbols @racket['=],
 
 Struct-type property for defining new ordered dictionary types.
 Methods can be attached to the @racket[prop:ordered-dict] struct property
-using the @racket[methods] form and the @racket[ordered-dict] generic
+using the @racket[methods] form and the @racket[gen:ordered-dict] generic
 interface. Two ``extrema'' methods and four ``search'' methods should be
 implemented. The extrema methods must satisfy @racket[_e/c] and the search
 methods must satisfy @racket[_s/c]:

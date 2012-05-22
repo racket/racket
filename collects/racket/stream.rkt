@@ -13,7 +13,7 @@
 (provide empty-stream
          stream-cons
          stream?
-         generic-stream
+         gen:stream
          ;; we don't need the generics versions of these because
          ;; the original sequence functions will work fine
          ;; for the dispatch. (the method table layout is
@@ -39,15 +39,15 @@
          stream-add-between
          stream-count)
 
-(define-generics (generic-stream prop:stream stream?
-                                 #:defined-table defined-table
-                                 #:coerce-method-table #f
-                                 #:prop-defined-already? stream-get-generics)
+(define-generics (gen:stream prop:stream stream?
+                             #:defined-table defined-table
+                             #:coerce-method-table #f
+                             #:prop-defined-already? stream-get-generics)
   ;; These three are never used for the reasons explained above.
   ;; We still need the headers for clients who extend racket/stream.
-  (stream-empty? generic-stream)
-  (stream-first generic-stream)
-  (stream-rest generic-stream))
+  (stream-empty? gen:stream)
+  (stream-first gen:stream)
+  (stream-rest gen:stream))
 
 (define-syntax stream
   (syntax-rules ()

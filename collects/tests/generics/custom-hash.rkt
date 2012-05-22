@@ -2,7 +2,7 @@
 
 (require racket/generics
          (only-in racket/dict
-                  dict prop:dict
+                  gen:dict prop:dict
                   dict?
                   dict-ref
                   dict-set!
@@ -42,7 +42,7 @@
 
 (struct custom-hash (table make-box)
   #:property prop:dict
-  (methods dict
+  (methods gen:dict
     (define dict-ref custom-hash-ref)
     (define dict-set! custom-hash-set!)
     (define (dict-set dict key val)

@@ -523,7 +523,7 @@ Options
                                 splay-tree-iter?
                                 #f #f #f))
         #:property prop:ordered-dict
-	(methods ordered-dict
+	(methods gen:ordered-dict
 	  (define dict-iterate-least n:splay-tree-iterate-least)
 	  (define dict-iterate-greatest n:splay-tree-iterate-greatest)
 	  (define dict-iterate-least/>? n:splay-tree-iterate-least/>?)
@@ -541,7 +541,7 @@ Options
                                 (lambda (s) (node-splay-tree*-value-c s))
                                 #f))
         #:property prop:ordered-dict
-        (methods ordered-dict
+        (methods gen:ordered-dict
 	  (define dict-iterate-least n:splay-tree-iterate-least)
 	  (define dict-iterate-greatest n:splay-tree-iterate-greatest)
 	  (define dict-iterate-least/>? n:splay-tree-iterate-least/>?)

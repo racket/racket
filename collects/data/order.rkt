@@ -10,13 +10,13 @@
 
 (provide ordering/c)
 
-(define-generics (ordered-dict prop:ordered-dict ordered-dict?)
-  (dict-iterate-least ordered-dict)
-  (dict-iterate-greatest ordered-dict)
-  (dict-iterate-least/>? ordered-dict key)
-  (dict-iterate-least/>=? ordered-dict key)
-  (dict-iterate-greatest/<? ordered-dict key)
-  (dict-iterate-greatest/<=? ordered-dict key))
+(define-generics (gen:ordered-dict prop:ordered-dict ordered-dict?)
+  (dict-iterate-least gen:ordered-dict)
+  (dict-iterate-greatest gen:ordered-dict)
+  (dict-iterate-least/>? gen:ordered-dict key)
+  (dict-iterate-least/>=? gen:ordered-dict key)
+  (dict-iterate-greatest/<? gen:ordered-dict key)
+  (dict-iterate-greatest/<=? gen:ordered-dict key))
 
 (define extreme-contract
   (->i ([d ordered-dict?])
@@ -40,7 +40,7 @@
 
 ;; --------
 
-(provide ordered-dict)
+(provide gen:ordered-dict)
 (provide/contract
  [prop:ordered-dict
   (struct-type-property/c prop:ordered-dict-contract)]

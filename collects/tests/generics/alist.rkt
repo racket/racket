@@ -4,7 +4,7 @@
 
 (define-struct alist (v)
   #:property prop:dict
-  (methods dict
+  (methods gen:dict
     (define (dict-ref dict key
                       [default (lambda () (error "key not found" key))])
       (cond [(assoc key (alist-v dict)) => cdr]

@@ -73,7 +73,7 @@ except that @racket[_k] by itself is not a @tech{stream}.
 
 Custom sequences can be defined using structure type properties.
 The easiest method to define a custom sequence is to use the
-@racket[prop:stream] property and the @racket[generic-stream]
+@racket[prop:stream] property and the @racket[gen:stream]
 extension interface. Streams are a suitable abstraction for data
 structures that are directly iterable. For example, a list is directly
 iterable with @racket[first] and @racket[rest]. On the other hand,
@@ -89,7 +89,7 @@ that can be represented as streams:
 @examples[#:eval stream-evaluator
   (struct unrolled-list-iterator (idx lst)
     #:property prop:stream
-    (methods generic-stream
+    (methods gen:stream
       (define (stream-empty? iter)
         (define lst (unrolled-list-iterator-lst iter))
         (or (null? lst)
@@ -776,7 +776,7 @@ A shorthand for nested @racket[stream-cons]es ending with
   The new stream is constructed lazily.}
 
 @deftogether[[
-@defthing[generic-stream any/c]
+@defthing[gen:stream any/c]
 @defthing[prop:stream struct-type-property?]]]{
 
   Associates three procedures to a structure type to implement stream
@@ -795,13 +795,13 @@ A shorthand for nested @racket[stream-cons]es ending with
 @examples[#:eval stream-evaluator
   (define-struct list-stream (v)
     #:property prop:stream
-    (methods generic-stream
-      (define (stream-empty? generic-stream)
-        (empty? (list-stream-v generic-stream)))
-      (define (stream-first generic-stream)
-        (first (list-stream-v generic-stream)))
-      (define (stream-rest generic-stream)
-        (rest (list-stream-v generic-stream)))))
+    (methods gen:stream
+      (define (stream-empty? stream)
+        (empty? (list-stream-v stream)))
+      (define (stream-first stream)
+        (first (list-stream-v stream)))
+      (define (stream-rest stream)
+        (rest (list-stream-v stream)))))
 
   (define l1 (list-stream '(1 2)))
   (stream? l1)

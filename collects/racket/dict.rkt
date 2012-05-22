@@ -217,7 +217,7 @@
   (->i ([d dict?])
        [_r (d) (listof (cons/c (dict-key-contract d) (dict-value-contract d)))])])
 
-(provide dict
+(provide gen:dict
          prop:dict
 
          make-custom-hash

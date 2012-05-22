@@ -357,7 +357,7 @@ Levels are indexed starting at 1, as in the paper.
               (vector-immutable any/c any/c skip-list-iter?
                                 #f #f #f))
         #:property prop:ordered-dict
-        (methods ordered-dict
+        (methods gen:ordered-dict
           (define dict-iterate-least skip-list-iterate-least)
           (define dict-iterate-greatest skip-list-iterate-greatest)
           (define dict-iterate-least/>? skip-list-iterate-least/>?)
@@ -373,7 +373,7 @@ Levels are indexed starting at 1, as in the paper.
                                 (lambda (s) (skip-list*-value-c s))
                                 #f))
         #:property prop:ordered-dict
-        (methods ordered-dict
+        (methods gen:ordered-dict
           (define dict-iterate-least skip-list-iterate-least)
           (define dict-iterate-greatest skip-list-iterate-greatest)
           (define dict-iterate-least/>? skip-list-iterate-least/>?)
@@ -395,7 +395,7 @@ Levels are indexed starting at 1, as in the paper.
                                 (lambda (s) (adjustable-skip-list*-value-c s))
                                 #f))
         #:property prop:ordered-dict
-        (methods ordered-dict
+        (methods gen:ordered-dict
           (define dict-iterate-least skip-list-iterate-least)
           (define dict-iterate-greatest skip-list-iterate-greatest)
           (define dict-iterate-least/>? skip-list-iterate-least/>?)

@@ -9,7 +9,7 @@
 
 @defmodule[racket/generics]
 
-@defform/subs[(define-generics (name prop:name name?
+@defform/subs[(define-generics (gen:name prop:name name?
                                 [#:defined-table defined-table])
                 [method . kw-formals*]
                 ...)
@@ -21,12 +21,12 @@
                      (code:line keyword id)
                      (code:line keyword [id])])
               #:contracts
-              ([name identifier?]
+              ([gen:name identifier?]
                [prop:name identifier?]
                [name? identifier?]
                [method identifier?])]{
 
-Defines @racket[name] as a transformer binding for the static
+Defines @racket[gen:name] as a transformer binding for the static
 information about a new generic group.
 
 Defines @racket[prop:name] as a structure type property.  Structure
@@ -44,7 +44,7 @@ types that implement this generic group.
 Defines each @racket[method] as a generic procedure that calls the
 corresponding method on values where @racket[name?] is true. Each method
 must have a required by-position argument that is
-@racket[free-identifier=?] to @racket[name]. This argument is used in
+@racket[free-identifier=?] to @racket[gen:name]. This argument is used in
 the generic definition to locate the specialization.
 
 The optional @racket[defined-table] argument should be an identifier.
@@ -57,38 +57,38 @@ availability.
 
 }
 
-@defform[(generics name
+@defform[(generics gen:name
                    [method . kw-formals*]
                    ...)
          #:contracts
-         ([name identifier?]
+         ([gen:name identifier?]
           [method identifier?])]{
 
 Expands to
 
-@racketblock[(define-generics (name _prop:name _name?)
+@racketblock[(define-generics (gen:name _prop:name _name?)
                [method . kw-formals*]
                ...)]
 
 where @racket[_prop:name] and @racket[_name?] are created with the lexical
-context of @racket[name].
+context of @racket[gen:name].
 
 }
 
-@defform[(methods name definition ...)
+@defform[(methods gen:name definition ...)
          #:contracts
-         ([name identifier?])]{
+         ([gen:name identifier?])]{
 
-@racket[name] must be a transformer binding for the static information
+@racket[gen:name] must be a transformer binding for the static information
 about a new generic group.
 
 Expands to a value usable as the property value for the structure type
-property of the @racket[name] generic group.
+property of the @racket[gen:name] generic group.
 
-If the @racket[definition]s define the methods of @racket[name], then
+If the @racket[definition]s define the methods of @racket[gen:name], then
 they are used in the property value.
 
-If any method of @racket[name] is not defined, then @racket[#f] is used
+If any method of @racket[gen:name] is not defined, then @racket[#f] is used
 to signify that the structure type does not implement the particular
 method.
 
@@ -120,14 +120,14 @@ Syntactically an error when used outside @racket[methods].
 @(define evaluator (new-evaluator))
 
 @examples[#:eval evaluator
-(define-generics (printable prop:printable printable?)
-  (gen-print printable [port])
-  (gen-port-print port printable)
-  (gen-print* printable [port] #:width width #:height [height]))
+(define-generics (gen:printable prop:printable printable?)
+  (gen-print gen:printable [port])
+  (gen-port-print port gen:printable)
+  (gen-print* gen:printable [port] #:width width #:height [height]))
 
 (define-struct num (v)
   #:property prop:printable
-  (methods printable
+  (methods gen:printable
     (define/generic super-print gen-print)
     (define (gen-print n [port (current-output-port)])
       (fprintf port "Num: ~a" (num-v n)))
@@ -139,7 +139,7 @@ Syntactically an error when used outside @racket[methods].
          
 (define-struct bool (v)
   #:property prop:printable
-  (methods printable
+  (methods gen:printable
     (define/generic super-print gen-print)
     (define (gen-print b [port (current-output-port)])
       (fprintf port "Bool: ~a" 
