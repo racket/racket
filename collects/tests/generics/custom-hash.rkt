@@ -41,16 +41,15 @@
 
 
 (struct custom-hash (table make-box)
-  #:property prop:dict
-  (methods gen:dict
-    (define dict-ref custom-hash-ref)
-    (define dict-set! custom-hash-set!)
-    (define (dict-set dict key val)
-      (error "no functional update"))
-    (define dict-remove! custom-hash-remove!)
-    (define (dict-remove dict key)
-      (error "no functional update"))
-    (define dict-count custom-hash-count))
+  #:methods gen:dict
+  [(define dict-ref custom-hash-ref)
+   (define dict-set! custom-hash-set!)
+   (define (dict-set dict key val)
+     (error "no functional update"))
+   (define dict-remove! custom-hash-remove!)
+   (define (dict-remove dict key)
+     (error "no functional update"))
+   (define dict-count custom-hash-count)]
   #:property prop:equal+hash
   (list (lambda (a b recur)
           (and (recur (custom-hash-make-box a)

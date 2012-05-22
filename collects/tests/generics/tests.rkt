@@ -5,4 +5,5 @@
          (submod "from-docs.rkt" test)
          (submod "coercion.rkt" test)
          (submod "stream.rkt" test)
-         (submod "iterator.rkt" test))
+         (submod "iterator.rkt" test)
+         (submod "struct-form.rkt" test))

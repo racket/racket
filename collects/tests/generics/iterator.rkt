@@ -40,22 +40,20 @@
   (iterator-continue? iterator))
 
 (struct list-iterator (l)
-        #:property prop:iterator
-        (methods iterator
-         (define (iterator-first x) (car (list-iterator-l x)))
+        #:methods iterator
+        [(define (iterator-first x) (car (list-iterator-l x)))
          (define (iterator-rest  x) (list-iterator (cdr (list-iterator-l x))))
-         (define (iterator-continue? x) (not (null? (list-iterator-l x))))))
+         (define (iterator-continue? x) (not (null? (list-iterator-l x))))])
 
 (struct vector-iterator (i v)
-        #:property prop:iterator
-        (methods iterator
-          (define (iterator-first x) (vector-ref (vector-iterator-v x)
-                                               (vector-iterator-i x)))
-          (define (iterator-rest x) (vector-iterator (add1 (vector-iterator-i x))
-                                                (vector-iterator-v x)))
-          (define (iterator-continue? x) (not (>= (vector-iterator-i x)
+        #:methods iterator
+        [(define (iterator-first x) (vector-ref (vector-iterator-v x)
+                                                (vector-iterator-i x)))
+         (define (iterator-rest x) (vector-iterator (add1 (vector-iterator-i x))
+                                                    (vector-iterator-v x)))
+         (define (iterator-continue? x) (not (>= (vector-iterator-i x)
                                                  (vector-length
-                                                  (vector-iterator-v x)))))))
+                                                  (vector-iterator-v x)))))])
 
 (module+ test
  (require rackunit)

@@ -3,25 +3,23 @@
 (require racket/generics racket/stream)
 
 (define-struct list-stream (v)
-  #:property prop:stream
-  (methods gen:stream
-    (define (stream-empty? generic-stream)
-      (empty? (list-stream-v generic-stream)))
-    (define (stream-first generic-stream)
-      (first (list-stream-v generic-stream)))
-    (define (stream-rest generic-stream)
-      (rest (list-stream-v generic-stream)))))
+  #:methods gen:stream
+  [(define (stream-empty? generic-stream)
+     (empty? (list-stream-v generic-stream)))
+   (define (stream-first generic-stream)
+     (first (list-stream-v generic-stream)))
+   (define (stream-rest generic-stream)
+     (rest (list-stream-v generic-stream)))])
 
 (struct vector-stream (i v)
-        #:property prop:stream
-        (methods gen:stream
-          (define (stream-first x) (vector-ref (vector-stream-v x)
-                                               (vector-stream-i x)))
-          (define (stream-rest x) (vector-stream (add1 (vector-stream-i x))
-                                                 (vector-stream-v x)))
-          (define (stream-empty? x) (>= (vector-stream-i x)
-                                        (vector-length
-                                         (vector-stream-v x))))))
+        #:methods gen:stream
+        [(define (stream-first x) (vector-ref (vector-stream-v x)
+                                              (vector-stream-i x)))
+         (define (stream-rest x) (vector-stream (add1 (vector-stream-i x))
+                                                (vector-stream-v x)))
+         (define (stream-empty? x) (>= (vector-stream-i x)
+                                       (vector-length
+                                        (vector-stream-v x))))])
 
 
 

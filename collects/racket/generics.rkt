@@ -10,7 +10,7 @@
 ;; Files that use racket/private/generics _must_ pass _all_ keyword
 ;; arguments to define-generics _in_order_.
 
-(provide generics define-generics define/generic methods)
+(provide generics define-generics define/generic)
 
 (define-syntax (generics stx)
   (syntax-case stx ()

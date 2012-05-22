@@ -8,30 +8,28 @@
   (gen-print* printable [port] #:width width #:height [height]))
 
 (define-struct num (v)
-  #:property prop:printable
-  (methods printable
-    (define/generic super-print gen-print)
-    (define (gen-print n [port (current-output-port)])
-      (fprintf port "Num: ~a" (num-v n)))
-    (define (gen-port-print port n)
-      (super-print n port))
-    (define (gen-print* n [port (current-output-port)]
-                        #:width w #:height [h 0])
-      (fprintf port "Num (~ax~a): ~a" w h (num-v n)))))
+  #:methods printable
+  [(define/generic super-print gen-print)
+   (define (gen-print n [port (current-output-port)])
+     (fprintf port "Num: ~a" (num-v n)))
+   (define (gen-port-print port n)
+     (super-print n port))
+   (define (gen-print* n [port (current-output-port)]
+                       #:width w #:height [h 0])
+     (fprintf port "Num (~ax~a): ~a" w h (num-v n)))])
 
 (define-struct bool (v)
-  #:property prop:printable
-  (methods printable
-    (define/generic super-print gen-print)
-    (define (gen-print b [port (current-output-port)])
-      (fprintf port "Bool: ~a"
-               (if (bool-v b) "Yes" "No")))
-    (define (gen-port-print port b)
-      (super-print b port))
-    (define (gen-print* b [port (current-output-port)]
-                        #:width w #:height [h 0])
-      (fprintf port "Bool (~ax~a): ~a" w h
-               (if (bool-v b) "Yes" "No")))))
+  #:methods printable
+  [(define/generic super-print gen-print)
+   (define (gen-print b [port (current-output-port)])
+     (fprintf port "Bool: ~a"
+              (if (bool-v b) "Yes" "No")))
+   (define (gen-port-print port b)
+     (super-print b port))
+   (define (gen-print* b [port (current-output-port)]
+                       #:width w #:height [h 0])
+     (fprintf port "Bool (~ax~a): ~a" w h
+              (if (bool-v b) "Yes" "No")))])
 
 (module+ test
   (require rackunit)

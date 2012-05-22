@@ -427,16 +427,15 @@
   (hash-iterate-value (custom-hash-table d) i))
 
 (struct custom-hash (table make-box)
-  #:property prop:dict
-  (methods gen:dict
-    (define dict-ref custom-hash-ref)
-    (define dict-set! custom-hash-set!)
-    (define dict-remove! custom-hash-remove!)
-    (define dict-count custom-hash-count)
-    (define dict-iterate-first custom-hash-iterate-first)
-    (define dict-iterate-next custom-hash-iterate-next)
-    (define dict-iterate-key custom-hash-iterate-key)
-    (define dict-iterate-value custom-hash-iterate-value))
+  #:methods gen:dict
+  [(define dict-ref custom-hash-ref)
+   (define dict-set! custom-hash-set!)
+   (define dict-remove! custom-hash-remove!)
+   (define dict-count custom-hash-count)
+   (define dict-iterate-first custom-hash-iterate-first)
+   (define dict-iterate-next custom-hash-iterate-next)
+   (define dict-iterate-key custom-hash-iterate-key)
+   (define dict-iterate-value custom-hash-iterate-value)]
   #:property prop:equal+hash
   (list (lambda (a b recur)
           (and (recur (custom-hash-make-box a)
@@ -447,16 +446,15 @@
         (lambda (a recur) (recur (custom-hash-table a)))))
 
 (struct immutable-custom-hash custom-hash ()
-  #:property prop:dict
-  (methods gen:dict
-    (define dict-ref custom-hash-ref)
-    (define dict-set custom-hash-set)
-    (define dict-remove custom-hash-remove)
-    (define dict-count custom-hash-count)
-    (define dict-iterate-first custom-hash-iterate-first)
-    (define dict-iterate-next custom-hash-iterate-next)
-    (define dict-iterate-key custom-hash-iterate-key)
-    (define dict-iterate-value custom-hash-iterate-value)))
+  #:methods gen:dict
+  [(define dict-ref custom-hash-ref)
+   (define dict-set custom-hash-set)
+   (define dict-remove custom-hash-remove)
+   (define dict-count custom-hash-count)
+   (define dict-iterate-first custom-hash-iterate-first)
+   (define dict-iterate-next custom-hash-iterate-next)
+   (define dict-iterate-key custom-hash-iterate-key)
+   (define dict-iterate-value custom-hash-iterate-value)])
           
 (define-values (create-custom-hash 
                 create-immutable-custom-hash

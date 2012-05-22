@@ -2,12 +2,13 @@
 (require racket/local
          (for-syntax racket/base
                      racket/local
-                     racket/syntax))
+                     racket/syntax)
+         (only-in "define-struct.rkt" define/generic))
 
 (define-for-syntax (keyword-stx? v)
   (keyword? (syntax->datum v)))
 
-(provide define-generics)
+(provide define-generics define/generic)
 (define-syntax (define-generics stx)
   (syntax-case stx () ; can't use syntax-parse, since it depends on us
     ;; keyword arguments must _all_ be provided _in_order_. For the
@@ -100,7 +101,7 @@
                           #'defined-already?
                           (generate-temporary 'get-generics))])
          #`(begin
-             (define-syntax name (list #'generic ...))
+             (define-syntax name (list #'prop:name #'generic ...))
              ; XXX optimize no kws or opts
              (define generic-arity-coerce
                (let*-values ([(p) (lambda fake-args #f)]
@@ -207,51 +208,3 @@
                              (error 'generic "not implemented for ~e" this)))
                        (raise-type-error 'generic name-str this))))))
              ...)))]))
-
-(require racket/stxparam)
-(define-syntax-parameter define/generic
-  (lambda (stx)
-    (raise-syntax-error 'define/generic "only allowed inside methods" stx)))
-(provide define/generic)
-
-;; utility for specification of methods for a group of generic functions
-;; (could make this do all the checks instead of a guard for the property)
-(provide methods)
-(define-syntax (methods stx)
-  (syntax-case stx (=>)
-    [(_ generics . mthds)
-     (identifier? #'generics)
-     (let ([specs (syntax-local-value #'generics (lambda () #f))])
-       (unless (and (list? specs) (andmap identifier? specs))
-         (raise-syntax-error
-          #f "not a name for a generics group" stx #'generics))
-       (with-syntax ([(generic ...)
-                      specs]
-                     [(mthd-generic ...)
-                      (map (λ (g) (datum->syntax #'mthds (syntax->datum g)))
-                           specs)])
-         (syntax-property
-         (syntax/loc stx
-           (let (; XXX this could be a signal to the guard to error early,
-                 ;     but is seems okay to allow missing methods
-                 [mthd-generic #f]
-                 ...)
-             (syntax-parameterize
-                 ([define/generic
-                    (lambda (stx)
-                      (syntax-case stx (mthd-generic ...)
-                        [(_ new-name mthd-generic)
-                         (syntax/loc stx
-                           (define new-name generic))]
-                        ...
-                        [(_ new-name method-name)
-                         (raise-syntax-error 'define/generic
-                                             (format "~.s not a method of ~.s"
-                                                     (syntax->datum #'method-name)
-                                                     'generics)
-                                             stx
-                                             #'method-name)]))])
-               (local mthds
-                 (vector mthd-generic ...)))))
-         'disappeared-use
-         (list #'generics))))]))

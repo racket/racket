@@ -9,9 +9,9 @@
   (echo echoable))
 
 (struct echo1 (s)
-        #:property prop:echo
+        #:methods echoable
         ;; defined the "new" way
-        (methods echoable (define (echo x) (echo1-s x))))
+        ((define (echo x) (echo1-s x))))
 
 (struct echo2 (s)
         #:property prop:echo
