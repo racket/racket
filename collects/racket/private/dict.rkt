@@ -3,20 +3,20 @@
 (require racket/private/generics ; to avoid circular dependencies
          (for-syntax racket/base))
 
-(define-generics (gen:dict prop:dict dict? #:defined-table dict-def-table
+(define-generics (dict gen:dict prop:dict dict? #:defined-table dict-def-table
                        ;; private version needs all kw args, in order
                        #:coerce-method-table #f
                        #:prop-defined-already? #f)
-  (dict-ref  gen:dict key [default])
-  (dict-set! gen:dict key val)
-  (dict-set  gen:dict key val)
-  (dict-remove! gen:dict key)
-  (dict-remove  gen:dict key)
-  (dict-count gen:dict)
-  (dict-iterate-first gen:dict)
-  (dict-iterate-next gen:dict pos)
-  (dict-iterate-key gen:dict pos)
-  (dict-iterate-value gen:dict pos))
+  (dict-ref  dict key [default])
+  (dict-set! dict key val)
+  (dict-set  dict key val)
+  (dict-remove! dict key)
+  (dict-remove  dict key)
+  (dict-count dict)
+  (dict-iterate-first dict)
+  (dict-iterate-next dict pos)
+  (dict-iterate-key dict pos)
+  (dict-iterate-value dict pos))
 
 (define (assoc? v)
   (and (list? v) (andmap pair? v)))

@@ -2,14 +2,14 @@
 
 (require racket/private/generics)
 
-(define-generics (echoable prop:echo echo?
+(define-generics (echoable gen:echoable prop:echo echo?
                            #:defined-table dummy
                            #:coerce-method-table list->vector
                            #:prop-defined-already? #f)
   (echo echoable))
 
 (struct echo1 (s)
-        #:methods echoable
+        #:methods gen:echoable
         ;; defined the "new" way
         ((define (echo x) (echo1-s x))))
 

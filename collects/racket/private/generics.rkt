@@ -13,16 +13,22 @@
   (syntax-case stx () ; can't use syntax-parse, since it depends on us
     ;; keyword arguments must _all_ be provided _in_order_. For the
     ;; user-facing version of `define-generics', see racket/generics.
-    [(_ (name prop:name name?
-              #:defined-table defined-table
-              ;; use of coercion functions is explained below
-              #:coerce-method-table coerce-method-table
-              ;; are we being passed an existing struct property? If so,
-              ;; this kw arg is bound to the struct property accessor, and
-              ;; we don't define the struct property
-              #:prop-defined-already? defined-already?)
+    ;;
+    ;; The `header` is the original name the library writer provides
+    ;; that is used to define the `name`, `prop:name`, and `name?`
+    ;; identifiers. We have it here so that we can use it to match
+    ;; the method header's self argument.
+    [(_ (header name prop:name name?
+                #:defined-table defined-table
+                ;; use of coercion functions is explained below
+                #:coerce-method-table coerce-method-table
+                ;; are we being passed an existing struct property? If so,
+                ;; this kw arg is bound to the struct property accessor, and
+                ;; we don't define the struct property
+                #:prop-defined-already? defined-already?)
         (generic . generic-args) ...)
-     (and (identifier? #'name)
+     (and (identifier? #'header)
+          (identifier? #'name)
           (identifier? #'prop:name)
           (identifier? #'name?)
           (identifier? #'defined-table)
@@ -50,7 +56,7 @@
                              (loop #'ga i)]
                             [(id . ga)
                              (and (identifier? #'id))
-                             (if (free-identifier=? #'name #'id)
+                             (if (free-identifier=? #'header #'id)
                                  i
                                  (loop #'ga (add1 i)))]
                             [(keyword [id] . ga)

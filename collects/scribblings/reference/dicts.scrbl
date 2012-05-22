@@ -18,9 +18,8 @@ values. The following datatypes are all dictionaries:
  @item{@techlink{lists} of @techlink{pairs} (an @deftech{association
        list} using @racket[equal?] to compare keys); and}
 
- @item{@techlink{structures} whose types implement the @racket[dict]
-       generic interface, with methods attached to the @racket[prop:dict]
-       struct property.}
+ @item{@techlink{structures} whose types implement the @racket[gen:dict]
+       @tech{generic interface}.}
 
 ]
 
@@ -528,11 +527,9 @@ Returns a list of the associations from
 (dict->list h)
 ]}
 
-@deftogether[[
-@defthing[gen:dict any/c]
-@defthing[prop:dict struct-type-property?]]]{
+@defthing[gen:dict any/c]{
 
-A @tech{structure type property} (see @secref["structprops"]) that
+A @tech{generic interface} (see @secref["struct-generics"]) that
 supplies dictionary method implementations for a structure type.
 To supply method implementations, the @racket[methods] form should be used.
 The provided implementations are applied only to instances of the structure
@@ -574,28 +571,33 @@ type. The following methods can be implemented:
 
 @examples[#:eval dict-eval
 (struct alist (v)
-  #:property prop:dict
-  (methods gen:dict
-    (define (dict-ref dict key
-                      [default (lambda () (error "key not found" key))])
-      (cond [(assoc key (alist-v dict)) => cdr]
-            [else (if (procedure? default) (default) default)]))
-    (define (dict-set dict key val)
-      (alist (cons (cons key val) (alist-v dict))))
-    (define (dict-remove dict key)
-      (define al (alist-v dict))
-      (remove* (assoc key al) al))
-    (define (dict-count dict #:default [x #f])
-      (or x
-          (length (remove-duplicates (alist-v dict) #:key car))))
-    (code:comment "etc. other methods")
-    ))
+  #:methods gen:dict
+  [(define (dict-ref dict key
+                     [default (lambda () (error "key not found" key))])
+     (cond [(assoc key (alist-v dict)) => cdr]
+           [else (if (procedure? default) (default) default)]))
+   (define (dict-set dict key val)
+     (alist (cons (cons key val) (alist-v dict))))
+   (define (dict-remove dict key)
+     (define al (alist-v dict))
+     (remove* (assoc key al) al))
+   (define (dict-count dict #:default [x #f])
+     (or x
+         (length (remove-duplicates (alist-v dict) #:key car))))
+   (code:comment "etc. other methods")])
 
   (define d1 '((1 . a) (2 . b)))
   (dict? d1)
   (dict-ref d1 1)
 ]
 
+}
+
+@defthing[prop:dict struct-type-property?]{
+  A deprecated structure type property used to define custom extensions
+  to the dictionary API. Use @racket[gen:dict] instead. Accepts a vector
+  of 10 procedures with the same arguments as the methods of
+  @racket[gen:dict].
 }
 
 @defthing[prop:dict/contract struct-type-property?]{
@@ -614,12 +616,13 @@ be a list of two immutable vectors:
               _instance-iter-contract))
 ]
 
-The first vector must be suitable as a value for @racket[prop:dict]
-(in addition, it must be an immutable vector). The second vector must
-contain six elements; each of the first three is a contract for the
-dictionary type's keys, values, and positions, respectively. Each of
-the second three is either @racket[#f] or a procedure used to extract
-the contract from a dictionary instance.
+The first vector must be a vector of 10 procedures which match the
+@racket[gen:dict] @tech{generic interface} (in addition, it must be an
+immutable vector). The second vector must contain six elements; each
+of the first three is a contract for the dictionary type's keys,
+values, and positions, respectively. Each of the second three is
+either @racket[#f] or a procedure used to extract the contract from
+a dictionary instance.
 }
 
 @deftogether[[

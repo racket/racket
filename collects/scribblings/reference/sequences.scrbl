@@ -73,14 +73,14 @@ except that @racket[_k] by itself is not a @tech{stream}.
 
 Custom sequences can be defined using structure type properties.
 The easiest method to define a custom sequence is to use the
-@racket[prop:stream] property and the @racket[gen:stream]
-extension interface. Streams are a suitable abstraction for data
-structures that are directly iterable. For example, a list is directly
-iterable with @racket[first] and @racket[rest]. On the other hand,
-vectors are not directly iterable: iteration has to go through an
-index. For data structures that are not directly iterable, the
-@deftech{iterator} for the data structure can be defined to be a
-stream (e.g., a structure containing the index of a vector).
+@racket[gen:stream] @tech{generic interface}. Streams are a suitable
+abstraction for data structures that are directly iterable.
+For example, a list is directly iterable with @racket[first] and
+@racket[rest]. On the other hand, vectors are not directly
+iterable: iteration has to go through an index. For data
+structures that are not directly iterable, the @deftech{iterator}
+for the data structure can be defined to be a stream
+(e.g., a structure containing the index of a vector).
 
 For example, unrolled linked lists (represented as a list of vectors)
 themeselves do not fit the stream abstraction, but have index-based iterators
@@ -88,23 +88,22 @@ that can be represented as streams:
 
 @examples[#:eval stream-evaluator
   (struct unrolled-list-iterator (idx lst)
-    #:property prop:stream
-    (methods gen:stream
-      (define (stream-empty? iter)
-        (define lst (unrolled-list-iterator-lst iter))
-        (or (null? lst)
-            (and (>= (unrolled-list-iterator-idx iter)
-                     (vector-length (first lst)))
-                 (null? (rest lst)))))
-      (define (stream-first iter)
-        (vector-ref (first (unrolled-list-iterator-lst iter))
-                    (unrolled-list-iterator-idx iter)))
-      (define (stream-rest iter)
-        (define idx (unrolled-list-iterator-idx iter))
-        (define lst (unrolled-list-iterator-lst iter))
-        (if (>= idx (sub1 (vector-length (first lst))))
-            (unrolled-list-iterator 0 (rest lst))
-            (unrolled-list-iterator (add1 idx) lst)))))
+    #:methods gen:stream
+    [(define (stream-empty? iter)
+       (define lst (unrolled-list-iterator-lst iter))
+       (or (null? lst)
+           (and (>= (unrolled-list-iterator-idx iter)
+                    (vector-length (first lst)))
+                (null? (rest lst)))))
+     (define (stream-first iter)
+       (vector-ref (first (unrolled-list-iterator-lst iter))
+                   (unrolled-list-iterator-idx iter)))
+     (define (stream-rest iter)
+       (define idx (unrolled-list-iterator-idx iter))
+       (define lst (unrolled-list-iterator-lst iter))
+       (if (>= idx (sub1 (vector-length (first lst))))
+           (unrolled-list-iterator 0 (rest lst))
+           (unrolled-list-iterator (add1 idx) lst)))])
 
   (define (make-unrolled-list-iterator ul)
     (unrolled-list-iterator 0 (unrolled-list-lov ul)))
@@ -775,16 +774,13 @@ A shorthand for nested @racket[stream-cons]es ending with
   but with @racket[e] between each pair of elements in @racket[s].
   The new stream is constructed lazily.}
 
-@deftogether[[
-@defthing[gen:stream any/c]
-@defthing[prop:stream struct-type-property?]]]{
+@defthing[gen:stream any/c]{
 
-  Associates three procedures to a structure type to implement stream
-  methods for instances of the stream generics.
+  Associates three methods to a structure type to implement the
+  @tech{generic interface} for streams.
 
-  To supply method implementations, the @racket[methods] form should be used.
-  The methods are applied only to instances of the structure type that has
-  the property value. The following three methods should be implemented:
+  To supply method implementations, the @racket[#:methods] keyword should be used.
+  The following three methods should be implemented:
   
 @itemize[
   @item{@racket[stream-empty?] : accepts one argument}
@@ -794,19 +790,25 @@ A shorthand for nested @racket[stream-cons]es ending with
 
 @examples[#:eval stream-evaluator
   (define-struct list-stream (v)
-    #:property prop:stream
-    (methods gen:stream
-      (define (stream-empty? stream)
-        (empty? (list-stream-v stream)))
-      (define (stream-first stream)
-        (first (list-stream-v stream)))
-      (define (stream-rest stream)
-        (rest (list-stream-v stream)))))
+    #:methods gen:stream
+    [(define (stream-empty? stream)
+       (empty? (list-stream-v stream)))
+     (define (stream-first stream)
+       (first (list-stream-v stream)))
+     (define (stream-rest stream)
+       (rest (list-stream-v stream)))])
 
   (define l1 (list-stream '(1 2)))
   (stream? l1)
   (stream-first l1)
 ]}
+
+@defthing[prop:stream struct-type-property?]{
+  A deprecated structure type property used to define custom
+  extensions to the stream API. Use @racket[gen:stream] instead.
+  Accepts a vector of three procedures taking the same arguments
+  as the methods in @racket[gen:stream].
+}
 
 @; ======================================================================
 @section{Generators}

@@ -31,7 +31,7 @@
                               (lambda (v) #t)
                               (lambda (t v) #t))))))))))
 
-(define-generics (iterator prop:iterator iterator?
+(define-generics (iterator gen:iterator prop:iterator iterator?
                            #:defined-table dummy
                            #:coerce-method-table #f
                            #:prop-defined-already? iterator-accessor)
@@ -40,13 +40,13 @@
   (iterator-continue? iterator))
 
 (struct list-iterator (l)
-        #:methods iterator
+        #:methods gen:iterator
         [(define (iterator-first x) (car (list-iterator-l x)))
          (define (iterator-rest  x) (list-iterator (cdr (list-iterator-l x))))
          (define (iterator-continue? x) (not (null? (list-iterator-l x))))])
 
 (struct vector-iterator (i v)
-        #:methods iterator
+        #:methods gen:iterator
         [(define (iterator-first x) (vector-ref (vector-iterator-v x)
                                                 (vector-iterator-i x)))
          (define (iterator-rest x) (vector-iterator (add1 (vector-iterator-i x))

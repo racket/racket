@@ -2,13 +2,13 @@
 
 (require racket/generics racket/port)
 
-(define-generics (printable prop:printable printable?)
+(define-generics (printable)
   (gen-print printable [port])
   (gen-port-print port printable)
   (gen-print* printable [port] #:width width #:height [height]))
 
 (define-struct num (v)
-  #:methods printable
+  #:methods gen:printable
   [(define/generic super-print gen-print)
    (define (gen-print n [port (current-output-port)])
      (fprintf port "Num: ~a" (num-v n)))
@@ -19,7 +19,7 @@
      (fprintf port "Num (~ax~a): ~a" w h (num-v n)))])
 
 (define-struct bool (v)
-  #:methods printable
+  #:methods gen:printable
   [(define/generic super-print gen-print)
    (define (gen-print b [port (current-output-port)])
      (fprintf port "Bool: ~a"

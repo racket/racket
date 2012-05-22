@@ -39,15 +39,15 @@
          stream-add-between
          stream-count)
 
-(define-generics (gen:stream prop:stream stream?
-                             #:defined-table defined-table
-                             #:coerce-method-table #f
-                             #:prop-defined-already? stream-get-generics)
+(define-generics (-stream gen:stream prop:stream stream?
+                          #:defined-table defined-table
+                          #:coerce-method-table #f
+                          #:prop-defined-already? stream-get-generics)
   ;; These three are never used for the reasons explained above.
   ;; We still need the headers for clients who extend racket/stream.
-  (stream-empty? gen:stream)
-  (stream-first gen:stream)
-  (stream-rest gen:stream))
+  (stream-empty? -stream)
+  (stream-first -stream)
+  (stream-rest -stream))
 
 (define-syntax stream
   (syntax-rules ()

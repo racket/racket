@@ -9,6 +9,12 @@
 
 @defmodule[racket/generics]
 
+A @deftech{generic interface} allows per-type methods to be
+associated with generic functions. Generic functions are defined
+using a @racket[define-generics] form. Method implementations for
+a structure type are defined using the @racket[#:methods] keyword
+(see @secref["define-struct"]).
+
 @defform/subs[(define-generics (gen:name prop:name name?
                                 [#:defined-table defined-table])
                 [method . kw-formals*]
@@ -57,55 +63,18 @@ availability.
 
 }
 
-@defform[(generics gen:name
-                   [method . kw-formals*]
-                   ...)
-         #:contracts
-         ([gen:name identifier?]
-          [method identifier?])]{
-
-Expands to
-
-@racketblock[(define-generics (gen:name _prop:name _name?)
-               [method . kw-formals*]
-               ...)]
-
-where @racket[_prop:name] and @racket[_name?] are created with the lexical
-context of @racket[gen:name].
-
-}
-
-@defform[(methods gen:name definition ...)
-         #:contracts
-         ([gen:name identifier?])]{
-
-@racket[gen:name] must be a transformer binding for the static information
-about a new generic group.
-
-Expands to a value usable as the property value for the structure type
-property of the @racket[gen:name] generic group.
-
-If the @racket[definition]s define the methods of @racket[gen:name], then
-they are used in the property value.
-
-If any method of @racket[gen:name] is not defined, then @racket[#f] is used
-to signify that the structure type does not implement the particular
-method.
-
-Allows @racket[define/generic] to appear in @racket[definition ...].
-
-}
-
 @defform[(define/generic local-name method-name)
          #:contracts
          ([local-name identifier?]
           [method-name identifier?])]{
 
-When used inside @racket[methods], binds @racket[local-name] to
+When used inside the method definitions associated with the
+@racket[#:methods] keyword, binds @racket[local-name] to
 the generic for @racket[method-name]. This is useful for method
 specializations to use the generic methods on other values.
 
-Syntactically an error when used outside @racket[methods].
+Syntactically an error when used outside the definitions associated
+with @racket[#:methods].
 
 }
 
@@ -120,36 +89,34 @@ Syntactically an error when used outside @racket[methods].
 @(define evaluator (new-evaluator))
 
 @examples[#:eval evaluator
-(define-generics (gen:printable prop:printable printable?)
-  (gen-print gen:printable [port])
-  (gen-port-print port gen:printable)
-  (gen-print* gen:printable [port] #:width width #:height [height]))
+(define-generics (printable)
+  (gen-print printable [port])
+  (gen-port-print port printable)
+  (gen-print* printable [port] #:width width #:height [height]))
 
 (define-struct num (v)
-  #:property prop:printable
-  (methods gen:printable
-    (define/generic super-print gen-print)
-    (define (gen-print n [port (current-output-port)])
-      (fprintf port "Num: ~a" (num-v n)))
-    (define (gen-port-print port n)
-      (super-print n port))
-    (define (gen-print* n [port (current-output-port)]
-                        #:width w #:height [h 0])
-      (fprintf port "Num (~ax~a): ~a" w h (num-v n)))))
+  #:methods gen:printable
+  [(define/generic super-print gen-print)
+   (define (gen-print n [port (current-output-port)])
+     (fprintf port "Num: ~a" (num-v n)))
+   (define (gen-port-print port n)
+     (super-print n port))
+   (define (gen-print* n [port (current-output-port)]
+                       #:width w #:height [h 0])
+     (fprintf port "Num (~ax~a): ~a" w h (num-v n)))])
          
 (define-struct bool (v)
-  #:property prop:printable
-  (methods gen:printable
-    (define/generic super-print gen-print)
-    (define (gen-print b [port (current-output-port)])
-      (fprintf port "Bool: ~a" 
-               (if (bool-v b) "Yes" "No")))
-    (define (gen-port-print port b)
-      (super-print b port))
-    (define (gen-print* b [port (current-output-port)]
-                        #:width w #:height [h 0])
-      (fprintf port "Bool (~ax~a): ~a" w h 
-               (if (bool-v b) "Yes" "No")))))
+  #:methods gen:printable
+  [(define/generic super-print gen-print)
+   (define (gen-print b [port (current-output-port)])
+     (fprintf port "Bool: ~a" 
+              (if (bool-v b) "Yes" "No")))
+   (define (gen-port-print port b)
+     (super-print b port))
+   (define (gen-print* b [port (current-output-port)]
+                       #:width w #:height [h 0])
+     (fprintf port "Bool (~ax~a): ~a" w h 
+              (if (bool-v b) "Yes" "No")))])
 
 (define x (make-num 10))
 (gen-print x)

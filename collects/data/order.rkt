@@ -3,20 +3,28 @@
          racket/contract/base
          racket/string
          ffi/unsafe/atomic
-         racket/generics)
+         racket/private/generics)
 
 (define ordering/c
   (or/c '= '< '>))
 
 (provide ordering/c)
 
-(define-generics (gen:ordered-dict prop:ordered-dict ordered-dict?)
-  (dict-iterate-least gen:ordered-dict)
-  (dict-iterate-greatest gen:ordered-dict)
-  (dict-iterate-least/>? gen:ordered-dict key)
-  (dict-iterate-least/>=? gen:ordered-dict key)
-  (dict-iterate-greatest/<? gen:ordered-dict key)
-  (dict-iterate-greatest/<=? gen:ordered-dict key))
+;; we use the private version here because we need to
+;; provide a backwards compatible interface (just in case)
+;; i.e., exporting prop:ordered-dict as opposed to using a
+;;       generated hidden property.
+(define-generics (ordered-dict gen:ordered-dict prop:ordered-dict ordered-dict?
+                               #:defined-table dict-def-table
+                               ;; private version needs all kw args, in order
+                               #:coerce-method-table #f
+                               #:prop-defined-already? #f)
+  (dict-iterate-least ordered-dict)
+  (dict-iterate-greatest ordered-dict)
+  (dict-iterate-least/>? ordered-dict key)
+  (dict-iterate-least/>=? ordered-dict key)
+  (dict-iterate-greatest/<? ordered-dict key)
+  (dict-iterate-greatest/<=? ordered-dict key))
 
 (define extreme-contract
   (->i ([d ordered-dict?])

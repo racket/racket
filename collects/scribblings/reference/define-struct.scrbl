@@ -25,10 +25,14 @@
                               (code:line #:constructor-name constructor-id)
                               (code:line #:extra-constructor-name constructor-id)
                               (code:line #:reflection-name symbol-expr)
+                              (code:line #:methods gen:name method-defs)
                               #:omit-define-syntaxes
                               #:omit-define-values]
                [field-option #:mutable
-                             #:auto])]{
+                             #:auto]
+               [method-defs (definition ...)])
+               #:contracts
+               ([gen:name identifier?])]{
 
 Creates a new @techlink{structure type} (or uses a pre-existing
 structure type if @racket[#:prefab] is specified), and binds
@@ -144,6 +148,15 @@ the structure type in reflective operations such as
 @racket[struct-type-info]. It corresponds to the first argument of
 @racket[make-struct-type]. Structure printing uses the reflective
 name, as do the various procedures that are bound by @racket[struct].
+
+If @racket[#:methods gen:name method-defs] is provided, then
+@racket[gen:name] must be a transformer binding for the static
+information about a generic group produced by @racket[define-generics].
+The @racket[method-defs] define the methods of @racket[gen:name].
+If any method of @racket[gen:name] is not defined, then @racket[#f] is used
+to signify that the structure type does not implement the particular
+method. At least one method definition must be provided if this keyword
+is used. A @racket[define/generic] form may appear in @racket[method-defs].
 
 If the @racket[#:omit-define-syntaxes] option is supplied, then
 @racket[id] is not bound as a transformer. If the
