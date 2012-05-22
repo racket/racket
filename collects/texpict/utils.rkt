@@ -785,7 +785,7 @@
                           (if (eq? direction 'left)
                               x0
                               (+ x (- w (- x0 x) w0))))]
-		  [set-rgn (lambda (rgn flip?)
+		  [set-rgn (lambda (rgn flip? old-rgn)
                              (let ([dy (if flip? (/ h 2) 0)]
                                    [wf (λ (x) (* (if (eq? 'left direction) x (+ 1 (* x -1))) w))])
 			       (if mouth-open?
@@ -801,7 +801,9 @@
 					 x (+ y dy))
 				   (send rgn set-rectangle 
 					 x (+ y dy)
-					 w (/ h 2)))))])
+					 w (/ h 2))))
+                             (when old-rgn
+                               (send rgn intersect old-rgn)))])
               (send dc set-pen no-pen)
               (color-series
                dc 4 1
@@ -822,7 +824,7 @@
                        x y))
                #f #t)
 
-	      (set-rgn rgn #f)
+	      (set-rgn rgn #f old-rgn)
 	      (send dc set-clipping-region rgn)
               (color-series
                dc 4 1
@@ -833,7 +835,7 @@
                #f #t)
               (send dc set-clipping-region old-rgn)
 
-              (set-rgn rgn #t)
+              (set-rgn rgn #t old-rgn)
               (send dc set-clipping-region rgn)
               (color-series
                dc 4 1
