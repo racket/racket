@@ -33,7 +33,6 @@
 
 (define-generics (iterator gen:iterator prop:iterator iterator?
                            #:defined-table dummy
-                           #:coerce-method-table #f
                            #:prop-defined-already? iterator-accessor)
   (iterator-first     iterator)
   (iterator-rest      iterator)

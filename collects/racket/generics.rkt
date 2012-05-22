@@ -27,7 +27,6 @@
                     [gen:name (id "gen:" name-str)])
        #'(define-generics/pre (name gen:name prop:name name?
                                     #:defined-table defined-table
-                                    ;; the following are not public
-                                    #:coerce-method-table #f
+                                    ;; the following is not public
                                     #:prop-defined-already? #f)
            (generic . generics-args) ...)))]))

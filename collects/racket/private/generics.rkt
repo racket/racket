@@ -20,8 +20,6 @@
     ;; the method header's self argument.
     [(_ (header name prop:name name?
                 #:defined-table defined-table
-                ;; use of coercion functions is explained below
-                #:coerce-method-table coerce-method-table
                 ;; are we being passed an existing struct property? If so,
                 ;; this kw arg is bound to the struct property accessor, and
                 ;; we don't define the struct property
@@ -39,7 +37,6 @@
                     i)]
             [name-str (symbol->string (syntax-e #'name))]
             [generics (syntax->list #'(generic ...))]
-            [need-coercion? (syntax->datum #'coerce-method-table)]
             [prop-defined-already? (syntax-e #'defined-already?)])
        (with-syntax ([name-str name-str]
                      [how-many-generics (length idxs)]
@@ -92,13 +89,6 @@
                              #'id]
                             [()
                              #'()])))]
-                     [prop:method-table
-                      ;; if we need to coerce what's at prop:name into a
-                      ;; method table, we need to generate a new struct
-                      ;; property for the method table
-                      (if need-coercion?
-                          (generate-temporary (syntax->datum #'prop:name))
-                          #'prop:name)]
                      ;; if we're the ones defining the struct property,
                      ;; generate a new id, otherwise use the struct property
                      ;; accessor that we were passed
@@ -119,7 +109,7 @@
              #,@(if prop-defined-already?
                     '() ; we don't need to define it
                     (list
-                     #'(define-values (prop:method-table name? get-generics)
+                     #'(define-values (prop:name name? get-generics)
                          (make-struct-type-property
                           'name
                           (lambda (generic-vector si)
@@ -137,54 +127,6 @@
                                       (and mthd-generic
                                            (generic-arity-coerce mthd-generic)))
                                     ...))))))
-
-             ;; Use case for method table coercion: retrofitting a generics-
-             ;; based API on top of a struct property that uses its own ad-hoc
-             ;; extension mechanism.
-             ;; If coercion is used, prop:method-table and prop:name are
-             ;; distinct. We define prop:name (e.g. prop:equals+hash-code,
-             ;; the user-facing name) to "push" its method table to
-             ;; prop:method-table, calling the coercion function if necessary.
-             ;; prop:method-table is then used for dispatch and all.
-             ;; That way, existing code can use prop:name using its old
-             ;; extension API, and new code can use the generics-based
-             ;; interface.
-             ;; The coercion function should take whatever lives at prop:name
-             ;; according to its old extension API, and produce a vector of
-             ;; methods in the defined order.
-             ;;
-             ;; Note: this feature turned out to be less useful than we
-             ;;       expected, because most of the backwards compatibility
-             ;;       examples we found were much more complicated. It would
-             ;;       have been useful for equal+hash were it not defined
-             ;;       in the C code.
-             #,@(if need-coercion?
-                    (list
-                     #'(define-values (prop:name unused unused2)
-                         (make-struct-type-property
-                          'front-facing-name
-                          #f ; no guard, we accept anything;
-                          ;; prop:method-table does the checking
-                          (list
-                           (cons prop:method-table
-                                 (lambda (maybe-method-table)
-                                   ;; if we get a valid method table, (methods
-                                   ;; was used, not the old API provided for
-                                   ;; prop:name) we just use it. otherwise, we
-                                   ;; call the coercion function
-                                   (if (and (vector? maybe-method-table)
-                                            (= (vector-length
-                                                maybe-method-table)
-                                               how-many-generics)
-                                            (for/and ([g (in-vector
-                                                          maybe-method-table)])
-                                              (procedure? g)))
-                                       ;; valid method table
-                                       maybe-method-table
-                                       (coerce-method-table
-                                        maybe-method-table))))))))
-                    ;; no need for coercions, methods are stored at prop:name
-                    '())
              ;; Hash table mapping method name symbols to
              ;; whether the given method is implemented
              (define (defined-table this)

@@ -17,7 +17,6 @@
 (define-generics (ordered-dict gen:ordered-dict prop:ordered-dict ordered-dict?
                                #:defined-table dict-def-table
                                ;; private version needs all kw args, in order
-                               #:coerce-method-table #f
                                #:prop-defined-already? #f)
   (dict-iterate-least ordered-dict)
   (dict-iterate-greatest ordered-dict)
