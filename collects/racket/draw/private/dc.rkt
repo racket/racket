@@ -1173,18 +1173,17 @@
                                    CAIRO_FILL_RULE_WINDING
                                    CAIRO_FILL_RULE_EVEN_ODD))
        (cairo_new_path cr)
-       (cairo_translate cr dx dy)
        (if (aligned? smoothing)
            (begin
              (when (brush-draws?)
-               (send path do-path cr (lambda (x) x) (lambda (y) y))
+               (send path do-path cr (lambda (x) (+ dx x)) (lambda (y) (+ dy y)))
                (draw cr #t #f))
              (cairo_new_path cr)
              (when (pen-draws?)
-               (send path do-path cr (lambda (x) (align-x x)) (lambda (y) (align-y y)))
+               (send path do-path cr (lambda (x) (align-x (+ dx x))) (lambda (y) (align-y (+ dy y))))
                (draw cr #f #t)))
            (begin
-             (send path do-path cr (lambda (x) x) (lambda (y) y))
+             (send path do-path cr (lambda (x) (+ dx x)) (lambda (y) (+ dy y)))
              (draw cr #t #t)))
        (cairo_restore cr)))
 
