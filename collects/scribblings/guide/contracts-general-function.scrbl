@@ -308,7 +308,7 @@ withdrawal operation. The improved bank-account module includes a
 ]
 
 Besides requiring that a client provide a valid amount for a
-withdrawal, however, the amount should be less than the specified
+withdrawal, however, the amount should be less than or equal to the specified
 account's balance, and the resulting account will have less money than
 it started with. Similarly, the module might promise that a deposit
 produces an account with money added to the account. The following
