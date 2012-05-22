@@ -3861,6 +3861,7 @@ An example
                                method-ht
                                (class-method-ids cls)
                                null
+                               null
 
                                (make-weak-hasheq)
 
