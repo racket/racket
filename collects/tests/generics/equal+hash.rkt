@@ -1,14 +1,15 @@
 #lang racket
 
+(require racket/struct)
+
 ;; vectors as method tables
 (struct kons (kar kdr)
-        #:property prop:equal+hash
-        (vector 'ta
-                (lambda (x y rec)
-                  (and (rec (kons-kar x) (kons-kar y))
-                       (rec (kons-kdr x) (kons-kdr y))))
-                (lambda (x y) 12)
-                (lambda (x y) 13)))
+        #:methods gen:equal+hash
+        [(define (equal-proc x y rec)
+           (and (rec (kons-kar x) (kons-kar y))
+                (rec (kons-kdr x) (kons-kdr y))))
+         (define (hash-proc x rec)  12)
+         (define (hash2-proc x rec) 13)])
 
 (module+ test
   (require rackunit)

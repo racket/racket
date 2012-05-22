@@ -655,7 +655,7 @@ iterators, respectively, if @racket[d] implements the
 Creates a dictionary that is implemented in terms of a hash table
 where keys are compared with @racket[eql?] and hashed with
 @racket[hash-proc] and @racket[hash2-proc]. See
-@racket[prop:equal+hash] for information on suitable equality and
+@racket[gen:equal+hash] for information on suitable equality and
 hashing functions.
 
 The @racket[make-custom-hash] and @racket[make-weak-custom-hash]

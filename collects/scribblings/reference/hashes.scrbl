@@ -443,7 +443,7 @@ the returned number is the same.}
 Returns a @tech{fixnum}; for any two calls with @racket[equal?] values,
 the returned number is the same. A hash code is computed even when
 @racket[v] contains a cycle through pairs, vectors, boxes, and/or
-inspectable structure fields. See also @racket[prop:equal+hash].}
+inspectable structure fields. See also @racket[gen:equal+hash].}
 
 
 @defproc[(equal-secondary-hash-code [v any/c]) fixnum?]{

@@ -4,7 +4,8 @@
                      unstable/wrapc)
          racket/contract/base
          racket/dict
-         racket/vector)
+         racket/vector
+         racket/struct)
 
 (define (make-gvector #:capacity [capacity 10])
   (gvector (make-vector capacity #f) 0))
@@ -192,25 +193,24 @@
                                      any/c
                                      exact-nonnegative-integer?
                                      #f #f #f))
-  #:property prop:equal+hash
-             (let ([equals
-                    (lambda (x y recursive-equal?)
-                      (let ([vx (gvector-vec x)]
-                            [vy (gvector-vec y)]
-                            [nx (gvector-n x)]
-                            [ny (gvector-n y)])
-                        (and (= nx ny)
-                             (for/and ([index (in-range nx)])
-                               (recursive-equal? (vector-ref vx index)
-                                                 (vector-ref vy index))))))]
-                   [hash-code
-                    (lambda (x hc)
-                      (let ([v (gvector-vec x)]
-                            [n (gvector-n x)])
-                        (for/fold ([h 1]) ([i (in-range n)])
-                          ;; FIXME: better way of combining hashcodes
-                          (+ h (hc (vector-ref v i))))))])
-               (list equals hash-code hash-code))
+  #:methods gen:equal+hash
+  [(define (equal-proc x y recursive-equal?)
+     (let ([vx (gvector-vec x)]
+           [vy (gvector-vec y)]
+           [nx (gvector-n x)]
+           [ny (gvector-n y)])
+       (and (= nx ny)
+            (for/and ([index (in-range nx)])
+              (recursive-equal? (vector-ref vx index)
+                                (vector-ref vy index))))))
+   (define (hash-code x hc)
+     (let ([v (gvector-vec x)]
+           [n (gvector-n x)])
+       (for/fold ([h 1]) ([i (in-range n)])
+         ;; FIXME: better way of combining hashcodes
+         (+ h (hc (vector-ref v i))))))
+   (define hash-proc  hash-code)
+   (define hash2-proc hash-code)]
   #:property prop:sequence in-gvector)
 
 (provide/contract

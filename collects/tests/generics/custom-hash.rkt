@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/generics
+(require racket/generics racket/struct
          (only-in racket/dict
                   gen:dict prop:dict
                   dict?
@@ -9,8 +9,7 @@
                   dict-set
                   dict-remove!
                   dict-remove
-                  dict-count)
-         (only-in racket/list remove-duplicates))
+                  dict-count))
 
 (struct hash-box (key))
 
@@ -50,14 +49,16 @@
    (define (dict-remove dict key)
      (error "no functional update"))
    (define dict-count custom-hash-count)]
-  #:property prop:equal+hash
-  (list (lambda (a b recur)
-          (and (recur (custom-hash-make-box a)
-                      (custom-hash-make-box b))
-               (recur (custom-hash-table a)
-                      (custom-hash-table b))))
-        (lambda (a recur) (recur (custom-hash-table a)))
-        (lambda (a recur) (recur (custom-hash-table a)))))
+  #:methods gen:equal+hash
+  [(define (equal-proc a b recur)
+     (and (recur (custom-hash-make-box a)
+                 (custom-hash-make-box b))
+          (recur (custom-hash-table a)
+                 (custom-hash-table b))))
+   (define (hash-proc a recur)
+     (recur (custom-hash-table a)))
+   (define (hash2-proc a recur)
+     (recur (custom-hash-table a)))])
 
 
 (define (make-custom-hash =? hash [hash2 (lambda (v) 10001)])
@@ -72,11 +73,13 @@
     (raise-type-error 'make-custom-hash "procedure (arity 1)" hash2))
   (let ()
     (struct box hash-box ()
-            #:property prop:equal+hash
-            (list
-             (lambda (a b recur) (=? (hash-box-key a) (hash-box-key b)))
-             (lambda (v recur)   (hash (hash-box-key v)))
-             (lambda (v recur)   (hash2 (hash-box-key v)))))
+            #:methods gen:equal+hash
+            [(define (equal-proc a b recur)
+               (=? (hash-box-key a) (hash-box-key b)))
+             (define (hash-proc v recur)
+               (hash (hash-box-key v)))
+             (define (hash2-proc v recur)
+               (hash2 (hash-box-key v)))])
     (custom-hash (make-hash) box)))
 
 

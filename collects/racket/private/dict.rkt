@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/private/generics ; to avoid circular dependencies
+         racket/struct
          (for-syntax racket/base))
 
 (define-generics (dict gen:dict prop:dict dict? #:defined-table dict-def-table
@@ -435,14 +436,16 @@
    (define dict-iterate-next custom-hash-iterate-next)
    (define dict-iterate-key custom-hash-iterate-key)
    (define dict-iterate-value custom-hash-iterate-value)]
-  #:property prop:equal+hash
-  (list (lambda (a b recur)
-          (and (recur (custom-hash-make-box a)
-                      (custom-hash-make-box b))
-               (recur (custom-hash-table a)
-                      (custom-hash-table b))))
-        (lambda (a recur) (recur (custom-hash-table a)))
-        (lambda (a recur) (recur (custom-hash-table a)))))
+  #:methods gen:equal+hash
+  [(define (equal-proc a b recur)
+     (and (recur (custom-hash-make-box a)
+                 (custom-hash-make-box b))
+          (recur (custom-hash-table a)
+                 (custom-hash-table b))))
+   (define (hash-proc a recur)
+     (recur (custom-hash-table a)))
+   (define (hash2-proc a recur)
+     (recur (custom-hash-table a)))])
 
 (struct immutable-custom-hash custom-hash ()
   #:methods gen:dict
@@ -471,13 +474,13 @@
              (raise-type-error who "procedure (arity 1)" hash2))
            (let ()
              (struct box hash-box ()
-               #:property prop:equal+hash (list
-                                           (lambda (a b recur) 
-                                             (=? (hash-box-key a) (hash-box-key b)))
-                                           (lambda (v recur) 
-                                             (hash (hash-box-key v)))
-                                           (lambda (v recur)
-                                             (hash2 (hash-box-key v)))))
+               #:methods gen:equal+hash
+               [(define (equal-proc a b recur)
+                  (=? (hash-box-key a) (hash-box-key b)))
+                (define (hash-proc v recur)
+                  (hash (hash-box-key v)))
+                (define (hash2-proc v recur)
+                  (hash2 (hash-box-key v)))])
              (make-custom-hash table (wrap-make-box box))))])
     (let ([make-custom-hash 
            (lambda (=? hash [hash2 (lambda (v) 10001)])

@@ -1,8 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt"
-          (for-label racket/serialize))
+          (for-label racket/serialize racket/struct))
 
 @(define posn-eval (make-base-eval))
+@(posn-eval '(require racket/struct))
 
 @title[#:tag "define-struct"]{Programmer-Defined Datatypes}
 
@@ -198,26 +199,26 @@ to mere instance identity for opaque structure types:
 ]
 
 To support instances comparisons via @racket[equal?] without making
-the structure type transparent, you can use the @racket[#:property]
-keyword, @racket[prop:equal+hash], and then a list of three functions:
+the structure type transparent, you can use the @racket[#:methods]
+keyword, @racket[gen:equal+hash], and implement three methods:
 
 @def+int[
 #:eval posn-eval
 (struct lead (width height)
-  #:property
-  prop:equal+hash
-  (list (lambda (a b equal?-recur) 
-          (code:comment @#,t{compare @racket[a] and @racket[b]})
-          (and (equal?-recur (lead-width a) (lead-width b))
-               (equal?-recur (lead-height a) (lead-height b))))
-        (lambda (a hash-recur)
-          (code:comment @#,t{compute primary hash code of @racket[a]})
-          (+ (hash-recur (lead-width a))
-             (* 3 (hash-recur (lead-height a)))))
-        (lambda (a hash2-recur)
-          (code:comment @#,t{compute secondary hash code of @racket[a]})
-          (+ (hash2-recur (lead-width a))
-             (hash2-recur (lead-height a))))))
+  #:methods
+  gen:equal+hash
+  [(define (equal-proc a b equal?-recur)
+     (code:comment @#,t{compare @racket[a] and @racket[b]})
+     (and (equal?-recur (lead-width a) (lead-width b))
+          (equal?-recur (lead-height a) (lead-height b))))
+   (define (hash-proc a hash-recur)
+     (code:comment @#,t{compute primary hash code of @racket[a]})
+     (+ (hash-recur (lead-width a))
+        (* 3 (hash-recur (lead-height a)))))
+   (define (hash2-proc a hash2-recur)
+     (code:comment @#,t{compute secondary hash code of @racket[a]})
+     (+ (hash2-recur (lead-width a))
+             (hash2-recur (lead-height a))))])
 (equal? (lead 1 2) (lead 1 2))
 ]
 
@@ -235,7 +236,7 @@ secondary hash codes for use with @tech{hash tables}:
 (hash-ref h (lead 2 1))
 ]
 
-The first function provided with @racket[prop:equal+hash] is not
+The first function provided with @racket[gen:equal+hash] is not
 required to recursively compare the fields of the structure. For
 example, a structure type representing a set might implement equality
 by checking that the members of the set are the same, independent of

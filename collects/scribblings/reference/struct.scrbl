@@ -73,7 +73,7 @@ same structure type, no fields are opaque, and the results of applying
 @racket[equal?]. (Consequently, @racket[equal?]  testing for
 structures may depend on the current inspector.) A structure type can
 override the default @racket[equal?] definition through the
-@racket[prop:equal+hash] property.
+@racket[gen:equal+hash] @tech{generic interface}.
 
 @local-table-of-contents[]
 
