@@ -2411,6 +2411,11 @@
                                 (append new-augonly-indices new-final-indices
                                         new-abstract-indices new-normal-indices)
                                 new-methods)
+                      ;; Add only abstracts, making sure the super method just calls (void)
+                      (let ([dummy (lambda args (void))])
+                        (for-each (lambda (index)
+                                    (vector-set! super-methods index dummy))
+                                  new-abstract-indices))
                       ;; Override old methods:
                       (for-each (lambda (index method id)
                                   (when (eq? 'final (vector-ref meth-flags index))

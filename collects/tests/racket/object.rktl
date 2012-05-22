@@ -825,13 +825,13 @@
       (test 11 'abstract (send o bar))
       (test 15 'abstract (send o baz)))
 
-;; super calls to an abstract should raise an error
+;; super calls to an abstract should just be (void)
 (let ([foo% (class (class object%
                      (super-new)
                      (abstract m))
               (super-new)
               (define/override (m) (super m)))])
-      (err/rt-test (send (new foo%) m) exn:fail:object?))
+  (test (void) 'super (send (new foo%) m)))
 
 ;; failing to implement abstract methods
 (define bad-leaf% (class bt% (inherit-field number)))
