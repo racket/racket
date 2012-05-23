@@ -4,8 +4,7 @@
                      unstable/wrapc)
          racket/contract/base
          racket/dict
-         racket/vector
-         racket/struct)
+         racket/vector)
 
 (define (make-gvector #:capacity [capacity 10])
   (gvector (make-vector capacity #f) 0))

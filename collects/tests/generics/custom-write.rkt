@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 
-(require racket/struct)
+(require racket/port)
 
 (struct loud (v)
         #:methods gen:custom-write

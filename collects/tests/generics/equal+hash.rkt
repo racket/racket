@@ -1,6 +1,4 @@
-#lang racket
-
-(require racket/struct)
+#lang racket/base
 
 ;; vectors as method tables
 (struct kons (kar kdr)

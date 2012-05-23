@@ -4,9 +4,6 @@
 @(define bool-eval (make-base-eval))
 @(bool-eval '(require racket/bool))
 
-@(define struct-eval (make-base-eval))
-@(struct-eval '(require racket/struct))
-
 @title[#:tag "booleans"]{Booleans and Equality}
 
 True and false @deftech{booleans} are represented by the values
@@ -135,10 +132,6 @@ type. @racket[gen:equal+hash] should be used instead. Accepts a list of
 three procedures that correspond to the methods of @racket[gen:equal+hash].
 }
 
-@section{Extensible Equality and Hashing}
-
-@note-lib[racket/struct]
-
 @defthing[gen:equal+hash any/c]{
 A @tech{generic interface} (see @secref["struct-generics"]) that
 supplies an equality predicate and hashing functions for a structure
@@ -208,7 +201,7 @@ property, then the @racket[prop:impersonator-of] property takes precedence over
 @racket[gen:equal+hash] if the property value's procedure returns a
 non-@racket[#f] value when applied to the structure.
 
-@examples[ #:eval struct-eval
+@examples[
 (define (farm=? farm1 farm2 recursive-equal?)
   (and (= (farm-apples farm1)
           (farm-apples farm2))

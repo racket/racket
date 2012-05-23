@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require racket/private/generics ; to avoid circular dependencies
-         racket/struct
          (for-syntax racket/base))
 
 (define-generics (dict gen:dict prop:dict dict? #:defined-table dict-def-table
