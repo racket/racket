@@ -13,7 +13,7 @@
 
 (test #:on-pass 'quiet
  (local
-   [(define-generics (lots)
+   [(define-generics lots
       (f #:foo foo lots zog [def]))
 
     (define-struct ex ()
@@ -26,7 +26,7 @@
     (f (make-ex) 2 #:foo 3) => 1))
 
  (local
-   [(define-generics (lots)
+   [(define-generics lots
       (f #:foo foo lots zog #:def [def]))
 
     (define-struct ex ()
@@ -39,7 +39,7 @@
     (f (make-ex) 3 #:foo 1) => 1))
 
  (local
-   [(define-generics (lots)
+   [(define-generics lots
       (f lots idx val))
 
     (define-struct ex ()
@@ -53,7 +53,7 @@
     (f (make-ex) 4 1) => (expt 2 4)))
 
  (local
-   [(define-generics (table)
+   [(define-generics table
       (get table idx [default])
       (weird-get idx table)
       (put! table idx new))
@@ -92,18 +92,18 @@
     1))
 
  (test #:on-pass 'quiet
-  (define-generics (table)
+  (define-generics table
     (get idx [default]))
   =error>
   "No required by-position generic argument"
 
-  (define-generics (table)
+  (define-generics table
     (get idx [table] [default]))
   =error>
   "No required by-position generic argument")
 
 
- (local [(define-generics (printable)
+ (local [(define-generics printable
            (gen-print printable [port])
            (gen-port-print port printable)
            (gen-print* printable [port] #:width width #:height [height]))

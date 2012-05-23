@@ -15,8 +15,7 @@ using a @racket[define-generics] form. Method implementations for
 a structure type are defined using the @racket[#:methods] keyword
 (see @secref["define-struct"]).
 
-@defform/subs[(define-generics (gen:name prop:name name?
-                                [#:defined-table defined-table])
+@defform/subs[(define-generics name [#:defined-table defined-table]
                 [method . kw-formals*]
                 ...)
               ([kw-formals* (arg* ...)
@@ -27,22 +26,12 @@ a structure type are defined using the @racket[#:methods] keyword
                      (code:line keyword id)
                      (code:line keyword [id])])
               #:contracts
-              ([gen:name identifier?]
-               [prop:name identifier?]
-               [name? identifier?]
+              ([name identifier?]
+               [defined-table identifier?]
                [method identifier?])]{
 
 Defines @racket[gen:name] as a transformer binding for the static
-information about a new generic group.
-
-Defines @racket[prop:name] as a structure type property.  Structure
-types implementing this generic group should have this property where
-the value is a vector with one element per @racket[method] where each
-value is either @racket[#f] or a procedure with the same arity as
-specified by @racket[kw-formals*].  (@racket[kw-formals*] is similar to
-the @racket[kw-formals] used by @racket[lambda], except no expression is
-given for optional arguments.)  The arity of each method is checked by
-the guard on the structure type property.
+information about a new generic interface.
 
 Defines @racket[name?] as a predicate identifying instances of structure
 types that implement this generic group.
@@ -50,7 +39,7 @@ types that implement this generic group.
 Defines each @racket[method] as a generic procedure that calls the
 corresponding method on values where @racket[name?] is true. Each method
 must have a required by-position argument that is
-@racket[free-identifier=?] to @racket[gen:name]. This argument is used in
+@racket[free-identifier=?] to @racket[name]. This argument is used in
 the generic definition to locate the specialization.
 
 The optional @racket[defined-table] argument should be an identifier.
@@ -89,7 +78,7 @@ with @racket[#:methods].
 @(define evaluator (new-evaluator))
 
 @examples[#:eval evaluator
-(define-generics (printable)
+(define-generics printable
   (gen-print printable [port])
   (gen-port-print port printable)
   (gen-print* printable [port] #:width width #:height [height]))

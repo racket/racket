@@ -2,7 +2,7 @@
 
 (require racket/generics racket/port)
 
-(define-generics (printable)
+(define-generics printable
   (gen-print printable [port])
   (gen-port-print port printable)
   (gen-print* printable [port] #:width width #:height [height]))
