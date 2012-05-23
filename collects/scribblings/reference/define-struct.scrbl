@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-syntax racket/base) (for-label racket/serialize))
+@(require "mz.rkt" (for-syntax racket/base) (for-label racket/serialize
+                                                       racket/generics))
 
 @(define posn-eval (make-base-eval))
 @(interaction-eval #:eval posn-eval (require (for-syntax racket/base)))
@@ -157,6 +158,7 @@ If any method of @racket[gen:name] is not defined, then @racket[#f] is used
 to signify that the structure type does not implement the particular
 method. At least one method definition must be provided if this keyword
 is used. A @racket[define/generic] form may appear in @racket[method-defs].
+Auxiliary definitions and expressions may also appear in @racket[method-defs].
 
 If the @racket[#:omit-define-syntaxes] option is supplied, then
 @racket[id] is not bound as a transformer. If the
