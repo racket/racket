@@ -17,7 +17,7 @@
 (provide search-for find-help find-help/lib go-to-main-page)
 
 (define (search-for strs)
-  (perform-search (string-join strs " ")))
+  (perform-search (string-join strs)))
 
 (define-namespace-anchor anchor)
 

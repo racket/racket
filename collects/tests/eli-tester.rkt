@@ -22,7 +22,7 @@
      (format "~e" x)]
     [(list 'values xs ...)
      (string-append "(values "
-                    (string-join (map (lambda (x) (format "~e" x)) xs) " ")
+                    (string-join (map (lambda (x) (format "~e" x)) xs))
                     ")")]
     [(list 'error err val)
      (cond [(procedure? err) (format "error satisfying ~.s" err)]

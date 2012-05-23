@@ -91,7 +91,7 @@
     (for/list ([i (get-index-entries sec ri)] [idx (in-naturals)])
       ;; i is (list tag (text ...) (element ...) index-desc)
       (define-values (tag texts elts desc) (apply values i))
-      (define text (string-downcase (string-join texts " ")))
+      (define text (string-downcase (string-join texts)))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
                ;; !!HACK!! The index entry for methods should have the extra

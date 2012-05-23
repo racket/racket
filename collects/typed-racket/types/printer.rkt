@@ -172,7 +172,7 @@
          [(list a b ...)
           (format "(case-> ~a ~a)"
                   (format-arr a)
-                  (string-join (map format-arr b) " "))]))]))
+                  (string-join (map format-arr b)))]))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void

@@ -163,7 +163,7 @@
           [(symbol? a)   (symbol->string a)]
           [(real? a)     (real->plot-label a digits)]
           [(ivl? a)      (ivl->plot-label a)]
-          [(list? a)     (string-append "(" (string-join (map loop a) " ") ")")]
+          [(list? a)     (string-append "(" (string-join (map loop a)) ")")]
           [(cons? a)     (string-append "(" (loop (car a)) " . " (loop (cdr a)) ")")]
           [(boolean? a)  (if a "true" "false")]
           [(char? a)     (list->string (list a))]

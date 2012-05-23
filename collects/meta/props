@@ -511,8 +511,7 @@ path/s is either such a string or a list of them.
                                            [(symbol? x) (symbol->string x)]
                                            [(string? x) x]
                                            [else (bad)]))
-                                   cmd)
-                              " ")])))
+                                   cmd))])))
   ;; --------------------
   (make-prop
    'drdr:timeout

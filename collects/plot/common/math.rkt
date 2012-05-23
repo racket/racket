@@ -223,7 +223,7 @@
     [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
                  (unless (apply equal?* ns)
                    (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
-                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
+                          f v (string-join (map (λ (v) (format "~e" v)) vs))))
                  (let/ec break
                    (define ess (apply map list (map vector->list vs)))
                    (for ([e  (in-vector v)] [es  (in-list ess)])
@@ -239,7 +239,7 @@
     [(f v . vs)  (define ns (cons (vector-length v) (map vector-length vs)))
                  (unless (apply equal?* ns)
                    (error 'vector-andmap "all vectors must have same size; arguments were ~e ~e ~e"
-                          f v (string-join (map (λ (v) (format "~e" v)) vs) " ")))
+                          f v (string-join (map (λ (v) (format "~e" v)) vs))))
                  (let/ec break
                    (define ess (apply map list (map vector->list vs)))
                    (for ([e  (in-vector v)] [es  (in-list ess)])

@@ -5,7 +5,6 @@
          racket/list
          racket/match
          (only-in srfi/1/list fold)
-         (only-in srfi/13/string string-join)
          xml/xml
          web-server/private/connection-manager
          web-server/http/request-structs
