@@ -785,6 +785,7 @@ an end-of-file if @racket[input] is an input port).
 (regexp-split #rx"" "12  34")
 (regexp-split #rx" *" "12  34")
 (regexp-split #px"\\b" "12, 13 and 14.")
+(regexp-split #rx" +" "")
 ]}
 
 @;------------------------------------------------------------------------
