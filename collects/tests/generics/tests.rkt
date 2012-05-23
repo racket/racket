@@ -7,4 +7,5 @@
          (submod "iterator.rkt" test)
          (submod "struct-form.rkt" test)
          (submod "equal+hash.rkt" test)
+         (submod "custom-write.rkt" test)
          "from-unstable.rkt")

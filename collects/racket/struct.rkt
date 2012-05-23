@@ -26,8 +26,31 @@
    (list (cons prop:equal+hash vector->list))))
 
 (define-generics (equal+hash gen:equal+hash prop:gen:equal+hash equal+hash?
-                             #:defined-table dummy
+                             #:defined-table equal+hash-def-table
                              #:prop-defined-already? gen:equal+hash-acc)
   (equal-proc equal+hash rhs equal?/recur)
   (hash-proc  equal+hash equal-hash-code/recur)
   (hash2-proc equal+hash equal-secondary-hash-code/recur))
+
+
+(provide gen:custom-write)
+
+(define-values (prop:gen:custom-write gen:custom-write? gen:custom-write-acc)
+  (make-struct-type-property
+   'prop:gen:custom-write
+   (lambda (v si)
+     (unless (and (vector? v)
+                  (= 1 (vector-length v))
+                  (procedure? (vector-ref v 0))
+                  (procedure-arity-includes? (vector-ref v 0) 3))
+       (raise-type-error 'guard-for-prop:gen:custom-write
+                         "vector of one procedure (arity 3)"
+                         v))
+     v)
+   (list (cons prop:custom-write (lambda (v) (vector-ref v 0))))))
+
+(define-generics (custom-write gen:custom-write prop:gen:custom-write
+                               gen:custom-write?
+                               #:defined-table custom-write-def-table
+                               #:prop-defined-already? gen:custom-write-acc)
+  (write-proc custom-write port mode))
