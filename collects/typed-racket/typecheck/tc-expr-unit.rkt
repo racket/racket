@@ -111,7 +111,7 @@
           (let* ([h (syntax-e #'i)]
                  [ks (hash-map h (lambda (x y) (tc-literal x k)))]
                  [vs (hash-map h (lambda (x y) (tc-literal y v)))])
-            (make-Hashtable (generalize (check-below (apply Un ks)) k) (generalize (check-below (apply Un vs)))))]
+            (make-Hashtable (generalize (check-below (apply Un ks) k)) (generalize (check-below (apply Un vs) v))))]
          [_ (let* ([h (syntax-e #'i)]
                    [ks (hash-map h (lambda (x y) (tc-literal x)))]
                    [vs (hash-map h (lambda (x y) (tc-literal y)))])
