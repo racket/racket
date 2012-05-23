@@ -1,7 +1,7 @@
 #lang scribble/manual
 @(require (for-label racket/base racket/generics))
 
-@title[#:tag "struct-generics"]{Generics}
+@title[#:tag "struct-generics"]{Generic Interfaces}
 @; @author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
 @;         @author+email["Jay McCarthy" "jay@racket-lang.org"]
 @; 	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
