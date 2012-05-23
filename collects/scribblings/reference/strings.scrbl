@@ -389,47 +389,65 @@ one between @racket[list] and @racket[list*].
                                      '("Alpha" "Beta" "Gamma")))))
 ]}
 
-@defproc[(string-join [strs (listof string?)] [sep string?]) string?]{
+@defproc[(string-join [strs (listof string?)] [sep string? " "]) string?]{
 
 Appends the strings in @racket[strs], inserting @racket[sep] between
 each pair of strings in @racket[strs].
 
 @mz-examples[#:eval string-eval
- (string-join '("one" "two" "three" "four") " potato ")
+  (string-join '("one" "two" "three" "four"))
+  (string-join '("one" "two" "three" "four") ", ")
+  (string-join '("one" "two" "three" "four") " potato ")
 ]}
 
-@defproc[(string-trim [str string?] [rx regexp? #px"\\s+"]
-                      [#:left? left? any/c #t] [#:right? right? any/c #t])
+@; *********************************************************************
+@; Meta note: these functions are intended to be newbie-friendly, so I'm
+@; intentionally starting the descriptions with a short senstence that
+@; describes the default behavior instead of diving straight to a
+@; precise description.
+
+@defproc[(string-trim [str string?]
+                      [sep (or/c string? regexp?) #px"\\s+"]
+                      [#:left? left? any/c #t]
+                      [#:right? right? any/c #t]
+                      [#:repeat? repeat? any/c #f])
          string?]{
 
-Trims the input @racket[str] by removing prefix and suffix matches of
-@racket[rx].  Use @racket[#:left?] or @racket[#:right?] to suppress
-trimming one of these sides.
+Trims the input @racket[str] by removing prefix and suffix whitespaces.
 
-The @racket[rx] regexp should match a whole (non-empty) sequence of
-spaces and should not rely on surrounding context.  This means that it
-should usually end with a @litchar{+}, and that it should not use
-@litchar{^}, @litchar{$}, or other lookaheads and lookbacks.  (The
-regexp is expected to both identify a whole sequence of spaces, and
-match on a non-empty part of such a sequence.)
+The optional @racket[sep] argument can be specified as either a string
+or a (p)regexp to remove a different prefix/suffix; a string is matched
+as-is.  Use @racket[#:left?] or @racket[#:right?] to suppress trimming
+one of these sides.  When @racket[repeat?] is @racket[#f] (the default),
+only one match is removed from each side, but when it is true any number
+of matches is trimmed.  (Note that with a regexp separator you can use
+@litchar{+} instead.)
 
 @mz-examples[#:eval string-eval
- (string-trim "  foo bar  baz \r\n\t")
+  (string-trim "  foo bar  baz \r\n\t")
+  (string-trim "  foo bar  baz \r\n\t" " " #:repeat? #t)
+  (string-trim "aaaxaayaa" "aa")
 ]}
 
-@defproc[(string-normalize-spaces
-          [str string?] [rx regexp? #px"\\s+"]
-          [#:space space string? " "] [#:trim? trim? any/c #t])
+@defproc[(string-normalize-spaces [str string?]
+                                  [sep (or/c string? regexp?) #px"\\s+"]
+                                  [space string? " "]
+                                  [#:trim? trim? any/c #t]
+                                  [#:repeat? repeat? any/c #f])
          string?]{
 
-Normalizes spaces (matching @racket[rx]) in the input @racket[str] by
-replacing them with @racket[space].  In the default configuration, this
-will replace any sequence of whitespaces by a single space character.
-In addition, prefix and suffix spaces are trimmed if @racket[trim?] is
-true, otherwise they get normalized too.
+Normalizes spaces in the input @racket[str] by trimming it (using
+@racket[string-trim]) and replacing all whitespace sequences in the
+result with a single space.
+
+Similarly to @racket[string-trim], @racket[sep] can be given as a string
+or a (p)regexp, and @racket[repeat?] controls matching repeated
+sequences.  In addition, you can specify @racket[space] for an alternate
+space replacement.  @racket[trim?] determines whether trimming is done
+(the default).
 
 @mz-examples[#:eval string-eval
- (string-normalize-spaces "  foo bar  baz \r\n\t")
+  (string-normalize-spaces "  foo bar  baz \r\n\t")
 ]}
 
 

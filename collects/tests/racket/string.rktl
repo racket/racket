@@ -367,11 +367,11 @@
 
 ;; ---------- string-join ----------
 (let ()
-  (test ""      string-join '()            " ")
-  (test ""      string-join '("")          " ")
-  (test " "     string-join '("" "")       " ")
-  (test "x"     string-join '("x")         " ")
-  (test "x y"   string-join '("x" "y")     " ")
+  (test ""      string-join '())
+  (test ""      string-join '(""))
+  (test " "     string-join '("" ""))
+  (test "x"     string-join '("x"))
+  (test "x y"   string-join '("x" "y"))
   (test "x y z" string-join '("x" "y" "z") " ")
   (test "x,y,z" string-join '("x" "y" "z") ","))
 
@@ -405,6 +405,29 @@
   (test "\t x \t" string-trim " \t x \t " #px" +")
   (test "  x"     string-trim "  x  " #:left? #f)
   (test "x  "     string-trim "  x  " #:right? #f)
-  (test "  x  "   string-trim "  x  " #:left? #f #:right? #f))
+  (test "  x  "   string-trim "  x  " #:left? #f #:right? #f)
+  (for* ([i+e '([""       ""  ""]
+                ["a"      "a" "a"]
+                ["aa"     ""  ""]
+                ["aaa"    ""  ""] ; weird case
+                ["aaaa"   ""  ""]
+                ["aaaaa"  "a" ""]
+                ["aa-aa"  "-" "-"]
+                ["aaaaaa" "aa" ""]
+                ["aa--aa" "--" "--"])]
+         [sep '("aa" #rx"aa" #px"aa")])
+    (define input     (car   i+e))
+    (define expected  (cadr  i+e))
+    (define expected+ (caddr i+e))
+    (test expected  string-trim input sep)
+    (test expected+ string-trim input sep #:repeat? #t))
+  ;; this is obvious, but...
+  (test "" string-trim "abaaba" "aba")
+  ;; ...this is a version of the above weird case: it's questionable whether
+  ;; this should return "" or "ba" (could also be "ab"), but it seems sensible
+  ;; to do this (I haven't seen any existing trimmers that make any relevant
+  ;; decision on this)
+  (test "" string-trim "ababa" "aba")
+  )
 
 (report-errs)
