@@ -1,6 +1,7 @@
 #lang racket/base
 
-(provide string-append* string-join string-trim string-normalize-spaces)
+(provide string-append* string-join string-trim string-normalize-spaces
+         string-split)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common case
@@ -67,11 +68,20 @@
         [r         (substring str 0 r)]
         [else      str]))
 
+(define (internal-split who str sep trim? +?)
+  (define rxs (get-rxs who sep +?))
+  (define-values [l r]
+    (if trim? (internal-trim who str sep #t #t (cdr rxs)) (values #f #f)))
+  (define strs (regexp-split (car rxs) str (or l 0) r))
+  ;; Seems to make more sense for these functions (eg, this corresponds to
+  ;; simple uses where `string-split' in Emacs uses t for `omit-nulls' (but we
+  ;; don't do that for all nulls).)
+  (if (equal? strs '("")) '() strs))
+
+(define (string-split str [sep none] #:trim? [trim? #t] #:repeat? [+? #f])
+  (internal-split 'string-split str sep trim? +?))
+
 (define (string-normalize-spaces str [sep none] [space " "]
                                  #:trim? [trim? #t] #:repeat? [+? #f])
-  (define rxs (get-rxs 'string-normalize-spaces sep +?))
-  (define-values [l r]
-    (if trim?
-      (internal-trim 'string-normalize-spaces str sep #t #t (cdr rxs))
-      (values #f #f)))
-  (string-join (regexp-split (car rxs) str (or l 0) r) space))
+  (string-join (internal-split 'string-normalize-spaces str sep trim? +?)
+               space))

@@ -430,7 +430,15 @@
   ;; this should return "" or "ba" (could also be "ab"), but it seems sensible
   ;; to do this (I haven't seen any existing trimmers that make any relevant
   ;; decision on this)
-  (test "" string-trim "ababa" "aba")
-  )
+  (test "" string-trim "ababa" "aba"))
+
+;; ---------- string-split ----------
+(let ()
+  (for ([s (in-list '("x y z" " x y z "  "\nx y z" "  \t x\r\r\ry    z\n"))])
+    (test '("x" "y" "z") string-split s))
+  (for ([s (in-list '(" " "   "  "\n\t\r"))])
+    (test '() string-split s))
+  (test '("x" "y" "z") string-split "axayaza" "a")
+  (test '("" "x" "y" "z" "") string-split "axayaza" "a" #:trim? #f))
 
 (report-errs)

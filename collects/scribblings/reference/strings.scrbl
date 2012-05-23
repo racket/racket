@@ -429,6 +429,29 @@ of matches is trimmed.  (Note that with a regexp separator you can use
   (string-trim "aaaxaayaa" "aa")
 ]}
 
+@defproc[(string-split [str string?]
+                       [sep (or/c string? regexp?) #px"\\s+"]
+                       [#:trim? trim? any/c #t]
+                       [#:repeat? repeat? any/c #f])
+         (listof string?)]{
+
+Splits the input @racket[str] on whitespaces, returning a list of
+strings.  The input is trimmed first.
+
+Similarly to @racket[string-trim], @racket[sep] can be given as a string
+or a (p)regexp to use a different separator, and @racket[repeat?]
+controls matching repeated sequences.  @racket[trim?] determines whether
+trimming is done (the default).
+
+@mz-examples[#:eval string-eval
+  (string-split "  foo bar  baz \r\n\t")
+  (string-split "  ")
+  (string-split "  " #:trim? #f)
+]
+
+(Note that unlike @racket[regexp-split], an empty input string results
+in an empty list.)}
+
 @defproc[(string-normalize-spaces [str string?]
                                   [sep (or/c string? regexp?) #px"\\s+"]
                                   [space string? " "]
@@ -440,15 +463,14 @@ Normalizes spaces in the input @racket[str] by trimming it (using
 @racket[string-trim]) and replacing all whitespace sequences in the
 result with a single space.
 
-Similarly to @racket[string-trim], @racket[sep] can be given as a string
-or a (p)regexp, and @racket[repeat?] controls matching repeated
-sequences.  In addition, you can specify @racket[space] for an alternate
-space replacement.  @racket[trim?] determines whether trimming is done
-(the default).
+You can specify @racket[space] for an alternate space replacement.
 
 @mz-examples[#:eval string-eval
   (string-normalize-spaces "  foo bar  baz \r\n\t")
-]}
+]
+
+Note that this is the same as
+@racket[(string-join (string-split str sep ....) space)]}
 
 
 @close-eval[string-eval]
