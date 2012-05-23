@@ -11,7 +11,7 @@
     [null
      #f]))
 
-(test
+(test #:on-pass 'quiet
  (local
    [(define-generics (lots)
       (f #:foo foo lots zog [def]))
@@ -20,7 +20,7 @@
       #:methods gen:lots
       [(define (f #:foo foo lots zog [def #t])
          1)])]
-   (test
+   (test #:on-pass 'quiet
     (f #:foo 3 (make-ex) 2) => 1
     (f (make-ex) #:foo 3 2) => 1
     (f (make-ex) 2 #:foo 3) => 1))
@@ -33,7 +33,7 @@
       #:methods gen:lots
       [(define (f #:foo foo lots zog #:def [def #t])
          1)])]
-   (test
+   (test #:on-pass 'quiet
     (f #:foo 3 (make-ex) 2) => 1
     (f (make-ex) 4 #:foo 3 #:def 2) => 1
     (f (make-ex) 3 #:foo 1) => 1))
@@ -49,7 +49,7 @@
          (if (zero? idx)
              val
              (gen:f lots (sub1 idx) (* 2 val))))])]
-   (test
+   (test #:on-pass 'quiet
     (f (make-ex) 4 1) => (expt 2 4)))
 
  (local
@@ -72,7 +72,7 @@
                (set-mcar! prev new)
                (set-alist-l! table (mcons (mcons idx new) (alist-l table))))))))]
 
-   (test
+   (test #:on-pass 'quiet
     (make-alist empty)
 
     (get (make-alist empty) 'foo) => #f
@@ -91,7 +91,7 @@
     =>
     1))
 
- (test
+ (test #:on-pass 'quiet
   (define-generics (table)
     (get idx [default]))
   =error>
@@ -130,11 +130,12 @@
 
          (define x (make-num 10))
          (define y (make-bool #t))]
-   (test
-    (gen-print x)
-    (gen-port-print (current-output-port) x)
-    (gen-print* x #:width 100 #:height 90)
+   (parameterize ([current-output-port (open-output-nowhere)])
+     (test #:on-pass 'quiet
+       (gen-print x)
+       (gen-port-print (current-output-port) x)
+       (gen-print* x #:width 100 #:height 90)
 
-    (gen-print y)
-    (gen-port-print (current-output-port) y)
-    (gen-print* y #:width 100 #:height 90))))
+       (gen-print y)
+       (gen-port-print (current-output-port) y)
+       (gen-print* y #:width 100 #:height 90)))))
