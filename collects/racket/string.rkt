@@ -1,7 +1,12 @@
 #lang racket/base
 
-(provide string-append* string-join string-trim string-normalize-spaces
-         string-split)
+(provide string-append*
+         string-join
+         string-trim
+         string-normalize-spaces
+         string-split
+         string-replace
+         string-replace*)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common case
@@ -22,7 +27,9 @@
         [(null? (cdr strs)) (car strs)]
         [else (apply string-append (add-between strs sep))]))
 
-;; Utilities for the functions below
+;; Utility for the functions below: get a string or a regexp and return a list
+;; of the regexp (strings are converted using `regexp-quote'), the and versions
+;; that matches at the beginning/end.
 (define none (gensym))
 (define get-rxs
   (let ([t (make-weak-hasheq)] [t+ (make-weak-hasheq)])
@@ -85,3 +92,24 @@
                                  #:trim? [trim? #t] #:repeat? [+? #f])
   (string-join (internal-split 'string-normalize-spaces str sep trim? +?)
                space))
+
+(define replace-cache (make-weak-hasheq))
+(define (replace-internal who str from to all?)
+  (unless (string? str)  (raise-type-error who "string" str))
+  (unless (string? to)   (raise-type-error who "string" to))
+  (define from*
+    (if (regexp? from)
+      from
+      (hash-ref! replace-cache from
+        (λ() (if (string? from)
+               (regexp (regexp-quote from))
+               (raise-type-error who "string" from))))))
+  (define to* (regexp-replace-quote to))
+  (if all?
+    (regexp-replace* from* str to*)
+    (regexp-replace  from* str to*)))
+
+(define (string-replace str from to)
+  (replace-internal 'string-replace str from to #f))
+(define (string-replace* str from to)
+  (replace-internal 'string-replace* str from to #t))

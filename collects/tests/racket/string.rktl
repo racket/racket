@@ -441,4 +441,14 @@
   (test '("x" "y" "z") string-split "axayaza" "a")
   (test '("" "x" "y" "z" "") string-split "axayaza" "a" #:trim? #f))
 
+;; ---------- string-replace/* ----------
+(let ()
+  (test ""         string-replace "" "|" "?")
+  (test "foo"      string-replace "foo" "|" "?")
+  (test "foo\\bar" string-replace "foo\\bar" "\\" "\\")
+  (test "foo[bar]" string-replace "foo]bar]" "]" "[")
+  (test "foo[bar[" string-replace* "foo]bar]" "]" "[")
+  (test "foo\\1bar" string-replace "foo===bar" #rx"(=+)" "\\1")
+  (test "foo\\1bar" string-replace "foo===bar" #px"={3}" "\\1"))
+
 (report-errs)
