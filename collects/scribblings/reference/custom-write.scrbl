@@ -3,15 +3,14 @@
 
 @title{Printer Extension}
 
-@defthing[prop:custom-write struct-type-property?]{
+@defthing[gen:custom-write any/c]{
 
-Associates a procedure to a structure type used by the default
-printer to @racket[display], @racket[write], or @racket[print]
-instances of the structure type.
+A @tech{generic interface} (see @secref["struct-generics"]) that
+supplies a method, @racket[write-proc] used by the default printer to
+@racket[display], @racket[write], or @racket[print] instances of the
+structure type.
 
-@moreref["structprops"]{structure type properties}
-
-The procedure for a @racket[prop:custom-write] value takes three
+A @racket[write-proc] method takes three
 arguments: the structure to be printed, the target port, and an
 argument that is @racket[#t] for @racket[write] mode, @racket[#f] for
 @racket[display] mode, or @racket[0] or @racket[1] indicating
@@ -20,7 +19,7 @@ procedure should print the value to the given port using
 @racket[write], @racket[display], @racket[print], @racket[fprintf],
 @racket[write-special], etc.
 
-The @tech{port write handler}, @tech{port display handler}, 
+The @tech{port write handler}, @tech{port display handler},
 and @tech{print handler} are specially
 configured for a port given to a custom-write procedure. Printing to
 the port through @racket[display], @racket[write], or @racket[print]
@@ -51,7 +50,7 @@ so that graph and cycle structure can be represented.
 @defexamples[
 (define (tuple-print tuple port mode)
   (when mode (write-string "<" port))
-  (let ([l (tuple-ref tuple 0)]
+  (let ([l (tuple-ref tuple)]
         [recur (case mode
                  [(#t) write]
                  [(#f) display]
@@ -64,18 +63,24 @@ so that graph and cycle structure can be represented.
                 (cdr (vector->list l)))))
   (when mode (write-string ">" port)))
 
-(define-values (s:tuple make-tuple tuple? tuple-ref tuple-set!)
-  (make-struct-type 'tuple #f 1 0 #f
-                    (list (cons prop:custom-write tuple-print))))
+(struct tuple (ref)
+        #:methods gen:custom-write
+        [(define write-proc tuple-print)])
 
-(display (make-tuple #(1 2 "a")))
+(display (tuple #(1 2 "a")))
 
-(print (make-tuple #(1 2 "a")))
+(print (tuple #(1 2 "a")))
 
-(let ([t (make-tuple (vector 1 2 "a"))])
-  (vector-set! (tuple-ref t 0) 0 t)
+(let ([t (tuple (vector 1 2 "a"))])
+  (vector-set! (tuple-ref t) 0 t)
   (write t))
 ]
+}
+
+@defthing[prop:custom-write struct-type-property?]{
+A deprecated @tech{structure type property} (see @secref["structprops"])
+that supplies a procedure that corresponds to @racket[gen:custom-write]'s
+@racket[write-proc]. @racket[gen:custom-write] should be used instead.
 }
 
 @defproc[(custom-write? [v any/c]) boolean?]{
