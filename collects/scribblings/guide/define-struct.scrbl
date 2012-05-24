@@ -1,9 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt"
-          (for-label racket/serialize racket/struct))
+          (for-label racket/serialize))
 
 @(define posn-eval (make-base-eval))
-@(posn-eval '(require racket/struct))
 
 @title[#:tag "define-struct"]{Programmer-Defined Datatypes}
 

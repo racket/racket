@@ -124,14 +124,6 @@ Returns @racket[#t] if @racket[v] is an immutable @tech{string},
 (immutable? (make-immutable-hash '([a b])))
 ]}
 
-@defthing[prop:equal+hash struct-type-property?]{
-
-A deprecated @tech{structure type property} (see @secref["structprops"])
-that supplies an equality predicate and hashing functions for a structure
-type. @racket[gen:equal+hash] should be used instead. Accepts a list of
-three procedures that correspond to the methods of @racket[gen:equal+hash].
-}
-
 @defthing[gen:equal+hash any/c]{
 A @tech{generic interface} (see @secref["struct-generics"]) that
 supplies an equality predicate and hashing functions for a structure
@@ -233,6 +225,14 @@ non-@racket[#f] value when applied to the structure.
 (equal? east north)
 (equal? west south)
 ]}
+
+@defthing[prop:equal+hash struct-type-property?]{
+
+A deprecated @tech{structure type property} (see @secref["structprops"])
+that supplies an equality predicate and hashing functions for a structure
+type. @racket[gen:equal+hash] should be used instead. Accepts a list of
+three procedures that correspond to the methods of @racket[gen:equal+hash].
+}
 
 @section{Boolean Aliases}
 
