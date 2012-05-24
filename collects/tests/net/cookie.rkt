@@ -4,6 +4,7 @@
 ;; cookie tests --- JBM, 2006-12-01
 
 (provide tests)
+(module+ main (tests))
 (define (tests)
   ;; cookie-test : (cookie -> cookie) string -> test
   (define (cookie-test fn expected)

@@ -69,6 +69,7 @@
     (for-each (check-same-file encode decode line-rx max-w) files)))
 
 (provide tests)
+(module+ main (tests))
 (define (tests)
   (test
    do (check-same-all (lambda (i o) (qp-encode-stream i o))

@@ -2,6 +2,7 @@
 (require net/uri-codec tests/eli-tester)
 
 (provide tests)
+(module+ main (tests))
 (define (tests)
   (define sepmode current-alist-separator-mode)
   (test (uri-decode "%Pq") => "%Pq"
@@ -72,6 +73,8 @@
         ))
 
 ;; tests adapted from Noel Welsh's original test suite
+(provide noels-tests)
+(module+ main (noels-tests))
 (define (noels-tests)
   (define (pad2 str)
     (if (= (string-length str) 1) (string-append "0" str) str))

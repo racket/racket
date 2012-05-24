@@ -4,6 +4,7 @@
 ;; a few tests of head.rkt -- JBC, 2006-07-31
 
 (provide tests)
+(module+ main (tests))
 (define (tests)
   (define test-header
     (string-append "From: abc\r\nTo: field is\r\n continued\r\n"
