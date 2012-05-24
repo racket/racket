@@ -3,7 +3,7 @@
          racket/contract/base
          racket/string
          ffi/unsafe/atomic
-         racket/private/generics)
+         racket/private/generic)
 
 (define ordering/c
   (or/c '= '< '>))

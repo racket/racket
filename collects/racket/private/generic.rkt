@@ -12,7 +12,7 @@
 (define-syntax (define-generics stx)
   (syntax-case stx () ; can't use syntax-parse, since it depends on us
     ;; keyword arguments must _all_ be provided _in_order_. For the
-    ;; user-facing version of `define-generics', see racket/generics.
+    ;; user-facing version of `define-generics', see racket/generic.
     ;;
     ;; The `header` is the original name the library writer provides
     ;; that is used to define the `name`, `prop:name`, and `name?`

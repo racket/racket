@@ -2,7 +2,7 @@
 @(require "mz.rkt" scribble/scheme
           (for-syntax racket/base)
           (for-label racket/generator
-                     racket/generics
+                     racket/generic
                      racket/mpair))
 
 @(define (info-on-seq where what)
@@ -25,7 +25,7 @@ vice-versa.
 
 @(define stream-evaluator
    (let ([evaluator (make-base-eval)])
-     (evaluator '(require racket/generics))
+     (evaluator '(require racket/generic))
      (evaluator '(require racket/list))
      (evaluator '(require racket/stream))
      evaluator))

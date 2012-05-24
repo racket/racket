@@ -1,6 +1,6 @@
 #lang racket
 
-(require racket/generics racket/stream)
+(require racket/generic racket/stream)
 
 (define-struct list-stream (v)
   #:methods gen:stream

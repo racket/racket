@@ -4,7 +4,7 @@
                      racket/contract
                      racket/dict
                      racket/base
-		     racket/generics))
+		     racket/generic))
 
 @title{Orders and Ordered Dictionaries}
 

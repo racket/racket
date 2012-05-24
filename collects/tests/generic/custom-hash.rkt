@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/generics
+(require racket/generic
          (only-in racket/dict
                   gen:dict prop:dict
                   dict?

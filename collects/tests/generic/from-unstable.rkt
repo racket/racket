@@ -1,5 +1,5 @@
 #lang racket
-(require racket/generics
+(require racket/generic
          tests/eli-tester)
 
 (define (massq idx l)

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/private/generics
+(require racket/private/generic
          (rename-in "private/for.rkt"
                     [stream-ref    stream-get-generics]
                     [stream-empty? -stream-empty]

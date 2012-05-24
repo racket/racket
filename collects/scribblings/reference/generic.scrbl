@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require (for-label racket/base racket/generics))
+@(require (for-label racket/base racket/generic))
 
 @title[#:tag "struct-generics"]{Generic Interfaces}
 @; @author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
@@ -7,7 +7,7 @@
 @; 	@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
 @; 	@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
-@defmodule[racket/generics]
+@defmodule[racket/generic]
 
 A @deftech{generic interface} allows per-type methods to be
 associated with generic functions. Generic functions are defined
@@ -72,7 +72,7 @@ with @racket[#:methods].
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
      (e '(require (for-syntax racket/base)
-                  racket/generics))
+                  racket/generic))
      e))
 
 @(define evaluator (new-evaluator))

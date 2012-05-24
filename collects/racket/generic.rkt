@@ -1,13 +1,13 @@
 #lang racket/base
-(require (rename-in "private/generics.rkt"
+(require (rename-in "private/generic.rkt"
                     [define-generics define-generics/pre])
          (for-syntax racket/base racket/local))
 
-;; Convenience layer on top of racket/private/generics.
-;; To avoid circular dependencies, racket/private/generics cannot use
+;; Convenience layer on top of racket/private/generic.
+;; To avoid circular dependencies, racket/private/generic cannot use
 ;; `parse-keyword-options' (which depends on racket/dict). So we do
 ;; keyword argument parsing here.
-;; Files that use racket/private/generics _must_ pass _all_ keyword
+;; Files that use racket/private/generic _must_ pass _all_ keyword
 ;; arguments to define-generics _in_order_.
 
 (provide define-generics define/generic)

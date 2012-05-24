@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/private/generics racket/sequence)
+(require racket/private/generic racket/sequence)
 
 ;; This was designed as a higher-level interface on top of sequences,
 ;; but it turns out streams can do all that already (including state),
