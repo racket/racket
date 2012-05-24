@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require tests/eli-tester profile/structs profile/utils
-         scheme/list scheme/match)
+         racket/list racket/match)
 
 (define arrow-sym->times
   ;; arrows with caller/callee times
@@ -67,6 +67,7 @@
 ;; to see a result: (sort-graph '(* -> A)) (exit)
 
 (provide topological-sort-tests)
+(module+ main (topological-sort-tests))
 (define (topological-sort-tests)
   (test
 

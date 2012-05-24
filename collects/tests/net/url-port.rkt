@@ -45,18 +45,18 @@
     (make-tester get-pure-port/headers))
   (define get-pure/headers/redirect
     (make-tester (λ (x) (get-pure-port/headers x #:redirections 1))))
-    
+
   (test
    (get-pure
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n")
    =>
    "This is the data in the first chunk and this is the second one"
-   
+
    (get-pure
     "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one")
    =>
    "This is the data in the first chunk and this is the second one"
-   
+
    (get-pure
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
    =>
@@ -66,12 +66,12 @@
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n")
    =>
    "This is the data in the first chunk and this is the second one"
-   
+
    (get-pure/redirect
     "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one")
    =>
    "This is the data in the first chunk and this is the second one"
-   
+
    (get-pure/redirect
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
    =>
@@ -81,32 +81,32 @@
     "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one\r\n")
    =>
    "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one\r\n"
-   
+
    (get-pure/headers
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n")
    =>
    (values "This is the data in the first chunk and this is the second one"
            "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\n")
-   
+
    (get-pure/headers
     "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one")
    =>
    (values "This is the data in the first chunk and this is the second one"
            "Content-Type: text/plain\r\n")
-   
+
    (get-pure/headers
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
    =>
    (values "This is the data in the first chand this is the second oneXXXXXXX"
            "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\n")
-   
+
    (get-pure/headers
     "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
    =>
    (values "This is the data in the first chand this is the second oneXXXXXXX"
            "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n")
    )
-  
+
   (unless skip-actual-redirect?
     (test
      (get-pure/redirect
@@ -114,18 +114,21 @@
       (string-append
        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n"
        "24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n"))
-     
+
      (get-pure/headers/redirect
       "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
      =>
      (values "This is the data in the first chand this is the second oneXXXXXXX"
              "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n"))))
 
-(run-tests "http" values #f)
-(run-tests "https" (let ([ctx (ssl-make-server-context)])
-                     (ssl-load-certificate-chain! ctx (collection-file-path "test.pem" "openssl"))
-                     (ssl-load-private-key! ctx (collection-file-path "test.pem" "openssl"))
-                     (lambda (in out)
-                       (ports->ssl-ports in out #:mode 'accept #:context ctx)))
-           #t)
-
+(provide tests)
+(module+ main (tests))
+(define (tests)
+  (test
+   (run-tests "http" values #f)
+   (run-tests "https" (let ([ctx (ssl-make-server-context)])
+                        (ssl-load-certificate-chain! ctx (collection-file-path "test.pem" "openssl"))
+                        (ssl-load-private-key! ctx (collection-file-path "test.pem" "openssl"))
+                        (lambda (in out)
+                          (ports->ssl-ports in out #:mode 'accept #:context ctx)))
+              #t)))

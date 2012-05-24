@@ -1,5 +1,5 @@
-#lang scheme/base
-(require file/gzip file/gunzip scheme/file tests/eli-tester)
+#lang racket/base
+(require file/gzip file/gunzip racket/file tests/eli-tester)
 
 (define ((io->str-op io) buf [check-ratio #f])
   (let* ([b? (bytes? buf)]
@@ -42,6 +42,7 @@
      (gzip-through-ports in (open-output-bytes) "defalte-me.dat" (current-seconds)))))
 
 (provide tests)
+(module+ main (tests))
 (define (tests) (test do (run-tests)))
 
 

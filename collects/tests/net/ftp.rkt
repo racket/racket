@@ -23,6 +23,7 @@
   (values thd (port->splitstr port)))
 
 (provide tests)
+(module+ main (tests))
 (define (tests)
   (define cop (open-output-string))
   (define-values [pasv1-thd pasv1-port] (tcp-serve* (current-output-port) DIRLIST))

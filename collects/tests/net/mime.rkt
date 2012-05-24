@@ -1,10 +1,6 @@
 #lang racket/base
-(require net/mime)
 
-(define-syntax-rule (test expect expr)
-  (let ([val expr])
-    (unless (equal? expect val)
-      (error 'test "failed at ~s: ~e" 'expr val))))
+(require tests/eli-tester net/mime)
 
 ;; This test is based on an example from Jordan Schatz
 
@@ -12,7 +8,7 @@
   (open-input-string
    (regexp-replace* #rx"(\r\n|\n)"
 #<<EOS
-Server: MochiWeb/1.1 WebMachine/1.9.0 (someone had painted it blue)
+Server: MochiWeb/1.1 WebMachine/1.9.0 (blah blah)
 Expires: Fri, 06 Jan 2012 02:01:12 GMT
 Date: Fri, 06 Jan 2012 01:51:12 GMT
 Content-Type: multipart/mixed; boundary=9nbsYRvJBLRyuL4VOuuejw9LcAy
@@ -37,29 +33,29 @@ Last-Modified: Wed, 04 Jan 2012 17:12:32 GMT
 EOS
 "\r\n")))
 
-(let* ([analyzed (mime-analyze ip)]
-       [our-entity (message-entity analyzed)]
-       [parts (entity-parts our-entity)]
-       [inner-message (car parts)]
-       [inner-entity (message-entity inner-message)]
-       [body-proc (entity-body inner-entity)]
-       [tmp (open-output-string)]) 
-  (test '("Server: MochiWeb/1.1 WebMachine/1.9.0 (someone had painted it blue)"
-          "Expires: Fri, 06 Jan 2012 02:01:12 GMT"
-          "Date: Fri, 06 Jan 2012 01:51:12 GMT")
-        (message-fields analyzed))
-  (test 1 (length parts))
-  (test '() body-proc)
-  (test 1 (length (entity-parts inner-entity)))
-  (define sub  (message-entity (car (entity-parts inner-entity))))
-  (test 'application (entity-type sub))
-  (test 'json (entity-subtype sub))
-  ((entity-body sub) tmp)
-  (test "{\"date\": \"11/02/2011\"}" (get-output-string tmp)))
-
-(test 'not-there (with-handlers ([exn:fail?
-                                  (lambda (exn)
-                                    (and (missing-multipart-boundary-parameter? exn)
-                                         'not-there))])
-                   (mime-analyze
-                    (open-input-string "Content-Type: multipart/mixed\r\n\r\n"))))
+(provide tests)
+(module+ main (tests))
+(define (tests)
+  (define analyzed      (mime-analyze ip))
+  (define our-entity    (message-entity analyzed))
+  (define parts         (entity-parts our-entity))
+  (define inner-message (car parts))
+  (define inner-entity  (message-entity inner-message))
+  (define body-proc     (entity-body inner-entity))
+  (define tmp           (open-output-string))
+  (define sub           (message-entity (car (entity-parts inner-entity))))
+  (test (message-fields analyzed)
+        => '("Server: MochiWeb/1.1 WebMachine/1.9.0 (blah blah)"
+             "Expires: Fri, 06 Jan 2012 02:01:12 GMT"
+             "Date: Fri, 06 Jan 2012 01:51:12 GMT")
+        (length parts) => 1
+        body-proc => '()
+        (length (entity-parts inner-entity)) => 1
+        (entity-type sub) => 'application
+        (entity-subtype sub) => 'json
+        ((entity-body sub) tmp)
+        (get-output-string tmp) => "{\"date\": \"11/02/2011\"}"
+        (mime-analyze
+         (open-input-string "Content-Type: multipart/mixed\r\n\r\n"))
+        =error> missing-multipart-boundary-parameter?
+        ))

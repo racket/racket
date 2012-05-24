@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/url tests/eli-tester
          (only-in net/uri-codec current-alist-separator-mode))
 
@@ -354,4 +354,5 @@
   )
 
 (provide tests)
+(module+ main (tests))
 (define (tests) (test do (run-tests)))

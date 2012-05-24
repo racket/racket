@@ -1,7 +1,10 @@
-#lang scheme/base
+#lang racket/base
 (require file/md5 tests/eli-tester)
 
-(define (run-tests)
+(provide tests)
+
+(module+ main (tests))
+(define (tests)
   (test
    (md5 #"")
    => #"d41d8cd98f00b204e9800998ecf8427e"
@@ -24,6 +27,3 @@
    (md5 #"" #f)
    => #"\324\35\214\331\217\0\262\4\351\200\t\230\354\370B~"
    ))
-
-(provide tests)
-(define (tests) (test do (run-tests)))

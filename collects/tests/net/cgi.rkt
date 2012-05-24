@@ -8,6 +8,7 @@
     (get-bindings)))
 
 (provide tests)
+(module+ main (tests))
 (define (tests)
   (putenv "REQUEST_METHOD" "GET")
   (test (test-bindings 'amp-or-semi "key1=value1&key2=value2;key3=value3")
