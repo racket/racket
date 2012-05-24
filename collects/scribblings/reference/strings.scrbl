@@ -472,5 +472,23 @@ You can specify @racket[space] for an alternate space replacement.
 Note that this is the same as
 @racket[(string-join (string-split str sep ....) space)]}
 
+@defproc[(string-replace [str  string?]
+                         [from (or/c string? regexp?)]
+                         [to   string?]
+                         [#:all all? any/c #t])
+         string?]{
+
+Returns a copy of @racket[str] where all occurrences of @racket[from]
+are replaced with with @racket[to].
+
+When @racket[from] is a string it is matched literally.  The replacement
+@racket[to] argument must be a string and is always inserted as-is.  All
+occurrences are replaced by default, pass @racket[#f] for @racket[all?]
+to replace only the first match.
+
+@mz-examples[#:eval string-eval
+  (string-replace "foo bar baz" "bar" "blah")
+]}
+
 
 @close-eval[string-eval]

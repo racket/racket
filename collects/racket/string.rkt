@@ -5,8 +5,7 @@
          string-trim
          string-normalize-spaces
          string-split
-         string-replace
-         string-replace*)
+         string-replace)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common case
@@ -94,22 +93,17 @@
                space))
 
 (define replace-cache (make-weak-hasheq))
-(define (replace-internal who str from to all?)
-  (unless (string? str)  (raise-type-error who "string" str))
-  (unless (string? to)   (raise-type-error who "string" to))
+(define (string-replace str from to #:all? [all? #t])
+  (unless (string? str) (raise-type-error 'string-replace "string" str))
+  (unless (string? to)  (raise-type-error 'string-replace "string" to))
   (define from*
     (if (regexp? from)
       from
       (hash-ref! replace-cache from
         (λ() (if (string? from)
                (regexp (regexp-quote from))
-               (raise-type-error who "string" from))))))
+               (raise-type-error 'string-replace "string" from))))))
   (define to* (regexp-replace-quote to))
   (if all?
     (regexp-replace* from* str to*)
     (regexp-replace  from* str to*)))
-
-(define (string-replace str from to)
-  (replace-internal 'string-replace str from to #f))
-(define (string-replace* str from to)
-  (replace-internal 'string-replace* str from to #t))

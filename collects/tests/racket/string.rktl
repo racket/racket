@@ -446,8 +446,8 @@
   (test ""         string-replace "" "|" "?")
   (test "foo"      string-replace "foo" "|" "?")
   (test "foo\\bar" string-replace "foo\\bar" "\\" "\\")
-  (test "foo[bar]" string-replace "foo]bar]" "]" "[")
-  (test "foo[bar[" string-replace* "foo]bar]" "]" "[")
+  (test "foo[bar]" string-replace "foo]bar]" "]" "[" #:all? #f)
+  (test "foo[bar[" string-replace "foo]bar]" "]" "[")
   (test "foo\\1bar" string-replace "foo===bar" #rx"(=+)" "\\1")
   (test "foo\\1bar" string-replace "foo===bar" #px"={3}" "\\1"))
 
