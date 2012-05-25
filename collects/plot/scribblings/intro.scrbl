@@ -6,9 +6,15 @@
 
 @section{Plotting 2D Graphs}
 
-To plot a one-input, real-valued function, first @(racket (require plot)), and then try something like
+To plot a one-input, real-valued function, do something like
 
+@racketinput[(require plot)]
 @interaction[#:eval plot-eval (plot (function sin (- pi) pi #:label "y = sin(x)"))]
+
+(If you're not using DrRacket, start with
+@racketblock[(require plot)
+             (plot-new-window? #t)]
+to open each plot in a new window.)
 
 The first argument to @(racket function) is the function to be plotted, and the @(racket #:label) argument becomes the name of the function in the legend.
 
@@ -23,7 +29,7 @@ The @(racket plot) function collects legend entries, bounds and ticks. It then s
 
 @section{Plotting 3D Graphs}
 
-To plot a two-input, real-valued function as a surface, first @(racket (require plot)), and then try something like
+To plot a two-input, real-valued function as a surface, try something like
 
 @margin-note{The documentation can't show it, but in DrRacket you can rotate 3D plots by clicking on them and dragging the mouse. Try it!}
 
