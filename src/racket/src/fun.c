@@ -1773,7 +1773,8 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     if (!SCHEME_STXP(code)) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "%S: return value from syntax expander was not syntax: %V",
+                       "%S: return value from syntax expander was not syntax\n"
+                       "  return value: %V",
                        SCHEME_STX_SYM(name),
                        code);
     }
@@ -2230,12 +2231,34 @@ int scheme_check_proc_arity2(const char *where, int a,
   if (!SCHEME_PROCP(p) || SCHEME_FALSEP(get_or_check_arity(p, a, NULL, 1))) {
     if (where) {
       char buffer[60];
+      const char *pre, *post;
 
-      sprintf(buffer, "procedure (arity %d)%s", 
-	      a,
-	      false_ok ? " or #f" : "");
+      if (false_ok) {
+        pre = "(or/c ";
+        post = " #f)";
+      } else
+        pre = post = "";
 
-      scheme_wrong_type(where, buffer, which, argc, argv);
+      switch (a) {
+      case 0:
+        sprintf(buffer, "%s(-> any)%s", pre, post);
+        break;
+      case 1:
+        sprintf(buffer, "%s(any/c . -> . any)%s", pre, post);
+        break;
+      case 2:
+        sprintf(buffer, "%s(any/c any/c . -> . any)%s", pre, post);
+        break;
+      case 3:
+        sprintf(buffer, "%s(any/c any/c any/c . -> . any)%s", pre, post);
+        break;
+      default:
+        sprintf(buffer, "%s(procedure-arity-includes/c %d)%s", 
+                pre, a, post);
+        break;
+      }
+
+      scheme_wrong_contract(where, buffer, which, argc, argv);
     } else
       return 0;
   }
@@ -2390,12 +2413,17 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
         }
       } else {
         Scheme_Object *sym;
+        intptr_t offset;
         sym = SCHEME_STRUCT_NAME_SYM(p);
         *len = SCHEME_SYM_LEN(sym);
         s = (char *)scheme_malloc_atomic((*len) + 8);
-        memcpy(s, "struct ", 7);
-        memcpy(s + 7, scheme_symbol_val(sym), *len);
-        (*len) += 7;
+        if (0) {
+          memcpy(s, "struct ", 7);
+          offset = 7;
+        } else
+          offset = 0;
+        memcpy(s + offset, scheme_symbol_val(sym), *len);
+        (*len) += offset;
         s[*len] = 0;
         return s;
       }
@@ -2444,7 +2472,7 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       return NULL;
   }
 
-  if (for_error > 0) {
+  if (0) {
     char *r;
 
     r = (char *)scheme_malloc_atomic((*len) + 11);
@@ -2477,7 +2505,7 @@ static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
       return scheme_make_arity(p->minr, p->maxr);
     }
   } else {
-    scheme_wrong_type("primitive-result_arity", "primitive", 0, argc, argv);
+    scheme_wrong_contract("primitive-result_arity", "primitive?", 0, argc, argv);
     return NULL;
   }
 
@@ -2555,7 +2583,7 @@ Scheme_Object *scheme_arity(Scheme_Object *p)
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure-arity", "procedure", 0, argc, argv);
+    scheme_wrong_contract("procedure-arity", "procedure?", 0, argc, argv);
 
   return get_or_check_arity(argv[0], -1, NULL, 1);
 }
@@ -2599,7 +2627,7 @@ Scheme_Object *scheme_procedure_arity_includes(int argc, Scheme_Object *argv[])
   int inc_ok;
 
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure-arity-includes?", "procedure", 0, argc, argv);
+    scheme_wrong_contract("procedure-arity-includes?", "procedure?", 0, argc, argv);
 
   n = scheme_extract_index("procedure-arity-includes?", 1, argc, argv, -2, 0);
   /* -2 means a bignum */
@@ -2808,10 +2836,12 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   Scheme_Object *orig, *aty;
 
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
+    scheme_wrong_contract("procedure-reduce-arity", "procedure?", 0, argc, argv);
 
   if (!is_arity(argv[1], 1, 1)) {
-    scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
+    scheme_wrong_contract("procedure-reduce-arity", 
+                          "(or/c exact-nonnegative-integer? arity-at-least? (listof (or/c exact-nonnegative-integer? arity-at-least?)))", 
+                          1, argc, argv);
   }
 
   /* Check whether current arity covers the requested arity.  This is
@@ -2822,11 +2852,11 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   aty = clone_arity(argv[1], 0);
 
   if (!is_subarity(aty, orig)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "procedure-reduce-arity: arity of procedure: %V"
-                     " does not include requested arity: %V",
-                     argv[0],
-                     argv[1]);
+    scheme_contract_error("procedure-reduce-arity",
+                          "arity of procedure does not include requested arity",
+                          "procedure", 1, argv[0],
+                          "requested arity", 1, argv[1],
+                          NULL);
     return NULL;
   }
 
@@ -2839,9 +2869,9 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
   Scheme_Object *p, *aty;
 
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure-rename", "procedure", 0, argc, argv);
+    scheme_wrong_contract("procedure-rename", "procedure?", 0, argc, argv);
   if (!SCHEME_SYMBOLP(argv[1]))
-    scheme_wrong_type("procedure-rename", "symbol", 1, argc, argv);
+    scheme_wrong_contract("procedure-rename", "symbol?", 1, argc, argv);
 
   p = scheme_rename_struct_proc(argv[0], argv[1]);
   if (p) return p;
@@ -2856,7 +2886,7 @@ static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
   Scheme_Object *aty;
 
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure->method", "procedure", 0, argc, argv);
+    scheme_wrong_contract("procedure->method", "procedure?", 0, argc, argv);
 
   aty = get_or_check_arity(argv[0], -1, NULL, 1);  
 
@@ -2868,9 +2898,9 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
   Scheme_Object *v1 = argv[0], *v2 = argv[1];
 
   if (!SCHEME_PROCP(v1))
-    scheme_wrong_type("procedure-closure-contents-eq?", "procedure", 0, argc, argv);
+    scheme_wrong_contract("procedure-closure-contents-eq?", "procedure?", 0, argc, argv);
   if (!SCHEME_PROCP(v2))
-    scheme_wrong_type("procedure-closure-contents-eq?", "procedure", 1, argc, argv);
+    scheme_wrong_contract("procedure-closure-contents-eq?", "procedure?", 1, argc, argv);
 
   if (SAME_OBJ(v1, v2))
     return scheme_true;
@@ -2983,19 +3013,20 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
     val = SCHEME_CHAPERONE_VAL(val);
 
   if (!SCHEME_PROCP(val))
-    scheme_wrong_type(name, "procedure", 0, argc, argv);
+    scheme_wrong_contract(name, "procedure?", 0, argc, argv);
   if (!SCHEME_PROCP(argv[1]))
-    scheme_wrong_type(name, "procedure", 1, argc, argv);
+    scheme_wrong_contract(name, "procedure?", 1, argc, argv);
 
   orig = get_or_check_arity(val, -1, NULL, 1);
   naya = get_or_check_arity(argv[1], -1, NULL, 1);
 
   if (!is_subarity(orig, naya))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: arity of %s procedure: %V"
-                     " does not cover arity of original procedure: %V",
+                     "%s: arity of %s procedure does not cover arity of original procedure",
+                     "  %s procedure: %V\n"
+                     "  original procedure: %V",
                      name, whating,
-                     argv[1],
+                     whating, argv[1],
                      argv[0]);
 
   props = scheme_parse_chaperone_props(name, 2, argc, argv);
@@ -3219,25 +3250,25 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         if (!SAME_OBJ(argv2[i], argv[i])
             && !scheme_chaperone_of(argv2[i], argv[i])) {
           if (argc == 1)
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "procedure chaperone: %V: result: %V is not a chaperone of argument: %V",
-                             SCHEME_CAR(px->redirects),
-                             argv2[i], argv[i]);
-          else
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "procedure chaperone: %V: %d%s result: %V is not a chaperone of argument: %V",
-                             SCHEME_CAR(px->redirects),
-                             i, scheme_number_suffix(i),
-                             argv2[i], argv[i]);
+            scheme_wrong_chaperoned("procedure chaperone", "argument", argv[i], argv2[i]);
+          else {
+            char nbuf[32];
+            sprintf(nbuf, "%d%s argument", i, scheme_number_suffix(i));
+            scheme_wrong_chaperoned("procedure chaperone", nbuf, argv[i], argv2[i]);
+          }
         }
       }
     }
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                     "procedure %s: %V: returned %d values, expected %d or %d",
+                     "procedure %s: incorrect number of results from wrapper\n"
+                     "  wrapper: %V\n"
+                     "  expected number of results: %d or %d\n"
+                     "  received number of results: %d",
                      what,
                      SCHEME_CAR(px->redirects),
-                     c, argc, argc + 1);
+                     argc, argc + 1,
+                     c);
     return NULL;
   }
 
@@ -3285,7 +3316,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     /* First element is a filter for the result(s) */
     if (!SCHEME_PROCP(post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure %s: %V: expected <procedure> as first result, produced: %V",
+                       "procedure %s: wrapper's first result is not a procedure\n"
+                       "  wrapper: %V\n"
+                       "  received first result: %V\n"
+                       "  explanation: extra result compared to original argument count should be a result wrapper",
+                       what,
                        what,
                        SCHEME_CAR(px->redirects),
                        post);
@@ -3336,7 +3371,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure-result chaperone: %V: does not accept %d values produced by chaperoned procedure",
+                       "procedure-result chaperone: wrapper does not accept the number"
+                       " of values produced by the chaperoned procedure\n"
+                       "  wrapper: %V\n"
+                       "  number of values produced by procedure: %d",
                        post,
                        c);
     
@@ -3362,22 +3400,21 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
           if (!SAME_OBJ(argv2[i], argv[i])
               && !scheme_chaperone_of(argv2[i], argv[i])) {
             if (argc == 1)
-              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                               "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",
-                               post,
-                               argv2[i], argv[i]);
-            else
-              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                               "procedure-result chaperone: %V: %d%s result: %V is not a chaperone of original result: %V",
-                               post,
-                               i, scheme_number_suffix(i),
-                               argv2[i], argv[i]);
+              scheme_wrong_chaperoned("procedure-result chaperone", "result", argv[i], argv2[i]);
+            else {
+              char nbuf[32];
+              sprintf(nbuf, "%d%s result", i, scheme_number_suffix(i));
+              scheme_wrong_chaperoned("procedure-result chaperone", nbuf, argv[i], argv2[i]);
+            }
           }
         }
       }
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                       "procedure-result %s: %V: returned %d values, expected %d",
+                       "procedure-result %s: wrapper returned wrong number of values\n"
+                       "  wrapper: %V\n"
+                       "  number of returned values: %d\n"
+                       "  expected number of returned values: %d",
                        what,
                        post,
                        argc, c);
@@ -3405,7 +3442,7 @@ apply(int argc, Scheme_Object *argv[])
   Scheme_Thread *p = scheme_current_thread;
 
   if (!SCHEME_PROCP(argv[0])) {
-    scheme_wrong_type("apply", "procedure", 0, argc, argv);
+    scheme_wrong_contract("apply", "procedure?", 0, argc, argv);
     return NULL;
   }
 
@@ -3413,7 +3450,7 @@ apply(int argc, Scheme_Object *argv[])
 
   num_rands = scheme_proper_list_length(rands);
   if (num_rands < 0) {
-    scheme_wrong_type("apply", "proper list", argc - 1, argc, argv);
+    scheme_wrong_contract("apply", "list?", argc - 1, argc, argv);
     return NULL;
   }
   num_rands += (argc - 2);
@@ -3478,7 +3515,7 @@ static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("call-with-values", 0, 0, argc, argv);
   if (!SCHEME_PROCP(argv[1]))
-    scheme_wrong_type("call-with-values", "procedure", 1, argc, argv);
+    scheme_wrong_contract("call-with-values", "procedure?", 1, argc, argv);
 
   v = _scheme_apply_multi(argv[0], 0, NULL);
   p = scheme_current_thread;
@@ -3736,7 +3773,7 @@ do_call_with_sema(const char *who, int enable_break, int argc, Scheme_Object *ar
   int old_pcc = scheme_prompt_capture_count;
 
   if (!SCHEME_SEMAP(argv[0])) {
-    scheme_wrong_type(who, "semaphore", 0, argc, argv);
+    scheme_wrong_contract(who, "semaphore?", 0, argc, argv);
     return NULL;
   }
   if (argc > 2)
@@ -3744,12 +3781,18 @@ do_call_with_sema(const char *who, int enable_break, int argc, Scheme_Object *ar
   else
     extra = 0;
   if (!scheme_check_proc_arity(NULL, extra, 1, argc, argv)) {
-    scheme_wrong_type(who, "procedure (arity matching extra args)", 1, argc, argv);
+    if (!SCHEME_PROCP(argv[1]))
+      scheme_wrong_contract(who, "procedure?", 1, argc, argv);
+    else
+      scheme_contract_error(who, "procedure arity does not match extra-argument count",
+                            "procedure", 1, argv[1],
+                            "extra-argument count", 1, scheme_make_integer(extra),
+                            NULL);
     return NULL;
   }
   if ((argc > 2) && SCHEME_TRUEP(argv[2])) {
     if (!scheme_check_proc_arity(NULL, 0, 2, argc, argv)) {
-      scheme_wrong_type(who, "procedure (arity 0) or #f", 1, argc, argv);
+      scheme_wrong_contract(who, "(or/c (-> any) #f)", 1, argc, argv);
       return NULL;
     }
     just_try = 1;
@@ -4556,7 +4599,7 @@ call_cc (int argc, Scheme_Object *argv[])
 			  0, argc, argv);
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      scheme_wrong_type("call-with-current-continuation", "continuation-prompt-tag",
+      scheme_wrong_contract("call-with-current-continuation", "continuation-prompt-tag?",
                         1, argc, argv);
     }
   }
@@ -5121,11 +5164,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
   prompt = scheme_get_prompt(SCHEME_PTR_VAL(prompt_tag), &prompt_cont, &prompt_pos);
   if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
-    scheme_arg_mismatch((composable
-                         ? "call-with-composable-continuation"
-                         : "call-with-current-continuation"), 
-                        "continuation includes no prompt with the given tag: ",
-                        prompt_tag);
+    scheme_contract_error((composable
+                           ? "call-with-composable-continuation"
+                           : "call-with-current-continuation"), 
+                          "continuation includes no prompt with the given tag",
+                          "tag", 1, prompt_tag,
+                          NULL);
     return NULL;
   }
 
@@ -5479,7 +5523,7 @@ static Scheme_Object *make_prompt_tag (int argc, Scheme_Object *argv[])
   Scheme_Object *o, *key;
 
   if (argc && !SCHEME_SYMBOLP(argv[0]))
-    scheme_wrong_type("make-continuation-prompt-tag", "symbol", 0, argc, argv);
+    scheme_wrong_contract("make-continuation-prompt-tag", "symbol?", 0, argc, argv);
 
   key = scheme_make_pair(scheme_false, scheme_false);
 
@@ -5938,7 +5982,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   scheme_check_proc_arity("call-with-continuation-prompt", argc, 0, in_argc, in_argv);
   if (in_argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(in_argv[1]))) {
-      scheme_wrong_type("call-with-continuation-prompt", "continuation-prompt-tag",
+      scheme_wrong_contract("call-with-continuation-prompt", "continuation-prompt-tag?",
                         1, in_argc, in_argv);
     }
     prompt_tag = in_argv[1];
@@ -5947,7 +5991,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
   if (in_argc > 2) {
     if (SCHEME_TRUEP(in_argv[2]) && !SCHEME_PROCP(in_argv[2]))
-      scheme_wrong_type("call-with-continuation-prompt", "procedure or #f", 2, in_argc, in_argv);
+      scheme_wrong_contract("call-with-continuation-prompt", "(or/c procedure? #f)", 2, in_argc, in_argv);
     handler = in_argv[2];
   } else
     handler = scheme_false;
@@ -6333,7 +6377,7 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
 
   prompt_tag = argv[0];
   if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
-    scheme_wrong_type("abort-current-continuation", "continuation-prompt-tag",
+    scheme_wrong_contract("abort-current-continuation", "continuation-prompt-tag?",
                       0, argc, argv);
   }
 
@@ -6342,9 +6386,10 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
     prompt = original_default_prompt;
 
   if (!prompt) {
-    scheme_arg_mismatch("abort-current-continuation", 
-                        "continuation includes no prompt with the given tag: ",
-                        prompt_tag);
+    scheme_contract_error("abort-current-continuation", 
+                          "continuation includes no prompt with the given tag",
+                          "tag", 1, prompt_tag,
+                          NULL);
     return NULL;
   }
 
@@ -6395,7 +6440,7 @@ static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int
   scheme_check_proc_arity("call-with-composable-continuation", 1, 0, argc, argv);
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      scheme_wrong_type("call-with-composable-continuation", "continuation-prompt-tag",
+      scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
                         1, argc, argv);
     }
     prompt_tag = argv[1];
@@ -6686,9 +6731,10 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
       }
       if (!who)
         return NULL;
-      scheme_arg_mismatch(who,
-                          "no corresponding prompt in the continuation: ",
-                          prompt_tag);
+      scheme_contract_error(who,
+                            "no corresponding prompt in the continuation",
+                            "tag", 1, prompt_tag,
+                            NULL);
     }
   }
 
@@ -6753,15 +6799,16 @@ cc_marks(int argc, Scheme_Object *argv[])
 {
   if (argc) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[0]))) {
-      scheme_wrong_type("current-continuation-marks", "continuation-prompt-tag",
+      scheme_wrong_contract("current-continuation-marks", "continuation-prompt-tag?",
                         0, argc, argv);
     }
 
     if (!SAME_OBJ(scheme_default_prompt_tag, argv[0]))
       if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(argv[0])))
-        scheme_arg_mismatch("current-continuation-marks",
-                            "no corresponding prompt in the continuation: ",
-                            argv[0]);
+        scheme_contract_error("current-continuation-marks",
+                              "no corresponding prompt in the continuation",
+                              "prompt tag", 1, argv[0],
+                              NULL);
   }
 
   return scheme_current_continuation_marks(argc ? argv[0] : NULL);
@@ -6774,11 +6821,11 @@ cont_marks(int argc, Scheme_Object *argv[])
 
   if (SCHEME_TRUEP(argv[0])
       && !SCHEME_CONTP(argv[0]) && !SCHEME_ECONTP(argv[0]) && !SCHEME_THREADP(argv[0]))
-    scheme_wrong_type("continuation-marks", "continuation, thread, or #f", 0, argc, argv);
+    scheme_wrong_contract("continuation-marks", "(or/c continuation? thread? #f)", 0, argc, argv);
 
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      scheme_wrong_type("continuation-marks", "continuation-prompt-tag",
+      scheme_wrong_contract("continuation-marks", "continuation-prompt-tag?",
                         1, argc, argv);
     }
     prompt_tag = argv[1];
@@ -6789,9 +6836,10 @@ cont_marks(int argc, Scheme_Object *argv[])
     return make_empty_marks();
   } else if (SCHEME_ECONTP(argv[0])) {
     if (!scheme_escape_continuation_ok(argv[0])) {
-      scheme_arg_mismatch("continuation-marks",
-			  "escape continuation not in the current thread's continuation: ",
-			  argv[0]);
+      scheme_contract_error("continuation-marks",
+                            "escape continuation not in the current thread's continuation",
+                            "escape continuation", 1, argv[0],
+                            NULL);
       return NULL;
     } else {
       Scheme_Meta_Continuation *mc;
@@ -6854,12 +6902,12 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
   Scheme_Object *pr;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
-    scheme_wrong_type("continuation-mark-set->list", "continuation-mark-set", 0, argc, argv);
+    scheme_wrong_contract("continuation-mark-set->list", "continuation-mark-set?", 0, argc, argv);
     return NULL;
   }
   if (argc > 2) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[2]))) {
-      scheme_wrong_type("continuation-mark-set->list", "continuation-prompt-tag",
+      scheme_wrong_contract("continuation-mark-set->list", "continuation-prompt-tag?",
                         2, argc, argv);
     }
     prompt_tag = argv[2];
@@ -6905,12 +6953,12 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
   intptr_t last_pos;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
-    scheme_wrong_type("continuation-mark-set->list*", "continuation-mark-set", 0, argc, argv);
+    scheme_wrong_contract("continuation-mark-set->list*", "continuation-mark-set?", 0, argc, argv);
     return NULL;
   }
   len = scheme_proper_list_length(argv[1]);
   if (len < 0) {
-    scheme_wrong_type("continuation-mark-set->list*", "list", 1, argc, argv);
+    scheme_wrong_contract("continuation-mark-set->list*", "list?", 1, argc, argv);
     return NULL;
   }
   if (argc > 2)
@@ -6919,7 +6967,7 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
     none = scheme_false;
   if (argc > 3) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[3]))) {
-      scheme_wrong_type("continuation-mark-set->list*", "continuation-prompt-tag",
+      scheme_wrong_contract("continuation-mark-set->list*", "continuation-prompt-tag?",
                         3, argc, argv);
     }
     prompt_tag = argv[3];
@@ -7062,7 +7110,7 @@ static Scheme_Object *
 extract_cc_proc_marks(int argc, Scheme_Object *argv[])
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
-    scheme_wrong_type("continuation-mark-set->context", "continuation-mark-set", 0, argc, argv);
+    scheme_wrong_contract("continuation-mark-set->context", "continuation-mark-set?", 0, argc, argv);
     return NULL;
   }
 
@@ -7276,7 +7324,7 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
 
   if (SCHEME_TRUEP(argv[0])
       && !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type))
-    scheme_wrong_type("continuation-mark-set-first", "continuation-mark-set or #f", 0, argc, argv);
+    scheme_wrong_contract("continuation-mark-set-first", "(or/c continuation-mark-set? #f)", 0, argc, argv);
   
   if ((argv[1] == scheme_parameterization_key)
       || (argv[1] == scheme_break_enabled_key)) {
@@ -7291,7 +7339,7 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
 
   if (argc > 3) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[3]))) {
-      scheme_wrong_type("continuation-mark-set-first", "continuation-prompt-tag",
+      scheme_wrong_contract("continuation-mark-set-first", "continuation-prompt-tag?",
                         3, argc, argv);
     }
     prompt_tag = argv[3];
@@ -7299,9 +7347,10 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
     if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
       if (SCHEME_FALSEP(argv[0])) {
         if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag)))
-          scheme_arg_mismatch("continuation-mark-set-first",
-                              "no corresponding prompt in the current continuation: ",
-                              prompt_tag);
+          scheme_contract_error("continuation-mark-set-first",
+                                "no corresponding prompt in the current continuation",
+                                "tag", 1, prompt_tag,
+                                NULL);
       }
     }
   } 
@@ -7337,16 +7386,17 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
 
   prompt_tag = argv[0];
   if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
-    scheme_wrong_type("continuation-prompt-available?", "continuation-prompt-tag",
+    scheme_wrong_contract("continuation-prompt-available?", "continuation-prompt-tag?",
                       0, argc, argv);
   }
 
   if (argc > 1) {
     if (SCHEME_ECONTP(argv[1])) {
       if (!scheme_escape_continuation_ok(argv[1])) {
-        scheme_arg_mismatch("continuation-prompt-available?",
-                            "escape continuation not in the current thread's continuation: ",
-                            argv[1]);
+        scheme_contract_error("continuation-prompt-available?",
+                              "escape continuation not in the current thread's continuation",
+                              "escape continuation", 1, argv[1],
+                              NULL);
         return NULL;
       } else {
         Scheme_Meta_Continuation *mc;
@@ -7364,7 +7414,7 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
       if (continuation_marks(NULL, argv[1], NULL, NULL, prompt_tag, NULL, 0))
         return scheme_true;
     } else {
-      scheme_wrong_type("continuation-prompt-available?", "continuation",
+      scheme_wrong_contract("continuation-prompt-available?", "continuation?",
                         1, argc, argv);
     }
   } else {
@@ -7963,11 +8013,12 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
           prompt = original_default_prompt;
         }
         if (!prompt) {
-          scheme_arg_mismatch("abort-current-continuation", 
-                              "abort in progress, but current continuation includes"
-                              " no prompt with the given tag"
-                              " after a `dynamic-wind' post-thunk return: ",
-                              tag);
+          scheme_contract_error("abort-current-continuation", 
+                                "abort in progress, but current continuation includes"
+                                " no prompt with the given tag"
+                                " after a `dynamic-wind' post-thunk return",
+                                "tag", 1, tag,
+                                NULL);
           return NULL;
         }
         p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
@@ -8351,7 +8402,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
   secs = argv[0];
 
   if (!SCHEME_REALP(secs)) {
-    scheme_wrong_type("seconds->date", "real", 0, argc, argv);
+    scheme_wrong_contract("seconds->date", "real?", 0, argc, argv);
     return NULL;
   }
   
@@ -8533,8 +8584,9 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
   }
 
   scheme_raise_exn(MZEXN_FAIL,
-		   "seconds->date: integer %s is out-of-range",
-		   scheme_make_provided_string(secs, 0, NULL));
+		   "seconds->date: integer is out-of-range\n"
+                   "  integer: %V",
+                   secs);
 
   return NULL;
 }
@@ -8549,7 +8601,7 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
   Scheme_Object *v, *p[4], **rand_vec, *rands, *r;
 
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("time-apply", "procedure", 0, argc, argv);
+    scheme_wrong_contract("time-apply", "procedure?", 0, argc, argv);
 
   rands = argv[1];
 
@@ -8557,20 +8609,17 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
   r = rands;
   while (!SCHEME_NULLP(r)) {
     if (!SCHEME_PAIRP(r))
-      scheme_wrong_type("time-apply", "proper list", 1, argc, argv);
+      scheme_wrong_contract("time-apply", "list?", 1, argc, argv);
     r = SCHEME_CDR(r);
     num_rands++;
   }
 
   if (SCHEME_FALSEP(get_or_check_arity(argv[0], num_rands, NULL, 1))) {
-    char *s;
-    intptr_t aelen;
-
-    s = scheme_make_arity_expect_string(argv[0], num_rands, NULL, &aelen);
-
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "time-apply: arity mismatch for %t",
-		     s, aelen);
+    scheme_contract_error("time-apply",
+                          "arity mismatch between procedure and argument-list length\n",
+                          "procedure", 1, argv[0],
+                          "argument-list length", 1, scheme_make_integer(num_rands),
+                          NULL);
     return NULL;
   }
 
@@ -8625,7 +8674,7 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
   else {
     if (SCHEME_THREADP(argv[0]))
       return scheme_make_integer(scheme_get_thread_milliseconds(argv[0]));
-    scheme_wrong_type("current-process-milliseconds", "thread", 0, argc, argv);
+    scheme_wrong_contract("current-process-milliseconds", "thread?", 0, argc, argv);
     return NULL;
   }
 }
@@ -8737,7 +8786,7 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
   inport = _scheme_apply(getter, 0, NULL);
 
   if (!SCHEME_INPORTP(inport))
-    scheme_wrong_type("default-prompt-read-hander", "input port", -1, -1, &inport);
+    scheme_wrong_contract("default-prompt-read-hander", "input-port?", -1, -1, &inport);
 
   name = (Scheme_Object *)scheme_port_record(inport);
   name = ((Scheme_Input_Port *)name)->name;
@@ -8783,11 +8832,11 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
   Scheme_Cont_Frame_Data cframe;
 
   if (!SCHEME_INPORTP(inport))
-    scheme_wrong_type("default-read-interaction-handler",
-                      "input port",
-                      1,
-                      argc,
-                      argv);
+    scheme_wrong_contract("default-read-interaction-handler",
+                          "input-port?",
+                          1,
+                          argc,
+                          argv);
 
   config = scheme_current_config();
   config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);

@@ -244,9 +244,9 @@
             (let-values ([(path base) (module-path-index-split v)])
               (loop path)
               (loop base))]
-	   [else (raise-type-error
+	   [else (raise-argument-error
 		  'serialize
-		  "serializable object"
+		  "serializable?"
 		  v)])
 	  ;; No more possibility for this object in
 	  ;;  a cycle:

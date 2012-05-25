@@ -31,17 +31,17 @@
 
   (-define (check-splicing-list l ctx)
     (unless (stx-list? l)
-      (raise-type-error
+      (raise-argument-error
        'unsyntax-splicing
-       "proper syntax list"
+       "syntax->list"
        l))
     (datum->syntax ctx l ctx))
 
   (-define (check-splicing-datum-list l ctx)
     (unless (list? l)
-      (raise-type-error
+      (raise-argument-error
        'undatum-splicing
-       "proper list"
+       "list?"
        l))
     l)
 

@@ -245,7 +245,7 @@ Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]) {
 
   place = (Scheme_Place *) args[0];
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
-    scheme_wrong_type("place-pumper-threads", "place", 0, argc, args);
+    scheme_wrong_contract("place-pumper-threads", "place?", 0, argc, args);
 
   if (argc == 2) {
     tmp = args[1];
@@ -313,25 +313,27 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     err_arg = args[4];
 
     if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0]) && !SCHEME_MODNAMEP(args[0])) {
-      scheme_wrong_type("dynamic-place", "module-path or path of resolved-module-path", 0, argc, args);
+      scheme_wrong_contract("dynamic-place", "(or/c module-path? path? resolved-module-path?)", 0, argc, args);
     }
     if (!SCHEME_SYMBOLP(args[1])) {
-      scheme_wrong_type("dynamic-place", "symbol", 1, argc, args);
+      scheme_wrong_contract("dynamic-place", "symbol?", 1, argc, args);
     }
     if (SCHEME_TRUEP(in_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &in_arg))) {
-      scheme_wrong_type("dynamic-place", "file-stream-input-port or #f", 2, argc, args);
+      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? input-port?) #f)", 2, argc, args);
     }
     if (SCHEME_TRUEP(out_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &out_arg))) {
-      scheme_wrong_type("dynamic-place", "file-stream-output-port or #f", 3, argc, args);
+      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? input-port?) #f)", 3, argc, args);
     }
     if (SCHEME_TRUEP(err_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &err_arg))) {
-      scheme_wrong_type("dynamic-place", "file-stream-output-port or #f", 4, argc, args);
+      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? input-port?) #f)", 4, argc, args);
     }
 
     if (SCHEME_PAIRP(args[0]) 
         && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)
         && !scheme_is_predefined_module_p(args[0])) {
-      scheme_arg_mismatch("dynamic-place", "not a filesystem or predefined module-path: ", args[0]);
+      scheme_contract_error("dynamic-place", "not a filesystem or predefined module-path", 
+                            "module path", 1, args[0],
+                            NULL);
     }
 
     so = places_deep_copy_to_master(args[0]);
@@ -367,61 +369,67 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     if (SCHEME_TRUEP(in_arg)) {
       if (scheme_port_closed_p(in_arg)) {
         close_six_fds(rw);
-        scheme_arg_mismatch("dynamic-place", "port is closed: ", in_arg);
+        scheme_contract_error("dynamic-place", "port is closed", 
+                              "port", 1, in_arg,
+                              NULL);
       }
       scheme_get_port_file_descriptor(in_arg, &tmpfd);
       tmpfd = scheme_dup_file(tmpfd);
       if (tmpfd == -1) {
         errorno = scheme_errno();
         close_six_fds(rw);
-        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor (%e)", errorno);
+        scheme_system_error("dynamic-place", "stdin dup", errorno);
       }
       rw[0] = tmpfd;
     }
     else if (scheme_os_pipe(rw, -1)) {
       errorno = scheme_errno();
       close_six_fds(rw);
-      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard input streams (%e)", errorno);
+      scheme_system_error("dynamic-place", "stdin pipe", errorno);
     }
 
     if (SCHEME_TRUEP(out_arg)) {
       if (scheme_port_closed_p(out_arg)) {
         close_six_fds(rw);
-        scheme_arg_mismatch("dynamic-place", "port is closed: ", out_arg);
+        scheme_contract_error("dynamic-place", "port is closed", 
+                              "port", 1, out_arg,
+                              NULL);
       }
       scheme_get_port_file_descriptor(out_arg, &tmpfd);
       tmpfd = scheme_dup_file(tmpfd);
       if (tmpfd == -1) {
         errorno = scheme_errno();
         close_six_fds(rw);
-        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor (%e)", errorno);
+        scheme_system_error("dynamic-place", "stdout dup", errorno);
       }
       rw[3] = tmpfd;
     }
     else if (scheme_os_pipe(rw + 2, -1)) {
       errorno = scheme_errno();
       close_six_fds(rw);
-      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard output streams (%e)", errorno);
+      scheme_system_error("dynamic-place", "stdout pipe", errorno);
     }
 
     if (SCHEME_TRUEP(err_arg)) {
       if (scheme_port_closed_p(err_arg)) {
         close_six_fds(rw);
-        scheme_arg_mismatch("dynamic-place", "port is closed: ", err_arg);
+        scheme_contract_error("dynamic-place", "port is closed", 
+                              "port", 1, err_arg,
+                              NULL);
       }
       scheme_get_port_file_descriptor(err_arg, &tmpfd);
       tmpfd = scheme_dup_file(tmpfd);
       if (tmpfd == -1) {
         errorno = scheme_errno();
         close_six_fds(rw);
-        scheme_raise_exn(MZEXN_FAIL, "dup: error duplicating file descriptor (%e)", errorno);
+        scheme_system_error("dynamic-place", "stderr dup", errorno);
       }
       rw[5] = tmpfd;
     }
     else if (scheme_os_pipe(rw + 4, -1)) {
       errorno = scheme_errno();
       close_six_fds(rw);
-      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "pipe: error creating place standard error streams (%e)", errorno);
+      scheme_system_error("dynamic-place", "stderr pipe", errorno);
     }
 
     {
@@ -554,7 +562,7 @@ static Scheme_Object *place_kill(int argc, Scheme_Object *args[]) {
   place = (Scheme_Place *) args[0];
 
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
-    scheme_wrong_type("place-kill", "place", 0, argc, args);
+    scheme_wrong_contract("place-kill", "place?", 0, argc, args);
 
   do_place_kill(place);
   return scheme_void;
@@ -565,7 +573,7 @@ static Scheme_Object *place_break(int argc, Scheme_Object *args[]) {
   place = (Scheme_Place *) args[0];
 
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
-    scheme_wrong_type("place-break", "place", 0, argc, args);
+    scheme_wrong_contract("place-break", "place?", 0, argc, args);
 
   return scheme_make_integer(do_place_break(place));
 }
@@ -595,7 +603,7 @@ static Scheme_Object *make_place_dead(int argc, Scheme_Object *argv[])
   Scheme_Object *b;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_place_type))
-    scheme_wrong_type("place-dead-evt", "place", 0, argc, argv);
+    scheme_wrong_contract("place-dead-evt", "place?", 0, argc, argv);
 
   b = scheme_alloc_small_object();
   b->type = scheme_place_dead_type;
@@ -1066,7 +1074,7 @@ static Scheme_Object *place_wait(int argc, Scheme_Object *args[]) {
   place = (Scheme_Place *) args[0];
 
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type))
-    scheme_wrong_type("place-wait", "place", 0, argc, args);
+    scheme_wrong_contract("place-wait", "place?", 0, argc, args);
   
   scheme_block_until(place_wait_ready, NULL, (Scheme_Object*)place, 0);
 
@@ -1105,9 +1113,10 @@ Scheme_Object *places_deep_uncopy(Scheme_Object *so) {
 }
 
 static void bad_place_message(Scheme_Object *so) {
-  scheme_arg_mismatch("place-channel-put", 
-                      "value not allowed in a message: ", 
-                      so);
+  scheme_contract_error("place-channel-put", 
+                        "value not allowed in a message", 
+                        "value", 1, so,
+                        NULL);
 }
 
 static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_raise_exn) {
@@ -1373,7 +1382,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             dupfd = scheme_dup_socket(fd);
             if (dupfd == -1) {
               if (can_raise_exn)
-                scheme_raise_exn(MZEXN_FAIL_NETWORK, "dup: error duplicating socket (%e)", scheme_socket_errno());
+                scheme_system_error("dynamic-place", "socket dup", scheme_socket_errno());
               if (delayed_errno) {
                 intptr_t tmp;
                 tmp = scheme_socket_errno();
@@ -1408,7 +1417,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
               dupfd = scheme_dup_file(fd);
               if (dupfd == -1) {
                 if (can_raise_exn)
-                  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, "dup: error duplicating file descriptor (%e)", scheme_errno());
+                  scheme_system_error("dynamic-place", "port dup", scheme_errno());
                 if (delayed_errno) {
                   intptr_t tmp;
                   tmp = scheme_errno();
@@ -2614,7 +2623,7 @@ Scheme_Object *place_send(int argc, Scheme_Object *args[])
   }
   else {
     ch = NULL;
-    scheme_wrong_type("place-channel-put", "place-channel", 0, argc, args);
+    scheme_wrong_contract("place-channel-put", "place-channel?", 0, argc, args);
   }
   place_async_send((Scheme_Place_Async_Channel *) ch->sendch, args[1]);
   return scheme_void;
@@ -2630,7 +2639,7 @@ Scheme_Object *place_receive(int argc, Scheme_Object *args[]) {
   }
   else {
     ch = NULL;
-    scheme_wrong_type("place-channel-get", "place-channel", 0, argc, args);
+    scheme_wrong_contract("place-channel-get", "place-channel?", 0, argc, args);
   }
   return place_async_receive((Scheme_Place_Async_Channel *) ch->recvch);
 }
@@ -2864,14 +2873,10 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
   o = places_serialize(uo, &msg_memory, &master_chain, &invalid_object);
   if (!o) {
     if (invalid_object) {
-      char *s;
-      intptr_t slen;
-      char *s1;
-      intptr_t slen1;
-      s = scheme_make_provided_string(invalid_object, 1, &slen);
-      s1 = scheme_make_provided_string(uo, 1, &slen1);
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT, "place-channel-put: value %t not allowed in a message: %t", 
-		   s, slen, s1, slen1);
+      scheme_contract_error("place-channel-put"
+                            "value not allowed in a message", 
+                            "value", 1, invalid_object,
+                            "message", 1, uo);
     }
     else bad_place_message(uo);
   }

@@ -1432,7 +1432,7 @@ exact_p (int argc, Scheme_Object *argv[])
   int v;
   v = scheme_is_exact(argv[0]);
   if (v < 0) {
-    scheme_wrong_type("exact?", "number", 0, argc, argv);
+    scheme_wrong_contract("exact?", "number?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   return (v ? scheme_true : scheme_false);
@@ -1467,7 +1467,7 @@ scheme_inexact_p (int argc, Scheme_Object *argv[])
   int v;
   v = scheme_is_inexact(argv[0]);
   if (v < 0) {
-    scheme_wrong_type("inexact?", "number", 0, argc, argv);
+    scheme_wrong_contract("inexact?", "number?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   return (v ? scheme_true : scheme_false);
@@ -1528,8 +1528,8 @@ static Scheme_Object *int_abs(Scheme_Object *v)
     return v;
 }
 
-GEN_NARY_OP(static, gcd, "gcd", scheme_bin_gcd, 0, is_rational, "rational", int_abs)
-GEN_NARY_OP(static, lcm, "lcm", bin_lcm, 1, is_rational, "rational", int_abs)
+GEN_NARY_OP(static, gcd, "gcd", scheme_bin_gcd, 0, is_rational, "rational?", int_abs)
+GEN_NARY_OP(static, lcm, "lcm", bin_lcm, 1, is_rational, "rational?", int_abs)
 
 Scheme_Object *
 scheme_bin_gcd (const Scheme_Object *n1, const Scheme_Object *n2)
@@ -1949,7 +1949,7 @@ static Scheme_Object *get_frac(char *name, int low_p,
     
     if (MZ_IS_NAN(d)
         || MZ_IS_INFINITY(d)) {
-      scheme_wrong_type(name, "rational number", 0, argc, argv);
+      scheme_wrong_contract(name, "rational?", 0, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
     
@@ -1969,7 +1969,7 @@ static Scheme_Object *get_frac(char *name, int low_p,
     else
       n = scheme_rational_numerator(n);
   } else {
-    scheme_wrong_type(name, "rational number", 0, argc, argv);
+    scheme_wrong_contract(name, "rational?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;   
   }
   
@@ -2266,7 +2266,7 @@ atan_prim (int argc, Scheme_Object *argv[])
     v = scheme_rational_to_double(n1);
   else if (SCHEME_COMPLEXP(n1)) {
     if (argc > 1) {
-      scheme_wrong_type("atan (with two arguments)", REAL_NUMBER_STR, 0, argc, argv);
+      scheme_wrong_contract("atan", "real?", 0, argc, argv);
       ESCAPED_BEFORE_HERE;
     } else
       return complex_atan(n1);
@@ -2313,7 +2313,7 @@ atan_prim (int argc, Scheme_Object *argv[])
     else if (SCHEME_RATIONALP(n2))
       v2 = scheme_rational_to_double(n2);
     else {
-      scheme_wrong_type("atan", REAL_NUMBER_STR, 1, argc, argv);
+      scheme_wrong_contract("atan", "real?", 1, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
 
@@ -2379,7 +2379,7 @@ Scheme_Object *scheme_sqrt (int argc, Scheme_Object *argv[])
     return scheme_complex_sqrt(n);
 
   if (!SCHEME_REALP(n))
-    scheme_wrong_type("sqrt", "number", 0, argc, argv);
+    scheme_wrong_contract("sqrt", "number?", 0, argc, argv);
 
   if (scheme_is_negative(n)) {
     n = scheme_bin_minus(zeroi, n);
@@ -2413,7 +2413,7 @@ Scheme_Object *do_int_sqrt (const char *name, int argc, Scheme_Object *argv[], i
   Scheme_Object *v = argv[0], *rem = NULL;
 
   if (!scheme_is_integer(v)) {
-    scheme_wrong_type(name, "integer", 0, argc, argv);
+    scheme_wrong_contract(name, "integer?", 0, argc, argv);
     return NULL;
   }
 
@@ -2589,7 +2589,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
   e = argv[1];
 
   if (!SCHEME_NUMBERP(n))
-    scheme_wrong_type("expt", "number", 0, argc, argv);
+    scheme_wrong_contract("expt", "number?", 0, argc, argv);
 
   if (e == zeroi)
     return scheme_make_integer(1);
@@ -2740,9 +2740,9 @@ Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[])
   a = argv[0];
   b = argv[1];
   if (!SCHEME_REALP(a))
-    scheme_wrong_type("make-rectangular", REAL_NUMBER_STR, 0, argc, argv);
+    scheme_wrong_contract("make-rectangular", "real?", 0, argc, argv);
   if (!SCHEME_REALP(b))
-    scheme_wrong_type("make-rectangular", REAL_NUMBER_STR, 1, argc, argv);
+    scheme_wrong_contract("make-rectangular", "real?", 1, argc, argv);
 
   af = SCHEME_FLOATP(a);
   bf = SCHEME_FLOATP(b);
@@ -2766,9 +2766,9 @@ Scheme_Object *scheme_checked_make_flrectangular (int argc, Scheme_Object *argv[
   a = argv[0];
   b = argv[1];
   if (!SCHEME_DBLP(a))
-    scheme_wrong_type("make-rectangular", "flonum", 0, argc, argv);
+    scheme_wrong_contract("make-rectangular", "flonum?", 0, argc, argv);
   if (!SCHEME_DBLP(b))
-    scheme_wrong_type("make-rectangular", "flonum", 1, argc, argv);
+    scheme_wrong_contract("make-rectangular", "flonum?", 1, argc, argv);
 
   return scheme_make_complex(a, b);
 }
@@ -2780,9 +2780,9 @@ Scheme_Object *scheme_make_polar (int argc, Scheme_Object *argv[])
   a = argv[0];
   b = argv[1];
   if (!SCHEME_REALP(a))
-    scheme_wrong_type("make-polar", REAL_NUMBER_STR, 0, argc, argv);
+    scheme_wrong_contract("make-polar", "real?", 0, argc, argv);
   if (!SCHEME_REALP(b))
-    scheme_wrong_type("make-polar", REAL_NUMBER_STR, 1, argc, argv);
+    scheme_wrong_contract("make-polar", "real?", 1, argc, argv);
 
   if (b == zeroi)
     return a;
@@ -2800,7 +2800,7 @@ Scheme_Object *scheme_checked_real_part (int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (!SCHEME_NUMBERP(o))
-    scheme_wrong_type("real-part", "number", 0, argc, argv);
+    scheme_wrong_contract("real-part", "number?", 0, argc, argv);
 
   if (SCHEME_COMPLEXP(o))
     return _scheme_complex_real_part(o);
@@ -2813,7 +2813,7 @@ Scheme_Object *scheme_checked_imag_part (int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (!SCHEME_NUMBERP(o))
-    scheme_wrong_type("imag-part", "number", 0, argc, argv);
+    scheme_wrong_contract("imag-part", "number?", 0, argc, argv);
 
   if (SCHEME_COMPLEXP(o))
     return scheme_complex_imaginary_part(o);
@@ -2826,8 +2826,8 @@ Scheme_Object *scheme_checked_flreal_part (int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (!SCHEME_COMPLEXP(o)
-      || !SCHEME_FLOATP(((Scheme_Complex *)o)->r))
-    scheme_wrong_type("flreal-part", "complex number with inexact parts", 0, argc, argv);
+      || !SCHEME_DBLP(((Scheme_Complex *)o)->r))
+    scheme_wrong_contract("flreal-part", "(and/c complex? (lambda (c) (flonum? (real-part c))))", 0, argc, argv);
 
   return _scheme_complex_real_part(o);
 }
@@ -2837,8 +2837,8 @@ Scheme_Object *scheme_checked_flimag_part (int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (!SCHEME_COMPLEXP(o)
-      || !SCHEME_FLOATP(((Scheme_Complex *)o)->r))
-    scheme_wrong_type("flimag-part", "complex number with inexact parts", 0, argc, argv);
+      || !SCHEME_DBLP(((Scheme_Complex *)o)->r))
+    scheme_wrong_contract("flimag-part", "(and/c complex? (lambda (c) (flonum? (real-part c))))", 0, argc, argv);
 
   return scheme_complex_imaginary_part(o);
 }
@@ -2848,7 +2848,7 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (!SCHEME_NUMBERP(o))
-    scheme_wrong_type("magnitude", "number", 0, argc, argv);
+    scheme_wrong_contract("magnitude", "number?", 0, argc, argv);
 
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = _scheme_complex_real_part(o);
@@ -2898,7 +2898,7 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (!SCHEME_NUMBERP(o))
-    scheme_wrong_type("angle", "number", 0, argc, argv);
+    scheme_wrong_contract("angle", "number?", 0, argc, argv);
 
   if (SCHEME_COMPLEXP(o)) {
     Scheme_Object *r = (Scheme_Object *)_scheme_complex_real_part(o);
@@ -3084,9 +3084,9 @@ GEN_BIN_INT_OP(bin_bitwise_xor, "bitwise-xor", ^, scheme_bignum_xor)
 
 #define MZ_PUBLIC /**/
 
-GEN_NARY_OP(MZ_PUBLIC, scheme_bitwise_and, "bitwise-and", bin_bitwise_and, -1, SCHEME_EXACT_INTEGERP, "exact integer", GEN_IDENT)
-GEN_NARY_OP(static, bitwise_or, "bitwise-ior", bin_bitwise_or, 0, SCHEME_EXACT_INTEGERP, "exact integer", GEN_IDENT)
-GEN_NARY_OP(static, bitwise_xor, "bitwise-xor", bin_bitwise_xor, 0, SCHEME_EXACT_INTEGERP, "exact integer", GEN_IDENT)
+GEN_NARY_OP(MZ_PUBLIC, scheme_bitwise_and, "bitwise-and", bin_bitwise_and, -1, SCHEME_EXACT_INTEGERP, "exact-integer?", GEN_IDENT)
+GEN_NARY_OP(static, bitwise_or, "bitwise-ior", bin_bitwise_or, 0, SCHEME_EXACT_INTEGERP, "exact-integer?", GEN_IDENT)
+GEN_NARY_OP(static, bitwise_xor, "bitwise-xor", bin_bitwise_xor, 0, SCHEME_EXACT_INTEGERP, "exact-integer?", GEN_IDENT)
 
 static Scheme_Object *
 bitwise_not(int argc, Scheme_Object *argv[])
@@ -3101,7 +3101,7 @@ bitwise_not(int argc, Scheme_Object *argv[])
   } else if (_SCHEME_TYPE(o) == scheme_bignum_type)
     return scheme_bignum_not(o);
    
-  scheme_wrong_type("bitwise-not", "exact integer", 0, argc, argv);
+  scheme_wrong_contract("bitwise-not", "exact-integer?", 0, argc, argv);
   ESCAPED_BEFORE_HERE;
 }
 
@@ -3114,7 +3114,7 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
   v = argv[0];
   
   if (!SCHEME_EXACT_INTEGERP(v)) {
-    scheme_wrong_type("arithmetic-shift", "exact integer", 0, argc, argv);
+    scheme_wrong_contract("arithmetic-shift", "exact-integer?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   so = argv[1];
@@ -3128,7 +3128,7 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
       } else
 	scheme_raise_out_of_memory("arithmetic-shift", NULL);
     } else
-      scheme_wrong_type("arithmetic-shift", "exact integer", 1, argc, argv);
+      scheme_wrong_contract("arithmetic-shift", "exact-integer?", 1, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   
@@ -3171,7 +3171,7 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
 
   so = argv[0];
   if (!SCHEME_EXACT_INTEGERP(so)) {
-    scheme_wrong_type("bitwise-bit-set?", "exact integer", 0, argc, argv);
+    scheme_wrong_contract("bitwise-bit-set?", "exact-integer?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   sb = argv[1];
@@ -3179,7 +3179,7 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
     intptr_t v;
     v = SCHEME_INT_VAL(sb);
     if (v < 0) {
-      scheme_wrong_type("bitwise-bit-set?", "nonnegative exact integer", 1, argc, argv);
+      scheme_wrong_contract("bitwise-bit-set?", "exact-nonnegative-integer?", 1, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
     if (SCHEME_INTP(so)) {
@@ -3213,7 +3213,7 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
     else
       return (SCHEME_BIGPOS(so) ? scheme_false : scheme_true);
   } else {
-    scheme_wrong_type("bitwise-bit-set?", "nonnegative exact integer", 1, argc, argv);
+    scheme_wrong_contract("bitwise-bit-set?", "exact-nonnegative-integer?", 1, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
 }
@@ -3224,19 +3224,21 @@ static Scheme_Object *slow_bitwise_bit_field (int argc, Scheme_Object *argv[],
   Scheme_Object *a[2];
 
   if (!SCHEME_EXACT_INTEGERP(so))
-    scheme_wrong_type("bitwise-bit-field", "exact integer", 0, argc, argv);
+    scheme_wrong_contract("bitwise-bit-field", "exact-integer?", 0, argc, argv);
 
   if (!((SCHEME_INTP(sb1) && (SCHEME_INT_VAL(sb1) >= 0))
         || (SCHEME_BIGNUMP(sb1) && SCHEME_BIGPOS(sb1))))
-    scheme_wrong_type("bitwise-bit-field", "nonnegative exact integer", 1, argc, argv);
+    scheme_wrong_contract("bitwise-bit-field", "exact-nonnegative-integer?", 1, argc, argv);
   if (!((SCHEME_INTP(sb2) && (SCHEME_INT_VAL(sb2) >= 0))
         || (SCHEME_BIGNUMP(sb2) && SCHEME_BIGPOS(sb2))))
-    scheme_wrong_type("bitwise-bit-field", "nonnegative exact integer", 2, argc, argv);
+    scheme_wrong_contract("bitwise-bit-field", "exact-nonnegative-integer?", 2, argc, argv);
 
   if (!scheme_bin_lt_eq(sb1, sb2))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "bitwise-bit-field: first index: %V is more than second index: %V",
-                     sb1, sb2);
+    scheme_contract_error("bitwise-bit-field",
+                          "first index is more than second index",
+                          "first index", 1, sb1,
+                          "second index", 1, sb2,
+                          NULL);
   
   sb2 = scheme_bin_minus(sb2, sb1);
   sb1 = scheme_bin_minus(scheme_make_integer(0), sb1);
@@ -3351,7 +3353,7 @@ integer_length(int argc, Scheme_Object *argv[])
     n = d;
 #endif
   } else {
-    scheme_wrong_type("integer-length", "exact integer", 0, argc, argv);
+    scheme_wrong_contract("integer-length", "exact-integer?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
 
@@ -3412,7 +3414,7 @@ static Scheme_Object *do_flvector (const char *name, Scheme_Double_Vector *vec, 
 
   for (i = 0; i < argc; i++) {
     if (!SCHEME_DBLP(argv[i])) {
-      scheme_wrong_type(name, "flonum", i, argc, argv);
+      scheme_wrong_contract(name, "flonum?", i, argc, argv);
       return NULL;
     }
     vec->els[i] = SCHEME_DBL_VAL(argv[i]);
@@ -3458,11 +3460,11 @@ static Scheme_Object *do_make_flvector (const char *name, int as_shared, int arg
     size = -1;
 
   if (size < 0)
-    scheme_wrong_type(name, "exact non-negative integer", 0, argc, argv);
+    scheme_wrong_contract(name, "exact-nonnegative-integer?", 0, argc, argv);
 
   if (argc > 1) {
     if (!SCHEME_DBLP(argv[1]))
-      scheme_wrong_type(name, "flonum", 1, argc, argv);
+      scheme_wrong_contract(name, "flonum?", 1, argc, argv);
   }
   
   if (as_shared)
@@ -3494,7 +3496,7 @@ static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_flvector_length(Scheme_Object *vec)
 {
   if (!SCHEME_FLVECTORP(vec))
-    scheme_wrong_type("flvector-length", "flvector", 0, 1, &vec);
+    scheme_wrong_contract("flvector-length", "flvector?", 0, 1, &vec);
 
   return scheme_make_integer(SCHEME_FLVEC_SIZE(vec));
 }
@@ -3512,14 +3514,14 @@ Scheme_Object *scheme_checked_flvector_ref (int argc, Scheme_Object *argv[])
 
   vec = argv[0];
   if (!SCHEME_FLVECTORP(vec))
-    scheme_wrong_type("flvector-ref", "flvector", 0, argc, argv);
+    scheme_wrong_contract("flvector-ref", "flvector?", 0, argc, argv);
   
   len = SCHEME_FLVEC_SIZE(vec);
   pos = scheme_extract_index("flvector-ref", 1, argc, argv, len, 0);
 
   if (pos >= len) {
     scheme_bad_vec_index("flvector-ref", argv[1], 
-                         "flvector", vec,
+                         "", vec,
                          0, len);
     return NULL;
   }
@@ -3536,17 +3538,17 @@ Scheme_Object *scheme_checked_flvector_set (int argc, Scheme_Object *argv[])
 
   vec = argv[0];
   if (!SCHEME_FLVECTORP(vec))
-    scheme_wrong_type("flvector-set!", "flvector", 0, argc, argv);
+    scheme_wrong_contract("flvector-set!", "flvector?", 0, argc, argv);
   
   len = SCHEME_FLVEC_SIZE(vec);
   pos = scheme_extract_index("flvector-set!", 1, argc, argv, len, 0);
   
   if (!SCHEME_DBLP(argv[2]))
-    scheme_wrong_type("flvector-set!", "flonum", 2, argc, argv);
+    scheme_wrong_contract("flvector-set!", "flonum?", 2, argc, argv);
 
   if (pos >= len) {
     scheme_bad_vec_index("flvector-set!", argv[1], 
-                         "flvector", vec,
+                         "", vec,
                          0, len);
     return NULL;
   }
@@ -3596,7 +3598,7 @@ static Scheme_Object *do_fxvector (const char *name, Scheme_Vector *vec, int arg
 
   for (i = 0; i < argc; i++) {
     if (!SCHEME_INTP(argv[i])) {
-      scheme_wrong_type(name, "fixnum", i, argc, argv);
+      scheme_wrong_contract(name, "fixnum?", i, argc, argv);
       return NULL;
     }
     vec->els[i] = argv[i];
@@ -3640,11 +3642,11 @@ static Scheme_Object *do_make_fxvector (const char *name, int as_shared, int arg
     size = -1;
 
   if (size < 0)
-    scheme_wrong_type(name, "exact non-negative integer", 0, argc, argv);
+    scheme_wrong_contract(name, "exact-nonnegative-integer?", 0, argc, argv);
 
   if (argc > 1) {
     if (!SCHEME_INTP(argv[1]))
-      scheme_wrong_type(name, "fixnum", 1, argc, argv);
+      scheme_wrong_contract(name, "fixnum?", 1, argc, argv);
   }
   
   if (as_shared)
@@ -3676,7 +3678,7 @@ static Scheme_Object *make_shared_fxvector (int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_fxvector_length(Scheme_Object *vec)
 {
   if (!SCHEME_FXVECTORP(vec))
-    scheme_wrong_type("fxvector-length", "fxvector", 0, 1, &vec);
+    scheme_wrong_contract("fxvector-length", "fxvector?", 0, 1, &vec);
 
   return scheme_make_integer(SCHEME_FXVEC_SIZE(vec));
 }
@@ -3693,14 +3695,14 @@ Scheme_Object *scheme_checked_fxvector_ref (int argc, Scheme_Object *argv[])
 
   vec = argv[0];
   if (!SCHEME_FXVECTORP(vec))
-    scheme_wrong_type("fxvector-ref", "fxvector", 0, argc, argv);
+    scheme_wrong_contract("fxvector-ref", "fxvector?", 0, argc, argv);
   
   len = SCHEME_FXVEC_SIZE(vec);
   pos = scheme_extract_index("fxvector-ref", 1, argc, argv, len, 0);
 
   if (pos >= len) {
     scheme_bad_vec_index("fxvector-ref", argv[1], 
-                         "fxvector", vec,
+                         "", vec,
                          0, len);
     return NULL;
   }
@@ -3715,17 +3717,17 @@ Scheme_Object *scheme_checked_fxvector_set (int argc, Scheme_Object *argv[])
 
   vec = argv[0];
   if (!SCHEME_FXVECTORP(vec))
-    scheme_wrong_type("fxvector-set!", "fxvector", 0, argc, argv);
+    scheme_wrong_contract("fxvector-set!", "fxvector?", 0, argc, argv);
   
   len = SCHEME_FXVEC_SIZE(vec);
   pos = scheme_extract_index("fxvector-set!", 1, argc, argv, len, 0);
   
   if (!SCHEME_INTP(argv[2]))
-    scheme_wrong_type("fxvector-set!", "fixnum", 2, argc, argv);
+    scheme_wrong_contract("fxvector-set!", "fixnum?", 2, argc, argv);
 
   if (pos >= len) {
     scheme_bad_vec_index("fxvector-set!", argv[1], 
-                         "fxvector", vec,
+                         "", vec,
                          0, len);
     return NULL;
   }
@@ -3751,23 +3753,23 @@ static Scheme_Object *neg_bitwise_shift(int argc, Scheme_Object *argv[])
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    Scheme_Object *o;                                         \
-   if (!SCHEME_INTP(argv[0])) scheme_wrong_type(s_name, "fixnum", 0, argc, argv); \
-   if (!sec_p(argv[1])) scheme_wrong_type(s_name, sec_t, 1, argc, argv); \
+   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
+   if (!sec_p(argv[1])) scheme_wrong_contract(s_name, sec_t, 1, argc, argv); \
    o = scheme_op(argc, argv);                                \
    if (!SCHEME_INTP(o)) scheme_non_fixnum_result(s_name, o); \
    return o;                            \
  }
 
-SAFE_FX(fx_and, "fxand", scheme_bitwise_and, SCHEME_INTP, "fixnum")
-SAFE_FX(fx_or, "fxior", bitwise_or, SCHEME_INTP, "fixnum")
-SAFE_FX(fx_xor, "fxxor", bitwise_xor, SCHEME_INTP, "fixnum")
+SAFE_FX(fx_and, "fxand", scheme_bitwise_and, SCHEME_INTP, "fixnum?")
+SAFE_FX(fx_or, "fxior", bitwise_or, SCHEME_INTP, "fixnum?")
+SAFE_FX(fx_xor, "fxxor", bitwise_xor, SCHEME_INTP, "fixnum?")
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define FIXNUM_WIDTH_P(v) (SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0) && (SCHEME_INT_VAL(v) <= 64))
-# define FIXNUM_WIDTH_TYPE "exact integer in [0,63]"
+# define FIXNUM_WIDTH_TYPE "(integer-in 0 63)"
 #else
 # define FIXNUM_WIDTH_P(v) (SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0) && (SCHEME_INT_VAL(v) <= 31))
-# define FIXNUM_WIDTH_TYPE "exact integer in [0,31]"
+# define FIXNUM_WIDTH_TYPE "(integer-in 0 31)"
 #endif
 
 SAFE_FX(fx_lshift, "fxlshift", scheme_bitwise_shift, FIXNUM_WIDTH_P, FIXNUM_WIDTH_TYPE)
@@ -3776,7 +3778,7 @@ SAFE_FX(fx_rshift, "fxrshift", neg_bitwise_shift, FIXNUM_WIDTH_P, FIXNUM_WIDTH_T
 static Scheme_Object *fx_not (int argc, Scheme_Object *argv[])
 {
   intptr_t v;
-  if (!SCHEME_INTP(argv[0])) scheme_wrong_type("fxnot", "fixnum", 0, argc, argv);
+  if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fxnot", "fixnum?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
   v = ~v;
   return scheme_make_integer(v);
@@ -3785,7 +3787,7 @@ static Scheme_Object *fx_not (int argc, Scheme_Object *argv[])
 static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[])
 {
   intptr_t v;
-  if (!SCHEME_INTP(argv[0])) scheme_wrong_type("fx->fl", "fixnum", 0, argc, argv);
+  if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fx->fl", "fixnum?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
   return scheme_make_double(v);
 }
@@ -3798,7 +3800,7 @@ static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
 
   if (!SCHEME_DBLP(argv[0])
       || !scheme_is_integer(argv[0]))
-    scheme_wrong_type("fl->fx", "flonum integer", 0, argc, argv);
+    scheme_wrong_contract("fl->fx", "(and/c flonum? integer?)", 0, argc, argv);
 
   d = SCHEME_DBL_VAL(argv[0]);
   v = (intptr_t)d;
@@ -3808,7 +3810,9 @@ static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
       return o;
   }
 
-  scheme_arg_mismatch("fl->fx", "no fixnum representation: ", argv[0]);
+  scheme_contract_error("fl->fx", "no fixnum representation", 
+                        "flonum", 1, argv[0],
+                        NULL);
   return NULL;
 }
 
@@ -3816,7 +3820,7 @@ static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
   static Scheme_Object * fl_ ## op (int argc, Scheme_Object *argv[])    \
   {                                                                     \
     double v;                                                           \
-    if (!SCHEME_DBLP(argv[0])) scheme_wrong_type("fl" #op, "flonum", 0, argc, argv); \
+    if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract("fl" #op, "flonum?", 0, argc, argv); \
     v = scheme_double_ ## op (SCHEME_DBL_VAL(argv[0]));                  \
     return scheme_make_double(v);                                        \
   }
@@ -3838,8 +3842,8 @@ SAFE_FL(log)
   static Scheme_Object * fl_ ## op (int argc, Scheme_Object *argv[])    \
   {                                                                     \
     double v;                                                           \
-    if (!SCHEME_DBLP(argv[0])) scheme_wrong_type("fl" #op, "flonum", 0, argc, argv); \
-    if (!SCHEME_DBLP(argv[1])) scheme_wrong_type("fl" #op, "flonum", 1, argc, argv); \
+    if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract("fl" #op, "flonum?", 0, argc, argv); \
+    if (!SCHEME_DBLP(argv[1])) scheme_wrong_contract("fl" #op, "flonum?", 1, argc, argv); \
     v = scheme_double_ ## op (SCHEME_DBL_VAL(argv[0]), SCHEME_DBL_VAL(argv[1]));     \
     return scheme_make_double(v);                                        \
   }
@@ -3994,7 +3998,7 @@ static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[])
       || SCHEME_BIGNUMP(argv[0])) {
     return scheme_exact_to_inexact(argc, argv);
   } else {
-    scheme_wrong_type("->fl", "exact integer", 0, argc, argv);
+    scheme_wrong_contract("->fl", "exact-integer?", 0, argc, argv);
     return NULL;
   }
 }
@@ -4008,7 +4012,7 @@ static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[])
       return o;
   }
    
-  scheme_wrong_type("fl->exact-integer", "flonum integer", 0, argc, argv);
+  scheme_wrong_contract("fl->exact-integer", "(and/c flonum? integer?)", 0, argc, argv);
   return NULL;
 }
 

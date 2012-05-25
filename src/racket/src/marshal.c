@@ -297,9 +297,9 @@ static Scheme_Object *write_top(Scheme_Object *obj)
   Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)obj;
 
   if (!top->prefix)
-    scheme_raise_exn(MZEXN_FAIL, 
-                     "write: cannot marshal shared compiled code: %V",
-                     obj);
+    scheme_contract_error("write",
+                          "cannot marshal shared compiled code",
+                          "compiled code", 1, obj);
 
   return cons(scheme_make_integer(top->max_let_depth),
 	      cons((Scheme_Object *)top->prefix,

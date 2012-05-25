@@ -231,10 +231,14 @@ MZ_EXTERN void scheme_case_lambda_wrong_count(const char *name, int argc,
 MZ_EXTERN void scheme_wrong_type(const char *name, const char *expected,
 				 int which, int argc,
 				 Scheme_Object **argv);
+MZ_EXTERN void scheme_wrong_contract(const char *name, const char *expected,
+                                     int which, int argc,
+                                     Scheme_Object **argv);
 MZ_EXTERN void scheme_wrong_field_type(Scheme_Object *c_name,
 				       const char *expected,
 				       Scheme_Object *o);
 MZ_EXTERN void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o);
+MZ_EXTERN void scheme_contract_error(const char *name, const char *msg, ...);
 MZ_EXTERN void scheme_wrong_return_arity(const char *where,
 					 int expected, int got,
 					 Scheme_Object **argv,
@@ -1157,6 +1161,7 @@ MZ_EXTERN int scheme_check_proc_arity2(const char *where, int a,
 
 MZ_EXTERN char *scheme_make_provided_string(Scheme_Object *o, int count, intptr_t *len);
 MZ_EXTERN char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
+MZ_EXTERN char *scheme_make_arg_lines_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
 
 MZ_EXTERN const char *scheme_system_library_subpath();
 

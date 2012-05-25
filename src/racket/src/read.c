@@ -1940,9 +1940,10 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
           scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
                           "read: illegal placeholder cycle");
         else {
-          scheme_arg_mismatch("make-reader-graph",
-                              "illegal placeholder cycle in value: ",
-                              top);
+          scheme_contract_error("make-reader-graph",
+                                "illegal placeholder cycle in value",
+                                "value", 1, top,
+                                NULL);
         }
         return NULL;
       }
@@ -2565,7 +2566,7 @@ read_list(Scheme_Object *port,
 	if (indt->suspicious_line) {
 	  suggestion = scheme_malloc_atomic(100);
 	  sprintf(suggestion,
-		  "; indentation suggests a missing %s before line %" PRIdPTR,
+		  "\n  possible cause: indentation suggests a missing %s before line %" PRIdPTR,
 		  closer_name(params, indt->suspicious_closer),
 		  indt->suspicious_line);
 	}
@@ -3190,7 +3191,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
   if (suspicious_quote) {
     suspicions = (char *)scheme_malloc_atomic(64);
     sprintf(suspicions,
-	    "; newline within %s suggests a missing %s on line %" PRIdPTR,
+	    "newline within %s suggests a missing %s on line %" PRIdPTR,
 	    "string",
 	    "'\"'",
 	    suspicious_quote);
@@ -5175,7 +5176,9 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       if (!params->skip_zo_vers_check)
         if (strcmp(buf, MZSCHEME_VERSION))
           scheme_read_err(port, stxsrc, line, col, pos, got, 0, NULL,
-                          "read (compiled): code compiled for version %s, not %s",
+                          "read (compiled): wrong version for compiled code\n"
+                          "  compiled version: %s\n"
+                          "  expected version: %s",
                           (buf[0] ? buf : "???"), MZSCHEME_VERSION);
     }
     offset += size + 1;
@@ -5772,7 +5775,7 @@ static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, Re
   if (get_info) {
     a[0] = v;
     if (!scheme_check_proc_arity(NULL, 2, 0, 1, a)) {
-      scheme_wrong_type("read-language", "procedure (arity 2)", -1, -1, a);
+      scheme_wrong_contract("read-language", "(any/c any/c . -> . any)", -1, -1, a);
     }
   }
 
@@ -5898,7 +5901,7 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
     orig_t = NULL;
   else {
     if (!SAME_TYPE(scheme_readtable_type, SCHEME_TYPE(argv[0]))) {
-      scheme_wrong_type("make-readtable", "readtable or #f", 0, argc, argv);
+      scheme_wrong_contract("make-readtable", "(or/c readtable? #f)", 0, argc, argv);
       return NULL;
     }
     orig_t = (Readtable *)argv[0];
@@ -5918,20 +5921,20 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
 
   for (i = 1; i < argc; i += 3) {
     if (!SCHEME_FALSEP(argv[i]) && !SCHEME_CHARP(argv[i])) {
-      scheme_wrong_type("make-readtable", "character or #f", i, argc, argv);
+      scheme_wrong_contract("make-readtable", "(or/c char? #f)", i, argc, argv);
       return NULL;
     }
 
     if (i + 1 >= argc) {
       if (SCHEME_FALSEP(argv[i]))
-	scheme_arg_mismatch("make-readtable",
-			    "expected 'non-terminating-macro after #f",
-			    NULL);
+	scheme_contract_error("make-readtable",
+                              "expected 'non-terminating-macro after #f");
       else
-	scheme_arg_mismatch("make-readtable",
-			    "expected 'terminating-macro, 'non-terminating-macro, 'dispatch-macro,"
-			    " or character argument after character argument: ",
-			    argv[i]);
+	scheme_contract_error("make-readtable",
+                              "expected 'terminating-macro, 'non-terminating-macro, 'dispatch-macro,"
+                              " or character argument after character argument",
+                              "character", 1, argv[i],
+                              NULL);
     }
 
     sym = argv[i + 1];
@@ -5939,24 +5942,26 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
 	&& !SAME_OBJ(sym, non_terminating_macro_symbol)
 	&& !SAME_OBJ(sym, dispatch_macro_symbol)
 	&& !SCHEME_CHARP(sym)) {
-      scheme_wrong_type("make-readtable", 
-			"'terminating-macro, 'non-terminating-macro, 'dispatch-macro, or character", 
-			i+1, argc, argv);
+      scheme_wrong_contract("make-readtable", 
+                            "(or/c 'terminating-macro 'non-terminating-macro 'dispatch-macro char?)", 
+                            i+1, argc, argv);
       return NULL;
     }
     if (SCHEME_FALSEP(argv[i])
 	&& !SAME_OBJ(sym, non_terminating_macro_symbol)) {
-      scheme_arg_mismatch("make-readtable",
-			  "expected 'non-terminating-macro after #f, given: ",
-			  sym);
+      scheme_contract_error("make-readtable",
+                            "expected 'non-terminating-macro after #f",
+                            "given", 1, sym,
+                            NULL);
     }
 
     if (i + 2 >= argc) {
-      scheme_arg_mismatch("make-readtable",
-			  (SCHEME_CHARP(sym) 
-			   ? "expected readtable or #f argument after character argument, given: "
-			   : "expected procedure argument after symbol argument, given: "),
-			  argv[i+1]);
+      scheme_contract_error("make-readtable",
+                            (SCHEME_CHARP(sym) 
+                             ? "expected readtable or #f argument after character argument"
+                             : "expected procedure argument after symbol argument"),
+                            "given", 1, argv[i+1],
+                            NULL);
     }
 
     if (SCHEME_FALSEP(argv[i])) {
@@ -5975,7 +5980,7 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
 	  src = NULL;
 	} else {
 	  if (!SAME_TYPE(scheme_readtable_type, SCHEME_TYPE(argv[i+2]))) {
-	    scheme_wrong_type("make-readtable", "readtable or #f", i+2, argc, argv);
+	    scheme_wrong_contract("make-readtable", "(or/c readtable? #f)", i+2, argc, argv);
 	    return NULL;
 	  }
 	  src = (Readtable *)(argv[i+2]);
@@ -6019,11 +6024,11 @@ static Scheme_Object *readtable_mapping(int argc, Scheme_Object **argv)
   int ch;
 
   if (!SAME_TYPE(scheme_readtable_type, SCHEME_TYPE(argv[0]))) {
-    scheme_wrong_type("readtable-mapping", "readtable", 0, argc, argv);
+    scheme_wrong_contract("readtable-mapping", "readtable?", 0, argc, argv);
     return NULL;
   }
   if (!SCHEME_CHARP(argv[1])) {
-    scheme_wrong_type("readtable-mapping", "character", 1, argc, argv);
+    scheme_wrong_contract("readtable-mapping", "character?", 1, argc, argv);
     return NULL;
   }
   
@@ -6158,12 +6163,12 @@ static Scheme_Object *do_reader(Scheme_Object *try_modpath,
     /* don't provide modpath_stx to reader */
     modpath_stx = NULL;
   } else {
-    scheme_wrong_type("#reader",
-		      (stxsrc ? "procedure (arity 2 or 6)" 
-                       : (get_info
-                          ? "procedure (arity 5)"
-                          : "procedure (arity 1 or 5)")),
-		      -1, -1, a);
+    scheme_wrong_contract("#reader",
+                          (stxsrc ? "(or/c (any/c any/c . -> . any) (procedure-arity-includes/c 6))"
+                           : (get_info
+                              ? "(procedure-arity-includes/c 5)"
+                              : "(or/c (any/c . -> . any) (procedure-arity-includes/c 5))")),
+                          -1, -1, a);
     return NULL;
   }
 

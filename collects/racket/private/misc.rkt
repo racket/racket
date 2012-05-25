@@ -45,7 +45,7 @@
 
   (define rationalize
     (letrec ([check (lambda (x) 
-                      (unless (real? x) (raise-type-error 'rationalize "real" x)))]
+                      (unless (real? x) (raise-argument-error 'rationalize "real?" x)))]
 	     [find-between 
 	      (lambda (lo hi)
 		(if (integer? lo)
@@ -108,7 +108,7 @@
   (define load/cd
     (lambda (n)
       (unless (path-string? n)
-	(raise-type-error 'load/cd "path or string (sans nul)" n))
+	(raise-argument-error 'load/cd "path-string?" n))
       (let-values ([(base name dir?) (split-path n)])
 	(if dir?
 	    (raise
@@ -136,7 +136,7 @@
 
   (define (-load load name path)
     (unless (path-string? path) 
-      (raise-type-error name "path or string (sans nul)" path))
+      (raise-argument-error name "path-string?" path))
     (if (complete-path? path)
 	(load path)
 	(let ([dir (current-load-relative-directory)])
@@ -152,22 +152,22 @@
   (define (guard-evt proc)
     (unless (and (procedure? proc)
 		 (procedure-arity-includes? proc 0))
-      (raise-type-error 'guard-evt "procedure (arity 0)" proc))
+      (raise-argument-error 'guard-evt "(any/c . -> . evt?)" proc))
     (make-guard (lambda (self) (proc))))
 
   (define (channel-get ch)
     (unless (channel? ch)
-      (raise-type-error 'channel-get "channel" ch))
+      (raise-argument-error 'channel-get "channel?" ch))
     (sync ch))
 
   (define (channel-try-get ch)
     (unless (channel? ch)
-      (raise-type-error 'channel-try-get "channel" ch))
+      (raise-argument-error 'channel-try-get "channel?" ch))
     (sync/timeout 0 ch))
 
   (define (channel-put ch val)
     (unless (channel? ch)
-      (raise-type-error 'channel-put "channel" ch))
+      (raise-argument-error 'channel-put "channel?" ch))
     (and (sync (channel-put-evt ch val)) (void)))
 
   ;; -------------------------------------------------------------------------
@@ -179,7 +179,7 @@
      [(v) (displayln v (current-output-port))]
      [(v p) 
       (unless (output-port? p)
-        (raise-type-error 'displayln "output port" 1 v p))
+        (raise-argument-error 'displayln "output-port?" 1 v p))
       (display v p)
       (newline p)]))
 

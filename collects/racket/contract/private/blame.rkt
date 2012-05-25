@@ -197,15 +197,19 @@
 
 ;; combine-lines : (->* #:rest (listof (or/c string? #f))) string?)
 ;; combines each of 'lines' into a single message, dropping #fs,
-;; and otherwise guaranteeing that each string is on its own line.
+;; and otherwise guaranteeing that each string is on its own line,
+;; with no ending newline.
 (define (combine-lines . lines)
-  (apply 
-   string-append
-   (for/list ([line (in-list lines)]
-              #:when (string? line))
-     (if (regexp-match #rx"\n$" line)
-         line
-         (string-append line "\n")))))
+  (regexp-replace
+   #rx"\n$"
+   (apply 
+    string-append
+    (for/list ([line (in-list lines)]
+               #:when (string? line))
+      (if (regexp-match #rx"\n$" line)
+          line
+          (string-append line "\n"))))
+   ""))
 
 (define ((show f) v #:alone? [alone? #f])
   (let* ([line

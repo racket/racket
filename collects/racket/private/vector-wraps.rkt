@@ -49,7 +49,7 @@
           (syntax/loc stx
             (let ((len length-expr))
               (unless (exact-nonnegative-integer? len)
-                (raise-type-error 'for/fXvector "exact nonnegative integer" len))
+                (raise-argument-error 'for/fXvector "exact-nonnegative-integer?" len))
               (let ((v (make-fXvector len)))
                 (for/fold ((i 0))
                     (for-clause ... 
@@ -68,7 +68,7 @@
           (syntax/loc stx
             (let ((len length-expr))
               (unless (exact-nonnegative-integer? len)
-                (raise-type-error 'for*/fXvector "exact nonnegative integer" len))
+                (raise-argument-error 'for*/fXvector "exact-nonnegative-integer?" len))
               (let ((v (make-fXvector len)))
                 (for*/fold ((i 0))
                     (for-clause ...
@@ -79,22 +79,18 @@
 
      (define (fXvector-copy flv [start 0] [end (and (fXvector? flv) (fXvector-length flv))])
        (unless (fXvector? flv)
-         (raise-type-error 'fXvector-copy fXvector-str flv))
+         (raise-argument-error 'fXvector-copy (string-append fXvector-str "?") flv))
        (unless (exact-nonnegative-integer? start)
-         (raise-type-error 'fXvector-copy "non-negative exact integer" start))
+         (raise-argument-error 'fXvector-copy "exact-nonnegative-integer?" start))
        (unless (exact-nonnegative-integer? end)
-         (raise-type-error 'fXvector-copy "non-negative exact integer" end))
+         (raise-argument-error 'fXvector-copy "exact-nonnegative-integer?" end))
        (let ([orig-len (fXvector-length flv)])
          (unless (<= start end orig-len)
            (unless (<= start orig-len)
-             (raise-mismatch-error 'fXvector-copy 
-                                   (format "start index ~s out of range [~a, ~a] for ~a: "
-                                           start 0 orig-len fXvector-str)
-                                   flv))
-           (raise-mismatch-error 'fXvector-copy 
-                                 (format "end index ~s out of range [~a, ~a] for ~a: "
-                                         end start orig-len fXvector-str)
-                                 flv)))
+             (raise-range-error 'fXvector-copy fXvector-str "starting "
+                                start flv 0 orig-len))
+           (raise-mismatch-error 'fXvector-copy fXvector-str "ending "
+                                 end flv start orig-len)))
        (let* ([len (- end start)]
               [vec (make-fXvector len)])
          (for ([i (in-range len)])

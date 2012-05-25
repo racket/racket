@@ -41,18 +41,18 @@
 
   (provide sort)
   (define (sort lst less? #:key [getkey #f] #:cache-keys? [cache-keys? #f])
-    (unless (list? lst) (raise-type-error 'sort "proper list" lst))
+    (unless (list? lst) (raise-argument-error 'sort "list?" lst))
     (unless (and (procedure? less?) (procedure-arity-includes? less? 2))
-      (raise-type-error 'sort "procedure of arity 2" less?))
+      (raise-argument-error 'sort "(any/c any/c . -> . any/c)" less?))
     (when (and getkey (not (and (procedure? getkey)
                                 (procedure-arity-includes? getkey 1))))
-      (raise-type-error 'sort "procedure of arity 1" getkey))
+      (raise-argument-error 'sort "(any/c . -> . any/c)" getkey))
     ;; don't provide the extra args if not needed, it's a bit faster
     (if getkey (raw-sort lst less? getkey cache-keys?) (raw-sort lst less?)))
 
   (define (do-remove who item list equal?)
     (unless (list? list)
-      (raise-type-error who "list" list))
+      (raise-argument-error who "list?" list))
     (let loop ([list list])
       (cond [(null? list) null]
             [(equal? item (car list)) (cdr list)]
@@ -64,7 +64,7 @@
       [(item list equal?)
        (unless (and (procedure? equal?)
                     (procedure-arity-includes? equal? 2))
-         (raise-type-error 'remove "procedure (arity 2)" equal?))
+         (raise-argument-error 'remove "(any/c any/c . -> . any/c)" equal?))
        (do-remove 'remove item list equal?)]))
 
   (define (remq item list)
@@ -75,9 +75,9 @@
 
   (define (do-remove* who l r equal?)
     (unless (list? l)
-      (raise-type-error who "list" l))
+      (raise-argument-error who "list?" l))
     (unless (list? r)
-      (raise-type-error who "list" r))
+      (raise-argument-error who "list?" r))
     (let rloop ([r r])
       (cond
         [(null? r) null]
@@ -94,7 +94,7 @@
       [(l r equal?)
        (unless (and (procedure? equal?)
                     (procedure-arity-includes? equal? 2))
-         (raise-type-error 'remove* "procedure (arity 2)" equal?))
+         (raise-argument-error 'remove* "(any/c any/c . -> . any/c)" equal?))
        (do-remove* 'remove* l r equal?)]))
 
   (define (remq* l r)
@@ -105,7 +105,7 @@
 
   (define (memf f list)
     (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (raise-type-error 'memf "procedure (arity 1)" f))
+      (raise-argument-error 'memf "(any/c . -> any/c)" f))
     (let loop ([l list])
       (cond
        [(null? l) #f]
@@ -117,7 +117,7 @@
 
   (define (findf f list)
     (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (raise-type-error 'findf "procedure (arity 1)" f))
+      (raise-argument-error 'findf "(any/c . -> . any/c)" f))
     (let loop ([l list])
       (cond
        [(null? l) #f]
@@ -182,12 +182,12 @@
                [(x l is-equal?)
                 (unless (and (procedure? is-equal?)
                              (procedure-arity-includes? is-equal? 2))
-                  (raise-type-error 'assoc "procedure (arity 2)" is-equal?))
+                  (raise-argument-error 'assoc "(any/c any/c . -> . any/c)" is-equal?))
                 (assoc-loop 'assoc x l is-equal?)])]
             [assf
              (lambda (f l)
                (unless (and (procedure? f) (procedure-arity-includes? f 1))
-                 (raise-type-error 'assf "procedure (arity 1)" f))
+                 (raise-argument-error 'assf "(any/c any/c . -> . any/c)" f))
                (assoc-loop 'assf #f l (lambda (_ a) (f a))))])
         (values assq assv assoc assf))))
 
@@ -206,9 +206,9 @@
 
   (define (check-fold name proc init l more)
     (unless (procedure? proc)
-      (apply raise-type-error name "procedure" 0 proc init l more))
+      (apply raise-argument-error name "procedure?" 0 proc init l more))
     (unless (list? l)
-      (apply raise-type-error name "list" 2 proc init l more))
+      (apply raise-argument-error name "list?" 2 proc init l more))
     (if (null? more)
         (unless (procedure-arity-includes? proc 2)
           (raise-mismatch-error name "given procedure does not accept 2 arguments: " proc))
@@ -216,7 +216,7 @@
           (let loop ([more more][n 3])
             (unless (null? more)
               (unless (list? (car more))
-                (apply raise-type-error name "list" n proc init l more))
+                (apply raise-argument-error name "list?" n proc init l more))
               (unless (= len (length (car more)))
                 (raise-mismatch-error name 
                                       "given list does not have the same size as the first list: "
@@ -259,9 +259,9 @@
   (define (filter f list)
     (unless (and (procedure? f)
                  (procedure-arity-includes? f 1))
-      (raise-type-error 'filter "procedure (arity 1)" f))
+      (raise-argument-error 'filter "(any/c . -> . any/c)" f))
     (unless (list? list)
-      (raise-type-error 'filter "proper list" list))
+      (raise-argument-error 'filter "list?" list))
     ;; accumulating the result and reversing it is currently slightly
     ;; faster than a plain loop
     (let loop ([l list] [result null])
@@ -274,10 +274,10 @@
   ;; eg: (build-vector 4 (lambda (i) i)) ==> #4(0 1 2 3)
   (define (build-vector n fcn)
     (unless (exact-nonnegative-integer? n)
-      (raise-type-error 'build-vector "exact-nonnegative-integer" n))
+      (raise-argument-error 'build-vector "exact-nonnegative-integer?" n))
     (unless (and (procedure? fcn)
                  (procedure-arity-includes? fcn 1))
-      (raise-type-error 'build-vector "procedure (arity 1)" fcn))
+      (raise-argument-error 'build-vector "(exact-nonnegative-integer? . -> . any/c)" fcn))
     (let ([vec (make-vector n)])
       (let loop ((i 0))
         (if (= i n)
@@ -286,10 +286,10 @@
 
   (define (build-string n fcn)
     (unless (exact-nonnegative-integer? n)
-      (raise-type-error 'build-string "exact-nonnegative-integer" n))
+      (raise-argument-error 'build-string "exact-nonnegative-integer?" n))
     (unless (and (procedure? fcn)
                  (procedure-arity-includes? fcn 1))
-      (raise-type-error 'build-string "procedure (arity 1)" fcn))
+      (raise-argument-error 'build-string "(exact-nonnegative-integer? . -> . char?)" fcn))
     (let ([str (make-string n)])
       (let loop ((i 0))
         (if (= i n)
@@ -298,10 +298,10 @@
 
   (define (build-list n fcn)
     (unless (exact-nonnegative-integer? n)
-      (raise-type-error 'build-list "exact-nonnegative-integer" n))
+      (raise-argument-error 'build-list "exact-nonnegative-integer?" n))
     (unless (and (procedure? fcn)
                  (procedure-arity-includes? fcn 1))
-      (raise-type-error 'build-list "procedure (arity 1)" fcn))
+      (raise-argument-error 'build-list "(exact-nonnegative-integer? . -> . any/c)" fcn))
     (let recr ([j 0] [i n])
       (cond [(zero? i) null]
             [else (cons (fcn j)
@@ -334,11 +334,11 @@
              composed))))
       (define-syntax-rule (can-compose* name n g f fs)
         (unless (null? (let-values ([(req _) (procedure-keywords g)]) req))
-          (apply raise-type-error 'name "procedure (no required keywords)"
+          (apply raise-argument-error 'name "procedure-with-no-required-keywords?"
                  n f fs)))
       (define-syntax-rule (can-compose1 name n g f fs)
         (begin (unless (procedure-arity-includes? g 1)
-                 (apply raise-type-error 'name "procedure (arity 1)" n f fs))
+                 (apply raise-argument-error 'name "(any/c . -> . any/c)" n f fs))
                ;; need to check this too (see PR 11978)
                (can-compose* name n g f fs)))
       (define (pipeline1 f rfuns)
@@ -387,19 +387,19 @@
           (let ([simple-compose mk-simple-compose])
             (case-lambda
               [(f)
-               (if (procedure? f) f (raise-type-error 'name "procedure" 0 f))]
+               (if (procedure? f) f (raise-argument-error 'name "procedure?" 0 f))]
               [(f g)
                (unless (procedure? f)
-                 (raise-type-error 'name "procedure" 0 f g))
+                 (raise-argument-error 'name "procedure?" 0 f g))
                (unless (procedure? g)
-                 (raise-type-error 'name "procedure" 1 f g))
+                 (raise-argument-error 'name "procedure?" 1 f g))
                (can-compose name 0 f f '())
                (simple-compose f g)]
               [() values]
               [(f0 . fs0)
                (let loop ([f f0] [fs fs0] [i 0] [rfuns '()])
                  (unless (procedure? f)
-                   (apply raise-type-error 'name "procedure" i f0 fs0))
+                   (apply raise-argument-error 'name "procedure?" i f0 fs0))
                  (if (pair? fs)
                    (begin (can-compose name i f f0 fs0)
                           (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))

@@ -457,6 +457,13 @@ inspect the entire tree.
 Produces a contract on parameters whose values must match
 @racket[contract].}
 
+
+@defproc[(procedure-arity-includes/c [n exact-nonnegative-integer?]) flat-contract?]{
+
+Produces a contract for procedures that accept @racket[n] argument
+(i.e,. the @racket[procedure?] contract is implied).}
+
+
 @defproc[(hash/c [key chaperone-contract?]
                  [val contract?] 
                  [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]

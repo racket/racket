@@ -116,10 +116,10 @@
   
   (define (call-with-parameterization paramz thunk)
     (unless (parameterization? paramz)
-      (raise-type-error 'call-with-parameterization "parameterization" 0 paramz thunk))
+      (raise-argument-error 'call-with-parameterization "parameterization?" 0 paramz thunk))
     (unless (and (procedure? thunk)
 		 (procedure-arity-includes? thunk 0))
-      (raise-type-error 'call-with-parameterization "procedure (arity 0)" 1 paramz thunk))
+      (raise-argument-error 'call-with-parameterization "(-> any)" 1 paramz thunk))
     (with-continuation-mark
 	parameterization-key
 	paramz
@@ -150,10 +150,10 @@
   
   (define (call-with-break-parameterization paramz thunk)
     (unless (break-paramz? paramz)
-      (raise-type-error 'call-with-break-parameterization "break parameterization" 0 paramz thunk))
+      (raise-argument-error 'call-with-break-parameterization "break-parameterization?" 0 paramz thunk))
     (unless (and (procedure? thunk)
 		 (procedure-arity-includes? thunk 0))
-      (raise-type-error 'call-with-parameterization "procedure (arity 0)" 1 paramz thunk))
+      (raise-argument-error 'call-with-parameterization "(-> any)" 1 paramz thunk))
     (begin0
      (with-continuation-mark
 	 break-enabled-key
@@ -364,10 +364,10 @@
                               (if mut?
                                   (not (immutable? ht))
                                   (immutable? ht)))
-                   (raise-type-error who (if mut? "mutable hash table" "immutable hash table") ht))
+                   (raise-argument-error who (if mut? "(and/c hash? (not/c immutable?))" "(and/c hash? immutable?)") ht))
                  (unless (and (procedure? xform)
                               (procedure-arity-includes? xform 1))
-                   (raise-type-error who "procedure (arity 1)" xform))
+                   (raise-argument-error who "(any/c . -> . any/c)" xform))
                  (let ([v (hash-ref ht key default)])
                    (if (eq? v not-there)
                        (raise-mismatch-error who "no value found for key: " key)
@@ -387,13 +387,13 @@
             [hash-has-key?
              (lambda (ht key)
                (unless (hash? ht)
-                 (raise-type-error 'hash-has-key? "hash table" 0 ht key))
+                 (raise-argument-error 'hash-has-key? "hash?" 0 ht key))
                (not (eq? not-there (hash-ref ht key not-there))))]
             [hash-ref!
              (lambda (ht key new)
                (unless (and (hash? ht)
                             (not (immutable? ht)))
-                 (raise-type-error 'hash-ref! "mutable hash table" 0 ht key new))
+                 (raise-argument-error 'hash-ref! "(and/c hash? (not/c immutable?))" 0 ht key new))
                (let ([v (hash-ref ht key not-there)])
                  (if (eq? not-there v)
                    (let ([n (if (procedure? new) (new) new)])

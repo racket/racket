@@ -5038,11 +5038,11 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
 
   if (is_byte) {
     if (!SCHEME_BYTE_STRINGP(argv[0]))
-      scheme_wrong_type(who, "byte string", 0, argc, argv);
+      scheme_wrong_contract(who, "byte?", 0, argc, argv);
     bs = argv[0];
   } else {
     if (!SCHEME_CHAR_STRINGP(argv[0]))
-      scheme_wrong_type(who, "string", 0, argc, argv);
+      scheme_wrong_contract(who, "string?", 0, argc, argv);
     bs = scheme_char_string_to_byte_string(argv[0]);
   }
 
@@ -5183,11 +5183,11 @@ static Scheme_Object *gen_compare(char *name, int pos,
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
       && !SCHEME_BYTE_STRINGP(argv[0])
       && !SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type(name, "regexp, byte-regexp, string, or byte string", 0, argc, argv);
+    scheme_wrong_contract(name, "(or/c regexp? byte-regexp? string? bytes?)", 0, argc, argv);
   if ((peek || (!SCHEME_BYTE_STRINGP(argv[1]) && !SCHEME_CHAR_STRINGP(argv[1])))
       && !SCHEME_INPUT_PORTP(argv[1])
       && !SCHEME_PATHP(argv[1]))
-    scheme_wrong_type(name, peek ? "input-port" : "string, byte string, path, or input port", 1, argc, argv);
+    scheme_wrong_contract(name, peek ? "input-port?" : "(or/c string? bytes? path? input-port?)", 1, argc, argv);
   
   srcin = argv[1];
   if (SCHEME_PATHP(srcin)) {
@@ -5218,7 +5218,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
     offset = scheme_extract_index(name, 2, argc, argv, len + 1, 0);
 
     if (!iport && (offset > len)) {
-      scheme_out_of_string_range(name, "offset ", argv[2], srcin, 0, len);
+      scheme_out_of_range(name, NULL, "offset ", argv[2], srcin, 0, len);
       return NULL;
     } else if (offset < 0) {
       /* argument was a bignum */
@@ -5237,13 +5237,15 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	  }
 	  /* compare numbers */
 	  if (scheme_bin_lt(argv[3], argv[2])) {
-	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			     "%s: ending index %V is smaller than starting index %V for port",
-			     name, argv[3], argv[2]);
+            scheme_contract_error(name,
+                                  "ending index is smaller than starting index",
+                                  "starting index", 1, argv[2],
+                                  "ending index", 1, argv[3],
+                                  NULL);
 	    return NULL;
 	  }
 	} else if (endset < offset || endset > len) {
-	  scheme_out_of_string_range(name, "ending ", argv[3], srcin, offset, len);
+	  scheme_out_of_range(name, NULL, "ending ", argv[3], srcin, offset, len);
 	  return NULL;
 	}
 	endv = argv[3];
@@ -5254,24 +5256,27 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	  if (!SCHEME_FALSEP(argv[4])) {
 	    unless_evt = argv[4];
 	    if (!SAME_TYPE(SCHEME_TYPE(unless_evt), scheme_progress_evt_type)) {
-	      scheme_wrong_type(name, "progress evt or #f", 4, argc, argv);
+	      scheme_wrong_contract(name, "(or/c progress-evt? #f)", 4, argc, argv);
 	      return NULL;
 	    }
 	    if (!iport) {
-	      scheme_arg_mismatch(name, 
-				  "progress evt cannot be used with string input: ",
-				  unless_evt);
+	      scheme_contract_error(name, 
+                                    "progress evt cannot be used with string input",
+                                    "progress evt", 1, unless_evt,
+                                    NULL);
 	    } else if (!SAME_OBJ(iport, SCHEME_PTR1_VAL(unless_evt))) {
-	      scheme_arg_mismatch(name,
-				  "evt is not a progress evt for the given port:",
-				  unless_evt);
+	      scheme_contract_error(name,
+                                    "evt is not a progress evt for the given port",
+                                    "progress evt", 1, unless_evt,
+                                    "port", 1, iport,
+                                    NULL);
 	      return NULL;
 	    }
 	  }
 	} else {
 	  if (SCHEME_TRUEP(argv[4])) {
 	    if (!SCHEME_OUTPUT_PORTP(argv[4]))
-	      scheme_wrong_type(name, "output port or #f", 4, argc, argv);
+	      scheme_wrong_contract(name, "(or/c output-port? #f)", 4, argc, argv);
 	    oport = argv[4];
 	  }
 	}
@@ -5279,14 +5284,14 @@ static Scheme_Object *gen_compare(char *name, int pos,
 
       if (argc > 5) {
         if (!SCHEME_BYTE_STRINGP(argv[5]))
-          scheme_wrong_type(name, "byte string", 5, argc, argv);
+          scheme_wrong_contract(name, "bytes?", 5, argc, argv);
         prefix = SCHEME_BYTE_STR_VAL(argv[5]);
         prefix_len = SCHEME_BYTE_STRLEN_VAL(argv[5]);
         prefix_offset = 0;
 
         if (argc > 6) {
           if (!scheme_nonneg_exact_p(argv[6]))
-            scheme_wrong_type(name, "exact nonnegative integer", 6, argc, argv);
+            scheme_wrong_contract(name, "exact-nonnegative-integer?", 6, argc, argv);
           if (SCHEME_INTP(argv[6]))
             last_bytes_count = SCHEME_INT_VAL(argv[6]);
           else
@@ -5644,22 +5649,24 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
       && !SCHEME_BYTE_STRINGP(argv[0])
       && !SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type(name, "regexp, byte-regexp, string, or byte string", 0, argc, argv);
+    scheme_wrong_contract(name, "(or/c regexp? byte-regexp? string? bytes?)", 0, argc, argv);
   if (!SCHEME_BYTE_STRINGP(argv[1])
       && !SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_type(name, "string or byte string", 1, argc, argv);
+    scheme_wrong_contract(name, "(or/c string? bytes?)", 1, argc, argv);
   if (!SCHEME_BYTE_STRINGP(argv[2])
       && !SCHEME_CHAR_STRINGP(argv[2])
       && !SCHEME_PROCP(argv[2]))
-    scheme_wrong_type(name, "string, byte string, or procedure", 2, argc, argv);
+    scheme_wrong_contract(name, "(or/c string? bytes? procedure?)", 2, argc, argv);
 
   if (SCHEME_BYTE_STRINGP(argv[2])) {
     if (SCHEME_CHAR_STRINGP(argv[0])
 	|| ((SCHEME_TYPE(argv[0]) == scheme_regexp_type)
 	    && (((regexp *)argv[0])->flags & REGEXP_IS_UTF8))) {
       if (SCHEME_CHAR_STRINGP(argv[1])) {
-	scheme_arg_mismatch(name, "cannot replace a string with a byte string: ",
-			    argv[2]);
+	scheme_contract_error(name, "cannot replace a string with a byte string",
+                              "string-matching regexp", 1, argv[0],
+                              "byte string", 1, argv[2],
+                              NULL);
       }
     }
   }
@@ -5672,17 +5679,18 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
 
   if (SCHEME_PROCP(argv[2])) {
     if (!scheme_check_proc_arity(NULL, r->nsubexp, 2, argc, argv)) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: regexp produces %d matches: %V; procedure does not accept %d arguments: %V",
-		       name, 
-		       r->nsubexp, (Scheme_Object *)r,
-		       r->nsubexp, argv[2]);
+      scheme_contract_error(name,
+                            "replace procedure's arity does not include regexp's match count",
+                            "regexp", 1, r,
+                            "regexp match count", 1, scheme_make_integer(r->nsubexp),
+                            "replace procedure", 1, argv[2],
+                            NULL);
     }
   }
 
   if (argc > 3) {
     if (!SCHEME_BYTE_STRINGP(argv[3]))
-      scheme_wrong_type(name, "byte string", 3, argc, argv);
+      scheme_wrong_contract(name, "bytes?", 3, argc, argv);
     prefix = SCHEME_BYTE_STR_VAL(argv[3]);
     prefix_len = SCHEME_BYTE_STRLEN_VAL(argv[3]);
     prefix_offset = 0;
@@ -5781,14 +5789,14 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
 	if (!was_non_byte) {
           if (!SCHEME_BYTE_STRINGP(m)) {
 	    args[0] = m;
-	    scheme_wrong_type(build_call_name(name), "byte string", -1, -1, args);
+	    scheme_wrong_contract(build_call_name(name), "bytes?", -1, -1, args);
 	  }
 	  insert = SCHEME_BYTE_STR_VAL(m);
           len = SCHEME_BYTE_STRLEN_VAL(m);
         } else {
 	  if (!SCHEME_CHAR_STRINGP(m)) {
 	    args[0] = m;
-	    scheme_wrong_type(build_call_name(name), "string", -1, -1, args);
+	    scheme_wrong_contract(build_call_name(name), "string?", -1, -1, args);
 	  }
           len = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(m), 0,
                                    SCHEME_CHAR_STRLEN_VAL(m),
@@ -5942,7 +5950,7 @@ static Scheme_Object *byte_pregexp_p(int argc, Scheme_Object *argv[])
 Scheme_Object *regexp_lookbehind(int argc, Scheme_Object *argv[])
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_regexp_type))
-    scheme_wrong_type("regexp-max-lookbehind", "regexp or byte-regexp", 0, argc, argv);
+    scheme_wrong_contract("regexp-max-lookbehind", "(or/c regexp? byte-regexp?)", 0, argc, argv);
   return scheme_make_integer(((regexp *)argv[0])->maxlookback);
 }
 

@@ -116,8 +116,10 @@
   scheme_extension_table->scheme_wrong_count_m = scheme_wrong_count_m;
   scheme_extension_table->scheme_case_lambda_wrong_count = scheme_case_lambda_wrong_count;
   scheme_extension_table->scheme_wrong_type = scheme_wrong_type;
+  scheme_extension_table->scheme_wrong_contract = scheme_wrong_contract;
   scheme_extension_table->scheme_wrong_field_type = scheme_wrong_field_type;
   scheme_extension_table->scheme_arg_mismatch = scheme_arg_mismatch;
+  scheme_extension_table->scheme_contract_error = scheme_contract_error;
   scheme_extension_table->scheme_wrong_return_arity = scheme_wrong_return_arity;
   scheme_extension_table->scheme_unbound_global = scheme_unbound_global;
   scheme_extension_table->scheme_dynamic_wind = scheme_dynamic_wind;
@@ -674,6 +676,7 @@
   scheme_extension_table->scheme_check_proc_arity2 = scheme_check_proc_arity2;
   scheme_extension_table->scheme_make_provided_string = scheme_make_provided_string;
   scheme_extension_table->scheme_make_args_string = scheme_make_args_string;
+  scheme_extension_table->scheme_make_arg_lines_string = scheme_make_arg_lines_string;
   scheme_extension_table->scheme_system_library_subpath = scheme_system_library_subpath;
   scheme_extension_table->scheme_signal_received = scheme_signal_received;
   scheme_extension_table->scheme_signal_received_at = scheme_signal_received_at;

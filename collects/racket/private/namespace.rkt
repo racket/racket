@@ -54,14 +54,14 @@
   
   (define (namespace-anchor->empty-namespace ra)
     (unless (namespace-anchor? ra)
-      (raise-type-error 'anchor->empty-namespace
-                        "namespace anchor"
-                        ra))
+      (raise-argument-error 'anchor->empty-namespace
+                            "namespace-anchor?"
+                            ra))
     (variable-reference->empty-namespace (namespace-anchor-var ra)))
 
   (define (namespace-anchor->namespace ra)
     (unless (namespace-anchor? ra)
-      (raise-type-error 'anchor->namespace
-                        "namespace anchor"
-                        ra))
+      (raise-argument-error 'anchor->namespace
+                            "namespace-anchor?"
+                            ra))
     (variable-reference->namespace (namespace-anchor-var ra))))

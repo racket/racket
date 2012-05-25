@@ -71,7 +71,7 @@
                 (let ([a (cadr p)])
                   (test a procedure-arity (car p))
                   (when (number? a)
-                    (let ([rx (regexp (format "expects(| at least) ~a argument" 
+                    (let ([rx (regexp (format "wrong number of arguments.*expected number of arguments: (|at least )~a" 
                                               (if (zero? a) "(0|no)" a)))]
                           [bad-args (cons 'extra (for/list ([i (in-range a)]) 'a))])
                       (test #t regexp-match? rx
@@ -266,9 +266,9 @@
 ;; Check error reporting of `procedure-reduce-keyword-arity'
 
 (err/rt-test (procedure-reduce-keyword-arity void 1 '(#:b #:a) null)
-             (lambda (exn) (regexp-match #rx"3rd argument" (exn-message exn))))
+             (lambda (exn) (regexp-match #rx"position: 3rd" (exn-message exn))))
 (err/rt-test (procedure-reduce-keyword-arity void 1 null '(#:b #:a))
-             (lambda (exn) (regexp-match #rx"4th argument" (exn-message exn))))
+             (lambda (exn) (regexp-match #rx"position: 4th" (exn-message exn))))
 
 ;; ----------------------------------------
 ;; Check mutation of direct-called keyword procedure

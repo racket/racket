@@ -460,8 +460,8 @@ GEN_BIN_OP(scheme_bin_minus, "-", SUBTRACT, F_SUBTRACT, FS_SUBTRACT, scheme_bign
 GEN_BIN_OP(scheme_bin_mult, "*", MULTIPLY, F_MULTIPLY, FS_MULTIPLY, scheme_bignum_multiply, scheme_rational_multiply, scheme_complex_multiply, GEN_RETURN_0, GEN_RETURN_0, NO_NAN_CHECK, NO_NAN_CHECK, ret_zero, ret_1other, ret_zero, ret_1other)
 GEN_BIN_DIV_OP(scheme_bin_div, "/", DIVIDE, F_DIVIDE, FS_DIVIDE, scheme_make_rational, scheme_rational_divide, scheme_complex_divide, ret_zero, cx_NO_CHECK, cx_NO_CHECK, ret_1other)
 
-GEN_NARY_OP(static, plus, "+", scheme_bin_plus, 0, SCHEME_NUMBERP, "number", GEN_IDENT)
-GEN_NARY_OP(static, mult, "*", scheme_bin_mult, 1, SCHEME_NUMBERP, "number", GEN_IDENT)
+GEN_NARY_OP(static, plus, "+", scheme_bin_plus, 0, SCHEME_NUMBERP, "number?", GEN_IDENT)
+GEN_NARY_OP(static, mult, "*", scheme_bin_mult, 1, SCHEME_NUMBERP, "number?", GEN_IDENT)
 
 static MZ_INLINE Scheme_Object *
 minus_slow (Scheme_Object *ret, int argc, Scheme_Object *argv[])
@@ -470,7 +470,7 @@ minus_slow (Scheme_Object *ret, int argc, Scheme_Object *argv[])
   for (i = 1; i < argc; i++) {
     Scheme_Object *o = argv[i];
     if (!SCHEME_NUMBERP(o)) {
-      scheme_wrong_type("-", "number", i, argc, argv);
+      scheme_wrong_contract("-", "number?", i, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
     ret = scheme_bin_minus(ret, o);
@@ -485,7 +485,7 @@ minus (int argc, Scheme_Object *argv[])
 
   ret = argv[0];
   if (!SCHEME_NUMBERP(ret)) {
-    scheme_wrong_type("-", "number", 0, argc, argv);
+    scheme_wrong_contract("-", "number?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   if (argc == 1) {
@@ -501,7 +501,7 @@ minus (int argc, Scheme_Object *argv[])
   if (argc == 2) {
     v = argv[1];
     if (!SCHEME_NUMBERP(v)) {
-      scheme_wrong_type("-", "number", 1, argc, argv);
+      scheme_wrong_contract("-", "number?", 1, argc, argv);
       ESCAPED_BEFORE_HERE;
     } 
     return scheme_bin_minus(ret, v);
@@ -517,7 +517,7 @@ div_prim (int argc, Scheme_Object *argv[])
 
   ret = argv[0];
   if (!SCHEME_NUMBERP(ret)) {
-    scheme_wrong_type("/", "number", 0, argc, argv);
+    scheme_wrong_contract("/", "number?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
   if (argc == 1) {
@@ -533,7 +533,7 @@ div_prim (int argc, Scheme_Object *argv[])
     Scheme_Object *o = argv[i];
 
     if (!SCHEME_NUMBERP(o)) {
-      scheme_wrong_type("/", "number", i, argc, argv);
+      scheme_wrong_contract("/", "number?", i, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
 
@@ -595,13 +595,13 @@ do_bin_quotient(const char *name, const Scheme_Object *n1, const Scheme_Object *
     Scheme_Object *a[2];
     a[0] = (Scheme_Object *)n1;
     a[1] = (Scheme_Object *)n2;
-    scheme_wrong_type(name, "integer", 0, 2, a);
+    scheme_wrong_contract(name, "integer?", 0, 2, a);
   }
   if (!scheme_is_integer(n2)) {
     Scheme_Object *a[2];
     a[0] = (Scheme_Object *)n1;
     a[1] = (Scheme_Object *)n2;
-    scheme_wrong_type(name, "integer", 1, 2, a);
+    scheme_wrong_contract(name, "integer?", 1, 2, a);
   }
 
   if (SCHEME_INTP(n2) && !SCHEME_INT_VAL(n2))
@@ -667,9 +667,9 @@ do_bin_quotient(const char *name, const Scheme_Object *n1, const Scheme_Object *
   /* I'm pretty sure this isn't needed, but I'm keeping the code just
      in case... 03/19/2000 */
   if (SCHEME_RATIONALP(n1))
-    WRONG_TYPE(name, "integer", n1);
+    wrong_contract(name, "integer?", n1);
   if (SCHEME_RATIONALP(n2))
-    WRONG_TYPE(name, "integer", n2);
+    wrong_contract(name, "integer?", n2);
 #endif
   
   n1 = scheme_to_bignum(n1);
@@ -705,9 +705,9 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
   n2 = argv[1];
 
   if (!scheme_is_integer(n1))
-    scheme_wrong_type(name, "integer", 0, argc, argv);
+    scheme_wrong_contract(name, "integer?", 0, argc, argv);
   if (!scheme_is_integer(n2))
-    scheme_wrong_type(name, "integer", 1, argc, argv);
+    scheme_wrong_contract(name, "integer?", 1, argc, argv);
 
   if (SCHEME_INTP(n2) && !SCHEME_INT_VAL(n2))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
@@ -929,9 +929,10 @@ static void check_always_fixnum(const char *name, Scheme_Object *o)
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
     if ((v < -1073741824) || (v > 1073741823)) {
-      scheme_arg_mismatch(name, 
-                          "cannot fold to result that is not a fixnum on some platforms: ",
-                          o);
+      scheme_contract_error(name, 
+                            "cannot fold to result that is not a fixnum on some platforms",
+                            "result", 1, o,
+                            NULL);
     }
   }
 }
@@ -944,8 +945,8 @@ static void check_always_fixnum(const char *name, Scheme_Object *o)
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    Scheme_Object *o;                                         \
-   if (!SCHEME_INTP(argv[0])) scheme_wrong_type(s_name, "fixnum", 0, argc, argv); \
-   if (!SCHEME_INTP(argv[1])) scheme_wrong_type(s_name, "fixnum", 1, argc, argv); \
+   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
+   if (!SCHEME_INTP(argv[1])) scheme_wrong_contract(s_name, "fixnum?", 1, argc, argv); \
    EXTRA_CHECK                                               \
    o = scheme_op(argc, argv);                                \
    mzWHEN_64_BITS(if (scheme_current_thread->constant_folding) check_always_fixnum(s_name, o);) \
@@ -963,7 +964,7 @@ SAFE_FX(fx_mod, "fxmodulo", scheme_modulo, CHECK_SECOND_ZERO("fxmodulo"))
 static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o;
-  if (!SCHEME_INTP(argv[0])) scheme_wrong_type("fxabs", "fixnum", 0, argc, argv);
+  if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fxabs", "fixnum?", 0, argc, argv);
   o = scheme_abs(argc, argv);
   if (!SCHEME_INTP(o)) scheme_non_fixnum_result("fxabs", o);
   return o;
@@ -1060,8 +1061,8 @@ UNSAFE_FL1(unsafe_fl_sqrt, sqrt, pos_sqrt)
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    double v;                                                 \
-   if (!SCHEME_DBLP(argv[0])) scheme_wrong_type(sname, "flonum", 0, argc, argv); \
-   if (!SCHEME_DBLP(argv[1])) scheme_wrong_type(sname, "flonum", 1, argc, argv); \
+   if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract(sname, "flonum?", 0, argc, argv); \
+   if (!SCHEME_DBLP(argv[1])) scheme_wrong_contract(sname, "flonum?", 1, argc, argv); \
    v = SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]);   \
    return scheme_make_double(v);                             \
  }
@@ -1075,7 +1076,7 @@ SAFE_FL(fl_div, "fl/", /)
  static Scheme_Object *name(int argc, Scheme_Object *argv[])  \
  {                                                            \
    double v;                                                              \
-   if (!SCHEME_DBLP(argv[0])) scheme_wrong_type(sname, "flonum", 0, argc, argv); \
+   if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract(sname, "flonum?", 0, argc, argv); \
    v = SCHEME_DBL_VAL(argv[0]);                                           \
    v = op(v);                                                             \
    return scheme_make_double(v);                                          \

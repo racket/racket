@@ -40,7 +40,7 @@ static void raise_bad_call_with_values(Scheme_Object *f)
 {
   Scheme_Object *a[1];
   a[0] = f;
-  scheme_wrong_type("call-with-values", "procedure", -1, 1, a);    
+  scheme_wrong_contract("call-with-values", "procedure?", -1, 1, a);    
 }
 
 static Scheme_Object *call_with_values_from_multiple_result(Scheme_Object *f)
@@ -92,11 +92,12 @@ static void apply_prim_to_fail(int argc, Scheme_Object **argv, void *_p)
 static Scheme_Object *vector_check_chaperone_of(Scheme_Object *o, Scheme_Object *orig, int setter)
 {
   if (!scheme_chaperone_of(o, orig))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: chaperone produced a result: %V that is not a chaperone of the original result: %V",
-                     (setter ? "vector-set!" : "vector-ref"),
-                     o, 
-                     orig);
+    scheme_contract_error((setter ? "vector-set!" : "vector-ref"),
+                          "chaperone produced a result that is not a chaperone of the original result",
+                          "chaperone result", 1, o,
+                          "original result", 1, o,
+                          NULL);
+  
   return o;
 }
 

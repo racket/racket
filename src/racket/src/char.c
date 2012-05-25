@@ -176,12 +176,12 @@ char_p (int argc, Scheme_Object *argv[])
  static Scheme_Object *func_name(int argc, Scheme_Object *argv[])     \
  { int c, prev, i; Scheme_Object *rv = scheme_true; \
    if (!SCHEME_CHARP(argv[0]))      \
-     scheme_wrong_type(#scheme_name, "character", 0, argc, argv);     \
+     scheme_wrong_contract(#scheme_name, "char?", 0, argc, argv);     \
    prev = SCHEME_CHAR_VAL(argv[0]);     \
    FOLDCASE(prev = scheme_tofold(prev)) \
    for (i = 1; i < argc; i++) {     \
      if (!SCHEME_CHARP(argv[i]))      \
-       scheme_wrong_type(#scheme_name, "character", i, argc, argv);     \
+       scheme_wrong_contract(#scheme_name, "char?", i, argc, argv);     \
      c = SCHEME_CHAR_VAL(argv[i]);     \
      FOLDCASE(c = scheme_tofold(c)) \
      if (!(prev comp c)) rv = scheme_false;   \
@@ -207,7 +207,7 @@ static Scheme_Object *func_name (int argc, Scheme_Object *argv[]) \
 { \
   mzchar c;    \
   if (!SCHEME_CHARP(argv[0]))  \
-    scheme_wrong_type(scheme_name, "character", 0, argc, argv); \
+    scheme_wrong_contract(scheme_name, "char?", 0, argc, argv); \
   c = SCHEME_CHAR_VAL(argv[0]);                    \
   return (pred(c) ? scheme_true : scheme_false);   \
 }
@@ -230,7 +230,7 @@ char_to_integer (int argc, Scheme_Object *argv[])
   mzchar c;
 
   if (!SCHEME_CHARP(argv[0]))
-    scheme_wrong_type("char->integer", "character", 0, argc, argv);
+    scheme_wrong_contract("char->integer", "char?", 0, argc, argv);
 
   c = SCHEME_CHAR_VAL(argv[0]);
 
@@ -257,9 +257,9 @@ integer_to_char (int argc, Scheme_Object *argv[])
     }
   }
 
-  scheme_wrong_type("integer->char", 
-		    "exact integer in [0,#x10FFFF], not in [#xD800,#xDFFF]", 
-		    0, argc, argv);
+  scheme_wrong_contract("integer->char", 
+                        "(and/c (integer-in 0 #x10FFFF) (not/c (integer-in #xD800 #xDFFF)))", 
+                        0, argc, argv);
   return NULL;
 }
 
@@ -268,7 +268,7 @@ static Scheme_Object *func_name (int argc, Scheme_Object *argv[]) \
 { \
   mzchar c, nc;    \
   if (!SCHEME_CHARP(argv[0]))  \
-    scheme_wrong_type(scheme_name, "character", 0, argc, argv); \
+    scheme_wrong_contract(scheme_name, "char?", 0, argc, argv); \
   c = SCHEME_CHAR_VAL(argv[0]);                    \
   nc = cvt(c);                                      \
   if (nc == c) return argv[0];       \
@@ -286,7 +286,7 @@ static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[])
   int cat;
 
   if (!SCHEME_CHARP(argv[0]))
-    scheme_wrong_type("char-general-category", "character", 0, argc, argv);
+    scheme_wrong_contract("char-general-category", "char?", 0, argc, argv);
 
   c = SCHEME_CHAR_VAL(argv[0]);
   cat = scheme_general_category(c);
@@ -298,7 +298,7 @@ static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[])
 {
   mzchar wc;
   if (!SCHEME_CHARP(argv[0]))
-    scheme_wrong_type("char-utf-8-length", "character", 0, argc, argv);
+    scheme_wrong_contract("char-utf-8-length", "char?", 0, argc, argv);
 
   wc = SCHEME_CHAR_VAL(argv[0]);
   if (wc < 0x80) {

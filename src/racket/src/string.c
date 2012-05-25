@@ -225,8 +225,6 @@ static char *mz_iconv_nl_langinfo(){
 }
 #endif
 
-READ_ONLY static const char * const STRING_IS_NOT_UTF_8 = "string is not a well-formed UTF-8 encoding: ";
-
 static Scheme_Object *make_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_p (int argc, Scheme_Object *argv[]);
@@ -937,38 +935,6 @@ scheme_make_locale_string(const char *chars)
 /*                         index helpers                              */
 /**********************************************************************/
 
-void scheme_out_of_string_range(const char *name, const char *which,
-				Scheme_Object *i, Scheme_Object *s,
-				intptr_t start, intptr_t len)
-{
-  int is_byte;
-
-  is_byte = SCHEME_BYTE_STRINGP(s);
-
-  if (len) {
-    char *sstr;
-    intptr_t slen;
-
-    sstr = scheme_make_provided_string(s, 2, &slen);
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: %sindex %s out of range [%d, %d] for %s%s: %t",
-		     name, which,
-		     scheme_make_provided_string(i, 2, NULL),
-		     ((start < 0) ? 0 : start), 
-                     ((start < 0) ? (len - 1) : len),
-		     is_byte ? "byte-" : "",
-                     SCHEME_CHAPERONE_VECTORP(s) ? "vector" : "string",
-		     sstr, slen);
-  } else {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: %sindex %s out of range for empty %s%s",
-		     name, which,
-		     scheme_make_provided_string(i, 0, NULL),
-		     is_byte ? "byte-" : "",
-                     SCHEME_CHAPERONE_VECTORP(s) ? "vector" : "string");
-  }
-}
-
 intptr_t scheme_extract_index(const char *name, int pos, int argc, Scheme_Object **argv, intptr_t top, int false_ok)
 {
   intptr_t i;
@@ -986,9 +952,9 @@ intptr_t scheme_extract_index(const char *name, int pos, int argc, Scheme_Object
     i = -1;
 
   if (!is_top && (i < 0))
-    scheme_wrong_type(name,
-		      (false_ok ? "non-negative exact integer or #f" : "non-negative exact integer"),
-		      pos, argc, argv);
+    scheme_wrong_contract(name,
+                          (false_ok ? "(or/c exact-nonnegative-integer? #f)" : "exact-nonnegative-integer?"),
+                          pos, argc, argv);
 
   return i;
 }
@@ -1017,10 +983,10 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
     finish = len;
 
   if (!(start <= len)) {
-    scheme_out_of_string_range(name, (fpos < 100) ? "starting " : "", argv[spos], str, 0, len);
+    scheme_out_of_range(name, NULL, (fpos < 100) ? "starting " : "", argv[spos], str, 0, len);
   }
   if (!(finish >= start && finish <= len)) {
-    scheme_out_of_string_range(name, "ending ", argv[fpos], str, start, len);
+    scheme_out_of_range(name, NULL, "ending ", argv[fpos], str, start, len);
   }
 
   *_start = start;
@@ -1074,11 +1040,12 @@ void scheme_do_get_substring_indices(const char *name, Scheme_Object *str,
 #define Xchar mzchar
 #define uXchar mzchar
 #define XSTR ""
+#define IS_STR "string?"
 #define XSTRINGSTR "string"
 #define SUBXSTR "substring"
 #define CHARP(x) SCHEME_CHARP(x)
 #define CHAR_VAL(x) SCHEME_CHAR_VAL(x)
-#define CHAR_STR "character"
+#define CHAR_STR "char?"
 #define MAKE_CHAR(x) _scheme_make_char(x)
 #define xstrlen scheme_char_strlen
 #include "strops.inc"
@@ -1087,11 +1054,11 @@ void scheme_do_get_substring_indices(const char *name, Scheme_Object *str,
 static Scheme_Object * name (int argc, Scheme_Object *argv[]) \
 {  mzchar *s, *prev; int i, sl, pl; int falz = 0;\
    if (!SCHEME_CHAR_STRINGP(argv[0])) \
-    scheme_wrong_type(scheme_name, "string", 0, argc, argv); \
+    scheme_wrong_contract(scheme_name, "string?", 0, argc, argv); \
    prev = SCHEME_CHAR_STR_VAL(argv[0]); pl = SCHEME_CHAR_STRTAG_VAL(argv[0]); \
    for (i = 1; i < argc; i++) { \
      if (!SCHEME_CHAR_STRINGP(argv[i])) \
-      scheme_wrong_type(scheme_name, "string", i, argc, argv); \
+      scheme_wrong_contract(scheme_name, "string?", i, argc, argv); \
      s = SCHEME_CHAR_STR_VAL(argv[i]); sl = SCHEME_CHAR_STRTAG_VAL(argv[i]); \
      if (!falz) if (!(comp(scheme_name, \
                            prev, pl, \
@@ -1125,7 +1092,6 @@ GEN_STRING_COMP(string_locale_ci_gt, "string-locale-ci>?", mz_char_strcmp_ci, >,
 /**********************************************************************/
 
 #define SCHEME_BYTEP(x) ((SCHEME_INTP(x)) && (SCHEME_INT_VAL(x) >= 0) && (SCHEME_INT_VAL(x) <= 255))
-#define BYTE_STR "exact integer in [0,255]"
 
 static Scheme_Object *
 byte_p(int argc, Scheme_Object *argv[])
@@ -1146,11 +1112,12 @@ byte_p(int argc, Scheme_Object *argv[])
 #define Xchar char
 #define uXchar unsigned char
 #define XSTR "byte "
+#define IS_STR "bytes?"
 #define XSTRINGSTR "bytes"
 #define SUBXSTR "subbytes"
 #define CHARP(x) SCHEME_BYTEP(x)
 #define CHAR_VAL(x) SCHEME_INT_VAL(x)
-#define CHAR_STR BYTE_STR
+#define CHAR_STR "byte?"
 #define MAKE_CHAR(x) scheme_make_integer_value(x)
 #define xstrlen strlen
 #define GENERATING_BYTE
@@ -1163,11 +1130,11 @@ byte_p(int argc, Scheme_Object *argv[])
 static Scheme_Object * name (int argc, Scheme_Object *argv[]) \
 {  char *s, *prev; int i, sl, pl; int falz = 0;\
    if (!SCHEME_BYTE_STRINGP(argv[0])) \
-    scheme_wrong_type(scheme_name, "byte string", 0, argc, argv); \
+    scheme_wrong_contract(scheme_name, "bytes?", 0, argc, argv); \
    prev = SCHEME_BYTE_STR_VAL(argv[0]); pl = SCHEME_BYTE_STRTAG_VAL(argv[0]); \
    for (i = 1; i < argc; i++) { \
      if (!SCHEME_BYTE_STRINGP(argv[i])) \
-      scheme_wrong_type(scheme_name, "byte string", i, argc, argv); \
+      scheme_wrong_contract(scheme_name, "bytes?", i, argc, argv); \
      s = SCHEME_BYTE_STR_VAL(argv[i]); sl = SCHEME_BYTE_STRTAG_VAL(argv[i]); \
      if (!falz) if (!(comp(scheme_name, \
                            (unsigned char *)prev, pl, \
@@ -1205,9 +1172,10 @@ do_byte_string_to_char_string(const char *who,
 		       NULL, 0, 
 		       (perm > -1) ? 0xD800 : 0);
   if (ulen < 0) {
-    scheme_arg_mismatch(who,
-			STRING_IS_NOT_UTF_8,
-			bstr);
+    scheme_contract_error(who,
+                          "string is not a well-formed UTF-8 encoding",
+                          "string", 1, bstr,
+                          NULL);
   }
 
   v = (unsigned int *)scheme_malloc_atomic((ulen + 1) * sizeof(unsigned int));
@@ -1254,9 +1222,10 @@ do_byte_string_to_char_string_locale(const char *who,
       if (no_cvt) {
 	return do_byte_string_to_char_string(who, bstr, istart, ifinish, perm, 1);
       } else {
-	scheme_arg_mismatch(who,
-			    "byte string is not a valid encoding for the current locale: ",
-			    bstr);
+	scheme_contract_error(who,
+                              "byte string is not a valid encoding for the current locale",
+                              "byte string", 1, bstr,
+                              NULL);
       }
     }
     ((mzchar *)us)[olen] = 0;
@@ -1275,13 +1244,13 @@ do_string_to_vector(const char *who, int mode, int argc, Scheme_Object *argv[])
   intptr_t istart, ifinish;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type(who, "byte string", 0, argc, argv);
+    scheme_wrong_contract(who, "bytes?", 0, argc, argv);
 
   if ((argc < 2) || SCHEME_FALSEP(argv[1]))
     permc = -1;
   else {
     if (!SCHEME_CHARP(argv[1]))
-      scheme_wrong_type(who, "character or #f", 1, argc, argv);
+      scheme_wrong_contract(who, "(or/c char? #f)", 1, argc, argv);
     permc = SCHEME_CHAR_VAL(argv[1]);
   }
 
@@ -1385,9 +1354,10 @@ do_char_string_to_byte_string_locale(const char *who,
       if (no_cvt) {
 	return do_char_string_to_byte_string(cstr, istart, ifinish, 1);
       } else {
-	scheme_arg_mismatch(who,
-			    "string cannot be encoded for the current locale: ",
-			    cstr);
+	scheme_contract_error(who,
+                              "string cannot be encoded for the current locale",
+                              "string", 1, cstr, 
+                              NULL);
       }
     }
     s[olen] = 0;
@@ -1417,13 +1387,13 @@ static Scheme_Object *do_chars_to_bytes(const char *who, int mode,
   int permc;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type(who, "string", 0, argc, argv);
+    scheme_wrong_contract(who, "string?", 0, argc, argv);
 
   if ((argc < 2) || SCHEME_FALSEP(argv[1]))
     permc = -1;
   else {
     if (!SCHEME_BYTEP(argv[1]))
-      scheme_wrong_type(who, "byte or #f", 1, argc, argv);
+      scheme_wrong_contract(who, "(or/c byte? #f)", 1, argc, argv);
     permc = SCHEME_INT_VAL(argv[1]);
   }
 
@@ -1448,9 +1418,10 @@ static Scheme_Object *do_chars_to_bytes(const char *who, int mode,
       else if (permc >= 0) {
 	s[i - istart] = permc;
       } else {
-	scheme_arg_mismatch(who,
-			    "string cannot be encoded in Latin-1: ",
-			    argv[0]);
+	scheme_contract_error(who,
+                              "string cannot be encoded in Latin-1",
+                              "string", 1, argv[0],
+                              NULL);
       }
     }
     s[len] = 0;
@@ -1481,7 +1452,7 @@ static Scheme_Object *char_string_utf8_length (int argc, Scheme_Object *argv[])
   intptr_t istart, ifinish, len;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string-utf-8-length", "string", 0, argc, argv);
+    scheme_wrong_contract("string-utf-8-length", "string?", 0, argc, argv);
 
   scheme_get_substring_indices("string-utf-8-length", argv[0], argc, argv,
 			       1, 2, &istart, &ifinish);
@@ -1500,13 +1471,13 @@ byte_string_utf8_length (int argc, Scheme_Object *argv[])
   char *chars;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type("bytes-utf-8-length", "string", 0, argc, argv);
+    scheme_wrong_contract("bytes-utf-8-length", "string?", 0, argc, argv);
 
   chars = SCHEME_BYTE_STR_VAL(argv[0]);
 
   if ((argc > 1) && !SCHEME_FALSEP(argv[1])) {
     if (!SCHEME_CHARP(argv[1]))
-      scheme_wrong_type("bytes-utf-8-length", "character or #f", 1, argc, argv);
+      scheme_wrong_contract("bytes-utf-8-length", "(or/c char? #f)", 1, argc, argv);
     perm = 1;
   } else
     perm = 0;
@@ -1533,7 +1504,7 @@ byte_string_utf8_index(int argc, Scheme_Object *argv[])
   char *chars;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type("bytes-utf-8-index", "byte string", 0, argc, argv);
+    scheme_wrong_contract("bytes-utf-8-index", "bytes?", 0, argc, argv);
 
   chars = SCHEME_BYTE_STR_VAL(argv[0]);
 
@@ -1545,12 +1516,12 @@ byte_string_utf8_index(int argc, Scheme_Object *argv[])
   }
 
   if (pos < 0) {
-    scheme_wrong_type("bytes-utf-8-index", "non-negative exact integer", 1, argc, argv);
+    scheme_wrong_contract("bytes-utf-8-index", "exact-nonnegative-integer?", 1, argc, argv);
   }
 
   if ((argc > 2) && !SCHEME_FALSEP(argv[2])) {
     if (!SCHEME_CHARP(argv[2]))
-      scheme_wrong_type("bytes-utf-8-index", "character or #f", 1, argc, argv);
+      scheme_wrong_contract("bytes-utf-8-index", "(or/c char? #f)", 1, argc, argv);
     perm = 1;
   } else
     perm = 0;
@@ -1580,7 +1551,7 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
   Scheme_Object *perm;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type("bytes-utf-8-ref", "byte string", 0, argc, argv);
+    scheme_wrong_contract("bytes-utf-8-ref", "bytes?", 0, argc, argv);
 
   chars = SCHEME_BYTE_STR_VAL(argv[0]);
 
@@ -1592,12 +1563,12 @@ byte_string_utf8_ref(int argc, Scheme_Object *argv[])
   }
 
   if (pos < 0) {
-    scheme_wrong_type("bytes-utf-8-ref", "non-negative exact integer", 1, argc, argv);
+    scheme_wrong_contract("bytes-utf-8-ref", "exact-nonnegative-integer?", 1, argc, argv);
   }
 
   if ((argc > 2) && !SCHEME_FALSEP(argv[2])) {
     if (!SCHEME_CHARP(argv[2]))
-      scheme_wrong_type("bytes-utf-8-ref", "character or #f", 1, argc, argv);
+      scheme_wrong_contract("bytes-utf-8-ref", "(or/c char? #f)", 1, argc, argv);
     perm = argv[2];
   } else
     perm = 0;
@@ -1644,7 +1615,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
 
   if (!format) {
     if (!SCHEME_CHAR_STRINGP(argv[fpos])) {
-      scheme_wrong_type(procname, "format-string", fpos, argc, argv);
+      scheme_wrong_contract(procname, "string?", fpos, argc, argv);
       return;
     }
     format = SCHEME_CHAR_STR_VAL(argv[fpos]);
@@ -1688,9 +1659,11 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
         case 'V':
           break;
         default:
-	  scheme_wrong_type(procname, 
-                            "pattern-string (tag `~.' not followed by `a', `s', or `v')", 
-                            fpos, argc, argv);
+	  scheme_contract_error(procname, 
+                                "ill-formed pattern string",
+                                "explanation", 0, "tag `~.' not followed by `a', `s', or `v'",
+                                "pattern string", 1, argv[fpos],
+                                NULL);
           break;
         }
         used++;
@@ -1721,15 +1694,23 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
       default:
 	{
 	  char buffer[64];
-	  sprintf(buffer, "pattern-string (tag `~%c' not allowed)", format[i]);
-	  scheme_wrong_type(procname, buffer, fpos, argc, argv);
+	  sprintf(buffer, "tag `~%c' not allowed", format[i]);          
+	  scheme_contract_error(procname, 
+                                "ill-formed pattern string",
+                                "explanation", 0, buffer,
+                                "pattern string", 1, argv[fpos],
+                                NULL);
 	  return;
 	}
       }
     }
   }
   if ((format[end] == '~') && !end_ok) {
-    scheme_wrong_type(procname, "pattern-string (cannot end in ~)", fpos, argc, argv);
+    scheme_contract_error(procname, 
+                          "ill-formed pattern string",
+                          "explanation", 0, "cannot end in `~'",
+                          "pattern string", 1, argv[fpos],
+                          NULL);
     return;
   }
   if (used != argc) {
@@ -1975,7 +1956,7 @@ static Scheme_Object *
 sch_fprintf(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_OUTPUT_PORTP(argv[0]))
-    scheme_wrong_type("fprintf", "output-port", 0, argc, argv);
+    scheme_wrong_contract("fprintf", "output-port?", 0, argc, argv);
 
   scheme_do_format("fprintf", argv[0], NULL, 0, 1, 2, argc, argv);
   return scheme_void;
@@ -2224,7 +2205,7 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   Scheme_Object *bs;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]) || scheme_any_string_has_null(argv[0]))
-    scheme_wrong_type("getenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
+    scheme_wrong_contract("getenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
 
   bs = scheme_char_string_to_byte_string_locale(argv[0]);
   name = SCHEME_BYTE_STR_VAL(bs);
@@ -2288,9 +2269,9 @@ static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
   int rc = 0;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]) || scheme_any_string_has_null(argv[0]))
-    scheme_wrong_type("putenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
+    scheme_wrong_contract("putenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
   if (!SCHEME_CHAR_STRINGP(argv[1]) || scheme_any_string_has_null(argv[1]))
-    scheme_wrong_type("putenv", CHAR_STRING_W_NO_NULLS, 1, argc, argv);
+    scheme_wrong_contract("putenv", CHAR_STRING_W_NO_NULLS, 1, argc, argv);
 
   varbs = scheme_char_string_to_byte_string_locale(argv[0]);
   var = SCHEME_BYTE_STR_VAL(varbs);
@@ -2374,7 +2355,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 
     sym = scheme_intern_symbol("os");
     if (!SAME_OBJ(argv[0], sym)) {
-      scheme_wrong_type("system-type", "'os, 'link, 'machine, 'gc, or 'so-suffix", 0, argc, argv);
+      scheme_wrong_contract("system-type", "(or/c 'os 'link 'machine 'gc 'so-suffix)", 0, argc, argv);
       return NULL;
     }
   }
@@ -2398,7 +2379,7 @@ static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])
     if (SAME_OBJ(sym, argv[0]))
       return platform_3m_path;
 
-    scheme_wrong_type("system-library-subpath", "'cgc, '3m, or #f", 0, argc, argv);
+    scheme_wrong_contract("system-library-subpath", "(or/c 'cgc '3m #f)", 0, argc, argv);
     return NULL;
   } else {
 #ifdef MZ_PRECISE_GC
@@ -3451,7 +3432,7 @@ unicode_recase(const char *who, int to_up, int argc, Scheme_Object *argv[])
   mzchar *chars;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type(who, "string", 0, argc, argv);
+    scheme_wrong_contract(who, "string?", 0, argc, argv);
 
   chars = SCHEME_CHAR_STR_VAL(argv[0]);
   len = SCHEME_CHAR_STRTAG_VAL(argv[0]);
@@ -3686,7 +3667,7 @@ static Scheme_Object *string_recase (const char *name, int argc, Scheme_Object *
   int len;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type(name, "string", 0, argc, argv);
+    scheme_wrong_contract(name, "string?", 0, argc, argv);
   
   s = SCHEME_CHAR_STR_VAL(argv[0]);
   len = SCHEME_CHAR_STRLEN_VAL(argv[0]);
@@ -4066,7 +4047,7 @@ static Scheme_Object *do_string_normalize_c (const char *who, int argc, Scheme_O
 
   o = argv[0];
   if (!SCHEME_CHAR_STRINGP(o))
-    scheme_wrong_type(who, "string", 0, argc, argv);
+    scheme_wrong_contract(who, "string?", 0, argc, argv);
 
   s = SCHEME_CHAR_STR_VAL(o);
   len = SCHEME_CHAR_STRLEN_VAL(o);
@@ -4134,7 +4115,7 @@ static Scheme_Object *do_string_normalize_d (const char *who, int argc, Scheme_O
 
   o = argv[0];
   if (!SCHEME_CHAR_STRINGP(o))
-    scheme_wrong_type(who, "string", 0, argc, argv);
+    scheme_wrong_contract(who, "string?", 0, argc, argv);
 
   s = SCHEME_CHAR_STR_VAL(o);
   len = SCHEME_CHAR_STRLEN_VAL(o);
@@ -4434,9 +4415,9 @@ static Scheme_Object *byte_string_open_converter(int argc, Scheme_Object **argv)
   char *from_e, *to_e;
   
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("bytes-open-converter", "byte string", 0, argc, argv);
+    scheme_wrong_contract("bytes-open-converter", "bytes?", 0, argc, argv);
   if (!SCHEME_CHAR_STRINGP(argv[1]))
-    scheme_wrong_type("bytes-open-converter", "byte string", 1, argc, argv);
+    scheme_wrong_contract("bytes-open-converter", "bytes?", 1, argc, argv);
 
   scheme_custodian_check_available(NULL, "bytes-open-converter", "converter");
 
@@ -4464,11 +4445,11 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
   Scheme_Converter *c;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_string_converter_type))
-    scheme_wrong_type(who, "converter", 0, argc, argv);
+    scheme_wrong_contract(who, "bytes-converter?", 0, argc, argv);
 
   if (opos > 1) {
     if (!SCHEME_BYTE_STRINGP(argv[1]))
-      scheme_wrong_type(who, "bytes", 1, argc, argv);
+      scheme_wrong_contract(who, "bytes?", 1, argc, argv);
     scheme_get_substring_indices(who, argv[1], argc, argv, 2, 3, &istart, &ifinish);
   } else {
     istart = 0;
@@ -4478,7 +4459,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
   if (argc > opos) {
     if (SCHEME_TRUEP(argv[opos])) {
       if (!SCHEME_MUTABLE_BYTE_STRINGP(argv[opos]))
-	scheme_wrong_type(who, "mutable byte string", opos, argc, argv);
+	scheme_wrong_contract(who, "(and/c bytes? (not/c immutable?))", opos, argc, argv);
       r = SCHEME_BYTE_STR_VAL(argv[opos]);
       scheme_get_substring_indices(who, argv[opos], argc, argv, opos + 1, opos + 2, &ostart, &ofinish);
     } else {
@@ -4494,19 +4475,21 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 	  else if ((ip == opos + 2) && SCHEME_FALSEP(argv[ip]))
 	    ok = 1;
 	  if (!ok)
-	    scheme_wrong_type(who,
-			      ((ip == opos + 2)
-			       ? "non-negative exact integer or #f"
-			       : "non-negative exact integer"),
-			      ip, argc, argv);
+	    scheme_wrong_contract(who,
+                                  ((ip == opos + 2)
+                                   ? "(or/c exact-nonnegative-integer? #f)"
+                                   : "exact-nonnegative-integer?"),
+                                  ip, argc, argv);
 	}
       }
       if ((argc > opos + 2) && SCHEME_TRUEP(argv[opos + 2])) {
 	Scheme_Object *delta;
 	if (scheme_bin_lt(argv[opos + 2], argv[opos + 1])) {
-	  scheme_arg_mismatch(who,
-			      "ending index is less than the starting index: ",
-			      argv[opos + 2]);
+	  scheme_contract_error(who,
+                                "ending index is less than the starting index",
+                                "staring index", 1, argv[opos + 1],
+                                "ending index", 1, argv[opos + 2],
+                                NULL);
 	}
 	delta = scheme_bin_minus(argv[opos + 2], argv[opos + 1]);
 	if (SCHEME_BIGNUMP(delta))
@@ -4527,7 +4510,9 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 
   c = (Scheme_Converter *)argv[0];
   if (c->closed)
-    scheme_arg_mismatch(who, "converter is closed: ", argv[0]);
+    scheme_contract_error(who, "converter is closed", 
+                          "converter", 1, argv[0],
+                          NULL);
 
   instr = ((opos > 1) ? SCHEME_BYTE_STR_VAL(argv[1]) : NULL);
 
@@ -4705,7 +4690,7 @@ void scheme_close_converter(Scheme_Object *conv)
 static Scheme_Object *byte_string_close_converter(int argc, Scheme_Object **argv)
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_string_converter_type))
-    scheme_wrong_type("bytes-close-converter", "converter", 0, argc, argv);
+    scheme_wrong_contract("bytes-close-converter", "bytes-converter?", 0, argc, argv);
 
   scheme_close_converter(argv[0]);
 

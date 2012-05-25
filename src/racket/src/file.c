@@ -785,7 +785,7 @@ static Scheme_Object *path_kind(int argc, Scheme_Object **argv)
       break;
     }
   } else {
-    scheme_wrong_type("path-system-type", "path (for any system)", 0, argc, argv);
+    scheme_wrong_contract("path-system-type", "path-for-some-system?", 0, argc, argv);
     return NULL;
   }
 }
@@ -843,7 +843,7 @@ Scheme_Object *scheme_path_to_char_string(Scheme_Object *p)
 static Scheme_Object *path_to_string(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_PATHP(argv[0]))
-    scheme_wrong_type("path->string", "path", 0, argc, argv);
+    scheme_wrong_contract("path->string", "path?", 0, argc, argv);
 
   return scheme_path_to_char_string(argv[0]);
 }
@@ -851,7 +851,7 @@ static Scheme_Object *path_to_string(int argc, Scheme_Object **argv)
 static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_GENERAL_PATHP(argv[0]))
-    scheme_wrong_type("path->bytes", "path", 0, argc, argv);
+    scheme_wrong_contract("path->bytes", "path?", 0, argc, argv);
 
   return scheme_make_sized_byte_string(SCHEME_PATH_VAL(argv[0]),
 				       SCHEME_PATH_LEN(argv[0]),
@@ -881,21 +881,23 @@ static Scheme_Object *do_path_element_to_bytes(const char *name, int argc, Schem
   int kind;
 
   if (!SCHEME_GENERAL_PATHP(p))
-    scheme_wrong_type(name, "path", 0, argc, argv);
+    scheme_wrong_contract(name, "path?", 0, argc, argv);
   
   pe = is_path_element(p);
 
   if (!pe)
-    scheme_arg_mismatch(name,
-                        "path can be split or is not relative: ",
-                        p);
+    scheme_contract_error(name,
+                          "path can be split or is not relative",
+                          "path", 1, p,
+                          NULL);
 
   if (SCHEME_SYMBOLP(pe)) {
-    scheme_arg_mismatch(name,
-                        (SAME_OBJ(pe, up_symbol)
-                         ? "path is an up-directory indicator: "
-                         : "path is a same-directory indicator: "),
-                        p);
+    scheme_contract_error(name,
+                          (SAME_OBJ(pe, up_symbol)
+                           ? "path is an up-directory indicator"
+                           : "path is a same-directory indicator"),
+                          "path", 1, p,
+                          NULL);
   }
 
   p = pe;
@@ -948,7 +950,7 @@ static Scheme_Object *string_to_path(int argc, Scheme_Object **argv)
   Scheme_Object *p;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->path", "string", 0, argc, argv);
+    scheme_wrong_contract("string->path", "string?", 0, argc, argv);
 
   p = scheme_char_string_to_path(argv[0]);
   
@@ -967,7 +969,7 @@ static int extract_path_kind(const char *who, int which, int argc, Scheme_Object
   if (SAME_OBJ(argv[which], unix_symbol))
     return SCHEME_UNIX_PATH_KIND;
 
-  scheme_wrong_type(who, "'unix or 'windows", which, argc, argv);
+  scheme_wrong_contract(who, "(or/c 'unix 'windows)", which, argc, argv);
   return 0;
 }
 
@@ -977,7 +979,7 @@ static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv)
   int kind;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type("bytes->path", "byte string", 0, argc, argv);
+    scheme_wrong_contract("bytes->path", "bytes?", 0, argc, argv);
   kind = extract_path_kind("bytes->path", 1, argc, argv);
 
   s = scheme_make_sized_byte_string(SCHEME_BYTE_STR_VAL(argv[0]),
@@ -997,7 +999,7 @@ static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *
   int kind;
 
   if (!SCHEME_BYTE_STRINGP(s))
-    scheme_wrong_type(name, "byte string", 0, argc, argv);
+    scheme_wrong_contract(name, "bytes?", 0, argc, argv);
   kind = extract_path_kind(name, 1, argc, argv);
 
   len = SCHEME_BYTE_STRLEN_VAL(s);
@@ -1014,11 +1016,13 @@ static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *
                                          kind);
   else
     p = NULL;
-
+  
   if (!p || !is_path_element(p))
-    scheme_arg_mismatch(name,
-                        "cannot be converted to a path element (can be split, is not relative, or names a special element): ",
-                        argv[0]);
+    scheme_contract_error(name,
+                          "cannot be converted to a path element",
+                          "path", 1, argv[0],
+                          "explanation", 0, "path can be split, is not relative, or names a special element",
+                          NULL);
 
   return p;
 }
@@ -1033,7 +1037,7 @@ static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
   Scheme_Object *b;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->path-element", "string", 0, argc, argv);
+    scheme_wrong_contract("string->path-element", "string?", 0, argc, argv);
 
   b = scheme_char_string_to_byte_string_locale(argv[0]);
   
@@ -1115,7 +1119,9 @@ char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
       }
 	
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
-		       "current-directory: unknown failure (%e)", errno);
+		       "current-directory: unknown failure\n"
+                       "  system error: %e", 
+                       errno);
     }
 
     buflen = strlen(r) + 1;
@@ -1156,7 +1162,8 @@ int scheme_os_setcwd(char *expanded, int noexn)
 
   if (err && !noexn)
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		       "current-directory: unable to switch to directory: \"%q\"",
+		       "current-directory: unable to switch to directory\n"
+                       "  path: %q",
 		       expanded);
 
   return !err;
@@ -1273,7 +1280,8 @@ static void raise_null_error(const char *name, Scheme_Object *path, const char *
 		     name, mod);
   else
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: path string%s contains a null character: %Q", 
+		     "%s: path string%s contains a null character\n"
+                     "  path string: %Q", 
 		     name, mod, 
 		     path);
 }
@@ -1811,7 +1819,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       if (filename[f] && filename[f] != '/') {
         if (errorin && report_bad_user)
           scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                           "%s: bad username in path: \"%q\"", 
+                           "%s: bad username in path\n"
+                           "  path: %q", 
                            errorin, filename);
         return NULL;
       }
@@ -1839,7 +1848,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       if (!home) {
         if (errorin && report_bad_user)
           scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                           "%s: bad username in path: \"%q\"", 
+                           "%s: bad username in path\n"
+                           "  path: %q", 
                            errorin, filename);
         return NULL;
       }
@@ -2286,7 +2296,7 @@ static Scheme_Object *file_exists(int argc, Scheme_Object **argv)
   char *f;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("file-exists?", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("file-exists?", "path-string?", 0, argc, argv);
 
   f = do_expand_filename(argv[0],
 			 NULL,
@@ -2306,7 +2316,7 @@ static Scheme_Object *directory_exists(int argc, Scheme_Object **argv)
   char *f;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("directory-exists?", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("directory-exists?", "path-string?", 0, argc, argv);
 
   f = do_expand_filename(argv[0],
 			 NULL,
@@ -2329,7 +2339,7 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv)
 #endif
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("link-exists?", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("link-exists?", "path-string?", 0, argc, argv);
 
 
 #ifndef UNIX_FILE_SYSTEM
@@ -2462,11 +2472,14 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *pa
 
   if (!path) {
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                     "port-file-identity: error obtaining identity (%E)",
+                     "port-file-identity: error obtaining identity\n"
+                     "  system error: %)",
                      errid);
   } else {
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                     "file-or-directory-identity: error obtaining identity for \"%q\" (%E)", 
+                     "file-or-directory-identity: error obtaining identity for path\n"
+                     "  path: %q\n"
+                     "  system error: %E", 
                      path, 
                      errid);
   }
@@ -2715,22 +2728,30 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 
         if (SCHEME_CHAR_STRINGP(argv[i+idelta])) {
           if (kind != SCHEME_PLATFORM_PATH_KIND) {
-            scheme_arg_mismatch(who,
-                                (idelta
-                                 ? "specified convention incompatible with string path element: "
-                                 : "preceding path's convention incompatible with string path element: "),
-                                argv[i+idelta]); 
+            scheme_contract_error(who,
+                                  (idelta
+                                   ? "specified convention incompatible with string path element"
+                                   : "preceding path's convention incompatible with string path element"),
+                                  "path element", 1, argv[i+idelta],
+                                  (idelta ? "convention" : "preceding path's convention"),
+                                  0,
+                                  (kind == scheme_unix_path_type) ? "'unix" : "'windows",
+                                  NULL); 
           }
         }
 
 	bs = TO_PATH(argv[i+idelta]);
 
         if (kind != SCHEME_PATH_KIND(bs)) {
-          scheme_arg_mismatch(who,
-                              (idelta
-                               ? "specified convention incompatible with given path element: "
-                               : "preceding path's convention incompatible from given path element: "),
-                              argv[i+idelta]);
+          scheme_contract_error(who,
+                                (idelta
+                                 ? "specified convention incompatible with given path element"
+                                 : "preceding path's convention incompatible with given path element"),
+                                "path element", 1, argv[i+idelta],
+                                (idelta ? "convention" : "preceding path's convention"),
+                                0,
+                                (kind == scheme_unix_path_type) ? "'unix" : "'windows",
+                                NULL); 
         }
 
 	next = SCHEME_PATH_VAL(bs);
@@ -2739,13 +2760,15 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 	  char *astr;
 	  intptr_t alen;
 
-	  astr = scheme_make_args_string("other ", i+idelta, argc, argv, &alen);
+	  astr = scheme_make_arg_lines_string("   ", i+idelta, argc, argv, &alen);
 	  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			   "%s: %d%s path element is an empty string%t", 
+			   "%s: path element is an empty string\n"
+                           "  argument position: %d%s\n"
+                           "  other arguments:%t", 
                            who,
 			   i + 1,
 			   scheme_number_suffix(i + 1),
-			   astr, alen); 
+			   astr, alen);
 	  return scheme_false;
 	}
 
@@ -2784,8 +2807,8 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
           rel = 0;
           if (i) {
             scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                             "%s: absolute path \"%q\" cannot be"
-                             " added to a path",
+                             "%s: absolute path cannot be added to a path\n"
+                             "  absolute path: %q",
                              who,
                              next);
             return scheme_false;
@@ -2997,9 +3020,11 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 	    } else
 	      str[pos] = 0;
 	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			     "%s: %s \"%s\" cannot be"
-			     " added to the path \"%q\"",
+			     "%s: %s cannot be added to a base path\n"
+                             "  %s: %s\n"
+                             "  base path: %q",
                              who,
+			     is_drive ? "drive" : "absolute path",
 			     is_drive ? "drive" : "absolute path",
 			     next, str);
 	    return scheme_false;
@@ -3164,7 +3189,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 	no_sep = 0;
       }
     } else {
-      scheme_wrong_type(who, "path, string, 'up, 'same", i + idelta, argc, argv);
+      scheme_wrong_contract(who, "(or/c path-for-some-system? path-string? 'up 'same)", i + idelta, argc, argv);
       return scheme_false;
     }
   }
@@ -3223,7 +3248,7 @@ static Scheme_Object *path_to_directory_path(int argc, Scheme_Object **argv)
   inpath = argv[0];
 
   if (!SCHEME_GENERAL_PATH_STRINGP(inpath))
-    scheme_wrong_type("path->directory-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("path->directory-path", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   inpath = TO_PATH(inpath);
 
@@ -3515,7 +3540,7 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
   inpath = argv[0];
 
   if (!SCHEME_GENERAL_PATH_STRINGP(inpath))
-    scheme_wrong_type("split-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("split-path", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   inpath = TO_PATH(inpath);
 
@@ -3523,8 +3548,9 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
   len = SCHEME_PATH_LEN(inpath);
 
   if (!len) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "split-path: path is an empty string");
+    scheme_contract_error("split-path",
+                          "path is an empty string",
+                          NULL);
   }
 
   if (has_null(s, len))
@@ -3668,12 +3694,12 @@ static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv)
 
   p = argv[0];
   if (!SCHEME_GENERAL_PATH_STRINGP(p))
-    scheme_wrong_type("path->complete-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("path->complete-path", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
   p = TO_PATH(p);
   if (argc > 1) {
     wrt = argv[1];
     if (!SCHEME_GENERAL_PATH_STRINGP(wrt))
-      scheme_wrong_type("path->complete-path", SCHEME_GENERAL_PATH_STRING_STR, 1, argc, argv);
+      scheme_wrong_contract("path->complete-path", "(or/c path-for-some-system? path-string?)", 1, argc, argv);
     wrt = TO_PATH(wrt);
   } else
     wrt = NULL;
@@ -3681,14 +3707,17 @@ static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv)
   kind = SCHEME_PATH_KIND(p);
   if (wrt) {
     if (SCHEME_PATH_KIND(wrt) != kind) {
-      scheme_arg_mismatch("path->complete-path",
-                          "convention of first path incompatible with convention of second path: ",
-                          argv[1]);
+      scheme_contract_error("path->complete-path",
+                            "convention of first path incompatible with convention of second path",
+                            "first path", 1, argv[0],
+                            "second path", 1, argv[1],
+                            NULL);
     }
   } else if (kind != SCHEME_PLATFORM_PATH_KIND) {
-    scheme_arg_mismatch("path->complete-path",
-                        "no second path supplied, and given path is not for the current platform: ",
-                        argv[0]);
+    scheme_contract_error("path->complete-path",
+                          "no second path supplied, and given path is not for the current platform",
+                          "given path", 1, argv[0],
+                          NULL);
   }
 
   s = SCHEME_PATH_VAL(p);
@@ -3708,10 +3737,11 @@ static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv)
       raise_null_error("path->complete-path", p, "");
 
     if (!scheme_is_complete_path(ws, wlen, kind))
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "path->complete-path: second argument is not a complete path: \"%q\"",
-		       ws);
-
+      scheme_contract_error("path->complete-path", "second argument is not a complete path",
+                            "first argument", 1, p,
+                            "second argument", 1, wrt,
+                            NULL);
+    
     if (!scheme_is_complete_path(s, len, kind)) {
       s = do_path_to_complete_path(s, len, ws, wlen, kind);
       return scheme_make_sized_offset_kind_path(s, 0, strlen(s), 0, kind);
@@ -3750,7 +3780,7 @@ static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
   int errid;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("delete-file", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("delete-file", "path-string?", 0, argc, argv);
 
   while (1) {
     if (!MSC_W_IZE(unlink)(MSC_WIDE_PATH(scheme_expand_string_filename(argv[0],
@@ -3764,7 +3794,9 @@ static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
   errid = errno;
   
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
-		   "delete-file: cannot delete file: \"%q\" (%e)",
+		   "delete-file: cannot delete file\n"
+                   "  path: %q\n"
+                   "  system error: %e",
 		   filename_for_error(argv[0]),
 		   errid);
 
@@ -3778,9 +3810,9 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
   Scheme_Object *bss, *bsd;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("rename-file-or-directory", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("rename-file-or-directory", "path-string?", 0, argc, argv);
   if (!SCHEME_PATH_STRINGP(argv[1]))
-    scheme_wrong_type("rename-file-or-directory", SCHEME_PATH_STRING_STR, 1, argc, argv);
+    scheme_wrong_contract("rename-file-or-directory", "path-string?", 1, argc, argv);
   if (argc > 2)
     exists_ok = SCHEME_TRUEP(argv[2]);
 
@@ -3842,7 +3874,10 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 failed:
 #endif
   scheme_raise_exn((exists_ok < 0) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
-		   "rename-file-or-directory: cannot rename file or directory: %q to: %q (" MOVE_ERRNO_FORMAT ")",
+		   "rename-file-or-directory: cannot rename file or directory\n"
+                   "  source path: %q\n"
+                   "  dest path: %q\n"
+                   "  system error: " MOVE_ERRNO_FORMAT,
 		   filename_for_error(argv[0]),
 		   filename_for_error(argv[1]),
 		   errno);
@@ -3860,9 +3895,9 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
   Scheme_Object *bss, *bsd;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("copy-file", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("copy-file", "path-string?", 0, argc, argv);
   if (!SCHEME_PATH_STRINGP(argv[1]))
-    scheme_wrong_type("copy-file", SCHEME_PATH_STRING_STR, 1, argc, argv);
+    scheme_wrong_contract("copy-file", "path-string?", 1, argc, argv);
 
   bss = argv[0];
   bsd = argv[1];
@@ -3982,14 +4017,16 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 #endif
 
   scheme_raise_exn(pre_exists ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
-		   "copy-file: %s; cannot copy: %q to: %q%s%M%s",
+		   "copy-file: %s\n"
+                   "  source path: %q\n"
+                   "  destination path: %q"
+                   "%s%M",
 		   reason,
 		   filename_for_error(argv[0]),
 		   filename_for_error(argv[1]),
-		   has_err_val ? " (" : "",
+		   has_err_val ? "\n  system error: " : "",
 		   has_err_val,
-		   err_val,
-		   has_err_val ? ")" : "");
+		   err_val);
 
   return NULL;
 }
@@ -4001,7 +4038,7 @@ static Scheme_Object *relative_path_p(int argc, Scheme_Object **argv)
   Scheme_Object *bs;
 
   if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("relative-path?", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("relative-path?", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -4023,7 +4060,7 @@ static Scheme_Object *complete_path_p(int argc, Scheme_Object **argv)
   Scheme_Object *bs;
 
   if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("complete-path?", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("complete-path?", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -4045,7 +4082,7 @@ static Scheme_Object *absolute_path_p(int argc, Scheme_Object **argv)
   Scheme_Object *bs;
 
   if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("absolute-path?", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("absolute-path?", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -4074,7 +4111,7 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
   int expanded;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("resolve-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("resolve-path", "path-string?", 0, argc, argv);
 
   filename = do_expand_filename(argv[0],
 				NULL,
@@ -4502,7 +4539,8 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	      && !strcmp(s, SCHEME_PATH_VAL(p))) {
 	    /* Cycle of links detected */
 	    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			     "simplify-path: cycle detected at link: \"%q\"",
+			     "simplify-path: cycle detected at link\n"
+                             "  link path: %q",
 			     s);
 	  }
 	  l = SCHEME_CDR(l);
@@ -4678,7 +4716,7 @@ Scheme_Object *scheme_simplify_path(int argc, Scheme_Object *argv[])
   Scheme_Object *bs, *r;
 
   if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("simplify-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("simplify-path", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -4692,9 +4730,10 @@ Scheme_Object *scheme_simplify_path(int argc, Scheme_Object *argv[])
   kind = SCHEME_PATH_KIND(bs);
 
   if (use_fs && (kind != SCHEME_PLATFORM_PATH_KIND)) {
-    scheme_arg_mismatch("simplify-path",
-                        "in use-filesystem mode, path is not for the current platform: ",
-                        argv[0]);
+    scheme_contract_error("simplify-path",
+                          "in use-filesystem mode, path is not for the current platform",
+                          "path", 1, argv[0],
+                          NULL);
   }
   
   r = do_simplify_path(bs, scheme_null, 0, use_fs, 0, kind);
@@ -4727,7 +4766,7 @@ static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[])
   int expanded, kind;
 
   if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("cleanse-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("cleanse-path", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   if (SCHEME_GENERAL_PATHP(argv[0]))
     kind = SCHEME_PATH_KIND(argv[0]);
@@ -4756,7 +4795,7 @@ static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[])
   int expanded;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("expand-user-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("expand-user-path", "path-string?", 0, argc, argv);
 
   filename = do_expand_filename(argv[0],
 				NULL,
@@ -4801,7 +4840,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
   volatile int counter = 0;
 
   if (argc && !SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("directory-list", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("directory-list", "path-string?", 0, argc, argv);
 
 #if defined(NO_READDIR) && !defined(USE_FINDFIRST)
   return scheme_null;
@@ -4887,7 +4926,9 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
       return scheme_null;
     if (break_ok)
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                       "directory-list: could not open \"%q\" (%E)",
+                       "directory-list: could not open directory\n"
+                       "  path: %q\n"
+                       "  system error: %E",
                        filename,
                        GetLastError());  
     return NULL;
@@ -4931,7 +4972,9 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
       return scheme_null;
     if (break_ok)
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                       "directory-list: could not open \"%q\" (%e)",
+                       "directory-list: could not open directory\n"
+                       "  path: %q\n"
+                       "  system error: %e",
                        filename,
                        errno);
     return NULL;
@@ -5207,7 +5250,7 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[])
   int len, copied;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("make-directory", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("make-directory", "path-string?", 0, argc, argv);
 
   filename = scheme_expand_string_filename(argv[0],
 					   "make-directory",
@@ -5239,7 +5282,9 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[])
 # define MKDIR_EXN_TYPE "%e"
 
   scheme_raise_exn(exists_already ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM,
-		   "make-directory: cannot make directory: %q (" MKDIR_EXN_TYPE ")",
+		   "make-directory: cannot make directory\n"
+                   "  path: %q\n"
+                   "  system error: " MKDIR_EXN_TYPE,
 		   filename_for_error(argv[0]),
 		   errno);
   return NULL;
@@ -5257,7 +5302,7 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
   char *filename;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("delete-directory", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("delete-directory", "path-string?", 0, argc, argv);
 
   filename = scheme_expand_string_filename(argv[0],
 					   "delete-directory",
@@ -5281,7 +5326,9 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
   }
 
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		   "delete-directory: cannot delete directory: %q (%e)",
+		   "delete-directory: cannot delete directory\n"
+                   "  path: %q\n"
+                   "  system error: %e",
 		   filename_for_error(argv[0]),
 		   errno);
   return NULL;
@@ -5295,9 +5342,9 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
   int copied;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("make-file-or-directory-link", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("make-file-or-directory-link", "path-string?", 0, argc, argv);
   if (!SCHEME_PATH_STRINGP(argv[1]))
-    scheme_wrong_type("make-file-or-directory-link", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("make-file-or-directory-link", "path-string?", 0, argc, argv);
 
   dest = argv[0];
   /* dest does not get expanded, but we need to make sure it's a path */
@@ -5319,7 +5366,8 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
 #if defined(DOS_FILE_SYSTEM)
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		   "make-file-or-directory-link: link creation not supported on this platform; "
-		   "cannot create link: %Q",
+		   "cannot create link\n"
+                   "  path: %Q",
 		   argv[1]);
 #else
   while (1) {
@@ -5330,7 +5378,9 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
   }
 
   scheme_raise_exn((errno == EEXIST) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM,
-		   "make-file-or-directory-link: cannot make link: %q (%e)",
+		   "make-file-or-directory-link: cannot make link\n"
+                   "  path: %q\n"
+                   "  system error: %e",
 		   filename_for_error(argv[1]),
 		   errno);
 #endif
@@ -5346,7 +5396,7 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)
   struct MSC_IZE(stat) buf;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("file-or-directory-modify-seconds", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("file-or-directory-modify-seconds", "path-string?", 0, argc, argv);
 
   set_time = ((argc > 1) && SCHEME_TRUEP(argv[1]));
 
@@ -5359,13 +5409,14 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)
   
   if (set_time) {
     if (!SCHEME_INTP(argv[1]) && !SCHEME_BIGNUMP(argv[1])) {
-      scheme_wrong_type("file-or-directory-modify-seconds", "exact integer or #f", 1, argc, argv);
+      scheme_wrong_contract("file-or-directory-modify-seconds", "(or/c exact-integer? #f)", 1, argc, argv);
       return NULL;
     }
     if (!scheme_get_time_val(argv[1], &mtime)) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "file-or-directory-modify-seconds: integer %s is out-of-range",
-		       scheme_make_provided_string(argv[1], 0, NULL));
+      scheme_contract_error("file-or-directory-modify-seconds"
+                            "integer value is out-of-range",
+                            "value", 1, argv[1],
+                            NULL);
       return NULL;
     }
   } else
@@ -5406,7 +5457,9 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)
   }
 
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		   "file-or-directory-modify-seconds: error %s file/directory time: %q (%e)",
+		   "file-or-directory-modify-seconds: error %s file/directory time\n"
+                   "  path: %q\n"
+                   "  system error: %e",
 		   set_time ? "setting" : "getting",
 		   filename_for_error(argv[0]),
 		   errno);
@@ -5467,7 +5520,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
   int err_val = 0;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("file-or-directory-permissions", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("file-or-directory-permissions", "path-string?", 0, argc, argv);
   if (argc > 1) {
     l = argv[1];
     if (SCHEME_FALSEP(l)) {
@@ -5483,9 +5536,9 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
         set_bits = 1;
         new_bits = SCHEME_INT_VAL(l);
       } else
-        scheme_wrong_type("file-or-directory-permissions", 
-                          "#f, 'bits, or an exact integer in [0, 65535]",
-                          1, argc, argv);
+        scheme_wrong_contract("file-or-directory-permissions", 
+                              "(or/c #f 'bits (integer-in 0 65535)",
+                              1, argc, argv);
     }
   }
 
@@ -5636,8 +5689,10 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
           || ((new_bits & MZ_UNC_WRITE) != ((new_bits & (MZ_UNC_WRITE << 6)) >> 6))
           || (new_bits >= (1 << 9)))
         scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                         "file-or-directory-permissions: update of \"%q\" failed:"
-                         " unsupported bit combination in %d",
+                         "file-or-directory-permissions: update of failed:"
+                         " unsupported bit combination\n"
+                         "  path: %c\n"
+                         "  permission value: %d",
                          filename_for_error(argv[0]),
                          new_bits);
       l = scheme_void;
@@ -5667,7 +5722,9 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
   
   if (!l) {
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		     "file-or-directory-permissions: %s of \"%q\" failed: %e",
+		     "file-or-directory-permissions: %s failed\n"
+                     "  path: %q\n"
+                     "  system error: %e",
                      set_bits ? "update" : "access",
 		     filename_for_error(argv[0]),
                      err_val);
@@ -5682,7 +5739,7 @@ static Scheme_Object *file_identity(int argc, Scheme_Object *argv[])
   int as_link = 0;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("file-or-directory-identity", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("file-or-directory-identity", "path-string?", 0, argc, argv);
 
   filename = scheme_expand_string_filename(argv[0],
 					   "file-or-directory-identity",
@@ -5701,7 +5758,7 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
   mzlonglong len = 0;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("file-size", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_contract("file-size", "path-string?", 0, argc, argv);
 
   filename = scheme_expand_string_filename(argv[0],
 					   "file-size",
@@ -5737,7 +5794,8 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 #endif
 
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		   "file-size: file not found: \"%q\"",
+		   "file-size: file not found\n"
+                   "  path: %q",
 		   filename_for_error(argv[0]));
   return NULL;
 }
@@ -5959,8 +6017,12 @@ find_system_path(int argc, Scheme_Object **argv)
     }
     which = id_links_file;
   } else {
-    scheme_wrong_type("find-system-path", "system-path-symbol",
-		      0, argc, argv);
+    scheme_wrong_contract("find-system-path", 
+                          "(or/c 'home-dir 'pref-dir 'pref-file 'temp-dir\n"
+                          "       'init-dir 'init-file 'links-file 'addon-dir\n"
+                          "       'doc-dir 'desk-dir 'sys-dir 'exec-file run-file\n"
+                          "       'collects-dir 'orig-dir)",
+                          0, argc, argv);
     return NULL;
   }
 

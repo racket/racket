@@ -108,8 +108,10 @@ scheme_wrong_count
 scheme_wrong_count_m
 scheme_case_lambda_wrong_count
 scheme_wrong_type
+scheme_wrong_contract
 scheme_wrong_field_type
 scheme_arg_mismatch
+scheme_contract_error
 scheme_wrong_return_arity
 scheme_unbound_global
 scheme_dynamic_wind
@@ -626,6 +628,7 @@ scheme_check_proc_arity
 scheme_check_proc_arity2
 scheme_make_provided_string
 scheme_make_args_string
+scheme_make_arg_lines_string
 scheme_system_library_subpath
 scheme_signal_received
 scheme_signal_received_at

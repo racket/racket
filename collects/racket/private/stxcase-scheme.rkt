@@ -10,14 +10,14 @@
 
   (-define (check-duplicate-identifier names)
     (unless (and (list? names) (andmap identifier? names))
-      (raise-type-error 'check-duplicate-identifier "list of identifiers" names))
+      (raise-argument-error 'check-duplicate-identifier "(listof identifier?)" names))
     (let/ec escape
       (let ([ht (make-hasheq)])
 	(for-each
 	 (lambda (defined-name)
 	   (unless (identifier? defined-name)
-	     (raise-type-error 'check-duplicate-identifier
-			       "list of identifiers" names))
+	     (raise-argument-error 'check-duplicate-identifier
+                                   "(listof identifier?)" names))
 	   (let ([l (hash-ref ht (syntax-e defined-name) null)])
 	     (when (ormap (lambda (i) (bound-identifier=? i defined-name)) l)
 	       (escape defined-name))
@@ -66,7 +66,7 @@
   (-define (syntax-protect stx)
     (if (syntax? stx)
         (syntax-arm stx #f #t)
-        (raise-type-error 'syntax-protect "syntax-object" stx)))
+        (raise-argument-error 'syntax-protect "syntax?" stx)))
 
   (#%provide syntax datum (all-from "with-stx.rkt") (all-from "stxloc.rkt") 
              check-duplicate-identifier syntax-protect

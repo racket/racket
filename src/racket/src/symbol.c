@@ -743,7 +743,7 @@ symbol_interned_p_prim (int argc, Scheme_Object *argv[])
   if (SCHEME_SYMBOLP(argv[0]))
     return (SCHEME_SYM_WEIRDP(argv[0]) ? scheme_false : scheme_true);
   
-  scheme_wrong_type("symbol-interned?", "symbol", 0, argc, argv);
+  scheme_wrong_contract("symbol-interned?", "symbol?", 0, argc, argv);
   return NULL;
 }
 
@@ -753,7 +753,7 @@ symbol_unreadable_p_prim (int argc, Scheme_Object *argv[])
   if (SCHEME_SYMBOLP(argv[0]))
     return (SCHEME_SYM_PARALLELP(argv[0]) ? scheme_true : scheme_false);
   
-  scheme_wrong_type("symbol-unreadable?", "symbol", 0, argc, argv);
+  scheme_wrong_contract("symbol-unreadable?", "symbol?", 0, argc, argv);
   return NULL;
 }
 
@@ -761,7 +761,7 @@ static Scheme_Object *
 string_to_symbol_prim (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->symbol", "string", 0, argc, argv);
+    scheme_wrong_contract("string->symbol", "string?", 0, argc, argv);
   return scheme_intern_exact_char_symbol(SCHEME_CHAR_STR_VAL(argv[0]),
 					 SCHEME_CHAR_STRTAG_VAL(argv[0]));
 }
@@ -770,7 +770,7 @@ static Scheme_Object *
 string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->uninterned-symbol", "string", 0, argc, argv);
+    scheme_wrong_contract("string->uninterned-symbol", "string?", 0, argc, argv);
   return scheme_make_exact_char_symbol(SCHEME_CHAR_STR_VAL(argv[0]),
 				       SCHEME_CHAR_STRTAG_VAL(argv[0]));
 }
@@ -782,7 +782,7 @@ string_to_unreadable_symbol_prim (int argc, Scheme_Object *argv[])
   intptr_t blen;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->unreadable-symbol", "string", 0, argc, argv);
+    scheme_wrong_contract("string->unreadable-symbol", "string?", 0, argc, argv);
 
   bs = scheme_utf8_encode_to_buffer_len(SCHEME_CHAR_STR_VAL(argv[0]),
                                         SCHEME_CHAR_STRTAG_VAL(argv[0]), 
@@ -802,7 +802,7 @@ symbol_to_string_prim (int argc, Scheme_Object *argv[])
   sym = argv[0];
 
   if (!SCHEME_SYMBOLP(sym))
-    scheme_wrong_type("symbol->string", "symbol", 0, argc, argv);
+    scheme_wrong_contract("symbol->string", "symbol?", 0, argc, argv);
 
   s = (unsigned char *)SCHEME_SYM_VAL(sym);
   len = SCHEME_SYM_LEN(sym);
@@ -841,12 +841,12 @@ static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
   int i, al, bl, t;
 
   if (!SCHEME_KEYWORDP(prev))
-    scheme_wrong_type("keyword<?", "keyword", 0, argc, argv);
+    scheme_wrong_contract("keyword<?", "keyword?", 0, argc, argv);
 
   for (i = 1; i < argc; i++) {
     kw = argv[i];
     if (!SCHEME_KEYWORDP(kw))
-      scheme_wrong_type("keyword<?", "keyword", i, argc, argv);
+      scheme_wrong_contract("keyword<?", "keyword?", i, argc, argv);
 
     a = (unsigned char *)SCHEME_SYM_VAL(prev);
     al = SCHEME_SYM_LEN(prev);
@@ -872,7 +872,7 @@ static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
       /* Check remaining types */
       for (i++; i < argc; i++) {
         if (!SCHEME_KEYWORDP(argv[i]))
-          scheme_wrong_type("keyword<?", "keyword", i, argc, argv);
+          scheme_wrong_contract("keyword<?", "keyword?", i, argc, argv);
       }
       return scheme_false;
     }
@@ -887,7 +887,7 @@ static Scheme_Object *
 string_to_keyword_prim (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->keyword", "string", 0, argc, argv);
+    scheme_wrong_contract("string->keyword", "string?", 0, argc, argv);
   return scheme_intern_exact_char_keyword(SCHEME_CHAR_STR_VAL(argv[0]),
 					  SCHEME_CHAR_STRTAG_VAL(argv[0]));
 }
@@ -896,7 +896,7 @@ static Scheme_Object *
 keyword_to_string_prim (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_KEYWORDP(argv[0]))
-    scheme_wrong_type("keyword->string", "keyword", 0, argc, argv);
+    scheme_wrong_contract("keyword->string", "keyword?", 0, argc, argv);
   
   return scheme_make_sized_offset_utf8_string((char *)(argv[0]),
 					      SCHEME_SYMSTR_OFFSET(argv[0]),
@@ -914,7 +914,7 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
     r = NULL;
 
   if (r && !SCHEME_SYMBOLP(r) && !SCHEME_CHAR_STRINGP(r))
-    scheme_wrong_type("gensym", "symbol or string", 0, argc, argv);
+    scheme_wrong_contract("gensym", "(or/c symbol? string?)", 0, argc, argv);
 
   if (r) {
     char buf[64];

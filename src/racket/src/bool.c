@@ -770,18 +770,22 @@ static Scheme_Object *apply_impersonator_of(int for_chaperone, Scheme_Object *pr
   
   oprocs = scheme_struct_type_property_ref(scheme_impersonator_of_property, v);  
   if (!oprocs || !SAME_OBJ(SCHEME_CAR(oprocs), SCHEME_CAR(procs)))
-    scheme_arg_mismatch((for_chaperone ? "impersonator-of?" : "equal?"),
-                        "impersonator-of property procedure returned a value with a different prop:impersonator-of source: ",
-                        v);
+    scheme_contract_error((for_chaperone ? "impersonator-of?" : "equal?"),
+                          "impersonator-of property procedure returned a value with a different prop:impersonator-of source",
+                          "original value", 1, obj,
+                          "returned value", 1, v,
+                          NULL);
 
   procs = scheme_struct_type_property_ref(scheme_equal_property, obj);
   oprocs = scheme_struct_type_property_ref(scheme_equal_property, v);  
   if (procs || oprocs)
     if (!procs || !oprocs || !SAME_OBJ(SCHEME_VEC_ELS(oprocs)[0], 
                                        SCHEME_VEC_ELS(procs)[0]))
-      scheme_arg_mismatch((for_chaperone ? "impersonator-of?" : "equal?"),
-                          "impersonator-of property procedure returned a value with a different prop:equal+hash source: ",
-                          v);
+      scheme_contract_error((for_chaperone ? "impersonator-of?" : "equal?"),
+                            "impersonator-of property procedure returned a value with a different prop:equal+hash source",
+                            "original value", 1, obj,
+                            "returned value", 1, v,
+                            NULL);
 
   return v;
 }

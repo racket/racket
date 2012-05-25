@@ -1099,7 +1099,7 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
   
   op = scheme_output_port_record(port);
   if (op->closed)
-    scheme_raise_exn(MZEXN_FAIL, "%s: output port is closed", name);
+    scheme_raise_exn(MZEXN_FAIL, "%s: output port is closed\n  port: %V", name, port);
 
   str = print_to_string(obj, &len, notdisplay, port, maxl, qq_depth);
 
@@ -1667,8 +1667,8 @@ static void cannot_print(PrintParams *pp, int notdisplay,
 {
   scheme_raise_exn(MZEXN_FAIL,
 		   ((compact || pp->printing_quoted)
-		    ? "%s: cannot marshal value that is embedded in compiled code: %V"
-		    : "%s: printing disabled for unreadable value: %V"),
+		    ? "%s: cannot marshal value that is embedded in compiled code\n  value: %V"
+		    : "%s: printing disabled for unreadable value\n  value: %V"),
 		   notdisplay ? "write" : "display",
 		   obj);
 }
@@ -3893,10 +3893,10 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
   volatile intptr_t save_max;
 
   if (!SCHEME_OUTPORTP(argv[1])) {
-    scheme_wrong_type((notdisplay > 1)
-                      ? "print/recursive"
-                      : (notdisplay ? "write/recursive" : "display/recursive"),
-		      "output-port", 1, argc, argv);
+    scheme_wrong_contract((notdisplay > 1)
+                          ? "print/recursive"
+                          : (notdisplay ? "write/recursive" : "display/recursive"),
+                          "output-port?", 1, argc, argv);
     return NULL;
   }
 
@@ -3946,7 +3946,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
           if (argc > 2) {
             Scheme_Object *qq_depth = argv[2];
             if (!scheme_nonneg_exact_p(qq_depth))
-              scheme_wrong_type("print/recursive", "nonnegative exact integer", 2, argc, argv);
+              scheme_wrong_contract("print/recursive", "exact-nonnegative-integer?", 2, argc, argv);
             sub_pp = copy_print_params(pp);
             if (scheme_bin_gt(qq_depth, scheme_make_integer(REASONABLE_QQ_DEPTH))) {
               notdisplay = 3 + REASONABLE_QQ_DEPTH;

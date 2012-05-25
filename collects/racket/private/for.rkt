@@ -101,14 +101,14 @@
       (unless (and (procedure? proc1)
                    (or (procedure-arity-includes? proc1 1)
                        (procedure-arity-includes? proc1 0)))
-        (raise-type-error 'define-sequence-syntax
-                          "procedure (arity 0 or 1)"
-                          0
-                          proc1 proc2))
+        (raise-argument-error 'define-sequence-syntax
+                              "(or/c (procedure-arity-includes/c 0) (procedure-arity-includes/c 1))"
+                              0
+                              proc1 proc2))
       (unless (and (procedure? proc2)
                    (procedure-arity-includes? proc2 1))
-        (raise-type-error 'define-sequence-syntax
-                          "procedure (arity 1)"
+        (raise-argument-error 'define-sequence-syntax
+                          "(procedure-arity-includes/c 1)"
                           1
                           proc1 proc2))
       (make-sequence-transformer
@@ -339,9 +339,12 @@
                     (procedure-arity-includes? (vector-ref v 1) 1)
                     (procedure? (vector-ref v 2))
                     (procedure-arity-includes? (vector-ref v 2) 1))
-         (raise-type-error 'guard-for-prop:stream
-                           "vector of three procedures (arity 1)"
-                           v))
+         (raise-argument-error 'guard-for-prop:stream
+                               (string-append
+                                "(vector/c (procedure-arity-includes/c 1)\n"
+                                "          (procedure-arity-includes/c 1)\n"
+                                "          (procedure-arity-includes/c 1))")
+                               v))
        (vector->immutable-vector v))))
 
   ;; new-style sequence property, where the property value is a procedure
@@ -353,9 +356,9 @@
      (lambda (v si)
        (unless (and (procedure? v)
                     (procedure-arity-includes? v 1))
-         (raise-type-error 'guard-for-prop:sequence
-                           "procedure (arity 1)"
-                           v))
+         (raise-argument-error 'guard-for-prop:sequence
+                               "(procedure-arity-includes/c 1)"
+                               v))
        v)))
 
   ;; exported sequence property, where the property value
@@ -365,7 +368,7 @@
      'sequence
      (lambda (v sinfo)
        (unless (and (procedure? v) (procedure-arity-includes? v 1))
-         (raise-type-error 'sequence-property-guard "procedure (arity 1)" v))
+         (raise-argument-error 'sequence-property-guard "(procedure-arity-includes/c 1)" v))
        (lambda (self)
          (let ([s (v self)])
            (unless (sequence? s)
@@ -398,9 +401,9 @@
             (if (pair? v)
                 #f
                 ((unsafe-vector-ref (stream-ref v) 0) v))
-            (raise-type-error 'stream-empty?
-                              "stream"
-                              v))))
+            (raise-argument-error 'stream-empty?
+                                  "stream?"
+                                  v))))
 
   (define (unsafe-stream-first v)
     (cond [(pair? v) (car v)]
@@ -410,9 +413,9 @@
     (if (and (stream? v)
              (not (stream-empty? v)))
         (unsafe-stream-first v)
-        (raise-type-error 'stream-first
-                          "non-empty stream"
-                          v)))
+        (raise-argument-error 'stream-first
+                              "(and/c stream? (not/c stream-empty?))"
+                              v)))
 
   (define (unsafe-stream-rest v)
     (cond [(pair? v) (cdr v)]
@@ -427,9 +430,9 @@
     (if (and (stream? v)
              (not (stream-empty? v)))
         (unsafe-stream-rest v)
-        (raise-type-error 'stream-rest
-                          "non-empty stream"
-                          v)))
+        (raise-argument-error 'stream-rest
+                              "(and/c stream? (not/c stream-empty?))"
+                              v)))
 
   (define (sequence? v)
     (or (exact-nonnegative-integer? v)
@@ -499,9 +502,9 @@
       [(b) (in-range 0 b 1)]
       [(a b) (in-range a b 1)]
       [(a b step)
-       (unless (real? a) (raise-type-error 'in-range "real-number" a))
-       (unless (real? b) (raise-type-error 'in-range "real-number" b))
-       (unless (real? step) (raise-type-error 'in-range "real-number" step))
+       (unless (real? a) (raise-argument-error 'in-range "real?" a))
+       (unless (real? b) (raise-argument-error 'in-range "real?" b))
+       (unless (real? step) (raise-argument-error 'in-range "real?" step))
        (let* ([cont? (if (step . >= . 0)
                          (lambda (x) (< x b))
                          (lambda (x) (> x b)))]
@@ -518,9 +521,9 @@
        (unless (and (integer? n)
                     (exact? n)
                     (n . >= . 0))
-         (raise-type-error 'in-naturals
-                           "exact non-negative integer"
-                           n))
+         (raise-argument-error 'in-naturals
+                               "exact-nonnegative-integer?"
+                               n))
        (make-range n add1 #f)]))
 
   (define-values (struct:list-stream
@@ -545,7 +548,7 @@
                                      #f))))))
 
   (define (in-list l)
-    (unless (list? l) (raise-type-error 'in-list "list" l))
+    (unless (list? l) (raise-argument-error 'in-list "list?" l))
     (make-list-stream l))
 
   (define (:list-gen l)
@@ -559,7 +562,7 @@
 
   (define (in-input-port-bytes p)
     (unless (input-port? p)
-      (raise-type-error 'in-input-port-bytes "input-port" p))
+      (raise-argument-error 'in-input-port-bytes "input-port?" p))
     (make-do-sequence (lambda () (:input-port-gen p))))
 
   (define (:input-port-gen p)
@@ -569,13 +572,13 @@
 
   (define (in-input-port-chars p)
     (unless (input-port? p)
-      (raise-type-error 'in-input-port-chars "input-port" p))
+      (raise-argument-error 'in-input-port-chars "input-port?" p))
     (in-producer (lambda () (read-char p)) eof))
 
   (define (check-in-port r p)
     (unless (and (procedure? r) (procedure-arity-includes? r 1))
-      (raise-type-error 'in-port "procedure (arity 1)" r))
-    (unless (input-port? p) (raise-type-error 'in-port "input-port" p)))
+      (raise-argument-error 'in-port "(procedure-arity-includes/c 1)" r))
+    (unless (input-port? p) (raise-argument-error 'in-port "input-port?" p)))
 
   (define in-port
     (case-lambda
@@ -586,11 +589,11 @@
        (in-producer (lambda () (r p)) eof)]))
 
   (define (check-in-lines p mode)
-    (unless (input-port? p) (raise-type-error 'in-lines "input-port" p))
+    (unless (input-port? p) (raise-argument-error 'in-lines "input-port?" p))
     (unless (memq mode '(linefeed return return-linefeed any any-one))
-      (raise-type-error
+      (raise-argument-error
        'in-lines
-       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
+       "(or/c 'linefeed 'return 'return-linefeed 'any 'any-one)"
        mode)))
 
   (define in-lines
@@ -602,11 +605,11 @@
        (in-producer (lambda () (read-line p mode)) eof)]))
 
   (define (check-in-bytes-lines p mode)
-    (unless (input-port? p) (raise-type-error 'in-bytes-lines "input-port" p))
+    (unless (input-port? p) (raise-argument-error 'in-bytes-lines "input-port" p))
     (unless (memq mode '(linefeed return return-linefeed any any-one))
-      (raise-type-error
+      (raise-argument-error
        'in-bytes-lines
-       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
+       "(or/c 'linefeed 'return 'return-linefeed 'any 'any-one)"
        mode)))
 
   (define in-bytes-lines
@@ -618,7 +621,7 @@
        (in-producer (lambda () (read-bytes-line p mode)) eof)]))
 
   (define (in-hash ht)
-    (unless (hash? ht) (raise-type-error 'in-hash "hash" ht))
+    (unless (hash? ht) (raise-argument-error 'in-hash "hash?" ht))
     (make-do-sequence (lambda () (:hash-key+val-gen ht))))
 
   (define (:hash-key+val-gen ht)
@@ -627,13 +630,13 @@
                             (hash-iterate-value ht pos)))))
 
   (define (in-hash-keys ht)
-    (unless (hash? ht) (raise-type-error 'in-hash-keys "hash" ht))
+    (unless (hash? ht) (raise-argument-error 'in-hash-keys "hash?" ht))
     (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key))))
   (define (in-hash-values ht)
-    (unless (hash? ht) (raise-type-error 'in-hash-values "hash" ht))
+    (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
     (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value))))
   (define (in-hash-pairs ht)
-    (unless (hash? ht) (raise-type-error 'in-hash-values "hash" ht))
+    (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
     (make-do-sequence (lambda ()
                         (:hash-gen ht (lambda (ht pos)
                                         (cons (hash-iterate-key ht pos)
@@ -648,7 +651,7 @@
             #f))
 
   (define (in-stream l)
-    (unless (stream? l) (raise-type-error 'in-stream "stream" l))
+    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
     (make-do-sequence (lambda () (:stream-gen l))))
 
   (define (:stream-gen l)
@@ -661,21 +664,25 @@
   ;; As no object can have more slots than can be indexed by
   ;; the largest fixnum, after running these checks start,
   ;; stop, and step are guaranteed to be fixnums.
-  (define (check-ranges who start stop step len)
+  (define (check-ranges who vec start stop step len)
     (unless (and (exact-nonnegative-integer? start) (<= start len))
-      (raise-type-error who (format "exact integer in [0,~a]" len) start))
+      (raise-range-error who "vector" "starting " start vec 0 len))
     (unless (and (exact-integer? stop) (<= -1 stop) (<= stop len))
-      (raise-type-error who (format "exact integer in [-1,~a] or #f" len) stop))
+      (raise-range-error who "vector" "stopping " stop vec -1 len))
     (unless (and (exact-integer? step) (not (zero? step)))
-      (raise-type-error who "exact non-zero integer" step))
+      (raise-argument-error who "(and/c exact-integer? (not/c zero?))" step))
     (when (and (< start stop) (< step 0))
-      (raise-mismatch-error who (format "start: ~a less than stop: ~a but given negative step: "
-                                        start stop)
-                            step))
+      (raise-arguments-error who 
+                             "starting index less then stopping index, but given a negative step"
+                             "starting index" start
+                             "stopping index" stop
+                             "step" step))
     (when (and (< stop start) (> step 0))
-      (raise-mismatch-error who (format "start: ~a more than stop: ~a but given positive step: "
-                                        start stop)
-                            step)))
+      (raise-arguments-error who 
+                             "starting index more then stopping index, but given a positive step"
+                             "starting index" start
+                             "stopping index" stop
+                             "step" step)))
 
   ;; (: normalise-inputs (A) (Symbol String (Any -> Boolean) (A -> Natural) Any Any Any Any -> (values Fixnum Fixnum Fixnum)))
   ;;
@@ -685,10 +692,10 @@
   (define (normalise-inputs who type-name vector? unsafe-vector-length
                             vec start stop step)
     (unless (vector? vec)
-      (raise-type-error who type-name vec))
+      (raise-argument-error who type-name vec))
     (let* ([len (unsafe-vector-length vec)]
            [stop* (if stop stop len)])
-      (check-ranges who start stop* step len)
+      (check-ranges who vec start stop* step len)
       (values vec start stop* step)))
 
   (define-syntax define-in-vector-like
@@ -854,10 +861,10 @@
   ;; ------------------------------------------------------------------------
 
   (define (stop-before g pred)
-    (unless (sequence? g) (raise-type-error 'stop-before "sequence" g))
+    (unless (sequence? g) (raise-argument-error 'stop-before "sequence?" g))
     (unless (and (procedure? pred)
                  (procedure-arity-includes? pred 1))
-      (raise-type-error 'stop-before "procedure (arity 1)" pred))
+      (raise-argument-error 'stop-before "(procedure-arity-includes/c 1)" pred))
     (make-do-sequence (lambda ()
                         (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
@@ -873,10 +880,10 @@
                                   post-cont?)))))
 
   (define (stop-after g pred)
-    (unless (sequence? g) (raise-type-error 'stop-after "sequence" g))
+    (unless (sequence? g) (raise-argument-error 'stop-after "sequence?" g))
     (unless (and (procedure? pred)
                  (procedure-arity-includes? pred 1))
-      (raise-type-error 'stop-after "procedure (arity 1)" pred))
+      (raise-argument-error 'stop-after "(procedure-arity-includes/c 1)" pred))
     (make-do-sequence (lambda ()
                         (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
@@ -892,7 +899,7 @@
                                                        (not (apply pred vals)))]))))))
 
   (define (in-indexed g)
-    (unless (sequence? g) (raise-type-error 'in-indexed "sequence" g))
+    (unless (sequence? g) (raise-argument-error 'in-indexed "sequence?" g))
     (make-do-sequence (lambda ()
                         (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
@@ -916,7 +923,7 @@
                                 void))))
 
   (define (in-values-sequence g)
-    (unless (sequence? g) (raise-type-error 'in-values-sequence "sequence" g))
+    (unless (sequence? g) (raise-argument-error 'in-values-sequence "sequence?" g))
     (make-do-sequence (lambda ()
                         (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
@@ -931,7 +938,7 @@
                                        (lambda (pos vals) (apply post-cont? pos vals))))))))
 
   (define (in-values*-sequence g)
-    (unless (sequence? g) (raise-type-error 'in-values-sequence "sequence" g))
+    (unless (sequence? g) (raise-argument-error 'in-values-sequence "sequence?" g))
     (make-do-sequence (lambda ()
                         (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
@@ -977,7 +984,7 @@
 
   (define (check-sequences who sequences)
     (for-each (lambda (g)
-                (unless (sequence? g) (raise-type-error who "sequence" g)))
+                (unless (sequence? g) (raise-argument-error who "sequence?" g)))
               sequences))
 
   (define (in-sequences . sequences)
@@ -1058,7 +1065,7 @@
 
   (define (sequence->stream s)
     (unless (sequence? s)
-      (raise-type-error 'sequence-generate "sequence" s))
+      (raise-argument-error 'sequence-generate "sequence?" s))
     (cond
       [(stream? s) s]
       [else
@@ -1098,7 +1105,7 @@
 
   (define (sequence-generate g)
     (unless (sequence? g)
-      (raise-type-error 'sequence-generate "sequence" g))
+      (raise-argument-error 'sequence-generate "sequence?" g))
     (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                   (make-sequence #f g)])
       (let ([pos init])
@@ -1154,7 +1161,7 @@
 
   (define (sequence-generate* g)
     (unless (sequence? g)
-      (raise-type-error 'sequence-generate* "sequence" g))
+      (raise-argument-error 'sequence-generate* "sequence?" g))
     (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                   (make-sequence #f g)])
       (letrec ([next!
@@ -1360,7 +1367,7 @@
        (syntax/loc stx
          (let ([len length-expr])
            (unless (exact-nonnegative-integer? len)
-             (raise-type-error 'for/vector "exact nonnegative integer" len))
+             (raise-argument-error 'for/vector "exact-nonnegative-integer?" len))
            (let ([v (make-vector len)])
              (for/fold ([i 0])
                  (for-clause ... #:when (< i len))
@@ -1378,7 +1385,7 @@
        (syntax/loc stx
          (let ([len length-expr])
            (unless (exact-nonnegative-integer? len)
-             (raise-type-error 'for*/vector "exact nonnegative integer" len))
+             (raise-argument-error 'for*/vector "exact-nonnegative-integer?" len))
            (let ([v (make-vector len)])
              (for*/fold ([i 0])
                  (for-clause ... #:when (< i len))
@@ -1791,7 +1798,7 @@
       [(dir)
        (when dir
          (unless (path-string? dir)
-           (raise-type-error 'in-directory "#f, path, or path string" dir)))
+           (raise-argument-error 'in-directory "(or/c #f path-string?)" dir)))
        (let ([make-gen (lambda ()
                          (call-with-continuation-prompt
                           (lambda ()

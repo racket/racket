@@ -916,9 +916,10 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv)
       && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(p))))
     return scheme_intern_resolved_module_path(SCHEME_CAR(SCHEME_CDR(p)));
 
-  scheme_arg_mismatch("default-module-name-resolver", 
-		      "the kernel's resolver works only on `quote' forms; given: ", 
-		      p);
+  scheme_contract_error("default-module-name-resolver", 
+                        "the kernel's resolver works only on `quote' forms", 
+                        "given", 1, p,
+                        NULL);
   return NULL;
 }
 
@@ -928,7 +929,9 @@ static Scheme_Object *check_resolver(int argc, Scheme_Object **argv)
       && scheme_check_proc_arity(NULL, 4, 0, argc, argv))
     return argv[0];
 
-  scheme_wrong_type("current-module-name-resolver", "procedure of arity 1 and 4", 0, argc, argv);
+  scheme_wrong_contract("current-module-name-resolver", 
+                        "(case-> (any/c . -> . any) (any/c any/c any/c any/c . -> . any))", 
+                        0, argc, argv);
 
   return NULL;
 }
@@ -1030,7 +1033,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
       && !SCHEME_SYMBOLP(name) 
       && !SAME_OBJ(name, scheme_make_integer(0))
       && !SCHEME_VOIDP(name)) {
-    scheme_wrong_type(errname, "symbol, #f, 0, or void", 1, argc, argv);
+    scheme_wrong_contract(errname, "(or/c symbol? #f 0 void?)", 1, argc, argv);
     return NULL;
   }
 
@@ -1121,10 +1124,11 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 
                   return ns;
                 } else {
-                  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                                   "%s: name is provided as syntax: %V by module: %V",
-                                   errname,
-                                   name, srcm->modsrc);
+                  scheme_contract_error(errname,
+                                        "name is provided as syntax",
+                                        "name", 1, name, 
+                                        "module", 1, srcm->modsrc,
+                                        NULL);
                 }
               }
 	      return NULL;
@@ -1181,10 +1185,11 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	  if (fail_with_error) {
             if (fail_thunk)
               return scheme_tail_apply(fail_thunk, 0, NULL);
-	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			     "%s: name is not provided: %V by module: %V",
-			     errname,
-			     name, srcm->modsrc);
+	    scheme_contract_error(errname,
+                                  "name is not provided"
+                                  "name", 1, name, 
+                                  "module", 1, srcm->modsrc,
+                                  NULL);
           }
 	  return NULL;
 	}
@@ -1214,17 +1219,18 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
       Scheme_Object *insp;
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
       if (scheme_module_protected_wrt(menv->insp, insp))
-	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			 "%s: name is protected: %V from module: %V",
-			 errname,
-			 name, srcm->modsrc);
+	scheme_contract_error(errname,
+                              "name is protected",
+                              "name", 1, name, 
+                              "module", 1, srcm->modsrc,
+                              NULL);
     }
 
     if (!menv || !menv->toplevel) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "%s: module initialization failed: %V",
-                       errname,
-                       srcm->modsrc);
+      scheme_contract_error(errname,
+                            "module iniialization failed",
+                            "module", 1, srcm->modsrc,
+                            NULL);
     }
     
     b = scheme_bucket_from_table(menv->toplevel, (const char *)srcname);
@@ -1433,12 +1439,12 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   Scheme_Hash_Table *nophase_checked;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
-    scheme_wrong_type(who, "namespace", 0, argc, argv);
+    scheme_wrong_contract(who, "namespace?", 0, argc, argv);
   from_env = (Scheme_Env *)argv[0];
 
   if (argc > 2) {
     if (!SCHEME_NAMESPACEP(argv[2]))
-      scheme_wrong_type(who, "namespace", 2, argc, argv);
+      scheme_wrong_contract(who, "namespace?", 2, argc, argv);
     to_env = (Scheme_Env *)argv[2];
     set_env_for_notify = 1;
   } else
@@ -1447,10 +1453,11 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   same_namespace = SAME_OBJ(from_env, to_env);
 
   if (from_env->phase != to_env->phase) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "namespace-attach-module: "
-                     "source namespace phase: %ld does not match destination namespace phase: %ld",
-                     (intptr_t)from_env->phase, (intptr_t)to_env->phase);
+    scheme_contract_error("namespace-attach-module"
+                          "source and destination namespace phases do not match",
+                          "source phase", 1, scheme_make_integer(from_env->phase),
+                          "destination phase", 1, scheme_make_integer(to_env->phase),
+                          NULL);
   }
 
   main_modidx = scheme_make_modidx(argv[1], scheme_false, scheme_false);
@@ -1531,13 +1538,15 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	  /* Assert: name == argv[1] */
 	  /* Module at least declared? */
           if (registry_get_loaded(from_env, name))
-            scheme_arg_mismatch(who,
-                                "module not instantiated (in the source namespace): ",
-                                name);
+            scheme_contract_error(who,
+                                  "module not instantiated (in the source namespace)",
+                                  "name", 1, name,
+                                  NULL);
           else
-            scheme_arg_mismatch(who,
-                                "unknown module (in the source namespace): ",
-                                name);
+            scheme_contract_error(who,
+                                  "unknown module (in the source namespace)",
+                                  "name", 1, name,
+                                  NULL);
 	}
 
         /* If to_modchain goes to #f, then our source check has gone
@@ -1568,9 +1577,9 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	    if (!menv->phase)
 	      phase = "";
 	    else if (menv->phase == 1)
-	      phase = " for syntax";
+	      phase = "  phase: for syntax\n";
 	    else {
-	      sprintf(buf, " at phase %" PRIdPTR, menv->phase);
+	      sprintf(buf, "  phase: %" PRIdPTR "\n", menv->phase);
 	      phase = buf;
 	    }
 
@@ -1582,7 +1591,9 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 			     "namespace-attach-module: "
 			     "a different %s is already "
-			     "in the destination namespace%s, for name: %D",
+			     "in the destination namespace\n"
+                             "%s"
+                             "  module name: %D",
 			     kind, phase, name);
 	    return NULL;
 	  }
@@ -1779,9 +1790,10 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
         if (only_declare && main_modidx) {
           m2 = registry_get_loaded(from_env, name);
 	  if (!m2)
-            scheme_arg_mismatch(who,
-                                "module not declared (in the source namespace): ",
-                                name);
+            scheme_contract_error(who,
+                                  "module not declared (in the source namespace)",
+                                  "name", 1, name,
+                                  NULL);
           else {
             /* instantiate for-label: */
             Scheme_Cont_Frame_Data cframe;
@@ -1825,7 +1837,9 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "namespace-attach-module: "
                          "a different %s is already "
-                         "in the destination namespace%s, for name: %D",
+                         "in the destination namespace\n"
+                         "%s"
+                         "  module name: %D",
                          kind, phase, name);
       }
     
@@ -2040,7 +2054,7 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   Scheme_Object *name, *to_modchain, *insp, *code_insp;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_inspector_type))
-    scheme_wrong_type("namespace-unprotect-module", "inspector", 0, argc, argv);
+    scheme_wrong_contract("namespace-unprotect-module", "inspector?", 0, argc, argv);
 
   insp = argv[0];
   if (argc > 2)
@@ -2063,9 +2077,10 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
       menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
 
     if (!menv2) {
-      scheme_arg_mismatch("namespace-unprotect-module",
-			  "module not instantiated (in the target namespace): ",
-			  name);
+      scheme_contract_error("namespace-unprotect-module",
+                            "module not instantiated (in the target namespace)",
+                            "name", 1, name,
+                            NULL);
     }
 
     if (!scheme_module_protected_wrt(menv2->insp, insp) && !menv2->attached) {
@@ -2817,13 +2832,15 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
     menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
     if (!menv) {
       if (registry_get_loaded(env, name))
-        scheme_arg_mismatch("module->namespace",
-                            "module not instantiated in the current namespace: ",
-                            name);
+        scheme_contract_error("module->namespace",
+                              "module not instantiated in the current namespace",
+                              "name", 1, name,
+                              NULL);
       else
-        scheme_arg_mismatch("module->namespace",
-                            "unknown module in the current namespace: ",
-                            name);
+        scheme_contract_error("module->namespace",
+                              "unknown module in the current namespace",
+                              "name", 1, name,
+                              NULL);
     }
   }
 
@@ -2831,9 +2848,10 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
     Scheme_Object *insp;
     insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
     if (scheme_module_protected_wrt(menv->insp, insp) || menv->attached) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "module->namespace: current code inspector cannot access namespace of module: %D",
-		       name);
+      scheme_contract_error("module->namespace",
+                            "current code inspector cannot access namespace of module",
+                            "module name", 1, name,
+                            NULL);
     }
   }
 
@@ -2849,7 +2867,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
   env = scheme_get_env(NULL);
 
   if (!scheme_is_module_path(argv[0]))
-    scheme_wrong_type("module->namespace", "module path", 0, argc, argv);
+    scheme_wrong_contract("module->namespace", "module-path?", 0, argc, argv);
 
   return scheme_module_to_namespace(argv[0], env);
 }
@@ -2868,7 +2886,7 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
       && !SCHEME_MODNAMEP(name)
       && !SAME_TYPE(SCHEME_TYPE(name), scheme_module_index_type)
       && !scheme_is_module_path(name))
-    scheme_wrong_type(who, "module path, module-path index, or resolved-module-path", 0, argc, argv);
+    scheme_wrong_contract(who, "(or/c module-path? module-path-index? resolved-module-path?)", 0, argc, argv);
 
   if (!SCHEME_MODNAMEP(name)) {
     if (!SAME_TYPE(SCHEME_TYPE(name), scheme_module_index_type))
@@ -2883,9 +2901,10 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
   }
 
   if (!m && !unknown_ok)
-    scheme_arg_mismatch(who,
-                        "unknown module in the current namespace: ",
-                        name);
+    scheme_contract_error(who,
+                          "unknown module in the current namespace",
+                          "name", 1, name,
+                          NULL);
 
   return m;
 }
@@ -3149,7 +3168,7 @@ static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[])
           v = NULL;
       }
       if (!v)
-        scheme_wrong_type("module-compiled-name", "symbol or list of symbols", 1, argc, argv);
+        scheme_wrong_contract("module-compiled-name", "(or/c symbol? (listof symbol?))", 1, argc, argv);
       if (SCHEME_PAIRP(v)) {
         p = SCHEME_CDR(v);
         if (SCHEME_NULLP(p))
@@ -3167,7 +3186,7 @@ static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[])
       return scheme_resolved_module_path_value(m->modname);
   }
 
-  scheme_wrong_type("module-compiled-name", "compiled module declaration", 0, argc, argv);
+  scheme_wrong_contract("module-compiled-name", "compiled-module-expression?", 0, argc, argv);
   return NULL;
 }
 
@@ -3180,7 +3199,7 @@ static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[])
   if (m)
     return extract_compiled_imports(m);
 
-  scheme_wrong_type("module-compiled-imports", "compiled module declaration", 0, argc, argv);
+  scheme_wrong_contract("module-compiled-imports", "compiled-module-expression?", 0, argc, argv);
   return NULL;
 }
 
@@ -3192,7 +3211,7 @@ static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[])
   if (m)
     return extract_compiled_exports(m);
 
-  scheme_wrong_type("module-compiled-exports", "compiled module declaration", 0, argc, argv);
+  scheme_wrong_contract("module-compiled-exports", "compiled-module-expression?", 0, argc, argv);
   return NULL;
 }
 
@@ -3206,7 +3225,7 @@ static Scheme_Object *module_compiled_lang_info(int argc, Scheme_Object *argv[])
     return (m->lang_info ? m->lang_info : scheme_false);
   }
 
-  scheme_wrong_type("module-compiled-language-info", "compiled module declaration", 0, argc, argv);
+  scheme_wrong_contract("module-compiled-language-info", "compiled-module-expression?", 0, argc, argv);
   return NULL;
 }
 
@@ -3238,7 +3257,7 @@ static Scheme_Object *module_compiled_submodules(int argc, Scheme_Object *argv[]
         reset_submodule_paths(m2);
         return wrap_module_in_top((Scheme_Object *)m2, argv[0]);
       } else {
-        scheme_wrong_type("module-compiled-submodules", "list of compiled module declarations", 2, argc, argv);
+        scheme_wrong_contract("module-compiled-submodules", "(listof compiled-module-expression?)", 2, argc, argv);
       }
     } else {
       l2 = scheme_null;
@@ -3252,7 +3271,7 @@ static Scheme_Object *module_compiled_submodules(int argc, Scheme_Object *argv[]
     return scheme_reverse(l2);
   }
   
-  scheme_wrong_type("module-compiled-submodules", "compiled module declaration", 0, argc, argv);
+  scheme_wrong_contract("module-compiled-submodules", "compiled-module-expression?", 0, argc, argv);
   return NULL;
 }
 
@@ -3266,7 +3285,7 @@ static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[])
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
-    scheme_wrong_type("module-path-index-resolve", "module-path-index", 0, argc, argv);
+    scheme_wrong_contract("module-path-index-resolve", "module-path-index?", 0, argc, argv);
 
   return scheme_module_resolve(argv[0], 0);
 }
@@ -3277,7 +3296,7 @@ static Scheme_Object *module_path_index_split(int argc, Scheme_Object *argv[])
   Scheme_Object *a[2];
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
-    scheme_wrong_type("module-path-index-split", "module-path-index", 0, argc, argv);
+    scheme_wrong_contract("module-path-index-split", "module-path-index?", 0, argc, argv);
 
   modidx = (Scheme_Modidx *)argv[0];
   a[0] = modidx->path;
@@ -3290,18 +3309,19 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
 {
   if (!scheme_is_module_path(argv[0])
       && !SCHEME_FALSEP(argv[0]))
-    scheme_wrong_type("module-path-index-join", "module path or #f", 0, argc, argv);
+    scheme_wrong_contract("module-path-index-join", "(or/c module-path? #f)", 0, argc, argv);
 
   if (argv[1]) { /* mzc will generate NULL sometimes; see scheme_declare_module(), below */
     if (SCHEME_TRUEP(argv[1])
 	&& !SCHEME_MODNAMEP(argv[1])
 	&& !SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_module_index_type))
-      scheme_wrong_type("module-path-index-join", "module-path-index, resolved-module-path, or #f", 1, argc, argv);
+      scheme_wrong_contract("module-path-index-join", "(or/c module-path-index? resolved-module-path? #f)", 1, argc, argv);
 
     if (SCHEME_FALSEP(argv[0]) && !SCHEME_FALSEP(argv[1]))
-      scheme_arg_mismatch("module-path-index-join", 
-                          "first argument cannot be #f when second argument is not #f: ",
-                          argv[1]);
+      scheme_contract_error("module-path-index-join", 
+                            "first argument cannot be #f when second argument is not #f",
+                            "second argument", 1, argv[1],
+                            NULL);
   }
 
   if (argc > 2) {
@@ -3316,11 +3336,14 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
       } else
         l = scheme_false;
       if (!SCHEME_NULLP(l))
-        scheme_wrong_type("module-path-index-join", "non-empty list of symbols", 2, argc, argv);
+        scheme_wrong_contract("module-path-index-join", "(non-empty-listof symbol?)", 2, argc, argv);
       if (SCHEME_TRUEP(argv[0]) || SCHEME_TRUEP(argv[1]))
-        scheme_arg_mismatch("module-path-index-join", 
-                            "first or second non-#f argument results a #f third argument, given: ",
-                            argv[2]);
+        scheme_contract_error("module-path-index-join", 
+                              "third argument must be #f when first or second argument is non-#f",
+                              "first argument", 1, argv[0],
+                              "second argument", 1, argv[1],
+                              "third argument", 1, argv[2],
+                              NULL);
       return scheme_get_submodule_empty_self_modidx(argv[2]);
     }
   }
@@ -3332,7 +3355,7 @@ static Scheme_Object *module_path_index_submodule(int argc, Scheme_Object *argv[
 {
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
-    scheme_wrong_type("module-path-index-submodule", "module-path-index", 0, argc, argv);
+    scheme_wrong_contract("module-path-index-submodule", "module-path-index?", 0, argc, argv);
   
   return scheme_modidx_submodule(argv[0]);
 }
@@ -3413,7 +3436,7 @@ int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object 
                     MIN(SCHEME_BYTE_STRLEN_VAL(rmp_val), SCHEME_SYM_LEN(o)));
   }  else {
     scheme_arg_mismatch("scheme_resolved_module_path_value_matches", 
-                        "unknown type of resolved_module_path_value",
+                        "internal error: unknown type of resolved_module_path_value",
                         rmp_val);
     return 0;
   }
@@ -3498,7 +3521,12 @@ static Scheme_Object *make_resolved_module_path(int argc, Scheme_Object *argv[])
           || !scheme_is_complete_path(SCHEME_PATH_VAL(p),
                                       SCHEME_PATH_LEN(p),
                                       SCHEME_PLATFORM_PATH_KIND)))
-    scheme_wrong_type("make-resolved-module-path", "symbol, complete path, or list of symbol/path and symbols", 0, argc, argv);
+    scheme_wrong_contract("make-resolved-module-path", 
+                          "(or/c symbol?"
+                          " (and/c path? complete-path?)"
+                          " (cons/c (or/c symbol? (and/c path? complete-path?)) (non-empty-listof symbol?))"
+                          ")",
+                          0, argc, argv);
 
   return scheme_intern_resolved_module_path(argv[0]);
 }
@@ -3506,7 +3534,7 @@ static Scheme_Object *make_resolved_module_path(int argc, Scheme_Object *argv[])
 static Scheme_Object *resolved_module_path_name(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_MODNAMEP(argv[0]))
-    scheme_wrong_type("resolved-module-path-name", "resolved-module-path", 0, argc, argv);
+    scheme_wrong_contract("resolved-module-path-name", "resolved-module-path?", 0, argc, argv);
 
   return scheme_resolved_module_path_value(argv[0]);
 }
@@ -3521,9 +3549,9 @@ static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv)
 
   if (!SCHEME_MODNAMEP(argv[0])
       && !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
-    scheme_wrong_type("module-provide-protected?", "resolved-module-path or module-path-index", 0, argc, argv);
+    scheme_wrong_contract("module-provide-protected?", "(or/c resolved-module-path? module-path-index?)", 0, argc, argv);
   if (!SCHEME_SYMBOLP(argv[1]))
-    scheme_wrong_type("module-provide-protected?", "symbol", 1, argc, argv);
+    scheme_wrong_contract("module-provide-protected?", "symbol?", 1, argc, argv);
 
   modname = scheme_module_resolve(argv[0], 1);
   name = argv[1];
@@ -3533,9 +3561,10 @@ static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv)
   if (!m)
     m = registry_get_loaded(env, modname);
   if (!m) {
-    scheme_arg_mismatch("module-provide-protected?",
-			"unknown module (in the source namespace): ",
-			modname);
+    scheme_contract_error("module-provide-protected?",
+                          "unknown module (in the source namespace)",
+                          "name", 1, modname,
+                          NULL);
     return NULL;
   }
 
@@ -3679,9 +3708,10 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx,
     a[3] = (load_it ? scheme_true : scheme_false);
     
     if (SCHEME_FALSEP(a[0])) {
-      scheme_arg_mismatch("module-path-index-resolve",
-                          "\"self\" index has no resolution: ",
-                          modidx);
+      scheme_contract_error("module-path-index-resolve",
+                            "\"self\" index has no resolution",
+                            "module path index", 1, modidx,
+                            NULL);
     }
 
 
@@ -3707,7 +3737,7 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx,
     
     if (!SCHEME_MODNAMEP(name)) {
       a[0] = name;
-      scheme_wrong_type("module name resolver", "resolved-module-path", -1, -1, a);
+      scheme_wrong_contract("module name resolver", "resolved-module-path?", -1, -1, a);
     }
 
     ((Scheme_Modidx *)modidx)->resolved = name;
@@ -3884,10 +3914,10 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
     m = registry_get_loaded(env, name);
 
     if (!m) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: unknown module: %D",
-		       who ? who : "require", 
-		       name);
+      scheme_contract_error(who ? who : "require",
+                            "unknown module",
+                            "module name", 1, name,
+                            NULL);
       return NULL;
     }
   }
@@ -4280,13 +4310,18 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     }
 
     scheme_wrong_syntax("link", stx, symbol, 
-                        "module mismatch, probably from old bytecode whose dependencies have changed: "
-                        "variable not provided (directly or indirectly%s) from module: %D%s%t at source phase level: %d",
-                        (position >= 0) ? " and at the expected position" : "",
-                        env->module->modsrc,
-                        srclen ? " accessed from module: " : "",
+                        "module mismatch\n"
+                        "  possible explanation: bytecode file needs re-compile because dependencies changed\n"
+                        "%s%t%s"
+                        "  exporting module: %D\n"
+                        "  exporting phase level: %d\n"
+                        "  internal explanation: variable not provided (directly or indirectly%s)",
+                        srclen ? "  importing module: " : "",
                         srcstr, srclen,
-                        env->mod_phase);
+                        srclen ? "\n" : "",
+                        env->module->modsrc,
+                        env->mod_phase,
+                        (position >= 0) ? " and at the expected position" : "");
   }
 
   return NULL;
@@ -5050,9 +5085,10 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 
   for (l = cycle_list; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m->modname, SCHEME_CAR(l))) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "module: import cycle detected at: %D",
-		       m->modsrc);
+      scheme_contract_error("module",
+                            "import cycle detected"
+                            "module in cycle", 1, m->modsrc,
+                            NULL);
     }
   }
 
@@ -5935,9 +5971,10 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   
   if (old_menv) {
     if (scheme_module_protected_wrt(old_menv->insp, insp) || old_menv->attached) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "module->namespace: current code inspector cannot re-declare module: %D",
-		       m->modname);
+      scheme_contract_error("module->namespace",
+                            "current code inspector cannot re-declare module",
+                            "module name", 1, m->modname,
+                            NULL);
       return NULL;
     }
   }

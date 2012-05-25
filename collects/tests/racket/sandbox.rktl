@@ -254,7 +254,7 @@
    ;; test source locations too
    --top--
    (make-base-evaluator! 0 1 2 '(define foo))
-   =err> "program:4:0: define"
+   =err> "define:.*  source:\n   program:4:0"
 
    ;; empty program for clean repls
    --top--

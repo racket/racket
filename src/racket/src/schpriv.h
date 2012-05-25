@@ -3323,6 +3323,10 @@ extern const char *scheme_begin_stx_string;
 
 void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv);
 
+void scheme_wrong_chaperoned(const char *who, const char *what, Scheme_Object *orig, Scheme_Object *naya);
+
+void scheme_system_error(const char *name, const char *what, int errid);
+
 void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
 void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
@@ -3343,22 +3347,22 @@ void scheme_do_get_substring_indices(const char *name, Scheme_Object *str,
                                      int argc, Scheme_Object **argv,
                                      int spos, int fpos, intptr_t *_start, intptr_t *_finish, intptr_t len);
 
-void scheme_out_of_string_range(const char *name, const char *which,
-				Scheme_Object *i, Scheme_Object *s,
-				intptr_t start, intptr_t len);
+void scheme_out_of_range(const char *name, const char *what, const char *which,
+                         Scheme_Object *i, Scheme_Object *s,
+                         intptr_t start, intptr_t len);
 
 const char *scheme_number_suffix(int);
 
 const char *scheme_hostname_error(int err);
 
 char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *olen);
+char *scheme_make_arg_lines_string(char *indent, int which, int argc, Scheme_Object **argv, intptr_t *_olen);
 
 #define IMPROPER_LIST_FORM "illegal use of `.'"
 
 int scheme_byte_string_has_null(Scheme_Object *o);
 int scheme_any_string_has_null(Scheme_Object *o);
-#define CHAR_STRING_W_NO_NULLS "string (with no nul characters)"
-#define STRING_OR_BYTE_STRING_W_NO_NULLS "string or byte string (with no nul characters)"
+#define CHAR_STRING_W_NO_NULLS "(and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))"
 
 Scheme_Object *scheme_do_exit(int argc, Scheme_Object *argv[]);
 

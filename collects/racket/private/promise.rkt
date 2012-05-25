@@ -150,7 +150,7 @@
                   (lambda (v info)
                     (unless (and (procedure? v)
                                  (procedure-arity-includes? v 1))
-                      (raise-type-error 'prop:force "a unary function" v))
+                      (raise-argument-error 'prop:force "(any/c . -> . any)" v))
                     v))])
     (values prop get)))
 
@@ -282,12 +282,12 @@
   (if (promise? promise)
     (let ([v (pref promise)])
       (or (not (procedure? v)) (reraise? v))) ; #f when running
-    (raise-type-error 'promise-forced? "promise" promise)))
+    (raise-argument-error 'promise-forced? "promise?" promise)))
 
 (define (promise-running? promise)
   (if (promise? promise)
     (running? (pref promise))
-    (raise-type-error 'promise-running? "promise" promise)))
+    (raise-argument-error 'promise-running? "promise?" promise)))
 
 )
 

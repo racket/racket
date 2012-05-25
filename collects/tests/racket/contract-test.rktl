@@ -6347,7 +6347,7 @@
             m
             1
             2))
-   "procedure m method: expects 1 argument, given 2: 1 2")
+   "application: wrong number of arguments\n  procedure: m method\n  expected number of arguments: 1\n  given number of arguments: 2\n  arguments:\n   1\n   2")
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;

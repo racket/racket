@@ -1754,9 +1754,12 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
       int is_set;
 
       if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-	msg = "%s: cannot %s: %S in module: %D";
+	msg = ("%s: cannot %s\n"
+               "  %s: %S\n"
+               "  in module: %D");
       else
-	msg = "%s: cannot %s: %S";
+	msg = ("%s: cannot %s\n"
+               "  %s: %S");
 
       is_set = !strcmp(who, "set!");
       
@@ -1770,15 +1773,24 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
                               ? "modify a constant"
                               : "re-define a constant"))
 			: "set variable before its definition"),
+                       (b->val
+			? (!val
+                           ? "variable"
+                           : "constant")
+			: "variable"),
 		       (Scheme_Object *)b->key,
 		       home->module->modsrc);
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
-		       "%s: cannot %s variable: %S",
+		       "%s: cannot %s\n"
+                       "  %s: %S",
 		       who,
                        (val
                         ? (b->val ? "change constant" : "set undefined")
                         : "undefine"),
+                       (val
+                        ? (b->val ? "constant" : "variable")
+                        : "variable"),
 		       (Scheme_Object *)b->key);
     }
   }
@@ -1999,7 +2011,7 @@ static Scheme_Object *apply_values_execute(Scheme_Object *data)
   if (!SCHEME_PROCP(f)) {
     Scheme_Object *a[1];
     a[0] = f;
-    scheme_wrong_type("call-with-values", "procedure", -1, 1, a);    
+    scheme_wrong_contract("call-with-values", "procedure?", -1, 1, a);    
     return NULL;
   }
 
@@ -3750,7 +3762,7 @@ static Scheme_Object *call_compile_handler(Scheme_Object *form, int immediate_ev
   
   if (!SAME_TYPE(SCHEME_TYPE(o), scheme_compilation_top_type)) {
     argv[0] = o;
-    scheme_wrong_type("compile-handler", "compiled code", 0, -1, argv);
+    scheme_wrong_contract("compile-handler", "compiled-expression?", 0, -1, argv);
     return NULL;
   }
 
@@ -4409,7 +4421,7 @@ sch_eval(const char *who, int argc, Scheme_Object *argv[])
     Scheme_Config *config;
     
     if (SCHEME_TYPE(argv[1]) != scheme_namespace_type)
-      scheme_wrong_type(who, "namespace", 1, argc, argv);
+      scheme_wrong_contract(who, "namespace?", 1, argc, argv);
 
     config = scheme_extend_config(scheme_current_config(),
 				  MZCONFIG_ENV,
@@ -4432,7 +4444,7 @@ eval(int argc, Scheme_Object *argv[])
     Scheme_Env *genv;
     if (argc > 1) {
       if (SCHEME_TYPE(argv[1]) != scheme_namespace_type)
-	scheme_wrong_type("eval", "namespace", 1, argc, argv);
+	scheme_wrong_contract("eval", "namespace?", 1, argc, argv);
       genv = (Scheme_Env *)argv[1];
     } else
       genv = scheme_get_env(NULL);
@@ -4449,7 +4461,7 @@ static Scheme_Object *
 eval_stx(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_STXP(argv[0])) {
-    scheme_wrong_type("eval-syntax", "syntax", 0, argc, argv);
+    scheme_wrong_contract("eval-syntax", "syntax?", 0, argc, argv);
     return NULL;
   }
   
@@ -4504,7 +4516,7 @@ top_introduce_stx(int argc, Scheme_Object **argv)
   Scheme_Object *form;
 
   if (!SCHEME_STXP(argv[0])) {
-    scheme_wrong_type("namespace-syntax-introduce", "syntax", 0, argc, argv);
+    scheme_wrong_contract("namespace-syntax-introduce", "syntax?", 0, argc, argv);
     return NULL;
   }
   
@@ -4543,7 +4555,7 @@ static Scheme_Object *
 compile_stx(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("compile-syntax", "syntax", 0, argc, argv);
+    scheme_wrong_contract("compile-syntax", "syntax?", 0, argc, argv);
 
   return call_compile_handler(argv[0], 0);
 }
@@ -4571,7 +4583,7 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   Scheme_Env *env;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("expand-syntax", "syntax", 0, argc, argv);
+    scheme_wrong_contract("expand-syntax", "syntax?", 0, argc, argv);
 
   env = scheme_get_env(NULL);
   
@@ -4665,7 +4677,9 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   orig_env = env;
 
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: not currently transforming", name);
+    scheme_contract_error(name,
+                          "not currently transforming",
+                          NULL);
 
   if (for_stx) {
     scheme_prepare_exp_env(env->genv);
@@ -4687,9 +4701,9 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   else if (scheme_proper_list_length(argv[1]) > 0)
     kind = SCHEME_INTDEF_FRAME;
   else  {
-    scheme_wrong_type(name,
-		      "'expression, 'module, 'module-begin, 'top-level, or non-empty list",
-		      1, argc, argv);
+    scheme_wrong_contract(name,
+                          "(or/c 'expression 'module 'module-begin 'top-level (and/c pair? list?))",
+                          1, argc, argv);
     return NULL;
   }
 
@@ -4782,7 +4796,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     
       i = SCHEME_CAR(l);
       if (!SCHEME_STXP(i) || !SCHEME_STX_SYMBOLP(i)) {
-        scheme_wrong_type(name, "#f or list of identifier syntax", 2, argc, argv);
+        scheme_wrong_contract(name, "(or/c #f (listof identifier?))", 2, argc, argv);
         return NULL;
       }
     
@@ -4790,7 +4804,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
         scheme_set_local_syntax(pos++, i, scheme_get_stop_expander(), env);
     }
     if (!SCHEME_NULLP(l)) {
-      scheme_wrong_type(name, "#f or list of identifier syntax", 2, argc, argv);
+      scheme_wrong_contract(name, "(or/c #f (listof identifier?))", 2, argc, argv);
       return NULL;
     }
 
@@ -4816,11 +4830,13 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   /* Report errors related to 3rd argument, finally */
   if (argc > 3) {
     if (bad_intdef) {
-      scheme_wrong_type(name, "internal-definition context, non-empty list of internal-definition contexts, or #f", 3, argc, argv);
+      scheme_wrong_contract(name, "(or/c internal-definition-context? (non-empty-listof internal-definition-context?) #f)",
+                            3, argc, argv);
       return NULL;
     } else if (bad_sub_env) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: transforming context does not match internal-definition context",
-                       name);
+      scheme_contract_error(name, 
+                            "transforming context does not match internal-definition context",
+                            NULL);
       return NULL;
     }
   }
@@ -4990,7 +5006,7 @@ expand_stx_once(int argc, Scheme_Object **argv)
   Scheme_Env *env;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("expand-syntax-once", "syntax", 0, argc, argv);
+    scheme_wrong_contract("expand-syntax-once", "syntax?", 0, argc, argv);
   
   env = scheme_get_env(NULL);
 
@@ -5015,7 +5031,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   Scheme_Env *env;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("expand-syntax-to-top", "syntax", 0, argc, argv);
+    scheme_wrong_contract("expand-syntax-to-top", "syntax?", 0, argc, argv);
   
   env = scheme_get_env(NULL);
 
@@ -5258,30 +5274,34 @@ local_eval(int argc, Scheme_Object **argv)
     cnt++;
   }
   if (!SCHEME_NULLP(l))
-    scheme_wrong_type("syntax-local-bind-syntaxes", "list of syntax identifiers", 0, argc, argv);
+    scheme_wrong_contract("syntax-local-bind-syntaxes", "(listof identifier?)", 0, argc, argv);
 
   expr = argv[1];
   if (!SCHEME_FALSEP(expr) && !SCHEME_STXP(expr))
-    scheme_wrong_type("syntax-local-bind-syntaxes", "syntax or #f", 1, argc, argv);
+    scheme_wrong_contract("syntax-local-bind-syntaxes", "(or/c syntax? #f)", 1, argc, argv);
   if (!SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[2])))
-    scheme_wrong_type("syntax-local-bind-syntaxes", "internal-definition context", 2, argc, argv);
+    scheme_wrong_contract("syntax-local-bind-syntaxes", "internal-definition-context?", 2, argc, argv);
 
   env = scheme_current_thread->current_local_env;
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: not currently transforming");
+    scheme_contract_error("syntax-local-bind-syntaxes",
+                          "not currently transforming",
+                          NULL);
 
   update_intdef_chain(argv[2]);
   stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[0];
   rib = SCHEME_PTR2_VAL(argv[2]);
 
   if (*scheme_stx_get_rib_sealed(rib)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: given "
-		     "internal-definition context has been sealed");
+    scheme_contract_error("syntax-local-bind-syntaxes",
+                          "given internal-definition context has been sealed",
+                          NULL);
   }
   
   if (!scheme_is_sub_env(stx_env, env)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: transforming context does "
-		     "not match given internal-definition context");
+    scheme_contract_error("syntax-local-bind-syntaxes",
+                          "transforming context does not match given internal-definition context",
+                          NULL);
   }
 
   old_stx_env = stx_env;

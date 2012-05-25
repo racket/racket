@@ -27,13 +27,13 @@ DO_MAP(int argc, Scheme_Object *argv[])
   int cc;
 
   if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type(MAP_NAME, "procedure", 0, argc, argv);
+    scheme_wrong_contract(MAP_NAME, "procedure?", 0, argc, argv);
 
   for (i = 1; i < argc; i++) {
     l = scheme_proper_list_length(argv[i]);
     
     if (l < 0)
-      scheme_wrong_type(MAP_NAME, "proper list", i, argc, argv);
+      scheme_wrong_contract(MAP_NAME, "list?", i, argc, argv);
     
     if (i == 1)
       size = l;

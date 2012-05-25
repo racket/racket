@@ -149,7 +149,7 @@
     (lambda (a b)
       (if (list? a)
 	  (append a b)
-	  (raise-type-error 'unquote-splicing "proper list" a))))
+	  (raise-argument-error 'unquote-splicing "list?" a))))
 
   (define-syntaxes (quasiquote)
     (let-values ([(here) (quote-syntax here)] ; id with module bindings, but not lexical

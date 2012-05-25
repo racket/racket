@@ -48,10 +48,10 @@
                         (if (and (procedure? proc)
                                  (procedure-arity-includes? proc 0))
                             (values proc autos)
-                            (raise-type-error 'make-struct-info
-                                              "procedure (arity 0)"
-                                              proc)))))
-
+                            (raise-argument-error 'make-struct-info
+                                                  "(procedure-arity-includes/c 0)"
+                                                  proc)))))
+  
   (define-for-syntax (self-ctor-transformer orig stx)
     (define (transfer-srcloc orig stx)
       (datum->syntax orig (syntax-e orig) stx orig))
@@ -91,18 +91,18 @@
   (define (check-struct-type name what)
     (when what
       (unless (struct-type? what)
-        (raise-type-error name "struct-type or #f" what)))
+        (raise-argument-error name "(or/c struct-type? #f)" what)))
     what)
 
   (define (check-inspector name what)
     (when what
       (unless (inspector? what)
-        (raise-type-error name "inspector or #f" what)))
+        (raise-argument-error name "(or/c inspector? #f)" what)))
     what)
 
   (define (check-reflection-name name what)
     (unless (symbol? what)
-      (raise-type-error name "symbol" what))
+      (raise-argument-error name "symbol?" what))
     what)
 
   (define-syntax-parameter define/generic
@@ -853,6 +853,6 @@
                                   (lambda (field) (or (new-binding-for field) 
                                                       #`(#,field the-struct)))
                                   (reverse accessors))))
-                           (raise-type-error 'form-name 
-                                             #,(format "~a" (syntax-e #'info))
-                                             the-struct)))))))]))))
+                           (raise-argument-error 'form-name 
+                                                 #,(format "~a?" (syntax-e #'info))
+                                                 the-struct)))))))]))))

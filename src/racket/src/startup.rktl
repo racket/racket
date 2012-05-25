@@ -207,7 +207,7 @@
     (lambda (s)
       (unless (or (path-for-some-system? s)
                   (path-string? s))
-        (raise-type-error 'normal-path-case "path (for any system) or valid-path string" s))
+        (raise-argument-error 'normal-path-case "(or/c path-for-some-system? path-string?)" s))
       (cond
        [(if (path-for-some-system? s)
             (eq? (path-convention-type s) 'windows)
@@ -236,10 +236,10 @@
     (case-lambda 
      [(program libpath reverse?)
       (unless (path-string? program) 
-	(raise-type-error 'find-executable-path "path or string (sans nul)" program))
+	(raise-argument-error 'find-executable-path "path-string?" program))
       (unless (or (not libpath) (and (path-string? libpath) 
 				     (relative-path? libpath)))
-	(raise-type-error 'find-executable-path "#f or relative path or string" libpath))
+	(raise-argument-error 'find-executable-path "(or/c #f (and/c path-string? relative-path?))" libpath))
       (letrec ([found-exec
 		(lambda (exec-name)
                   (if libpath
@@ -300,10 +300,10 @@
       (lambda (s default)
 	(unless (or (bytes? s)
 		    (string? s))
-	  (raise-type-error 'path-list-string->path-list "byte string or string" s))
+	  (raise-argument-error 'path-list-string->path-list "(or/c bytes? string?)" s))
 	(unless (and (list? default)
 		     (andmap path? default))
-	  (raise-type-error 'path-list-string->path-list "list of paths" default))
+	  (raise-argument-error 'path-list-string->path-list "(listof path?)" default))
 	(let loop ([s (if (string? s)
 			  (string->bytes/utf-8 s)
 			  s)])
@@ -317,12 +317,11 @@
   (define-values (-check-relpath)
     (lambda (who s)
       (unless (path-string? s)
-        (raise-type-error who "path or valid-path string" s))
+        (raise-argument-error who "path-string?" s))
       (unless (relative-path? s)
-        (raise (exn:fail:contract
-                (string->immutable-string
-                 (format "~a: invalid relative path: ~s" who s))
-                (current-continuation-marks))))))
+        (raise-arguments-error who
+                               "invalid relative path"
+                               "path" s))))
 
   (define-values (-check-collection)
     (lambda (who collection collection-path)
@@ -333,7 +332,7 @@
     (lambda (who fail)
       (unless (and (procedure? fail)
                    (procedure-arity-includes? fail 1))
-        (raise-type-error who "procedure (arity 1)" fail))))
+        (raise-argument-error who "(any/c . -> . any)" fail))))
 
   (define-values (collection-path)
     (lambda (fail collection . collection-path) 
@@ -568,15 +567,23 @@
                                   (cons (car l) (filter f (cdr l)))
                                   (filter f (cdr l))))))
                       (fail
-                       (format "collection not found: ~s in any of: ~s~a" 
+                       (format "collection not found\n  collection: ~s\n  in collection directories:~a~a" 
                                (if (null? collection-path)
                                    (to-string collection)
                                    (string-append (to-string collection) "/" rest-coll))
-                               (filter path? all-paths)
+                               (apply
+                                string-append
+                                (map (lambda (p)
+                                       (format "\n   ~a" p))
+                                     (filter path? all-paths)))
                                (if (ormap box? all-paths)
-                                   (format " or: ~s in any of: ~s" 
+                                   (format "\n   sub-collection: ~s\n  in parent directories:~a"
                                            rest-coll 
-                                           (map unbox (filter box? all-paths)))
+                                           (apply
+                                            string-append
+                                            (map (lambda (p)
+                                                   (format "\n   ~a" (unbox p))))
+                                            (filter box? all-paths)))
                                    "")))))
                 (let ([dir (*build-path-rep (car paths) collection)])
                   (if (*directory-exists? (car paths) dir)
@@ -611,9 +618,9 @@
     (lambda (s sfx who)
       (unless (or (path-for-some-system? s)
                   (path-string? s))
-        (raise-type-error who "path (for any system) or valid-path string" 0 s sfx))
+        (raise-argument-error who "(or/c path-for-some-system? path-string?)" 0 s sfx))
       (unless (or (string? sfx) (bytes? sfx))
-        (raise-type-error who "string or byte string" 1 s sfx))
+        (raise-argument-error who "(or/c string? bytes?)" 1 s sfx))
       (let-values ([(base name dir?) (split-path s)])
         (when (not base)
           (raise-mismatch-error who "cannot add a suffix to a root path: " s))
@@ -771,7 +778,7 @@
                          (and am bm (>= (cdr am) (cdr bm)) am)))))])
       (lambda (path expect-module)
         (unless (path-string? path)
-          (raise-type-error 'load/use-compiled "path or valid-path string" path))
+          (raise-argument-error 'load/use-compiled "path-string?" path))
         (unless (or (not expect-module)
                     (symbol? expect-module)
                     (and (list? expect-module)
@@ -779,7 +786,7 @@
                          (or (symbol? (car expect-module))
                              (not (car expect-module)))
                          (andmap symbol? (cdr expect-module))))
-          (raise-type-error 'load/use-compiled "#f, symbol, list (length 2 or more) of symbol or #f followed by symbols" path))
+          (raise-argument-error 'load/use-compiled "(or/c #f symbol? (cons/c (or/c #f symbol?) (non-empty-listof symbol?)))" path))
         (let*-values ([(orig-path) (resolve path)]
                       [(base orig-file dir?) (split-path path)]
                       [(file alt-file) (if expect-module
@@ -932,9 +939,9 @@
         (case-lambda 
          [(s) 
           (unless (resolved-module-path? s)
-            (raise-type-error 'standard-module-name-resolver
-                              "resolved-module-path"
-                              s))
+            (raise-argument-error 'standard-module-name-resolver
+                                  "resolved-module-path?"
+                                  s))
           ;; Just register s as loaded
           (when planet-resolver
             ;; Let planet resolver register, too:
@@ -958,9 +965,9 @@
                 (raise-syntax-error #f
                                     "bad module path"
                                     stx)
-                (raise-type-error 'standard-module-name-resolver
-                                  "module-path or path"
-                                  s)))
+                (raise-argument-error 'standard-module-name-resolver
+                                     "(or/c module-path? path?)"
+                                     s)))
           (define (flatten-sub-path base orig-l)
             (let loop ([a null] [l orig-l])
               (cond
@@ -1154,11 +1161,9 @@
                                                        (car s-parsed)
                                                        ""))
                        stx)
-                      (raise-type-error 
+                      (raise-argument-error 
                        'standard-module-name-resolver
-                       (format "module path~a" (if s-parsed
-                                                   (car s-parsed)
-                                                   ""))
+                       "module-path?"
                        s)))
                 ;; At this point, s-parsed is a complete path (or a cached vector)
                 (let* ([filename (if (vector? s-parsed)

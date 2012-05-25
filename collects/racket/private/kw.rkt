@@ -87,12 +87,12 @@
        (cond
         [(number? a) 
          (let ([a (method-adjust a)])
-           (format "~a argument~a" a (if (= a 1) "" "s")))]
+           (format "~a" a))]
         [(arity-at-least? a)
          (let ([a (method-adjust (arity-at-least-value a))])
-           (format "at least ~a argument~a" a (if (= a 1) "" "s")))]
+           (format "at least ~a" a))]
         [else
-         "a different number of arguments"])
+         "a different number"])
        (if (null? req)
            ""
            (format " plus ~a" (keywords-desc "" req)))
@@ -201,7 +201,7 @@
   (define (keyword-apply proc kws kw-vals normal-args . normal-argss)
     (let ([type-error
            (lambda (what which)
-             (apply raise-type-error
+             (apply raise-argument-error
                     'keyword-apply
                     what
                     which
@@ -211,22 +211,22 @@
                     normal-args
                     normal-argss))])
       (unless (procedure? proc)
-        (type-error "procedure" 0))
+        (type-error "procedure?" 0))
       (let loop ([ks kws])
         (cond
           [(null? ks) (void)]
           [(or (not (pair? ks))
                (not (keyword? (car ks))))
-           (type-error "list of keywords" 1)]
+           (type-error "(listof keyword?)" 1)]
           [(null? (cdr ks)) (void)]
           [(or (not (pair? (cdr ks)))
                (not (keyword? (cadr ks))))
            (loop (cdr ks))]
           [(keyword<? (car ks) (cadr ks))
            (loop (cdr ks))]
-          [else (type-error "sorted list of distinct keywords" 1)]))
+          [else (type-error "(and/c (listof? keyword?) sorted? distinct?)" 1)]))
       (unless (list? kw-vals)
-        (type-error "list" 2))
+        (type-error "list?" 2))
       (unless (= (length kws) (length kw-vals))
         (raise-mismatch-error
          'keyword-apply
@@ -241,7 +241,7 @@
                    (let ([l (car normal-argss)])
                      (if (list? l)
                          l
-                         (type-error "list" pos)))
+                         (type-error "list?" pos)))
                    (cons (car normal-argss)
                          (loop (cdr normal-argss) (add1 pos)))))])
         (if (null? kws)
@@ -267,9 +267,9 @@
                       (procedure-keywords v)
                       (values null null)))
                 (values null null))))]
-     [else (raise-type-error 'procedure-keywords
-                             "procedure"
-                             p)]))
+     [else (raise-argument-error 'procedure-keywords
+                                 "procedure?"
+                                 p)]))
 
   ;; ----------------------------------------
   ;; `lambda' with optional and keyword arguments
@@ -973,10 +973,10 @@
   (define-for-syntax kw-converted-arguments-variant-of (gensym 'converted-arguments-variant-of))
 
   (define-for-syntax (syntax-procedure-alias-property stx)
-    (unless (syntax? stx) (raise-type-error 'syntax-procedure-alias "syntax" stx))
+    (unless (syntax? stx) (raise-argument-error 'syntax-procedure-alias "syntax?" stx))
     (syntax-property stx kw-alias-of))
   (define-for-syntax (syntax-procedure-converted-arguments-property stx) 
-    (unless (syntax? stx) (raise-type-error 'syntax-procedure-converted-arguments "syntax" stx))
+    (unless (syntax? stx) (raise-argument-error 'syntax-procedure-converted-arguments "syntax?" stx))
     (syntax-property stx kw-converted-arguments-variant-of))
 
   (define-for-syntax (make-keyword-syntax get-ids n-req n-opt rest? req-kws all-kws)
@@ -1262,27 +1262,18 @@
                            (if (n . >= . method-n) (- n method-n) n))]
                       [args-str
                        (if (and (null? args) (null? kws))
-                           "no arguments supplied"
-                           ;; Hack to format arguments:
-                           (with-handlers ([exn:fail?
-                                            (lambda (exn)
-                                              ;; the message can end with:
-                                              ;; ..., given: x; given 117 arguments total
-                                              ;; ..., given: x; other arguments were: 1 2 3
-                                              (regexp-replace #rx"^.*? given: x; (other )?"
-                                                              (exn-message exn)
-                                                              ""))])
-                             (let-values ([(struct:written make-written written? written-ref written-set!)
-                                           (make-struct-type 'written #f 1 0)])
-                               (parameterize ([error-value->string-handler
-                                               (let ([prev (error-value->string-handler)])
-                                                 (lambda (v n)
-                                                   (if (written? v)
-                                                       (format "~s" (written-ref v 0))
-                                                       (prev v n))))])
-                                 (apply
-                                  raise-type-error 'x "x" 0 (make-written 'x)
-                                  (append args (apply append (map list (map make-written kws) kw-args))))))))]
+                           ""
+                           ;; Format arguments:
+                           (apply
+                            string-append
+                            "\n  given arguments:"
+                            (append
+                             (map (lambda (v)
+                                    (format "\n   ~e" v))
+                                  args)
+                             (map (lambda (kw kw-arg)
+                                    (format "\n   ~a ~e" kw kw-arg))
+                                  kws kw-args))))]
                       [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
                                                       (car (keyword-procedure-name+fail p)))
                                                  (object-name p)
@@ -1293,23 +1284,32 @@
                         (if (keyword-procedure? p)
                             (format
                              (string-append
-                              "~a: does not expect an argument with keyword ~a; ~a")
+                              "application: procedure does not expect an argument with given keyword\n"
+                              "  procedure: ~a\n"
+                              "  given keyword: ~a"
+                              "~a")
                              (proc-name p) extra-kw args-str)
                             (format
                              (string-append
-                              "~a: does not accept keyword arguments; ~a")
+                              "application: procedure does not accept keyword arguments\n"
+                              "  procedure: ~a"
+                              "~a")
                              (proc-name p) args-str))
                         (if missing-kw
                             (format
                              (string-append
-                              "~a: requires an argument with keyword ~a, not supplied; ~a")
+                              "application: required keyword argument not supplied\n"
+                              "  procedure: ~a\n"
+                              "  required keyword: ~a"
+                              "~a")
                              (proc-name p) missing-kw args-str)
                             (format
                              (string-append
-                              "~a: no case matching ~a non-keyword"
-                              " argument~a; ~a")
-                             (proc-name p)
-                             (- n 2) (if (= 1 (- n 2)) "" "s") args-str)))
+                              "application: no case matching ~a non-keyword argument~a\n"
+                              "  procedure: ~a"
+                              "~a")
+                             (- n 2) (if (= 1 (- n 2)) "" "s")
+                             (proc-name p) args-str)))
                     (current-continuation-marks)))))))))
   (define (keyword-procedure-extract p kws n)
     (keyword-procedure-extract/method kws n p 0))
@@ -1330,13 +1330,13 @@
 
       (unless (and (list? req-kw) (andmap keyword? req-kw)
                    (sorted? req-kw))
-        (raise-type-error 'procedure-reduce-keyword-arity "sorted list of distinct keywords" 
-                          2 proc arity req-kw allowed-kw))
+        (raise-argument-error 'procedure-reduce-keyword-arity "(and/c (listof? keyword?) sorted? distinct?)"
+                              2 proc arity req-kw allowed-kw))
       (when allowed-kw
         (unless (and (list? allowed-kw) (andmap keyword? allowed-kw)
                      (sorted? allowed-kw))
-          (raise-type-error 'procedure-reduce-keyword-arity "sorted list of distinct keywords or #f" 
-                            3 proc arity req-kw allowed-kw))
+          (raise-argument-error 'procedure-reduce-keyword-arity "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
+                                3 proc arity req-kw allowed-kw))
         (unless (subset? req-kw allowed-kw)
           (raise-mismatch-error 'procedure-reduce-keyword-arity 
                                 "allowed-keyword list does not include all required keywords: "

@@ -7,7 +7,7 @@
                       (lambda (l)
                         (if (list? l) 
                             (void)
-                            (raise-type-error 'reverse "list" l))
+                            (raise-argument-error 'reverse "list?" l))
                         (letrec-values ([(loop)
                                          (lambda (a l)
                                            (if (null? l)

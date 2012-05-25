@@ -1224,9 +1224,10 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
         else if (SCHEME_BIGNUMP(v)) {
           return k + (uintptr_t)((Scheme_Bignum *)v)->digits[0];
         } else {
-          scheme_arg_mismatch("equal-hash-code",
-                              "hash procedure returned a value other than an exact integer: ",
-                              v);
+          scheme_contract_error("equal-hash-code",
+                                "hash procedure returned a value other than an exact integer",
+                                "resul1", 1, v,
+                                NULL);
           return 0;
         }
       } else {
@@ -1654,9 +1655,10 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
         else if (SCHEME_BIGNUMP(v)) {
           return (uintptr_t)((Scheme_Bignum *)v)->digits[0];
         } else {
-          scheme_arg_mismatch("equal-secondary-hash-code",
-                              "hash procedure returned a value other than an exact integer: ",
-                              v);
+          scheme_contract_error("equal-secondary-hash-code",
+                                "hash procedure returned a value other than an exact integer",
+                                "result", 1, v,
+                                NULL);
           return 0;
         }
       } else {

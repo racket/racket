@@ -28,6 +28,7 @@
          check-between/c
          check-unary-between/c
          parameter/c
+         procedure-arity-includes/c
          
          any/c
          any
@@ -879,7 +880,26 @@
            (contract-stronger? (parameter/c-ctc that) 
                                (parameter/c-ctc this))))))
 
+(define-struct procedure-arity-includes/c (n)
+  #:omit-define-syntaxes
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:stronger (λ (this that) (and (procedure-arity-includes/c? that)
+                                  (= (procedure-arity-includes/c-n this)
+                                     (procedure-arity-includes/c-n that))))
+   #:name (λ (ctc) `(procedure-arity-includes/c ,(procedure-arity-includes/c-n ctc)))
+   #:first-order (λ (ctc)
+                   (define n (procedure-arity-includes/c-n ctc))
+                   (λ (x)
+                     (and (procedure? x)
+                          (procedure-arity-includes? x n))))))
 
+(define/subexpression-pos-prop (procedure-arity-includes/c n)
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'procedure-arity-includes/c
+                          "exact-nonnegative-integer?"
+                          n))
+  (make-procedure-arity-includes/c n))
 
 (define (get-any-projection c) any-projection)
 (define (any-projection b) any-function)

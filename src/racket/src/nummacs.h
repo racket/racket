@@ -24,11 +24,11 @@
 */
 
 #define NEED_NUMBER(name) \
-  scheme_wrong_type(#name, "number", 0, argc, argv)
+  scheme_wrong_contract(#name, "number?", 0, argc, argv)
 #define NEED_REAL(name) \
-  scheme_wrong_type(#name, REAL_NUMBER_STR, 0, argc, argv)
+  scheme_wrong_contract(#name, "real?", 0, argc, argv)
 #define NEED_INTEGER(name) \
-  scheme_wrong_type(#name, "integer", 0, argc, argv)
+  scheme_wrong_contract(#name, "integer", 0, argc, argv)
 
 #define rat_from_float(d, sr) force_rat(scheme_rational_from_float(d), sr)
 #define rat_from_double(d, sr) force_rat(scheme_rational_from_double(d), sr)
@@ -61,13 +61,13 @@ name ## __slow (Scheme_Object *p, int argc, Scheme_Object *argv[]) \
   for (i = 1; i < argc; i++) {\
     o = argv[i]; \
     if (!TYPEP(o)) { \
-      scheme_wrong_type(scheme_name, type, i, argc, argv); \
+      scheme_wrong_contract(scheme_name, type, i, argc, argv); \
       return NULL; \
     } \
     if (!bin_name(p, o)) { \
         for (i++; i < argc; i++) { \
           if (!TYPEP(argv[i])) \
-           scheme_wrong_type(scheme_name, type, i, argc, argv); \
+           scheme_wrong_contract(scheme_name, type, i, argc, argv); \
         } \
         return scheme_false; \
     } \
@@ -84,11 +84,11 @@ name (int argc, Scheme_Object *argv[]) \
   Scheme_Object *p, *p2; \
   p = argv[0]; \
   if (!TYPEP(p)) \
-   scheme_wrong_type(scheme_name, type, 0, argc, argv); \
+   scheme_wrong_contract(scheme_name, type, 0, argc, argv); \
   if (argc == 2) { \
     p2 = argv[1]; \
     if (!TYPEP(p2)) \
-      scheme_wrong_type(scheme_name, type, 1, argc, argv); \
+      scheme_wrong_contract(scheme_name, type, 1, argc, argv); \
     return name ## __bin(p, p2); \
   } else \
     return name ## __slow(p, argc, argv); \
@@ -111,11 +111,11 @@ static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2)
                       toi_or_toe, \
                       check_exact_zero1, check_exact_one1, check_exact_zero2, check_exact_one2) \
 rettype name (const Scheme_Object *n1, const Scheme_Object *n2); \
-static rettype name ## __wrong_type(const Scheme_Object *v) \
+static rettype name ## __wrong_contract(const Scheme_Object *v) \
 { \
   Scheme_Object *a[1]; \
   a[0] = (Scheme_Object *)v; \
-  scheme_wrong_type(scheme_name, numbertype, -1, 0, a); \
+  scheme_wrong_contract(scheme_name, numbertype, -1, 0, a); \
   return 0; \
 } \
 static MZ_INLINE rettype name ## __int_big(const Scheme_Object *n1, const Scheme_Object *n2) { \
@@ -336,7 +336,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
         return name ## __int_comp(n1, n2); \
       } \
       ) \
-      return name ## __wrong_type(n2); \
+      return name ## __wrong_contract(n2); \
     } \
   else { \
    t1 = _SCHEME_TYPE(n1); \
@@ -372,7 +372,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
         return name ## __flt_comp(d1, n1, n2);        \
       } \
       )\
-      return name ## __wrong_type(n2); \
+      return name ## __wrong_contract(n2); \
     } else \
    ) \
    if (t1 == scheme_double_type) \
@@ -408,7 +408,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
         return name ## __dbl_comp(d1, n1, n2); \
       } \
       )\
-      return name ## __wrong_type(n2); \
+      return name ## __wrong_contract(n2); \
     } \
   else if (t1 == scheme_bignum_type) \
     { \
@@ -433,7 +433,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 	 return name ## __big_comp(n1, n2); \
        } \
        )\
-       return name ## __wrong_type(n2); \
+       return name ## __wrong_contract(n2); \
     } \
   else if (t1 == scheme_rational_type) \
     { \
@@ -458,7 +458,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
          return name ## __rat_comp(n1, n2); \
        } \
        )\
-       return name ## __wrong_type(n2); \
+       return name ## __wrong_contract(n2); \
     } \
   complexwrap( \
   else if (noniziwrap((t1 == scheme_complex_type))) \
@@ -480,11 +480,11 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
          return name ## __comp_rat(n1, n2); \
        if (noniziwrap((t2 == scheme_complex_type))) \
 	 return cxop((n1), (n2)); \
-       return name ## __wrong_type(n2); \
+       return name ## __wrong_contract(n2); \
     } \
   ) \
   else \
-       return name ## __wrong_type(n1); \
+       return name ## __wrong_contract(n1); \
   } \
 }
 
@@ -548,7 +548,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 0, 0, 0, 0, \
                 GEN_SCHEME_BOOL_APPLY, badfunc, badfunc, badfunc, badfunc, \
                 nanckop, snanckop, nanckop, snanckop, \
-                GEN_IDENT, GEN_IDENT, exzeopl, exzeopr, "number", GEN_TOI, \
+                GEN_IDENT, GEN_IDENT, exzeopl, exzeopr, "number?", GEN_TOI, \
                 c0_1, c1_1, c0_2, c1_2)
 
 #define GEN_BIN_DIV_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, c0_1, c1_1, c0_2, c1_2) \
@@ -559,7 +559,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 GEN_MAKE_NZERO, GEN_MAKE_NSZERO, GEN_MAKE_PZERO, GEN_MAKE_PSZERO, \
                 GEN_APPLY3, GEN_MAKE_ZERO_Z, GEN_MAKE_SZERO_Z, GEN_SAME_INF_Z, GEN_SAME_SINF_Z, \
                 NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, \
-                GEN_IDENT, GEN_IDENT, GEN_RETURN_0, GEN_OMIT, "number", GEN_TOI, \
+                GEN_IDENT, GEN_IDENT, GEN_RETURN_0, GEN_OMIT, "number?", GEN_TOI, \
                 c0_1, c1_1, c0_2, c1_2)
 
 #define GEN_BIN_COMP(name, scheme_name, iop, fop, bn_op, rop, cxop, waybig, waysmall, firstzero, secondzero, complexwrap, noniziwrap, numbertype) \
@@ -575,11 +575,11 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 
 #define GEN_BIN_INT_OP(name, scheme_name, op, bigop) \
 static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2); \
-static Scheme_Object *name ## __wrong_type(const Scheme_Object *v) \
+static Scheme_Object *name ## __wrong_contract(const Scheme_Object *v) \
 { \
   Scheme_Object *a[1]; \
   a[0] = (Scheme_Object *)v; \
-  scheme_wrong_type(scheme_name, "exact integer", -1, 0, a); \
+  scheme_wrong_contract(scheme_name, "exact-integer?", -1, 0, a); \
   return NULL; \
 } \
 static MZ_INLINE Scheme_Object * name ## __int_big(const Scheme_Object *n1, const Scheme_Object *n2) { \
@@ -609,10 +609,10 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
     if (SCHEME_BIGNUMP(n2)) \
       return bigop(n1, n2); \
   } else { \
-    return name ## __wrong_type(n1);       \
+    return name ## __wrong_contract(n1);       \
   } \
  \
-  return name ## __wrong_type(n2); \
+  return name ## __wrong_contract(n2); \
 }
 
 #define GEN_NARY_OP(stat, name, scheme_name, bin_name, ident, TYPEP, type, single) \
@@ -624,7 +624,7 @@ name ## __slow (Scheme_Object *ret, int argc, Scheme_Object *argv[])  \
   for (i = 1 ; i<argc ; ++i ) { \
     Scheme_Object *o; \
     o = argv[i]; \
-    if (!TYPEP(o)) { scheme_wrong_type(scheme_name, type, i, argc, argv); return NULL; } \
+    if (!TYPEP(o)) { scheme_wrong_contract(scheme_name, type, i, argc, argv); return NULL; } \
     ret = bin_name (ret, o); \
   } \
   return (ret); \
@@ -635,11 +635,11 @@ name (int argc, Scheme_Object *argv[]) \
   Scheme_Object *ret;                          \
   if (!argc) return scheme_make_integer(ident); \
   ret = argv[0]; \
-  if (!TYPEP(ret)) { scheme_wrong_type(scheme_name, type, 0, argc, argv); return NULL; } \
+  if (!TYPEP(ret)) { scheme_wrong_contract(scheme_name, type, 0, argc, argv); return NULL; } \
   if (argc == 2) { \
     Scheme_Object *b; \
     b = argv[1]; \
-    if (!TYPEP(b)) { scheme_wrong_type(scheme_name, type, 1, argc, argv); return NULL; } \
+    if (!TYPEP(b)) { scheme_wrong_contract(scheme_name, type, 1, argc, argv); return NULL; } \
     return bin_name(ret, b); \
   } \
   if (argc == 1) { return single(ret); } \
@@ -654,7 +654,7 @@ name ## __slow (Scheme_Object *ret, int argc, Scheme_Object *argv[]) \
   int i; \
   for ( i=1 ; i<argc ; ++i ) { \
     if (!TYPEP(argv[i])) \
-      scheme_wrong_type(scheme_name, type, i, argc, argv); \
+      scheme_wrong_contract(scheme_name, type, i, argc, argv); \
     ret = bin_name (ret, argv[i]); \
   } \
   return ret; \
@@ -664,11 +664,11 @@ name (int argc, Scheme_Object *argv[]) \
 { \
   Scheme_Object *ret = argv[0]; \
   if (!TYPEP(ret)) \
-    scheme_wrong_type(scheme_name, type, 0, argc, argv); \
+    scheme_wrong_contract(scheme_name, type, 0, argc, argv); \
   if (argc == 1) return ret; \
   if (argc == 2) { \
     if (!TYPEP(argv[1])) \
-      scheme_wrong_type(scheme_name, type, 1, argc, argv); \
+      scheme_wrong_contract(scheme_name, type, 1, argc, argv); \
     return bin_name(ret, argv[1]); \
   } \
   return name ## __slow(ret, argc, argv); \
@@ -707,7 +707,7 @@ name (int argc, Scheme_Object *argv[]) \
    } else if (t == scheme_complex_type) \
      return complex_fun(o); \
    else { \
-     scheme_wrong_type(#scheme_name, "number", 0, argc, argv); \
+     scheme_wrong_contract(#scheme_name, "number?", 0, argc, argv); \
      return NULL; \
     } \
   } \

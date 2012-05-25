@@ -221,15 +221,6 @@ typedef struct fsemaphore_t {
 
 /* Primitive instrumentation stuff */
 
-/* Exceptions */ 
-void scheme_wrong_type_from_ft(const char *who, const char *expected_type, int what, int argc, Scheme_Object **argv);
-
-#define SCHEME_WRONG_TYPE_MAYBE_IN_FT(who, expected_type, what, argc, argv) \
-  if (scheme_use_rtcall) \
-    scheme_wrong_type_from_ft(who, expected_type, what, argc, argv); \
-  else \
-    scheme_wrong_type(who, expected_type, what, argc, argv);
-
 /* Signature flags for primitive invocations */
 #define SIG_ON_DEMAND          1
 #define SIG_ALLOC              2

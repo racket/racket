@@ -21,9 +21,9 @@
                                  (if (and (procedure? v)
                                           (procedure-arity-includes? v 1))
                                      v
-                                     (raise-type-error 'guard-for-prop:struct-info
-                                                       "procedure (arity 1)"
-                                                       v)))))
+                                     (raise-argument-error 'guard-for-prop:struct-info
+                                                           "(any/c . -> . any/c)"
+                                                           v)))))
   
   (define-values (struct:struct-info make-struct-info struct-info-rec?
                                      struct-info-ref struct-info-set!)
@@ -40,9 +40,9 @@
                         (if (and (procedure? proc)
                                  (procedure-arity-includes? proc 0))
                             proc
-                            (raise-type-error 'make-struct-info
-                                              "procedure (arity 0)"
-                                              proc)))))
+                            (raise-argument-error 'make-struct-info
+                                                  "(procedure-arity-includes/c 0)"
+                                                  proc)))))
 
   (define-values (extract-struct-info)
     (lambda (si)
@@ -65,9 +65,9 @@
        [(set!-transformer? si)
         (extract-struct-info (set!-transformer-procedure si))]
        [(struct-declaration-info? si) si]
-       [else (raise-type-error 'extract-struct-info
-                               "struct-info"
-                               si)])))
+       [else (raise-argument-error 'extract-struct-info
+                                   "struct-info?"
+                                   si)])))
 
   (define-values (struct-info?)
     (lambda (si)
@@ -113,13 +113,13 @@
                                (lambda (val info)
                                  (unless (and (procedure? val)
                                               (procedure-arity-includes? val 1))
-                                   (raise-type-error 'guard-for-prop:struct-auto-info "procedure (arity 1)" val))
+                                   (raise-argument-error 'guard-for-prop:struct-auto-info "(procedure-arity-includes/c 1)" val))
                                  val)))
 
   (define-values (struct-auto-info-lists)
     (lambda (v)
       (unless (struct-auto-info? v)
-        (raise-type-error 'struct-auto-info-lists "struct-auto-info" v))
+        (raise-argument-error 'struct-auto-info-lists "struct-auto-info?" v))
       (let ([l ((struct-auto-info-ref v) v)]
             [identifier? (lambda (v) (and (syntax? v) (symbol? (syntax-e v))))])
         (unless (and (list? l)

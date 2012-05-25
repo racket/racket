@@ -2179,21 +2179,21 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
       count = -1;
 
     if (count < 0)
-      scheme_wrong_type(who, "exact nonnegative integer", 0, argc, argv);
+      scheme_wrong_contract(who, "exact-nonnegative-integer?", 0, argc, argv);
   } else
     count = 1;
 
   expr = argv[stx_pos];
   if (!SCHEME_STXP(expr))
-    scheme_wrong_type(who, "syntax", stx_pos, argc, argv);
+    scheme_wrong_contract(who, "syntax?", stx_pos, argc, argv);
 
   env = orig_env = scheme_current_thread->current_local_env;
   local_mark = scheme_current_thread->current_local_mark;
 
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "%s: not currently transforming",
-                     who);
+    scheme_contract_error(who,
+                          "not currently transforming",
+                          NULL);
 
   while (env && !COMPILE_DATA(env)->lifts) {
     env = env->next;
@@ -2204,8 +2204,9 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
       env = NULL;
 
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "syntax-local-lift-expression: no lift target");
+    scheme_contract_error("syntax-local-lift-expression",
+                          "no lift target",
+                          NULL);
   
   expr = scheme_add_remove_mark(expr, local_mark);
 
@@ -2283,9 +2284,10 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_mark, 
   env = scheme_get_module_lift_env(env);
 
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "syntax-local-lift-module-end-declaration: not currently transforming"
-                     " an expression within a module declaration");
+    scheme_contract_error("syntax-local-lift-module-end-declaration",
+                          "not currently transforming"
+                          " an expression within a module declaration",
+                          NULL);
   
   expr = scheme_add_remove_mark(expr, local_mark);
   orig_expr = expr;
@@ -2320,8 +2322,9 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
   }
 
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "syntax-local-lift-requires: could not find target context");
+    scheme_contract_error("syntax-local-lift-requires",
+                          "could not find target context",
+                          NULL);
 
   
   mark = scheme_new_mark();
@@ -2360,8 +2363,9 @@ Scheme_Object *scheme_local_lift_provide(Scheme_Object *form, Scheme_Object *loc
   }
 
   if (!env)
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "syntax-local-lift-provide: not expanding in a module run-time body");
+    scheme_contract_error("syntax-local-lift-provide",
+                          "not expanding in a module run-time body",
+                          NULL);
   
   form = scheme_add_remove_mark(form, local_mark);
   form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 

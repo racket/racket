@@ -2213,9 +2213,9 @@ Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, Scheme_Object *shift,
 static Scheme_Object *syntax_shift_phase(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-shift-phase-level", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-shift-phase-level", "syntax?", 0, argc, argv);
   if (SCHEME_TRUEP(argv[1]) && !scheme_exact_p(argv[1]))
-    scheme_wrong_type("syntax-shift-phase-level", "exact integer or #f", 0, argc, argv);
+    scheme_wrong_contract("syntax-shift-phase-level", "(or/c exact-integer? #f)", 0, argc, argv);
 
   if (SCHEME_INTP(argv[1]) && !SCHEME_INT_VAL(argv[1]))
     return argv[0];
@@ -7625,9 +7625,10 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
     if (ut)
       return_NULL; /* happens with bad wraps from a bad .zo */
     /* otherwise, only happens with cycles: */
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "datum->syntax: cannot create syntax from cyclic datum: %V",
-                     o);
+    scheme_contract_error("datum->syntax"
+                          "cannot create syntax from cyclic datum",
+                          "datum", 1, o,
+                          NULL);
     return NULL;
   }
 
@@ -7801,7 +7802,7 @@ static Scheme_Object *syntax_p(int argc, Scheme_Object **argv)
 static Scheme_Object *syntax_to_datum(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax->datum", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax->datum", "syntax?", 0, argc, argv);
     
   return scheme_syntax_to_datum(argv[0], 0, NULL);
 }
@@ -7823,7 +7824,7 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
   Scheme_Object *src = scheme_false, *properties = NULL;
   
   if (!SCHEME_FALSEP(argv[0]) && !SCHEME_STXP(argv[0]))
-    scheme_wrong_type("datum->syntax", "syntax or #f", 0, argc, argv);
+    scheme_wrong_contract("datum->syntax", "(or/c syntax? #f)", 0, argc, argv);
   if (argc > 2) {
     int ll;
 
@@ -7865,7 +7866,7 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     if (argc > 3) {
       if (!SCHEME_FALSEP(argv[3])) {
 	if (!SCHEME_STXP(argv[3]))
-	  scheme_wrong_type("datum->syntax", "syntax or #f", 3, argc, argv);
+	  scheme_wrong_contract("datum->syntax", "(or/c syntax? #f)", 3, argc, argv);
 	properties = ((Scheme_Stx *)argv[3])->props;
       }
       
@@ -7873,7 +7874,7 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
         /* Not used; allowed for backward-compatibility */
         if (!SCHEME_FALSEP(argv[4])) {
           if (!SCHEME_STXP(argv[4]))
-            scheme_wrong_type("datum->syntax", "syntax or #f", 4, argc, argv);
+            scheme_wrong_contract("datum->syntax", "(or/c syntax? #f)", 4, argc, argv);
         } 
       }
     }
@@ -7896,9 +7897,10 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
       }
       
       if (SCHEME_FALSEP(line) != SCHEME_FALSEP(col))
-	scheme_arg_mismatch("datum->syntax", 
-			    "line and column positions must both be numbers or #f in: ", 
-			    argv[2]);
+	scheme_contract_error("datum->syntax", 
+                              "line and column positions must both be numbers or #f", 
+                              "in location", 1, argv[2],
+                              NULL);
 
       /* Too-large positions go to unknown */
       if (SCHEME_BIGNUMP(line) || SCHEME_BIGNUMP(col)) {
@@ -7939,7 +7941,7 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-e", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-e", "syntax?", 0, argc, argv);
     
   return scheme_stx_content(argv[0]);
 }
@@ -7949,7 +7951,7 @@ static Scheme_Object *syntax_line(int argc, Scheme_Object **argv)
   Scheme_Stx *stx = (Scheme_Stx *)argv[0];
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-line", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-line", "syntax?", 0, argc, argv);
     
   if (stx->srcloc->line < 0)
     return scheme_false;
@@ -7962,7 +7964,7 @@ static Scheme_Object *syntax_col(int argc, Scheme_Object **argv)
   Scheme_Stx *stx = (Scheme_Stx *)argv[0];
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-column", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-column", "syntax?", 0, argc, argv);
     
   if (stx->srcloc->col < 0)
     return scheme_false;
@@ -7975,7 +7977,7 @@ static Scheme_Object *syntax_pos(int argc, Scheme_Object **argv)
   Scheme_Stx *stx = (Scheme_Stx *)argv[0];
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-position", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-position", "syntax?", 0, argc, argv);
     
   if (stx->srcloc->pos < 0)
     return scheme_false;
@@ -7988,7 +7990,7 @@ static Scheme_Object *syntax_span(int argc, Scheme_Object **argv)
   Scheme_Stx *stx = (Scheme_Stx *)argv[0];
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-span", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-span", "syntax?", 0, argc, argv);
     
   if (stx->srcloc->span < 0)
     return scheme_false;
@@ -8001,7 +8003,7 @@ static Scheme_Object *syntax_src(int argc, Scheme_Object **argv)
   Scheme_Stx *stx = (Scheme_Stx *)argv[0];
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-source", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-source", "syntax?", 0, argc, argv);
 
   return stx->srcloc->src;
 }
@@ -8011,7 +8013,7 @@ static Scheme_Object *syntax_to_list(int argc, Scheme_Object **argv)
   Scheme_Object *l;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax->list", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax->list", "syntax?", 0, argc, argv);
 
   l = scheme_stx_content(argv[0]);
   if (SCHEME_NULLP(l))
@@ -8030,7 +8032,7 @@ static Scheme_Object *syntax_to_list(int argc, Scheme_Object **argv)
 static Scheme_Object *syntax_tainted_p(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-tainted?", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-tainted?", "syntax?", 0, argc, argv);
 
   return (scheme_stx_is_tainted(argv[0])
           ? scheme_true
@@ -8044,7 +8046,7 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   WRAP_POS ewl;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-original?", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-original?", "syntax?", 0, argc, argv);
 
   stx = (Scheme_Stx *)argv[0];
 
@@ -8146,7 +8148,7 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 static Scheme_Object *syntax_property(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-property", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-property", "syntax?", 0, argc, argv);
 
   return scheme_stx_property(argv[0],
 			     argv[1],
@@ -8158,7 +8160,7 @@ static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv)
   Scheme_Stx *stx;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-property-symbol-keys", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-property-symbol-keys", "syntax?", 0, argc, argv);
 
   stx = (Scheme_Stx *)argv[0];
 
@@ -8185,11 +8187,11 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
   Scheme_Object *result, *observer;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-track-origin", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-track-origin", "syntax?", 0, argc, argv);
   if (!SCHEME_STXP(argv[1]))
-    scheme_wrong_type("syntax-track-origin", "syntax", 1, argc, argv);
+    scheme_wrong_contract("syntax-track-origin", "syntax?", 1, argc, argv);
   if (!SCHEME_STX_IDP(argv[2]))
-    scheme_wrong_type("syntax-track-origin", "identifier syntax", 2, argc, argv);
+    scheme_wrong_contract("syntax-track-origin", "identifier?", 2, argc, argv);
   
   result = scheme_stx_track(argv[0], argv[1], argv[2]);
   observer = scheme_get_expand_observe();
@@ -8214,7 +8216,7 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
   r = argv[0];
 
   if (!SCHEME_STXP(r))
-    scheme_wrong_type("delta-introducer", "syntax", 0, argc, argv);
+    scheme_wrong_contract("delta-introducer", "syntax?", 0, argc, argv);
 
   delta = SCHEME_PRIM_CLOSURE_ELS(p)[0];
   taint_p = SCHEME_PRIM_CLOSURE_ELS(p)[1];
@@ -8239,7 +8241,7 @@ static Scheme_Object *extract_phase(const char *who, int pos, int argc, Scheme_O
     if (!SCHEME_FALSEP(phase)
         && !SCHEME_INTP(phase)
         && !SCHEME_BIGNUMP(phase))
-      scheme_wrong_type(who, "exact integer or #f", pos, argc, argv);
+      scheme_wrong_contract(who, "(or/c exact-integer? #f)", pos, argc, argv);
   } else {
     Scheme_Thread *p = scheme_current_thread;
     intptr_t ph;
@@ -8266,9 +8268,9 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   Scheme_Object *phase;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
-    scheme_wrong_type("make-syntax-delta-introducer", "syntax identifier", 0, argc, argv);
+    scheme_wrong_contract("make-syntax-delta-introducer", "identifier?", 0, argc, argv);
   if (!SCHEME_STXP(argv[1]) && !SCHEME_FALSEP(argv[1]))
-    scheme_wrong_type("make-syntax-delta-introducer", "syntax or #f", 1, argc, argv);
+    scheme_wrong_contract("make-syntax-delta-introducer", "(or/c syntax? #f)", 1, argc, argv);
 
   phase = extract_phase("make-syntax-delta-introducer", 2, argc, argv, scheme_make_integer(0), 1);
 
@@ -8347,9 +8349,9 @@ static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)
   Scheme_Object *phase;
 
   if (!SCHEME_STX_IDP(argv[0]))
-    scheme_wrong_type("bound-identifier=?", "identifier syntax", 0, argc, argv);
+    scheme_wrong_contract("bound-identifier=?", "identifier?", 0, argc, argv);
   if (!SCHEME_STX_IDP(argv[1]))
-    scheme_wrong_type("bound-identifier=?", "identifier syntax", 1, argc, argv);
+    scheme_wrong_contract("bound-identifier=?", "identifier?", 1, argc, argv);
 
   phase = extract_phase("bound-identifier=?", 2, argc, argv, scheme_make_integer(0), 0);
 
@@ -8363,9 +8365,9 @@ static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_
   Scheme_Object *phase, *phase2;
 
   if (!SCHEME_STX_IDP(argv[0]))
-    scheme_wrong_type(who, "identifier syntax", 0, argc, argv);
+    scheme_wrong_contract(who, "identifier?", 0, argc, argv);
   if (!SCHEME_STX_IDP(argv[1]))
-    scheme_wrong_type(who, "identifier syntax", 1, argc, argv);
+    scheme_wrong_contract(who, "identifier?", 1, argc, argv);
 
   phase = extract_phase(who, 2, argc, argv, 
                         ((delta == MZ_LABEL_PHASE) 
@@ -8410,7 +8412,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
   a = argv[0];
 
   if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
-    scheme_wrong_type(name, "identifier syntax", 0, argc, argv);
+    scheme_wrong_contract(name, "identifier?", 0, argc, argv);
 
   phase = extract_phase(name, 1, argc, argv, dphase, 1);
 
@@ -8419,7 +8421,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
     if (!SCHEME_FALSEP(phase)
         && !SCHEME_INTP(phase)
         && !SCHEME_BIGNUMP(phase))
-      scheme_wrong_type(name, "exact integer or #f", 1, argc, argv);
+      scheme_wrong_contract(name, "(or/c exact-integer? #f)", 1, argc, argv);
   } else {
     Scheme_Thread *p = scheme_current_thread;
     phase = scheme_make_integer(p->current_local_env
@@ -8481,7 +8483,7 @@ static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)
   Scheme_Object *a = argv[0], *p, *l;
 
   if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
-    scheme_wrong_type("identifier-prune-lexical-context", "identifier syntax", 0, argc, argv);
+    scheme_wrong_contract("identifier-prune-lexical-context", "identifier?", 0, argc, argv);
 
   if (argc > 1) {
     l = argv[1];
@@ -8491,7 +8493,7 @@ static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)
       l = SCHEME_CDR(l);
     }
     if (!SCHEME_NULLP(l))
-      scheme_wrong_type("identifier-prune-lexical-context", "list of symbols", 1, argc, argv);
+      scheme_wrong_contract("identifier-prune-lexical-context", "(listof symbol?)", 1, argc, argv);
     l = argv[1];
   } else {
     l = scheme_make_pair(SCHEME_STX_VAL(a), scheme_null);
@@ -8509,7 +8511,7 @@ static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv)
   Scheme_Object *l = scheme_null;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_STX_SYMBOLP(argv[0]))
-    scheme_wrong_type("identifier-prune-to-source-module", "identifier syntax", 0, argc, argv);
+    scheme_wrong_contract("identifier-prune-to-source-module", "identifier?", 0, argc, argv);
 
   /* Keep only redirecting phase shifts */
 
@@ -8545,7 +8547,7 @@ static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv)
   int source = 0;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-source-module", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-source-module", "syntax?", 0, argc, argv);
 
   if ((argc > 1) && SCHEME_TRUEP(argv[1]))
     source = 1;
@@ -8561,10 +8563,10 @@ static Scheme_Object *syntax_arm(int argc, Scheme_Object **argv)
   int use_mode;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-arm", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-arm", "syntax?", 0, argc, argv);
   if ((argc > 1) && !SCHEME_FALSEP(argv[1])) {
     if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_inspector_type))
-      scheme_wrong_type("syntax-arm", "inspector or #f", 1, argc, argv);
+      scheme_wrong_contract("syntax-arm", "(or/c inspector? #f)", 1, argc, argv);
     insp = argv[1];
   } else
     insp = scheme_false;
@@ -8579,10 +8581,10 @@ static Scheme_Object *syntax_disarm(int argc, Scheme_Object **argv)
   Scheme_Object *insp;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-disarm", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-disarm", "syntax?", 0, argc, argv);
   if (argc > 1) {
     if (SCHEME_TRUEP(argv[1]) && !SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_inspector_type))
-      scheme_wrong_type("syntax-disarm", "inspector or #f", 1, argc, argv);
+      scheme_wrong_contract("syntax-disarm", "(or/c inspector? #f)", 1, argc, argv);
     insp = argv[1];
   } else
     insp = scheme_false;
@@ -8593,9 +8595,9 @@ static Scheme_Object *syntax_disarm(int argc, Scheme_Object **argv)
 static Scheme_Object *syntax_rearm(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-rearm", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-rearm", "syntax?", 0, argc, argv);
   if (!SCHEME_STXP(argv[1]))
-    scheme_wrong_type("syntax-rearm", "syntax", 1, argc, argv);
+    scheme_wrong_contract("syntax-rearm", "syntax?", 1, argc, argv);
 
   if ((argc > 2) && SCHEME_TRUEP(argv[2]))
     return scheme_syntax_taint_rearm(argv[0], argv[1]);
@@ -8606,7 +8608,7 @@ static Scheme_Object *syntax_rearm(int argc, Scheme_Object **argv)
 static Scheme_Object *syntax_taint(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-taint", "syntax", 0, argc, argv);
+    scheme_wrong_contract("syntax-taint", "syntax?", 0, argc, argv);
 
   return add_taint_to_stx(argv[0], 1);
   

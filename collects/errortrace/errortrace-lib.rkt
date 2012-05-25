@@ -387,7 +387,7 @@
               [line (syntax-line stx)]
               [col (syntax-column stx)]
               [pos (syntax-position stx)])
-         (fprintf p "~a~a: ~.s\n"
+         (fprintf p "\n   ~a~a: ~.s"
                   (or file "[unknown source]")
                   (cond [line (format ":~a:~a" line col)]
                         [pos (format "::~a" pos)]
@@ -504,7 +504,7 @@
       (if (exn? exn)
           (let ([p (open-output-string)])
             (display (exn-message exn) p)
-            (newline p)
+            (display "\n  errortrace:" p)
             (print-error-trace p exn)
             (orig (get-output-string p) exn))
           (orig msg exn)))))

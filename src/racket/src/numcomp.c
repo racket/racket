@@ -322,11 +322,11 @@ static MZ_INLINE Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr)
     return scheme_make_small_bn_rational(n, sr);
 }
 
-GEN_NARY_COMP(eq, "=", scheme_bin_eq, SCHEME_NUMBERP, "number")
-GEN_NARY_COMP(lt, "<", scheme_bin_lt, SCHEME_REALP, REAL_NUMBER_STR)
-GEN_NARY_COMP(gt, ">", scheme_bin_gt, SCHEME_REALP, REAL_NUMBER_STR)
-GEN_NARY_COMP(lt_eq, "<=", scheme_bin_lt_eq, SCHEME_REALP, REAL_NUMBER_STR)
-GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, REAL_NUMBER_STR)
+GEN_NARY_COMP(eq, "=", scheme_bin_eq, SCHEME_NUMBERP, "number?")
+GEN_NARY_COMP(lt, "<", scheme_bin_lt, SCHEME_REALP, "real?")
+GEN_NARY_COMP(gt, ">", scheme_bin_gt, SCHEME_REALP, "real?")
+GEN_NARY_COMP(lt_eq, "<=", scheme_bin_lt_eq, SCHEME_REALP, "real?")
+GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, "real?")
 
 #define EQUAL(x, y) (x == y)
 #define LESS_THAN(x, y) (x < y)
@@ -349,11 +349,11 @@ GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, REAL_NUMBER_STR)
 
 #define GEN_IDENT_FOR_IZI GEN_OMIT
 
-GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_is_inexact, scheme_is_inexact, GEN_IDENT, GEN_IDENT, "number")
-GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
-GEN_BIN_COMP(scheme_bin_gt, ">", GREATER_THAN, GREATER_THAN, scheme_bignum_gt, scheme_rational_gt, COMP_IZI_GT, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
-GEN_BIN_COMP(scheme_bin_lt_eq, "<=", LESS_OR_EQUAL, fLESS_OR_EQUAL, scheme_bignum_le, scheme_rational_le, COMP_IZI_LT_EQ, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
-GEN_BIN_COMP(scheme_bin_gt_eq, ">=", GREATER_OR_EQUAL, GREATER_OR_EQUAL, scheme_bignum_ge, scheme_rational_ge, COMP_IZI_GT_EQ, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
+GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_is_inexact, scheme_is_inexact, GEN_IDENT, GEN_IDENT, "number?")
+GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_gt, ">", GREATER_THAN, GREATER_THAN, scheme_bignum_gt, scheme_rational_gt, COMP_IZI_GT, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_lt_eq, "<=", LESS_OR_EQUAL, fLESS_OR_EQUAL, scheme_bignum_le, scheme_rational_le, COMP_IZI_LT_EQ, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
+GEN_BIN_COMP(scheme_bin_gt_eq, ">=", GREATER_OR_EQUAL, GREATER_OR_EQUAL, scheme_bignum_ge, scheme_rational_ge, COMP_IZI_GT_EQ, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, "real?")
 
 int
 scheme_is_zero(const Scheme_Object *o)
@@ -509,8 +509,8 @@ negative_p (int argc, Scheme_Object *argv[])
 static GEN_BIN_OP(bin_max, "max", MAX, F_MAX, FS_MAX, scheme_bignum_max, scheme_rational_max, MAX_IZI, GEN_OMIT, GEN_OMIT, NAN_RETURNS_NAN, NAN_RETURNS_SNAN, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK)
 static GEN_BIN_OP(bin_min, "min", MIN, F_MIN, FS_MIN, scheme_bignum_min, scheme_rational_min, MIN_IZI, GEN_OMIT, GEN_OMIT, NAN_RETURNS_NAN, NAN_RETURNS_SNAN, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK)
 
-GEN_TWOARY_OP(static, sch_max, "max", bin_max, SCHEME_REALP, REAL_NUMBER_STR)
-GEN_TWOARY_OP(static, sch_min, "min", bin_min, SCHEME_REALP, REAL_NUMBER_STR)
+GEN_TWOARY_OP(static, sch_max, "max", bin_max, SCHEME_REALP, "real?")
+GEN_TWOARY_OP(static, sch_min, "min", bin_min, SCHEME_REALP, "real?")
 
 /************************************************************************/
 /*                                Flfx                                  */
@@ -519,8 +519,8 @@ GEN_TWOARY_OP(static, sch_min, "min", bin_min, SCHEME_REALP, REAL_NUMBER_STR)
 #define SAFE_FX_X(name, s_name, op, T, F)                    \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   if (!SCHEME_INTP(argv[0])) scheme_wrong_type(s_name, "fixnum", 0, argc, argv); \
-   if (!SCHEME_INTP(argv[1])) scheme_wrong_type(s_name, "fixnum", 1, argc, argv); \
+   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
+   if (!SCHEME_INTP(argv[1])) scheme_wrong_contract(s_name, "fixnum?", 1, argc, argv); \
    if (SCHEME_INT_VAL(argv[0]) op SCHEME_INT_VAL(argv[1]))   \
      return T;                                               \
    else                                                      \
@@ -563,8 +563,8 @@ UNSAFE_FX_X(unsafe_fx_max, >, bin_max, argv[0], argv[1], FX_SEL_ID)
 #define SAFE_FL_X(name, sname, op, T, F)                       \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   if (!SCHEME_DBLP(argv[0])) scheme_wrong_type(sname, "flonum", 0, argc, argv); \
-   if (!SCHEME_DBLP(argv[1])) scheme_wrong_type(sname, "flonum", 1, argc, argv); \
+   if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract(sname, "flonum?", 0, argc, argv); \
+   if (!SCHEME_DBLP(argv[1])) scheme_wrong_contract(sname, "flonum?", 1, argc, argv); \
    if (SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]))   \
      return T;                                               \
    else                                                      \

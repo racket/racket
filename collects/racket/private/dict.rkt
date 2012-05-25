@@ -34,7 +34,7 @@
           (and (dict? d)
                (hash-ref (dict-def-table d) 'dict-set! #f)
                #t))
-      (raise-type-error 'dict-mutable? "dict" d)))
+      (raise-argument-error 'dict-mutable? "dict?" d)))
 
 (define (dict-can-remove-keys? d)
   (if (d:dict? d)
@@ -44,7 +44,7 @@
                (or (hash-ref (dict-def-table d) 'dict-remove! #f)
                    (hash-ref (dict-def-table d) 'dict-remove #f))
                #t))
-      (raise-type-error 'dict-can-remove-keys? "dict" d)))
+      (raise-argument-error 'dict-can-remove-keys? "dict?" d)))
 
 (define (dict-can-functional-set? d)
   (if (d:dict? d)
@@ -53,7 +53,7 @@
           (and (dict? d)
                (hash-ref (dict-def-table d) 'dict-set #f)
                #t))
-      (raise-type-error 'dict-can-functional-set? "dict" d)))
+      (raise-argument-error 'dict-can-functional-set? "dict?" d)))
 
 (define (dict-has-key? d k)
   (define not-there (gensym))
@@ -75,7 +75,7 @@
                                   d)))]
      [(dict? d) (dict-ref d key)]
      [else
-      (raise-type-error 'dict-ref "dict" 0 d key)])]
+      (raise-argument-error 'dict-ref "dict?" 0 d key)])]
    [(d key default)
     (cond
      [(hash? d) (hash-ref d key default)]
@@ -95,7 +95,7 @@
      [(dict? d)
       (dict-ref d key default)]
      [else
-      (raise-type-error 'dict-ref "dict" 0 d key default)])]))
+      (raise-argument-error 'dict-ref "dict?" 0 d key default)])]))
 
 (define (dict-ref! d key new)
   (define not-there (gensym))
@@ -111,14 +111,14 @@
    [(hash? d) (hash-set! d key val)]
    [(vector? d) (vector-set! d key val)]
    [(assoc? d)
-    (raise-type-error 'dict-set! "mutable dict" 0 d key val)]
+    (raise-type-error 'dict-set! "mutable-dict?" 0 d key val)]
    [(dict? d)
     (let ([s! (hash-ref (dict-def-table d) 'dict-set! #f)])
       (if s!
           (dict-set! d key val)
-          (raise-type-error 'dict-set! "mutable dict" 0 d key val)))]
+          (raise-type-error 'dict-set! "mutable-dict?" 0 d key val)))]
    [else
-    (raise-type-error 'dict-set! "dict" 0 d key val)]))
+    (raise-argument-error 'dict-set! "dict?" 0 d key val)]))
 
 (define (dict-set*! d . pairs)
   (unless (even? (length pairs))
@@ -132,7 +132,7 @@
   (cond
    [(hash? d) (hash-set d key val)]
    [(vector? d)
-    (raise-type-error 'dict-set "functional-update dict" 0  d key val)]
+    (raise-argument-error 'dict-set "functional-update-dict?" 0  d key val)]
    [(assoc? d)
     (let loop ([xd d])
       (cond
@@ -146,9 +146,9 @@
     (let ([s (hash-ref (dict-def-table d) 'dict-set #f)])
       (if s
           (dict-set d key val)
-          (raise-type-error 'dict-set "functional-update dict" 0 d key val)))]
+          (raise-type-error 'dict-set "functional-update-dict?" 0 d key val)))]
    [else
-    (raise-type-error 'dict-set "dict" 0 d key val)]))
+    (raise-argument-error 'dict-set "dict?" 0 d key val)]))
 
 (define (dict-set* d . pairs)
     (unless (even? (length pairs))
@@ -178,22 +178,22 @@
   (cond
    [(hash? d) (hash-remove! d key)]
    [(vector? d)
-    (raise-type-error 'dict-remove! "dict with removeable keys" 0 d key)]
+    (raise-argument-error 'dict-remove! "dict-with-removeable-keys?" 0 d key)]
    [(assoc? d)
-    (raise-type-error 'dict-remove! "mutable dict" 0 d key)]
+    (raise-type-error 'dict-remove! "mutable-dict?" 0 d key)]
    [(dict? d)
     (let ([r! (hash-ref (dict-def-table d) 'dict-remove! #f)])
       (if r!
           (dict-remove! d key)
-          (raise-type-error 'dict-remove! "mutable dict with removable keys" 0 d key)))]
+          (raise-type-error 'dict-remove! "mutable-dict-with-removable-keys?" 0 d key)))]
    [else
-    (raise-type-error 'dict-remove! "dict" 0 d key)]))
+    (raise-argument-error 'dict-remove! "dict?" 0 d key)]))
 
 (define (d:dict-remove d key)
   (cond
    [(hash? d) (hash-remove d key)]
    [(vector? d)
-    (raise-type-error 'dict-remove "dict with removeable keys" 0 d key)]
+    (raise-argument-error 'dict-remove "dict-with-removeable-keys?" 0 d key)]
    [(assoc? d)
     (let loop ([xd d])
       (cond
@@ -207,9 +207,9 @@
     (let ([s (hash-ref (dict-def-table d) 'dict-remove #f)])
       (if s
           (dict-remove d key)
-          (raise-type-error 'dict-remove "dict with functionally removeable keys" 0 d key)))]
+          (raise-type-error 'dict-remove "dict-with-functionally-removeable-keys?" 0 d key)))]
    [else
-    (raise-type-error 'dict-remove "dict" 0 d key)]))
+    (raise-argument-error 'dict-remove "dict?" 0 d key)]))
 
 (define (d:dict-count d)
   (cond
@@ -218,7 +218,7 @@
    [(assoc? d) (length d)]
    [(dict? d) (dict-count d)]
    [else
-    (raise-type-error 'dict-count "dict" d)]))
+    (raise-argument-error 'dict-count "dict?" d)]))
 
 (struct assoc-iter (head pos))
 
@@ -231,7 +231,7 @@
    [(assoc? d) (if (null? d) #f (assoc-iter d d))]
    [(dict? d) (dict-iterate-first d)]
    [else
-    (raise-type-error 'dict-iterate-first "dict" d)]))
+    (raise-argument-error 'dict-iterate-first "dict?" d)]))
 
 (define (d:dict-iterate-next d i)
   (cond
@@ -262,7 +262,7 @@
      "invalid iteration position for association list: " 
      i)]
    [else
-    (raise-type-error 'dict-iterate-next "dict" d)]))
+    (raise-argument-error 'dict-iterate-next "dict?" d)]))
 
 (define (d:dict-iterate-key d i)
   (cond
@@ -276,7 +276,7 @@
      "invalid iteration position for association list: " 
      i)]
    [else
-    (raise-type-error 'dict-iterate-key "dict" d)]))
+    (raise-argument-error 'dict-iterate-key "dict?" d)]))
 
 (define (d:dict-iterate-value d i)
   (cond
@@ -290,7 +290,7 @@
      "invalid iteration position for association list: " 
      i)]
    [else
-    (raise-type-error 'dict-iterate-value "dict" d)]))
+    (raise-argument-error 'dict-iterate-value "dict?" d)]))
 
 (define-sequence-syntax :in-dict
   (lambda () #'in-dict)
@@ -464,13 +464,13 @@
          (lambda (hash hash2 =? who make-custom-hash table wrap-make-box)
            (unless (and (procedure? =?)
                         (procedure-arity-includes? =? 2))
-             (raise-type-error who "procedure (arity 2)" =?))
+             (raise-argument-error who "(any/c any/c . -> . any/c)" =?))
            (unless (and (procedure? hash)
                         (procedure-arity-includes? hash 1))
-             (raise-type-error who "procedure (arity 1)" hash))
+             (raise-argument-error who "(any/c . -> . exact-integer?)" hash))
            (unless (and (procedure? hash2)
                         (procedure-arity-includes? hash2 1))
-             (raise-type-error who "procedure (arity 1)" hash2))
+             (raise-argument-error who "(any/c . -> . exact-integer?)" hash2))
            (let ()
              (struct box hash-box ()
                #:methods gen:equal+hash

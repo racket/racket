@@ -15,8 +15,8 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (define (real->decimal-string n [digits 2])
     (unless (exact-nonnegative-integer? digits)
-      (raise-type-error 'real->decimal-string "exact-nonnegative-integer"
-                        digits))
+      (raise-argument-error 'real->decimal-string "exact-nonnegative-integer?"
+                            digits))
     (let* ([e (expt 10 digits)]
            [num (round (abs (* e (inexact->exact n))))])
       (format
@@ -40,8 +40,8 @@
   (define (regexp-quote s [case-sens? #t])
     (let* ([b? (cond [(bytes? s) #t]
                      [(string? s) #f]
-                     [else (raise-type-error 'regexp-quote
-                                             "string or byte string" s)])]
+                     [else (raise-argument-error 'regexp-quote
+                                                 "(or/c string? bytes?)" s)])]
            [s (if b?
                 (regexp-replace* regexp-quote-chars:b s #"\\\\&")
                 (regexp-replace* regexp-quote-chars:s s "\\\\&"))])
@@ -52,8 +52,8 @@
   (define (regexp-replace-quote s)
     (cond [(bytes?  s) (regexp-replace* #rx#"[&\\]" s #"\\\\&")]
           [(string? s) (regexp-replace* #rx"[&\\]"  s "\\\\&")]
-          [else (raise-type-error 'regexp-replace-quote
-                                  "string or byte string" s)]))
+          [else (raise-argument-error 'regexp-replace-quote
+                                      "(or/c string? bytes?)" s)]))
 
   ;; This was originally intended to be general, but it has become specialized
   ;; to deal with the combination of a regexp and a number:
@@ -78,9 +78,9 @@
                 ;; because of the intermediate regexp being recreated
                 [(string? rx) (tweak (lambda (x) x) regexp      ->str)]
                 [(bytes?  rx) (tweak (lambda (x) x) byte-regexp ->bts)]
-                [else (raise-type-error
+                [else (raise-argument-error
                        'regexp-tweaker
-                       "regexp, byte regexp, string, or byte string"
+                       "(or/c regexp? byte-regexp? string? bytes?)"
                        rx)]))
         (let ([key (cons n rx)])
           (or (hash-ref t key #f)
@@ -89,9 +89,9 @@
   (define (regexp-try-match pattern input-port [start-k 0] [end-k #f] [out #f]
                             [prefix #""])
     (unless (input-port? input-port)
-      (raise-type-error 'regexp-try-match "input port" input-port))
+      (raise-argument-error 'regexp-try-match "input-port?" input-port))
     (unless (or (not out) (output-port? out))
-      (raise-type-error 'regexp-try-match "output port or #f" out))
+      (raise-argument-error 'regexp-try-match "(or/c output-port? #f)" out))
     (let ([m (regexp-match-peek-positions pattern input-port start-k end-k #f
                                           prefix)])
       (and m
@@ -136,26 +136,26 @@
                   [(string? pattern) (regexp pattern)]
                   [(regexp? pattern) pattern]
                   [(byte-regexp? pattern) pattern]
-                  [else (raise-type-error
+                  [else (raise-argument-error
                          'name
-                         "regexp, byte regexp, string, or byte string"
+                         "(or/c regexp? byte-regexp? string? bytes?)"
                          pattern)])]
            [max-lookbehind (regexp-max-lookbehind orig-rx)])
       (if peek?
         (unless (input-port? string)
-          (raise-type-error 'name "input port" string))
+          (raise-argument-error 'name "input-port?" string))
         (unless (or len (input-port? string))
-          (raise-type-error
-           'name "string, byte string, path, or input port" string)))
+          (raise-argument-error
+           'name "(or/c string? bytes? path? input-port?)" string)))
       (unless (and (number? start) (exact? start) (integer? start)
                    (start . >= . 0))
-        (raise-type-error 'name "non-negative exact integer" start))
+        (raise-argument-error 'name "exact-nonnegative-integer?" start))
       (unless (or (not end)
                   (and (number? end) (exact? end) (integer? end)
                        (end . >= . 0)))
-        (raise-type-error 'name "non-negative exact integer or false" end))
+        (raise-argument-error 'name "(or/c exact-nonnegative-integer? #f)" end))
       (unless (bytes? ipre)
-        (raise-type-error 'name "byte string" ipre))
+        (raise-argument-error 'name "bytes?" ipre))
       (unless (or (input-port? string) (and len (start . <= . len)))
         (raise-mismatch-error
          'name
@@ -241,7 +241,7 @@
   (define (regexp-match-positions* pattern string [start 0] [end #f] [ipre #""]
                                    #:match-select [match-select car])
     (unless (procedure? match-select)
-      (raise-type-error 'regexp-match-positions* "procedure" match-select))
+      (raise-argument-error 'regexp-match-positions* "procedure?" match-select))
     ;; Note: no need for a #:gap-select?, since it is easily inferred from the
     ;; resulting matches
     (if (eq? match-select car)
@@ -300,7 +300,7 @@
                                         [ipre #""]
                                         #:match-select [match-select car])
     (unless (procedure? match-select)
-      (raise-type-error 'regexp-match-peek-positions* "procedure" match-select))
+      (raise-argument-error 'regexp-match-peek-positions* "procedure?" match-select))
     (if (eq? match-select car)
       ;; common case
       (regexp-loop regexp-match-peek-positions* loop start end pattern string ipre
@@ -431,13 +431,13 @@
                        (regexp? pattern) (byte-regexp? pattern))
                (unless (or (string? string)
                            (bytes? string))
-                 (raise-type-error 'regexp-replace* "string or byte string"
+                 (raise-argument-error 'regexp-replace* "(or/c string? bytes?)"
                                    string))
                (unless (or (string? replacement)
                            (bytes? replacement)
                            (procedure? replacement))
-                 (raise-type-error 'regexp-replace*
-                                   "string, byte string, or procedure"
+                 (raise-argument-error 'regexp-replace*
+                                   "(or/c string? bytes? procedure?)"
                                    replacement))
                (when (and needs-string? (bytes? replacement))
                  (raise-mismatch-error
@@ -485,7 +485,7 @@
       ;; no match-select => same as `regexp-split'
       [(not match-select) (regexp-split pattern string start end ipre)]
       [(not (procedure? match-select))
-       (raise-type-error 'regexp-match* "procedure-or-#f" match-select)]
+       (raise-argument-error 'regexp-match* "(or/c procedure? #f)" match-select)]
       ;; uncommon case => full code
       [(not (eq? match-select car))
        (define-values [buf sub] (get-buf+sub string pattern))

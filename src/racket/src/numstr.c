@@ -1442,7 +1442,7 @@ number_to_string (int argc, Scheme_Object *argv[])
   intptr_t radix;
 
   if (!SCHEME_NUMBERP(o))
-    scheme_wrong_type("number->string", "number", 0, argc, argv);
+    scheme_wrong_contract("number->string", "number?", 0, argc, argv);
   
   if (argc == 2) {
     if (!SCHEME_INTP(argv[1]))
@@ -1451,7 +1451,7 @@ number_to_string (int argc, Scheme_Object *argv[])
       radix = SCHEME_INT_VAL(argv[1]);
 
     if ((radix != 2) && (radix != 8) && (radix != 10)  && (radix != 16)) {
-      scheme_wrong_type("number->string", "2, 8, 10, or 16", 1, argc, argv);
+      scheme_wrong_contract("number->string", "(or/c 2 8 10 16)", 1, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
     
@@ -1501,7 +1501,7 @@ string_to_number (int argc, Scheme_Object *argv[])
   Scheme_Object *v;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->number", "string", 0, argc, argv);
+    scheme_wrong_contract("string->number", "string?", 0, argc, argv);
 
   if (argc > 1) {
     if (SCHEME_INTP(argv[1]))
@@ -1510,7 +1510,7 @@ string_to_number (int argc, Scheme_Object *argv[])
       radix = 0;
     
     if ((radix < 2) || (radix > 16)) {
-      scheme_wrong_type("string->number", "exact integer in [2, 16]", 1, argc, argv);
+      scheme_wrong_contract("string->number", "(integer-in 2 16)", 1, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
   } else
@@ -1652,9 +1652,11 @@ static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc
 
   if (SCHEME_FLOATP(obj)) {
     if (radix != 10)
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "number->string: "
-		       "inexact numbers can only be printed in base 10");
+      scheme_contract_error("number->string",
+                            "inexact numbers can only be printed in base 10",
+                            "number", 1, obj,
+                            "requested base", 1, scheme_make_integer(radix),
+                            NULL);
     s = double_to_string(SCHEME_FLOAT_VAL(obj), alloc, SCHEME_FLTP(obj));
   } else if (SCHEME_RATIONALP(obj)) {
     Scheme_Object *n, *d;
@@ -1715,12 +1717,14 @@ int scheme_check_double(const char *where, double d, const char *dest)
 {
   if (MZ_IS_INFINITY(d)
       || MZ_IS_NAN(d)) {
-    if (where)
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: no %s representation for %s",
-		       where, 
-		       dest,
-		       double_to_string(d, 0, 0));
+    if (where) {
+      char buf[32];
+      sprintf(buf, "no %s representation", dest);
+      scheme_contract_error(where,
+                            buf,
+                            "number", 1, scheme_make_double(d),
+                            NULL);
+    }
     return 0;
   }
 
@@ -1740,7 +1744,7 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
   int bigend = MZ_IS_BIG_ENDIAN, offset = 0;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type("integer-bytes->integer", "byte string", 0, argc, argv);
+    scheme_wrong_contract("integer-bytes->integer", "bytes?", 0, argc, argv);
   strlen = SCHEME_BYTE_STRLEN_VAL(argv[0]);
 
   str = SCHEME_BYTE_STR_VAL(argv[0]);
@@ -1764,16 +1768,10 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
   }
 
   if ((slen != 2)  && (slen != 4) && (slen != 8)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "integer-bytes->integer: length is not 2, 4, or 8 bytes: %ld",
-                     slen);
-    return NULL;
-  }
-
-  if (offset + slen > strlen) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     
-                     slen);
+    scheme_contract_error("integer-bytes->integer",
+                          "length is not 2, 4, or 8 bytes",
+                          "length", 1, scheme_make_integer(slen),
+                          NULL);
     return NULL;
   }
 
@@ -1886,14 +1884,14 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
 
   n = argv[0];
   if (!SCHEME_INTP(n) && !SCHEME_BIGNUMP(n))
-    scheme_wrong_type("integer->integer-bytes", "exact integer", 0, argc, argv);
+    scheme_wrong_contract("integer->integer-bytes", "exact-integer?", 0, argc, argv);
 
   if (SCHEME_INTP(argv[1]))
     size = SCHEME_INT_VAL(argv[1]);
   else
     size = 0;
-  if ((size != 2) && (size != 4) &&(size != 8))
-    scheme_wrong_type("integer->integer-bytes", "exact 2, 4, or 8", 1, argc, argv);
+  if ((size != 2) && (size != 4) && (size != 8))
+    scheme_wrong_contract("integer->integer-bytes", "(or/c 2 4 8)", 1, argc, argv);
 
   sgned = SCHEME_TRUEP(argv[2]);
   if (argc > 3)
@@ -1905,7 +1903,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     s = scheme_make_sized_byte_string("12345678", size, 1);
   
   if (!SCHEME_MUTABLE_BYTE_STRINGP(s))
-    scheme_wrong_type("integer->integer-bytes", "mutable byte string", 4, argc, argv);
+    scheme_wrong_contract("integer->integer-bytes", "(and/c bytes? (not/c immutable?))", 4, argc, argv);
 
   if (argc > 5) {
     intptr_t start, finish;
@@ -1919,10 +1917,12 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     offset = 0;
   
   if (offset + size > SCHEME_BYTE_STRLEN_VAL(s)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "integer-bytes->integer: byte string is %ld bytes,"
-                     " which is shorter than starting position %ld plus size %ld",
-                     SCHEME_BYTE_STRLEN_VAL(s), offset, size);
+    scheme_contract_error("integer-bytes->integer",
+                          "byte string length is shorter than starting position plus size",
+                          "byte string length", 1, scheme_make_integer(SCHEME_BYTE_STRLEN_VAL(s)),
+                          "starting position", 1, scheme_make_integer(offset),
+                          "size", 1, scheme_make_integer(size),
+                          NULL);
     return NULL;
   }
 
@@ -1977,9 +1977,13 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   }
 
   if (bad) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "integer->integer-bytes: integer does not fit into %d %ssigned bytes: %V",
-		     size, (sgned ? "" : "un"), n);
+    scheme_contract_error("integer->integer-bytes",
+                          (sgned
+                           ? "integer does not fit into requested signed bytes"
+                           : "integer does not fit into requested unsigned bytes"),
+                          "integer", 1, n,
+                          "requested bytes", 1, scheme_make_integer(size),
+                          NULL);
     return NULL;
   }
 
@@ -2072,7 +2076,7 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
   int bigend = MZ_IS_BIG_ENDIAN;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    scheme_wrong_type("integer-bytes->integer", "byte string", 0, argc, argv);
+    scheme_wrong_contract("integer-bytes->integer", "bytes?", 0, argc, argv);
 
   if (argc > 2) {
     intptr_t start, finish;
@@ -2089,9 +2093,10 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
   }
 
   if ((slen != 4) && (slen != 8))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "floating-point-bytes->real: length is not 2, 4, or 8 bytes: %ld",
-                     slen);
+    scheme_contract_error("floating-point-bytes->real"
+                          "length is not 2, 4, or 8 bytes",
+                          "length", 1, scheme_make_integer(slen),
+                          NULL);
 
   str = SCHEME_BYTE_STR_VAL(argv[0]);
 
@@ -2140,14 +2145,14 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
 
   n = argv[0];
   if (!SCHEME_REALP(n))
-    scheme_wrong_type("real->floating-point-bytes", "real number", 0, argc, argv);
+    scheme_wrong_contract("real->floating-point-bytes", "real?", 0, argc, argv);
 
   if (SCHEME_INTP(argv[1]))
     size = SCHEME_INT_VAL(argv[1]);
   else
     size = 0;
   if ((size != 4) && (size != 8))
-    scheme_wrong_type("real->floating-point-bytes", "exact 4 or 8", 1, argc, argv);
+    scheme_wrong_contract("real->floating-point-bytes", "(or/c 4 8)", 1, argc, argv);
 
   if (argc > 2)
     bigend = SCHEME_TRUEP(argv[2]);
@@ -2156,7 +2161,7 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
     s = argv[3];
 
     if (!SCHEME_MUTABLE_BYTE_STRINGP(s))
-      scheme_wrong_type("real->floating-point-bytes", "mutable byte string", 3, argc, argv);
+      scheme_wrong_contract("real->floating-point-bytes", "(and/c bytes? (not/c immutable?))", 3, argc, argv);
     
     if (argc > 4) {
       intptr_t start, finish;
@@ -2172,10 +2177,12 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
     s = scheme_make_sized_byte_string("12345678", size, 1);
   
   if (offset + size > SCHEME_BYTE_STRLEN_VAL(s)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "real->floating-point-bytes: byte string is %ld bytes,"
-                     " which is shorter than starting position %ld plus size %ld",
-                     SCHEME_BYTE_STRLEN_VAL(s), offset, size);
+    scheme_contract_error("real->floating-point-bytes",
+                          "byte string length is shorter than starting position plus size",
+                          "byte string length", 1, scheme_make_integer(SCHEME_BYTE_STRLEN_VAL(s)),
+                          "starting position", 1, scheme_make_integer(offset),
+                          "size", 1, scheme_make_integer(size),
+                          NULL);
     return NULL;
   }
 
@@ -2241,7 +2248,7 @@ random_seed(int argc, Scheme_Object *argv[])
   }
 
   if (i < 0)
-    scheme_wrong_type("random-seed", "exact integer in [0, 2147483647]", 0, argc, argv);
+    scheme_wrong_contract("random-seed", "(integer-in 0 2147483647)", 0, argc, argv);
 
   rand_state = scheme_get_param(scheme_current_config(), MZCONFIG_RANDOM_STATE);
   sch_srand(i, (Scheme_Random_State *)rand_state);
@@ -2279,18 +2286,18 @@ sch_random(int argc, Scheme_Object *argv[])
       i = 0;
     
     if (!i) {
-      scheme_wrong_type("random", 
-                        ((argc == 1)
-                         ? "exact integer in [1, 4294967087] or pseudo-random-generator"
-                         : "exact integer in [1, 4294967087]"), 
-                        0, argc, argv);
+      scheme_wrong_contract("random", 
+                            ((argc == 1)
+                             ? "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
+                             : "(integer-in 1 4294967087)"), 
+                            0, argc, argv);
       return NULL;
     }
 
     if (argc == 2) {
       rand_state = argv[1];
       if (!SAME_TYPE(SCHEME_TYPE(rand_state), scheme_random_state_type)) {
-        scheme_wrong_type("random", "pseudo-random-generator", 1, argc, argv);
+        scheme_wrong_contract("random", "pseudo-random-generator?", 1, argc, argv);
         return NULL;
       }
     } else {
@@ -2312,7 +2319,7 @@ do_pack(const char *name, int argc, Scheme_Object *argv[], int set, int check)
   if (set) {
     s = argv[0];
     if (!SAME_TYPE(SCHEME_TYPE(s), scheme_random_state_type)) {
-      scheme_wrong_type(name, "pseudo-random-generator", 0, argc, argv);
+      scheme_wrong_contract(name, "pseudo-random-generator?", 0, argc, argv);
     }
   }
 
@@ -2325,10 +2332,9 @@ do_pack(const char *name, int argc, Scheme_Object *argv[], int set, int check)
     return (s ? scheme_true : scheme_false);
 
   if (!s)
-    scheme_wrong_type(name,
-		      "vector of six elements, three in [0, 4294967086] and three in [0, 4294944442], "
-		      "at least one non-zero in each set of three",
-		      set, argc, argv);
+    scheme_wrong_contract(name,
+                          "pseudo-random-generator-vector?",
+                          set, argc, argv);
 
   if (set) {
     s = argv[0];
@@ -2367,8 +2373,8 @@ static Scheme_Object *
 sch_unpack(int argc, Scheme_Object *argv[])
 {
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_random_state_type))
-    scheme_wrong_type("pseudo-random-generator->vector", "pseudo-random-generator",
-		      0, argc, argv);
+    scheme_wrong_contract("pseudo-random-generator->vector", "pseudo-random-generator?",
+                          0, argc, argv);
 
   return unpack_rand_state((Scheme_Random_State *)argv[0]);
 }

@@ -89,7 +89,7 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
   future_t * volatile ft;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_future_type))
-    scheme_wrong_type("touch", "future", 0, argc, argv);
+    scheme_wrong_contract("touch", "future?", 0, argc, argv);
 
   ft = (future_t *)argv[0];
 
@@ -188,7 +188,7 @@ Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object *argv[])
 {
   fsemaphore_t *fsema;
   if (argc != 1 || !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) 
-    scheme_wrong_type("fsemaphore-post", "fsemaphore", 0, argc, argv);
+    scheme_wrong_contract("fsemaphore-post", "fsemaphore?", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
   scheme_post_sema(fsema->sema);
@@ -200,7 +200,7 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object *argv[])
 {
   fsemaphore_t *fsema;
   if (argc != 1 || !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) 
-    scheme_wrong_type("fsemaphore-wait", "fsemaphore", 0, argc, argv);
+    scheme_wrong_contract("fsemaphore-wait", "fsemaphore?", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
   scheme_wait_sema(fsema->sema, 0);
@@ -212,7 +212,7 @@ Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object *argv[])
 {
   fsemaphore_t *fsema;
   if (argc != 1 || !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type))
-    scheme_wrong_type("fsemaphore-try-wait?", "fsemaphore", 0, argc, argv);
+    scheme_wrong_contract("fsemaphore-try-wait?", "fsemaphore?", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
   if (scheme_wait_sema(fsema->sema, 1))
@@ -225,7 +225,7 @@ Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object *argv[])
 {
   fsemaphore_t *fsema;
   if (argc != 1 || !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) 
-    scheme_wrong_type("fsemaphore-count", "fsemaphore", 0, argc, argv);
+    scheme_wrong_contract("fsemaphore-count", "fsemaphore?", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
   return scheme_make_integer(((Scheme_Sema *)fsema->sema)->value);
@@ -1151,6 +1151,15 @@ static void flush_future_logs(Scheme_Future_State *fs)
 /* Primitive implementations                                          */
 /**********************************************************************/
 
+void scheme_wrong_contract_from_ft(const char *who, const char *expected_type, int what, int argc, Scheme_Object **argv);
+
+#define SCHEME_WRONG_CONTRACT_MAYBE_IN_FT(who, expected_type, what, argc, argv) \
+  if (scheme_use_rtcall) \
+    scheme_wrong_contract_from_ft(who, expected_type, what, argc, argv); \
+  else \
+    scheme_wrong_contract(who, expected_type, what, argc, argv);
+
+
 static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue)
 /* Called in runtime thread --- as atomic on behalf of a future thread
    if `lambda' is known to be a thunk */ 
@@ -1354,7 +1363,7 @@ Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object **argv)
   fsemaphore_t *sema;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) { 
-    SCHEME_WRONG_TYPE_MAYBE_IN_FT("fsemaphore-count", "fsemaphore", 0, argc, argv);
+    SCHEME_WRONG_CONTRACT_MAYBE_IN_FT("fsemaphore-count", "fsemaphore?", 0, argc, argv);
   }
 
   sema = (fsemaphore_t*)argv[0]; 
@@ -1417,7 +1426,7 @@ Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object **argv)
   int old_count;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) { 
-    SCHEME_WRONG_TYPE_MAYBE_IN_FT("fsemaphore-post", "fsemaphore", 0, argc, argv);
+    SCHEME_WRONG_CONTRACT_MAYBE_IN_FT("fsemaphore-post", "fsemaphore?", 0, argc, argv);
   }
 
   sema = (fsemaphore_t*)argv[0];
@@ -1477,7 +1486,7 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
   void *storage[3];
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) { 
-    SCHEME_WRONG_TYPE_MAYBE_IN_FT("fsemaphore-wait", "fsemaphore", 0, argc, argv);
+    SCHEME_WRONG_CONTRACT_MAYBE_IN_FT("fsemaphore-wait", "fsemaphore?", 0, argc, argv);
   }
 
   sema = (fsemaphore_t*)argv[0];
@@ -1598,7 +1607,7 @@ Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object **argv)
   Scheme_Object *ret;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) { 
-    SCHEME_WRONG_TYPE_MAYBE_IN_FT("fsemaphore-try-wait?", "fsemaphore", 0, argc, argv);
+    SCHEME_WRONG_CONTRACT_MAYBE_IN_FT("fsemaphore-try-wait?", "fsemaphore?", 0, argc, argv);
   }
 
   sema = (fsemaphore_t*)argv[0];
@@ -1814,7 +1823,7 @@ Scheme_Object *general_touch(int argc, Scheme_Object *argv[])
   future_t *ft;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_future_type))
-    scheme_wrong_type("touch", "future", 0, argc, argv);
+    scheme_wrong_contract("touch", "future?", 0, argc, argv);
 
   ft = (future_t*)argv[0];
 
@@ -2635,7 +2644,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
 /**********************************************************************/
 /* Functions for primitive invocation          			      */
 /**********************************************************************/
-void scheme_wrong_type_from_ft(const char *who, const char *expected_type, int what, int argc, Scheme_Object **argv) 
+void scheme_wrong_contract_from_ft(const char *who, const char *expected_type, int what, int argc, Scheme_Object **argv) 
   XFORM_SKIP_PROC 
 /* Called in future thread */
 {
@@ -2651,7 +2660,7 @@ void scheme_wrong_type_from_ft(const char *who, const char *expected_type, int w
 
   future->time_of_request = get_future_timestamp();
   future->source_of_request = who;
-  future_do_runtimecall(fts, (void*)scheme_wrong_type, 0, 1);
+  future_do_runtimecall(fts, (void*)scheme_wrong_contract, 0, 1);
   
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
@@ -3073,7 +3082,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
 
         ADJUST_RS_ARG(future, argv);
 
-        scheme_wrong_type(who, expected_type, what, argc, argv);
+        scheme_wrong_contract(who, expected_type, what, argc, argv);
 
         /* doesn't return */
 

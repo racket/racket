@@ -186,7 +186,7 @@
 				  (if inspector
 				      `(let-values ([(inspector) ,inspector])
 					 (if (if inspector (not (inspector? inspector)) #f)
-					     (raise-type-error 'define-struct "inspector or #f" inspector)
+					     (raise-argument-error 'define-struct "(or/c inspector? #f)" inspector)
                                              (void))
 					 ,core)
 				      core)))

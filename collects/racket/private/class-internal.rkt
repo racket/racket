@@ -1874,9 +1874,9 @@
 
 (define (member-name-key-hash-code a)
   (unless (member-name-key? a)
-    (raise-type-error
+    (raise-argument-error
      'member-name-key-hash-code
-     "member name key"
+     "member-name-key?"
      a))
   (eq-hash-code (member-key-id a)))
 
@@ -3939,7 +3939,7 @@ An example
 
 (define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)
-    (raise-type-error 'instantiate "class" class))
+    (raise-type-error 'instantiate "class?" class))
   ;; make sure the class isn't abstract
   (unless (null? (class-abstract-ids class))
     (obj-error 'instantiate
@@ -4183,8 +4183,8 @@ An example
 (define dynamic-send
   (make-keyword-procedure
    (lambda (kws kw-vals obj method-name . args)
-     (unless (object? obj) (raise-type-error 'dynamic-send "object" obj))
-     (unless (symbol? method-name) (raise-type-error 'dynamic-send "symbol" method-name))
+     (unless (object? obj) (raise-argument-error 'dynamic-send "object?" obj))
+     (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
      (keyword-apply (find-method/who 'dynamic-send obj method-name) kws kw-vals obj args))))
 
 (define-syntax (send* stx)
@@ -4224,9 +4224,9 @@ An example
   (let ([check-and-get-index
          (λ (who class name)
            (unless (class? class)
-             (raise-type-error who "class" class))
+             (raise-argument-error who "class?" class))
            (unless (symbol? name)
-             (raise-type-error who "symbol" name))
+             (raise-argument-error who "symbol?" name))
            (hash-ref (class-field-ht class) name
                      (lambda ()
                        (obj-error who "no such field: ~a~a"
@@ -4237,13 +4237,13 @@ An example
                      [ref (field-info-external-ref fi)])
                 (λ (o) (if (object? o)
                            (ref o)
-                           (raise-type-error 'class-field-accessor "object" o)))))
+                           (raise-argument-error 'class-field-accessor "object?" o)))))
             (λ (class name)
               (let* ([fi (check-and-get-index 'class-field-mutator class name)]
                      [setter! (field-info-external-set! fi)])
                 (λ (o v) (if (object? o)
                              (setter! o v)
-                             (raise-type-error 'class-field-mutator "object" o))))))))
+                             (raise-argument-error 'class-field-mutator "object?" o))))))))
 
 (define-struct generic (name applicable))
 
@@ -4254,9 +4254,9 @@ An example
   (let ([make-generic
          (lambda (class name)
            (unless (or (class? class) (interface? class))
-             (raise-type-error 'make-generic "class or interface" class))
+             (raise-argument-error 'make-generic "(or/c class? interface?)" class))
            (unless (symbol? name)
-             (raise-type-error 'make-generic "symbol" name))
+             (raise-argument-error 'make-generic "symbol?" name))
            (make-generic
             name
             (if (interface? class)
@@ -4508,11 +4508,11 @@ An example
     [(not (object? v)) #f]
     [(class? c) ((class-object? (class-orig-cls c)) v)]
     [(interface? c) (implementation? (object-ref v) c)]
-    [else (raise-type-error 'is-a? "class or interface" 1 v c)]))
+    [else (raise-argument-error 'is-a? "(or/c class? interface?)" 1 v c)]))
 
 (define (subclass? v c)
   (unless (class? c)
-    (raise-type-error 'subclass? "class" 1 v c))
+    (raise-argument-error 'subclass? "class?" 1 v c))
   (and (class? v)
        (let* ([c (class-orig-cls c)]
               [v (class-orig-cls v)]
@@ -4522,18 +4522,18 @@ An example
 
 (define (object-interface o)
   (unless (object? o)
-    (raise-type-error 'object-interface "object" o))
+    (raise-argument-error 'object-interface "object?" o))
   (class-self-interface (object-ref o)))
 
 (define (object-method-arity-includes? o name cnt)
   (unless (object? o)
-    (raise-type-error 'object-method-arity-includes? "object" o))
+    (raise-argument-error 'object-method-arity-includes? "object?" o))
   (unless (symbol? name)
-    (raise-type-error 'object-method-arity-includes? "symbol" name))
+    (raise-argument-error 'object-method-arity-includes? "symbol?" name))
   (unless (and (integer? cnt)
                (exact? cnt)
                (not (negative? cnt)))
-    (raise-type-error 'object-method-arity-includes? "non-negative exact integer" cnt))
+    (raise-argument-error 'object-method-arity-includes? "exact-nonnegative-integer?" cnt))
   (let loop ([o o])
      (let* ([c (object-ref o)]
             [pos (hash-ref (class-method-ht c) name #f)])
@@ -4544,26 +4544,26 @@ An example
 
 (define (implementation? v i)
   (unless (interface? i)
-    (raise-type-error 'implementation? "interface" 1 v i))
+    (raise-argument-error 'implementation? "interface?" 1 v i))
   (and (class? v)
        (interface-extension? (class-self-interface v) i)))
 
 (define (interface-extension? v i)
   (unless (interface? i)
-    (raise-type-error 'interface-extension? "interface" 1 v i))
+    (raise-argument-error 'interface-extension? "interface?" 1 v i))
   (and (interface? i)
        (hash-ref (interface-all-implemented v) i #f)))
 
 (define (method-in-interface? s i)
   (unless (symbol? s)
-    (raise-type-error 'method-in-interface? "symbol" 0 s i))
+    (raise-argument-error 'method-in-interface? "symbol?" 0 s i))
   (unless (interface? i)
-    (raise-type-error 'method-in-interface? "interface" 1 s i))
+    (raise-argument-error 'method-in-interface? "interface?" 1 s i))
   (and (memq s (interface-public-ids i)) #t))
 
 (define (class->interface c)
   (unless (class? c)
-    (raise-type-error 'class->interface "class" c))
+    (raise-argument-error 'class->interface "class?" c))
   (class-self-interface c))
 
 (define (interned? sym)
@@ -4571,13 +4571,13 @@ An example
 
 (define (interface->method-names i)
   (unless (interface? i)
-    (raise-type-error 'interface->method-names "interface" i))
+    (raise-argument-error 'interface->method-names "interface?" i))
   (filter interned? (interface-public-ids i)))
 
 
 (define (object-info o)
   (unless (object? o)
-    (raise-type-error 'object-info "object" o))
+    (raise-argument-error 'object-info "object?" o))
   (let ([o* (if (has-original-object? o) (original-object o) o)])
     (let loop ([c (object-ref o*)]
                [skipped? #f])
@@ -4595,7 +4595,7 @@ An example
 
 (define (class-info c)
   (unless (class? c)
-    (raise-type-error 'class-info "class" c))
+    (raise-argument-error 'class-info "class?" c))
   (if (struct? ((class-insp-mk c)))
       (let ([super (vector-ref (class-supers c) (sub1 (class-pos c)))])
         (let loop ([next super][skipped? #f])
@@ -4616,7 +4616,7 @@ An example
 (define object->vector
   (opt-lambda (in-o [opaque-v '...])
     (unless (object? in-o)
-      (raise-type-error 'object->vector "object" in-o))
+      (raise-argument-error 'object->vector "object?" in-o))
     (let ([o in-o])
       (list->vector
        (cons
@@ -4641,9 +4641,9 @@ An example
 
 (define (object=? o1 o2)
   (unless (object? o1)
-    (raise-type-error 'object=? "object" o1))
+    (raise-argument-error 'object=? "object?" o1))
   (unless (object? o2)
-    (raise-type-error 'object=? "object" o2))
+    (raise-argument-error 'object=? "object?" o2))
   (let ([orig-o1 (if (has-original-object? o1) (original-object o1) o1)]
         [orig-o2 (if (has-original-object? o2) (original-object o2) o2)])
     (eq? orig-o1 orig-o2)))
