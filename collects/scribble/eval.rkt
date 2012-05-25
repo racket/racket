@@ -105,11 +105,14 @@
                flow-accum)]))))
 
 (define (string->wrapped-lines str)
-  (wrap-line str maxlen
-             (λ (word fits)
-               (if ((string-length word) . > . maxlen)
-                 (values (substring word 0 fits) (substring word fits) #f)
-                 (values #f word #f)))))
+  (apply
+   append
+   (for/list ([line-str (regexp-split #rx"\n" str)])
+     (wrap-line line-str maxlen
+                (λ (word fits)
+                   (if ((string-length word) . > . maxlen)
+                       (values (substring word 0 fits) (substring word fits) #f)
+                       (values #f word #f)))))))
 
 (struct formatted-result (content))
 
@@ -128,7 +131,11 @@
               (cond
                 [(string? (caar val-list+outputs))
                  ;; Error result case:
-                 (map (lambda (s) (car (format-output s error-color)))
+                 (map (lambda (s) 
+                        (define p (format-output s error-color))
+                        (if (null? p)
+                            (list null)
+                            (car p)))
                       (string->wrapped-lines (caar val-list+outputs)))]
                 [(box? (caar val-list+outputs))
                  ;; Output written to a port
