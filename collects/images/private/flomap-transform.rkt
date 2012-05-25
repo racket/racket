@@ -109,8 +109,8 @@
   (let ([θ  (- (exact->inexact θ))])
     (define cos-θ (cos θ))
     (define sin-θ (sin θ))
-    (define x-mid (* 0.5 (fx->fl w)))
-    (define y-mid (* 0.5 (fx->fl h)))
+    (define x-mid (* 0.5 (->fl w)))
+    (define y-mid (* 0.5 (->fl h)))
     (invertible-2d-function
      (λ: ([x : Flonum] [y : Flonum])
        (let ([x  (- x x-mid)]
@@ -132,16 +132,16 @@
     (define pinch-exp
       (cond [(pinch . >= . 0.0)  pinch]
             [else  (/ pinch (- 1.0 pinch))]))
-    (define x-mid (* 0.5 (fx->fl w)))
-    (define y-mid (* 0.5 (fx->fl h)))
+    (define x-mid (* 0.5 (->fl w)))
+    (define y-mid (* 0.5 (->fl h)))
     (define-values (x-scale y-scale)
       (cond [(x-mid . < . y-mid)  (values (/ y-mid x-mid) 1.0)]
             [(x-mid . > . y-mid)  (values 1.0 (/ x-mid y-mid))]
             [else  (values 1.0 1.0)]))
-    (define fm-radius (* 0.5 (fx->fl (max w h))))
+    (define fm-radius (* 0.5 (->fl (max w h))))
     (define fm-radius^2 (* radius (sqr fm-radius)))
-    (define x-max (+ 0.5 (fx->fl w)))
-    (define y-max (+ 0.5 (fx->fl h)))
+    (define x-max (+ 0.5 (->fl w)))
+    (define y-max (+ 0.5 (->fl h)))
     (λ: ([x : Flonum] [y : Flonum])
       (define dx (* (- x x-mid) x-scale))
       (define dy (* (- y y-mid) y-scale))

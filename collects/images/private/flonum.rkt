@@ -6,7 +6,8 @@
                     [flvector-set! old:flvector-set!])
          (except-in racket/fixnum fl->fx fx->fl)  ; these two functions are untyped
          racket/math
-         (only-in racket/unsafe/ops unsafe-flvector-set! unsafe-fx+))
+         (only-in racket/unsafe/ops unsafe-flvector-set! unsafe-fx+)
+         racket/performance-hint)
 
 (provide (all-defined-out)
          (except-out (all-from-out racket/flonum
@@ -25,89 +26,92 @@
 (: flvector-set! (FlVector Integer Flonum -> Void))
 (define flvector-set! old:flvector-set!)
 
-(define-syntax (fl->fx stx)
-  (syntax-case stx ()
-    [(_ x)
-     (syntax/loc stx
-       (let ([i  (fl->exact-integer x)])
-         (with-asserts ([i  fixnum?])
-           i)))]))
-
-(define-syntax-rule (fx->fl i)
-  (->fl i))
-
-(define-syntax-rule (flrational? x)
-  (let: ([x* : Flonum  x])
-    ;; if x = +nan.0, both tests return #f
-    (and (x . > . -inf.0) (x . < . +inf.0))))
-
-(define-syntax-rule (fl-convex-combination dv sv sa)
-  (let: ([sa* : Flonum  sa])
-    (+ (fl* sv sa*) (fl* dv (- 1.0 sa*)))))
-
-(define-syntax-rule (fl-alpha-blend dca sca sa)
-  (+ sca (* dca (- 1.0 sa))))
-
-(define-syntax-rule (flgaussian x s)
-  (let*: ([sigma : Flonum  s]
-          [x/s : Flonum  (fl/ x sigma)])
-    (/ (exp (* -0.5 (* x/s x/s)))
-       (* (sqrt (* 2.0 pi)) sigma))))
-
-(define-syntax-rule (flsigmoid x)
-  (/ 1.0 (+ 1.0 (exp (fl- 0.0 x)))))
-
 (define-syntax-rule (inline-build-flvector size f)
   (let: ([n : Integer  size])
     (with-asserts ([n  nonnegative-fixnum?])
-      (let: ([vs : FlVector  (make-flvector n)])
-        (let: loop : FlVector ([i : Nonnegative-Fixnum  0])
-          (cond [(i . fx< . n)  (unsafe-flvector-set! vs i (f i))
-                                (loop (unsafe-fx+ i 1))]
-                [else  vs]))))))
+      (define vs (make-flvector n))
+      (let: loop : FlVector ([i : Nonnegative-Fixnum  0])
+        (cond [(i . fx< . n)  (unsafe-flvector-set! vs i (f i))
+                              (loop (unsafe-fx+ i 1))]
+              [else  vs])))))
 
-;; ===================================================================================================
-;; 3-vectors
-
-(define-syntax-rule (fl3dot x1 y1 z1 x2 y2 z2)
-  (+ (fl* x1 x2) (fl* y1 y2) (fl* z1 z2)))
-
-(define-syntax (fl3* stx)
-  (syntax-case stx ()
-    [(_ x y z c)
-     (syntax/loc stx
-       (let: ([c* : Flonum  c])
-         (values (fl* x c*) (fl* y c*) (fl* z c*))))]
-    [(_ x1 y1 z1 x2 y2 z2)
-     (syntax/loc stx
-       (values (fl* x1 x2) (fl* y1 y2) (fl* z1 z2)))]))
-
-(define-syntax-rule (fl3+ x1 y1 z1 x2 y2 z2)
-  (values (fl+ x1 x2) (fl+ y1 y2) (fl+ z1 z2)))
-
-(define-syntax (fl3- stx)
-  (syntax-case stx ()
-    [(_ x y z)
-     (syntax/loc stx
-       (values (fl- 0.0 x) (fl- 0.0 y) (fl- 0.0 z)))]
-    [(_ x1 y1 z1 x2 y2 z2)
-     (syntax/loc stx
-       (values (fl- x1 x2) (fl- y1 y2) (fl- z1 z2)))]))
-
-(define-syntax-rule (fl3mag^2 x y z)
-  (let: ([x* : Flonum  x] [y* : Flonum  y] [z* : Flonum  z])
-    (+ (* x* x*) (* y* y*) (* z* z*))))
-
-(define-syntax-rule (fl3mag x y z)
-  (flsqrt (fl3mag^2 x y z)))
-
-(define-syntax-rule (fl3dist x1 y1 z1 x2 y2 z2)
-  (fl3mag (fl- x1 x2) (fl- y1 y2) (fl- z1 z2)))
-
-(define-syntax-rule (fl3normalize x y z)
-  (let: ([x* : Flonum  x] [y* : Flonum  y] [z* : Flonum  z])
-    (let: ([d : Flonum  (fl3mag x* y* z*)])
-      (values (/ x* d) (/ y* d) (/ z* d)))))
-
-(define-syntax-rule (fl3-half-norm x1 y1 z1 x2 y2 z2)
-  (fl3normalize (fl+ x1 x2) (fl+ y1 y2) (fl+ z1 z2)))
+(begin-encourage-inline
+  
+  (: fx->fl (Fixnum -> Flonum))
+  (define fx->fl ->fl)
+  
+  (: fl->fx (Flonum -> Fixnum))
+  (define (fl->fx x)
+    (define i (fl->exact-integer x))
+    (with-asserts ([i fixnum?]) i))
+  
+  (: flrational? (Flonum -> Boolean))
+  (define (flrational? x)
+    ;; if x = +nan.0, both tests return #f
+    (and (x . > . -inf.0) (x . < . +inf.0)))
+  
+  (: fl-convex-combination (Flonum Flonum Flonum -> Flonum))
+  (define (fl-convex-combination dv sv sa)
+    (+ (* sv sa) (* dv (- 1.0 sa))))
+  
+  (: fl-alpha-blend (Flonum Flonum Flonum -> Flonum))
+  (define (fl-alpha-blend dca sca sa)
+    (+ sca (* dca (- 1.0 sa))))
+  
+  (: flgaussian (Flonum Flonum -> Flonum))
+  (define (flgaussian x s)
+    (define x/s (/ x s))
+    (/ (exp (* -0.5 (* x/s x/s)))
+       (* (sqrt (* 2.0 pi)) s)))
+  
+  (: flsigmoid (Flonum -> Flonum))
+  (define (flsigmoid x)
+    (/ 1.0 (+ 1.0 (exp (- x)))))
+  
+  ;; =================================================================================================
+  ;; 3-vectors
+  
+  (: fl3dot (Flonum Flonum Flonum Flonum Flonum Flonum -> Flonum))
+  (define (fl3dot x1 y1 z1 x2 y2 z2)
+    (+ (* x1 x2) (* y1 y2) (* z1 z2)))
+  
+  (: fl3* (case-> (Flonum Flonum Flonum Flonum -> (values Flonum Flonum Flonum))
+                  (Flonum Flonum Flonum Flonum Flonum Flonum -> (values Flonum Flonum Flonum))))
+  (define fl3*
+    (case-lambda
+      [(x y z c)  (values (* x c) (* y c) (* z c))]
+      [(x1 y1 z1 x2 y2 z2)  (values (* x1 x2) (* y1 y2) (* z1 z2))]))
+  
+  (: fl3+ (Flonum Flonum Flonum Flonum Flonum Flonum -> (values Flonum Flonum Flonum)))
+  (define (fl3+ x1 y1 z1 x2 y2 z2)
+    (values (+ x1 x2) (+ y1 y2) (+ z1 z2)))
+  
+  (: fl3- (case-> (Flonum Flonum Flonum -> (values Flonum Flonum Flonum))
+                  (Flonum Flonum Flonum Flonum Flonum Flonum -> (values Flonum Flonum Flonum))))
+  (define fl3-
+    (case-lambda
+      [(x y z)  (values (- x) (- y) (- z))]
+      [(x1 y1 z1 x2 y2 z2)  (values (- x1 x2) (- y1 y2) (- z1 z2))]))
+  
+  (: fl3mag^2 (Flonum Flonum Flonum -> Flonum))
+  (define (fl3mag^2 x y z)
+    (+ (* x x) (* y y) (* z z)))
+  
+  (: fl3mag (Flonum Flonum Flonum -> Flonum))
+  (define (fl3mag x y z)
+    (flsqrt (fl3mag^2 x y z)))
+  
+  (: fl3dist (Flonum Flonum Flonum Flonum Flonum Flonum -> Flonum))
+  (define (fl3dist x1 y1 z1 x2 y2 z2)
+    (fl3mag (- x1 x2) (- y1 y2) (- z1 z2)))
+  
+  (: fl3normalize (Flonum Flonum Flonum -> (values Flonum Flonum Flonum)))
+  (define (fl3normalize x y z)
+    (define d (fl3mag x y z))
+    (values (/ x d) (/ y d) (/ z d)))
+  
+  (: fl3-half-norm (Flonum Flonum Flonum Flonum Flonum Flonum -> (values Flonum Flonum Flonum)))
+  (define (fl3-half-norm x1 y1 z1 x2 y2 z2)
+    (fl3normalize (+ x1 x2) (+ y1 y2) (+ z1 z2)))
+  
+  ) ; begin-encourage-inline

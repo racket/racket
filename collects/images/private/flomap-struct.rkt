@@ -4,6 +4,7 @@
          (only-in racket/unsafe/ops
                   unsafe-flvector-ref unsafe-flvector-set!
                   unsafe-fx+)
+         racket/performance-hint
          "flonum.rkt")
 
 (provide flomap flomap? flomap-values flomap-components flomap-width flomap-height
@@ -23,32 +24,33 @@
                (* c w h) (flvector-length vs)))
       (values vs c w h))))
 
-(: flomap-size (flomap -> (values Nonnegative-Fixnum Nonnegative-Fixnum)))
-(define (flomap-size fm)
-  (match-define (flomap _vs _c w h) fm)
-  (with-asserts ([w  nonnegative-fixnum?] [h  nonnegative-fixnum?])
-    (values w h)))
+(begin-encourage-inline
 
-#;;(: coords->index (Integer Integer Integer Integer Integer -> Fixnum))
-(define (coords->index c w k x y)
-  (fx+ k (fx* c (fx+ x (fx* y w)))))
-
-(define-syntax-rule (coords->index c w k x y)
-  (fx+ k (fx* c (fx+ x (fx* y w)))))
-
-(: unsafe-flomap-ref (FlVector Integer Integer Integer Integer Integer Integer -> Flonum))
-(define (unsafe-flomap-ref vs c w h k x y)
-  (cond [(and (x . fx>= . 0) (x . fx< . w)
-              (y . fx>= . 0) (y . fx< . h))
-         (unsafe-flvector-ref vs (coords->index c w k x y))]
-        [else  0.0]))
-
-(: flomap-ref (flomap Integer Integer Integer -> Flonum))
-(define (flomap-ref fm k x y)
-  (match-define (flomap vs c w h) fm)
-  (unless (and (k . >= . 0) (k . < . c))
-    (raise-type-error 'flomap-ref (format "nonnegative fixnum < ~e" c) k))
-  (unsafe-flomap-ref vs c w h k x y))
+  (: flomap-size (flomap -> (values Nonnegative-Fixnum Nonnegative-Fixnum)))
+  (define (flomap-size fm)
+    (match-define (flomap _vs _c w h) fm)
+    (with-asserts ([w  nonnegative-fixnum?] [h  nonnegative-fixnum?])
+      (values w h)))
+  
+  (: coords->index (Integer Integer Integer Integer Integer -> Fixnum))
+  (define (coords->index c w k x y)
+    (fx+ k (fx* c (fx+ x (fx* y w)))))
+  
+  (: unsafe-flomap-ref (FlVector Integer Integer Integer Integer Integer Integer -> Flonum))
+  (define (unsafe-flomap-ref vs c w h k x y)
+    (cond [(and (x . fx>= . 0) (x . fx< . w)
+                (y . fx>= . 0) (y . fx< . h))
+           (unsafe-flvector-ref vs (coords->index c w k x y))]
+          [else  0.0]))
+  
+  (: flomap-ref (flomap Integer Integer Integer -> Flonum))
+  (define (flomap-ref fm k x y)
+    (match-define (flomap vs c w h) fm)
+    (unless (and (k . >= . 0) (k . < . c))
+      (raise-type-error 'flomap-ref (format "nonnegative fixnum < ~e" c) k))
+    (unsafe-flomap-ref vs c w h k x y))
+  
+  ) ; begin-encourage-inline
 
 (: flomap-bilinear-ref (flomap Integer Real Real -> Flonum))
 (define (flomap-bilinear-ref fm k x y)
@@ -56,8 +58,8 @@
   (cond [(and (k . >= . 0) (k . < . c))
          (let ([x  (- (exact->inexact x) 0.5)]
                [y  (- (exact->inexact y) 0.5)])
-           (cond [(and (x . > . -0.5) (x . < . (+ 0.5 (fx->fl w)))
-                       (y . > . -0.5) (y . < . (+ 0.5 (fx->fl h))))
+           (cond [(and (x . > . -0.5) (x . < . (+ 0.5 (->fl w)))
+                       (y . > . -0.5) (y . < . (+ 0.5 (->fl h))))
                   (define floor-x (floor x))
                   (define floor-y (floor y))
                   (define x0 (fl->fx floor-x))

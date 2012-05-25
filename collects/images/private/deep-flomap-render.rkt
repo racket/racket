@@ -175,8 +175,8 @@
         (define dist (/ (- 0.0 z) tz))
         (when (and (dist . >= . 0.0) (dist . < . +inf.0))
           ;; transmitted ray intersects with shadow plane at sx sy 0.0
-          (define sx (+ 0.5 (fx->fl int-x) (* dist tx)))
-          (define sy (+ 0.5 (fx->fl int-y) (* dist ty)))
+          (define sx (+ 0.5 (->fl int-x) (* dist tx)))
+          (define sy (+ 0.5 (->fl int-y) (* dist ty)))
           ;; actual transmission proportion (Fresnel's law)
           (define T (* Ti (transmission-intensity n-dot-l 1.0 η2)))
           ;; intensity of incident light (Lambert's cosine law)
@@ -387,8 +387,8 @@
         (define T (* Ti orig-T))
         (define R (* Ri (- 1.0 orig-T)))
         ;; surface coordinates
-        (define x (+ 0.5 (fx->fl int-x)))
-        (define y (+ 0.5 (fx->fl int-y)))
+        (define x (+ 0.5 (->fl int-x)))
+        (define y (+ 0.5 (->fl int-y)))
         (define z (flvector-ref z-vs i))
         ;; reflection
         (when (and (Ri . > . 0.0)
