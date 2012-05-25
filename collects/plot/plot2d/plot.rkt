@@ -21,7 +21,7 @@
 ;; Require lazily: without this, Racket complains while generating documentation:
 ;;   cannot instantiate `racket/gui/base' a second time in the same process
 (lazy-require ["snip.rkt" (make-2d-plot-snip)]
-              ["../common/gui.rkt" (make-snip-frame)])
+              ["../common/gui.rkt" (make-snip-frame with-new-eventspace)])
 
 (provide (except-out (all-defined-out) get-renderer-list get-bounds-rect get-ticks plot-dc))
 
@@ -301,7 +301,7 @@
     (when out-file
       (call plot-file out-file out-kind))
     
-    (cond [(plot-new-window?)  (define frame (call plot-frame))
+    (cond [(plot-new-window?)  (define frame (with-new-eventspace (λ () (call plot-frame))))
                                (send frame show #t)
                                (void)]
           [else  (call plot-snip)])))

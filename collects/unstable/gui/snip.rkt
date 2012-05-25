@@ -24,20 +24,6 @@
     (define text (new read-only-text%))
     (send text set-writable #f)
     
-    (super-new [parent parent]
-               [editor text]
-               [horizontal-inset horizontal-inset]
-               [vertical-inset vertical-inset]
-               [label label]
-               [enabled enabled]
-               [style (list* 'no-hscroll 'no-vscroll style)]
-               [vert-margin vert-margin]
-               [horiz-margin horiz-margin]
-               [min-width min-width]
-               [min-height min-height]
-               [stretchable-width stretchable-width]
-               [stretchable-height stretchable-height])
-    
     (define/public (get-snip) snip)
     
     (define/override (on-size w h)
@@ -58,14 +44,23 @@
       (send text erase)
       (send text insert snip)
       (send text set-writable #f))
-    ))
+    
+    (super-new [parent parent]
+               [editor text]
+               [horizontal-inset horizontal-inset]
+               [vertical-inset vertical-inset]
+               [label label]
+               [enabled enabled]
+               [style (list* 'no-hscroll 'no-vscroll style)]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])))
 
 (define read-only-text%
   (class text%
-    (super-new)
-    
-    (send this hide-caret #t)
-    
     (define writable? #t)
     (define/public (set-writable w?) (set! writable? w?))
     
@@ -78,4 +73,6 @@
       (case op
         [(copy select-all)  #t]
         [else    writable?]))
-    ))
+    
+    (super-new)
+    (send this hide-caret #t)))
