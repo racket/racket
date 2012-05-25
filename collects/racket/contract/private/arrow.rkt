@@ -476,8 +476,11 @@ v4 todo:
         (for/list ([dom (in-list doms-proj)]
                    [n (in-naturals 1)])
           (dom (blame-add-context orig-blame 
-                                  (format "the ~a argument of"
-                                          (n->th n))
+                                  (if (and has-rest?
+                                           (n . > . dom-length))
+                                      "the rest argument of"
+                                      (format "the ~a argument of"
+                                              (n->th n)))
                                   #:swap? #t))))
       (define partial-optional-doms 
         (for/list ([dom (in-list doms-optional-proj)]

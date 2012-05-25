@@ -12728,7 +12728,7 @@ so that propagation occurs.
                           'neg)
                 #f)))
   
-    (ctest '("the range of") 
+  (ctest '("the range of") 
          extract-context-lines 
          (λ () ((contract (->d ([x integer?]) [y integer?])
                           (λ (x) #f)
@@ -12836,6 +12836,31 @@ so that propagation occurs.
                            'neg)
                  0)
                 1)))
+  
+  (ctest '("an element of" "the rest argument of")
+         extract-context-lines
+         (λ ()
+           ((contract (->* () #:rest (listof number?) number?)
+                      +
+                      'pos 'neg)
+            1 "a")))
+
+  (ctest '("the 2nd argument of")
+         extract-context-lines
+         (λ ()
+           ((contract (->* (number? number?) #:rest (listof number?) number?)
+                      +
+                      'pos 'neg)
+            1 "a")))
+
+  (ctest '("an element of" "the rest argument of")
+         extract-context-lines
+         (λ ()
+           ((contract (->* (number?) #:rest (listof number?) number?)
+                      +
+                      'pos 'neg)
+            1 "a")))
+
   
   (let* ([blame-pos (contract-eval '(make-blame #'here #f (λ () 'integer?) 'positive 'negative #t))]
          [blame-neg (contract-eval `(blame-swap ,blame-pos))])
