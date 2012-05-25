@@ -76,8 +76,8 @@
 ;; Function
 
 (define ((function-render-proc f samples color width style alpha label) area)
-  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
-  (match-define (sample xs ys y-min y-max) (f x-min x-max samples))
+  (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+  (match-define (sample xs ys y-min y-max) (f x-ivl samples))
   
   (send area put-alpha alpha)
   (send area put-pen color width style)
@@ -96,18 +96,20 @@
                    [#:alpha alpha (real-in 0 1) (line-alpha)]
                    [#:label label (or/c string? #f) #f]
                    ) renderer2d?
-  (define g (function->sampler f))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
-              (function-bounds-fun g samples)
-              default-ticks-fun
-              (function-render-proc g samples color width style alpha label)))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (let ([f  (function->sampler f x-ivl)])
+    (renderer2d (vector x-ivl y-ivl)
+                (function-bounds-fun f samples)
+                default-ticks-fun
+                (function-render-proc f samples color width style alpha label))))
 
 ;; ===================================================================================================
 ;; Inverse function
 
 (define ((inverse-render-proc f samples color width style alpha label) area)
-  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
-  (match-define (sample ys xs x-min x-max) (f y-min y-max samples))
+  (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+  (match-define (sample ys xs x-min x-max) (f y-ivl samples))
   
   (send area put-alpha alpha)
   (send area put-pen color width style)
@@ -126,8 +128,10 @@
                   [#:alpha alpha (real-in 0 1) (line-alpha)]
                   [#:label label (or/c string? #f) #f]
                   ) renderer2d?
-  (define g (inverse->sampler f))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define g (inverse->sampler f y-ivl))
+  (renderer2d (vector x-ivl y-ivl)
               (inverse-bounds-fun g samples)
               default-ticks-fun
               (inverse-render-proc g samples color width style alpha label)))

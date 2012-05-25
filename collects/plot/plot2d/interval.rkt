@@ -125,9 +125,9 @@
                                         line2-color line2-width line2-style
                                         alpha label)
          area)
-  (match-define (vector (ivl x-min x-max) y-ivl) (send area get-bounds-rect))
-  (match-define (sample x1s y1s y1-min y1-max) (f1 x-min x-max samples))
-  (match-define (sample x2s y2s y2-min y2-max) (f2 x-min x-max samples))
+  (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+  (match-define (sample x1s y1s _ _) (f1 x-ivl samples))
+  (match-define (sample x2s y2s _ _) (f2 x-ivl samples))
   (define v1s (map vector x1s y1s))
   (define v2s (map vector x2s y2s))
   
@@ -153,9 +153,11 @@
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define g1 (function->sampler f1))
-  (define g2 (function->sampler f2))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define g1 (function->sampler f1 x-ivl))
+  (define g2 (function->sampler f2 x-ivl))
+  (renderer2d (vector x-ivl y-ivl)
               (function-interval-bounds-fun g1 g2 samples)
               default-ticks-fun
               (function-interval-render-proc g1 g2 samples color style
@@ -171,9 +173,9 @@
                                        line2-color line2-width line2-style
                                        alpha label)
          area)
-  (match-define (vector x-ivl (ivl y-min y-max)) (send area get-bounds-rect))
-  (match-define (sample y1s x1s x1-min x1-max) (f1 y-min y-max samples))
-  (match-define (sample y2s x2s x2-min x2-max) (f2 y-min y-max samples))
+  (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+  (match-define (sample y1s x1s _ _) (f1 y-ivl samples))
+  (match-define (sample y2s x2s _ _) (f2 y-ivl samples))
   (define v1s (map vector x1s y1s))
   (define v2s (map vector x2s y2s))
   
@@ -199,9 +201,11 @@
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define g1 (inverse->sampler f1))
-  (define g2 (inverse->sampler f2))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define g1 (inverse->sampler f1 y-ivl))
+  (define g2 (inverse->sampler f2 y-ivl))
+  (renderer2d (vector x-ivl y-ivl)
               (inverse-interval-bounds-fun g1 g2 samples)
               default-ticks-fun
               (inverse-interval-render-proc g1 g2 samples color style

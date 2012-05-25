@@ -13,11 +13,12 @@
 (define ((isosurface3d-render-proc
           f d samples color style line-color line-width line-style alpha label)
          area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)
-                    z-min z-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+  (define num (animated-samples samples))
+  (define sample (f (vector x-ivl y-ivl z-ivl) (vector num num num)))
   (match-define (3d-sample xs ys zs dsss d-min d-max) sample)
   
   (send area put-alpha alpha)
@@ -50,8 +51,11 @@
                        [#:alpha alpha (real-in 0 1) (surface-alpha)]
                        [#:label label (or/c string? #f) #f]
                        ) renderer3d?
-  (define g (3d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define z-ivl (ivl z-min z-max))
+  (define g (3d-function->sampler f (vector x-ivl y-ivl z-ivl)))
+  (renderer3d (vector x-ivl y-ivl z-ivl) #f default-ticks-fun
               (isosurface3d-render-proc
                g d samples color style line-color line-width line-style alpha label)))
 
@@ -61,11 +65,12 @@
 (define ((isosurfaces3d-render-proc f rd-min rd-max levels samples colors styles
                                     line-colors line-widths line-styles alphas label)
          area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)
-                    z-min z-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+  (define num (animated-samples samples))
+  (define sample (f (vector x-ivl y-ivl z-ivl) (vector num num num)))
   (match-define (3d-sample xs ys zs dsss fd-min fd-max) sample)
   
   (define d-min (if rd-min rd-min fd-min))
@@ -103,7 +108,6 @@
            (send area put-polygons polys
                  (vector (* 1/2 (+ xa xb)) (* 1/2 (+ ya yb)) (* 1/2 (+ za zb)))))))))
   
-  
   (cond
     [(and label (not (empty? ds)))  (rectangle-legend-entries
                                      label ds colors styles line-colors line-widths line-styles)]
@@ -125,8 +129,11 @@
           [#:alphas alphas (alphas/c (listof real?)) (isosurface-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (define g (3d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f default-ticks-fun
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define z-ivl (ivl z-min z-max))
+  (define g (3d-function->sampler f (vector x-ivl y-ivl z-ivl)))
+  (renderer3d (vector x-ivl y-ivl z-ivl) #f default-ticks-fun
               (isosurfaces3d-render-proc g d-min d-max levels samples colors styles
                                          line-colors line-widths line-styles alphas
                                          label)))
@@ -135,11 +142,12 @@
 
 (define ((polar3d-render-proc f g samples color style line-color line-width line-style alpha label)
          area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (g x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)
-                    z-min z-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+  (define num (animated-samples samples))
+  (define sample (g (vector x-ivl y-ivl z-ivl) (vector num num num)))
   (match-define (3d-sample xs ys zs dsss d-min d-max) sample)
   
   (define (draw-cube xa xb ya yb za zb d d1 d2 d3 d4 d5 d6 d7 d8)
@@ -218,9 +226,12 @@
                [y-max  (if y-max y-max (apply max* rys))]
                [z-min  (if z-min z-min (apply min* rzs))]
                [z-max  (if z-max z-max (apply max* rzs))])
+           (define x-ivl (ivl x-min x-max))
+           (define y-ivl (ivl y-min y-max))
+           (define z-ivl (ivl z-min z-max))
            (define new-f (2d-polar->3d-function f))
-           (define g (3d-function->sampler new-f))
-           (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
+           (define g (3d-function->sampler new-f (vector x-ivl y-ivl z-ivl)))
+           (renderer3d (vector x-ivl y-ivl z-ivl) #f
                        default-ticks-fun
                        (polar3d-render-proc new-f g samples color style
                                             line-color line-width line-style alpha label)))]))

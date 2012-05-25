@@ -10,9 +10,16 @@
 (provide (all-defined-out))
 
 (defproc (build-linear-seq [start real?] [step real?]
-                           [num exact-nonnegative-integer?]) (listof real?)
-  (for/list ([n  (in-range num)])
-    (+ start (* n step))))
+                           [num exact-nonnegative-integer?]
+                           [min-val real? start]
+                           [max-val real? (+ start (* (- num 1) step))]
+                           ) (listof real?)
+  (define n-start (max 0 (inexact->exact (floor (/ (- min-val start) step)))))
+  (define n-end (min num (+ (inexact->exact (ceiling (/ (- max-val start) step))) 1)))
+  (for*/list ([n  (in-range n-start n-end)]
+              [x  (in-value (+ start (* n step)))]
+              #:when (<= min-val x max-val))
+    x))
 
 (defproc (linear-seq [start real?] [end real?] [num exact-nonnegative-integer?]
                      [#:start? start? boolean? #t]
@@ -57,6 +64,41 @@
   (match-define (invertible-function _ finv) (apply-axis-transform transform start end))
   (map finv (linear-seq start end num #:start? start? #:end? end?)))
 
+;; ===================================================================================================
+
+(define (ensure-endpoints xs i-min i-max)
+  (cond [(empty? xs)  (cond [(i-min . = . i-max)  (list i-min)]
+                            [else  (list i-min i-max)])]
+        [else
+         (define xs-min (first xs))
+         (define xs-max (last xs))
+         (let* ([xs  (if (xs-min . <= . i-min) xs (cons i-min xs))]
+                [xs  (if (xs-max . >= . i-max) xs (append xs (list i-max)))])
+           xs)]))
+
+(defproc (sample-points [outer-ivl rational-ivl?] [inner-ivl ivl?]
+                        [num exact-nonnegative-integer?]
+                        [transform axis-transform/c id-transform]) (listof real?)
+  (let* ([inner-ivl  (ivl-meet inner-ivl outer-ivl)]
+         [inner-ivl  (ivl-inexact->exact inner-ivl)]
+         [outer-ivl  (ivl-inexact->exact outer-ivl)])
+    (match-define (ivl o-min o-max) outer-ivl)
+    (match-define (ivl i-min i-max) inner-ivl)
+    (match-define (invertible-function f finv) (apply-axis-transform transform o-min o-max))
+    (cond
+      [(ivl-empty? inner-ivl)  empty]
+      [(= num 0)  empty]
+      [(or (= o-min o-max) (= num 1))
+       (cond [(<= i-min o-min i-max)  (build-list num (λ _ o-min))]
+             [else  empty])]
+      [else
+       (define step (/ (- o-max o-min) (- num 1)))
+       (let* ([xs  (map finv (build-linear-seq o-min step num (f i-min) (f i-max)))]
+              [xs  (remove-duplicates (map (λ (x) (clamp-real x inner-ivl)) xs))])
+         (ensure-endpoints xs i-min i-max))])))
+
+;; ===================================================================================================
+
 (struct mapped-function (f fmap) #:transparent
   #:property prop:procedure
   (λ (g x) ((mapped-function-f g) x)))
@@ -75,26 +117,28 @@
 (struct 2d-sample (xs ys zss z-min z-max) #:transparent)
 (struct 3d-sample (xs ys zs dsss d-min d-max) #:transparent)
 
-(defcontract sampler/c (real? real? exact-nonnegative-integer? . -> . sample?))
+(defcontract sampler/c
+  (-> rational-ivl? exact-nonnegative-integer? sample?))
 
-(defcontract 2d-sampler/c (real? real? exact-nonnegative-integer?
-                                 real? real? exact-nonnegative-integer?
-                                 . -> . 2d-sample?))
+(defcontract 2d-sampler/c
+  (-> (vector/c rational-ivl? rational-ivl?)
+      (vector/c exact-nonnegative-integer? exact-nonnegative-integer?)
+      2d-sample?))
 
-(defcontract 3d-sampler/c (real? real? exact-nonnegative-integer?
-                                 real? real? exact-nonnegative-integer?
-                                 real? real? exact-nonnegative-integer?
-                                 . -> . 3d-sample?))
+(defcontract 3d-sampler/c
+  (-> (vector/c rational-ivl? rational-ivl? rational-ivl?)
+      (vector/c exact-nonnegative-integer? exact-nonnegative-integer? exact-nonnegative-integer?)
+      3d-sample?))
 
 (defproc (make-function->sampler [transform-thnk (-> axis-transform/c)]
-                                 ) ((real? . -> . real?) . -> . sampler/c)
-  (λ (f)
+                                 ) (-> (real? . -> . real?) ivl? sampler/c)
+  (λ (f inner-ivl)
     (define memo (make-hash))
-    (λ (x-min x-max x-samples)
+    (λ (outer-ivl num)
       (define tx (transform-thnk))
-      (hash-ref! memo (vector x-min x-max x-samples tx)
+      (hash-ref! memo (vector outer-ivl num tx)
                  (λ ()
-                   (define xs (nonlinear-seq x-min x-max x-samples tx))
+                   (define xs (sample-points outer-ivl inner-ivl num tx))
                    (define ys (map* f xs))
                    (define rys (filter rational? ys))
                    (define-values (y-min y-max)
@@ -106,20 +150,25 @@
 
 (defproc (make-2d-function->sampler [transform-x-thnk (-> axis-transform/c)]
                                     [transform-y-thnk (-> axis-transform/c)]
-                                    ) ((real? real? . -> . real?) . -> . 2d-sampler/c)
-  (λ (f)
+                                    ) (-> (real? real? . -> . real?)
+                                          (vector/c ivl? ivl?)
+                                           2d-sampler/c)
+  (λ (f inner-rect)
     (define memo (make-hash))
-    (λ (x-min x-max x-samples y-min y-max y-samples)
+    (λ (outer-rect nums)
       (define tx (transform-x-thnk))
       (define ty (transform-y-thnk))
-      (hash-ref! memo (vector x-min x-max x-samples tx y-min y-max y-samples ty)
+      (hash-ref! memo (vector outer-rect nums tx ty)
                  (λ ()
-                   (define xs (nonlinear-seq x-min x-max x-samples tx))
-                   (define ys (nonlinear-seq y-min y-max y-samples ty))
+                   (match-define (vector outer-x-ivl outer-y-ivl) outer-rect)
+                   (match-define (vector inner-x-ivl inner-y-ivl) inner-rect)
+                   (match-define (vector x-num y-num) nums)
+                   (define xs (sample-points outer-x-ivl inner-x-ivl x-num tx))
+                   (define ys (sample-points outer-y-ivl inner-y-ivl y-num ty))
                    (define z-min #f)
                    (define z-max #f)
-                   (define zss (for/vector #:length y-samples ([y  (in-list ys)])
-                                 (for/vector #:length x-samples ([x  (in-list xs)])
+                   (define zss (for/vector #:length (length ys) ([y  (in-list ys)])
+                                 (for/vector #:length (length xs) ([x  (in-list xs)])
                                    (let ([z  (f x y)])
                                      (when (rational? z)
                                        (unless (and z-min (z . >= . z-min)) (set! z-min z))
@@ -132,25 +181,28 @@
 (defproc (make-3d-function->sampler [transform-x-thnk (-> axis-transform/c)]
                                     [transform-y-thnk (-> axis-transform/c)]
                                     [transform-z-thnk (-> axis-transform/c)]
-                                    ) ((real? real? real? . -> . real?) . -> . 3d-sampler/c)
-  (λ (f)
+                                    ) (-> (real? real? real? . -> . real?)
+                                          (vector/c ivl? ivl? ivl?)
+                                          3d-sampler/c)
+  (λ (f inner-rect)
     (define memo (make-hash))
-    (λ (x-min x-max x-samples y-min y-max y-samples z-min z-max z-samples)
+    (λ (outer-rect nums)
       (define tx (transform-x-thnk))
       (define ty (transform-y-thnk))
       (define tz (transform-z-thnk))
-      (hash-ref! memo (vector x-min x-max x-samples tx
-                              y-min y-max y-samples ty
-                              z-min z-max z-samples tz)
+      (hash-ref! memo (vector outer-rect nums tx ty tz)
                  (λ ()
-                   (define xs (nonlinear-seq x-min x-max x-samples tx))
-                   (define ys (nonlinear-seq y-min y-max y-samples ty))
-                   (define zs (nonlinear-seq z-min z-max z-samples tz))
+                   (match-define (vector outer-x-ivl outer-y-ivl outer-z-ivl) outer-rect)
+                   (match-define (vector inner-x-ivl inner-y-ivl inner-z-ivl) inner-rect)
+                   (match-define (vector x-num y-num z-num) nums)
+                   (define xs (sample-points outer-x-ivl inner-x-ivl x-num tx))
+                   (define ys (sample-points outer-y-ivl inner-y-ivl y-num ty))
+                   (define zs (sample-points outer-z-ivl inner-z-ivl z-num tz))
                    (define d-min #f)
                    (define d-max #f)
-                   (define dsss (for/vector #:length z-samples ([z  (in-list zs)])
-                                  (for/vector #:length y-samples ([y  (in-list ys)])
-                                    (for/vector #:length x-samples ([x  (in-list xs)])
+                   (define dsss (for/vector #:length (length zs) ([z  (in-list zs)])
+                                  (for/vector #:length (length ys) ([y  (in-list ys)])
+                                    (for/vector #:length (length xs) ([x  (in-list xs)])
                                       (let ([d  (f x y z)])
                                         (when (rational? d)
                                           (unless (and d-min (d . >= . d-min)) (set! d-min d))

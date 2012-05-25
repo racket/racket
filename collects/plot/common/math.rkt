@@ -558,6 +558,10 @@
                     [x2  (in-list (rest xs))])
            (ivl x1 x2))]))
 
+(defproc (clamp-real [x real?] [i ivl?]) real?
+  (match-define (ivl a b) i)
+  (max (min x b) a))
+
 ;; ===================================================================================================
 ;; Rectangles
 

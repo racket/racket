@@ -36,8 +36,7 @@
   (λ (r)
     (match-define (vector xi yi) r)
     (cond [(ivl-known? xi)
-           (match-define (ivl x-min x-max) xi)
-           (match-define (sample xs ys y-min y-max) (f x-min x-max samples))
+           (match-define (sample xs ys y-min y-max) (f xi samples))
            (vector xi (ivl y-min y-max))]
           [else  r])))
 
@@ -45,8 +44,7 @@
   (λ (r)
     (match-define (vector xi yi) r)
     (cond [(ivl-known? yi)
-           (match-define (ivl y-min y-max) yi)
-           (match-define (sample ys xs x-min x-max) (f y-min y-max samples))
+           (match-define (sample ys xs x-min x-max) (f yi samples))
            (vector (ivl x-min x-max) yi)]
           [else  r])))
 
@@ -66,10 +64,8 @@
   (λ (r)
     (match-define (vector xi yi zi) r)
     (cond [(and (ivl-known? xi) (ivl-known? yi))
-           (match-define (ivl x-min x-max) xi)
-           (match-define (ivl y-min y-max) yi)
            (match-define (2d-sample xs ys zss z-min z-max)
-             (f x-min x-max samples y-min y-max samples))
+             (f (vector xi yi) (vector samples samples)))
            (vector xi yi (ivl z-min z-max))]
           [else  r])))
 
@@ -87,12 +83,21 @@
   (let/ec break
     ;; Shortcut eval: if the plot bounds are all given, the code below just returns them anyway
     (when (rect-known? given-bounds-rect) (break given-bounds-rect))
-    ;; Objective: find the fixpoint of F starting at given-bounds-rect
+    ;; A list of elements' known bounds rects
+    (define elem-bounds-rects (filter values (map plot-element-bounds-rect elems)))
+    ;; The minimum bounding rectangle
+    (define min-bounds-rect
+      (cond [(empty? elem-bounds-rects)  given-bounds-rect]
+            [else  (rect-join given-bounds-rect
+                              (rect-meet given-bounds-rect
+                                         (apply rect-join elem-bounds-rects)))]))
+    ;; Objective: find the fixpoint of F starting at min-bounds-rect
     (define (F bounds-rect) (rect-meet given-bounds-rect (apply-bounds* elems bounds-rect)))
     ;; Iterate joint bounds to (hopefully) a fixpoint
     (define-values (bounds-rect area delta-area)
-      (for/fold ([bounds-rect  given-bounds-rect]
-                 [area  (rect-area given-bounds-rect)] [delta-area  #f]
+      (for/fold ([bounds-rect  min-bounds-rect]
+                 [area  (rect-area min-bounds-rect)]
+                 [delta-area  #f]
                  ) ([n  (in-range max-iters)])
         ;(printf "bounds-rect = ~v~n" bounds-rect)
         ;; Get new bounds from the elements' bounds functions
@@ -120,13 +125,6 @@
 (define (apply-bounds elem bounds-rect)
   (match-define (plot-element elem-bounds-rect elem-bounds-fun _) elem)
   ;(printf "elem-bounds-rect = ~v~n" elem-bounds-rect)
-  (let* ([new-bounds-rect  (if elem-bounds-rect
-                               (rect-meet bounds-rect elem-bounds-rect)
-                               bounds-rect)]
-         [new-bounds-rect  (if elem-bounds-fun
-                               (elem-bounds-fun (rect-inexact->exact new-bounds-rect))
-                               new-bounds-rect)]
-         [new-bounds-rect  (if elem-bounds-rect
-                               (rect-join new-bounds-rect elem-bounds-rect)
-                               new-bounds-rect)])
-    new-bounds-rect))
+  (let* ([bounds-rect  (if elem-bounds-fun (elem-bounds-fun bounds-rect) bounds-rect)]
+         [bounds-rect  (if elem-bounds-rect (rect-join elem-bounds-rect bounds-rect) bounds-rect)])
+    bounds-rect))

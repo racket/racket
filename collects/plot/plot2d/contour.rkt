@@ -13,9 +13,11 @@
 ;; One contour line
 
 (define ((isoline-render-proc g z samples color width style alpha label) area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-  (define sample (g x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (define num (animated-samples samples))
+  (define sample (g (vector x-ivl y-ivl) (vector num num)))
   (match-define (2d-sample xs ys zss z-min z-max) sample)
   
   (when (<= z-min z z-max)
@@ -43,8 +45,10 @@
           [#:alpha alpha (real-in 0 1) (line-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define g (2d-function->sampler f))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+  (renderer2d (vector x-ivl y-ivl) #f default-ticks-fun
               (isoline-render-proc g z samples color width style alpha label)))
 
 ;; ===================================================================================================
@@ -52,9 +56,11 @@
 
 (define ((contours-render-proc g levels samples colors widths styles alphas label) area)
   (let/ec return
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-    (define sample (g x-min x-max (animated-samples samples)
-                      y-min y-max (animated-samples samples)))
+    (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+    (match-define (ivl x-min x-max) x-ivl)
+    (match-define (ivl y-min y-max) y-ivl)
+    (define num (animated-samples samples))
+    (define sample (g (vector x-ivl y-ivl) (vector num num)))
     (match-define (2d-sample xs ys zss z-min z-max) sample)
     (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #f))
     
@@ -95,8 +101,10 @@
           [#:alphas alphas (alphas/c (listof real?)) (contour-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define g (2d-function->sampler f))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+  (renderer2d (vector x-ivl y-ivl) #f default-ticks-fun
               (contours-render-proc g levels samples colors widths styles alphas label)))
 
 ;; ===================================================================================================
@@ -106,9 +114,11 @@
           g levels samples colors styles contour-colors contour-widths contour-styles alphas label)
          area)
   (let/ec return
-    (match-define (vector (ivl x-min x-max) (ivl y-min y-max)) (send area get-bounds-rect))
-    (define sample (g x-min x-max (animated-samples samples)
-                      y-min y-max (animated-samples samples)))
+    (match-define (vector x-ivl y-ivl) (send area get-bounds-rect))
+    (match-define (ivl x-min x-max) x-ivl)
+    (match-define (ivl y-min y-max) y-ivl)
+    (define num (animated-samples samples))
+    (define sample (g (vector x-ivl y-ivl) (vector num num)))
     (match-define (2d-sample xs ys zss z-min z-max) sample)
     (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #t))
     
@@ -171,8 +181,10 @@
           [#:alphas alphas (alphas/c (listof ivl?)) (contour-interval-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer2d?
-  (define g (2d-function->sampler f))
-  (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+  (renderer2d (vector x-ivl y-ivl) #f default-ticks-fun
               (contour-intervals-render-proc g levels samples colors styles
                                              contour-colors contour-widths contour-styles
                                              alphas label)))

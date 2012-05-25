@@ -11,11 +11,14 @@
 
 (define ((surface3d-render-proc f samples color style line-color line-width line-style alpha label)
          area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (define num (animated-samples samples))
+  (define sample (f (vector x-ivl y-ivl) (vector num num)))
   
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+
   (send area put-alpha alpha)
   (send area put-brush color style)
   (send area put-pen line-color line-width line-style)
@@ -43,8 +46,11 @@
           [#:alpha alpha (real-in 0 1) (surface-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (define g (2d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define z-ivl (ivl z-min z-max))
+  (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+  (renderer3d (vector x-ivl y-ivl z-ivl)
               (surface3d-bounds-fun g samples)
               default-ticks-fun
               (surface3d-render-proc g samples color style

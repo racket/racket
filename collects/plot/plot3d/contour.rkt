@@ -11,10 +11,12 @@
 ;; One contour line in 3D (using marching squares)
 
 (define ((isoline3d-render-proc f z samples color width style alpha label) area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+  (define num (animated-samples samples))
+  (define sample (f (vector x-ivl y-ivl) (vector num num)))
   
   (when (<= z-min z z-max)
     (send area put-alpha alpha)
@@ -45,10 +47,13 @@
           [#:alpha alpha (real-in 0 1) (line-alpha)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (define g (2d-function->sampler f))
   (let ([z-min  (if z-min z-min z)]
         [z-max  (if z-max z-max z)])
-    (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+    (define x-ivl (ivl x-min x-max))
+    (define y-ivl (ivl y-min y-max))
+    (define z-ivl (ivl z-min z-max))
+    (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+    (renderer3d (vector x-ivl y-ivl z-ivl)
                 #f default-ticks-fun
                 (isoline3d-render-proc g z samples color width style alpha label))))
 
@@ -56,10 +61,12 @@
 ;; Contour lines in 3D (using marching squares)
 
 (define ((contours3d-render-proc f levels samples colors widths styles alphas label) area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+  (define num (animated-samples samples))
+  (define sample (f (vector x-ivl y-ivl) (vector num num)))
   ;; can't use the actual z ticks because some or all could be collapsed
   (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #f))
   
@@ -101,8 +108,11 @@
           [#:alphas alphas (alphas/c (listof real?)) (contour-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (define g (2d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define z-ivl (ivl z-min z-max))
+  (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+  (renderer3d (vector x-ivl y-ivl z-ivl)
               (surface3d-bounds-fun g samples)
               default-ticks-fun
               (contours3d-render-proc g levels samples colors widths styles alphas label)))
@@ -114,10 +124,12 @@
           f levels samples colors styles line-colors line-widths line-styles
           contour-colors contour-widths contour-styles alphas label)
          area)
-  (match-define (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
-    (send area get-bounds-rect))
-  (define sample (f x-min x-max (animated-samples samples)
-                    y-min y-max (animated-samples samples)))
+  (match-define (vector x-ivl y-ivl z-ivl) (send area get-bounds-rect))
+  (match-define (ivl x-min x-max) x-ivl)
+  (match-define (ivl y-min y-max) y-ivl)
+  (match-define (ivl z-min z-max) z-ivl)
+  (define num (animated-samples samples))
+  (define sample (f (vector x-ivl y-ivl) (vector num num)))
   ;; can't use the actual z ticks because some or all could be collapsed
   (match-define (list (tick zs _ labels) ...) (contour-ticks (plot-z-ticks) z-min z-max levels #t))
   
@@ -193,8 +205,11 @@
           [#:alphas alphas (alphas/c (listof ivl?)) (contour-interval-alphas)]
           [#:label label (or/c string? #f) #f]
           ) renderer3d?
-  (define g (2d-function->sampler f))
-  (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max))
+  (define x-ivl (ivl x-min x-max))
+  (define y-ivl (ivl y-min y-max))
+  (define z-ivl (ivl z-min z-max))
+  (define g (2d-function->sampler f (vector x-ivl y-ivl)))
+  (renderer3d (vector x-ivl y-ivl z-ivl)
               (surface3d-bounds-fun g samples)
               default-ticks-fun
               (contour-intervals3d-render-proc g levels samples colors styles

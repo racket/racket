@@ -461,6 +461,9 @@ Use this to construct inputs for @(racket rectangles) and @(racket rectangles3d)
 @examples[#:eval plot-eval (bounds->intervals (linear-seq 0 1 5))]
 }
 
+@doc-apply[clamp-real]{
+}
+
 @;----------------------------------------------------------------------------------------------------
 @;{
 @subsection[#:tag "math.rectangles"]{Rectangles and Rectangle Functions}
