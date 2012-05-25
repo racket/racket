@@ -24,7 +24,7 @@
                      (typecheck typechecker)
                      (env global-env)
                      (base-env base-env-indexing))
-         racket/file racket/port
+         racket/file racket/port racket/flonum
          (for-template
           racket/file racket/port
             (base-env base-types base-types-extra base-env-indexing))

@@ -2,7 +2,7 @@
 
 (begin
   (require
-   racket/list racket/unsafe/ops
+   racket/list racket/math racket/flonum racket/unsafe/ops
    (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base
                  (only-in "../types/numeric-predicates.rkt" index?))
    (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
@@ -461,7 +461,7 @@
                   (-FlonumNegZero -NegFlonum . -> . -FlonumPosZero)
                   (-PosFlonum -PosFlonum . -> . -NonNegFlonum) ; possible underflow
                   (commutative-binop -PosFlonum -NegFlonum -NonPosFlonum)
-                  (-NegFlonum -NegFlonum . -> . -NonNegFlonum)
+                  (-NegFlonum -NegFlonum . -> . (Un -NonNegFlonum -FlonumNan))
                   (binop -Flonum))))
   (define fl=-type
     (lambda ()
@@ -540,7 +540,7 @@
       (from-cases (commutative-case -PosFlonum (Un -NonNegFlonum -NonPosFlonum))
                   (commutative-case -PosFlonum -Flonum (Un -PosFlonum -FlonumNan))
                   (commutative-case -NonNegFlonum (Un -NonNegFlonum -NonPosFlonum))
-                  (commutative-case -NonNegFlonum (Un -NonNegFlonum -FlonumNan))
+                  (commutative-case -NonNegFlonum -Flonum (Un -NonNegFlonum -FlonumNan))
                   (map binop (list -NegFlonum -NonPosFlonum -Flonum)))))
   (define flround-type ; truncate too
     (lambda ()
@@ -557,7 +557,6 @@
   (define fllog-type
     (lambda ()
       (from-cases (-> -FlonumZero -NegFlonum) ; -inf
-                  (-> -PosFlonum -NonNegFlonum) ; possible underflow
                   (unop -Flonum))))
   (define flexp-type
     (lambda ()
@@ -571,10 +570,9 @@
                                   -Flonum))))) ; anything negative returns nan
   (define flexpt-type
     (lambda ()
-      (from-cases (-FlonumZero -Flonum . -> . -FlonumZero) ; (flexpt -0.0 0.1) -> 0.0 ; not sign preserving
-                  (-Flonum -FlonumZero . -> . -PosFlonum) ; always returns 1.0
-                  (-NonNegFlonum -Flonum . -> . -NonNegFlonum) ; can underflow, so not closed on positives
-                  (-NonPosFlonum -NonNegFlonum . -> . -NonPosFlonum) ; if we allow negative exponents, can return NaN, which is not NonPos
+      (from-cases (-FlonumZero -PosFlonum . -> . -FlonumZero) ; (flexpt -0.0 0.1) -> 0.0 ; not sign preserving
+                  ((Un -PosFlonum -NegFlonum) -FlonumZero . -> . -PosFlonum) ; always returns 1.0
+                  (-PosFlonum (Un -NonNegFlonum -NonPosFlonum) . -> . -NonNegFlonum) ; can underflow, and can't have NaN as exponent
                   (-Flonum -Flonum . -> . -Flonum))))
 
   (define fx->fl-type
@@ -1154,7 +1152,7 @@
     (-> -NonNegFlonum -NonNegFlonum)
     (varop-1+ (Un -NonNegFlonum -FlonumNan))
     ;; if we mix Pos and NonNeg (or just NonNeg), we go to Flonum: (/ +inf.0 0.0) -> NaN
-    (-> -NonPosFlonum -NonPosFlonum) ; possible underflow, so no neg -> neg
+    ;; No (-> -NonPosFlonum -NonPosFlonum), (/ 0.0) => +inf.0
     (-> -NegFlonum -NegFlonum -NonNegFlonum)
     (-> -NegFlonum -NegFlonum -NegFlonum -NonPosFlonum)
     ;; limited flonum contagion rules
@@ -1822,13 +1820,13 @@
                  (unop -PosRat)
                  (-> -Rat -NonNegRat)
                  (unop -PosFlonum)
-                 (-> -Flonum -NonNegFlonum)
+                 (-> -Flonum (Un -NonNegFlonum -FlonumNan))
                  (unop -PosSingleFlonum)
-                 (-> -SingleFlonum -NonNegSingleFlonum)
+                 (-> -SingleFlonum (Un -NonNegSingleFlonum -SingleFlonumNan))
                  (unop -PosInexactReal)
-                 (-> -InexactReal -NonNegInexactReal)
+                 (-> -InexactReal (Un -NonNegInexactReal -InexactRealNan))
                  (unop -PosReal)
-                 (-> -Real -NonNegReal)
+                 (-> -Real (Un -NonNegReal -InexactRealNan))
                  (map unop (list -FloatComplex -SingleFlonumComplex
                                  -InexactComplex -ExactNumber N)))]
 [conjugate (from-cases
