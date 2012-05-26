@@ -28,8 +28,8 @@
 
 (define (list-tests)
   (test
-   (! (car 0)) =error> "car: expects argument of type <pair>"
-   (! (cdr 0)) =error> "cdr: expects argument of type <pair>"
+   (! (car 0)) =error> "car: contract violation\n  expected: pair?"
+   (! (cdr 0)) =error> "cdr: contract violation\n  expected: pair?"
    (! (car (cons 1 (/ 1 0)))) => 1
    (! (cdr (cons (/ 1 0) 1))) => 1
    (! (list-ref (list (/ 1 0) 1 (/ 1 0)) 1)) => 1
@@ -40,7 +40,7 @@
    (!! (member 1 (cons 0 (cons 1 2)))) => '(1 . 2)
    (!! (memq   1 (cons 0 (cons 1 2)))) => '(1 . 2)
    (!! (memv   1 (cons 0 (cons 1 2)))) => '(1 . 2)
-   (! (second (map car (list 1 2 3)))) =error> "expects argument of type"
+   (! (second (map car (list 1 2 3)))) =error> "contract violation"
    (! (second (map car (list 1 '(2) 3)))) => 2
    ))
 

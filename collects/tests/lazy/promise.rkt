@@ -167,7 +167,7 @@
                   [p (delayer (channel-get ch) 99)])
              (thread (lambda () (channel-put ch 'x)))
              (test (force p) => 99))
-           (test (force (delayer (+ 1 "2"))) =error> "expects type")))
+           (test (force (delayer (+ 1 "2"))) =error> "contract violation")))
   (t delay/sync)
   (t delay/idle)
   (let* ([ch (make-channel)] [p (delay/idle #:wait-for ch 99)])
