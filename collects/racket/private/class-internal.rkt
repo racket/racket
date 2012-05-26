@@ -3939,7 +3939,7 @@ An example
 
 (define (do-make-object blame class by-pos-args named-args)
   (unless (class? class)
-    (raise-type-error 'instantiate "class?" class))
+    (raise-argument-error 'instantiate "class?" class))
   ;; make sure the class isn't abstract
   (unless (null? (class-abstract-ids class))
     (obj-error 'instantiate
