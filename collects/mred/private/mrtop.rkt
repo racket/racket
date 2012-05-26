@@ -6,7 +6,6 @@
          "lock.rkt"
          "helper.rkt"
          "const.rkt"
-         "kw.rkt"
          "check.rkt"
          "wx.rkt"
          "wxtop.rkt"

@@ -7,7 +7,6 @@
          "check.rkt"
          "helper.rkt"
          "wx.rkt"
-         "kw.rkt"
          "wxpanel.rkt"
          "mrwindow.rkt"
          "mrcontainer.rkt")

@@ -7,7 +7,6 @@
            "check.rkt"
            "helper.rkt"
            "wx.rkt"
-           "kw.rkt"
            "wxtextfield.rkt"
            "mrcontainer.rkt"
            "mritem.rkt"

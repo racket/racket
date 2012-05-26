@@ -6,7 +6,6 @@
            "const.rkt"
            "check.rkt"
            "wx.rkt"
-           "kw.rkt"
            "wxwindow.rkt"
            "mrpopup.rkt")
 

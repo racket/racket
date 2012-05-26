@@ -5,7 +5,6 @@
          (prefix-in wx: "kernel.rkt")
          "lock.rkt"
          "const.rkt"
-         "kw.rkt"
          "gdi.rkt"
          "check.rkt"
          "helper.rkt"
