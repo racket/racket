@@ -32,6 +32,7 @@
          sandbox-memory-limit
          sandbox-eval-limits
          sandbox-eval-handlers
+         sandbox-propagate-exceptions
          call-with-trusted-sandbox-configuration
          evaluator-alive?
          kill-evaluator
@@ -78,6 +79,7 @@
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
+(define sandbox-propagate-exceptions (make-parameter #t))
 
 (define (call-with-trusted-sandbox-configuration thunk)
   (parameterize ([sandbox-propagate-breaks    #t]
@@ -679,6 +681,7 @@
   (define user-cust     (make-custodian memory-cust))
   (define user-cust-box (make-custodian-box user-cust #t))
   (define coverage?     (sandbox-coverage-enabled))
+  (define propagate-exceptions? (sandbox-propagate-exceptions))
   (define uncovered     #f)
   (define default-coverage-source-filter #f)
   (define input-ch      (make-channel))
@@ -759,7 +762,13 @@
        (when (eof-object? expr)
          (terminated! 'eof) (channel-put result-ch expr) (user-kill))
        (with-handlers ([void (lambda (exn)
-                               (channel-put result-ch (cons 'exn exn)))])
+                               (if propagate-exceptions?
+                                   (channel-put result-ch (cons 'exn exn))
+                                   (begin
+                                     (call-with-continuation-prompt
+                                      (lambda ()
+                                        (raise exn)))
+                                     (channel-put result-ch (cons 'vals (list (void)))))))])
          (define run
            (if (evaluator-message? expr)
              (case (evaluator-message-msg expr)
