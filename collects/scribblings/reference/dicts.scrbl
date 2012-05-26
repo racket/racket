@@ -531,7 +531,7 @@ Returns a list of the associations from
 
 A @tech{generic interface} (see @secref["struct-generics"]) that
 supplies dictionary method implementations for a structure type.
-To supply method implementations, the @racket[methods] form should be used.
+To supply method implementations, the @racket[#:methods] form should be used.
 The provided implementations are applied only to instances of the structure
 type. The following methods can be implemented:
 
