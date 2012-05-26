@@ -63,22 +63,54 @@
                                          -> (or r (failed 'CreateIconIndirect)))
   #:wrap (allocator DestroyIcon))
 
+(define-cstruct _MONITORINFO ([cbSize _DWORD]
+			      [rcMonitor _RECT]
+			      [rcWork _RECT]
+			      [dwFlags _DWORD]))
+
+(define-user32 GetMonitorInfoW (_wfun _pointer _MONITORINFO-pointer 
+				      -> (r : _BOOL)
+				      -> (unless r (failed 'GetMonitorInfoW))))
+
 (define SPI_GETWORKAREA            #x0030)
 
 (define MA_NOACTIVATEANDEAT 4)
 
+(define MONITORINFOF_PRIMARY 1)
+
 (define (get-all-screen-rects)
-  (let ([rects null])
+  (let ([rects null]
+	[pos 0])
     (EnumDisplayMonitors #f #f (lambda (mon dc r ptr)
+				 (define mi (cast (malloc _MONITORINFO)
+						  _pointer
+						  _MONITORINFO-pointer))
+				 (set-MONITORINFO-cbSize! mi (ctype-sizeof _MONITORINFO))
+				 (GetMonitorInfoW mon mi)
+				 (set! pos (add1 pos))
 				 (set! rects (cons
-					      (list (RECT-left r)
-						    (RECT-top r)
-						    (RECT-right r)
-						    (RECT-bottom r))
+					      (list*
+					       ;; sort first by main monitor:
+					       (positive?
+						(bitwise-and MONITORINFOF_PRIMARY
+							     (MONITORINFO-dwFlags mi)))
+					       ;; otherwise, preserve order:
+					       pos
+					       ;; monitor rectangle, which is the goal:
+					       (list (RECT-left r)
+						     (RECT-top r)
+						     (RECT-right r)
+						     (RECT-bottom r)))
 					      rects))
 				 #t)
 			 #f)
-    (reverse rects)))
+    (map
+     cddr
+     (sort rects (lambda (a b)
+		   (cond
+		    [(and (car a) (not (car b))) #t]
+		    [(and (car b) (not (car a))) #f]
+		    [else (< (cadr a) (cadr b))]))))))
 
 (define (display-size xb yb all? num fail)
   (cond
