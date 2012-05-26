@@ -169,9 +169,8 @@
     (values (vector-copy* v 0 (unsafe-fx- len n))
             (vector-copy* v (unsafe-fx- len n) len))))
 
-(define (vector-append v . vs)
-  (let* ([vs (cons v vs)]
-         [lens (for/list ([e (in-list vs)] [i (in-naturals)])
+(define (vector-append . vs)
+  (let* ([lens (for/list ([e (in-list vs)] [i (in-naturals)])
                  (if (vector? e)
                    (unsafe-vector-length e)
                    (raise-argument-error 'vector-append "vector?" e i)))]
