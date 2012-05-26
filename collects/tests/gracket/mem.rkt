@@ -1,7 +1,5 @@
 #lang racket/gui
 
-(require mzlib/class100)
-
 (define source-dir (current-load-relative-directory))
 
 (define num-times 80)
@@ -88,9 +86,10 @@
 	  (send (remember 
 		 tag
 		 (make-object
-		  (class100 timer% args
-		    (override [notify (lambda () (void))])
-		    (sequence (apply super-init args)))))
+		  (class timer%
+                    (init-rest args)
+		    (override* [notify (lambda () (void))])
+                    (apply super-make-object args))))
 		start 100))
 
 	(when frame?

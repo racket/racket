@@ -1,8 +1,7 @@
-(module repl mzscheme
-  (require mzlib/class
-           mzlib/class100
-           (prefix wx: "kernel.rkt")
-	   (prefix wx: racket/snip/private/style)
+(module repl racket/base 
+  (require racket/class
+           (prefix-in wx: "kernel.rkt")
+	   (prefix-in wx: racket/snip/private/style)
            "editor.rkt"
            "app.rkt"
            "mrtop.rkt"
@@ -16,72 +15,72 @@
   (define (-graphical-read-eval-print-loop user-esp override-ports?)
     ;; The REPL buffer class
     (define esq:text%
-      (class100 text% ()
+      (class text%
 	(inherit insert last-position get-text erase change-style clear-undos set-max-undo-history)
-	(rename [super-on-char on-char])
-	(private-field [prompt-pos 0] [locked? #f])
-	(augment
+	(rename-super [super-on-char on-char])
+	(define prompt-pos 0)
+        (define locked? #f)
+	(augment*
 	 [can-insert? (lambda (start end) (and (>= start prompt-pos) (not locked?)))]
 	 [can-delete? (lambda (start end) (and (>= start prompt-pos) (not locked?)))])
-	(override
-	  [on-char (lambda (c)
-		     (super-on-char c)
-		     (when (and (memq (send c get-key-code) '(#\return #\newline #\003))
-				(not locked?))
-		       (set! locked? #t)
-		       (evaluate (get-text prompt-pos (last-position)))))])
-	(public
-	  [new-prompt (lambda ()
-			(output "> ")
-			(set! prompt-pos (last-position))
-			(set! locked? #f)
-			(clear-undos))]
-	  [output (lambda (str)
-		    (let ([l? locked?])
-		      (set! locked? #f)
-		      (insert str)
-		      (set! locked? l?)))]
-	  [reset (lambda ()
-		   (set! locked? #f)
-		   (set! prompt-pos 0)
-		   (erase)
-		   (new-prompt))])
-	(sequence 
-	  (super-init)
-	  (let ([s (last-position)]
-		[m (regexp-match #rx"^(.*), (Copyright.*)$" (banner))])
-            (insert (if m
-                        (format "~a." (cadr m))
-                        (let ([b (banner)])
-                          (substring b 0 (sub1 (string-length b))))))
-            (let ([e (last-position)])
-              (insert #\newline)
-              (change-style (send (make-object wx:style-delta% 'change-bold) set-delta-foreground "BLUE") s e))
-            (when m
-              (output (caddr m))))
-	  (insert "This is a simple window for evaluating Racket expressions.") (insert #\newline)
-	  (let ([s (last-position)])
-	    (insert "Quit now and run DrRacket to get a better window.")
-	    (let ([e (last-position)])
-	      (insert #\newline)
-	      (change-style
-	       (send (make-object wx:style-delta% 'change-italic) set-delta-foreground "RED")
-	       s e)))
-	  (insert "The current input port always returns eof.") (insert #\newline)
-	  (new-prompt)
-	  (set-max-undo-history 'forever))))
+	(override*
+         [on-char (lambda (c)
+                    (super-on-char c)
+                    (when (and (memq (send c get-key-code) '(#\return #\newline #\003))
+                               (not locked?))
+                      (set! locked? #t)
+                      (evaluate (get-text prompt-pos (last-position)))))])
+	(public*
+         [new-prompt (lambda ()
+                       (output "> ")
+                       (set! prompt-pos (last-position))
+                       (set! locked? #f)
+                       (clear-undos))]
+         [output (lambda (str)
+                   (let ([l? locked?])
+                     (set! locked? #f)
+                     (insert str)
+                     (set! locked? l?)))]
+         [reset (lambda ()
+                  (set! locked? #f)
+                  (set! prompt-pos 0)
+                  (erase)
+                  (new-prompt))])
+        (super-new)
+        (let ([s (last-position)]
+              [m (regexp-match #rx"^(.*), (Copyright.*)$" (banner))])
+          (insert (if m
+                      (format "~a." (cadr m))
+                      (let ([b (banner)])
+                        (substring b 0 (sub1 (string-length b))))))
+          (let ([e (last-position)])
+            (insert #\newline)
+            (change-style (send (make-object wx:style-delta% 'change-bold) set-delta-foreground "BLUE") s e))
+          (when m
+            (output (caddr m))))
+        (insert "This is a simple window for evaluating Racket expressions.") (insert #\newline)
+        (let ([s (last-position)])
+          (insert "Quit now and run DrRacket to get a better window.")
+          (let ([e (last-position)])
+            (insert #\newline)
+            (change-style
+             (send (make-object wx:style-delta% 'change-italic) set-delta-foreground "RED")
+             s e)))
+        (insert "The current input port always returns eof.") (insert #\newline)
+        (new-prompt)
+        (set-max-undo-history 'forever)))
 
     ;; GUI creation
-    (define frame (make-object (class100 frame% args
+    (define frame (make-object (class frame%
+                                 (init-rest args)
 				 (inherit accept-drop-files)
-				 (augment
+				 (augment*
 				  [on-close (lambda () 
 					      (custodian-shutdown-all user-custodian)
 					      (semaphore-post waiting))])
-				 (override
-				   [on-drop-file (lambda (f) (evaluate (format "(load ~s)" (path->string f))))])
-				 (sequence 
-				   (apply super-init args) (accept-drop-files #t)))
+				 (override*
+                                  [on-drop-file (lambda (f) (evaluate (format "(load ~s)" (path->string f))))])
+                                 (apply super-make-object args) (accept-drop-files #t))
 			       "GRacket REPL" #f 500 400))
     (define repl-buffer (make-object esq:text%))
     (define repl-display-canvas (new editor-canvas% [parent frame] [style '(no-border auto-hscroll resize-corner)]))

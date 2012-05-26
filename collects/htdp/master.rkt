@@ -1,10 +1,8 @@
-#lang scheme/gui
+#lang racket/gui
 
 (require htdp/error
          lang/prim
-         mzlib/class
-         mzlib/class100
-         mzlib/etc)
+         racket/class)
 
 (provide master)
 
@@ -88,10 +86,11 @@
   Some additional functionality |#
 
 (define colored-button%
-  (class100 button% (color:str parent call-back [_width BUT-SIZE] [_height BUT-SIZE])
-    (private-field (width _width)
-                   (height _height))
-    (private
+  (class button%
+    (init color:str parent call-back [_width BUT-SIZE] [_height BUT-SIZE])
+    (define width _width)
+    (define height _height)
+    (private*
       (make-colored-bm
        (lambda (color:str)
          (let* ([bm (make-object bitmap% width height)]
@@ -100,12 +99,11 @@
            (send dc draw-rectangle 0 0 width height)
            (send dc set-bitmap #f)
            bm))))
-    (public
+    (public*
       (change-color
        (lambda (color:str)
          (send this set-label (make-colored-bm color:str))))) 
-    (sequence
-      (super-init (make-colored-bm color:str) parent call-back))
+    (super-make-object (make-colored-bm color:str) parent call-back)
     ))
 
 

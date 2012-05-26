@@ -1,10 +1,8 @@
-(module classes mzscheme
-  (require mzlib/class
-           mzlib/class100
-           (prefix mred: mred)
-           mzlib/list
-           mzlib/etc
-           (prefix util: "utils.rkt")
+(module classes racket/base
+  (require racket/class
+           (prefix-in mred: mred)
+           racket/list
+           (prefix-in util: "utils.rkt")
            "constants.rkt"
            "make-cards.rkt"
            "region.rkt"
@@ -16,7 +14,7 @@
 	   table%)
 
   (define pasteboard%
-    (class100 mred:pasteboard% ()
+    (class mred:pasteboard%
       (inherit begin-edit-sequence end-edit-sequence get-admin
 	       invalidate-bitmap-cache
 	       find-next-selected-snip find-first-snip find-snip
@@ -25,24 +23,24 @@
 	       get-snip-location move-to
 	       dc-location-to-editor-location
 	       set-selection-visible)
-      (private-field
-	[select-one? #t]
-	[select-backward? #f]
-	[raise-to-front? #f]
-	[button-map '((left #f #f #t)
-		      (middle #t #f #t)
-		      (right #f #t #f))]
-
-	[do-on-double-click 'flip]
-	[do-on-single-click void]
-
-	[selecting? #f]
-	[dragging? #f]
-	[bg-click? #f]
-	[click-base #f]
-        [last-click #f]
-	[regions null])
-      (private
+      
+      (define select-one? #t)
+      (define select-backward? #f)
+      (define raise-to-front? #f)
+      (define button-map '((left #f #f #t)
+                           (middle #t #f #t)
+                           (right #f #t #f)))
+      
+      (define do-on-double-click 'flip)
+      (define do-on-single-click void)
+      
+      (define selecting? #f)
+      (define dragging? #f)
+      (define bg-click? #f)
+      (define click-base #f)
+      (define last-click #f)
+      (define regions null)
+      (private*
 	[get-snip-bounds
 	 (lambda (s)
 	   (let ([xbox (box 0)]
@@ -122,7 +120,7 @@
 	 (lambda (region)
 	   (let-values ([(sx sy sw sh) (get-region-box region)])
 	     (invalidate-bitmap-cache sx sy sw sh)))])
-      (public
+      (public*
         [only-front-selected
          (lambda ()
  	   (let loop ([s (find-next-selected-snip #f)][ok (find-first-snip)])
@@ -137,7 +135,7 @@
                            (for-each (lambda (s)
                                        (remove-selected s))
                                      l))))))))])
-      (override
+      (override*
 	[on-paint
 	 (lambda (before? dc l t r b dx dy caret)
 	   (when before?
@@ -183,7 +181,7 @@
 		    (send dc set-brush old-b)
 		    (send dc set-pen old-p))))
 	      regions)))])
-      (augment
+      (augment*
 	[after-select
 	 (lambda (s on?)
 	   (inner (void) after-select s on?)
@@ -211,7 +209,7 @@
 	   (for-each (lambda (region) (set-region-decided-start?! region #f)) regions)
 	   (for-each-selected (lambda (snip) (send snip remember-location this)))
 	   (set! dragging? #t))])
-      (override
+      (override*
 	[interactive-adjust-move
 	 (lambda (snip xb yb)
 	   (super interactive-adjust-move snip xb yb)
@@ -234,7 +232,7 @@
 		   (set-box! yb rt))
 		 (when (> (unbox yb) max-y)
 		   (set-box! yb max-y))))))])
-      (augment
+      (augment*
 	[after-interactive-move
 	 (lambda (e)
            (when dragging?
@@ -252,7 +250,7 @@
                        ((region-callback region) cards)
                        (unhilite-region region)))))
                 regions))))])
-      (override
+      (override*
 	[on-default-event
 	 (lambda (e)
 	   (let ([click (let ([c (or (and (send e button-down? 'left) 'left)
@@ -378,7 +376,7 @@
 	    [do-on-double-click
 	     (do-on-double-click s)]
 	    [else (void)]))])
-      (public
+      (public*
 	[get-all-list
 	 (lambda ()
 	   (let loop ([t (find-first-snip)][accum null])
@@ -435,9 +433,8 @@
 		    (cons button map)
 		    (remq (assoc button button-map)
 			  button-map)))))])
-      (sequence
-	(super-init)
-	(set-selection-visible #f))))
+      (super-make-object)
+      (set-selection-visible #f)))
 
   (define table%
     (class mred:frame%
@@ -468,7 +465,7 @@
 	 (lambda (card x y)
 	   (position-cards (list card) x y (lambda (p) (values 0 0)) add-cards-callback))]
 	[add-cards
-	 (opt-lambda (cards x y [offset (lambda (p) (values 0 0))])
+	 (lambda (cards x y [offset (lambda (p) (values 0 0))])
 	   (position-cards cards x y offset add-cards-callback))]
 	[add-cards-to-region
 	 (lambda (cards region)
@@ -477,7 +474,7 @@
 	 (lambda (card x y)
 	   (position-cards (list card) x y (lambda (p) (values 0 0)) move-cards-callback))]
 	[move-cards
-	 (opt-lambda (cards x y  [offset (lambda (p) (values 0 0))])
+	 (lambda (cards x y  [offset (lambda (p) (values 0 0))])
 	   (position-cards cards x y offset move-cards-callback))]
 	[move-cards-to-region
 	 (lambda (cards region)

@@ -1,10 +1,9 @@
-(module wxlitem mzscheme
-  (require mzlib/class
-           mzlib/class100
-           mzlib/file
-           (only racket/base remq)
+(module wxlitem racket/base
+  (require racket/class
+           racket/file
+           (only-in racket/base remq)
            racket/snip/private/prefs
-           (prefix wx: "kernel.rkt")
+           (prefix-in wx: "kernel.rkt")
            "lock.rkt"
            "helper.rkt"
            "const.rkt"
@@ -14,11 +13,11 @@
            "wxitem.rkt"
            "wxpanel.rkt")
 
-  (provide (protect wx-choice%
-                    wx-list-box%
-                    wx-radio-box%
-                    wx-gauge%
-                    wx-slider%))
+  (provide (protect-out wx-choice%
+                        wx-list-box%
+                        wx-radio-box%
+                        wx-gauge%
+                        wx-slider%))
 
   ;; ----------------------------------------
 
@@ -65,7 +64,7 @@
       (define/override (is-enabled?) (if c (send c is-enabled?) #t))
       (define/override (is-window-enabled?) (if c (send c is-window-enabled?) #t))
 
-      (super-init #f proxy parent (if (memq 'deleted style) '(deleted) null) #f)
+      (super-make-object #f proxy parent (if (memq 'deleted style) '(deleted) null) #f)
       (unless (memq 'deleted style)
         (send (area-parent) add-child this))
       (define horiz? (is-horiz? style parent))
@@ -85,20 +84,21 @@
   ;; ----------------------------------------
 
   (define wx-internal-choice% 
-    (class100 (make-window-glue% (make-simple-control% wx:choice% 0 0)) (mred proxy parent cb label x y w h choices style font)
-      (override 
-        [handles-key-code 
-         (lambda (x alpha? meta?) 
-           (or (memq x '(up down))
-               (and alpha? (not meta?))))])
-      (sequence (super-init mred proxy style parent cb label x y w h choices (cons 'deleted style) font))))
+    (class (make-window-glue% (make-simple-control% wx:choice% 0 0))
+      (init mred proxy parent cb label x y w h choices style font)
+      (override*
+       [handles-key-code 
+        (lambda (x alpha? meta?) 
+          (or (memq x '(up down))
+              (and alpha? (not meta?))))])
+      (super-make-object mred proxy style parent cb label x y w h choices (cons 'deleted style) font)))
 
   (define wx-choice%
     (class wx-label-panel% 
       (init mred proxy parent cb label x y w h choices style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
 
-      (super-init proxy parent label style font 'left 'center)
+      (super-make-object proxy parent label style font 'left 'center)
 
       (define c (make-object wx-internal-choice% mred proxy (get-p) cb label x y w h choices 
                              (filter-style style) font))
@@ -121,44 +121,45 @@
 
   (define wx-internal-list-box%
     (make-window-glue% 
-     (class100 (make-control% wx:list-box% 0 0 #t #t) (parent cb label kind x y w h choices style font 
-                                                              label-font columns column-order)
+     (class (make-control% wx:list-box% 0 0 #t #t)
+       (init parent cb label kind x y w h choices style font 
+             label-font columns column-order)
        (inherit get-first-item
 		set-first-visible-item
                 number-of-visible-items)
-       (private
-	 [scroll (lambda (dir)
-		   (unless list-box-wheel-step
-		     (set! list-box-wheel-step (get-preference* '|GRacket:wheelStep| (lambda () 3)))
-		     (unless (and (number? list-box-wheel-step)
-				  (exact? list-box-wheel-step)
-				  (integer? list-box-wheel-step)
-				  (<= 1 list-box-wheel-step 100))
-		       (set! list-box-wheel-step 3)))
-		   (let ([top (get-first-item)])
-		     (set-first-visible-item
-                      (max 0 (+ top (* (min list-box-wheel-step (number-of-visible-items)) dir))))))])
-       (override
-	 [handles-key-code (lambda (x alpha? meta?)
-			     (case x
-			       [(up down) #t]
-			       [else (and alpha? (not meta?))]))]
-	 [pre-on-char (lambda (w e)
-			(or (super pre-on-char w e)
-                            (and (not (eq? (system-type) 'macosx)) ; scrolling is built into NSListView 
-                                 (case (send e get-key-code)
-                                   [(wheel-up) (scroll -1) #t]
-                                   [(wheel-down) (scroll 1) #t]
-                                   [else #f]))))])
-       (sequence (super-init style parent cb label kind x y w h choices (cons 'deleted style) font 
-                             label-font columns column-order)))))
+       (private*
+        [scroll (lambda (dir)
+                  (unless list-box-wheel-step
+                    (set! list-box-wheel-step (get-preference* '|GRacket:wheelStep| (lambda () 3)))
+                    (unless (and (number? list-box-wheel-step)
+                                 (exact? list-box-wheel-step)
+                                 (integer? list-box-wheel-step)
+                                 (<= 1 list-box-wheel-step 100))
+                      (set! list-box-wheel-step 3)))
+                  (let ([top (get-first-item)])
+                    (set-first-visible-item
+                     (max 0 (+ top (* (min list-box-wheel-step (number-of-visible-items)) dir))))))])
+       (override*
+        [handles-key-code (lambda (x alpha? meta?)
+                            (case x
+                              [(up down) #t]
+                              [else (and alpha? (not meta?))]))]
+        [pre-on-char (lambda (w e)
+                       (or (super pre-on-char w e)
+                           (and (not (eq? (system-type) 'macosx)) ; scrolling is built into NSListView 
+                                (case (send e get-key-code)
+                                  [(wheel-up) (scroll -1) #t]
+                                  [(wheel-down) (scroll 1) #t]
+                                  [else #f]))))])
+       (super-make-object style parent cb label kind x y w h choices (cons 'deleted style) font 
+                          label-font columns column-order))))
 
   (define wx-list-box%
     (class wx-label-panel% 
       (init mred proxy parent cb label kind x y w h choices style font label-font columns column-order)
       (inherit get-p set-c)
 
-      (super-init proxy parent label style font 'left 'top)
+      (super-make-object proxy parent label style font 'left 'top)
 
       (define c (make-object wx-internal-list-box% mred proxy (get-p) cb label kind x y w h choices 
                              (filter-style style) font label-font columns column-order))
@@ -205,40 +206,41 @@
 
   (define wx-internal-radio-box%
     (make-window-glue% 
-     (class100 (make-simple-control% wx:radio-box% 0 0) (parent cb label x y w h choices major style font)
+     (class (make-simple-control% wx:radio-box% 0 0)
+       (init parent cb label x y w h choices major style font)
        (inherit number orig-enable set-selection command)
-       (override
-	 [enable
-	  (case-lambda
+       (override*
+        [enable
+         (case-lambda
 	   [(on?) (super enable on?)]
 	   [(which on?) (when (< -1 which (number))
 			  (vector-set! enable-vector which (and on? #t))
 			  (orig-enable which on?))])]
-	 [is-enabled?
-	  (case-lambda
+        [is-enabled?
+         (case-lambda
 	   [() (super is-enabled?)]
 	   [(which) (and (< -1 which (number))
 			 (vector-ref enable-vector which))])])
 
-       (private-field [is-vertical? (memq 'vertical style)])
-       (public
-	 [vertical? (lambda () is-vertical?)]
-	 [char-to-button (lambda (i)
-			   (as-exit
-			    (lambda ()
-			      (set-selection i)
-			      (command (make-object wx:control-event% 'radio-box)))))])
+       (define is-vertical? (memq 'vertical style))
+       (public*
+        [vertical? (lambda () is-vertical?)]
+        [char-to-button (lambda (i)
+                          (as-exit
+                           (lambda ()
+                             (set-selection i)
+                             (command (make-object wx:control-event% 'radio-box)))))])
 
-       (sequence (super-init style parent cb label x y w h choices major (cons 'deleted style) font))
+       (super-make-object style parent cb label x y w h choices major (cons 'deleted style) font)
 
-       (private-field [enable-vector (make-vector (number) #t)]))))
+       (define enable-vector (make-vector (number) #t)))))
 
   (define wx-radio-box%
     (class wx-label-panel% 
       (init mred proxy parent cb label x y w h choices major style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
 
-      (super-init proxy parent label style font 'left 'center)
+      (super-make-object proxy parent label style font 'left 'center)
 
       (define c (make-object wx-internal-radio-box% mred proxy (get-p) cb label x y w h choices 
                              major (filter-style style) font))
@@ -272,57 +274,55 @@
 
   (define wx-internal-gauge%
     (make-window-glue% 
-     (class100 (make-control% wx:gauge% 0 0 #f #f)
-	 (parent label range style font)
+     (class (make-control% wx:gauge% 0 0 #f #f)
+       (init parent label range style font)
        (inherit get-client-size get-width get-height set-size 
 		stretchable-in-x stretchable-in-y set-min-height set-min-width
 		get-parent)
-       (override [gets-focus? (lambda () #f)])
-       (private-field
-	;; # pixels per unit of value.
-	[pixels-per-value 1])
-       (sequence
-	 (super-init style parent label range -1 -1 -1 -1 (cons 'deleted style) font)
+       (override* [gets-focus? (lambda () #f)])
+       ;; # pixels per unit of value.
+       (define pixels-per-value 1)
+       (super-make-object style parent label range -1 -1 -1 -1 (cons 'deleted style) font)
 
-	 (let-values ([(client-width client-height) (get-two-int-values 
-						     (lambda (a b) (get-client-size a b)))])
-	   (let ([delta-w (- (get-width) client-width)]
-		 [delta-h (- (get-height) client-height)]
-		 [vertical-labels? (eq? (send (send (get-parent) get-window) get-label-position) 'vertical)]
-		 [horizontal? (memq 'horizontal style)])
-	     (set-min-width (if horizontal?
-				(let ([cw (min const-max-gauge-length
-					       (* range pixels-per-value))])
-				  (max (if vertical-labels?
-					   cw
-					   (+ cw delta-w))
-				       (get-width)))
-				;; client-height is the default
-				;; dimension in the minor direction.
-				(+ client-width delta-w)))
-	     (set-min-height (if horizontal?
-				 (+ client-height delta-h)
-				 (let ([ch (min const-max-gauge-length
-						(* range pixels-per-value))])
-				   (max (if vertical-labels?
-					    (+ ch delta-h)
-					    ch)
-					(get-height)))))))
+       (let-values ([(client-width client-height) (get-two-int-values 
+                                                   (lambda (a b) (get-client-size a b)))])
+         (let ([delta-w (- (get-width) client-width)]
+               [delta-h (- (get-height) client-height)]
+               [vertical-labels? (eq? (send (send (get-parent) get-window) get-label-position) 'vertical)]
+               [horizontal? (memq 'horizontal style)])
+           (set-min-width (if horizontal?
+                              (let ([cw (min const-max-gauge-length
+                                             (* range pixels-per-value))])
+                                (max (if vertical-labels?
+                                         cw
+                                         (+ cw delta-w))
+                                     (get-width)))
+                              ;; client-height is the default
+                              ;; dimension in the minor direction.
+                              (+ client-width delta-w)))
+           (set-min-height (if horizontal?
+                               (+ client-height delta-h)
+                               (let ([ch (min const-max-gauge-length
+                                              (* range pixels-per-value))])
+                                 (max (if vertical-labels?
+                                          (+ ch delta-h)
+                                          ch)
+                                      (get-height)))))))
 
-	 (if (memq 'horizontal style)
-	     (begin
-	       (stretchable-in-x #t)
-	       (stretchable-in-y #f))
-	     (begin
-	       (stretchable-in-x #f)
-	       (stretchable-in-y #t)))))))
+       (if (memq 'horizontal style)
+           (begin
+             (stretchable-in-x #t)
+             (stretchable-in-y #f))
+           (begin
+             (stretchable-in-x #f)
+             (stretchable-in-y #t))))))
 
   (define wx-gauge%
     (class wx-label-panel% 
       (init mred proxy parent label range style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
       
-      (super-init proxy parent label style font 'center 'center)
+      (super-make-object proxy parent label style font 'center 'center)
       
       (define c (make-object wx-internal-gauge% mred proxy (get-p) label range
                              (filter-style style) font))
@@ -344,41 +344,39 @@
 
   (define wx-internal-slider%
     (make-window-glue% 
-     (class100 (make-control% wx:slider% 0 0 #f #f)
-	 (parent func label value min-val max-val style font)
+     (class (make-control% wx:slider% 0 0 #f #f)
+       (init parent func label value min-val max-val style font)
        (inherit set-min-width set-min-height stretchable-in-x stretchable-in-y
 		get-client-size get-width get-height get-parent)
-       (private-field
-	;; # pixels per possible setting.
-	[pixels-per-value 3])
+       ;; # pixels per possible setting.
+       (define pixels-per-value 3)
        ;; 3 is good because with horizontal sliders under Xt, with 1 or 2
        ;; pixels per value, the thumb is too small to display the number,
        ;; which looks bad.
        
-       (sequence
-	 (super-init style parent func label value min-val max-val -1 -1 -1 (cons 'deleted style) font)
+       (super-make-object style parent func label value min-val max-val -1 -1 -1 (cons 'deleted style) font)
 	 
-	 (let-values ([(client-w client-h) (get-two-int-values (lambda (a b)
-								 (get-client-size a b)))])
-	   (let* ([horizontal? (memq 'horizontal style)]
-		  [vertical-labels? (eq? (send (send (get-parent) get-window) get-label-position) 'vertical)]
-		  [range (+ (* pixels-per-value (add1 (- max-val min-val)))
-			    (cond
-			     [(and horizontal? (not vertical-labels?)) (- (get-width) client-w)]
-			     [(and (not horizontal?) vertical-labels?) (- (get-height) client-h)]
-			     [else 0]))])
-	     ((if horizontal? (lambda (v) (set-min-width v)) (lambda (v) (set-min-height v)))
-	      (max ((if horizontal? (lambda () (get-width)) (lambda () (get-height))))
-		   (min const-max-gauge-length range)))
-	     (stretchable-in-x horizontal?)
-	     (stretchable-in-y (not horizontal?))))))))
+       (let-values ([(client-w client-h) (get-two-int-values (lambda (a b)
+                                                               (get-client-size a b)))])
+         (let* ([horizontal? (memq 'horizontal style)]
+                [vertical-labels? (eq? (send (send (get-parent) get-window) get-label-position) 'vertical)]
+                [range (+ (* pixels-per-value (add1 (- max-val min-val)))
+                          (cond
+                           [(and horizontal? (not vertical-labels?)) (- (get-width) client-w)]
+                           [(and (not horizontal?) vertical-labels?) (- (get-height) client-h)]
+                           [else 0]))])
+           ((if horizontal? (lambda (v) (set-min-width v)) (lambda (v) (set-min-height v)))
+            (max ((if horizontal? (lambda () (get-width)) (lambda () (get-height))))
+                 (min const-max-gauge-length range)))
+           (stretchable-in-x horizontal?)
+           (stretchable-in-y (not horizontal?)))))))
 
   (define wx-slider%
     (class wx-label-panel% 
       (init mred proxy parent func label value min-val max-val style font)
       (inherit stretchable-in-y stretchable-in-x get-p set-c)
 
-      (super-init proxy parent label style font 'center 'center)
+      (super-make-object proxy parent label style font 'center 'center)
 
       (define c (make-object wx-internal-slider% mred proxy (get-p) func label value min-val max-val
                              (filter-style style) font))

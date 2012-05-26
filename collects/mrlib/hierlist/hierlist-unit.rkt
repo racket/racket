@@ -1,13 +1,13 @@
-(module hierlist-unit mzscheme
-  (require (all-except mzlib/unit rename)
-           mzlib/class
-           mzlib/class100
+(module hierlist-unit racket/base
+  (require racket/class
+           racket/unit
            mred/mred-sig
            mrlib/include-bitmap
            "hierlist-sig.rkt")
 
-  (require (rename mzlib/list sort* sort)
-           mzlib/etc)
+  ;; Previously was a rename-in from mzlib/list, but
+  ;; now it's imported from racket/base
+  (define sort* sort)
 
   (define turn-up (include-bitmap "../../icons/turn-up.png" 'png/mask))
   (define turn-down (include-bitmap "../../icons/turn-down.png" 'png/mask))
@@ -44,17 +44,17 @@
       (define arrow-snip-class (make-object snip-class%))
       (send arrow-snip-class set-classname "hier-arrow")
       (define arrow-snip%
-	(class100 snip% (callback)
+	(class snip%
+          (init callback)
           (inherit get-admin set-flags get-flags set-count set-snipclass get-style)
-          (rename [super-get-extent get-extent])
-          (private-field 
-           [size-calculated? #f]
-           [size orig-size]
-           [width-fraction 1/2]
-           [on? #f]
-           [click-callback callback]
-           [clicked? #f])
-          (private
+          (rename-super [super-get-extent get-extent])
+          (define size-calculated? #f)
+          (define size orig-size)
+          (define width-fraction 1/2)
+          (define on? #f)
+          (define click-callback callback)
+          (define clicked? #f)
+          (private*
             [set-sizes
              (lambda (dc)
                (let* ([s (get-style)]
@@ -69,7 +69,7 @@
             [update
              (lambda ()
                (send (get-admin) needs-update this 0 0 (get-width) (get-height)))])
-          (override
+          (override*
             [get-extent (lambda (dc x y w h descent space lspace rspace)
                           (super-get-extent dc x y w h descent space lspace rspace)
                           (unless size-calculated? (set-sizes dc))
@@ -124,22 +124,22 @@
                            (set! clicked? #f)
                            (update))])))]
             [copy (lambda () (make-object arrow-snip% click-callback))])
-          (public
+          (public*
             [on (case-lambda 
                  [(v) (set! on? v) (update)]
                  [() on?])])
-          (sequence
-            (super-init)
-            (set-snipclass arrow-snip-class)
-            (set-count 1)
-            (set-flags (cons 'handles-events (get-flags))))))
+          
+          (super-make-object)
+          (set-snipclass arrow-snip-class)
+          (set-count 1)
+          (set-flags (cons 'handles-events (get-flags)))))
 
       ;; Hack to get whitespace matching width of arrow: derive a new
       ;; class that overrides the `draw' method to do nothing. 
       (define whitespace-snip%
-	(class100 arrow-snip% ()
-	  (override [draw (lambda (dc x y left top right bottom dx dy draw-caret) (void))])
-	  (sequence (super-init void))))
+	(class arrow-snip%
+	  (override* [draw (lambda (dc x y left top right bottom dx dy draw-caret) (void))])
+          (super-make-object void)))
 
       ;; Keymap to map clicks and double-clicks
       (define item-keymap (make-object keymap%))
@@ -168,12 +168,12 @@
           get-parent))
 
       (define hierarchical-list-item%
-	(class100* object% (hierarchical-list-item<%>) (snp)
-          (private-field
-           [snip snp]
-           [data #f]
-           [allow-selection #t])
-          (public
+	(class* object% (hierarchical-list-item<%>)
+          (init snp)
+          (define snip snp)
+          (define data #f)
+          (define allow-selection #t)
+          (public*
             [get-allow-selection? (lambda () allow-selection)]
             [set-allow-selection (lambda (_a) (set! allow-selection _a))]
             
@@ -201,7 +201,7 @@
                                  (let ([parent-snip (send parent-of-snip get-parent-snip)])
                                    (and parent-snip
                                         (send parent-snip get-item))))))])
-          (sequence (super-init))))
+          (super-make-object)))
 
       (define hierarchical-list-compound-item<%>
 	(interface (hierarchical-list-item<%>)
@@ -216,11 +216,12 @@
           get-arrow-snip))
 
       (define hierarchical-list-compound-item%
-	(class100* hierarchical-list-item% (hierarchical-list-compound-item<%>) (snp)
-          (private-field [snip snp])
-          (override
+	(class* hierarchical-list-item% (hierarchical-list-compound-item<%>)
+          (init snp)
+          (define snip snp)
+          (override*
             [get-editor (lambda () (send snip get-title-buffer))])
-          (public
+          (public*
             [get-arrow-snip (lambda () (send snip get-arrow-snip))]
             [open
              (lambda ()
@@ -249,31 +250,31 @@
                                        (send (send snip get-content-buffer) delete-item i)
                                        (send snip check-empty-now)))]
             [get-items (lambda () (send (send snip get-content-buffer) get-items))])
-          (sequence
-            (super-init snip))))
+          (super-make-object snip)))
 
       ;; Buffer for a single list item
       (define hierarchical-item-text%
-	(class100 text% (tp tp-select itm snp dpth)
+	(class text%
+          (init tp tp-select itm snp dpth)
           (inherit hide-caret
                    last-position set-position set-keymap
                    invalidate-bitmap-cache set-max-width
                    get-view-size)
-          (rename [super-auto-wrap auto-wrap]
-                  [super-on-default-event on-default-event])
-          (private-field
-           [top tp]
-           [top-select tp-select]
-           [item itm]
-           [snip snp]
-           [depth dpth]
-           [selected? #f])
-          (public
+          (rename-super [super-auto-wrap auto-wrap]
+                        [super-on-default-event on-default-event])
+          
+          (define top tp)
+          (define top-select tp-select)
+          (define item itm)
+          (define snip snp)
+          (define depth dpth)
+          (define selected? #f)
+          (public*
             [is-selected? (lambda () selected?)]
             [show-select (lambda (on?)
                            (set! selected? on?)
                            (invalidate-bitmap-cache))])
-          (override
+          (override*
             [auto-wrap (case-lambda
                         [() (super-auto-wrap)]
                         [(on?) (super-auto-wrap on?)
@@ -316,44 +317,43 @@
 		     (send dc draw-rectangle (+ dx left 1) (+ dy top_ 1) (- right left 2) (- bottom top_ 2)))
                    (send dc set-pen p)
                    (send dc set-brush b))))])
-	  (private
+	  (private*
             ;; need to use top-select anyway, because it might want to react to
             ;; all clicks
 	    [do-select (lambda (on? clicked?)
 			 (top-select (if on? item #f) snip clicked?
                                      (not (eq? (not selected?) (not on?)))))])
-          (public
+          (public*
             [select (lambda (on?) (do-select on? #f))]
             [click-select (lambda (on?) (do-select on? #t))]
             [double-select (lambda () (send top on-double-select item))]
             [select-prev (lambda () (send top select-prev))])
-          (override
+          (override*
             [on-default-char (lambda (x) (void))]
-	    [can-do-edit-operation? (opt-lambda (x [r? #t]) 
+	    [can-do-edit-operation? (lambda (x [r? #t]) 
 				      (and (super can-do-edit-operation? x r?)
 					   (send top can-do-edit-operation? x r?)))]
-	    [do-edit-operation (opt-lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
-          (sequence
-            (super-init)
-            (hide-caret #t)
-            (set-keymap item-keymap))))
+	    [do-edit-operation (lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
+          (super-make-object)
+          (hide-caret #t)
+          (set-keymap item-keymap)))
       
       ;; Buffer for a compound list item (and the top-level list)
       (define (make-hierarchical-list-text% super%)
-	(class100 super% (tp tp-select dpth parent-snp)
+	(class super%
+          (init tp tp-select dpth parent-snp)
           (inherit hide-caret erase
                    last-position insert delete line-start-position line-end-position
                    begin-edit-sequence end-edit-sequence get-style-list)
-          (private-field
-           [top tp]
-           [top-select tp-select]
-           [depth dpth]
-           [parent-snip parent-snp]
-           [children null]
-	   [new-children null]
-	   [no-sublists? #f]
-           [transparent? #f])
-          (private
+          (define top tp)
+          (define top-select tp-select)
+          (define depth dpth)
+          (define parent-snip parent-snp)
+          (define children null)
+	  (define new-children null)
+	  (define no-sublists? #f)
+          (define transparent? #f)
+          (private*
             [append-children! (lambda ()
                                 (unless (null? new-children)
                                   (set! children (append children (reverse new-children)))
@@ -373,7 +373,7 @@
                  (end-edit-sequence)
                  (set! new-children (cons s new-children))
                  (send s get-item)))])
-          (public
+          (public*
             [set-transparent (λ (t?) (set! transparent? (and t? #t)))]
             [get-parent-snip (lambda () parent-snip)]
             [deselect-all 
@@ -415,7 +415,7 @@
                           [e (line-end-position pos)])
                       (delete (if (zero? s) s (sub1 s)) (if (zero? s) (add1 e) e)))]
                    [else (loop (add1 pos) (cdr l) (cons (car l) others))])))]
-            [sort (opt-lambda (less-than? [recur? #t])
+            [sort (lambda (less-than? [recur? #t])
                     (append-children!)
                     (let ([l (sort* children
                                     (lambda (a b)
@@ -456,24 +456,24 @@
                 (lambda (c)
                   (send c reflow-item))
                 children))])
-          (override
+          (override*
             [on-default-char (lambda (x) (void))]
             [on-default-event (lambda (x) (void))]
-	    [can-do-edit-operation? (opt-lambda (x [r? #t]) 
+	    [can-do-edit-operation? (lambda (x [r? #t]) 
 				      (and (super can-do-edit-operation? x r?)
 					   (send top can-do-edit-operation? x r?)))]
-	    [do-edit-operation (opt-lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
-          (sequence
-            (super-init)
-            (hide-caret #t))))
+	    [do-edit-operation (lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
+          (super-make-object)
+          (hide-caret #t)))
 
       (define hierarchical-list-text% (make-hierarchical-list-text% text%))
 
       ;; Snip for a single list item
       (define hierarchical-item-snip%
-	(class100 editor-snip% (prnt top top-select depth mixin)
-	  (private-field [parent prnt])
-	  (public
+	(class editor-snip%
+          (init prnt top top-select depth mixin)
+          (define parent prnt)
+	  (public*
 	    [get-parent (lambda () parent)]
 	    [get-item-text% (lambda () hierarchical-item-text%)]
 	    [select (lambda (on?) (send item-buffer select on?))]
@@ -485,30 +485,29 @@
 	    [reflow-item (lambda () 
 			   (when (send item-buffer auto-wrap)
 			     (send item-buffer auto-wrap #t)))])
-	  (private-field
-	    [item (make-object (mixin hierarchical-list-item%) this)]
-	    [item-buffer (make-object (get-item-text%) top top-select item this depth)])
-	  (sequence
-	    (super-init item-buffer #f 0 0 0 0 0 0 0 0))))
+          
+	  (define item (make-object (mixin hierarchical-list-item%) this))
+	  (define item-buffer (make-object (get-item-text%) top top-select item this depth))
+	  (super-make-object item-buffer #f 0 0 0 0 0 0 0 0)))
 
       ;; Snip for a compound list item
       (define hierarchical-list-snip%
-        (class100 editor-snip% (prnt tp top-select depth mixin [title #f][content #f])
-	  (private-field 
-	    [parent prnt]
-	    [top tp])
-	  (public
+        (class editor-snip%
+          (init prnt tp top-select depth mixin [title #f][content #f])
+          (define parent prnt)
+          (define top tp)
+	  (public*
 	    [get-parent (lambda () parent)]
-	    [get-main-text% (lambda () (class100 text% args
-					 (override
+	    [get-main-text% (lambda () (class text%
+                                         (init-rest args)
+					 (override*
 					   [on-default-char (lambda (x) (void))]
 					   [on-default-event (lambda (x) (void))]
-					   [can-do-edit-operation? (opt-lambda (x [r? #t]) 
+					   [can-do-edit-operation? (lambda (x [r? #t]) 
 								     (and (super can-do-edit-operation? x r?)
 									  (send top can-do-edit-operation? x r?)))]
-					   [do-edit-operation (opt-lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
-					 (sequence 
-					   (apply super-init args))))]
+					   [do-edit-operation (lambda (x [r? #t] [time 0]) (send top do-edit-operation x r? time))])
+                                         (apply super-make-object args)))]
 	    [get-title-text% (lambda () hierarchical-item-text%)]
 	    [get-content-text% (lambda () hierarchical-list-text%)]
 	    [get-arrow-snip% (lambda () arrow-snip%)]
@@ -552,9 +551,8 @@
 			   (when (send title-buffer auto-wrap)
 			     (send title-buffer auto-wrap #t))
 			   (send (send content-snip get-editor) reflow-items))])
-	  (private-field
-	    [open? #f])
-	  (private
+          (define open? #f)
+	  (private*
 	    [handle-open
 	     (lambda (update-arrow?)
 	       (unless open?
@@ -586,35 +584,33 @@
 		 (send main-buffer delete 2 5)
 		 (send top on-item-closed (get-item))
 		 (send main-buffer end-edit-sequence)))])
-	  (private-field
-	    [was-empty? #f]
-	    [was-non-empty? #f]
-	    [item (make-object (mixin hierarchical-list-compound-item%) this)]
-	    [main-buffer (make-object (get-main-text%))]
-	    [title-buffer (make-object (get-title-text%) top top-select item this depth)]
-	    [content-buffer (make-object (get-content-text%) top top-select depth this)]
-	    [title-snip (make-object editor-snip% title-buffer #f 0 0 0 0 0 0 0 0)]
-	    [content-snip (make-object editor-snip% content-buffer #f 4 0 0 0 0 0 0 0)]
-	    [arrow (make-object (get-arrow-snip%) (lambda (a) (on-arrow a)))]
-	    [whitespace (make-object whitespace-snip%)])
-          (override 
+	  (define was-empty? #f)
+	  (define was-non-empty? #f)
+	  (define item (make-object (mixin hierarchical-list-compound-item%) this))
+	  (define main-buffer (make-object (get-main-text%)))
+	  (define title-buffer (make-object (get-title-text%) top top-select item this depth))
+	  (define content-buffer (make-object (get-content-text%) top top-select depth this))
+	  (define title-snip (make-object editor-snip% title-buffer #f 0 0 0 0 0 0 0 0))
+	  (define content-snip (make-object editor-snip% content-buffer #f 4 0 0 0 0 0 0 0))
+	  (define arrow (make-object (get-arrow-snip%) (lambda (a) (on-arrow a))))
+	  (define whitespace (make-object whitespace-snip%))
+          (override*
             [use-style-background
              (λ (x)
                (super use-style-background x)
                (send title-snip use-style-background x)
                (send content-snip use-style-background x)
                (send content-buffer set-transparent x))])
-          (public
+          (public*
             [get-arrow-snip (lambda () arrow)])
           (inherit style-background-used?)
-          (sequence
-	    (super-init main-buffer #f 0 0 0 0 0 0 0 0)
-            (send main-buffer hide-caret #t)
-	    (send main-buffer insert arrow)
-	    (when title (send title-buffer insert title))
-	    (when content (send content-buffer insert content))
-	    (send main-buffer insert title-snip)
-	    (send main-buffer change-style (make-object style-delta% 'change-alignment 'top) 0 2))))
+	  (super-make-object main-buffer #f 0 0 0 0 0 0 0 0)
+          (send main-buffer hide-caret #t)
+	  (send main-buffer insert arrow)
+	  (when title (send title-buffer insert title))
+	  (when content (send content-buffer insert content))
+	  (send main-buffer insert title-snip)
+	  (send main-buffer change-style (make-object style-delta% 'change-alignment 'top) 0 2)))
 
       (define list-keymap (make-object keymap%))
 
@@ -659,11 +655,12 @@
       (send list-keymap map-function "return" "toggle-open/closed")
 
       (define hierarchical-list%
-        (class100 editor-canvas% (parent [style '(no-hscroll)])
+        (class editor-canvas%
+          (init parent [style '(no-hscroll)])
           (inherit min-width min-height allow-tab-exit refresh)
-          (rename [super-on-char on-char]
-                  [super-on-focus on-focus])
-          (public
+          (rename-super [super-on-char on-char]
+                        [super-on-focus on-focus])
+          (public*
             [selectable
              (case-lambda
               [() selectable?]
@@ -678,7 +675,7 @@
             [set-no-sublists (lambda x (send top-buffer set-no-sublists . x))]
             [new-list (lambda x (send top-buffer new-list . x))]
             [delete-item (lambda (i) (send top-buffer delete-item i))]
-            [sort (opt-lambda (less-than? [recur? #t]) (send top-buffer sort less-than? recur?))]
+            [sort (lambda (less-than? [recur? #t]) (send top-buffer sort less-than? recur?))]
             [get-items (lambda () (send top-buffer get-items))]
             [toggle-open/closed
              (lambda ()
@@ -745,15 +742,15 @@
              (case-lambda
               [() show-focus?]
               [(on?) (set! show-focus? on?)])]
-	    [can-do-edit-operation? (opt-lambda (x [r? #t]) #f)]
-	    [do-edit-operation (opt-lambda (x [r? #t] [time 0]) (void))])
-	  (public ;; ---- local to this module! ----
+	    [can-do-edit-operation? (lambda (x [r? #t]) #f)]
+	    [do-edit-operation (lambda (x [r? #t] [time 0]) (void))])
+	  (public* ;; ---- local to this module! ----
 	    [ensure-not-selected (lambda (i)
 				   (when (eq? i selected)
 				     (set! selected #f))
 				   (when (eq? i selected-item)
 				     (set! selected-item #f)))])
-          (override
+          (override*
             [on-char
              (lambda (e)
                (unless (send list-keymap handle-key-event this e)
@@ -768,7 +765,7 @@
                (when (and selected show-focus?)
                  (send selected show-select #t))
                (super-on-focus on?))])
-          (private
+          (private*
             [move (lambda (dir) 
                     (define (find i l)
                       (let loop ([l l][pos 0])
@@ -833,13 +830,12 @@
                                 (send i click-select #t)
                                 (send i scroll-to)))))
                         (send top-buffer move-position dir #f 'page)))])
-          (private-field
-           [selectable? #t]
-           [show-focus? #f]
-	   [on-select-always? #t]
-	   [on-click-always? #f]
-	   [allow-deselect? #f])
-	  (public
+          (define selectable? #t)
+          (define show-focus? #f)
+	  (define on-select-always? #t)
+	  (define on-click-always? #f)
+	  (define allow-deselect? #f)
+	  (public*
 	    [on-select-always
 	     (case-lambda 
 	      [() on-select-always?]
@@ -852,7 +848,7 @@
 	     (case-lambda 
 	      [() allow-deselect?]
 	      [(v) (set! allow-deselect? (and v #t))])])
-          (private
+          (private*
             [do-select (lambda (item s clicked? selected?)
                          (when (and item clicked? on-click-always?)
                            (on-click item))
@@ -881,14 +877,12 @@
 			      (set! selected-item #f))
 			    (when (or clicked? on-select-always?)
 			      (on-select #f))]))])
-          (private-field
-           [top-buffer (make-object hierarchical-list-text% this (lambda (i s c? s?) (do-select i s c? s?)) 0 #f)]
-           [selected #f]
-           [selected-item #f])
-          (sequence
-            (send top-buffer set-transparent (member 'transparent style))
-            (super-init parent top-buffer style)
-	    (allow-tab-exit #t)
-            (send top-buffer set-cursor arrow-cursor) 
-            (min-width 150)
-            (min-height 200))))))
+          (define top-buffer (make-object hierarchical-list-text% this (lambda (i s c? s?) (do-select i s c? s?)) 0 #f))
+          (define selected #f)
+          (define selected-item #f)
+          (send top-buffer set-transparent (member 'transparent style))
+          (super-make-object parent top-buffer style)
+	  (allow-tab-exit #t)
+          (send top-buffer set-cursor arrow-cursor) 
+          (min-width 150)
+          (min-height 200)))))

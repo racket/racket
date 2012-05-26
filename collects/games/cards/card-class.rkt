@@ -1,12 +1,10 @@
 
-(module card-class mzscheme
-  (require mzlib/class
-	   mzlib/class100
-           mzlib/shared
-	   (prefix mred: mred)
+(module card-class racket/base
+  (require racket/class
+           racket/shared
+	   (prefix-in mred: mred)
 	   "snipclass.rkt"
-	   "region.rkt"
-           (only scheme/base for in-range))
+	   "region.rkt")
 
   (provide card%)
 
@@ -57,30 +55,30 @@
         (find-head (cdr l) s)))
 
   (define card%
-    (class100 mred:snip% (-suit-id -value -width -height -front -back -mk-dim-front -mk-dim-back -rotated-bms)
+    (class mred:snip%
+      (init -suit-id -value -width -height -front -back -mk-dim-front -mk-dim-back -rotated-bms)
       (inherit set-snipclass set-count get-admin)
-      (private-field
-	[suit-id -suit-id]
-	[value -value]
-	[width -width]
-	[height -height]
-        [rotated 'n]
-	[front -front]
-	[back -back]
-	[mk-dim-front -mk-dim-front]
-	[mk-dim-back -mk-dim-back]
-	[dim-front #f]
-	[dim-back #f]
-	[is-dim? #f]
-	[flipped? #f]
-	[semi-flipped? #f]
-	[can-flip? #t]
-	[can-move? #t]
-	[snap-back? #f]
-	[stay-region #f]
-	[home-reg #f]
-        [rotated-bms -rotated-bms])
-      (private
+      (define suit-id -suit-id)
+      (define value -value)
+      (define width -width)
+      (define height -height)
+      (define rotated 'n)
+      (define front -front)
+      (define back -back)
+      (define mk-dim-front -mk-dim-front)
+      (define mk-dim-back -mk-dim-back)
+      (define dim-front #f)
+      (define dim-back #f)
+      (define is-dim? #f)
+      (define flipped? #f)
+      (define semi-flipped? #f)
+      (define can-flip? #t)
+      (define can-move? #t)
+      (define snap-back? #f)
+      (define stay-region #f)
+      (define home-reg #f)
+      (define rotated-bms -rotated-bms)
+      (private*
 	[refresh
 	 (lambda ()
 	   (let ([a (get-admin)])
@@ -104,14 +102,14 @@
          (lambda (bm dir)
            (if (eq? dir 'n)
                bm
-               (or (hash-table-get rotated-bms (cons dir bm) #f)
+               (or (hash-ref rotated-bms (cons dir bm) #f)
                    (let ([rotated-bm (case dir
                                        [(w) (rotate-bm bm #f)]
                                        [(e) (rotate-bm bm #t)]
                                        [(s) (rotate-bm (rotate-bm bm #t) #t)])])
-                     (hash-table-put! rotated-bms (cons dir bm) rotated-bm)
+                     (hash-set! rotated-bms (cons dir bm) rotated-bm)
                      rotated-bm))))])
-      (public
+      (public*
 	[face-down? (lambda () flipped?)]
 	[flip
 	 (lambda ()
@@ -182,7 +180,7 @@
 	  [(r) (set! home-reg r)])]
 	[card-width (lambda () width)]
 	[card-height (lambda () height)])
-      (override
+      (override*
 	[resize
 	 (lambda (w h) (void))]
 	[get-extent
@@ -235,10 +233,9 @@
                                    (set! dim-back (mk-dim-back)))
                                  dim-back)
                                rotated-bms)))])
-      (private-field
-	[save-x (box 0)]
-	[save-y (box 0)])
-      (public
+      (define save-x (box 0))
+      (define save-y (box 0))
+      (public*
 	[remember-location
 	 (lambda (pb)
 	   (send pb get-snip-location this save-x save-y))]
@@ -270,10 +267,10 @@
 			     (min (max t rt) (- rb height)))
 		       ;; Completely out
 		       (send pb move-to this (unbox save-x) (unbox save-y))))))))])
-      (sequence
-	(super-init)
-	(set-count 1)
-	(set-snipclass sc)
-	(flip)))))
+      
+      (super-make-object)
+      (set-count 1)
+      (set-snipclass sc)
+      (flip))))
 
 
