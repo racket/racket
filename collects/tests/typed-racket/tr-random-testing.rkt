@@ -121,5 +121,5 @@
  #f 1000
  (lambda ()
    (redex-check tr-arith E (check-all-floats (term E))
-                #:attempts 1000
+                #:attempts 500
                 #:prepare exp->float-exp)))
