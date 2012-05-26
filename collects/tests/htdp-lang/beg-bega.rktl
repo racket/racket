@@ -34,7 +34,7 @@
 (htdp-top (define (my-f x) x))
 (htdp-top (define-struct foo (a b)))
 
-(htdp-syntax-test #'(go 5 8) "go: expects a function in this position at: 8 in: (go 5 8)")
+(htdp-syntax-test #'(go 5 8) "go: expects a function in this position\n  at: 8\n  in: (go 5 8)")
 (htdp-syntax-test #'(go add1 add1) "add1: expected a function call, but there is no open parenthesis before this function")
 (htdp-syntax-test #'(go my-f add1) "my-f: expected a function call, but there is no open parenthesis before this function")
 (htdp-syntax-test #'(go foo? add1) "foo?: expected a function call, but there is no open parenthesis before this function")

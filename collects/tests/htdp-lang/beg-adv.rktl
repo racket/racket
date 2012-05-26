@@ -75,7 +75,7 @@
 (htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
 (htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
 (htdp-test #f 'a3? (a3? (make-a1 1)))
-(htdp-err/rt-test (a1-b 10) "a1-b: expects argument of type <struct:a1>; given: 10")
+(htdp-err/rt-test (a1-b 10) "a1-b: contract violation\n  expected: a1[?]\n  given: 10")
 (htdp-syntax-test #'(a0 1 2 3) "a0: expected a function after the open parenthesis, but found a structure name")
 
 (htdp-syntax-test #'cond "cond: expected an open parenthesis before cond, but found none")
