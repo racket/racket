@@ -247,7 +247,9 @@
                    (dynamic-wind
                      void
                      (lambda ()
-                       (set! port (open-output-file file (if text-mode? 'text 'binary) 'truncate/replace))
+                       (set! port (open-output-file file
+                                                    #:mode (if text-mode? 'text 'binary)
+                                                    #:exists 'truncate/replace))
                        (wx:file-creator-and-type file #"mReD" (if text? #"TEXT" #"WXME"))
                        (wx:begin-busy-cursor)
                        (dynamic-wind
