@@ -128,7 +128,8 @@
     (for ([e (reverse errors)])
       (match-let ([(list cc desc x out err type) e])
         (setup-fprintf port type "during ~a for ~a" desc (if (cc? cc) (cc-name cc) cc))
-        (unless (null? x) (setup-fprintf port #f "  ~a" (exn->string x)))
+        (unless (null? x) (for ([str (in-list (regexp-split #rx"\n" (exn->string x)))])
+                            (setup-fprintf port #f "  ~a" str)))
         (unless (zero? (string-length out)) (eprintf "STDOUT:\n~a=====\n" out))
         (unless (zero? (string-length err)) (eprintf "STDERR:\n~a=====\n" err)))))
 
