@@ -22,7 +22,7 @@
          call-with-input-bytes)
 
 (define (port->string-port who p)
-  (unless (input-port? p) (raise-type-error who "input-port" p))
+  (unless (input-port? p) (raise-argument-error who "input-port?" p))
   (let ([s (open-output-string)]) (copy-port p s) s))
 
 (define (port->string [p (current-input-port)])
@@ -39,19 +39,19 @@
 
 (define (port->list [r read] [p (current-input-port)])
   (unless (input-port? p)
-    (raise-type-error 'port->list "input-port" p))
+    (raise-argument-error 'port->list "input-port?" p))
   (unless (and (procedure? r) (procedure-arity-includes? r 1))
-    (raise-type-error 'port->list "procedure (arity 1)" r))
+    (raise-argument-error 'port->list "(procedure-arity-includes/c 1)" r))
   (for/list ([v (in-port r p)]) v))
 
 (define (display-lines l [p (current-output-port)] #:separator [newline #"\n"])
-  (unless (list? l) (raise-type-error 'display-lines "list" l))
-  (unless (output-port? p) (raise-type-error 'display-lines "output-port" p))
+  (unless (list? l) (raise-argument-error 'display-lines "list?" l))
+  (unless (output-port? p) (raise-argument-error 'display-lines "output-port?" p))
   (do-lines->port l p newline))
 
 (define (with-output-to-x who n proc)
   (unless (and (procedure? proc) (procedure-arity-includes? proc n))
-    (raise-type-error who (format "procedure (arity ~a)" n) proc))
+    (raise-argument-error who (if (zero? n) "(-> any)" "(output-port? . -> . any)") proc))
   (let ([s (open-output-bytes)])
     ;; Use `dup-output-port' to hide string-port-ness of s:
     (if (zero? n)
@@ -74,9 +74,9 @@
 
 (define (with-input-from-x who n b? str proc)
   (unless (if b? (bytes? str) (string? str))
-    (raise-type-error who (if b? "byte string" "string") 0 str proc))
+    (raise-argument-error who (if b? "bytes?" "string?") 0 str proc))
   (unless (and (procedure? proc) (procedure-arity-includes? proc n))
-    (raise-type-error who (format "procedure (arity ~a)" n) 1 str proc))
+    (raise-argument-error who (if (zero? n) "(-> any)" "(input-port? . -> . any)") 1 str proc))
   (let ([s (if b? (open-input-bytes str) (open-input-string str))])
     (if (zero? n)
       (parameterize ([current-input-port s])

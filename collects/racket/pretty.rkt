@@ -45,25 +45,27 @@
    (define pretty-print-extend-style-table
      (lambda (table symbols like-symbols)
        (let ([terr (lambda (kind which)
-                     (raise-type-error
+                     (raise-argument-error
                       'pretty-print-extend-style-table
                       kind
                       which
                       table symbols like-symbols))])
          (unless (or (not table) (pretty-print-style-table? table))
-           (terr "pretty-print style table or #f" 0))
+           (terr "(or/c pretty-print-style-table? #f)" 0))
          (unless (and (list? symbols)
                       (andmap symbol? symbols))
-           (terr "list of symbols" 1))
+           (terr "(listof symbol?)" 1))
          (unless (and (list? like-symbols)
                       (andmap symbol? like-symbols))
-           (terr "list of symbols" 1))
+           (terr "(listof symbol?)" 1))
          (unless (= (length symbols) (length like-symbols))
-           (raise-mismatch-error
+           (raise-arguments-error
             'pretty-print-extend-style-table
-            (format "length of first list (~a) doesn't match the length of the second list (~a): "
-                    (length symbols) (length like-symbols))
-            like-symbols)))
+            "length of first list doesn't match the length of the second list"
+            "first list length" (length symbols) 
+            "second list length" (length like-symbols)
+            "first list" symbols
+            "second list" like-symbols)))
        (let ([ht (if table (pretty-print-style-table-hash table) (make-hasheq))]
              [new-ht (make-hasheq)])
          (hash-for-each
@@ -86,9 +88,9 @@
       (pretty-print-extend-style-table #f null null)
       (lambda (s)
 	(unless (pretty-print-style-table? s)
-	  (raise-type-error
+	  (raise-argument-error
 	   'pretty-print-current-style-table 
-	   "pretty-print style table"
+	   "pretty-print-style-table?"
 	   s))
 	s)))
 
@@ -108,9 +110,9 @@
 		     (lambda (x)
 		       (unless (or (eq? x 'infinity)
 				   (integer? x))
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-columns
-				"integer or 'infinity"
+				"(or/c integer? 'infinity)"
 				x))
 		       x)))
 
@@ -118,9 +120,9 @@
      (make-parameter #f
 		     (lambda (x)
 		       (unless (or (not x) (number? x))
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-depth
-				"number or #f"
+				"(or/c number? #f)"
 				x))
 		       x)))
 
@@ -132,9 +134,9 @@
      (make-parameter (lambda (x display? port) #f)
 		     (lambda (x)
 		       (unless (can-accept-n? 3 x)
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-size-hook
-				"procedure of 3 arguments"
+				"(any/c any/c any/c . -> . any/c)"
 				x))
 		       x)))
 
@@ -142,9 +144,9 @@
      (make-parameter void
 		     (lambda (x)
 		       (unless (can-accept-n? 3 x)
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-print-hook
-				"procedure of 3 arguments"
+                                "(any/c any/c any/c . -> . any/c)"
 				x))
 		       x)))
 
@@ -156,9 +158,9 @@
 		       0)
 		     (lambda (x)
 		       (unless (can-accept-n? 4 x)
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-print-line
-				"procedure of 4 arguments"
+                                "(procedure-arity-includes/c 4)"
 				x))
 		       x)))
 
@@ -166,9 +168,9 @@
      (make-parameter void
 		     (lambda (x)
 		       (unless (can-accept-n? 2 x)
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-pre-print-hook
-				"procedure of 2 arguments"
+                                "(any/c any/c . -> . any/c)"
 				x))
 		       x)))
 
@@ -176,9 +178,9 @@
      (make-parameter void
 		     (lambda (x)
 		       (unless (can-accept-n? 2 x)
-			       (raise-type-error 
+			       (raise-argument-error 
 				'pretty-print-post-print-hook
-				"procedure of 2 arguments"
+                                "(any/c any/c . -> . any/c)"
 				x))
 		       x)))
 
@@ -189,16 +191,16 @@
     (make-parameter (λ (x) #f) 
                     (λ (f) 
                       (unless (can-accept-n? 1 f)
-                        (raise-type-error
+                        (raise-argument-error
                          'pretty-print-remap-stylable
-                         "procedure of 1 argument"
+                         "(symbol? . -> . (or/c symbol? #f))"
                          f))
                       (λ (x)
                         (let ([res (f x)])
                           (unless (or (not res) (symbol? res))
-                            (raise-type-error
+                            (raise-result-error
                              'pretty-print-remap-stylable
-                             "result of parameter function to be a symbol or #f"
+                             "(or/c symbol? #f)"
                              res))
                           res)))))
 
@@ -208,10 +210,10 @@
 		 (case-lambda 
 		  [(obj port qq-depth)
                    (unless (output-port? port)
-                     (raise-type-error name "output port" port))
+                     (raise-argument-error name "output-port?" port))
                    (unless (or (equal? qq-depth 0)
                                (equal? qq-depth 1))
-                     (raise-type-error name "0 or 1" qq-depth))
+                     (raise-argument-error name "(or/c 0 1)" qq-depth))
 		   (let ([width (pretty-print-columns)]
 			 [size-hook (pretty-print-size-hook)]
 			 [print-hook (pretty-print-print-hook)]

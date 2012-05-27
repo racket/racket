@@ -484,7 +484,7 @@
    (make-base-evaluator/reqs! '(racket/list))
    --eval--
    (last-pair '(1 2 3)) => '(3)
-   (last-pair null) =err> "expected argument of type"
+   (last-pair null) =err> "contract violation"
 
    ;; coverage
    --top--

@@ -51,7 +51,7 @@
 
 (define (delete-directory/files path)
   (unless (path-string? path)
-    (raise-type-error 'delete-directory/files "path or string" path))
+    (raise-argument-error 'delete-directory/files "path-string?" path))
   (cond
    [(or (link-exists? path) (file-exists? path))
     (delete-file path)]
@@ -126,20 +126,20 @@
     (define (make-temporary-file [template "rkttmp~a"] [copy-from #f] [base-dir #f])
       (with-handlers ([exn:fail:contract?
                        (lambda (x)
-                         (raise-type-error 'make-temporary-file
-                                           "format string for 1 argument"
-                                           template))])
+                         (raise-arguments-error 'make-temporary-file
+                                                "format string does not expect 1 argument"
+                                                "format string" template))])
         (format template void))
       (unless (or (not copy-from)
                   (path-string? copy-from)
                   (eq? copy-from 'directory))
-        (raise-type-error 'make-temporary-file
-                          "path, valid-path string, 'directory, or #f"
-                          copy-from))
+        (raise-argument-error 'make-temporary-file
+                              "(or/c path-string? 'directory #f)"
+                              copy-from))
       (unless (or (not base-dir) (path-string? base-dir))
-        (raise-type-error 'make-temporary-file
-                          "path, valid-path, string, or #f"
-                          base-dir))
+        (raise-argument-error 'make-temporary-file
+                              "(or/c path-string? #f)"
+                              base-dir))
       (let ([tmpdir (find-system-path 'temp-dir)])
         (let loop ([s (current-seconds)]
                    [ms (inexact->exact (truncate (current-inexact-milliseconds)))])
@@ -209,16 +209,16 @@
   (case-lambda
    [(path)
     (unless (path-string? path)
-      (raise-type-error 'make-lock-file-name "path string" path))
+      (raise-argument-error 'make-lock-file-name "path-string?" path))
     (let-values ([(dir name dir?) (split-path path)])
       (if (eq? dir 'relative)
           (make-pathless-lock-file-name name)
           (make-lock-file-name dir name)))]
    [(dir name)
     (unless (path-string? dir)
-      (raise-type-error 'make-lock-file-name "path string" dir))
+      (raise-argument-error 'make-lock-file-name "path-string?" dir))
     (unless (path-element? name)
-      (raise-type-error 'make-lock-file-name "path element" name))
+      (raise-argument-error 'make-lock-file-name "path-element?" name))
     (build-path dir
                 (make-pathless-lock-file-name name))]))
 
@@ -233,19 +233,19 @@
                                      #:max-delay [max-delay 0.2])
   
   (unless (or (path-string? fn) (eq? fn #f))
-    (raise-type-error 'call-with-file-lock/timeout "path-string? or #f" fn))
+    (raise-argument-error 'call-with-file-lock/timeout "(or/c path-string? #f)" fn))
   (unless (or (eq? kind 'shared) (eq? kind 'exclusive))
-    (raise-type-error 'call-with-file-lock/timeout "'shared or 'exclusive" kind))
+    (raise-argument-error 'call-with-file-lock/timeout "(or/c 'shared 'exclusive)" kind))
   (unless (and (procedure? thunk) (= (procedure-arity thunk) 0))
-    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" thunk))
+    (raise-argument-error 'call-with-file-lock/timeout "(-> any)" thunk))
   (unless (and (procedure? thunk) (= (procedure-arity failure-thunk) 0))
-    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" failure-thunk))
+    (raise-argument-error 'call-with-file-lock/timeout "(-> any)" failure-thunk))
   (unless (or (not lock-file) (path-string? lock-file))
-    (raise-type-error 'call-with-file-lock/timeout "path-string? or #f" lock-file))
+    (raise-argument-error 'call-with-file-lock/timeout "(or/c path-string? #f)" lock-file))
   (unless (and (real? delay) (not (negative? delay)))
-    (raise-type-error 'call-with-file-lock/timeout "non-negative real" delay))
+    (raise-argument-error 'call-with-file-lock/timeout "(>=/c 0.0)" delay))
   (unless (and (real? max-delay) (not (negative? max-delay)))
-    (raise-type-error 'call-with-file-lock/timeout "non-negative real" max-delay))
+    (raise-argument-error 'call-with-file-lock/timeout "(>=/c 0.0)" max-delay))
   
   (define real-lock-file (or lock-file (make-lock-file-name fn)))
   (let loop ([delay delay])
@@ -430,10 +430,10 @@
                                        #:lock-there timeout-lock-there)]
                         #:use-lock? [use-lock? #t])
   (unless (symbol? name)
-    (raise-type-error 'get-preference "symbol" name))
+    (raise-argument-error 'get-preference "symbol?" name))
   (unless (and (procedure? fail-thunk)
                (procedure-arity-includes? fail-thunk 0))
-    (raise-type-error 'get-preference "procedure (arity 0)" fail-thunk))
+    (raise-argument-error 'get-preference "(-> any)" fail-thunk))
   ((let/ec esc
      (let ([f (get-prefs refresh-cache? filename use-lock? 
                          (and lock-there
@@ -445,15 +445,17 @@
 
 (define (put-preferences names vals [lock-there #f] [filename #f])
   (unless (and (list? names) (andmap symbol? names))
-    (raise-type-error 'put-preferences "list of symbols" names))
+    (raise-argument-error 'put-preferences "(listof symbol?)" names))
   (unless (list? vals)
-    (raise-type-error 'put-preferences "list" vals))
+    (raise-argument-error 'put-preferences "list?" vals))
   (unless (= (length names) (length vals))
-    (raise-mismatch-error
+    (raise-arguments-error
      'put-preferences
-     (format "the size of the name list (~a) does not match the size of the value list (~a): "
-             (length names) (length vals))
-     vals))
+     "the length of the name list does not match the length of the value list"
+     "name list length" (length names) 
+     "value list length" (length vals)
+     "name list" names
+     "value list" vals))
   (let-values ([(pref-file lock-file pref-dir)
                 (let ([filename (or filename (find-system-path 'pref-file))])
                   (let-values ([(base name dir?) (split-path filename)])
@@ -586,11 +588,11 @@
 
 (define (check-path who f)
   (unless (path-string? f)
-    (raise-type-error who "path string" f)))
+    (raise-argument-error who "path-string?" f)))
 
 (define (check-file-mode who file-mode)
   (unless (memq file-mode '(binary text))
-    (raise-type-error who "'binary or 'text" file-mode)))
+    (raise-argument-error who "(or/c 'binary 'text)" file-mode)))
 
 (define (file->x who f file-mode read-x x-append)
   (check-path who f)
@@ -621,7 +623,7 @@
   (check-path 'file->list f)
   (check-file-mode 'file->list file-mode)
   (unless (and (procedure? r) (procedure-arity-includes? r 1))
-    (raise-type-error 'file->list "procedure (arity 1)" r))
+    (raise-argument-error 'file->list "(procedure-arity-includes/c 1)" r))
   (call-with-input-file* f #:mode file-mode
     (lambda (p) (for/list ([v (in-port r p)]) v))))
 
@@ -640,11 +642,11 @@
 
 (define (->file who f mode exists write)
   (unless (path-string? f)
-    (raise-type-error who "path string" f))
+    (raise-argument-error who "path-string?" f))
   (unless (memq mode '(binary text))
-    (raise-type-error who "'binary or 'text" mode))
+    (raise-argument-error who "(or/c 'binary 'text)" mode))
   (unless (memq exists '(error append update replace truncate truncate/replace))
-    (raise-type-error who "'error, 'append, 'update, 'replace, 'truncate, or 'truncate/replace" exists))
+    (raise-argument-error who "(or/c 'error 'append 'update 'replace 'truncate 'truncate/replace)" exists))
   (call-with-output-file* f #:mode mode #:exists exists write))
 
 (define (display-to-file s f #:mode [mode 'binary] #:exists [exists 'error])
@@ -658,7 +660,7 @@
                                #:exists [exists 'error]
                                #:separator [newline #"\n"])
   (unless (list? l)
-    (raise-type-error 'display-lines-to-file "list" l))
+    (raise-argument-error 'display-lines-to-file "list?" l))
   (->file 'display-lines-to-file f mode exists
           (lambda (p) (do-lines->port l p newline))))
 

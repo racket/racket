@@ -21,38 +21,38 @@
   (define-struct* import (local-id src-sym src-mod-path mode req-mode orig-mode orig-stx)
     #:guard (lambda (i s path mode req-mode orig-mode stx info)
               (unless (identifier? i)
-                (raise-type-error 'make-import "identifier" i))
+                (raise-argument-error 'make-import "identifier?" i))
               (unless (symbol? s)
-                (raise-type-error 'make-import "symbol" s))
+                (raise-argument-error 'make-import "symbol?" s))
               (unless (module-path? path)
-                (raise-type-error 'make-import "module-path" path))
+                (raise-argument-error 'make-import "module-path?" path))
               (unless (or (not mode)
                           (exact-integer? mode))
-                (raise-type-error 'make-import "exact integer or #f" mode))
+                (raise-argument-error 'make-import "(or/c exact-integer? #f)" mode))
               (unless (or (not req-mode)
                           (exact-integer? req-mode))
-                (raise-type-error 'make-import "'exact integer or #f" req-mode))
+                (raise-argument-error 'make-import "(or/c exact-integer? #f)" req-mode))
               (unless (or (not orig-mode)
                           (exact-integer? orig-mode))
-                (raise-type-error 'make-import "'exact integer or #f" orig-mode))
+                (raise-argument-error 'make-import "(or/c exact-integer? #f)" orig-mode))
               (unless (equal? mode (and req-mode orig-mode (+ req-mode orig-mode)))
-                (raise-mismatch-error 'make-import 
-                                      (format
-                                       "orig mode: ~a and require mode: ~a not consistent with mode: " 
-                                       orig-mode req-mode)
-                                      mode))
+                (raise-arguments-error 'make-import 
+                                       "original mode and require mode not consistent with mode" 
+                                       "original mode" orig-mode 
+                                       "require mode" req-mode
+                                       "mode" mode))
               (unless (syntax? stx)
-                (raise-type-error 'make-import "syntax" stx))
+                (raise-argument-error 'make-import "syntax?" stx))
               (values i s path mode req-mode orig-mode stx)))
               
   (define-struct* import-source (mod-path-stx mode)
     #:guard (lambda (path mode info)
               (unless (and (syntax? path)
                            (module-path? (syntax->datum path)))
-                (raise-type-error 'make-import-source "syntax module-path" path))
+                (raise-argument-error 'make-import-source "(and/c syntax? (lambda (s) (module-path? (syntax->datum s))))" path))
               (unless (or (not mode)
                           (exact-integer? mode))
-                (raise-type-error 'make-import-source "exact integer or #f" mode))
+                (raise-argument-error 'make-import-source "(or/c exact-integer? #f)" mode))
               (values path mode)))
     
   (define-values (prop:require-transformer require-transformer? require-transformer-get-proc)
@@ -78,9 +78,9 @@
                     (lambda (v)
                       (unless (or (not v)
                                   (module-path-index? v))
-                        (raise-type-error 'current-require-module-path 
-                                          "#f or module path index"
-                                          v))
+                        (raise-argument-error 'current-require-module-path 
+                                              "(or/c module-path-index? #f)"
+                                              v))
                       v)))
 
   ;; a simplified version of `collapse-module-path-index', where

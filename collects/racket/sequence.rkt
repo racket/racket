@@ -33,29 +33,29 @@
   (for/list ([v s]) v))
 
 (define (sequence-length s)
-  (unless (sequence? s) (raise-type-error 'sequence-length "sequence" s))
+  (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))
   (for/fold ([c 0]) ([i (in-values*-sequence s)])
     (add1 c)))
 
 (define (sequence-ref s i)
-  (unless (sequence? s) (raise-type-error 'sequence-ref "sequence" s))
+  (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
   (unless (exact-nonnegative-integer? i)
-    (raise-type-error 'sequence-ref "nonnegative exact integer" i))
+    (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
   (let ([v (for/fold ([c #f]) ([v (in-values-sequence s)]
                                [i (in-range (add1 i))])
              v)])
     (if (list? v)
         (apply values v)
-        (raise-mismatch-error 
+        (raise-arguments-error 
          'sequence-ref
-         (format "sequence ended before element ~e: "
-                 (add1 i))
-         s))))
+         "sequence ended before index"
+         "index" (add1 i)
+         "sequence" s))))
 
 (define (sequence-tail seq i)
-  (unless (sequence? seq) (raise-type-error 'sequence-tail "sequence" seq))
+  (unless (sequence? seq) (raise-argument-error 'sequence-tail "sequence?" seq))
   (unless (exact-nonnegative-integer? i)
-    (raise-type-error 'sequence-tail "nonnegative exact integer" i))
+    (raise-argument-error 'sequence-tail "exact-nonnegative-integer?" i))
   (cond
    [(zero? i) seq]
    [(stream? seq) (stream-tail seq i)]
@@ -79,12 +79,11 @@
            (let-values ([(vals next) (next)])
              (if vals
                  (loop next (sub1 n))
-                 (raise-mismatch-error 
+                 (raise-arguments-error 
                   'sequence-ref
-                  (format "sequence ended before ~e element~a: "
-                          i
-                          (if (= i 1) "" "s"))
-                  seq)))]))))]))
+                  "sequence ended before index"
+                  "index" i
+                  "sequence" seq)))]))))]))
 
 (define (sequence-append . l)
   (if (null? l)
@@ -94,8 +93,8 @@
           (apply in-sequences l))))
 
 (define (sequence-map f s)
-  (unless (procedure? f) (raise-type-error 'sequence-map "procedure" f))
-  (unless (sequence? s) (raise-type-error 'sequence-map "sequence" s))
+  (unless (procedure? f) (raise-argument-error 'sequence-map "procedure?" f))
+  (unless (sequence? s) (raise-argument-error 'sequence-map "sequence?" s))
   (if (stream? s)
       (stream-map f s)
       (make-do-sequence
@@ -112,8 +111,8 @@
            
 
 (define (sequence-filter f s)
-  (unless (procedure? f) (raise-type-error 'sequence-filter "procedure" f))
-  (unless (sequence? s) (raise-type-error 'sequence-filter "sequence" s))
+  (unless (procedure? f) (raise-argument-error 'sequence-filter "procedure?" f))
+  (unless (sequence? s) (raise-argument-error 'sequence-filter "sequence?" s))
   (if (stream? s)
       (stream-filter f s)
       (make-do-sequence
@@ -137,7 +136,7 @@
                  (loop next))))))))
 
 (define (sequence-add-between s e)
-  (unless (sequence? s) (raise-type-error 'sequence-add-between "sequence" s))
+  (unless (sequence? s) (raise-argument-error 'sequence-add-between "sequence?" s))
   (if (stream? s)
       (stream-add-between s e)
       (make-do-sequence

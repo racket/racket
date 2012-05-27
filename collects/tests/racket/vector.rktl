@@ -165,13 +165,13 @@
 
   (test '(1 banana) vector-argmin car #((3 pears) (1 banana) (2 apples)))
 
-  (err/rt-test (vector-argmin 1 (vector 1)) (check-regs #rx"vector-argmin" #rx"procedure"))
+  (err/rt-test (vector-argmin 1 (vector 1)) (check-regs #rx"vector-argmin" #rx"any/c . -> . real"))
   (err/rt-test (vector-argmin (lambda (x) x) 3) (check-regs #rx"vector-argmin" #rx"vector"))
-  (err/rt-test (vector-argmin (lambda (x) x) (vector 1 #f)) (check-regs #rx"vector-argmin" #rx"procedure that returns real numbers"))
-  (err/rt-test (vector-argmin (lambda (x) x) (vector #f)) (check-regs #rx"vector-argmin" #rx"procedure that returns real numbers"))
+  (err/rt-test (vector-argmin (lambda (x) x) (vector 1 #f)) (check-regs #rx"vector-argmin" #rx"real"))
+  (err/rt-test (vector-argmin (lambda (x) x) (vector #f)) (check-regs #rx"vector-argmin" #rx"real"))
 
-  (err/rt-test (vector-argmin (lambda (x) x) (vector +i)) (check-regs #rx"vector-argmin" #rx"procedure that returns real numbers"))
-  (err/rt-test (vector-argmin (lambda (x) x) (vector)) (check-regs #rx"vector-argmin" #rx"non-empty vector"))
+  (err/rt-test (vector-argmin (lambda (x) x) (vector +i)) (check-regs #rx"vector-argmin" #rx"real"))
+  (err/rt-test (vector-argmin (lambda (x) x) (vector)) (check-regs #rx"vector-argmin" #rx".and/c vector.*vector-length"))
 
   (test 'vector-argmax object-name vector-argmax)
   (test 1 vector-argmax (lambda (x) 0) (vector 1))
@@ -187,13 +187,13 @@
 
   (test '(3 pears) vector-argmax car #((3 pears) (1 banana) (2 apples)))
 
-  (err/rt-test (vector-argmax 1 (vector 1)) (check-regs #rx"vector-argmax" #rx"procedure"))
+  (err/rt-test (vector-argmax 1 (vector 1)) (check-regs #rx"vector-argmax" #rx"any/c . -> . real"))
   (err/rt-test (vector-argmax (lambda (x) x) 3) (check-regs #rx"vector-argmax" #rx"vector"))
-  (err/rt-test (vector-argmax (lambda (x) x) (vector 1 #f)) (check-regs #rx"vector-argmax" #rx"procedure that returns real numbers"))
-  (err/rt-test (vector-argmax (lambda (x) x) (vector #f)) (check-regs #rx"vector-argmax" #rx"procedure that returns real numbers"))
+  (err/rt-test (vector-argmax (lambda (x) x) (vector 1 #f)) (check-regs #rx"vector-argmax" #rx"real"))
+  (err/rt-test (vector-argmax (lambda (x) x) (vector #f)) (check-regs #rx"vector-argmax" #rx"real"))
 
-  (err/rt-test (vector-argmax (lambda (x) x) (vector +i)) (check-regs #rx"vector-argmax" #rx"procedure that returns real numbers"))
-  (err/rt-test (vector-argmax (lambda (x) x) (vector)) (check-regs #rx"vector-argmax" #rx"non-empty vector")))
+  (err/rt-test (vector-argmax (lambda (x) x) (vector +i)) (check-regs #rx"vector-argmax" #rx"real"))
+  (err/rt-test (vector-argmax (lambda (x) x) (vector)) (check-regs #rx"vector-argmax" #rx".and/c vector.*vector-length")))
 
 ;; vector-mem{ber,v,q}
 
@@ -221,11 +221,11 @@
   (let ([vec (vector 1 -2 -3)])
     (test #(1 2 3) vector-map! (lambda (x y) (max x y)) vec #(0 2 3))
     (test #(1 2 3) values vec))
-  (err/rt-test (vector-map 1 #()) (check-regs #rx"vector-map" #rx"<procedure>"))
-  (err/rt-test (vector-map (lambda (x) x) 1) (check-regs #rx"vector-map" #rx"<vector>"))
-  (err/rt-test (vector-map (lambda (x) x) #() 1) (check-regs #rx"vector-map" #rx"<vector>"))
+  (err/rt-test (vector-map 1 #()) (check-regs #rx"vector-map" #rx"procedure"))
+  (err/rt-test (vector-map (lambda (x) x) 1) (check-regs #rx"vector-map" #rx"vector"))
+  (err/rt-test (vector-map (lambda (x) x) #() 1) (check-regs #rx"vector-map" #rx"vector"))
   (err/rt-test (vector-map (lambda (x) x) #() #(1)) (check-regs #rx"vector-map" #rx"same size"))
-  (err/rt-test (vector-map (lambda (x) x) #() #() #()) (check-regs #rx"vector-map" #rx"arity mismatch")))
+  (err/rt-test (vector-map (lambda (x) x) #() #() #()) (check-regs #rx"vector-map" #rx"mismatch between procedure arity")))
 
 
 ;; ---------- check no collisions with srfi/43 ----------

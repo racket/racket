@@ -10,9 +10,9 @@
 
 (define (bytes-join strs sep)
   (cond [(not (and (list? strs) (andmap bytes? strs)))
-         (raise-type-error 'bytes-join "list-of-byte-strings" strs)]
+         (raise-argument-error 'bytes-join "(listof bytes?)" strs)]
         [(not (bytes? sep))
-         (raise-type-error 'bytes-join "bytes" sep)]
+         (raise-argument-error 'bytes-join "bytes?" sep)]
         [(null? strs) #""]
         [(null? (cdr strs)) (car strs)]
         [else (apply bytes-append (add-between strs sep))]))

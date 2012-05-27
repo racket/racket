@@ -99,9 +99,9 @@
                 (set! cont (lambda () (set! state 'done) (apply values rs)))
                 (cont))))))
     (define (err [what "send a value to"])
-      (raise-mismatch-error 'generator 
-                            (format "cannot ~a a ~a generator: " what state)
-                            self))
+      (raise-arguments-error 'generator 
+                             (format "cannot ~a a ~a generator" what state)
+                             "generator" self))
     (define generator
       (case-lambda
         [()  (if (eq? state 'running)
@@ -130,7 +130,7 @@
 (define (generator-state g)
   (if (generator? g)
       (g yield-tag)
-      (raise-type-error 'generator-state "generator" g)))
+      (raise-argument-error 'generator-state "generator?" g)))
 
 (define-syntax-rule (infinite-generator body0 body ...)
   (generator () (let loop () body0 body ... (loop))))

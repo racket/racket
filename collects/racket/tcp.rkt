@@ -24,5 +24,5 @@
           (c:tcp-addresses socket port-numbers?)
           (if (tcp-listener? socket)
               (c:tcp-addresses socket port-numbers?)
-              (raise-type-error 'tcp-addresses "tcp-port or tcp-listener" socket)))])))
+              (raise-argument-error 'tcp-addresses "(or/c tcp-port? tcp-listener?)" socket)))])))
 

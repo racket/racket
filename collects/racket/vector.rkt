@@ -25,34 +25,22 @@
 
 (define (vector-copy v [start 0] [end (and (vector? v) (vector-length v))])
   (unless (vector? v)
-    (raise-type-error 'vector-copy "vector" v))
+    (raise-argument-error 'vector-copy "vector?" v))
   (unless (exact-nonnegative-integer? start)
-    (raise-type-error 'vector-copy "non-negative exact integer" start))
+    (raise-argument-error 'vector-copy "exact-nonnegative-integer?" start))
   (let ([len (vector-length v)])
     (cond
       [(= len 0)
        (unless (= start 0)
-         (raise-mismatch-error 'vector-copy
-                               "start index must be 0 for empty vector, got "
-                               start))
+         (raise-range-error 'vector-copy "vector" "starting " start v 0 0))
        (unless (= end 0)
-         (raise-mismatch-error 'vector-copy
-                               "end index must be 0 for empty vector, got "
-                               end))
+         (raise-range-error 'vector-copy "vector" "ending " end v 0 0))
        (vector)]
       [else
        (unless (and (<= 0 start len))
-         (raise-mismatch-error
-          'vector-copy
-          (format "start index ~e out of range [~e, ~e] for vector: "
-                  start 0 len)
-          v))
+         (raise-range-error 'vector-copy "vector" "starting " start v 0 len))
        (unless (and (<= start end len))
-         (raise-mismatch-error
-          'vector-copy
-          (format "end index ~e out of range [~e, ~e] for vector: "
-                  end start len)
-          v))
+         (raise-range-error 'vector-copy "vector" "ending " end v start len 0))
        (vector-copy* v start end)])))
 
 ;; do vector-map, putting the result in `target'
@@ -69,14 +57,14 @@
 ;; uses name for error reporting
 (define (varargs-check f v vs name)
   (unless (procedure? f)
-    (apply raise-type-error name "procedure" 0 f v vs))
+    (apply raise-argument-error name "procedure?" 0 f v vs))
   (unless (vector? v)
-    (apply raise-type-error name "vector" 1 f v vs))
+    (apply raise-argument-error name "vector?" 1 f v vs))
   (let ([len (unsafe-vector-length v)])
     (for ([e (in-list vs)]
           [i (in-naturals 2)])
       (unless (vector? e)
-        (apply raise-type-error name "vector" e i f v vs))
+        (apply raise-argument-error name "vector?" e i f v vs))
       (unless (= len (unsafe-vector-length e))
         (raise
          (make-exn:fail:contract
@@ -92,12 +80,9 @@
                               (sub1 (length args))))))
           (current-continuation-marks)))))
     (unless (procedure-arity-includes? f (add1 (length vs)))
-      (raise-mismatch-error
-       name
-       (format 
-        "arity mismatch (expected arity ~a to match number of supplied vectors): "
-        (add1 (length vs)))
-       f))
+      (raise-arguments-error name "mismatch between procedure arity and argument count"
+                             "procedure" f
+                             "expected arity" (add1 (length vs))))
     len))
 
 (define (vector-map f v . vs)
@@ -115,7 +100,7 @@
 ;; uses name for error reporting
 (define (one-arg-check f v name)
   (unless (and (procedure? f) (procedure-arity-includes? f 1))
-    (raise-type-error name "procedure (arity 1)" 0 f)))
+    (raise-argument-error name "(any/c . -> . any/c)" 0 f)))
 
 (define (vector-filter f v)
   (one-arg-check f v 'vector-filter)
@@ -126,12 +111,15 @@
   (list->vector (for/list ([i (in-vector v)] #:unless (f i)) i)))
 
 (define (vector-count f v . vs)
-  (unless (and (procedure? f) (procedure-arity-includes? f (add1 (length vs))))
-    (raise-type-error
-     'vector-count (format "procedure (arity ~a)" (add1 (length vs))) f))
+  (unless (procedure? f)
+    (raise-argument-error 'vector-count "procedure?" f))
+  (unless (procedure-arity-includes? f (add1 (length vs)))
+    (raise-arguments-error 'vector-count "mismatch between procedure arity and argument count"
+                           "procedure" f
+                           "expected arity" (add1 (length vs))))
   (unless (and (vector? v) (andmap vector? vs))
-    (raise-type-error
-     'vector-count "vector"
+    (raise-argument-error
+     'vector-count "vector?"
      (ormap (lambda (x) (and (not (list? x)) x)) (cons v vs))))
   (if (pair? vs)
     (let ([len (vector-length v)])
@@ -143,21 +131,18 @@
                     (unsafe-vector-ref v i)
                     (map (lambda (v) (unsafe-vector-ref v i)) vs)))
           (add1 c))
-        (error 'vector-count "all vectors must have same size")))
+        (raise-arguments-error 'vector-count "all vectors must have same size")))
     (for/fold ([cnt 0]) ([i (in-vector v)] #:when (f i))
       (add1 cnt))))
 
 (define (check-vector/index v n name)
   (unless (vector? v)
-    (raise-type-error name "vector" v))
+    (raise-argument-error name "vector?" v))
   (unless (exact-nonnegative-integer? n)
-    (raise-type-error name "non-negative exact integer" n))
+    (raise-argument-error name "exact-nonnegative-integer?" n))
   (let ([len (unsafe-vector-length v)])
     (unless (<= 0 n len)
-      (raise-mismatch-error
-       name
-       (format "index out of range [~e, ~e] for vector " 0 len)
-       v))
+      (raise-range-error name "vector" "" n v 0 len))
     len))
 
 (define (vector-take v n)
@@ -189,7 +174,7 @@
          [lens (for/list ([e (in-list vs)] [i (in-naturals)])
                  (if (vector? e)
                    (unsafe-vector-length e)
-                   (raise-type-error 'vector-append "vector" e i)))]
+                   (raise-argument-error 'vector-append "vector?" e i)))]
          [new-v (make-vector (apply + lens))])
     (let loop ([start 0] [lens lens] [vs vs])
       (when (pair? lens)
@@ -203,13 +188,13 @@
 (define (mk-min cmp name f xs)
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-type-error name "procedure (arity 1)" f))
+    (raise-argument-error name "(any/c . -> . real?)" f))
   (unless (and (vector? xs)
                (< 0 (unsafe-vector-length xs)))
-    (raise-type-error name "non-empty vector" xs))
+    (raise-argument-error name "(and/c vector? (lambda (v) (positive? (vector-length v))))" xs))
   (let ([init-min-var (f (unsafe-vector-ref xs 0))])
     (unless (real? init-min-var)
-      (raise-type-error name "procedure that returns real numbers" f))
+      (raise-result-error name "real?" init-min-var))
     (if (unsafe-fx= (unsafe-vector-length xs) 1)
         (unsafe-vector-ref xs 0)
         (let-values ([(min* min-var*)
@@ -218,8 +203,8 @@
                       ([e (in-vector xs 1)])
                     (let ([new-min (f e)])
                       (unless (real? new-min)
-                        (raise-type-error
-                         name "procedure that returns real numbers" f))
+                        (raise-result-error
+                         name "real?" new-min))
                       (cond [(cmp new-min min-var)
                              (values e new-min)]
                             [else (values min min-var)])))])
@@ -231,7 +216,7 @@
 (define-syntax-rule (vm-mk name cmp)
   (define (name val vec)
     (unless (vector? vec)
-      (raise-type-error 'name "vector" 1 val vec))
+      (raise-argument-error 'name "vector?" 1 val vec))
     (let ([sz (unsafe-vector-length vec)])
       (let loop ([k 0])
         (cond [(= k sz) #f]

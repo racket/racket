@@ -28,7 +28,7 @@
            (make-keyword-procedure (lambda (_1 _2 . _3) (th)) proc))))]))
 
 (define (negate f)
-  (unless (procedure? f) (raise-type-error 'negate "procedure" f))
+  (unless (procedure? f) (raise-argument-error 'negate "procedure?" f))
   (let-values ([(arity) (procedure-arity f)] [(_ kwds) (procedure-keywords f)])
     (case (and (null? kwds) arity) ; optimize some simple cases
       [(0) (lambda () (not (f)))]
@@ -40,7 +40,7 @@
   ;; The real code is here
   (define (curry* f args kws kvs)
     (unless (procedure? f)
-      (raise-type-error (if right? 'curryr 'curry) "procedure" f))
+      (raise-argument-error (if right? 'curryr 'curry) "procedure?" f))
     (let* ([arity (procedure-arity f)]
            [max-arity (cond [(integer? arity) arity]
                             [(arity-at-least? arity) #f]

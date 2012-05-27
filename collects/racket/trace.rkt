@@ -66,9 +66,9 @@
                   (lambda (p)
                     (unless (and (procedure? p)
                                  (procedure-arity-includes? p 1))
-                      (raise-type-error 'current-trace-notify
-                                        "procedure (arity 1)"
-                                        p))
+                      (raise-argument-error 'current-trace-notify
+                                            "(any/c . -> . any)"
+                                            p))
                     p)))
 
 (define (as-trace-notify thunk)

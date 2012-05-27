@@ -205,9 +205,9 @@
       (if (or (security-guard? x)
               (and (procedure? x) (procedure-arity-includes? x 0)))
         x
-        (raise-type-error
+        (raise-argument-error
          'sandbox-security-guard
-         "security-guard or a security-guard translator procedure" x)))))
+         "(or/c security-guard? (-> security-guard?))" x)))))
 
 ;; this is never really used (see where it's used in the evaluator)
 (define (default-sandbox-exit-handler _) (error 'exit "sandbox exits"))

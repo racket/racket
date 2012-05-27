@@ -586,7 +586,7 @@
   (define (trait-sum . ts)
     (for-each (lambda (t)
                 (unless (trait? t)
-                  (raise-type-error 'trait-sum "trait" t)))
+                  (raise-argument-error 'trait-sum "trait?" t)))
               ts)
     (validate-trait
      'trait-sum
@@ -599,7 +599,7 @@
     
   (define (:trait-exclude t name)
     (unless (trait? t)
-      (raise-type-error 'trait-exclude "trait" t))
+      (raise-argument-error 'trait-exclude "trait?" t))
     (let ([new-methods
            (filter (lambda (m)
                      (not (member-name-key=? (method-name m) name)))
@@ -613,7 +613,7 @@
 
   (define (:trait-exclude-field t name)
     (unless (trait? t)
-      (raise-type-error 'trait-exclude-field "trait" t))
+      (raise-argument-error 'trait-exclude-field "trait?" t))
     (let ([new-fields
            (filter (lambda (m)
                      (not (member-name-key=? (feeld-name m) name)))
@@ -645,7 +645,7 @@
 
   (define (:trait-alias t name new-name)
     (unless (trait? t)
-      (raise-type-error 'trait-alias "trait" t))
+      (raise-argument-error 'trait-alias "trait?" t))
     (let ([m (ormap (lambda (m)
                       (and (member-name-key=? (method-name m) name)
                            m))
@@ -664,7 +664,7 @@
 
   (define (:trait-rename t name new-name)
     (unless (trait? t)
-      (raise-type-error 'trait-rename "trait" t))
+      (raise-argument-error 'trait-rename "trait?" t))
     (let ([rename (lambda (n)
                     (if (same-name? n name)
                         new-name
@@ -683,7 +683,7 @@
 
   (define (:trait-rename-field t name new-name)
     (unless (trait? t)
-      (raise-type-error 'trait-rename-field "trait" t))
+      (raise-argument-error 'trait-rename-field "trait?" t))
     (let ([rename (lambda (n)
                     (if (same-name? n name)
                         new-name
