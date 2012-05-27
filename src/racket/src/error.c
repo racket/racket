@@ -2623,6 +2623,7 @@ static Scheme_Object *do_raise_type_error(const char *name, int argc, Scheme_Obj
   case 0: wrong = scheme_wrong_type; break;
   case 1: wrong = scheme_wrong_contract; break;
   case 2: wrong = scheme_wrong_contract; negate = 1; break;
+  default: wrong = NULL; break;
   }
 
   if (argc == 3) {
