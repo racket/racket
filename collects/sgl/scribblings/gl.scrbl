@@ -18,7 +18,7 @@ in the GL 1.5 and GLU 1.3 specifications, except for the following:
  @item{Buffer object queries   (GL 1.5, Section 6.1.13)}
  @item{Polygon tessellation    (GLU 1.3, Section 5)}
  @item{@tt{gluQuadricCallback} (GLU 1.3, Section 6.2)}
- @item{NURBS                   (GLU 1.3, Section 7)}
+ @item{NURBS callbacks         (GLU 1.3, Section 7.2)}
 ]
 
 If one of the provided functions is not present on your system

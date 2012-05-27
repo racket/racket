@@ -807,10 +807,13 @@
   _glu-quadric _gl-double _gl-double _gl-int _gl-int _gl-double _gl-double ->)
 
 ;; 7.1
-#|
-(define-foreignu gluNewNurbsRenderer -> _glu-nurbs*)
-(define-foreignu gludeleteNurbsRenderer _glu-nurbs* ->)
-|#
+(define _glu-nurbs
+  (_cpointer 'nurbs _pointer #f
+             (lambda (q*) (register-finalizer q* gluDeleteNurbsRenderer) q*)))
+
+(define-foreignu gluNewNurbsRenderer -> _glu-nurbs)
+(define-foreignu gluDeleteNurbsRenderer _glu-nurbs ->)
+
 
 ;; 7.2
 #|
@@ -819,21 +822,19 @@
 |#
 
 ;; 7.3
-#|
-(define-foreignu gluBeginCurve _glu-nurbs* ->)
+(define-foreignu gluBeginCurve _glu-nurbs ->)
 (define-foreignu gluNurbsCurve
-  _glu-nurbs* _gl-int _gl-floatv _gl-int _gl-floatv _gl-int _gl-enum ->)
-(define-foreignu gluEndCurve _glu-nurbs* ->)
-|#
+  _glu-nurbs _gl-int _gl-floatv _gl-int _gl-floatv _gl-int _gl-enum ->)
+(define-foreignu gluEndCurve _glu-nurbs ->)
 
 ;; 7.4
-#|
-(define-foreignu gluBeginSurface _glu-nurbs* ->)
+
+(define-foreignu gluBeginSurface _glu-nurbs ->)
 (define-foreignu gluNurbsSurface
-  _glu-nurbs* _gl-int _gl-floatv _gl-int _gl-floatv _gl-int
+  _glu-nurbs _gl-int _gl-floatv _gl-int _gl-floatv _gl-int
   _gl-int _gl-floatv _gl-int _gl-int _gl-enum ->)
-(define-foreignu gluEndSurface _glu-nurbs* ->)
-|#
+(define-foreignu gluEndSurface _glu-nurbs ->)
+
 
 ;; 7.5
 #|
@@ -843,8 +844,8 @@
 |#
 
 ;; 7.6
+(define-foreignu gluNurbsProperty _glu-nurbs _gl-enum _gl-float ->)
 #|
-(define-foreignu gluNurbsProperty _glu-nurbs* _gl-enum _gl-float ->)
 (define-foreignu gluLoadSamplingMatrix _glu-nurbs* _gl-floatv _gl-floatv _gl-intv ->)
 (define-foreignu gluGetNurbsProperty _glu-nurbs* _gl-enum _gl-floatv ->)
 |#
