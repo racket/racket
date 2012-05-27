@@ -262,9 +262,9 @@
 (define (validate-local-member orig s)
   (if (symbol? s)
       s
-      (error 'local-member-name
-             "used before its definition: ~a"
-             orig)))
+      (obj-error 'local-member-name
+                 "used before its definition"
+                 "name" (as-write orig))))
 
 ;;--------------------------------------------------------------------
 ;; field info creation/access
@@ -1422,7 +1422,7 @@
                                           ;; store a dummy method body that should never be called for abstracts
                                           [(abstract-method ...) (map (lambda (abs)
                                                                         #'(lambda (this . rest)
-                                                                            (obj-error 'class "Cannot call abstract method")))
+                                                                            (obj-error 'class "cannot call abstract method")))
                                                                       (map car abstracts))]
                                           [mappings mappings]
                                           
@@ -1847,7 +1847,10 @@
 
 (define (check-member-key id v)
   (unless (member-name-key? v)
-    (error 'define-local-member-name "not a member key for ~a: ~e" id v))
+    (obj-error 'define-local-member-name 
+               "value is not a member key" 
+               "value" v
+               "local name" (as-write id)))
   (member-key-id v))
 
 (define-syntax (member-name-key stx)
@@ -1991,9 +1994,9 @@
   
   ;; -- Check superclass --
   (unless (class? super)
-    (obj-error 'class* "superclass expression ~e returned a non-class: ~a" 
-               super
-               (for-class name)))
+    (obj-error 'class* "superclass expression result is not a class"
+               "result" super
+               #:class-name name))
   
   (when any-localized?
     (check-still-unique name
@@ -2039,17 +2042,17 @@
     (for-each
      (lambda (intf)
        (unless (interface? intf)
-         (obj-error 'class* "interface expression returned a non-interface: ~a~a" 
-                    intf
-                    (for-class name))))
+         (obj-error 'class* "interface expression result is not an interface"
+                    "result" intf
+                    #:class-name name)))
      interfaces)
     
     ;; -- Check inspectors ---
     (when inspector
       (unless (inspector? inspector)
-        (obj-error 'class* "inspect class result is not an inspector or #f: ~a~a" 
-                   inspector
-                   (for-class name))))
+        (obj-error 'class* "class `inspect' result is not an inspector or #f"
+                   "result" inspector
+                   #:class-name name)))
     
     ;; -- Match method and field names to indices --
     (let ([method-ht (if no-new-methods?
@@ -2069,28 +2072,28 @@
         (for ([id (in-list public-names)]
               [p (in-naturals (class-method-width super))])
           (when (hash-ref method-ht id #f)
-            (obj-error 'class* "superclass ~e already contains method: ~a~a" 
-                       super
-                       id
-                       (for-class name)))
+            (obj-error 'class* "superclass already contains method"
+                       "superclass" super
+                       "method name" (as-write id)
+                       #:class-name name))
           (hash-set! method-ht id p)))
       
       ;; Keep check here for early failure, will add to hashtable later in this function.
       (unless no-new-fields?
         (for ([id (in-list public-field-names)])
           (when (hash-ref field-ht id #f)
-              (obj-error 'class* "superclass ~e already contains field: ~a~a" 
-                         super
-                         id
-                         (for-class name)))))
+              (obj-error 'class* "superclass already contains field"
+                         "superclass" super
+                         "field name" (as-write id)
+                         #:class-name name))))
       
       ;; Check that superclass has expected fields
       (for-each (lambda (id)
                   (unless (hash-ref field-ht id #f)
-                    (obj-error 'class* "superclass ~e does not provide field: ~a~a" 
-                               super
-                               id
-                               (for-class name))))
+                    (obj-error 'class* "superclass does not provide field" 
+                               "superclass" super
+                               "field name" (as-write id)
+                               (and name "class") name)))
                 inherit-field-names)
       
       ;; Check that superclass has expected methods, and get indices
@@ -2102,11 +2105,11 @@
                    method-ht id
                    (lambda ()
                      (obj-error 'class* 
-                                "~a does not provide an expected method for ~a: ~a~a" 
-                                (if (eq? method-ht super-method-ht) "superclass" "class")
-                                what
-                                id
-                                (for-class name)))))
+                                (format "~a does not provide an expected method for ~a" 
+                                        (if (eq? method-ht super-method-ht) "superclass" "class")
+                                        what)
+                                (format "~a name" what) (as-write id)
+                                #:class-name name))))
                 ids))]
             [method-width (+ (class-method-width super) (length public-names))]
             [field-width (+ (class-field-width super) num-fields)]
@@ -2132,29 +2135,26 @@
               (lambda (var)
                 (unless (hash-ref method-ht var #f)
                   (obj-error 'class* 
-                             "interface-required method missing: ~a~a~a" 
-                             var
-                             (for-class name)
-                             (for-intf (interface-name intf)))))
+                             "missing interface-required method"
+                             "method name" (as-write var)
+                             (and name "class name") (as-write name)
+                             (and (interface-name intf) "interface name") (as-write (interface-name intf)))))
               (interface-public-ids intf)))
            interfaces)
-          (let ([c (get-implement-requirement interfaces 'class* (for-class name))])
+          (let ([c (get-implement-requirement interfaces 'class* #:class-name name)])
             (when (and c (not (subclass? super c)))
               (obj-error 'class* 
-                         "interface-required implementation not satisfied~a~a"
-                         (for-class name)
-                         (let ([r (class-name c)])
-                           (if r
-                               (format " required class: ~a" r)
-                               "")))))
+                         "interface-required implementation not satisfied"
+                         (and name "class name") (as-write name)
+                         (and (class-name c) "required class name") (as-write (class-name c)))))
           
           ;; -- For serialization, check that the superclass is compatible --
           (when deserialize-id
             (unless (class-serializer super)
               (obj-error 'class*
-                         "superclass is not serialiazable, not transparent, and does not implement externalizable<%>: ~e~a"
-                         super
-                         (for-class name))))
+                         "superclass is not serialiazable, not transparent, and does not implement externalizable<%>"
+                         "superclass" super
+                         #:class-name name)))
           
           ;; ---- Make the class and its interface ----
           (let* ([class-make (if name
@@ -2299,11 +2299,11 @@
                                                          (not (vector-ref vec (sub1 (vector-length vec)))))
                                                 (obj-error 'class* 
                                                            (string-append
-                                                            "superclass ~e method for override, overment, inherit/super, "
-                                                            "or rename-super is not overrideable: ~a~a")
-                                                           super
-                                                           mname
-                                                           (for-class name))))
+                                                            "superclass method for override, overment, inherit/super, "
+                                                            "or rename-super is not overrideable")
+                                                           "superclass" super
+                                                           "method name" (as-write mname)
+                                                           #:class-name name)))
                                             (vector-ref (class-super-methods super) index))
                                           rename-super-indices
                                           rename-super-names)]
@@ -2332,11 +2332,11 @@
                                                     (unless aug-ok?
                                                       (obj-error 'class* 
                                                                  (string-append
-                                                                  "superclass ~e method for augride, augment, inherit/inner, "
-                                                                  "or rename-inner method is not augmentable: ~a~a")
-                                                                 super
-                                                                 mname
-                                                                 (for-class name))))))])
+                                                                  "superclass method for augride, augment, inherit/inner, "
+                                                                  "or rename-inner method is not augmentable")
+                                                                 "superclass" super
+                                                                 "method name" (as-write mname)
+                                                                 #:class-name name)))))])
                                          (for-each (check-aug #f) 
                                                    augride-normal-names
                                                    (get-indices method-ht "augride" augride-normal-names))
@@ -2420,9 +2420,9 @@
                       (for-each (lambda (index method id)
                                   (when (eq? 'final (vector-ref meth-flags index))
                                     (obj-error 'class* 
-                                               "cannot override or augment final method: ~a~a"
-                                               id
-                                               (for-class name)))
+                                               "cannot override or augment final method"
+                                               "method name" (as-write id)
+                                               #:class-name name))
                                   (let ([v (vector-ref beta-methods index)])
                                     (if (zero? (vector-length v))
                                         ;; Normal mode - set vtable entry
@@ -2548,8 +2548,9 @@
                                              o)))
                                      (if (interface-extension? i externalizable<%>)
                                          (lambda ()
-                                           (error 'deserialize "cannot deserialize instance with cycles~a"
-                                                  (for-class name)))
+                                           (obj-error 'deserialize 
+                                                      "cannot deserialize instance with cycles"
+                                                      #:class-name name))
                                          (lambda ()
                                            (let ([o (object-make)])
                                              (values o
@@ -2654,9 +2655,9 @@ An example
                                 (lambda ()
                                   (hash-set! ht s #t)
                                   #f))
-                  (obj-error 'class* "external ~a mapped to overlapping keys~a" 
-                             what
-                             (for-class name))))
+                  (obj-error 'class* (format "external ~a mapped to overlapping keys"
+                                             what)
+                             #:class-name name)))
               syms)))
 
 (define (get-properties intfs)
@@ -3591,17 +3592,17 @@ An example
    (lambda (intf)
      (unless (interface? intf)
        (obj-error 'interface 
-                  "superinterface expression returned a non-interface: ~e~a" 
-                  intf
-                  (for-intf name))))
+                  "superinterface expression result is not an interface" 
+                  "result" intf
+                  #:intf-name name)))
    supers)
   (for-each
    (lambda (p)
      (unless (struct-type-property? p)
        (obj-error 'interface
-                  "property expression returned a non-property: ~e~a"
-                  p
-                  (for-intf name))))
+                  "property expression result is not a property"
+                  "result" p
+                  #:intf-name name)))
    props)
   (let ([ht (make-hasheq)])
     (for-each
@@ -3615,13 +3616,10 @@ An example
         (lambda (var)
           (when (and (hash-ref ht var #f)
                      (not (hash-ref ctcs var #f)))
-            (obj-error 'interface "variable already in superinterface: ~a~a~a" 
-                       var
-                       (for-intf name)
-                       (let ([r (interface-name super)])
-                         (if r
-                             (format " already in: ~a" r)
-                             "")))))
+            (obj-error 'interface "variable already in superinterface" 
+                       "variable name" (as-write var)
+                       (and (interface-name super) "already in") (as-write (interface-name super))
+                       #:intf-name name)))
         (interface-public-ids super)))
      supers)
     ;; merge properties:
@@ -3638,7 +3636,7 @@ An example
                     (hash-set! prop-ht g (vector g p v))))
                 props vals)
       ;; Check for [conflicting] implementation requirements
-      (let ([class (get-implement-requirement supers 'interface (for-intf name))]
+      (let ([class (get-implement-requirement supers 'interface #:intf-name name)]
             [interface-make (if name
                                 (make-naming-constructor 
                                  struct:interface
@@ -3672,7 +3670,9 @@ An example
               (interface-supers i))
     (set-interface-all-implemented! i ht)))
 
-(define (get-implement-requirement interfaces where for)
+(define (get-implement-requirement interfaces where 
+                                   #:class-name [class-name #f]
+                                   #:intf-name [intf-name #f])
   (let loop ([class #f]
              [supers interfaces])
     (if (null? supers)
@@ -3687,8 +3687,9 @@ An example
              [else
               (obj-error 
                where
-               "conflicting class implementation requirements in superinterfaces~a"
-               for)])
+               "conflicting class implementation requirements in superinterfaces"
+               #:class-name class-name
+               #:intf-name intf-name)])
            (cdr supers))))))
 
 ;;--------------------------------------------------------------------
@@ -3943,9 +3944,9 @@ An example
   ;; make sure the class isn't abstract
   (unless (null? (class-abstract-ids class))
     (obj-error 'instantiate
-               "cannot instantiate class ~a with abstract methods ~a"
-               class
-               (class-abstract-ids class)))
+               "cannot instantiate class with abstract methods"
+               "class" class
+               "abstract methods" (as-write-list (class-abstract-ids class))))
   ;; Generate correct class by concretizing methods w/interface ctcs
   (let* ([class (fetch-concrete-class class blame)]
          [o ((class-make-object class))])
@@ -3974,9 +3975,9 @@ An example
           (if explict-named-args?
               (obj-error 
                'instantiate
-               "class has only by-position initializers, but given by-name arguments:~a~a" 
-               (make-named-arg-string named-args)
-               (for-class (class-name c)))
+               "class has only by-position initializers, but given by-name arguments" 
+               "arguments" (as-lines (make-named-arg-string named-args))
+               #:class-name (class-name c))
               ;; If args were implicit from subclass, should report as unused:
               (unused-args-error o named-args))))
       ;; Merge by-pos into named args:
@@ -4003,13 +4004,15 @@ An example
              c inited? leftovers ; merely passed through to continue-make-super
              named-args)
             (unless (unbox inited?)
-              (obj-error 'instantiate "superclass initialization not invoked by initialization~a"
-                         (for-class (class-name c))))))))))
+              (obj-error 'instantiate 
+                         "superclass initialization not invoked by initialization"
+                         #:class-name (class-name c)))))))))
 
 (define (continue-make-super o c inited? leftovers by-pos-args new-named-args)
   (when (unbox inited?)
-    (obj-error 'instantiate "superclass already initialized by class initialization~a"
-               (for-class (class-name c))))
+    (obj-error 'instantiate 
+               "superclass already initialized by class initialization"
+               #:class-name (class-name c)))
   (set-box! inited? #t)
   (let ([named-args (if (eq? 'list (class-init-mode c))
                         ;; all old args must have been used up
@@ -4049,9 +4052,9 @@ An example
                       named-args))]
          [else
           (obj-error 'instantiate 
-                     "too many initialization arguments:~a~a" 
-                     (make-pos-arg-string by-pos-args)
-                     (for-class (class-name c)))]))]
+                     "too many initialization arguments" 
+                     "arguments" (as-lines (make-pos-arg-string by-pos-args))
+                     #:class-name (class-name c))]))]
     [else (cons (cons (car nl) (car al))
                 (do-merge (cdr al) (cdr nl) ic named-args by-pos-args c))]))
 
@@ -4090,26 +4093,31 @@ An example
                 args))))
 
 (define (make-named-arg-string args)
-  (let loop ([args args][count 0])
-    (cond
-      [(null? args) ""]
-      [(= count 3) " ..."]
+  (apply
+   string-append
+   (let loop ([args args][count 0])
+     (cond
+      [(null? args) null]
+      [(= count 3) '("\n   ...")]
       [else (let ([rest (loop (cdr args) (add1 count))])
-              (format " (~a ~e)~a"
-                      (caar args)
-                      (cdar args)
-                      rest))])))
+              (cons (format "\n   [~a ~e]"
+                            (caar args)
+                            (cdar args))
+                    rest))]))))
 
 (define (unused-args-error this args)
   (let ([arg-string (make-named-arg-string args)])
-    (obj-error 'instantiate "unused initialization arguments:~a~a" 
-               arg-string
-               (for-class/which "instantiated" (class-name (object-ref this))))))
+    (obj-error 'instantiate "unused initialization arguments" 
+               "unused arguments" (as-lines arg-string)
+               #:class-name (class-name (object-ref this))
+               #:which-class "instantiated ")))
 
 (define (missing-argument-error class-name name)
-  (obj-error 'instantiate "no argument for required init variable: ~a~a"
-             name
-             (if class-name (format " in class: ~a" class-name) "")))
+  (obj-error 'instantiate 
+             "no argument for required init variable"
+             "init variable name" (as-write name)
+             #:class-name class-name
+             #:which-class "instantiated "))
 
 ;;--------------------------------------------------------------------
 ;;  methods and fields
@@ -4214,11 +4222,13 @@ An example
         (let ([pos (hash-ref (class-method-ht cls) name #f)])
           (if pos
               (vector-ref (class-methods cls) pos)
-              (obj-error who "no such method: ~a~a"
-                         name
-                         (for-class (class-name cls)))))
-        (obj-error who "target is not an object: ~e for method: ~a"
-                   in-object name))))
+              (obj-error who 
+                         "no such method"
+                         "method name" (as-write name)
+                         #:class-name (class-name cls))))
+        (obj-error who "target is not an object"
+                   "target" in-object 
+                   "method name" (as-write name)))))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
   (let ([check-and-get-index
@@ -4229,9 +4239,9 @@ An example
              (raise-argument-error who "symbol?" name))
            (hash-ref (class-field-ht class) name
                      (lambda ()
-                       (obj-error who "no such field: ~a~a"
-                                  name
-                                  (for-class (class-name class))))))])
+                       (obj-error who "no such field"
+                                  "field-name" (as-write name)
+                                  #:class-name (class-name class)))))])
     (values (λ (class name)
               (let* ([fi (check-and-get-index 'class-field-accessor class name)]
                      [ref (field-info-external-ref fi)])
@@ -4262,9 +4272,9 @@ An example
             (if (interface? class)
                 (let ([intf class])
                   (unless (method-in-interface? name intf)
-                    (obj-error 'make-generic "no such method: ~a~a"
-                               name
-                               (for-intf (interface-name intf))))
+                    (obj-error 'make-generic "no such method"
+                               "method name" (as-write name)
+                               #:intf-name (interface-name intf)))
                   (lambda (obj)
                     (unless (is-a? obj intf)
                       (raise-type-error 
@@ -4274,9 +4284,9 @@ An example
                     (find-method/who 'make-generic obj name)))
                 (let* ([pos (hash-ref (class-method-ht class) name
                                       (lambda ()
-                                        (obj-error 'make-generic "no such method: ~a~a"
-                                                   name
-                                                   (for-class (class-name class)))))]
+                                        (obj-error 'make-generic "no such method"
+                                                   "method name" (as-write name)
+                                                   #:class-name (class-name class))))]
                        [instance? (class-object? class)]
                        [dynamic-generic
                         (lambda (obj)
@@ -4356,19 +4366,18 @@ An example
 
 (define (set-field!/proc id obj val)
   (unless (object? obj)
-    (raise-mismatch-error
-     'set-field!
-     "expected an object, got "
-     obj))
+    (raise-argument-error 'set-field!
+                          "object?"
+                          obj))
   (let* ([cls (object-ref obj)]
           [field-ht (class-field-ht cls)]
           [fi (hash-ref field-ht id #f)])
      (if fi
          ((field-info-external-set! fi) obj val)
-         (raise-mismatch-error 
-          'get-field
-          (format "expected an object that has a field named ~s, got " id)
-          obj))))
+         (obj-error 'get-field
+                    "given object does not have the requested field"
+                    "field name" (as-write id)
+                    "object" obj))))
 
 (define-syntax (get-field stx)
   (syntax-case stx ()
@@ -4383,19 +4392,18 @@ An example
 
 (define (get-field/proc id obj)
   (unless (object? obj)
-    (raise-mismatch-error 
-     'get-field
-     "expected an object, got "
-     obj))
+    (raise-argument-error 'get-field
+                          "object?"
+                          obj))
   (let* ([cls (object-ref obj)]
           [field-ht (class-field-ht cls)]
           [fi (hash-ref field-ht id #f)])
      (if fi
          ((field-info-external-ref fi) obj)
-         (raise-mismatch-error 
-          'get-field
-          (format "expected an object that has a field named ~s, got " id)
-          obj))))
+         (obj-error 'get-field
+                    "given object does not have the requested field"
+                    "field name" (as-write id)
+                    "object" obj))))
 
 (define-syntax (field-bound? stx)
   (syntax-case stx ()
@@ -4410,10 +4418,9 @@ An example
 
 (define (field-bound?/proc id obj)
   (unless (object? obj)
-    (raise-mismatch-error 
-     'field-bound?
-     "expected an object, got "
-     obj))
+    (raise-argument-error 'field-bound?
+                          "object?"
+                          obj))
   (let loop ([obj obj])
      (let* ([cls (object-ref obj)]
             [field-ht (class-field-ht cls)])
@@ -4422,10 +4429,9 @@ An example
 
 (define (field-names obj)
   (unless (object? obj)
-    (raise-mismatch-error 
-     'field-names
-     "expected an object, got "
-     obj))
+    (raise-argument-error 'field-names
+                          "object?"
+                          obj))
   (let loop ([obj obj])
      (let* ([cls (object-ref obj)]
             [field-ht (class-field-ht cls)]
@@ -4611,7 +4617,8 @@ An example
               (if (zero? (class-pos next))
                   (loop #f #t)
                   (loop (vector-ref (class-supers next) (sub1 (class-pos next))) #t)))))
-      (raise-mismatch-error 'class-info "current inspector cannot inspect class: " c)))
+      (raise-arguments-error 'class-info "current inspector cannot inspect class" 
+                             "class" c)))
 
 (define object->vector
   (opt-lambda (in-o [opaque-v '...])
@@ -4876,9 +4883,60 @@ An example
 
 (define-struct (exn:fail:object exn:fail) () #:inspector insp)
 
-(define (obj-error where . msg)
+(struct as-write (content))
+(struct as-write-list (content))
+(struct as-value-list (content))
+(struct as-lines (content))
+
+(define (obj-error where 
+                   msg
+                   #:class-name [class-name #f]
+                   #:intf-name [intf-name #f]
+                   #:which-class [which-class ""]
+                   . fields)
+  (define all-fields
+    (append fields
+            (if class-name
+                (list (string-append which-class "class name")
+                      (as-write class-name))
+                null)
+            (if intf-name
+                (list "interface name"
+                      (as-write intf-name))
+                null)))
   (raise (make-exn:fail:object
-          (string-append (format "~a: " where) (apply format msg))
+          (format "~a: ~a~a" where msg
+                  (apply
+                   string-append
+                   (let loop ([fields all-fields])
+                     (cond
+                      [(null? fields) null]
+                      [else
+                       (define field (car fields))
+                       (define val (cadr fields))
+                       (list*
+                        "\n  "
+                        field
+                        (if (or (as-write-list? val)
+                                (as-lines? val))
+                            ":"
+                            ": ")
+                        (cond
+                         [(or (as-write-list? val)
+                              (as-value-list? val))
+                          (apply string-append
+                                 (for/list ([v (in-list (as-write-list-content val))])
+                                   (format (if (as-write-list? val)
+                                               "\n   ~s"
+                                               "\n   ~e")
+                                           v)))]
+                         [(as-write? val)
+                          (format "~s" (as-write-content val))]
+                         [(as-lines? val)
+                          (as-lines-content val)]
+                         [else
+                          (format "~e" val)])
+                        (loop (cddr fields)))]))))
           (current-continuation-marks))))
 
 (define (for-class name)
@@ -4896,28 +4954,33 @@ An example
 (define (check-mixin-super mixin-name super% from-ids)
   (let ([mixin-name (or mixin-name 'mixin)])
     (unless (class? super%)
-      (error mixin-name "argument is not a class: ~e" super%))
+      (obj-error mixin-name 
+                 "argument is not a class"
+                 "argument" super%))
     (for-each (lambda (from-id)
                 (unless (implementation? super% from-id)
-                  (error mixin-name "argument does not implement ~e: ~e" from-id super%)))
+                  (obj-error mixin-name 
+                             "argument class does not implement method" 
+                             "argument" super% 
+                             "method name" (as-write from-id))))
               from-ids)))
 
 (define (check-mixin-from-interfaces all-from)
   (for-each (lambda (from-id)
               (unless (interface? from-id)
-                (error 'mixin
-                       "expected from-interface, got: ~e; others ~e"
-                       from-id
-                       all-from)))
+                (obj-error 'mixin
+                           "given value for from-interface is not an interface"
+                           "given" from-id
+                           "all given" (as-value-list all-from))))
             all-from))
 
 (define (check-mixin-to-interfaces all-to)
   (for-each (lambda (to-id)
               (unless (interface? to-id)
-                (error 'mixin
-                       "expected to-interface, got: ~e; others ~e"
-                       to-id
-                       all-to)))
+                (obj-error 'mixin
+                           "given values for from-interface is not an interface"
+                           "given" to-id
+                           "all given" (as-value-list all-to))))
             all-to))
 
 
@@ -4925,9 +4988,10 @@ An example
   (for-each
    (lambda (x)
      (unless (ormap (lambda (i) (method-in-interface? x i)) from-ids)
-       (error 'mixin
-              "method `~a' was referenced in definition, but is not in any of the from-interfaces: ~e"
-              x from-ids)))
+       (obj-error 'mixin
+              "method was referenced in definition, but is not in any of the from-interfaces"
+              "method name" (as-write x)
+              "from-interfaces" (as-write-list from-ids))))
    xs))
 
 (define-syntax (mixin stx)
