@@ -9155,7 +9155,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       } else {
 	mzCLOSE_FILE_HANDLE(err_subprocess, 1);
       }
-      scheme_system_error(name, "fork", errid);
+      scheme_system_error(name, "fork", fork_errno);
       return scheme_false;
 
     case 0: /* child */
