@@ -236,7 +236,7 @@
 
 (define (namespace-defined? n)
   (unless (symbol? n)
-    (raise-type-error 'namespace-defined? "symbol" n))
+    (raise-argument-error 'namespace-defined? "symbol?" n))
   (not (eq? (namespace-variable-value n #t (lambda () ns-undefined))
             ns-undefined)))
 

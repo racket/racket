@@ -1,5 +1,6 @@
 (module gl-vectors mzscheme
   (require mzlib/foreign
+           (only racket/base for/list in-list in-naturals)
            "gl-types.rkt")
   
   (define-syntax gl-vector-binop
@@ -8,7 +9,7 @@
        (case-lambda
          ((v)
           (unless (gl-vector? v)
-            (raise-type-error name "gl-vector" v))
+            (raise-argument-error name "gl-vector?" v))
           (let* ((l (cvector-length v))
                  (res (make-res l)))
             (let loop ((i 0))
@@ -18,12 +19,14 @@
               res)))
          ((v1 v2)
           (unless (gl-vector? v1)
-           (raise-type-error name "gl-vector" 0 v1 v2))
+           (raise-argument-error name "gl-vector?" 0 v1 v2))
           (unless (gl-vector? v2)
-            (raise-type-error name "gl-vector" 1 v1 v2))
+            (raise-argument-error name "gl-vector?" 1 v1 v2))
           (unless (= (cvector-length v1) (cvector-length v2))
-            (error name "given gl-vector arguments of unequal lengths: ~a" 
-                   (list (cvector-length v1) (cvector-length v2))))
+            (raise-arguments-error name 
+                                   "given gl-vector arguments of unequal lengths" 
+                                   "first argument length" (cvector-length v1)
+                                   "second argument length" (cvector-length v2)))
           (let* ((l (cvector-length v1))
                  (t (cvector-type v1))
                  (res (make-res l)))
@@ -39,12 +42,18 @@
                          (to-check all-v))
                 (unless (null? to-check)
                   (unless (gl-vector? (car to-check))
-                    (apply raise-type-error (list* name "gl-vector" i all-v)))
+                    (apply raise-argument-error (list* name "gl-vector?" i all-v)))
                   (loop (add1 i) (cdr to-check)))))
             (let ((l (cvector-length v)))
               (unless (andmap (lambda (x) (= l (cvector-length x))) vs)
-                (error name "given gl-vector arguments of unequal lengths: ~a"
-                       (map cvector-length all-v)))
+                (apply raise-arguments-error name 
+                       "given gl-vector arguments of unequal lengths"
+                       (apply
+                        append
+                        (for/list ([v (in-list all-v)]
+                                   [i (in-naturals 1)])
+                          (list (format "argument ~a" i)
+                                v)))))
               (let ((res (make-res l)))
                 (let loop ((i 0))
                   (when (< i l)
@@ -80,7 +89,7 @@
                  (apply cvector (cons gl-type args)))
                (define (vector->v v)
                  (unless (vector? v)
-                   (raise-type-error 'vector->v "vector" v))
+                   (raise-argument-error 'vector->v "vector?" v))
                  (list->cvector (vector->list v) gl-type))
                (define (list->v l)
                  (list->cvector l gl-type))
@@ -88,9 +97,9 @@
                (define v- (gl-vector-binop - 'v- make-v))
                (define (v* n v)
                  (unless (real? n)
-                   (raise-type-error 'gl-vector* "real number" 0 n v))
+                   (raise-argument-error 'gl-vector* "real?" 0 n v))
                  (unless (gl-vector? v)
-                   (raise-type-error 'gl-vector* "gl-vector" 1 n v))
+                   (raise-argument-error 'gl-vector* "gl-vector?" 1 n v))
                  (let* ((l (cvector-length v))
                         (t (cvector-type v))
                         (res (make-v l)))
@@ -122,7 +131,7 @@
   (define gl-vector? cvector?)
   (define (gl-vector-norm v)
     (unless (gl-vector? v)
-      (raise-type-error 'gl-vector-norm "gl-vector" v))
+      (raise-argument-error 'gl-vector-norm "gl-vector?" v))
     (let ((l (gl-vector-length v)))
       (let loop ((i 0)
                  (res 0))

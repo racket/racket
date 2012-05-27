@@ -228,12 +228,13 @@
       (unless (list? kw-vals)
         (type-error "list?" 2))
       (unless (= (length kws) (length kw-vals))
-        (raise-mismatch-error
+        (raise-arguments-error
          'keyword-apply
-         (format
-          "keyword list: ~e; does not match the length of the value list: "
-          kws)
-         kw-vals))
+         "keyword list length does not match value list length"
+         "keyword list length" (length kws)
+         "value list length" (length kw-vals)
+         "keyword list" kws
+         "value list" kw-vals))
       
       (let ([normal-args
              (let loop ([normal-argss (cons normal-args normal-argss)][pos 3])
@@ -1338,9 +1339,10 @@
           (raise-argument-error 'procedure-reduce-keyword-arity "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
                                 3 proc arity req-kw allowed-kw))
         (unless (subset? req-kw allowed-kw)
-          (raise-mismatch-error 'procedure-reduce-keyword-arity 
-                                "allowed-keyword list does not include all required keywords: "
-                                allowed-kw)))
+          (raise-arguments-error 'procedure-reduce-keyword-arity 
+                                 "allowed-keyword list does not include all required keywords"
+                                 "allowed-keyword list" allowed-kw
+                                 "required keywords" req-kw)))
       (let ([old-req (if (keyword-procedure? proc)
                          (keyword-procedure-required proc)
                          null)]
@@ -1348,19 +1350,22 @@
                              (keyword-procedure-allowed proc)
                              null)])
         (unless (subset? old-req req-kw)
-          (raise-mismatch-error 'procedure-reduce-keyword-arity
-                                "cannot reduce required keyword set: "
-                                old-req))
+          (raise-arguments-error 'procedure-reduce-keyword-arity
+                                 "cannot reduce required keyword set"
+                                 "required keywords" old-req
+                                 "requested required keywords" req-kw))
         (when old-allowed
           (unless (subset? req-kw old-allowed)
-            (raise-mismatch-error 'procedure-reduce-keyword-arity
-                                  "cannot require keywords not in original allowed set: "
-                                  old-allowed))
+            (raise-arguments-error 'procedure-reduce-keyword-arity
+                                   "cannot require keywords not in original allowed set"
+                                   "original allowed keywords" old-allowed
+                                   "requested required keywords" req-kw))
           (unless (or (not allowed-kw)
                       (subset? allowed-kw old-allowed))
-            (raise-mismatch-error 'procedure-reduce-keyword-arity
-                                  "cannot allow keywords not in original allowed set: "
-                                  old-allowed))))
+            (raise-arguments-error 'procedure-reduce-keyword-arity
+                                   "cannot allow keywords not in original allowed set"
+                                   "original allowed keywords" old-allowed
+                                   "requested allowed keywords" allowed-kw))))
       (if (null? allowed-kw)
           plain-proc
           (let* ([inc-arity (lambda (arity delta)
@@ -1408,9 +1413,9 @@
                       (keyword-procedure? proc)
                       (not (okp? proc))
                       (not (null? arity)))
-                 (raise-mismatch-error 'procedure-reduce-arity
-                                       "procedure has required keyword arguments: "
-                                       proc)
+                 (raise-arguments-error 'procedure-reduce-arity
+                                        "procedure has required keyword arguments"
+                                        "procedure" proc)
                  (procedure-reduce-arity proc arity)))])
       procedure-reduce-arity))
     
@@ -1517,21 +1522,19 @@
             ;; Let core report error:
             (apply chaperone-procedure proc wrap-proc props))
           (unless (subset? b-req a-req)
-            (raise-mismatch-error
+            (raise-arguments-error
              name
-             (format
-              "~a procedure requires more keywords than original procedure: "
-              (if is-impersonator? "impersonating" "chaperoning"))
-             proc))
+             "wrapper procedure requires more keywords than original procedure"
+             "wrapper procedure" wrap-proc
+             "original procedure" proc))
           (unless (or (not b-allow)
                       (and a-allow
                            (subset? a-allow b-allow)))
-            (raise-mismatch-error
+            (raise-arguments-error
              name
-             (format
-              "~a procedure does not accept all keywords of original procedure: "
-              (if is-impersonator? "impersonating" "chaperoning"))
-             proc))
+             "wrapper procedure does not accept all keywords of original procedure"
+             "wrapper procedure" wrap-proc
+             "original procedure" proc))
           (let* ([kw-chaperone
                   (let ([p (keyword-procedure-proc wrap-proc)])
                     (case-lambda 
@@ -1541,36 +1544,37 @@
                           (let ([len (length results)]
                                 [alen (length rest)])
                             (unless (<= (+ alen 1) len (+ alen 2))
-                              (raise-mismatch-error
+                              (raise-arguments-error
                                '|keyword procedure chaperone|
-                               (format
-                                "expected ~a or ~a results, received ~a results from chaperoning procedure: "
-                                (+ alen 1)
-                                (+ alen 2)
-                                len)
-                               wrap-proc))
+                               "wrong number of results from wrapper procedure"
+                               "expected minimum number of results" (+ alen 1)
+                               "expected maximum number of results" (+ alen 2)
+                               "received number of results" len
+                               "wrapper procedure" wrap-proc))
                             (let ([extra? (= len (+ alen 2))])
                               (let ([new-args ((if extra? cadr car) results)])
                                 (unless (and (list? new-args)
                                              (= (length new-args) (length args)))
-                                  (raise-mismatch-error
+                                  (raise-arguments-error
                                    '|keyword procedure chaperone|
                                    (format
-                                    "expected a list of keyword-argument values as first result~a from chaperoning procedure: "
+                                    "expected a list of keyword-argument values as first result~a from wrapper procedure"
                                     (if (= len alen)
                                         ""
-                                        " (after the result chaperoning procedure)"))
-                                   wrap-proc))
+                                        " (after the result-wrapper procedure)"))
+                                   "first result" new-args
+                                   "wrapper procedure" wrap-proc))
                                 (for-each
                                  (lambda (kw new-arg arg)
                                    (unless is-impersonator?
                                      (unless (chaperone-of? new-arg arg)
-                                       (raise-mismatch-error
+                                       (raise-arguments-error
                                         '|keyword procedure chaperone|
                                         (format
-                                         "~a keyword result is not a chaperone of original argument from chaperoning procedure: "
+                                         "~a keyword result is not a chaperone of original argument from chaperoning procedure"
                                          kw)
-                                        wrap-proc))))
+                                        "result" new-arg
+                                        "wrapper procedure" wrap-proc))))
                                  kws
                                  new-args
                                  args))

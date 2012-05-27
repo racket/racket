@@ -35,7 +35,7 @@
 
 (define (check-exe who exe)
   (unless (path-string? exe)
-    (raise-type-error who "path or string" exe))
+    (raise-argument-error who "path-string?" exe))
   exe)
 
 (define (path-or-ok-string? s)
@@ -75,14 +75,21 @@
     (for ([s (in-list args)])
       (unless (or (path-or-ok-string? s)
                   (bytes-no-nuls? s))
-        (raise-type-error who "path, string, or byte string (without nuls)"
-                          s)))])
+        (raise-argument-error
+         who
+         (string-append "(or/c path-string?\n"
+                        "      (and/c bytes? (lambda (bs) (not (memv 0 (bytes->list bs))))))")
+         s)))])
   args)
 
 (define (check-command who str)
   (unless (or (string-no-nuls? str)
               (bytes-no-nuls? str))
-    (raise-type-error who "string or byte string (without nuls)" str)))
+    (raise-argument-error
+     who
+     (string-append "(or/c (and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))\n"
+                    "      (and/c bytes? (lambda (bs) (not (memv 0 (bytes->list bs))))))")
+     str)))
 
 ;; Old-style functions: ----------------------------------------
 
@@ -131,9 +138,9 @@
                (twait se))]
             [(interrupt) (subprocess-kill subp #f)]
             [(kill) (subprocess-kill subp #t)]
-            [else (raise-type-error
+            [else (raise-argument-error
                    'control-process
-                   "'status, 'exit-code, 'wait, 'interrupt, or 'kill" m)]))
+                   "(or/c 'status 'exit-code 'wait 'interrupt 'kill)" m)]))
         (list (aport so)
               (aport si)
               (subprocess-pid subp)

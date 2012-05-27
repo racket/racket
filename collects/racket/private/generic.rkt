@@ -35,7 +35,7 @@
      (let* ([idxs (for/list ([i (in-naturals 0)]
                              [_ (syntax->list #'(generic ...))])
                     i)]
-            [name-str (symbol->string (syntax-e #'name))]
+            [name-str (symbol->string (syntax-e #'name?))]
             [generics (syntax->list #'(generic ...))]
             [prop-defined-already? (syntax-e #'defined-already?)])
        (with-syntax ([name-str name-str]
@@ -131,7 +131,7 @@
              ;; whether the given method is implemented
              (define (defined-table this)
                (unless (name? this)
-                 (raise-type-error 'defined-table name-str this))
+                 (raise-argument-error 'defined-table name-str this))
                (for/hash ([name (in-list '(#,@(map syntax->datum generics)))]
                           [gen (in-vector (get-generics this))])
                  (values name (not (not gen)))))
@@ -145,7 +145,7 @@
                          (if m
                              (keyword-apply m kws kws-args given-args)
                              (error 'generic "not implemented for ~e" this)))
-                       (raise-type-error 'generic name-str this)))
+                       (raise-argument-error 'generic name-str this)))
                  ; XXX (non-this ... this . rst)
                  (lambda given-args
                    (define this (list-ref given-args generic-this-idx))
@@ -154,5 +154,5 @@
                          (if m
                              (apply m given-args)
                              (error 'generic "not implemented for ~e" this)))
-                       (raise-type-error 'generic name-str this))))))
+                       (raise-argument-error 'generic name-str this))))))
              ...)))]))

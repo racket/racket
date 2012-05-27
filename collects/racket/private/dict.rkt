@@ -111,12 +111,12 @@
    [(hash? d) (hash-set! d key val)]
    [(vector? d) (vector-set! d key val)]
    [(assoc? d)
-    (raise-type-error 'dict-set! "mutable-dict?" 0 d key val)]
+    (raise-argument-error 'dict-set! "mutable-dict?" 0 d key val)]
    [(dict? d)
     (let ([s! (hash-ref (dict-def-table d) 'dict-set! #f)])
       (if s!
           (dict-set! d key val)
-          (raise-type-error 'dict-set! "mutable-dict?" 0 d key val)))]
+          (raise-argument-error 'dict-set! "mutable-dict?" 0 d key val)))]
    [else
     (raise-argument-error 'dict-set! "dict?" 0 d key val)]))
 
@@ -146,7 +146,7 @@
     (let ([s (hash-ref (dict-def-table d) 'dict-set #f)])
       (if s
           (dict-set d key val)
-          (raise-type-error 'dict-set "functional-update-dict?" 0 d key val)))]
+          (raise-argument-error 'dict-set "functional-update-dict?" 0 d key val)))]
    [else
     (raise-argument-error 'dict-set "dict?" 0 d key val)]))
 
@@ -180,12 +180,12 @@
    [(vector? d)
     (raise-argument-error 'dict-remove! "dict-with-removeable-keys?" 0 d key)]
    [(assoc? d)
-    (raise-type-error 'dict-remove! "mutable-dict?" 0 d key)]
+    (raise-argument-error 'dict-remove! "mutable-dict?" 0 d key)]
    [(dict? d)
     (let ([r! (hash-ref (dict-def-table d) 'dict-remove! #f)])
       (if r!
           (dict-remove! d key)
-          (raise-type-error 'dict-remove! "mutable-dict-with-removable-keys?" 0 d key)))]
+          (raise-argument-error 'dict-remove! "mutable-dict-with-removable-keys?" 0 d key)))]
    [else
     (raise-argument-error 'dict-remove! "dict?" 0 d key)]))
 
@@ -207,7 +207,7 @@
     (let ([s (hash-ref (dict-def-table d) 'dict-remove #f)])
       (if s
           (dict-remove d key)
-          (raise-type-error 'dict-remove "dict-with-functionally-removeable-keys?" 0 d key)))]
+          (raise-argument-error 'dict-remove "dict-with-functionally-removeable-keys?" 0 d key)))]
    [else
     (raise-argument-error 'dict-remove "dict?" 0 d key)]))
 

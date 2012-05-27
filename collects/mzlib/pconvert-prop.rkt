@@ -19,9 +19,9 @@
 			       (lambda (s info)
 				 (if (symbol? s)
                                      (void)
-                                     (raise-type-error '|prop:print-convert-constructor-name guard|
-                                                       "symbol"
-                                                       s))
+                                     (raise-argument-error '|prop:print-convert-constructor-name guard|
+                                                           "symbol?"
+                                                           s))
 				 s)))
 
   (define-values (prop:print-converter
@@ -33,7 +33,7 @@
                                          (procedure-arity-includes? p 2)
                                          #f)
                                      (void)
-                                     (raise-type-error '|prop:print-converter|
-                                                       "procedure (arity 2)"
-                                                       p))
+                                     (raise-argument-error '|prop:print-converter|
+                                                           "(procedure-arity-includes/c 2)"
+                                                           p))
 				 p))))

@@ -4277,10 +4277,11 @@ An example
                                #:intf-name (interface-name intf)))
                   (lambda (obj)
                     (unless (is-a? obj intf)
-                      (raise-type-error 
-                       (string->symbol (format "generic:~a~a" name (for-intf (interface-name intf))))
-                       (format "instance~a" (for-intf (interface-name intf)))
-                       obj))
+                      (obj-error 
+                       (string->symbol (format "generic:~a" name))
+                       "target is not an instance of the generic's interface"
+                       "target" obj
+                       #:intf-name (interface-name intf)))
                     (find-method/who 'make-generic obj name)))
                 (let* ([pos (hash-ref (class-method-ht class) name
                                       (lambda ()
@@ -4291,10 +4292,11 @@ An example
                        [dynamic-generic
                         (lambda (obj)
                           (unless (instance? obj)
-                            (raise-type-error 
-                             (string->symbol (format "generic:~a~a" name (for-class (class-name class))))
-                             (format "instance~a" (for-class (class-name class)))
-                             obj))
+                            (obj-error 
+                             (string->symbol (format "generic:~a" name))
+                             "target is not an instance of the generic's class"
+                             "target" obj
+                             #:class-name (class-name class)))
                           (vector-ref (class-methods (object-ref obj)) pos))])
                   (if (eq? 'final (vector-ref (class-meth-flags class) pos))
                       (let ([method (vector-ref (class-methods class) pos)])

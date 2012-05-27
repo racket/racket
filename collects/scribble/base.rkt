@@ -60,7 +60,7 @@
    [(string? s) (make-style s null)]
    [(symbol? s) (make-style #f (list s))]
    [(and (list? s) (andmap symbol? s)) (make-style #f s)]
-   [else (raise-type-error who "style, string, symbol, list of symbols, or #f" s)]))
+   [else (raise-argument-error who "(or/c style? string? symbol? (listof symbol?) #f)" s)]))
 
 (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style plain]
                #:version [version #f] #:date [date #f]

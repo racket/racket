@@ -65,19 +65,19 @@
     (make-parameter (let ([original-build-share-name-hook (lambda (e) #f)]) original-build-share-name-hook)
                     (lambda (f)
                       (unless (procedure-arity-includes? f 1)
-                        (raise-type-error 'current-build-share-name-hook "procedure of arity 1" f))
+                        (raise-argument-error 'current-build-share-name-hook "(procedure-arity-includes/c 1)" f))
                       f)))
   (define current-build-share-hook 
     (make-parameter (lambda (e base sub) (base e))
                     (lambda (f)
                       (unless (procedure-arity-includes? f 3)
-                        (raise-type-error 'current-build-share-hook "procedure of arity 3" f))
+                        (raise-argument-error 'current-build-share-hook "(procedure-arity-includes/c 3)" f))
                       f)))
   (define current-print-convert-hook 
     (make-parameter (lambda (e base sub) (base e))
                     (lambda (f)
                       (unless (procedure-arity-includes? f 3)
-                        (raise-type-error 'current--hook "procedure of arity 3" f))
+                        (raise-argument-error 'current--hook "(procedure-arity-includes/c 3)" f))
                       f)))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
