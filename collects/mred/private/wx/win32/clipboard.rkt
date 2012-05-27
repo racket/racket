@@ -196,7 +196,17 @@
           (begin0
            (get-bitmap-from-clipboard)
            (CloseClipboard)))))
-                
+
+  (define/public (set-bitmap-data bm timestamp)
+    (define h (bitmap->hbitmap bm))
+    (set-cpointer-tag! h '(HBITMAP HANDLE))
+    (atomically
+     (when (OpenClipboard clipboard-owner-hwnd)
+       (EmptyClipboard)
+       (SetClipboardData CF_BITMAP h)
+       (CloseClipboard)
+       (void))))
+
   (super-new))
 
 

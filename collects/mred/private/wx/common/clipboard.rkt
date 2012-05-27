@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         (only-in racket/draw bitmap%)
          "../../syntax.rkt"
          "../platform.rkt"
          "local.rkt"
@@ -61,7 +62,8 @@
 
   (def/public (get-clipboard-bitmap [exact-integer? timestamp])
     (send driver get-bitmap-data))
-  (def/public-unimplemented set-clipboard-bitmap)
+  (def/public (set-clipboard-bitmap [bitmap% bm] [exact-integer? timestamp])
+    (send driver set-bitmap-data bm timestamp))
   (def/public (get-clipboard-data [string? type]
                                   [exact-integer? timestamp])
     (send driver get-data type))

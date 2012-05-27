@@ -100,4 +100,14 @@
       (let ([i (tell (tell NSImage alloc) 
                      initWithPasteboard: (tell NSPasteboard generalPasteboard))])
         (and i
-             (image->bitmap i)))))))
+             (image->bitmap i))))))
+
+  (define/public (set-bitmap-data bm timestamp)
+    (define image (bitmap->image bm))
+    (atomically
+     (with-autorelease
+      (let ([pasteboard (tell NSPasteboard generalPasteboard)])
+        (tell pasteboard clearContents)
+        (let ([copied-objects (tell NSArray arrayWithObject: image)])
+          (tell pasteboard writeObjects: copied-objects)
+          (void)))))))

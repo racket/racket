@@ -127,6 +127,8 @@
   (_fun _GtkClipboard (_fpointer = string_request_received) _pointer -> _void))
 (define-gtk gtk_clipboard_request_image 
   (_fun _GtkClipboard (_fpointer = image_request_received) _pointer -> _void))
+(define-gtk gtk_clipboard_set_image 
+  (_fun _GtkClipboard _GdkPixbuf -> _void))
 
 ;; ----------------------------------------
 
@@ -295,6 +297,10 @@
       (let-values ([(l backref) (make-request-backref)])
 	(gtk_clipboard_request_image cb backref)
 	l))))
+
+  (define/public (set-bitmap-data bm timestamp)
+    (define pb (bitmap->pixbuf bm))
+    (gtk_clipboard_set_image cb pb))
   
   (super-new))
 
