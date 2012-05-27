@@ -5155,10 +5155,10 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
   Scheme_Object *val = argv[0], *proc;
   Scheme_Object *redirects, *prop, *si_chaperone = scheme_false;
   Struct_Proc_Info *pi;
-  Scheme_Object *a[1];
+  Scheme_Object *a[1], *inspector, *getter_positions = scheme_null;
   int i, offset, arity, non_applicable_op, repeat_op;
   const char *kind;
-  Scheme_Hash_Tree *props = NULL, *red_props = NULL;
+  Scheme_Hash_Tree *props = NULL, *red_props = NULL, *setter_positions = NULL;
 
   if (argc == 1) return argv[0];
 
@@ -5174,6 +5174,11 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     stype = NULL;
     redirects = NULL;
   }
+
+  if (is_impersonator)
+    inspector = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+  else
+    inspector = NULL;
 
   for (i = 1; i < argc; i++) {
     proc = argv[i];
@@ -5254,16 +5259,33 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
         repeat_op = 1;
       else {
         if (is_impersonator) {
+          intptr_t field_pos;
+          field_pos = pi->field - (pi->struct_type->name_pos 
+                                   ? pi->struct_type->parent_types[pi->struct_type->name_pos - 1]->num_slots 
+                                   : 0);
           /* Must not be an immutable field. */
           if (stype->immutables) {
-            if (stype->immutables[pi->field - (pi->struct_type->name_pos 
-                                               ? pi->struct_type->parent_types[pi->struct_type->name_pos - 1]->num_slots 
-                                               : 0)])
+            if (stype->immutables[field_pos])
               scheme_contract_error(name,
                                     "cannot replace operation for an immutable field",
                                     "operation kind", 0, kind,
                                     "operation procedure", 1, a[0],
-                                           NULL);
+                                    NULL);
+          }
+          if (!offset) {
+            /* impersonating a getter is allowed only if the structure type is
+               transparent or if the setter is also impersonated (which would prove
+               that the code creating the impersonator has suitable access). */
+            if (!scheme_inspector_sees_part(argv[0], inspector, pi->field)) {
+              getter_positions = scheme_make_pair(scheme_make_pair(scheme_make_integer(pi->field), a[0]),
+                                                  getter_positions);
+            }
+          } else {
+            if (!scheme_inspector_sees_part(argv[0], inspector, pi->field)) {
+              if (!setter_positions)
+                setter_positions = scheme_make_hash_tree(0);
+              setter_positions = scheme_hash_tree_set(setter_positions, scheme_make_integer(pi->field), scheme_true);
+            }
           }
         }
       }
@@ -5313,6 +5335,25 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field] = proc;
     else
       si_chaperone = proc;
+  }
+
+  if (is_impersonator) {
+    /* For each getter for a non-transparent field, check that a witness
+       setter was provided */
+    getter_positions = scheme_reverse(getter_positions);
+    while (!SCHEME_NULLP(getter_positions)) {
+      prop = SCHEME_CAR(getter_positions);
+      if (!setter_positions
+          || !scheme_hash_tree_get(setter_positions, SCHEME_CAR(prop))) {
+        scheme_contract_error(name,
+                              "accessor redirection for a non-transparent field requires a mutator redirection",
+                              "explanaion", 0, "a mutator redirection acts as a witness that access is allowed",
+                              "accessor", 1, SCHEME_CDR(prop),
+                              "value to impersonate", 1, argv[0],
+                              NULL);
+      }
+      getter_positions = SCHEME_CDR(getter_positions);
+    }
   }
   
   if (!redirects) {

@@ -4,6 +4,9 @@ Added raise-argument-error, raise-result-error,
  raise-arguments-error, raise-range-error
 racket/contract: added procedure-arity-includes/c
 racket/sandbox: added sandbox-propagate-exceptions
+Changed impersonate-struct so that accessor impersonation requires
+ work only if the field is accessible via the current impersonator
+ or a mutator for the same field is also impersonated
 
 Version 5.3.0.8
 Required modules are instantiated in the order that they are required
