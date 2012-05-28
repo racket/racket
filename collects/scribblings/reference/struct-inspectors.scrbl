@@ -17,7 +17,7 @@ opaque to ``peer'' code that cannot access the parent inspector.
 
 The @racket[current-inspector] @tech{parameter} determines a default
 inspector argument for new structure types. An alternate inspector can
-be provided though the @racket[#:inspector] option of the
+be provided through the @racket[#:inspector] option of the
 @racket[define-struct] form (see @secref["define-struct"]), or
 through an optional @racket[inspector] argument to
 @racket[make-struct-type].
