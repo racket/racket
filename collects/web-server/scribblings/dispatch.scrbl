@@ -5,6 +5,7 @@
                      web-server/dispatchers/dispatch
                      web-server/servlet-env
                      web-server/dispatch/extend
+                     (except-in syntax/parse attribute)
                      racket/match
                      racket/list
                      net/url
@@ -103,24 +104,37 @@ or else the filesystem server will never see the requests.
 
 @section{API Reference}
 
-@defform*[#:literals (else)
+@defform*[#:literals (else ~optional ~seq syntax or)
          [(dispatch-rules
-           [dispatch-pattern dispatch-fun]
+           [dispatch-pattern
+            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
+            dispatch-fun]
            ...
            [else else-fun])
           (dispatch-rules
-           [dispatch-pattern dispatch-fun]
+           [dispatch-pattern
+            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
+            dispatch-fun]
            ...)]
          #:contracts
          ([else-fun (request? . -> . any)]
           [dispatch-fun (request? any/c ... . -> . any)])]{
- Returns two values: the first is a dispatching function with the contract @racket[(request? . -> . any)]
- that calls the appropriate @racket[dispatch-fun] based on the first @racket[dispatch-pattern] that matches the
- request's URL; the second is a URL-generating function with the contract @racket[(procedure? any/c ... . -> . string?)]
- that generates a URL using @racket[dispatch-pattern] for the @racket[dispatch-fun] given as its first argument.
- 
- If @racket[else-fun] is left out, one is provided that calls @racket[(next-dispatcher)] to signal to the Web Server that this
- dispatcher does not apply.
+
+ Returns two values: the first is a dispatching function with the
+contract @racket[(request? . -> . any)] that calls the appropriate
+@racket[dispatch-fun] based on the first @racket[dispatch-pattern]
+that matches the request's URL (and method), the second is a URL-generating
+function with the contract @racket[(procedure? any/c ... . ->
+. string?)] that generates a URL using @racket[dispatch-pattern] for
+the @racket[dispatch-fun] given as its first argument.
+
+ If @racket[else-fun] is left out, one is provided that calls
+@racket[(next-dispatcher)] to signal to the Web Server that this
+dispatcher does not apply.
+
+ If any @racket[_method] is left out, it assumed to apply to requests
+without methods and GET methods.
+
 }
  
 @racketgrammar[dispatch-pattern
@@ -129,13 +143,17 @@ or else the filesystem server will never see the requests.
                (bidi-match-expander ... . dispatch-pattern)
                (bidi-match-expander . dispatch-pattern)]
 
-@defform*[#:literals (else)
+@defform*[#:literals (else ~optional ~seq syntax or)
          [(dispatch-rules+applies
-           [dispatch-pattern dispatch-fun]
+           [dispatch-pattern
+            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
+            dispatch-fun]
            ...
            [else else-fun])
           (dispatch-rules+applies
-           [dispatch-pattern dispatch-fun]
+           [dispatch-pattern
+            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
+            dispatch-fun]
            ...)]
          #:contracts
          ([else-fun (request? . -> . any)]
@@ -144,13 +162,17 @@ or else the filesystem server will never see the requests.
       @racket[#t] if the dispatching rules apply to the request and @racket[#f] otherwise.
       }
 
-@defform*[#:literals (else)
+@defform*[#:literals (else ~optional ~seq syntax or)
          [(dispatch-case
-           [dispatch-pattern dispatch-fun]
+           [dispatch-pattern
+            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
+            dispatch-fun]
            ...
            [else else-fun])
           (dispatch-case
-           [dispatch-pattern dispatch-fun]
+           [dispatch-pattern
+            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
+            dispatch-fun]
            ...)]
          #:contracts
          ([else-fun (request? . -> . any)]
