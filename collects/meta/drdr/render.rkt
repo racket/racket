@@ -189,7 +189,7 @@
                    (td "Date:")
                    (td ,(git-date->nice-date date)))
                (tr ([class "author"]) (td "Author:") (td ,author))
-               (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
+               (tr ([class "msg"]) (td "Log:") (td (pre ,@(add-between msg "\n"))))
                (tr ([class "changes"]) 
                    (td 
                     (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
