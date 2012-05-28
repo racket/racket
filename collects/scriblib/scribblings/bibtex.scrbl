@@ -18,3 +18,18 @@ Uses @racket[define-cite] from @racketmodname[scriblib/autobib], but augments th
 Each string is broken along spaces into citations keys that are looked up in the BibTeX database and turned into @racket[bib?] structures.
 
 }
+
+@defstruct*[bibdb ([raw (hash/c string? (hash/c string? string?))]
+                   [bibs (hash/c string? bib?)])]{
+                                             Represents a BibTeX database. The @racket[_raw] hash table maps the labels in the file to hash tables of the attributes and their values. The @racket[_bibs] hash table maps the same labels to Scribble data-structures representing the same information.
+                                             }
+
+@defproc[(path->bibdb [path path-string?])
+         bibdb?]{
+                 Parses a path into a BibTeX database.
+                 }
+
+@defproc[(bibtex-parse [ip input-port?])
+         bibdb?]{
+                 Parses an input port into a BibTeX database.
+                 }

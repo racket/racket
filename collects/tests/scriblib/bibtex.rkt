@@ -7,6 +7,15 @@
 
 (test
  (let ()
+   (define example (path->bibdb example.bib))
+   (define raw (bibdb-raw example))
+
+   (test
+    (hash-ref (hash-ref raw "sweig42") "month") => "march"
+    (hash-ref (hash-ref raw "sweig42a") "month") => "1~mar"
+    (hash-ref (hash-ref raw "sweig42b") "month") => "1~march"
+    (hash-ref (hash-ref raw "sweig42c") "month") => "1~marcha"))
+ (let ()
    (define-bibtex-cite example.bib
      ~cite-id citet-id generate-bibliography-id)
 
