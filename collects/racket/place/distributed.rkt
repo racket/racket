@@ -406,6 +406,8 @@
                   (send node log-from-child #:severity severity msg)]
                 [(dcgm #;51 (== DCGM-NEW-PLACE-CHANNEL) _ _ _)
                   (send node forward-mesg e pch)]
+                [(dcgm #;102 (== DCGM-CONTROL-NEW-CONNECTION) dest -1 (list name ch))
+                  (send node forward-mesg e pch)]
                 [else (put-msg e)])))
           nes))
       (define/public (get-sc-id) id)
@@ -553,12 +555,14 @@
             (log-debug (format "RECV DCGM-TYPE-SET-OWNER ~a" src-channel))
             (set! owner src-channel)]
           [(dcgm #;50 (== DCGM-NEW-NODE-CONNECT) -1 -1 (list node-name node-port))
-            (add-spawned-node (list node-name node-port) (new remote-node% [host-name node-name] [listen-port node-port]))]
+            (define node (find-spawned-node (list node-name node-port)))
+            (unless node
+              (add-spawned-node (list node-name node-port) (new remote-node% [host-name node-name] [listen-port node-port])))]
 
           [(dcgm #;51 (== DCGM-NEW-PLACE-CHANNEL) src-id (and dest (list host port name)) pch)
             ;(printf/f "DCGM-NEW-PLACE-CHANNEL ~a ~a\n" src-id dest)
             (define node (find-spawned-node (list host port)))
-            (unless node (raise (format "DCGM-CONTROL-NEW-CONNECTION Node ~a not found in ~a" dest spawned-nodes)))
+            (unless node (raise (format "1DCGM-CONTROL-NEW-CONNECTION Node ~a not found in ~a" dest spawned-nodes)))
             (send node connect-channel src-id name #:one-sided pch)]
 
           [(dcgm #;100 (== DCGM-CONTROL-NEW-NODE) -1 solo (list node-name node-port))
@@ -572,11 +576,15 @@
                (add-spawned-node (list node-name node-port) node)])]
           [(dcgm #;101 (== DCGM-CONTROL-NEW-PLACE) dest -1 place-exec)
            (define node (find-spawned-node dest))
-           (unless node (raise (format "DCGM-CONTROL-NEW-PLACE Node ~a not found in ~a" dest spawned-nodes)))
+           (unless node (raise (format "2DCGM-CONTROL-NEW-PLACE Node ~a not found in ~a" dest spawned-nodes)))
            (send node launch-place place-exec)]
           [(dcgm #;102 (== DCGM-CONTROL-NEW-CONNECTION) dest -1 (list name ch))
-           (define node (find-spawned-node dest))
-           (unless node (raise (format "DCGM-CONTROL-NEW-CONNECTION Node ~a not found in ~a" dest spawned-nodes)))
+           (define node
+             (or (find-spawned-node dest)
+                 (let ()
+                   (define node (new remote-node% [host-name (first dest)] [listen-port (second dest)]))
+                   (add-spawned-node dest node)
+                   node)))
            (send node remote-connect name #:one-sided ch)]
 
           [(dcgm mtype srcs dest msg)

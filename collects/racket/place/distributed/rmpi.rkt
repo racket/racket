@@ -187,8 +187,7 @@
                 (hash-set (car _rest) (string->keyword "listen-port") port))]))
 ;        (printf/f "~a\n" rest)
         (define-values (k v) 
-          (let loop ([keys (map string->keyword 
-                                (sort (list "racket-path" "listen-port" "distributed-launch-path")))]
+          (let loop ([keys (list "racket-path" "listen-port" "distributed-launch-path")]
                      [k null]
                      [v null])
             (match keys
@@ -196,7 +195,7 @@
               (cond
                 [(lookup-config-value rest head) => (lambda (x) 
                   (loop tail
-                        (cons head k)
+                        (cons (string->keyword head) k)
                         (cons x v)))]
                 [else
                   (loop (cdr keys) k v)])]
@@ -210,8 +209,8 @@
     (match-define (list-rest host port name id rest) c)
     (supervise-named-dynamic-place-at n 
                                       name 
-                                      (lookup-config-value rest "rmpi-module")
-                                      (lookup-config-value rest "rmpi-func")))
+                                      (lookup-config-value rest "mpi-module")
+                                      (lookup-config-value rest "mpi-func")))
 
   (define-values (mrth ch)
     (start-message-router/thread
@@ -226,7 +225,7 @@
     (match-define (list-rest host port name id rest) c)
     (define npch (mr-connect-to ch (list host port) name))
     (*channel-put npch (list 'rmpi-id id simple-config))
-    (*channel-put npch (list 'args (or (lookup-config-value rest "rmpi-args") null))))
+    (*channel-put npch (list 'args (or (lookup-config-value rest "mpi-args") null))))
 
   (for/first ([c config])
     (match-define (list-rest host port name id rest) c)
