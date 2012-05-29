@@ -1186,7 +1186,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
             if (fail_thunk)
               return scheme_tail_apply(fail_thunk, 0, NULL);
 	    scheme_contract_error(errname,
-                                  "name is not provided"
+                                  "name is not provided",
                                   "name", 1, name, 
                                   "module", 1, srcm->modsrc,
                                   NULL);
