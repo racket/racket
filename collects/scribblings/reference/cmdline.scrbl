@@ -17,7 +17,8 @@
                             (code:line #:once-each flag-spec ...)
                             (code:line #:once-any flag-spec ...)
                             (code:line #:final flag-spec ...)
-                            (code:line #:help-labels string ...)]
+                            (code:line #:help-labels string ...)
+                            (code:line #:ps string ...)]
                 [flag-spec (flags id ... help-spec body ...+)
                            (flags => handler-expr help-expr)]
                 [flags flag-string
@@ -143,6 +144,10 @@ A @racket[#:help-labels] clause inserts text lines into the help table
 of command-line flags. Each string in the clause provides a separate
 line of text.
 
+A @racket[#:ps] clause inserts text lines at the end of the help
+output. Each string in the clause provides a separate
+line of text.
+
 After the flag clauses, a final clause handles command-line arguments
 that are not parsed as flags:
 
@@ -260,9 +265,9 @@ A @racket[table] is a list of flag specification sets. Each set is
 represented as a pair of two items: a mode symbol and a list of either
 help strings or flag specifications.  A mode symbol is one of
 @racket['once-each], @racket['once-any], @racket['multi],
-@racket['final], or @racket['help-labels], with the same meanings as
+@racket['final], @racket['help-labels], or @racket['ps] with the same meanings as
 the corresponding clause tags in @racket[command-line]. For the
-@racket['help-labels] mode, a list of help string is provided. For the
+@racket['help-labels] or @racket['ps] mode, a list of help string is provided. For the
 other modes, a list of flag specifications is provided, where each
 specification maps a number of flags to a single handler procedure. A
 specification is a list of three items:
