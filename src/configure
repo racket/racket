@@ -3932,6 +3932,7 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     need_gcc_static_libgcc="yes"
     check_gcc_dash_e="yes"
+    try_poll_syscall="yes"
     ;;
   aix*)
     enable_cgcdefault="yes"
