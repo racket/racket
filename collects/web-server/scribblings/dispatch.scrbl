@@ -104,21 +104,26 @@ or else the filesystem server will never see the requests.
 
 @section{API Reference}
 
-@defform*[#:literals (else ~optional ~seq syntax or)
-         [(dispatch-rules
-           [dispatch-pattern
-            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
-            dispatch-fun]
-           ...
-           [else else-fun])
-          (dispatch-rules
-           [dispatch-pattern
-            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
-            dispatch-fun]
-           ...)]
-         #:contracts
-         ([else-fun (request? . -> . any)]
-          [dispatch-fun (request? any/c ... . -> . any)])]{
+@defform/subs[#:literals (else)
+ (dispatch-rules
+  dispatch-clause ...
+  maybe-else-clause)
+([dispatch-clause
+  [dispatch-pattern maybe-method dispatch-fun]]
+ [dispatch-pattern
+  ()
+  (string . dispatch-pattern)
+  (bidi-match-expander ... . dispatch-pattern)
+  (bidi-match-expander . dispatch-pattern)]
+ [maybe-method
+  code:blank
+  (code:line #:method method)]
+ [maybe-else-clause
+  code:blank
+  [else else-fun]])
+#:contracts
+([else-fun (request? . -> . any)]
+ [dispatch-fun (request? any/c ... . -> . any)])]{
 
  Returns two values: the first is a dispatching function with the
 contract @racket[(request? . -> . any)] that calls the appropriate
@@ -136,47 +141,19 @@ dispatcher does not apply.
 without methods and GET methods.
 
 }
- 
-@racketgrammar[dispatch-pattern
-               ()
-               (string . dispatch-pattern)
-               (bidi-match-expander ... . dispatch-pattern)
-               (bidi-match-expander . dispatch-pattern)]
 
-@defform*[#:literals (else ~optional ~seq syntax or)
-         [(dispatch-rules+applies
-           [dispatch-pattern
-            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
-            dispatch-fun]
-           ...
-           [else else-fun])
-          (dispatch-rules+applies
-           [dispatch-pattern
-            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
-            dispatch-fun]
-           ...)]
-         #:contracts
-         ([else-fun (request? . -> . any)]
-          [dispatch-fun (request? any/c ... . -> . any)])]{
+@defform[
+ (dispatch-rules+applies
+  dispatch-clause ...
+  maybe-else-clause)]{
  Like @racket[dispatch-rules], except returns a third value with the contract @racket[(request? . -> . boolean?)] that returns
       @racket[#t] if the dispatching rules apply to the request and @racket[#f] otherwise.
       }
 
-@defform*[#:literals (else ~optional ~seq syntax or)
-         [(dispatch-case
-           [dispatch-pattern
-            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
-            dispatch-fun]
-           ...
-           [else else-fun])
-          (dispatch-case
-           [dispatch-pattern
-            (~optional (~seq #:method method) #:defaults ([method #'(or #f "get")]))
-            dispatch-fun]
-           ...)]
-         #:contracts
-         ([else-fun (request? . -> . any)]
-          [dispatch-fun (request? any/c ... . -> . any)])]{
+@defform[
+ (dispatch-case
+  dispatch-clause ...
+  maybe-else-clause)]{
  Returns a dispatching function as described by @racket[dispatch-rules].
 }
 
