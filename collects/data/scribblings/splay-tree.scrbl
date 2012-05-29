@@ -7,6 +7,8 @@
                      racket/base))
 
 @title{Splay Trees}
+(section-index "splay")
+(section-index "splay-tree")
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/dict data/order data/splay-tree))
