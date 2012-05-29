@@ -17,15 +17,15 @@
   (define end-frame-quality 90)
   (define mid-frame-quality 35)
   
-  (define background-fm (make-flomap/components size size '(1 1 1 1)))
+  (define background-fm (make-flomap* size size (flvector 1.0 1.0 1.0 1.0)))
   
   (define plt-fm
     (flomap-shadowed (flomap-inset (plt-flomap (- size (* 4 blur))) (* 2 blur))
-                     blur '(0 0 0.1)))
+                     blur (flvector 0.0 0.0 0.1)))
   
   (define racket-fm
     (flomap-shadowed (flomap-inset (racket-flomap (- size (* 4 blur))) (* 2 blur))
-                     blur '(0.1 0 0)))
+                     blur (flvector 0.1 0.0 0.0)))
   
   (define logo-flomap* (flomap-whirl-morph plt-fm racket-fm))
   

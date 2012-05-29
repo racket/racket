@@ -9,9 +9,9 @@
 
 (provide flomap flomap? flomap-values flomap-components flomap-width flomap-height
          ;; Accessors
-         flomap-size flomap-ref flomap-bilinear-ref coords->index
+         flomap-size unsafe-flomap-ref flomap-ref flomap-bilinear-ref coords->index
          ;; Basic constructors
-         make-flomap make-flomap/components build-flomap inline-build-flomap
+         make-flomap make-flomap* build-flomap inline-build-flomap
          flomap-ref-component flomap-take-components flomap-drop-components flomap-append-components)
 
 (struct: flomap ([values : FlVector] [components : Integer] [width : Integer] [height : Integer])
@@ -120,11 +120,10 @@
 (define (build-flomap components width height fun)
   (inline-build-flomap components width height (λ (k x y i) (exact->inexact (fun k x y i)))))
 
-(: make-flomap/components (Integer Integer (Listof Real) -> flomap))
-(define (make-flomap/components w h vs)
-  (let ([vs  (apply flvector (map exact->inexact vs))])
-    (define c (flvector-length vs))
-    (inline-build-flomap c w h (λ (k _x _y _i) (unsafe-flvector-ref vs k)))))
+(: make-flomap* (Integer Integer FlVector -> flomap))
+(define (make-flomap* w h vs)
+  (define c (flvector-length vs))
+  (inline-build-flomap c w h (λ (k _x _y _i) (unsafe-flvector-ref vs k))))
 
 (: flomap-ref-component (flomap Integer -> flomap))
 (define (flomap-ref-component fm k)

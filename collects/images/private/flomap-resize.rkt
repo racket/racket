@@ -7,11 +7,55 @@
          "flomap-stats.rkt"
          "flomap-blur.rkt")
 
-(provide flomap-inset flomap-trim flomap-crop
+(provide flomap-copy subflomap flomap-trim flomap-inset flomap-crop
          flomap-lt-crop flomap-lc-crop flomap-lb-crop
          flomap-ct-crop flomap-cc-crop flomap-cb-crop
          flomap-rt-crop flomap-rc-crop flomap-rb-crop
          flomap-scale flomap-resize)
+
+(: flomap-copy (flomap Integer Integer Integer Integer -> flomap))
+(define (flomap-copy fm x-start y-start x-end y-end)
+  (match-define (flomap src-vs c src-w src-h) fm)
+  (define dst-w (max 0 (- x-end x-start)))
+  (define dst-h (max 0 (- y-end y-start)))
+  (define new-fm (make-flomap c dst-w dst-h))
+  (define dst-vs (flomap-values new-fm))
+  (when (and (dst-w . > . 0) (dst-h . > . 0))
+    (let: y-loop : Void ([dst-y : Nonnegative-Fixnum  0])
+      (when (dst-y . fx< . dst-h)
+        (define src-y (fx+ dst-y y-start))
+        (when (and (src-y . fx>= . 0) (src-y . fx< . src-h))
+          (let: x-loop : Void ([dst-x : Nonnegative-Fixnum  0])
+            (when (dst-x . fx< . dst-w)
+              (define src-x (fx+ dst-x x-start))
+              (when (and (src-x . fx>= . 0) (src-x . fx< . src-w))
+                (let: k-loop : Void ([k : Nonnegative-Fixnum  0])
+                  (when (k . fx< . c)
+                    (define src-i (coords->index c src-w k src-x src-y))
+                    (define dst-i (coords->index c dst-w k dst-x dst-y))
+                    (flvector-set! dst-vs dst-i (flvector-ref src-vs src-i))
+                    (k-loop (unsafe-fx+ k 1)))))
+              (x-loop (unsafe-fx+ dst-x 1)))))
+        (y-loop (unsafe-fx+ dst-y 1)))))
+  new-fm)
+
+(: subflomap (flomap Integer Integer Integer Integer -> flomap))
+(define (subflomap fm x-start y-start x-end y-end)
+  (match-define (flomap _ _ src-w src-h) fm)
+  (cond [(and (= x-start 0) (= y-start 0) (= x-end src-w) (= y-end src-h))  fm]
+        [else  (flomap-copy fm x-start y-start x-end y-end)]))
+
+(: flomap-trim (case-> (flomap -> flomap)
+                       (flomap Boolean -> flomap)))
+(define flomap-trim
+  (case-lambda
+    [(fm)  (flomap-trim fm #t)]
+    [(fm alpha?)
+     (cond [(= (flomap-components fm) 0)  (make-flomap 0 0 0)]
+           [else
+            (define-values (x-start y-start x-end y-end)
+              (flomap-nonzero-rect (if alpha? (flomap-ref-component fm 0) fm)))
+            (subflomap fm x-start y-start x-end y-end)])]))
 
 (: flomap-inset (case-> (flomap Integer -> flomap)
                         (flomap Integer Integer -> flomap)
@@ -21,41 +65,8 @@
     [(fm amt)          (flomap-inset fm amt amt amt amt)]
     [(fm h-amt v-amt)  (flomap-inset fm h-amt v-amt h-amt v-amt)]
     [(fm l-amt t-amt r-amt b-amt)
-     (cond [(and (= l-amt 0) (= t-amt 0) (= r-amt 0) (= b-amt 0))  fm]
-           [else
-            (match-define (flomap src-vs c src-w src-h) fm)
-            (define dst-w (fxmax 0 (fx+ src-w (fx+ l-amt r-amt))))
-            (define dst-h (fxmax 0 (fx+ src-h (fx+ t-amt b-amt))))
-            (define dst-vs (make-flvector (* c dst-w dst-h)))
-            (cond
-              [(or (dst-w . fx= . 0) (dst-h . fx= . 0))
-               (flomap dst-vs c dst-w dst-h)]
-              [else
-               (let: y-loop : Void ([dst-y : Nonnegative-Fixnum  0])
-                 (when (dst-y . fx< . dst-h)
-                   (define src-y (fx- dst-y t-amt))
-                   (when (and (src-y . fx>= . 0) (src-y . fx< . src-h))
-                     (let: x-loop : Void ([dst-x : Nonnegative-Fixnum  0])
-                       (when (dst-x . fx< . dst-w)
-                         (define src-x (fx- dst-x l-amt))
-                         (when (and (src-x . fx>= . 0) (src-x . fx< . src-w))
-                           (let: k-loop : Void ([k : Nonnegative-Fixnum  0])
-                             (when (k . fx< . c)
-                               (define src-i (coords->index c src-w k src-x src-y))
-                               (define dst-i (coords->index c dst-w k dst-x dst-y))
-                               (flvector-set! dst-vs dst-i (flvector-ref src-vs src-i))
-                               (k-loop (unsafe-fx+ k 1)))))
-                         (x-loop (unsafe-fx+ dst-x 1)))))
-                   (y-loop (unsafe-fx+ dst-y 1))))
-               (flomap dst-vs c dst-w dst-h)])])]))
-
-(: flomap-trim (flomap -> flomap))
-(define (flomap-trim fm)
-  (match-define (flomap _ c w h) fm)
-  (cond [(c . = . 0)  (make-flomap 0 0 0)]
-        [else  (define-values (x-min y-min x-max y-max)
-                 (flomap-nonzero-rect (flomap-ref-component fm 0)))
-               (flomap-inset fm (- x-min) (- y-min) (- x-max w) (- y-max h))]))
+     (match-define (flomap _ _ w h) fm)
+     (subflomap fm (- l-amt) (- t-amt) (+ w r-amt) (+ h b-amt))]))
 
 (: flomap-crop (flomap Integer Integer Real Real -> flomap))
 (define (flomap-crop fm width height x-frac y-frac)
@@ -128,14 +139,14 @@
 (: flomap-scale-x (flomap Flonum -> flomap))
 (define (flomap-scale-x fm scale)
   (match-define (flomap _ c w h) fm)
-  (cond [(= 0 scale)  (make-flomap c 0 h)]
+  (cond [(= 0.0 scale)  (make-flomap c 0 h)]
         [else  (let ([scale  (abs scale)])
                  (flomap-scale*-x fm scale (abs (fl->fx (ceiling (* (exact->inexact w) scale))))))]))
 
 (: flomap-scale-y (flomap Flonum -> flomap))
 (define (flomap-scale-y fm scale)
   (match-define (flomap _ c w h) fm)
-  (cond [(= 0 scale)  (make-flomap c w 0)]
+  (cond [(= 0.0 scale)  (make-flomap c w 0)]
         [else  (let ([scale  (abs scale)])
                  (flomap-scale*-y fm scale (abs (fl->fx (ceiling (* (exact->inexact h) scale))))))]))
 

@@ -15,6 +15,8 @@
           [else  0.0])))
 
 (define (bitmap->flomap bm)
+  (unless (is-a? bm bitmap%)
+    (raise-type-error 'bitmap->flomap "bitmap% instance" bm))
   (define w (send bm get-width))
   (define h (send bm get-height))
   (define bs (make-bytes (* 4 w h)))
@@ -72,7 +74,7 @@
     (send bm set-argb-pixels 0 0 w h bs #f #t)
     bm))
 
-(define (draw-flomap w h draw-proc)
+(define (draw-flomap draw-proc w h)
   (unless (w . >= . 0) (raise-type-error 'draw-flomap "nonnegative fixnum" 0 w h draw-proc))
   (unless (h . >= . 0) (raise-type-error 'draw-flomap "nonnegative fixnum" 1 w h draw-proc))
   

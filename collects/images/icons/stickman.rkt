@@ -120,66 +120,62 @@
    [height color arm-color head-color material]
    (flomap-lt-superimpose
     (draw-short-rendered-icon-flomap 
-     26 32 (λ (dc)
-             (send dc set-pen (icon-color->outline-color arm-color)
-                   (+ arm-width (* 2 line-width)) 'solid)
-             (send dc draw-lines (list standing-right-shoulder-point
-                                       standing-right-elbow-point
-                                       standing-right-hand-point))
-             (send dc set-pen arm-color arm-width 'solid)
-             (send dc draw-lines (list standing-right-shoulder-point
-                                       standing-right-elbow-point
-                                       standing-right-hand-point)))
-     (/ height 32)
-     material)
+     (λ (dc)
+       (send dc set-pen (icon-color->outline-color arm-color)
+             (+ arm-width (* 2 line-width)) 'solid)
+       (send dc draw-lines (list standing-right-shoulder-point
+                                 standing-right-elbow-point
+                                 standing-right-hand-point))
+       (send dc set-pen arm-color arm-width 'solid)
+       (send dc draw-lines (list standing-right-shoulder-point
+                                 standing-right-elbow-point
+                                 standing-right-hand-point)))
+     26 32 (/ height 32) material)
     (draw-short-rendered-icon-flomap 
-     26 32 (λ (dc)
-             (send dc set-pen (icon-color->outline-color color)
-                   (+ body-width (* 2 line-width)) 'solid)
-             (send dc draw-lines (list standing-neck-point standing-hip-point))
-             
-             (send dc set-pen (icon-color->outline-color color)
-                   (+ leg-width (* 2 line-width)) 'solid)
-             (send dc draw-lines (list standing-hip-point
-                                       standing-left-knee-point
-                                       standing-left-foot-point))
-             (send dc draw-lines (list standing-hip-point
-                                       standing-right-knee-point
-                                       standing-right-foot-point))
-             
-             (send dc set-pen color body-width 'solid)
-             (send dc draw-lines (list standing-neck-point standing-hip-point))
-             
-             (send dc set-pen color leg-width 'solid)
-             (send dc draw-lines (list standing-hip-point
-                                       standing-left-knee-point
-                                       standing-left-foot-point))
-             (send dc draw-lines (list standing-hip-point
-                                       standing-right-knee-point
-                                       standing-right-foot-point)))
-     (/ height 32)
-     material)
+     (λ (dc)
+       (send dc set-pen (icon-color->outline-color color)
+             (+ body-width (* 2 line-width)) 'solid)
+       (send dc draw-lines (list standing-neck-point standing-hip-point))
+       
+       (send dc set-pen (icon-color->outline-color color)
+             (+ leg-width (* 2 line-width)) 'solid)
+       (send dc draw-lines (list standing-hip-point
+                                 standing-left-knee-point
+                                 standing-left-foot-point))
+       (send dc draw-lines (list standing-hip-point
+                                 standing-right-knee-point
+                                 standing-right-foot-point))
+       
+       (send dc set-pen color body-width 'solid)
+       (send dc draw-lines (list standing-neck-point standing-hip-point))
+       
+       (send dc set-pen color leg-width 'solid)
+       (send dc draw-lines (list standing-hip-point
+                                 standing-left-knee-point
+                                 standing-left-foot-point))
+       (send dc draw-lines (list standing-hip-point
+                                 standing-right-knee-point
+                                 standing-right-foot-point)))
+     26 32 (/ height 32) material)
     (draw-short-rendered-icon-flomap 
-     26 32 (λ (dc)
-             (send dc set-pen (icon-color->outline-color arm-color)
-                   (+ arm-width (* 2 line-width)) 'solid)
-             (send dc draw-lines (list standing-left-shoulder-point
-                                       standing-left-elbow-point
-                                       standing-left-hand-point))
-             (send dc set-pen arm-color arm-width 'solid)
-             (send dc draw-lines (list standing-left-shoulder-point
-                                       standing-left-elbow-point
-                                       standing-left-hand-point)))
-     (/ height 32)
-     material)
+     (λ (dc)
+       (send dc set-pen (icon-color->outline-color arm-color)
+             (+ arm-width (* 2 line-width)) 'solid)
+       (send dc draw-lines (list standing-left-shoulder-point
+                                 standing-left-elbow-point
+                                 standing-left-hand-point))
+       (send dc set-pen arm-color arm-width 'solid)
+       (send dc draw-lines (list standing-left-shoulder-point
+                                 standing-left-elbow-point
+                                 standing-left-hand-point)))
+     26 32 (/ height 32) material)
     (draw-short-rendered-icon-flomap 
-     26 32 (λ (dc)
-             (send dc set-pen (icon-color->outline-color head-color) line-width 'solid)
-             (send dc set-brush head-color 'solid)
-             (match-define (cons x y) standing-head-point)
-             (send dc draw-ellipse (- x 3.5) (- y 3.5) 7 7))
-     (/ height 32)
-     material))))
+     (λ (dc)
+       (send dc set-pen (icon-color->outline-color head-color) line-width 'solid)
+       (send dc set-brush head-color 'solid)
+       (match-define (cons x y) standing-head-point)
+       (send dc draw-ellipse (- x 3.5) (- y 3.5) 7 7))
+     26 32 (/ height 32) material))))
 
 ;; ===================================================================================================
 ;; Running
@@ -269,37 +265,34 @@
   (make-cached-flomap
    [height t color material]
    (draw-rendered-icon-flomap 
-    26 32 (λ (dc)
-            (send dc set-pen (icon-color->outline-color color) line-width 'solid)
-            (send dc set-brush color 'solid)
-            (match-define (cons x y) (running-head-point t))
-            (send dc draw-ellipse (- x 3.5) (- y 3.5) 7 7))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (send dc set-pen (icon-color->outline-color color) line-width 'solid)
+      (send dc set-brush color 'solid)
+      (match-define (cons x y) (running-head-point t))
+      (send dc draw-ellipse (- x 3.5) (- y 3.5) 7 7))
+    26 32 (/ height 32) material)))
 
 (define (running-leg-flomap t body? color height material)
   (make-cached-flomap
    [height t body? color material]
    (draw-rendered-icon-flomap 
-    26 32 (λ (dc)
-            (draw-running-leg dc t (icon-color->outline-color color) (+ leg-width (* 2 line-width)))
-            (when body?
-              (draw-running-body dc t (icon-color->outline-color color)
-                                 (+ body-width (* 2 line-width)))
-              (draw-running-body dc t color body-width))
-            (draw-running-leg dc t color leg-width))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (draw-running-leg dc t (icon-color->outline-color color) (+ leg-width (* 2 line-width)))
+      (when body?
+        (draw-running-body dc t (icon-color->outline-color color)
+                           (+ body-width (* 2 line-width)))
+        (draw-running-body dc t color body-width))
+      (draw-running-leg dc t color leg-width))
+    26 32 (/ height 32) material)))
 
 (define (running-arm-flomap t color height material)
   (make-cached-flomap
    [height t color material]
    (draw-rendered-icon-flomap 
-    26 32 (λ (dc)
-            (draw-running-arm dc t (icon-color->outline-color color) (+ arm-width (* 2 line-width)))
-            (draw-running-arm dc t color arm-width))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (draw-running-arm dc t (icon-color->outline-color color) (+ arm-width (* 2 line-width)))
+      (draw-running-arm dc t color arm-width))
+    26 32 (/ height 32) material)))
 
 (defproc (running-stickman-flomap [t rational?]
                                   [color (or/c string? (is-a?/c color%))]

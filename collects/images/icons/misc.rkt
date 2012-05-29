@@ -27,17 +27,17 @@
 (define (flat-regular-polygon-flomap sides start color size)
   (let ([start  (- start)])
     (draw-icon-flomap
-     32 32 (λ (dc)
-             (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-             (send dc set-brush color 'solid)
-             (define dθ (/ (* 2 pi) sides))
-             (define θs (sequence->list (in-range start (+ start (* 2 pi)) dθ)))
-             (define max-frac (apply max (append (map (compose abs cos) θs)
-                                                 (map (compose abs sin) θs))))
-             (send dc draw-polygon (for/list ([θ  (in-list θs)])
-                                     (cons (+ 15.5 (/ (* 15.5 (cos θ)) max-frac))
-                                           (+ 15.5 (/ (* 15.5 (sin θ)) max-frac))))))
-     (/ size 32))))
+     (λ (dc)
+       (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+       (send dc set-brush color 'solid)
+       (define dθ (/ (* 2 pi) sides))
+       (define θs (sequence->list (in-range start (+ start (* 2 pi)) dθ)))
+       (define max-frac (apply max (append (map (compose abs cos) θs)
+                                           (map (compose abs sin) θs))))
+       (send dc draw-polygon (for/list ([θ  (in-list θs)])
+                               (cons (+ 15.5 (/ (* 15.5 (cos θ)) max-frac))
+                                     (+ 15.5 (/ (* 15.5 (sin θ)) max-frac))))))
+     32 32 (/ size 32))))
 
 (defproc (regular-polygon-flomap [sides exact-positive-integer?]
                                  [start real?]
@@ -83,17 +83,16 @@
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-            (send dc set-brush color 'solid)
-            (send dc draw-ellipse 4 8 23 23)
-            (send dc draw-ellipse 0 10 4 3.5)
-            (send dc draw-ellipse 3 4.5 4.5 4.5)
-            (send dc draw-ellipse 8.75 1 5.25 5.25)
-            (send dc draw-ellipse 16 0 6 6)
-            (send dc draw-ellipse 23.5 1.5 7.5 9))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+      (send dc set-brush color 'solid)
+      (send dc draw-ellipse 4 8 23 23)
+      (send dc draw-ellipse 0 10 4 3.5)
+      (send dc draw-ellipse 3 4.5 4.5 4.5)
+      (send dc draw-ellipse 8.75 1 5.25 5.25)
+      (send dc draw-ellipse 16 0 6 6)
+      (send dc draw-ellipse 23.5 1.5 7.5 9))
+    32 32 (/ height 32) material)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Magnifying glass
@@ -115,11 +114,11 @@
    (define scale (/ height 32))
    (define glass-fm
      (let* ([fm  (draw-icon-flomap
-                  18 18 (λ (dc)
-                          (set-icon-pen dc (icon-color->outline-color "azure") 1 'solid)
-                          (send dc set-brush "azure" 'solid)
-                          (send dc draw-ellipse 0 0 17 17))
-                  scale)]
+                  (λ (dc)
+                    (set-icon-pen dc (icon-color->outline-color "azure") 1 'solid)
+                    (send dc set-brush "azure" 'solid)
+                    (send dc draw-ellipse 0 0 17 17))
+                  18 18 scale)]
             [dfm  (flomap->deep-flomap fm)]
             [dfm  (deep-flomap-bulge-spheroid dfm (* 4 scale))]
             [dfm  (deep-flomap-raise dfm (* 4 scale))])
@@ -127,21 +126,21 @@
    
    (define circle-fm
      (let* ([fm  (draw-icon-flomap
-                  28 28 (λ (dc)
-                          (define outline-color (icon-color->outline-color frame-color))
-                          (send dc set-pen outline-color 3 'solid)
-                          (send dc set-brush outline-color 'solid)
-                          (send dc draw-ellipse 1 1 25 25)
-                          (send dc set-pen frame-color 1 'solid)
-                          (send dc set-brush frame-color 'solid)
-                          (send dc draw-ellipse 1 1 25 25))
-                  scale)]
+                  (λ (dc)
+                    (define outline-color (icon-color->outline-color frame-color))
+                    (send dc set-pen outline-color 3 'solid)
+                    (send dc set-brush outline-color 'solid)
+                    (send dc draw-ellipse 1 1 25 25)
+                    (send dc set-pen frame-color 1 'solid)
+                    (send dc set-brush frame-color 'solid)
+                    (send dc draw-ellipse 1 1 25 25))
+                  28 28 scale)]
             [indent-fm  (draw-icon-flomap
-                         28 28 (λ (dc)
-                                 (send dc set-pen frame-color 1 'solid)
-                                 (send dc set-brush frame-color 'solid)
-                                 (send dc draw-ellipse 5 5 17 17))
-                         scale)]
+                         (λ (dc)
+                           (send dc set-pen frame-color 1 'solid)
+                           (send dc set-brush frame-color 'solid)
+                           (send dc draw-ellipse 5 5 17 17))
+                         28 28 scale)]
             [indent-dfm  (flomap->deep-flomap indent-fm)]
             [indent-dfm  (deep-flomap-raise indent-dfm (* -4 scale))]
             [dfm  (flomap->deep-flomap fm)]
@@ -152,17 +151,17 @@
    
    (define handle-fm
      (let* ([fm  (draw-icon-flomap
-                  11 11 (λ (dc)
-                          (set-icon-pen dc (icon-color->outline-color handle-color) 1 'solid)
-                          (send dc set-brush handle-color 'solid)
-                          (define p (new dc-path%))
-                          (send p move-to 4 0)
-                          (send p line-to 10 5)
-                          (send p curve-to 10 8 8 10 5 10)
-                          (send p line-to 0 4)
-                          (send p move-to 4 0)
-                          (send dc draw-path p))
-                  scale)])
+                  (λ (dc)
+                    (set-icon-pen dc (icon-color->outline-color handle-color) 1 'solid)
+                    (send dc set-brush handle-color 'solid)
+                    (define p (new dc-path%))
+                    (send p move-to 4 0)
+                    (send p line-to 10 5)
+                    (send p curve-to 10 8 8 10 5 10)
+                    (send p line-to 0 4)
+                    (send p move-to 4 0)
+                    (send dc draw-path p))
+                  11 11 scale)])
        (flomap-render-icon fm material)))
    
    (flomap-pin* 0 0 21/28 21/28
@@ -189,20 +188,20 @@
    (define scale (/ height 32))
    (define fuse-fm
      (let* ([fm  (draw-icon-flomap
-                  10 25 (λ (dc)
-                          (send dc set-pen "darkred" 1 'solid)
-                          (send dc set-brush "gold" 'solid)
-                          (draw-path-commands dc '((m 3.5 0)
-                                                   (c -5 0 -3.29080284 10.4205 -3 11.5
-                                                      1.1137011 4.1343 2 6.5 0 8.5
-                                                      -0.5711131 2.0524 1.5 4 3.5 3.5
-                                                      2.5711131 -2.5524 3.1327042 -5.5355 2 -9.5
-                                                      -2 -7 -2 -9 -1.5 -9
-                                                      0 1 -0.5 2 1 3.5
-                                                      2 0.5 4 -1.5 3.5 -3.5
-                                                      -2 -2 -2 -5 -5.5 -5))
-                                              0 0))
-                  scale)]
+                  (λ (dc)
+                    (send dc set-pen "darkred" 1 'solid)
+                    (send dc set-brush "gold" 'solid)
+                    (draw-path-commands dc '((m 3.5 0)
+                                             (c -5 0 -3.29080284 10.4205 -3 11.5
+                                                1.1137011 4.1343 2 6.5 0 8.5
+                                                -0.5711131 2.0524 1.5 4 3.5 3.5
+                                                2.5711131 -2.5524 3.1327042 -5.5355 2 -9.5
+                                                -2 -7 -2 -9 -1.5 -9
+                                                0 1 -0.5 2 1 3.5
+                                                2 0.5 4 -1.5 3.5 -3.5
+                                                -2 -2 -2 -5 -5.5 -5))
+                                        0 0))
+                  10 25 scale)]
             [dfm  (flomap->deep-flomap fm)]
             [dfm  (deep-flomap-icon-style dfm)]
             [dfm  (deep-flomap-scale-z dfm 1)])
@@ -210,19 +209,19 @@
    
    (define (bomb-cap-flomap color)
      (draw-icon-flomap
-      20 20 (λ (dc)
-              (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-              (send dc set-brush color 'solid)
-              (draw-path-commands dc '((m 1.5 11.5)
-                                       (l 10 -10 2.5 2.5)
-                                       (c 4 5 -5 14 -10 10)
-                                       (l -2.5 -2.5))
-                                  0 0)
-              (draw-path-commands dc '((m 1.5 11.5)
-                                       (c -2 -5 5 -12 10 -10
-                                          4 5 -5 14 -10 10))
-                                  0 0))
-      scale))
+      (λ (dc)
+        (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+        (send dc set-brush color 'solid)
+        (draw-path-commands dc '((m 1.5 11.5)
+                                 (l 10 -10 2.5 2.5)
+                                 (c 4 5 -5 14 -10 10)
+                                 (l -2.5 -2.5))
+                            0 0)
+        (draw-path-commands dc '((m 1.5 11.5)
+                                 (c -2 -5 5 -12 10 -10
+                                    4 5 -5 14 -10 10))
+                            0 0))
+      20 20 scale))
    
    (define cap-fm
      (let* ([cap-fm  (bomb-cap-flomap cap-color)]
@@ -232,11 +231,11 @@
    
    (define sphere-fm
      (let* ([sphere-fm  (draw-icon-flomap
-                         30 30 (λ (dc)
-                                 (set-icon-pen dc (icon-color->outline-color bomb-color) 1 'solid)
-                                 (send dc set-brush bomb-color 'solid)
-                                 (send dc draw-ellipse 0 0 29 29))
-                         scale)]
+                         (λ (dc)
+                           (set-icon-pen dc (icon-color->outline-color bomb-color) 1 'solid)
+                           (send dc set-brush bomb-color 'solid)
+                           (send dc draw-ellipse 0 0 29 29))
+                         30 30 scale)]
             [cap-fm  (bomb-cap-flomap cap-color)]
             [cap-dfm  (flomap->deep-flomap cap-fm)]
             [cap-dfm  (deep-flomap-raise cap-dfm (* -2 scale))]
@@ -280,69 +279,67 @@
      (flomap-cc-superimpose
       ;; face and ticks
       (draw-icon-flomap
-       32 32 (λ (dc)
-               (set-icon-pen dc (icon-color->outline-color (icon-color->outline-color face-color))
-                             1 'solid)
-               (send dc set-brush face-color 'solid)
-               (send dc draw-ellipse 0 0 31 31)
-               (set-icon-pen dc "black" 1 'solid)
-               (for ([i  (in-range 60)]
-                     [r  (in-cycle (list 1.5 .5 .5 .5 .5
-                                         1.0 .5 .5 .5 .5
-                                         1.0 .5 .5 .5 .5))]
-                     [t  (in-cycle (list 1.0 .25 .25 .25 .25
-                                         .75 .25 .25 .25 .25
-                                         .75 .25 .25 .25 .25))])
-                 (define θ (* i (* 1/30 pi)))
-                 (set-icon-pen dc "black" t 'solid)
-                 (send dc draw-line
-                       (+ 15.5 (* (- R r) (cos θ)))
-                       (+ 15.5 (* (- R r) (sin θ)))
-                       (+ 15.5 (* R (cos θ)))
-                       (+ 15.5 (* R (sin θ))))))
-       scale)
+       (λ (dc)
+         (set-icon-pen dc (icon-color->outline-color (icon-color->outline-color face-color))
+                       1 'solid)
+         (send dc set-brush face-color 'solid)
+         (send dc draw-ellipse 0 0 31 31)
+         (set-icon-pen dc "black" 1 'solid)
+         (for ([i  (in-range 60)]
+               [r  (in-cycle (list 1.5 .5 .5 .5 .5
+                                   1.0 .5 .5 .5 .5
+                                   1.0 .5 .5 .5 .5))]
+               [t  (in-cycle (list 1.0 .25 .25 .25 .25
+                                   .75 .25 .25 .25 .25
+                                   .75 .25 .25 .25 .25))])
+           (define θ (* i (* 1/30 pi)))
+           (set-icon-pen dc "black" t 'solid)
+           (send dc draw-line
+                 (+ 15.5 (* (- R r) (cos θ)))
+                 (+ 15.5 (* (- R r) (sin θ)))
+                 (+ 15.5 (* R (cos θ)))
+                 (+ 15.5 (* R (sin θ))))))
+       32 32 scale)
       ;; lambda logo
       (fm* 0.33 (lambda-flomap face-color (* 1/2 height) glass-icon-material))
       ;; minute hand
       (draw-rendered-icon-flomap
-       32 32 (λ (dc)
-               (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
-               (send dc set-brush hand-color 'solid)
-               (send dc draw-polygon
-                     (list (cons (+ 15.5 (* R (cos minute-θ)))
-                                 (+ 15.5 (* R (sin minute-θ))))
-                           (cons (+ 15.5 (* 1 (cos (+ minute-θ (* 1/2 pi)))))
-                                 (+ 15.5 (* 1 (sin (+ minute-θ (* 1/2 pi))))))
-                           (cons (+ 15.5 (* 1 (cos (+ minute-θ pi))))
-                                 (+ 15.5 (* 1 (sin (+ minute-θ pi)))))
-                           (cons (+ 15.5 (* 1 (cos (+ minute-θ (* 3/2 pi)))))
-                                 (+ 15.5 (* 1 (sin (+ minute-θ (* 3/2 pi)))))))))
-       scale
-       metal-icon-material)
+       (λ (dc)
+         (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
+         (send dc set-brush hand-color 'solid)
+         (send dc draw-polygon
+               (list (cons (+ 15.5 (* R (cos minute-θ)))
+                           (+ 15.5 (* R (sin minute-θ))))
+                     (cons (+ 15.5 (* 1 (cos (+ minute-θ (* 1/2 pi)))))
+                           (+ 15.5 (* 1 (sin (+ minute-θ (* 1/2 pi))))))
+                     (cons (+ 15.5 (* 1 (cos (+ minute-θ pi))))
+                           (+ 15.5 (* 1 (sin (+ minute-θ pi)))))
+                     (cons (+ 15.5 (* 1 (cos (+ minute-θ (* 3/2 pi)))))
+                           (+ 15.5 (* 1 (sin (+ minute-θ (* 3/2 pi)))))))))
+       32 32 scale metal-icon-material)
       ;; hour hand
       (draw-rendered-icon-flomap
-       32 32 (λ (dc)
-               (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
-               (send dc set-brush hand-color 'solid)
-               (send dc draw-polygon
-                     (list (cons (+ 15.5 (* (- R 5) (cos hour-θ)))
-                                 (+ 15.5 (* (- R 5) (sin hour-θ))))
-                           (cons (+ 15.5 (* 1.25 (cos (+ hour-θ (* 1/2 pi)))))
-                                 (+ 15.5 (* 1.25 (sin (+ hour-θ (* 1/2 pi))))))
-                           (cons (+ 15.5 (* 1.25 (cos (+ hour-θ pi))))
-                                 (+ 15.5 (* 1.25 (sin (+ hour-θ pi)))))
-                           (cons (+ 15.5 (* 1.25 (cos (+ hour-θ (* 3/2 pi)))))
-                                 (+ 15.5 (* 1.25 (sin (+ hour-θ (* 3/2 pi)))))))))
-       scale
-       metal-icon-material)))
+       (λ (dc)
+         (set-icon-pen dc (icon-color->outline-color hand-color) 1/2 'solid)
+         (send dc set-brush hand-color 'solid)
+         (send dc draw-polygon
+               (list (cons (+ 15.5 (* (- R 5) (cos hour-θ)))
+                           (+ 15.5 (* (- R 5) (sin hour-θ))))
+                     (cons (+ 15.5 (* 1.25 (cos (+ hour-θ (* 1/2 pi)))))
+                           (+ 15.5 (* 1.25 (sin (+ hour-θ (* 1/2 pi))))))
+                     (cons (+ 15.5 (* 1.25 (cos (+ hour-θ pi))))
+                           (+ 15.5 (* 1.25 (sin (+ hour-θ pi)))))
+                     (cons (+ 15.5 (* 1.25 (cos (+ hour-θ (* 3/2 pi)))))
+                           (+ 15.5 (* 1.25 (sin (+ hour-θ (* 3/2 pi)))))))))
+       32 32 scale metal-icon-material)))
    
    (define shell-fm
      (draw-icon-flomap
-      32 32 (λ (dc)
-              (set-icon-pen dc "white" 1 'solid)
-              (send dc set-brush "white" 'solid)
-              (send dc draw-ellipse 1 1 29 29))
-      scale))
+      (λ (dc)
+        (set-icon-pen dc "white" 1 'solid)
+        (send dc set-brush "white" 'solid)
+        (send dc draw-ellipse 1 1 29 29))
+      32 32 scale))
    
    (let* ([dfm  (flomap->deep-flomap shell-fm)]
           [dfm  (deep-flomap-bulge-spheroid dfm (* 9 scale))]
@@ -362,17 +359,16 @@
    (define clock-fm (clock-flomap (* 30/32 height) face-color hand-color hours minutes))
    (define buttons-fm
      (draw-rendered-icon-flomap
-      32 8 (λ (dc)
-             (set-icon-pen dc (make-object color% 128 0 0) 1 'solid)
-             (send dc set-brush (make-object color% 144 0 0) 'solid)
-             (send dc draw-polygon '((2 . 4) (4 . 2) (31 . 31)))
-             (send dc draw-polygon '((0 . 5) (5 . 0) (6 . 1) (1 . 6)))
-             (set-icon-pen dc "black" 1 'solid)
-             (send dc set-brush (make-object color% 16 16 16) 'solid)
-             (send dc draw-polygon '((28.5 . 5.5) (25.5 . 2.5) (0 . 31)))
-             (send dc draw-polygon '((31 . 5) (26 . 0) (24.5 . 1.5) (29.5 . 6.5))))
-      (/ height 32)
-      metal-icon-material))
+      (λ (dc)
+        (set-icon-pen dc (make-object color% 128 0 0) 1 'solid)
+        (send dc set-brush (make-object color% 144 0 0) 'solid)
+        (send dc draw-polygon '((2 . 4) (4 . 2) (31 . 31)))
+        (send dc draw-polygon '((0 . 5) (5 . 0) (6 . 1) (1 . 6)))
+        (set-icon-pen dc "black" 1 'solid)
+        (send dc set-brush (make-object color% 16 16 16) 'solid)
+        (send dc draw-polygon '((28.5 . 5.5) (25.5 . 2.5) (0 . 31)))
+        (send dc draw-polygon '((31 . 5) (26 . 0) (24.5 . 1.5) (29.5 . 6.5))))
+      32 8 (/ height 32) metal-icon-material))
    (flomap-pin* 1/2 0 1/2 -2/32 buttons-fm clock-fm)))
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -410,33 +406,31 @@
   (define scale (/ height 32))
   (flomap-ct-superimpose
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (send dc set-pen (make-object pen% color 2 'solid 'round 'round))
-            (send dc set-brush "white" 'transparent)
-            (draw-path-commands dc rubber-hose-commands 0 0)
-            (draw-path-commands dc rubber-t-commands 0 0)
-            (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
-            (send dc draw-line 23.5 1 25 1.5)
-            (send dc draw-line 7.5 1 6 1.5))
-    scale
-    rubber-material)
+    (λ (dc)
+      (send dc set-pen (make-object pen% color 2 'solid 'round 'round))
+      (send dc set-brush "white" 'transparent)
+      (draw-path-commands dc rubber-hose-commands 0 0)
+      (draw-path-commands dc rubber-t-commands 0 0)
+      (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
+      (send dc draw-line 23.5 1 25 1.5)
+      (send dc draw-line 7.5 1 6 1.5))
+    32 32 scale rubber-material)
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
-            (send dc set-brush "white" 'transparent)
-            (draw-path-commands dc left-metal-commands 0 0)
-            (draw-path-commands dc right-metal-commands 0 0)
-            (send dc set-pen (make-object pen% metal-icon-color 2 'solid 'round 'round))
-            (draw-path-commands dc left-metal-commands 0 0)
-            (draw-path-commands dc right-metal-commands 0 0)
-            (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
-            (send dc set-brush metal-icon-color 'solid)
-            (send dc draw-ellipse 21.25 21.25 10 10)
-            (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
-            (send dc set-brush light-metal-icon-color 'solid)
-            (send dc draw-ellipse 22.25 22.25 8 8))
-    scale
-    metal-icon-material)))
+    (λ (dc)
+      (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
+      (send dc set-brush "white" 'transparent)
+      (draw-path-commands dc left-metal-commands 0 0)
+      (draw-path-commands dc right-metal-commands 0 0)
+      (send dc set-pen (make-object pen% metal-icon-color 2 'solid 'round 'round))
+      (draw-path-commands dc left-metal-commands 0 0)
+      (draw-path-commands dc right-metal-commands 0 0)
+      (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
+      (send dc set-brush metal-icon-color 'solid)
+      (send dc draw-ellipse 21.25 21.25 10 10)
+      (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
+      (send dc set-brush light-metal-icon-color 'solid)
+      (send dc draw-ellipse 22.25 22.25 8 8))
+    32 32 scale metal-icon-material)))
 
 (define short-rubber-t-commands
   '((m 3 12.5)
@@ -455,36 +449,33 @@
   (define scale (/ height 32))
   (flomap-ct-superimpose
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (send dc translate 0 6)
-            (send dc set-pen (make-object pen% color 2 'solid 'round 'round))
-            (send dc set-brush "white" 'transparent)
-            (draw-path-commands dc short-rubber-hose-commands 0 0)
-            (draw-path-commands dc short-rubber-t-commands 0 0)
-            (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
-            (send dc draw-line 4.5 1 3 1.5)
-            (send dc draw-line 26.5 1 28 1.5))
-    scale
-    rubber-material)
+    (λ (dc)
+      (send dc translate 0 6)
+      (send dc set-pen (make-object pen% color 2 'solid 'round 'round))
+      (send dc set-brush "white" 'transparent)
+      (draw-path-commands dc short-rubber-hose-commands 0 0)
+      (draw-path-commands dc short-rubber-t-commands 0 0)
+      (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
+      (send dc draw-line 4.5 1 3 1.5)
+      (send dc draw-line 26.5 1 28 1.5))
+    32 32 scale rubber-material)
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (send dc translate 0 6)
-            (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
-            (send dc set-brush "white" 'transparent)
-            (draw-path-commands dc left-metal-commands -3 0)
-            (draw-path-commands dc right-metal-commands 3 0)
-            (send dc set-pen (make-object pen% metal-icon-color 2 'solid 'round 'round))
-            (draw-path-commands dc left-metal-commands -3 0)
-            (draw-path-commands dc right-metal-commands 3 0)
-            (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
-            (send dc set-brush metal-icon-color 'solid)
-            (send dc draw-ellipse 21.25 15.25 10 10)
-            (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
-            (send dc set-brush light-metal-icon-color 'solid)
-            (send dc draw-ellipse 22.25 16.25 8 8)
-            )
-    scale
-    metal-icon-material)))
+    (λ (dc)
+      (send dc translate 0 6)
+      (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
+      (send dc set-brush "white" 'transparent)
+      (draw-path-commands dc left-metal-commands -3 0)
+      (draw-path-commands dc right-metal-commands 3 0)
+      (send dc set-pen (make-object pen% metal-icon-color 2 'solid 'round 'round))
+      (draw-path-commands dc left-metal-commands -3 0)
+      (draw-path-commands dc right-metal-commands 3 0)
+      (set-icon-pen dc dark-metal-icon-color 0.5 'solid)
+      (send dc set-brush metal-icon-color 'solid)
+      (send dc draw-ellipse 21.25 15.25 10 10)
+      (set-icon-pen dc dark-metal-icon-color 0.25 'solid)
+      (send dc set-brush light-metal-icon-color 'solid)
+      (send dc draw-ellipse 22.25 16.25 8 8))
+    32 32 scale metal-icon-material)))
 
 ;; ===================================================================================================
 ;; Bitmaps (icons)

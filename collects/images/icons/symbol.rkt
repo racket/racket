@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/draw racket/class racket/math racket/sequence
+(require racket/draw racket/class racket/math racket/sequence racket/flonum
          racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
          "../private/deep-flomap.rkt"
@@ -21,28 +21,28 @@
   (define mn 7.5)
   (define mx 23.5)
   (draw-icon-flomap
-   32 32 (λ (dc)
-           (send dc set-pen (make-object pen% (icon-color->outline-color color) 
-                              12 'solid 'projecting 'miter))
-           (send dc draw-line mn mn mx mx)
-           (send dc draw-line mn mx mx mn)
-           (send dc set-pen (make-object pen% color 10 'solid 'projecting  'miter))
-           (send dc draw-line mn mn mx mx)
-           (send dc draw-line mn mx mx mn))
-   (/ height 32)))
+   (λ (dc)
+     (send dc set-pen (make-object pen% (icon-color->outline-color color) 
+                        12 'solid 'projecting 'miter))
+     (send dc draw-line mn mn mx mx)
+     (send dc draw-line mn mx mx mn)
+     (send dc set-pen (make-object pen% color 10 'solid 'projecting  'miter))
+     (send dc draw-line mn mn mx mx)
+     (send dc draw-line mn mx mx mn))
+   32 32 (/ height 32)))
 
 (define (flat-check-flomap color height)
   (draw-icon-flomap
-   32 32 (λ (dc)
-           (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-           (send dc set-brush color 'solid)
-           (draw-path-commands dc '((m 0 19)
-                                    (c 0 0 7 4 14 12 5.5 -13.5 17 -23 17 -23)
-                                    (l -9 -8)
-                                    (c 0 0 -6.5 7.5 -9.5 16 -2.5 -4 -6 -6.5 -6 -6.5)
-                                    (l -6 9))
-                               0 0))
-   (/ height 32)))
+   (λ (dc)
+     (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+     (send dc set-brush color 'solid)
+     (draw-path-commands dc '((m 0 19)
+                              (c 0 0 7 4 14 12 5.5 -13.5 17 -23 17 -23)
+                              (l -9 -8)
+                              (c 0 0 -6.5 7.5 -9.5 16 -2.5 -4 -6 -6.5 -6 -6.5)
+                              (l -6 9))
+                         0 0))
+   32 32 (/ height 32)))
 
 (defproc (text-flomap [str string?] [font (is-a?/c font%)]
                       [color (or/c string? (is-a?/c color%))]
@@ -68,14 +68,15 @@
      (define-values (w h) (get-text-size str font))
      (define ceiling-amt (inexact->exact (ceiling outline)))
      (let* ([fm  (draw-flomap
-                  w h (λ (dc)
+                  (λ (dc)
                         (send dc set-font font)
                         (send dc set-text-foreground color)
-                        (send dc draw-text str 0 0 #t)))]
+                        (send dc draw-text str 0 0 #t))
+                  w h)]
             [fm  (if trim? (flomap-trim fm) fm)]
             [fm  (flomap-resize fm #f (- height (* 2 ceiling-amt)))]
             [fm  (flomap-inset fm ceiling-amt)]
-            [fm  (if (outline . > . 0) (flomap-outlined fm outline (list r g b)) fm)])
+            [fm  (if (outline . > . 0) (flomap-outlined fm outline (flvector r g b)) fm)])
        (flomap-render-icon fm material)))))
 
 (define recycle-path-commands
@@ -135,12 +136,11 @@
   (make-cached-flomap
    [height color material]
    (draw-short-rendered-icon-flomap
-    32 32 (λ (dc)
-            (set-icon-pen dc (icon-color->outline-color color) 1/2 'solid)
-            (send dc set-brush color 'solid)
-            (draw-path-commands dc recycle-path-commands 0 0))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (set-icon-pen dc (icon-color->outline-color color) 1/2 'solid)
+      (send dc set-brush color 'solid)
+      (draw-path-commands dc recycle-path-commands 0 0))
+    32 32 (/ height 32) material)))
 
 (defproc (x-flomap [color (or/c string? (is-a?/c color%))]
                    [height (and/c rational? (>=/c 0)) (default-icon-height)]
@@ -229,15 +229,14 @@
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (set-icon-pen dc (icon-color->outline-color color) 4 'solid)
-            (send dc set-brush (icon-color->outline-color color) 'solid)
-            (draw-path-commands dc lambda-path-commands 4 0)
-            (set-icon-pen dc color 2 'solid)
-            (send dc set-brush color 'solid)
-            (draw-path-commands dc lambda-path-commands 4 0))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (set-icon-pen dc (icon-color->outline-color color) 4 'solid)
+      (send dc set-brush (icon-color->outline-color color) 'solid)
+      (draw-path-commands dc lambda-path-commands 4 0)
+      (set-icon-pen dc color 2 'solid)
+      (send dc set-brush color 'solid)
+      (draw-path-commands dc lambda-path-commands 4 0))
+    32 32 (/ height 32) material)))
 
 (defproc (hash-quote-flomap [color (or/c string? (is-a?/c color%))]
                             [height (and/c rational? (>=/c 0)) (default-icon-height)]
@@ -257,16 +256,15 @@
    (define outline-color (icon-color->outline-color color))
    
    (draw-rendered-icon-flomap
-    36 32 (λ (dc)
-            (send dc translate 0.5 0.5)
-            (set-icon-pen dc outline-color 2 'solid)
-            (send dc set-brush outline-color 'solid)
-            (draw-hash-quote dc)
-            (send dc set-pen "black" 1 'transparent)
-            (send dc set-brush color 'solid)
-            (draw-hash-quote dc))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (send dc translate 0.5 0.5)
+      (set-icon-pen dc outline-color 2 'solid)
+      (send dc set-brush outline-color 'solid)
+      (draw-hash-quote dc)
+      (send dc set-pen "black" 1 'transparent)
+      (send dc set-brush color 'solid)
+      (draw-hash-quote dc))
+    36 32 (/ height 32) material)))
 
 ;; ===================================================================================================
 ;; Bitmaps (icons)

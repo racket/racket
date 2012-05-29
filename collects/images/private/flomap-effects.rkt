@@ -13,13 +13,13 @@
          flomap-shadow flomap-shadowed
          flomap-whirl-morph)
 
-(: colorize-alpha (flomap (Listof Real) -> flomap))
-(define (colorize-alpha fm color)
+(: colorize-alpha (flomap FlVector -> flomap))
+(define (colorize-alpha fm vs)
   (match-define (flomap _ 1 w h) fm)
-  (flomap-append-components fm (fm* fm (make-flomap/components w h color))))
+  (flomap-append-components fm (fm* fm (make-flomap* w h vs))))
 
 (: flomap-shadow (case-> (flomap Real -> flomap)
-                         (flomap Real (Option (Listof Real)) -> flomap)))
+                         (flomap Real (Option FlVector) -> flomap)))
 (define flomap-shadow
   (case-lambda
     [(fm σ)  (flomap-shadow fm σ #f)]
@@ -27,18 +27,18 @@
      (match-define (flomap _ c w h) fm)
      (cond [(c . = . 0)  fm]
            [else  (define alpha-fm (flomap-ref-component fm 0))
-                  (define color-vs (if (list? color) color (make-list (- c 1) 0.0)))
+                  (define color-vs (if (flvector? color) color (make-flvector (- c 1) 0.0)))
                   (colorize-alpha (flomap-blur alpha-fm σ) color-vs)])]))
 
 (: flomap-shadowed (case-> (flomap Real -> flomap)
-                           (flomap Real (Option (Listof Real)) -> flomap)))
+                           (flomap Real (Option FlVector) -> flomap)))
 (define flomap-shadowed
   (case-lambda
     [(fm σ)    (flomap-shadowed fm σ #f)]
     [(fm σ c)  (flomap-cc-superimpose (flomap-shadow fm σ c) fm)]))
 
 (: flomap-outline (case-> (flomap Real -> flomap)
-                          (flomap Real (Option (Listof Real)) -> flomap)))
+                          (flomap Real (Option FlVector) -> flomap)))
 (define flomap-outline
   (case-lambda
     [(fm amt)  (flomap-outline fm amt #f)]
@@ -57,11 +57,11 @@
        (define alpha-fm (flomap-ref-component fm 0))
        (define new-alpha-fm (fmmax 0.0 (fmmin 1.0 (fm/ (fm- (flomap-blur alpha-fm σ) v-min)
                                                        (- v-max v-min)))))
-       (define color-vs (if (list? color) color (make-list (- c 1) 0.0)))
+       (define color-vs (if (flvector? color) color (make-flvector (- c 1) 0.0)))
        (colorize-alpha new-alpha-fm color-vs))]))
 
 (: flomap-outlined (case-> (flomap Real -> flomap)
-                           (flomap Real (Option (Listof Real)) -> flomap)))
+                           (flomap Real (Option FlVector) -> flomap)))
 (define flomap-outlined
   (case-lambda
     [(fm amt)    (flomap-outlined fm amt #f)]
