@@ -45,9 +45,15 @@ Blocks until a receiver is ready to accept the value @racket[v]
 through @racket[ch].}
 
 
-@defproc[(channel-put-evt [ch channel?] [v any/c]) evt?]{
+@defproc[(channel-put-evt [ch channel?] [v any/c]) channel-put-evt?]{
 
 Returns a fresh @tech{synchronizable event} for use with
 @racket[sync]. The event is ready when @racket[(channel-put ch v)]
 would not block, and the event's synchronization result is the event
 itself.}
+
+
+@defproc[(channel-put-evt? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a channel-put event produced by
+@racket[channel-put-evt], @racket[#f] otherwise.}

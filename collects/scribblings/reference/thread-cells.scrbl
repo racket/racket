@@ -77,8 +77,8 @@ value in @racket[cell] to @racket[v] for the current thread.}
 (channel-get ch)
 ]
 
-@defproc*[([(current-preserved-thread-cell-values) any]
-           [(current-preserved-thread-cell-values [thread-cell-vals any/c]) void?])]{
+@defproc*[([(current-preserved-thread-cell-values) thread-cell-values?]
+           [(current-preserved-thread-cell-values [thread-cell-vals thread-cell-values?]) void?])]{
 
 When called with no arguments, this procedure produces a
 @racket[thread-cell-vals] that represents the current values (in the
@@ -92,3 +92,8 @@ cell was created after @racket[thread-cell-vals] was generated, then
 the thread cell's value for the current thread reverts to its initial
 value.}
 
+@defproc[(thread-cell-values? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a set of thread cell values
+produced by @racket[current-preserved-thread-cell-values], @racket[#f]
+otherwise.}

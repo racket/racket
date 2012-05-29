@@ -1067,6 +1067,10 @@
   
   (syntax-test #'(struct-copy t (t 1 2 3) [a #:parent p 11])))
 
+(test #t prefab-key? 'apple)
+(test #f prefab-key? '#(apple))
+(test #t prefab-key? '(apple 4))
+
 ;; ----------------------------------------
 
 (report-errs)

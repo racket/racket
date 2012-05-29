@@ -535,7 +535,7 @@ of the structure type.
 ]}
 
 
-@defproc[(make-prefab-struct [key (or/c symbol? list?)] [v any/c] ...) struct?]{
+@defproc[(make-prefab-struct [key prefab-key?] [v any/c] ...) struct?]{
 
 Creates an instance of a @tech{prefab} structure type, using the
 @racket[v]s as field values. The @racket[key] and the number of
@@ -589,7 +589,8 @@ supplied @racket[v]s, the @exnraise[exn:fail:contract].
 (make-prefab-struct '(clown 1 (1 #f) #(0)) "Binky" "pie")
 ]}
 
-@defproc[(prefab-key->struct-type [key (or/c symbol? list?)]
+
+@defproc[(prefab-key->struct-type [key prefab-key?]
                                   [field-count (integer-in 0 32768)])
          struct-type?]{
 
@@ -599,6 +600,14 @@ structure type specified by the combination of @racket[key] and
 
 If the number of fields indicated by @racket[key] is inconsistent with
 @racket[field-count], the @exnraise[exn:fail:contract].}
+
+
+@defproc[(prefab-key? [v any/c]) boolean?]{
+
+Return @racket[#t] if @racket[v] can be a @tech{prefab} structure type
+key, @racket[#f] otherwise.
+
+See @racket[make-prefab-struct] for a description of valid key shapes.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}

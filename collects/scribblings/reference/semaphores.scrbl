@@ -56,10 +56,14 @@ breaking is disabled when @racket[semaphore-wait/enable-break] is
 called, then either the semaphore's counter is decremented or the
 @racket[exn:break] exception is raised, but not both.}
 
-@defproc[(semaphore-peek-evt [sema semaphore?]) evt?]{Creates and
+@defproc[(semaphore-peek-evt [sema semaphore?]) semaphore-peek-evt?]{Creates and
 returns a new synchronizable event (for use with @racket[sync], for
 example) that is ready when @racket[sema] is ready, but synchronizing
 the event does not decrement @racket[sema]'s internal count.}
+
+@defproc[(semaphore-peek-evt? [v any/c]) boolean?]{
+Returns @racket[#t] if @racket[v] is a semaphore wrapper produced by
+@racket[semaphore-peek-evt], @racket[#f] otherwise.}
 
 @defproc[(call-with-semaphore [sema semaphore?]
                               [proc procedure?]

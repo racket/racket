@@ -33,10 +33,12 @@ static Scheme_Object *block_sema_p(int n, Scheme_Object **p);
 static Scheme_Object *block_sema(int n, Scheme_Object **p);
 static Scheme_Object *block_sema_breakable(int n, Scheme_Object **p);
 static Scheme_Object *make_sema_repost(int n, Scheme_Object **p);
+static Scheme_Object *is_sema_repost(int n, Scheme_Object **p);
 
 static Scheme_Object *make_channel(int n, Scheme_Object **p);
 static Scheme_Object *make_channel_put(int n, Scheme_Object **p);
 static Scheme_Object *channel_p(int n, Scheme_Object **p);
+static Scheme_Object *channel_put_p(int n, Scheme_Object **p);
 
 static Scheme_Object *thread_send(int n, Scheme_Object **p);
 static Scheme_Object *thread_receive(int n, Scheme_Object **p);
@@ -126,6 +128,11 @@ void scheme_init_sema(Scheme_Env *env)
 						      "semaphore-peek-evt", 
 						      1, 1), 
 			     env);
+  scheme_add_global_constant("semaphore-peek-evt?", 
+			     scheme_make_folding_prim(is_sema_repost,
+						      "semaphore-peek-evt?", 
+						      1, 1, 1), 
+			     env);
 
   scheme_add_global_constant("make-channel", 
 			     scheme_make_prim_w_arity(make_channel,
@@ -142,6 +149,11 @@ void scheme_init_sema(Scheme_Env *env)
 						      "channel?",
 						      1, 1, 1), 
 			     env);  
+  scheme_add_global_constant("channel-put-evt?", 
+			     scheme_make_folding_prim(channel_put_p,
+                                                      "channel-put-evt?",
+                                                      1, 1, 1), 
+			     env);
 
   scheme_add_global_constant("thread-send", 
 			     scheme_make_prim_w_arity(thread_send,
@@ -270,6 +282,13 @@ Scheme_Object *scheme_make_sema_repost(Scheme_Object *sema)
   SCHEME_PTR_VAL(o) = sema;
 
   return o;
+}
+
+static Scheme_Object *is_sema_repost(int n, Scheme_Object **p)
+{
+  return (SAME_TYPE(SCHEME_TYPE(p[0]), scheme_semaphore_repost_type)
+          ? scheme_true
+          : scheme_false);
 }
 
 static Scheme_Object *semap(int n, Scheme_Object **p)
@@ -1018,6 +1037,13 @@ static Scheme_Object *make_channel_put(int argc, Scheme_Object **argv)
 static Scheme_Object *channel_p(int n, Scheme_Object **p)
 {
   return (SCHEME_CHANNELP(p[0])
+	  ? scheme_true
+	  : scheme_false);
+}
+
+static Scheme_Object *channel_put_p(int n, Scheme_Object **p)
+{
+  return (SAME_TYPE(SCHEME_TYPE(p[0]), scheme_channel_put_type)
 	  ? scheme_true
 	  : scheme_false);
 }

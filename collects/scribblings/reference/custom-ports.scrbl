@@ -229,7 +229,11 @@ The arguments implement the port as follows:
     If @racket[get-progress-evt] is @racket[#f], then
     @racket[port-provides-progress-evts?] applied to the port will
     produce @racket[#f], and the port will not be a valid argument to
-    @racket[port-progress-evt].}
+    @racket[port-progress-evt].
+
+    The result event will not be exposed directly by
+    @racket[port-progress-evt]. Instead, it will be wrapped in an
+    event for which @racket[progress-evt?] returns true.}
 
   @item{@racket[commit] --- either @racket[#f] (the
     default), or a procedure that takes three arguments: 

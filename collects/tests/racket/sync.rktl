@@ -13,6 +13,10 @@
 (let* ([s (make-semaphore)]
        [p (semaphore-peek-evt s)]
        [ch (make-channel)])
+  (test #t semaphore? s)
+  (test #t semaphore-peek-evt? p)
+  (test #f semaphore? p)
+  (test #f semaphore-peek-evt? s)
   (test #f sync/timeout 0 s p)
   (test #f sync/timeout 0 s p)
   (test 'nope sync/timeout (lambda () 'nope) s p)
@@ -60,6 +64,8 @@
   (test #f sync/timeout 0 c)
   (test 11 sync c)
   (let ([p (channel-put-evt c 45)])
+    (test #t channel-put-evt? p)
+    (test #f channel-put-evt? c)
     (thread (lambda () (sync (system-idle-evt)) (set! v (sync c))))
     (test #f sync/timeout 0 p)
     (test p sync p)

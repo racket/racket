@@ -126,6 +126,7 @@ static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[]);
+static Scheme_Object *is_prefab_key(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_setter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_getter_p(int argc, Scheme_Object *argv[]);
@@ -656,6 +657,10 @@ scheme_init_struct (Scheme_Env *env)
 			     scheme_make_prim_w_arity(prefab_key_struct_type,
 						      "prefab-key->struct-type",
 						      2, 2),
+			     env);
+  scheme_add_global_constant("prefab-key?",
+			     scheme_make_folding_prim(is_prefab_key, "prefab-key?", 
+                                                      1, 1, 1),
 			     env);
 
   /*** Predicates ****/
@@ -2950,6 +2955,13 @@ static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[])
   }
 
   return (Scheme_Object *)stype;
+}
+
+static Scheme_Object *is_prefab_key(int argc, Scheme_Object *argv[])
+{
+  return (scheme_lookup_prefab_type(argv[0], -1)
+          ? scheme_true
+          : scheme_false);
 }
 
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)

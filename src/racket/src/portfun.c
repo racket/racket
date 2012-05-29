@@ -88,6 +88,7 @@ static Scheme_Object *char_ready_p (int, Scheme_Object *[]);
 static Scheme_Object *byte_ready_p (int, Scheme_Object *[]);
 static Scheme_Object *peeked_read(int argc, Scheme_Object *argv[]);
 static Scheme_Object *progress_evt (int argc, Scheme_Object *argv[]);
+static Scheme_Object *is_progress_evt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *closed_evt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *write_bytes_avail_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *write_special_evt(int argc, Scheme_Object *argv[]);
@@ -303,6 +304,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("write-byte",                     write_byte,                     1, 2, env);
   GLOBAL_NONCM_PRIM("port-commit-peeked",             peeked_read,                    3, 4, env);
   GLOBAL_NONCM_PRIM("port-progress-evt",              progress_evt,                   0, 1, env);
+  GLOBAL_NONCM_PRIM("progress-evt?",                  is_progress_evt,                1, 2, env);
   GLOBAL_NONCM_PRIM("port-closed-evt",                closed_evt,                     0, 1, env);
   GLOBAL_NONCM_PRIM("write-bytes-avail-evt",          write_bytes_avail_evt,          1, 4, env);
   GLOBAL_NONCM_PRIM("write-special-evt",              write_special_evt,              2, 2, env);
@@ -3490,6 +3492,28 @@ progress_evt(int argc, Scheme_Object *argv[])
     return NULL;
   } else
     return v;
+}
+
+static Scheme_Object *
+is_progress_evt(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (argc > 1) {
+    if (!SAME_TYPE(SCHEME_TYPE(v), scheme_progress_evt_type))
+      scheme_wrong_contract("progress-evt?", "progress-evt?", 0, argc, argv);
+    if (!SCHEME_INPUT_PORTP(argv[1]))
+      scheme_wrong_contract("progress-evt?", "input-port?", 1, argc, argv);
+    return (SAME_OBJ(argv[1], SCHEME_PTR1_VAL(v))
+            ? scheme_true
+            : scheme_false);
+  } else {
+    return (SAME_TYPE(SCHEME_TYPE(v), scheme_progress_evt_type)
+            ? scheme_true
+            : scheme_false);
+  }
 }
 
 static Scheme_Object *make_closed_evt(int already_closed)
