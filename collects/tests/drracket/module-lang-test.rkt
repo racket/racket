@@ -85,7 +85,7 @@
       #rx"first>")
 (test @t{(module m mzscheme (require (all-except mzlib/list foldl)))}
       @t{foldl}
-      ". . reference to an identifier before its definition: foldl")
+      #rx"[.] [.] reference to an identifier before its definition.*foldl")
 (test @t{(module m mzscheme (require (prefix mz: mzscheme)))}
       @t{mz:+}
       #rx"procedure:[+]")
@@ -106,7 +106,7 @@
 ;; + shouldn't be bound in the REPL because it isn't bound in the module.
 (test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) x)}
       @t{+}
-      ". . reference to an identifier before its definition: +")
+      #rx"[.] [.] reference to an identifier before its definition.*[+]")
 (test @t{(module m mzscheme (provide lambda))}
       @t{(lambda (x) x)}
       #rx"<procedure")
@@ -118,13 +118,13 @@
       ". s: illegal use of syntax in: s")
 (test @t{(module m mzscheme (define-syntax (x stx) #'(define a 10)) x x)}
       @t{a}
-      ". . reference to an identifier before its definition: a")
+      #rx"[.] [.] reference to an identifier before its definition.*a")
 (test @t{(module m mzscheme
            (define-syntax (x stx) #'(define-syntax (a stx) #'10))
            x
            x)}
       @t{a}
-      ". . reference to an identifier before its definition: a")
+      #rx"[.] [.] reference to an identifier before its definition.*a")
 (test @t{(module m mzscheme
            (define-syntax (x stx) #'(define a 10))
            x
@@ -272,7 +272,7 @@
       @t{lambda: bad syntax in: (lambda ())})
 (test @t{#lang racket/base}
       @t{(expt 3 (void))}
-      @rx{expt: expected argument of type <number>; given: #<void>})
+      @rx{expt: contract violation.*given: #<void>})
 (test @t{#lang racket/base}
       @t{1 2 ( 3 4}
       @t{1@"\n"2@"\n". read: expected a `)' to close `('})
@@ -284,7 +284,7 @@
       "1\n2\n. lambda: bad syntax in: (lambda ())")
 (test @t{#lang racket/base}
       "1 2 x 3 4"
-      "1\n2\n. . reference to an identifier before its definition: x")
+      #rx"1\n2\n[.] [.] reference to an identifier before its definition.*x")
 (test @t{#lang racket/base}
       "1 2 (raise 1) 3 4"
       "1\n2\nuncaught exception: 1")
@@ -302,7 +302,7 @@
        "(lambda () (expt 3 #f))\n"
        "(lambda () (error-escape-handler old))))\n"
        "10))")
-      ". . expt: expected argument of type <number>; given: #f\n15")
+      #rx"[.] [.] expt: contract violation.*given: #f\n15")
 (test @t{#lang racket/base}
       "(write (list (syntax x)))"
       "(.)")
@@ -322,12 +322,12 @@
                    (lambda () (expt 3 #f))
                    (lambda () (semaphore-post s)))))
               '(begin (yield s) (void)))
-      ". . expt: expected argument of type <number>; given: #f")
+      #rx"[.] [.] expt: contract violation.*given: #f")
 (test @t{#lang racket/base}
       (format "~s ~s" 
               '(define x 1) 
               '((λ (x y) y) (set! x (call/cc (lambda (x) x))) (x 3)))
-      ". . procedure application: expected procedure, given: 3; arguments were: 3")
+      #rx". . application: expected procedure.*given: 3")
 (test @t{#lang racket/base}
       (format "~s ~s ~s ~s"
               '(begin (define k (call/cc (λ (x) x)))
@@ -352,7 +352,7 @@
       "(vector .)")
 (test @t{#lang racket/base}
       "(begin (thread (lambda () x)) (sleep 1/10))"
-      ". . reference to an identifier before its definition: x")
+      #rx"[.] [.] reference to an identifier before its definition.*x")
 (test @t{#lang racket/base}
       "(require texpict/utils)(disk 3)"
       ".")

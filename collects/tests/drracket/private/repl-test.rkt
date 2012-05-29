@@ -81,6 +81,7 @@ This produces an ACK message
 
 (define test-data
   (list
+
    ;; basic tests
    (mktest "1"
            ("1"
@@ -95,7 +96,6 @@ This produces an ACK message
            void)
    
    (mktest "\"a\""
-           
            ("\"a\""
             "\"a\""
             "\"a\""
@@ -184,19 +184,18 @@ This produces an ACK message
            void)
    
    (mktest "xx"
-           
-           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
-            "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*xx"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*xx"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier.*xx"
+            #rx"reference to undefined identifier.*xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*xx")
            'definitions
            #f
            void
            void)
+   
    (mktest "(raise 1)"
-           
            ("uncaught exception: 1"
             "uncaught exception: 1"
             "uncaught exception: 1"
@@ -259,12 +258,12 @@ This produces an ACK message
    
    ;; top-level semantics test
    (mktest "(define (f) (+ 1 1)) (define + -) (f)"
-           ("define-values: cannot change constant variable: +"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+"
-            "define-values: cannot change constant variable: +"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+")
+           (#rx"define-values: cannot change constant.*: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+"
+            #rx"define-values: cannot change constant.*: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+")
            'interactions
            #f
            void
@@ -297,12 +296,12 @@ This produces an ACK message
    
    (mktest "(begin xx (printf \"hi\\n\"))"
            
-           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: reference to undefined identifier: xx"
-            "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: reference to undefined identifier.*: xx"
+            #rx"reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx")
            'definitions
            #f
            void
@@ -341,13 +340,12 @@ This produces an ACK message
            void)
    
    (mktest "#!/bin/sh\nxx"
-           
-           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: reference to undefined identifier: xx"
-            "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: reference to undefined identifier.*: xx"
+            #rx"reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx")
            'definitions
            #f
            void
@@ -407,13 +405,12 @@ This produces an ACK message
            void)
    
    (mktest "    (eval 'x)"
-           
-           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
-            "reference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
+           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier.*: x"
+            #rx"reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x")
            'definitions
            #f
            void
@@ -447,13 +444,12 @@ This produces an ACK message
    
    ; printer setup test
    (mktest "(expt 3 (void))"
-           
-           ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #<void>"
-            "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #<void>"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: expected argument of type <number>; given: #<void>"
-            "expt: expected argument of type <number>; given: #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #<void>")
+           (#rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: contract violation.*given: #<void>"
+            #rx"expt: contract violation.*given: #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #<void>")
            'definitions
            #f
            void
@@ -498,12 +494,12 @@ This produces an ACK message
            void)
    (mktest "1 2 x 3 4"
            
-           ("1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
-            "1\n2\nreference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
+           (#rx"1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier.*: x"
+            #rx"1\n2\nreference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x")
            'definitions
            #f
            void
@@ -550,12 +546,12 @@ This produces an ACK message
    (mktest
     "(load \"repl-test-tmp2.rkt\") (define (g) (+ 1 (expt 3 #f))) (f g)"
     
-    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: expected argument of type <number>; given: #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: expected argument of type <number>; given: #f")
+    (#rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f"
+     #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f"
+     #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: contract violation.*given: #f"
+     #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f"
+     #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f"
+     #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: contract violation.*given: #f")
     'definitions
     #f
     (λ ()
@@ -610,13 +606,12 @@ This produces an ACK message
    ;; error escape handler test
    (mktest
     "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (expt 3 #f))\n(lambda () (error-escape-handler old))))\n10))"
-    
-    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f\n15"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given: #f\n15"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: expected argument of type <number>; given: #f\n15"
-     "expt: expected argument of type <number>; given: #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given: #f\n15")
+    (#rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: contract violation.*given: #f\n15"
+     #rx"expt: contract violation.*given: #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #f\n15")
     'definitions
     #f
     void
@@ -649,10 +644,9 @@ This produces an ACK message
            #f
            void
            void)
-   
+
    ;; make sure syntax objects only go into good ports
    (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
-           
            ("10"
             "10"
             "10"
@@ -666,7 +660,6 @@ This produces an ACK message
    
    ;; make sure syntax objects don't go into bad ports
    (mktest "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
-           
            (""
             ""
             ""
@@ -679,7 +672,6 @@ This produces an ACK message
            void)
    
    (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
-           
            (#rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
             #rx"#<syntax:.*repl-test-tmp3.rkt:1:96.*>"
@@ -693,7 +685,6 @@ This produces an ACK message
    
    
    (mktest "(write-special 1)"
-           
            ("1#t"
             "1#t"
             "1#t"
@@ -709,13 +700,12 @@ This produces an ACK message
     ;; the begin/void combo is to make sure that no value printout
     ;; comes and messes up the source location for the error.
     "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (expt 3 #f))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
-    
-    (#rx"expt: expected argument of type <number>; given: #f"
-     #rx"expt: expected argument of type <number>; given: #f"
-     #rx"expt: expected argument of type <number>; given: #f"
-     #rx"expt: expected argument of type <number>; given: #f"
-     #rx"expt: expected argument of type <number>; given: #f"
-     #rx"expt: expected argument of type <number>; given: #f")
+    (#rx"expt: contract violation.*given: #f"
+     #rx"expt: contract violation.*given: #f"
+     #rx"expt: contract violation.*given: #f"
+     #rx"expt: contract violation.*given: #f"
+     #rx"expt: contract violation.*given: #f"
+     #rx"expt: contract violation.*given: #f")
     'definitions
     #f
     void
@@ -749,7 +739,6 @@ This produces an ACK message
    
    ;; continuation tests
    (mktest "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"
-           
            ("17"
             "17"
             "17"
@@ -760,8 +749,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"
-           
            ("#(2)"
             "#(2)"
             "#(2)"
@@ -772,8 +761,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
-           
            ("#(2)"
             "#(2)"
             "#(2)"
@@ -786,13 +775,12 @@ This produces an ACK message
            void)
    
    (mktest "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
-           
-           ("{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
-            "{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
-            "procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
+           (#rx"{stop-multi.png} {stop-22x22.png} application: expected procedure.*given: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} application: expected procedure.*given: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:3:13: application: expected procedure.*given: 3"
+            #rx"application: expected procedure.*given: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: application: expected procedure.*given: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: application: expected procedure.*given: 3")
            'definitions
            #f
            void
@@ -800,7 +788,6 @@ This produces an ACK message
    
    ;; top-level & continuation interaction test
    (mktest "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
-           
            ("right"
             "right"
             "right"
@@ -821,7 +808,6 @@ This produces an ACK message
                                      10)))
                      (default-continuation-prompt-tag)
                      list))
-           
            ("(1 2 3)"
             "(1 2 3)"
             "(1 2 3)"
@@ -847,7 +833,6 @@ This produces an ACK message
 
    ;; graphical lambda tests
    (mktest (list "((" '("Insert" "Insert λ") "(x) x) 1)")
-           
            ("1"
             "1"
             "1"
@@ -874,13 +859,12 @@ This produces an ACK message
    
    ;; thread tests
    (mktest "(begin (thread (lambda () x)) (sleep 1/10))"
-           
-           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: reference to undefined identifier: x"
-            "reference to undefined identifier: x"
-            "reference to undefined identifier: x"
-            "reference to undefined identifier: x")
+           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: reference to undefined identifier.*: x"
+            #rx"reference to undefined identifier.*: x"
+            #rx"reference to undefined identifier.*: x"
+            #rx"reference to undefined identifier.*: x")
            'definitions
            #f
            void
@@ -888,13 +872,12 @@ This produces an ACK message
    
    ;; brought down from above for comparison
    (mktest "xx"
-           
-           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
-            "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier.*: xx"
+            #rx"reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx")
            'definitions
            #f
            void
@@ -1391,7 +1374,7 @@ This produces an ACK message
       
       (let* ([end (- (get-int-pos) 1)]
              [output (fetch-output drscheme-frame start end)]
-             [expected #rx"reference to undefined identifier: x"])
+             [expected #rx"reference to undefined identifier.*: x"])
         (unless (regexp-match expected output)
           (failure)
           (eprintf "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
