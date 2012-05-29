@@ -5,6 +5,7 @@ Added raise-argument-error, raise-result-error,
 racket/contract: added procedure-arity-includes/c
 racket/sandbox: added sandbox-propagate-exceptions
 racket/cmdline: add #:ps for command-line
+slideshow/start: run a `slideshow' or `main' submodule, if any
 Changed impersonate-struct so that accessor impersonation requires
  work only if the field is accessible via the current impersonator
  or a mutator for the same field is also impersonated

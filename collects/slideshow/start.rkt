@@ -64,7 +64,15 @@
 			    (lambda (who where-name where-port-num mode)
 			      (error 'slideshow
 				     "slide program attempted to make a network connection")))))
-    (dynamic-require (path->complete-path content) #f))
+    (define content-path (path->complete-path content))
+    (dynamic-require content-path #f)
+    (ormap (lambda (sm)
+             (define submod-path `(submod ,content-path ,sm))
+             (and (module-declared? submod-path #t)
+                  (begin
+                    (dynamic-require submod-path #f)
+                    #t)))
+           '(slideshow main)))
 
   (when (file-to-load)
     (load-content (string->path (file-to-load))))
