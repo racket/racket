@@ -1467,9 +1467,9 @@ path/s is either such a string or a list of them.
 "collects/tests/eli-tester.rkt" responsible (eli)
 "collects/tests/eopl" responsible (dvanhorn)
 "collects/tests/errortrace/alert.rkt" responsible (eli)
-"collects/tests/errortrace/main" drdr:command-line #f
+"collects/tests/errortrace/main.rkt" drdr:command-line #f
 "collects/tests/file" responsible (eli mflatt)
-"collects/tests/file/main" drdr:command-line #f
+"collects/tests/file/main.rkt" drdr:command-line #f
 "collects/tests/framework" responsible (robby)
 "collects/tests/framework/canvas.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/debug.rkt" drdr:command-line (mzc "-k" *)
@@ -1554,7 +1554,7 @@ path/s is either such a string or a list of them.
 "collects/tests/jpr/streams.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/valrose.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/lazy" responsible (eli stchang)
-"collects/tests/lazy/main" drdr:command-line #f
+"collects/tests/lazy/main.rkt" drdr:command-line #f
 "collects/tests/macro-debugger" responsible (ryanc)
 "collects/tests/macro-debugger/all-tests.rkt" drdr:command-line (racket * "--text")
 "collects/tests/macro-debugger/gui-tests.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1564,7 +1564,7 @@ path/s is either such a string or a list of them.
 "collects/tests/mzcom" responsible (mflatt)
 "collects/tests/mzcom/test.rktl" drdr:command-line #f
 "collects/tests/net" responsible (jay eli mflatt robby)
-"collects/tests/net/main" drdr:command-line #f
+"collects/tests/net/main.rkt" drdr:command-line #f
 "collects/tests/net/stress" responsible (jay)
 "collects/tests/net/url-port.rkt" responsible (jay)
 "collects/tests/net/websocket" responsible (jay)
@@ -1951,7 +1951,7 @@ path/s is either such a string or a list of them.
 "collects/tests/rackunit/standalone.rkt" drdr:command-line (racket "-qjt" *)
 "collects/tests/run-automated-tests.rkt" responsible (eli) drdr:command-line (mzc "-k" *) drdr:timeout 600
 "collects/tests/scribble" responsible (eli mflatt)
-"collects/tests/scribble/main" drdr:command-line #f
+"collects/tests/scribble/main.rkt" drdr:command-line #f
 "collects/tests/slatex" responsible (jay sstrickl)
 "collects/tests/srfi" responsible (noel chongkai jay)
 "collects/tests/srfi/1/run-tests.rktl" drdr:command-line (racket "-f" *)
