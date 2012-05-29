@@ -1228,7 +1228,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 
     if (!menv || !menv->toplevel) {
       scheme_contract_error(errname,
-                            "module iniialization failed",
+                            "module inialization failed",
                             "module", 1, srcm->modsrc,
                             NULL);
     }
