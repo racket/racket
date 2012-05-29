@@ -1500,7 +1500,7 @@ path/s is either such a string or a list of them.
 "collects/tests/generic" responsible (asumu stamourv)
 "collects/tests/gracket" responsible (mflatt)
 "collects/tests/gracket/auto.rktl" drdr:command-line #f
-"collects/tests/gracket/blits.rkt" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/blits.rkt" drdr:command-line (gracket *)
 "collects/tests/gracket/dc.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/draw.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/editor.rktl" drdr:command-line (gracket "-f" *)
