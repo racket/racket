@@ -10,11 +10,12 @@
       read))
   
   (define (get-all-exps source-name port)
-    (let loop ()
-      (let ([exp (read-syntax source-name port)])
-        (cond
-          [(eof-object? exp) null]
-          [else (cons exp (loop))]))))
+    (parameterize ([read-accept-lang #f])
+      (let loop ()
+        (let ([exp (read-syntax source-name port)])
+          (cond
+           [(eof-object? exp) null]
+           [else (cons exp (loop))])))))
   
   (define (lookup key table)
     (let ([ans (assoc key table)])

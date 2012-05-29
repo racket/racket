@@ -1,6 +1,9 @@
 Version 5.3.0.10
 racket/base: add progress-evt?, thread-cell-values?, prefab-key?,
  semaphore-peek-evt?, channel-put-evt?
+Changed #lang for most languages so that it cannot be nested;
+ this change is within syntax/module-reader and applies to
+ racket, racket/base, and more
 
 Version 5.3.0.9
 Changed the format of error messages
