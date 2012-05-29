@@ -114,7 +114,7 @@ port, unless the path has a @racket[".zo"] suffix. It also
 @racket[parameterize]s each read to set @racket[read-accept-compiled],
 @racket[read-accept-reader], and @racket[read-accept-lang] to
 @racket[#t]. In addition, if @racket[load-on-demand-enabled] is
-@racket[#t], then @racket[read-on-demand-source] is effectively set to
+@racket[#t], then @racket[read-on-demand-source] is set to
 the @tech{cleanse}d, absolute form of @racket[path] during the
 @racket[read-syntax] call. After reading a single form, the form is
 passed to the current @tech{evaluation handler}, wrapping the

@@ -249,27 +249,31 @@
 	  (lambda () (void))
 	  (lambda ()
 	    (parameterize ([read-accept-compiled #t]
+                           [read-accept-reader #t]
+                           [read-accept-lang #t]
                            [read-on-demand-source (and (load-on-demand-enabled)
                                                        (path->complete-path filename))])
 	      (if expected-module
-                  (jump-to-submodule
-                   in-port
-                   expected-module
-                   (lambda (check-second?)
-                      (with-module-reading-parameterization 
-                       (lambda ()
-                         (let* ([first (read-syntax src in-port)]
-                                [module-ized-exp (check-module-form first expected-module filename)]
-                                [second (if check-second?
-                                            (read in-port)
-                                            eof)])
-                           (unless (eof-object? second)
-                             (raise-syntax-error
-                              'text-editor-load-handler
-                              (format "expected only a `module' declaration for `~s', but found an extra expression"
-                                      expected-module)
-                              second))
-                           (eval module-ized-exp))))))
+                  (with-module-reading-parameterization
+                   (lambda ()
+                     (jump-to-submodule
+                      in-port
+                      expected-module
+                      (lambda (check-second?)
+                        (with-module-reading-parameterization 
+                         (lambda ()
+                           (let* ([first (read-syntax src in-port)]
+                                  [module-ized-exp (check-module-form first expected-module filename)]
+                                  [second (if check-second?
+                                              (read in-port)
+                                              eof)])
+                             (unless (eof-object? second)
+                               (raise-syntax-error
+                                'text-editor-load-handler
+                                (format "expected only a `module' declaration for `~s', but found an extra expression"
+                                        expected-module)
+                                second))
+                             (eval module-ized-exp))))))))
 		  (let loop ([last-time-values (list (void))])
 		    (let ([exp (read-syntax src in-port)])
 		      (if (eof-object? exp)

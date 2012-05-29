@@ -4266,7 +4266,6 @@ typedef struct {
   Scheme_Thread *p;
   Scheme_Object *stxsrc;
   Scheme_Object *expected_module;
-  Scheme_Object *delay_load_info;
 } LoadHandlerData;
 
 static void post_load_handler(void *data)
@@ -4428,8 +4427,8 @@ static Scheme_Object *do_load_handler(void *data)
     }
   }
 
-  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, 
-                                     NULL, NULL, lhd->delay_load_info))
+  while ((obj = scheme_internal_read(port, lhd->stxsrc, -1, 0, 0, 0, -1, NULL, 
+                                     NULL, NULL, NULL))
 	 && !SCHEME_EOFP(obj)) {
     save_array = NULL;
     got_one = 1;
@@ -4516,7 +4515,7 @@ static Scheme_Object *do_load_handler(void *data)
 
       /* Check no more expressions: */
       if (!skip_no_more_check) {
-        d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+        d = scheme_internal_read(port, lhd->stxsrc, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
         if (!SCHEME_EOFP(d)) {
           Scheme_Input_Port *ip;
           ip = scheme_input_port_record(port);
@@ -4664,6 +4663,15 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_READTABLE, scheme_false);
+  } else {
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_COMPILED, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+    config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_true);
+  }
+
+  if (use_delay_load) {
+    v = scheme_path_to_complete_path(argv[0], NULL);
+    config = scheme_extend_config(config, MZCONFIG_DELAY_LOAD_INFO, v);
   }
 
   lhd = MALLOC_ONE_RT(LoadHandlerData);
@@ -4676,22 +4684,14 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   name = scheme_input_port_record(port)->name;
   lhd->stxsrc = name;
   lhd->expected_module = expected_module;
-  if (use_delay_load) {
-    v = scheme_path_to_complete_path(argv[0], NULL);
-    lhd->delay_load_info = v;
-  }
 
-  if (SCHEME_TRUEP(expected_module)) {
-    scheme_push_continuation_frame(&cframe);
-    scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
-  }
+  scheme_push_continuation_frame(&cframe);
+  scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
   v = scheme_dynamic_wind(NULL, do_load_handler, post_load_handler,
 			  NULL, (void *)lhd);
 
-  if (SCHEME_TRUEP(expected_module)) {
-    scheme_pop_continuation_frame(&cframe);
-  }
+  scheme_pop_continuation_frame(&cframe);
 
   return v;
 }
