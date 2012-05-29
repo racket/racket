@@ -6,6 +6,6 @@
  (with-handlers ([exn? (λ (x) (exn-message x))])
    (go 42)
    (error 'go "Failed to throw exn"))
- "procedure go: expects no arguments, given 1: 42")
+ "application: wrong number of arguments\n  procedure: go\n  expected number of arguments: 0\n  given number of arguments: 1\n  arguments:\n   42")
 
 
