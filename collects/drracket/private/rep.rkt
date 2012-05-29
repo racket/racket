@@ -1075,49 +1075,63 @@ TODO
              ;   breaks as we go in and turn them off as we go out.
              ;   (Actually, we adjust breaks however the user wanted it.)
              
-             (call-with-continuation-prompt
-              (λ ()
-                (call-with-break-parameterization
-                 user-break-parameterization
-                 (λ ()
-                   (let loop ()
-                     (let ([sexp/syntax/eof (with-stack-checkpoint (get-sexp/syntax/eof))])
-                       (unless (eof-object? sexp/syntax/eof)
-                         (define results
-                           ;; we duplicate the 'expand-syntax-to-top-form' dance that eval-syntax
-                           ;; does here, so that we can put 'with-stack-checkpoint's in to limit
-                           ;; the amount of DrRacket code we see in stacktraces
-                           (let loop ([stx sexp/syntax/eof])
-                             (define top-expanded (with-stack-checkpoint (expand-syntax-to-top-form stx)))
-                             (syntax-case top-expanded (begin)
-                               [(begin a1 . args)
-                                (let lloop ([args (syntax->list #'(a1 . args))])
-                                  (cond
-                                    [(null? (cdr args))
-                                     (loop (car args))]
-                                    [else
-                                     (loop (car args))
-                                     (lloop (cdr args))]))]
-                               [_ 
-                                (let ([expanded (with-stack-checkpoint (expand-syntax top-expanded))])
-                                  (call-with-values
-                                   (λ () 
-                                     (call-with-continuation-prompt
-                                      (λ ()
-                                        (with-stack-checkpoint (eval-syntax expanded)))
-                                      (default-continuation-prompt-tag)
-                                      (λ args
-                                        (apply
-                                         abort-current-continuation 
-                                         (default-continuation-prompt-tag)
-                                         args))))
-                                   list))])))
-                         (parameterize ([pretty-print-columns pretty-print-width])
-                           (for ([x (in-list results)])
-                             ((current-print) x)))
-                         (loop)))))))
-              (default-continuation-prompt-tag)
-              (λ args (void)))
+             
+             ;; this binding of last-results is to catch the results 
+             ;; that come from throwing to the prompt instead of
+             ;; a normal exit
+             (define last-results
+               (call-with-values
+                (λ ()
+                  (call-with-continuation-prompt
+                   (λ ()
+                     (call-with-break-parameterization
+                      user-break-parameterization
+                      (λ ()
+                        (let loop ()
+                          (define sexp/syntax/eof (with-stack-checkpoint (get-sexp/syntax/eof)))
+                          (cond
+                            [(eof-object? sexp/syntax/eof) (abort-current-continuation 
+                                                            (default-continuation-prompt-tag)
+                                                            (λ () (values)))]
+                            [else
+                             (define results
+                               (call-with-values
+                                (λ ()
+                                  ;; we duplicate the 'expand-syntax-to-top-form' dance that eval-syntax
+                                  ;; does here, so that we can put 'with-stack-checkpoint's in to limit
+                                  ;; the amount of DrRacket code we see in stacktraces
+                                  (let loop ([stx sexp/syntax/eof])
+                                    (define top-expanded (with-stack-checkpoint (expand-syntax-to-top-form stx)))
+                                    (syntax-case top-expanded (begin)
+                                      [(begin a1 . args)
+                                       (let lloop ([args (syntax->list #'(a1 . args))])
+                                         (cond
+                                           [(null? (cdr args))
+                                            (loop (car args))]
+                                           [else
+                                            (loop (car args))
+                                            (lloop (cdr args))]))]
+                                      [_ 
+                                       (let ([expanded (with-stack-checkpoint (expand-syntax top-expanded))])
+                                         (call-with-continuation-prompt
+                                          (λ ()
+                                            (with-stack-checkpoint (eval-syntax expanded)))
+                                          (default-continuation-prompt-tag)
+                                          (λ args
+                                            (apply
+                                             abort-current-continuation 
+                                             (default-continuation-prompt-tag)
+                                             args))))])))
+                                list))
+                             (parameterize ([pretty-print-columns pretty-print-width])
+                               (for ([x (in-list results)])
+                                 ((current-print) x)))
+                             (loop)])))))))
+                list))
+             
+             (parameterize ([pretty-print-columns pretty-print-width])
+               (for ([x (in-list last-results)])
+                 ((current-print) x)))
              
              (when complete-program?
                (call-with-continuation-prompt

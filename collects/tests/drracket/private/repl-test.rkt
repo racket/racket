@@ -36,7 +36,7 @@ This produces an ACK message
                      answer ;; : answer
                      ;; the answers for the various modes of the test, specifically:
                      ;;   with debugging enabled: execute, load with different filename, load with same filename
-                     ;;   as in ordinary mzscheme: execute, load with different filename, load with same filename
+                     ;;   as in ordinary racket: execute, load with different filename, load with same filename
                      
                      source-location ;; (or/c 'interactions 'definitions (cons number number))
                      
@@ -81,7 +81,6 @@ This produces an ACK message
 
 (define test-data
   (list
-
    ;; basic tests
    (mktest "1"
            ("1"
@@ -108,7 +107,6 @@ This produces an ACK message
            void)
    
    (mktest "1 2"
-           
            ("1\n2"
             "2"
             "2"
@@ -121,7 +119,6 @@ This produces an ACK message
            void)
    
    (mktest "\"a\" \"b\""
-           
            ("\"a\"\n\"b\""
             "\"b\""
             "\"b\""
@@ -146,7 +143,6 @@ This produces an ACK message
            void)
    
    (mktest "."
-           
            ("{stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\""
@@ -206,8 +202,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "(raise #f)"
-           
            ("uncaught exception: #f"
             "uncaught exception: #f"
             "uncaught exception: #f"
@@ -220,7 +216,6 @@ This produces an ACK message
            void)
    
    (mktest "(values 1 2)"
-           
            ("1\n2"
             "1\n2"
             "1\n2"
@@ -231,8 +226,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "(list 1 2)"
-           
            ("(1 2)"
             "(1 2)"
             "(1 2)"
@@ -282,7 +277,6 @@ This produces an ACK message
            void)
    
    (mktest "(begin (values) 1)"
-           
            ("1"
             "1"
             "1"
@@ -295,7 +289,6 @@ This produces an ACK message
            void)
    
    (mktest "(begin xx (printf \"hi\\n\"))"
-           
            (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
             #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
             #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: reference to undefined identifier.*: xx"
@@ -327,7 +320,6 @@ This produces an ACK message
    
    ;; leading comment test
    (mktest "#!/bin/sh\n1"
-           
            ("1"
             "1"
             "1"
@@ -354,7 +346,6 @@ This produces an ACK message
    ;; eval tests
    
    (mktest "    (eval '(values 1 2))"
-           
            ("1\n2"
             "1\n2"
             "1\n2"
@@ -367,7 +358,6 @@ This produces an ACK message
            void)
    
    (mktest "    (eval '(list 1 2))"
-           
            ("(1 2)"
             "(1 2)"
             "(1 2)"
@@ -392,7 +382,6 @@ This produces an ACK message
            void)
    
    (mktest "    (read (open-input-string \".\"))"
-           
            ("{stop-multi.png} read: illegal use of \".\""
             "{stop-multi.png} read: illegal use of \".\""
             "{stop-multi.png} read: illegal use of \".\""
@@ -417,7 +406,6 @@ This produces an ACK message
            void)
    
    (mktest "(eval (box 1))"
-           
            ("#&1"
             "#&1"
             "#&1"
@@ -430,7 +418,6 @@ This produces an ACK message
            void)
    
    (mktest "(eval '(box 1))"
-           
            ("#&1"
             "#&1"
             "#&1"
@@ -457,7 +444,6 @@ This produces an ACK message
    
    ;; error in the middle
    (mktest "1 2 ( 3 4"
-           
            ("1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('"
@@ -468,8 +454,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "1 2 . 3 4"
-           
            ("1\n2\n{stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\""
@@ -480,8 +466,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "1 2 (lambda ()) 3 4"
-           
            ("1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())"
@@ -492,8 +478,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "1 2 x 3 4"
-           
            (#rx"1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
             #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
             #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier.*: x"
@@ -504,8 +490,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "1 2 (raise 1) 3 4"
-           
            ("1\n2\nuncaught exception: 1"
             "uncaught exception: 1"
             "uncaught exception: 1"
@@ -516,8 +502,8 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest "1 2 (raise #f) 3 4"
-           
            ("1\n2\nuncaught exception: #f"
             "uncaught exception: #f"
             "uncaught exception: #f"
@@ -530,7 +516,6 @@ This produces an ACK message
            void)
    
    (mktest "(require lang/htdp-beginner)\n(cond [1 2 3 4])"
-           
            ("{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-22x22.png} cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with a question and an answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
@@ -545,7 +530,6 @@ This produces an ACK message
    ;; error across separate files
    (mktest
     "(load \"repl-test-tmp2.rkt\") (define (g) (+ 1 (expt 3 #f))) (f g)"
-    
     (#rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f"
      #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f"
      #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: contract violation.*given: #f"
@@ -591,7 +575,6 @@ This produces an ACK message
    
    ;; macro tests
    (mktest "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"
-           
            (""
             ""
             ""
@@ -886,7 +869,6 @@ This produces an ACK message
    ;; setup of the namespaces for pict printing (from slideshow)
 
    (mktest "(require texpict/utils)(disk 3)"
-
            ("{pict-snip}"
             "{pict-snip}"
             "{pict-snip}"
@@ -908,7 +890,6 @@ This produces an ACK message
                (current-namespace (make-namespace))
                (namespace-set-variable-value! 'd (disk 3)))
             'd)
-           
            ("{image}"
             "{image}"
             "{image}"
@@ -919,6 +900,7 @@ This produces an ACK message
            #f
            void
            void)
+   
    (mktest (to-strings
             '(let ([on (current-namespace)]
                    [n ((current-module-name-resolver) 'mred #f #f)])
@@ -926,7 +908,6 @@ This produces an ACK message
                (namespace-attach-module on n))
             '(require texpict/utils)
             '(disk 3))
-           
            ("{pict-snip}"
             "{pict-snip}"
             "{pict-snip}"
@@ -942,7 +923,6 @@ This produces an ACK message
             "(require mzlib/pretty)"
             "(pretty-print-print-hook (lambda x (expt 3 #f)))"
             "(list 1 2 3)")
-
            ("(1 2 3)"
             "(1 2 3)"
             "(1 2 3)"
@@ -957,7 +937,6 @@ This produces an ACK message
    (mktest (format "~s\n~s"
                    `(require scheme/pretty)
                    `(parameterize ((pretty-print-exact-as-decimal #t)) (display 1/4)))
-           
            ("1/4"
             "1/4"
             "1/4"
@@ -990,7 +969,55 @@ This produces an ACK message
     'interactions
     #f
     void 
-    void)))
+    void)
+  
+   (mktest
+    (format "~s" '(+ 1 (+ 1 (abort-current-continuation
+                             (default-continuation-prompt-tag)
+                             (lambda () 
+                               (abort-current-continuation
+                                (default-continuation-prompt-tag)
+                                (λ () 0)))))))
+    ("0" "0" "0" "0" "0" "0")
+    'interactions
+    #f
+    void
+    void)
+   
+   (mktest
+    (format "~s ~s ~s" 
+            '1
+            '(+ 1 (+ 1 (abort-current-continuation
+                        (default-continuation-prompt-tag)
+                        (lambda () 
+                          (abort-current-continuation
+                           (default-continuation-prompt-tag)
+                           (λ () 0))))))
+            '2)
+    ("1\n0" "0" "0" "1\n0" "0" "0")
+    'interactions
+    #f
+    void
+    void)
+   
+   (mktest
+    (format "~s" 
+            '(begin
+               1
+               (+ 1 (+ 1 (abort-current-continuation
+                          (default-continuation-prompt-tag)
+                          (lambda () 
+                            (abort-current-continuation
+                             (default-continuation-prompt-tag)
+                             (λ () 0))))))
+               2))
+    ("0" "0" "0" "0" "0" "0")
+    'interactions
+    #f
+    void
+    void)
+   
+   ))
 
 ;; these tests aren't used at the moment.
 #;

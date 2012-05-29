@@ -385,4 +385,39 @@
       #f
       #rx"main\ntest")
 
+
+(test @t{#lang racket}
+      (format "~s" '(+ 1 (+ 1 (abort-current-continuation
+                               (default-continuation-prompt-tag)
+                               (lambda () 
+                                 (abort-current-continuation
+                                  (default-continuation-prompt-tag)
+                                  (λ () 0)))))))
+      "0")
+   
+(test @t{#lang racket}
+      (format "~s ~s ~s" 
+              '1
+              '(+ 1 (+ 1 (abort-current-continuation
+                          (default-continuation-prompt-tag)
+                          (lambda () 
+                            (abort-current-continuation
+                             (default-continuation-prompt-tag)
+                             (λ () 0))))))
+              '2)
+      "1\n0")
+
+(test @t{#lang racket}
+      (format "~s" 
+              '(begin
+                 1
+                 (+ 1 (+ 1 (abort-current-continuation
+                            (default-continuation-prompt-tag)
+                            (lambda () 
+                              (abort-current-continuation
+                               (default-continuation-prompt-tag)
+                               (λ () 0))))))
+                 2))
+      "0")
+
 (fire-up-drracket-and-run-tests run-test)
