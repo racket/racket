@@ -42,16 +42,18 @@
 (define (insert-in-uri uri c)
   (insert-param uri URL-KEY (bytes->string/utf-8 c)))
 
+(define serialize-rx #rx"serialize: contract violation\n  expected: serializable\\?\n  given: (.*)")
+
 (define (stuff-url stuffer uri c)
   (with-handlers
    ([(lambda (x)
        (and (exn:fail? x)
-            (regexp-match #rx"serialize: expected argument of type <serializable object>; given: (.*)"
+            (regexp-match serialize-rx
                           (exn-message x))))
      (lambda (x)
        (define non
          (second
-          (regexp-match #rx"serialize: expected argument of type <serializable object>; given: (.*)"
+          (regexp-match serialize-rx
                        (exn-message x))))
        (error 'stuff-url 
               "Cannot stuff ~e into a URL because it contains non-serializable pieces. Convert ~a to a serializable struct"
