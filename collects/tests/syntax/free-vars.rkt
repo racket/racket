@@ -34,4 +34,9 @@
                  [y 2])
              '(x)
              (let-syntax ([ex (syntax-rules () [(foo) x])])
-               (lambda (z) (ex))))))
+               (lambda (z) (ex)))))
+  (check #'(let ([x 1]
+                 [y 2])
+             '(x)
+             (let ([y 3])
+               (list x y)))))

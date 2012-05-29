@@ -31,22 +31,17 @@
       [(pair? t) (loop (cdr t) (loop (car t) a))]
       [else (error "internal error")]))))
 
-;; formals->boundmap : formals-stx -> bound-map-table
+;; formals->ids : formals-stx -> (listof identifier?)
 ;; Parses a procedure "formals" and returns the binding ids
 ;;  in a table
-(define (formals->boundmap f)
-  (let ([ids (let loop ([f f])
-               (cond
-                 [(identifier? f) (list f)]
-                 [(pair? f) (cons (car f)
-                                  (loop (cdr f)))]
-                 [(null? f) null]
-                 [(syntax? f) (loop (syntax-e f))]))]
-        [b (make-bound-identifier-mapping)])
-    (for-each (lambda (id)
-                (bound-identifier-mapping-put! b id #t))
-              ids)
-    b))
+(define (formals->ids f)
+  (let loop ([f f])
+    (cond
+     [(identifier? f) (list f)]
+     [(pair? f) (cons (car f)
+                      (loop (cdr f)))]
+     [(null? f) null]
+     [(syntax? f) (loop (syntax-e f))])))
 
 ;; free-vars : expr-stx -> (listof id)
 ;; Returns a list of free lambda- and let-bound identifiers in a
@@ -54,24 +49,31 @@
 (define (free-vars e [code-insp
                       (variable-reference->module-declaration-inspector
                        (#%variable-reference))])
+  ;; It would be nicers to have a functional mapping:
+  (define bindings (make-bound-identifier-mapping))
   (merge
    (let free-vars ([e e])
      (kernel-syntax-case (syntax-disarm e code-insp) #f
        [id 
         (identifier? #'id) 
-        (if (eq? 'lexical (identifier-binding #'id))
+        (if (and (eq? 'lexical (identifier-binding #'id))
+                 (not (bound-identifier-mapping-get bindings #'id (lambda () #f))))
             (list #'id)
             null)]
        [(#%top . id) null]
        [(quote q) null]
        [(quote-syntax q) null]
        [(#%plain-lambda formals expr ...)
-        ;; FIXME: this case makes the algorithm quadratic-time
-        (let ([free (merge (map free-vars (syntax->list #'(expr ...))))]
-              [bindings (formals->boundmap #'formals)])
-          (filter (lambda (id)
-                    (not (bound-identifier-mapping-get bindings id (lambda () #f))))
-                  free))]
+        (let ([ids (formals->ids #'formals)])
+          (for ([id (in-list ids)])
+            (bound-identifier-mapping-put! bindings id #t))
+          (begin0
+           (map free-vars (syntax->list #'(expr ...)))
+           ;; Since every binding should be distinct, it shouldn't
+           ;; matter whether we map them back to #f, but just in case
+           ;; we get a weird expression...
+           (for ([id (in-list ids)])
+             (bound-identifier-mapping-put! bindings id #f))))]
        [(case-lambda [formals expr ...] ...)
         (map free-vars (syntax->list
                         #'((#%plain-lambda formals expr ...) ...)))]
