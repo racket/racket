@@ -9,7 +9,8 @@
          (listof identifier?)]{
 
 Returns a list of free @racket[lambda]- and @racket[let]-bound
-identifiers in @racket[expr-stx]. The expression must be fully
+identifiers in @racket[expr-stx] in the order in which each
+identifier first appears within @racket[expr-stx]. The expression must be fully
 expanded (see @secref[#:doc refman "fully-expanded"] and
 @racket[expand]).
 
