@@ -80,10 +80,10 @@
   (log-missed-optimization
    "all args float-arg-expr, result not Float"
    (string-append
-    "This expression has a Real type. It would be better optimized if it had a Float type."
+    "This expression has a Real type. The optimizer could improve its performance if it had type Float."
     (if (null? irritants)
         ""
-        "To fix this, change the highlighted expression(s) to have Float type(s)."))
+        "To fix, change the highlighted expression(s) to have Float type(s)."))
    stx irritants))
 
 (define float-opt-msg "Float arithmetic specialization.")

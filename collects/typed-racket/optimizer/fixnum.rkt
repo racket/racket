@@ -84,7 +84,7 @@
 (define (log-fixnum-missed-opt stx)
   (log-missed-optimization
    "out of fixnum range"
-   "This expression has all fixnum arguments but is not guaranteed to itself return a fixnum. Therefore, it cannot be safely optimized. Constraining the arguments to be of Byte or Index types may help."
+   "This expression consists of all fixnum arguments but is not guaranteed to produce a fixnum. Therefore it cannot be safely optimized. Constraining the arguments to be of Byte or Index types may help."
    stx))
 
 ;; general-purpose safety check for fixnum opts
