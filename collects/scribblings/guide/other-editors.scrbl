@@ -154,7 +154,7 @@ filetype plugin on
 set expandtab
 }|
 
-@subsection{Indentation}
+@subsubsub*section{Indentation}
 
 You can enable indentation for Racket by setting both the @tt{lisp} and
 @tt{autoindent} options in Vim. However, the indentation is limited and not as
@@ -178,7 +178,7 @@ set lispwords+=public-method,override-method,private-method,syntax-case,syntax-r
 set lispwords+=..more..
 }|
 
-@subsection{Highlighting}
+@subsubsub*section{Highlighting}
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=1230"]{Rainbow
 Parenthesis} script for vim can be useful for more visible parenthesis
@@ -186,20 +186,20 @@ matching. Syntax highlighting for Scheme is shipped with vim on many platforms,
 which will work for the most part with Racket. The vim-racket script
 provides good default highlighting settings for you.
 
-@subsection{Structured Editing}
+@subsubsub*section{Structured Editing}
 
 The @hyperlink["http://www.vim.org/scripts/script.php?script_id=2531"]{Slimv}
 plugin has a paredit mode that works like paredit in Emacs. However, the plugin
 is not aware of Racket. You can either set vim to treat Racket as Scheme files
 or you can modify the paredit script to load on @filepath{.rkt} files.
 
-@subsection{Scribble}
+@subsubsub*section{Scribble}
 
 Vim support for writing scribble documents is provided by the
 @hyperlink["http://www.vim.org/scripts/script.php?script_id=3756"]{scribble.vim}
 plugin.
 
-@subsection{Miscellaneous}
+@subsubsub*section{Miscellaneous}
 
 If you are installing many vim plugins (not necessary specific to Racket), we
 recommend using a plugin that will make loading other plugins easier.
