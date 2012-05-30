@@ -9,6 +9,11 @@
           images/flomap
           slideshow/pict)
 
+@(require (for-label (only-in typed/racket
+                              Integer Float Nonnegative-Fixnum Real Boolean
+                              FlVector Vectorof
+                              U Any Option)))
+
 @(define flomap-eval (make-base-eval))
 @interaction-eval[#:eval flomap-eval (require racket racket/flonum images/flomap)]
 
@@ -383,11 +388,12 @@ The function @racket[f] receives three arguments @racket[k] @racket[x] @racket[y
                                                 (sqr (- y 50))))))))))
                  (flomap->bitmap sine-fm)]
 
-To build a flomap from a function that returns vectors, see @racket[build-flomap*].
+To build a flomap using a function that returns vectors, see @racket[build-flomap*].
 }
 
 @defproc[(build-flomap* [c Integer] [w Integer] [h Integer]
-                        [f (Nonnegative-Fixnum Nonnegative-Fixnum -> (U (Vectorof Real) FlVector))]) flomap]{
+                        [f (Nonnegative-Fixnum Nonnegative-Fixnum
+                            -> (U (Vectorof Real) FlVector))]) flomap]{
 Returns a @racket[w]×@racket[h] flomap with @racket[c] color components.
 Its values are defined by @racket[f], which returns vectors of point components.
 The vectors returned by @racket[f] must be length @racket[c].
@@ -445,7 +451,7 @@ First, the @racket[f] passed to @racket[inline-build-flomap] can be a macro.
 Second, it receives arguments @racket[k] @racket[x] @racket[y] @racket[i], where @racket[i] is a precalculated index into the result's @racketid[values].
 Third, it must return a @racket[Float].
 
-Using @racket[inline-build-flomap] instead of @racket[build-flomap] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
+Using @racket[inline-build-flomap] instead of @racket[build-flomap] may ensure that @racket[f] is inlined, and therefore floats remain unboxed.
 Many library functions use @racket[inline-build-flomap] internally for speed, notably @racket[fm+] and the other pointwise arithmetic operators.
 
 @bold{This is not available in untyped Racket.}
@@ -585,7 +591,7 @@ Because @racket[fm] is an alpha-multiplied flomap (see @secref{flomap:opacity}),
 @interaction[#:eval flomap-eval
                     (flomap->bitmap (fm* fm 0.2))]
 
-@defproc[(flomap-lift2 [f (Flonum Flonum -> Real)]) ((U Real flomap) (U Real flomap) -> flomap)]{
+@defproc[(flomap-lift2 [f (Float Float -> Real)]) ((U Real flomap) (U Real flomap) -> flomap)]{
 Lifts a binary floating-point function to operate pointwise on flomaps, allowing the same argument combinations as @racket[fm+] and others.
 }
 
@@ -593,7 +599,7 @@ Lifts a binary floating-point function to operate pointwise on flomaps, allowing
 A macro version of @racket[flomap-lift].
 The function or macro @racket[f] must return a @racket[Float], not a @racket[Real] as the @racket[f] argument to @racket[flomap-lift] can.
 
-Using @racket[inline-flomap-lift] instead of @racket[flomap-lift] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
+Using @racket[inline-flomap-lift] instead of @racket[flomap-lift] may ensure that @racket[f] is inlined, and therefore floats remain unboxed.
 
 @bold{This is not available in untyped Racket.}
 }
@@ -602,7 +608,7 @@ Using @racket[inline-flomap-lift] instead of @racket[flomap-lift] often ensures 
 A macro version of @racket[flomap-lift2].
 The function or macro @racket[f] must return a @racket[Float], not a @racket[Real] as the @racket[f] argument to @racket[flomap-lift2] can.
 
-Using @racket[inline-flomap-lift2] instead of @racket[flomap-lift2] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
+Using @racket[inline-flomap-lift2] instead of @racket[flomap-lift2] may ensure that @racket[f] is inlined, and therefore floats remain unboxed.
 
 @bold{This is not available in untyped Racket.}
 }
@@ -879,7 +885,76 @@ See @racket[flomap-pin] and @racket[flomap-pin*] for implementation details.
 @; ===================================================================================================
 
 
-@;@section{Transformations}
+@section{Transformations}
+
+@defproc[(flomap-flip-horizontal [fm flomap]) flomap]
+@defproc[(flomap-flip-vertical [fm flomap]) flomap]
+@defproc[(flomap-transpose [fm flomap]) flomap]
+@defproc[(flomap-cw-rotate [fm flomap]) flomap]
+@defproc[(flomap-ccw-rotate [fm flomap]) flomap]{
+Some standard image transformations.
+These are lossless, in that repeated transformations do not degrade the image.
+@examples[#:eval flomap-eval
+                 (require slideshow/pict)
+                 (define hello-fm (flomap-trim
+                                   (bitmap->flomap
+                                    (pict->bitmap (text "Hello" '(bold) 25)))))
+                 (flomap->bitmap hello-fm)
+                 (flomap->bitmap (flomap-flip-horizontal hello-fm))
+                 (flomap->bitmap (flomap-flip-vertical hello-fm))
+                 (flomap->bitmap (flomap-transpose hello-fm))
+                 (flomap->bitmap (flomap-cw-rotate hello-fm))
+                 (flomap->bitmap (flomap-ccw-rotate hello-fm))]
+}
+
+@defproc[(flomap-rotate [fm flomap] [θ Real]) flomap]{
+Equivalent to @racket[(flomap-transform fm (rotate-transform θ))].
+@examples[#:eval flomap-eval
+                 (flomap->bitmap (flomap-rotate hello-fm (* 1/4 pi)))]
+}
+
+@defstruct*[invertible-2d-mapping ([fun (Float Float -> (values Float Float))]
+                                   [inv (Float Float -> (values Float Float))])]{
+}
+
+@defidform[Flomap-Transform]{
+Defined as @racket[(Integer Integer -> invertible-2d-mapping)].
+}
+
+@defproc*[([(flomap-transform [fm flomap] [t Flomap-Transform]) flomap]
+           [(flomap-transform [fm flomap] [t Flomap-Transform]
+                              [x-min Real] [y-min Real]
+                              [x-max Real] [y-max Real])
+            flomap])]{
+}
+
+@defproc[(rotate-transform [θ Real]) Flomap-Transform]{
+rotates around center; positive is screen-clockwise
+}
+
+@defproc[(whirl-and-pinch-transform [θ Real] [pinch Real] [radius Real]) Flomap-Transform]{
+}
+
+@defproc[(transform-compose [t2 Flomap-Transform] [t1 Flomap-Transform]) Flomap-Transform]{
+@examples[#:eval flomap-eval
+                 (flomap-size hello-fm)
+                 (define hello-fm-blurry
+                   (for/fold ([hello-fm hello-fm]) ([_  (in-range 8)])
+                     (flomap-rotate hello-fm (* 1/4 pi))))
+                 (flomap->bitmap hello-fm-blurry)
+                 (flomap-size hello-fm-blurry)]
+
+@examples[#:eval flomap-eval
+                 (define t
+                   (for/fold ([t (rotate-transform (* 1/4 pi))]) ([_  (in-range 7)])
+                     (transform-compose t (rotate-transform (* 1/4 pi)))))
+                 (define hello-fm-sharp
+                   (flomap-transform hello-fm t))
+                 (flomap->bitmap hello-fm-sharp)
+                 (flomap-size hello-fm-sharp)
+                 (flomap-extreme-values
+                  (fmsqr (fm- hello-fm hello-fm-sharp)))]
+}
 
 
 @; ===================================================================================================
