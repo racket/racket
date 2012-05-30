@@ -164,9 +164,9 @@
         [else  (let ([height  (abs height)])
                  (flomap-scale*-y fm (abs (exact->inexact (/ height h))) height))]))
 
-;; standard deviation of an unscaled box filter (i.e. f([-1/2,1/2]) = {1}, zero elsewhere)
+;; variance of an unscaled box filter (i.e. f([-1/2,1/2]) = {1}, zero elsewhere)
 (define box-filter-variance (/ 1.0 12.0))
-;; standard deviation of an unscaled triangle filter (simulates effect of linear interpolation)
+;; variance of an unscaled triangle filter (simulates effect of linear interpolation)
 (define triangle-filter-variance (/ 1.0 24.0))
 
 ;; calculates the standard deviation of downscaling blur, assuming linear interpolation will be
@@ -175,7 +175,7 @@
 (define (stddev-for-scale scale)
   (define var (- (/ box-filter-variance (sqr scale))
                  triangle-filter-variance))
-  (abs (flsqrt (max 0.0 var))))
+  (flsqrt (max 0.0 var)))
 
 (: flomap-scale*-x (flomap Flonum Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-x fm scale width)
@@ -196,17 +196,18 @@
 (: flomap-scale*-x/linear (flomap Flonum Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-x/linear fm s new-w)
   (match-define (flomap vs c w h) fm)
-  (define w-1 (fx- w 1))
+  (define w-1 (unsafe-fx+ w -1))
   (inline-build-flomap
    c new-w h
    (λ (k new-x y _i)
      (define scaled-x (- (/ (+ (fx->fl new-x) 0.5) s) 0.5))
      (define floor-scaled-x (floor scaled-x))
      (define x0 (fl->fx floor-scaled-x))
-     (cond [(or (x0 . fx< . 0) (x0 . fx>= . w)) 0.0]
+     (cond [(or (x0 . fx< . -1) (x0 . fx>= . w))  0.0]
            [else
             (define i0 (coords->index c w k x0 y))
-            (define v0 (flvector-ref vs i0))
+            (define v0 (cond [(x0 . fx= . -1)  0.0]
+                             [else  (flvector-ref vs i0)]))
             (define v1 (cond [(x0 . fx= . w-1)  0.0]
                              [else  (flvector-ref vs (unsafe-fx+ i0 c))]))
             (fl-convex-combination v0 v1 (- scaled-x floor-scaled-x))]))))
@@ -214,7 +215,7 @@
 (: flomap-scale*-y/linear (flomap Flonum Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-y/linear fm s new-h)
   (match-define (flomap vs c w h) fm)
-  (define h-1 (fx- h 1))
+  (define h-1 (unsafe-fx+ h -1))
   (define cw (* c w))
   (inline-build-flomap
    c w new-h
@@ -222,10 +223,11 @@
      (define scaled-y (- (/ (+ (fx->fl new-y) 0.5) s) 0.5))
      (define floor-scaled-y (floor scaled-y))
      (define y0 (fl->fx floor-scaled-y))
-     (cond [(or (y0 . fx< . 0) (y0 . fx>= . h))  0.0]
+     (cond [(or (y0 . fx< . -1) (y0 . fx>= . h))  0.0]
            [else
             (define i0 (coords->index c w k x y0))
-            (define v0 (flvector-ref vs i0))
+            (define v0 (cond [(y0 . fx= . -1)  0.0]
+                             [else  (flvector-ref vs i0)]))
             (define v1 (cond [(y0 . fx= . h-1)  0.0]
                              [else  (flvector-ref vs (unsafe-fx+ i0 cw))]))
             (fl-convex-combination v0 v1 (- scaled-y floor-scaled-y))]))))

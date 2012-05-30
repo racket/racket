@@ -9,9 +9,12 @@
 
 (provide flomap flomap? flomap-values flomap-components flomap-width flomap-height
          ;; Accessors
-         flomap-size unsafe-flomap-ref flomap-ref flomap-bilinear-ref coords->index
+         flomap-size coords->index
+         unsafe-flomap-ref flomap-ref flomap-bilinear-ref
+         unsafe-flomap-ref* flomap-ref* flomap-bilinear-ref*
          ;; Basic constructors
-         make-flomap make-flomap* build-flomap inline-build-flomap
+         make-flomap build-flomap inline-build-flomap
+         make-flomap* build-flomap* inline-build-flomap*
          flomap-ref-component flomap-take-components flomap-drop-components flomap-append-components)
 
 (struct: flomap ([values : FlVector] [components : Integer] [width : Integer] [height : Integer])
@@ -43,12 +46,30 @@
            (unsafe-flvector-ref vs (coords->index c w k x y))]
           [else  0.0]))
   
+  (: unsafe-flomap-ref* (FlVector Integer Integer Integer Integer Integer -> FlVector))
+  (define (unsafe-flomap-ref* vs c w h x y)
+    (cond [(and (x . fx>= . 0) (x . fx< . w)
+                (y . fx>= . 0) (y . fx< . h))
+           (define i (coords->index c w 0 x y))
+           (define point-vs (make-flvector c))
+           (let: loop : Void ([k : Nonnegative-Fixnum  0])
+             (when (k . < . c)
+               (unsafe-flvector-set! point-vs k (unsafe-flvector-ref vs (unsafe-fx+ i k)))
+               (loop (unsafe-fx+ k 1))))
+           point-vs]
+          [else  (make-flvector c 0.0)]))
+  
   (: flomap-ref (flomap Integer Integer Integer -> Flonum))
   (define (flomap-ref fm k x y)
     (match-define (flomap vs c w h) fm)
     (unless (and (k . >= . 0) (k . < . c))
       (raise-type-error 'flomap-ref (format "nonnegative fixnum < ~e" c) k))
     (unsafe-flomap-ref vs c w h k x y))
+  
+  (: flomap-ref* (flomap Integer Integer -> FlVector))
+  (define (flomap-ref* fm x y)
+    (match-define (flomap vs c w h) fm)
+    (unsafe-flomap-ref* vs c w h x y))
   
   ) ; begin-encourage-inline
 
@@ -58,14 +79,14 @@
   (cond [(and (k . >= . 0) (k . < . c))
          (let ([x  (- (exact->inexact x) 0.5)]
                [y  (- (exact->inexact y) 0.5)])
-           (cond [(and (x . > . -0.5) (x . < . (+ 0.5 (->fl w)))
-                       (y . > . -0.5) (y . < . (+ 0.5 (->fl h))))
+           (cond [(and (x . > . -1.0) (x . < . (->fl w))
+                       (y . > . -1.0) (y . < . (->fl h)))
                   (define floor-x (floor x))
                   (define floor-y (floor y))
                   (define x0 (fl->fx floor-x))
                   (define y0 (fl->fx floor-y))
-                  (define x1 (fx+ x0 1))
-                  (define y1 (fx+ y0 1))
+                  (define x1 (unsafe-fx+ x0 1))
+                  (define y1 (unsafe-fx+ y0 1))
                   (define v00 (unsafe-flomap-ref vs c w h k x0 y0))
                   (define v10 (unsafe-flomap-ref vs c w h k x1 y0))
                   (define v01 (unsafe-flomap-ref vs c w h k x0 y1))
@@ -77,6 +98,40 @@
                  [else  0.0]))]
         [else
          (raise-type-error 'flomap-bilinear-ref (format "nonnegative fixnum < ~e" c) 1 fm k x y)]))
+
+(: flomap-bilinear-ref* (flomap Real Real -> FlVector))
+(define (flomap-bilinear-ref* fm x y)
+  (match-define (flomap vs c w h) fm)
+  (let ([x  (- (exact->inexact x) 0.5)]
+        [y  (- (exact->inexact y) 0.5)])
+    (cond [(and (x . > . -1.0) (x . < . (->fl w))
+                (y . > . -1.0) (y . < . (->fl h)))
+           (define floor-x (floor x))
+           (define floor-y (floor y))
+           (define x0 (fl->fx floor-x))
+           (define y0 (fl->fx floor-y))
+           (define x1 (unsafe-fx+ x0 1))
+           (define y1 (unsafe-fx+ y0 1))
+           (define vs00 (unsafe-flomap-ref* vs c w h x0 y0))
+           (define vs10 (unsafe-flomap-ref* vs c w h x1 y0))
+           (define vs01 (unsafe-flomap-ref* vs c w h x0 y1))
+           (define vs11 (unsafe-flomap-ref* vs c w h x1 y1))
+           (define xα (- x floor-x))
+           (define yα (- y floor-y))
+           (define point-vs (make-flvector c))
+           (let: loop : FlVector ([k : Nonnegative-Fixnum  0])
+             (cond [(k . < . c)
+                    (define v00 (unsafe-flvector-ref vs00 k))
+                    (define v10 (unsafe-flvector-ref vs10 k))
+                    (define v01 (unsafe-flvector-ref vs01 k))
+                    (define v11 (unsafe-flvector-ref vs11 k))
+                    (define v (fl-convex-combination (fl-convex-combination v00 v10 xα)
+                                                     (fl-convex-combination v01 v11 xα)
+                                                     yα))
+                    (unsafe-flvector-set! point-vs k v)
+                    (loop (unsafe-fx+ k 1))]
+                   [else  point-vs]))]
+          [else  (make-flvector c 0.0)])))
 
 ;; ===================================================================================================
 ;; Construction and conversion
@@ -98,7 +153,8 @@
          [w : Integer  width]
          [h : Integer  height])
     (with-asserts ([c  nonnegative-fixnum?] [w  nonnegative-fixnum?] [h  nonnegative-fixnum?])
-      (define vs (make-flvector (* c w h)))
+      (define fm (make-flomap c w h))
+      (define vs (flomap-values fm))
       (let: y-loop : flomap ([y : Nonnegative-Fixnum  0] [i : Nonnegative-Fixnum  0])
         (cond
           [(y . fx< . h)
@@ -111,19 +167,63 @@
                                     (k-loop (unsafe-fx+ k 1) (unsafe-fx+ i 1))]
                     [else  (x-loop (unsafe-fx+ x 1) i)]))]
                [else  (y-loop (unsafe-fx+ y 1) i)]))]
-          [else  (flomap vs c w h)])))))
+          [else  fm])))))
 
 (: build-flomap (Integer Integer Integer
-                         (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum
-                                             Nonnegative-Fixnum -> Real)
+                         (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum -> Real)
                          -> flomap))
-(define (build-flomap components width height fun)
-  (inline-build-flomap components width height (λ (k x y i) (exact->inexact (fun k x y i)))))
+(define (build-flomap c w h f)
+  (inline-build-flomap c w h (λ (k x y i) (exact->inexact (f k x y)))))
 
-(: make-flomap* (Integer Integer FlVector -> flomap))
+#;
+(: inline-build-flomap* (Integer Integer Integer
+                                 (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum
+                                                     -> FlVector)
+                                 -> flomap))
+(define-syntax-rule (inline-build-flomap* components width height f)
+  (let: ([c : Integer  components]
+         [w : Integer  width]
+         [h : Integer  height])
+    (with-asserts ([c  nonnegative-fixnum?] [w  nonnegative-fixnum?] [h  nonnegative-fixnum?])
+      (define fm (make-flomap c w h))
+      (define vs (flomap-values fm))
+      (let: y-loop : flomap ([y : Nonnegative-Fixnum  0] [i : Nonnegative-Fixnum  0])
+        (cond
+          [(y . fx< . h)
+           (let: x-loop : flomap ([x : Nonnegative-Fixnum  0] [i : Nonnegative-Fixnum  i])
+             (cond
+               [(x . fx< . w)
+                (define: point-vs : FlVector  (f x y i))
+                (cond
+                  [(fx= (flvector-length point-vs) c)
+                   (let: k-loop : flomap ([k : Nonnegative-Fixnum  0] [i : Nonnegative-Fixnum  i])
+                     (cond
+                       [(k . fx< . c)  (unsafe-flvector-set! vs i (unsafe-flvector-ref point-vs k))
+                                       (k-loop (unsafe-fx+ k 1) (unsafe-fx+ i 1))]
+                       [else  (x-loop (unsafe-fx+ x 1) i)]))]
+                  [else  (raise-type-error 'inline-build-flomap* (format "length-~e FlVector" c)
+                                           point-vs)])]
+               [else  (y-loop (unsafe-fx+ y 1) i)]))]
+          [else  fm])))))
+
+(: make-flomap* (Integer Integer (U (Vectorof Real) FlVector) -> flomap))
 (define (make-flomap* w h vs)
-  (define c (flvector-length vs))
-  (inline-build-flomap c w h (λ (k _x _y _i) (unsafe-flvector-ref vs k))))
+  (let ([vs  (->flvector vs)])
+    (define c (flvector-length vs))
+    (inline-build-flomap* c w h (λ (_x _y _i) vs))))
+
+(: build-flomap* (Integer Integer Integer
+                          (Nonnegative-Fixnum Nonnegative-Fixnum -> (U (Vectorof Real) FlVector))
+                          -> flomap))
+(define (build-flomap* c w h f)
+  (inline-build-flomap*
+   c w h
+   (λ (x y i)
+     (define point-vs0 (f x y))
+     (define point-vs1 (->flvector point-vs0))
+     (cond [(fx= (flvector-length point-vs1) c)  point-vs1]
+           [else  (raise-type-error 'build-flomap* (format "length-~e Vector or FlVector" c)
+                                    point-vs0)]))))
 
 (: flomap-ref-component (flomap Integer -> flomap))
 (define (flomap-ref-component fm k)
@@ -155,8 +255,7 @@
   (match-define (flomap vs1 d1 w1 h1) fm1)
   (match-define (flomap vs2 d2 w2 h2) fm2)
   (unless (and (= w1 w2) (= h1 h2))
-    (error 'flomap-append-components
-           "expected flomaps with equal dimension; given dimensions ~e×~e and ~e×~e"
+    (error 'flomap-append-components "expected same-size flomaps; given sizes ~e×~e and ~e×~e"
            w1 h1 w2 h2))
   (inline-build-flomap (fx+ d1 d2) w1 h1
                        (λ (k x y _i)

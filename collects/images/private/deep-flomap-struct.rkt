@@ -31,8 +31,7 @@
     (match-define (flomap _ 4 w h) argb-fm)
     (match-define (flomap _ 1 zw zh) z-fm)
     (unless (and (= w zw) (= h zh))
-      (error 'deep-flomap
-             "expected flomaps of equal dimension; given dimensions ~e×~e and ~e×~e" w h zw zh))
+      (error 'deep-flomap "expected same-size flomaps; given sizes ~e×~e and ~e×~e" w h zw zh))
     (values argb-fm z-fm)))
 
 (: flomap->deep-flomap (flomap -> deep-flomap))

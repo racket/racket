@@ -6,7 +6,10 @@
                     [flvector-set! old:flvector-set!])
          (except-in racket/fixnum fl->fx fx->fl)  ; these two functions are untyped
          racket/math
-         (only-in racket/unsafe/ops unsafe-flvector-set! unsafe-fx+)
+         (only-in racket/unsafe/ops
+                  unsafe-flvector-set! unsafe-flvector-ref
+                  unsafe-vector-set! unsafe-vector-ref
+                  unsafe-fx+)
          racket/performance-hint)
 
 (provide (all-defined-out)
@@ -35,7 +38,30 @@
                               (loop (unsafe-fx+ i 1))]
               [else  vs])))))
 
+(: flvector->vector (FlVector -> (Vectorof Flonum)))
+(define (flvector->vector vs)
+  (define n (flvector-length vs))
+  (define new-vs (make-vector n 0.0))
+  (let: loop : (Vectorof Flonum) ([k : Nonnegative-Fixnum  0])
+    (cond [(k . < . n)  (unsafe-vector-set! new-vs k (unsafe-flvector-ref vs k))
+                        (loop (unsafe-fx+ k 1))]
+          [else  new-vs])))
+
+(: real-vector->flvector ((Vectorof Real) -> FlVector))
+(define (real-vector->flvector vs)
+  (define n (vector-length vs))
+  (define new-vs (make-flvector n 0.0))
+  (let: loop : FlVector ([k : Nonnegative-Fixnum  0])
+    (cond [(k . < . n)  (unsafe-flvector-set! new-vs k (exact->inexact (unsafe-vector-ref vs k)))
+                        (loop (unsafe-fx+ k 1))]
+          [else  new-vs])))
+
 (begin-encourage-inline
+  
+  (: ->flvector ((U (Vectorof Real) FlVector) -> FlVector))
+  (define (->flvector vs)
+    (cond [(flvector? vs)  vs]
+          [else  (real-vector->flvector vs)]))
   
   (: fx->fl (Fixnum -> Flonum))
   (define fx->fl ->fl)

@@ -29,19 +29,19 @@ The following flomap @racket[fm] is used in various examples:
 @interaction[#:eval flomap-eval
                     (define fm
                       (draw-flomap
-                       (λ (bm-dc)
-                         (send bm-dc set-alpha 0)
-                         (send bm-dc set-background "black")
-                         (send bm-dc clear)
-                         (send bm-dc set-alpha 1/3)
-                         (send bm-dc translate 2 2)
-                         (send bm-dc set-pen "black" 4 'long-dash)
-                         (send bm-dc set-brush "red" 'solid)
-                         (send bm-dc draw-ellipse 0 0 192 192)
-                         (send bm-dc set-brush "green" 'solid)
-                         (send bm-dc draw-ellipse 64 0 192 192)
-                         (send bm-dc set-brush "blue" 'solid)
-                         (send bm-dc draw-ellipse 32 44 192 192))
+                       (λ (fm-dc)
+                         (send fm-dc set-alpha 0)
+                         (send fm-dc set-background "black")
+                         (send fm-dc clear)
+                         (send fm-dc set-alpha 1/3)
+                         (send fm-dc translate 2 2)
+                         (send fm-dc set-pen "black" 4 'long-dash)
+                         (send fm-dc set-brush "red" 'solid)
+                         (send fm-dc draw-ellipse 0 0 192 192)
+                         (send fm-dc set-brush "green" 'solid)
+                         (send fm-dc draw-ellipse 64 0 192 192)
+                         (send fm-dc set-brush "blue" 'solid)
+                         (send fm-dc draw-ellipse 32 44 192 192))
                        260 240))
                     (flomap->bitmap fm)]
 It is typical to use @racket[flomap->bitmap] to visualize a flomap at the REPL.
@@ -68,7 +68,7 @@ There are three main reasons to use flomaps:
   @item{@bold{Range.}
          A floating-point value can also represent about 4.6 quintillion distinct intensities above saturation (@racket[1.0]).
          If distinguishing oversaturated values is important, flomaps have the range for it.
-         Further, floating-point images are (approximately) closed under pointwise arithmetic.
+         Further, floating-point images are closed under pointwise arithmetic (up to floating-point error).
          }
   @item{@bold{Speed.}
          The @racketmodname[images/flomap] module benefits greatly from Typed Racket's type-directed optimizations.
@@ -76,7 +76,7 @@ There are three main reasons to use flomaps:
          }
   )
 For these reasons, other parts of the @racket[images] library use flomaps internally, to represent and operate on
-ARGB and RGB images, light maps, shadow maps, height maps, and normal maps.
+RGB and ARGB images, light maps, shadow maps, height maps, and normal maps.
 
 @subsection[#:tag "flomap:conceptual"]{Conceptual Model}
 
@@ -88,23 +88,24 @@ The following example creates a 10×10 bitmap with RGB components, and indexes i
 It also attempts to index component @racket[3], which doesn't exist.
 Note that @racket[flomap-ref] accepts its coordinate arguments in a standard order: @racket[k] @racket[x] @racket[y] (with @racket[k] for @bold{k}omponent).
 @interaction[#:eval flomap-eval
-                    (define magenta-fm (make-flomap* 10 10 (flvector 1.0 0.0 1.0)))
+                    (define magenta-fm (make-flomap* 10 10 #(0.5 0.0 1.0)))
                     (flomap->bitmap magenta-fm)
-                    (flomap-ref magenta-fm 0 0 0)
-                    (flomap-ref magenta-fm 0 -1 0)
-                    (flomap-ref magenta-fm 0 0 1000)
+                    (flomap-ref* magenta-fm 0 0)
+                    (flomap-ref* magenta-fm -1 0)
+                    (flomap-ref* magenta-fm 0 1000)
                     (flomap-ref magenta-fm 3 0 0)]
 
 Many flomap functions, such as @racket[flomap-bilinear-ref], treat their arguments as if every @italic{real} @racket[x] @racket[y] coordinate has values.
 In all such cases, known nonzero values are at half-integer coordinates and others are interpolated.
 
 @examples[#:eval flomap-eval
-                 (flomap-bilinear-ref magenta-fm 0 0.5 0.5)
-                 (flomap-bilinear-ref magenta-fm 0 0.25 0.25)
-                 (flomap-bilinear-ref magenta-fm 0 0.0 0.0)]
+                 (flomap-bilinear-ref* magenta-fm 0.5 0.5)
+                 (flomap-bilinear-ref* magenta-fm 0.25 0.25)
+                 (flomap-bilinear-ref* magenta-fm 0.0 0.0)
+                 (flomap-bilinear-ref* magenta-fm -0.25 -0.25)]
 
 This conceptual model allows us to treat flomaps as if they were multi-valued functions on @racket[Real]×@racket[Real].
-For example, we might plot the red component of an icon:
+For example, we might plot the red component of an ARGB icon:
 @interaction[#:eval flomap-eval
                     (require images/icons/misc plot)
                     (define icon-fm (bomb-flomap "azure" "orange" 48))
@@ -112,7 +113,7 @@ For example, we might plot the red component of an icon:
                     (define-values (icon-width icon-height) (flomap-size icon-fm))
                     (plot3d-bitmap (contour-intervals3d
                                     (λ (x y) (flomap-bilinear-ref icon-fm 1 x y))
-                                    0 icon-width 0 icon-height))]
+                                    -0.5 (+ 0.5 icon-width) -0.5 (+ 0.5 icon-height)))]
 Notice that the plot's maximum height is above saturation (@racket[1.0]).
 The tallest peak corresponds to the specular highlight (the shiny part) on the bomb.
 Specular highlights are one case where it is important to operate on oversaturated values without truncating them---until it is time to display the image.
@@ -143,10 +144,10 @@ As an example of the last point, consider blur.
 The following example creates an alpha-multiplied flomap using @racket[draw-flomap].
 It blurs the flomap using a general-purpose (i.e. non-alpha-aware) blur function, then converts the flomap to non-alpha-multiplied and does the same.
 @interaction[#:eval flomap-eval
-                    (define circle-fm (draw-flomap (λ (dc)
-                                                     (send dc set-pen "black" 1 'transparent)
-                                                     (send dc set-brush "green" 'solid)
-                                                     (send dc draw-ellipse 10 10 30 30))
+                    (define circle-fm (draw-flomap (λ (fm-dc)
+                                                     (send fm-dc set-pen "black" 1 'transparent)
+                                                     (send fm-dc set-brush "green" 'solid)
+                                                     (send fm-dc draw-ellipse 10 10 30 30))
                                                    50 50))
                     (flomap->bitmap circle-fm)
                     (flomap->bitmap (flomap-blur circle-fm 4 4))
@@ -239,10 +240,17 @@ Returns the width and height of @racket[fm] as nonnegative fixnums.
 
 @defproc[(flomap-ref [fm flomap] [k Integer] [x Integer] [y Integer]) Float]{
 Returns @racket[fm]'s value at @racket[k] @racket[x] @racket[y].
-        
+
 If @racket[x] or @racket[y] is out of bounds, this function returns @racket[0.0].
 If @racket[k] is out of bounds, it raises an error.
-See @secref{flomap:conceptual} to read about why.
+The @secref{flomap:conceptual} section explains why @racket[k] is treated differently.
+}
+
+@defproc[(flomap-ref* [fm flomap] [x Integer] [y Integer]) FlVector]{
+Returns @racket[fm]'s component values at @racket[x] @racket[y] as an flvector.
+
+If @racket[x] or @racket[y] is out of bounds, this function returns an flvector filled with @racket[0.0].
+It always returns an flvector of length @racket[(flomap-components fm)].
 }
 
 @defproc[(flomap-bilinear-ref [fm flomap] [k Integer] [x Real] [y Real]) Float]{
@@ -252,9 +260,14 @@ Like all other @racket[flomap] functions that operate on real-valued coordinates
 Mathematically, if @racket[x] = @racket[(+ i 0.5)] and @racket[y] = @racket[(+ j 0.5)] for any integers @racket[i] and @racket[j],
 then @racket[(flomap-bilinear-ref fm k x y)] = @racket[(flomap-ref fm k i j)].
 
-If @racket[x] or @racket[y] is out of bounds, this function returns @racket[0.0].
+Suppose @racket[fm] is size @racket[w]×@racket[h].
+If @racket[x] ≤ @racket[-0.5] or @racket[x] ≥ @racket[(+ w 0.5)], this function returns @racket[0.0]; similarly for @racket[y] and @racket[h].
 If @racket[k] is out of bounds, it raises an error.
-See @secref{flomap:conceptual} to read about why.
+The @secref{flomap:conceptual} section explains why @racket[k] is treated differently.
+}
+
+@defproc[(flomap-bilinear-ref* [fm flomap] [x Real] [y Real]) FlVector]{
+Like @racket[flomap-bilinear-ref], but returns an flvector containing estimates of all the components at @racket[x] @racket[y].
 }
 
 @defproc[(flomap-min-value [fm flomap]) Float]
@@ -291,6 +304,12 @@ This function is used by some library functions, such as @racket[flomap-bilinear
 From untyped code, applying this function is likely no faster than applying @racket[flomap-ref], because of extra contract checks.
 }
 
+@defproc[(unsafe-flomap-ref* [vs FlVector]
+                             [c Integer] [w Integer] [h Integer]
+                             [x Integer] [y Integer]) FlVector]{
+Like @racket[unsafe-flomap-ref], but returns an flvector containing all the component values at @racket[x] @racket[y].
+}
+
 
 @; ===================================================================================================
 
@@ -316,6 +335,8 @@ See @secref{flomap:opacity} for a discussion of opacity (alpha) representation.
 
 A zero-size @racket[fm] is padded by one point in any zero direction before conversion.
 For example, if @racket[fm] is size 0×1, the result of @racket[(flomap->bitmap fm)] is size 1×1.
+
+Values are clamped to between @racket[0.0] and @racket[1.0] before conversion.
 }
 
 @defproc[(bitmap->flomap [bm Any]) flomap]{
@@ -327,52 +348,68 @@ The argument type is imprecise because Typed Racket does not support the object 
 
 @defproc[(make-flomap [c Integer] [w Integer] [h Integer] [v Real 0.0]) flomap]{
 Returns a @racket[w]×@racket[h] flomap with @racket[c] components, with every value initialized to @racket[v].
+Analogous to @racket[make-vector].
 
 To create flomaps filled with a solid color, use @racket[make-flomap*].
 }
 
-@defproc[(make-flomap* [w Integer] [h Integer] [vs FlVector]) flomap]{
-Returns a @racket[w]×@racket[h] flomap with @racket[(flvector-length vs)] color components, with each known point initialized using the values in @racket[vs].
+@defproc[(make-flomap* [w Integer] [h Integer] [vs (U (Vectorof Real) FlVector)]) flomap]{
+Returns a @racket[w]×@racket[h] flomap with each point's components initialized using the values in @racket[vs].
+Analogous to @racket[make-vector].
 
-The following two examples create magenta bitmaps with an alpha channel:
+The following two examples create an RGB and an ARGB flomap:
 @interaction[#:eval flomap-eval
-                    (flomap->bitmap (make-flomap* 100 100 (flvector 1.0 1.0 0.0 1.0)))
-                    (flomap->bitmap (make-flomap* 100 100 (flvector 0.5 0.5 0.0 0.5)))]
+                    (flomap->bitmap (make-flomap* 100 100 #(0.5 0.0 1.0)))
+                    (flomap->bitmap (make-flomap* 100 100 #(0.5 0.25 0.0 0.5)))]
 See @secref{flomap:opacity} for a discussion of opacity (alpha) representation.
 }
 
 @defproc[(build-flomap [c Integer] [w Integer] [h Integer]
-                       [f (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum
-                                              Nonnegative-Fixnum -> Real)]) flomap]{
+                       [f (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum -> Real)]) flomap]{
 Returns a @racket[w]×@racket[h] flomap with @racket[c] color components, with values defined by @racket[f].
+Analogous to @racket[build-vector].
 
-The function @racket[f] receives four arguments @racket[k] @racket[x] @racket[y] @racket[i]: the color component, two positional coordinates, and a precalculated index into the flomap's @racketid[values] vector.
+The function @racket[f] receives three arguments @racket[k] @racket[x] @racket[y]: the color component and two positional coordinates.
+
 @examples[#:eval flomap-eval
                  (flomap->bitmap
                   (build-flomap 1 100 100
-                                (λ (k x y i) (/ (+ x y) 200))))
+                                (λ (k x y) (/ (+ x y) 200))))
                  (define sine-fm
                    (build-flomap
                     1 100 100
-                    (λ (k x y i)
+                    (λ (k x y)
                       (* 1/2 (+ 1 (sin (sqrt (+ (sqr (- x 50))
                                                 (sqr (- y 50))))))))))
                  (flomap->bitmap sine-fm)]
+
+To build a flomap from a function that returns vectors, see @racket[build-flomap*].
 }
 
-@defform[(inline-build-flomap c w h f)]{
-A macro version of @racket[build-flomap].
-The function or macro @racket[f] must return a @racket[Float], not a @racket[Real] as the @racket[f] argument to @racket[build-flomap] can.
+@defproc[(build-flomap* [c Integer] [w Integer] [h Integer]
+                        [f (Nonnegative-Fixnum Nonnegative-Fixnum -> (U (Vectorof Real) FlVector))]) flomap]{
+Returns a @racket[w]×@racket[h] flomap with @racket[c] color components.
+Its values are defined by @racket[f], which returns vectors of point components.
+The vectors returned by @racket[f] must be length @racket[c].
 
-Using @racket[inline-build-flomap] instead of @racket[build-flomap] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
-Many library functions use @racket[inline-build-flomap] internally for speed, notably @racket[fm+] and the other pointwise arithmetic operators.
+Analogous to @racket[build-vector].
 
-@bold{This is not available in untyped Racket.}
+@examples[#:eval flomap-eval
+                 (flomap->bitmap
+                  (build-flomap* 4 100 100
+                                 (λ (x y)
+                                   (vector (/ (+ x y) 200)
+                                           (/ (+ (- 100 x) y) 200)
+                                           (/ (+ (- 100 x) (- 100 y)) 200)
+                                           (/ (+ x (- 100 y)) 200)))))
+                 
+                 (build-flomap* 4 100 100
+                                (λ (x y) (vector (/ (+ x y) 200))))]
 }
 
 @defproc[(draw-flomap [draw (Any -> Any)] [w Integer] [h Integer]) flomap]{
 Returns a @racket[w]×@racket[h] bitmap drawn by @racket[draw].
-Think of it as the flomap version of @racketmodname[slideshow]'s @racket[dc].
+Analogous to @racketmodname[slideshow]'s @racket[dc].
 
 The @racket[draw] function should accept a @racket[dc<%>] instance and use its drawing methods to draw on an underlying bitmap.
 The bitmap is converted to a flomap using @racket[bitmap->flomap] and returned.
@@ -393,6 +430,41 @@ and @racket[flomap-divide-alpha] converts them back.
 You should not generally have to use these functions, because @racket[bitmap->flomap] returns an alpha-multiplied flomap and every alpha-aware flomap function assumes its arguments are alpha-multiplied and produces alpha-multiplied flomaps.
 
 See @secref{flomap:opacity} for a discussion of opacity (alpha) representation.
+}
+
+@defform[(inline-build-flomap c w h f)
+         #:contracts ([c Integer]
+                      [w Integer]
+                      [h Integer]
+                      [f (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum
+                          Nonnegative-Fixnum -> Float)])]{
+A macro version of @racket[build-flomap].
+
+There are three differences between the function @racket[f] passed to @racket[build-flomap] and the @racket[f] passed to @racket[inline-build-flomap].
+First, the @racket[f] passed to @racket[inline-build-flomap] can be a macro.
+Second, it receives arguments @racket[k] @racket[x] @racket[y] @racket[i], where @racket[i] is a precalculated index into the result's @racketid[values].
+Third, it must return a @racket[Float].
+
+Using @racket[inline-build-flomap] instead of @racket[build-flomap] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
+Many library functions use @racket[inline-build-flomap] internally for speed, notably @racket[fm+] and the other pointwise arithmetic operators.
+
+@bold{This is not available in untyped Racket.}
+}
+
+@defform[(inline-build-flomap* c w h f)
+         #:contracts ([c Integer]
+                      [w Integer]
+                      [h Integer]
+                      [f (Nonnegative-Fixnum Nonnegative-Fixnum
+                          Nonnegative-Fixnum -> FlVector)])]{
+A macro version of @racket[build-flomap*].
+
+There are three differences between the function @racket[f] passed to @racket[build-flomap*] and the @racket[f] passed to @racket[inline-build-flomap*].
+First, the @racket[f] passed to @racket[inline-build-flomap*] can be a macro.
+Second, it receives arguments @racket[x] @racket[y] @racket[i], where @racket[i] is a precalculated index into the result's @racketid[values].
+Third, it must return a @racket[FlVector].
+
+@bold{This is not available in untyped Racket.}
 }
 
 
@@ -466,23 +538,14 @@ For example, to estimate the local gradient magnitude at each point in a flomap:
 Lifts a unary floating-point function to operate pointwise on flomaps.
 }
 
-@defform[(inline-flomap-lift f)]{
-A macro version of @racket[flomap-lift].
-The function or macro @racket[f] must return a @racket[Float], not a @racket[Real] as the @racket[f] argument to @racket[flomap-lift] can.
-
-Using @racket[inline-flomap-lift] instead of @racket[flomap-lift] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
-
-@bold{This is not available in untyped Racket.}
-}
-
 @defproc[(flomap-normalize [fm flomap]) flomap]{
 Returns a flomap like @racket[fm], but with values linearly rescaled to be between @racket[0.0] and @racket[1.0] inclusive.
 @examples[#:eval flomap-eval
                  (define gray-fm
-                   (build-flomap 1 100 100 (λ (k x y i) (+ 0.375 (/ (+ x y) 800)))))
+                   (build-flomap 1 100 100 (λ (k x y) (+ 0.375 (/ (+ x y) 800)))))
                  (flomap->bitmap gray-fm)
                  (flomap->bitmap (flomap-normalize gray-fm))]
-Besides increasing contrast, you could use this function to debug a rendering pipeline that produces overbright intermediate flomaps.
+Besides increasing contrast, you could use this function to visualize oversaturated flomaps, or visualize flomaps that don't correspond directly to displayed images, such as height maps and normal maps.
 }
 
 @defproc[(fm+ [fm1 (U Real flomap)] [fm2 (U Real flomap)]) flomap]
@@ -504,7 +567,7 @@ Binary operations accept the following argument combinations, in either order:
 Any other argument combination will raise a type error.
 
 @examples[#:eval flomap-eval
-                 (define fm1 (build-flomap 1 260 240 (λ (k x y i) (/ (+ x y) 500))))
+                 (define fm1 (build-flomap 1 260 240 (λ (k x y) (/ (+ x y) 500))))
                  (define fm2 (fm- 1.0 fm1))
                  (flomap->bitmap fm1)
                  (flomap->bitmap fm2)
@@ -526,7 +589,16 @@ Because @racket[fm] is an alpha-multiplied flomap (see @secref{flomap:opacity}),
 Lifts a binary floating-point function to operate pointwise on flomaps, allowing the same argument combinations as @racket[fm+] and others.
 }
 
-@defform[(inline-flomap-lift2 f)]{
+@defform[(inline-flomap-lift f) #:contracts ([f (Float -> Float)])]{
+A macro version of @racket[flomap-lift].
+The function or macro @racket[f] must return a @racket[Float], not a @racket[Real] as the @racket[f] argument to @racket[flomap-lift] can.
+
+Using @racket[inline-flomap-lift] instead of @racket[flomap-lift] often ensures that @racket[f] is inlined, and therefore floats remain unboxed.
+
+@bold{This is not available in untyped Racket.}
+}
+
+@defform[(inline-flomap-lift2 f) #:contracts ([f (Float Float -> Float)])]{
 A macro version of @racket[flomap-lift2].
 The function or macro @racket[f] must return a @racket[Float], not a @racket[Real] as the @racket[f] argument to @racket[flomap-lift2] can.
 
@@ -550,10 +622,10 @@ These return, per-component, estimates of the local @italic{x}- and @italic{y}-d
 Equivalent to @racket[(values (flomap-gradient-x fm) (flomap-gradient-y fm))].
 
 @examples[#:eval flomap-eval
-                 (let-values ([(dx-fm dy-fm)  (flomap-gradient
-                                               (flomap-drop-components fm 1))])
-                   (values (flomap->bitmap (fm* 0.5 (fm+ 1.0 dx-fm)))
-                           (flomap->bitmap (fm* 0.5 (fm+ 1.0 dy-fm)))))]
+                 (define-values (dx-fm dy-fm)
+                   (flomap-gradient (flomap-drop-components fm 1)))
+                 (values (flomap->bitmap (fm* 0.5 (fm+ 1.0 dx-fm)))
+                         (flomap->bitmap (fm* 0.5 (fm+ 1.0 dy-fm))))]
 }
 
 @defproc[(flomap-gradient-normal [fm flomap]) flomap]{
@@ -561,7 +633,8 @@ Given a one-component flomap, returns a @racket[3]-component flomap containing e
 In other words, @racket[flomap-normal] converts height maps to normal maps.
 @examples[#:eval flomap-eval
                  (flomap->bitmap sine-fm)
-                 (flomap->bitmap (flomap-gradient-normal sine-fm))]
+                 (flomap->bitmap (flomap-gradient-normal sine-fm))
+                 (flomap-gradient-normal fm)]
 }
 
 
@@ -595,7 +668,7 @@ Like @racket[flomap-gaussian-blur-x], but per-column instead of per-row.
 
 @defproc[(flomap-box-blur [fm flomap] [x-radius Real] [y-radius Real x-radius]) flomap]{
 Returns @racket[fm] convolved, per-component, with a box kernel with radii @racket[x-radius] and @racket[y-radius].
-The radii are of the largest ellipse that would fit in the box.
+The radii are of the largest axis-aligned ellipse that would fit in the box.
 @examples[#:eval flomap-eval
                  (flomap->bitmap (flomap-box-blur (flomap-inset fm 4) 4))
                  (flomap->bitmap (flomap-box-blur (flomap-inset fm 4 1) 4 1))]
@@ -662,8 +735,8 @@ This function cannot return a larger flomap.
 
 @examples[#:eval flomap-eval
                  (define small-circle-fm
-                   (draw-flomap (λ (dc)
-                                  (send dc draw-ellipse 20 20 10 10))
+                   (draw-flomap (λ (fm-dc)
+                                  (send fm-dc draw-ellipse 20 20 10 10))
                                 100 100))
                  (flomap->bitmap small-circle-fm)
                  (flomap->bitmap (flomap-trim small-circle-fm))]
@@ -741,11 +814,11 @@ The result is expanded as necessary.
 @examples[#:eval flomap-eval
                  (flomap-pin fm -10 -10 sine-fm)
                  (define circle-fm
-                   (draw-flomap (λ (the-dc)
-                                  (send the-dc set-pen "black" 4 'short-dash)
-                                  (send the-dc set-brush "yellow" 'solid)
-                                  (send the-dc set-alpha 1/2)
-                                  (send the-dc draw-ellipse 2 2 124 124))
+                   (draw-flomap (λ (fm-dc)
+                                  (send fm-dc set-pen "black" 4 'short-dash)
+                                  (send fm-dc set-brush "yellow" 'solid)
+                                  (send fm-dc set-alpha 1/2)
+                                  (send fm-dc draw-ellipse 2 2 124 124))
                                 128 128))
                  (flomap->bitmap (flomap-pin fm 0 0 circle-fm 64 64))
                  (flomap->bitmap (flomap-pin sine-fm 50 0 sine-fm))]
@@ -795,9 +868,10 @@ See @racket[flomap-pin] and @racket[flomap-pin*] for implementation details.
 @defproc[(flomap-hc-append [fm0 flomap] [fm flomap] ...) flomap]
 @defproc[(flomap-hb-append [fm0 flomap] [fm flomap] ...) flomap]{
 These create a new flomap by spatially appending the flomaps in the argument list.
-The two-letter abbreviation determines direction (@racket[v] or @racket[h]) and alignment (@racket[l], @racket[c], @racket[r], or @racket[t], @racket[c], @racket[b]).
+The two-letter abbreviation determines direction (@racketid[v] or @racketid[h]) and alignment (@racketid[l], @racketid[c], @racketid[r], or @racketid[t], @racketid[c], @racketid[b]).
 @examples[#:eval flomap-eval
-                 (flomap->bitmap (flomap-ht-append circle-fm fm circle-fm))]
+                 (flomap->bitmap (flomap-ht-append circle-fm fm
+                                                   (flomap-scale circle-fm 1/2)))]
 See @racket[flomap-pin] and @racket[flomap-pin*] for implementation details.
 }
 
