@@ -309,8 +309,10 @@ default print handler calls the global port print handler (the value
 of the @racket[global-port-print-handler] parameter); the default
 global port print handler is the same as the default write handler.}
 
-@defproc*[([(global-port-print-handler) ((any/c output-port?) ((or/c 0 1)) . ->* . any)]
-           [(global-port-print-handler [proc (any/c output-port? . -> . any)]) void?])]{
+@defproc*[([(global-port-print-handler) (->* (any/c output-port?) ((or/c 0 1)) any)]
+           [(global-port-print-handler [proc (or/c (->* (any/c output-port?) ((or/c 0 1)) any)
+                                                   (any/c output-port? . -> . any))])
+            void?])]{
 
 A parameter that determines @deftech{global port print handler},
 which is called by the default port print handler (see
