@@ -21,11 +21,12 @@
      (flomap-gaussian-blur-y (flomap-gaussian-blur-x fm (abs (exact->inexact xσ)))
                              (abs (exact->inexact yσ)))]))
 
-(: flomap-gaussian-blur-x (flomap Flonum -> flomap))
-(define (flomap-gaussian-blur-x fm σ)
+(: flomap-gaussian-blur-x (flomap Real -> flomap))
+(define (flomap-gaussian-blur-x fm σ*)
   (cond
-    [(σ . = . 0.0)  fm]
+    [(σ* . = . 0)  fm]
     [else
+     (define σ (abs (exact->inexact σ*)))
      (define dx-min (fl->fx (floor (* (- 3.0) σ))))
      (define dx-max (fx+ 1 (fl->fx (ceiling (* 3.0 σ)))))
      (define ss (gaussian-kernel-1d dx-min dx-max σ))
@@ -44,11 +45,12 @@
                                                 (fx+ j c))]
                 [else  sum]))))]))
 
-(: flomap-gaussian-blur-y (flomap Flonum -> flomap))
-(define (flomap-gaussian-blur-y fm σ)
+(: flomap-gaussian-blur-y (flomap Real -> flomap))
+(define (flomap-gaussian-blur-y fm σ*)
   (cond
-    [(σ . = . 0.0)  fm]
+    [(σ* . = . 0)  fm]
     [else
+     (define σ (abs (exact->inexact σ*)))
      (define dy-min (fl->fx (floor (* (- 3.0) σ))))
      (define dy-max (fx+ 1 (fl->fx (ceiling (* 3.0 σ)))))
      (define ss (gaussian-kernel-1d dy-min dy-max σ))
@@ -203,8 +205,9 @@
              [else
               (flomap-box-blur-y (flomap-box-blur-x fm xr) yr)]))]))
 
-(: flomap-box-blur-x (flomap Flonum -> flomap))
-(define (flomap-box-blur-x fm r)
+(: flomap-box-blur-x (flomap Real -> flomap))
+(define (flomap-box-blur-x fm r*)
+  (define r (abs (exact->inexact r*)))
   (cond
     [(integer? r)  (let ([r  (fl->fx r)])
                      (with-asserts ([r  nonnegative-fixnum?])
@@ -229,8 +232,9 @@
            (* norm2 (raw-flomap-integral-x-sum int-vs int-c int-w k (fx- x r2) (fx+ x r2+1) y))
            )))]))
 
-(: flomap-box-blur-y (flomap Flonum -> flomap))
-(define (flomap-box-blur-y fm r)
+(: flomap-box-blur-y (flomap Real -> flomap))
+(define (flomap-box-blur-y fm r*)
+  (define r (abs (exact->inexact r*)))
   (cond
     [(integer? r)  (let ([r  (fl->fx r)])
                      (with-asserts ([r  nonnegative-fixnum?])

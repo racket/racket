@@ -456,6 +456,14 @@ integer, such as @racket['(array 7 int)], represents a vector of
 values to be used as a COM array.  Array types can be nested to
 specify a multidimensional array as represented by nested vectors.
 
+A type wrapped in a list with @racket['variant], such as
+@racket['(variant (array 7 int))], is the same as the wrapped type,
+but a @racket['variant] wrapper within an @racket['array] type prevents
+construction of another array dimension. For example, @racket['(array 2 (array 3
+int))] is a two-dimensional array of integers, but @racket['(array 2
+(variant (array 3 int)))] is a one-dimensional array whose elements
+are one-dimensional arrays of integers.
+
 When type information is not available, functions like @racket[com-invoke]
 infer type descriptions from arguments. Inference chooses @racket['boolean]
 for booleans; the first of @racket['int], @racket['unsigned-int], 

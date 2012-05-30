@@ -12,23 +12,23 @@
   (define (perror ip sym fmt . args)
     (define loc (call-with-values (λ () (port-next-location ip)) list))
     (apply error sym (string-append fmt " @ line ~a column ~a byte ~a") (append args loc)))
-  
+
   (define (read-while pred ip)
     (list->string
      (let loop ()
        (match (peek-char ip)
-         [(? pred)
+         [(and (? char?) (? pred))
           (cons (read-char ip)
                 (loop))]
          [_
           empty]))))
-  
+
   (define (read-until pred ip)
     (read-while (negate pred) ip))
-  
+
   (define (slurp-whitespace ip)
     (read-while (λ (c) (and (char? c) (char-whitespace? c))) ip))
-  
+
   (define (read-entries ip)
     (slurp-whitespace ip)
     (match (read-char ip)
@@ -41,10 +41,13 @@
       [(? eof-object?)
        (void)]
       [c
-       (perror ip 'read-entries "Expected % or @, got ~v" c)]))
-  
+       ;; All other characters are comments.
+       (read-entries ip)]))
+
   (define (read-entry ip)
-    (match (read-until (λ (c) (char=? c #\{)) ip)
+    (match (read-until (λ (c) (or (char=? c #\{)
+                                  (char=? c #\()))
+                       ip)
       [(app string-downcase "string")
        (slurp-whitespace ip)
        (match (read-char ip)
@@ -84,56 +87,91 @@
          (let loop ()
            (slurp-whitespace ip)
            (define atag (read-tag ip))
-           (slurp-whitespace ip)
-           (match (read-char ip)
-             [#\=
+           (cond
+             [(string=? "" atag)
+              (read-char ip)
+              (hash)]
+             [else
               (slurp-whitespace ip)
-              (define aval (read-value ip))
               (match (read-char ip)
-                [#\,
-                 (hash-set (loop) atag aval)]
-                [#\}
-                 (hash atag aval)]
+                [#\=
+                 (slurp-whitespace ip)
+                 (define aval (read-value ip))
+                 (slurp-whitespace ip)
+                 (match (read-char ip)
+                   [#\,
+                    (hash-set (loop) atag aval)]
+                   [#\}
+                    (hash atag aval)]
+                   [c
+                    (perror ip 'read-entry "Parsing entry, expected , or }, got ~v; label is ~v; atag is ~v; aval is ~v" c label atag aval)])]
                 [c
-                 (perror ip 'read-entry "Parsing entry, expected , or }, got ~v; label is ~v; atag is ~v; aval is ~v" c label atag aval)])]
-             [c
-              (perror ip 'read-entry "Parsing entry tag, expected =, got ~v; label is ~v; atag is ~v" c label atag)])))
+                 (perror ip 'read-entry "Parsing entry tag, expected =, got ~v; label is ~v; atag is ~v" c label atag)])])))
        (hash-set! ENTRY-DB label
                   (hash-set alist 'type typ))]))
-  
+
   (define (read-tag ip)
     (slurp-whitespace ip)
-    (string-downcase 
-     (read-until 
+    (string-downcase
+     (read-until
       (λ (c) (or (char-whitespace? c)
-                 (char=? c #\=)))
+                 (char=? c #\=)
+                 (char=? c #\{)
+                 (char=? c #\})))
       ip)))
-  
+
+  (define (read-braced-value ip)
+    (read-char ip)
+    (let loop ()
+      (define first-part (read-until (λ (c) (or (char=? c #\{) (char=? c #\})))
+                                     ip))
+      (match (peek-char ip)
+        [#\{
+         (string-append first-part (read-value ip) (loop))]
+        [#\}
+         (read-char ip)
+         first-part])))
+
   (define (read-value ip)
+    (slurp-whitespace ip)
+    (define first-part (read-value-single ip))
+    (slurp-whitespace ip)
+    (match (peek-char ip)
+      [#\#
+       (read-char ip)
+       (string-append first-part (read-value ip))]
+      [_
+       first-part]))
+
+  (define (read-value-single ip)
     (slurp-whitespace ip)
     (match (peek-char ip)
       [#\{
+       (read-braced-value ip)]
+      [#\"
        (read-char ip)
        (let loop ()
-         (define first-part (read-until (λ (c) (or (char=? c #\{) (char=? c #\})))
+         (define first-part (read-until (λ (c) (or (char=? c #\{) (char=? c #\")))
                                         ip))
          (match (peek-char ip)
            [#\{
-            (string-append first-part (read-value ip) (loop))]
-           [#\}
+            (string-append first-part (read-braced-value ip) (loop))]
+           [#\"
             (read-char ip)
             first-part]))]
       [(? char-numeric?)
        (read-while char-numeric? ip)]
       [(? char-alphabetic?)
-       (define string-tag (read-until (λ (c) (char=? c #\,)) ip))
+       (define string-tag (read-until (λ (c) (or (char-whitespace? c)
+                                                 (char=? c #\,)))
+                                      ip))
        (hash-ref STRING-DB string-tag
                  (λ () string-tag))]
       [c
        (perror ip 'read-value "Parsing value, expected {, got ~v" c)]))
-  
+
   (read-entries ip)
-  
+
   (bibdb ENTRY-DB (make-hash)))
 
 (define (path->bibdb pth)
@@ -155,11 +193,11 @@
     (define bibtex-db (path->bibdb bib-pth))
     (define-cite autobib-cite autobib-citet generate-bibliography-id)
     (define ((make-citer citer) f . r)
-      (apply citer 
-             (filter-map 
+      (apply citer
+             (filter-map
               (λ (key)
-                 (and (not (string=? "\n" key))
-                      (generate-bib bibtex-db key)))                     
+                (and (not (string=? "\n" key))
+                     (generate-bib bibtex-db key)))
               (append-map (curry regexp-split #rx" +")
                           (cons f r)))))
     (define ~cite-id (make-citer autobib-cite))
@@ -189,7 +227,7 @@
                (define (raw-attr a [def #f])
                  (hash-ref the-raw a def))
                (define (raw-attr* a)
-                 (hash-ref the-raw a 
+                 (hash-ref the-raw a
                            (λ () (error 'bibtex "Key ~a is missing attribute ~a, has ~a"
                                         key a the-raw))))
                (match (raw-attr 'type)
@@ -228,14 +266,17 @@
                   (make-bib #:title (raw-attr "title")
                             #:author (parse-author (raw-attr "author"))
                             #:date (raw-attr "year")
-                            #:location 
+                            #:location
                             (match* ((raw-attr "institution") (raw-attr "number"))
-                                    [(#f #f) @elem{}]
-                                    [(l #f) @elem{@|l|}]
-                                    [(#f n) @elem{@|n|}]
-                                    [(l n) @elem{@|l|, @|n|}])
+                              [(#f #f) @elem{}]
+                              [(l #f) @elem{@|l|}]
+                              [(#f n) @elem{@|n|}]
+                              [(l n) @elem{@|l|, @|n|}])
                             #:url (raw-attr "url"))]
                  [_
                   (make-bib #:title (format "~v" the-raw))]))))
 
-(provide define-bibtex-cite)
+(provide (struct-out bibdb)
+         path->bibdb
+         bibtex-parse
+         define-bibtex-cite)

@@ -10,6 +10,18 @@ A @racket[record-dc%] object records drawing actions for replay into
  (that can be printed with @racket[write] and recreated with
  @racket[read]) via @method[record-dc% get-recorded-datum].
 
+When drawing recorded actions, the target drawing context's pen,
+brush, font, text, background, text background, and text foreground do
+not affect the recorded actions. The target drawing context's
+transformation, alpha, and clipping region compose with settings in
+the recorded actions (so that, for example, a recorded action to set
+the clipping region actually intersects the region with the drawing
+context's clipping region at the time that the recorded commands are
+replayed). After recoded commands are replayed, all settings in the
+target drawing context, such as its clipping region or current font,
+are as before the replay.
+
+
 @defconstructor[([width (>=/c 0) 640]
                  [height (>=/c 0) 480])]{
 

@@ -1385,6 +1385,8 @@
          (= (vector-length arg) (cadr type))
          (for/and ([v (in-vector arg)])
            (ok-argument? v (caddr type))))]
+   [(eq? 'variant (car type))
+    (ok-argument? arg (cadr type))]
    [else #f]))
 
 (define (type-description? type)
@@ -1426,6 +1428,9 @@
       (and (= (length type) 3)
            (exact-positive-integer? (cadr type))
            (type-description? (caddr type)))]
+     [(eq? 'variant (car type))
+      (and (= (length type) 2)
+           (type-description? (cadr type)))]
      [else #f])]
    [else #f]))
 
@@ -1456,6 +1461,8 @@
   (cond
    [(type-described? a)
     (scheme-to-variant! var (type-described-value a) elem-desc scheme-type)]
+   [(and (pair? scheme-type) (eq? 'variant (car scheme-type)))
+    (scheme-to-variant! var a elem-desc (cadr scheme-type))]
    [(eq? a com-omit)
     (if (and elem-desc
              (elem-desc-has-default? elem-desc))
@@ -1596,6 +1603,8 @@
 	 [else
 	  (values null t)])))
     (_safe-array/vectors dims base)]
+   [(eq? 'variant (car type))
+    (to-ctype (cadr type))]
    [else #f]))
 
 (define (to-vt type)
@@ -1624,6 +1633,7 @@
 		(car type))
        [(array) (bitwise-ior VT_ARRAY (to-vt (caddr type)))]
        [(opt) (to-vt (cadr type))]
+       [(variant) VT_VARIANT]
        [else
 	(error 'to-vt "Internal error: unsupported type ~s" type)])]))
 

@@ -352,9 +352,9 @@
 		  TLSv1_server_method)]
        [else (escape-atomic
 	      (lambda ()
-		(raise-type-error 
+		(raise-argument-error 
 		 who
-		 (string-append also-expect "'sslv2-or-v3, 'sslv2, 'sslv3, or 'tls")
+		 (format "(or/c ~a'sslv2-or-v3 'sslv2 'sslv3 'tls)" also-expect)
 		 e)))])))
 
   (define (make-context who protocol-symbol also-expected client?)
@@ -376,7 +376,7 @@
   (define (get-context who context-or-encrypt-method client?)
     (if (ssl-context? context-or-encrypt-method)
 	(ssl-context-ctx context-or-encrypt-method)
-	(let ([ctx (SSL_CTX_new (encrypt->method who "context" context-or-encrypt-method client?))])
+	(let ([ctx (SSL_CTX_new (encrypt->method who "ssl-context? " context-or-encrypt-method client?))])
 	  (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
 	  ctx)))
 
@@ -388,18 +388,18 @@
       (ssl-context-ctx (ssl-listener-mzctx ssl-context-or-listener))]
      [else
       (if fail?
-          (raise-type-error who
-                            "SSL context or listener"
-                            ssl-context-or-listener)
+          (raise-argument-error who
+                                "(or/c ssl-context? ssl-listener?)"
+                                ssl-context-or-listener)
           #f)]))
 
   (define (ssl-load-... who load-it ssl-context-or-listener pathname)
     (let ([ctx (get-context/listener 'ssl-load-certificate-chain!
 				     ssl-context-or-listener)])
       (unless (path-string? pathname)
-	(raise-type-error 'ssl-load-certificate-chain!
-			  "path or string"
-			  pathname))
+	(raise-argument-error 'ssl-load-certificate-chain!
+                              "path-string?"
+                              pathname))
       (let ([path (path->bytes
 		   (path->complete-path (cleanse-path pathname)
 					(current-directory)))])
@@ -470,7 +470,7 @@
                                    SSL_VERIFY_NONE)
                                #f))]
      [else
-      (let-values ([(mzssl input?) (lookup who "SSL context, listener, or port"
+      (let-values ([(mzssl input?) (lookup who "(or/c ssl-context? ssl-listener? ssl-port?)"
                                            ssl-context-or-listener-or-port)])
         (SSL_set_verify (mzssl-ssl mzssl)
                         (if on?
@@ -954,8 +954,8 @@
 			  [else
 			   (escape-atomic
 			    (lambda ()
-			      (raise-type-error who "'connect or 'accept" 
-						connect/accept)))])]
+			      (raise-argument-error who "(or/c 'connect 'accept)"
+                                                    connect/accept)))])]
 	      [r-bio (BIO_new (BIO_s_mem))]
 	      [w-bio (BIO_new (BIO_s_mem))]
 	      [free-bio? #t])
@@ -997,9 +997,9 @@
 
   (define (wrap-ports who i o context-or-encrypt-method connect/accept close? shutdown-on-close? error/ssl)
     (unless (input-port? i)
-      (raise-type-error who "input port" i))
+      (raise-argument-error who "input-port?" i))
     (unless (output-port? o)
-      (raise-type-error who "output port" o))
+      (raise-argument-error who "output-port?" o))
     ;; Create the SSL connection:
     (let-values ([(ssl cancel r-bio w-bio connect?)
 		  (create-ssl who context-or-encrypt-method connect/accept error/ssl)])
@@ -1052,31 +1052,31 @@
   (define (lookup who what port)
     (let ([v (hash-ref ssl-ports port #f)])
       (unless v
-	(raise-type-error who what port))
+	(raise-argument-error who what port))
       (let ([p (ephemeron-value v)])
 	(values (car p) (cdr p)))))
 
   (define (ssl-addresses p [port-numbers? #f])
-    (let-values ([(mzssl input?) (lookup 'ssl-addresses "SSL port or listener" p)])
+    (let-values ([(mzssl input?) (lookup 'ssl-addresses "(or/c ssl-port? ssl-listener?)" p)])
       (tcp-addresses (if (eq? 'listener input?)
                          (ssl-listener-l mzssl)
                          (if input? (mzssl-i mzssl) (mzssl-o mzssl)))
                      port-numbers?)))
 
   (define (ssl-abandon-port p)
-    (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "SSL output port" p)])
+    (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "(and/c ssl-port? output-port?)" p)])
       (when input?
-	(raise-type-error 'ssl-abandon-port "SSL output port" p))
+	(raise-argument-error 'ssl-abandon-port "(and/c ssl-port? output-port?)" p))
       (set-mzssl-shutdown-on-close?! mzssl #f)))
   
   (define (ssl-peer-verified? p)
-    (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? "SSL port" p)])
+    (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? "ssl-port?" p)])
       (and (eq? X509_V_OK (SSL_get_verify_result (mzssl-ssl mzssl)))
            (SSL_get_peer_certificate (mzssl-ssl mzssl))
            #t)))
   
   (define (ssl-peer-subject-name p)
-    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "SSL port" p)])
+    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "ssl-port?" p)])
       (let ([cert (SSL_get_peer_certificate (mzssl-ssl mzssl))])
         (if cert
             (let ([bytes (make-bytes 1024 0)])
@@ -1084,7 +1084,7 @@
             #f))))
   
   (define (ssl-peer-issuer-name p)
-    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "SSL port" p)])
+    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "ssl-port?" p)])
       (let ([cert (SSL_get_peer_certificate (mzssl-ssl mzssl))])
         (if cert
             (let ([bytes (make-bytes 1024 0)])
@@ -1110,7 +1110,7 @@
 
   (define (ssl-close l)
     (unless (ssl-listener? l)
-      (raise-type-error 'ssl-close "SSL listener" l))
+      (raise-argument-error 'ssl-close "ssl-listener?" l))
     (tcp-close (ssl-listener-l l)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -219,10 +219,11 @@ displays).
 
 @defmodule[slideshow/start]
 
-The @exec{slideshow} executable invokes the
+The @exec{slideshow} executable instantiates the
 @racketmodname[slideshow/start] module, which inspects the command
 line as reported by @racket[current-command-line-arguments] to get
-another module to provide the slide content. It also initializes
+another module to @racket[require] for the slide content.The @racketmodname[slideshow/start]
+module also initializes
 variables like @racket[printing?] and @racket[condense?] based on
 flags supplied on the command line.
 
@@ -233,7 +234,14 @@ command
 
 runs the slides.
 
-The @exec{Slideshow} executable accepts a number of command-line
+If the module given to @exec{slideshow} has a @racketidfont{slideshow}
+submodule, then @racketmodname[slideshow/start] @racket[require]s the
+@racketidfont{slideshow} submodule after @racket[require]ing the
+module. If the module has no @racketidfont{slideshow} but has a
+@racketidfont{main} submodule, then the @racketidfont{main} submodule
+is @racket[require]d.
+
+The @exec{slideshow} executable accepts a number of command-line
 flags.  Use the @DFlag{help} flag to obtain a list of other
 flags.
 

@@ -233,7 +233,7 @@ string, and returns the number of bytes read.}
 
 @defproc[(peek-bytes-avail! [bstr (and/c bytes? (not/c immutable?))]
                             [skip-bytes-amt exact-nonnegative-integer?]
-                            [progress (or/c evt? #f) #f]
+                            [progress (or/c progress-evt? #f) #f]
                             [in input-port? (current-input-port)]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
@@ -257,7 +257,7 @@ case that @racket[progress] becomes ready before bytes are peeked.}
 
 @defproc[(peek-bytes-avail!* [bstr (and/c bytes? (not/c immutable?))]
                              [skip-bytes-amt exact-nonnegative-integer?]
-                             [progress (or/c evt? #f) #f]
+                             [progress (or/c progress-evt? #f) #f]
                              [in input-port? (current-input-port)]
                              [start-pos exact-nonnegative-integer? 0]
                              [end-pos exact-nonnegative-integer? (bytes-length bstr)])
@@ -271,7 +271,7 @@ port.}
 
 @defproc[(peek-bytes-avail!/enable-break [bstr (and/c bytes? (not/c immutable?))]
                                          [skip-bytes-amt exact-nonnegative-integer?]
-                                         [progress (or/c evt? #f) #f]
+                                         [progress (or/c progress-evt? #f) #f]
                                          [in input-port? (current-input-port)]
                                          [start-pos exact-nonnegative-integer? 0]
                                          [end-pos exact-nonnegative-integer? (bytes-length bstr)])
@@ -319,21 +319,22 @@ value after @racket[skip-bytes-amt] byte positions, then it is returned.}
 
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
-                               [progress (or/c evt? #f) #f])
+                               [progress (or/c progress-evt? #f) #f])
          (or/c character? eof-object? any/c)]{
 
 Like @racket[peek-char-or-special], but reads and returns a byte
 instead of a character, and it supports a @racket[progress] argument
 like @racket[peek-bytes-avail!].}
 
-@defproc[(port-progress-evt [in input-port? (current-input-port)])
-         evt?]{
+
+@defproc[(port-progress-evt [in (and/c input-port? port-provides-progress-evts?)
+                                (current-input-port)])
+         progress-evt?]{
 
 Returns a @tech{synchronizable event} that becomes ready after any subsequent read from
 @racket[in], or after @racket[in] is closed. After the event becomes
-ready, it remains ready.  If progress events are unavailable for
-@racket[in] (as reported by @racket[port-provides-progress-evts?]), then the
-@exnraise[exn:fail:contract].}
+ready, it remains ready..}
+
 
 @defproc[(port-provides-progress-evts? [in input-port?]) boolean]{
 
@@ -341,9 +342,10 @@ Returns @racket[#t] if @racket[port-progress-evt] can return an event
 for @racket[in]. All built-in kinds of ports support progress events,
 but ports created with @racket[make-input-port] (see
 @secref["customport"]) may not.}
+
  
 @defproc[(port-commit-peeked [amt exact-nonnegative-integer?]
-                             [progress evt?]
+                             [progress progress-evt?]
                              [evt evt?]
                              [in input-port? (current-input-port)])
          boolean?]{
@@ -378,12 +380,14 @@ is committed as read.
 If @racket[progress] is not a result of @racket[port-progress-evt]
 applied to @racket[in], then @exnraise[exn:fail:contract].}
 
+
 @defproc[(byte-ready? [in input-port? (current-input-port)])
          boolean?]{
 
 Returns @racket[#t] if @racket[(read-byte in)] would not block (at the
 time that @racket[byte-ready?] was called, at least).  Equivalent to
 @racket[(and (sync/timeout 0 in) #t)].}
+
 
 @defproc[(char-ready? [in input-port? (current-input-port)])
          boolean?]{
@@ -392,3 +396,13 @@ Returns @racket[#t] if @racket[(read-char in)] would not block (at the
 time that @racket[char-ready?] was called, at least). Depending on the
 initial bytes of the stream, multiple bytes may be needed to form a
 UTF-8 encoding.}
+
+
+@defproc*[([(progress-evt? [v any/c]) boolean?]
+           [(progress-evt? [evt progress-evt?] [in input-port?]) boolean?])]{
+
+With one argument, returns @racket[#t] is @racket[v] is a progress evt
+for some input port, @racket[#f] otherwise.
+
+With two arguments, returns @racket[#t] if @racket[evt] is a progress
+event for @racket[in], @racket[#f] otherwise.}

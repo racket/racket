@@ -1,13 +1,12 @@
 ; Simple graphics routines for GRacket
 ; Originally written by Johnathan Franklin
 
-(module graphics-posn-less-unit mzscheme
-  (require mzlib/unit
+(module graphics-posn-less-unit racket/base
+  (require racket/unit
            mred/mred-sig
            mred
-           mzlib/class
-           mzlib/class100
            mzlib/etc
+           racket/class
            "graphics-sig.rkt")
   (provide graphics-posn-less@)
 
@@ -67,20 +66,18 @@
   (define black-color (make-object mred:color% "BLACK"))
 
   (define sixlib-canvas%
-    (class100-asi mred:canvas% 
+    (class mred:canvas% 
       (inherit get-parent
 	       min-client-width min-client-height
 	       stretchable-width stretchable-height)
-      (private-field
-        [current-mouse-posn (make-posn 0 0)]
-	[queue%
-	 (class100 object% ()
-	   (private-field
-	     [queue '()]
-	     [last #f]
-	     [lock (make-semaphore 1)]
-	     [ready (make-semaphore)])
-	   (public
+      (define current-mouse-posn (make-posn 0 0))
+      (define queue%
+	 (class object%
+	   (define queue '())
+	   (define last #f)
+	   (define lock (make-semaphore 1))
+	   (define ready (make-semaphore))
+	   (public*
 	     [flush
 	      (lambda ()
 		(semaphore-wait lock)
@@ -110,20 +107,19 @@
 		      (mcar queue)
 		      (semaphore-wait ready)
 		      (set! queue (mcdr queue))
-		      (if (null? queue)
-			  (set! last #f))))
+		      (when (null? queue)
+		        (set! last #f))))
 		 (semaphore-post lock)))]
 	     [remove/wait
 	      (lambda ()
 		(semaphore-wait ready)
 		(semaphore-post ready)
 		(remove))])
-	   (sequence
-	     (super-init)))]
-	[click-queue (make-object queue%)]
-	[release-queue (make-object queue%)]
-	[press-queue (make-object queue%)])
-      (private
+           (super-make-object)))
+      (define click-queue (make-object queue%))
+      (define release-queue (make-object queue%))
+      (define press-queue (make-object queue%))
+      (private*
         [reset-size
 	 (lambda ()
            (min-client-width width)
@@ -142,18 +138,18 @@
            (send buffer-dc clear)
            (send dc clear))])
       
-      (private-field ; were public
-        viewport
-	[height 0]
-	[width 0]
-	[label 0]
-	[current-pen 'uninitialized-pen]
-	[current-brush 'uninitialized-brush]
-	[bitmap 'uninitalized-bitmap]
-	[dc 'uninitialized-dc]
-	[buffer-dc 'uninitialized-buffer-dc])
+      ;; were public
+      (define viewport (void))
+      (define height 0)
+      (define width 0)
+      (define label 0)
+      (define current-pen 'uninitialized-pen)
+      (define current-brush 'uninitialized-brush)
+      (define bitmap 'uninitalized-bitmap)
+      (define dc 'uninitialized-dc)
+      (define buffer-dc 'uninitialized-buffer-dc)
       
-      (public
+      (public*
         [get-viewport (lambda () viewport)]
 	[set-viewport (lambda (x) (set! viewport x))]
 	[get-sixlib-height (lambda () height)]
@@ -166,7 +162,7 @@
 	[remember-pen (lambda (pen) (set! current-pen pen))]
 	[remember-brush (lambda (brush) (set! current-brush brush))])
 
-      (override
+      (override*
        [on-paint
 	(lambda ()
 	  (let ([bm (send buffer-dc get-bitmap)])
@@ -200,32 +196,31 @@
                 (send press-queue add the-event))))])
       
       ;; --- timing stuff : MF 4/4/2004
-      (private-field
-        [the-world #f]
-        ;; KeyEvent World -> Void
-        [on-char-proc #f]
-	[the-time
-	  (new timer% [notify-callback (lambda () (timer-callback))])]
-	[timer-callback
-	  (lambda ()
-	    (set! the-world 
-	      (with-handlers ([exn:break? break-handler]
-			      [exn? exn-handler])
-		(on-tick-proc the-world))))]
-        ;; World -> World 
-        [on-tick-proc void]
-        [exn-handler 
-         (lambda (e)
-           (send the-time stop)
-           (set! on-char-proc #f)
-           (raise e))]
-        [break-handler
-         (lambda _ 
-           (printf "animation stopped")
-           (send the-time stop)
-           (set! on-char-proc #f)
-           the-world)])
-      (public
+      (define the-world #f)
+      ;; KeyEvent World -> Void
+      (define on-char-proc #f)
+      (define the-time
+        (new timer% [notify-callback (lambda () (timer-callback))]))
+      (define timer-callback
+        (lambda ()
+          (set! the-world 
+            (with-handlers ([exn:break? break-handler]
+      		      [exn? exn-handler])
+      	(on-tick-proc the-world)))))
+      ;; World -> World 
+      (define on-tick-proc void)
+      (define exn-handler 
+       (lambda (e)
+         (send the-time stop)
+         (set! on-char-proc #f)
+         (raise e)))
+      (define break-handler
+       (lambda _ 
+         (printf "animation stopped")
+         (send the-time stop)
+         (set! on-char-proc #f)
+         the-world))
+      (public*
         [set-on-char-proc 
          (lambda (f)
            (let ([esp (current-eventspace)])
@@ -255,7 +250,7 @@
         [init-world (lambda (w) (set! the-world w))])
       ;; --- end timing stuff
       
-      (public 
+      (public*
 	[get-click
 	 (lambda ()
 	   (send click-queue remove))]

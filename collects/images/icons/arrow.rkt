@@ -25,28 +25,28 @@
                                   ) flomap?
   (let ([color  (->color% color)])
     (draw-icon-flomap
-     32 32 (λ (dc)
-             (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-             (send dc set-brush color 'solid)
-             (send dc draw-polygon (list '(0 . 9) '(15 . 9) '(14 . 0)
-                                         '(31 . 15.5)
-                                         '(14 . 31) '(15 . 22) '(0 . 22))))
-     (/ height 32))))
+     (λ (dc)
+       (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+       (send dc set-brush color 'solid)
+       (send dc draw-polygon (list '(0 . 9) '(15 . 9) '(14 . 0)
+                                   '(31 . 15.5)
+                                   '(14 . 31) '(15 . 22) '(0 . 22))))
+     32 32 (/ height 32))))
 
 (defproc (flat-right-over-arrow-flomap [color (or/c string? (is-a?/c color%))]
                                        [height (and/c rational? (>=/c 0))]
                                        ) flomap?
   (draw-icon-flomap
-   32 32 (λ (dc)
-           (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-           (send dc set-brush color 'solid)
-           (draw-path-commands dc '((m 0 15)
-                                    (c 9 -14 19.5 -8 24 -2)
-                                    (l 5 -7 2 20 -20 -2 7 -5)
-                                    (c -2.5 -4 -8 -8.5 -14 0)
-                                    (l -4 -4))
-                               0 0))
-   (/ height 32)))
+   (λ (dc)
+     (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+     (send dc set-brush color 'solid)
+     (draw-path-commands dc '((m 0 15)
+                              (c 9 -14 19.5 -8 24 -2)
+                              (l 5 -7 2 20 -20 -2 7 -5)
+                              (c -2.5 -4 -8 -8.5 -14 0)
+                              (l -4 -4))
+                         0 0))
+   32 32 (/ height 32)))
 
 (defproc (right-arrow-flomap [color (or/c string? (is-a?/c color%))]
                              [height (and/c rational? (>=/c 0)) (default-icon-height)]

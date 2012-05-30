@@ -224,10 +224,10 @@
        (values tok #f v1 v2))
       ((token? tok)
        (values (real-token-name tok) (real-token-value tok) v1 v2))
-      (else (raise-type-error 'parser 
-                              "symbol or struct:token"
-                              0 
-                              tok))))
+      (else (raise-argument-error 'parser 
+                                  "(or/c symbol? token?)"
+                                  0 
+                                  tok))))
   
   ;; extract-src-pos : position-token -> symbol any any any
   (define (extract-src-pos ip)
@@ -237,10 +237,10 @@
                        (position-token-start-pos ip)
                        (position-token-end-pos ip)))
       (else
-       (raise-type-error 'parser 
-                         "struct:position-token"
-                         0
-                         ip))))
+       (raise-argument-error 'parser 
+                             "position-token?"
+                             0
+                             ip))))
   
   ;; extract-no-src-pos : (symbol or make-token) -> symbol any any any
   (define (extract-no-src-pos ip)

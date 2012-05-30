@@ -389,6 +389,7 @@ one between @racket[list] and @racket[list*].
                                      '("Alpha" "Beta" "Gamma")))))
 ]}
 
+
 @defproc[(string-join [strs (listof string?)] [sep string? " "]) string?]{
 
 Appends the strings in @racket[strs], inserting @racket[sep] between
@@ -400,57 +401,6 @@ each pair of strings in @racket[strs].
   (string-join '("one" "two" "three" "four") " potato ")
 ]}
 
-@; *********************************************************************
-@; Meta note: these functions are intended to be newbie-friendly, so I'm
-@; intentionally starting the descriptions with a short senstence that
-@; describes the default behavior instead of diving straight to a
-@; precise description.
-
-@defproc[(string-trim [str string?]
-                      [sep (or/c string? regexp?) #px"\\s+"]
-                      [#:left? left? any/c #t]
-                      [#:right? right? any/c #t]
-                      [#:repeat? repeat? any/c #f])
-         string?]{
-
-Trims the input @racket[str] by removing prefix and suffix whitespaces.
-
-The optional @racket[sep] argument can be specified as either a string
-or a (p)regexp to remove a different prefix/suffix; a string is matched
-as-is.  Use @racket[#:left?] or @racket[#:right?] to suppress trimming
-one of these sides.  When @racket[repeat?] is @racket[#f] (the default),
-only one match is removed from each side, but when it is true any number
-of matches is trimmed.  (Note that with a regexp separator you can use
-@litchar{+} instead.)
-
-@mz-examples[#:eval string-eval
-  (string-trim "  foo bar  baz \r\n\t")
-  (string-trim "  foo bar  baz \r\n\t" " " #:repeat? #t)
-  (string-trim "aaaxaayaa" "aa")
-]}
-
-@defproc[(string-split [str string?]
-                       [sep (or/c string? regexp?) #px"\\s+"]
-                       [#:trim? trim? any/c #t]
-                       [#:repeat? repeat? any/c #f])
-         (listof string?)]{
-
-Splits the input @racket[str] on whitespaces, returning a list of
-strings.  The input is trimmed first.
-
-Similarly to @racket[string-trim], @racket[sep] can be given as a string
-or a (p)regexp to use a different separator, and @racket[repeat?]
-controls matching repeated sequences.  @racket[trim?] determines whether
-trimming is done (the default).
-
-@mz-examples[#:eval string-eval
-  (string-split "  foo bar  baz \r\n\t")
-  (string-split "  ")
-  (string-split "  " #:trim? #f)
-]
-
-(Note that unlike @racket[regexp-split], an empty input string results
-in an empty list.)}
 
 @defproc[(string-normalize-spaces [str string?]
                                   [sep (or/c string? regexp?) #px"\\s+"]
@@ -460,17 +410,17 @@ in an empty list.)}
          string?]{
 
 Normalizes spaces in the input @racket[str] by trimming it (using
-@racket[string-trim]) and replacing all whitespace sequences in the
-result with a single space.
-
-You can specify @racket[space] for an alternate space replacement.
+@racket[string-trim] and @racket[sep]) and replacing all whitespace
+sequences in the result with @racket[space], which defaults to a
+single space.
 
 @mz-examples[#:eval string-eval
   (string-normalize-spaces "  foo bar  baz \r\n\t")
 ]
 
-Note that this is the same as
-@racket[(string-join (string-split str sep ....) space)]}
+The result of @racket[(string-normalize-spaces str sep space)] is the same
+as @racket[(string-join (string-split str sep ....) space)].}
+
 
 @defproc[(string-replace [str  string?]
                          [from (or/c string? regexp?)]
@@ -478,16 +428,64 @@ Note that this is the same as
                          [#:all all? any/c #t])
          string?]{
 
-Returns a copy of @racket[str] where all occurrences of @racket[from]
-are replaced with with @racket[to].
+Returns @racket[str] with all occurrences of @racket[from] replaced
+with by @racket[to]. If @racket[from] is a string, it is matched
+literally (as opposed to being used as a @tech{regular expression}).
 
-When @racket[from] is a string it is matched literally.  The replacement
-@racket[to] argument must be a string and is always inserted as-is.  All
-occurrences are replaced by default, pass @racket[#f] for @racket[all?]
-to replace only the first match.
+By default, all occurrences are replaced, but only the first match is
+replaced if @racket[all?] is @racket[#f].
 
 @mz-examples[#:eval string-eval
   (string-replace "foo bar baz" "bar" "blah")
+]}
+
+
+@defproc[(string-split [str string?]
+                       [sep (or/c string? regexp?) #px"\\s+"]
+                       [#:trim? trim? any/c #t]
+                       [#:repeat? repeat? any/c #f])
+         (listof string?)]{
+
+Splits the input @racket[str] on whitespaces, returning a list of
+substrings of @racket[str] that are separated by @racket[sep]. The
+input is first trimmed using @racket[sep] (see @racket[string-trim]),
+unless @racket[trim?] is @racket[#f]. Empty matches are handled in the
+same way as for @racket[regexp-split]. As a special case, if
+@racket[str] is the empty string after trimming, the result is
+@racket['()] instead of @racket['("")].
+
+Like @racket[string-trim], provide @racket[sep] to use a different separator,
+and @racket[repeat?]  controls matching repeated sequences.
+
+@mz-examples[#:eval string-eval
+  (string-split "  foo bar  baz \r\n\t")
+  (string-split "  ")
+  (string-split "  " #:trim? #f)
+]}
+
+
+@defproc[(string-trim [str string?]
+                      [sep (or/c string? regexp?) #px"\\s+"]
+                      [#:left? left? any/c #t]
+                      [#:right? right? any/c #t]
+                      [#:repeat? repeat? any/c #f])
+         string?]{
+
+Trims the input @racket[str] by removing prefix and suffix @racket[sep],
+which defaults to whitespace. A string @racket[sep] is matched literally
+(as opposed to being used as a @tech{regular expression}).
+
+Use @racket[#:left? #f] or @racket[#:right? #f] to suppress trimming
+the corresponding side.  When @racket[repeat?] is @racket[#f] (the
+default), only one match is removed from each side; when
+@racket[repeat?] it is true, all initial or trailing matches are
+trimmed (which is an alternative to using a @tech{regular expression}
+@racket[sep] that contains @litchar{+}).
+
+@mz-examples[#:eval string-eval
+  (string-trim "  foo bar  baz \r\n\t")
+  (string-trim "  foo bar  baz \r\n\t" " " #:repeat? #t)
+  (string-trim "aaaxaayaa" "aa")
 ]}
 
 

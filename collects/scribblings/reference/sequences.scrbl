@@ -777,10 +777,12 @@ A shorthand for nested @racket[stream-cons]es ending with
 @defthing[gen:stream any/c]{
 
   Associates three methods to a structure type to implement the
-  @tech{generic interface} for streams.
+  @tech{generic interface} (see @secref["struct-generics"]) for
+  streams.
 
-  To supply method implementations, the @racket[#:methods] keyword should be used.
-  The following three methods should be implemented:
+  To supply method implementations, the @racket[#:methods] keyword
+  should be used in a structure type definition. The following three
+  methods should be implemented:
   
 @itemize[
   @item{@racket[stream-empty?] : accepts one argument}

@@ -19,9 +19,9 @@
 
 (define (string-join strs [sep " "])
   (cond [(not (and (list? strs) (andmap string? strs)))
-         (raise-type-error 'string-join "list-of-strings" strs)]
+         (raise-argument-error 'string-join "(listof string?)" strs)]
         [(not (string? sep))
-         (raise-type-error 'string-join "string" sep)]
+         (raise-argument-error 'string-join "string?" sep)]
         [(null? strs) ""]
         [(null? (cdr strs)) (car strs)]
         [else (apply string-append (add-between strs sep))]))
@@ -39,8 +39,8 @@
       (hash-ref! (if +? t+ t) rx
         (λ () (let* ([s (cond [(string? rx) (regexp-quote rx)]
                               [(regexp? rx) (object-name rx)]
-                              [else (raise-type-error
-                                     who "string-or-regexp" rx)])]
+                              [else (raise-argument-error
+                                     who "(or/c string? regexp?)" rx)])]
                      [s (if +? (string-append "(?:" s ")+") s)]
                      [^s (string-append "^" s)]
                      [s$ (string-append s "$")])
@@ -50,7 +50,7 @@
 
 ;; returns start+end positions, #f when no trimming should happen
 (define (internal-trim who str sep l? r? rxs)
-  (unless (string? str) (raise-type-error who "string" str))
+  (unless (string? str) (raise-argument-error who "string?" str))
   (define l
     (and l? (let ([p (regexp-match-positions (car rxs) str)])
               (and p (let ([p (cdar p)]) (and (> p 0) p))))))
@@ -94,15 +94,15 @@
 
 (define replace-cache (make-weak-hasheq))
 (define (string-replace str from to #:all? [all? #t])
-  (unless (string? str) (raise-type-error 'string-replace "string" str))
-  (unless (string? to)  (raise-type-error 'string-replace "string" to))
+  (unless (string? str) (raise-argument-error 'string-replace "string?" str))
+  (unless (string? to)  (raise-argument-error 'string-replace "string?" to))
   (define from*
     (if (regexp? from)
       from
       (hash-ref! replace-cache from
         (λ() (if (string? from)
                (regexp (regexp-quote from))
-               (raise-type-error 'string-replace "string" from))))))
+               (raise-argument-error 'string-replace "string?" from))))))
   (define to* (regexp-replace-quote to))
   (if all?
     (regexp-replace* from* str to*)

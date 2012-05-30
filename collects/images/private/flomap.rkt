@@ -11,15 +11,10 @@
          "flomap-resize.rkt")
 
 (require/typed
- "draw-predicates.rkt"
- [opaque Bitmap bitmap?]
- [opaque DC dc?])
-
-(require/typed
  "flomap-convert.rkt"
- [bitmap->flomap  (Bitmap -> flomap)]
- [flomap->bitmap  (flomap -> Bitmap)]
- [draw-flomap     (Integer Integer (DC -> Any) -> flomap)])
+ [bitmap->flomap  (Any -> flomap)]
+ [flomap->bitmap  (flomap -> Any)]
+ [draw-flomap     ((Any -> Any) Integer Integer -> flomap)])
 
 (provide (all-from-out "flomap-struct.rkt"
                        "flomap-stats.rkt"
@@ -30,5 +25,4 @@
                        "flomap-blur.rkt"
                        "flomap-composite.rkt"
                        "flomap-resize.rkt")
-         Bitmap DC
          bitmap->flomap flomap->bitmap draw-flomap)

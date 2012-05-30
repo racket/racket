@@ -112,8 +112,8 @@
 (htdp-test 1 '+ (+ 1))
 (htdp-test 1 '* (*))
 (htdp-test 1 '* (* 1))
-(htdp-err/rt-test (-) (exn-type-and-msg exn:application:arity? "-: expects at least 1 argument, given 0"))
-(htdp-err/rt-test (/) (exn-type-and-msg exn:application:arity? "/: expects at least 1 argument, given 0"))
+(htdp-err/rt-test (-) (exn-type-and-msg exn:application:arity? #rx"wrong number of arguments.*procedure: -\n.*expected[^:]*: at least 1.*given[^:]*: 0"))
+(htdp-err/rt-test (/) (exn-type-and-msg exn:application:arity? #rx"wrong number of arguments.*procedure: /\n.*expected[^:]*: at least 1.*given[^:]*: 0"))
 ;(htdp-test 1 (/ 1) exn:application:arity?)
 
 ;; Check that `local' works with macros that expand to `begin':

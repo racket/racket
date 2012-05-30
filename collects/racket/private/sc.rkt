@@ -144,7 +144,7 @@
                                                       (when (...? (stx-car rest))
                                                         (raise-syntax-error 
                                                          (syntax-e who)
-                                                         "misplaced ellipses in pattern (follows other ellipses)"
+                                                         "misplaced ellipsis in pattern (follows other ellipsis)"
                                                          top
                                                          (stx-car rest)))
                                                       (loop (stx-cdr rest) (add1 cnt)))
@@ -198,7 +198,7 @@
                                   (m&e dp dp #f last? #f))
                                 (raise-syntax-error 
                                  (syntax-e who)
-                                 "misplaced ellipses in pattern"
+                                 "misplaced ellipsis in pattern"
                                  top
                                  hd))
                             ;; When just-vars?, do head first for good error ordering.
@@ -282,7 +282,7 @@
                                    (...? p))
                               (raise-syntax-error 
                                (syntax-e who)
-                               "misplaced ellipses in pattern"
+                               "misplaced ellipsis in pattern"
                                top
                                p)
                               (if (wildcard? p)
@@ -540,7 +540,7 @@
                           (apply
                            raise-syntax-error 
                            'syntax
-                           "no pattern variables before ellipses in template"
+                           "no pattern variables before ellipsis in template"
                            (pick-specificity
                             top
                             last-el)))
@@ -556,7 +556,7 @@
                                                       [(cdar l) (loop (cdr l))]
                                                       [else (cons (caar l) (loop (cdr l)))])))]
                                [proto-rr-shallow (and proto-r
-                                                      ;; the ones that we leave alone for these ellipses:
+                                                      ;; the ones that we leave alone for these ellipsis:
                                                       (let loop ([l proto-rr+deep?s])
                                                         (cond
                                                          [(null? l) null]
@@ -567,7 +567,7 @@
                                        (apply
                                         raise-syntax-error 
                                         'syntax
-                                        "too many ellipses in template"
+                                        "too many ellipsis in template"
                                         (pick-specificity
                                          top
                                          last-el))))]
@@ -648,7 +648,7 @@
                                   (expander dp proto-r dp #f use-tail-pos hash! need-list?))
                                 (raise-syntax-error 
                                  'syntax
-                                 "misplaced ellipses in template"
+                                 "misplaced ellipsis in template"
                                  top
                                  hd))
                             (let ([ehd (expander hd proto-r hd use-ellipses? use-tail-pos hash! #f)]
@@ -689,7 +689,7 @@
                                                  (...? p))
                                         (raise-syntax-error 
                                          'syntax
-                                         "misplaced ellipses in template"
+                                         "misplaced ellipsis in template"
                                          top
                                          p))
                                       (check-not-pattern p proto-r)
@@ -1012,7 +1012,7 @@
                              (when (bound-identifier=? l ssym)
                                (raise-syntax-error 
                                 'syntax
-                                "missing ellipses with pattern variable in template"
+                                "missing ellipsis with pattern variable in template"
                                 ssym))]
                             [else (loop (car l))]))))
                      proto-r))

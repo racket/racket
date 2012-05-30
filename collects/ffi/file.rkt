@@ -17,7 +17,7 @@
 
 (define (convert-modes who guards)
   (unless (list? guards)
-    (raise-type-error who "list of symbols" guards))
+    (raise-argument-error who "(listof symbol?)" guards))
   (let ([read?    0]
         [write?   0]
         [execute? 0]
@@ -30,18 +30,19 @@
                   ((execute) (set! execute? SCHEME_GUARD_FILE_EXECUTE))
                   ((delete) (set! delete? SCHEME_GUARD_FILE_DELETE))
                   ((exists) (set! exists? SCHEME_GUARD_FILE_EXISTS))
-                  (else (error who "bad permission symbol: ~e" guard))))
+                  (else (raise-argument-error who "bad permission symbol" "symbol" guard))))
               guards)
     (when (and (positive? exists?)
                (positive? (+ read? write? execute? delete?)))
-      (error who "permission 'exists must occur alone: ~e" guards))
+      (raise-argument-error who "permission 'exists must occur alone" 
+                            "permissions" guards))
     (+ read? write? execute? delete? exists?)))
 
 (define (security-guard-check-file who path modes)
   (unless (symbol? who)
-    (raise-type-error 'security-guard-check-file "symbol" 0 who path modes))
+    (raise-argument-error 'security-guard-check-file "symbol?" 0 who path modes))
   (unless (or (path? path) (path-string? path))
-    (raise-type-error 'security-guard-check-file "path or path string" 1 who path modes))
+    (raise-argument-error 'security-guard-check-file "path-string?" 1 who path modes))
   (let ([cp (cleanse-path (path->complete-path path))]
         [mode (convert-modes 'security-guard-check-file modes)])
     (scheme_security_check_file who cp mode)))
@@ -49,7 +50,7 @@
 (define (_file/guard modes [who '_file/guard])
   (let ([mode (convert-modes '_file/guard modes)])
     (unless (symbol? who)
-      (raise-type-error '_file/guard "symbol" who))
+      (raise-argument-error '_file/guard "symbol?" who))
     (make-ctype
      _path
      (lambda (p)

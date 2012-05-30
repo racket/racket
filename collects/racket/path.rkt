@@ -13,7 +13,7 @@
 
 (define (simple-form-path p)
   (unless (path-string? p)
-    (raise-type-error 'simple-form-path "path or string" p))
+    (raise-argument-error 'simple-form-path "path-string?" p))
   (simplify-path (path->complete-path p)))
 
 ;; Note that normalize-path does not normalize the case
@@ -34,14 +34,14 @@
                                          resolved)
                                         resolved)])
                           (if (member path seen-paths)
-                              (error 'normalize-path "circular reference at ~s" path)
+                              (error 'normalize-path "circular reference found\n  path: ~a" path)
                               (let ([spath
                                      ;; Use simplify-path to get rid of ..s, which can
                                      ;;  allow the path to grow indefinitely in a cycle.
                                      ;; An exception must mean a cycle of links.
                                      (with-handlers ([exn:fail:filesystem?
                                                       (lambda (x)
-                                                        (error 'normalize-path "circular reference at ~s" path))])
+                                                        (error 'normalize-path "circular reference found\n  path: ~a" path))])
                                        (simplify-path path))])
                                 (loop spath (cons path seen-paths))))))))))]
            [resolve
@@ -53,13 +53,13 @@
             (case-lambda
              [(orig-path) (do-normalize-path orig-path (current-directory))]
              [(orig-path wrt)
-              (unless (complete-path? wrt)
-                (raise-type-error 'normalize-path "complete path" wrt))
+              (unless (and (path-string? wrt) (complete-path? wrt))
+                (raise-argument-error 'normalize-path "(and/c path-string? complete-path?)" wrt))
               (do-normalize-path orig-path wrt)])]
            [error-not-a-dir
             (lambda (path)
               (error 'normalize-path
-                     "~s (within the input path) is not a directory or does not exist"
+                     "element within the input path is not a directory or does not exist\n  element: ~a"
                      path))]
            [do-normalize-path
             (lambda (orig-path wrt)
@@ -75,7 +75,7 @@
                             (cond
                              [(not prev) 
                               (error 'normalize-path
-                                     "root has no parent directory: ~s"
+                                     "root has no parent directory\n  root path: ~a"
                                      orig-path)]
                              [else
                               (let ([prev
@@ -113,14 +113,14 @@
 
 ;; Argument must be in simple form
 (define (do-explode-path who orig-path simple?)
-  (let loop ([path orig-path][rest '()])
+  (let loop ([path orig-path] [rest '()])
     (let-values ([(base name dir?) (split-path path)])
       (when simple?
         (when (or (and base (not (path-for-some-system? base)))
                   (not (path-for-some-system? name)))
-          (raise-type-error who 
-                            "path (for ay platform) in simple form (absolute, complete, and with no same- or up-directory indicators)"
-                            orig-path)))
+          (raise-argument-error who 
+                                "(and/c path-for-some-system? simple-form?)"
+                                orig-path)))
       (if (path-for-some-system? base)
           (loop base (cons name rest))
           (cons name rest)))))
@@ -128,7 +128,7 @@
 (define (explode-path orig-path)
   (unless (or (path-string? orig-path)
               (path-for-some-system? orig-path))
-    (raise-type-error 'explode-path "path (for any platform) or string" orig-path))
+    (raise-argument-error 'explode-path "(or/c path-string? path-for-some-system?)" orig-path))
   (do-explode-path 'explode-path orig-path #f))
 
 ;; Arguments must be in simple form
@@ -156,7 +156,7 @@
 (define (file-name who name)
   (unless (or (path-string? name)
               (path-for-some-system? name))
-    (raise-type-error who "path (for any platform) or string" name))
+    (raise-argument-error who "(or/c path-string? path-for-some-system?)" name))
   (let-values ([(base file dir?) (split-path name)])
     (and (not dir?) (path-for-some-system? file) file)))
 
@@ -166,7 +166,7 @@
 (define (path-only name)
   (unless (or (path-string? name)
               (path-for-some-system? name))
-    (raise-type-error 'path-only "path (for any platform) or string" name))
+    (raise-argument-error 'path-only "(or/c path-string? path-for-some-system?)" name))
   (let-values ([(base file dir?) (split-path name)])
     (cond [dir? (if (string? name) (string->path name) name)]
           [(path-for-some-system? base) base]
@@ -181,15 +181,15 @@
 
 (define (some-system-path->string path)
   (unless (path-for-some-system? path)
-    (raise-type-error 'some-system-path->string "path (for any platform)" path))
+    (raise-argument-error 'some-system-path->string "path-for-some-system?" path))
   (bytes->string/utf-8 (path->bytes path)))
 
 (define (string->some-system-path path kind)
   (unless (string? path)
-    (raise-type-error 'string->some-system-path "string" path))
+    (raise-argument-error 'string->some-system-path "string?" path))
   (unless (or (eq? kind 'unix)
               (eq? kind 'windows))
-    (raise-type-error 'string->some-system-path "'unix or 'windows" kind))
+    (raise-argument-error 'string->some-system-path "(or/c 'unix 'windows)" kind))
   (bytes->path (string->bytes/utf-8 path) kind))
 
 (define (path-element? path)

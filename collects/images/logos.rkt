@@ -116,26 +116,26 @@
    (define scale (/ height 256))
    (define bulge-fm
      (draw-icon-flomap
-      256 256 (λ (dc)
-                (send dc set-pen logo-red-color 2 'transparent)
-                (send dc set-brush logo-red-color 'solid)
-                (send dc draw-path (make-arc-path 8 8 239 239 blue-θ-end blue-θ-start))
-                (send dc set-pen logo-blue-color 2 'transparent)
-                (send dc set-brush logo-blue-color 'solid)
-                (send dc draw-path (make-arc-path 8 8 239 239 blue-θ-start blue-θ-end))
-                (send dc set-pen (lambda-pen lambda-outline-color 10))
-                (send dc set-brush lambda-outline-color 'solid)
-                (draw-lambda dc 8 8 240 240))
-      scale))
+      (λ (dc)
+        (send dc set-pen logo-red-color 2 'transparent)
+        (send dc set-brush logo-red-color 'solid)
+        (send dc draw-path (make-arc-path 8 8 239 239 blue-θ-end blue-θ-start))
+        (send dc set-pen logo-blue-color 2 'transparent)
+        (send dc set-brush logo-blue-color 'solid)
+        (send dc draw-path (make-arc-path 8 8 239 239 blue-θ-start blue-θ-end))
+        (send dc set-pen (lambda-pen lambda-outline-color 10))
+        (send dc set-brush lambda-outline-color 'solid)
+        (draw-lambda dc 8 8 240 240))
+      256 256 scale))
    
    (define (lambda-flomap color pen-width)
      (draw-icon-flomap
-      256 256 (λ (dc)
-                (send dc set-scale scale scale)
-                (send dc set-pen (lambda-pen color pen-width))
-                (send dc set-brush color 'solid)
-                (draw-lambda dc 8 8 240 240))
-      scale))
+      (λ (dc)
+        (send dc set-scale scale scale)
+        (send dc set-pen (lambda-pen color pen-width))
+        (send dc set-brush color 'solid)
+        (draw-lambda dc 8 8 240 240))
+      256 256 scale))
    
    (let* ([bulge-dfm  (flomap->deep-flomap bulge-fm)]
           [bulge-dfm  (deep-flomap-bulge-spheroid bulge-dfm (* 112 scale))]
@@ -150,14 +150,14 @@
                 lambda-fm)]
           [fm  (flomap-cc-superimpose
                 (draw-icon-flomap
-                 32 32 (λ (dc)
-                         (send dc set-pen lambda-outline-color 1/2 'solid)
-                         (send dc set-brush "white" 'solid)
-                         (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
-                         (send dc set-pen "lightblue" 1/2 'solid)
-                         (send dc set-brush "white" 'transparent)
-                         (send dc draw-ellipse 0.5 0.5 30 30))
-                 (/ height 32))
+                 (λ (dc)
+                   (send dc set-pen lambda-outline-color 1/2 'solid)
+                   (send dc set-brush "white" 'solid)
+                   (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
+                   (send dc set-pen "lightblue" 1/2 'solid)
+                   (send dc set-brush "white" 'transparent)
+                   (send dc draw-ellipse 0.5 0.5 30 30))
+                 32 32 (/ height 32))
                 fm)])
      fm)))
 
@@ -252,11 +252,11 @@
 (define (continents-flomap color height)
   (define scale (/ height 32))
   (draw-icon-flomap
-   32 32 (λ (dc)
-           (send dc set-pen lambda-outline-color 3/8 'solid)
-           (send dc set-brush color 'solid)
-           (draw-path-commands dc continents-path-commands 0 -17))
-   scale))
+   (λ (dc)
+     (send dc set-pen lambda-outline-color 3/8 'solid)
+     (send dc set-brush color 'solid)
+     (draw-path-commands dc continents-path-commands 0 -17))
+   32 32 scale))
 
 (defproc (planet-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
   (make-cached-flomap
@@ -268,11 +268,11 @@
             [indent-dfm  (deep-flomap-raise indent-dfm (* -1/8 scale))]
             [indent-dfm  (deep-flomap-smooth-z indent-dfm (* 1 scale))]
             [earth-fm  (draw-icon-flomap
-                        32 32 (λ (dc)
-                                (send dc set-pen logo-water-color 1/2 'solid)
-                                (send dc set-brush logo-water-color 'solid)
-                                (send dc draw-ellipse 0.75 0.75 29.5 29.5))
-                        scale)]
+                        (λ (dc)
+                          (send dc set-pen logo-water-color 1/2 'solid)
+                          (send dc set-brush logo-water-color 'solid)
+                          (send dc draw-ellipse 0.75 0.75 29.5 29.5))
+                        32 32 scale)]
             [earth-dfm  (flomap->deep-flomap earth-fm)]
             [earth-dfm  (deep-flomap-bulge-spheroid earth-dfm (* 16 scale))]
             [earth-dfm  (deep-flomap-cc-superimpose 'add earth-dfm indent-dfm)])
@@ -288,14 +288,14 @@
    
    (flomap-cc-superimpose
     (draw-icon-flomap
-     32 32 (λ (dc)
-             (send dc set-pen lambda-outline-color 1/2 'solid)
-             (send dc set-brush "white" 'solid)
-             (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
-             (send dc set-pen "lightblue" 1/2 'solid)
-             (send dc set-brush "white" 'transparent)
-             (send dc draw-ellipse 0.5 0.5 30 30))
-     scale)
+     (λ (dc)
+       (send dc set-pen lambda-outline-color 1/2 'solid)
+       (send dc set-brush "white" 'solid)
+       (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
+       (send dc set-pen "lightblue" 1/2 'solid)
+       (send dc set-brush "white" 'transparent)
+       (send dc draw-ellipse 0.5 0.5 30 30))
+     32 32 scale)
     earth-fm
     land-fm)))
 
@@ -338,11 +338,11 @@
 
 (define (racket-r-flomap color height)
   (draw-icon-flomap
-   32 32 (λ (dc)
-           (set-icon-pen dc racket-r-outline-color 3/8 'solid)
-           (send dc set-brush color 'solid)
-           (draw-path-commands dc racket-r-commands 0 0))
-   (/ height 32)))
+   (λ (dc)
+     (set-icon-pen dc racket-r-outline-color 3/8 'solid)
+     (send dc set-brush color 'solid)
+     (draw-path-commands dc racket-r-commands 0 0))
+   32 32 (/ height 32)))
 
 (define racket-sphere-material
   (deep-flomap-material-value
@@ -361,20 +361,20 @@
             [indent-dfm  (deep-flomap-raise indent-dfm (* -0.75 scale))]
             [indent-dfm  (deep-flomap-smooth-z indent-dfm (* 0.5 scale))]
             [sphere-fm  (draw-icon-flomap
-                         32 32 (λ (dc)
-                                 (define top-rgn (make-object region% dc))
-                                 (send top-rgn set-polygon
-                                       '((0 . 0) (31 . 0) (31 . 4) (5 . 13) (8 . 31) (0 . 31)))
-                                 
-                                 (send dc set-pen logo-blue-color 1/2 'solid)
-                                 (send dc set-brush logo-blue-color 'solid)
-                                 (send dc draw-ellipse 0.75 0.75 29.5 29.5)
-                                 
-                                 (send dc set-clipping-region top-rgn)
-                                 (send dc set-pen logo-red-color 1/2 'solid)
-                                 (send dc set-brush logo-red-color 'solid)
-                                 (send dc draw-ellipse 0.75 0.75 29.5 29.5))
-                         scale)]
+                         (λ (dc)
+                           (define top-rgn (make-object region% dc))
+                           (send top-rgn set-polygon
+                                 '((0 . 0) (31 . 0) (31 . 4) (5 . 13) (8 . 31) (0 . 31)))
+                           
+                           (send dc set-pen logo-blue-color 1/2 'solid)
+                           (send dc set-brush logo-blue-color 'solid)
+                           (send dc draw-ellipse 0.75 0.75 29.5 29.5)
+                           
+                           (send dc set-clipping-region top-rgn)
+                           (send dc set-pen logo-red-color 1/2 'solid)
+                           (send dc set-brush logo-red-color 'solid)
+                           (send dc draw-ellipse 0.75 0.75 29.5 29.5))
+                         32 32 scale)]
             [sphere-dfm  (flomap->deep-flomap sphere-fm)]
             [sphere-dfm  (deep-flomap-bulge-spheroid sphere-dfm (* 14 scale))]
             [sphere-dfm  (deep-flomap-cc-superimpose 'add sphere-dfm indent-dfm)])
@@ -389,14 +389,14 @@
    
    (flomap-cc-superimpose
     (draw-icon-flomap
-     32 32 (λ (dc)
-             (send dc set-pen racket-r-outline-color 1/2 'solid)
-             (send dc set-brush "white" 'solid)
-             (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
-             (send dc set-pen "lightblue" 1/2 'solid)
-             (send dc set-brush "white" 'transparent)
-             (send dc draw-ellipse 0.5 0.5 30 30))
-     scale)
+     (λ (dc)
+       (send dc set-pen racket-r-outline-color 1/2 'solid)
+       (send dc set-brush "white" 'solid)
+       (send dc draw-ellipse -0.25 -0.25 31.5 31.5)
+       (send dc set-pen "lightblue" 1/2 'solid)
+       (send dc set-brush "white" 'transparent)
+       (send dc draw-ellipse 0.5 0.5 30 30))
+     32 32 scale)
     sphere-fm
     r-fm)))
 

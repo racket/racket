@@ -4,7 +4,8 @@
 
 (Section 'serialization)
 
-(require scheme/serialize)
+(require racket/serialize
+         racket/file)
 
 ;; ----------------------------------------
 
@@ -468,6 +469,24 @@
 
 (test #t pair? (serialize (new s:bad% [foo 10])))
 (err/rt-test (deserialize (serialize (new s:bad% [foo 10]))) exn:fail:object?)
+
+;; ----------------------------------------
+
+(let ([fn (make-temporary-file)])
+  (with-output-to-file fn
+    #:exists 'truncate
+    (lambda () (display
+                (string-append "#lang racket/base\n"
+                               "(require racket/serialize)\n"
+                               "(module+ main\n"
+                               "   (provide s)\n"
+                               "   (serializable-struct foo (bar))\n"
+                               "   (define s (serialize (foo 35))))\n"))))
+  (define s (dynamic-require `(submod ,fn main) 's))
+  (let ([o (open-output-bytes)])
+    (write s o)
+    (test s read (open-input-string (get-output-string o)))))
+
 
 ;; ----------------------------------------
 

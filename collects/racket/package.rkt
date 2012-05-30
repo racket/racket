@@ -435,7 +435,10 @@
   (let ([v (and (identifier? id)
                 (syntax-local-value id (lambda () #f)))])
     (unless (package? v)
-      (raise-type-error 'package-exported-identifiers "identifier bound to a package" id))
+      (if (identifier? id)
+          (raise-arguments-error 'package-exported-identifiers "identifier is not bound to a package"
+                                 "identifier" id)
+          (raise-argument-error 'package-exported-identifiers "identifier?" id)))
     (let ([introduce (syntax-local-make-delta-introducer 
                       (syntax-local-introduce id))])
       (map (lambda (i)
@@ -448,5 +451,8 @@
   (let ([v (and (identifier? id)
                 (syntax-local-value id (lambda () #f)))])
     (unless (package? v)
-      (raise-type-error 'package-exported-identifiers "identifier bound to a package" id))
+      (if (identifier? id)
+          (raise-arguments-error 'package-original-identifiers "identifier is not bound to a package"
+                                 "identifier" id)
+          (raise-argument-error 'package-original-identifiers "identifier?" id)))
     (map cdr ((package-exports v)))))

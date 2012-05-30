@@ -80,7 +80,7 @@
 						(integer? x)
 						(exact? x)
 						(positive? x))
-				     (raise-type-error 'current-font-size "exact non-negative integer" x))
+				     (raise-argument-error 'current-font-size "nonnegative-exact-integer?" x))
 				   x)))
 
       (define current-title-color (make-parameter
@@ -88,9 +88,9 @@
 				   (lambda (x)
 				     (unless (or (string? x)
 						 (x . is-a? . color%))
-				       (raise-type-error 'current-title-color
-							 "string or color% object"
-							 x))
+				       (raise-argument-error 'current-title-color
+                                                             "(or/c string? (is-a?/c color%))"
+                                                             x))
 				     x)))
 
       (define (t s) (text s (current-main-font) (current-font-size)))
@@ -166,19 +166,19 @@
 	 (make-object font% 10 'default 'normal 'normal)
 	 (lambda (f)
 	   (unless (f . is-a? . font%)
-	     (raise-type-error 'current-page-number-font "font%" f))
+	     (raise-argument-error 'current-page-number-font "(is-a?/c font%)" f))
 	   f)))
       (define current-page-number-color 
 	(make-parameter (make-object color% "black")
 			(lambda (s)
 			  (unless (s . is-a? . color%)
-			    (raise-type-error 'current-page-number-color "color%" s))
+			    (raise-argument-error 'current-page-number-color "(is-a?/c color%)" s))
 			  s)))
       (define current-page-number-adjust (make-parameter 
                                           (λ (n s) s)
                                           (lambda (f)
                                             (unless (procedure-arity-includes? f 2)
-                                              (raise-type-error 'current-page-number-adjust "procedure that accepts 2 arguments" f))
+                                              (raise-argument-error 'current-page-number-adjust "(procedure-arity-includes/c 2)" f))
                                             f)))
       
       (define page-number 1)
@@ -540,7 +540,7 @@
       (define re-slide
 	(lambda (s [addition #f])
 	  (unless (sliderec? s)
-	    (raise-type-error 're-slide "slide" s))
+	    (raise-argument-error 're-slide "slide?" s))
 	  (viewer:add-talk-slide!
 	   (make-sliderec
 	    (let ([orig (sliderec-drawer s)]
@@ -563,7 +563,7 @@
       
       (define (slide->pict s)
         (unless (sliderec? s)
-          (raise-type-error 'slide->pict "slide" s))
+          (raise-argument-error 'slide->pict "slide?" s))
         (let ([orig (sliderec-drawer s)])
           (dc orig client-w client-h)))
 

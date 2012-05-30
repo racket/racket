@@ -172,6 +172,15 @@
                                              (make-bytes 500000)))))
         =err> "out of memor(?:y)"))
 
+   ;; check non-propagation of errors
+   --top--
+   (parameterize ([sandbox-propagate-exceptions #f]
+                  [sandbox-error-output 'string])
+     (make-base-evaluator! '(void)))
+   --eval--
+   (/ 0) => (void)
+   --top--
+   (regexp-match #rx"^.*?\n" (get-error-output ev)) => '("/: division by zero\n")
    ;; i/o
    --top--
    (parameterize ([sandbox-input "3\n"]
@@ -475,7 +484,7 @@
    (make-base-evaluator/reqs! '(racket/list))
    --eval--
    (last-pair '(1 2 3)) => '(3)
-   (last-pair null) =err> "expected argument of type"
+   (last-pair null) =err> "contract violation"
 
    ;; coverage
    --top--

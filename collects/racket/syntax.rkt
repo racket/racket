@@ -118,9 +118,10 @@
 
 (define (check-restricted-format-string who fmt)
   (unless (restricted-format-string? fmt)
-    (raise-type-error who
-                      "format string using only ~a placeholders"
-                      fmt)))
+    (raise-arguments-error who
+                           (format "format string should have ~a placeholders"
+                                   fmt)
+                           "format string" fmt)))
 
 (define (->atom x err)
   (cond [(string? x) x]
@@ -129,9 +130,9 @@
         [(keyword? x) (keyword->string x)]
         [(number? x) x]
 	[(char? x) x]
-        [else (raise-type-error err
-                                "string, symbol, identifier, keyword, character, or number"
-                                x)]))
+        [else (raise-argument-error err
+                                    "(or/c string? symbol? identifier? keyword? char? number?)"
+                                    x)]))
 
 
 ;; == Error reporting ==
@@ -140,14 +141,14 @@
   (make-parameter #f
                   (lambda (new-value)
                     (unless (or (syntax? new-value) (eq? new-value #f))
-                      (raise-type-error 'current-syntax-context
-                                        "syntax or #f"
-                                        new-value))
+                      (raise-argument-error 'current-syntax-context
+                                            "(or/c syntax? #f)"
+                                            new-value))
                     new-value)))
 
 (define (wrong-syntax stx #:extra [extras null] format-string . args)
   (unless (or (eq? stx #f) (syntax? stx))
-    (raise-type-error 'wrong-syntax "syntax or #f" 0 (list* stx format-string args)))
+    (raise-argument-error 'wrong-syntax "(or/c syntax? #f)" 0 (list* stx format-string args)))
   (let* ([ctx (current-syntax-context)]
          [blame (and (syntax? ctx) (syntax-property ctx 'report-error-as))])
     (raise-syntax-error (if (symbol? blame) blame #f)

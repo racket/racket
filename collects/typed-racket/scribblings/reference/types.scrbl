@@ -97,6 +97,8 @@ Float-Positive-Zero
 Flonum-Positive-Zero
 Float-Zero
 Flonum-Zero
+Float-Nan
+Flonum-Nan
 Positive-Single-Flonum
 Nonnegative-Single-Flonum
 Negative-Single-Flonum
@@ -104,6 +106,7 @@ Nonpositive-Single-Flonum
 Single-Flonum-Negative-Zero
 Single-Flonum-Positive-Zero
 Single-Flonum-Zero
+Single-Flonum-Nan
 Positive-Inexact-Real
 Nonnegative-Inexact-Real
 Negative-Inexact-Real
@@ -111,6 +114,7 @@ Nonpositive-Inexact-Real
 Inexact-Real-Negative-Zero
 Inexact-Real-Positive-Zero
 Inexact-Real-Zero
+Inexact-Real-Nan
 Positive-Exact-Rational
 Nonnegative-Exact-Rational
 Negative-Exact-Rational

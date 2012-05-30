@@ -106,12 +106,16 @@
             [(module-path? src)
              (loop (module-path-index-join src #f))]
             [else
-             (raise-type-error 'xref-binding-definition->tag
-                               "list starting with module path or module path index"
-                               src)]))]
-        [else (raise-type-error 'xref-binding-definition->tag
-                                "identifier, 2-element list, or 7-element list"
-                                id/binding)]))]))
+             (raise-argument-error 'xref-binding-definition->tag
+                                   "(list/c (or/c module-path? module-path-index?) any/c)"
+                                   src)]))]
+        [else (raise-argument-error 'xref-binding-definition->tag
+                                    (string-append
+                                     "(or/c identifier? (lambda (l)\n"
+                                     "                    (and (list? l)\n"
+                                     "                         (or (= (length l) 2)\n"
+                                     "                             (= (length l) 7)))))")
+                                    id/binding)]))]))
 
 (define (xref-binding->definition-tag xrefs id/binding mode)
   (let-values ([(tag form?) (xref-binding-tag xrefs id/binding mode)])

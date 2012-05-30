@@ -232,13 +232,14 @@ sandboxed code, for example:
 ]
 An error will be signaled in such cases.
 
-Evaluation can also be instrumented to track coverage information when
-@racket[sandbox-coverage-enabled] is set. Exceptions (both syntax and
+If the value of @racket[sandbox-propagate-exceptions] is true (the
+default) when the sandbox is created, then exceptions (both syntax and
 run-time) are propagated as usual to the caller of the evaluation
-function (i.e., catch it with @racket[with-handlers]).  However, note
-that a sandboxed evaluator is convenient for testing, since all
-exceptions happen in the same way, so you don't need special code to
-catch syntax errors.
+function (i.e., catch them with @racket[with-handlers]).  If the value
+of @racket[sandbox-propagate-exceptions] is @racket[#f] when the
+sandbox is created, then uncaught exceptions in a sandbox evaluation
+cause the error to be printed to the sandbox's error port, and the
+caller of the evaluation receives @|void-const|.
 
 Finally, the fact that a sandboxed evaluator accept syntax objects
 makes it usable as the value for @racket[current-eval], which means
@@ -454,6 +455,17 @@ beware that a break may be propagated after an evaluator has produced
 a result, so that the break is visible on the next interaction with
 the evaluator (or the break is lost if the evaluator is not used
 further). The default is @racket[#t].}
+
+
+@defboolparam[sandbox-propagate-exceptions propagate?]{
+
+A parameter that controls how uncaught exceptions during a sandbox
+evaluation are treated. When the parameter value is @racket[#t], 
+then the exception is propagated to the caller of sandbox.
+When the parameter value is @racket[#f], the exception message
+is printed to the sandbox's error port, and the caller of the
+sandbox receives @|void-const| for the evaluation. The default
+is @racket[#t].}
 
 
 @defparam[sandbox-namespace-specs spec (cons/c (-> namespace?) 

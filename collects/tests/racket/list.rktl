@@ -348,13 +348,13 @@
 
   (test '(1 banana) argmin car '((3 pears) (1 banana) (2 apples)))
 
-  (err/rt-test (argmin 1 (list 1)) (check-regs #rx"argmin" #rx"procedure"))
+  (err/rt-test (argmin 1 (list 1)) (check-regs #rx"argmin" #rx"any/c . -> . real[?]"))
   (err/rt-test (argmin (lambda (x) x) 3) (check-regs #rx"argmin" #rx"list"))
-  (err/rt-test (argmin (lambda (x) x) (list 1 #f)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
-  (err/rt-test (argmin (lambda (x) x) (list #f)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
+  (err/rt-test (argmin (lambda (x) x) (list 1 #f)) (check-regs #rx"argmin" #rx"real"))
+  (err/rt-test (argmin (lambda (x) x) (list #f)) (check-regs #rx"argmin" #rx"real"))
 
-  (err/rt-test (argmin (lambda (x) x) (list +i)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
-  (err/rt-test (argmin (lambda (x) x) (list)) (check-regs #rx"argmin" #rx"non-empty list"))
+  (err/rt-test (argmin (lambda (x) x) (list +i)) (check-regs #rx"argmin" #rx"real"))
+  (err/rt-test (argmin (lambda (x) x) (list)) (check-regs #rx"argmin" #rx".and/c list[?] .not/c empty[?].."))
 
   (test 'argmax object-name argmax)
   (test 1 argmax (lambda (x) 0) (list 1))
@@ -370,13 +370,13 @@
 
   (test '(3 pears) argmax car '((3 pears) (1 banana) (2 apples)))
 
-  (err/rt-test (argmax 1 (list 1)) (check-regs #rx"argmax" #rx"procedure"))
+  (err/rt-test (argmax 1 (list 1)) (check-regs #rx"argmax" #rx"any/c . -> . real[?]"))
   (err/rt-test (argmax (lambda (x) x) 3) (check-regs #rx"argmax" #rx"list"))
-  (err/rt-test (argmax (lambda (x) x) (list 1 #f)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
-  (err/rt-test (argmax (lambda (x) x) (list #f)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
+  (err/rt-test (argmax (lambda (x) x) (list 1 #f)) (check-regs #rx"argmax" #rx"real"))
+  (err/rt-test (argmax (lambda (x) x) (list #f)) (check-regs #rx"argmax" #rx"real"))
 
-  (err/rt-test (argmax (lambda (x) x) (list +i)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
-  (err/rt-test (argmax (lambda (x) x) (list)) (check-regs #rx"argmax" #rx"non-empty list")))
+  (err/rt-test (argmax (lambda (x) x) (list +i)) (check-regs #rx"argmax" #rx"real?"))
+  (err/rt-test (argmax (lambda (x) x) (list)) (check-regs #rx"argmax" #rx".and/c list[?] .not/c empty[?]..")))
 
 ;; ---------- range ----------
 

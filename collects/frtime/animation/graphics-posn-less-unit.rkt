@@ -3,11 +3,10 @@
 ;
 ; modified by Gregory Cooper to support FrTime
 
-#lang scheme/unit
+#lang racket/unit
 
   (require mred/mred-sig
-	   mzlib/class
-	   mzlib/class100
+	   racket/class
 	   mzlib/etc
            frtime/core/frp
 	   "graphics-sig.rkt")
@@ -36,15 +35,15 @@
   (define black-color (make-object mred:color% "BLACK"))
 
   (define sixlib-canvas%
-    (class100-asi mred:canvas% 
+    (class mred:canvas%
+      (super-new)
       (inherit get-parent
 	       min-client-width min-client-height
 	       stretchable-width stretchable-height)
-      (private-field
-        [current-mouse-pos (make-posn 0 0)]
-        [mouse-listener #f]
-        [key-listener #f])
-      (private
+      (define current-mouse-pos (make-posn 0 0))
+      (define mouse-listener #f)
+      (define key-listener #f)
+      (private*
         [reset-size
 	 (lambda ()
            (min-client-width width)
@@ -64,18 +63,18 @@
            (send buffer-dc clear)
            (send dc clear))])
       
-      (private-field ; were public
-        viewport
-	[height 0]
-	[width 0]
-	[label 0]
-	[current-pen 'uninitialized-pen]
-	[current-brush 'uninitialized-brush]
-	[bitmap 'uninitalized-bitmap]
-	[dc 'uninitialized-dc]
-	[buffer-dc 'uninitialized-buffer-dc])
+      ;; were public
+      (define viewport (void))
+      (define height 0)
+      (define width 0)
+      (define label 0)
+      (define current-pen 'uninitialized-pen)
+      (define current-brush 'uninitialized-brush)
+      (define bitmap 'uninitalized-bitmap)
+      (define dc 'uninitialized-dc)
+      (define buffer-dc 'uninitialized-buffer-dc)
       
-      (public
+      (public*
         [get-mouse-listener (lambda () mouse-listener)]
         [get-key-listener (lambda () key-listener)]
         [set-mouse-listener (lambda (ml) (set! mouse-listener ml))]
@@ -93,7 +92,7 @@
 	[remember-pen (lambda (pen) (set! current-pen pen))]
 	[remember-brush (lambda (brush) (set! current-brush brush))])
 
-      (override
+      (override*
        [on-paint
 	(lambda ()
 	  (let ([bm (send buffer-dc get-bitmap)])
@@ -127,7 +126,7 @@
                 (send key-event get-meta-down)
                 (send key-event get-alt-down)))))])
 
-      (public
+      (public*
 	[set-dc (lambda (new-dc) (set! dc new-dc))]
 	[set-buffer-dc (lambda (new-buffer-dc) (set! buffer-dc
 						     new-buffer-dc))]

@@ -26,14 +26,13 @@
 
 (define (flat-play-flomap color height)
   (draw-icon-flomap
-   24 32
    (λ (dc)
      (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
      (send dc set-brush color 'solid)
      (send dc draw-polygon (list (cons 0 0) (cons 4 0)
                                  (cons 23 13) (cons 23 18)
                                  (cons 4 31) (cons 0 31))))
-   (/ height 32)))
+   24 32 (/ height 32)))
 
 (defproc (play-flomap [color (or/c string? (is-a?/c color%))]
                       [height (and/c rational? (>=/c 0)) (default-icon-height)]
@@ -50,15 +49,15 @@
                               ) flomap?
   (make-cached-flomap
    [height color material]
-   (define fm (draw-rendered-icon-flomap
-               20 32 (λ (dc)
-                       (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-                       (send dc set-brush color 'solid)
-                       (send dc draw-polygon (list (cons 0 0) (cons 4 0)
-                                                   (cons 19 13) (cons 19 18)
-                                                   (cons 4 31) (cons 0 31))))
-               (/ height 32)
-               material))
+   (define fm
+     (draw-rendered-icon-flomap
+      (λ (dc)
+        (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+        (send dc set-brush color 'solid)
+        (send dc draw-polygon (list (cons 0 0) (cons 4 0)
+                                    (cons 19 13) (cons 19 18)
+                                    (cons 4 31) (cons 0 31))))
+      20 32 (/ height 32) material))
    (flomap-hc-append fm fm)))
 
 (defproc (stop-flomap [color (or/c string? (is-a?/c color%))]
@@ -68,12 +67,11 @@
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-            (send dc set-brush color 'solid)
-            (send dc draw-polygon (list '(0 . 0) '(31 . 0) '(31 . 31) '(0 . 31))))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+      (send dc set-brush color 'solid)
+      (send dc draw-polygon (list '(0 . 0) '(31 . 0) '(31 . 31) '(0 . 31))))
+    32 32 (/ height 32) material)))
 
 (defproc (record-flomap [color (or/c string? (is-a?/c color%))]
                         [height (and/c rational? (>=/c 0)) (default-icon-height)]
@@ -82,12 +80,11 @@
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
-    32 32 (λ (dc)
-            (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-            (send dc set-brush color 'solid)
-            (send dc draw-ellipse 0 0 31 31))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+      (send dc set-brush color 'solid)
+      (send dc draw-ellipse 0 0 31 31))
+    32 32 (/ height 32) material)))
 
 (defproc (bar-flomap [color (or/c string? (is-a?/c color%))]
                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
@@ -96,12 +93,11 @@
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
-    8 32 (λ (dc)
-           (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
-           (send dc set-brush color 'solid)
-           (send dc draw-polygon (list '(0 . 0) '(7 . 0) '(7 . 31) '(0 . 31))))
-    (/ height 32)
-    material)))
+    (λ (dc)
+      (set-icon-pen dc (icon-color->outline-color color) 1 'solid)
+      (send dc set-brush color 'solid)
+      (send dc draw-polygon (list '(0 . 0) '(7 . 0) '(7 . 31) '(0 . 31))))
+    8 32 (/ height 32) material)))
 
 (defproc (back-flomap [color (or/c string? (is-a?/c color%))]
                       [height (and/c rational? (>=/c 0)) (default-icon-height)]

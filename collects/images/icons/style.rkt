@@ -123,21 +123,21 @@
          [dfm  (deep-flomap-raise dfm (* s height))])
     dfm))
 
-(define (draw-icon-flomap w h draw-proc scale)
-  (draw-flomap (inexact->exact (ceiling (* w scale)))
-               (inexact->exact (ceiling (* h scale)))
-               (λ (dc)
+(define (draw-icon-flomap draw-proc w h scale)
+  (draw-flomap (λ (dc)
                  (send dc set-scale scale scale)
                  (send dc set-smoothing 'smoothed)
                  (send dc set-origin (* 0.5 scale) (* 0.5 scale))
                  (set-icon-pen dc "black" 10 'solid)
-                 (draw-proc dc))))
+                 (draw-proc dc))
+               (inexact->exact (ceiling (* w scale)))
+               (inexact->exact (ceiling (* h scale)))))
 
 (define (flomap-render-icon fm material)
   (deep-flomap-render-icon (deep-flomap-icon-style (flomap->deep-flomap fm)) material))
 
-(define (draw-rendered-icon-flomap w h draw-proc scale material)
-  (let* ([fm  (draw-icon-flomap w h draw-proc scale)]
+(define (draw-rendered-icon-flomap draw-proc w h scale material)
+  (let* ([fm  (draw-icon-flomap draw-proc w h scale)]
          [fm  (flomap-render-icon fm material)])
     fm))
 
@@ -149,8 +149,8 @@
       dfm))
   (deep-flomap-render-icon dfm material))
 
-(define (draw-short-rendered-icon-flomap w h proc scale material)
-  (flomap-render-thin-icon (draw-icon-flomap w h proc scale) material))
+(define (draw-short-rendered-icon-flomap draw-proc w h scale material)
+  (flomap-render-thin-icon (draw-icon-flomap draw-proc w h scale) material))
 
 ;; ===================================================================================================
 ;; Syntax for writing icon functions

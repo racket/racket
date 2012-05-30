@@ -11,44 +11,43 @@
          order-of-magnitude)
 
 (define (sqr z)
-  (unless (number? z) (raise-type-error 'sqr "number" z))
+  (unless (number? z) (raise-argument-error 'sqr "number?" z))
   (* z z))
 
 (define pi (atan 0 -1))
 
 ;; sgn function
 (define (sgn x)
-  (unless (real? x) (raise-type-error 'sgn "real number" x))
+  (unless (real? x) (raise-argument-error 'sgn "real?" x))
   (if (exact? x)
     (cond [(< x 0) -1] [(> x 0) 1] [else 0])
     (cond [(< x 0.0) -1.0] [(> x 0.0) 1.0] [else 0.0])))
 
 ;; complex conjugate
 (define (conjugate z)
-  (unless (number? z) (raise-type-error 'conjugate "number" z))
+  (unless (number? z) (raise-argument-error 'conjugate "number?" z))
   (make-rectangular (real-part z) (- (imag-part z))))
 
 ;; real hyperbolic functions
 (define (sinh x)
-  (unless (number? x) (raise-type-error 'sinh "number" x))
+  (unless (number? x) (raise-argument-error 'sinh "number?" x))
   (/ (- (exp x) (exp (- x))) 2.0))
 
 (define (cosh x)
-  (unless (number? x) (raise-type-error 'cosh "number" x))
+  (unless (number? x) (raise-argument-error 'cosh "number?" x))
   (/ (+ (exp x) (exp (- x))) 2.0))
 
 (define (tanh x)
-  (unless (number? x) (raise-type-error 'tanh "number" x))
+  (unless (number? x) (raise-argument-error 'tanh "number?" x))
   (/ (sinh x) (cosh x)))
 
 (define order-of-magnitude
   (let* ([exact-log (λ (x) (inexact->exact (log x)))]
          [inverse-exact-log10 (/ (exact-log 10))])
     (λ (r)
-      (unless (and (real? r) (positive? r))
-        (raise-type-error 'order-of-magnitude "positive real number" r))
-      (when (= r +inf.0)
-        (raise-type-error 'order-of-magnitude "non-infinite" r))
+      (unless (and (real? r) (positive? r)
+                   (not (= r +inf.0)))
+        (raise-argument-error 'order-of-magnitude "(and/c (>/c 0.0) (not/c +inf.0))" r))
       (let* ([q (inexact->exact r)]
              [m
               (floor

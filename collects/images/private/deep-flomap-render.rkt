@@ -482,23 +482,23 @@
          (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max))
        
        ;; two Gaussian blurs by half of σ^2 is equivalent to one Gaussian blur by σ^2
-       (define σ^2 (sqr (* (min w h) (shadow-blur))))
+       (define σ^2 (exact->inexact (sqr (* (min w h) (shadow-blur)))))
        
        ;; blur the shadow to simulate internal scatter
        (define shadow-fm
          (cond [bg-fm
-                (let* ([fm  (flomap-blur raw-shadow-fm (sqrt (* 1/3 σ^2)))]
+                (let* ([fm  (flomap-blur raw-shadow-fm (flsqrt (* 1/3 σ^2)))]
                        [fm  (fm* fm bg-fm)]
-                       [fm  (flomap-blur fm (sqrt (* 1/3 σ^2)))])
+                       [fm  (flomap-blur fm (flsqrt (* 1/3 σ^2)))])
                   fm)]
                [else
-                (flomap-blur raw-shadow-fm (sqrt (* 2/3 σ^2)))]))
+                (flomap-blur raw-shadow-fm (flsqrt (* 2/3 σ^2)))]))
        
        ;; pass 2: trace from the viewer
        (define-values (reflected-fm raw-transmitted-fm)
          (trace-directional-view alpha-fm rgb-fm z-fm normal-fm shadow-fm x-min x-max y-min y-max))
        ;; simulate scatter some more
-       (define transmitted-fm (flomap-blur raw-transmitted-fm (sqrt (* 1/3 σ^2))))
+       (define transmitted-fm (flomap-blur raw-transmitted-fm (flsqrt (* 1/3 σ^2))))
        ;; add all the light together, convert to premultiplied-alpha flomap
        (let* ([fm  (fm+ (fm+ diffracted-fm transmitted-fm) reflected-fm)]
               [fm  (flomap-append-components alpha-fm fm)]

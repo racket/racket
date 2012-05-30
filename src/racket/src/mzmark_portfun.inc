@@ -13,7 +13,6 @@ static int mark_load_handler_data_MARK(void *p, struct NewGC *gc) {
   gcMARK2(d->p, gc);
   gcMARK2(d->stxsrc, gc);
   gcMARK2(d->expected_module, gc);
-  gcMARK2(d->delay_load_info, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
@@ -27,7 +26,6 @@ static int mark_load_handler_data_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(d->p, gc);
   gcFIXUP2(d->stxsrc, gc);
   gcFIXUP2(d->expected_module, gc);
-  gcFIXUP2(d->delay_load_info, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));

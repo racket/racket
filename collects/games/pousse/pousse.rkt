@@ -1,13 +1,12 @@
-(module pousse mzscheme
+(module pousse racket/base
   (require "utils.rkt"
            "board.rkt"
            "board-size.rkt"
            "../show-scribbling.rkt"
-           mzlib/class
-           mzlib/class100
-           (all-except mzlib/unit rename) ; rename collides with class100
+           racket/class
+           racket/unit
            mred
-           (prefix robot: "robot.rkt"))
+           (prefix-in robot: "robot.rkt"))
   
   (provide game@)
   
@@ -175,12 +174,12 @@
       
       ; The canvas (drawing/event area) class
       (define pousse-canvas%
-        (class100 canvas% args
+        (class canvas%
+          (init-rest args)
           (inherit get-dc)
-          (private-field
-           [dc #f]
-           [do-kill-robot (lambda () #f)]) ;; installed by refresh-controls
-          (public
+          (define dc #f)
+          (define do-kill-robot (lambda () #f)) ; installed by refresh-controls
+          (public*
             [kill-robot (lambda () (do-kill-robot))]
             [draw-box 
              ; Draw a string in a box
@@ -318,18 +317,17 @@
                                                             (if (eq? current-player x) "X" "O")))
                              (enable-arrows)]))))])
           ;; Animation state
-          (private-field
-           [tracking-i 0] ;; for tracking mouse clicks
-           [tracking-j 0]
-           [tracking-highlight? #f]
-           
-           [pushpiece #f] ;; piece being pushed onto board, #f for none
-           [pushrow -1]   ;; row being pushed, -1 for none
-           [pushcol -1]   ;; col being pushed, -1 for none
-           [pushdown? #t] ;; left or top push?
-           [amt 0])       ;; displacement for push, between -1 and 1
+          (define tracking-i 0) ;; for tracking mouse clicks
+          (define tracking-j 0)
+          (define tracking-highlight? #f)
           
-          (public
+          (define pushpiece #f) ;; piece being pushed onto board, #f for none
+          (define pushrow -1)   ;; row being pushed, -1 for none
+          (define pushcol -1)   ;; col being pushed, -1 for none
+          (define pushdown? #t) ;; left or top push?
+          (define amt 0)        ;; displacement for push, between -1 and 1
+          
+          (public*
             [do-draw
              ;;;;;;;;;;;;;;;;;;;; Draw the Board ;;;;;;;;;;;;;;;;;;;;;;;
              (lambda ()
@@ -421,9 +419,8 @@
                              (cond
                                [(eq? pushpiece x) "x"]
                                [(eq? pushpiece o) "o"])))))])
-          (private-field
-           [bitmap #f])
-          (public
+          (define bitmap #f)
+          (public*
             [repaint (lambda ()
                        (set! pushpiece #f)
                        (set! pushcol -1)
@@ -466,7 +463,7 @@
                                     (set! tracking-highlight? #f) ;; expects redraw triggered afterwards...
                                     (loop (+ a animate-step))))))])
           
-          (override
+          (override*
             [on-paint (lambda ()
                         (when bitmap
                           (send (get-dc) draw-bitmap bitmap 0 0)))]
@@ -515,8 +512,7 @@
                            (when tracking-highlight?
                              (set! tracking-highlight? #f)
                              (repaint))]))])
-          
-          (sequence (apply super-init args))))
+          (apply super-make-object args)))
       
       ;; Create the GUI interface with the above pieces ;;
       
@@ -551,14 +547,15 @@
       (send right-panel set-alignment 'right 'bottom)
       
       (define clock-timer (make-object
-                              (class100 timer% ()
-                                (private-field [init 0][dinged 0])
-                                (rename [super-start start])
-                                (public [reset (lambda ()
-                                                 (send clock set-label "00:00")
-                                                 (set! dinged 0)
-                                                 (set! init (current-seconds)))])
-                                (override
+                              (class timer%
+                                (define init 0)
+                                (define dinged 0)
+                                (rename-super [super-start start])
+                                (public* [reset (lambda ()
+                                                  (send clock set-label "00:00")
+                                                  (set! dinged 0)
+                                                  (set! init (current-seconds)))])
+                                (override*
                                   [notify 
                                    (lambda ()
                                      (let* ([v (- (current-seconds) init)])
@@ -580,7 +577,7 @@
                                   [start (lambda ()
                                            (set! init (current-seconds))
                                            (super-start 1000 #f))])
-                                (sequence (super-init)))))
+                                (super-make-object))))
       (send clock-timer start)
       
       ;; This procedure is called to enable/disable the arrow buttons
@@ -617,13 +614,13 @@
       ; method to refresh the window after a move or rewind.
       (make-object message% "Moves" history-panel)
       (define history-canvas (make-object editor-canvas% history-panel #f '(no-hscroll)))
-      (define history-text (make-object (class100 text% ()
+      (define history-text (make-object (class text%
                                           (inherit begin-edit-sequence end-edit-sequence
                                                    erase insert delete change-style hide-caret
                                                    set-position line-start-position line-end-position)
                                           ; Ignore all user actions:
-                                          (override [on-char (lambda (e) (void))] [on-event (lambda (e) (void))])
-                                          (public
+                                          (override* [on-char (lambda (e) (void))] [on-event (lambda (e) (void))])
+                                          (public*
                                             [show-moves
                                              (lambda ()
                                                (begin-edit-sequence)
@@ -647,7 +644,8 @@
                                                                    (line-end-position past-move))
                                                      (set-position start)))
                                                (end-edit-sequence))])
-                                          (sequence (super-init) (hide-caret #t)))))
+                                          (super-make-object)
+                                          (hide-caret #t))))
       (send history-canvas set-editor history-text)
       (send history-canvas min-client-width 30)
       

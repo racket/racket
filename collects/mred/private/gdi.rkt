@@ -1,6 +1,5 @@
 (module gdi mzscheme
   (require mzlib/class
-           mzlib/class100
            mzlib/list
            racket/draw/private/page-dc
            (prefix wx: "kernel.rkt")

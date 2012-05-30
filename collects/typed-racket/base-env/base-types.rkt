@@ -22,9 +22,11 @@
 [Nonnegative-Single-Flonum -NonNegSingleFlonum]
 [Positive-Inexact-Real -PosInexactReal]
 [Positive-Single-Flonum -PosSingleFlonum]
+[Inexact-Real-Nan -InexactRealNan]
 [Inexact-Real-Zero -InexactRealZero]
 [Inexact-Real-Negative-Zero -InexactRealNegZero]
 [Inexact-Real-Positive-Zero -InexactRealPosZero]
+[Single-Flonum-Nan -SingleFlonumNan]
 [Single-Flonum-Zero -SingleFlonumZero]
 [Single-Flonum-Negative-Zero -SingleFlonumNegZero]
 [Single-Flonum-Positive-Zero -SingleFlonumPosZero]
@@ -39,6 +41,8 @@
 [Nonnegative-Flonum -NonNegFlonum]
 [Positive-Float -PosFlonum] ; both of these are valid
 [Positive-Flonum -PosFlonum]
+[Float-Nan -FlonumNan]
+[Flonum-Nan -FlonumNan]
 [Float-Zero -FlonumZero] ; both of these are valid
 [Flonum-Zero -FlonumZero]
 [Float-Negative-Zero -FlonumNegZero] ; both of these are valid

@@ -1189,6 +1189,9 @@
 
 ; ----------------------------------------
 
+(test #f thread-cell-values? 10)
+(test #t thread-cell-values? (current-preserved-thread-cell-values))
+
 (let ([c (make-thread-cell 10)]
       [c2 (make-thread-cell -10 #t)]
       [c3 (make-thread-cell 3 #t)])

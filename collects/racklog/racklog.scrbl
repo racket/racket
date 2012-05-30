@@ -1203,11 +1203,12 @@ Like @racket[(list (%which (V ...) G ...) (%more) ...)] with as many @racket[(%m
               #:contracts ([V identifier?]
                            [E expression?]
                            [G goal/c])]{
-Returns a predicate function.
-Each clause @racket[C] signifies
-that the goal created by applying the predicate object to
-anything that matches @racket[(E ...)] is deemed to succeed if all
-the goals @racket[G], ..., can, in their turn, be shown to succeed.}
+Returns a predicate function.  Each clause @racket[C] signifies that
+the goal created by applying the predicate object to anything that
+matches @racket[(E ...)] is deemed to succeed if all the goals
+@racket[G], ..., can, in their turn, be shown to succeed. The
+variables @racket[V], ..., are local logic variables for
+@racket[clause], ....}
 
 @defpred[(%empty-rel [E unifiable?] ...)]{
 The goal @racket[(%empty-rel E ...)] always fails.  The @emph{value}

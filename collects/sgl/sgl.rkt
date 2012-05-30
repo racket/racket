@@ -34,6 +34,15 @@
         (syntax->list #'(x ...)))
        #'(provide x ...))]))
 
+(define (combine-syms strs)
+    (string-append "(or/c" 
+                   (apply
+                    string-append
+                    (map (lambda (s)
+                           (format " '~s" s))
+                         strs))
+                   ")"))
+
 (define-syntax-set (multi-arg multi-type-v)
 
   (define (iota n)
@@ -43,21 +52,25 @@
     (combine-str
      (map (lambda (t)
             (case t
-              [(iv) "gl-int-vector"]
-              [(sv) "gl-short-vector"]
-              [(bv) "gl-byte-vector"]
-              [(uiv) "gl-uint-vector"]
-              [(usv) "gl-ushort-vector"]
-              [(ubv) "gl-ubyte-vector"]
-              [(dv) "gl-double-vector"]
-              [(fv) "gl-float-vector"]
-              [else (error (format "~a" t))]))
+              [(iv) "gl-int-vector?"]
+              [(sv) "gl-short-vector?"]
+              [(bv) "gl-byte-vector?"]
+              [(uiv) "gl-uint-vector?"]
+              [(usv) "gl-ushort-vector?"]
+              [(ubv) "gl-ubyte-vector?"]
+              [(dv) "gl-double-vector?"]
+              [(fv) "gl-float-vector?"]
+              [else (error (format "~a?" t))]))
           ts)))
 
   (define (combine-str strs)
-    (cond [(null? strs) ""]
-          [(null? (cdr strs)) (string-append "or " (car strs))]
-          [else (string-append (car strs) ", " (combine-str (cdr strs)))]))
+    (string-append "(or/c" 
+                   (apply
+                    string-append
+                    (map (lambda (s)
+                           (string-append " " s))
+                         strs))
+                   ")"))
 
   (define (multi-arg/proc stx)
     (syntax-case stx ()
@@ -78,8 +91,8 @@
                   #`((pre-arg-name ... arg ...)
                      (if (and (real? arg) ...)
                        (gl-name pre-arg ... arg ...)
-                       (raise-type-error
-                        'name "real numbers" (list arg ...))))))])
+                       (raise-argument-error
+                        'name "(listof real?)" (list arg ...))))))])
          (with-syntax ([(clauses ...)
                         (map build-clause
                              (syntax-object->datum  #'(num-arg ...)))])
@@ -134,7 +147,7 @@
                  (cond
                    clause ...
                    [else
-                    (raise-type-error 'name
+                    (raise-argument-error 'name
                                       #,(get-possible-types-v types)
                                       arg)])))))])))
 
@@ -158,9 +171,9 @@
                (lambda (enum-sym name)
                  (let ([v (assq enum-sym l)])
                    (unless v
-                     (raise-type-error name
-                                       (format "symbol in ~a" '(sym ...))
-                                       enum-sym))
+                     (raise-argument-error name
+                                           (combine-syms '(sym ...))
+                                           enum-sym))
                    (cdr v))))))
          (quasisyntax/loc stx
            (define name
@@ -171,9 +184,9 @@
                (lambda (enum-sym name)
                  (let ([v (hash-table-get ht enum-sym (lambda () #f))])
                    (unless v
-                     (raise-type-error name
-                                       (format "symbol in ~a" '(sym ...))
-                                       enum-sym))
+                     (raise-argument-error name
+                                           (combine-syms '(sym ...))
+                                           enum-sym))
                    v)))))))]))
 
 (define-syntax (make-inv-enum-table stx)
@@ -373,9 +386,9 @@
     (let ([f (cond [(gl-int-vector? v) glTexGeniv]
                    [(gl-float-vector? v) glTexGenfv]
                    [(gl-double-vector? v) glTexGendv]
-                   [else (raise-type-error
+                   [else (raise-argument-error
                           'tex-gen-v
-                          "gl-int-vector, gl-float-vector, or gl-double-vector"
+                          "(or/c gl-int-vector? gl-float-vector? gl-double-vector?)"
                           2 c p v)])])
       (check-length 'tex-gen-v v 4)
       (f cv pv v))))
@@ -388,7 +401,7 @@
 (define (clip-plane p eqn)
   (let ([v (clip-plane-table p 'clip-plane)])
     (unless (gl-double-vector? eqn)
-      (raise-type-error 'clip-plane "gl-double-vector" 1 p eqn))
+      (raise-argument-error 'clip-plane "gl-double-vector?" 1 p eqn))
     (check-length 'clip-plane eqn 4)
     (glClipPlane v eqn)))
 
@@ -416,12 +429,12 @@
 (define (get-f v iv fv name a1 a2)
   (cond [(gl-int-vector? v) iv]
         [(gl-float-vector? v) fv]
-        [else (raise-type-error name
-                                "gl-int-vector or gl-float-vector"
-                                2 a1 a2 v)]))
+        [else (raise-argument-error name
+                                    "(or/c gl-int-vector? gl-float-vector?)"
+                                    2 a1 a2 v)]))
 (define (do-f n v0 v1 i f name a0 a1)
   (unless (real? n)
-    (raise-type-error name "real number" 2 a0 a1 n))
+    (raise-argument-error name "real?" 2 a0 a1 n))
   (if (exact-integer? n)
     (i v0 v1 n)
     (f v0 v1 n)))
@@ -485,7 +498,7 @@
     (when (= GL_LIGHT_MODEL_AMBIENT v)
       (error 'light-model "does not accept ~a, use light-model-v instead" pname))
     (unless (real? param)
-      (raise-type-error 'light-model "real number" 1 pname param))
+      (raise-argument-error 'light-model "real?" 1 pname param))
     (if (exact-integer? param)
       (glLightModeli v param)
       (glLightModelf v param))))
@@ -494,9 +507,9 @@
   (let ([v (light-model-table pname 'light-model-v)]
         [f (cond [(gl-int-vector? params) glLightModeliv]
                  [(gl-float-vector? params) glLightModelfv]
-                 [else (raise-type-error 'light-model-v
-                                         "gl-int-vector or gl-float-vector"
-                                         1 pname params)])])
+                 [else (raise-argument-error 'light-model-v
+                                             "(or/c gl-int-vector? gl-float-vector?)"
+                                             1 pname params)])])
     (check-length 'light-model-v params
                   (if (= GL_LIGHT_MODEL_AMBIENT v) 4 1)
                   pname)
@@ -530,7 +543,7 @@
       (error 'point-parameter
              "does not accept ~a, use point-parameter-v instead" pname))
     (unless (real? param)
-      (raise-type-error 'point-parameter "real number" 1 pname param))
+      (raise-argument-error 'point-parameter "real?" 1 pname param))
     (if (exact-integer? param)
       (glPointParameteri v param)
       (glPointParameterf v param))))
@@ -538,9 +551,9 @@
   (let ([v (point-parameter-table pname 'point-parameter)]
         [f (cond [(gl-int-vector? params) glPointParameteriv]
                  [(gl-float-vector? params) glPointParameterfv]
-                 [else (raise-type-error 'point-parameter-v
-                                         "gl-int-vector or gl-float-vector"
-                                         1 pname params)])])
+                 [else (raise-argument-error 'point-parameter-v
+                                             "(or/c gl-int-vector? gl-float-vector?)"
+                                             1 pname params)])])
     (check-length 'point-parameter-v
                   (if (= GL_POINT_DISTANCE_ATTENUATION v) 3 1)
                   pname)
@@ -580,7 +593,7 @@
 (define (pixel-store pname param)
   (let ([v (pixel-store-table pname 'pixel-store)])
     (unless (real? param)
-      (raise-type-error 'pixel-store "real number" 1 pname param))
+      (raise-argument-error 'pixel-store "real?" 1 pname param))
     (if (exact-integer? param)
       (glPixelStorei v param)
       (glPixelStoref v param))))
@@ -841,9 +854,9 @@
           pick-matrix)
 (define (pick-matrix a b c d v)
   (unless (gl-int-vector? v)
-    (raise-type-error 'pick-matrix
-                      "gl-int-vector"
-                      4 a b c d v))
+    (raise-argument-error 'pick-matrix
+                          "gl-int-vector?"
+                          4 a b c d v))
   (check-length 'pick-matrix v 4)
   (gluPickMatrix a b c d v))
 
@@ -851,11 +864,11 @@
 (_provide project un-project un-project4)
 (define (project a b c d e f)
   (unless (gl-double-vector? d)
-    (raise-type-error 'project "gl-double-vector" 3 a b c d e f))
+    (raise-argument-error 'project "gl-double-vector?" 3 a b c d e f))
   (unless (gl-double-vector? e)
-    (raise-type-error 'project "gl-double-vector" 4 a b c d e f))
+    (raise-argument-error 'project "gl-double-vector?" 4 a b c d e f))
   (unless (gl-int-vector? f)
-    (raise-type-error 'project "gl-double-vector" 5 a b c d e f))
+    (raise-argument-error 'project "gl-double-vector?" 5 a b c d e f))
   (check-length 'project d 16)
   (check-length 'project e 16)
   (check-length 'project f 4)
@@ -863,11 +876,11 @@
 
 (define (un-project a b c d e f)
   (unless (gl-double-vector? d)
-    (raise-type-error 'un-project "gl-double-vector" 3 a b c d e f))
+    (raise-argument-error 'un-project "gl-double-vector?" 3 a b c d e f))
   (unless (gl-double-vector? e)
-    (raise-type-error 'un-project "gl-double-vector" 4 a b c d e f))
+    (raise-argument-error 'un-project "gl-double-vector?" 4 a b c d e f))
   (unless (gl-int-vector? f)
-    (raise-type-error 'un-project "gl-double-vector" 5 a b c d e f))
+    (raise-argument-error 'un-project "gl-double-vector?" 5 a b c d e f))
   (check-length 'un-project d 16)
   (check-length 'un-project e 16)
   (check-length 'un-project f 4)
@@ -875,11 +888,11 @@
 
 (define (un-project4 a b c d e f g h i)
   (unless (gl-double-vector? e)
-    (raise-type-error 'un-project "gl-double-vector" 4 a b c d e f g h i))
+    (raise-argument-error 'un-project "gl-double-vector?" 4 a b c d e f g h i))
   (unless (gl-double-vector? f)
-    (raise-type-error 'un-project "gl-double-vector" 5 a b c d e f g h i))
+    (raise-argument-error 'un-project "gl-double-vector?" 5 a b c d e f g h i))
   (unless (gl-int-vector? g)
-    (raise-type-error 'un-project "gl-double-vector" 6 a b c d e f g h i))
+    (raise-argument-error 'un-project "gl-double-vector?" 6 a b c d e f g h i))
   (check-length 'un-project4 e 16)
   (check-length 'un-project4 f 16)
   (check-length 'un-project4 g 4)
@@ -932,7 +945,7 @@
 ;; process-selection : gl-uint-vector int -> (listof selection-record)
 (define (process-selection v hits)
   (unless (gl-uint-vector? v)
-    (raise-type-error 'process-selection "gl-uint-vector" 0 v hits))
+    (raise-argument-error 'process-selection "gl-uint-vector?" 0 v hits))
   (let ([index 0])
     (let loop ([hit 0])
       (if (>= hit hits)

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/cmdline
+#lang racket/base
+(require racket/cmdline
          raco/command-name
          compiler/private/embed
          launcher/launcher
@@ -73,6 +73,23 @@
                  (extract-base-filename/ss source-file
                                            (string->symbol (short-program+command-name))))
              (gui))])
+  (unless (file-exists? source-file)
+    (raise-user-error (string->symbol (short-program+command-name))
+                      "source file does not exist\n  path: ~a" source-file))
+  (with-handlers ([exn:fail:filesystem? (lambda (exn) (void))])
+    (call-with-input-file* dest
+      (lambda (dest-in)
+        (call-with-input-file* source-file
+          (lambda (source-in)
+            (when (equal? (port-file-identity dest-in)
+                          (port-file-identity source-in))
+              (raise-user-error (string->symbol (short-program+command-name))
+                                (string-append
+                                 "source file is the same as the destination file"
+                                 "\n  source path: ~a"
+                                 "\n  destination path: ~a")
+                                source-file
+                                dest)))))))
   (cond
    [(launcher)
     (parameterize ([current-launcher-variant (if (3m) '3m 'cgc)])

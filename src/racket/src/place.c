@@ -2873,10 +2873,11 @@ static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) 
   o = places_serialize(uo, &msg_memory, &master_chain, &invalid_object);
   if (!o) {
     if (invalid_object) {
-      scheme_contract_error("place-channel-put"
+      scheme_contract_error("place-channel-put",
                             "value not allowed in a message", 
                             "value", 1, invalid_object,
-                            "message", 1, uo);
+                            "message", 1, uo,
+                            NULL);
     }
     else bad_place_message(uo);
   }

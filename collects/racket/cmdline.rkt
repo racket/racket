@@ -72,6 +72,14 @@
                                (loop (at-next-keyword (cdr lst))
                                      (cons (list* #'list #`(quote help-labels) pieces)
                                            accum))]
+                              [(#:ps)
+                               (for ([x (in-list pieces)])
+                                 (unless (string? (syntax-e x))
+                                   (serror "#:ps clause contains non-string"
+                                           x)))
+                               (loop (at-next-keyword (cdr lst))
+                                     (cons (list* #'list #`(quote ps) pieces)
+                                           accum))]
                               [(#:once-each #:once-any #:multi #:final)
                                (let ([sublines
                                       (let slloop ([sublines pieces])
@@ -239,13 +247,13 @@
   (for ([spec (in-list table)])
     (unless (and (list? spec) (pair? spec))
       (bad-table "spec-set must be a non-empty list: ~a" spec))
-    (unless (memq (car spec) '(once-any once-each multi final help-labels))
-      (bad-table "spec-set type must be 'once-any, 'once-each, 'multi, 'final, or 'help-labels: ~a"
+    (unless (memq (car spec) '(once-any once-each multi final help-labels ps))
+      (bad-table "spec-set type must be 'once-any, 'once-each, 'multi, 'final, 'help-labels, or 'ps: ~a"
                  (car spec)))
     (for ([line (in-list (cdr spec))])
-      (if (eq? (car spec) 'help-labels)
+      (if (memq (car spec) '(help-labels ps))
         (unless (string? line)
-          (bad-table "help-labels line must be a string: ~e" line))
+          (bad-table "~a line must be a string: ~e" (car spec) line))
         (begin
           (unless (and (list? line) (= (length line) 3))
             (bad-table "spec-line must be a list of at three or four items: ~e" line))
@@ -339,7 +347,8 @@
                       (fprintf sp "~a [ <option> ... ]" (program-name program))
                       (print-args sp finish-help finish)
                       (fprintf sp "\n where <option> is one of\n")
-                      (for ([set (in-list table)]) ; the original table
+                      (for ([set (in-list table)] ; the original table
+                            #:unless (eq? (car set) 'ps))
                         (if (eq? (car set) 'help-labels)
                           (for ([line (in-list (cdr set))])
                             (fprintf sp " ~a\n" line))
@@ -382,6 +391,10 @@
                         (fprintf sp " /|\\ Brackets indicate mutually exclusive options.\n"))
                       (fprintf sp " Multiple single-letter switches can be combined after one `-'; for\n")
                       (fprintf sp "  example: `-h-' is the same as `-h --'\n")
+                      (for ([set (in-list table)] ; the original table
+                            #:when (eq? (car set) 'ps))
+                        (for ([line (in-list (cdr set))])
+                          (fprintf sp " ~a\n" line)))
                       (help (get-output-string sp))))
                   (list "Help")))
            (for/list ([spec (in-list table)])

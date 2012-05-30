@@ -3022,11 +3022,11 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   if (!is_subarity(orig, naya))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "%s: arity of %s procedure does not cover arity of original procedure",
-                     "  %s procedure: %V\n"
-                     "  original procedure: %V",
-                     name, whating,
-                     whating, argv[1],
+                     "%s: arity of wrapper procedure does not cover arity of original procedure\n"
+                     "  wrapper: %V\n"
+                     "  original: %V",
+                     name,
+                     argv[1],
                      argv[0]);
 
   props = scheme_parse_chaperone_props(name, 2, argc, argv);

@@ -5,6 +5,7 @@
                      web-server/dispatchers/dispatch
                      web-server/servlet-env
                      web-server/dispatch/extend
+                     (except-in syntax/parse attribute)
                      racket/match
                      racket/list
                      net/url
@@ -103,58 +104,56 @@ or else the filesystem server will never see the requests.
 
 @section{API Reference}
 
-@defform*[#:literals (else)
-         [(dispatch-rules
-           [dispatch-pattern dispatch-fun]
-           ...
-           [else else-fun])
-          (dispatch-rules
-           [dispatch-pattern dispatch-fun]
-           ...)]
-         #:contracts
-         ([else-fun (request? . -> . any)]
-          [dispatch-fun (request? any/c ... . -> . any)])]{
- Returns two values: the first is a dispatching function with the contract @racket[(request? . -> . any)]
- that calls the appropriate @racket[dispatch-fun] based on the first @racket[dispatch-pattern] that matches the
- request's URL; the second is a URL-generating function with the contract @racket[(procedure? any/c ... . -> . string?)]
- that generates a URL using @racket[dispatch-pattern] for the @racket[dispatch-fun] given as its first argument.
- 
- If @racket[else-fun] is left out, one is provided that calls @racket[(next-dispatcher)] to signal to the Web Server that this
- dispatcher does not apply.
-}
- 
-@racketgrammar[dispatch-pattern
-               ()
-               (string . dispatch-pattern)
-               (bidi-match-expander ... . dispatch-pattern)
-               (bidi-match-expander . dispatch-pattern)]
+@defform/subs[#:literals (else)
+ (dispatch-rules
+  dispatch-clause ...
+  maybe-else-clause)
+([dispatch-clause
+  [dispatch-pattern maybe-method dispatch-fun]]
+ [dispatch-pattern
+  ()
+  (string . dispatch-pattern)
+  (bidi-match-expander ... . dispatch-pattern)
+  (bidi-match-expander . dispatch-pattern)]
+ [maybe-method
+  code:blank
+  (code:line #:method method)]
+ [maybe-else-clause
+  code:blank
+  [else else-fun]])
+#:contracts
+([else-fun (request? . -> . any)]
+ [dispatch-fun (request? any/c ... . -> . any)])]{
 
-@defform*[#:literals (else)
-         [(dispatch-rules+applies
-           [dispatch-pattern dispatch-fun]
-           ...
-           [else else-fun])
-          (dispatch-rules+applies
-           [dispatch-pattern dispatch-fun]
-           ...)]
-         #:contracts
-         ([else-fun (request? . -> . any)]
-          [dispatch-fun (request? any/c ... . -> . any)])]{
+ Returns two values: the first is a dispatching function with the
+contract @racket[(request? . -> . any)] that calls the appropriate
+@racket[dispatch-fun] based on the first @racket[dispatch-pattern]
+that matches the request's URL (and method), the second is a URL-generating
+function with the contract @racket[(procedure? any/c ... . ->
+. string?)] that generates a URL using @racket[dispatch-pattern] for
+the @racket[dispatch-fun] given as its first argument.
+
+ If @racket[else-fun] is left out, one is provided that calls
+@racket[(next-dispatcher)] to signal to the Web Server that this
+dispatcher does not apply.
+
+ If any @racket[_method] is left out, it assumed to apply to requests
+without methods and GET methods.
+
+}
+
+@defform[
+ (dispatch-rules+applies
+  dispatch-clause ...
+  maybe-else-clause)]{
  Like @racket[dispatch-rules], except returns a third value with the contract @racket[(request? . -> . boolean?)] that returns
       @racket[#t] if the dispatching rules apply to the request and @racket[#f] otherwise.
       }
 
-@defform*[#:literals (else)
-         [(dispatch-case
-           [dispatch-pattern dispatch-fun]
-           ...
-           [else else-fun])
-          (dispatch-case
-           [dispatch-pattern dispatch-fun]
-           ...)]
-         #:contracts
-         ([else-fun (request? . -> . any)]
-          [dispatch-fun (request? any/c ... . -> . any)])]{
+@defform[
+ (dispatch-case
+  dispatch-clause ...
+  maybe-else-clause)]{
  Returns a dispatching function as described by @racket[dispatch-rules].
 }
 

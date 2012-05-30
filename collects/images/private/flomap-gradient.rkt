@@ -8,7 +8,7 @@
 (provide flomap-gradient-x flomap-gradient-y flomap-gradient flomap-gradient-normal)
 
 ;; ===================================================================================================
-;; Derivatives (Schurr operator)
+;; Derivatives (Scharr operator)
 
 (: flomap-gradient-x (flomap -> flomap))
 (define (flomap-gradient-x fm)
@@ -70,6 +70,8 @@
 
 (: flomap-gradient-normal (flomap -> flomap))
 (define (flomap-gradient-normal z-fm)
+  (unless (= 1 (flomap-components z-fm))
+    (raise-type-error 'flomap-gradient-normal "flomap with 1 component" z-fm))
   (define-values (dx-fm dy-fm) (flomap-gradient z-fm))
   (match-define (flomap dx-vs 1 w h) dx-fm)
   (match-define (flomap dy-vs 1 _w _h) dy-fm)

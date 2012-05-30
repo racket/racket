@@ -309,3 +309,91 @@
 	Year = {1987},
 	Bdsk-Url-1 = {http://doi.acm.org/10.1145/41625.41654}}
 
+@article{hochreiter_long_1997,
+    author = {Hochreiter, S. and Schmidhuber, J.},
+    title = {Long {Short-Term} Memory},
+    volume = {9},
+    number = {8},
+    journal = {Neural Computation},
+    year = {1997},
+    pages = {1735--1780}
+}
+
+@Article{py03,
+     author = {Xavier D\'ecoret},
+     title  = "PyBiTex",
+     year   = 2003
+}
+
+@Article{key03,
+  title = "A {bunch {of} braces {in}} title"
+}
+
+@Article{key01,
+  author = "Simon {"}the {saint"} Templar", 
+}
+
+@Article{key01,
+  title = "The history of @ sign"
+}
+
+Some {{comments} with unbalanced braces
+....and a "commented" entry...
+
+Book{landru21,
+  author =	 {Landru, Henri D\'esir\'e},
+  title =	 {A hundred recipes for you wife},
+  publisher =	 {Culinary Expert Series},
+  year =	 1921
+}
+
+..some other comments..before a valid entry...
+
+@Book{steward03,
+  author =	 { Martha Steward },
+  title =	 {Cooking behind bars},
+  publisher =	 {Culinary Expert Series},
+  year =	 2003
+}
+
+...and finally an entry commented by the use of the special @Comment entry type.
+
+@Comment{steward03,
+  author =	 {Martha Steward},
+  title =	 {Cooking behind bars},
+  publisher =	 {Culinary Expert Series},
+  year =	 2003
+}
+
+@Comment{
+  @Book{steward03,
+    author =	 {Martha Steward},
+    title =	 {Cooking behind bars},
+    publisher =	 {Culinary Expert Series},
+    year =	 2003
+  }
+}
+
+@String{mar = "march"}
+
+@Book{sweig42,
+  Author =	 { Stefan Sweig },
+  title =	 { The impossible book },
+  publisher =	 { Dead Poet Society},
+  year =	 1942,
+  month =        mar
+}
+
+@Book{sweig42a,
+  month =        "1~mar"
+}
+
+@Book{sweig42b,
+  month =        "1~" # mar
+}
+
+@Book{sweig42c,
+  month =        "1~" # mar # "a"
+}
+
+@preamble{"This bibliography was generated on \today"}

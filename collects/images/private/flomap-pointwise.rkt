@@ -6,7 +6,7 @@
          "flomap-stats.rkt")
 
 (provide flomap-lift flomap-lift2 inline-flomap-lift inline-flomap-lift2
-         fmsqrt fm+ fm- fm* fm/ fmmin fmmax
+         fmsqrt fm+ fm- fm* fm/ fmmin fmmax fmsqr
          flomap-normalize flomap-multiply-alpha flomap-divide-alpha)
 
 ;; ===================================================================================================
@@ -89,6 +89,9 @@
 (define fm/ (inline-flomap-lift2 'fm/ /))
 (define fmmin (inline-flomap-lift2 'fmmin min))
 (define fmmax (inline-flomap-lift2 'fmmax max))
+
+(: fmsqr (flomap -> flomap))
+(define (fmsqr fm) (fm* fm fm))
 
 (: flomap-normalize (flomap -> flomap))
 (define (flomap-normalize fm)

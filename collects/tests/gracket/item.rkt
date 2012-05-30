@@ -1,7 +1,6 @@
 #lang racket/gui
 
-(require mzlib/class
-	 mzlib/class100
+(require racket/class
 	 mzlib/etc)
 
 (define my-txt #f)
@@ -90,9 +89,10 @@
   (define m (make-object message% "focus: ??????????????????????????????" panel))
   (send
    (make-object
-    (class100-asi timer%
+    (class timer%
+      (super-new)
       (inherit start)
-      (override
+      (override*
 	[notify
 	 (lambda ()
 	   (when (send frame is-shown?)
@@ -197,118 +197,118 @@
        (build-path d n)))))
 
 (define on-demand-menu-item%
-  (class100 menu-item% (-name . args)
-    (private-field
-     [name -name])
-    (override
+  (class menu-item%
+    (init -name)
+    (init-rest args)
+    (define name -name)
+    (override*
       [on-demand
        (lambda ()
 	 (printf "Menu item ~a demanded\n" name))])
-    (sequence
-      (apply super-init name args))))
+    (apply super-make-object name args)))
 
 (define popup-test-canvas%
-  (class100 canvas% (-objects -names . args)
+  (class canvas%
+    (init -objects -names)
+    (init-rest args)
     (inherit popup-menu get-dc refresh)
-    (private-field
-      [objects -objects]
-      [names -names]
-      [tab-in? #f]
-      [last-m null]
-      [last-choice #f])
-    (override
-      [on-paint
-       (lambda ()
-	 (let ([dc (get-dc)])
-	   (send dc clear)
-	   (send dc draw-text "Left: popup hide state" 0 0)
-	   (send dc draw-text "Right: popup previous" 0 20)
-	   (send dc draw-text (format "Last pick: ~s" last-choice) 0 40)
-	   (when tab-in?
-	     (send dc draw-text "Tab in" 0 60))))]
-      [on-event
-       (lambda (e)
-	 (when (send e button-down?)
-	     (let ([x (send e get-x)]
-		   [y (send e get-y)]
-		   [m (if (or (null? last-m)
-			      (send e button-down? 'left)
-			      (send e button-down? 'middle))
-			  (let ([m (make-object popup-menu% "T&itle"
-						(lambda (m e)
-						  (unless (is-a? m popup-menu%)
-						    (error "bad menu object"))
-						  (unless (and (is-a? e control-event%)
-							       (memq (send e get-event-type)
-								     '(menu-popdown menu-popdown-none)))
-						    (error "bad event object"))
-						  (printf "popdown ok\n")))]
-				[make-callback 
-				 (let ([id 0])
-				   (lambda ()
-				     (set! id (add1 id))
-				     (let ([id id])
-				       (lambda (m e)
-					 (set! last-choice id)
-					 (on-paint)))))])
-			    (for-each
-			     (lambda (obj name)
-			       (make-object menu-item%
-					    (string-append
-					     name ": "
-					     (if (send obj is-shown?)
-						 "SHOWN"
-						 "<h i d d e n>"))
-					    m
-					    (make-callback)))
-			     objects names)
-			    (make-object on-demand-menu-item%
-					 "[on-demand hook]"
-					 m
-					 void)
-			    (make-object menu-item%
-					 "6 && Half-D&ozen"
-					 m
-					 void)
-			    (make-object menu-item%
-					 "&&_A"
-					 m
-					 void)
-			    (let mloop ([m m][sub-at-50? #t])
-			      (let ([sm (if (and sub-at-50?
-						 (send e button-down? 'middle))
-					    m
-					    (make-object menu% "Too Tall" m))])
-				(let loop ([n 1])
-				  (unless (= n 101)
-				    (if (and sub-at-50? (= n 50))
-					(let ([m (make-object menu% "Item 50" sm)])
-					  (mloop m #f))
-					(make-object menu-item% (format "Item ~a" n) sm void))
-				    (when (zero? (modulo (- n 5) 10))
-				      (make-object separator-menu-item% sm))
-				    (loop (add1 n))))))
-			    m)
-			  last-m)])
-	       (set! last-m m)
-	       (popup-menu m (inexact->exact x) (inexact->exact y)))))]
-      [on-tab-in (lambda () (set! tab-in? #t) (refresh))]
-      [on-focus (lambda (on?)
-		  (when (and tab-in? (not on?))
-		    (set! tab-in? #f)
-		    (refresh)))])
-    (sequence
-      (apply super-init args))))
+    (define objects -objects)
+    (define names -names)
+    (define tab-in? #f)
+    (define last-m null)
+    (define last-choice #f)
+    (override*
+     [on-paint
+      (lambda ()
+        (let ([dc (get-dc)])
+          (send dc clear)
+          (send dc draw-text "Left: popup hide state" 0 0)
+          (send dc draw-text "Right: popup previous" 0 20)
+          (send dc draw-text (format "Last pick: ~s" last-choice) 0 40)
+          (when tab-in?
+            (send dc draw-text "Tab in" 0 60))))]
+     [on-event
+      (lambda (e)
+        (when (send e button-down?)
+          (let ([x (send e get-x)]
+                [y (send e get-y)]
+                [m (if (or (null? last-m)
+                           (send e button-down? 'left)
+                           (send e button-down? 'middle))
+                       (let ([m (make-object popup-menu% "T&itle"
+                                             (lambda (m e)
+                                               (unless (is-a? m popup-menu%)
+                                                 (error "bad menu object"))
+                                               (unless (and (is-a? e control-event%)
+                                                            (memq (send e get-event-type)
+                                                                  '(menu-popdown menu-popdown-none)))
+                                                 (error "bad event object"))
+                                               (printf "popdown ok\n")))]
+                             [make-callback 
+                              (let ([id 0])
+                                (lambda ()
+                                  (set! id (add1 id))
+                                  (let ([id id])
+                                    (lambda (m e)
+                                      (set! last-choice id)
+                                      (on-paint)))))])
+                         (for-each
+                          (lambda (obj name)
+                            (make-object menu-item%
+                                         (string-append
+                                          name ": "
+                                          (if (send obj is-shown?)
+                                              "SHOWN"
+                                              "<h i d d e n>"))
+                                         m
+                                         (make-callback)))
+                          objects names)
+                         (make-object on-demand-menu-item%
+                                      "[on-demand hook]"
+                                      m
+                                      void)
+                         (make-object menu-item%
+                                      "6 && Half-D&ozen"
+                                      m
+                                      void)
+                         (make-object menu-item%
+                                      "&&_A"
+                                      m
+                                      void)
+                         (let mloop ([m m][sub-at-50? #t])
+                           (let ([sm (if (and sub-at-50?
+                                              (send e button-down? 'middle))
+                                         m
+                                         (make-object menu% "Too Tall" m))])
+                             (let loop ([n 1])
+                               (unless (= n 101)
+                                 (if (and sub-at-50? (= n 50))
+                                     (let ([m (make-object menu% "Item 50" sm)])
+                                       (mloop m #f))
+                                     (make-object menu-item% (format "Item ~a" n) sm void))
+                                 (when (zero? (modulo (- n 5) 10))
+                                   (make-object separator-menu-item% sm))
+                                 (loop (add1 n))))))
+                         m)
+                       last-m)])
+            (set! last-m m)
+            (popup-menu m (inexact->exact x) (inexact->exact y)))))]
+     [on-tab-in (lambda () (set! tab-in? #t) (refresh))]
+     [on-focus (lambda (on?)
+                 (when (and tab-in? (not on?))
+                   (set! tab-in? #f)
+                   (refresh)))])
+    (apply super-make-object args)))
 
 (define prev-frame #f)
 
 (define bitmap2%
-  (class100 bitmap% args
+  (class bitmap%
+    (init-rest args)
     (inherit ok?)
-    (sequence
-      (apply super-init args)
-      (unless (ok?)
-	(printf "bitmap failure: ~s\n" args)))))
+    (apply super-make-object args)
+    (unless (ok?)
+      (printf "bitmap failure: ~s\n" args))))
 
 (define (active-mixin %)
   (class %
@@ -339,17 +339,18 @@
 (define active-dialog% (active-mixin dialog%))
 
 (define (trace-mixin c%)
-  (class100 c% (-name . args)
-    (private-field [name -name])
-    (override
+  (class c%
+    (init -name)
+    (init-rest args)
+    (define name -name)
+    (override*
       [on-superwindow-show
        (lambda (on?)
 	 (printf "~a ~a\n" name (if on? "show" "hide")))]
       [on-superwindow-enable
        (lambda (on?)
 	 (printf "~a ~a\n" name (if on? "on" "off")))])
-    (sequence
-      (apply super-init name args))))
+    (apply super-make-object name args)))
 
 (define (auto-mixin c% v)
   (class c%
@@ -791,314 +792,309 @@
 ; Need: check, check-test, and enable via menubar
 ; All operations on Submenus
 (define f%
-  (class100 frame% args
-    (private-field
-      ADD-APPLE
-      ADD-BANANA
-      ADD-COCONUT
-      DELETE-APPLE
-      DELETE-EXTRA-BANANA
-      DELETE-BANANA
-      DELETE-COCONUT-0
-      DELETE-COCONUT
-      DELETE-COCONUT-2
-      COCONUT-ID
-      DELETE-ONCE
-      APPLE-CHECK-ID
-      CHINESE)
-    (private-field
-      menu-bar
-      main-menu
-      apple-menu
-      banana-menu
-      coconut-menu
-      baseball-ids
-      hockey-ids
-      enable-item)
-    (sequence (apply super-init args))
-    (public
-      [make-menu-bar
-       (lambda ()
-	 (let* ([mb (make-object menu-bar% this)]
-		[menu (make-object menu% "&Tester" mb)]
-		[new (case-lambda 
+  (class frame%
+    (init-rest args)
+    (define ADD-APPLE (void))
+    (define ADD-BANANA (void))
+    (define ADD-COCONUT (void))
+    (define DELETE-APPLE (void))
+    (define DELETE-EXTRA-BANANA (void))
+    (define DELETE-BANANA (void))
+    (define DELETE-COCONUT-0 (void))
+    (define DELETE-COCONUT (void))
+    (define DELETE-COCONUT-2 (void))
+    (define COCONUT-ID (void))
+    (define DELETE-ONCE (void))
+    (define APPLE-CHECK-ID (void))
+    (define CHINESE (void))
+    (define menu-bar (void))
+    (define main-menu (void))
+    (define apple-menu (void))
+    (define banana-menu (void))
+    (define coconut-menu (void))
+    (define baseball-ids (void))
+    (define hockey-ids (void))
+    (define enable-item (void))
+    (apply super-make-object args)
+    (public*
+     [make-menu-bar
+      (lambda ()
+        (let* ([mb (make-object menu-bar% this)]
+               [menu (make-object menu% "&Tester" mb)]
+               [new (case-lambda 
 		      [(l help parent) (make-object menu-item% l parent (lambda (o e) (callback o e)) #f help)]
 		      [(l help) (make-object menu-item% l menu (lambda (o e) (callback o e)) #f help)]
 		      [(l) (make-object menu-item% l menu (lambda (o e) (callback o e)))])]
-		[sep (lambda () (make-object separator-menu-item% menu))])
-	   (set! menu-bar mb)
-	   (set! main-menu menu)
+               [sep (lambda () (make-object separator-menu-item% menu))])
+          (set! menu-bar mb)
+          (set! main-menu menu)
 
-	   (set! ADD-APPLE (new "Add Apple" "Adds the Apple menu"))
-	   (set! ADD-BANANA (new "Add Banana"))
-	   (set! ADD-COCONUT (new "Add Coconut"))
+          (set! ADD-APPLE (new "Add Apple" "Adds the Apple menu"))
+          (set! ADD-BANANA (new "Add Banana"))
+          (set! ADD-COCONUT (new "Add Coconut"))
 	   
-	   (make-object on-demand-menu-item% "Append Donut" menu
-			(lambda (m e) 
-			  (make-object menu-item% "Donut" apple-menu void)))
-	   (sep)
-	   (set! DELETE-COCONUT-0 (new "Delete Coconut"))
-	   (make-object menu-item% "Delete Apple" menu
-			(lambda (m e) 
-			  (send apple-menu delete)
-			  (set! apple-installed? #f)))
+          (make-object on-demand-menu-item% "Append Donut" menu
+                       (lambda (m e) 
+                         (make-object menu-item% "Donut" apple-menu void)))
+          (sep)
+          (set! DELETE-COCONUT-0 (new "Delete Coconut"))
+          (make-object menu-item% "Delete Apple" menu
+                       (lambda (m e) 
+                         (send apple-menu delete)
+                         (set! apple-installed? #f)))
 	   
-	   (sep)
-	   (set! enable-item
-		 (make-object checkable-menu-item% "Apple Once Disabled" menu
-			      (lambda (m e)
-				(send DELETE-ONCE enable
-				      (not (send enable-item is-checked?))))))
+          (sep)
+          (set! enable-item
+                (make-object checkable-menu-item% "Apple Once Disabled" menu
+                             (lambda (m e)
+                               (send DELETE-ONCE enable
+                                     (not (send enable-item is-checked?))))))
 	   
-	   (let ([mk-enable (lambda (on?)
-			      (lambda (m e)
-				(let ([l (send menu-bar get-items)])
-				  (unless (null? (cdr l))
-				    (send (cadr l) enable on?)))))])
-	     (make-object menu-item% "Disable Second" menu (mk-enable #f))
-	     (make-object menu-item% "Enable Second" menu (mk-enable #t)))
+          (let ([mk-enable (lambda (on?)
+                             (lambda (m e)
+                               (let ([l (send menu-bar get-items)])
+                                 (unless (null? (cdr l))
+                                   (send (cadr l) enable on?)))))])
+            (make-object menu-item% "Disable Second" menu (mk-enable #f))
+            (make-object menu-item% "Enable Second" menu (mk-enable #t)))
 
-	   (set! CHINESE (make-object menu-item% "Chinese: \U7238" menu void))
+          (set! CHINESE (make-object menu-item% "Chinese: \U7238" menu void))
 	   
-	   (let ([make-menu
-		  (opt-lambda (title parent help-string)
-		    (let ([m (make-object menu% title parent help-string)])
-		      (send m delete)
-		      m))])
-	     (set! apple-menu (make-menu "Apple" mb #f))
-	     (set! banana-menu (make-menu "Banana" mb #f))
-	     (set! coconut-menu (make-menu "Coconut" apple-menu "Submenu")))
+          (let ([make-menu
+                 (opt-lambda (title parent help-string)
+                   (let ([m (make-object menu% title parent help-string)])
+                     (send m delete)
+                     m))])
+            (set! apple-menu (make-menu "Apple" mb #f))
+            (set! banana-menu (make-menu "Banana" mb #f))
+            (set! coconut-menu (make-menu "Coconut" apple-menu "Submenu")))
 	   
-	   (set! COCONUT-ID coconut-menu)
+          (set! COCONUT-ID coconut-menu)
 
-	   (set! DELETE-ONCE (new "Delete Once" #f apple-menu))
-	   (set! DELETE-APPLE (new "Delete Apple" "Deletes the Apple menu" apple-menu))
-	   (set! APPLE-CHECK-ID (make-object checkable-menu-item% "Checkable" apple-menu void))
+          (set! DELETE-ONCE (new "Delete Once" #f apple-menu))
+          (set! DELETE-APPLE (new "Delete Apple" "Deletes the Apple menu" apple-menu))
+          (set! APPLE-CHECK-ID (make-object checkable-menu-item% "Checkable" apple-menu void))
 
-	   (set! DELETE-BANANA (new "Delete Banana" #f banana-menu))
-	   (set! DELETE-EXTRA-BANANA (new "Delete First Banana Item" #f banana-menu))
+          (set! DELETE-BANANA (new "Delete Banana" #f banana-menu))
+          (set! DELETE-EXTRA-BANANA (new "Delete First Banana Item" #f banana-menu))
 
-	   (set! DELETE-COCONUT (new "Delete Coconut" #f coconut-menu))
-	   (set! DELETE-COCONUT-2 (new "Delete Coconut By Position" #f coconut-menu))))]
+          (set! DELETE-COCONUT (new "Delete Coconut" #f coconut-menu))
+          (set! DELETE-COCONUT-2 (new "Delete Coconut By Position" #f coconut-menu))))]
       
-      [callback
-       (lambda (op ev)
-	 (cond
-	  [(eq? op ADD-APPLE)
-	   (send apple-menu restore)
-	   (set! apple-installed? #t)]
-	  [(eq? op ADD-BANANA)
-	   (send banana-menu restore)]
-	  [(eq? op ADD-COCONUT)
-	   (send coconut-menu restore)]
-	  [(eq? op DELETE-ONCE)
-	   (send DELETE-ONCE delete)]
-	  [(eq? op DELETE-APPLE)
-	   (send apple-menu delete)
-	   (set! apple-installed? #f)]
-	  [(eq? op DELETE-BANANA)
-	   (send banana-menu delete)]
-	  [(eq? op DELETE-EXTRA-BANANA)
-	   (send (car (send banana-menu get-items)) delete)]
-	  [(or (eq? op DELETE-COCONUT) (eq? op DELETE-COCONUT-0))
-	   (send COCONUT-ID delete)]
-	  [(eq? op DELETE-COCONUT-2)
-	   (send (list-ref (send apple-menu get-items) 3) delete)]))])
-    (private-field
-	[mfp (make-object vertical-panel% this)]
-	[mc (make-object editor-canvas% mfp)]
-	[restp (make-object vertical-panel% mfp)]
-	[sbp (make-object horizontal-panel% restp)]
-	[mfbp (make-object horizontal-panel% restp)]
-	[lblp (make-object horizontal-panel% restp)]
-	[badp (make-object horizontal-panel% restp)]
-	[e (make-object text%)])
-      (sequence
-	(send restp stretchable-height #f)
-	(send mc min-height 250)
-	(send mc set-editor e)
-	(send e load-file (local-path "menu-steps.txt")))
-      (public
-	[make-test-button
-	 (lambda (name pnl menu id)
-	   (make-object button%
-			(format "Test ~a" name) pnl 
-			(lambda (b e)
-			  (message-box
-			   "Checked?"
-			   (if (send id is-checked?)
-			       "yes"
-			       "no")))))]
-	[compare
-	 (lambda (expect v kind)
-	   (unless (or (and (string? expect) (string? v)
-			    (string=? expect v))
-		       (eq? expect v))
-	     (error 'test-compare "~a mismatch: ~s != ~s" kind expect v)))]
-	[check-parent
-	 (lambda (menu id)
-	   (unless use-menubar?
-	     (unless (eq? (send id get-parent) menu)
-	       (error 'check-parent "parent mismatch: for ~a, ~a != ~a"
-		      (send id get-label)
-		      (send menu get-label)
-		      (send (send (send id get-parent) get-item) get-label)))))]
-	[label-test
-	 (lambda (menu id expect)
-	   (check-parent menu id)
-	   (let ([v (send id get-label)])
-	     (compare expect v "label")))]
-	[top-label-test
-	 (lambda (pos expect)
-	   (let ([i (send menu-bar get-items)])
-	     (and (> (length i) pos)
-		  (let ([v (send (list-ref i pos) get-label)])
-		    (compare expect v "top label")))))]
-	[help-string-test
-	 (lambda (menu id expect)
-	   (check-parent menu id)
-	   (let ([v (send id get-help-string)])
-	     (compare expect v "help string")))]
-	[find-test
-	 (lambda (menu title expect string)
-	   (letrec ([find
-		     (lambda (menu str)
-		       (let ([items (send menu get-items)])
-			 (ormap (lambda (i)
-				  (and (is-a? i labelled-menu-item<%>)
-				       (equal? (send i get-plain-label) str)
-				       i))
-				items)))]
-		    [find-item
-		     (lambda (menu str)
-		       (or (find menu str)
-			   (let ([items (send menu get-items)])
-			     (ormap (lambda (i)
-				      (and (is-a? i menu%)
-					   (find-item i str)))
-				    items))))]
-		    [v (if use-menubar? 
-			   (let ([item (find menu-bar title)])
-			     (if item
-				 (find-item item string)
-				 -1))
-			   (find-item menu string))])
-	     (compare expect v (format "label search: ~a" string))))]
-	[tell-ok
-	 (lambda ()
-	   (printf "ok\n"))])
-      (private-field
-	[temp-labels? #f]
-	[use-menubar? #f]
-	[apple-installed? #f])
-      (public
-	[via (lambda (menu) (if use-menubar? menu-bar menu))]
-	[tmp-pick (lambda (a b) (if temp-labels? a b))]
-	[apple-pick (lambda (x a b) (if (and use-menubar? (not apple-installed?))
-					x
-					(tmp-pick a b)))])
-      (sequence
-	(make-menu-bar)
+     [callback
+      (lambda (op ev)
+        (cond
+         [(eq? op ADD-APPLE)
+          (send apple-menu restore)
+          (set! apple-installed? #t)]
+         [(eq? op ADD-BANANA)
+          (send banana-menu restore)]
+         [(eq? op ADD-COCONUT)
+          (send coconut-menu restore)]
+         [(eq? op DELETE-ONCE)
+          (send DELETE-ONCE delete)]
+         [(eq? op DELETE-APPLE)
+          (send apple-menu delete)
+          (set! apple-installed? #f)]
+         [(eq? op DELETE-BANANA)
+          (send banana-menu delete)]
+         [(eq? op DELETE-EXTRA-BANANA)
+          (send (car (send banana-menu get-items)) delete)]
+         [(or (eq? op DELETE-COCONUT) (eq? op DELETE-COCONUT-0))
+          (send COCONUT-ID delete)]
+         [(eq? op DELETE-COCONUT-2)
+          (send (list-ref (send apple-menu get-items) 3) delete)]))])
+    (define mfp (make-object vertical-panel% this))
+    (define mc (make-object editor-canvas% mfp))
+    (define restp (make-object vertical-panel% mfp))
+    (define sbp (make-object horizontal-panel% restp))
+    (define mfbp (make-object horizontal-panel% restp))
+    (define lblp (make-object horizontal-panel% restp))
+    (define badp (make-object horizontal-panel% restp))
+    (define e (make-object text%))
+    (send restp stretchable-height #f)
+    (send mc min-height 250)
+    (send mc set-editor e)
+    (send e load-file (local-path "menu-steps.txt"))
+    (public*
+     [make-test-button
+      (lambda (name pnl menu id)
+        (make-object button%
+                     (format "Test ~a" name) pnl 
+                     (lambda (b e)
+                       (message-box
+                        "Checked?"
+                        (if (send id is-checked?)
+                            "yes"
+                            "no")))))]
+     [compare
+      (lambda (expect v kind)
+        (unless (or (and (string? expect) (string? v)
+                         (string=? expect v))
+                    (eq? expect v))
+          (error 'test-compare "~a mismatch: ~s != ~s" kind expect v)))]
+     [check-parent
+      (lambda (menu id)
+        (unless use-menubar?
+          (unless (eq? (send id get-parent) menu)
+            (error 'check-parent "parent mismatch: for ~a, ~a != ~a"
+                   (send id get-label)
+                   (send menu get-label)
+                   (send (send (send id get-parent) get-item) get-label)))))]
+     [label-test
+      (lambda (menu id expect)
+        (check-parent menu id)
+        (let ([v (send id get-label)])
+          (compare expect v "label")))]
+     [top-label-test
+      (lambda (pos expect)
+        (let ([i (send menu-bar get-items)])
+          (and (> (length i) pos)
+               (let ([v (send (list-ref i pos) get-label)])
+                 (compare expect v "top label")))))]
+     [help-string-test
+      (lambda (menu id expect)
+        (check-parent menu id)
+        (let ([v (send id get-help-string)])
+          (compare expect v "help string")))]
+     [find-test
+      (lambda (menu title expect string)
+        (letrec ([find
+                  (lambda (menu str)
+                    (let ([items (send menu get-items)])
+                      (ormap (lambda (i)
+                               (and (is-a? i labelled-menu-item<%>)
+                                    (equal? (send i get-plain-label) str)
+                                    i))
+                             items)))]
+                 [find-item
+                  (lambda (menu str)
+                    (or (find menu str)
+                        (let ([items (send menu get-items)])
+                          (ormap (lambda (i)
+                                   (and (is-a? i menu%)
+                                        (find-item i str)))
+                                 items))))]
+                 [v (if use-menubar? 
+                        (let ([item (find menu-bar title)])
+                          (if item
+                              (find-item item string)
+                              -1))
+                        (find-item menu string))])
+          (compare expect v (format "label search: ~a" string))))]
+     [tell-ok
+      (lambda ()
+        (printf "ok\n"))])
+    (define temp-labels? #f)
+    (define use-menubar? #f)
+    (define apple-installed? #f)
+    (public*
+     [via (lambda (menu) (if use-menubar? menu-bar menu))]
+     [tmp-pick (lambda (a b) (if temp-labels? a b))]
+     [apple-pick (lambda (x a b) (if (and use-menubar? (not apple-installed?))
+                                     x
+                                     (tmp-pick a b)))])
+     (make-menu-bar)
 
-	(send apple-menu restore)
+     (send apple-menu restore)
 
-	(make-object button%
-		     "Delete Tester" sbp 
-		     (lambda args
-		       (send main-menu delete)))
-	(make-object button%
-		     "Delete First Menu" sbp
-		     (lambda args
-		       (send (car (send menu-bar get-items)) delete)))
-	(make-object button%
-		     "Add Tester" sbp
-		     (lambda args
-		       (send main-menu restore)))
-	(make-object button%
-		     "Add Delete Banana" sbp
-		     (lambda args
-		       (send DELETE-BANANA restore)))
-	(make-object button%
-		     "Counts" sbp
-		     (lambda args
-		       (message-box
-			"Counts"
-			(format "MB: ~a; T: ~a; A: ~a; B: ~a"
-				(length (send menu-bar get-items))
-				(length (send main-menu get-items))
-				(length (send apple-menu get-items))
-				(length (send banana-menu get-items))))))
+     (make-object button%
+                  "Delete Tester" sbp 
+                  (lambda args
+                    (send main-menu delete)))
+     (make-object button%
+                  "Delete First Menu" sbp
+                  (lambda args
+                    (send (car (send menu-bar get-items)) delete)))
+     (make-object button%
+                  "Add Tester" sbp
+                  (lambda args
+                    (send main-menu restore)))
+     (make-object button%
+                  "Add Delete Banana" sbp
+                  (lambda args
+                    (send DELETE-BANANA restore)))
+     (make-object button%
+                  "Counts" sbp
+                  (lambda args
+                    (message-box
+                     "Counts"
+                     (format "MB: ~a; T: ~a; A: ~a; B: ~a"
+                             (length (send menu-bar get-items))
+                             (length (send main-menu get-items))
+                             (length (send apple-menu get-items))
+                             (length (send banana-menu get-items))))))
 
-	(make-test-button "Apple Item" mfbp apple-menu APPLE-CHECK-ID)
-	(make-object button%
-		     "Check in Apple" mfbp
-		     (lambda args
-		       (send APPLE-CHECK-ID check #t)))
-	(make-object button%
-		     "Delete/Restore Check" mfbp
-		     (lambda args
-                       (if (send APPLE-CHECK-ID is-deleted?)
-                           (send APPLE-CHECK-ID restore)
-                           (send APPLE-CHECK-ID delete))))
-	(make-object button%
-		     "Toggle Menubar Enable" mfbp
-		     (lambda args
-		       (send menu-bar enable (not (send menu-bar is-enabled?)))))
-	(make-object button%
-		     "Toggle Apple Enable" mfbp
-		     (lambda args
-		       (send apple-menu enable (not (send apple-menu is-enabled?)))))
-	
-	(make-object button%
-		     "Test Labels" lblp 
-		     (lambda args
-		       (label-test (via main-menu) ADD-APPLE (tmp-pick "Apple Adder" "Add Apple"))
-		       (help-string-test (via main-menu) ADD-APPLE (tmp-pick "ADDER" "Adds the Apple menu"))
-		       (label-test (via apple-menu) DELETE-APPLE (apple-pick #f "Apple Deleter" "Delete Apple"))
-		       (help-string-test (via apple-menu) DELETE-APPLE (apple-pick #f "DELETER"
-										   "Deletes the Apple menu"))
-		       (label-test (via apple-menu) COCONUT-ID (apple-pick #f "Coconut!" "Coconut"))
-		       (help-string-test (via apple-menu) COCONUT-ID (apple-pick #f "SUBMENU" "Submenu"))
-		       (label-test (via coconut-menu) DELETE-COCONUT (apple-pick #f "Coconut Deleter" "Delete Coconut")) ; submenu test
-		       (help-string-test (via coconut-menu) DELETE-COCONUT (apple-pick #f "CDELETER" #f))
-		       (top-label-test 0 (if temp-labels? "Hi" "&Tester"))
-		       (top-label-test 1 (if apple-installed? "Apple" #f))
-		       (tell-ok)))
-	(make-object button%
-		     "Find Labels" lblp
-		     (lambda args
-		       (find-test main-menu (tmp-pick "Hi" "&Tester")
-				  ADD-APPLE (tmp-pick "Apple Adder" "Add Apple"))
-		       (find-test apple-menu "Apple" (apple-pick -1 DELETE-APPLE DELETE-APPLE)
-				  (tmp-pick "Apple Deleter" "Delete Apple"))
-		       (find-test apple-menu "Apple" (apple-pick -1 COCONUT-ID COCONUT-ID)
-				  (tmp-pick "Coconut!" "Coconut"))
-		       (find-test apple-menu "Apple" (apple-pick -1 DELETE-COCONUT DELETE-COCONUT)
-				  (tmp-pick "Coconut Deleter" "Delete Coconut"))
-		       (tell-ok)))
-	(make-object button%
-		     "Toggle Labels" lblp
-		     (lambda args
-		       (set! temp-labels? (not temp-labels?))
-		       (let ([menu (via main-menu)])
-			 (send ADD-APPLE set-label (tmp-pick "Apple Adder" "Add Apple"))
-			 (send DELETE-APPLE set-label (tmp-pick "Apple Deleter" "Delete Apple"))
-			 (send COCONUT-ID set-label (tmp-pick "Coconut!" "Coconut"))
-			 (send DELETE-COCONUT set-label (tmp-pick "Coconut Deleter" "Delete Coconut"))
-			 (send ADD-APPLE set-help-string (tmp-pick "ADDER" "Adds the Apple menu"))
-			 (send DELETE-APPLE set-help-string (tmp-pick "DELETER" "Deletes the Apple menu"))
-			 (send COCONUT-ID set-help-string (tmp-pick "SUBMENU" "Submenu"))
-			 (send DELETE-COCONUT set-help-string (tmp-pick "CDELETER" #f))
-			 (send CHINESE set-label (tmp-pick "Chinese: \U7239" "Chinese: \U7238"))
-			 (send CHINESE set-shortcut (tmp-pick #\C #\K))
-			 (send main-menu set-label (if temp-labels? "Hi" "&Tester")))))
-	(letrec ([by-bar (make-object check-box%
-				      "Via Menubar" lblp
-				      (lambda args
-					(set! use-menubar? (send by-bar get-value))))])
-	  by-bar)
-	
-	#f)))
+     (make-test-button "Apple Item" mfbp apple-menu APPLE-CHECK-ID)
+     (make-object button%
+                  "Check in Apple" mfbp
+                  (lambda args
+                    (send APPLE-CHECK-ID check #t)))
+     (make-object button%
+                  "Delete/Restore Check" mfbp
+                  (lambda args
+                    (if (send APPLE-CHECK-ID is-deleted?)
+                        (send APPLE-CHECK-ID restore)
+                        (send APPLE-CHECK-ID delete))))
+     (make-object button%
+                  "Toggle Menubar Enable" mfbp
+                  (lambda args
+                    (send menu-bar enable (not (send menu-bar is-enabled?)))))
+     (make-object button%
+                  "Toggle Apple Enable" mfbp
+                  (lambda args
+                    (send apple-menu enable (not (send apple-menu is-enabled?)))))
+       
+     (make-object button%
+                  "Test Labels" lblp 
+                  (lambda args
+                    (label-test (via main-menu) ADD-APPLE (tmp-pick "Apple Adder" "Add Apple"))
+                    (help-string-test (via main-menu) ADD-APPLE (tmp-pick "ADDER" "Adds the Apple menu"))
+                    (label-test (via apple-menu) DELETE-APPLE (apple-pick #f "Apple Deleter" "Delete Apple"))
+                    (help-string-test (via apple-menu) DELETE-APPLE (apple-pick #f "DELETER"
+                                                                                "Deletes the Apple menu"))
+                    (label-test (via apple-menu) COCONUT-ID (apple-pick #f "Coconut!" "Coconut"))
+                    (help-string-test (via apple-menu) COCONUT-ID (apple-pick #f "SUBMENU" "Submenu"))
+                    (label-test (via coconut-menu) DELETE-COCONUT (apple-pick #f "Coconut Deleter" "Delete Coconut")) ; submenu test
+                    (help-string-test (via coconut-menu) DELETE-COCONUT (apple-pick #f "CDELETER" #f))
+                    (top-label-test 0 (if temp-labels? "Hi" "&Tester"))
+                    (top-label-test 1 (if apple-installed? "Apple" #f))
+                    (tell-ok)))
+     (make-object button%
+                  "Find Labels" lblp
+                  (lambda args
+                    (find-test main-menu (tmp-pick "Hi" "&Tester")
+                               ADD-APPLE (tmp-pick "Apple Adder" "Add Apple"))
+                    (find-test apple-menu "Apple" (apple-pick -1 DELETE-APPLE DELETE-APPLE)
+                               (tmp-pick "Apple Deleter" "Delete Apple"))
+                    (find-test apple-menu "Apple" (apple-pick -1 COCONUT-ID COCONUT-ID)
+                               (tmp-pick "Coconut!" "Coconut"))
+                    (find-test apple-menu "Apple" (apple-pick -1 DELETE-COCONUT DELETE-COCONUT)
+                               (tmp-pick "Coconut Deleter" "Delete Coconut"))
+                    (tell-ok)))
+     (make-object button%
+                  "Toggle Labels" lblp
+                  (lambda args
+                    (set! temp-labels? (not temp-labels?))
+                    (let ([menu (via main-menu)])
+                      (send ADD-APPLE set-label (tmp-pick "Apple Adder" "Add Apple"))
+                      (send DELETE-APPLE set-label (tmp-pick "Apple Deleter" "Delete Apple"))
+                      (send COCONUT-ID set-label (tmp-pick "Coconut!" "Coconut"))
+                      (send DELETE-COCONUT set-label (tmp-pick "Coconut Deleter" "Delete Coconut"))
+                      (send ADD-APPLE set-help-string (tmp-pick "ADDER" "Adds the Apple menu"))
+                      (send DELETE-APPLE set-help-string (tmp-pick "DELETER" "Deletes the Apple menu"))
+                      (send COCONUT-ID set-help-string (tmp-pick "SUBMENU" "Submenu"))
+                      (send DELETE-COCONUT set-help-string (tmp-pick "CDELETER" #f))
+                      (send CHINESE set-label (tmp-pick "Chinese: \U7239" "Chinese: \U7238"))
+                      (send CHINESE set-shortcut (tmp-pick #\C #\K))
+                      (send main-menu set-label (if temp-labels? "Hi" "&Tester")))))
+     (letrec ([by-bar (make-object check-box%
+                                   "Via Menubar" lblp
+                                   (lambda args
+                                     (set! use-menubar? (send by-bar get-value))))])
+       by-bar)
+       
+     #f))
 
 (define (menu-frame)
   (define mf (make-frame f% "Menu Test"))
@@ -1109,8 +1105,9 @@
 (define (panel-frame)
   (define make-p% 
     (lambda (panel%)
-      (class100 panel% (parent)
-	(override
+      (class panel%
+        (init parent)
+	(override*
 	  [container-size
 	   (lambda (l)
 	     (values (apply + (map car l))
@@ -1130,7 +1127,7 @@
 			 (loop (cdr l)
 			       (cons (list x y w h) r)
 			       (+ x w) (+ y h))))))))])
-	(sequence (super-init parent)))))
+        (super-make-object parent))))
   (define f (make-frame frame% "Panel Tests"))
   (define h (make-object horizontal-panel% f))
   (define kind (begin
@@ -1931,7 +1928,7 @@
 		[init-manual-scrollbars (lambda x
 					  (set! auto? #f)
 					  (super init-manual-scrollbars . x))])
-               (super-init p flags)))
+               (super-make-object p flags)))
   (define un-name "Unmanaged scroll")
   (define m-name "Automanaged scroll")
   (define c1 (make-object c% un-name m-name p))
@@ -2321,9 +2318,9 @@
   (make-object vertical-panel% clockp) ; filler
   (let ([time (make-object message% "XX:XX:XX" clockp)])
     (make-object
-     (class100 timer% ()
+     (class timer%
        (inherit start)
-       (override
+       (override*
 	 [notify
 	  (lambda ()
 	    (let* ([now (seconds->date (current-seconds))]
@@ -2342,9 +2339,8 @@
 	      (send time set-label s)
 	      (when (send selector is-shown?)
 		(start 1000 #t))))])
-       (sequence
-	 (super-init)
-	 (start 1000 #t))))))
+       (super-make-object)
+       (start 1000 #t)))))
 
 (define bp0 (make-object vertical-panel% ap '(border)))
 (define bp1 (make-object horizontal-panel% bp0))

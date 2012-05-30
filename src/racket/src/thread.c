@@ -373,6 +373,7 @@ static Scheme_Object *thread_cell_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_get(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_set(int argc, Scheme_Object *args[]);
 static Scheme_Object *thread_cell_values(int argc, Scheme_Object *args[]);
+static Scheme_Object *is_thread_cell_values(int argc, Scheme_Object *args[]);
 
 static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[]);
@@ -544,6 +545,7 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("thread-cell-ref"                     , thread_cell_get   , 1, 1, env);
   GLOBAL_PRIM_W_ARITY("thread-cell-set!"                    , thread_cell_set   , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("current-preserved-thread-cell-values", thread_cell_values, 0, 1, env);
+  GLOBAL_FOLDING_PRIM("thread-cell-values?"                 , is_thread_cell_values, 1, 1, 1, env);
 
   GLOBAL_PRIM_W_ARITY("make-will-executor", make_will_executor, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("will-executor?"    , will_executor_p   , 1, 1, env);
@@ -6751,6 +6753,13 @@ static Scheme_Object *thread_cell_values(int argc, Scheme_Object *argv[])
 
     return o;
   }
+}
+
+static Scheme_Object *is_thread_cell_values(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(scheme_thread_cell_values_type, SCHEME_TYPE(argv[0]))
+          ? scheme_true
+          : scheme_false);
 }
 
 static Scheme_Object *make_thread_cell(int argc, Scheme_Object *argv[])

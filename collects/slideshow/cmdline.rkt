@@ -4,7 +4,7 @@
            mzlib/file
            mzlib/contract
            mred
-           mzlib/cmdline
+           racket/cmdline
            texpict/mrpict
            texpict/utils
            mzlib/math
@@ -57,10 +57,9 @@
     
     (define file-to-load
       (command-line
-       "slideshow"
-       (current-command-line-arguments)
-       [once-each
-	(("-M" "--monitor") monitor "display to <monitor> (count from 0)"
+       #:program "slideshow"
+       #:once-each
+       (("-M" "--monitor") monitor "display to <monitor> (count from 0)"
 	 (let ([n (string->number monitor)])
 	   (unless (and n (exact-nonnegative-integer? n))
 	     (die 'slideshow "argument to -M is not an exact non-negative integer: ~a" monitor))
@@ -102,16 +101,6 @@
         (("-m" "--no-smoothing") 
          "disable anti-aliased drawing (usually faster)"
          (set! smoothing? #f))
-        ;; Disable --minutes, because it's not used
-        #;
-        (("-m" "--minutes") min "set talk duration in minutes"
-        (let ([n (string->number min)])
-        (unless (and n 
-        (integer? n)
-        (exact? n)
-        (positive? n))
-        (die 'slideshow "argument to -m is not a positive exact integer: ~a" min))
-        (set! talk-duration-minutes n)))
         (("-i" "--immediate") "no transitions"
          (set! use-transitions? #f))
         (("--trust") "allow slide program to write files and make network connections"
@@ -131,20 +120,12 @@
         (("--comment-on-slide") "display commentary on slide"
          (set! commentary? #t)
          (set! commentary-on-slide? #t))
-        (("--time") "time seconds per slide" (set! print-slide-seconds? #t))]
-       [args slide-module-file
-             (cond
-              [(null? slide-module-file) #f]
-              [(null? (cdr slide-module-file)) 
-               (let ([candidate (car slide-module-file)])
-                 (unless (file-exists? candidate)
-                   (die 'slideshow "expected a filename on the commandline, given: ~a"
-                        candidate))
-                 candidate)]
-              [else (die 'slideshow
-                         "expects at most one module file, given ~a: ~s"
-                         (length slide-module-file)
-                         slide-module-file)])]))
+        (("--time") "time seconds per slide" (set! print-slide-seconds? #t))
+        #:ps
+        "After requiring <slide-module-file>, if a `slideshow' submodule exists,"
+        " it is required. Otherwise, if a `main' submodule exists, it is required."
+        #:args ([slide-module-file #f])
+        slide-module-file))
 
     (define printing? (and printing-mode #t))
 

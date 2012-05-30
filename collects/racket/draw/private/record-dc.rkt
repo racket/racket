@@ -347,6 +347,7 @@
     (inherit get-origin get-scale get-rotation get-initial-matrix 
              get-pen get-brush get-font
              get-smoothing get-text-mode 
+             get-background get-text-background get-text-foreground
              get-alpha get-clipping-region
              translate rotate scale)
 
@@ -489,6 +490,9 @@
                    [(s) (get-smoothing)]
                    [(f) (get-font)]
                    [(tm) (get-text-mode)]
+                   [(bg) (get-background)]
+                   [(tbg) (get-text-background)]
+                   [(tfg) (get-text-foreground)]
                    [(a) (get-alpha)]
                    [(cr) (get-clipping-region)]
                    [(to-default?) (applies-to-default?)])
@@ -502,7 +506,19 @@
         (unless (and to-default? (eq? s 'unsmoothed)) (set-smoothing s))
         (unless (and to-default? (eq? tm 'transparent)) (set-text-mode tm))
         (unless (and to-default? (= a 1.0)) (set-alpha a))
-        (unless (and to-default? (not cr)) (set-clipping-region cr))))
+        (unless (and to-default? (not cr)) (set-clipping-region cr))
+        (unless (and to-default? (and (= (color-red bg) 255)
+                                      (= (color-green bg) 255)
+                                      (= (color-blue bg) 255)))
+          (set-background bg))
+        (unless (and to-default? (and (= (color-red tbg) 255)
+                                      (= (color-green tbg) 255)
+                                      (= (color-blue tbg) 255)))
+          (set-text-background tbg))
+        (unless (and to-default? (and (= (color-red tfg) 0)
+                                      (= (color-green tfg) 0)
+                                      (= (color-blue tfg) 0)))
+          (set-text-foreground tfg))))
 
     (define/public (applies-to-default?) #t)
 
@@ -725,6 +741,9 @@
     (define s (send dc get-smoothing))
     (define f (send dc get-font))
     (define tm (send dc get-text-mode))
+    (define bg (send dc get-background))
+    (define tbg (send dc get-text-background))
+    (define tfg (send dc get-text-foreground))
     (define a (send dc get-alpha))
     (define cr (send dc get-clipping-region))
     
@@ -742,5 +761,8 @@
     (send dc set-font f)
     (send dc set-smoothing s)
     (send dc set-text-mode tm)
+    (send dc set-background bg)
+    (send dc set-text-background tbg)
+    (send dc set-text-foreground tfg)
     (send dc set-alpha a)
     (send dc set-clipping-region cr)))

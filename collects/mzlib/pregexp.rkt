@@ -23,7 +23,7 @@
      [(string? pattern) (pregexp pattern)]
      [(regexp? pattern) pattern]
      [(byte-regexp? pattern) pattern]
-     [else (raise-type-error who "regexp, byte-regexp, string, or byte string"
+     [else (raise-argument-error who "(or/c regexp? byte-regexp? string? bytes?)"
 			     pattern)]))
 
   (define/kw (pregexp-match pattern input #:optional [start-k 0] [end-k #f] [output-port #f])

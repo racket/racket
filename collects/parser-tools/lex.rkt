@@ -294,9 +294,9 @@
                                               longest-match-length)))))))))))))
       (lambda (ip)
         (unless (input-port? ip)
-          (raise-type-error 
+          (raise-argument-error 
            'lexer 
-           "input-port"
+           "input-port?"
            0
            ip))
         (lexer ip))))

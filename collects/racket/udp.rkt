@@ -31,4 +31,4 @@
       [(socket port-numbers?)
         (if (udp? socket)
             (tcp-addresses socket port-numbers?)
-            (raise-type-error 'udp-addresses "udp socket" socket))])))
+            (raise-argument-error 'udp-addresses "udp?" socket))])))

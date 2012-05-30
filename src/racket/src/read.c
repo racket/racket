@@ -2184,14 +2184,19 @@ _internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cant_fai
     else
       params.table = NULL;
   }
-  params.can_read_compiled = crc;
+  if (crc >= 0)
+    params.can_read_compiled = crc;
+  else {
+    v = scheme_get_param(scheme_current_config(), MZCONFIG_CAN_READ_COMPILED);
+    params.can_read_compiled = SCHEME_TRUEP(v);
+  }
   v = scheme_get_param(config, MZCONFIG_CAN_READ_PIPE_QUOTE);
   params.can_read_pipe_quote = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_BOX);
   params.can_read_box = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_GRAPH);
   params.can_read_graph = SCHEME_TRUEP(v);
-  if (crc || get_info) {
+  if ((crc > 0) || get_info) {
     params.can_read_reader = 1;
     params.can_read_lang = 1;
   } else {
@@ -2328,9 +2333,6 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
                      Scheme_Object *delay_load_info)
 {
   Scheme_Thread *p = scheme_current_thread;
-
-  if (crc < 0)
-    crc = SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_CAN_READ_COMPILED));
 
   if (cantfail) {
     return _internal_read(port, stxsrc, crc, cantfail, recur, expose_comment, -1, NULL, 

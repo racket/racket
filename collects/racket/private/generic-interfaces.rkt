@@ -23,9 +23,12 @@
                 (procedure? (vector-ref v 2))
                 (procedure-arity-includes? (vector-ref v 2) 2))
            v
-           (raise-type-error 'guard-for-prop:gen:equal+hash
-                             "vector of three procedures (arities 3, 2, 2)"
-                             v)))
+           (raise-argument-error 'guard-for-prop:gen:equal+hash
+                                 (string-append
+                                  "(vector/c (procedure-arity-includes/c 3)\n"
+                                  "          (procedure-arity-includes/c 2)\n"
+                                  "          (procedure-arity-includes/c 2))")
+                                 v)))
      (list (cons prop:equal+hash vector->list))))
 
   (define-syntax gen:equal+hash
@@ -44,9 +47,9 @@
                 (procedure? (vector-ref v 0))
                 (procedure-arity-includes? (vector-ref v 0) 3))
            v
-           (raise-type-error 'guard-for-prop:gen:custom-write
-                             "vector of one procedure (arity 3)"
-                             v)))
+           (raise-argument-error 'guard-for-prop:gen:custom-write
+                                 "(vector/c (procedure-arity-includes/c 3))"
+                                 v)))
      (list (cons prop:custom-write (lambda (v) (vector-ref v 0))))))
 
   (define-syntax gen:custom-write

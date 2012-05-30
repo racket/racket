@@ -189,7 +189,10 @@ The protocol for a @racket[redirect-proc] depends on the corresponding
       @racket[_field-v] that @racket[orig-proc] produces for
       @racket[v]; it must return a replacement for
       @racket[_field-v]. The corresponding field must not be
-      immutable.}
+      immutable, and either the field's structure type must be
+      accessible via the current @tech{inspector} or one of the other
+      @racket[orig-proc]s must be a structure-field mutator for the
+      same field.}
 
  @item{A structure-field mutator: @racket[redirect-proc] must accept
       two arguments, @racket[v] and the value @racket[_field-v]

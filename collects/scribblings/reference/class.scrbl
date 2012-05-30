@@ -1196,7 +1196,7 @@ Extracts the field with (external) name @racket[id] from the value of
 @racket[obj-expr].
 
 If @racket[obj-expr] does not produce an object, the
-@exnraise[exn:fail:contract]. If the object has no @racket[id] method,
+@exnraise[exn:fail:contract]. If the object has no @racket[id] field,
 the @exnraise[exn:fail:object].}
 
 @defform[(set-field! id obj-expr expr)]{

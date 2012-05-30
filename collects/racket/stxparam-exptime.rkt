@@ -14,7 +14,7 @@
                     (set!-transformer-procedure v)
                     v)])
         (unless (syntax-parameter? v)
-          (raise-type-error 'syntax-parameter-value "syntax parameter" v))
+          (raise-argument-error 'syntax-parameter-value "syntax-parameter?" v))
         (let ([target (syntax-parameter-target v)])
           (syntax-parameter-target-value target)))))
 

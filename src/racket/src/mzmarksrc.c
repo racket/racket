@@ -1559,7 +1559,6 @@ mark_load_handler_data {
   gcMARK2(d->p, gc);
   gcMARK2(d->stxsrc, gc);
   gcMARK2(d->expected_module, gc);
-  gcMARK2(d->delay_load_info, gc);
   
  size:
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));

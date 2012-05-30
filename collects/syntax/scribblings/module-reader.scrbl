@@ -94,7 +94,12 @@ identifiers used by the @racket[reader-option]s.
        @racket[read-syntax], respectively. Normally, the replacements
        for @racket[read] and @racket[read-syntax] are applied
        repeatedly to the module source until @racket[eof] is produced,
-       but see also @racket[#:whole-body-readers?].
+       but see also @racket[#:whole-body-readers?]. 
+
+       Unless @racket[#:whole-body-readers?] specifies a true value,
+       the repeated use of @racket[read] or @racket[read-syntax] is
+       @racket[parameterize]d to set @racket[read-accept-lang] to
+       @racket[#f], which disables nested uses of @hash-lang[].
 
         See also @racket[#:wrapper1] and @racket[#:wrapper2], which
         support simple parameterization of readers rather than

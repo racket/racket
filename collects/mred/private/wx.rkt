@@ -1,18 +1,17 @@
-(module wx mzscheme
-  (require mzlib/class
-           mzlib/class100
-           (prefix wx: "kernel.rkt")
+(module wx racket/base
+  (require racket/class
+           (prefix-in wx: "kernel.rkt")
            "lock.rkt"
            "helper.rkt")
 
-  (provide (protect wx<%>
-                    wx/proxy<%>
-                    make-glue%
-                    wx->mred
-                    wx->proxy
-                    mred%
-                    mred->wx
-                    mred->wx-container))
+  (provide (protect-out wx<%>
+                        wx/proxy<%>
+                        make-glue%
+                        wx->mred
+                        wx->proxy
+                        mred%
+                        mred->wx
+                        mred->wx-container))
 
   ;; The windowing wx classes are not exposed directly.
   ;; Instead, we expose wrapper classes that have wx instances.
@@ -25,13 +24,15 @@
   (define wx/proxy<%> (interface (wx<%>) get-proxy))
   
   (define (make-glue% %)
-    (class100* % (wx/proxy<%>) (mr prxy . args)
-	       (private-field [mred mr]
-			      [proxy prxy])
-	       (public
-		 [get-mred (lambda () mred)]
-		 [get-proxy (lambda () proxy)])
-	       (sequence (apply super-init args))))
+    (class* % (wx/proxy<%>)
+      (init mr prxy)
+      (init-rest args)
+      (define mred mr)
+      (define proxy prxy)
+      (public*
+       [get-mred (lambda () mred)]
+       [get-proxy (lambda () proxy)])
+      (apply super-make-object args)))
 
   (define wx-get-mred/gen (make-generic wx<%> 'get-mred))
   (define wx-get-proxy/gen (make-generic wx/proxy<%> 'get-proxy))

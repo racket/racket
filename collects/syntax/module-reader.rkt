@@ -175,12 +175,13 @@
     (let* ([lang (if stx? (datum->syntax #f lang modpath modpath) lang)]
            [body (lambda ()
                    (if whole?
-                     (read port)
-                     (let loop ([a null])
-                       (let ([v (read port)])
-                         (if (eof-object? v)
-                             (reverse a)
-                             (loop (cons v a)))))))]
+                       (read port)
+                       (parameterize ([read-accept-lang #f])
+                         (let loop ([a null])
+                           (let ([v (read port)])
+                             (if (eof-object? v)
+                                 (reverse a)
+                                 (loop (cons v a))))))))]
            [body (cond [(not wrapper)   (body)]
                        [(ar? wrapper 2) (wrapper body stx?)]
                        [else            (wrapper body)])]

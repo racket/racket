@@ -34,12 +34,12 @@
     [(a b) (merge-input a b 4096)]
     [(a b limit)
      (or (input-port? a)
-         (raise-type-error 'merge-input "input-port" a))
+         (raise-argument-error 'merge-input "input-port?" a))
      (or (input-port? b)
-         (raise-type-error 'merge-input "input-port" b))
+         (raise-argument-error 'merge-input "input-port?" b))
      (or (not limit)
          (and (number? limit) (positive? limit) (exact? limit) (integer? limit))
-         (raise-type-error 'merge-input "positive exact integer or #f" limit))
+         (raise-argument-error 'merge-input "(or/c exact-positive-integer #f)" limit))
      (let-values ([(rd wt) (make-pipe-with-specials limit)]
                   [(other-done?) #f]
                   [(sema) (make-semaphore 1)])
@@ -898,10 +898,10 @@
 (define special-filter-input-port
   (lambda (p filter [close? #t])
     (unless (input-port? p)
-      (raise-type-error 'special-filter-input-port "input port" p))
+      (raise-argument-error 'special-filter-input-port "input-port?" p))
     (unless (and (procedure? filter)
                  (procedure-arity-includes? filter 2))
-      (raise-type-error 'special-filter-input-port "procedure (arity 2)" filter))
+      (raise-argument-error 'special-filter-input-port "(any/c bytes? . -> . any/c)" filter))
     (make-input-port
      (object-name p)
      (lambda (s)

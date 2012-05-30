@@ -28,4 +28,4 @@
 (htdp-syntax-test #'unquote-splicing "unquote-splicing: misuse of ,@ or unquote-splicing, not under a quasiquoting backquote")
 (htdp-syntax-test #'(unquote-splicing (list 10)) "unquote-splicing: misuse of ,@ or unquote-splicing, not under a quasiquoting backquote")
 
-(htdp-err/rt-test `(,@4) (exn-type-and-msg exn:fail:contract? "append: expected argument of type <proper list>; given: 4"))
+(htdp-err/rt-test `(,@4) (exn-type-and-msg exn:fail:contract? "append: contract violation\n  expected: list?\n  given: 4"))

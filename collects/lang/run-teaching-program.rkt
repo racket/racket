@@ -90,7 +90,8 @@
 
 ;; take all of the body expressions from the port
 (define (suck-all-exps port reader)
-  (define (port-reader p) (reader (object-name port) p))
+  (define (port-reader p) (parameterize ([read-accept-lang #f])
+                            (reader (object-name port) p)))
   (sequence->list (in-port port-reader port)))
 
 ;; check that the teachpacks exist, return 
