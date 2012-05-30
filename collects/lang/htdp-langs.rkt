@@ -180,9 +180,10 @@
             ;; set the global-port-print-handler after the super class because the super sets it too
             (run-in-user-thread
              (lambda ()
+               (define my-setup-printing-parameters (drscheme:language:make-setup-printing-parameters))
                (global-port-print-handler
                 (λ (value port [depth 0])
-                  (teaching-language-render-value/format value settings port 'infinity))))))
+                  (teaching-language-render-value/format my-setup-printing-parameters value settings port 'infinity))))))
           
           (define/private (teaching-languages-error-value->string settings v len)
             (let ([sp (open-output-string)])
@@ -240,13 +241,13 @@
               (thunk)))
           
           (define/override (render-value/format value settings port width)
-            (teaching-language-render-value/format value settings port width))
+            (teaching-language-render-value/format drscheme:language:setup-printing-parameters value settings port width))
           (define/override (render-value value settings port)
-            (teaching-language-render-value/format value settings port 'infinity))
+            (teaching-language-render-value/format drscheme:language:setup-printing-parameters value settings port 'infinity))
           
-          (define/private (teaching-language-render-value/format value settings port width)
+          (define/private (teaching-language-render-value/format setup-printing-parameters value settings port width)
             ;; set drscheme's printing parameters
-            (drscheme:language:setup-printing-parameters
+            (setup-printing-parameters
              (λ ()
                ;; then adjust the settings for the teaching languages
                (set-printing-parameters

@@ -362,127 +362,144 @@
   
   (define default-pretty-print-current-style-table (pretty-print-current-style-table))
   
-  ;; setup-printing-parameters : (-> void) simple-settings number -> void
-  (define (setup-printing-parameters thunk settings width)
-    (let ([use-number-snip?
-           (λ (x)
-             (and (number? x)
-                  (exact? x)
-                  (real? x)
-                  (not (integer? x))))])
-      (define convert-table (make-hasheq))
-      (define pict:convertible?
-        (with-handlers ((exn:fail? (λ (exn) (λ (val) #f))))
-          (dynamic-require 'slideshow/pict-convert 'pict-convertible?)))
-      (parameterize ([pretty-print-pre-print-hook (λ (val port) (void))]
-                     [pretty-print-post-print-hook (λ (val port) (void))]
-                     [pretty-print-exact-as-decimal #f]
-                     [pretty-print-depth #f]
-                     [pretty-print-.-symbol-without-bars #f]
-                     [pretty-print-show-inexactness #f]
-                     [pretty-print-abbreviate-read-macros #t]
-                     [pretty-print-current-style-table default-pretty-print-current-style-table]
-                     [pretty-print-remap-stylable (λ (x) #f)]
-                     [pretty-print-print-line
-                      (lambda (line port offset width)
-                        (when (and (number? width)
-                                   (not (eq? 0 line)))
-                          (newline port))
-                        0)]
-                     
-                     [pretty-print-columns width]
-                     [pretty-print-size-hook
-                      (let ([oh (pretty-print-size-hook)])
-                        (λ (value display? port)
-                          (cond
-                            [(not (port-writes-special? port)) (oh value display? port)]
-                            [(is-a? value snip%) 1]
-                            [(pict:convertible? value) 1]
-                            [(use-number-snip? value) 1]
-                            [(syntax? value) 1]
-                            [(to-snip-value? value) 1]
-                            [(hash-ref convert-table value #f) 
-                             ;; this handler can be called multiple times per value
-                             ;; avoid building the png bytes more than once
-                             1]
-                            [(and (file:convertible? value)
-                                  (file:convert value 'png-bytes #f))
-                             =>
-                             (λ (converted)
-                               (hash-set! convert-table value converted)
-                               1)]
-                            [else (oh value display? port)])))]
-                     [pretty-print-print-hook
-                      (let ([oh (pretty-print-print-hook)])
-                        (λ (value display? port)
-                          (cond
-                            [(not (port-writes-special? port)) (oh value display? port)]
-                            [(is-a? value snip%)
-                             (cond
-                               [(image-core:image? value)
-                             
-                                ;; do this computation here so that any failures
-                                ;; during drawing happen under the user's custodian
-                                (image-core:compute-image-cache value) 
-                                (write-special value port)
-                                1]
-                               [else
-                                (write-special value port)
-                                1])]
-                            [(pict:convertible? value)
-                             (write-special (mk-pict-snip value))]
-                            [(use-number-snip? value)
-                             (write-special
-                              (case (simple-settings-fraction-style settings)
-                                [(mixed-fraction) 
-                                 (number-snip:make-fraction-snip value #f)]
-                                [(mixed-fraction-e)
-                                 (number-snip:make-fraction-snip value #t)]
-                                [(repeating-decimal)
-                                 (number-snip:make-repeating-decimal-snip value #f)]
-                                [(repeating-decimal-e)
-                                 (number-snip:make-repeating-decimal-snip value #t)])
-                              port)
-                             1]
-                            [(syntax? value)
-                             (write-special (render-syntax/snip value) port)]
-                            [(to-snip-value? value)
-                             (write-special (value->snip value) port)]
-                            [(hash-ref convert-table value #f)
-                             =>
-                             (λ (bytes)
-                               (write-special
-                                (make-object image-snip%
-                                  (read-bitmap (open-input-bytes bytes)))
-                                port))]
-                            [else (oh value display? port)])))]
-                     [print-graph
-                      ;; only turn on print-graph when using `write' or `print' printing 
-                      ;; style, because the sharing is being taken care of
-                      ;; by the print-convert sexp construction when using
-                      ;; other printing styles.
-                      (and (memq (simple-settings-printing-style settings) '(write print))
-                           (simple-settings-show-sharing settings))])
-        (thunk))))
   
+  (define (setup-printing-parameters thunk settings width) ((make-setup-printing-parameters) thunk settings width))
   
-  (define (mk-pict-snip convertible)
+  ;; make-setup-printing-parameters : -> (-> (-> void) simple-settings number void)
+  (define (make-setup-printing-parameters)
     (define-syntax-rule 
-      (dyn name args ...)
-      ((dynamic-require 'slideshow/pict 'name) args ...))
-    (define pict ((dynamic-require 'slideshow/pict-convert 'pict-convert) 
-                  convertible))
-    (define w (dyn pict-width pict))
-    (define h (dyn pict-height pict))
-    (define a (dyn pict-ascent pict))
-    (define d (dyn pict-descent pict))
-    (define rdc (new record-dc%))
-    (send rdc set-smoothing 'aligned)
-    (send rdc set-clipping-rect 0 0 w h)
-    (dyn draw-pict pict rdc 0 0)
-    (define recorded-datum (send rdc get-recorded-datum))
-    (new pict-snip:pict-snip% [w w] [h h] [d d] [a a] [recorded-datum recorded-datum]))
-    
+      (dyn name)
+      (define name (if gave-up?
+                       (symbol->string (format "~a-gave-up" 'name))
+                       (dynamic-require 'slideshow/pict 'name))))
+    (define gave-up? #f)
+    (define pict:convertible?
+      (with-handlers ((exn:fail? (λ (exn)
+                                   (set! gave-up? #t)
+                                   (log-error (exn-message exn))
+                                   (λ (val) #f))))
+        (dynamic-require 'slideshow/pict-convert 'pict-convertible?)))
+    (define pict-convert (if gave-up?
+                             'pict-convert-gave-up
+                             (dynamic-require 'slideshow/pict-convert 'pict-convert)))
+    (dyn pict-width)
+    (dyn pict-height)
+    (dyn pict-ascent)
+    (dyn pict-descent)
+    (dyn draw-pict)
+      
+    (define (mk-pict-snip convertible)
+      (define pict (pict-convert convertible))
+      (define w (pict-width pict))
+      (define h (pict-height pict))
+      (define a (pict-ascent pict))
+      (define d (pict-descent pict))
+      (define rdc (new record-dc%))
+      (send rdc set-smoothing 'aligned)
+      (send rdc set-clipping-rect 0 0 w h)
+      (draw-pict pict rdc 0 0)
+      (define recorded-datum (send rdc get-recorded-datum))
+      (new pict-snip:pict-snip% [w w] [h h] [d d] [a a] [recorded-datum recorded-datum]))
+    (λ (thunk settings width)
+      
+      (let ([use-number-snip?
+             (λ (x)
+               (and (number? x)
+                    (exact? x)
+                    (real? x)
+                    (not (integer? x))))])
+        (define convert-table (make-hasheq))
+        (parameterize ([pretty-print-pre-print-hook (λ (val port) (void))]
+                       [pretty-print-post-print-hook (λ (val port) (void))]
+                       [pretty-print-exact-as-decimal #f]
+                       [pretty-print-depth #f]
+                       [pretty-print-.-symbol-without-bars #f]
+                       [pretty-print-show-inexactness #f]
+                       [pretty-print-abbreviate-read-macros #t]
+                       [pretty-print-current-style-table default-pretty-print-current-style-table]
+                       [pretty-print-remap-stylable (λ (x) #f)]
+                       [pretty-print-print-line
+                        (lambda (line port offset width)
+                          (when (and (number? width)
+                                     (not (eq? 0 line)))
+                            (newline port))
+                          0)]
+                       
+                       [pretty-print-columns width]
+                       [pretty-print-size-hook
+                        (let ([oh (pretty-print-size-hook)])
+                          (λ (value display? port)
+                            (cond
+                              [(not (port-writes-special? port)) (oh value display? port)]
+                              [(is-a? value snip%) 1]
+                              [(pict:convertible? value) 1]
+                              [(use-number-snip? value) 1]
+                              [(syntax? value) 1]
+                              [(to-snip-value? value) 1]
+                              [(hash-ref convert-table value #f) 
+                               ;; this handler can be called multiple times per value
+                               ;; avoid building the png bytes more than once
+                               1]
+                              [(and (file:convertible? value)
+                                    (file:convert value 'png-bytes #f))
+                               =>
+                               (λ (converted)
+                                 (hash-set! convert-table value converted)
+                                 1)]
+                              [else (oh value display? port)])))]
+                       [pretty-print-print-hook
+                        (let ([oh (pretty-print-print-hook)])
+                          (λ (value display? port)
+                            (cond
+                              [(not (port-writes-special? port)) (oh value display? port)]
+                              [(is-a? value snip%)
+                               (cond
+                                 [(image-core:image? value)
+                                  
+                                  ;; do this computation here so that any failures
+                                  ;; during drawing happen under the user's custodian
+                                  (image-core:compute-image-cache value) 
+                                  (write-special value port)
+                                  1]
+                                 [else
+                                  (write-special value port)
+                                  1])]
+                              [(pict:convertible? value)
+                               (write-special (mk-pict-snip value))]
+                              [(use-number-snip? value)
+                               (write-special
+                                (case (simple-settings-fraction-style settings)
+                                  [(mixed-fraction) 
+                                   (number-snip:make-fraction-snip value #f)]
+                                  [(mixed-fraction-e)
+                                   (number-snip:make-fraction-snip value #t)]
+                                  [(repeating-decimal)
+                                   (number-snip:make-repeating-decimal-snip value #f)]
+                                  [(repeating-decimal-e)
+                                   (number-snip:make-repeating-decimal-snip value #t)])
+                                port)
+                               1]
+                              [(syntax? value)
+                               (write-special (render-syntax/snip value) port)]
+                              [(to-snip-value? value)
+                               (write-special (value->snip value) port)]
+                              [(hash-ref convert-table value #f)
+                               =>
+                               (λ (bytes)
+                                 (write-special
+                                  (make-object image-snip%
+                                    (read-bitmap (open-input-bytes bytes)))
+                                  port))]
+                              [else (oh value display? port)])))]
+                       [print-graph
+                        ;; only turn on print-graph when using `write' or `print' printing 
+                        ;; style, because the sharing is being taken care of
+                        ;; by the print-convert sexp construction when using
+                        ;; other printing styles.
+                        (and (memq (simple-settings-printing-style settings) '(write print))
+                             (simple-settings-show-sharing settings))])
+          (thunk)))))
+      
   ;; drscheme-inspector : inspector
   (define drscheme-inspector (current-inspector))
   
@@ -536,6 +553,7 @@
             (drracket:debug:test-coverage-enabled #t)
             (current-eval (drracket:debug:make-debug-eval-handler (current-eval)))]))
        
+       (define my-setup-printing-parameters (make-setup-printing-parameters))
        (global-port-print-handler
         (λ (value port [depth 0])
           (let-values ([(converted-value write?)
@@ -544,7 +562,7 @@
                           (case-lambda
                            [(converted-value) (values converted-value #t)]
                            [(converted-value write?) (values converted-value write?)]))])
-            (setup-printing-parameters 
+            (my-setup-printing-parameters 
              (λ ()
                (parameterize ([pretty-print-columns 'infinity])
                  ((if write? pretty-write pretty-print) converted-value port)))

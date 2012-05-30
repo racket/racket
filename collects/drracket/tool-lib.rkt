@@ -1656,9 +1656,23 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:setup-printing-parameters
   (-> (-> any) drracket:language:simple-settings? (or/c number? 'infinity) any)
   (thunk settings width)
-  @{Sets all of the @racket[pretty-print] and @racket[print-convert] parameters
+  @{Equivalent to @racket[(drracket:language:make-setup-printing-parameters)].})
+ 
+ (proc-doc/names
+  drracket:language:make-setup-printing-parameters
+  (-> (-> (-> any) drracket:language:simple-settings? (or/c number? 'infinity) any))
+  ()
+  @{Returns a procedure that accepts three arguments: a thunk, settings, and 
+    a pretty-print width. The result procedure, when invoked sets all of the 
+    @racket[pretty-print] and @racket[print-convert] parameters
     either to the defaults to values based on @racket[settings]
-    and then invokes @racket[thunk], returning what it returns.})
+    and then invokes @racket[thunk], returning what it returns.
+    
+    When @racket[drracket:language:make-setup-printing-parameters] is invoked,
+    it @racket[dynamic-require]s @racketmodname[slideshow/pict-convert] and
+    closes over the results, using them to convert values when the resulting
+    procedure is invoked.
+    })
  
  (proc-doc/names
   drracket:language:text/pos-text
