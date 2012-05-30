@@ -2,7 +2,7 @@
 
 (require images/gui
          images/compile-time
-         (for-syntax racket/math
+         (for-syntax racket/flonum racket/math
                      images/private/flomap
                      images/logos)
          images/private/flomap
