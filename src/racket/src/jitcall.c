@@ -152,6 +152,7 @@ Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v)
 static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
                                                                 int argc,
                                                                 Scheme_Object **argv)
+  XFORM_SKIP_PROC
 {
   int already = fixup_already_in_place, i;
   Scheme_Object **base;
@@ -455,7 +456,8 @@ int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   jit_pusharg_i(JIT_R0);
   jit_pusharg_p(JIT_V1);
   if (direct_native > 1) { /* => some_args_already_in_place */
-    (void)mz_finish(_scheme_tail_apply_from_native_fixup_args);
+    GC_CAN_IGNORE jit_insn *refr;
+    (void)mz_finish_lwe(_scheme_tail_apply_from_native_fixup_args, refr);
   } else {
     GC_CAN_IGNORE jit_insn *refr;
     (void)mz_finish_lwe(ts__scheme_tail_apply_from_native, refr);
