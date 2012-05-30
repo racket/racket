@@ -1685,8 +1685,9 @@ static void complete_rtcall(Scheme_Future_State *fs, future_t *future)
        can continue running machine code */
     future->want_lw = 0; /* needed if we get here via direct_future_to_future_touch() */
     if (future->can_continue_sema) {
-      mzrt_sema_post(future->can_continue_sema);
+      mzrt_sema *can_continue_sema = future->can_continue_sema;
       future->can_continue_sema = NULL;
+      mzrt_sema_post(can_continue_sema);
     }
   }
 }
@@ -2281,7 +2282,7 @@ static Scheme_Object *apply_future_lw(future_t *ft)
 
 static int capture_future_continuation(Scheme_Future_State *fs, future_t *ft, void **storage, int need_lock)
   XFORM_SKIP_PROC
-/* The lock is *not* help when calling this function.
+/* The lock is *not* held when calling this function.
    This function explicitly cooperates with the GC by storing the
    pointers it needs to save across a collection in `storage', so
    it can be used in a future thread. If future-thread-local 
@@ -2448,9 +2449,18 @@ void scheme_check_future_work()
           FUTURE_ASSERT(ft->status != RUNNING);
         mzrt_mutex_unlock(fs->future_mutex);
       } else {
-        /* Must have been handled, but no future thread should be
-           running the future, yet. */
+        /* Couldn't capture the continuation. */
         FUTURE_ASSERT(ft->status != RUNNING);
+        if (can_continue_sema) {
+          /* may need to reinstall the semaphore */
+          mzrt_mutex_lock(fs->future_mutex);
+          if ((ft->status == WAITING_FOR_PRIM) 
+              || (ft->status == WAITING_FOR_FSEMA)) {
+            ft->can_continue_sema = can_continue_sema;
+            can_continue_sema = NULL;
+          }
+          mzrt_mutex_unlock(fs->future_mutex);
+        }
       }
       /* Signal the waiting worker thread that it can continue, since
          we either captured the continuation or the result became
@@ -2603,7 +2613,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
     mzrt_sema_wait(fts->worker_can_continue_sema);
 
     mzrt_mutex_lock(fs->future_mutex);
-    start_gc_not_ok(fs);    
+    start_gc_not_ok(fs);
   }
 
   /* Fetch the future instance again, in case the GC has moved the pointer
@@ -3154,8 +3164,9 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
     } else {
       /* Signal the waiting worker thread that it
          can continue running machine code */
-      mzrt_sema_post(future->can_continue_sema);
+      mzrt_sema *can_continue_sema = future->can_continue_sema;
       future->can_continue_sema = NULL;
+      mzrt_sema_post(can_continue_sema);
       mzrt_mutex_unlock(fs->future_mutex);
     }
     if (is_atomic) {

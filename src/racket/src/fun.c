@@ -7475,7 +7475,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
                                                                          Scheme_Current_LWC *p_lwc,
                                                                          void **storage)
   XFORM_SKIP_PROC
-/* This function explicitly coorperates with the GC by storing the
+/* This function explicitly cooperates with the GC by storing the
    pointers it needs to save across a collection in `storage'. Also,
    if allocation fails, it can abort and return NULL. The combination
    allows it to work in a thread for running futures (where allocation
