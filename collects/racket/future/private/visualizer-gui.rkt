@@ -158,7 +158,7 @@
                                                  (set! tacked-seg seg) 
                                                  ;(send timeline-panel set-redraw-overlay! #t) 
                                                  (post-event listener-table 'segment-click timeline-panel seg)))]
-                              [overlay-builder (λ (vregion) 
+                              [overlay-builder (λ (vregion scale-factor) 
                                                  (build-timeline-overlay vregion 
                                                                          tacked-seg 
                                                                          hover-seg 
@@ -168,13 +168,13 @@
                               [min-height (inexact->exact (round (* winh .7)))] 
                               [style '(hscroll vscroll)] 
                               [stretchable-width #t]))
+  ;; TODO sometimes the sizes passed to the scrollbars are so big we blow up!
   (send timeline-panel init-auto-scrollbars 
         (frame-info-adjusted-width frameinfo) 
         (frame-info-adjusted-height frameinfo) 
         0.0 
         0.0)
   (send timeline-panel show-scrollbars #t #t)
-  (send timeline-panel set-redo-bitmap-on-paint! #t)
   
   ;Calculate for and create creation graph pict container
   (define creation-tree-layout (draw-tree (trace-creation-tree the-trace) 
@@ -187,9 +187,8 @@
                                  [parent graph-container]  
                                  [redraw-on-resize #f]
                                  [pict-builder (λ (vregion) 
-                                                 (build-creategraph-pict vregion 
-                                                                         creation-tree-layout 
-                                                                         cg-zoom-level))]
+                                                 (draw-creategraph-pict vregion 
+                                                                         creation-tree-layout))]
                                  [hover-handler (λ (x y vregion) 
                                                   (set! hovered-graph-node 
                                                         (find-node-for-coords x 
@@ -205,11 +204,12 @@
                                                     (send timeline-panel set-redraw-overlay! #t)
                                                     (send timeline-panel refresh)
                                                     (post-event listener-table 'segment-click timeline-panel seg)))]
-                                 [overlay-builder (λ (vregion) 
+                                 [overlay-builder (λ (vregion scale-factor) 
                                                     (graph-overlay-pict hovered-graph-node 
                                                                         the-trace 
                                                                         creation-tree-layout 
-                                                                        vregion))]
+                                                                        vregion 
+                                                                        scale-factor))]
                                  [min-width 500]
                                  [min-height 500]
                                  [style '(hscroll vscroll)] 
@@ -221,7 +221,6 @@
         (inexact->exact (floor (graph-layout-height creation-tree-layout)))
         0.0 
         0.0)
-  (send creategraph-panel set-redo-bitmap-on-paint! #t)
   
   
   (define graph-footer (new horizontal-panel% 
@@ -234,8 +233,7 @@
   ;;Handles a change event for the creation graph zoom slider 
   ;;on-zoom : slider% event% -> void
   (define (on-zoom slider event)
-    (printf "slider: ~s\n" (send slider get-value)) ;;REMOVE
-    (set! cg-zoom-level (send slider get-value))
+    (send creategraph-panel set-scale-factor! (zoom-level->factor (send slider get-value)))
     (send creategraph-panel redraw-everything))
     
   (define zoom-slider (new slider% 

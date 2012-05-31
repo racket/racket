@@ -243,7 +243,7 @@
                  h))
   (for ([fid (in-list (hash-keys ftls))]) 
     (hash-set! ftls fid (reverse (hash-ref ftls fid)))) 
-  (define-values (block-hash sync-hash rt-hash) (build-rtcall-hash all-evts))
+  (define-values (block-hash sync-hash rtcalls-per-future-hash) (build-rtcall-hashes all-evts))
   (define tr (trace start-time 
                     end-time 
                     tls 
@@ -257,14 +257,14 @@
                     0 
                     block-hash
                     sync-hash 
-                    rt-hash ;hash of fid -> rtcall-info
+                    rtcalls-per-future-hash ;hash of fid -> rtcall-info
                     (build-creation-graph ftls)))
   (connect-event-chains! tr) 
   (connect-target-fid-events! tr)
   tr)
 
-;;build-rtcall-hash : (listof event) -> (values (blocking_prim --o--> count) (sync_prim --o--> count) (fid --o--> rtcall-info)
-(define (build-rtcall-hash evts) 
+;;build-rtcall-hash : (listof event) -> (values (blocking_prim -o-> count) (sync_prim -o-> count) (fid -o-> rtcall-info)
+(define (build-rtcall-hashes evts) 
   (define block-hash (make-hash)) 
   (define sync-hash (make-hash)) 
   (define rt-hash (make-hash)) 
@@ -272,7 +272,6 @@
                                               (or (equal? (event-type e) 'block) 
                                                   (equal? (event-type e) 'sync)))) 
                                   evts))])
-    ;(printf "event: ~a\n" evt)
     (define isblock (case (event-type evt) 
                       [(block) #t] 
                       [else #f]))
@@ -280,7 +279,7 @@
     (hash-update! ophash 
                   (event-prim-name evt) 
                   (λ (old) (add1 old)) 
-                  (λ () 1)) 
+                  1) 
     (hash-update! rt-hash 
                   (event-future-id evt) 
                   (λ (old) 
@@ -302,7 +301,6 @@
                                     (λ (o) (add1 o)) 
                                     (λ () 1)) 
                       ri))))
-  ; (printf "blocks: ~a\n syncs: ~a\n rts: ~a\n" block-hash sync-hash rt-hash)
   (values block-hash sync-hash rt-hash))
                       
 
@@ -334,7 +332,7 @@
       (let ([cur-evt (car rest)])
         (when (and (or (equal? (event-type cur-evt) 'create) 
                        (equal? (event-type cur-evt) 'touch)) 
-                   (not (zero? (event-user-data cur-evt)))) 
+                   (>= (event-user-data cur-evt) 0)) 
           (let ([targ-evt (findf (λ (e) (and (event-future-id e) 
                                              (= (event-future-id e) 
                                                 (event-user-data cur-evt)))) 

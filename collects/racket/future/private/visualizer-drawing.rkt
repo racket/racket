@@ -23,7 +23,8 @@
          build-timeline-overlay 
          build-timeline-with-overlay 
          build-timeline-bmp-with-overlay 
-         build-creategraph-pict 
+         draw-creategraph-pict 
+         zoom-level->factor
          graph-overlay-pict
          (struct-out segment) 
          (struct-out frame-info) 
@@ -170,21 +171,32 @@
       (segment-x seg)
       (+ (segment-x seg) (segment-width seg))))
 
+(define (find-most-recent-and-next segs time)
+  (let loop ([ss segs])
+    (cond
+      [(empty? (cddr ss))
+       (values (first ss) (second ss) ss)]
+      [(> (event-start-time (segment-event (second ss))) time)
+       (values (first ss) (second ss) ss)]
+      [else
+       (loop (cdr ss))])))
+
 ;;calc-ticks : (listof segment) float trace -> (listof timeline-tick)
 (define (calc-ticks segs timeToPixMod tr)
   (define trace-start (inexact->exact (trace-start-time tr)))
   (define segs-len (length segs)) 
-  (define-values (lt lx tks) 
+  (define-values (lt lx tks _) 
     (for/fold ([last-time trace-start] 
                [last-x 0]
-               [ticks '()]) ([i (in-range 0 (floor (/ (- (trace-end-time tr) 
+               [ticks '()]
+               [remain-segs segs]) ([i (in-range 0 (floor (/ (- (trace-end-time tr) 
                                                          trace-start) 
                                                       DEFAULT-TIME-INTERVAL)))]) 
       (define tick-time (+ last-time DEFAULT-TIME-INTERVAL)) 
       (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL)) 
       (define want-x (+ last-x (* DEFAULT-TIME-INTERVAL timeToPixMod)))
-      (define next-seg (findf (λ (s) (> (event-start-time (segment-event s)) tick-time)) segs))
-      (define most-recent-seg (list-ref segs (sub1 (event-index (segment-event next-seg)))))
+      (define-values (most-recent-seg next-seg r-segs)
+        (find-most-recent-and-next remain-segs tick-time))
       (define most-recent-evt (segment-event most-recent-seg))
       (define most-recent-time (inexact->exact (event-start-time most-recent-evt)))
       (define next-evt (segment-event next-seg))
@@ -195,7 +207,8 @@
         [(= most-recent-time tick-time) 
          (values tick-time 
                  (segment-x most-recent-seg) 
-                 (cons (timeline-tick (segment-x most-recent-seg) tick-time tick-rel-time) ticks))]
+                 (cons (timeline-tick (segment-x most-recent-seg) tick-time tick-rel-time) ticks)
+                 r-segs)]
         [(= (segment-x next-seg) (add1 (+ (segment-x most-recent-seg) (segment-width most-recent-seg))))
          (values tick-time 
                  (+ (segment-x most-recent-seg) (segment-width most-recent-seg)) 
@@ -203,7 +216,8 @@
                                          (segment-width most-recent-seg))
                                       tick-time
                                       tick-rel-time) 
-                       ticks))]
+                       ticks)
+                 r-segs)]
         [else 
          (define start-x (max most-recent-edge last-x))
          (define start-time (max most-recent-time last-time))
@@ -212,7 +226,8 @@
          (define tick-x (round (+ start-x x-offset)))
          (values tick-time 
                  tick-x 
-                 (cons (timeline-tick tick-x tick-time tick-rel-time) ticks))]))) 
+                 (cons (timeline-tick tick-x tick-time tick-rel-time) ticks)
+                 r-segs)]))) 
   tks)
 
 ;;calc-process-timespan-lines : trace (listof segment) -> (listof (uint . uint))
@@ -232,14 +247,27 @@
         cur)))
 
 ;;get-first-future-seg-in-region : viewable-region segment -> segment
-(define (get-first-future-seg-in-region vregion seg) 
-  (let loop ([cur seg]) 
-    (let ([prev (segment-prev-future-seg cur)]) 
-      (if (not prev) 
-          cur 
-          (if (not ((seg-in-vregion vregion) prev)) 
-              cur 
-              (loop prev))))))
+(define (get-first-future-seg-in-region vregion seg)
+  (define prev-seg (get-seg-previous-to-vregion vregion seg))
+    (if ((seg-in-vregion vregion) prev-seg)
+        prev-seg
+        (segment-next-future-seg prev-seg)))
+
+;; get-seg-previous-to-vregion : viewable-region segment -> segment
+(define (get-seg-previous-to-vregion vregion seg)
+  (define first-seg
+    (let loop ([cur seg])
+      (define prev (segment-prev-future-seg cur))
+      (if (not prev)
+          cur
+          (loop prev))))
+  (let loop ([cur first-seg])
+    (define next (segment-next-future-seg cur))
+    (if (or (not next)
+            (> (segment-x next) (viewable-region-x vregion)))
+        cur
+        (loop next))))
+
   
 ;;adjust-work-segs! : (listof segment) -> void
 (define (adjust-work-segs! segs) 
@@ -294,13 +322,6 @@
             (values last-right-edge (+ delta (- last-right-edge wanted-offset)))))
       (define radius (/ MIN-SEG-WIDTH 2))
       (define segw MIN-SEG-WIDTH)
-      #;(define segw (case (event-type evt) 
-                     [(start-work start-0-work) 
-                      (max MIN-SEG-WIDTH 
-                           (inexact->exact 
-                            (round (* timeToPixModifier 
-                                      (- (event-end-time evt) (event-start-time evt))))))] 
-                     [else MIN-SEG-WIDTH]))
       (define seg (segment evt 
                            (round offset) 
                            (- (calc-row-mid-y (event-proc-index evt) TIMELINE-ROW-HEIGHT) radius)
@@ -341,7 +362,7 @@
 
 ;;pict-for-segment : segment -> pict
 (define (pict-for-segment seg) 
-  (when (not (segment-p seg))
+  (unless (segment-p seg)
     (set-segment-p! seg (if (event-has-duration? (segment-event seg)) 
                             (rect-pict (segment-color seg)
                                        (timeline-event-strokecolor) 
@@ -454,8 +475,8 @@
 ;;make-stand-out-pict : segment -> pict
 (define (make-stand-out-pict seg) 
   (case (event-type (segment-event seg)) 
-    [(start-work start-0-work) (scale (segment-p seg) 1 2)] 
-    [else (scale (segment-p seg) 2)]))
+    [(start-work start-0-work) (scale (pict-for-segment seg) 1 2)] 
+    [else (scale (pict-for-segment seg) 2)]))
 
 ;;frame-bg : viewable-region frame-info trace -> pict
 (define (frame-bg vregion finfo tr)
@@ -523,10 +544,11 @@
         
 ;;draw-arrows : pict viewable-region segment -> pict
 (define (draw-arrows base-pct vregion seg) 
-  (let ([fst (get-first-future-seg-in-region vregion seg)]) 
+  (let ([fst (get-seg-previous-to-vregion vregion seg)])
+    ;(printf "~s ~s\n" (event-index (segment-event fst)) (event-type (segment-event fst)))
     (let loop ([pct base-pct] 
                [cur-seg fst])
-        (if (not cur-seg) 
+        (if (not cur-seg)
             pct 
             (let ([next (segment-next-future-seg cur-seg)])
               (let* ([next-targ (segment-next-targ-future-seg cur-seg)] 
@@ -557,8 +579,11 @@
                                                          (event-target-future-line-color) 
                                                          #:with-arrow #t 
                                                          #:style 'dot))])
-                (loop next-targ-arr 
-                      next)))))))  
+                (if (and next 
+                         ((seg-in-vregion vregion) next))
+                    (loop next-targ-arr next)
+                    next-targ-arr)))))))
+
 
 ;;timeline-bmp-from-log : (listof indexed-fevent) (or uint bool) (or uint bool) -> bitmap%
 (define (build-timeline-bmp-from-log logs 
@@ -595,12 +620,13 @@
             buf) 
       new-b)))
 
-;;build-timeline-bmp-with-overlay : (listof indexed-fevent) uint [uint] [uint] -> bitmap%
+;;build-timeline-bmp-with-overlay : (listof indexed-fevent) uint vregion [uint] [uint] -> bitmap%
 (define (build-timeline-bmp-with-overlay logs 
                                          event-index 
+                                         vregion
                                          #:max-width [max-width #f] 
                                          #:max-height [max-height #f]) 
-  (define p (build-timeline-with-overlay logs event-index)) 
+  (define p (build-timeline-with-overlay logs event-index vregion)) 
   (define-values (w h) 
     (values (if max-width (min max-width (pict-width p)) (pict-width p)) 
             (if max-height (min max-height (pict-height p)) (pict-height p))))
@@ -635,10 +661,9 @@
   (build-timeline-pict-from-trace (build-trace logs) vregion)) 
 
 ;;build-timeline-with-overlay : (listof indexed-fevent) uint -> pict
-(define (build-timeline-with-overlay logs event-index)
+(define (build-timeline-with-overlay logs event-index vregion)
   (define tr (build-trace logs)) 
-  (define-values (finfo segments) (calc-segments tr)) 
-  (define vregion (viewable-region-from-frame finfo))
+  (define-values (finfo segments) (calc-segments tr))
   (define timeline-p (build-timeline-pict vregion
                                           tr 
                                           finfo 
@@ -663,7 +688,7 @@
                       (viewable-region-height vregion))) 
   (define-values (seg-with-arrows showing-tacked) 
     (if tacked (values tacked #t) (values hovered #f)))
-  (if (and seg-with-arrows (segment-p seg-with-arrows)) 
+  (if seg-with-arrows 
       (let* ([bg base] 
              [dots (let loop ([p bg] [cur-seg (get-first-future-seg-in-region vregion seg-with-arrows)]) 
                      (if (or (not cur-seg) (not ((seg-in-vregion vregion) cur-seg))) 
@@ -682,22 +707,21 @@
                              0
                              (colorize (vline 1 height) (hover-tickline-color)))]
              [bigger (make-stand-out-pict seg-with-arrows)]
-             [width-dif (/ (- (pict-width bigger) (pict-width (segment-p seg-with-arrows))) 2)]
-             [height-dif (/ (- (pict-height bigger) (pict-height (segment-p seg-with-arrows))) 2)]
+             [width-dif (/ (- (pict-width bigger) (segment-width seg-with-arrows)) 2)]
+             [height-dif (/ (- (pict-height bigger) (segment-height seg-with-arrows)) 2)]
              [magnified (pin-over line 
                                   (- aseg-rel-x width-dif)
                                   (- aseg-rel-y height-dif) 
                                   bigger)] 
              [hover-magnified (if (and showing-tacked 
                                        hovered 
-                                       (segment-p hovered)
                                        (not (eq? hovered tacked)))
                                   (let* ([hmag (make-stand-out-pict hovered)] 
                                          [hwidth-dif (/ (- (pict-width hmag)
-                                                           (pict-width (segment-p hovered)))
+                                                           (pict-width (pict-for-segment hovered)))
                                                         2)] 
                                          [hheight-dif (/ (- (pict-height hmag)
-                                                            (pict-height (segment-p hovered)))
+                                                            (pict-height (pict-for-segment hovered)))
                                                          2)])
                                     (pin-over magnified 
                                               (- (- (segment-x hovered) (viewable-region-x vregion)) hwidth-dif) 
@@ -710,19 +734,17 @@
 
 ;Draw a line from one node on the creation graph to another
 ;;line-from : drawable-node drawable-node pict viewable-region -> pict
-(define (line-from start end pct vregion) 
-  (let* ([par-center (drawable-node-center start)] 
-         [child-center (drawable-node-center end)] 
-         [minx (viewable-region-x vregion)] 
-         [miny (viewable-region-y vregion)])
-    (draw-line-onto pct 
-                    (- (point-x par-center) minx)
-                    (- (point-y par-center) miny)
-                    (- (point-x child-center) minx)  
-                    (- (point-y child-center) miny) 
-                    (create-graph-edge-color) 
-                    #:width 1
-                    #:style 'dot)))
+(define (line-from start end pct minx miny) 
+  (define par-center (drawable-node-center start))
+  (define child-center (drawable-node-center end))
+  (draw-line-onto pct 
+                  (- (point-x par-center) minx)
+                  (- (point-y par-center) miny)
+                  (- (point-x child-center) minx)  
+                  (- (point-y child-center) miny) 
+                  (create-graph-edge-color) 
+                  #:width 1
+                  #:style 'dot))
 
 ;Draws a circle for a node on the creation graph
 ;;node-pict : drawable-node -> pict
@@ -739,40 +761,44 @@
 ;Cache the creation graph pict after first drawing
 (define cg-pict #f)
 
-;;draw-creategraph-pict : viewable-region tree-layout -> pict
+;;draw-creategraph-pict : (or/c viewable-region #f) tree-layout -> pict
+;; if vregion is #f, return a pict that includes the entire tree
 (define (draw-creategraph-pict vregion layout) 
   (define rt-root (first (graph-layout-nodes layout)))
   (define width (inexact->exact (floor (graph-layout-width layout))))
   (define height (inexact->exact (floor (graph-layout-height layout))))
-  (define base (blank (viewable-region-width vregion) (viewable-region-height vregion)))
-  (define viewable-nodes (filter (λ (n) (in-viewable-region vregion 
-                                                            (drawable-node-x n) 
-                                                            (drawable-node-y n) 
-                                                            (drawable-node-width n) 
-                                                            (drawable-node-width n))) 
-                                 (graph-layout-nodes layout)))
-  (let ([arrow-pct (for/fold ([pct base]) ([node (in-list (graph-layout-nodes layout))])
-                     (for/fold ([p pct]) ([child (in-list (drawable-node-children node))]) 
-                       (line-from node child p vregion)))])
-    (for/fold ([pct arrow-pct]) ([node (in-list viewable-nodes)]) 
-      (pin-over pct 
-                (- (drawable-node-x node) (viewable-region-x vregion)) 
-                (- (drawable-node-y node) (viewable-region-y vregion)) 
-                (node-pict node)))))
-
-;Draws the pict displayed in the creation graph canvas
-;;creategraph-p : viewable-region tree-layout uint -> pict
-(define (build-creategraph-pict vregion layout zoom-level)
-  (define factor (zoom-level->factor zoom-level))
-  (set! cg-pict (draw-creategraph-pict (scale-viewable-region vregion (/ 1 factor)) layout)) 
-  (scale cg-pict factor))
+  (define base (if vregion 
+                   (blank (viewable-region-width vregion) (viewable-region-height vregion))
+                   (blank)))
+  (define minx (if vregion (viewable-region-x vregion) 0))
+  (define miny (if vregion (viewable-region-y vregion) 0))
+  (define viewable-nodes (if vregion
+                             (filter (λ (n) (in-viewable-region vregion 
+                                                                (drawable-node-x n) 
+                                                                (drawable-node-y n) 
+                                                                (drawable-node-width n) 
+                                                                (drawable-node-width n))) 
+                                     (graph-layout-nodes layout))
+                             (graph-layout-nodes layout)))
+  (define with-arrows
+    (let ([arrow-pct (for/fold ([pct base]) ([node (in-list (graph-layout-nodes layout))])
+                       (for/fold ([p pct]) ([child (in-list (drawable-node-children node))]) 
+                         (line-from node child p minx miny)))])
+      (for/fold ([pct arrow-pct]) ([node (in-list viewable-nodes)]) 
+        (pin-over pct 
+                  (- (drawable-node-x node) minx) 
+                  (- (drawable-node-y node) miny) 
+                  (node-pict node)))))
+  (if vregion
+      with-arrows
+      (panorama with-arrows)))
 
 (define (zoom-level->factor zoom-level)
    (+ 1.0 (* (- zoom-level CREATE-GRAPH-DEFAULT-ZOOM) 
                        CREATE-GRAPH-ZOOM-FACTOR)))
 
 ;;graph-overlay-pict : drawable-node trace graph-layout -> pict
-(define (graph-overlay-pict hover-node tr layout vregion) 
+(define (graph-overlay-pict hover-node tr layout vregion scale-factor) 
   (when hover-node 
     (unless (equal? (node-data (drawable-node-node hover-node)) 'runtime-thread)
       (define fid (event-user-data (node-data (drawable-node-node hover-node))))
@@ -787,17 +813,17 @@
                                #:key (λ (op) 
                                        (hash-ref (rtcall-info-sync-hash ri) op))))
         (define-values (node-origin-x node-origin-y) 
-          (values (- (drawable-node-x hover-node) (viewable-region-x vregion)) 
-                  (- (drawable-node-y hover-node) (viewable-region-y vregion))))
+          (values (* (- (drawable-node-x hover-node) (viewable-region-x vregion)) scale-factor) 
+                  (* (- (drawable-node-y hover-node) (viewable-region-y vregion)) scale-factor)))
         (define-values (center-x center-y) 
-          (values (+ node-origin-x (/ (drawable-node-width hover-node) 2)) 
-                  (+ node-origin-y (/ (drawable-node-width hover-node) 2))))
+          (values (+ node-origin-x (/ (* (drawable-node-width hover-node) scale-factor) 2)) 
+                  (+ node-origin-y (/ (* (drawable-node-width hover-node) scale-factor) 2))))
         (define x (+ center-x CREATE-GRAPH-NODE-DIAMETER))
         (define-values (pct yacc) 
           (for/fold ([p (pin-over (blank (viewable-region-width vregion) (viewable-region-height vregion)) 
                                   node-origin-x 
                                   node-origin-y 
-                                  (node-pict hover-node))] 
+                                  (scale (node-pict hover-node) scale-factor))] 
                      [yacc node-origin-y])
             ([rtcall (in-list (append (map (λ (op) (cons 'block op)) block-ops) 
                                       (map (λ (op) (cons 'sync op)) sync-ops)))]) 
