@@ -240,6 +240,7 @@
   (mk/register-sty nm flds parent-name parent-field-types types
                    #:maker maker
                    #:mutable mutable
+                   #:struct-info (syntax-property nm/par 'struct-info)
                    ;; wrap everything in the approriate forall
                    #:wrapper (λ (t) (make-Poly tvars t))
                    #:type-wrapper (λ (t) (make-App t new-tvars #f))
