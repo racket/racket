@@ -118,32 +118,50 @@
   (define ticks (frame-info-timeline-ticks finfo))
   (check-equal? (length ticks) 11))
 
+(define (sanity-check-ticks ticks)
+  (define ticks-in-ascending-time-order (reverse ticks))
+  (let loop ([cur (car ticks-in-ascending-time-order)] 
+             [rest (cdr ticks-in-ascending-time-order)]) 
+    (unless (null? rest) 
+      (define next (car rest))
+      (check-true (>= (timeline-tick-x next) (timeline-tick-x cur)) 
+                  (format "Tick at time ~a [x:~a] had x-coord less than previous tick: ~a [x:~a]" 
+                          (exact->inexact (timeline-tick-rel-time next)) 
+                          (timeline-tick-x next) 
+                          (exact->inexact (timeline-tick-rel-time cur)) 
+                          (timeline-tick-x cur)))
+      (loop next 
+            (cdr rest)))))
+
+;;do-seg-check : trace segment timeline-tick (a a -> bool) string -> void
+(define (do-seg-check tr seg tick op adjective) 
+  (define evt (segment-event seg))
+  (check-true (op (segment-x seg) (timeline-tick-x tick)) 
+              (format "Event at time ~a [x:~a] (~a) should be ~a tick at time ~a [x:~a]"
+                      (relative-time tr (event-start-time evt))
+                      (segment-x seg)
+                      (event-type evt)
+                      adjective
+                      (exact->inexact (timeline-tick-rel-time tick)) 
+                      (timeline-tick-x tick))))
+
+;;check-seg-layout : trace (listof segment) (listof timeline-tick) -> void
 (define (check-seg-layout tr segs ticks) 
-  (define (do-seg-check seg tick op adjective) 
-    (define evt (segment-event seg))
-    (check-true (op (segment-x seg) (timeline-tick-x tick)) 
-                (format "Event at time ~a [x:~a] (~a) should be ~a tick at time ~a [x:~a]"
-                        (relative-time tr (event-start-time evt))
-                        (segment-x seg)
-                        (event-type evt)
-                        adjective
-                        (exact->inexact (timeline-tick-rel-time tick)) 
-                        (timeline-tick-x tick))))
-  (for ([seg (in-list segs)]) 
-    (let* ([evt (segment-event seg)] 
-           [evt-rel-time (relative-time tr (event-start-time evt))])
+  (for ([seg (in-list segs)])
+    (define evt-rel-time (relative-time tr (event-start-time (segment-event seg))))
       (for ([tick (in-list ticks)]) 
-        (let ([ttime (timeline-tick-rel-time tick)])
+        (define ttime (timeline-tick-rel-time tick))
           (cond 
             [(< evt-rel-time ttime) 
-             (do-seg-check seg tick <= "before")] 
+             (do-seg-check tr seg tick <= "before")] 
             [(= evt-rel-time ttime) 
-             (do-seg-check seg tick = "equal to")]
+             (do-seg-check tr seg tick = "equal to")]
             [(> evt-rel-time ttime) 
-             (do-seg-check seg tick >= "after")]))))))
+             (do-seg-check tr seg tick >= "after")]))))
 
 ;Test layout for 'bad' mandelbrot trace 
 (let-values ([(tr finfo segs ticks) (compile-trace-data BAD-TRACE-1)]) 
+  (sanity-check-ticks ticks)
   (check-seg-layout tr segs ticks))
              
 (let* ([future-log (list (indexed-fevent 0 (future-event #f 0 'create 0.05 #f 42)) 
@@ -265,7 +283,22 @@
 (let-values ([(tr finfo segs ticks) (compile-trace-data mand-first)]) 
   (check-seg-layout tr segs ticks))
 
-
+(define single-block-log 
+  (list
+   (indexed-fevent 0 '#s(future-event #f 0 create 1339469018856.55 #f 1))
+   (indexed-fevent 1 '#s(future-event 1 1 start-work 1339469018856.617 #f 0))
+   (indexed-fevent 2 '#s(future-event 1 1 block 1339469018856.621 #f 0))
+   (indexed-fevent 3 '#s(future-event 1 1 suspend 1339469018856.891 #f 0))
+   (indexed-fevent 4 '#s(future-event 1 1 end-work 1339469018856.891 #f 0))
+   (indexed-fevent 5 '#s(future-event 1 0 block 1339469019057.609 printf 0))
+   (indexed-fevent 6 '#s(future-event 1 0 result 1339469019057.783 #f 0))
+   (indexed-fevent 7 '#s(future-event 1 2 start-work 1339469019057.796 #f 0))
+   (indexed-fevent 8 '#s(future-event 1 2 complete 1339469019057.799 #f 0))
+   (indexed-fevent 9 '#s(future-event 1 2 end-work 1339469019057.801 #f 0)))) 
+(let ([tr (build-trace single-block-log)]) 
+  (check-equal? (length (hash-keys (trace-block-counts tr))) 1) 
+  (check-equal? (length (hash-keys (trace-sync-counts tr))) 0) 
+  (check-equal? (length (hash-keys (trace-future-rtcalls tr))) 1))
 
 
 

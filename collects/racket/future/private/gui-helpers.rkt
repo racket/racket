@@ -25,7 +25,8 @@
     (define draw-on-resize redraw-on-resize)
     (define do-logging #f)
     (define redraw-overlay #f) ;Whether we should redraw the overlay pict in the canvas 
-    (define redo-bitmap-on-paint #f)
+    (define redo-bitmap-on-paint #t) ;Redraw the base bitmap on paint? #f for mouse events
+    (define scale-factor 1)
     
     (define/public (set-redo-bitmap-on-paint! v) 
       (set! redo-bitmap-on-paint v))
@@ -53,6 +54,9 @@
     (define/public (set-redraw-overlay! b) 
       (set! redraw-overlay b))
     
+    (define/public (set-scale-factor! s) 
+      (set! scale-factor s))
+    
     (define the-drawer #f)
     (define img-width 0)
     (define bm #f)
@@ -61,11 +65,11 @@
     (define/private (get-viewable-region) 
       (define-values (x y) (get-view-start)) 
       (define-values (w h) (get-client-size)) 
-      (viewable-region x y w h))
+      (scale-viewable-region (viewable-region x y w h) (/ 1 scale-factor)))
     
     (define/private (overlay-drawer dc vregion) 
       (when ob 
-        (define p (ob vregion))
+        (define p (ob vregion scale-factor))
         (unless (or (not p) (void? p))
           (draw-pict p
                      dc 
@@ -74,7 +78,7 @@
     
     (define/private (redo-bitmap vregion)  
       (when bp 
-        (define p (bp vregion))  
+        (define p (scale (bp vregion) scale-factor)) 
         (set! bm (pict->bitmap p))))
     
     (define/public (redraw-everything) 
@@ -92,6 +96,8 @@
       (define vregion (get-viewable-region))
       (when (or redo-bitmap-on-paint (not bm))
         (redo-bitmap vregion))
+      (unless redo-bitmap-on-paint
+        (set! redo-bitmap-on-paint #t))
       (when bm
         (let ([dc (get-dc)])
           (send dc draw-bitmap 
@@ -102,12 +108,14 @@
     
     (define/override (on-event event)
       (define vregion (get-viewable-region))
-      (define x (+ (viewable-region-x vregion) (send event get-x))) 
-      (define y (+ (viewable-region-y vregion) (send event get-y)))
+      (define x (+ (viewable-region-x vregion) (/ (send event get-x) scale-factor))) 
+      (define y (+ (viewable-region-y vregion) (/ (send event get-y) scale-factor)))
       (case (send event get-event-type) 
-        [(motion) 
+        [(motion)
+         (set! redo-bitmap-on-paint #f)
          (when mh (mh x y vregion))] 
-        [(left-up) 
+        [(left-up)
+         (set! redo-bitmap-on-paint #f)
          (when ch (ch x y vregion))]) 
       (when redraw-overlay 
           (refresh)))
