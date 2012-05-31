@@ -305,11 +305,11 @@
                [i:id
                 (when (def-stx-binding? (dict-ref def-tbl #'i #f))
                   (set! syntax-provide? #t))
-                (dict-set h #'i #'i)]
+                (dict-update h #'i (lambda (tail) (cons #'i tail)) '())]
                [((~datum rename) in out)
                 (when (def-stx-binding? (dict-ref def-tbl #'in #f))
                   (set! syntax-provide? #t))
-                (dict-set h #'in #'out)]
+                (dict-update h #'in (lambda (tail) (cons #'out tail)) '())]
                [(name:unknown-provide-form . _)
                 (tc-error "provide: ~a not supported by Typed Racket" (syntax-e #'name.name))]
                [_ (int-err "unknown provide form")])))]
