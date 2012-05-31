@@ -1,4 +1,4 @@
-(#rx"missing ellipses"
+(#rx"missing ellipsis"
  ([id-no-ellipsis x]) ([ellipsis ...])
  (term-let ([(id-no-ellipsis ellipsis) '(a b c)]) (term id-no-ellipsis)))
 

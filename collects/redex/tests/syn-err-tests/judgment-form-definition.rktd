@@ -157,7 +157,7 @@
      [(uses-unquote n unq)])
    (void)))
 
-(#rx"missing ellipses"
+(#rx"missing ellipsis"
  ([use any_0]) ([ellipsis ...] [def any_0])
  (let ()
    (define-judgment-form syn-err-lang

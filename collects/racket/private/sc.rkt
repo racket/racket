@@ -567,7 +567,7 @@
                                        (apply
                                         raise-syntax-error 
                                         'syntax
-                                        "too many ellipsis in template"
+                                        "too many ellipses in template"
                                         (pick-specificity
                                          top
                                          last-el))))]
