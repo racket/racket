@@ -237,6 +237,11 @@ static Scheme_Object *would_be_future(int argc, Scheme_Object *argv[])
   return scheme_future(argc, argv);  
 }
 
+static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object *argv[])
+{
+  return scheme_void;
+}
+
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
 void scheme_init_futures(Scheme_Env *newenv)
@@ -254,6 +259,7 @@ void scheme_init_futures(Scheme_Env *newenv)
   FUTURE_PRIM_W_ARITY("fsemaphore-count", scheme_fsemaphore_count, 1, 1, newenv);
   FUTURE_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
   FUTURE_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
+  FUTURE_PRIM_W_ARITY("init-visualizer-tracking!", reset_future_logs_for_tracking, 0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -422,6 +428,7 @@ static void pop_suspended_lw(Scheme_Future_State *fs, future_t *ft);
 
 static Scheme_Object *bad_multi_result_proc;
 static Scheme_Object *bad_multi_result(int argc, Scheme_Object **argv);
+static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object *argv[]);
 
 READ_ONLY static int cpucount;
 static void init_cpucount(void);
@@ -547,6 +554,7 @@ void scheme_init_futures(Scheme_Env *newenv)
 
   GLOBAL_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
   GLOBAL_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
+  GLOBAL_PRIM_W_ARITY("init-visualizer-tracking!", reset_future_logs_for_tracking, 0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -943,6 +951,40 @@ void scheme_future_check_custodians()
 /**********************************************************************/
 /* Future-event logging                                               */
 /**********************************************************************/
+
+static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object **argv) 
+{
+  Scheme_Future_State *fs;
+  Scheme_Future_Thread_State *fts;
+  Scheme_Future_Thread_State *rt_fts;
+
+  fs = scheme_future_state;
+  rt_fts = scheme_future_thread_state;
+  if (fs) {
+    int i;
+    mzrt_mutex_lock(fs->future_mutex);
+    init_fevent(&fs->runtime_fevents);
+
+    if (rt_fts) {
+      init_fevent(&rt_fts->fevents1);
+      init_fevent(&rt_fts->fevents2);
+      rt_fts->use_fevents1 = 1;
+    }
+
+    for (i = 0; i < fs->thread_pool_size; i++) {
+      fts = fs->pool_threads[i];
+      if (fts) {
+        init_fevent(&fts->fevents1);
+        init_fevent(&fts->fevents2);
+        fts->use_fevents1 = 1;
+      }
+    }  
+    mzrt_mutex_unlock(fs->future_mutex);
+
+  }
+
+  return scheme_void;
+}
 
 static double get_future_timestamp() XFORM_SKIP_PROC {
 #if 1
