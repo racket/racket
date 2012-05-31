@@ -1340,7 +1340,7 @@ Optional Features:
   --enable-usersetup      setup user-specific files on install
   --enable-shared         create shared libraries
   --enable-dynlib         same as --enable-shared
-  --enable-lt=<prog>      use <prog> instead of bundled libtool
+  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
   --enable-libffi         use installed libffi (enabled by default)
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X
@@ -2035,7 +2035,7 @@ fi
 if test "${enable_lt+set}" = set; then
   enableval=$enable_lt; LIBTOOLPROG="$enableval"
 else
-  enable_lt=no
+  enable_lt=default
 fi
 
 
@@ -2156,11 +2156,19 @@ fi
 if test "${enable_shared}" != "yes" ; then
   enable_lt=no
 fi
+if test "${enable_lt}" = "no" ; then
+  LIBTOOLPROG=""
+fi
 if test "${enable_lt}" = "yes" ; then
   echo "ERROR: no program given for libtool!"
   echo " Supply a program for --enable-lt, something like this:"
   echo "   --enable-lt=/usr/bin/libtool"
   exit 1
+fi
+if test "${enable_lt}" = "default" ; then
+  if `which libtool > /dev/null` ; then
+    LIBTOOLPROG="libtool"
+  fi
 fi
 
 if test "${enable_shared}" = "yes" ; then

@@ -42,7 +42,7 @@ AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled
 AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
-AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled libtool], LIBTOOLPROG="$enableval", enable_lt=no)
+AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default)], , enable_libffi=yes)
 
@@ -89,11 +89,19 @@ fi
 if test "${enable_shared}" != "yes" ; then
   enable_lt=no
 fi
+if test "${enable_lt}" = "no" ; then
+  LIBTOOLPROG=""
+fi
 if test "${enable_lt}" = "yes" ; then
   echo "ERROR: no program given for libtool!"
   echo " Supply a program for --enable-lt, something like this:"
   echo "   --enable-lt=/usr/bin/libtool"
   exit 1
+fi
+if test "${enable_lt}" = "default" ; then
+  if `which libtool > /dev/null` ; then
+    LIBTOOLPROG="libtool"
+  fi
 fi
 
 if test "${enable_shared}" = "yes" ; then
