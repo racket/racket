@@ -56,6 +56,8 @@ to DrRacket and then tries out the keystrokes.
                          (send defs set-position (send defs last-position) (send defs last-position))))
    (test:keystroke #\c '(control))
    (test:keystroke #\e '(control))
+   (queue-callback/res void) 
+   (sync (system-idle-evt))
    (wait-for-computation drs-frame)
    (define got2 (get-repl-contents))
    (unless (equal? got2 "6\n> (+ 1 (+ 2 3))\n6\n> ")
