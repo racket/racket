@@ -204,8 +204,11 @@
     (public get-scroll-pos set-scroll-pos
             get-scroll-range set-scroll-range
             get-scroll-page set-scroll-page)
+    (define/override (on-paint)
+      (if (eq? paint-cb default-paint-cb)
+          (super on-paint)
+          (paint-cb this (get-dc))))
     (define no-clear? (memq 'no-autoclear style))
-    (inherit on-paint)
     (define/public (refresh-now [do-paint (lambda (dc) (on-paint))]
                                 #:flush? [flush? #t])
       (let ([dc (get-dc)])
