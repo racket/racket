@@ -5,7 +5,8 @@
          racket/future 
          racket/set 
          "constants.rkt"
-         "graph-drawing.rkt")
+         "graph-drawing.rkt" 
+         (only-in '#%futures init-visualizer-tracking!))
 
 (provide (contract-out [start-performance-tracking! (-> void?)])
          (struct-out future-event)
@@ -27,7 +28,8 @@
 
 ;;start-performance-tracking! -> void
 (define (start-performance-tracking!) 
-  (when (not recv)
+  (when (not recv) 
+    (init-visualizer-tracking!)
     (set! recv (make-log-receiver (current-logger) 'debug))))
 
 (define-struct future-event (future-id process-id what time prim-name user-data) 
