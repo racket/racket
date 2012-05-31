@@ -88,6 +88,33 @@ static void save_errno_values(int kind);
    doesn't generate a mark/fixup action: */
 #define NON_GCBALE_PTR(t) t*
 
+static void overflow_error(const char *who, const char *op, intptr_t a, intptr_t b)
+{
+  scheme_contract_error(who, "arithmetic overflow",
+                        "operation", 0, op,
+                        "first argument", 1, scheme_make_integer(a),
+                        "first argument", 1, scheme_make_integer(b),
+                        NULL);
+}
+
+intptr_t mult_check_overflow(const char *who, intptr_t a, intptr_t b)
+{
+  Scheme_Object *c;
+  c = scheme_bin_mult(scheme_make_integer(a), scheme_make_integer(b));
+  if (!SCHEME_INTP(c))
+    overflow_error(who, "multiply", a, b);
+  return SCHEME_INT_VAL(c);
+}
+
+intptr_t add_check_overflow(const char *who, intptr_t a, intptr_t b)
+{
+  Scheme_Object *c;
+  c = scheme_bin_plus(scheme_make_integer(a), scheme_make_integer(b));
+  if (!SCHEME_INTP(c))
+    overflow_error(who, "add", a, b);
+  return SCHEME_INT_VAL(c);
+}
+
 /*****************************************************************************/
 /* Defining EnumProcessModules for openning `self' as an ffi-lib */
 
@@ -1019,7 +1046,7 @@ static Scheme_Object *get_ctype_base(Scheme_Object *type)
 }
 
 /* Returns the size, 0 for void, -1 if no such type */
-static int ctype_sizeof(Scheme_Object *type)
+static intptr_t ctype_sizeof(Scheme_Object *type)
 {
   type = get_ctype_base(type);
   if (type == NULL) return -1;
@@ -1223,7 +1250,7 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
   Scheme_Object *base, *basetype;
   GC_CAN_IGNORE ffi_type *libffi_type, **elements;
   ctype_struct *type;
-  intptr_t len;
+  intptr_t len, size;
 
   if (NULL == (base = get_ctype_base(argv[0])))
     scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
@@ -1245,7 +1272,8 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
      a single instance of the element type... which seems to work
      ok so far.  */
   libffi_type = malloc(sizeof(ffi_type));
-  libffi_type->size      = CTYPE_PRIMTYPE(base)->size * len;
+  size = mult_check_overflow(MYNAME, CTYPE_PRIMTYPE(base)->size, len);
+  libffi_type->size      = size;
   libffi_type->alignment = CTYPE_PRIMTYPE(base)->alignment;
   libffi_type->type      = FFI_TYPE_STRUCT;
 
@@ -2034,7 +2062,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
 #define MYNAME "ctype-sizeof"
 static Scheme_Object *foreign_ctype_sizeof(int argc, Scheme_Object *argv[])
 {
-  int size;
+  intptr_t size;
   size = ctype_sizeof(argv[0]);
   if (size >= 0) return scheme_make_integer(size);
   else scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
@@ -2224,7 +2252,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   }
   if (!num) return scheme_false;
   if ((num == -1) && (size == 0)) scheme_signal_error(MYNAME": no size given");
-  size = ((size==0) ? 1 : size) * ((num==-1) ? 1 : num);
+  size = mult_check_overflow(MYNAME, ((size==0) ? 1 : size), ((num==-1) ? 1 : num));
   if (mode == NULL)
     mf = (base != NULL && CTYPE_PRIMTYPE(base) == &ffi_type_gcpointer)
       ? scheme_malloc : scheme_malloc_atomic;
@@ -2348,23 +2376,27 @@ static Scheme_Object *do_ptr_add(const char *who, int is_bang,
       intptr_t size;
       size = ctype_sizeof(argv[2]);
       if (size <= 0) scheme_wrong_type(who, "non-void-C-type", 2, argc, argv);
-      noff = noff * size;
+      noff = mult_check_overflow(who, noff, size);
     } else
       scheme_wrong_type(who, "C-type", 2, argc, argv);
   }
   if (is_bang) {
-    ((Scheme_Offset_Cptr*)(cp))->offset += noff;
+    intptr_t delta;
+    delta = add_check_overflow(who, ((Scheme_Offset_Cptr*)(cp))->offset, noff);
+    ((Scheme_Offset_Cptr*)(cp))->offset = delta;
     return scheme_void;
   } else {
+    intptr_t delta;
+    delta = add_check_overflow(who, SCHEME_FFIANYPTR_OFFSET(cp), noff);
     if (SCHEME_CPTRP(cp) && (SCHEME_CPTR_FLAGS(cp) & 0x1))
       return scheme_make_offset_external_cptr
         (SCHEME_FFIANYPTR_VAL(cp),
-         SCHEME_FFIANYPTR_OFFSET(cp) + noff,
+         delta,
          (SCHEME_CPTRP(cp)) ? SCHEME_CPTR_TYPE(cp) : NULL);
     else
       return scheme_make_offset_cptr
         (SCHEME_FFIANYPTR_VAL(cp),
-         SCHEME_FFIANYPTR_OFFSET(cp) + noff,
+         delta,
          (SCHEME_CPTRP(cp)) ? SCHEME_CPTR_TYPE(cp) : NULL);
   }
 }
@@ -2430,7 +2462,7 @@ static Scheme_Object *foreign_set_ptr_offset_bang(int argc, Scheme_Object *argv[
       size = ctype_sizeof(argv[2]);
       if (size <= 0)
         scheme_wrong_type(MYNAME, "non-void-C-type", 2, argc, argv);
-      noff = noff * size;
+      noff = mult_check_overflow(MYNAME, noff, size);
     } else
       scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
   }
@@ -2573,7 +2605,7 @@ static Scheme_Object *abs_sym;
 #define MYNAME "ptr-ref"
 static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 {
-  int size=0; void *ptr; Scheme_Object *base;
+  intptr_t size=0; void *ptr; Scheme_Object *base;
   intptr_t delta; int gcsrc=1;
   Scheme_Object *cp;
   cp = unwrap_cpointer_property(argv[0]);
@@ -2609,13 +2641,13 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "fixnum", 3, argc, argv);
-    delta += SCHEME_INT_VAL(argv[3]);
+    delta = add_check_overflow(MYNAME, delta, SCHEME_INT_VAL(argv[3]));
   } else if (argc > 2) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "fixnum", 2, argc, argv);
     if (!size)
       scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
-    delta += (size * SCHEME_INT_VAL(argv[2]));
+    delta = add_check_overflow(MYNAME, delta, mult_check_overflow(MYNAME, size, SCHEME_INT_VAL(argv[2])));
   }
   return C2SCHEME(argv[1], ptr, delta, 0, gcsrc);
 }
@@ -2629,7 +2661,7 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 #define MYNAME "ptr-set!"
 static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
 {
-  int size=0; void *ptr;
+  intptr_t size=0; void *ptr;
   intptr_t delta;
   Scheme_Object *val = argv[argc-1], *base;
   Scheme_Object *cp;
@@ -2656,13 +2688,13 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "'abs", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "fixnum", 3, argc, argv);
-    delta += SCHEME_INT_VAL(argv[3]);
+    delta = add_check_overflow(MYNAME, delta, SCHEME_INT_VAL(argv[3]));
   } else if (argc > 3) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "fixnum", 2, argc, argv);
     if (!size)
       scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
-    delta += (size * SCHEME_INT_VAL(argv[2]));
+    delta = add_check_overflow(MYNAME, delta, mult_check_overflow(MYNAME, size, SCHEME_INT_VAL(argv[2])));
   }
   SCHEME2C(argv[1], ptr, delta, val, NULL, NULL, 0);
   return scheme_void;

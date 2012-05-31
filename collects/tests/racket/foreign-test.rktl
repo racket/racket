@@ -45,6 +45,9 @@
   (test (big/little 4 1) ptr-ref p _int8 3))
 (flush-output)
 
+(err/rt-test (_array _byte 1024 1024 1024 1024 1024 1024 1200 2)
+             (lambda (exn) (regexp-match? #rx"arithmetic overflow" (exn-message exn))))
+
 (when (eq? 'windows (system-type))
   (define concat string-append)
   (define 64bit? (= 8 (compiler-sizeof '(* void))))
