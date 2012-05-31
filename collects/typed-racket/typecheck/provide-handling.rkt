@@ -31,7 +31,7 @@
   (cond [(s:member i vd (lambda (i j) (free-identifier=? i (binding-name j)))) => car]
         [else #f]))
 
-;; generate-contract-defs : dict[id -> def-binding] dict[id -> id] id -> syntax
+;; generate-contract-defs : dict[id -> def-binding] dict[id -> list[id]] id -> syntax
 ;; defs: defines in this module
 ;; provs: provides in this module
 ;; pos-blame-id: a #%variable-reference for the module
@@ -118,7 +118,10 @@
              new-id))])]
       ;; otherwise, not defined in this module, not our problem
       [else (values #'(begin) internal-id)]))
-  ;; do-one : id id -> syntax
-  (for/list ([(internal-id external-id) (in-dict provs)])
+  ;; Build the final provide with auxilliary definitions
+  (for/list ([(internal-id external-ids) (in-dict provs)])
     (define-values (defs id) (mk internal-id))
-    #`(begin #,defs (provide (rename-out [#,id #,external-id])))))
+    (define provide-forms
+      (for/list ([external-id (in-list external-ids)])
+        #`(rename-out [#,id #,external-id])))
+    #`(begin #,defs (provide #,@provide-forms))))
