@@ -1403,6 +1403,8 @@
               (-vec -Integer)]
 	[tc-e/t (ann #() (Vectorof Integer))
                 (-vec -Integer)]
+        
+        [tc-e/t (ann (lambda: ([x : Boolean]) (if x x #t)) (Boolean -> #t)) (t:-> -Boolean (-val #t))]
         )
   (test-suite
    "check-type tests"
