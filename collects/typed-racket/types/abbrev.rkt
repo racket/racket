@@ -120,7 +120,7 @@
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
-(define -Boolean (make-Base 'Boolean #'boolean? boolean? #'-Boolean))
+(define -Boolean (*Un (-val #t) (-val #f)))
 (define -Symbol (make-Base 'Symbol #'symbol? symbol? #'-Symbol))
 (define -Void (make-Base 'Void #'void? void? #'-Void))
 (define -Undefined
