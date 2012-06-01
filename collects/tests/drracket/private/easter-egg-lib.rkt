@@ -22,7 +22,7 @@
                                     (date-year (seconds->date (current-seconds)))))
   (printf "trying ~a, ~a/~a PLTDREASTERSECONDS=~a\n" what month day the-seconds)
   (unless (putenv "PLTDREASTERSECONDS" (number->string the-seconds))
-    (error 'splash.rkt "putenv failed"))
+    (error 'easter-egg-lib.rkt "putenv failed"))
   (start-up-and-check-car))
 
 (define (start-up-and-check-car)
@@ -55,9 +55,8 @@
        (wait-for-run-to-finish drr-frame)
        (define res 
          (queue-callback/res (λ () (send (send drr-frame get-interactions-text) get-text))))
-       (unless (regexp-match (regexp-quote "car: expects argument of type <pair>; given: 'x")
-                             res)
-         (eprintf "splash.rkt: interactions looks wrong; got: ~s\n" res)))
+       (unless (regexp-match #rx"contract violation.*expected: pair[?]" res)
+         (eprintf "easter-egg-lib.rkt: interactions looks wrong; got: ~s\n" res)))
      
      (define (set-module-language! drr-frame)
        (test:menu-select "Language" "Choose Language...")
