@@ -22,7 +22,8 @@
                       (set->list
                        (for/seteq ([s (in-list p)]
                                    #:when (assertion? s))
-                                  (clause-predicate (assertion-clause s)))))])
+                                  (coerce-sym 
+                                   (clause-predicate (assertion-clause s))))))])
     (quasisyntax
      (#%module-begin 
       (require racklog
@@ -31,8 +32,16 @@
       ...
       #,@(map compile-statement p)))))
 
+(define coerce-sym
+  (match-lambda
+   [(predicate-sym _ s)
+    s]
+   [(? symbol? s)
+    s]))
+
 (define pred-cache (make-hasheq))
-(define (pred->stx p)
+(define (pred->stx maybe-p)
+  (define p (coerce-sym maybe-p))
   (hash-ref! pred-cache p
              (λ ()
                (datum->syntax #f p))))
@@ -67,7 +76,7 @@
     [(literal _ _ ts)
      (for/seteq ([t (in-list ts)]
                  #:when (variable? t))
-                (variable-sym t))]))
+                (coerce-sym (variable-sym t)))]))
 
 (define clause-variables
   (match-lambda
@@ -108,7 +117,7 @@
 (define compile-term
   (match-lambda
     [(variable srcloc sym)
-     (datum->syntax #f sym srcloc)]
+     (datum->syntax #f (coerce-sym sym) srcloc)]
     [(constant srcloc (? string? str))
      (datum->syntax #f str srcloc)]
     [(constant srcloc (? symbol? sym))
