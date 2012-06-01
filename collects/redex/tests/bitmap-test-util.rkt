@@ -13,6 +13,8 @@
 
 (define show-bitmap-test-gui? (make-parameter #t))
 
+(define just-save-failures? (getenv "PLTJUSTSAVEFAILURES"))
+
 (define tests 0)
 (define failed-tests 0)
 (define failed-panels '())
@@ -56,9 +58,14 @@
     (send bdc set-bitmap #f)
     (unless (bitmaps-same? old-bitmap new-bitmap)
       (set! failed-tests (+ failed-tests 1))
-      (when (show-bitmap-test-gui?)
-        (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap)])
-          (set! failed-panels (append failed-panels (list failed-panel))))))))
+      (cond
+        [just-save-failures? 
+         (eprintf "saving ~a\n" bitmap-filename)
+         (void (send new-bitmap save-file bitmap-filename 'png))]
+        [else
+         (when (show-bitmap-test-gui?)
+           (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap)])
+             (set! failed-panels (append failed-panels (list failed-panel)))))]))))
 
 (define (set-fonts/call thunk)
   (case (system-type)
