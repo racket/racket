@@ -5,12 +5,16 @@
          "private/pprint.rkt"
          "ast.rkt")
 
-(define (format-datum s)
-  (cond
-    [(symbol? s)
-     (text (symbol->string s))]
-    [else
-     (text (format "~S" s))]))
+(define format-datum
+  (match-lambda
+   [(predicate-sym _ s)
+    (format-datum s)]
+   [(? symbol? s)
+    (text (symbol->string s))]
+   [(? string? s)
+    (text (format "~S" s))]
+   [(? number? s)
+    (text (format "~S" s))]))
 (define (format-variable v)
   (format-datum (variable-sym v)))
 (define (format-constant c)

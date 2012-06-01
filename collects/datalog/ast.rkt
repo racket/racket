@@ -11,8 +11,16 @@
                 (or/c exact-nonnegative-integer? #f)
                 (or/c exact-positive-integer? #f))))
 
-(define datum/c (or/c string? symbol?))
-(define datum-equal? equal?)
+(define-struct predicate-sym (srcloc sym) #:prefab)
+(define datum/c (or/c string? symbol? predicate-sym?))
+(define (datum-equal? x y)
+  (match* (x y)
+    [((predicate-sym _ x) y)
+     (datum-equal? x y)]
+    [(x (predicate-sym _ y))
+     (datum-equal? x y)]
+    [(x y)
+     (equal? x y)]))
 
 (define-struct variable (srcloc sym) #:prefab)  
 (define (variable-equal? v1 v2)
@@ -20,8 +28,6 @@
 (define-struct constant (srcloc value) #:prefab)
 (define (constant-equal? v1 v2)
   (equal? (constant-value v1) (constant-value v2)))
-
-(define-struct predicate-sym (srcloc sym) #:prefab)
 
 (define term/c (or/c variable? constant?))
 (define (term-equal? t1 t2)
