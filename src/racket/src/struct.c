@@ -4471,7 +4471,7 @@ static char* immutable_pos_list_to_immutable_array(Scheme_Object *immutable_pos_
     else
       a_val = SCHEME_INT_VAL(a); 
     if (a_val < 0) {
-      scheme_contract_error("make-struct-type"
+      scheme_contract_error("make-struct-type",
                             "contract failure at index for immutable field",
                             "expected matching", 0, "(and/c exact-nonnegative-integer? fixnum?)",
                             "given", 1, a,

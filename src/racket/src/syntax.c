@@ -7625,7 +7625,7 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
     if (ut)
       return_NULL; /* happens with bad wraps from a bad .zo */
     /* otherwise, only happens with cycles: */
-    scheme_contract_error("datum->syntax"
+    scheme_contract_error("datum->syntax",
                           "cannot create syntax from cyclic datum",
                           "datum", 1, o,
                           NULL);

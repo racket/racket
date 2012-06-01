@@ -2093,7 +2093,7 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
   }
 
   if ((slen != 4) && (slen != 8))
-    scheme_contract_error("floating-point-bytes->real"
+    scheme_contract_error("floating-point-bytes->real",
                           "length is not 2, 4, or 8 bytes",
                           "length", 1, scheme_make_integer(slen),
                           NULL);

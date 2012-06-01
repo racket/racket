@@ -1453,7 +1453,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   same_namespace = SAME_OBJ(from_env, to_env);
 
   if (from_env->phase != to_env->phase) {
-    scheme_contract_error("namespace-attach-module"
+    scheme_contract_error("namespace-attach-module",
                           "source and destination namespace phases do not match",
                           "source phase", 1, scheme_make_integer(from_env->phase),
                           "destination phase", 1, scheme_make_integer(to_env->phase),
@@ -3914,7 +3914,7 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
     m = registry_get_loaded(env, name);
 
     if (!m) {
-      scheme_contract_error(who ? who : "require",
+      scheme_contract_error((who ? who : "require"),
                             "unknown module",
                             "module name", 1, name,
                             NULL);
@@ -5086,7 +5086,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
   for (l = cycle_list; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     if (SAME_OBJ(m->modname, SCHEME_CAR(l))) {
       scheme_contract_error("module",
-                            "import cycle detected"
+                            "import cycle detected",
                             "module in cycle", 1, m->modsrc,
                             NULL);
     }

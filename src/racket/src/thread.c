@@ -1151,8 +1151,8 @@ void scheme_custodian_check_available(Scheme_Custodian *m, const char *who, cons
   
   if (!scheme_custodian_is_available(m))
     scheme_contract_error(who, "the custodian has been shut down",
-                                 "custodian", 1, (Scheme_Object *)m,
-                                 NULL);
+                          "custodian", 1, m,
+                          NULL);
 }
 
 Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Object *o, 
@@ -1441,9 +1441,9 @@ static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[])
 
   if (m->shut_down)
     scheme_contract_error("make-custodian", 
-                                 "the custodian has been shut down", 
-                                 "custodian", 1, (Scheme_Object *)m,
-                                 NULL);
+                          "the custodian has been shut down", 
+                          "custodian", 1, m,
+                          NULL);
 
   return (Scheme_Object *)scheme_make_custodian(m);
 }
@@ -1873,7 +1873,7 @@ static void check_current_custodian_allows(const char *who, Scheme_Thread *p)
   scheme_contract_error(who,
                         "the current custodian does not "
                         "solely manage the specified thread",
-                        "thread", 1, (Scheme_Object *)p,
+                        "thread", 1, p,
                         NULL);
 }
 

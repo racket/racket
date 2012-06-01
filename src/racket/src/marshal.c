@@ -299,7 +299,8 @@ static Scheme_Object *write_top(Scheme_Object *obj)
   if (!top->prefix)
     scheme_contract_error("write",
                           "cannot marshal shared compiled code",
-                          "compiled code", 1, obj);
+                          "compiled code", 1, obj,
+                          NULL);
 
   return cons(scheme_make_integer(top->max_let_depth),
 	      cons((Scheme_Object *)top->prefix,

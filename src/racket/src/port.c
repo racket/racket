@@ -5595,7 +5595,7 @@ static void check_already_closed(const char *name, Scheme_Object *p)
   }
   if (is_closed) {
     scheme_contract_error(name,
-                          "port is closed"
+                          "port is closed",
                           "port", 1, p,
                           NULL);
   }
@@ -9371,7 +9371,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	scheme_contract_error(name,
                               "extra arguments after the application id are "
                               "not allowed on this platform",
-                              "first extra argument", 1 args[5],
+                              "first extra argument", 1, args[5],
                               NULL);
     } else {
       appname = args[3];

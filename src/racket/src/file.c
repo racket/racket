@@ -5413,7 +5413,7 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)
       return NULL;
     }
     if (!scheme_get_time_val(argv[1], &mtime)) {
-      scheme_contract_error("file-or-directory-modify-seconds"
+      scheme_contract_error("file-or-directory-modify-seconds",
                             "integer value is out-of-range",
                             "value", 1, argv[1],
                             NULL);

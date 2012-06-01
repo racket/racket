@@ -5930,7 +5930,8 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
     if (i + 1 >= argc) {
       if (SCHEME_FALSEP(argv[i]))
 	scheme_contract_error("make-readtable",
-                              "expected 'non-terminating-macro after #f");
+                              "expected 'non-terminating-macro after #f",
+                              NULL);
       else
 	scheme_contract_error("make-readtable",
                               "expected 'terminating-macro, 'non-terminating-macro, 'dispatch-macro,"
