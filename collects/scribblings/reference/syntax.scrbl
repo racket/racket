@@ -1725,7 +1725,7 @@ is like the original identifier except that the arguments are converted to a
 flattened form: keyword arguments, required by-position arguments,
 by-position optional arguments, and rest arguments---all as required,
 by-position arguments; the keyword arguments are sorted by keyword
-name, each optional keyword argument is preceded by a boolean to
+name, each optional keyword argument is followed by a boolean to
 indicate whether a value is provided, and @racket[#f] is used for an
 optional keyword argument whose value is not provided; optional
 by-position arguments include @racket[#f] for each non-provided
