@@ -233,19 +233,6 @@
                (combine-frees (map free-idxs* (cons dty rs))))]
   [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
-;; lazy-arr is NOT a Type
-(def-type lazy-arr ([mand (listof Type/c)] 
-                    [opt (listof Type/c)]
-                    [rng (or/c Values? ValuesDots?)]              
-                    [rest (or/c #f Type/c)]
-                    [drest #f] ;; to be extended later
-                    [kws (listof Keyword?)])
-  [#:intern (list (map Rep-seq mand) (map Rep-seq opt) (Rep-seq rng) (and rest (Rep-seq rest))
-                  (and drest (cons (Rep-seq (car drest)) (cdr drest)))
-                  (map Rep-seq kws))]
-  [#:frees (λ _ (int-err "lazy-arr frees"))]
-  [#:fold-rhs (int-err "lazy-arr fold")])
-
 ;; arr is NOT a Type
 (def-type arr ([dom (listof Type/c)]
                [rng (or/c Values? ValuesDots?)]
