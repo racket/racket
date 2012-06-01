@@ -29,7 +29,10 @@
                  :-
                  ,@(map term->datum anss))]
     [(literal _ pred ts)
-     (list* pred (map term->datum ts))]))
+     (list* (if '(predicate-sym? pred)
+                '(predicate-sym-sym pred)
+                pred)
+            (map term->datum ts))]))
 
 (define term->datum
   (match-lambda
@@ -62,13 +65,13 @@
    #:literals (! ~ ?)
    [(_ (~and tstx (! c)))
     (quasisyntax/loc #'tstx
-      (assertion #'#,#'tstx (datalog-clause c)))]
+      (assertion #'#,(unoriginal #'tstx) (datalog-clause c)))]
    [(_ (~and tstx (~ c)))
     (quasisyntax/loc #'tstx
-      (retraction #'#,#'tstx (datalog-clause c)))]
+      (retraction #'#,(unoriginal #'tstx) (datalog-clause c)))]
    [(_ (~and tstx (? l)))
     (quasisyntax/loc #'tstx
-      (query #'#,#'tstx (datalog-literal l)))]))
+      (query #'#,(unoriginal #'tstx) (datalog-literal/ref l)))]))
 
 (define-syntax (datalog-stmt-var-selector stx)
   (syntax-parse 
@@ -127,29 +130,38 @@
       (syntax-local-lift-expression
        fake-lam))
     (quasisyntax/loc #'tstx
-      (clause #'#,#'tstx (datalog-literal head) 
-              (list (datalog-literal body) ...)))]
+      (clause #'#,(unoriginal #'tstx) (datalog-literal/bind head) 
+              (list (datalog-literal/ref body) ...)))]
    [(_ e)
     (quasisyntax/loc #'e
-      (clause #'#,#'e (datalog-literal e) empty))]))
+      (clause #'#,(unoriginal #'e) (datalog-literal/bind e) empty))]))
 
-(define-syntax (datalog-literal stx)
+(define-syntax (datalog-literal/bind stx) (datalog-literal/b stx #t))
+(define-syntax (datalog-literal/ref stx) (datalog-literal/b stx #f))
+
+(define-for-syntax (datalog-literal/b stx binding?)
   (syntax-parse 
    stx
    #:literals (:-)
    [(_ sym:id)
-    (quasisyntax/loc #'sym
-      (literal #'#,#'sym 'sym empty))]
+    (syntax-property 
+     (quasisyntax/loc #'sym
+       (literal #'#,(unoriginal #'sym) 'sym empty))
+     (if binding? 'disappeared-binding 'disappeared-use)
+     (syntax-local-introduce #'sym))]
    [(_ (~and tstx (sym:id arg ... :- ans ...)))
     (quasisyntax/loc #'tstx
-      (external #'#,#'tstx 'sym sym
+      (external #'#,(unoriginal #'tstx) 'sym sym
                 (list (datalog-term arg) ...)
                 (list (datalog-term ans) ...)))]
    [(_ (~and tstx (sym:id e ...)))
-    (quasisyntax/loc #'tstx
-      (literal #'#,#'tstx 'sym 
-               (list (datalog-term e)
-                     ...)))]))
+    (syntax-property
+     (quasisyntax/loc #'tstx
+       (literal #'#,(unoriginal #'tstx) 'sym 
+                (list (datalog-term e)
+                      ...)))
+     (if binding? 'disappeared-binding 'disappeared-use)
+     (syntax-local-introduce #'sym))]))
 
 (define-syntax (datalog-literal-var-selector stx)
   (syntax-parse 
@@ -186,16 +198,26 @@
     (cond
       [(identifier-binding #'sym 0)
        (quasisyntax/loc #'sym
-         (constant #'#,#'sym sym))]
+         (constant #'#,(unoriginal #'sym) sym))]
       [(char-upper-case? (string-ref (symbol->string (syntax->datum #'sym)) 0))
        (quasisyntax/loc #'sym
-         (variable #'#,#'sym 'sym))]
+         (variable #'#,(unoriginal #'sym) 'sym))]
       [else
        (quasisyntax/loc #'sym
-         (constant #'#,#'sym 'sym))])]
+         (constant #'#,(unoriginal #'sym) 'sym))])]
    [(_ sym:expr)
     (quasisyntax/loc #'sym
-      (constant #'#,#'sym sym))]))
+      (constant #'#,(unoriginal #'sym) sym))]))
+
+(define-for-syntax (unoriginal stx)
+  (let loop ([stx stx])
+    (cond
+      [(syntax? stx)
+       (datum->syntax stx (loop (syntax-e stx)) stx)]
+      [(pair? stx)
+       (cons (loop (car stx))
+             (loop (cdr stx)))]
+      [else stx])))
 
 (provide datalog datalog!
          :- ! ~ ?)

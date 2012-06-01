@@ -50,7 +50,7 @@
               [(predicate-sym) (make-literal (make-srcloc $1-start-pos $1-end-pos) $1 empty)]
               [(term NEQUAL term) (make-literal (make-srcloc $1-start-pos $3-end-pos) '!= (list $1 $3))]
               [(term EQUAL term) (make-literal (make-srcloc $1-start-pos $3-end-pos) '= (list $1 $3))])
-     (predicate-sym [(IDENTIFIER) (string->symbol $1)]
+     (predicate-sym [(IDENTIFIER) (make-predicate-sym (make-srcloc $1-start-pos $1-end-pos) (string->symbol $1))]
                     [(STRING) $1])
      (terms [(term) (list $1)]
             [(term COMMA terms) (list* $1 $3)])

@@ -21,6 +21,8 @@
 (define (constant-equal? v1 v2)
   (equal? (constant-value v1) (constant-value v2)))
 
+(define-struct predicate-sym (srcloc sym) #:prefab)
+
 (define term/c (or/c variable? constant?))
 (define (term-equal? t1 t2)
   (cond
@@ -78,6 +80,7 @@
  [srcloc/c contract?]
  [datum/c contract?]
  [datum-equal? (datum/c datum/c . -> . boolean?)]
+ [struct predicate-sym ([srcloc srcloc/c] [sym symbol?])]
  [struct variable ([srcloc srcloc/c]
                    [sym symbol?])]
  [variable-equal? (variable? variable? . -> . boolean?)]
@@ -87,7 +90,7 @@
  [term/c contract?]
  [term-equal? (term/c term/c . -> . boolean?)]
  [struct literal ([srcloc srcloc/c]
-                  [predicate datum/c]
+                  [predicate (or/c predicate-sym? string? symbol?)]
                   [terms (listof term/c)])]
  [literal-equal? (literal? literal? . -> . boolean?)]
  [struct external ([srcloc srcloc/c]

@@ -45,12 +45,23 @@
        (= #,@(map compile-term ts)))]
     [(literal srcloc pred ts)
      (define srcstx (datum->syntax #f 'x srcloc))
+     (define pred-stx (if (predicate-sym? pred)
+                          (sym->original-syntax (predicate-sym-sym pred)
+                                                (predicate-sym-srcloc pred))
+                          pred))
      (quasisyntax/loc srcstx
-       (#,pred #,@(map compile-term ts)))]))
+       (#,pred-stx #,@(map compile-term ts)))]))
 
 (define compile-term
   (match-lambda
     [(variable srcloc sym)
-     (datum->syntax #f sym srcloc)]
+     (sym->original-syntax sym srcloc)]
     [(constant srcloc sym)
      (datum->syntax #f sym srcloc)]))
+
+(define (sym->original-syntax sym srcloc)
+  (define p (open-input-string (symbol->string sym)))
+  (port-count-lines! p)
+  (match-define (list source-name line column position span) srcloc)
+  (set-port-next-location! p line column position)
+  (read-syntax source-name p))

@@ -144,7 +144,6 @@
                             phase-to-requires)
       
       (let ([maybe-jump (λ (vars) (visit-id vars))])
-
         (let level+tail-loop ([stx-obj stx-obj]
                               [level 0]
                               [tail-parent-src #f]
@@ -576,10 +575,9 @@
                                 phase-level user-namespace user-directory actual?)
       (let ([binders (get-ids all-binders var)])
         (when binders
-          (for-each (λ (x)
-                      (when (syntax-original? x)
-                        (connect-syntaxes x var actual? (id-level phase-level x))))
-                    binders))
+          (for ([x (in-list binders)])
+            (when (syntax-original? x)
+              (connect-syntaxes x var actual? (id-level phase-level x)))))
         
         (when (and unused/phases phase-to-requires)
           (let ([req-path/pr (get-module-req-path var phase-level)]
