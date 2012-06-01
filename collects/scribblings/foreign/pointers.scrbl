@@ -16,9 +16,10 @@ property}.  Returns @racket[#f] for other values.}
 Compares the values of the two pointers. Two different Racket
 pointer objects can contain the same pointer.
 
-If the values are both C pointers---as opposed to @racket[#f], a byte
-string, @racket[ffi-obj], or callback---this comparison is the same as
-@racket[equal?].}
+If the values are both pointers that are not represented by
+@racket[#f], a byte string, a callback, or a pointer based on
+@racket[_fpointer], then the @racket[ptr-equal?] comparison is the
+same as using @racket[equal?].}
 
 
 @defproc[(ptr-add [cptr cpointer?] [offset exact-integer?] [type ctype? _byte]) 

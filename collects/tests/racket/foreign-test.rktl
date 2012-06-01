@@ -195,8 +195,9 @@
   (test* 4 'g3 _pointer (lambda (p) ((function-ptr p (_fun _int -> _int)) 3)))
   ;; Equivalentlly, 'g3 is a static variable that holds a function pointer. By
   ;; looking it up with _fpointer, we get its address, which then works
-  ;; with ptr-ref to extract the function.
-  (test* 7 'g3 _fpointer (lambda (p) ((ptr-ref p (_fun _int -> _int)) 6)))
+  ;; with ptr-ref to extract the function. (This pattern isn't a good idea, but
+  ;; it's a useful extra check here.)
+  (test* 7 'g3 _fpointer (lambda (p) ((ptr-ref (cast p _fpointer _pointer) (_fun _int -> _int)) 6)))
   ;; ---
   (test ((lambda (x f) ((f (+ x 1)) (- x 1)))
          3 (lambda (x) (lambda (y) (+ y (* x x)))))

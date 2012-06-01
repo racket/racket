@@ -118,7 +118,7 @@ corresponding library.}
                       [failure-thunk (or/c (-> any) #f) #f]) 
          any]{
 
-Looks for the given object name @racket[objname] in the given
+Looks for @racket[objname] in
 @racket[lib] library.  If @racket[lib] is not a @tech{foreign-library value}
 it is converted to one by calling @racket[ffi-lib]. If @racket[objname] 
 is found in @racket[lib], it is
@@ -129,9 +129,9 @@ is most often used with function types created with @racket[_fun].
 Keep in mind that @racket[get-ffi-obj] is an unsafe procedure; see
 @secref["intro"] for details.
 
-If the object is not found, and @racket[failure-thunk] is provided, it is
+If the name is not found, and @racket[failure-thunk] is provided, it is
 used to produce a return value.  For example, a failure thunk can be
-provided to report a specific error if an object is not found:
+provided to report a specific error if an name is not found:
 
 @racketblock[
 (define foo
@@ -181,14 +181,15 @@ actual call.}
 Defines @racket[id] behave like a Racket binding, but @racket[id] is
 actually redirected through a parameter-like procedure created by
 @racket[make-c-parameter]. The @racket[id] is used both for the Racket
-binding and for the foreign object's name.}
+binding and for the foreign name.}
 
 @defproc[(ffi-obj-ref [objname (or/c string? bytes? symbol?)]
                       [lib (or/c ffi-lib? path-string? #f)]
                       [failure-thunk (or/c (-> any) #f) #f]) 
          any]{
 
-Returns a pointer object for the specified foreign object.  This
-procedure is for rare cases where @racket[make-c-parameter] is
-insufficient, because there is no type to cast the foreign object to
-(e.g., a vector of numbers).}
+Returns a pointer for the specified foreign name, calls
+@racket[failure-thunk] if the name is not found, or raises an
+exception if @racket[failure-thunk] is @racket[#f].
+
+Normally, @racket[get-ffi-obj] should be used, instead.}

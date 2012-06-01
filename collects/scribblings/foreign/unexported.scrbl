@@ -12,17 +12,15 @@
 Parts of the @racketmodname[ffi/unsafe] library are implemented by
 the Racket built-in @racketmodname['#%foreign] module.  The
 @racketmodname['#%foreign] module is not intended for direct use, but
-it exports the following procedures.  If you find any of these useful,
-please let us know.
+it exports the following procedures (among others).
 
 @defproc[(ffi-obj [objname (or/c string? bytes? symbol?)]
                   [lib (or/c ffi-lib? path-string? #f)])
-         any]{
+         ffi-obj?]{
 
-Pulls out a foreign object from a library, returning a Racket value
-that can be used as a pointer.  If a name is provided instead of a
-foreign-library value, @racket[ffi-lib] is used to create a library
-object.}
+Pulls out a foreign object from a library, returning a value
+that can be used as a C pointer.  If @racket[lib] is a path or string,
+then @racket[ffi-lib] is used to create a library object.}
 
 
 @defproc*[([(ffi-obj? [x any/c]) boolean?]
@@ -44,33 +42,27 @@ symbol for primitive types that names the type, a list of ctypes for
 cstructs, and another ctype for user-defined ctypes.}
 
 
-@defproc[(ffi-call [ptr any/c] [in-types (listof ctype?)] [out-type ctype?]
-                   [abi (or/c symbol/c #f) #f])
-         any]{
+@defproc[(ffi-call [ptr cpointer?] [in-types (listof ctype?)] [out-type ctype?]
+                   [abi (or/c #f 'default 'stdcall 'sysv) #f]
+                   [save-errno? any/c]
+                   [orig-place? any/c])
+         procedure?]{
 
-The primitive mechanism that creates Racket ``callout'' values.  The
-given @racket[ptr] (any pointer value, including @racket[ffi-obj]
-values) is wrapped in a Racket-callable primitive function that uses
-the types to specify how values are marshaled.
-
-The optional @racket[abi] argument determines the foreign ABI that is
-used.  @racket[#f] or @racket['default] will use a platform-dependent
-default; other possible values are @racket['stdcall] and
-@racket['sysv] (the latter corresponds to ``cdecl'').  This is
-especially important on Windows, where most system functions are
-@racket['stdcall], which is not the default.}
+The primitive mechanism that creates Racket ``callout'' values for
+@racket[_cprocedure].  The given @racket[ptr] is wrapped in a
+Racket-callable primitive function that uses the types to specify how
+values are marshaled.}
 
 
 @defproc[(ffi-callback [proc any/c] [in-types any/c] [out-type any/c]
-                       [abi (or/c symbol/c #f) #f]
-                       [atomic? any/c #f])
+                       [abi (or/c #f 'default 'stdcall 'sysv) #f]
+                       [atomic? any/c #f]
+                       [async-apply (or/c #f ((-> any) . -> . any)) #f])
          ffi-callback?]{
 
 The symmetric counterpart of @racket[ffi-call].  It receives a Racket
 procedure and creates a callback object, which can also be used as a
-pointer.  This object can be used as a C-callable function, which
-invokes @racket[proc] using the types to specify how values are
-marshaled.}
+C pointer.}
 
 
 @defproc[(ffi-callback? [x any/c]) boolean?]{

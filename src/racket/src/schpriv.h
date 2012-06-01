@@ -3355,9 +3355,6 @@ const char *scheme_number_suffix(int);
 
 const char *scheme_hostname_error(int err);
 
-char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *olen);
-char *scheme_make_arg_lines_string(char *indent, int which, int argc, Scheme_Object **argv, intptr_t *_olen);
-
 #define IMPROPER_LIST_FORM "illegal use of `.'"
 
 int scheme_byte_string_has_null(Scheme_Object *o);

@@ -944,8 +944,8 @@ int (*scheme_check_proc_arity2)(const char *where, int a,
 				       int which, int argc, Scheme_Object **argv,
 				       int false_ok);
 char *(*scheme_make_provided_string)(Scheme_Object *o, int count, intptr_t *len);
-char *(*scheme_make_args_string)(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
-char *(*scheme_make_arg_lines_string)(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
+char *(*scheme_make_args_string)(const char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
+char *(*scheme_make_arg_lines_string)(const char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
 const char *(*scheme_system_library_subpath)();
 void (*scheme_signal_received)(void);
 void (*scheme_signal_received_at)(void *);

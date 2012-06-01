@@ -1388,7 +1388,7 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
   return make_arity_expect_string(name, namelen, mina, maxa, argc, argv, _slen, 0);
 }
 
-char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *_olen)
+char *scheme_make_args_string(const char *s, int which, int argc, Scheme_Object **argv, intptr_t *_olen)
 {
   char *other;
   intptr_t len;
@@ -1429,7 +1429,7 @@ char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv
   return other;
 }
 
-char *scheme_make_arg_lines_string(char *indent, int which, int argc, Scheme_Object **argv, intptr_t *_olen)
+char *scheme_make_arg_lines_string(const char *indent, int which, int argc, Scheme_Object **argv, intptr_t *_olen)
 {
   char *other;
   intptr_t len, plen;
