@@ -14,7 +14,8 @@
 	 (all-from-out 2htdp/universe)
 	 show-it)
 
-(provide provide)
+(provide provide all-defined-out all-from-out rename-out except-out
+prefix-out struct-out)
 
 (define (show-it img)
   (check-arg 'show-it (image? img) "image" "first" img)
