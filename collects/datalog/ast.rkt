@@ -3,8 +3,7 @@
          racket/match)
 
 (define srcloc/c
-  (or/c syntax?
-        false/c
+  (or/c #f
         (list/c any/c
                 (or/c exact-positive-integer? #f)
                 (or/c exact-nonnegative-integer? #f)

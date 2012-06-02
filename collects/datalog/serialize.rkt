@@ -2,26 +2,27 @@
 (require racket/contract
          racket/match
          racket/list
-         "runtime.rkt")
+         "runtime.rkt"
+         "ast.rkt")
 
-(define remove-stx-objs
+(define remove-paths
   (match-lambda
     [(? hash? ht)
      (for/hash ([(k v) (in-hash ht)])
-       (values k (remove-stx-objs v)))]
+       (values k (remove-paths v)))]
     [(? cons? c)
-     (cons (remove-stx-objs (car c))
-           (remove-stx-objs (cdr c)))]
+     (cons (remove-paths (car c))
+           (remove-paths (cdr c)))]
     [(? prefab-struct-key s)
      (apply make-prefab-struct
             (prefab-struct-key s)
-            (remove-stx-objs (rest (vector->list (struct->vector s)))))]
-    [(? syntax? s)
+            (remove-paths (rest (vector->list (struct->vector s)))))]
+    [(? path? s)
      #f]
     [x x]))
 
 (define (write-theory t)
-  (write (remove-stx-objs t)))
+  (write (remove-paths t)))
 
 (define (hash->hash! ht)
   (define ht! (make-hash))

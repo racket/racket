@@ -65,13 +65,13 @@
    #:literals (! ~ ?)
    [(_ (~and tstx (! c)))
     (quasisyntax/loc #'tstx
-      (assertion #'#,(unoriginal #'tstx) (datalog-clause c)))]
+      (assertion #,(srcloc-list #'tstx) (datalog-clause c)))]
    [(_ (~and tstx (~ c)))
     (quasisyntax/loc #'tstx
-      (retraction #'#,(unoriginal #'tstx) (datalog-clause c)))]
+      (retraction #,(srcloc-list #'tstx) (datalog-clause c)))]
    [(_ (~and tstx (? l)))
     (quasisyntax/loc #'tstx
-      (query #'#,(unoriginal #'tstx) (datalog-literal/ref l)))]))
+      (query #,(srcloc-list #'tstx) (datalog-literal/ref l)))]))
 
 (define-syntax (datalog-stmt-var-selector stx)
   (syntax-parse 
@@ -130,11 +130,11 @@
       (syntax-local-lift-expression
        fake-lam))
     (quasisyntax/loc #'tstx
-      (clause #'#,(unoriginal #'tstx) (datalog-literal/bind head) 
+      (clause #,(srcloc-list #'tstx) (datalog-literal/bind head) 
               (list (datalog-literal/ref body) ...)))]
    [(_ e)
     (quasisyntax/loc #'e
-      (clause #'#,(unoriginal #'e) (datalog-literal/bind e) empty))]))
+      (clause #,(srcloc-list #'e) (datalog-literal/bind e) empty))]))
 
 (define-syntax (datalog-literal/bind stx) (datalog-literal/b stx #t))
 (define-syntax (datalog-literal/ref stx) (datalog-literal/b stx #f))
@@ -146,18 +146,18 @@
    [(_ sym:id)
     (syntax-property 
      (quasisyntax/loc #'sym
-       (literal #'#,(unoriginal #'sym) 'sym empty))
+       (literal #,(srcloc-list #'sym) 'sym empty))
      (if binding? 'disappeared-binding 'disappeared-use)
      (syntax-local-introduce #'sym))]
    [(_ (~and tstx (sym:id arg ... :- ans ...)))
     (quasisyntax/loc #'tstx
-      (external #'#,(unoriginal #'tstx) 'sym sym
+      (external #,(srcloc-list #'tstx) 'sym sym
                 (list (datalog-term arg) ...)
                 (list (datalog-term ans) ...)))]
    [(_ (~and tstx (sym:id e ...)))
     (syntax-property
      (quasisyntax/loc #'tstx
-       (literal #'#,(unoriginal #'tstx) 'sym 
+       (literal #,(srcloc-list #'tstx) 'sym 
                 (list (datalog-term e)
                       ...)))
      (if binding? 'disappeared-binding 'disappeared-use)
@@ -198,26 +198,26 @@
     (cond
       [(identifier-binding #'sym 0)
        (quasisyntax/loc #'sym
-         (constant #'#,(unoriginal #'sym) sym))]
+         (constant #,(srcloc-list #'sym) sym))]
       [(char-upper-case? (string-ref (symbol->string (syntax->datum #'sym)) 0))
        (quasisyntax/loc #'sym
-         (variable #'#,(unoriginal #'sym) 'sym))]
+         (variable #,(srcloc-list #'sym) 'sym))]
       [else
        (quasisyntax/loc #'sym
-         (constant #'#,(unoriginal #'sym) 'sym))])]
+         (constant #,(srcloc-list #'sym) 'sym))])]
    [(_ sym:expr)
     (quasisyntax/loc #'sym
-      (constant #'#,(unoriginal #'sym) sym))]))
+      (constant #,(srcloc-list #'sym) sym))]))
 
-(define-for-syntax (unoriginal stx)
-  (let loop ([stx stx])
-    (cond
-      [(syntax? stx)
-       (datum->syntax stx (loop (syntax-e stx)) stx)]
-      [(pair? stx)
-       (cons (loop (car stx))
-             (loop (cdr stx)))]
-      [else stx])))
+(define-for-syntax (srcloc-list stx)
+  (define src (syntax-source stx))
+  `(list ,(if (path? src)
+             `(bytes->path ,(path->bytes src))
+             `',src)
+         ',(syntax-line stx)
+         ',(syntax-column stx)
+         ',(syntax-position stx)
+         ',(syntax-span stx)))
 
 (provide datalog datalog!
          :- ! ~ ?)
