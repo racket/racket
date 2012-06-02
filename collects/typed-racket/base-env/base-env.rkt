@@ -1357,7 +1357,7 @@
 
 
 ;; scheme/function
-[identity (-poly (a) (-> a a))]
+[identity (-poly (a) (->acc (list a) a null))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
 [negate (-polydots (b) (-> ((list) [b b] . ->... . Univ)
                            ((list) [b b] . ->... . -Boolean)))]
