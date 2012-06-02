@@ -19,9 +19,10 @@ new rules.
 
 In the descriptive body of @racket[defform], @racket[defproc], etc.,
 do not start with ``This ...'' Instead, start with a sentence whose
-implicit subject is the form or value being described. Capitalize the
-first word. Thus, the description will often start with ``Returns'' or
-``Produces.''  Refer to arguments and sub-forms by name.
+implicit subject is the form or value being described (but only start
+the first sentence that way). Capitalize the first word. Thus, the
+description will often start with ``Returns'' or ``Produces.''  Refer
+to arguments and sub-forms by name.
 
 Do not use the word ``argument'' to describe a sub-form in a syntactic
 form; use the term ``sub-form'' instead, reserving ``argument'' for
@@ -119,6 +120,21 @@ variable, meta-variable, etc.---use @racket[racketidfont] (e.g., as in
 not merely @racket[racketfont] or @racket[verbatim], to refer to a
 specific sequence of characters.
 
+When a syntactic form synthesizes an identifier from a given
+identifier, use a combination of @racket[racketidfont] and
+@racket[racket] to describe the identifiers. For example, if
+@racket[_id] is combined with @racketidfont{is-} and @racketidfont{?}
+to form @racketidfont{is-}@racket[_id]@racketidfont{?}, then implement
+that identifier as
+@code[#:lang "at-exp racket"]|{@racketidfont{is-}@racket[id]@racketidfont{?}}|.
+
+When using @racket[defform] to describe a syntactic form, don't
+confuse the @racket[#:contracts] clause with a grammar
+specification. Use @racket[#:contracts] only for expressions within the
+syntactic form, and the contract is a run-time constraint---not a
+syntactic constraint, such as requiring a sub-form to be an identifier.
+Use @racket[defform/subs] for syntactic constraints.
+
 When showing example evaluations, use the REPL-snapshot style:
 
 @verbatim[#:indent 2]|{
@@ -131,6 +147,7 @@ See also the @racket[scribble/eval] library and @secref["examples-style"].
 
 Use four dots, @litchar{....}, in place of omitted code, since
 @litchar{...} means repetition.
+
 
 @section{Typesetting Prose}
 
