@@ -1463,9 +1463,8 @@ char *scheme_make_arg_lines_string(const char *indent, int which, int argc, Sche
         pos += plen;
       
 	o = error_write_to_string_w_max(argv[i], len, &l);
-	memcpy(other + pos, " ", 1);
-	memcpy(other + pos + 1, o, l);
-	pos += l + 1;
+	memcpy(other + pos, o, l);
+	pos += l;
       }
     }
     other[pos] = 0;
