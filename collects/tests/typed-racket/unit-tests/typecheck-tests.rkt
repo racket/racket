@@ -4,9 +4,11 @@
          (for-syntax scheme/base)
          (for-template scheme/base))
 (require (private type-annotation parse-type)
-         (base-env prims
-                   base-types-extra
-                   base-env-indexing base-structs)
+         (except-in 
+          (base-env prims
+                    base-types-extra
+                    base-env-indexing base-structs)
+          define lambda λ)
          (typecheck typechecker)
          (rep type-rep filter-rep object-rep)
          (rename-in (types utils union convenience abbrev filter-ops)

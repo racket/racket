@@ -10,7 +10,7 @@
                                [lambda-id-stx identifier?]
 
                                [check-context? boolean? #t]
-                               [opt+kws? boolean? #t])
+                               [opt+kws? boolean? #f])
          (values identifier? syntax?)]{
 
 Takes a definition form whose shape is like @racket[define] (though

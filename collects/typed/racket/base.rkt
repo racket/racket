@@ -1,7 +1,7 @@
 #lang typed-racket/minimal
 
-(providing (libs (except racket/base #%module-begin #%top-interaction with-handlers lambda #%app define-struct for for*))
-	   (basics #%module-begin #%top-interaction lambda #%app))
+(providing (libs (except racket/base #%module-begin #%top-interaction with-handlers define λ lambda define-struct for for*))
+	   (basics #%module-begin #%top-interaction))
 
 (require typed-racket/base-env/extra-procs
          (except-in typed-racket/base-env/prims

@@ -23,6 +23,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
          :
          (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
+                     [-lambda lambda]
+                     [-lambda λ]
+                     [-define define]
                      [with-handlers: with-handlers]
                      [define-typed-struct/exec define-struct/exec:]
                      [for/annotation for]
@@ -40,6 +43,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/parse
           racket/syntax
           racket/base
+          syntax/define
           racket/struct-info
           syntax/struct
           "../rep/type-rep.rkt"
@@ -284,7 +288,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (lambda: stx)
   (syntax-parse stx
     [(lambda: formals:annotated-formals . body)
-     (syntax/loc stx (lambda formals.ann-formals . body))]))
+     (syntax/loc stx (-lambda formals.ann-formals . body))]))
 
 (define-syntax (case-lambda: stx)
   (syntax-parse stx
@@ -847,6 +851,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
        [(_ (~var k (param-annotated-name (lambda (s) #`(#,s -> (U))))) . body)
 	(quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
+
+;; annotation to help tc-expr pick out keyword functions
+(define-syntax (-lambda stx)
+  (syntax-parse stx
+    [(_ formals . body)
+     (define d (datum->syntax stx `(,#'λ ,#'formals . ,#'body)
+                              stx stx))
+     (syntax-property d 'kw-lambda #t)]))
+
+;; do this ourselves so that we don't get the static bindings,
+;; which are harder to typecheck
+(define-syntax (-define stx)
+  (define-values (i b) (normalize-definition stx #'-lambda #t #t))
+  (datum->syntax stx `(,#'define ,i ,b) stx stx))
 
 (define-syntax (with-asserts stx)
   (define-syntax-class with-asserts-clause

@@ -23,7 +23,7 @@
            [#,i #:declare #,i pat #'#,get-i])))]))
 
 (define (atom? v)
-  (or (number? v) (string? v) (boolean? v) (symbol? v) (keyword? v) (char? v) (bytes? v) (regexp? v)))
+  (or (number? v) (string? v) (boolean? v) (symbol? v) (char? v) (bytes? v) (regexp? v)))
 
 (define-syntax-class (3d pred)
   (pattern s

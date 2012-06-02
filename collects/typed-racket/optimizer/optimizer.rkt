@@ -20,6 +20,14 @@
 (define-syntax-class opt-expr*
   #:commit
   #:literal-sets (kernel-literals)
+  
+  ;; can't optimize the body of this code because it isn't typechecked
+  (pattern ((~and op (~literal let-values))
+            ([(i:id) e-rhs:expr]) e-body:expr ...)
+           #:when (syntax-property this-syntax 'kw-lambda)
+           #:with opt-rhs ((optimize) #'e-rhs)
+           #:with opt (quasisyntax/loc/origin this-syntax #'op
+                        (op ([(i) opt-rhs]) e-body ...)))
 
   ;; interesting cases, where something is optimized
   (pattern e:dead-code-opt-expr       #:with opt #'e.opt)
@@ -49,7 +57,7 @@
                            (cons (car l)
                                  (map (optimize) (cdr l)))))
                        #'([formals e ...] ...))
-           #:with opt (syntax/loc/origin this-syntax #'op (op opt-parts ...)))
+           #:with opt (syntax/loc/origin this-syntax #'op (op opt-parts ...)))  
   (pattern ((~and op (~or (~literal let-values) (~literal letrec-values)))
             ([ids e-rhs:expr] ...) e-body:expr ...)
            #:with (opt-rhs ...) (syntax-map (optimize) #'(e-rhs ...))
@@ -88,7 +96,9 @@
           [e:expr
            #:when (and (not (syntax-property #'e 'typechecker:ignore))
                        (not (syntax-property #'e 'typechecker:ignore-some))
-                       (not (syntax-property #'e 'typechecker:with-handlers)))
+                       (not (syntax-property #'e 'typechecker:with-handlers))
+                       #;
+                       (not (syntax-property #'e 'kw-lambda)))
            #:with e*:opt-expr #'e
            #'e*.opt]
           [e:expr #'e])])

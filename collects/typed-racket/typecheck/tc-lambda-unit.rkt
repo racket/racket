@@ -275,6 +275,10 @@
       (and (check-below (ret t true-filter) expected) t)
       t))
 
+(define (plambda-prop stx)
+  (define d (syntax-property stx 'typechecker:plambda))
+  (and d (car (flatten d))))
+
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define/cond-contract (tc/plambda form formals bodies expected)
@@ -290,7 +294,7 @@
       [_ (int-err "expected not an appropriate tc-result: ~a" expected)]))
   (match expected
     [(tc-result1: (and t (Poly-names: ns expected*)))
-     (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
+     (let* ([tvars (let ([p (plambda-prop form)])
                      (when (and (pair? p) (eq? '... (car (last p))))
                        (tc-error
                         "Expected a polymorphic function without ..., but given function had ..."))
@@ -303,7 +307,7 @@
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
      (let-values
          ([(tvars dotted)
-           (let ([p (syntax-property form 'typechecker:plambda)])
+           (let ([p (plambda-prop form)])
              (if p
                  (match (map syntax-e (syntax->list p))
                    [(list var ... dvar '...)
@@ -316,7 +320,7 @@
            (maybe-loop form formals bodies (ret expected*))))
        t)]
     [#f
-     (match (map syntax-e (syntax->list (syntax-property form 'typechecker:plambda)))
+     (match (map syntax-e (syntax->list (plambda-prop form)))
        [(list tvars ... dotted-var '...)
         (let* ([ty (extend-indexes dotted-var
                      (extend-tvars tvars
@@ -337,7 +341,7 @@
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result
 (define (tc/lambda/internal form formals bodies expected)
-  (if (or (syntax-property form 'typechecker:plambda)
+  (if (or (plambda-prop form)
           (match expected
             [(tc-result1: t) (or (Poly? t) (PolyDots? t))]
             [_ #f]))

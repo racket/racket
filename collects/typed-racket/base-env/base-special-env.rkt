@@ -133,4 +133,9 @@
   ;; from the expansion of `make-temp-file`
   [(make-template-identifier 'make-temporary-file/proc 'racket/file)
    (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
+  ;; from the (lifted) portion of the expansion of keyword lambdas
+  [(make-template-identifier 'make-required 'racket/private/kw)
+   (-> Univ Univ Univ Univ Univ)]
+  [(make-template-identifier 'missing-kw 'racket/private/kw)
+   (->* (list Univ) Univ Univ)]
   )

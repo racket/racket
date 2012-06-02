@@ -4,7 +4,7 @@
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - scheme/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
-         "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt"
+         "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
          (types utils convenience union subtype remove-intersect type-table filter-ops)
          (private-in parse-type type-annotation)
          (rep type-rep)
@@ -338,6 +338,19 @@
              (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
                (#%plain-app _ _ args ...))))
          (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
+        ;; kw function def
+        [(let-values ([(_) fun])
+           . body)
+         #:when (syntax-property form 'kw-lambda)
+         (match expected
+           [(tc-result1: (and f (Function: _))) 
+            ;(printf ">>> ~a\n" f)
+            ;(printf ">>>\t ~a\n" (kw-convert f #:split #t))
+            (tc-expr/check/type #'fun (kw-convert f #:split #t))]
+           [(tc-result1: (Poly-names: names (and f (Function: _))))
+            (tc-expr/check/type #'fun (make-Poly names (kw-convert f #:split #t)))]
+           [(tc-result1: _) (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
+         expected]
         ;; let
         [(let-values ([(name ...) expr] ...) . body)
          (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]

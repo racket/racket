@@ -8,10 +8,7 @@
  "utils/any-wrap.rkt" unstable/contract)
 
 (provide (rename-out [module-begin #%module-begin]
-                     [top-interaction #%top-interaction]
-                     [#%plain-lambda lambda]
-                     [#%app #%app]
-                     [require require])
+                     [top-interaction #%top-interaction])
          with-type
          (for-syntax do-standard-inits))
 

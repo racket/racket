@@ -37,7 +37,7 @@
     (set-box! typed-context? #t)
     ;(start-timing (syntax-property stx 'enclosing-module-name))
     (with-handlers
-        ([(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e)) (not (exn:fail:filesystem? e))))
+        (#;[(λ (e) (and (exn:fail? e) (not (exn:fail:syntax? e)) (not (exn:fail:filesystem? e))))
           (λ (e) (tc-error "Internal Typed Racket Error : ~a" e))])
       (parameterize (;; enable fancy printing?
                      [custom-printer #t]
