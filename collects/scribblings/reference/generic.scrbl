@@ -15,57 +15,62 @@ using a @racket[define-generics] form. Method implementations for
 a structure type are defined using the @racket[#:methods] keyword
 (see @secref["define-struct"]).
 
-@defform/subs[(define-generics name [#:defined-table defined-table]
-                [method . kw-formals*]
+@defform/subs[(define-generics id [#:defined-table defined-table-id]
+                [method-id . kw-formals*]
                 ...)
               ([kw-formals* (arg* ...)
                             (arg* ...+ . rest-id)
                             rest-id]
-               [arg* id
-                     [id]
-                     (code:line keyword id)
-                     (code:line keyword [id])])
-              #:contracts
-              ([name identifier?]
-               [defined-table identifier?]
-               [method identifier?])]{
+               [arg* arg-id
+                     [arg-id]
+                     (code:line keyword arg-id)
+                     (code:line keyword [arg-id])])]{
 
-Defines @racket[gen:name] as a transformer binding for the static
-information about a new generic interface.
+Defines 
 
-Defines @racket[name?] as a predicate identifying instances of structure
-types that implement this generic group.
+@itemlist[
 
-Defines each @racket[method] as a generic procedure that calls the
-corresponding method on values where @racket[name?] is true. Each method
-must have a required by-position argument that is
-@racket[free-identifier=?] to @racket[name]. This argument is used in
-the generic definition to locate the specialization.
+ @item{@racketidfont{gen:}@racket[id] as a transformer binding for
+       the static information about a new generic interface;}
 
-The optional @racket[defined-table] argument should be an identifier.
-@racket[define-generics] will bind it to a procedure that takes an instance of
-the generics and returns an immutable hash-table that maps symbols
-corresponding to method names to booleans representing whether or not that
-method is implemented by that instance. The intended use case for this table is
-to allow higher-level APIs to adapt their behavior depending on method
-availability.
+ @item{@racket[id]@racketidfont{?} as a predicate identifying
+       instances of structure types that implement this generic group; and}
 
-}
+ @item{each @racket[method-id] as a generic procedure that calls the
+       corresponding method on values where
+       @racket[id]@racketidfont{?} is true.}
 
-@defform[(define/generic local-name method-name)
+]
+
+Each @racket[method-id]'s @racket[kw-formals*] must include a required
+by-position argument that is @racket[free-identifier=?] to
+@racket[id]. That argument is used in the generic definition to
+locate the specialization.
+
+When @racket[defined-table-id] is provided, it is defined as a
+procedure that takes an instance of the generics and returns an
+immutable @tech{hash table} that maps symbols corresponding to method
+names to booleans representing whether or not that method is
+implemented by the instance. This table is intended for use by
+higher-level APIs to adapt their behavior depending on method
+availability.}
+
+
+@defform[(define/generic local-id method-id)
          #:contracts
-         ([local-name identifier?]
-          [method-name identifier?])]{
+         ([local-id identifier?]
+          [method-id identifier?])]{
 
 When used inside the method definitions associated with the
-@racket[#:methods] keyword, binds @racket[local-name] to
-the generic for @racket[method-name]. This is useful for method
-specializations to use the generic methods on other values.
+@racket[#:methods] keyword, binds @racket[local-id] to the generic for
+@racket[method-id]. This form is useful for method specializations to
+use generic methods (as opposed to the local specialization) on other
+values.
 
-Syntactically an error when used outside the definitions associated
-with @racket[#:methods].
+Using the @racket[define/generic] form outside a @racket[#:methods]
+specification in @racket[struct] (or @racket[define-struct]) is an
+syntax error.}
 
-}
 
 @; Examples
 @(require scribble/eval)
