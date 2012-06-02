@@ -11,7 +11,7 @@ foo h
 h 5
 h 8 * 9
 
-test(z){
+function test(z){
   macro foo (){ x:identifier }{
     syntax(macro x (){ e:expression }{
       syntax(e + z)
