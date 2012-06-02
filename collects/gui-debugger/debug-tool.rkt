@@ -158,7 +158,7 @@
     
     (define filename->defs
       (opt-lambda (source [default #f])
-        (let/cc k
+        (let/ec k
           (cond
             [(is-a? source editor<%>) source]
             [else
@@ -619,99 +619,110 @@
         ;; adds debugging information to `sexp' and calls `oe'
         (define/private (make-debug-eval-handler oe break? break-before break-after)
           (lambda (orig-exp)
-            (if (compiled-expression? (if (syntax? orig-exp)
-                                          (syntax-e orig-exp)
-                                          orig-exp))
-                (oe orig-exp)
-                (let* ([exp (if (syntax? orig-exp)
-                                orig-exp
-                                (namespace-syntax-introduce
-                                 (datum->syntax #f orig-exp)))]
-                       [top-e (expand-syntax-to-top-form exp)])
-                  (parameterize ([current-eval oe])
-                    (eval/annotations
-                     top-e
-                     ; annotate-module?
-                     (lambda (fn m)
-                       (cond
-                         [(filename->defs fn)
-                          =>
-                          ; fn is loaded into defs
-                          (lambda (defs)
-                            (let ([extern-tab (send defs get-tab)]
-                                  [this-tab (get-tab)])
-                              (case (if (or (not (send extern-tab debug?))
-                                            (eq? this-tab (send extern-tab get-master)))
-                                        (message-box
-                                         "Debugging Multi-File Program"
-                                         (format "Debug ~a?" fn)
-                                         #f
-                                         '(yes-no))
-                                        (message-box
-                                         "Debugging Multi-File Program"
-                                         (format "~a is already involved in a debugging session." fn)
-                                         #f
-                                         '(ok)))
-                                [(yes)
-                                 ; set tab up with shared data from the master tab
-                                 (send extern-tab prepare-execution #t)
-                                 (send this-tab add-slave extern-tab)
-                                 (call-with-values
-                                  (lambda () (send this-tab get-shared-data))
-                                  (lambda vals (send extern-tab set-shared-data . vals)))
-                                 #t]
-                                [(no ok)
-                                 (send extern-tab prepare-execution #f)
-                                 #f])))]
-                         ; fn is not open, so don't try to debug it
-                         [else #f]))
-                     ; annotator
-                     (lambda (stx)
-                       (let*-values ([(source) (syntax-source stx)]
-                                     [(breakpoints) (stx-source->breakpoints source)]
-                                     [(pos-vec) (stx-source->pos-vec source)]
-                                     [(annotated break-posns)
-                                      (annotate-for-single-stepping
-                                       (expand-syntax stx)
-                                       break? break-before break-after
-                                       ; record-bound-identifier
-                                       (lambda (type bound binding)
-                                         (cond
-                                           [(filename->defs (robust-syntax-source bound))
-                                            =>
-                                            (lambda (defs)
-                                              (let ([pos-vec (send (send defs get-tab) get-pos-vec)])
-                                                (let loop ([i 0])
-                                                  (when (< i (syntax-span bound))
-                                                    (safe-vector-set! pos-vec (+ i (syntax-position bound))
-                                                                      binding)
-                                                 (loop (add1 i))))))]
-                                           [else (void)]))
-                                       ; record-top-level-identifier
-                                       (lambda (mod var rd/wr)
-                                         ; filename->defs should succeed unless a slave tab gets closed
-                                         (cond
-                                           [(filename->defs (robust-syntax-source var))
-                                            =>
-                                            (lambda (defs)
-                                              (send (send defs get-tab)
-                                                    add-top-level-binding var rd/wr))]
-                                           [else (void)]))
-                                       source)])
-                         (hash-for-each
-                          breakpoints
-                          (lambda (pos status)
-                            ; possible efficiency problem for large files with many breakpoints
-                            (when (and (syntax-position stx)
-                                       (>= pos (syntax-position stx))
-                                       (< pos (+ (syntax-position stx) (syntax-span stx)))
-                                       (not (memq pos break-posns)))
-                              (hash-remove! breakpoints pos))))
-                         (for-each (lambda (posn)
-                                     (hash-set!
-                                      breakpoints posn
-                                      (hash-ref breakpoints posn (lambda () #f)))) break-posns)
-                         annotated))))))))
+            (cond
+              [(compiled-expression? (if (syntax? orig-exp)
+                                         (syntax-e orig-exp)
+                                         orig-exp))
+               (oe orig-exp)]
+              [else
+               (define exp (if (syntax? orig-exp)
+                               orig-exp
+                               (namespace-syntax-introduce
+                                (datum->syntax #f orig-exp))))
+               (define top-e (expand-syntax-to-top-form exp))
+               (define fn (and (syntax? orig-exp)
+                               (let ([src (syntax-source orig-exp)])
+                                 (and (path? src)
+                                      src))))
+               (when (or (eq? (filename->defs fn) (send (get-tab) get-defs))
+                         (annotate-this-module? fn))
+                 (parameterize ([current-eval oe])
+                   (eval/annotations
+                    top-e
+                    ; annotate-module?
+                    (lambda (fn m) 
+                      (annotate-this-module? fn))
+                    ; annotator
+                    (lambda (stx)
+                      (define source (syntax-source stx))
+                      (define breakpoints (stx-source->breakpoints source))
+                      (define pos-vec (stx-source->pos-vec source))
+                      (define-values (annotated break-posns)
+                        (annotate-for-single-stepping
+                         (expand-syntax stx)
+                         break? break-before break-after
+                         ; record-bound-identifier
+                         (lambda (type bound binding)
+                           (cond
+                             [(filename->defs (robust-syntax-source bound))
+                              =>
+                              (lambda (defs)
+                                (let ([pos-vec (send (send defs get-tab) get-pos-vec)])
+                                  (let loop ([i 0])
+                                    (when (< i (syntax-span bound))
+                                      (safe-vector-set! pos-vec (+ i (syntax-position bound))
+                                                        binding)
+                                      (loop (add1 i))))))]
+                             [else (void)]))
+                         ; record-top-level-identifier
+                         (lambda (mod var rd/wr)
+                           ; filename->defs should succeed unless a slave tab gets closed
+                           (cond
+                             [(filename->defs (robust-syntax-source var))
+                              =>
+                              (lambda (defs)
+                                (send (send defs get-tab)
+                                      add-top-level-binding var rd/wr))]
+                             [else (void)]))
+                         source))
+                      (hash-for-each
+                       breakpoints
+                       (lambda (pos status)
+                         ; possible efficiency problem for large files with many breakpoints
+                         (when (and (syntax-position stx)
+                                    (>= pos (syntax-position stx))
+                                    (< pos (+ (syntax-position stx) (syntax-span stx)))
+                                    (not (memq pos break-posns)))
+                           (hash-remove! breakpoints pos))))
+                      (for ([posn (in-list break-posns)]) 
+                        (hash-set!
+                         breakpoints posn
+                         (hash-ref breakpoints posn (lambda () #f))))
+                      annotated))))])))
+        
+        (define/private (annotate-this-module? fn)
+          (cond
+            [(filename->defs fn)
+             =>
+             ; fn is loaded into defs
+             (lambda (defs)
+               (let ([extern-tab (send defs get-tab)]
+                     [this-tab (get-tab)])
+                 (case (if (or (not (send extern-tab debug?))
+                               (eq? this-tab (send extern-tab get-master)))
+                           (message-box
+                            "Debugging Multi-File Program"
+                            (format "Debug ~a?" fn)
+                            #f
+                            '(yes-no))
+                           (message-box
+                            "Debugging Multi-File Program"
+                            (format "~a is already involved in a debugging session." fn)
+                            #f
+                            '(ok)))
+                   [(yes)
+                    ; set tab up with shared data from the master tab
+                    (send extern-tab prepare-execution #t)
+                    (send this-tab add-slave extern-tab)
+                    (call-with-values
+                     (lambda () (send this-tab get-shared-data))
+                     (lambda vals (send extern-tab set-shared-data . vals)))
+                    #t]
+                   [(no ok)
+                    (send extern-tab prepare-execution #f)
+                    #f])))]
+            ; fn is not open, so don't try to debug it
+            [else #f]))
         
         (define/override (reset-console)
           (super reset-console)

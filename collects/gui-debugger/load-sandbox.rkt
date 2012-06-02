@@ -1,4 +1,4 @@
-(module load-sandbox mzscheme
+#lang mzscheme
   
   (require syntax/moddep
            mzlib/class
@@ -79,6 +79,4 @@
                      [else p])])
         (port-count-lines! p)
         (values p filename))))
-  
-  
-)
+
