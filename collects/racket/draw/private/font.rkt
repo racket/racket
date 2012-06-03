@@ -55,8 +55,8 @@
                        ;; failed to find previously
                        null]
                       [else
-                       ;; Hack: prefer Lucida Grande
-                       (cons "Lucida Grande" (get-face-list))])))])
+                       ;; Hack: prefer a particular font for Mac OS X
+                       (cons "Arial Unicode MS" (get-face-list))])))])
      (let ([desc (send (make-object font%
                                     (send font get-point-size)
                                     face
