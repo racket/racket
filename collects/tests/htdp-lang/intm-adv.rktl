@@ -1,4 +1,8 @@
 
+(htdp-err/rt-test (/) "/: expects at least 1 argument, but found none")
+(htdp-err/rt-test (pi) #px"function call: expected a function after the open parenthesis, but received 3[.]14\\d+$")
+(htdp-err/rt-test (pi 1 2) #px"function call: expected a function after the open parenthesis, but received 3[.]14\\d+\n  arguments:\n   1\n   2$")
+
 ;; These are true for beginner, but the operators are syntax, so
 ;; arity-test doesn't work.
 
@@ -112,8 +116,8 @@
 (htdp-test 1 '+ (+ 1))
 (htdp-test 1 '* (*))
 (htdp-test 1 '* (* 1))
-(htdp-err/rt-test (-) (exn-type-and-msg exn:application:arity? #rx"wrong number of arguments.*procedure: -\n.*expected[^:]*: at least 1.*given[^:]*: 0"))
-(htdp-err/rt-test (/) (exn-type-and-msg exn:application:arity? #rx"wrong number of arguments.*procedure: /\n.*expected[^:]*: at least 1.*given[^:]*: 0"))
+(htdp-err/rt-test (-) (exn-type-and-msg exn:application:arity? #rx"-: expects at least 1 argument, but found none"))
+(htdp-err/rt-test (/) (exn-type-and-msg exn:application:arity? #rx"/: expects at least 1 argument, but found none"))
 ;(htdp-test 1 (/ 1) exn:application:arity?)
 
 ;; Check that `local' works with macros that expand to `begin':

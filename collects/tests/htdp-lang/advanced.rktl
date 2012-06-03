@@ -205,11 +205,11 @@
 
 (load (build-path (collection-path "tests" "racket") "shared-tests.rktl"))
 
-(htdp-err/rt-test (cons 1 2) "cons: second argument must be a list or cyclic list, but received 1 and 2")
-(htdp-err/rt-test (append (list 1) 2) "append: last argument must be a list or cyclic list, but received 2")
+(htdp-err/rt-test (cons 1 2) "cons: second argument must be a list, but received 1 and 2")
+(htdp-err/rt-test (append (list 1) 2) "append: last argument must be a list, but received 2")
 
-(htdp-err/rt-test (first 1) "first: expected argument of type <non-empty list>; given: 1")
-(htdp-err/rt-test (rest 1) "rest: expected argument of type <non-empty list>; given: 1")
+(htdp-err/rt-test (first 1) "first: expects a non-empty list; given: 1")
+(htdp-err/rt-test (rest 1) "rest: expects a non-empty list; given: 1")
 
 
 (htdp-test #t 'equal? (equal? (vector (list 10) 'apple) (vector (list 10) 'apple)))

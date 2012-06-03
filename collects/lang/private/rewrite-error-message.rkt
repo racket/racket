@@ -39,11 +39,12 @@
        "this variable is not defined"
        id)))
 
-(define (argcount-error-message arity found [at-least #f])
+(define (argcount-error-message name arity found [at-least #f])
   (define arity:n (ensure-number arity))
   (define found:n (ensure-number found))
   (define fn-is-large (> arity:n found:n))
-  (format "expects ~a~a~a argument~a, but found ~a~a"
+  (format "~a~aexpects ~a~a~a argument~a, but found ~a~a"
+          (or name "") (if name ": " "")
           (if at-least "at least " "")
           (if (or (= arity:n 0) fn-is-large) "" "only ")
           (if (= arity:n 0) "no" arity:n) (plural arity:n)
@@ -52,13 +53,10 @@
 
 (define (rewrite-contract-error-message msg)
   (define replacements
-    (list (list #rx"procedure application: expected procedure, given: (.*) \\(no arguments\\)"
+    (list (list #rx"application: expected procedure\n  given: ([^\n]*)(?:\n  arguments: [[]none[]])?"
                 (lambda (all one) 
                   (format "function call: expected a function after the open parenthesis, but received ~a" one)))
-          (list #rx"procedure application: expected procedure, given: (.*); arguments were:.*"
-                (lambda (all one)  
-                  (format "function call: expected a function after the open parenthesis, but received ~a" one)))
-          (list #rx"reference to an identifier before its definition: (.*)"
+          (list #rx"reference to an identifier before its definition\n  identifier: ([^\n]*)"
                 (lambda (all one) (format "~a is used here before its definition" one)))
           (list #rx"expects argument of type (<([^>]+)>)"
                 (lambda (all one two) (format "expects a ~a" two)))
@@ -66,10 +64,10 @@
                 (lambda (all one two) (format "expects a ~a" two)))
           (list #rx"expects type (<([^>]+)>)"
                 (lambda (all one two) (format "expects a ~a" two)))
-          (list #px"expects at least (\\d+) argument.?, given (\\d+)(: .*)?"
-                (lambda (all one two three) (argcount-error-message one two #t)))
-          (list #px"expects (\\d+) argument.?, given (\\d+)(: .*)?"
-                (lambda (all one two three) (argcount-error-message one two)))
+          (list #px"application: wrong number of arguments.*\n  procedure: ([^\n]*)\n  expected[^:]*: at least (\\d+)\n  given[^:]*: (\\d+)"
+                (lambda (all one two three) (argcount-error-message one two three #t)))
+          (list #px"application: wrong number of arguments.*\n  procedure: ([^\n]*)\n  expected[^:]*: (\\d+)\n  given[^:]*: (\\d+)(?:\n  arguments:(?:\n   [^\n]*)*)?"
+                (lambda (all one two three) (argcount-error-message one two three)))
           (list #rx"^procedure "
                 (lambda (all) ""))
           (list #rx", given: "
@@ -80,18 +78,13 @@
                 (lambda (all one) "expects a "))
           (list #rx"list or cyclic list"
                 (lambda (all) "list"))
-          (list (regexp-quote "given #(struct:object:image% ...)")
-                (lambda (all) "given an image"))
-          (list (regexp-quote "given #(struct:object:image-snip% ...)")
-                (lambda (all) "given an image"))
-          (list (regexp-quote "given #(struct:object:cache-image-snip% ...)")
-                (lambda (all) "given an image"))
+          ;; When do these show up? I see only `#<image>' errors, currently.
           (list (regexp-quote "#(struct:object:image% ...)")
-                (lambda (all) "(image)"))
+                (lambda (all) "an image"))
           (list (regexp-quote "#(struct:object:image-snip% ...)")
-                (lambda (all) "(image)"))
+                (lambda (all) "an image"))
           (list (regexp-quote "#(struct:object:cache-image-snip% ...)")
-                (lambda (all) "(image)"))))
+                (lambda (all) "an image"))))
   (for/fold ([msg msg]) ([repl. replacements])
     (regexp-replace* (first repl.) msg (second repl.))))
 

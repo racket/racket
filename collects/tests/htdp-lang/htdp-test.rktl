@@ -1,4 +1,6 @@
 
+(require lang/private/rewrite-error-message)
+
 (define (strip-context v)
   ;; Just to be sure, remove all top-level context from the syntax object
   (cond
@@ -64,7 +66,8 @@
 		    #,(strip-context stx))
 		(lambda (x)
 		  (and (exn:fail:syntax? x)
-                       (regexp-match (if (string? rx) (regexp-quote rx) rx) (exn-message x))
+                       (regexp-match (if (string? rx) (regexp-quote rx) rx) 
+                                     (get-rewriten-error-message x))
                        (let ([locs ((exn:srclocs-accessor x) x)])
                          (and (not (empty? locs))
                               (andmap (lambda (s) (and (srcloc-source s)
@@ -103,7 +106,11 @@
 (define (htdp-string-to-pred exn?/rx)
   (if (or (regexp? exn?/rx) (string? exn?/rx))
       (lambda (x)
-	(regexp-match exn?/rx (exn-message x)))
+	(if (regexp-match exn?/rx (get-rewriten-error-message x))
+            #t
+            (begin
+              (printf "written: ~s\n" (get-rewriten-error-message x))
+              #f)))
       exn?/rx))
 
 (define-syntax (htdp-err/rt-test stx)
@@ -116,7 +123,8 @@
 (define (exn-type-and-msg type-pred msg)
   (lambda (exn)
     (and (type-pred exn)
-         (regexp-match (if (string? msg) (regexp-quote msg) msg) (exn-message exn)))))
+         (regexp-match (if (string? msg) (regexp-quote msg) msg) 
+                       (get-rewriten-error-message exn)))))
 
 
 (define (htdp-error-test stx)

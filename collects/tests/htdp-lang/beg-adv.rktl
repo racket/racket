@@ -1,4 +1,9 @@
 
+(htdp-err/rt-test (add1) "add1: expects 1 argument, but found none")
+(htdp-err/rt-test (add1 'a 'b 'c) "add1: expects only 1 argument, but found 3")
+(htdp-err/rt-test (define x x) "x is used here before its definition")
+(htdp-err/rt-test (add1 'a) "add1: contract violation")
+
 (htdp-syntax-test #'() "function call: expected a function after the open parenthesis, but nothing's there")
 
 (htdp-syntax-test #'#%app)
@@ -391,4 +396,3 @@
                   #rx"^several numbers 1234567$")
 (htdp-err/rt-test (error "several numbers " 1 " 2 " 3 " 4")
                   #rx"^several numbers 1 2 3 4$")
-

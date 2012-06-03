@@ -1428,7 +1428,7 @@
 				where
 				stx
 				#f
-                                (argcount-error-message 2 n #t)))
+                                (argcount-error-message #f 2 n #t)))
 			     (let loop ([clauses-consumed 0]
 					[remaining (syntax->list #`clauses)])
 			       (if (null? remaining)
