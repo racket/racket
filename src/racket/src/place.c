@@ -512,7 +512,8 @@ static void do_place_kill(Scheme_Place *place)
   {
     mzrt_mutex_lock(place_obj->lock);
 
-    place_obj->die = 1;
+    if (!place_obj->die)
+      place_obj->die = 1;
     place_obj->refcount--;
     refcount = place_obj->refcount;
 
@@ -2269,6 +2270,8 @@ void scheme_place_check_for_interruption()
     local_die = place_obj->die;
     local_break = place_obj->pbreak;
     local_pause = place_obj->pause;
+    if (local_die)
+      place_obj->die = -1;
     place_obj->pbreak = 0;
     if (local_pause)
       place_obj->pausing = 1;
@@ -2284,7 +2287,7 @@ void scheme_place_check_for_interruption()
       break;
   }
   
-  if (local_die)
+  if (local_die > 0)
     scheme_kill_thread(scheme_main_thread);
   if (local_break)
     scheme_break_thread(NULL);
