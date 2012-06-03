@@ -441,7 +441,8 @@
 
   (define (check-against-all given-ccs)
     (when (null? given-ccs)
-      (raise-user-error name-sym "nothing to do"))
+      (setup-printf #f "nothing to do")
+      (exit 1))
     (define (cc->name cc)
       (string-join (map path->string (cc-collection cc)) "/"))
     (define (cc->cc+name+id cc)
