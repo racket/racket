@@ -240,7 +240,8 @@
                     (set-position new-line-position new-line-position)
                     (send zoom-text begin-edit-sequence)
                     (send zoom-text lock #f)
-                    (send zoom-text load-file/gui-error full-filename)
+                    (unless (really-same-file? full-filename (send zoom-text get-filename))
+                      (send zoom-text load-file/gui-error full-filename))
                     (send zoom-text set-position (send zoom-text paragraph-start-position line-number))
                     (let ([start (+ (send zoom-text paragraph-start-position line-number)
                                     col-number)])
@@ -298,6 +299,20 @@
       (send zoom-text lock #t)
       (set-styles-sticky #f)
       (insert (string-constant mfs-searching...))))
+  
+  (define (really-same-file? fn1 fn2)
+    (define p1 (with-handlers ((exn:fail? (λ (x) #f))) (open-input-file fn1)))
+    (define p2 (with-handlers ((exn:fail? (λ (x) #f))) (open-input-file fn2)))
+    (cond
+      [(and p1 p2)
+       (begin0
+         (= (port-file-identity p1) (port-file-identity p2))
+         (close-input-port p1)
+         (close-input-port p2))]
+      [else
+       (when p1 (close-input-port p1))
+       (when p2 (close-input-port p2))
+       #f]))
   
   ;; collaborates with search-size-frame%
   (define searching-canvas%
