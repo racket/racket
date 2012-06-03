@@ -1406,6 +1406,10 @@
 	[tc-e/t (ann #() (Vectorof Integer))
                 (-vec -Integer)]
         
+        [tc-e (let: ([x : Float 0.0])
+                (= 0 x))
+              #:ret (ret -Boolean (-FS -top -top) (make-NoObject))]
+        
         [tc-e/t (ann (lambda: ([x : Boolean]) (if x x #t)) (Boolean -> #t)) (t:-> -Boolean (-val #t))]
         )
   (test-suite
