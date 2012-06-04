@@ -23,7 +23,7 @@
 @defmodule[images/flomap]
 
 The @racketmodname[images/flomap] module provides the struct type @racket[flomap], whose instances represent floating-point bitmaps with any number of color components.
-It also provides purely functional operations on flomaps for compositing, pointwise floating-point math, blur, gradient calculation, arbitrary spatial transformations (such as rotation), and conversion to and from @racket[bitmap%] instances.
+It also provides purely functional operations on flomaps for compositing, pointwise floating-point math, blur, gradient calculation, arbitrary spatial transforms (such as rotation), and conversion to and from @racket[bitmap%] instances.
 
 @bold{This is a Typed Racket module.}
 Its exports can generally be used from untyped code with negligible performance loss over typed code.
@@ -59,6 +59,9 @@ Contents:
 
 
 @section{Overview}
+
+Contents:
+@local-table-of-contents[]
 
 @subsection{Motivation}
 
@@ -100,8 +103,8 @@ Note that @racket[flomap-ref] accepts its coordinate arguments in a standard ord
                     (flomap-ref* magenta-fm 0 1000)
                     (flomap-ref magenta-fm 3 0 0)]
 
-Many flomap functions, such as @racket[flomap-bilinear-ref], treat their arguments as if every @italic{real} @racket[x] @racket[y] coordinate has values.
-In all such cases, known nonzero values are at half-integer coordinates and others are interpolated.
+Many flomap functions, such as @racket[flomap-bilinear-ref] and @racket[flomap-rotate], treat their arguments as if every @italic{real} @racket[x] @racket[y] coordinate has values.
+In all such cases, known values are at half-integer coordinates and others are interpolated.
 
 @examples[#:eval flomap-eval
                  (flomap-bilinear-ref* magenta-fm 0.5 0.5)
@@ -122,6 +125,9 @@ For example, we might plot the red component of an ARGB icon:
 Notice that the plot's maximum height is above saturation (@racket[1.0]).
 The tallest peak corresponds to the specular highlight (the shiny part) on the bomb.
 Specular highlights are one case where it is important to operate on oversaturated values without truncating them---until it is time to display the image.
+
+If we have a @racket[w]×@racket[h] flomap and consider its known values as being at half-integer coordinates, the exact center of the flomap is at @racket[(* 1/2 w)] @racket[(* 1/2 h)].
+When unknown values are estimated using bilinear interpolation, the finite rectangle containing all the known @italic{and estimated} nonzero values is from @racket[-1/2] @racket[-1/2] to @racket[(+ w 1/2)] @racket[(+ h 1/2)].
 
 @subsection[#:tag "flomap:opacity"]{Opacity (Alpha Components)}
 
@@ -885,82 +891,411 @@ See @racket[flomap-pin] and @racket[flomap-pin*] for implementation details.
 @; ===================================================================================================
 
 
-@section{Transformations}
+@section{Spatial Transformations}
+
+This section gives the API for applying spatial transforms to a flomap, such as rotations, warps, morphs, and lens distortion effects.
+
+To use the provided transforms, apply a function like @racket[flomap-flip-horizontal] directly,
+or apply something like a @racket[flomap-rotate-transform] to a flomap using @racket[flomap-transform].
+
+To make your own transforms, compose existing ones with @racket[flomap-transform-compose], or construct a value of type @racket[Flomap-Transform] directly:
+@racketblock[(: my-awesome-transform Flomap-Transform)
+             (define (my-awesome-transform w h)
+               (make-flomap-2d-mapping fun inv))]
+Here, @racket[fun] is a mapping from input coordinates to output coordinates and @racket[inv] is its inverse.
+
+Contents:
+@local-table-of-contents[]
+
+@subsection{Provided Transformations}
 
 @defproc[(flomap-flip-horizontal [fm flomap]) flomap]
 @defproc[(flomap-flip-vertical [fm flomap]) flomap]
 @defproc[(flomap-transpose [fm flomap]) flomap]
 @defproc[(flomap-cw-rotate [fm flomap]) flomap]
 @defproc[(flomap-ccw-rotate [fm flomap]) flomap]{
-Some standard image transformations.
-These are lossless, in that repeated transformations do not degrade the image.
+Some standard image transforms.
+These are lossless, in that repeated applications do not degrade (blur or alias) the image.
 @examples[#:eval flomap-eval
                  (require slideshow/pict)
-                 (define hello-fm (flomap-trim
-                                   (bitmap->flomap
-                                    (pict->bitmap (text "Hello" '(bold) 25)))))
-                 (flomap->bitmap hello-fm)
-                 (flomap->bitmap (flomap-flip-horizontal hello-fm))
-                 (flomap->bitmap (flomap-flip-vertical hello-fm))
-                 (flomap->bitmap (flomap-transpose hello-fm))
-                 (flomap->bitmap (flomap-cw-rotate hello-fm))
-                 (flomap->bitmap (flomap-ccw-rotate hello-fm))]
+                 (define text-fm
+                   (flomap-trim
+                    (bitmap->flomap
+                     (pict->bitmap (vc-append (text "We CLAIM the" '(bold) 25)
+                                              (text "PRIVILEGE" '(bold) 25))))))
+                 (flomap->bitmap text-fm)
+                 (flomap->bitmap (flomap-flip-horizontal text-fm))
+                 (flomap->bitmap (flomap-flip-vertical text-fm))
+                 (flomap->bitmap (flomap-transpose text-fm))
+                 (flomap->bitmap (flomap-cw-rotate text-fm))
+                 (flomap->bitmap (flomap-ccw-rotate text-fm))
+                 (equal? (flomap-cw-rotate fm)
+                         (flomap-flip-vertical (flomap-transpose fm)))
+                 (equal? (flomap-ccw-rotate fm)
+                         (flomap-flip-horizontal (flomap-transpose fm)))]
 }
 
 @defproc[(flomap-rotate [fm flomap] [θ Real]) flomap]{
-Equivalent to @racket[(flomap-transform fm (rotate-transform θ))].
+Returns a flomap rotated by @racket[θ] radians counterclockwise.
+Equivalent to @racket[(flomap-transform fm (flomap-rotate-transform θ))].
 @examples[#:eval flomap-eval
-                 (flomap->bitmap (flomap-rotate hello-fm (* 1/4 pi)))]
+                 (flomap->bitmap (flomap-rotate text-fm (* 1/4 pi)))]
 }
 
-@defstruct*[invertible-2d-mapping ([fun (Float Float -> (values Float Float))]
-                                   [inv (Float Float -> (values Float Float))])]{
+@defproc[(flomap-rotate-transform [θ Real]) Flomap-Transform]{
+Returns a flomap transform that rotates a flomap @racket[θ] radians counterclockwise around its (@racket[Real]-valued) center.
+
+Use @racket[flomap-rotate-transform] if you need to know the bounds of the rotated flomap or need to compose a rotation with another transform using @racket[flomap-transform-compose].
+
+@examples[#:eval flomap-eval
+                 (flomap-transform-bounds (flomap-rotate-transform (* 1/4 pi))
+                                          100 100)
+                 (flomap->bitmap
+                  (flomap-transform text-fm (flomap-rotate-transform (* 1/4 pi))))]
 }
 
-@defidform[Flomap-Transform]{
-Defined as @racket[(Integer Integer -> invertible-2d-mapping)].
+@defproc[(flomap-whirl-transform [θ Real]) Flomap-Transform]{
+Returns a flomap transform that ``whirls'' a flomap: rotates it counterclockwise @racket[θ] radians in the center, and rotates less with more distance from the center.
+
+This transform does not alter the size of its input.
+
+@examples[#:eval flomap-eval
+                 (flomap->bitmap
+                  (flomap-transform text-fm (flomap-whirl-transform pi)))]
 }
+
+@defproc[(flomap-fisheye-transform [α Real]) Flomap-Transform]{
+Returns a flomap transform that simulates ``fisheye'' lens distortion with an @racket[α] diagonal angle of view.
+Equivalent to
+@racketblock[(flomap-projection-transform (equal-area-projection α)
+                                          (perspective-projection α)
+                                          #f)]
+
+@examples[#:eval flomap-eval
+                 (flomap->bitmap
+                  (flomap-transform text-fm (flomap-fisheye-transform (* 2/3 pi))))]
+}
+
+@defproc[(flomap-scale-transform [x-scale Real] [y-scale Real x-scale]) Flomap-Transform]{
+Returns a flomap transform that scales flomaps by @racket[x-scale] horizontally and @racket[y-scale] vertically.
+
+You should generally prefer to use @racket[flomap-scale], which is faster and correctly reduces resolution before downsampling to avoid aliasing.
+This is provided for composition with other transforms using @racket[flomap-transform-compose].
+}
+
+@defthing[flomap-id-transform Flomap-Transform]{
+A flomap transform that does nothing.
+See @racket[flomap-transform-compose] for an example of using @racket[flomap-id-transform] as the initial value for a fold.
+}
+
+@subsection{General Transformations}
 
 @defproc*[([(flomap-transform [fm flomap] [t Flomap-Transform]) flomap]
            [(flomap-transform [fm flomap] [t Flomap-Transform]
-                              [x-min Real] [y-min Real]
-                              [x-max Real] [y-max Real])
+                              [x-start Integer] [y-start Integer]
+                              [x-end Integer] [y-end Integer])
             flomap])]{
+Applies spatial transform @racket[t] to @racket[fm].
+
+The rectangle @racket[x-start] @racket[y-start] @racket[x-end] @racket[y-end] is with respect to the @racket[fm]'s @italic{transformed} coordinates.
+If given, points in @racket[fm] are transformed only if their transformed coordinates are within that rectangle.
+If not given, @racket[flomap-transform] uses the rectangle returned by @racket[(flomap-transform-bounds t w h)], where @racket[w] and @racket[h] are the size of @racket[fm].
+
+This transform doubles a flomap's size:
+@interaction[#:eval flomap-eval
+                    (define (double-transform w h)
+                      (make-flomap-2d-mapping (λ (x y) (values (* x 2) (* y 2)))
+                                              (λ (x y) (values (/ x 2) (/ y 2)))))
+                    (flomap->bitmap
+                     (flomap-transform text-fm double-transform))]
+Transforms can use the width and height arguments @racket[w] @racket[h] however they wish; for example, @racket[double-transform] ignores them, and @racket[flomap-rotate-transform] uses them to calculate the center coordinate.
+
+The @racket[flomap-rotate] function usually increases the size of a flomap to fit its corners in the result.
+To rotate in a way that does not change the size---i.e. to do an @italic{in-place} rotation---use @racket[0] @racket[0] @racket[w] @racket[h] as the transformed rectangle:
+@interaction[#:eval flomap-eval
+                    (define (flomap-in-place-rotate fm θ)
+                      (define-values (w h) (flomap-size fm))
+                      (flomap-transform fm (flomap-rotate-transform θ) 0 0 w h))]
+Using it on @racket[text-fm] with a purple background:
+@interaction[#:eval flomap-eval
+                    (define-values (text-fm-w text-fm-h) (flomap-size text-fm))
+                    (define purple-text-fm
+                      (flomap-lt-superimpose (make-flomap* text-fm-w text-fm-h #(1 1/2 0 1))
+                                             text-fm))
+                    (flomap->bitmap purple-text-fm)
+                    (flomap->bitmap (flomap-in-place-rotate purple-text-fm (* 1/8 pi)))]
+See @racket[flomap-projection-transform] for another example of using @racket[flomap-transform]'s rectangle arguments, to manually crop a lens projection.
+
+Alternatively, we could define a new transform-producing function @racket[flomap-in-place-rotate-transform]
+that never transforms points outside of the orginal flomap:
+@interaction[#:eval flomap-eval
+                    (define ((flomap-in-place-rotate-transform θ) w h)
+                      (match-define (flomap-2d-mapping fun inv _)
+                        ((flomap-rotate-transform θ) w h))
+                      (make-flomap-2d-mapping (λ (x y)
+                                                (let-values ([(x y)  (fun x y)])
+                                                  (values (if (<= 0 x w) x +nan.0)
+                                                          (if (<= 0 y h) y +nan.0))))
+                                              inv))
+                    (flomap->bitmap
+                     (flomap-transform purple-text-fm
+                                       (flomap-in-place-rotate-transform (* 1/8 pi))))]
+
+To transform @racket[fm], @racket[flomap-transform] uses only the @racketid[inv] field of @racket[(t w h)].
+Every point @racket[new-x] @racket[new-y] in the transformed bounds is given the components returned by
+@racketblock[(let-values ([(old-x old-y)  (inv new-x new-y)])
+               (flomap-bilinear-ref* fm old-x old-y))]
+The forward mapping @racket[fun] is used by @racket[flomap-transform-bounds].
 }
 
-@defproc[(rotate-transform [θ Real]) Flomap-Transform]{
-rotates around center; positive is screen-clockwise
+@defidform[Flomap-Transform]{
+Defined as @racket[(Integer Integer -> flomap-2d-mapping)].
+
+A value of type @racket[Flomap-Transform] receives the width and height of a flomap to operate on, and returns a @racket[flomap-2d-mapping] on the coordinates of flomaps of that size.
 }
 
-@defproc[(whirl-and-pinch-transform [θ Real] [pinch Real] [radius Real]) Flomap-Transform]{
+@defstruct*[flomap-2d-mapping ([fun (Float Float -> (values Float Float))]
+                               [inv (Float Float -> (values Float Float))]
+                               [bounded-by (U 'id 'corners 'edges 'all)])]{
+Represents an invertible mapping from @racket[Real]×@racket[Real] to @racket[Real]×@racket[Real], or from real-valued flomap coordinates to real-valued flomap coordinates.
+See @racket[flomap-transform] for examples.
+See @secref{flomap:conceptual} for the meaning of real-valued flomap coordinates.
+
+The forward mapping @racket[fun] is used to determine the bounds of a transformed flomap.
+(See @racket[flomap-transform-bounds] for details.)
+The inverse mapping @racket[inv] is used to actually transform the flomap.
+(See @racket[flomap-transform] for details.)
+
+The symbol @racket[bounded-by] tells @racket[flomap-transform-bounds] how to transform bounds.
+In order of efficiency:
+@(itemlist
+  @item{@racket['id]: Do not transform bounds.
+         Use this for in-place transforms such as @racket[flomap-whirl-transform].}
+  @item{@racket['corners]: Return the smallest rectangle containing only the transformed corners.
+         Use this for linear and affine transforms (such as @racket[flomap-rotate-transform] or a skew transform),
+         transforms that do not produce extreme points, and others for which it can be proved (or at least empirically demonstrated)
+         that the rectangle containing the transformed corners contains all the transformed points.}
+  @item{@racket['edges]: Return the smallest rectangle containing only the transformed left, top, right, and bottom edges.
+         Use this for transforms that are almost-everywhere continuous and invertible---which describes most interesting transforms.}
+  @item{@racket['all]: Return the smallest rectangle containing all the transformed points.
+         Use this for transforms that produce overlaps and other non-invertible results.}
+  )
+
+For good performance, define instances of @racket[flomap-2d-mapping] and functions that return them (e.g. instances of @racket[Flomap-Transform]), in Typed Racket.
+Defining them in untyped Racket makes every application of @racket[fun] and @racket[inv] contract-checked when used in typed code, such as the implementation of @racket[flomap-transform].
+(In the worst case, @racket[flomap-transform] applies @racket[fun] to every pair of coordinates in the input flomap.
+It always applies @racket[inv] to every pair of coordinates in the output flomap.)
 }
 
-@defproc[(transform-compose [t2 Flomap-Transform] [t1 Flomap-Transform]) Flomap-Transform]{
-@examples[#:eval flomap-eval
-                 (flomap-size hello-fm)
-                 (define hello-fm-blurry
-                   (for/fold ([hello-fm hello-fm]) ([_  (in-range 8)])
-                     (flomap-rotate hello-fm (* 1/4 pi))))
-                 (flomap->bitmap hello-fm-blurry)
-                 (flomap-size hello-fm-blurry)]
+@defproc[(make-flomap-2d-mapping [fun (Float Float -> (values Real Real))]
+                                 [inv (Float Float -> (values Real Real))]
+                                 [bounded-by (U 'id 'corners 'edges 'all) 'edges]) flomap-2d-mapping]{
+A more permissive, more convenient constructor for @racket[flomap-2d-mapping].
+}
 
-@examples[#:eval flomap-eval
-                 (define t
-                   (for/fold ([t (rotate-transform (* 1/4 pi))]) ([_  (in-range 7)])
-                     (transform-compose t (rotate-transform (* 1/4 pi)))))
-                 (define hello-fm-sharp
-                   (flomap-transform hello-fm t))
-                 (flomap->bitmap hello-fm-sharp)
-                 (flomap-size hello-fm-sharp)
-                 (flomap-extreme-values
-                  (fmsqr (fm- hello-fm hello-fm-sharp)))]
+@defproc[(flomap-transform-compose [t2 Flomap-Transform] [t1 Flomap-Transform]) Flomap-Transform]{
+Composes two flomap transforms.
+Applying the result of @racket[(flomap-transform-compose t2 t1)] is the same as applying @racket[t1] and then @racket[t2], @bold{except}:
+@(itemlist
+  @item{The points are transformed only once, meaning their component values are estimated only once, so the result is less degraded (blurry or aliased).}
+  @item{The bounds are generally tighter.}
+  )
+
+The following example ``whirls'' @racket[text-fm] clockwise 360 degrees and back.
+This is first done by applying the two transforms separately, and secondly by applying a composition of them.
+@interaction[#:eval flomap-eval
+                    (let* ([text-fm  (flomap-transform
+                                      text-fm (flomap-whirl-transform (* 2 pi)))]
+                           [text-fm  (flomap-transform
+                                      text-fm (flomap-whirl-transform (* -2 pi)))])
+                      (flomap->bitmap text-fm))
+                    (flomap->bitmap
+                     (flomap-transform text-fm (flomap-transform-compose
+                                                (flomap-whirl-transform (* -2 pi))
+                                                (flomap-whirl-transform (* 2 pi)))))]
+Notice the heavy aliasing (a ``Moiré pattern'') in the first result is not in the second.
+
+In the next example, notice that rotating multiple times blurs the result and pads it with transparent points, but that applying composed rotation transforms doesn't:
+@interaction[#:eval flomap-eval
+                    (let* ([text-fm  (flomap-rotate text-fm (* 1/8 pi))]
+                           [text-fm  (flomap-rotate text-fm (* 1/8 pi))]
+                           [text-fm  (flomap-rotate text-fm (* 1/8 pi))]
+                           [text-fm  (flomap-rotate text-fm (* 1/8 pi))])
+                      (flomap->bitmap text-fm))
+                    (define rotate-pi/2
+                      (for/fold ([t flomap-id-transform]) ([_  (in-range 4)])
+                        (flomap-transform-compose (flomap-rotate-transform (* 1/8 pi)) t)))
+                    (flomap->bitmap (flomap-transform text-fm rotate-pi/2))]
+
+How the bounds for the composed transform are calculated depends on how they would have been calculated for @racket[t1] and @racket[t2].
+Suppose @racket[b1] is the bounds rule for @racket[(t1 w h)] and @racket[b2] is the bounds rule for @racket[(t2 w h)].
+Then the bounds rule @racket[b] for @racket[(flomap-transform-compose t2 t1)] is determined by the following rules, applied in order:
+@(itemlist
+  @item{If either @racket[b1] = @racket['all] or @racket[b2] = @racket['all], then @racket[b] = @racket['all].}
+  @item{If either @racket[b1] = @racket['edges] or @racket[b2] = @racket['edges], then @racket[b] = @racket['edges].}
+  @item{If either @racket[b1] = @racket['corners] or @racket[b2] = @racket['corners], then @racket[b] = @racket['corners].}
+  @item{Otherwise, @racket[b1] = @racket[b2] = @racket['id], so @racket[b] = @racket['id].}
+  )
+See @racket[flomap-2d-mapping] for details on how @racket[b] affects bounds calculation.
+}
+
+@defproc[(flomap-transform-bounds [t Flomap-Transform] [w Integer] [h Integer])
+                                  (values Integer Integer Integer Integer)]{
+Returns the rectangle that would contain a @racket[w]×@racket[h] flomap after transform by @racket[t].
+                                                 
+How the rectangle is determined depends on the @racket[bounded-by] field of @racket[(t w h)].
+See @racket[flomap-2d-mapping] for details.
+
+See @racket[flomap-rotate-transform] and @racket[flomap-projection-transform] for examples.
+}
+
+@subsection{Lens Projection and Correction}
+
+The following API demonstrates a parameterized family of spatial transforms.
+It also provides a physically grounded generalization of the flomap transforms returned by @racket[flomap-fisheye-transform].
+
+@interaction-eval[#:eval flomap-eval
+                         (begin (require racket/draw)
+                                (define state-of-the-union-fm
+                                  (bitmap->flomap (read-bitmap (build-path (current-directory) "scribblings" "images" "state-of-the-union.jpg") 'jpeg))))]
+
+@defproc[(flomap-projection-transform [to-proj Projection] [from-proj Projection] [crop? Boolean]) Flomap-Transform]{
+Returns a flomap transform that corrects for or simulates lens distortion.
+
+To correct for lens distortion in a flomap:
+@(itemlist
+  @item{Find a projection @racket[from-proj] that models the actual lens.}
+  @item{Find a projection @racket[to-proj] that models the desired (but fictional) lens.}
+  @item{Apply @racket[(flomap-projection-transform to-proj from-proj)] to the flomap.}
+  )
+
+@margin-note*{This photo is in the public domain.}
+In the following example, a photo of the State of the Union address was taken using an ``equal area'' (or ``equisolid angle'') fisheye lens with a 180-degree diagonal angle of view:
+@interaction[#:eval flomap-eval
+                    (flomap->bitmap state-of-the-union-fm)]
+We would like it to have been taken with a perfect ``rectilinear'' (or ``perspective projection'') lens with a 120-degree diagonal angle of view.
+Following the steps above, we apply a projection transform using @racket[(equal-area-projection pi)] for @racket[from-proj] and @racket[(perspective-projection (* 2/3 pi))] for @racket[to-proj]:
+@interaction[#:eval flomap-eval
+                    (flomap->bitmap
+                     (flomap-transform
+                      state-of-the-union-fm
+                      (flomap-projection-transform (perspective-projection (* 2/3 pi))
+                                                   (equal-area-projection pi))))]
+Notice that the straight geometry in the House chamber (especially the trim around the ceiling) is represented by straight edges in the corrected photo.
+
+When @racket[crop?] is @racket[#t], the output flomap is no larger than the input flomap.
+When @racket[crop?] is @racket[#f], the output flomap is large enough to contain the entire transformed flomap.
+An uncropped result can be quite large, especially with angles of view at or near @racket[180] degrees (@racket[pi] radians).
+@interaction[#:eval flomap-eval
+                    (define rectangle-fm
+                      (draw-flomap (λ (fm-dc)
+                                     (send fm-dc set-pen "black" 4 'dot)
+                                     (send fm-dc set-brush "yellow" 'solid)
+                                     (send fm-dc set-alpha 1/2)
+                                     (send fm-dc draw-rectangle 0 0 32 32))
+                                   32 32))
+                    (flomap->bitmap rectangle-fm)
+                    (flomap-transform-bounds
+                     (flomap-projection-transform (perspective-projection (* 1/2 pi))
+                                                  (equal-area-projection pi)
+                                                  #f)
+                     32 32)
+                    (flomap->bitmap
+                     (flomap-transform
+                      rectangle-fm
+                      (flomap-projection-transform (perspective-projection (* 1/2 pi))
+                                                   (orthographic-projection (* 7/8 pi))
+                                                   #f)))]
+To crop manually, apply @racket[flomap-transform] to explicit rectangle arguments:
+@interaction[#:eval flomap-eval
+                    (flomap->bitmap
+                     (flomap-transform
+                      rectangle-fm
+                      (flomap-projection-transform (perspective-projection (* 1/2 pi))
+                                                   (orthographic-projection (* 7/8 pi))
+                                                   #f)
+                      -10 -10 42 42))]
+}
+
+@defproc[(perspective-projection [α Real]) Projection]
+@defproc[(linear-projection [α Real]) Projection]
+@defproc[(orthographic-projection [α Real]) Projection]
+@defproc[(equal-area-projection [α Real]) Projection]
+@defproc[(stereographic-projection [α Real]) Projection]{
+Given a diagonal angle of view @racket[α], these all return a projection modeling some kind of camera lens.
+See @link["http://en.wikipedia.org/wiki/Fisheye_lens"]{Fisheye Lens} for the defining formulas.
+}
+
+@defidform[Projection]{
+Equivalent to @racket[(Float -> projection-mapping)].
+
+A value of type @racket[Projection] receives the diagonal size of a flomap to operate on, and returns a @racket[projection-mapping] instance.
+The provided projections (such as @racket[perspective-projection]) use a closed-over diagonal angle of view @racketid[α] and the diagonal size to calculate the focal length.
+}
+
+@defstruct*[projection-mapping ([fun (Float -> Float)]
+                                [inv (Float -> Float)])]{
+Represents an invertible function from a point's angle @racket[ρ] from the optical axis, to the distance @racket[r] to the center of a photo, in flomap coordinates.
+
+For example, given a diagonal angle of view @racket[α] and the diagonal size @racket[d] of a flomap, the @racket[perspective-projection] function calculates the focal length @racket[f]:
+@racketblock[(define f (/ d 2.0 (tan (* 0.5 α))))]
+It then constructs the projection mapping as
+@racketblock[(projection-mapping (λ (ρ) (* (tan ρ) f))
+                                 (λ (r) (atan (/ r f))))]
+See @link["http://en.wikipedia.org/wiki/Fisheye_lens"]{Fisheye Lens} for details.
 }
 
 
 @; ===================================================================================================
 
 
-@;@section{Effects}
+@section{Effects}
+
+@defproc[(flomap-shadow [fm flomap] [σ Real] [color (Option (U (Vectorof Real) FlVector)) #f]) flomap]{
+Returns the alpha (zeroth) component of @racket[fm], blurred with standard deviation @racket[σ] and colorized by @racket[color].
+Assumes @racket[fm] and @racket[color] are alpha-multiplied; see @secref{flomap:opacity}.
+
+If @racket[color] = @racket[#f], it is interpreted as @racket[(flvector 1.0 0.0 ...)], or opaque black.
+@examples[#:eval flomap-eval
+                 (flomap->bitmap
+                  (flomap-shadow (flomap-inset text-fm 12) 4 #(1/2 1/8 0 1/4)))
+                 (flomap->bitmap
+                  (flomap-cc-superimpose
+                   (flomap-shadow (flomap-inset text-fm 12) 4 #(1/2 1/8 0 1/4))
+                   text-fm))]
+}
+
+@defproc[(flomap-outline [fm flomap] [radius Real] [color (Option (U (Vectorof Real) FlVector)) #f]) flomap]{
+Returns a flomap that outlines @racket[fm] with a @racket[radius]-thick line when @racket[fm] is superimposed over it.
+Assumes @racket[fm] and @racket[color] are alpha-multiplied; see @secref{flomap:opacity}.
+
+If @racket[color] = @racket[#f], it is interpreted as @racket[(flvector 1.0 0.0 ...)], or opaque black.
+@examples[#:eval flomap-eval
+                 (flomap->bitmap
+                  (flomap-outline (flomap-inset text-fm 2) 2 #(1 0 1 1)))
+                 (flomap->bitmap
+                  (flomap-cc-superimpose
+                   (flomap-outline (flomap-inset text-fm 2) 2 #(1 0 1 1))
+                   text-fm))]
+
+The greatest alpha value in the returned outline is the greatest alpha value in @racket[fm].
+Because of this, @racket[flomap-outline] does fine with flomaps with fully opaque regions that are made semi-transparent:
+@interaction[#:eval flomap-eval
+                    (define trans-text-fm (fm* 0.5 text-fm))
+                    (flomap->bitmap trans-text-fm)
+                    (flomap->bitmap
+                     (flomap-cc-superimpose
+                      (flomap-outline (flomap-inset trans-text-fm 2) 2 #(1 0 1 1))
+                      trans-text-fm))]
+However, it does not do so well with flomaps that are partly opaque and partly semi-transparent:
+@interaction[#:eval flomap-eval
+                    (define mixed-text-fm
+                      (flomap-vc-append text-fm (make-flomap 4 0 10) trans-text-fm))
+                    (flomap->bitmap
+                     (flomap-cc-superimpose
+                      (flomap-outline (flomap-inset mixed-text-fm 2) 2 #(1 0 1 1))
+                      mixed-text-fm))]
+}
 
 
 @close-eval[flomap-eval]

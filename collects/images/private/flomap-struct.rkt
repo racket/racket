@@ -39,7 +39,7 @@
   (define (coords->index c w k x y)
     (fx+ k (fx* c (fx+ x (fx* y w)))))
   
-  (: unsafe-flomap-ref (FlVector Integer Integer Integer Integer Integer Integer -> Flonum))
+  (: unsafe-flomap-ref (FlVector Integer Integer Integer Integer Integer Integer -> Float))
   (define (unsafe-flomap-ref vs c w h k x y)
     (cond [(and (x . fx>= . 0) (x . fx< . w)
                 (y . fx>= . 0) (y . fx< . h))
@@ -59,7 +59,7 @@
            point-vs]
           [else  (make-flvector c 0.0)]))
   
-  (: flomap-ref (flomap Integer Integer Integer -> Flonum))
+  (: flomap-ref (flomap Integer Integer Integer -> Float))
   (define (flomap-ref fm k x y)
     (match-define (flomap vs c w h) fm)
     (unless (and (k . >= . 0) (k . < . c))
@@ -73,7 +73,7 @@
   
   ) ; begin-encourage-inline
 
-(: flomap-bilinear-ref (flomap Integer Real Real -> Flonum))
+(: flomap-bilinear-ref (flomap Integer Real Real -> Float))
 (define (flomap-bilinear-ref fm k x y)
   (match-define (flomap vs c w h) fm)
   (cond [(and (k . >= . 0) (k . < . c))
@@ -146,7 +146,7 @@
 #;
 (: inline-build-flomap (Integer Integer Integer
                                 (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum
-                                                    Nonnegative-Fixnum -> Flonum)
+                                                    Nonnegative-Fixnum -> Float)
                                 -> flomap))
 (define-syntax-rule (inline-build-flomap components width height f)
   (let: ([c : Integer  components]

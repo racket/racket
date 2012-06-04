@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require racket/match racket/math
+(require racket/match racket/math racket/bool
          (only-in racket/unsafe/ops
                   unsafe-flvector-ref
                   unsafe-fx+ unsafe-fx-)
@@ -9,10 +9,19 @@
 
 (provide flomap-flip-horizontal flomap-flip-vertical flomap-transpose
          flomap-cw-rotate flomap-ccw-rotate flomap-rotate
-         (struct-out invertible-2d-mapping) Flomap-Transform
-         transform-compose rotate-transform whirl-and-pinch-transform
-         flomap-transform 
-         )
+         flomap-2d-mapping flomap-2d-mapping-fun flomap-2d-mapping-inv
+         flomap-2d-mapping-bounded-by make-flomap-2d-mapping
+         Flomap-Transform
+         flomap-transform flomap-transform-bounds
+         flomap-id-transform flomap-rotate-transform flomap-scale-transform flomap-whirl-transform
+         flomap-transform-compose
+         perspective-projection linear-projection orthographic-projection
+         equal-area-projection stereographic-projection flomap-projection-transform
+         flomap-fisheye-transform
+         Projection (struct-out projection-mapping))
+
+;; ===================================================================================================
+;; Basic transformations
 
 (: flomap-flip-horizontal (flomap -> flomap))
 (define (flomap-flip-horizontal fm)
@@ -46,106 +55,191 @@
 
 (: flomap-rotate (flomap Real -> flomap))
 (define (flomap-rotate fm θ)
-  (flomap-transform fm (rotate-transform θ)))
+  (flomap-transform fm (flomap-rotate-transform θ)))
 
-(struct: invertible-2d-mapping ([fun : (Flonum Flonum -> (values Flonum Flonum))]
-                                [inv : (Flonum Flonum -> (values Flonum Flonum))]))
+;; ===================================================================================================
+;; Data types
 
-(define-type Flomap-Transform (Integer Integer -> invertible-2d-mapping))
+(struct: flomap-2d-mapping ([fun : (Float Float -> (values Float Float))]
+                            [inv : (Float Float -> (values Float Float))]
+                            [bounded-by : (U 'id 'corners 'edges 'all)])
+  #:transparent)
 
-(: transform-compose (Flomap-Transform Flomap-Transform -> Flomap-Transform))
-(define ((transform-compose t1 t2) w h)
-  (match-define (invertible-2d-mapping f1 g1) (t1 w h))
-  (match-define (invertible-2d-mapping f2 g2) (t2 w h))
-  (invertible-2d-mapping (λ: ([x : Flonum] [y : Flonum])
-                           (let-values ([(x y)  (f2 x y)])
-                             (f1 x y)))
-                         (λ: ([x : Flonum] [y : Flonum])
-                           (let-values ([(x y)  (g1 x y)])
-                             (g2 x y)))))
+(: 2d-mapping-exact->inexact ((Float Float -> (values Real Real))
+                              -> (Float Float -> (values Float Float))))
+(define ((2d-mapping-exact->inexact f) x y)
+  (let-values ([(x y)  (f x y)])
+    (values (exact->inexact x) (exact->inexact y))))
 
-(: flomap-transform (case-> (flomap Flomap-Transform -> flomap)
-                            (flomap Flomap-Transform Real Real Real Real -> flomap)))
-(define flomap-transform
+(: make-flomap-2d-mapping (case-> ((Float Float -> (values Real Real))
+                                   (Float Float -> (values Real Real))
+                                   -> flomap-2d-mapping)
+                                  ((Float Float -> (values Real Real))
+                                   (Float Float -> (values Real Real))
+                                   (U 'id 'corners 'edges 'all) -> flomap-2d-mapping)))
+(define make-flomap-2d-mapping
   (case-lambda
-    [(fm t)  
-     (match-define (flomap vs c w h) fm)
-     (match-define (invertible-2d-mapping f g) (t w h))
-     (define x-min +inf.0)
-     (define x-max -inf.0)
-     (define y-min +inf.0)
-     (define y-max -inf.0)
-     (let: y-loop : Void ([y : Fixnum  0])
-       (when (y . fx< . h)
-         (let: x-loop : Void ([x : Fixnum  0])
-           (cond [(x . fx< . w)
-                  (define i (coords->index c w 0 x y))
-                  (define any-nonzero?
-                    (let: k-loop : Boolean ([k : Fixnum  0])
-                      (cond [(k . < . c)  (cond [(= 0.0 (unsafe-flvector-ref vs (unsafe-fx+ i k)))
-                                                 (k-loop (unsafe-fx+ k 1))]
-                                                [else  #t])]
-                            [else  #f])))
-                  (when any-nonzero?
-                    (define-values (new-x new-y) (f (+ 0.5 (fx->fl x)) (+ 0.5 (fx->fl y))))
+    [(fun inv)  (make-flomap-2d-mapping fun inv 'edges)]
+    [(fun inv bounded-by)  (flomap-2d-mapping (2d-mapping-exact->inexact fun)
+                                              (2d-mapping-exact->inexact inv)
+                                              bounded-by)]))
+
+(define-type Flomap-Transform (Integer Integer -> flomap-2d-mapping))
+
+;; ===================================================================================================
+;; Transformations
+
+(: flomap-transform-bounds (Flomap-Transform Integer Integer
+                                               -> (values Integer Integer Integer Integer)))
+(define (flomap-transform-bounds t w h)
+  (match-define (flomap-2d-mapping fun _ bounded-by) (t w h))
+  
+  (: maybe-expand (Integer Integer Float Float Float Float -> (values Float Float Float Float)))
+  (define (maybe-expand x y x-min y-min x-max y-max)
+    ;; transform the coordinate, possibly update the mins and maxes
+    (define-values (new-x new-y) (fun (->fl x) (->fl y)))
+    (values (if (new-x . < . x-min) new-x x-min)
+            (if (new-y . < . y-min) new-y y-min)
+            (if (new-x . > . x-max) new-x x-max)
+            (if (new-y . > . y-max) new-y y-max)))
+  
+  (define-values (x-min y-min x-max y-max)
+    (case bounded-by
+      [(id)  (values 0 0 w h)]
+      [(corners)
+       (for*/fold: ([x-min : Float  +inf.0]
+                    [y-min : Float  +inf.0]
+                    [x-max : Float  -inf.0]
+                    [y-max : Float  -inf.0]
+                    ) ([y : Integer  (list 0 h)]
+                       [x : Integer  (list 0 w)])
+         (maybe-expand x y x-min y-min x-max y-max))]
+      [(edges)
+       (define-values (x-min1 y-min1 x-max1 y-max1)
+         (for*/fold: ([x-min : Float  +inf.0]
+                      [y-min : Float  +inf.0]
+                      [x-max : Float  -inf.0]
+                      [y-max : Float  -inf.0]
+                      ) ([y : Integer  (in-range (fx+ h 1))]
+                         [x : Integer  (list 0 w)])
+           (maybe-expand x y x-min y-min x-max y-max)))
+       (define-values (x-min2 y-min2 x-max2 y-max2)
+         (for*/fold: ([x-min : Float  +inf.0]
+                      [y-min : Float  +inf.0]
+                      [x-max : Float  -inf.0]
+                      [y-max : Float  -inf.0]
+                      ) ([y : Integer  (list 0 h)]
+                         [x : Integer  (in-range (fx+ w 1))])
+           (maybe-expand x y x-min y-min x-max y-max)))
+       (values (min x-min1 x-min2) (min y-min1 y-min2)
+               (max x-max1 x-max2) (max y-max1 y-max2))]
+      [(all)
+       ;; these will be mutated within the loop (instead of accumulating them, which is annoying)
+       (define-values (x-min y-min x-max y-max) (values +inf.0 +inf.0 -inf.0 -inf.0))
+       ;; for each point...
+       (let: y-loop : Void ([y : Nonnegative-Fixnum  0])
+         (when (y . fx<= . h)
+           (let: x-loop : Void ([x : Nonnegative-Fixnum  0])
+             (cond [(x . fx<= . w)
+                    ;; transform the coordinate, possibly set the mins and maxes
+                    (define-values (new-x new-y) (fun (->fl x) (->fl y)))
                     (when (new-x . < . x-min) (set! x-min new-x))
                     (when (new-x . > . x-max) (set! x-max new-x))
                     (when (new-y . < . y-min) (set! y-min new-y))
-                    (when (new-y . > . y-max) (set! y-max new-y)))
-                  (x-loop (unsafe-fx+ x 1))]
-                 [else
-                  (y-loop (unsafe-fx+ y 1))]))))
-     (flomap-transform fm t x-min y-min x-max y-max)]
-    [(fm t x-min y-min x-max y-max)
-     (let ([x-min  (exact->inexact x-min)]
-           [y-min  (exact->inexact y-min)]
-           [x-max  (exact->inexact x-max)]
-           [y-max  (exact->inexact y-max)])
-       (match-define (flomap vs c w h) fm)
-       (match-define (invertible-2d-mapping f g) (t w h))
-       (define int-x-min (fl->fx (floor x-min)))
-       (define int-y-min (fl->fx (floor y-min)))
-       (define int-x-max (fl->fx (ceiling x-max)))
-       (define int-y-max (fl->fx (ceiling y-max)))
-       (define new-w (- int-x-max int-x-min))
-       (define new-h (- int-y-max int-y-min))
-       (define x-offset (+ 0.5 (fx->fl int-x-min)))
-       (define y-offset (+ 0.5 (fx->fl int-y-min)))
-       (inline-build-flomap*
-        c new-w new-h
-        (λ (x y _i)
-          (define-values (old-x old-y) (g (+ (fx->fl x) x-offset)
-                                          (+ (fx->fl y) y-offset)))
-          (flomap-bilinear-ref* fm old-x old-y))))]))
+                    (when (new-y . > . y-max) (set! y-max new-y))
+                    (x-loop (unsafe-fx+ x 1))]
+                   [else
+                    (y-loop (unsafe-fx+ y 1))]))))
+       (values x-min y-min x-max y-max)]))
+  ;; return integer bounds
+  (cond [(and (rational? x-min) (rational? y-min) (rational? x-max) (rational? y-max))
+         (values (round (inexact->exact x-min))
+                 (round (inexact->exact y-min))
+                 (round (inexact->exact x-max))
+                 (round (inexact->exact y-max)))]
+        [else  (values 0 0 0 0)]))
 
-(: rotate-transform (Real -> Flomap-Transform))
-(define ((rotate-transform θ) w h)
+(: flomap-transform-compose (Flomap-Transform Flomap-Transform -> Flomap-Transform))
+(define ((flomap-transform-compose t2 t1) w0 h0)
+  (match-define (flomap-2d-mapping fun1 inv1 bounded-by1) (t1 w0 h0))
+  (define-values (x-start y-start x-end y-end) (flomap-transform-bounds t1 w0 h0))
+  (define w1 (- x-end x-start))
+  (define h1 (- y-end y-start))
+  (match-define (flomap-2d-mapping fun2 inv2 bounded-by2) (t2 w1 h1))
+  (flomap-2d-mapping
+   (λ (x y)
+     (let-values ([(x y)  (fun1 x y)])
+       (fun2 (- x x-start) (- y y-start))))
+   (λ (x y)
+     (let-values ([(x y)  (inv2 x y)])
+       (inv1 (+ x x-start) (+ y y-start))))
+   (cond [(or (symbol=? bounded-by1 'all) (symbol=? bounded-by2 'all))  'all]
+         [(or (symbol=? bounded-by1 'edges) (symbol=? bounded-by2 'edges))  'edges]
+         [(or (symbol=? bounded-by1 'corners) (symbol=? bounded-by2 'corners))  'corners]
+         [(or (symbol=? bounded-by1 'id) (symbol=? bounded-by2 'id))  'id])))
+
+(: flomap-transform (case-> (flomap Flomap-Transform -> flomap)
+                            (flomap Flomap-Transform Integer Integer Integer Integer -> flomap)))
+(define flomap-transform
+  (case-lambda
+    [(fm t)  (match-define (flomap _vs _c w h) fm)
+             (define-values (x-start y-start x-end y-end)
+               (flomap-transform-bounds t w h))
+             (flomap-transform fm t x-start y-start x-end y-end)]
+    [(fm t x-start y-start x-end y-end)
+     (match-define (flomap _ c w h) fm)
+     (match-define (flomap-2d-mapping _ inv _) (t w h))  ; only need the inverse mapping
+     (define new-w (- x-end x-start))
+     (define new-h (- y-end y-start))
+     (define x-offset (+ 0.5 x-start))
+     (define y-offset (+ 0.5 y-start))
+     (inline-build-flomap*
+      c new-w new-h
+      (λ (x y _i)
+        (define-values (old-x old-y) (inv (+ (fx->fl x) x-offset)
+                                          (+ (fx->fl y) y-offset)))
+        (flomap-bilinear-ref* fm old-x old-y)))]))
+
+(: flomap-id-transform Flomap-Transform)
+(define (flomap-id-transform w h)
+  (flomap-2d-mapping (λ (x y) (values x y)) (λ (x y) (values x y)) 'id))
+
+(: flomap-scale-transform (case-> (Real -> Flomap-Transform)
+                                  (Real Real -> Flomap-Transform)))
+(define flomap-scale-transform
+  (case-lambda
+    [(x-scale)  (flomap-scale-transform x-scale x-scale)]
+    [(x-scale y-scale)
+     (let ([x-scale  (exact->inexact x-scale)]
+           [y-scale  (exact->inexact y-scale)])
+       (λ (w h)
+         (flomap-2d-mapping (λ (x y) (values (* x x-scale) (* y y-scale)))
+                            (λ (x y) (values (/ x x-scale) (/ y y-scale)))
+                            'corners)))]))
+
+(: flomap-rotate-transform (Real -> Flomap-Transform))
+(define ((flomap-rotate-transform θ) w h)
   (let ([θ  (- (exact->inexact θ))])
     (define cos-θ (cos θ))
     (define sin-θ (sin θ))
     (define x-mid (* 0.5 (->fl w)))
     (define y-mid (* 0.5 (->fl h)))
-    (invertible-2d-mapping
-     (λ: ([x : Flonum] [y : Flonum])
+    (flomap-2d-mapping
+     (λ: ([x : Float] [y : Float])
        (let ([x  (- x x-mid)]
              [y  (- y y-mid)])
          (values (+ x-mid (- (* x cos-θ) (* y sin-θ)))
                  (+ y-mid (+ (* x sin-θ) (* y cos-θ))))))
-     (λ: ([x : Flonum] [y : Flonum])
+     (λ: ([x : Float] [y : Float])
        (let ([x  (- x x-mid)]
              [y  (- y y-mid)])
          (values (+ x-mid (+ (* x cos-θ) (* y sin-θ)))
-                 (+ y-mid (- (* y cos-θ) (* x sin-θ)))))))))
+                 (+ y-mid (- (* y cos-θ) (* x sin-θ))))))
+     'corners)))
 
-(: whirl-and-pinch-function (Real Real Real Integer Integer
-                                  -> (Flonum Flonum -> (values Flonum Flonum))))
-(define (whirl-and-pinch-function θ pinch radius w h)
-  (let ([θ  (exact->inexact θ)]
-        [pinch  (- (exact->inexact pinch))]
-        [radius  (exact->inexact radius)])
-    (define pinch-exp
-      (cond [(pinch . >= . 0.0)  pinch]
-            [else  (/ pinch (- 1.0 pinch))]))
+(: whirl-function (Real Integer Integer -> (Float Float -> (values Float Float))))
+(define (whirl-function θ w h)
+  (let ([θ  (exact->inexact θ)])
     (define x-mid (* 0.5 (->fl w)))
     (define y-mid (* 0.5 (->fl h)))
     (define-values (x-scale y-scale)
@@ -153,31 +247,100 @@
             [(x-mid . > . y-mid)  (values 1.0 (/ x-mid y-mid))]
             [else  (values 1.0 1.0)]))
     (define fm-radius (* 0.5 (->fl (max w h))))
-    (define fm-radius^2 (* radius (sqr fm-radius)))
-    (define x-max (+ 0.5 (->fl w)))
-    (define y-max (+ 0.5 (->fl h)))
-    (λ: ([x : Flonum] [y : Flonum])
+    (define fm-radius^2 (sqr fm-radius))
+    (define x-max (->fl w))
+    (define y-max (->fl h))
+    (λ: ([x : Float] [y : Float])
       (define dx (* (- x x-mid) x-scale))
       (define dy (* (- y y-mid) y-scale))
       (define r^2 (+ (sqr dx) (sqr dy)))
       (cond [(r^2 . < . fm-radius^2)
              (define r (flsqrt (/ r^2 fm-radius^2)))
-             (define factor (cond [(or (r . = . 0.0) (pinch . = . 0.0))  1.0]
-                                  [else  (flexpt r pinch-exp)]))
-             (define pinched-dx (* dx factor))
-             (define pinched-dy (* dy factor))
              (define ang (* θ (sqr (- 1.0 r))))
              (define cos-a (cos ang))
              (define sin-a (sin ang))
-             (define old-x (+ (/ (- (* pinched-dx cos-a) (* pinched-dy sin-a)) x-scale) x-mid))
-             (define old-y (+ (/ (+ (* pinched-dx sin-a) (* pinched-dy cos-a)) y-scale) y-mid))
-             (values (max -0.5 (min x-max old-x))
-                     (max -0.5 (min y-max old-y)))]
+             (define old-x (+ (/ (- (* dx cos-a) (* dy sin-a)) x-scale) x-mid))
+             (define old-y (+ (/ (+ (* dx sin-a) (* dy cos-a)) y-scale) y-mid))
+             (values (max 0.0 (min x-max old-x))
+                     (max 0.0 (min y-max old-y)))]
             [else
              (values x y)]))))
 
-(: whirl-and-pinch-transform (Real Real Real -> Flomap-Transform))
-(define ((whirl-and-pinch-transform θ pinch radius) w h)
-  (invertible-2d-mapping
-   (whirl-and-pinch-function (- θ) (- pinch) radius w h)
-   (whirl-and-pinch-function θ pinch radius w h)))
+(: flomap-whirl-transform (Real -> Flomap-Transform))
+(define ((flomap-whirl-transform θ) w h)
+  (flomap-2d-mapping (whirl-function (- θ) w h) (whirl-function θ w h) 'id))
+
+;; ===================================================================================================
+;; Projection transforms
+
+(struct: projection-mapping ([fun : (Float -> Float)]
+                             [inv : (Float -> Float)]))
+
+(define-type Projection (Float -> projection-mapping))
+
+(: perspective-projection (Real -> Projection))
+(define ((perspective-projection α) d)
+  (define f (/ d 2.0 (tan (* 0.5 (exact->inexact α)))))
+  (projection-mapping (λ (ρ) (* (tan ρ) f))
+                      (λ (r) (atan (/ r f)))))
+
+(: linear-projection (Real -> Projection))
+(define ((linear-projection α) d)
+  (define f (/ d (exact->inexact α)))
+  (projection-mapping (λ (ρ) (* ρ f))
+                      (λ (r) (/ r f))))
+
+(: orthographic-projection (Real -> Projection))
+(define ((orthographic-projection α) d)
+  (define f (/ d 2.0 (sin (* 0.5 (exact->inexact α)))))
+  (projection-mapping (λ (ρ) (* (sin ρ) f))
+                      (λ (r) (asin (/ r f)))))
+
+(: equal-area-projection (Real -> Projection))
+(define ((equal-area-projection α) d)
+  (define f (/ d 4.0 (sin (* 0.25 (exact->inexact α)))))
+  (projection-mapping (λ (ρ) (* 2.0 (sin (* 0.5 ρ)) f))
+                      (λ (r) (* 2.0 (asin (/ r 2.0 f))))))
+
+(: stereographic-projection (Real -> Projection))
+(define ((stereographic-projection α) d)
+  (define f (/ d 4.0 (tan (* 0.25 (exact->inexact α)))))
+  (projection-mapping (λ (ρ) (* 2.0 (tan (* 0.5 ρ)) f))
+                      (λ (r) (* 2.0 (atan (/ r 2.0 f))))))
+
+(: reproject (Projection Projection Boolean Integer Integer -> (Float Float -> (values Float Float))))
+(define (reproject to-proj from-proj crop? w h)
+  (define x-max (->fl w))
+  (define y-max (->fl h))
+  (define x-mid (* 0.5 x-max))
+  (define y-mid (* 0.5 y-max))
+  (define d (* 2.0 (flsqrt (+ (sqr x-mid) (sqr y-mid)))))
+  (match-define (projection-mapping _ inv) (from-proj d))
+  (match-define (projection-mapping fun _) (to-proj d))
+  (λ: ([x : Float] [y : Float])
+    (define dx (- x x-mid))
+    (define dy (- y y-mid))
+    (define θ (atan dy dx))
+    (define r (flsqrt (+ (sqr dx) (sqr dy))))
+    (define new-r (fun (inv r)))
+    (define new-x (+ x-mid (* (cos θ) new-r)))
+    (define new-y (+ y-mid (* (sin θ) new-r)))
+    (cond [crop?  (values (if (or (new-x . < . 0.0) (new-x . > . x-max)) +nan.0 new-x)
+                          (if (or (new-y . < . 0.0) (new-y . > . y-max)) +nan.0 new-y))]
+          [else   (values new-x new-y)])))
+
+(: flomap-projection-transform (case-> (Projection Projection -> Flomap-Transform)
+                                       (Projection Projection Boolean -> Flomap-Transform)))
+(define flomap-projection-transform
+  (case-lambda
+    [(to-proj from-proj)  (flomap-projection-transform to-proj from-proj #t)]
+    [(to-proj from-proj crop?)
+     (λ (w h) (flomap-2d-mapping (reproject to-proj from-proj crop? w h)
+                                 (reproject from-proj to-proj crop? w h)
+                                 'edges))]))
+
+(: flomap-fisheye-transform (Real -> Flomap-Transform))
+(define (flomap-fisheye-transform α)
+  (flomap-projection-transform (equal-area-projection α)
+                               (perspective-projection α)
+                               #f))

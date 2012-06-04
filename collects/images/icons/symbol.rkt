@@ -76,7 +76,9 @@
             [fm  (if trim? (flomap-trim fm) fm)]
             [fm  (flomap-resize fm #f (- height (* 2 ceiling-amt)))]
             [fm  (flomap-inset fm ceiling-amt)]
-            [fm  (if (outline . > . 0) (flomap-outlined fm outline (flvector r g b)) fm)])
+            [fm  (cond [(outline . > . 0)
+                        (flomap-cc-superimpose (flomap-outline fm outline (flvector 1.0 r g b)) fm)]
+                       [else  fm])])
        (flomap-render-icon fm material)))))
 
 (define recycle-path-commands

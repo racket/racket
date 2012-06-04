@@ -7,20 +7,21 @@
 (provide flomap-min-value flomap-max-value flomap-extreme-values
          flomap-nonzero-rect)
 
-(: flomap-min-value (flomap -> Flonum))
+(: flomap-min-value (flomap -> Float))
 (define (flomap-min-value fm)
   (for/fold ([v-min +inf.0]) ([v  (in-flvector (flomap-values fm))])
     (min v-min v)))
 
-(: flomap-max-value (flomap -> Flonum))
+(: flomap-max-value (flomap -> Float))
 (define (flomap-max-value fm)
   (for/fold ([v-max -inf.0]) ([v  (in-flvector (flomap-values fm))])
     (max v-max v)))
 
-(: flomap-extreme-values (flomap -> (values Flonum Flonum)))
+(: flomap-extreme-values (flomap -> (values Float Float)))
 (define (flomap-extreme-values fm)
-  (for/fold: ([v-min : Flonum  +inf.0] [v-max : Flonum  -inf.0]
-                                       ) ([v : Flonum  (in-flvector (flomap-values fm))])
+  (for/fold: ([v-min : Float  +inf.0]
+              [v-max : Float  -inf.0]
+              ) ([v : Float  (in-flvector (flomap-values fm))])
     (values (min v-min v) (max v-max v))))
 
 (: flomap-nonzero-rect (flomap -> (values Nonnegative-Fixnum Nonnegative-Fixnum

@@ -136,14 +136,14 @@
                               (flomap-scale-x (flomap-resize-y fm height) s)])]
         [else  (error 'flomap-resize "can't happen")]))
 
-(: flomap-scale-x (flomap Flonum -> flomap))
+(: flomap-scale-x (flomap Float -> flomap))
 (define (flomap-scale-x fm scale)
   (match-define (flomap _ c w h) fm)
   (cond [(= 0.0 scale)  (make-flomap c 0 h)]
         [else  (let ([scale  (abs scale)])
                  (flomap-scale*-x fm scale (abs (fl->fx (ceiling (* (exact->inexact w) scale))))))]))
 
-(: flomap-scale-y (flomap Flonum -> flomap))
+(: flomap-scale-y (flomap Float -> flomap))
 (define (flomap-scale-y fm scale)
   (match-define (flomap _ c w h) fm)
   (cond [(= 0.0 scale)  (make-flomap c w 0)]
@@ -171,13 +171,13 @@
 
 ;; calculates the standard deviation of downscaling blur, assuming linear interpolation will be
 ;; carried out on the blurred image
-(: stddev-for-scale (Flonum -> Flonum))
+(: stddev-for-scale (Float -> Float))
 (define (stddev-for-scale scale)
   (define var (- (/ box-filter-variance (sqr scale))
                  triangle-filter-variance))
   (flsqrt (max 0.0 var)))
 
-(: flomap-scale*-x (flomap Flonum Exact-Nonnegative-Integer -> flomap))
+(: flomap-scale*-x (flomap Float Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-x fm scale width)
   (cond [(scale . = . 1.0)  fm]
         [(scale . > . 1.0)  (flomap-scale*-x/linear fm scale width)]
@@ -185,7 +185,7 @@
                  (flomap-gaussian-blur-x fm (stddev-for-scale scale)))
                (flomap-scale*-x/linear low-res-fm scale width)]))
 
-(: flomap-scale*-y (flomap Flonum Exact-Nonnegative-Integer -> flomap))
+(: flomap-scale*-y (flomap Float Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-y fm scale height)
   (cond [(scale . = . 1.0)  fm]
         [(scale . > . 1.0)  (flomap-scale*-y/linear fm scale height)]
@@ -193,7 +193,7 @@
                  (flomap-gaussian-blur-y fm (stddev-for-scale scale)))
                (flomap-scale*-y/linear low-res-fm scale height)]))
 
-(: flomap-scale*-x/linear (flomap Flonum Exact-Nonnegative-Integer -> flomap))
+(: flomap-scale*-x/linear (flomap Float Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-x/linear fm s new-w)
   (match-define (flomap vs c w h) fm)
   (define w-1 (unsafe-fx+ w -1))
@@ -212,7 +212,7 @@
                              [else  (flvector-ref vs (unsafe-fx+ i0 c))]))
             (fl-convex-combination v0 v1 (- scaled-x floor-scaled-x))]))))
 
-(: flomap-scale*-y/linear (flomap Flonum Exact-Nonnegative-Integer -> flomap))
+(: flomap-scale*-y/linear (flomap Float Exact-Nonnegative-Integer -> flomap))
 (define (flomap-scale*-y/linear fm s new-h)
   (match-define (flomap vs c w h) fm)
   (define h-1 (unsafe-fx+ h -1))

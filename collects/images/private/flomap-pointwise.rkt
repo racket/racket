@@ -12,14 +12,14 @@
 ;; ===================================================================================================
 ;; Unary
 
-;(: inline-flomap-lift ((Flonum -> Flonum) -> (flomap -> flomap)))
+;(: inline-flomap-lift ((Float -> Float) -> (flomap -> flomap)))
 (define-syntax-rule (inline-flomap-lift f)
   (λ: ([fm : flomap])
     (match-define (flomap vs c w h) fm)
     (flomap (inline-build-flvector (* c w h) (λ (i) (f (flvector-ref vs i))))
             c w h)))
 
-(: flomap-lift ((Flonum -> Real) -> (flomap -> flomap)))
+(: flomap-lift ((Float -> Real) -> (flomap -> flomap)))
 (define (flomap-lift op)
   (inline-flomap-lift (λ (x) (exact->inexact (op x)))))
 
@@ -44,7 +44,7 @@
          c1 c2))
 
 #;
-(: inline-flomap-lift2* (Symbol (Flonum Flonum -> Flonum)
+(: inline-flomap-lift2* (Symbol (Float Float -> Float)
                                 -> (flomap flomap -> flomap)))
 (define-syntax-rule (inline-flomap-lift2* name f)
   (λ: ([fm1 : flomap] [fm2 : flomap])
@@ -67,7 +67,7 @@
       [else  (raise-component-error name c1 c2)])))
 
 #;
-(: inline-flomap-lift2 (Symbol (Flonum Flonum -> Flonum)
+(: inline-flomap-lift2 (Symbol (Float Float -> Float)
                                -> ((U Real flomap) (U Real flomap) -> flomap)))
 (define-syntax-rule (inline-flomap-lift2 name f)
   (λ: ([fm1 : (U Real flomap)] [fm2 : (U Real flomap)])
@@ -79,7 +79,7 @@
                       ((inline-flomap-lift (λ (v) (f v fm2))) fm1))]
       [else  ((inline-flomap-lift2* name f) fm1 fm2)])))
 
-(: flomap-lift2 (Symbol (Flonum Flonum -> Real) -> ((U Real flomap) (U Real flomap) -> flomap)))
+(: flomap-lift2 (Symbol (Float Float -> Real) -> ((U Real flomap) (U Real flomap) -> flomap)))
 (define (flomap-lift2 name f)
   (inline-flomap-lift2 name (λ (x y) (exact->inexact (f x y)))))
 
