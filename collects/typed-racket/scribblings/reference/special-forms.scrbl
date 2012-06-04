@@ -13,14 +13,17 @@
    (examples #:eval the-top-eval . args))
 
 
-@(define-syntax-rule (def-racket for-id for*-id with-handlers-id mod-beg-id)
+@(define-syntax-rule (def-racket for-id for*-id with-handlers-id mod-beg-id lambda-id λ-id define-id)
   (begin
-    (require (for-label (only-in racket/base for for* with-handlers #%module-begin)))
+    (require (for-label (only-in racket/base for for* with-handlers #%module-begin lambda λ define)))
     (define for-id (racket for))
     (define for*-id (racket for*))
     (define mod-beg-id (racket #%module-begin))
-    (define with-handlers-id (racket with-handlers))))
-@(def-racket for-id for*-id with-handlers-id mod-beg-id)
+    (define with-handlers-id (racket with-handlers))
+    (define lambda-id (racket lambda))
+    (define λ-id (racket λ))
+    (define define-id (racket define))))
+@(def-racket for-id for*-id with-handlers-id mod-beg-id lambda-id λ-id define-id)
 
 
 @title[#:tag "special-forms"]{Special Form Reference}
@@ -397,8 +400,17 @@ Similar to @racket[require/typed], but also provides the imported identifiers.
 
 @section{Other Forms}
 
-@defidform[with-handlers]{
-Identical to @|with-handlers-id|, but provides additional annotations to help the typechecker.
+@deftogether[[@defidform[with-handlers]
+              @defidform[lambda]
+              @defidform[λ]
+              @defidform[define]]]{
+Identical to @|with-handlers-id|, @|lambda-id|, @|λ-id|, and @|define-id|, respectively, 
+but provide additional annotations to assist the typechecker.  The @racket[define:], 
+@racket[lambda:], and @racket[λ:] forms are useful replacements which support type
+annotation.
+             
+Note that unlike @|define-id|, @racket[define] does not bind functions with keyword arguments
+to static information about those functions.
 }
 
 @defform[(#%module-begin form ...)]{
