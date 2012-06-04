@@ -1408,7 +1408,7 @@
         
         [tc-e (let: ([x : Float 0.0])
                 (= 0 x))
-              #:ret (ret -Boolean (-FS -top -top) (make-NoObject))]
+              #:ret (ret -Boolean (-FS -top -top) (make-Empty))]
         
         [tc-e/t (ann (lambda: ([x : Boolean]) (if x x #t)) (Boolean -> #t)) (t:-> -Boolean (-val #t))]
         )
