@@ -51,6 +51,57 @@
           (if (and (not (= found:n 0)) fn-is-large) "only " "")
           (if (= found:n 0) "none" found:n)))
 
+(define (format-enum conj l)
+  (if (= (length l) 2)
+      (format "~a ~a ~a" (car l) conj (cadr l))
+      (apply string-append
+             (let loop ([l l])
+               (cond
+                [(null? (cdr l)) l]
+                [(null? (cddr l))
+                 (list* (car l) ", " conj " " (loop (cdr l)))]
+                [else
+                 (list* (car l) ", " (loop (cdr l)))])))))
+
+(define (contract-to-desc ctc)
+  (with-handlers ([exn:fail:read? (lambda (exn) ctc)])
+    (define s (read (open-input-string ctc)))
+    (let loop ([s s])
+      (cond
+       [(not s) "false"]
+       [(and (symbol? s) (regexp-match? #rx"[?]$" (symbol->string s)))
+        (define str (symbol->string s))
+        (format "a~a ~a"
+                (if (and ((string-length str) . > . 0)
+                         (memv (string-ref str 0) '(#\a #\e #\i #\o #\u)))
+                    "n"
+                    "")
+                (substring str 0 (sub1 (string-length str))))]
+       [(null? s) "an impossible value"]
+       [(not (list? s)) ctc] ;; ???
+       [(eq? 'or/c (car s))
+        (format-enum "or" (map loop (cdr s)))]
+       [(eq? 'and/c (car s))
+        (string-append "a value that is " (format-enum "and" (map loop (cdr s))))]
+       [(eq? 'not/c (car s))
+        (format "a value that is not ~a" (loop (cadr s)))]
+       [(and (eq? '>/c (car s)) (zero? (cadr s)))
+        "a positive number"]
+       [(and (eq? '</c (car s)) (zero? (cadr s)))
+        "a negative number"]
+       [(and (eq? '>=/c (car s)) (zero? (cadr s)))
+        "a non-negative number"]
+       [else ctc]))))
+
+(define (contract-error-message ctc given pos)
+  (define d (contract-to-desc ctc))
+  (format "expects ~a~a~a~a, given ~a"
+          d
+          (if pos " as " "")
+          (or pos "")
+          (if pos " argument" "")
+          given))
+
 (define (rewrite-contract-error-message msg)
   (define replacements
     (list (list #rx"application: expected procedure\n  given: ([^\n]*)(?:\n  arguments: [[]none[]])?"
@@ -68,6 +119,8 @@
                 (lambda (all one two three) (argcount-error-message one two three #t)))
           (list #px"application: wrong number of arguments.*\n  procedure: ([^\n]*)\n  expected[^:]*: (\\d+)\n  given[^:]*: (\\d+)(?:\n  arguments:(?:\n   [^\n]*)*)?"
                 (lambda (all one two three) (argcount-error-message one two three)))
+          (list #px"contract violation\n  expected: (.*?)\n  given: ([^\n]*)(?:\n  argument position: ([^\n]*))?(?:\n  other arguments:.*)?"
+                (lambda (all ctc given pos) (contract-error-message ctc given pos)))
           (list #rx"^procedure "
                 (lambda (all) ""))
           (list #rx", given: "

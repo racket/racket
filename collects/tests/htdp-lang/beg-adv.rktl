@@ -2,7 +2,9 @@
 (htdp-err/rt-test (add1) "add1: expects 1 argument, but found none")
 (htdp-err/rt-test (add1 'a 'b 'c) "add1: expects only 1 argument, but found 3")
 (htdp-err/rt-test (define x x) "x is used here before its definition")
-(htdp-err/rt-test (add1 'a) "add1: contract violation")
+(htdp-err/rt-test (add1 'a) "add1: expects a number, given 'a")
+(htdp-err/rt-test (+ 'a 1) "[+]: expects a number as 1st argument, given 'a")
+(htdp-err/rt-test (+ 1 'a) "[+]: expects a number as 2nd argument, given 'a")
 
 (htdp-syntax-test #'() "function call: expected a function after the open parenthesis, but nothing's there")
 
@@ -80,7 +82,7 @@
 (htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
 (htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
 (htdp-test #f 'a3? (a3? (make-a1 1)))
-(htdp-err/rt-test (a1-b 10) "a1-b: contract violation\n  expected: a1[?]\n  given: 10")
+(htdp-err/rt-test (a1-b 10) "a1-b: expects an a1, given 10")
 (htdp-syntax-test #'(a0 1 2 3) "a0: expected a function after the open parenthesis, but found a structure name")
 
 (htdp-syntax-test #'cond "cond: expected an open parenthesis before cond, but found none")
