@@ -3,13 +3,13 @@
          ffi/unsafe/alloc
          "utils.rkt"
          "const.rkt"
-         "types.rkt")
+         "types.rkt"
+         "font.rkt")
 
 (provide
  (protect-out get-theme-logfont
               get-theme-font-face
               get-theme-font-size
-              _LOGFONT-pointer
               OpenThemeData
               CloseThemeData
               DrawThemeParentBackground
@@ -19,38 +19,6 @@
 
 (define _HTHEME (_cpointer 'HTHEME))
 
-(define-cstruct _FaceName1
-  ([c1 _uint16]
-   [c2 _uint16]
-   [c3 _uint16]
-   [c4 _uint16]
-   [c5 _uint16]
-   [c6 _uint16]
-   [c7 _uint16]
-   [c8 _uint16]))
-
-(define-cstruct _FaceName
-  ([f1 _FaceName1]
-   [f2 _FaceName1]
-   [f3 _FaceName1]
-   [f4 _FaceName1]))
-
-(define-cstruct _LOGFONT
-  ([lfHeight  _LONG]
-   [lfWidth  _LONG]
-   [lfEscapement  _LONG]
-   [lfOrientation  _LONG]
-   [lfWeight  _LONG]
-   [lfItalic  _BYTE]
-   [lfUnderline  _BYTE]
-   [lfStrikeOut  _BYTE]
-   [lfCharSet  _BYTE]
-   [lfOutPrecision  _BYTE]
-   [lfClipPrecision  _BYTE]
-   [lfQuality  _BYTE]
-   [lfPitchAndFamily  _BYTE]
-   [lfFaceName _FaceName])) ; 32 of them
-
 (define-uxtheme CloseThemeData (_wfun _HTHEME -> (r : _HRESULT)
 				      -> (when (negative? r)
 					   (error 'CloseThemeData "failed: ~s" (bitwise-and #xFFFF r))))
@@ -59,13 +27,13 @@
 (define-uxtheme OpenThemeData (_wfun _HWND _string/utf-16 -> (_or-null _HTHEME))
   #:wrap (allocator maybe-CloseThemeData))
 
-(define-uxtheme GetThemeFont (_wfun _HTHEME _HDC _int _int _int (f : (_ptr o _LOGFONT))
+(define-uxtheme GetThemeFont (_wfun _HTHEME _HDC _int _int _int (f : (_ptr o _LOGFONTW))
 				    -> (r : _HRESULT)
 				    -> (if (negative? r) 
 					   (error 'GetThemeFont "failed: ~s" (bitwise-and #xFFFF r))
 					   f)))
 
-(define-uxtheme GetThemeSysFont(_wfun (_or-null _HTHEME) _int (f : (_ptr o _LOGFONT))
+(define-uxtheme GetThemeSysFont(_wfun (_or-null _HTHEME) _int (f : (_ptr o _LOGFONTW))
 				      -> (r : _HRESULT)
 				      -> (if (negative? r) 
 					     (error 'GetThemeSysFont "failed: ~s" (bitwise-and #xFFFF r))
@@ -98,7 +66,7 @@
   theme-logfont)
 
 (define (get-theme-font-face)
-  (cast (LOGFONT-lfFaceName theme-logfont) _pointer _string/utf-16))
+  (cast (array-ptr (LOGFONTW-lfFaceName theme-logfont)) _pointer _string/utf-16))
 
 (define (get-theme-font-size)
-  (abs (LOGFONT-lfHeight theme-logfont)))
+  (abs (LOGFONTW-lfHeight theme-logfont)))

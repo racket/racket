@@ -42,7 +42,8 @@
               CheckMenuItem
               ModifyMenuW
               RemoveMenu
-              SelectObject))
+              SelectObject
+              WideCharToMultiByte))
 
 (define gdi32-lib (ffi-lib "gdi32.dll"))
 (define user32-lib (ffi-lib "user32.dll"))
@@ -151,3 +152,7 @@
                                  -> (unless r (failed 'RemoveMenu))))
 
 (define-gdi32 SelectObject (_wfun _HDC _pointer -> _pointer))
+
+(define-kernel32 WideCharToMultiByte (_wfun _UINT _DWORD _pointer _int
+                                            _pointer _int _pointer _pointer
+                                            -> _int))

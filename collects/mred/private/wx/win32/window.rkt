@@ -59,7 +59,7 @@
 (define-user32 ScreenToClient (_wfun _HWND _POINT-pointer -> (r : _BOOL)
                                      -> (unless r (failed 'ClientToScreen))))
 
-(define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
+(define-gdi32 CreateFontIndirectW (_wfun _LOGFONTW-pointer -> _HFONT))
 
 (define-shell32 DragAcceptFiles (_wfun _HWND _BOOL -> _void))
 
@@ -797,7 +797,8 @@
     (set! default-control-font
 	  (make-object font%
 		       (get-theme-font-size)
-		       (get-theme-font-face)
+                       (logfont->pango-family
+                         (get-theme-logfont))
 		       'system
 		       'normal 'normal #f 'default
 		       #t)))

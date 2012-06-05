@@ -298,6 +298,7 @@
 (define-pango pango_font_description_set_weight (_pfun PangoFontDescription _int -> _void))
 (define-pango pango_font_description_set_size (_pfun PangoFontDescription _int -> _void))
 (define-pango pango_font_description_set_absolute_size (_pfun PangoFontDescription _double* -> _void))
+(define-pango pango_font_description_get_family (_pfun PangoFontDescription ->  _string))
 
 (define _PangoWin32FontCache (_cpointer 'PangoWin32FontCache))
 (define _HFONT (_cpointer 'HFONT))
@@ -307,6 +308,9 @@
 (define-pangowin32 pango_win32_font_logfont (_pfun PangoFont -> _LOGFONT-pointer)
   #:make-fail make-not-available
   #:wrap (allocator g_free))
+(define-pangowin32 pango_win32_font_description_from_logfont (_pfun _LOGFONT-pointer -> PangoFontDescription)
+  #:make-fail make-not-available
+  #:wrap (allocator pango_font_description_free))
 (define-pangowin32 pango_win32_font_cache_unload (_pfun _PangoWin32FontCache _HFONT -> _void)
   #:make-fail make-not-available)
 (define-pangowin32 pango_win32_font_cache_load (_pfun _PangoWin32FontCache _LOGFONT-pointer -> _HFONT)
