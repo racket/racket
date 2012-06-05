@@ -142,7 +142,50 @@
        (define out (racket-syntax (define-honu-operator/syntax name level association.result function.result)))
        (values out #'rest #t)])))
 
+;; equals can have a compile time property that allows it to do something like set!
+;; v.x could return a syntax object with a property that can be invoked by an equals
+;; thing so that it can be rewritten to do the set! thing
+;; if the property is not used then it will just be a field lookup
+;;   v.x => (syntax-property #'(foo-x v)
+;;                           'setter (lambda (e) (set-foo-x! v e)))
+;; where `e' is the right hand side of the = expression
+
+;; default dot interpretation
+(define-syntax (dot stx)
+  (syntax-parse stx
+    [(_ object field:identifier)
+     (racket-syntax
+       (let ([left* object])
+         (cond
+           [(honu-struct? left*) (let ([use (honu-struct-get left*)])
+                                   (use left* 'field))]
+           [(object? left*) (get-field field left*)]
+           ;; possibly handle other types of data
+           [else (error 'dot "don't know how to deal with ~a (~a)" 'object left*)])))]))
+
+(define-syntax (dot-assign stx)
+  (syntax-parse stx
+    [(_ left field:identifier expression)
+     (racket-syntax
+       (let ([left* left])
+         (cond
+           [(honu-struct? left*)
+            (honu-struct-set! left* 'field expression)]
+           [(object? left*) (error 'assign "implement set for objects")]
+           [else (error 'assign "don't know how to do set for ~a" left*)])))]))
+
 (provide honu-dot)
+(define-honu-operator/syntax honu-dot 10000 'left
+  (lambda (left right)
+    (with-syntax ([left left]
+                  [right (syntax-parse right
+                           [field:identifier #'field])])
+      (syntax-property (racket-syntax (dot left right))
+                       'assign
+                       (lambda (expression)
+                         (with-syntax ([expression expression])
+                           (racket-syntax (dot-assign left right expression))))))))
+#;
 (define-honu-fixture honu-dot
   (lambda (left rest)
 

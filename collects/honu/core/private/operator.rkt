@@ -4,6 +4,7 @@
                      "transformer.rkt"
                      "fixture.rkt"
                      "compile.rkt"
+                     "debug.rkt"
                      syntax/parse))
 
 (provide (all-defined-out))
@@ -55,13 +56,36 @@
 
 ;; Traditional assignment operator
 (define-honu-operator/syntax honu-equal 0.0001 'left
-  (mutator (lambda (left right) right)))
+  (let ([plain-mutate (mutator (lambda (left right) right))])
+    (lambda (left right)
+      (define mutate (syntax-property left 'assign))
+      (if mutate
+        (mutate right)
+        (plain-mutate left right)))))
 
+;; Define an assignment operator that uses the current value in its operation
+;;   a -= 2
+;; is the same 
+;;   a = a - 2
+;; and turns into
+;;   (set! a (- a 2))
+;;
+;;   a.x -= 2
+;; turns into
+;;   (honu-struct-set! a x (- (dot a x) 2))
+;; where (dot a x) is field lookup of x inside a
 (define-syntax-rule (define-honu-operator-= name operation)
   (define-honu-operator/syntax name 0.0001 'left
-                               (mutator (lambda (left right)
-                                          (with-syntax ([left left] [right right])
-                                            #'(operation left right))))))
+    (let ()
+      (define (do-it left right)
+        (with-syntax ([left left] [right right])
+          #'(operation left right)))
+      (define plain-mutate (mutator do-it))
+      (lambda (left right)
+        (define mutate (syntax-property left 'assign))
+        (if mutate
+          (mutate (do-it left right))
+          (plain-mutate left right))))))
 
 ;; Operators that mutate the left hand side
 (define-honu-operator-= honu-+= +)

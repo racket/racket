@@ -372,7 +372,7 @@
                    precedence left
                    #'racket))]
       [(head rest ...)
-       (debug "Not a special expression..\n")
+       (debug 2 "Not a special expression..\n")
        (cond
          [(honu-macro? #'head)
           (debug "Macro ~a\n" #'head)
@@ -613,15 +613,21 @@
                        (when (not (empty-syntax? rest))
                          (raise-syntax-error 'parse-all "expected no more syntax" parsed-original))
                        out)))
-    (debug "Parsed ~a unparsed ~a\n"
+    (debug "Parsed ~a unparsed ~a all ~a\n"
            (if parsed (syntax->datum parsed) parsed)
-           (if unparsed (syntax->datum unparsed) unparsed))
+           (if unparsed (syntax->datum unparsed) unparsed)
+           all)
     (if (empty-syntax? unparsed)
       (with-syntax ([(use ...) (reverse (if parsed
                                           (cons parsed all)
                                           all))])
-        (emit-remark "Parsed all" #'(begin use ...))
-        (racket-syntax (begin use ...)))
+        (debug "Nothing left to parse. Use ~a\n" #'(use ...))
+        ;; If multiple things then wrap inside a begin
+        (syntax-parse #'(use ...)
+          [(x z y ...)
+           (emit-remark "Parsed all" #'(begin use ...))
+           (racket-syntax (begin use ...))]
+          [(x) (racket-syntax x)]))
       (loop (cons parsed all)
             unparsed))))
 

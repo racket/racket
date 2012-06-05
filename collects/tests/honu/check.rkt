@@ -45,6 +45,14 @@
                 }
              1)
 
+  (check-equal? @honu{
+                  var x = 12
+                  x *= 2
+                  x -= 5
+                  x
+                }
+                (- (* 12 2) 5))
+
   (check-equal? @honu{[x + 1: x = [1, 2, 3]]} '(2 3 4))
   (check-equal? @honu{[x + y: x = [1, 2, 3], y = [4, 5, 6]]} '(5 7 9))
   )

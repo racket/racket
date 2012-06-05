@@ -468,10 +468,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
   (syntax-parse stx
     [(_) #'(void)]
     [(_ forms ...)
-     (define-values (parsed unparsed) (honu-expand #'(forms ...)))
-     (debug "expanded ~a unexpanded ~a\n"
-            (if parsed (syntax->datum parsed) parsed)
-            (syntax->datum unparsed))
      #'(begin
          (define-syntax (parse-more stx)
            (syntax-case stx ()
@@ -482,6 +478,10 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
      ;; so use an empty form, begin, `parsed' could be #f becuase there was no expression
      ;; in the input such as parsing just ";".
      #;
+     (begin
+     (debug "expanded ~a unexpanded ~a\n"
+            (if parsed (syntax->datum parsed) parsed)
+            (syntax->datum unparsed))(define-values (parsed unparsed) (honu-expand #'(forms ...)))
      (with-syntax ([parsed (if (not parsed) #'(begin)
                              (remove-repeats parsed)
                              #;
@@ -497,7 +497,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
          (if (parsed-syntax? #'parsed)
            #'(begin parsed (honu-unparsed-begin unparsed ...))
            (with-syntax ([(out ...) #'parsed])
-             #'(honu-unparsed-begin out ... unparsed ...)))))]))
+             #'(honu-unparsed-begin out ... unparsed ...))))))]))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()
