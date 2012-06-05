@@ -1157,7 +1157,9 @@ It also provides a physically grounded generalization of the flomap transforms r
 @interaction-eval[#:eval flomap-eval
                          (begin (require racket/draw)
                                 (define state-of-the-union-fm
-                                  (bitmap->flomap (read-bitmap (build-path (current-directory) "scribblings" "images" "state-of-the-union.jpg") 'jpeg))))]
+                                  (bitmap->flomap (read-bitmap (collection-file-path "state-of-the-union.jpg"
+                                                                                     (build-path "images" "scribblings" "images"))
+                                                               'jpeg))))]
 
 @defproc[(flomap-projection-transform [to-proj Projection] [from-proj Projection] [crop? Boolean]) Flomap-Transform]{
 Returns a flomap transform that corrects for or simulates lens distortion.
