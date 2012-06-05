@@ -77,7 +77,7 @@ Adds a new item to the combo's popup menu. The given label is used for
 @defmethod[(get-menu)
            (is-a?/c popup-menu%)]{
 Returns a @racket[popup-menu%] that is effectively copied into the
- combo's popup menu when the combo is clicked. Only the labels can
+ combo's popup menu when the combo is clicked. Only the labels and
  callbacks of the menu's items are used; the enable state, submenus,
  or separators are ignored.
 }
