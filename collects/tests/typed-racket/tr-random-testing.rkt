@@ -3,7 +3,7 @@
 ;; Random testing of type preservation for floats.
 
 (require redex
-         racket/flonum racket/unsafe/ops
+         racket/flonum racket/unsafe/ops unstable/flonum
          racket/sandbox)
 
 (require (except-in typed-racket/utils/utils infer)
@@ -17,6 +17,8 @@
 
 (b:init) (n:init)
 (define-namespace-anchor anch)
+
+todo: exact numbers
 
 (define-language tr-arith ; to stay within floats, removed some numeric ops
   [n real]
@@ -99,10 +101,33 @@
   (define subtype? (subtype type-after type-before))
   subtype?)
 
+(define (random-integer->random-float E)
+  (define r (random))
+  (cond 
+    ;; probability 1/4: noisify and convert to single flonum
+    [(r . < . 0.25)
+     (real->single-flonum (* (random) E))]
+    ;; probability 1/4: noisify and convert to double flonum
+    [(r . < . 0.5)
+     (real->double-flonum (* (random) E))]
+    ;; probability 1/4: convert to very small double flonum
+    [(r . < . 0.75)
+     (define x (ordinal->flonum E))
+     (cond [(= x 0.0)  (if ((random) . < . 0.5) 0.0 -0.0)]
+           [else  x])]
+    ;; probability 1/20: +nan.0
+    [(r . < . 0.8)
+     +nan.0]
+    ;; remaining probability: convert to very large double flonum
+    [else
+     (if ((random) . < . 0.5)
+         (flstep -inf.0 E)
+         (flstep +inf.0 (- E)))]))
+
 ;; Redex can't generate floats, so we convert ints to floats.
 (define (exp->float-exp E) ; numbers or symbols or lists
   (cond [(number? E)
-         (exact->inexact (* (random) E))] ; add noise
+         (random-integer->random-float E)]
         [(list? E)
          (map exp->float-exp E)]
         [else

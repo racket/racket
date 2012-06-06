@@ -1808,7 +1808,8 @@
             (-NegRat . -> . -NegFixnum) ; -1
             (-NonPosRat . -> . -NonPosFixnum) ; 0 or -1
             (-Rat . -> . -Fixnum)
-            (-InexactReal . -> . -Flonum) ; single-flonums give a flonum result
+            (-Flonum . -> . -Flonum)
+            (-SingleFlonum . -> . -SingleFlonum)
             (-Real . -> . -Real))]
 
 [pi -PosFlonum]

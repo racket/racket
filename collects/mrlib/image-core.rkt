@@ -1132,9 +1132,6 @@ the mask bitmap and the original bitmap are all together in a single bytes!
        (values (abs rotated-width)
                (abs rotated-height)))]))
 
-(define (degrees->radians θ)
-  (* θ 2 pi (/ 360)))
-
 (define (mode-color->smoothing mode color)
   (cond
     [(and (eq? mode 'outline)

@@ -1,6 +1,7 @@
 #lang racket
 
-(require racket/contract racket/unsafe/ops unstable/flonum unstable/latent-contract/defthing)
+(require racket/contract racket/unsafe/ops
+         unstable/flonum unstable/latent-contract/defthing)
 
 (provide (all-defined-out))
 
@@ -12,12 +13,6 @@
 
 ;; ===================================================================================================
 ;; Flonums
-
-(defproc (nan? [x any/c]) boolean?
-  (eqv? x +nan.0))
-
-(defproc (infinite? [x any/c]) boolean?
-  (and (flonum? x) (or (unsafe-fl= x +inf.0) (unsafe-fl= x -inf.0))))
 
 (defproc (flblend [x flonum?] [y flonum?] [α flonum?]) flonum?
   (cond [(not (flonum? x))  (raise-type-error 'flblend "flonum" 0 x y α)]
@@ -120,17 +115,6 @@
                      [else  (for/fold ([m x]) ([y  (in-list xs)] [i  (in-naturals 1)])
                               (cond [(real? y)  (max2* m y)]
                                     [else  (apply raise-type-error 'max* "real number" i x xs)]))])]))
-
-(define 180/pi (/ 180 pi))
-(define pi/180 (/ pi 180))
-
-(defproc (degrees->radians [d real?]) real?
-  (cond [(not (real? d))  (raise-type-error 'degrees->radians "real number" d)]
-        [else  (* d pi/180)]))
-
-(defproc (radians->degrees [r real?]) real?
-  (cond [(not (real? r))  (raise-type-error 'radians->degrees "real number" r)]
-        [else  (* r 180/pi)]))
 
 (defproc (blend [x real?] [y real?] [α real?]) real?
   (cond [(not (real? x))  (raise-type-error 'blend "real number" 0 x y α)]
@@ -475,17 +459,21 @@
   (if x (if y (max* x y) x)
       (if y y #f)))
 
+(define (maybe-real? x)
+  (or (real? x) (not x)))
+
 (struct ivl (min max) #:transparent
   #:guard (λ (a b _)
-            (cond [(or (nan? a) (nan? b))  (values +nan.0 +nan.0)]
-                  [(and a b)               (values (min* a b) (max* a b))]
-                  [else                    (values a b)])))
+            (cond [(or (and a (nan? a)) (and b (nan? b)))  (values +nan.0 +nan.0)]
+                  [(and a b)  (values (min* a b) (max* a b))]
+                  [else  (values a b)])))
 
 (defthing empty-ivl ivl? (ivl +nan.0 +nan.0))
 (defthing unknown-ivl ivl? (ivl #f #f))
 
 (defproc (ivl-empty? [i ivl?]) boolean?
-  (nan? (ivl-min i)))
+  (define a (ivl-min i))
+  (and a (nan? a)))
 
 (defproc (ivl-known? [i ivl?]) boolean?
   (match-define (ivl a b) i)

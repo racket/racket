@@ -4,42 +4,105 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #lang racket/base
-(provide pi
+
+(require "unsafe/ops.rkt"
+         "performance-hint.rkt")
+
+(provide pi pi.f
+         nan? infinite?
          sqr
          sgn conjugate
          sinh cosh tanh
+         degrees->radians radians->degrees
+         exact-round exact-floor exact-ceiling exact-truncate
          order-of-magnitude)
 
-(define (sqr z)
-  (unless (number? z) (raise-argument-error 'sqr "number?" z))
-  (* z z))
-
 (define pi (atan 0 -1))
+(define pi.f (atan 0.0f0 -1.0f0))
 
-;; sgn function
-(define (sgn x)
-  (unless (real? x) (raise-argument-error 'sgn "real?" x))
-  (if (exact? x)
-    (cond [(< x 0) -1] [(> x 0) 1] [else 0])
-    (cond [(< x 0.0) -1.0] [(> x 0.0) 1.0] [else 0.0])))
-
-;; complex conjugate
-(define (conjugate z)
-  (unless (number? z) (raise-argument-error 'conjugate "number?" z))
-  (make-rectangular (real-part z) (- (imag-part z))))
-
-;; real hyperbolic functions
-(define (sinh x)
-  (unless (number? x) (raise-argument-error 'sinh "number?" x))
-  (/ (- (exp x) (exp (- x))) 2.0))
-
-(define (cosh x)
-  (unless (number? x) (raise-argument-error 'cosh "number?" x))
-  (/ (+ (exp x) (exp (- x))) 2.0))
-
-(define (tanh x)
-  (unless (number? x) (raise-argument-error 'tanh "number?" x))
-  (/ (sinh x) (cosh x)))
+(begin-encourage-inline
+  
+  ;; real predicates
+  (define (nan? x)
+    (unless (real? x) (raise-argument-error 'nan? "real?" x))
+    (or (eqv? x +nan.0) (eqv? x +nan.f)))
+  
+  (define (infinite? x)
+    (unless (real? x) (raise-argument-error 'infinite? "real?" x))
+    (or (= x +inf.0) (= x -inf.0)))
+  
+  ;; z^2
+  (define (sqr z)
+    (unless (number? z) (raise-argument-error 'sqr "number?" z))
+    (* z z))
+  
+  ;; sgn function
+  (define (sgn x)
+    (unless (real? x) (raise-argument-error 'sgn "real?" x))
+    (cond [(= 0 x)   x]  ; preserve 0, 0.0 and 0.0f0
+          [(double-flonum? x)  (cond [(unsafe-fl> x 0.0)  1.0]
+                                     [(unsafe-fl< x 0.0) -1.0]
+                                     [else  +nan.0])]
+          [(single-flonum? x)  (cond [(> x 0.0f0)  1.0f0]
+                                     [(< x 0.0f0) -1.0f0]
+                                     [else  +nan.f])]
+          [else  (if (> x 0) 1 -1)]))
+  
+  ;; complex conjugate
+  (define (conjugate z)
+    (unless (number? z) (raise-argument-error 'conjugate "number?" z))
+    (make-rectangular (real-part z) (- (imag-part z))))
+  
+  ;; complex hyperbolic functions
+  (define (sinh z)
+    (unless (number? z) (raise-argument-error 'sinh "number?" z))
+    (cond [(real? z)
+           (let loop ([z z])
+             (cond [(z . < . 0)  (- (loop (- z)))]
+                   [else  (/ (- (exp z) (exp (- z))) 2)]))]
+          [else  (/ (- (exp z) (exp (- z))) 2)]))
+  
+  (define (cosh z)
+    (unless (number? z) (raise-argument-error 'cosh "number?" z))
+    (/ (+ (exp z) (exp (- z))) 2))
+  
+  (define (tanh z)
+    (unless (number? z) (raise-argument-error 'tanh "number?" z))
+    (cond [(= z 0)  z]  ; preserve 0, 0.0, -0.0, 0.0f0, 0.0+0.0i, etc.
+          [(real? z)
+           (let loop ([z z])
+             (cond [(z . < . 0)  (- (loop (- z)))]
+                   [(z . < . 20)  (define exp2z (exp (* 2 z)))
+                                  (/ (- exp2z 1) (+ exp2z 1))]
+                   [(z . >= . 20)  (if (single-flonum? z) 1.0f0 1.0)]
+                   [else  z]))]  ; +nan.0 or +nan.f
+          [else
+           (define exp2z (exp (* 2 z)))
+           (/ (- exp2z 1) (+ exp2z 1))]))
+  
+  ;; angle conversion
+  (define (degrees->radians x)
+    (unless (real? x) (raise-argument-error 'degrees->radians "real?" x))
+    (cond [(single-flonum? x)  (* x (/ pi.f 180f0))]
+          [else  (* x (/ pi 180.0))]))
+  
+  (define (radians->degrees x)
+    (unless (real? x) (raise-argument-error 'radians->degrees "real?" x))
+    (cond [(single-flonum? x)  (* x (/ 180f0 pi.f))]
+          [else  (* x (/ 180.0 pi))]))
+  
+  ;; inexact->exact composed with round, floor, ceiling, truncate
+  (define-syntax-rule (define-integer-conversion name convert)
+    (define (name x)
+      (unless (real? x) (raise-argument-error 'name "real?" x))
+      (inexact->exact (convert x))))
+  
+  (define-integer-conversion exact-round round)
+  (define-integer-conversion exact-floor floor)
+  (define-integer-conversion exact-ceiling ceiling)
+  (define-integer-conversion exact-truncate truncate)
+  
+  )  ; begin-encourage-inline
 
 (define order-of-magnitude
   (let* ([exact-log (λ (x) (inexact->exact (log x)))]

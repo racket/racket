@@ -238,14 +238,6 @@ Integer brush styles repeat starting at @(racket 7).
 @;----------------------------------------------------------------------------------------------------
 @subsection{Real Functions}
 
-@doc-apply[degrees->radians]{
-Converts degrees to radians.
-}
-
-@doc-apply[radians->degrees]{
-Converts radians to degrees.
-}
-
 @doc-apply[polar->cartesian]{
 Converts 2D polar coordinates to 3D cartesian coordinates.
 }
@@ -253,18 +245,6 @@ Converts 2D polar coordinates to 3D cartesian coordinates.
 @doc-apply[3d-polar->3d-cartesian]{
 Converts 3D polar coordinates to 3D cartesian coordinates.
 See @racket[parametric3d] for an example of use.
-}
-
-@doc-apply[infinite?]{
-Returns @racket[#t] if @racket[x] is either @racket[+inf.0] or @racket[-inf.0].
-@examples[#:eval plot-eval
-                 (map infinite? (list +inf.0 -inf.0 0 'bob))]
-}
-
-@doc-apply[nan?]{
-Returns @racket[#t] if @racket[x] is @racket[+nan.0].
-@examples[#:eval plot-eval
-                 (map nan? (list +nan.0 +inf.0 0 'bob))]
 }
 
 @doc-apply[ceiling-log/base]{
