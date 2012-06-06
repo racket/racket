@@ -95,7 +95,7 @@
   ;; inexact->exact composed with round, floor, ceiling, truncate
   (define-syntax-rule (define-integer-conversion name convert)
     (define (name x)
-      (unless (real? x) (raise-argument-error 'name "real?" x))
+      (unless (rational? x) (raise-argument-error 'name "rational?" x))
       (inexact->exact (convert x))))
   
   (define-integer-conversion exact-round round)

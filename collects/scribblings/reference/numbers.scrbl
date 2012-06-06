@@ -1072,22 +1072,22 @@ Returns the hyperbolic cosine of @racket[z].}
 
 Returns the hyperbolic tangent of @racket[z].}
 
-@defproc[(exact-round [x real?]) real?]{
+@defproc[(exact-round [x rational?]) exact-integer?]{
 
 Equivalent to @racket[(inexact->exact (round x))].
 }
 
-@defproc[(exact-floor [x real?]) real?]{
+@defproc[(exact-floor [x rational?]) exact-integer?]{
 
 Equivalent to @racket[(inexact->exact (floor x))].
 }
 
-@defproc[(exact-ceiling [x real?]) real?]{
+@defproc[(exact-ceiling [x rational?]) exact-integer?]{
 
 Equivalent to @racket[(inexact->exact (ceiling x))].
 }
 
-@defproc[(exact-truncate [x real?]) real?]{
+@defproc[(exact-truncate [x rational?]) exact-integer?]{
 
 Equivalent to @racket[(inexact->exact (truncate x))].
 }
