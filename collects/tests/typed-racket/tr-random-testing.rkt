@@ -101,9 +101,11 @@
   (define subtype? (subtype type-after type-before))
   subtype?)
 
-(define (random-integer->random-float E)
+;; Takes random redex reals (mostly integers, sometimes rationals, floats
+;; once in a blue moon).
+(define (random->random-float E)
   (define r (random))
-  (cond 
+  (cond
     ;; probability 1/4: noisify and convert to single flonum
     [(r . < . 0.25)
      (real->single-flonum (* (random) E))]
@@ -112,7 +114,7 @@
      (real->double-flonum (* (random) E))]
     ;; probability 1/4: convert to very small double flonum
     [(r . < . 0.75)
-     (define x (ordinal->flonum E))
+     (define x (ordinal->flonum (round (inexact->exact E))))
      (cond [(= x 0.0)  (if ((random) . < . 0.5) 0.0 -0.0)]
            [else  x])]
     ;; probability 1/20: +nan.0
@@ -121,13 +123,13 @@
     ;; remaining probability: convert to very large double flonum
     [else
      (if ((random) . < . 0.5)
-         (flstep -inf.0 E)
-         (flstep +inf.0 (- E)))]))
+         (flstep -inf.0 (round (inexact->exact E)))
+         (flstep +inf.0 (- (round (inexact->exact E)))))]))
 
 ;; Redex can't generate floats, so we convert ints to floats.
 (define (exp->float-exp E) ; numbers or symbols or lists
   (cond [(number? E)
-         (random-integer->random-float E)]
+         (random->random-float E)]
         [(list? E)
          (map exp->float-exp E)]
         [else
