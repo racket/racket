@@ -560,18 +560,19 @@ UNSAFE_FX(unsafe_fx_gt_eq, >=, scheme_bin_gt_eq)
 UNSAFE_FX_X(unsafe_fx_min, <, bin_min, argv[0], argv[1], FX_SEL_ID)
 UNSAFE_FX_X(unsafe_fx_max, >, bin_max, argv[0], argv[1], FX_SEL_ID)
 
-#define SAFE_FL_X(name, sname, op, T, F)                       \
+#define SAFE_FL_X(name, sname, op, T, F, PRE_CHECK)	     \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract(sname, "flonum?", 0, argc, argv); \
    if (!SCHEME_DBLP(argv[1])) scheme_wrong_contract(sname, "flonum?", 1, argc, argv); \
+   PRE_CHECK                                                 \
    if (SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]))   \
      return T;                                               \
    else                                                      \
      return F;                                               \
  }
 
-#define SAFE_FL(name, sname, op) SAFE_FL_X(name, sname, op, scheme_true, scheme_false)
+#define SAFE_FL(name, sname, op) SAFE_FL_X(name, sname, op, scheme_true, scheme_false, ;)
 
 SAFE_FL(fl_eq, "fl=", ==)
 SAFE_FL(fl_lt, "fl<", <)
@@ -579,8 +580,10 @@ SAFE_FL(fl_gt, "fl>", >)
 SAFE_FL(fl_lt_eq, "fl<=", <=)
 SAFE_FL(fl_gt_eq, "fl>=", >=)
 
-SAFE_FL_X(fl_min, "flmin", <, argv[0], argv[1])
-SAFE_FL_X(fl_max, "flmax", >, argv[0], argv[1])
+#define CHECK_ARGV0_NAN { if (MZ_IS_NAN(SCHEME_DBL_VAL(argv[0]))) return argv[0]; }
+
+SAFE_FL_X(fl_min, "flmin", <, argv[0], argv[1], CHECK_ARGV0_NAN)
+SAFE_FL_X(fl_max, "flmax", >, argv[0], argv[1], CHECK_ARGV0_NAN)
 
 /* Unsafe FL comparisons. Return boolean */
 #define UNSAFE_FL_COMP(name, op, fold)         \
@@ -610,8 +613,6 @@ UNSAFE_FL_COMP(unsafe_fl_lt, <, scheme_bin_lt)
 UNSAFE_FL_COMP(unsafe_fl_gt, >, scheme_bin_gt)
 UNSAFE_FL_COMP(unsafe_fl_lt_eq, <=, scheme_bin_lt_eq)
 UNSAFE_FL_COMP(unsafe_fl_gt_eq, >=, scheme_bin_gt_eq)
-
-#define CHECK_ARGV0_NAN if (MZ_IS_NAN(SCHEME_DBL_VAL(argv[0]))) return argv[0];
 
 UNSAFE_FL_BINOP(unsafe_fl_min, <, bin_min, argv[0], argv[1], CHECK_ARGV0_NAN)
 UNSAFE_FL_BINOP(unsafe_fl_max, >, bin_max, argv[0], argv[1], CHECK_ARGV0_NAN)
