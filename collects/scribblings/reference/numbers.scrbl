@@ -1016,6 +1016,24 @@ is little-endian.}
 An approximation to the ratio of a circle's circumference to its
 diameter: @number->string[pi].}
 
+@defproc[(degrees->radians [x real?]) real?]{
+
+Converts an @racket[x]-degree angle to radians.
+@mz-examples[
+#:eval math-eval
+(degrees->radians 180)
+(sin (degrees->radians 45))
+]}
+
+@defproc[(radians->degrees [x real?]) real?]{
+
+Converts @racket[x] radians to degrees.
+@mz-examples[
+#:eval math-eval
+(radians->degrees pi)
+(radians->degrees (* 1/4 pi))
+]}
+
 @defproc[(sqr [z number?]) number?]{
 
 Returns @racket[(* z z)].}
@@ -1054,6 +1072,26 @@ Returns the hyperbolic cosine of @racket[z].}
 
 Returns the hyperbolic tangent of @racket[z].}
 
+@defproc[(exact-round [x real?]) real?]{
+
+Equivalent to @racket[(inexact->exact (round x))].
+}
+
+@defproc[(exact-floor [x real?]) real?]{
+
+Equivalent to @racket[(inexact->exact (floor x))].
+}
+
+@defproc[(exact-ceiling [x real?]) real?]{
+
+Equivalent to @racket[(inexact->exact (ceiling x))].
+}
+
+@defproc[(exact-truncate [x real?]) real?]{
+
+Equivalent to @racket[(inexact->exact (truncate x))].
+}
+
 @defproc[(order-of-magnitude [r (and/c real? positive?)]) (and/c exact? integer?)]{
 Computes the greatest exact integer @racket[m] such that:
 @racketblock[(<= (expt 10 m)
@@ -1068,6 +1106,14 @@ Hence also:
                     (order-of-magnitude 1/100)
                     (order-of-magnitude 1/101)]
 }
+
+@defproc[(nan? [x real?]) boolean?]{
+
+Returns @racket[#t] if @racket[x] is @racket[eqv?] to @racket[+nan.0] or @racket[+nan.f], @racket[#f] otherwise.}
+
+@defproc[(infinite? [x real?]) boolean?]{
+
+Returns @racket[#t] if @racket[z] is @racket[+inf.0], @racket[-inf.0], @racket[+inf.f], @racket[-inf.f]; @racket[#f] otherwise.}
 
 @; ----------------------------------------------------------------------
 @close-eval[math-eval]

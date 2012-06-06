@@ -1176,18 +1176,19 @@ In the following example, a photo of the State of the Union address was taken us
 @interaction[#:eval flomap-eval
                     (flomap->bitmap state-of-the-union-fm)]
 We would like it to have been taken with a perfect ``rectilinear'' (or ``perspective projection'') lens with a 120-degree diagonal angle of view.
-Following the steps above, we apply a projection transform using @racket[(equal-area-projection pi)] for @racket[from-proj] and @racket[(perspective-projection (* 2/3 pi))] for @racket[to-proj]:
+Following the steps above, we apply a projection transform using @racket[(equal-area-projection (degrees->radians 180))] for @racket[from-proj] and @racket[(perspective-projection (degrees->radians 120))] for @racket[to-proj]:
 @interaction[#:eval flomap-eval
                     (flomap->bitmap
                      (flomap-transform
                       state-of-the-union-fm
-                      (flomap-projection-transform (perspective-projection (* 2/3 pi))
-                                                   (equal-area-projection pi))))]
+                      (flomap-projection-transform
+                       (perspective-projection (degrees->radians 120))
+                       (equal-area-projection (degrees->radians 180)))))]
 Notice that the straight geometry in the House chamber (especially the trim around the ceiling) is represented by straight edges in the corrected photo.
 
 When @racket[crop?] is @racket[#t], the output flomap is no larger than the input flomap.
 When @racket[crop?] is @racket[#f], the output flomap is large enough to contain the entire transformed flomap.
-An uncropped result can be quite large, especially with angles of view at or near @racket[180] degrees (@racket[pi] radians).
+An uncropped result can be quite large, especially with angles of view at or near @racket[180] degrees.
 @interaction[#:eval flomap-eval
                     (define rectangle-fm
                       (draw-flomap (λ (fm-dc)
@@ -1198,24 +1199,27 @@ An uncropped result can be quite large, especially with angles of view at or nea
                                    32 32))
                     (flomap->bitmap rectangle-fm)
                     (flomap-transform-bounds
-                     (flomap-projection-transform (perspective-projection (* 1/2 pi))
-                                                  (equal-area-projection pi)
-                                                  #f)
+                     (flomap-projection-transform
+                      (perspective-projection (degrees->radians 90))
+                      (equal-area-projection (degrees->radians 180))
+                      #f)
                      32 32)
                     (flomap->bitmap
                      (flomap-transform
                       rectangle-fm
-                      (flomap-projection-transform (perspective-projection (* 1/2 pi))
-                                                   (orthographic-projection (* 7/8 pi))
-                                                   #f)))]
+                      (flomap-projection-transform
+                       (perspective-projection (degrees->radians 90))
+                       (orthographic-projection (degrees->radians 160))
+                       #f)))]
 To crop manually, apply @racket[flomap-transform] to explicit rectangle arguments:
 @interaction[#:eval flomap-eval
                     (flomap->bitmap
                      (flomap-transform
                       rectangle-fm
-                      (flomap-projection-transform (perspective-projection (* 1/2 pi))
-                                                   (orthographic-projection (* 7/8 pi))
-                                                   #f)
+                      (flomap-projection-transform
+                       (perspective-projection (degrees->radians 90))
+                       (orthographic-projection (degrees->radians 160))
+                       #f)
                       -10 -10 42 42))]
 }
 
