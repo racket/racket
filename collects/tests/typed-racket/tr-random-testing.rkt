@@ -18,7 +18,7 @@
 (b:init) (n:init)
 (define-namespace-anchor anch)
 
-todo: exact numbers
+;; TODO exact numbers
 
 (define-language tr-arith ; to stay within floats, removed some numeric ops
   [n real]
