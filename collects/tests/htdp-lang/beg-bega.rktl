@@ -1,5 +1,6 @@
 
 (htdp-err/rt-test (/) "/: expects at least 2 arguments, but found none")
+(htdp-err/rt-test (+ 1) #rx"^[+]: expects at least 2 arguments, but found only 1$")
 
 (htdp-syntax-test #'(local [(define x 5)] x) "local: this function is not defined")
 (htdp-syntax-test #'(recur name ([x 18]) x) "recur: this function is not defined")
