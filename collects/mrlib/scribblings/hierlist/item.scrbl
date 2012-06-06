@@ -42,4 +42,10 @@ list. This method is intended for use with an automatic test suite.}
 
 Gets/sets whether this item is allowed to be selected.}
 
+
+@defmethod[(get-parent) (or/c (is-a?/c hierarchical-list-compound-item<%>) #f)]{
+
+Returns the compound list item that contains the item or @racket[#f] if
+none exists.}
+
 }

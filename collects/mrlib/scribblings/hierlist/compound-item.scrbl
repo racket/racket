@@ -47,7 +47,7 @@ Returns a list of all immediate items in the sub-list.}
 Shows or hides the items of this sub-list.}
 
 
-@defmethod[(is-open) boolean?]{
+@defmethod[(is-open?) boolean?]{
 
 Reports whether the items of this sub-list are visible.}
 
