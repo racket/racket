@@ -1845,7 +1845,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/macrolib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/makeflat.rktl" drdr:command-line #f
 "collects/tests/racket/makeflats.rktl" drdr:command-line #f
-"collects/tests/racket/math.rktl" drdr:command-line #f
+"collects/tests/racket/math.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/moddep.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/modprot.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/module-reader.rktl" drdr:command-line (racket "-f" *)
