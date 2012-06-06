@@ -353,6 +353,7 @@ static const char * const fevent_long_strs[] = { "created", "completed",
 typedef struct Scheme_Future_State {
   int thread_pool_size;
   Scheme_Future_Thread_State **pool_threads;
+  int busy_thread_count;
 
   void *signal_handle;
 
@@ -735,13 +736,14 @@ static void check_future_thread_creation(Scheme_Future_State *fs)
     return;
 
   if (fs->future_threads_created < fs->thread_pool_size) {
-    int count;
+    int count, busy;
 
     mzrt_mutex_lock(fs->future_mutex);
     count = fs->future_queue_count;
+    busy = fs->busy_thread_count;
     mzrt_mutex_unlock(fs->future_mutex);
 
-    if (count >= fs->future_threads_created) {
+    if (count >= (fs->future_threads_created - busy)) {
       init_future_thread(fs, fs->future_threads_created);
       fs->future_threads_created++;
     }
@@ -2129,6 +2131,7 @@ void *worker_thread_future_loop(void *arg)
     ft = get_pending_future(fs);
 
     if (ft) {
+      fs->busy_thread_count++;
       fid = ft->id;
       record_fevent(FEVENT_START_WORK, fid);
 
@@ -2219,6 +2222,8 @@ void *worker_thread_future_loop(void *arg)
         scheme_signal_received_at(fs->signal_handle);
 
       record_fevent(FEVENT_END_WORK, fid);
+
+      --fs->busy_thread_count;
     }
 
     end_gc_not_ok(fts, fs, NULL);
