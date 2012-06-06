@@ -56,7 +56,8 @@
   ;; complex hyperbolic functions
   (define (sinh z)
     (unless (number? z) (raise-argument-error 'sinh "number?" z))
-    (cond [(real? z)
+    (cond [(= z 0)  z]    ; preserve 0, 0.0, -0.0, 0.0f0, 0.0+0.0i, etc.
+          [(real? z)
            (let loop ([z z])
              (cond [(z . < . 0)  (- (loop (- z)))]
                    [else  (/ (- (exp z) (exp (- z))) 2)]))]
