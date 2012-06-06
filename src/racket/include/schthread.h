@@ -189,6 +189,7 @@ typedef struct Thread_Local_Variables {
   struct ITimer_Data *itimerdata_;
   char *quick_buffer_;
   char *quick_encode_buffer_;
+  char *quick_print_buffer_;
   struct Scheme_Hash_Table *cache_ht_;
   char *regstr_;
   char *regparsestr_;
@@ -533,6 +534,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define itimerdata XOA (scheme_get_thread_local_variables()->itimerdata_)
 #define quick_buffer XOA (scheme_get_thread_local_variables()->quick_buffer_)
 #define quick_encode_buffer XOA (scheme_get_thread_local_variables()->quick_encode_buffer_)
+#define quick_print_buffer XOA (scheme_get_thread_local_variables()->quick_print_buffer_)
 #define cache_ht XOA (scheme_get_thread_local_variables()->cache_ht_)
 #define regstr XOA (scheme_get_thread_local_variables()->regstr_)
 #define regparsestr XOA (scheme_get_thread_local_variables()->regparsestr_)

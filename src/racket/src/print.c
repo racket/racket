@@ -37,6 +37,8 @@ HOOK_SHARED_OK int (*scheme_check_print_is_obj)(Scheme_Object *o);
 #define QUICK_ENCODE_BUFFER_SIZE 256
 THREAD_LOCAL_DECL(static char *quick_buffer = NULL);
 THREAD_LOCAL_DECL(static char *quick_encode_buffer = NULL);
+#define QUICK_PRINT_BUFFER_SIZE 50
+THREAD_LOCAL_DECL(static char *quick_print_buffer = NULL);
 
 /* FIXME places possible race condition on growing printer size */
 SHARED_OK static Scheme_Type_Printer *printers;
@@ -196,6 +198,7 @@ void scheme_init_print_buffers_places()
 {
   REGISTER_SO(quick_buffer);
   REGISTER_SO(quick_encode_buffer);
+  REGISTER_SO(quick_print_buffer);
   REGISTER_SO(cache_ht);
   
   quick_buffer = (char *)scheme_malloc_atomic(100);
@@ -284,10 +287,20 @@ static void do_handled_print(Scheme_Object *obj, Scheme_Object *port,
   }
 }
 
+static int can_print_fast(Scheme_Object *obj)
+{
+  /* No need for continuation barrier or cycle checking... */
+  return (SCHEME_NUMBERP(obj) 
+          || SCHEME_BOOLP(obj)
+          || SCHEME_SYMBOLP(obj));
+}
+
 void scheme_write_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
 {
   if (((Scheme_Output_Port *)port)->write_handler)
     do_handled_print(obj, port, scheme_write_proc, maxl);
+  else if (can_print_fast(obj))
+    return print_to_port("write", obj, port, 1, maxl, NULL);
   else {
     Scheme_Thread *p = scheme_current_thread;
     
@@ -310,6 +323,8 @@ void scheme_display_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl
 {
   if (((Scheme_Output_Port *)port)->display_handler)
     do_handled_print(obj, port, scheme_display_proc, maxl);
+  else if (can_print_fast(obj))
+    return print_to_port("display", obj, port, 0, maxl, NULL);
   else {
     Scheme_Thread *p = scheme_current_thread;
     
@@ -332,6 +347,8 @@ void scheme_print_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
 {
   if (((Scheme_Output_Port *)port)->print_handler)
     do_handled_print(obj, port, scheme_print_proc, maxl);
+  else if (can_print_fast(obj))
+    return print_to_port("print", obj, port, 2, maxl, NULL);
   else {
     Scheme_Thread *p = scheme_current_thread;
     
@@ -380,7 +397,7 @@ char *scheme_write_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t m
   p->ku.k.i2 = 1;
   p->ku.k.i3 = 0;
   p->ku.k.p3 = NULL;
-
+  
   return (char *)scheme_top_level_do(print_to_string_k, 0);
 }
 
@@ -941,17 +958,20 @@ print_to_string(Scheme_Object *obj,
 		Scheme_Object *port, intptr_t maxl,
                 Scheme_Object *qq_depth)
 {
-  Scheme_Hash_Table * volatile ht;
+  Scheme_Hash_Table *ht;
   Scheme_Hash_Table *uq_ht;
   Scheme_Object *v;
   char *ca;
   int cycles;
-  Scheme_Config *config;
   mz_jmp_buf escape;
   volatile PrintParams params;
 
-  params.print_allocated = 50;
-  ca = (char *)scheme_malloc_atomic(params.print_allocated);
+  params.print_allocated = QUICK_PRINT_BUFFER_SIZE;
+  if (quick_print_buffer) {
+    ca = quick_print_buffer;
+    quick_print_buffer = NULL;
+  } else
+    ca = (char *)scheme_malloc_atomic(params.print_allocated);
   params.print_buffer = ca;
   params.print_position = 0;
   params.print_offset = 0;
@@ -963,11 +983,11 @@ print_to_string(Scheme_Object *obj,
 
   /* Getting print params can take a while, and they're irrelevant
      for simple things like displaying numbers. So try a shortcut: */
-  if (!write
-      && (SCHEME_NUMBERP(obj)
-	  || SCHEME_BYTE_STRINGP(obj)
-	  || SCHEME_CHAR_STRINGP(obj)
-	  || SCHEME_SYMBOLP(obj))) {
+  if (SCHEME_NUMBERP(obj)
+      || (!write
+          && (SCHEME_BYTE_STRINGP(obj)
+              || SCHEME_CHAR_STRINGP(obj)
+              || SCHEME_SYMBOLP(obj)))) {
     params.print_graph = 0;
     params.print_box = 0;
     params.print_struct = 0;
@@ -983,6 +1003,8 @@ print_to_string(Scheme_Object *obj,
     params.inspector = scheme_false;
     params.print_syntax = -1;
   } else {
+    Scheme_Config *config;
+
     config = scheme_current_config();
 
     v = scheme_get_param(config, MZCONFIG_PRINT_GRAPH);
@@ -1051,7 +1073,10 @@ print_to_string(Scheme_Object *obj,
     cycles = 1;
   else {
 #ifdef MZ_USE_PLACES
-    cycles = -1;
+    if (can_print_fast(obj))
+      cycles = 0;
+    else
+      cycles = -1;
 #else
     int fast_checker_counter = 50;
     cycles = check_cycles_fast(obj, (PrintParams *)&params, &fast_checker_counter, write);
@@ -1085,6 +1110,9 @@ print_to_string(Scheme_Object *obj,
     *len = params.print_position;
 
   params.inspector = NULL;
+
+  if (port && !quick_print_buffer)
+    quick_print_buffer = ca;
 
   return params.print_buffer;
 }
