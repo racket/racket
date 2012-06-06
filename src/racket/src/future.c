@@ -2995,7 +2995,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
                      "future %d, process %d: %s: %s; time: %f",
                      src,
                      -1, 
-                     (is_atomic ? FEVENT_HANDLE_RTCALL_ATOMIC : FEVENT_HANDLE_RTCALL),
+                     (future->rt_prim_is_atomic ? FEVENT_HANDLE_RTCALL_ATOMIC : FEVENT_HANDLE_RTCALL),
                      get_future_timestamp(),
                      future->id);
   }
