@@ -4669,7 +4669,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 {
   Scheme_Comp_Env *env, *orig_env, **ip;
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
-  int cnt, pos, kind;
+  int cnt, pos, kind, is_modstar;
   int bad_sub_env = 0, bad_intdef = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
 
@@ -4785,8 +4785,15 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   } else if (SCHEME_TRUEP(argv[2])) {
 #   define NUM_CORE_EXPR_STOP_FORMS 15
     cnt = scheme_stx_proper_list_length(argv[2]);
+
+    if (cnt == 1)
+      is_modstar = scheme_stx_module_eq_x(scheme_modulestar_stx, SCHEME_CAR(argv[2]), env->genv->phase);
+    else
+      is_modstar = 0;
+
     if (cnt > 0) {
-      cnt += NUM_CORE_EXPR_STOP_FORMS;
+      if (!is_modstar)
+        cnt += NUM_CORE_EXPR_STOP_FORMS;
       scheme_add_local_syntax(cnt, env);
     }
     pos = 0;
@@ -4808,7 +4815,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       return NULL;
     }
 
-    if (cnt > 0) {
+    if ((cnt > 0) && !is_modstar) {
       scheme_add_core_stop_form(pos++, begin_symbol, env);
       scheme_add_core_stop_form(pos++, scheme_intern_symbol("set!"), env);
       scheme_add_core_stop_form(pos++, app_symbol, env);

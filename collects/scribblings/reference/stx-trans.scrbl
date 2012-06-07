@@ -200,7 +200,7 @@ information on the form of the list is below.
 
 When an identifier in @racket[stop-ids] is encountered by the expander
 in a sub-expression, expansions stops for the sub-expression. If
-@racket[stop-ids] is a non-empty list, then
+@racket[stop-ids] is a non-empty list and does not contain just @racket[module*], then
 @racket[begin], @racket[quote], @racket[set!], @racket[lambda],
 @racket[case-lambda], @racket[let-values], @racket[letrec-values],
 @racket[if], @racket[begin0], @racket[with-continuation-mark],

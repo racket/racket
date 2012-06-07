@@ -459,6 +459,17 @@
   (define q 8)
   (nab h))
 
+;; #'module* in sto plist shouldn't add all the rest:
+(let ()
+  (define-syntax (m stx) (syntax-case stx () 
+                           [(_ e) 
+                            (let ([e (local-expand #'e 'expression (list #'module*))])
+                              (syntax-case e  (#%plain-app quote)
+                                [(#%plain-app + (quote 1) (quote 2)) 'ok]
+                                [else (error 'test "bad local-expand result: ~e" e)])
+                              #'(void))]))
+  (m (+ 1 2)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (module rename-transformer-tests scheme/base

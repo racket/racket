@@ -472,7 +472,7 @@ for booleans; the first of @racket['int], @racket['unsigned-int],
 @racket['com-object] and @racket['iunknown] for corresponding COM object references;
 and an @racket['array] type for a vector, where the element type is inferred
 from vector values, resorting to @racket['any] if any two elements have different
-inferred types or if the array is multidimensional.
+inferred types.
 
 
 @defproc[(type-description? [v any/c]) boolean?]{

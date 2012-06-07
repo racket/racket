@@ -1117,16 +1117,10 @@
    [(vector? arg) `(array ,(vector-length arg)
 			  ,(if (zero? (vector-length arg))
 			       'int
-			       (for/fold ([t (arg-to-type (vector-ref arg 0) (add1 in-array))]) ([v (in-vector arg)])
-			         (define t2 (arg-to-type v (add1 in-array)))
-				 (let loop ([t t] [t2 t2])
-				   (cond
-				    [(equal? t t2) t]
-				    [(and (pair? t) (pair? t2) 
-					  (eq? (car t) 'array) (eq? (car t2) 'array)
-					  (equal? (cadr t) (cadr t2)))
-				     `(array ,(cadr t) ,(loop (caddr t) (caddr t2)))]
-				    [else 'any])))))]
+			       (for/fold ([t (arg-to-type (vector-ref arg 0))]) ([v (in-vector arg)])
+				 (if (equal? t (arg-to-type v))
+				     t
+				     'any))))]
    [(in-array . > . 1) 'any]
    [(boolean? arg) 'boolean]
    [(signed-int? arg 32) 'int]
