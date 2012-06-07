@@ -12642,6 +12642,14 @@ so that propagation occurs.
                           'pos
                           'neg))))
   
+  (ctest '("the _ result of")
+         extract-context-lines
+         (λ () ((contract (->i ([x integer?]) [_ (x) (<=/c x)])
+                          add1
+                          'pos
+                          'neg)
+                1)))
+  
   (ctest '("the a argument of") 
          extract-context-lines 
          (λ () ((contract (->i ([a integer?] #:b [b integer?]) ([c integer?] #:d [d integer?]) any)
