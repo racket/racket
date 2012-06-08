@@ -243,8 +243,6 @@
       (super render-intrapara-block p part ri first? last? starting-item?))
 
     (define/override (render-content e part ri)
-      (when (render-element? e)
-        ((render-element-render e) this part ri))
       (let ([part-label? (and (link-element? e)
                               (pair? (link-element-tag e))
                               (eq? 'part (car (link-element-tag e)))
@@ -285,10 +283,15 @@
                                  (style-name es)
                                  es)]
                  [style (and (style? es) es)]
+                 [check-render
+                  (lambda ()
+                    (when (render-element? e)
+                      ((render-element-render e) this part ri)))]
                  [core-render (lambda (e tt?)
                                 (cond
                                  [(and (image-element? e)
                                        (not (disable-images)))
+                                  (check-render)
                                   (let ([fn (install-file
                                              (select-suffix 
                                               (main-collects-relative->path
@@ -306,6 +309,7 @@
                                              (ftag (xlist (convert e 'eps-bytes)) ".ps")
                                              (ftag (xlist (convert e 'png-bytes)) ".png"))))
                                   => (lambda (bstr+info+suffix)
+                                       (check-render)
                                        (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]
                                               [suffix (list-ref bstr+info+suffix 1)]
                                               [width (list-ref (list-ref bstr+info+suffix 0) 1)]
@@ -342,14 +346,17 @@
                   [(smaller) (wrap e "Smaller" #f)]
                   [(larger) (wrap e "Larger" #f)]
                   [(hspace)
+                   (check-render)
                    (let ([s (content->string e)])
                      (case (string-length s)
                        [(0) (void)]
                        [else
                         (printf "\\mbox{\\hphantom{\\Scribtexttt{~a}}}"
                                 (regexp-replace* #rx"." s "x"))]))]
-                  [(newline) (unless (suppress-newline-content)
-                               (printf "\\\\"))]
+                  [(newline) 
+                   (check-render)
+                   (unless (suppress-newline-content)
+                     (printf "\\\\"))]
                   [else (error 'latex-render
                                "unrecognzied style symbol: ~s" style)])]
                [(string? style-name)
@@ -360,6 +367,7 @@
                              [else tt?])])
                   (cond
                    [(multiarg-element? e)
+                    (check-render)
                     (printf "\\~a" style-name)
                     (if (null? (multiarg-element-contents e))
                         (printf "{}")
@@ -370,7 +378,7 @@
                           (printf "}")))]
                    [else
                     (wrap e style-name tt?)]))]
-               [else 
+               [else
                 (core-render e tt?)]))
             (let loop ([l (if style (style-properties style) null)] [tt? #f])
               (if (null? l)

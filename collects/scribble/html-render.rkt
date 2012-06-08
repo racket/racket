@@ -1136,8 +1136,6 @@
                          `(,(format "~s" (tag-key (link-element-tag e) ri)))
                          (render-plain-content e part ri))))))))]
         [else 
-         (when (render-element? e)
-           ((render-element-render e) this part ri))
          (render-plain-content e part ri)]))
 
     (define/private (render-plain-content e part ri)
@@ -1173,13 +1171,18 @@
                                   [else null]))
                                properties))
                (attribs))]
-             [newline? (eq? name 'newline)])
+             [newline? (eq? name 'newline)]
+             [check-render
+              (lambda ()
+                (when (render-element? e)
+                  ((render-element-render e) this part ri)))])
         (let-values ([(content) (cond
                                  [link?
                                   (parameterize ([current-no-links #t])
                                     (super render-content e part ri))]
-                                 [newline? null]
+                                 [newline? (check-render) null]
                                  [(eq? 'hspace name)
+                                  (check-render)
                                   (let ([str (content->string e)])
                                     (map (lambda (c) 'nbsp) (string->list str)))]
                                  [else
