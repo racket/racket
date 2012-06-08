@@ -28,7 +28,7 @@
 ;; to heavy to load twice).
 (define-runtime-path search-context-page "search-context.html")
 
-(define (quote-string str)
+(define (quote-string val)
   (define (hex4 ch)
     (let ([s (number->string (char->integer (string-ref ch 0)) 16)])
       (string-append "\\u" (case (string-length s)
@@ -36,8 +36,12 @@
                              [(2) (string-append "00" s)]
                              [(3) (string-append "0" s)]
                              [else s]))))
-  ;; use ~s to create a javascript-quoted string, then quote unicode chars
-  (regexp-replace* #px"[^[:ascii:]]" (format "~s" str) hex4))
+  (define str (format "~s" val))
+  (if (= (string-utf-8-length str) (string-length str))
+      ;; It's ASCII:
+      str
+      ;; Quote unicode chars:
+      (regexp-replace* #px"[^[:ascii:]]" str hex4)))
 
 (define (make-script user-dir? renderer sec ri)
   (define dest-dir (send renderer get-dest-directory #t))
@@ -62,6 +66,8 @@
       (match xexprs
         [`() xexprs]
         [`("" . ,r) (compact r)]
+        [`(,(? string? s) ...)
+         (list (apply string-append xexprs))]
         [`(,(? string? s1) ,(? string? s2) . ,r)
          (compact `(,(string-append s1 s2) . ,r))]
         [`((span ([class ,c]) . ,b1) (span ([class ,c]) . ,b2) . ,r)
@@ -73,16 +79,16 @@
                                       (cons (cons c n) span-classes))
                                 n)])])
            (cons `(,c . ,(compact-body b)) (compact r)))]
-        [`(,x . ,r) (cons (xexpr->string x) (compact r))]))
+        [`(,x . ,r) 
+         (cons (xexpr->string x) (compact r))]))
     ;; generate javascript array code
     (let loop ([body (compact xexprs)])
       (if (andmap string? body)
         (quote-string (string-append* body))
-        (let ([body (map (lambda (x)
-                           (if (string? x)
-                             (quote-string x)
-                             (format "[~a,~a]" (car x) (cdr x))))
-                         body)])
+        (let ([body (for/list ([x (in-list body)])
+                      (if (string? x)
+                          (quote-string x)
+                          (format "[~a,~a]" (car x) (cdr x))))])
           (if (= 1 (length body))
             (car body)
             (string-append* `("[" ,@(add-between body ",") "]")))))))

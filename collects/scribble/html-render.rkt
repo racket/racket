@@ -1382,12 +1382,14 @@
          (list (format "~s" i))]))
     
     (define/private (ascii-ize s)
-      (let ([m (regexp-match-positions #rx"[^\u01-\u7E]" s)])
-        (if m
-          (append (ascii-ize (substring s 0 (caar m)))
-                  (list (char->integer (string-ref s (caar m))))
-                  (ascii-ize (substring s (cdar m))))
-          (list s))))
+      (if (= (string-utf-8-length s) (string-length s))
+          (list s)
+          (let ([m (regexp-match-positions #rx"[^\u01-\u7E]" s)])
+            (if m
+                (append (ascii-ize (substring s 0 (caar m)))
+                        (list (char->integer (string-ref s (caar m))))
+                        (ascii-ize (substring s (cdar m))))
+                (list s)))))
 
     ;; ----------------------------------------
 
