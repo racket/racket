@@ -4046,6 +4046,106 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
+  ;;  prompt/c
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (test/spec-passed
+   'prompt/c-fo-1
+   '(contract (prompt/c string?)
+              (make-continuation-prompt-tag)
+              'pos 'neg))
+
+  (test/pos-blame
+   'prompt/c-fo-2
+   '(contract (prompt/c string?) 5 'pos 'neg))
+
+  (test/spec-passed
+   'prompt/c-ho-1
+   '(let ([pt (contract (prompt/c number?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+        (λ () (abort-current-continuation pt 3))
+        pt
+        (λ (x) (+ x 1)))))
+
+  (test/neg-blame
+   'prompt/c-ho-2
+   '(let ([pt (contract (prompt/c string?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+        (λ () (abort-current-continuation pt 3))
+        pt
+        (λ (x) (+ x 1)))))
+
+  (test/neg-blame
+   'prompt/c-ho-3
+   '(let ([pt (contract (prompt/c (-> string? number?))
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+        (λ () (abort-current-continuation pt (λ (x) 5)))
+        pt
+        (λ (x) (x 8)))))
+
+  (test/neg-blame
+   'prompt/c-ho-4
+   '(let ([pt (contract (prompt/c (-> string? number?))
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+       (λ () (abort-current-continuation pt (λ (x) "bad")))
+       pt
+       (λ (x) (x "potato")))))
+
+  (test/pos-blame
+   'prompt/c-ho-5
+   '(let* ([pt (make-continuation-prompt-tag)]
+           [do-prompt (contract
+                        (-> (-> (prompt/c (-> number? number?))
+                                any)
+                                number?)
+                        (λ (f) (call-with-continuation-prompt
+                                (λ () (f pt))
+                                pt
+                                (λ (f) (f "bad"))))
+                        'pos
+                        'neg)])
+      (do-prompt (λ (pt)
+                  (abort-current-continuation pt (λ (v) (+ v 1)))))))
+
+  (test/spec-failed
+   'prompt/c-ho-5
+   '(let* ([pt (make-continuation-prompt-tag)]
+           [do-prompt (contract
+                        (-> (-> (prompt/c (-> number? number?))
+                                any)
+                                number?)
+                        (λ (f) (call-with-continuation-prompt
+                                (λ () (f pt))
+                                pt
+                                (λ (f) (f 0))))
+                        'A
+                        'B)]
+           [do-prompt2 (contract
+                         (-> (-> (prompt/c (-> string? number?))
+                                 any)
+                                 number?)
+                         do-prompt
+                         'B
+                         'C)])
+      (do-prompt2
+        (λ (pt) (abort-current-continuation pt (λ (v) (+ v 1))))))
+   "B")
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
   ;;  make-contract
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -33,7 +33,9 @@
          any/c
          any
          none/c
-         make-none/c 
+         make-none/c
+
+         prompt/c
 
          chaperone-contract?
          impersonator-contract?
@@ -942,6 +944,55 @@
    #:first-order (λ (ctc) (λ (val) #f))))
 
 (define/final-prop none/c (make-none/c 'none/c))
+
+;; prompt/c
+(define/subexpression-pos-prop (prompt/c ctc-arg)
+  (define ctc (coerce-contract 'prompt/c ctc-arg))
+  (cond [(chaperone-contract? ctc) (chaperone-prompt/c ctc)]
+        [else (impersonator-prompt/c ctc)]))
+
+(define (prompt/c-name ctc)
+  (build-compound-type-name 'prompt/c (base-prompt/c-ctc ctc)))
+
+(define ((prompt/c-proj proxy) ctc)
+  (define ho-proj (contract-projection (base-prompt/c-ctc ctc)))
+  (λ (blame)
+    (define proj1 (ho-proj blame))
+    (define proj2 (ho-proj (blame-swap blame)))
+    (λ (val)
+      (unless (contract-first-order-passes? ctc val)
+        (raise-blame-error
+         blame val
+         '(expected: "~s," given: "~e")
+         (contract-name ctc)
+         val))
+      (proxy val proj1 proj2))))
+
+(define ((prompt/c-first-order ctc) v)
+  (continuation-prompt-tag? v))
+
+(define (prompt/c-stronger? this that)
+  (and (base-prompt/c? that)
+       (contract-stronger? (base-prompt/c-ctc this)
+                           (base-prompt/c-ctc that))))
+
+(define-struct base-prompt/c (ctc))
+
+(define-struct (chaperone-prompt/c base-prompt/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection (prompt/c-proj chaperone-prompt-tag)
+   #:first-order prompt/c-first-order
+   #:stronger prompt/c-stronger?
+   #:name prompt/c-name))
+
+(define-struct (impersonator-prompt/c base-prompt/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:projection (prompt/c-proj impersonate-prompt-tag)
+   #:first-order prompt/c-first-order
+   #:stronger prompt/c-stronger?
+   #:name prompt/c-name))
 
 
 (define (flat-contract-predicate x)
