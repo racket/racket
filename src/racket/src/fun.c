@@ -139,6 +139,8 @@ static Scheme_Object *abort_continuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *argv[]);
 static Scheme_Object *get_default_prompt_tag (int argc, Scheme_Object *argv[]);
 static Scheme_Object *prompt_tag_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonate_prompt_tag (int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_prompt_tag (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema_enable_break (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cc_marks (int argc, Scheme_Object *argv[]);
@@ -368,6 +370,16 @@ scheme_init_fun (Scheme_Env *env)
                              scheme_make_folding_prim(prompt_tag_p,
 						      "continuation-prompt-tag?",
 						      1, 1, 1),
+                             env);
+  scheme_add_global_constant("impersonate-prompt-tag",
+                             scheme_make_prim_w_arity(impersonate_prompt_tag,
+						      "impersonate-prompt-tag",
+						      3, -1),
+                             env);
+  scheme_add_global_constant("chaperone-prompt-tag",
+                             scheme_make_prim_w_arity(chaperone_prompt_tag,
+						      "chaperone-prompt-tag",
+						      3, -1),
                              env);
 
   scheme_add_global_constant("call-with-semaphore",
@@ -5542,9 +5554,51 @@ static Scheme_Object *get_default_prompt_tag (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *prompt_tag_p (int argc, Scheme_Object *argv[])
 {
-  return (SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[0]))
+  return (SCHEME_CHAPERONE_PROMPT_TAGP(argv[0])
           ? scheme_true
           : scheme_false);
+}
+
+Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, int argc, Scheme_Object **argv)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val = argv[0];
+  Scheme_Object *redirects;
+  Scheme_Hash_Tree *props;
+
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!SCHEME_PROMPT_TAGP(val))
+    scheme_wrong_contract(name, "prompt-tag?", 0, argc, argv);
+  scheme_check_proc_arity(name, 1, 1, argc, argv);
+  scheme_check_proc_arity(name, 1, 1, argc, argv);
+
+  redirects = scheme_make_pair(argv[1], argv[2]);
+
+  props = scheme_parse_chaperone_props(name, 3, argc, argv);
+
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  px->iso.so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = redirects;
+
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
+  return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_prompt_tag(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_prompt_tag("chaperone-prompt-tag", 0, argc, argv);
+}
+
+static Scheme_Object *impersonate_prompt_tag(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_prompt_tag("impersonate-prompt-tag", 1, argc, argv);
 }
 
 Scheme_Overflow *scheme_get_thread_end_overflow(void)
@@ -5951,6 +6005,39 @@ static void prompt_unwind_one_dw(Scheme_Object *prompt_tag)
     prompt_unwind_dw(prompt_tag);
 }
 
+static Scheme_Object **chaperone_do_prompt_handler(Scheme_Object *obj, int argc, Scheme_Object *argv[])
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *a[1];
+  Scheme_Object *v;
+  Scheme_Object **vals;
+
+  vals = MALLOC_N(Scheme_Object *, argc);
+
+  while (1) {
+    int i;
+    if (SCHEME_PROMPT_TAGP(obj)) {
+      return vals;
+    } else {
+      px = (Scheme_Chaperone *)obj;
+
+      obj = px->prev;
+      for (i = 0; i < argc; i++) {
+        a[0] = argv[i];
+        v =  _scheme_apply(SCHEME_CAR(px->redirects), 1, a);
+        vals[i] = v;
+      }
+
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
+        for (i = 0; i < argc; i++) {
+          if (!scheme_chaperone_of(vals[i], argv[i]))
+            scheme_wrong_chaperoned("call-with-continuation-prompt", "value", argv[i], vals[i]);
+        }
+      }
+    }
+  }
+}
+
 static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 {
   Scheme_Object *v;
@@ -5963,6 +6050,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   Scheme_Cont_Frame_Data cframe;
   Scheme_Dynamic_Wind *prompt_dw;
   int cc_count = scheme_cont_capture_count;
+  int is_chaperoned = 0;
 
   argc = in_argc - 3;
   if (argc <= 0) {
@@ -5981,11 +6069,17 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
   scheme_check_proc_arity("call-with-continuation-prompt", argc, 0, in_argc, in_argv);
   if (in_argc > 1) {
-    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(in_argv[1]))) {
-      scheme_wrong_contract("call-with-continuation-prompt", "continuation-prompt-tag?",
-                        1, in_argc, in_argv);
-    }
-    prompt_tag = in_argv[1];
+    if (!SCHEME_PROMPT_TAGP(in_argv[1])) {
+      if (SCHEME_NP_CHAPERONEP(in_argv[1])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(in_argv[1]))) {
+        is_chaperoned = 1;
+        prompt_tag = SCHEME_CHAPERONE_VAL(in_argv[1]);
+      }
+      else
+        scheme_wrong_contract("call-with-continuation-prompt", "continuation-prompt-tag?",
+                          1, in_argc, in_argv);
+    } else
+      prompt_tag = in_argv[1];
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -6133,6 +6227,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
             argv = a;
           } else
             argv = (Scheme_Object **)p->cjs.val;
+
+          if (is_chaperoned) {
+            argv = chaperone_do_prompt_handler(in_argv[1], argc, argv);
+          }
 
           reset_cjs(&p->cjs);
 
@@ -6369,17 +6467,61 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
   return value;
 }
 
+static Scheme_Object *chaperone_do_abort_one(Scheme_Object *obj, Scheme_Object *v)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *a[1];
+
+  while (1) {
+    if (SCHEME_PROMPT_TAGP(obj)) {
+      return v;
+    } else {
+      px = (Scheme_Chaperone *)obj;
+
+      obj = px->prev;
+      a[0] = v;
+      v = _scheme_apply(SCHEME_CDR(px->redirects), 1, a);
+
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+        if (!scheme_chaperone_of(v, a[0]))
+          scheme_wrong_chaperoned("abort-current-continuation", "value", a[0], v);
+    }
+  }
+}
+
+static Scheme_Object **chaperone_do_abort(Scheme_Object *obj, int num_args, Scheme_Object *args[])
+{
+  Scheme_Object **vals;
+  Scheme_Object *v;
+  int i;
+  vals = MALLOC_N(Scheme_Object *, num_args);
+  for (i = 0; i < num_args; i++) {
+    v = chaperone_do_abort_one(obj, args[i]);
+    vals[i] = v;
+  }
+
+  return vals;
+}
+
 static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], int skip_dws)
 {
   Scheme_Object *prompt_tag;
   Scheme_Prompt *prompt;
   Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *val;
+  int is_chaperoned = 0;
 
-  prompt_tag = argv[0];
-  if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
-    scheme_wrong_contract("abort-current-continuation", "continuation-prompt-tag?",
-                      0, argc, argv);
-  }
+  if (!SCHEME_PROMPT_TAGP(argv[0])) {
+    if (SCHEME_NP_CHAPERONEP(argv[0])
+        && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[0]))) {
+        is_chaperoned = 1;
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[0]);
+    }
+    else
+      scheme_wrong_contract("abort-current-continuation", "continuation-prompt-tag?",
+                        0, argc, argv);
+  } else
+    prompt_tag = argv[0];
 
   prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag));
   if (!prompt && SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
@@ -6395,7 +6537,12 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
 
   if (argc == 2) {
     p->cjs.num_vals = 1;
-    p->cjs.val = argv[1];
+    if (!is_chaperoned)
+      p->cjs.val = argv[1];
+    else {
+      val = chaperone_do_abort_one(argv[0], argv[1]);
+      p->cjs.val = val;
+    }
   } else {
     Scheme_Object **vals;
     int i;
@@ -6404,7 +6551,12 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
       vals[i-1] = argv[i];
     }
     p->cjs.num_vals = argc - 1;
-    p->cjs.val = (Scheme_Object *)vals;
+    if (!is_chaperoned)
+      p->cjs.val = (Scheme_Object *)vals;
+    else {
+      val = chaperone_do_abort(argv[0], argc - 1, vals);
+      p->cjs.val = val;
+    }
   }
   p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
   p->cjs.alt_full_continuation = NULL;

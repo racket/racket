@@ -883,6 +883,8 @@ typedef struct Scheme_Chaperone {
                                        || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj))))
 #define SCHEME_CHAPERONE_BUCKTP(obj) (SCHEME_BUCKTP(obj) \
                                       || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_PROMPT_TAGP(obj) (SCHEME_PROMPT_TAGP(obj) \
+                                           || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(obj))))
 
 Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
 void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);

@@ -450,6 +450,8 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_MUTABLE_BOXP(obj)  (SCHEME_BOXP(obj) && SCHEME_MUTABLEP(obj))
 #define SCHEME_IMMUTABLE_BOXP(obj)  (SCHEME_BOXP(obj) && SCHEME_IMMUTABLEP(obj))
 
+#define SCHEME_PROMPT_TAGP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_prompt_tag_type)
+
 #define SCHEME_BUCKTP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_bucket_table_type)
 #define SCHEME_HASHTP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_hash_table_type)
 #define SCHEME_HASHTRP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_hash_tree_type)

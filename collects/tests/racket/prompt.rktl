@@ -159,5 +159,38 @@
   (test (void) overflow-prompt-go))
 
 ;; ----------------------------------------
+;; control proxies
+
+(define imp-tag
+  (impersonate-prompt-tag
+   (make-continuation-prompt-tag)
+   (lambda (x) (* x 2))
+   (lambda (x) (+ x 1))))
+
+(define cha-tag
+  (chaperone-prompt-tag
+   (make-continuation-prompt-tag)
+   (lambda (x) (if (number? x) x (error "fail")))
+   (lambda (x) x)))
+
+(define bad-tag
+  (chaperone-prompt-tag
+   (make-continuation-prompt-tag)
+   (lambda (x) 42)
+   (lambda (x) x)))
+
+(define (do-test tag v)
+  (call-with-continuation-prompt
+    (lambda ()
+      (abort-current-continuation tag v))
+    tag
+    (lambda (x) x)))
+
+(test 12 do-test imp-tag 5)
+(test 5 do-test cha-tag 5)
+(err/rt-test (do-test cha-tag "bad") exn:fail?)
+(err/rt-test (do-test bad-tag 5) exn:fail?)
+
+;;----------------------------------------
 
 (report-errs)
