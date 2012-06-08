@@ -58,6 +58,12 @@
        #:when (or (syntax-property form 'typechecker:ignore)
                   (syntax-property form 'typechecker:ignore-some))
        (list)]
+      
+      [((~literal module) n:id spec ((~literal #%plain-module-begin) body ...))
+       (list)]
+       ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
+      [((~literal module*) n:id spec body ...)
+       (list)]
 
       ;; type aliases have already been handled by an earlier pass
       [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
@@ -172,7 +178,7 @@
 (define (tc-toplevel/pass2 form)
   (parameterize ([current-orig-stx form])
     (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal define-type-internal
-                                   require/typed-internal values)
+                                   require/typed-internal values module module*)
       ;; these forms we have been instructed to ignore
       [stx
        (syntax-property form 'typechecker:ignore)
@@ -196,6 +202,13 @@
       [(define-values () (begin (quote-syntax (define-type-alias-internal . rest)) (#%plain-app values)))
        (void)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal . rest)) (#%plain-app values)))
+       (void)]
+      
+      ;; submodules take care of themselves:      
+      [(module n spec (#%plain-module-begin body ...))
+       (void)]
+      ;; module* is not expanded, so it doesn't have a `#%plain-module-begin`
+      [(module* n spec body ...)
        (void)]
 
       ;; definitions just need to typecheck their bodies
