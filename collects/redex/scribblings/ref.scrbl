@@ -2244,14 +2244,22 @@ for use in combination with other libraries that operate on picts
 The primary difference between these functions is that the former list
 sets @racket[dc-for-text-size] and the latter does not.
 
-@defproc[(render-term [lang compiled-lang?] [term any/c] [file (or/c #f path-string?) #f])
-         (if file void? pict?)]{
-  Renders the term @racket[term]. If @racket[file] is @racket[#f],
-  it produces a pict; if @racket[file] is a path, it saves
+
+@defform*[[(render-term lang term)
+           (render-term lang term file)]]{
+  Renders the term @racket[term]. If @racket[file] is @racket[#f] or not present,
+  @racket[render-term] produces a pict; if @racket[file] is a path, it saves
   Encapsulated PostScript in the provided filename, unless the filename
   ends with @filepath{.pdf}, in which case it saves PDF.
   
-  See @racket[render-language] for details on the construction of the pict.
+  The @racket[term] argument must be a literal; it is not an 
+  evaluated position. For example, this:
+  @racketblock[(define-language L)
+               (define x (term (+ 1 2)))
+               (render-term L x)]
+  will render the term @racket[x], not the term @racket[(+ 1 2)].
+  
+  See @racket[render-language] for more details on the construction of the pict.
 }
 
 
