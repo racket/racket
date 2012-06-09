@@ -18,8 +18,10 @@
          (for-syntax syntax/parse
                      syntax/parse/experimental/reflect
                      syntax/parse/experimental/splicing
+                     macro-debugger/emit
                      racket/syntax
                      racket/pretty
+                     racket/string
                      "compile.rkt"
                      "util.rkt"
                      "debug.rkt"
@@ -235,19 +237,36 @@
               ;; possibly handle other types of data
               [else (error 'dot "don't know how to deal with ~a (~a)" 'left left*)]))))))
 
+(provide honu-for-syntax)
+(define-literal honu-for-syntax) 
 
 (begin-for-syntax
   (define (fix-module-name name)
     (format-id name "~a" (regexp-replace* #rx"_" (symbol->string (syntax->datum name)) "-")))
+  (define (combine-paths paths name)
+    (define all (for/list ([path (if paths
+                                   (append paths (list name))
+                                   (list name))])
+                  (cond
+                    [(identifier? path) (symbol->string (syntax->datum path))]
+                    [(string? path) path]
+                    [else (error 'combine-paths "what is ~a" path)])))
+    (format-id name (string-join all "/")))
   (define-splicing-syntax-class require-form
-                                #:literals (honu-prefix)
+                                #:literals (honu-prefix honu-for-syntax)
                                 #:literal-sets (cruft)
-    [pattern (~seq honu-prefix prefix module)
-             #:with result (with-syntax ([module (fix-module-name #'module)])
-                             #'(prefix-in prefix module))]
+    [pattern (~seq honu-prefix prefix module:require-form)
+             #:with result #'(prefix-in prefix module.result)]
+    [pattern (~seq honu-for-syntax ~! (#%parens module:require-form))
+             #:with result #'(for-syntax module.result)]
     [pattern x:str #:with result #'x]
-    [pattern x:id
-             #:with result (with-syntax ([name (fix-module-name #'x)]) #'name)
+    [pattern (~seq (~seq base:id (~literal honu-/)) ... x:id)
+             #:with result (with-syntax ([name (combine-paths
+                                                 (syntax->list #'(base ...))
+                                                 (fix-module-name #'x))])
+                             (emit-remark "require-form" #'honu-for-syntax #'x)
+                             (debug "Plain path: ~a ~a\n" #'name (free-identifier=? #'honu-for-syntax #'x))
+                             #'name)
              #:when (not ((literal-set->predicate cruft) #'x))]))
 
 (define-for-syntax (racket-names->honu name)
@@ -257,13 +276,13 @@
 (define-honu-syntax honu-require
   (lambda (code context)
     (syntax-parse code
-      [(_ form:require-form ... . rest)
+      [(_ form1:require-form form:require-form ... . rest)
        (values
          (racket-syntax (require (filtered-in (lambda (name)
-                                   (regexp-replace* #rx"-"
-                                                    (regexp-replace* #rx"->" name "_to_")
-                                                    "_"))
-                                 (combine-in form.result ...))))
+                                                (regexp-replace* #rx"-"
+                                                                 (regexp-replace* #rx"->" name "_to_")
+                                                                 "_"))
+                                              (combine-in form1.result form.result ...))))
 
          #'rest
          #f)])))

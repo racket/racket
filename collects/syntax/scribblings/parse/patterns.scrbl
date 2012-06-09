@@ -398,7 +398,7 @@ See @tech{@EHpatterns} for more information.
 
 @specsubform[(H-pattern @#,def-dotsplus . S-pattern)]{
 
-Like an ellipses (@ellipses) pattern, but requires at one occurrence
+Like an ellipses (@ellipses) pattern, but requires at least one occurrence
 of the head pattern to be present.
 
 That is, the following patterns are equivalent:

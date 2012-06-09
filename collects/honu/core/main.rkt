@@ -40,6 +40,7 @@
                                    [honu-match match]
                                    [honu-with with]
                                    [literal:honu-where where]
+                                   [honu-for-syntax for_syntax]
                                    [honu-var var]
                                    [honu-val val]
                                    [honu-for for]

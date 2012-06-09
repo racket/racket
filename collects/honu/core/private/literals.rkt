@@ -28,7 +28,7 @@
                 ellipses-comma ellipses-comma* ellipses-repeat
                 honu-in
                 honu-where
-                honu-for-syntax
+                ;; honu-for-syntax
                 honu-for-template
                 honu-prefix
                 honu-$
