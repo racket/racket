@@ -37,17 +37,18 @@
 ;; -----------------------------------------------------------------------------
 ;; packages for broadcasting information to the universe 
 
-(define-struct package (world message) #:transparent)
-
-;; World Sexp -> Package 
-(define (create-package w m)
-  (check-arg 'make-package (sexp? m) 'sexp "second" m)
-  (make-package w m))
+(define-values (make-package package? package-world package-message)
+  (let ()
+    (struct package (world message) #:transparent)
+    (define (make-package w m)
+      (check-arg 'make-package (sexp? m) 'sexp "second" m)
+      (package w m))
+    (values make-package package? package-world package-message)))
 
 (provide
- (rename-out (create-package make-package)) ;; World S-expression -> Package
- package? ;; Any -> Package
- package-world
+ make-package  ;; World S-expression -> Package
+ package?      ;; Any -> Package
+ package-world ;; Package -> World 
  )
 
 (define world%
