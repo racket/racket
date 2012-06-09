@@ -1620,13 +1620,21 @@ static char *double_to_string (double d, int alloc, int was_single)
     }
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single) {
-      /* In case of a single-precision float, add the f0 suffix to
-	 cause the string to be read back as a single-precision
-	 float. */
-      buffer[l] = 'f';
-      buffer[l + 1] = '0';
-      buffer[l + 2] = 0;
-      l += 2;
+      /* In case of a single-precision float, add the f0 suffix (or
+	 replace the existing e exponent separator) to cause the
+	 string to be read back as a single-precision float. */
+      for (i = 0; i < l; i++) {
+	if (buffer[i] == 'e')
+	  break;
+      }
+      if (i == l) {
+	buffer[l] = 'f';
+	buffer[l + 1] = '0';
+	buffer[l + 2] = 0;
+	l += 2;
+      } else {
+	buffer[i] = 'f';
+      }
     }
 #endif
     
