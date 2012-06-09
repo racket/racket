@@ -13,4 +13,5 @@
 (define (distribute specs)
   (for ([s (in-list specs)])
     (let ([srcs (cdr s)] [tgt (car s)])
+      (printf "  to ~a\n" tgt)
       (apply rsync "-aqz" "-e" "ssh" "--delete" `(,@srcs ,tgt)))))
