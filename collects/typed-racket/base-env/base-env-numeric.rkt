@@ -91,7 +91,22 @@
                        -InexactRealPosZero -InexactRealNegZero -InexactRealZero
                        -NonNegInexactReal -NonPosInexactReal -InexactReal
                        -RealZero -NonNegReal -NonPosReal -Real)))))
-
+  
+  (define (inexact-zero->exact-zero-type)
+    (for/list ([t  (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                         -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero
+                         -InexactRealPosZero -InexactRealNegZero -InexactRealZero
+                         -RealZero)])
+      (-> t -Zero)))
+  
+  (define (exact-round-type) ; also used for exact-truncate
+    (from-cases
+     (map unop all-int-types)
+     (inexact-zero->exact-zero-type)
+     (-> (Un -NonNegRat -NonNegFlonum -NonNegSingleFlonum -NonNegInexactReal -NonNegReal) -Nat)
+     (-> (Un -NonPosRat -NonPosFlonum -NonPosSingleFlonum -NonPosInexactReal -NonPosReal) -NonPosInt)
+     (-> (Un -Rat -Flonum -SingleFlonum -InexactReal -Real) -Int)))
+  
   (define fl-unop (lambda () (unop -Flonum)))
 
   ;; types for specific operations, to avoid repetition between safe and unsafe versions
@@ -1810,6 +1825,7 @@
             (-Real . -> . -Real))]
 
 [pi -PosFlonum]
+[pi.f -PosSingleFlonum]
 [sqr (from-cases (map unop (list -Zero -One))
                  (-> -PosByte -PosIndex)
                  (-> -Byte -Index)
@@ -1836,29 +1852,90 @@
             (N . -> . N))]
 [sinh (from-cases
        (unop -Zero) ; only exact case
-       ((Un -PosRat -PosFlonum) . -> . -PosFlonum)
-       ((Un -NegRat -NegFlonum) . -> . -NegFlonum)
-       (map unop (list -NonNegFlonum -NonPosFlonum
-                       -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+       ((Un -PosRat -PosFlonum) . -> . -NonNegFlonum) ; possible underflow, no pos -> pos
+       ((Un -NegRat -NegFlonum) . -> . -NonPosFlonum)
+       ((Un -PosSingleFlonum) . -> . -NonNegSingleFlonum)
+       ((Un -NegSingleFlonum) . -> . -NonPosSingleFlonum)
+       (map unop (list -FlonumNan -NonNegFlonum -NonPosFlonum -Flonum
+                       -SingleFlonumNan -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
                        -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
                        -PosReal -NonNegReal -NegReal -NonPosReal -Real
                        -FloatComplex -SingleFlonumComplex -InexactComplex N)))]
 [cosh (from-cases ; no exact cases
-       ((Un -Rat -Flonum) . -> . -PosFlonum)
-       (-SingleFlonum . -> . -PosSingleFlonum)
-       (-InexactReal . -> . -PosInexactReal)
+       (map unop (list -FlonumNan -SingleFlonumNan))
+       ((Un -Rat -Flonum) . -> . (Un -PosFlonum -FlonumNan))
+       (-SingleFlonum . -> . (Un -PosSingleFlonum -SingleFlonumNan))
+       (-InexactReal . -> . (Un -PosInexactReal -InexactRealNan))
        (-Real . -> . -PosReal)
        (map unop (list -FloatComplex -SingleFlonumComplex -InexactComplex N)))]
 [tanh (from-cases ; same as sinh
        (unop -Zero) ; only exact case
-       ((Un -PosRat -PosFlonum) . -> . -PosFlonum)
-       ((Un -NegRat -NegFlonum) . -> . -NegFlonum)
-       (map unop (list -NonNegFlonum -NonPosFlonum
-                       -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+       ((Un -PosRat -PosFlonum) . -> . -NonNegFlonum) ; possible underflow, no pos -> pos
+       ((Un -NegRat -NegFlonum) . -> . -NonPosFlonum)
+       ((Un -PosSingleFlonum) . -> . -NonNegSingleFlonum)
+       ((Un -NegSingleFlonum) . -> . -NonPosSingleFlonum)
+       (map unop (list -FlonumNan -NonNegFlonum -NonPosFlonum -Flonum
+                       -SingleFlonumNan -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
                        -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
                        -PosReal -NonNegReal -NegReal -NonPosReal -Real
                        -FloatComplex -SingleFlonumComplex -InexactComplex N)))]
 
+[degrees->radians
+ (from-cases
+  (unop -Zero) ; only exact case
+  ((Un -PosRat -PosFlonum) . -> . -NonNegFlonum) ; possible underflow, no pos -> pos
+  ((Un -NegRat -NegFlonum) . -> . -NonPosFlonum)
+  ((Un -PosSingleFlonum) . -> . -NonNegSingleFlonum)
+  ((Un -NegSingleFlonum) . -> . -NonPosSingleFlonum)
+  (map unop (list -FlonumNan -SingleFlonumNan
+                  -NonNegFlonum -NonPosFlonum -Flonum
+                  -NonNegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+                  -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
+                  -PosReal -NonNegReal -NegReal -NonPosReal -Real)))]
+
+[radians->degrees
+ (from-cases
+  (unop -Zero) ; only exact case
+  ((Un -PosRat -PosFlonum) . -> . -PosFlonum)
+  ((Un -NegRat -NegFlonum) . -> . -NegFlonum)
+  (map unop (list -FlonumNan -SingleFlonumNan
+                  -NonNegFlonum -NonPosFlonum -Flonum
+                  -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+                  -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
+                  -PosReal -NonNegReal -NegReal -NonPosReal -Real)))]
+
+[exact-round (exact-round-type)]
+[exact-truncate (exact-round-type)]
+
+[exact-floor
+ (from-cases
+  (map unop all-int-types)
+  (inexact-zero->exact-zero-type)
+  (-> (Un -NonNegRat -NonNegFlonum -NonNegSingleFlonum -NonNegInexactReal -NonNegReal) -Nat)
+  (-> (Un -NegRat -NegFlonum -NegSingleFlonum -NegInexactReal -NegReal) -NegInt)
+  (-> (Un -NonPosRat -NonPosFlonum -NonPosSingleFlonum -NonPosInexactReal -NonPosReal) -NonPosInt)
+  (-> (Un -Rat -Flonum -SingleFlonum -InexactReal -Real) -Int))]
+
+[exact-ceiling
+ (from-cases
+  (map unop all-int-types)
+  (inexact-zero->exact-zero-type)
+  (-> (Un -PosRat -PosFlonum -PosSingleFlonum -PosInexactReal -PosReal) -PosInt)
+  (-> (Un -NonNegRat -NonNegFlonum -NonNegSingleFlonum -NonNegInexactReal -NonNegReal) -Nat)
+  (-> (Un -NonPosRat -NonPosFlonum -NonPosSingleFlonum -NonPosInexactReal -NonPosReal) -NonPosInt)
+  (-> (Un -Rat -Flonum -SingleFlonum -InexactReal -Real) -Int))]
+
+[nan? (from-cases
+       (-> (Un -PosFlonum -NonPosFlonum -PosSingleFlonum -NonPosSingleFlonum -Rat) (-val #f))
+       (-> (Un -FlonumNan -SingleFlonumNan) (-val #t))
+       (-> -Real B))]
+
+[infinite? (from-cases
+            (-> (Un -FlonumNan -FlonumNegZero -FlonumPosZero
+                    -SingleFlonumNan -SingleFlonumNegZero -SingleFlonumPosZero
+                    -Rat)
+                (-val #f))
+            (-> -Real B))]
 
 ;; scheme/fixnum
 [fx+ (fx+-type)]

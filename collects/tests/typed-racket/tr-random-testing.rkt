@@ -1,10 +1,11 @@
 #lang racket
 
-;; Random testing of type preservation for floats.
+;; Random testing of type preservation for reals.
 
 (require redex
-         racket/flonum racket/unsafe/ops unstable/flonum
-         racket/sandbox)
+         racket/flonum racket/unsafe/ops
+         racket/sandbox
+         "random-real.rkt")
 
 (require (except-in typed-racket/utils/utils infer)
          (typecheck typechecker)
@@ -18,12 +19,26 @@
 (b:init) (n:init)
 (define-namespace-anchor anch)
 
-;; TODO exact numbers
-
-(define-language tr-arith ; to stay within floats, removed some numeric ops
+(define-language tr-arith
   [n real]
-  [E n
-     (* E)
+  ;; randomly generate F, not E, because literal numbers self-evaluate
+  ;; (i.e. generates a useless test)
+  [E n F]
+  #;; racket/math
+  [F (degrees->radians E)
+     (radians->degrees E)
+     (exact-round E)
+     (exact-floor E)
+     (exact-ceiling E)
+     (exact-truncate E)
+     (sinh E)
+     (cosh E)
+     (tanh E)
+     (nan? E)
+     (infinite? E)
+     ]
+  ;; racket/base, racket/flonum, racket/unsafe/ops
+  [F (* E)
      (* E E)
      (* E E E)
      (+ E)
@@ -48,7 +63,9 @@
      (ceiling E)
      (truncate E)
      (round E)
-     (log E)
+     ;; uncomment when single-flonum complex types are fixed
+     ;(sqrt E)
+     ;(log E)
      (exp E)
      (cos E)
      (sin E)
@@ -96,50 +113,34 @@
 
 (define (right-type? before)
   (define type-before (match (get-type before) [(tc-result1: b) b]))
-  (define after (eval before (namespace-anchor->namespace anch)))
-  (define type-after (get-type after tc-literal))
-  (define subtype? (subtype type-after type-before))
-  subtype?)
+  (define after (with-handlers ([values values])
+                  (eval before (namespace-anchor->namespace anch))))
+  (cond [(exn? after)  #t]
+        [else
+         (define type-after (get-type after tc-literal))
+         (define subtype? (subtype type-after type-before))
+         (unless subtype?
+           (printf "type-before = ~v~ntype-after = ~v~n" type-before type-after))
+         subtype?]))
 
-;; Takes random redex reals (mostly integers, sometimes rationals, floats
-;; once in a blue moon).
-(define (random->random-float E)
-  (define r (random))
-  (cond
-    ;; probability 1/4: noisify and convert to single flonum
-    [(r . < . 0.25)
-     (real->single-flonum (* (random) E))]
-    ;; probability 1/4: noisify and convert to double flonum
-    [(r . < . 0.5)
-     (real->double-flonum (* (random) E))]
-    ;; probability 1/4: convert to very small double flonum
-    [(r . < . 0.75)
-     (define x (ordinal->flonum (round (inexact->exact E))))
-     (cond [(= x 0.0)  (if ((random) . < . 0.5) 0.0 -0.0)]
-           [else  x])]
-    ;; probability 1/20: +nan.0
-    [(r . < . 0.8)
-     +nan.0]
-    ;; remaining probability: convert to very large double flonum
-    [else
-     (if ((random) . < . 0.5)
-         (flstep -inf.0 (round (inexact->exact E)))
-         (flstep +inf.0 (- (round (inexact->exact E)))))]))
-
-;; Redex can't generate floats, so we convert ints to floats.
-(define (exp->float-exp E) ; numbers or symbols or lists
+;; Redex can't generate reals, so we convert ints to reals.
+(define (exp->real-exp E) ; numbers or symbols or lists
   (cond [(number? E)
-         (random->random-float E)]
+         (random-integer->random-real (exact-round E))]
         [(list? E)
-         (map exp->float-exp E)]
+         (map exp->real-exp E)]
         [else
          E]))
 
-(define (check-all-floats sexp)
+(define num-exceptions 0)
+
+(define (check-all-reals sexp)
   (or (with-handlers
           ;; something went wrong, almost certainly typechecking failed
           ;; in which case we ignore the expression
-          ([exn? (const #t)])
+          ([exn?  (λ (e)
+                    (set! num-exceptions (+ num-exceptions 1))
+                    #t)])
         (get-type sexp)
         #f) ; go on and check preservation
       (right-type? sexp)))
@@ -147,6 +148,8 @@
 (call-with-limits
  #f 1000
  (lambda ()
-   (redex-check tr-arith E (check-all-floats (term E))
-                #:attempts 500
-                #:prepare exp->float-exp)))
+   (redex-check tr-arith F (check-all-reals (term F))
+                #:attempts 1000
+                #:prepare exp->real-exp)))
+
+;(printf "bad tests (usually typechecking failed): ~v~n" num-exceptions)

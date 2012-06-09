@@ -173,11 +173,9 @@
 	     #'-SingleFlonumNegZero))
 (define -SingleFlonumZero (*Un -SingleFlonumPosZero -SingleFlonumNegZero))
 (define -SingleFlonumNan (make-Base 'Single-Flonum-Nan
-                                  #'(and/c single-flonum?
-                                           ;; eqv? equates single and double precision nans
-                                           (lambda (x) (eqv? x +nan.0)))
-                                  (lambda (x) #f)
-				  #'-SingleFlonumNan))
+                                    #'(and/c single-flonum? (lambda (x) (eqv? x +nan.f)))
+                                    (lambda (x) (and (single-flonum? x) (eqv? x +nan.f)))
+                                    #'-SingleFlonumNan))
 (define -InexactRealPosZero (*Un -SingleFlonumPosZero -FlonumPosZero))
 (define -InexactRealNegZero (*Un -SingleFlonumNegZero -FlonumNegZero))
 (define -InexactRealZero    (*Un -InexactRealPosZero

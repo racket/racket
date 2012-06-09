@@ -65,7 +65,8 @@
   
   (define (cosh z)
     (unless (number? z) (raise-argument-error 'cosh "number?" z))
-    (/ (+ (exp z) (exp (- z))) 2))
+    (cond [(and (real? z) (= z 0))  (if (single-flonum? z) 1.0f0 1.0)]
+          [else  (/ (+ (exp z) (exp (- z))) 2)]))
   
   (define (tanh z)
     (unless (number? z) (raise-argument-error 'tanh "number?" z))

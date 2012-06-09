@@ -174,7 +174,7 @@
 (define cosh+1 #e1.5430806348152437784779056207570616826015291123659)
 
 (test #t double=? cosh+1 (cosh -1))
-(test 1 cosh 0)
+(test 1.0 cosh 0)
 (test #t double=? cosh+1 (cosh 1))
 
 (test +nan.f cosh +nan.f)
