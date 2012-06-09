@@ -3,11 +3,17 @@ racket/base: add progress-evt?, thread-cell-values?, prefab-key?,
  semaphore-peek-evt?, channel-put-evt?
 Changed #lang for most languages so that it cannot be nested;
  this change is within syntax/module-reader and applies to
- racket, racket/base, and morea
+ racket, racket/base, and more
 racket/com: don't always infer 'any for the element type of a
  multidimensional array 
 Changed local-expand to not add core forms if the stop list has
  just module*
+racket/math: added degrees->radians, radians->degrees, nan?,
+ infinite?, exact-round, exact-floor, exact-ceiling, exact-truncate;
+ fixed sinh and tanh to return correct answers given extreme and non-
+ rational values like -inf.0, -0.0, -min.0 (see unstable/flonum for
+ definition); fixed handling of single flonums in sinh, cosh, tanh
+ and sgn
 
 Version 5.3.0.9
 Changed the format of error messages

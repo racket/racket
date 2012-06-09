@@ -436,3 +436,7 @@
 (test 4 order-of-magnitude 10000)
 (test -2 order-of-magnitude 1/100)
 (test -3 order-of-magnitude 1/101)
+
+;; =========================================================================
+
+(report-errs)
