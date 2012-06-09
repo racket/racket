@@ -243,7 +243,10 @@
             (test #f regexp-match? (regexp-quote (path->bytes super)) (get-output-string o))))
         (loop super)))))
 
-
+;; ----------------------------------------
+;; make sure +inf.0 is ok for `print-syntax-width':
+(parameterize ([print-syntax-width +inf.0])
+  (test +inf.0 print-syntax-width))
 
 ;; ----------------------------------------
 

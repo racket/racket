@@ -742,8 +742,8 @@ static Scheme_Object *good_syntax_width(int c, Scheme_Object **argv)
            || !SCHEME_INT_VAL(argv[0]))
 	: (SCHEME_BIGNUMP(argv[0])
 	   ? SCHEME_BIGPOS(argv[0])
-	   : (SCHEME_FLTP(argv[0])
-              ? MZ_IS_POS_INFINITY(SCHEME_FLT_VAL(argv[0]))
+	   : (SCHEME_DBLP(argv[0])
+              ? MZ_IS_POS_INFINITY(SCHEME_DBL_VAL(argv[0]))
               : 0)));
 
   return ok ? scheme_true : scheme_false;
