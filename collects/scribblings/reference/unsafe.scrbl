@@ -114,8 +114,8 @@ For @tech{flonums}: Unchecked versions of @racket[fl+], @racket[fl-],
 @defproc[(unsafe-fl>   [a flonum?] [b flonum?]) boolean?]
 @defproc[(unsafe-fl<=  [a flonum?] [b flonum?]) boolean?]
 @defproc[(unsafe-fl>=  [a flonum?] [b flonum?]) boolean?]
-@defproc[(unsafe-flmin [a flonum?]) flonum?]
-@defproc[(unsafe-flmax [a flonum?]) flonum?]
+@defproc[(unsafe-flmin [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-flmax [a flonum?] [b flonum?]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[fl=], @racket[fl<],
