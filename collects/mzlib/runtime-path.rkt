@@ -1,7 +1,7 @@
 (module runtime-path racket/base
-  (require mzlib/etc
-	   setup/dirs
+  (require "private/this-expression-source-directory.rkt"
            racket/list
+           setup/dirs
            (only-in "private/runtime-path-table.rkt" table)
            (for-syntax racket/base))
 
@@ -72,7 +72,7 @@
 		      ((length p) . > . 1)
 		      (eq? 'lib (car p))
 		      (andmap string? (cdr p)))
-		 (let* ([strs (regexp-split #rx"/" 
+                 (let* ([strs (regexp-split #rx"/" 
                                             (let ([s (cadr p)])
                                               (if (regexp-match? #rx"[./]" s)
                                                   s
