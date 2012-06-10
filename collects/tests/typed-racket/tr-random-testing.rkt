@@ -63,9 +63,8 @@
      (ceiling E)
      (truncate E)
      (round E)
-     ;; uncomment when single-flonum complex types are fixed
-     ;(sqrt E)
-     ;(log E)
+     (sqrt E)
+     (log E)
      (exp E)
      (cos E)
      (sin E)
