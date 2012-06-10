@@ -1693,8 +1693,6 @@
                   -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -PosSingleFlonum -NonNegSingleFlonum
                   -InexactRealPosZero -InexactRealNegZero -InexactRealZero -PosInexactReal -NonNegInexactReal
                   -RealZero -PosReal -NonNegReal))
-  (-ExactNumber . -> . -ExactNumber)
-  (-Flonum . -> . (Un -Flonum -FloatComplex))
   (-FloatComplex . -> . -FloatComplex)
   (-SingleFlonumComplex . -> . -SingleFlonumComplex)
   (-InexactComplex . -> . -InexactComplex)
