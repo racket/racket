@@ -655,7 +655,11 @@
     (list (-> pos neg)
           (-> non-neg non-pos)
           (-> neg pos)
-          (-> non-pos non-neg)))
+          (-> non-pos non-neg)
+          (-> -Zero pos neg)
+          (-> -Zero non-neg non-pos)
+          (-> -Zero neg pos)
+          (-> -Zero non-pos non-neg)))
 
 
   ;Check to ensure we fail fast if the flonum bindings change
@@ -1124,7 +1128,7 @@
     (negation-pattern -PosSingleFlonum -NegSingleFlonum -NonNegSingleFlonum -NonPosSingleFlonum)
     (negation-pattern -PosInexactReal -NegInexactReal -NonNegInexactReal -NonPosInexactReal)
     (negation-pattern -PosReal -NegReal -NonNegReal -NonPosReal)
-    (map (lambda (t) (commutative-binop t -Zero t))
+    (map (lambda (t) (-> t -Zero t))
          (list -One -PosByte -Byte -PosIndex -Index
                -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum -Fixnum))
     (-> -One -One -Zero)
