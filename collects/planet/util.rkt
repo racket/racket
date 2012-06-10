@@ -711,9 +711,10 @@
                        (λ (x) (and (list? x) 
                                    (srfi1:lset<= equal? x '("3xx" "4.x"))))
                        (announce "Repositories: ~s\n" repositories)
-                       (warn (string-append
-                              "Package's info.rkt does not contain a repositories field."
-                              " The package will be listed in all repositories by default."))]
+                       (unless repositories
+                         (warn (string-append
+                                "Package's info.rkt does not contain a repositories field."
+                                " The package will be listed in all repositories by default.")))]
                       [version
                        string?
                        (announce "Version description: ~a\n" version)]))])
