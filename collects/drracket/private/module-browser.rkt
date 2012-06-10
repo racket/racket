@@ -19,6 +19,8 @@
 
 (provide module-overview@
          process-program-unit
+         process-program-import^
+         process-program-export^
          (struct-out req))
 
 (define adding-file (string-constant module-browser-adding-file))
@@ -1025,27 +1027,25 @@
   ;; the program
   (define (add-connections filename/stx)
     (cond
-      [(string? filename/stx)
+      [(path-string? filename/stx)
        (add-filename-connections filename/stx)]
       [(syntax? filename/stx)
        (add-syntax-connections filename/stx)]))
   
   ;; add-syntax-connections : syntax -> void
   (define (add-syntax-connections stx)
-    (let ([module-codes (map compile (expand-syntax-top-level-with-compile-time-evals/flatten stx))])
-      (for-each
-       (λ (module-code)
-         (when (compiled-module-expression? module-code)
-           (let* ([name (extract-module-name stx)]
-                  [base 
-                   (build-module-filename
-                    (if (regexp-match #rx"^," name)
-                        (substring name 1 (string-length name))
-                        (build-path (or (current-load-relative-directory) 
-                                        (current-directory))
-                                    name)))])
-             (add-module-code-connections base module-code))))
-       module-codes)))
+    (define module-codes (map compile (expand-syntax-top-level-with-compile-time-evals/flatten stx)))
+    (for ([module-code (in-list module-codes)])
+      (when (compiled-module-expression? module-code)
+        (define name (extract-module-name stx))
+        (define base 
+          (build-module-filename
+           (if (regexp-match #rx"^," name)
+               (substring name 1 (string-length name))
+               (build-path (or (current-load-relative-directory) 
+                               (current-directory))
+                           name))))
+        (add-module-code-connections base module-code))))
   
   (define (build-module-filename str)
     (let ([try (λ (ext)
@@ -1053,7 +1053,7 @@
                    (and (file-exists? tst)
                         tst)))])
       (or (try #".rkt")
-	      (try #".ss")
+          (try #".ss")
           (try #".scm")
           (try #"")
           str)))
@@ -1066,20 +1066,17 @@
     (unless (hash-ref visited-hash-table module-name (λ () #f))
       (async-channel-put progress-channel (format adding-file module-name))
       (hash-set! visited-hash-table module-name #t)
-      (let ([import-assoc (module-compiled-imports module-code)])
-        (for-each
-         (λ (line)
-           (let* ([level (car line)]
-                  [mpis (cdr line)]
-                  [requires (extract-filenames mpis module-name)])
-             (for-each (λ (require)
-                         (add-connection module-name
-                                         (req-filename require)
-                                         (req-key require)
-                                         level)
-                         (add-filename-connections (req-filename require)))
-                       requires)))
-         import-assoc))))
+      (define import-assoc (module-compiled-imports module-code))
+      (for ([line (in-list import-assoc)])
+        (define level (car line))
+        (define mpis (cdr line))
+        (define requires (extract-filenames mpis module-name))
+        (for ([require (in-list requires)])
+          (add-connection module-name
+                          (req-filename require)
+                          (req-key require)
+                          level)
+          (add-filename-connections (req-filename require))))))
   
   ;; add-connection : string string (union symbol #f) number -> void
   ;; name-original and name-require and the identifiers for those paths and
