@@ -69,7 +69,8 @@
        -FloatComplex]
       [(~var i (3d (conjoin number? (lambda (x) (and (single-flonum? (imag-part x))
                                                      (single-flonum? (real-part x)))))))
-       -InexactComplex]
+       -SingleFlonumComplex]
+      ;; can't have real and imaginary parts that are both inexact, but not the same precision
       [(~var i (3d number?)) -Number] ; otherwise, Number
       
       [i:str -String]
