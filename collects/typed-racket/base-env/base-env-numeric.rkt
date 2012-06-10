@@ -474,8 +474,8 @@
                   (-FlonumPosZero -NegFlonum . -> . -FlonumNegZero)
                   (-FlonumNegZero -PosFlonum . -> . -FlonumNegZero)
                   (-FlonumNegZero -NegFlonum . -> . -FlonumPosZero)
-                  (-PosFlonum -PosFlonum . -> . -NonNegFlonum) ; possible underflow
-                  (commutative-binop -PosFlonum -NegFlonum -NonPosFlonum)
+                  (-PosFlonum -PosFlonum . -> . (Un -NonNegFlonum -FlonumNan)) ; possible underflow
+                  (commutative-binop -PosFlonum -NegFlonum (Un -NonPosFlonum -FlonumNan))
                   (-NegFlonum -NegFlonum . -> . (Un -NonNegFlonum -FlonumNan))
                   (binop -Flonum))))
   (define fl=-type
