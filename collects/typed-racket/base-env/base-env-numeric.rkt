@@ -1677,12 +1677,10 @@
              (-Real (Un -NegInt -PosInt) . -> . -Real)
              (-InexactReal -InexactReal . -> . (Un -InexactReal -InexactComplex))
              (-ExactNumber -ExactNumber . -> . -ExactNumber)
-             (N -FloatComplex . -> . -FloatComplex)
-             (-FloatComplex (Un -InexactComplex -InexactReal -NegReal -PosReal) . -> . -FloatComplex)
-             ((Un -ExactNumber -SingleFlonum -SingleFlonumComplex) -SingleFlonumComplex . -> . -SingleFlonum)
-             (-SingleFlonumComplex (Un -NegRat -PosRat -SingleFlonum -SingleFlonumComplex) . -> . -SingleFlonum)
-             ((Un -ExactNumber -InexactReal -InexactComplex) -InexactComplex . -> . -InexactComplex)
-             (-InexactComplex (Un -NegRat -PosRat -InexactReal -InexactComplex) . -> . -InexactComplex)
+             (-FloatComplex (Un -InexactComplex -InexactReal) . -> . -FloatComplex)
+             (-SingleFlonumComplex (Un -SingleFlonum -SingleFlonumComplex) . -> . -SingleFlonumComplex)
+             ((Un -InexactReal -InexactComplex) -InexactComplex . -> . -InexactComplex)
+             (-InexactComplex (Un -InexactReal -InexactComplex) . -> . -InexactComplex)
              (N N . -> . N))]
 [sqrt
  (from-cases
@@ -1694,8 +1692,8 @@
   (-ExactNumber . -> . -ExactNumber)
   (-Flonum . -> . (Un -Flonum -FloatComplex))
   (-FloatComplex . -> . -FloatComplex)
-  ((Un -SingleFlonumComplex -SingleFlonum) . -> . -SingleFlonumComplex)
-  ((Un -InexactComplex -InexactReal) . -> . -InexactComplex)
+  (-SingleFlonumComplex . -> . -SingleFlonumComplex)
+  (-InexactComplex . -> . -InexactComplex)
   (N . -> . N))]
 [integer-sqrt
  (from-cases
@@ -1707,22 +1705,16 @@
                   -InexactRealPosZero -InexactRealNegZero -InexactRealZero -NonNegInexactReal
                   -RealZero -NonNegReal))
   (-Rat . -> . -ExactNumber)
-  (-Flonum . -> . -FloatComplex) ; defined on inexact integers too
-  (-SingleFlonum . -> . -SingleFlonumComplex)
-  (-InexactReal . -> . -InexactComplex)
-  (N . -> . N))]
+  (N . -> . N))] ; defined on inexact integers too
 [log (cl->*
       (-NonNegRat . -> . -Real)
       (-FlonumZero . -> . -NegFlonum)
       (-NonNegFlonum . -> . -Flonum)
-      (-Flonum . -> . (Un -Flonum -FloatComplex))
       (-SingleFlonumZero . -> . -NegSingleFlonum)
       (-NonNegSingleFlonum . -> . -SingleFlonum)
-      (-SingleFlonum . -> . (Un -SingleFlonum -SingleFlonumComplex))
       (-InexactRealZero . -> . -NegInexactReal)
       (-NonNegInexactReal . -> . -InexactReal)
       (-NonNegReal . -> . -Real)
-      (-ExactNumber . -> . (Un -ExactNumber -FloatComplex))
       (-FloatComplex . -> . -FloatComplex)
       (-SingleFlonumComplex . -> . -SingleFlonumComplex)
       (-InexactComplex . -> . -InexactComplex)
