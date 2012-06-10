@@ -1157,7 +1157,8 @@
     (varop-1+ N))]
 [/ (from-cases ; very similar to multiplication, without closure properties for integers
     (commutative-case -Zero N -Zero)
-    (map (lambda (t) (commutative-binop -One t))
+    (unop -One)
+    (map (lambda (t) (-> t -One t))
          all-number-types)
     (varop-1+ -PosRat)
     (varop-1+ -NonNegRat)
@@ -1171,35 +1172,35 @@
     (-> -NonPosRat -NonPosRat -NonPosRat -NonPosRat)
     (varop-1+ -Rat)
     (-> -FlonumZero (Un -PosFlonum -NegFlonum)) ; one of the infinities
-    (varop-1+ -PosFlonum -NonNegFlonum) ; possible underflow
+    (varop-1+ -PosFlonum (Un -NonNegFlonum -FlonumNan)) ; possible underflow
     ;; if we mix Pos and NonNeg (or just NonNeg), we go to Flonum: (/ +inf.0 0.0) -> NaN
     ;; No (-> -NonPosFlonum -NonPosFlonum), (/ 0.0) => +inf.0
-    (-> -NegFlonum -NegFlonum -NonNegFlonum)
-    (-> -NegFlonum -NegFlonum -NegFlonum -NonPosFlonum)
+    (-> -NegFlonum -NegFlonum (Un -NonNegFlonum -FlonumNan))
+    (-> -NegFlonum -NegFlonum -NegFlonum (Un -NonPosFlonum -FlonumNan))
     ;; limited flonum contagion rules
     ;; (/ 0 <float>) is exact 0 (i.e. not a float)
-    (-> -PosFlonum -PosReal -NonNegFlonum)
-    (-> -PosReal -PosFlonum -NonNegFlonum)
+    (-> -PosFlonum -PosReal (Un -NonNegFlonum -FlonumNan))
+    (-> -PosReal -PosFlonum (Un -NonNegFlonum -FlonumNan))
     (commutative-case -PosFlonum -PosReal (Un -NonNegFlonum -FlonumNan))
     (->* (list (Un -PosReal -NegReal -Flonum) -Flonum) -Flonum -Flonum)
     (->* (list -Flonum) -Real -Flonum) ; if any argument after the first is exact 0, not a problem
     (varop-1+ -Flonum)
     (-> -SingleFlonumZero (Un -PosSingleFlonum -NegSingleFlonum)) ; one of the infinities
-    (varop-1+ -PosSingleFlonum -NonNegSingleFlonum) ; possible underflow
+    (varop-1+ -PosSingleFlonum (Un -NonNegSingleFlonum -SingleFlonumNan)) ; possible underflow
     ;; we could add contagion rules for negatives, but we haven't for now
-    (-> -NegSingleFlonum -NegSingleFlonum -NonNegSingleFlonum) ; possible underflow, so no neg neg -> pos
-    (-> -NegSingleFlonum -NegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum)
-    (-> -PosSingleFlonum (Un -PosRat -PosSingleFlonum) -NonNegSingleFlonum)
-    (-> (Un -PosRat -PosSingleFlonum) -PosSingleFlonum -NonNegSingleFlonum)
+    (-> -NegSingleFlonum -NegSingleFlonum (Un -NonNegSingleFlonum -SingleFlonumNan)) ; possible underflow, so no neg neg -> pos
+    (-> -NegSingleFlonum -NegSingleFlonum -NegSingleFlonum (Un -NonPosSingleFlonum -SingleFlonumNan))
+    (-> -PosSingleFlonum (Un -PosRat -PosSingleFlonum) (Un -NonNegSingleFlonum -SingleFlonumNan))
+    (-> (Un -PosRat -PosSingleFlonum) -PosSingleFlonum (Un -NonNegSingleFlonum -SingleFlonumNan))
     (commutative-case -PosSingleFlonum (Un -PosRat -PosSingleFlonum) (Un -NonNegSingleFlonum -SingleFlonumNan))
     (commutative-case -SingleFlonum (Un -PosRat -NegRat -SingleFlonum) -SingleFlonum)
     (varop-1+ -SingleFlonum)
     (-> -InexactRealZero (Un -PosInexactReal -NegInexactReal))
-    (varop-1+ -PosInexactReal -NonNegInexactReal) ; possible underflow
-    (-> -NegInexactReal -NegInexactReal -NonNegInexactReal)
-    (-> -NegInexactReal -NegInexactReal -NegInexactReal -NonPosInexactReal)
-    (-> -PosInexactReal (Un -PosRat -PosInexactReal) -NonNegInexactReal)
-    (-> (Un -PosRat -PosInexactReal) -PosInexactReal -NonNegInexactReal)
+    (varop-1+ -PosInexactReal (Un -NonNegInexactReal -InexactRealNan)) ; possible underflow
+    (-> -NegInexactReal -NegInexactReal (Un -NonNegInexactReal -InexactRealNan))
+    (-> -NegInexactReal -NegInexactReal -NegInexactReal (Un -NonPosInexactReal -InexactRealNan))
+    (-> -PosInexactReal (Un -PosRat -PosInexactReal) (Un -NonNegInexactReal -InexactRealNan))
+    (-> (Un -PosRat -PosInexactReal) -PosInexactReal (Un -NonNegInexactReal -InexactRealNan))
     (commutative-case -PosInexactReal (Un -PosRat -PosInexactReal) (Un -NonNegInexactReal -InexactRealNan))
     (commutative-case -InexactReal (Un -PosRat -NegRat -InexactReal) -InexactReal)
     (varop-1+ -InexactReal)
@@ -1207,10 +1208,10 @@
     (varop-1+ -PosReal)
     (-> -NegReal -NegReal)
     (-> -NonPosReal -NonPosReal)
-    (-> -NegReal -NegReal -NonNegReal)
-    (-> -NegReal -PosReal -NonPosReal)
-    (-> -PosReal -NegReal -NonPosReal)
-    (-> -NegReal -NegReal -NegReal -NonPosReal)
+    (-> -NegReal -NegReal (Un -NonNegReal -InexactRealNan))
+    (-> -NegReal -PosReal (Un -NonPosReal -InexactRealNan))
+    (-> -PosReal -NegReal (Un -NonPosReal -InexactRealNan))
+    (-> -NegReal -NegReal -NegReal (Un -NonPosReal -InexactRealNan))
     (varop-1+ -Real)
     ;; complexes
     (commutative-case -FloatComplex (Un -InexactComplex -InexactReal -PosRat -NegRat) -FloatComplex)
