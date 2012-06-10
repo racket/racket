@@ -344,16 +344,21 @@
 	    (send dc set-brush b)))
 	width height))
 
-  (define (disk size) (filled-ellipse size size))
+  (define (disk size #:draw-border? [draw-border? #t])
+    (filled-ellipse size size #:draw-border? draw-border?))
   
-  (define (filled-ellipse width height)
+  (define (filled-ellipse width height #:draw-border? [draw-border? #t])
     (dc (lambda (dc x y)
-	  (let ([b (send dc get-brush)])
-	    (send dc set-brush (send the-brush-list find-or-create-brush
-				     (send (send dc get-pen) get-color)
-				     'solid))
-	    (send dc draw-ellipse x y width height)
-	    (send dc set-brush b)))
+	  (define b (send dc get-brush))
+          (define p (send dc get-pen))
+          (send dc set-brush (send the-brush-list find-or-create-brush
+                                   (send (send dc get-pen) get-color)
+                                   'solid))
+          (unless draw-border?
+            (send dc set-pen "black" 1 'transparent))
+          (send dc draw-ellipse x y width height)
+          (send dc set-brush b)
+          (send dc set-pen p))
 	width height))
 
   (define cloud

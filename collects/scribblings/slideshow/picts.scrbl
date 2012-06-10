@@ -233,10 +233,14 @@ override settings supplied by the context.}
 
 @defproc*[([(ellipse [w real?] [h real?]) pict?]
            [(circle [diameter real?]) pict?]
-           [(filled-ellipse [w real?] [h real?]) pict?]
-           [(disk [diameter real?]) pict?])]{
+           [(filled-ellipse [w real?] [h real?] [#:draw-border? draw-border? any/c #t]) pict?]
+           [(disk [diameter real?] [#:draw-border? draw-border? any/c #t]) pict?])]{
 
-Unfilled and filled ellipses.}
+Unfilled and filled ellipses.
+
+If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
+before drawing the ellipse.
+}
 
 @defproc*[([(rectangle [w real?] [h real?]) pict?]
            [(filled-rectangle [w real?]
