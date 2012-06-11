@@ -92,12 +92,12 @@
                                   [object (if (object-equal? o2 o3) o2 (make-Empty))])
                               ;(printf "result filter is: ~a\n" filter)
                               (ret type filter object))))])
-                  (if expected (check-below r expected) r))]
+                  (cond-check-below r expected))]
                ;; special case if one of the branches is unreachable
                [(and (= 1 (length us)) (type-equal? (car us) (Un)))
-                (if expected (check-below (ret ts fs2 os2) expected) (ret ts fs2 os2))]
+                (cond-check-below (ret ts fs2 os2) expected)]
                [(and (= 1 (length ts)) (type-equal? (car ts) (Un)))
-                (if expected (check-below (ret us fs3 os3) expected) (ret us fs3 os3))]
+                (cond-check-below (ret us fs3 os3) expected)]
                ;; otherwise, error
                [else
                 (tc-error/expr #:return (ret (or expected Err))

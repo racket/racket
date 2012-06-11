@@ -121,10 +121,8 @@
                    [vs (hash-map h (lambda (x y) (tc-literal y)))])
               (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
       [_ Univ]))
-
-  (if expected
-      (check-below r expected)
-      r))
+  
+  (cond-check-below r expected))
 
 
 ;; do-inst : syntax type -> type
@@ -497,9 +495,7 @@
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)]
-               [retval (if expected
-                           (begin (check-below ret-ty expected) expected)
-                           ret-ty)])
+               [retval (cond-check-below ret-ty expected)])
           (add-typeof-expr form retval)
           retval)]
        [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]

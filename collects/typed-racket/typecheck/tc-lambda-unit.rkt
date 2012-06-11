@@ -271,9 +271,8 @@
 
 (define (tc/mono-lambda/type formals bodies expected)
   (define t (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
-  (if expected
-      (and (check-below (ret t true-filter) expected) t)
-      t))
+  (cond-check-below (ret t true-filter) expected)
+  t)
 
 (define (plambda-prop stx)
   (define d (syntax-property stx 'typechecker:plambda))
@@ -332,10 +331,7 @@
           ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
           (make-Poly tvars ty))])]
     [(tc-result1: t)
-     (unless (check-below (tc/plambda form formals bodies #f) t)
-       (tc-error/expr #:return expected
-                      "Expected a value of type ~a, but got a polymorphic function." t))
-     t]
+     (check-below (tc/plambda form formals bodies #f) t)]
     [_ (int-err "not a good expected value: ~a" expected)]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
