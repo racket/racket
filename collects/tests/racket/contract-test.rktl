@@ -4144,6 +4144,28 @@
         (λ (pt) (abort-current-continuation pt (λ (v) (+ v 1))))))
    "B")
 
+  (test/neg-blame
+   'prompt/c-ho-6
+   '(let ([pt (contract (prompt/c string? number?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+        (λ () (abort-current-continuation pt 3 "bad"))
+        pt
+        (λ (x y) (values x y)))))
+
+  (test/spec-passed
+   'prompt/c-ho-7
+   '(let ([pt (contract (prompt/c string? number?)
+                        (make-continuation-prompt-tag)
+                        'pos
+                        'neg)])
+      (call-with-continuation-prompt
+        (λ () (abort-current-continuation pt "good" 5))
+        pt
+        (λ (x y) (values x y)))))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  make-contract

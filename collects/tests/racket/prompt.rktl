@@ -167,6 +167,24 @@
    (lambda (x) (* x 2))
    (lambda (x) (+ x 1))))
 
+(define imp-tag-2
+  (impersonate-prompt-tag
+   (make-continuation-prompt-tag)
+   (lambda (x y) (values (* x 2) (* y 2)))
+   (lambda (x y) (values (+ x 1) (+ y 1)))))
+
+(define imp-tag-3
+  (impersonate-prompt-tag
+   (make-continuation-prompt-tag)
+   (lambda (x y) (values (* x 2) (* y 2)))
+   (lambda (x y) x)))
+
+(define imp-tag-4
+  (impersonate-prompt-tag
+   (make-continuation-prompt-tag)
+   (lambda (x y) (values x x x))
+   (lambda (x y) (values x y))))
+
 (define cha-tag
   (chaperone-prompt-tag
    (make-continuation-prompt-tag)
@@ -179,15 +197,20 @@
    (lambda (x) 42)
    (lambda (x) x)))
 
-(define (do-test tag v)
+(define (do-test tag . rst)
   (call-with-continuation-prompt
     (lambda ()
-      (abort-current-continuation tag v))
+      (apply abort-current-continuation
+             (cons tag rst)))
     tag
-    (lambda (x) x)))
+    (lambda x x)))
 
-(test 12 do-test imp-tag 5)
-(test 5 do-test cha-tag 5)
+(test '(12) do-test imp-tag 5)
+(test '(12 14) do-test imp-tag-2 5 6)
+(err/rt-test (do-test imp-tag-2 5) exn:fail?)
+(err/rt-test (do-test imp-tag-3 10 11) exn:fail?)
+(err/rt-test (do-test imp-tag-4 10 11) exn:fail?)
+(test '(7) do-test cha-tag 7)
 (err/rt-test (do-test cha-tag "bad") exn:fail?)
 (err/rt-test (do-test bad-tag 5) exn:fail?)
 

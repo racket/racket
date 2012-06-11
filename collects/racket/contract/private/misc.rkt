@@ -946,19 +946,31 @@
 (define/final-prop none/c (make-none/c 'none/c))
 
 ;; prompt/c
-(define/subexpression-pos-prop (prompt/c ctc-arg)
-  (define ctc (coerce-contract 'prompt/c ctc-arg))
-  (cond [(chaperone-contract? ctc) (chaperone-prompt/c ctc)]
-        [else (impersonator-prompt/c ctc)]))
+(define/subexpression-pos-prop (prompt/c . ctc-args)
+  (define ctcs
+    (map (λ (ctc-arg)
+           (coerce-contract 'prompt/c ctc-arg))
+         ctc-args))
+  (cond [(andmap chaperone-contract? ctcs) (chaperone-prompt/c ctcs)]
+        [else (impersonator-prompt/c ctcs)]))
 
 (define (prompt/c-name ctc)
-  (build-compound-type-name 'prompt/c (base-prompt/c-ctc ctc)))
+  (apply build-compound-type-name
+         (cons 'prompt/c (base-prompt/c-ctcs ctc))))
 
 (define ((prompt/c-proj proxy) ctc)
-  (define ho-proj (contract-projection (base-prompt/c-ctc ctc)))
+  (define ho-projs (map contract-projection (base-prompt/c-ctcs ctc)))
   (λ (blame)
-    (define proj1 (ho-proj blame))
-    (define proj2 (ho-proj (blame-swap blame)))
+    (define proj1
+      (λ vs
+        (define vs2 (for/list ([proj ho-projs] [v vs])
+                      ((proj blame) v)))
+        (apply values vs2)))
+    (define proj2
+      (λ vs
+        (define vs2 (for/list ([proj ho-projs] [v vs])
+                      ((proj (blame-swap blame)) v)))
+        (apply values vs2)))
     (λ (val)
       (unless (contract-first-order-passes? ctc val)
         (raise-blame-error
@@ -973,10 +985,11 @@
 
 (define (prompt/c-stronger? this that)
   (and (base-prompt/c? that)
-       (contract-stronger? (base-prompt/c-ctc this)
-                           (base-prompt/c-ctc that))))
+       (andmap (λ (this that) (contract-stronger? this that))
+               (base-prompt/c-ctcs this)
+               (base-prompt/c-ctcs that))))
 
-(define-struct base-prompt/c (ctc))
+(define-struct base-prompt/c (ctcs))
 
 (define-struct (chaperone-prompt/c base-prompt/c) ()
   #:property prop:chaperone-contract

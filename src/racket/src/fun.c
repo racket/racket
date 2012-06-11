@@ -5571,8 +5571,11 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
 
   if (!SCHEME_PROMPT_TAGP(val))
     scheme_wrong_contract(name, "prompt-tag?", 0, argc, argv);
-  scheme_check_proc_arity(name, 1, 1, argc, argv);
-  scheme_check_proc_arity(name, 1, 1, argc, argv);
+
+  if (!SCHEME_PROCP(argv[1]))
+    scheme_wrong_contract(name, "procedure?", 1, argc, argv);
+  if (!SCHEME_PROCP(argv[2]))
+    scheme_wrong_contract(name, "procedure?", 2, argc, argv);
 
   redirects = scheme_make_pair(argv[1], argv[2]);
 
@@ -6005,37 +6008,69 @@ static void prompt_unwind_one_dw(Scheme_Object *prompt_tag)
     prompt_unwind_dw(prompt_tag);
 }
 
-static Scheme_Object **chaperone_do_prompt_handler(Scheme_Object *obj, int argc, Scheme_Object *argv[])
+static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Scheme_Object *obj,
+                                            int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
-  Scheme_Object *a[1];
-  Scheme_Object *v;
   Scheme_Object **vals;
-
-  vals = MALLOC_N(Scheme_Object *, argc);
+  Scheme_Object *v;
+  Scheme_Object *proc;
+  int i, num_args;
 
   while (1) {
-    int i;
     if (SCHEME_PROMPT_TAGP(obj)) {
       return vals;
     } else {
       px = (Scheme_Chaperone *)obj;
-
       obj = px->prev;
-      for (i = 0; i < argc; i++) {
-        a[0] = argv[i];
-        v =  _scheme_apply(SCHEME_CAR(px->redirects), 1, a);
-        vals[i] = v;
+
+      if (is_prompt)
+        proc = SCHEME_CAR(px->redirects);
+      else
+        proc = SCHEME_CDR(px->redirects);
+
+      v = _scheme_apply_multi(proc, argc, argv);
+
+      if (v == SCHEME_MULTIPLE_VALUES) {
+        GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+        if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+          p->values_buffer = NULL;
+        num_args = p->ku.multiple.count;
+        vals = p->ku.multiple.array;
+      } else {
+        num_args = 1;
+        vals = MALLOC_N(Scheme_Object *, 1);
+        vals[0] = v;
       }
+
+      /*
+       * All kinds of proxies should return the same number of results
+       * as the number of aborted values
+       */
+      if (num_args == 1 && num_args != argc)
+        scheme_wrong_return_arity(name, argc, 1, vals[0], "application of proxy function");
+      else if (num_args != argc)
+        scheme_wrong_return_arity(name, argc, num_args, vals, "application of proxy function");
 
       if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
         for (i = 0; i < argc; i++) {
           if (!scheme_chaperone_of(vals[i], argv[i]))
-            scheme_wrong_chaperoned("call-with-continuation-prompt", "value", argv[i], vals[i]);
+            scheme_wrong_chaperoned(name, "value", argv[i], vals[i]);
+          argv[i] = vals[i];
         }
       }
     }
   }
+}
+
+static Scheme_Object **chaperone_do_prompt_handler(Scheme_Object *obj, int argc, Scheme_Object **argv)
+{
+    return chaperone_do_control("call-with-continuation-prompt", 1, obj, argc, argv);
+}
+
+static Scheme_Object **chaperone_do_abort(Scheme_Object *obj, int argc, Scheme_Object **argv)
+{
+    return chaperone_do_control("abort-current-continuation", 0, obj, argc, argv);
 }
 
 static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
@@ -6069,6 +6104,9 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
   scheme_check_proc_arity("call-with-continuation-prompt", argc, 0, in_argc, in_argv);
   if (in_argc > 1) {
+    /*
+     * Check if the prompt tag is proxied
+     */
     if (!SCHEME_PROMPT_TAGP(in_argv[1])) {
       if (SCHEME_NP_CHAPERONEP(in_argv[1])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(in_argv[1]))) {
@@ -6228,6 +6266,10 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
           } else
             argv = (Scheme_Object **)p->cjs.val;
 
+          /*
+           * If the prompt tag is proxied, run the intercession function
+           * and call the handler on its results
+           */
           if (is_chaperoned) {
             argv = chaperone_do_prompt_handler(in_argv[1], argc, argv);
           }
@@ -6467,51 +6509,19 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
   return value;
 }
 
-static Scheme_Object *chaperone_do_abort_one(Scheme_Object *obj, Scheme_Object *v)
-{
-  Scheme_Chaperone *px;
-  Scheme_Object *a[1];
-
-  while (1) {
-    if (SCHEME_PROMPT_TAGP(obj)) {
-      return v;
-    } else {
-      px = (Scheme_Chaperone *)obj;
-
-      obj = px->prev;
-      a[0] = v;
-      v = _scheme_apply(SCHEME_CDR(px->redirects), 1, a);
-
-      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
-        if (!scheme_chaperone_of(v, a[0]))
-          scheme_wrong_chaperoned("abort-current-continuation", "value", a[0], v);
-    }
-  }
-}
-
-static Scheme_Object **chaperone_do_abort(Scheme_Object *obj, int num_args, Scheme_Object *args[])
-{
-  Scheme_Object **vals;
-  Scheme_Object *v;
-  int i;
-  vals = MALLOC_N(Scheme_Object *, num_args);
-  for (i = 0; i < num_args; i++) {
-    v = chaperone_do_abort_one(obj, args[i]);
-    vals[i] = v;
-  }
-
-  return vals;
-}
-
 static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], int skip_dws)
 {
   Scheme_Object *prompt_tag;
   Scheme_Prompt *prompt;
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *val;
+  Scheme_Object *a[1];
+  Scheme_Object **vals;
   int is_chaperoned = 0;
 
   if (!SCHEME_PROMPT_TAGP(argv[0])) {
+    /*
+     * Check if the prompt tag is proxied
+     */
     if (SCHEME_NP_CHAPERONEP(argv[0])
         && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[0]))) {
         is_chaperoned = 1;
@@ -6537,14 +6547,19 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
 
   if (argc == 2) {
     p->cjs.num_vals = 1;
+    /*
+     * If the prompt tag isn't proxied, continue with the aborted value.
+     * Otherwise, run the intercession function and then continue with its
+     * new results.
+     */
     if (!is_chaperoned)
       p->cjs.val = argv[1];
     else {
-      val = chaperone_do_abort_one(argv[0], argv[1]);
-      p->cjs.val = val;
+      a[0] = argv[1];
+      vals = chaperone_do_abort(argv[0], 1, a);
+      p->cjs.val = (Scheme_Object *)vals[0];
     }
   } else {
-    Scheme_Object **vals;
     int i;
     vals = MALLOC_N(Scheme_Object *, argc - 1);
     for (i = argc; i-- > 1; ) {
@@ -6552,10 +6567,10 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
     }
     p->cjs.num_vals = argc - 1;
     if (!is_chaperoned)
-      p->cjs.val = (Scheme_Object *)vals;
+      p->cjs.val = (Scheme_Object **)vals;
     else {
-      val = chaperone_do_abort(argv[0], argc - 1, vals);
-      p->cjs.val = val;
+      vals = chaperone_do_abort(argv[0], argc - 1, vals);
+      p->cjs.val = (Scheme_Object **)vals;
     }
   }
   p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
