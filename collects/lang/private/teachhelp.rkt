@@ -65,7 +65,7 @@
 	     (unless (= found arity)
 	       (raise-syntax-error
 		#f
-                (argcount-error-message arity found)
+                (argcount-error-message #f arity found)
 		stx
 		#f))
 	     (datum->syntax-object
