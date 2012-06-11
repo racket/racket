@@ -244,22 +244,21 @@ or override impersonator-property values of @racket[vec].}
                           [prop-val any] ... ...)
           (and/c box? impersonator?)]{
 
-Returns an impersonator of @racket[bx], which redirects the
+Returns an impersonator of @racket[box], which redirects the
 @racket[unbox] and @racket[set-box!] operations.
 
-The @racket[unbox-proc] must accept @racket[bx] and the value that
-@racket[unbox] on @racket[bx] produces index; it must produce a replacement
-value, which is the result of
-@racket[unbox] on the impersonator.
+The @racket[unbox-proc] must accept @racket[box] and the value that
+@racket[unbox] produces on @racket[box]; it must produce a replacement
+value, which is the result of @racket[unbox] on the impersonator.
 
-The @racket[set-proc] must accept @racket[bx] and the value passed to
+The @racket[set-proc] must accept @racket[box] and the value passed to
 @racket[set-box!]; it must produce a replacement
 value, which is used with @racket[set-box!] on the original
-@racket[bx] to install the value.
+@racket[box] to install the value.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-box] must be odd) add impersonator properties
-or override impersonator-property values of @racket[bx].}
+or override impersonator-property values of @racket[box].}
 
 
 @defproc[(impersonate-hash [hash (and/c hash? (not/c immutable?))]
@@ -427,7 +426,7 @@ of the original value, and @racket[set-proc] must produce the value
 that is given or a chaperone of the value. The @racket[set-proc] will
 not be used if @racket[vec] is immutable.}
 
-@defproc[(chaperone-box [bx box?]
+@defproc[(chaperone-box [box box?]
                         [unbox-proc (box? any/c . -> . any/c)]
                         [set-proc (box? any/c . -> . any/c)]
                         [prop impersonator-property?]
@@ -438,7 +437,7 @@ Like @racket[impersonate-box], but with support for immutable boxes. The
 @racket[unbox-proc] procedure must produce the same value or a
 chaperone of the original value, and @racket[set-proc] must produce
 the same value or a chaperone of the value that it is given.  The
-@racket[set-proc] will not be used if @racket[bx] is immutable.}
+@racket[set-proc] will not be used if @racket[box] is immutable.}
 
 
 @defproc[(chaperone-hash [hash hash?]
