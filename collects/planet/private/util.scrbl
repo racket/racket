@@ -336,8 +336,10 @@ See also @racket[build-scribble-docs?] and @racket[force-package-building?]
 }
 
 @defparam[force-package-building? b boolean?]{
-  Determines if @racket[make-planet-archive] is more strict and thus
-  aborts more often.
+  Determines if @racket[make-planet-archive] signals an error and refuses
+  to continue packaging for certain, more significant errors.
+  
+  Defaults to @racket[#t], and thus packaging will signal errors.
 }
 
 @defproc[(download-package [pkg-spec pkg-spec?]) 
