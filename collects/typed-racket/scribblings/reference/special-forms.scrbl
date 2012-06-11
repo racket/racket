@@ -124,7 +124,7 @@ A polymorphic function with optional arguments.}
 
 @section{Loops}
 
-@defform/subs[(for: type-ann-maybe (for-clause ...)
+@defform/subs[(for: type-ann-maybe (for:-clause ...)
                 expr ...+)
               ([type-ann-maybe code:blank
                                @code:line[: u]]
