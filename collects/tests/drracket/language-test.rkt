@@ -484,13 +484,13 @@ the settings above should match r5rs
                      "(cons 1 empty)"
                      "(cons 1 empty)")
     (test-expression "(car (list))" 
-                     "car: expects a pair; given: empty")
+                     "car: expects a pair, given empty")
     
     (test-undefined-var "argv")
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: this function is not defined"
+                     "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                        "define: expected at least one variable after the function name, but found none"
@@ -634,14 +634,14 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given: empty")
+    (test-expression "(car (list))" "car: expects a pair, given empty")
     
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: this function is not defined"
+                     "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      "define: expected at least one variable after the function name, but found none"
@@ -780,13 +780,13 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given: empty")
+    (test-expression "(car (list))" "car: expects a pair, given empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: this function is not defined"
+                     "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      "define: expected at least one variable after the function name, but found none"
@@ -923,13 +923,13 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given: empty")
+    (test-expression "(car (list))" "car: expects a pair, given empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: this function is not defined"
+                     "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                        "define: expected at least one variable after the function name, but found none"
@@ -1074,13 +1074,13 @@ the settings above should match r5rs
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects a pair; given: empty")
+    (test-expression "(car (list))" "car: expects a pair, given empty")
     (test-undefined-var "argv")
     
     (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: this function is not defined"
+                     "read: #lang not enabled in the current context"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      #rx"raise-user-error"
