@@ -490,6 +490,21 @@ to the input.  The result will be a copy for immutable hash tables, and either a
 }
 
 
+@defproc[(prompt/c [contract contract?] ...) contract?]{
+Takes any number of contracts and returns a contract that recognizes
+continuation prompt tags and will check any aborts or prompt handlers that
+use the contracted prompt tag.
+
+Each @racket[contract] will check the corresponding value passed to
+an @racket[abort-current-continuation] and handled by the handler of a
+call to @racket[call-with-continuation-prompt].
+
+If all of the @racket[contract]s are chaperone contracts, the resulting
+contract will also be a @tech{chaperone} contract. Otherwise, the contract is
+an @tech{impersonator} contract.
+}
+
+
 @defform[(flat-rec-contract id flat-contract-expr ...)]{
 
 Constructs a recursive @tech{flat contract}. A

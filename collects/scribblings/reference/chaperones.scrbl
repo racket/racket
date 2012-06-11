@@ -323,6 +323,30 @@ to @racket[impersonate-hash] must be odd) add impersonator properties
 or override impersonator-property values of @racket[hash].}
 
 
+@defproc[(impersonate-prompt-tag [prompt-tag continuation-prompt-tag?]
+                                 [handle-proc procedure?]
+                                 [abort-proc procedure?]
+                                 [prop impersonator-property?]
+                                 [prop-val any] ... ...)
+          (and/c continuation-prompt-tag? impersonator?)]{
+
+Returns an impersonator of @racket[prompt-tag], which adds intercession
+to the handler of @racket[call-with-continuation-prompt] and to
+@racket[abort-current-continuation].
+
+The @racket[handle-proc] must accept the values that the handler
+of a continuation prompt would take and it must produce replacement
+values, which will be passed to the handler.
+
+The @racket[abort-proc] must accept the values passed to
+@racket[abort-current-continuation]; it must produce replacement
+values, which are aborted to the appropriate prompt.
+
+Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
+to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
+or override impersonator-property values of @racket[prompt-tag].}
+
+
 @defthing[prop:impersonator-of struct-type-property?]{
 
 A @tech{structure type property} (see @secref["structprops"]) that
@@ -518,6 +542,18 @@ and it must return a chaperone of that value.
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[chaperone-evt] must be even) add impersonator properties
 or override impersonator-property values of @racket[evt].}
+
+@defproc[(chaperone-prompt-tag [prompt-tag continuation-prompt-tag?]
+                               [handle-proc procedure?]
+                               [abort-proc procedure?]
+                               [prop impersonator-property?]
+                               [prop-val any] ... ...)
+          (and/c continuation-prompt-tag? chaperone?)]{
+
+Like @racket[impersonate-prompt-tag], but produces a chaperoned value.
+The @racket[handle-proc] procedure must produce the same values or
+chaperones of the original values, and @racket[abort-proc] must produce
+the same values or chaperones of the values that it is given.}
 
 @; ------------------------------------------------------------
 @section{Impersonator Properties}
