@@ -1520,14 +1520,19 @@
 ;; exactness
 [exact->inexact
  (from-cases (map unop all-float-types)
-             (-RealZero . -> . -FlonumZero)
-             (-NonNegReal . -> . -NonNegFlonum) ; not for Pos, possible underflow
-             (-NonPosReal . -> . -NonPosFlonum)
-             (-Real . -> . -Flonum)
+             (-Zero . -> . -FlonumZero)
+             (-PosRat . -> . -NonNegFlonum)
+             (-NegRat . -> . -NonPosFlonum)
+             (-Rat . -> . -Flonum)
+             (map unop (list -FlonumZero -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum
+                             -SingleFlonumZero -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum))
+             (-NonNegReal . -> . -NonNegInexactReal) ; not for Pos, possible underflow
+             (-NonPosReal . -> . -NonPosInexactReal)
+             (-Real . -> . -InexactReal)
              (-FloatComplex . -> . -FloatComplex)
              (-SingleFlonumComplex . -> . -SingleFlonumComplex)
              (-InexactComplex . -> . -InexactComplex)
-             (N . -> . -FloatComplex))]
+             (N . -> . N))]
 [inexact->exact
  (from-cases (map unop all-rat-types)
              (-RealZero . -> . -Zero)
