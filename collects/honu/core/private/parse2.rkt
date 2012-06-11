@@ -212,15 +212,6 @@
      (do-parse-rest #'(stuff ...) #'do-parse-rest-macro)]))
 |#
 
-(provide parse-local)
-(define-syntax-rule (parse-local code ...)
-  (let ()
-    (define-syntax (parse-more stx)
-      (syntax-case stx ()
-        [(_ stuff (... ...))
-         (do-parse-rest #'(stuff (... ...)) #'parse-more)]))
-    (parse-more code ...)))
-
 (provide honu-body)
 (define-syntax-class honu-body
   #:literal-sets (cruft)
@@ -232,6 +223,16 @@
                                 [(_ stuff (... ...))
                                  (do-parse-rest #'(stuff (... ...)) #'parse-more)]))
                             (parse-more code ...)))])
+
+(provide honu-delayed)
+(define-syntax-class honu-delayed
+  [pattern any #:with result (racket-syntax
+                               (let ()
+                                 (define-syntax (parse-more stx)
+                                   (syntax-case stx ()
+                                     [(_ stuff (... ...))
+                                      (do-parse-rest #'(stuff (... ...)) #'parse-more)]))
+                                 (parse-more any)))])
 
 (provide honu-function)
 (define-splicing-syntax-class honu-function #:literal-sets (cruft)
