@@ -4611,8 +4611,12 @@ call_cc (int argc, Scheme_Object *argv[])
 			  0, argc, argv);
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      scheme_wrong_contract("call-with-current-continuation", "continuation-prompt-tag?",
-                        1, argc, argv);
+      if (SCHEME_NP_CHAPERONEP(argv[1])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
+        argv[1] = SCHEME_CHAPERONE_VAL(argv[1]);
+      else
+        scheme_wrong_contract("call-with-current-continuation", "continuation-prompt-tag?",
+                          1, argc, argv);
     }
   }
 
@@ -6607,10 +6611,14 @@ static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int
   scheme_check_proc_arity("call-with-composable-continuation", 1, 0, argc, argv);
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
-                        1, argc, argv);
-    }
-    prompt_tag = argv[1];
+      if (SCHEME_NP_CHAPERONEP(argv[1])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[1]);
+      else
+        scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
+                          1, argc, argv);
+    } else
+      prompt_tag = argv[1];
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -6964,21 +6972,28 @@ Scheme_Object *scheme_all_current_continuation_marks()
 static Scheme_Object *
 cc_marks(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *prompt_tag;
+
   if (argc) {
-    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[0]))) {
-      scheme_wrong_contract("current-continuation-marks", "continuation-prompt-tag?",
-                        0, argc, argv);
+    prompt_tag = argv[0];
+    if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
+      if (SCHEME_NP_CHAPERONEP(prompt_tag)
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(prompt_tag)))
+        prompt_tag = SCHEME_CHAPERONE_VAL(prompt_tag);
+      else
+        scheme_wrong_contract("current-continuation-marks", "continuation-prompt-tag?",
+                          0, argc, argv);
     }
 
-    if (!SAME_OBJ(scheme_default_prompt_tag, argv[0]))
-      if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(argv[0])))
+    if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
+      if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag)))
         scheme_contract_error("current-continuation-marks",
                               "no corresponding prompt in the continuation",
-                              "prompt tag", 1, argv[0],
+                              "prompt tag", 1, prompt_tag,
                               NULL);
   }
 
-  return scheme_current_continuation_marks(argc ? argv[0] : NULL);
+  return scheme_current_continuation_marks(argc ? prompt_tag : NULL);
 }
 
 static Scheme_Object *
@@ -6992,10 +7007,14 @@ cont_marks(int argc, Scheme_Object *argv[])
 
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
-      scheme_wrong_contract("continuation-marks", "continuation-prompt-tag?",
-                        1, argc, argv);
-    }
-    prompt_tag = argv[1];
+      if (SCHEME_NP_CHAPERONEP(argv[1])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[1]);
+      else
+        scheme_wrong_contract("continuation-marks", "continuation-prompt-tag?",
+                          1, argc, argv);
+    } else
+      prompt_tag = argv[1];
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -7074,10 +7093,14 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
   }
   if (argc > 2) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[2]))) {
-      scheme_wrong_contract("continuation-mark-set->list", "continuation-prompt-tag?",
-                        2, argc, argv);
-    }
-    prompt_tag = argv[2];
+      if (SCHEME_NP_CHAPERONEP(argv[2])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[2])))
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[2]);
+      else
+        scheme_wrong_contract("continuation-mark-set->list", "continuation-prompt-tag?",
+                          2, argc, argv);
+    } else
+      prompt_tag = argv[2];
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -7134,10 +7157,14 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
     none = scheme_false;
   if (argc > 3) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[3]))) {
-      scheme_wrong_contract("continuation-mark-set->list*", "continuation-prompt-tag?",
-                        3, argc, argv);
-    }
-    prompt_tag = argv[3];
+      if (SCHEME_NP_CHAPERONEP(argv[3])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[3])))
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[3]);
+      else
+        scheme_wrong_contract("continuation-mark-set->list*", "continuation-prompt-tag?",
+                          3, argc, argv);
+    } else
+      prompt_tag = argv[3];
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -7506,10 +7533,14 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
 
   if (argc > 3) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[3]))) {
-      scheme_wrong_contract("continuation-mark-set-first", "continuation-prompt-tag?",
-                        3, argc, argv);
-    }
-    prompt_tag = argv[3];
+      if (SCHEME_NP_CHAPERONEP(argv[3])
+          && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[3])))
+        prompt_tag = SCHEME_CHAPERONE_VAL(argv[3]);
+      else
+        scheme_wrong_contract("continuation-mark-set-first", "continuation-prompt-tag?",
+                          3, argc, argv);
+    } else
+      prompt_tag = argv[3];
 
     if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
       if (SCHEME_FALSEP(argv[0])) {
@@ -7553,8 +7584,12 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
 
   prompt_tag = argv[0];
   if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(prompt_tag))) {
-    scheme_wrong_contract("continuation-prompt-available?", "continuation-prompt-tag?",
-                      0, argc, argv);
+    if (SCHEME_NP_CHAPERONEP(prompt_tag)
+        && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(prompt_tag)))
+      prompt_tag = SCHEME_CHAPERONE_VAL(prompt_tag);
+    else
+      scheme_wrong_contract("continuation-prompt-available?", "continuation-prompt-tag?",
+                        0, argc, argv);
   }
 
   if (argc > 1) {

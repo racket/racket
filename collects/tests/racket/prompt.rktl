@@ -205,6 +205,15 @@
     tag
     (lambda x x)))
 
+(define (in-prompt tag k . vs)
+  (call-with-continuation-prompt
+    (lambda () (apply k vs))
+    tag))
+
+;; make sure proxied tags are still tags
+(test #t continuation-prompt-tag? imp-tag)
+
+;; make sure proxies do the right thing
 (test '(12) do-test imp-tag 5)
 (test '(12 14) do-test imp-tag-2 5 6)
 (err/rt-test (do-test imp-tag-2 5) exn:fail?)
@@ -213,6 +222,25 @@
 (test '(7) do-test cha-tag 7)
 (err/rt-test (do-test cha-tag "bad") exn:fail?)
 (err/rt-test (do-test bad-tag 5) exn:fail?)
+
+;; sanity checks
+(test 5 in-prompt imp-tag call/cc (lambda (k) (k 5)) imp-tag)
+(test 5 in-prompt imp-tag
+      call-with-composable-continuation
+      (lambda (k) (k 5))
+      imp-tag)
+(test #t in-prompt imp-tag
+      continuation-prompt-available? imp-tag)
+
+(call-with-continuation-prompt
+  (lambda ()
+    (with-continuation-mark 'mark 'val
+      (test
+        'val
+        (compose (lambda (s) (continuation-mark-set-first s 'mark))
+                 current-continuation-marks)
+        imp-tag)))
+  imp-tag)
 
 ;;----------------------------------------
 
