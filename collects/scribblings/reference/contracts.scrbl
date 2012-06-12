@@ -502,6 +502,21 @@ call to @racket[call-with-continuation-prompt].
 If all of the @racket[contract]s are chaperone contracts, the resulting
 contract will also be a @tech{chaperone} contract. Otherwise, the contract is
 an @tech{impersonator} contract.
+
+@examples[#:eval (contract-eval)
+  (define/contract tag
+    (prompt/c (-> number? string?))
+    (make-continuation-prompt-tag))
+
+  (call-with-continuation-prompt
+    (lambda ()
+      (number->string
+        (call-with-composable-continuation
+          (lambda (k)
+            (abort-current-continuation tag k)))))
+    tag
+    (lambda (k) (k "not a number")))
+]
 }
 
 

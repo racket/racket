@@ -6052,9 +6052,9 @@ static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Sch
        * as the number of aborted values
        */
       if (num_args == 1 && num_args != argc)
-        scheme_wrong_return_arity(name, argc, 1, vals[0], "application of proxy function");
+        scheme_wrong_return_arity(name, argc, 1, vals[0], "use of redirecting procedure");
       else if (num_args != argc)
-        scheme_wrong_return_arity(name, argc, num_args, vals, "application of proxy function");
+        scheme_wrong_return_arity(name, argc, num_args, vals, "use of redirecting procedure");
 
       if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
         for (i = 0; i < argc; i++) {

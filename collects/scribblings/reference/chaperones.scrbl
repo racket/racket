@@ -330,9 +330,9 @@ or override impersonator-property values of @racket[hash].}
                                  [prop-val any] ... ...)
           (and/c continuation-prompt-tag? impersonator?)]{
 
-Returns an impersonator of @racket[prompt-tag], which adds intercession
-to the handler of @racket[call-with-continuation-prompt] and to
-@racket[abort-current-continuation].
+Returns an impersonator of @racket[prompt-tag], which redirects
+the @racket[call-with-continuation-prompt] and
+@racket[abort-current-continuation] operations.
 
 The @racket[handle-proc] must accept the values that the handler
 of a continuation prompt would take and it must produce replacement
@@ -344,7 +344,22 @@ values, which are aborted to the appropriate prompt.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
-or override impersonator-property values of @racket[prompt-tag].}
+or override impersonator-property values of @racket[prompt-tag].
+
+@examples[
+  (define tag
+    (impersonate-prompt-tag
+     (make-continuation-prompt-tag)
+     (lambda (n) (* n 2))
+     (lambda (n) (+ n 1))))
+
+  (call-with-continuation-prompt
+    (lambda ()
+      (abort-current-continuation tag 5))
+    tag
+    (lambda (n) n))
+]
+}
 
 
 @defthing[prop:impersonator-of struct-type-property?]{
@@ -553,7 +568,34 @@ or override impersonator-property values of @racket[evt].}
 Like @racket[impersonate-prompt-tag], but produces a chaperoned value.
 The @racket[handle-proc] procedure must produce the same values or
 chaperones of the original values, and @racket[abort-proc] must produce
-the same values or chaperones of the values that it is given.}
+the same values or chaperones of the values that it is given.
+
+@examples[
+  (define bad-chaperone
+    (chaperone-prompt-tag
+     (make-continuation-prompt-tag)
+     (lambda (n) (* n 2))
+     (lambda (n) (+ n 1))))
+
+  (call-with-continuation-prompt
+    (lambda ()
+      (abort-current-continuation bad-chaperone 5))
+    bad-chaperone
+    (lambda (n) n))
+
+  (define good-chaperone
+    (chaperone-prompt-tag
+     (make-continuation-prompt-tag)
+     (lambda (n) (if (even? n) n (error "not even")))
+     (lambda (n) (if (even? n) n (error "not even")))))
+
+  (call-with-continuation-prompt
+    (lambda ()
+      (abort-current-continuation good-chaperone 2))
+    good-chaperone
+    (lambda (n) n))
+]
+}
 
 @; ------------------------------------------------------------
 @section{Impersonator Properties}
