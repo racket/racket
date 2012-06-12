@@ -439,8 +439,9 @@
 
   (define all-collections-closure (plt-collection-closure all-collections))
 
-  (define (check-against-all given-ccs)
-    (when (null? given-ccs)
+  (define (check-against-all given-ccs nothing-else-to-do?)
+    (when (and (null? given-ccs)
+               nothing-else-to-do?)
       (setup-printf #f "nothing to do")
       (exit 1))
     (define (cc->name cc)
@@ -488,6 +489,15 @@
   (define (sort-collections-tree ccs)
     (sort ccs string<? #:key (lambda (x) (cc-name (first x)))))
 
+  (define planet-collects
+    (if (make-planet)
+      (filter-map (lambda (spec) (apply planet-cc! spec))
+                  (if no-specific-collections?
+                    (get-all-planet-packages)
+                    (filter-map planet-spec->planet-list
+                                x-specific-planet-dirs)))
+      null))
+
   (define top-level-plt-collects
     (if no-specific-collections?
       all-collections
@@ -508,16 +518,8 @@
                           "nothing to compile in a given collection path: \"~a\""
                           (string-join c "/")))
           ccs)
-        x-specific-collections))))
-
-  (define planet-collects
-    (if (make-planet)
-      (filter-map (lambda (spec) (apply planet-cc! spec))
-                  (if no-specific-collections?
-                    (get-all-planet-packages)
-                    (filter-map planet-spec->planet-list
-                                x-specific-planet-dirs)))
-      null))
+        x-specific-collections)
+       (null? planet-collects))))
 
   (define planet-dirs-to-compile
     (sort-collections
