@@ -165,6 +165,15 @@ static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
 # define ts_allocate_values allocate_values
 #endif
 
+static void chaperone_set_mark()
+/* arguments are on runstack; result goes there, too */
+{
+  Scheme_Object *v;
+  v = scheme_chaperone_do_continuation_mark("with-continuation-mark", 0, MZ_RUNSTACK[1], MZ_RUNSTACK[0]);
+  MZ_RUNSTACK[0] = v;
+  MZ_RUNSTACK[1] = SCHEME_CHAPERONE_VAL(MZ_RUNSTACK[1]);
+}
+
 #define JITCOMMON_TS_PROCS
 #define JIT_APPLY_TS_PROCS
 #include "jit_ts.c"
@@ -2256,6 +2265,21 @@ static int common6(mz_jit_state *jitter, void *_data)
     (void)jit_jmpi(ref5);
 
     scheme_jit_register_sub_func(jitter, sjc.wcm_code, scheme_false);
+  }
+
+  /* wcm_chaperone */
+  /* key and value are on runstack and are updated there */
+  {
+    GC_CAN_IGNORE jit_insn *ref2;
+    sjc.wcm_chaperone = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(0);
+    (void)mz_finish_lwe(ts_chaperone_set_mark, ref2);
+    mz_epilog(JIT_R2);
+
+    scheme_jit_register_sub_func(jitter, sjc.wcm_chaperone, scheme_false);
   }
 
   return 1;

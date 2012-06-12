@@ -60,7 +60,7 @@
         XFORM_SKIP_PROC \
      { \
        if (scheme_use_rtcall) \
-         @|return| scheme_rtcall_@|t|("[" #id "]", src_type, id, @(string-join arg-names ", ")); \
+         @|return| scheme_rtcall_@|t|("[" #id "]", src_type, @(string-join (cons "id" arg-names) ", ")); \
        else \
          @|return| id(@(string-join arg-names ", ")); \
      }})
@@ -196,7 +196,8 @@
     sis_v
     ss_i
     iSp_v
-    sss_s))
+    sss_s
+    _v))
 
 (with-output-to-file "jit_ts_def.c"
   #:exists 'replace

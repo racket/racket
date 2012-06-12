@@ -2857,6 +2857,23 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       /* Key and value are on runstack */
       mz_rs_sync();
+
+      if (SCHEME_TYPE(wcm->key) < _scheme_values_types_) {
+        /* Check whether the key is chaperoned: */
+        GC_CAN_IGNORE jit_insn *ref, *ref2;
+        mz_rs_ldxi(JIT_R0, 1);
+        __START_TINY_JUMPS__(1);
+        ref = jit_bmsi_i(jit_forward(), JIT_R0, 0x1);
+        ref2 = mz_bnei_t(jit_forward(), JIT_R0, scheme_chaperone_type, JIT_R1);
+        __END_TINY_JUMPS__(1);
+        (void)jit_calli(sjc.wcm_chaperone); /* adjusts values on the runstack */
+        __START_TINY_JUMPS__(1);
+        mz_patch_branch(ref);
+        mz_patch_branch(ref2);
+        __END_TINY_JUMPS__(1);
+      }
+
+      /* Key and value are (still) on runstack */
       if (!wcm_may_replace) {
         (void)jit_calli(sjc.wcm_nontail_code);
         wcm_may_replace = 1;

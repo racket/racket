@@ -3559,6 +3559,12 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  if (SCHEME_TYPE(val) < _scheme_values_types_)
 	    val = _scheme_eval_linked_expr_wp(val, p);
 
+          if (SCHEME_NP_CHAPERONEP(key)
+              && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
+            val = scheme_chaperone_do_continuation_mark("with-continuation-mark", 0, key, val);
+            key = SCHEME_CHAPERONE_VAL(key);
+          }
+
 	  scheme_set_cont_mark(key, val);
 
 	  obj = wcm->body;

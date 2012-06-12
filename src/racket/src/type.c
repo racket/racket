@@ -274,6 +274,7 @@ scheme_init_type ()
   set_name(scheme_thread_cell_values_type, "<thread-cell-values>");
 
   set_name(scheme_prompt_tag_type, "<continuation-prompt-tag>");
+  set_name(scheme_continuation_mark_key_type, "<continuation-mark-key>");
 
   set_name(scheme_string_converter_type, "<string-converter>");
 
@@ -632,6 +633,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_thread_type, thread_val);
   GC_REG_TRAV(scheme_prompt_type, prompt_val);
   GC_REG_TRAV(scheme_prompt_tag_type, cons_cell);
+  GC_REG_TRAV(scheme_continuation_mark_key_type, small_object);
   GC_REG_TRAV(scheme_cont_mark_set_type, cont_mark_set_val);
   GC_REG_TRAV(scheme_sema_type, sema_val);
   GC_REG_TRAV(scheme_channel_type, channel_val);

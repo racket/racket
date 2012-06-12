@@ -79,3 +79,6 @@ void scheme_rtcall_iSp_v(const char *who, int src_type, prim_iSp_v f, int g221, 
 #define SIG_sss_s 36
 typedef Scheme_Object* (*prim_sss_s)(Scheme_Object*, Scheme_Object*, Scheme_Object*);
 Scheme_Object* scheme_rtcall_sss_s(const char *who, int src_type, prim_sss_s f, Scheme_Object* g224, Scheme_Object* g225, Scheme_Object* g226);
+#define SIG__v 37
+typedef void (*prim__v)();
+void scheme_rtcall__v(const char *who, int src_type, prim__v f );

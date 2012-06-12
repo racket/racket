@@ -39,7 +39,7 @@ static Scheme_Object* ts_ ## id() \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-    return scheme_rtcall__s("[" #id "]", src_type, id, ); \
+    return scheme_rtcall__s("[" #id "]", src_type, id); \
   else \
     return id(); \
 }
@@ -240,4 +240,13 @@ static Scheme_Object* ts_ ## id(Scheme_Object* g59, Scheme_Object* g60, Scheme_O
     return scheme_rtcall_sss_s("[" #id "]", src_type, id, g59, g60, g61); \
   else \
     return id(g59, g60, g61); \
+}
+#define define_ts__v(id, src_type) \
+static void ts_ ## id() \
+   XFORM_SKIP_PROC \
+{ \
+  if (scheme_use_rtcall) \
+     scheme_rtcall__v("[" #id "]", src_type, id); \
+  else \
+     id(); \
 }

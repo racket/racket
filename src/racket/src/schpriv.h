@@ -885,6 +885,9 @@ typedef struct Scheme_Chaperone {
                                       || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(obj))))
 #define SCHEME_CHAPERONE_PROMPT_TAGP(obj) (SCHEME_PROMPT_TAGP(obj) \
                                            || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_CONTINUATION_MARK_KEYP(obj) (SCHEME_CONTINUATION_MARK_KEYP(obj) \
+                                                      || (SCHEME_NP_CHAPERONEP(obj) \
+                                                          && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(obj))))
 
 Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
 void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
@@ -1674,6 +1677,8 @@ Scheme_Object *scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int n
 
 Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
                                            Scheme_Object **old_runstack, int can_ec);
+
+Scheme_Object *scheme_chaperone_do_continuation_mark(const char *name, int is_get, Scheme_Object *key, Scheme_Object *val);
 
 /*========================================================================*/
 /*                         semaphores and locks                           */

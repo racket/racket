@@ -143,6 +143,10 @@ static Scheme_Object *impersonate_prompt_tag (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_prompt_tag (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema_enable_break (int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_continuation_mark_key (int argc, Scheme_Object *argv[]);
+static Scheme_Object *continuation_mark_key_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *impersonate_continuation_mark_key (int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_continuation_mark_key (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cont_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cc_marks_p (int argc, Scheme_Object *argv[]);
@@ -394,6 +398,27 @@ scheme_init_fun (Scheme_Env *env)
 						       2, -1,
 						       0, -1),
 			     env);
+
+  scheme_add_global_constant("make-continuation-mark-key",
+			     scheme_make_prim_w_arity(make_continuation_mark_key,
+						      "make-continuation-mark-key",
+						      0, 1),
+			     env);
+  scheme_add_global_constant("continuation-mark-key?",
+			     scheme_make_prim_w_arity(continuation_mark_key_p,
+						      "continuation-mark-key?",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("impersonate-continuation-mark-key",
+                             scheme_make_prim_w_arity(impersonate_continuation_mark_key,
+						      "impersonate-continuation-mark-key",
+						      3, -1),
+                             env);
+  scheme_add_global_constant("chaperone-continuation-mark-key",
+                             scheme_make_prim_w_arity(chaperone_continuation_mark_key,
+						      "chaperone-continuation-mark-key",
+						      3, -1),
+                             env);
 
   scheme_add_global_constant("current-continuation-marks",
 			     scheme_make_prim_w_arity(cc_marks,
@@ -3742,6 +3767,100 @@ int scheme_escape_continuation_ok(Scheme_Object *ec)
     return 0;
 }
 
+static Scheme_Object *make_continuation_mark_key (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o;
+
+  if (argc && !SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("make-continuation-mark-key", "symbol?", 0, argc, argv);
+
+  o = scheme_alloc_small_object();
+  o->type = scheme_continuation_mark_key_type;
+  SCHEME_PTR_VAL(o) = (argc ? argv[0] : NULL);
+
+  return o;
+}
+
+static Scheme_Object *continuation_mark_key_p (int argc, Scheme_Object *argv[])
+{
+  return (SCHEME_CHAPERONE_CONTINUATION_MARK_KEYP(argv[0])
+          ? scheme_true
+          : scheme_false);
+}
+
+Scheme_Object *scheme_chaperone_do_continuation_mark (const char *name, int is_get, Scheme_Object *key, Scheme_Object *val)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *proc;
+  Scheme_Object *a[1];
+
+  while (1) {
+    if (SCHEME_CONTINUATION_MARK_KEYP(key)) {
+      return val;
+    } else {
+      px = (Scheme_Chaperone *)key;
+      key = px->prev;
+
+      if (is_get)
+        proc = SCHEME_CAR(px->redirects);
+      else
+        proc = SCHEME_CDR(px->redirects);
+
+      a[0] = val;
+      val = _scheme_apply(proc, 1, a);
+
+      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
+        if (!scheme_chaperone_of(val, a[0]))
+          scheme_wrong_chaperoned(name, "value", a[0], val);
+      }
+    }
+  }
+}
+
+Scheme_Object *do_chaperone_continuation_mark_key (const char *name, int is_impersonator, int argc, Scheme_Object **argv)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val = argv[0];
+  Scheme_Object *redirects;
+  Scheme_Hash_Tree *props;
+
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!SCHEME_CONTINUATION_MARK_KEYP(val))
+    scheme_wrong_contract(name, "continuation-mark-key?", 0, argc, argv);
+
+  scheme_check_proc_arity(name, 1, 1, argc, argv);
+  scheme_check_proc_arity(name, 1, 2, argc, argv);
+
+  redirects = scheme_make_pair(argv[1], argv[2]);
+
+  props = scheme_parse_chaperone_props(name, 3, argc, argv);
+
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  px->iso.so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = redirects;
+
+  if (is_impersonator)
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
+  return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_continuation_mark_key(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_continuation_mark_key("chaperone-continuation-mark-key", 0, argc, argv);
+}
+
+static Scheme_Object *impersonate_continuation_mark_key(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_continuation_mark_key("impersonate-continuation-mark-key", 1, argc, argv);
+}
+
+
 static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[])
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -3751,6 +3870,10 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
   scheme_check_proc_arity("call-with-immediate-continuation-mark", 1, 1, argc, argv);
 
   key = argv[0];
+  if (SCHEME_NP_CHAPERONEP(key)
+      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key)))
+    key = SCHEME_CHAPERONE_VAL(key);
+
   if (argc > 2)
     a[0] = argv[2];
   else
@@ -3768,7 +3891,16 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
         break;
       } else {
         if (find->key == key) {
-          a[0] = find->val;
+          /*
+           * If not equal, it was a chaperone since we unwrapped the key
+           */
+          if (argv[0] != key) {
+            Scheme_Object *val;
+            val = scheme_chaperone_do_continuation_mark("call-with-immediate-continuation-mark",
+                                                        1, argv[0], find->val);
+            a[0] = val;
+          } else
+            a[0] = find->val;
           break;
         }
       }
@@ -7093,7 +7225,9 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
 {
   Scheme_Cont_Mark_Chain *chain;
   Scheme_Object *first = scheme_null, *last = NULL, *key, *prompt_tag;
+  Scheme_Object *v;
   Scheme_Object *pr;
+  int is_chaperoned = 0;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type)) {
     scheme_wrong_contract("continuation-mark-set->list", "continuation-mark-set?", 0, argc, argv);
@@ -7124,11 +7258,22 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
+  if (SCHEME_NP_CHAPERONEP(key)
+      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
+    is_chaperoned = 1;
+    key = SCHEME_CHAPERONE_VAL(key);
+  }
+
   prompt_tag = SCHEME_PTR_VAL(prompt_tag);
 
   while (chain) {
     if (chain->key == key) {
-      pr = scheme_make_pair(chain->val, scheme_null);
+      if (is_chaperoned)
+        v = scheme_chaperone_do_continuation_mark("continuation-mark-set->list",
+                                                  1, argv[1], chain->val);
+      else
+        v = chain->val;
+      pr = scheme_make_pair(v, scheme_null);
       if (last)
 	SCHEME_CDR(last) = pr;
       else
@@ -7198,8 +7343,17 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
 
   while (chain) {
     for (i = 0; i < len; i++) {
+      int is_chaperoned = 0;
+      Scheme_Object *orig_key, *val;
+
       if (SCHEME_MARK_CHAIN_FLAG(chain) & 0x1)
         last_pos = -1;
+      if (SCHEME_NP_CHAPERONEP(keys[i])
+          && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(keys[i]))) {
+        is_chaperoned = 1;
+        orig_key = keys[i];
+        keys[i] = SCHEME_CHAPERONE_VAL(orig_key);
+      }
       if (SAME_OBJ(chain->key, keys[i])) {
 	intptr_t pos;
 	pos = (intptr_t)chain->pos;
@@ -7214,7 +7368,12 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
 	  last = pr;
 	} else
 	  vals = SCHEME_CAR(last);
-	SCHEME_VEC_ELS(vals)[i] = chain->val;
+        if (is_chaperoned) {
+          val = scheme_chaperone_do_continuation_mark("continuation-mark-set->list*",
+                                                      1, orig_key, chain->val);
+          SCHEME_VEC_ELS(vals)[i] = val;
+        } else
+	  SCHEME_VEC_ELS(vals)[i] = chain->val;
       }
     }
 
@@ -7324,16 +7483,30 @@ extract_cc_proc_marks(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
+scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key_arg, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
                                      MZ_MARK_POS_TYPE *_vpos)
 {
+  Scheme_Object *key = key_arg;
+  if (SCHEME_NP_CHAPERONEP(key)
+      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
+    key = SCHEME_CHAPERONE_VAL(key);
+  }
+
   if (mark_set) {
     Scheme_Cont_Mark_Chain *chain;
     chain = ((Scheme_Cont_Mark_Set *)mark_set)->chain;
     while (chain) {
       if (chain->key == key)
-	return chain->val;
+        if (key_arg != key)
+          /*
+           * TODO: is this the only name that this procedure is called as
+           * publicly?
+           */
+          return scheme_chaperone_do_continuation_mark("continuation-mark-set-first",
+                                                       1, key_arg, chain->val);
+        else
+	  return chain->val;
       else if (SAME_OBJ(chain->key, prompt_tag))
         break;
       else 
@@ -7450,6 +7623,8 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
           } else
             cht = NULL;
 
+          if (key_arg != key)
+            val = scheme_chaperone_do_continuation_mark("continuation-mark-set-first", 1, key_arg, val);
           if (!cache || !SCHEME_VECTORP(cache)) {
             /* No cache so far, so map one key */
             cache = scheme_make_vector(4, NULL);

@@ -702,3 +702,28 @@
   receive_special_result(future, retval, 1);
   return retval;
 }
+ void scheme_rtcall__v(const char *who, int src_type, prim__v f )
+   XFORM_SKIP_PROC
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  future_t *future;
+  double tm;
+  
+
+  future = fts->thread->current_ft;
+  future->prim_protocol = SIG__v;
+  future->prim_func = f;
+  tm = get_future_timestamp();
+  future->time_of_request = tm;
+  future->source_of_request = who;
+  future->source_type = src_type;
+  
+  
+  future_do_runtimecall(fts, (void*)f, 0, 1, 0);
+  fts->thread = scheme_current_thread;
+  future = fts->thread->current_ft;
+  
+  
+  
+  
+}

@@ -916,5 +916,86 @@
          pt)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test proxy-able continuation marks
+
+(let ()
+
+  (define my-mark (make-continuation-mark-key 'my-mark))
+  (wcm-test '(secret)
+    (lambda ()
+      (with-continuation-mark my-mark 'secret
+        (extract-current-continuation-marks my-mark))))
+
+  (wcm-test '()
+    (lambda ()
+      (with-continuation-mark my-mark 'secret
+        (extract-current-continuation-marks 'my-mark))))
+
+  (define my-mark-2 (make-continuation-mark-key 'my-mark))
+  (wcm-test '()
+    (lambda ()
+      (with-continuation-mark my-mark 'secret
+        (extract-current-continuation-marks my-mark-2)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tests for continuation mark proxies
+
+(let ()
+
+  (define imp-mark
+    (impersonate-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (x) (* x 2))
+     (lambda (x) (+ x 1))))
+
+  (define cha-mark
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (x) (if (number? x) x (error "fail")))
+     (lambda (x) x)))
+
+  (define bad-mark
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (x) 42)
+     (lambda (x) x)))
+
+  (define bad-mark-2
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (x) x)
+     (lambda (x) 42)))
+
+  (define (do-test mark val)
+    (with-continuation-mark mark val
+      (extract-current-continuation-marks mark)))
+
+  (define (do-test* mark val)
+    (with-continuation-mark mark val
+      (continuation-mark-set->list*
+       (current-continuation-marks)
+       (list mark))))
+
+  (define (do-test/first mark val)
+    (with-continuation-mark mark val
+      (continuation-mark-set-first (current-continuation-marks) mark)))
+
+  (define (do-test/immediate mark val)
+    (with-continuation-mark mark val
+      (call-with-immediate-continuation-mark mark
+        (lambda (v) v))))
+
+  (wcm-test '(12) (lambda () (do-test imp-mark 5)))
+  (wcm-test '(#(12)) (lambda () (do-test* imp-mark 5)))
+  (wcm-test 12 (lambda () (do-test/first imp-mark 5)))
+  (wcm-test 12 (lambda () (do-test/immediate imp-mark 5)))
+  (wcm-test '(5) (lambda () (do-test cha-mark 5)))
+  (wcm-test '(#(5)) (lambda () (do-test* cha-mark 5)))
+  (wcm-test 5 (lambda () (do-test/first cha-mark 5)))
+  (wcm-test 5 (lambda () (do-test/immediate cha-mark 5)))
+  (err/rt-test (do-test cha-mark "fail") exn:fail?)
+  (err/rt-test (do-test bad-mark 5) exn:fail?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

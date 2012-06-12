@@ -376,3 +376,17 @@ case SIG_sss_s:
      send_special_result(future, retval);
      break;
   }
+case SIG__v:
+  {
+     prim__v f = (prim__v)future->prim_func;
+     
+     
+     
+     
+     
+     
+     f();
+     
+     
+     break;
+  }
