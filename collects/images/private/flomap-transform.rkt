@@ -65,11 +65,11 @@
                             [bounded-by : (U 'id 'corners 'edges 'all)])
   #:transparent)
 
-(: 2d-mapping-exact->inexact ((Float Float -> (values Real Real))
-                              -> (Float Float -> (values Float Float))))
-(define ((2d-mapping-exact->inexact f) x y)
+(: 2d-mapping-real->double-flonum ((Float Float -> (values Real Real))
+                                   -> (Float Float -> (values Float Float))))
+(define ((2d-mapping-real->double-flonum f) x y)
   (let-values ([(x y)  (f x y)])
-    (values (exact->inexact x) (exact->inexact y))))
+    (values (real->double-flonum x) (real->double-flonum y))))
 
 (: make-flomap-2d-mapping (case-> ((Float Float -> (values Real Real))
                                    (Float Float -> (values Real Real))
@@ -80,8 +80,8 @@
 (define make-flomap-2d-mapping
   (case-lambda
     [(fun inv)  (make-flomap-2d-mapping fun inv 'edges)]
-    [(fun inv bounded-by)  (flomap-2d-mapping (2d-mapping-exact->inexact fun)
-                                              (2d-mapping-exact->inexact inv)
+    [(fun inv bounded-by)  (flomap-2d-mapping (2d-mapping-real->double-flonum fun)
+                                              (2d-mapping-real->double-flonum inv)
                                               bounded-by)]))
 
 (define-type Flomap-Transform (Integer Integer -> flomap-2d-mapping))
@@ -210,8 +210,8 @@
   (case-lambda
     [(x-scale)  (flomap-scale-transform x-scale x-scale)]
     [(x-scale y-scale)
-     (let ([x-scale  (exact->inexact x-scale)]
-           [y-scale  (exact->inexact y-scale)])
+     (let ([x-scale  (real->double-flonum x-scale)]
+           [y-scale  (real->double-flonum y-scale)])
        (λ (w h)
          (flomap-2d-mapping (λ (x y) (values (* x x-scale) (* y y-scale)))
                             (λ (x y) (values (/ x x-scale) (/ y y-scale)))
@@ -219,7 +219,7 @@
 
 (: flomap-rotate-transform (Real -> Flomap-Transform))
 (define ((flomap-rotate-transform θ) w h)
-  (let ([θ  (- (exact->inexact θ))])
+  (let ([θ  (- (real->double-flonum θ))])
     (define cos-θ (cos θ))
     (define sin-θ (sin θ))
     (define x-mid (* 0.5 (->fl w)))
@@ -239,7 +239,7 @@
 
 (: whirl-function (Real Integer Integer -> (Float Float -> (values Float Float))))
 (define (whirl-function θ w h)
-  (let ([θ  (exact->inexact θ)])
+  (let ([θ  (real->double-flonum θ)])
     (define x-mid (* 0.5 (->fl w)))
     (define y-mid (* 0.5 (->fl h)))
     (define-values (x-scale y-scale)
@@ -280,31 +280,31 @@
 
 (: perspective-projection (Real -> Projection))
 (define ((perspective-projection α) d)
-  (define f (/ d 2.0 (tan (* 0.5 (exact->inexact α)))))
+  (define f (/ d 2.0 (tan (* 0.5 (real->double-flonum α)))))
   (projection-mapping (λ (ρ) (* (tan ρ) f))
                       (λ (r) (atan (/ r f)))))
 
 (: linear-projection (Real -> Projection))
 (define ((linear-projection α) d)
-  (define f (/ d (exact->inexact α)))
+  (define f (/ d (real->double-flonum α)))
   (projection-mapping (λ (ρ) (* ρ f))
                       (λ (r) (/ r f))))
 
 (: orthographic-projection (Real -> Projection))
 (define ((orthographic-projection α) d)
-  (define f (/ d 2.0 (sin (* 0.5 (exact->inexact α)))))
+  (define f (/ d 2.0 (sin (* 0.5 (real->double-flonum α)))))
   (projection-mapping (λ (ρ) (* (sin ρ) f))
                       (λ (r) (asin (/ r f)))))
 
 (: equal-area-projection (Real -> Projection))
 (define ((equal-area-projection α) d)
-  (define f (/ d 4.0 (sin (* 0.25 (exact->inexact α)))))
+  (define f (/ d 4.0 (sin (* 0.25 (real->double-flonum α)))))
   (projection-mapping (λ (ρ) (* 2.0 (sin (* 0.5 ρ)) f))
                       (λ (r) (* 2.0 (asin (/ r 2.0 f))))))
 
 (: stereographic-projection (Real -> Projection))
 (define ((stereographic-projection α) d)
-  (define f (/ d 4.0 (tan (* 0.25 (exact->inexact α)))))
+  (define f (/ d 4.0 (tan (* 0.25 (real->double-flonum α)))))
   (projection-mapping (λ (ρ) (* 2.0 (tan (* 0.5 ρ)) f))
                       (λ (r) (* 2.0 (atan (/ r 2.0 f))))))
 

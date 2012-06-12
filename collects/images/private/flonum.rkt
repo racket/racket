@@ -52,8 +52,9 @@
   (define n (vector-length vs))
   (define new-vs (make-flvector n 0.0))
   (let: loop : FlVector ([k : Nonnegative-Fixnum  0])
-    (cond [(k . < . n)  (unsafe-flvector-set! new-vs k (exact->inexact (unsafe-vector-ref vs k)))
-                        (loop (unsafe-fx+ k 1))]
+    (cond [(k . < . n)
+           (unsafe-flvector-set! new-vs k (real->double-flonum (unsafe-vector-ref vs k)))
+           (loop (unsafe-fx+ k 1))]
           [else  new-vs])))
 
 (begin-encourage-inline

@@ -21,7 +21,7 @@
 
 (: flomap-lift ((Float -> Real) -> (flomap -> flomap)))
 (define (flomap-lift op)
-  (inline-flomap-lift (λ (x) (exact->inexact (op x)))))
+  (inline-flomap-lift (λ (x) (real->double-flonum (op x)))))
 
 (define fmsqrt (inline-flomap-lift flsqrt))
 
@@ -73,15 +73,15 @@
   (λ: ([fm1 : (U Real flomap)] [fm2 : (U Real flomap)])
     (cond
       [(and (real? fm1) (real? fm2))  (raise-two-reals-error name fm1 fm2)]
-      [(real? fm1)  (let ([fm1  (exact->inexact fm1)])
+      [(real? fm1)  (let ([fm1  (real->double-flonum fm1)])
                       ((inline-flomap-lift (λ (v) (f fm1 v))) fm2))]
-      [(real? fm2)  (let ([fm2  (exact->inexact fm2)])
+      [(real? fm2)  (let ([fm2  (real->double-flonum fm2)])
                       ((inline-flomap-lift (λ (v) (f v fm2))) fm1))]
       [else  ((inline-flomap-lift2* name f) fm1 fm2)])))
 
 (: flomap-lift2 (Symbol (Float Float -> Real) -> ((U Real flomap) (U Real flomap) -> flomap)))
 (define (flomap-lift2 name f)
-  (inline-flomap-lift2 name (λ (x y) (exact->inexact (f x y)))))
+  (inline-flomap-lift2 name (λ (x y) (real->double-flonum (f x y)))))
 
 (define fm+ (inline-flomap-lift2 'fm+ +))
 (define fm- (inline-flomap-lift2 'fm- -))

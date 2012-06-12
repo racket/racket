@@ -46,7 +46,7 @@
      (define c (flomap-components fm))
      (unless (c . > . 0)
        (raise-type-error 'flomap-outline "flomap with at least one component" fm))
-     (let ([amt  (exact->inexact amt)])
+     (let ([amt  (real->double-flonum amt)])
        (define σ (* 0.5 (max 1.0 amt)))
        (define ceiling-amt (fl->fx (ceiling amt)))
        (define test-size (fx* 2 (fx+ 1 ceiling-amt)))

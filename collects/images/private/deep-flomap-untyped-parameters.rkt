@@ -20,29 +20,29 @@
                    (λ () (error 'refractive-index
                                 "`refractive-indexes' does not have a refractive index for ~e"
                                 idx)))]
-        [else  (exact->inexact idx)]))
+        [else  (real->double-flonum idx)]))
 
-(define (list-exact->inexact vs)
-  (map exact->inexact vs))
+(define (list-real->double-flonum vs)
+  (map real->double-flonum vs))
 
 ;; light parameters
-(define light-direction (make-parameter '(0.0 -1.0 1.0) list-exact->inexact))
-(define light-intensity (make-parameter '(1.0 1.0 1.0) list-exact->inexact))
-(define ambient-intensity (make-parameter '(1.0 1.0 1.0) list-exact->inexact))
-(define reflected-intensity (make-parameter '(1.0 1.0 1.0) list-exact->inexact))
+(define light-direction (make-parameter '(0.0 -1.0 1.0) list-real->double-flonum))
+(define light-intensity (make-parameter '(1.0 1.0 1.0) list-real->double-flonum))
+(define ambient-intensity (make-parameter '(1.0 1.0 1.0) list-real->double-flonum))
+(define reflected-intensity (make-parameter '(1.0 1.0 1.0) list-real->double-flonum))
 
 ;; material parameters
 (define refractive-index (make-parameter (->refractive-index 'glass) ->refractive-index))
-(define ideal-reflectance (make-parameter 1.0 exact->inexact))
-(define ideal-transmission (make-parameter 1.0 exact->inexact))
-(define transmission-density (make-parameter 0.65 exact->inexact))
-(define specular-reflectance (make-parameter 0.15 exact->inexact))
-(define specular-roughness (make-parameter 0.15 exact->inexact))
-(define specular-purity (make-parameter 1.0 exact->inexact))
-(define diffuse-reflectance (make-parameter 0.25 exact->inexact))
-(define ambient-reflectance (make-parameter 0.1 exact->inexact))
-(define ambient-transmission (make-parameter 0.7 exact->inexact))
-(define shadow-blur (make-parameter 0.02 exact->inexact))
+(define ideal-reflectance (make-parameter 1.0 real->double-flonum))
+(define ideal-transmission (make-parameter 1.0 real->double-flonum))
+(define transmission-density (make-parameter 0.65 real->double-flonum))
+(define specular-reflectance (make-parameter 0.15 real->double-flonum))
+(define specular-roughness (make-parameter 0.15 real->double-flonum))
+(define specular-purity (make-parameter 1.0 real->double-flonum))
+(define diffuse-reflectance (make-parameter 0.25 real->double-flonum))
+(define ambient-reflectance (make-parameter 0.1 real->double-flonum))
+(define ambient-transmission (make-parameter 0.7 real->double-flonum))
+(define shadow-blur (make-parameter 0.02 real->double-flonum))
 
 (define-parameter-group deep-flomap-lighting
   (light-direction light-intensity ambient-intensity reflected-intensity))

@@ -88,7 +88,7 @@
   ;; view and "half" directions
   (define-values (hx hy hz) (fl3-half-norm lx ly lz 0.0 0.0 1.0))
   ;; material properties
-  (define η2 (exact->inexact (refractive-index)))
+  (define η2 (real->double-flonum (refractive-index)))
   (define η1/η2 (/ 1.0 η2))
   ;; proportion of diffracted reflection
   (define 0.5*v-dot-h (* 0.5 hz))
@@ -482,7 +482,7 @@
          (trace-directional-light alpha-fm rgb-fm z-fm normal-fm x-min x-max y-min y-max))
        
        ;; two Gaussian blurs by half of σ^2 is equivalent to one Gaussian blur by σ^2
-       (define σ^2 (exact->inexact (sqr (* (min w h) (shadow-blur)))))
+       (define σ^2 (real->double-flonum (sqr (* (min w h) (shadow-blur)))))
        
        ;; blur the shadow to simulate internal scatter
        (define shadow-fm

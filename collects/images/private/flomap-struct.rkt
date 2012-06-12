@@ -77,8 +77,8 @@
 (define (flomap-bilinear-ref fm k x y)
   (match-define (flomap vs c w h) fm)
   (cond [(and (k . >= . 0) (k . < . c))
-         (let ([x  (- (exact->inexact x) 0.5)]
-               [y  (- (exact->inexact y) 0.5)])
+         (let ([x  (- (real->double-flonum x) 0.5)]
+               [y  (- (real->double-flonum y) 0.5)])
            (cond [(and (x . > . -1.0) (x . < . (->fl w))
                        (y . > . -1.0) (y . < . (->fl h)))
                   (define floor-x (floor x))
@@ -102,8 +102,8 @@
 (: flomap-bilinear-ref* (flomap Real Real -> FlVector))
 (define (flomap-bilinear-ref* fm x y)
   (match-define (flomap vs c w h) fm)
-  (let ([x  (- (exact->inexact x) 0.5)]
-        [y  (- (exact->inexact y) 0.5)])
+  (let ([x  (- (real->double-flonum x) 0.5)]
+        [y  (- (real->double-flonum y) 0.5)])
     (cond [(and (x . > . -1.0) (x . < . (->fl w))
                 (y . > . -1.0) (y . < . (->fl h)))
            (define floor-x (floor x))
@@ -141,7 +141,7 @@
 (define make-flomap
   (case-lambda
     [(c w h)    (flomap (make-flvector (* c w h)) c w h)]
-    [(c w h v)  (flomap (make-flvector (* c w h) (exact->inexact v)) c w h)]))
+    [(c w h v)  (flomap (make-flvector (* c w h) (real->double-flonum v)) c w h)]))
 
 #;
 (: inline-build-flomap (Integer Integer Integer
@@ -173,7 +173,7 @@
                          (Nonnegative-Fixnum Nonnegative-Fixnum Nonnegative-Fixnum -> Real)
                          -> flomap))
 (define (build-flomap c w h f)
-  (inline-build-flomap c w h (λ (k x y i) (exact->inexact (f k x y)))))
+  (inline-build-flomap c w h (λ (k x y i) (real->double-flonum (f k x y)))))
 
 #;
 (: inline-build-flomap* (Integer Integer Integer

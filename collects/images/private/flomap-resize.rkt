@@ -74,8 +74,8 @@
     (raise-type-error 'flomap-crop "nonnegative integer" 1 fm width height x-frac y-frac))
   (unless (height . >= . 0)
     (raise-type-error 'flomap-crop "nonnegative integer" 2 fm width height x-frac y-frac))
-  (let ([x-frac  (exact->inexact x-frac)]
-        [y-frac  (exact->inexact y-frac)])
+  (let ([x-frac  (real->double-flonum x-frac)]
+        [y-frac  (real->double-flonum y-frac)])
     (match-define (flomap _ c w h) fm)
     (define l-amt (fl->fx (round (* x-frac (fx->fl (fx- width w))))))
     (define r-amt (fx- (fx- width w) l-amt))
@@ -113,8 +113,8 @@
     [(fm x-scale y-scale)
      (cond [(< x-scale 0)  (raise-type-error 'flomap-scale "nonnegative real" 1 fm x-scale y-scale)]
            [(< y-scale 0)  (raise-type-error 'flomap-scale "nonnegative real" 2 fm x-scale y-scale)]
-           [else  (flomap-scale-x (flomap-scale-y fm (exact->inexact y-scale))
-                                  (exact->inexact x-scale))])]))
+           [else  (flomap-scale-x (flomap-scale-y fm (real->double-flonum y-scale))
+                                  (real->double-flonum x-scale))])]))
 
 (: flomap-resize (flomap (Option Integer) (Option Integer) -> flomap))
 (define (flomap-resize fm width height)
@@ -127,12 +127,12 @@
         [width   (cond [(= w 0)  (error 'flomap-resize
                                         "cannot proportionally scale ~e×~e flomap's height"
                                         w h)]
-                       [else  (define s (exact->inexact (/ width w)))
+                       [else  (define s (real->double-flonum (/ width w)))
                               (flomap-resize-x (flomap-scale-y fm s) width)])]
         [height  (cond [(= h 0)  (error 'flomap-resize
                                         "cannot proportionally scale ~e×~e flomap's width"
                                         w h)]
-                       [else  (define s (exact->inexact (/ height h)))
+                       [else  (define s (real->double-flonum (/ height h)))
                               (flomap-scale-x (flomap-resize-y fm height) s)])]
         [else  (error 'flomap-resize "can't happen")]))
 
@@ -140,29 +140,31 @@
 (define (flomap-scale-x fm scale)
   (match-define (flomap _ c w h) fm)
   (cond [(= 0.0 scale)  (make-flomap c 0 h)]
-        [else  (let ([scale  (abs scale)])
-                 (flomap-scale*-x fm scale (abs (fl->fx (ceiling (* (exact->inexact w) scale))))))]))
+        [else
+         (let ([scale  (abs scale)])
+           (flomap-scale*-x fm scale (abs (fl->fx (ceiling (* (real->double-flonum w) scale))))))]))
 
 (: flomap-scale-y (flomap Float -> flomap))
 (define (flomap-scale-y fm scale)
   (match-define (flomap _ c w h) fm)
   (cond [(= 0.0 scale)  (make-flomap c w 0)]
-        [else  (let ([scale  (abs scale)])
-                 (flomap-scale*-y fm scale (abs (fl->fx (ceiling (* (exact->inexact h) scale))))))]))
+        [else
+         (let ([scale  (abs scale)])
+           (flomap-scale*-y fm scale (abs (fl->fx (ceiling (* (real->double-flonum h) scale))))))]))
 
 (: flomap-resize-x (flomap Integer -> flomap))
 (define (flomap-resize-x fm width)
   (match-define (flomap _ c w h) fm)
   (cond [(= 0 width)  (make-flomap c 0 h)]
         [else  (let ([width  (abs width)])
-                 (flomap-scale*-x fm (abs (exact->inexact (/ width w))) width))]))
+                 (flomap-scale*-x fm (abs (real->double-flonum (/ width w))) width))]))
 
 (: flomap-resize-y (flomap Integer -> flomap))
 (define (flomap-resize-y fm height)
   (match-define (flomap _ c w h) fm)
   (cond [(= 0 height)  (make-flomap c w 0)]
         [else  (let ([height  (abs height)])
-                 (flomap-scale*-y fm (abs (exact->inexact (/ height h))) height))]))
+                 (flomap-scale*-y fm (abs (real->double-flonum (/ height h))) height))]))
 
 ;; variance of an unscaled box filter (i.e. f([-1/2,1/2]) = {1}, zero elsewhere)
 (define box-filter-variance (/ 1.0 12.0))

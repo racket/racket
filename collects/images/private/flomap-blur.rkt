@@ -18,15 +18,15 @@
   (case-lambda
     [(fm xσ)  (flomap-gaussian-blur fm xσ xσ)]
     [(fm xσ yσ)
-     (flomap-gaussian-blur-y (flomap-gaussian-blur-x fm (abs (exact->inexact xσ)))
-                             (abs (exact->inexact yσ)))]))
+     (flomap-gaussian-blur-y (flomap-gaussian-blur-x fm (abs (real->double-flonum xσ)))
+                             (abs (real->double-flonum yσ)))]))
 
 (: flomap-gaussian-blur-x (flomap Real -> flomap))
 (define (flomap-gaussian-blur-x fm σ*)
   (cond
     [(σ* . = . 0)  fm]
     [else
-     (define σ (abs (exact->inexact σ*)))
+     (define σ (abs (real->double-flonum σ*)))
      (define dx-min (fl->fx (floor (* (- 3.0) σ))))
      (define dx-max (fx+ 1 (fl->fx (ceiling (* 3.0 σ)))))
      (define ss (gaussian-kernel-1d dx-min dx-max σ))
@@ -50,7 +50,7 @@
   (cond
     [(σ* . = . 0)  fm]
     [else
-     (define σ (abs (exact->inexact σ*)))
+     (define σ (abs (real->double-flonum σ*)))
      (define dy-min (fl->fx (floor (* (- 3.0) σ))))
      (define dy-max (fx+ 1 (fl->fx (ceiling (* 3.0 σ)))))
      (define ss (gaussian-kernel-1d dy-min dy-max σ))
@@ -197,7 +197,8 @@
   (case-lambda
     [(fm xr)  (flomap-box-blur fm xr xr)]
     [(fm xr yr)
-     (let ([xr  (abs (exact->inexact xr))] [yr  (abs (exact->inexact yr))])
+     (let ([xr  (abs (real->double-flonum xr))]
+           [yr  (abs (real->double-flonum yr))])
        (cond [(and (integer? xr) (integer? yr))
               (let ([xr  (fl->fx xr)] [yr  (fl->fx yr)])
                 (with-asserts ([xr  nonnegative-fixnum?] [yr  nonnegative-fixnum?])
@@ -207,7 +208,7 @@
 
 (: flomap-box-blur-x (flomap Real -> flomap))
 (define (flomap-box-blur-x fm r*)
-  (define r (abs (exact->inexact r*)))
+  (define r (abs (real->double-flonum r*)))
   (cond
     [(integer? r)  (let ([r  (fl->fx r)])
                      (with-asserts ([r  nonnegative-fixnum?])
@@ -234,7 +235,7 @@
 
 (: flomap-box-blur-y (flomap Real -> flomap))
 (define (flomap-box-blur-y fm r*)
-  (define r (abs (exact->inexact r*)))
+  (define r (abs (real->double-flonum r*)))
   (cond
     [(integer? r)  (let ([r  (fl->fx r)])
                      (with-asserts ([r  nonnegative-fixnum?])
@@ -312,7 +313,8 @@
   (case-lambda
     [(fm σ)  (flomap-blur fm σ σ)]
     [(fm xσ yσ)
-     (let ([xσ  (abs (exact->inexact xσ))] [yσ  (abs (exact->inexact yσ))])
+     (let ([xσ  (abs (real->double-flonum xσ))]
+           [yσ  (abs (real->double-flonum yσ))])
        (cond
          [(and (xσ . >= . 1.5) (yσ . >= . 1.5))
           (define xσ^2 (sqr xσ))
