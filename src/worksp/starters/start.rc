@@ -22,8 +22,8 @@ APPLICATION             ICON    DISCARDABLE     "mzstart.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 5,3,0,10
- PRODUCTVERSION 5,3,0,10
+ FILEVERSION 5,3,0,11
+ PRODUCTVERSION 5,3,0,11
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,7 +45,7 @@ BEGIN
 #ifdef MZSTART
             VALUE "FileDescription", "Racket Launcher\0"
 #endif
-            VALUE "FileVersion", "5, 3, 0, 10\0"
+            VALUE "FileVersion", "5, 3, 0, 11\0"
 #ifdef MRSTART
             VALUE "InternalName", "mrstart\0"
 #endif
@@ -60,7 +60,7 @@ BEGIN
             VALUE "OriginalFilename", "MzStart.exe\0"
 #endif
             VALUE "ProductName", "Racket\0"
-            VALUE "ProductVersion", "5, 3, 0, 10\0"
+            VALUE "ProductVersion", "5, 3, 0, 11\0"
         END
     END
     BLOCK "VarFileInfo"

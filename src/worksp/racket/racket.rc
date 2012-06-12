@@ -11,8 +11,8 @@ APPLICATION             ICON    DISCARDABLE     "racket.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 5,3,0,10
- PRODUCTVERSION 5,3,0,10
+ FILEVERSION 5,3,0,11
+ PRODUCTVERSION 5,3,0,11
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -30,11 +30,11 @@ BEGIN
             VALUE "CompanyName", "PLT Scheme Inc.\0"
             VALUE "FileDescription", "Racket application\0"
             VALUE "InternalName", "Racket\0"
-            VALUE "FileVersion", "5, 3, 0, 10\0"
+            VALUE "FileVersion", "5, 3, 0, 11\0"
             VALUE "LegalCopyright", "Copyright Å© 1995-2012\0"
             VALUE "OriginalFilename", "racket.exe\0"
             VALUE "ProductName", "Racket\0"
-            VALUE "ProductVersion", "5, 3, 0, 10\0"
+            VALUE "ProductVersion", "5, 3, 0, 11\0"
         END
     END
     BLOCK "VarFileInfo"
