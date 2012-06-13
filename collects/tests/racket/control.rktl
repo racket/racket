@@ -178,6 +178,16 @@
 (ctest (all-prefixes '(1 2 3 4))
       '((1) (1 2) (1 2 3) (1 2 3 4)))
 
+;; ----------------------------------------
+;; fcontrol/% with prompt tags
+
+(ctest (let ([pt (make-continuation-prompt-tag)])
+         (* 2 (% (% (fcontrol 5 #:tag pt)
+                    (lambda (v k) (k v)))
+                 (lambda (v k) (k (add1 v)))
+                 #:tag pt)))
+       12)
+
 ;; ------------------------------------------------------------
 ;; spawn
 ;;  example from Queinnec & Serpete, POPL'91

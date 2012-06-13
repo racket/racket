@@ -1,6 +1,10 @@
-(module control mzscheme
+(module control racket/base
 
-  (provide abort
+  (require (for-syntax racket/base))
+
+  (provide call/prompt call/comp abort/cc
+
+           abort
            
            fcontrol %
 
@@ -20,6 +24,12 @@
 
   ;; ----------------------------------------
 
+  (define call/prompt call-with-continuation-prompt)
+  (define call/comp call-with-composable-continuation)
+  (define abort/cc abort-current-continuation)
+
+  ;; ----------------------------------------
+
   (define (abort . vals)
     (abort-current-continuation 
      (default-continuation-prompt-tag)
@@ -30,16 +40,21 @@
   ;;  The `%' here is compable with Sitaram & Felleisen, LSC'90,
   ;;  since we make the handler optional.
 
-  (define (fcontrol f)
+  (define (fcontrol f #:tag [prompt-tag (default-continuation-prompt-tag)])
     (call-with-composable-continuation
      (lambda (k)
        (abort-current-continuation
-        (default-continuation-prompt-tag)
-        f 
+        prompt-tag
+        f
         k))))
 
   (define-syntax % 
     (syntax-rules ()
+      [(_ expr handler #:tag prompt-tag)
+       (call-with-continuation-prompt
+        (lambda () expr)
+        prompt-tag
+        handler)]
       [(_ expr handler)
        (call-with-continuation-prompt
         (lambda () expr)

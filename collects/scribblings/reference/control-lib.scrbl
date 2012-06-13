@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require (except-in "mz.rkt" set) (for-label racket/control))
 
-@title{Classical Control Operators}
+@title{Additional Control Operators}
 
 @note-lib-only[racket/control]
 
@@ -18,6 +18,31 @@ in terms of @racket[call-with-continuation-prompt],
 work sensibly together. Many are redundant; for example,
 @racket[reset] and @racket[prompt] are aliases.
  
+@; ----------------------------------------------------------------------
+
+@defproc[(call/prompt
+          [proc procedure?]
+          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)]
+          [handler (or/c procedure? #f) #f]
+          [arg any/c] ...)
+         any]{
+The @racket[call/prompt] binding is an alias for @racket[call-with-continuation-prompt].
+}
+
+@defproc[(abort/cc
+          [prompt-tag any/c]
+          [v any/c] ...+)
+         any]{
+The @racket[abort/cc] binding is an alias for @racket[abort-current-continuation].
+}
+
+@defproc[(call/comp
+          [proc (continuation? . -> . any)]
+          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
+         any]{
+The @racket[call/comp] binding is an alias for @racket[call-with-composable-continuation].
+}
+
 @; ----------------------------------------------------------------------
 
 @defproc[(abort [v any/c] ...) any]{
@@ -43,8 +68,12 @@ That is, @racket[(abort v ...)] is equivalent to
 
 @deftogether[(
 @defform*[[(% expr)
-           (% expr handler-expr)]]
-@defproc[(fcontrol [v any/c]) any]
+           (% expr handler-expr)
+           (% expr handler-expr #:tag tag-expr)]]
+@defproc[(fcontrol
+          [v any/c]
+          [#:tag prompt-tag (default-continuation-prompt-tag)])
+         any]
 )]{
 
 
@@ -59,7 +88,8 @@ The essential reduction rules are:
 ]
 
 When @racket[handler-expr] is omitted, @racket[%] is the same as 
-@racket[prompt].
+@racket[prompt]. If @racket[prompt-tag] is provided, @racket[%]
+uses specific prompt tags like @racket[prompt-at].
 
 @examples[#:eval control-eval
 (% (+ 2 (fcontrol 5))
