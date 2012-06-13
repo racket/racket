@@ -150,6 +150,7 @@ static Scheme_Object *fixup_expanded(Scheme_Object *expanded_l,
 
 static void check_formerly_unbound(Scheme_Object *unbounds, Scheme_Comp_Env *env);
 static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_begin_for_syntax_stx);
+static int is_modulestar_stop(Scheme_Comp_Env *env);
 
 static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p);
 
@@ -7727,8 +7728,18 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       (void)do_module_execute(o, env->genv, 0, 1, root_module_name);
     }
 
-    expanded_modules = expand_submodules(rec, drec, env, bxs->saved_submodules, 1, bxs, !rec[drec].comp);
-    
+    if (!rec[drec].comp && (is_modulestar_stop(env))) {
+      Scheme_Object *l = bxs->saved_submodules;
+      expanded_modules =  NULL;
+      while (!SCHEME_NULLP(l)) {
+        expanded_modules = scheme_make_pair(SCHEME_CAR(SCHEME_CAR(l)),
+                                            expanded_modules);
+        l = SCHEME_CDR(l);
+      }
+      bxs->saved_submodules = scheme_null;
+    } else
+      expanded_modules = expand_submodules(rec, drec, env, bxs->saved_submodules, 1, bxs, !rec[drec].comp);
+
     if (!rec[drec].comp) {
       (void)fixup_expanded(expanded_l, expanded_modules, 0, MODULE_MODFORM_KIND);
     }
@@ -8934,6 +8945,20 @@ static void check_formerly_unbound(Scheme_Object *unbounds,
     uenv->disallow_unbound = 1;
     uenv = uenv->exp_env;
   }
+}
+
+static int is_modulestar_stop(Scheme_Comp_Env *env)
+{
+  Scheme_Object *p;
+  p = scheme_datum_to_syntax(scheme_intern_symbol("module*"), scheme_false, scheme_sys_wraps(env), 0, 0);
+  p = scheme_lookup_binding(p, env, 
+                            (SCHEME_NULL_FOR_UNBOUND
+                             + SCHEME_DONT_MARK_USE 
+                             + SCHEME_ENV_CONSTANTS_OK
+                             + (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)),
+                            env->in_modidx, 
+                            NULL, NULL, NULL, NULL);
+  return (scheme_get_stop_expander() == p);
 }
 
 static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_begin_for_syntax_stx)

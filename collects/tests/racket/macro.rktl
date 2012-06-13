@@ -459,7 +459,7 @@
   (define q 8)
   (nab h))
 
-;; #'module* in sto plist shouldn't add all the rest:
+;; #'module* in stop list shouldn't add all the rest:
 (let ()
   (define-syntax (m stx) (syntax-case stx () 
                            [(_ e) 
@@ -469,6 +469,31 @@
                                 [else (error 'test "bad local-expand result: ~e" e)])
                               #'(void))]))
   (m (+ 1 2)))
+
+;; #'module* in stop list should stop:
+(module m1-for-local-expand racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [mb #%module-begin])
+           (except-out (all-from-out racket/base) #%module-begin))
+  (define-syntax (mb stx)
+    (syntax-case stx ()
+      [(_ 10) #'(#%plain-module-begin 10)]
+      [(_ 11) #'(#%plain-module-begin 11)]
+      [(_ form ...)
+       (let ([e (local-expand #'(#%plain-module-begin form ...)
+                              'module-begin
+                              (list #'module*))])
+         (syntax-case e (module module* quote #%plain-app)
+           [(mod-beg
+             (#%plain-app + (quote 1) (quote 2))
+             (module* q #f 10)
+             (module* z #f 11))
+            'ok]
+           [else (error 'test "bad local-expand result: ~s" (syntax->datum e))])
+         e)])))
+(module m2-for-local-expand 'm1-for-local-expand
+  (+ 1 2)
+  (module* q #f 10) (module* z #f 11))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

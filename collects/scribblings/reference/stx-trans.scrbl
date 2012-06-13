@@ -218,6 +218,14 @@ bindings listed in @secref["fully-expanded"] plus the
 @racket[letrec-syntaxes+values] form and @racket[#%expression]
 in any expression position.
 
+When @racket[#%plain-module-begin] is not itself in @racket[stop-ids]
+and @racket[module*] is in @racket[stop-ids], then the
+@racket[#%plain-module-begin] transformer refrains from expanding
+@racket[module*] sub-forms. Otherwise, the
+@racket[#%plain-module-begin] transformer detects and expands sub-forms
+(such as @racket[define-values]) independent of the correspond
+identifier's presence in @racket[stop-ids].
+
 The optional @racket[intdef-ctx] argument must be either @racket[#f],
 the result of @racket[syntax-local-make-definition-context], or a list
 of such results. In the latter two cases, lexical information for
