@@ -44,7 +44,9 @@ the impersonator:
             @t{application of a procedure}
             unbox set-box!
             vector-ref vector-set!
-            hash-ref hash-set hash-set! hash-remove hash-remove!]
+            hash-ref hash-set hash-set! hash-remove hash-remove!
+            call-with-continuation-prompt
+            abort-current-continuation]
 
 Derived operations, such as printing a value, can be redirected
 through impersonators due to their use of accessor functions. The
