@@ -146,12 +146,16 @@ Combines elements to generate an element that is suitable for
 describing a paper's location within a journal.}
 
 
-@defproc[(book-location [#:edition edition any/c #f]
+@defproc[(book-location [#:chapter-of chapter-of any/c #f]
+                        [#:edition edition any/c #f]
                         [#:publisher publisher any/c #f])
          element?]{
 
-Combines elements to generate an element that is suitable for
-describing a book's location.}
+If a source is @emph{titled} chapter of a book, using @racket[in-bib] is
+undesirable for citations. Instead the source's title should be the chapter
+title, and the location is a @racket[chapter-of] some book. Otherwise the source is the
+book described. This combines elements to generate an element that is suitable
+for describing a book's location.}
 
 @defproc[(techrpt-location [#:institution institution edition any/c]
                            [#:number number any/c])
