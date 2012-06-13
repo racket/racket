@@ -87,6 +87,19 @@ in @racket[mark-set], which is a set of marks returned by
 the first point, if any, where continuation frames were originally
 separated by a prompt tagged with @racket[prompt-tag].}
 
+@defproc*[([(make-continuation-mark-key) continuation-mark-key?]
+           [(make-continuation-mark-key [sym symbol?]) continuation-mark-key?])]{
+Creates a continuation mark key that is not @racket[equal?] to the result
+of any other value (including prior and future results from
+@racket[make-continuation-mark-key]). The continuation mark key can be used
+as the key argument for @racket[with-continuation-mark] or accessor procedures
+like @racket[continuation-mark-set-first]. The mark key can be chaperoned
+or impersonated, unlike other values that are used as the mark key.
+
+The optional @racket[sym] argument, if provided, is used when printing
+the continuation mark.
+}
+
 @defproc[(continuation-mark-set->list*
           [mark-set continuation-mark-set?]
           [key-list (listof any/c)]
@@ -139,6 +152,10 @@ and @racket[continuation-mark-set->list], but
 @racket[call-with-immediate-continuation-mark] is implemented more
 efficiently; it inspects only the first frame of the current
 continuation.}
+
+@defproc[(continuation-mark-key? [v any/c]) boolean?]{
+Returns @racket[#t] if @racket[v] is a mark key created by
+@racket[make-continuation-mark-key], @racket[#f] otherwise.}
 
 @defproc[(continuation-mark-set? [v any/c]) boolean?]{
 Returns @racket[#t] if @racket[v] is a mark set created by

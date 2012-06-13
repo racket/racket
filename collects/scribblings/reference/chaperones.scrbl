@@ -369,6 +369,45 @@ or override impersonator-property values of @racket[prompt-tag].
 }
 
 
+@defproc[(impersonate-continuation-mark-key
+          [key continuation-mark-key?]
+          [get-proc procedure?]
+          [set-proc procedure?]
+          [prop impersonator-property?]
+          [prop-val any] ... ...)
+         (and/c continuation-mark? impersonator?)]{
+
+Returns an impersonator of @racket[key], which redirects
+@racket[with-continuation-mark] and continuation mark accessors such
+as @racket[continuation-mark-set->list].
+
+The @racket[get-proc] must accept the the value attached to a
+continuation mark and it must produce a replacement
+value, which will be returned by the continuation mark accessor.
+
+The @racket[set-proc] must accept a value passed to
+@racket[with-continuation-mark]; it must produce a replacement
+value, which is attached to the continuation frame.
+
+Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
+to @racket[impersonate-prompt-tag] must be odd) add impersonator properties
+or override impersonator-property values of @racket[key].
+
+@examples[
+  (define mark-key
+    (impersonate-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (l) (map char-upcase l))
+     (lambda (s) (string->list s))))
+
+  (with-continuation-mark mark-key "quiche"
+    (continuation-mark-set-first
+     (current-continuation-marks)
+     mark-key))
+]
+}
+
+
 @defthing[prop:impersonator-of struct-type-property?]{
 
 A @tech{structure type property} (see @secref["structprops"]) that
@@ -598,6 +637,51 @@ the same values or chaperones of the values that it is given.
       (abort-current-continuation good-chaperone 2))
     good-chaperone
     (lambda (n) n))
+]
+}
+
+
+@defproc[(chaperone-continuation-mark-key
+          [key continuation-mark-key?]
+          [get-proc procedure?]
+          [set-proc procedure?]
+          [prop impersonator-property?]
+          [prop-val any] ... ...)
+         (and/c continuation-mark-key? chaperone?)]{
+
+Like @racket[impersonate-continuation-mark-key], but produces a
+chaperoned value.  The @racket[get-proc] procedure must produce the
+same value or a chaperone of the original value, and @racket[set-proc]
+must produce the same value or a chaperone of the value that it is
+given.
+
+@examples[
+  (define bad-chaperone
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (l) (map char-upcase l))
+     string->list))
+
+  (with-continuation-mark bad-chaperone "timballo"
+    (continuation-mark-set-first
+     (current-continuation-marks)
+     bad-chaperone))
+
+  (define (checker s)
+    (if (> (string-length s) 5)
+        s
+        (error "expected string of length at least 5")))
+
+  (define good-chaperone
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     checker
+     checker))
+
+  (with-continuation-mark good-chaperone "zabaione"
+    (continuation-mark-set-first
+     (current-continuation-marks)
+     good-chaperone))
 ]
 }
 

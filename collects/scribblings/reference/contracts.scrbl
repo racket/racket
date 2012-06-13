@@ -520,6 +520,30 @@ an @tech{impersonator} contract.
 }
 
 
+@defproc[(continuation-mark/c [contract contract?]) contract?]{
+Takes a single contract and returns a contract that recognizes
+continuation marks and will check any mappings of marks to values
+or any accesses of the mark value.
+
+If the argument @racket[contract] is a chaperone contract, the resulting
+contract will also be a @tech{chaperone} contract. Otherwise, the contract is
+an @tech{impersonator} contract.
+
+@examples[#:eval (contract-eval)
+  (define/contract mark-key
+    (continuation-mark/c (-> symbol (listof symbol?)))
+    (make-continuation-mark-key))
+
+  (with-continuation-mark
+    mark-key
+    (lambda (s) (append s '(truffle fudge ganache)))
+    (let ([mark-value (continuation-mark-set-first
+                       (current-continuation-marks) mark-key)])
+      (mark-value "chocolate-bar")))
+]
+}
+
+
 @defform[(flat-rec-contract id flat-contract-expr ...)]{
 
 Constructs a recursive @tech{flat contract}. A
