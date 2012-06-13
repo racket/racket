@@ -6052,7 +6052,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Sch
        * as the number of aborted values
        */
       if (num_args == 1 && num_args != argc)
-        scheme_wrong_return_arity(name, argc, 1, vals[0], "use of redirecting procedure");
+        scheme_wrong_return_arity(name, argc, 1, (Scheme_Object **)(vals[0]), "use of redirecting procedure");
       else if (num_args != argc)
         scheme_wrong_return_arity(name, argc, num_args, vals, "use of redirecting procedure");
 
@@ -6571,10 +6571,10 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
     }
     p->cjs.num_vals = argc - 1;
     if (!is_chaperoned)
-      p->cjs.val = (Scheme_Object **)vals;
+      p->cjs.val = (Scheme_Object *)vals;
     else {
       vals = chaperone_do_abort(argv[0], argc - 1, vals);
-      p->cjs.val = (Scheme_Object **)vals;
+      p->cjs.val = (Scheme_Object *)vals;
     }
   }
   p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
