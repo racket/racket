@@ -993,8 +993,9 @@
   (wcm-test '(#(5)) (lambda () (do-test* cha-mark 5)))
   (wcm-test 5 (lambda () (do-test/first cha-mark 5)))
   (wcm-test 5 (lambda () (do-test/immediate cha-mark 5)))
-  (err/rt-test (do-test cha-mark "fail") exn:fail?)
-  (err/rt-test (do-test bad-mark 5) exn:fail?))
+  (err/rt-test (do-test cha-mark #t) exn:fail?)
+  (err/rt-test (do-test bad-mark 5) exn:fail?)
+  (err/rt-test (do-test bad-mark-2 5) exn:fail?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

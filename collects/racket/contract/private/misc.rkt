@@ -36,6 +36,7 @@
          make-none/c
 
          prompt/c
+         continuation-mark/c
 
          chaperone-contract?
          impersonator-contract?
@@ -1006,6 +1007,59 @@
    #:first-order prompt/c-first-order
    #:stronger prompt/c-stronger?
    #:name prompt/c-name))
+
+
+;; continuation-mark/c
+(define/subexpression-pos-prop (continuation-mark/c ctc-arg)
+  (define ctc (coerce-contract 'continuation-mark/c ctc-arg))
+  (cond [(chaperone-contract? ctc) (chaperone-continuation-mark/c ctc)]
+        [else (impersonator-continuation-mark/c ctc)]))
+
+(define (continuation-mark/c-name ctc)
+  (build-compound-type-name
+   'continuation-mark/c
+   (base-continuation-mark/c-ctc ctc)))
+
+(define ((continuation-mark/c-proj proxy) ctc)
+  (define ho-proj (contract-projection (base-continuation-mark/c-ctc ctc)))
+  (λ (blame)
+    (define proj1 (λ (v) ((ho-proj blame) v)))
+    (define proj2 (λ (v) ((ho-proj (blame-swap blame)) v)))
+    (λ (val)
+      (unless (contract-first-order-passes? ctc val)
+        (raise-blame-error
+         blame val
+         '(expected: "~s," given: "~e")
+         (contract-name ctc)
+         val))
+      (proxy val proj1 proj2))))
+
+(define ((continuation-mark/c-first-order ctc) v)
+  (continuation-mark-key? v))
+
+(define (continuation-mark/c-stronger? this that)
+  (and (base-continuation-mark/c? that)
+       (contract-stronger?
+        (base-continuation-mark/c-ctc this)
+        (base-continuation-mark/c-ctc that))))
+
+(define-struct base-continuation-mark/c (ctc))
+
+(define-struct (chaperone-continuation-mark/c base-continuation-mark/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection (continuation-mark/c-proj chaperone-continuation-mark-key)
+   #:first-order continuation-mark/c-first-order
+   #:stronger continuation-mark/c-stronger?
+   #:name continuation-mark/c-name))
+
+(define-struct (impersonator-continuation-mark/c base-continuation-mark/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:projection (continuation-mark/c-proj impersonate-continuation-mark-key)
+   #:first-order continuation-mark/c-first-order
+   #:stronger continuation-mark/c-stronger?
+   #:name continuation-mark/c-name))
 
 
 (define (flat-contract-predicate x)
