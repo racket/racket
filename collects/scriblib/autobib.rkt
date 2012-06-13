@@ -62,6 +62,7 @@
                                        (resolve-get part ri `(autobib-disambiguation ,key)))
                                      (case maybe-disambiguation
                                        [(unambiguous) #f]
+                                       [(#f) #f] ;; XXX: this means the bibliography was not rendered.
                                        [else (make-link-element #f maybe-disambiguation `(autobib ,key))]))
                                    ","))
                     (cond [(not (car disambiguation*)) '()] ;; the bib was unambiguous
@@ -387,11 +388,20 @@
     s))
 
 (define (book-location
+         ;; Some chapters are named rather than numbered, making in-bib
+         ;; undesirable. Chapter-of allows you to say the actual book's title
+         ;; here, and consider the bib entry's title as the chapter name.
+         #:chapter-of [chapter-of #f]
          #:edition [edition #f]
          #:publisher [publisher #f])
-  (let* ([s (if edition
-                @elem{@(string-titlecase edition) edition}
+  (let* ([s (if chapter-of
+                @elem{In @(italic chapter-of)}
                 #f)]
+         [s (if edition
+                (if s
+                    @elem{@|s|. @(string-titlecase edition) edition}
+                    edition)
+                s)]
          [s (if publisher
                 (if s
                    @elem{@|s|. @|publisher|}
