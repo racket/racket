@@ -6016,7 +6016,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int is_prompt, Sch
                                             int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
-  Scheme_Object **vals;
+  Scheme_Object **vals = NULL;
   Scheme_Object *v;
   Scheme_Object *proc;
   int i, num_args;
@@ -6523,17 +6523,16 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
   int is_chaperoned = 0;
 
   if (!SCHEME_PROMPT_TAGP(argv[0])) {
-    /*
-     * Check if the prompt tag is proxied
-     */
+    /* Check if the prompt tag is proxied */
     if (SCHEME_NP_CHAPERONEP(argv[0])
         && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[0]))) {
-        is_chaperoned = 1;
-        prompt_tag = SCHEME_CHAPERONE_VAL(argv[0]);
-    }
-    else
+      is_chaperoned = 1;
+      prompt_tag = SCHEME_CHAPERONE_VAL(argv[0]);
+    } else {
       scheme_wrong_contract("abort-current-continuation", "continuation-prompt-tag?",
                         0, argc, argv);
+      return NULL;
+    }
   } else
     prompt_tag = argv[0];
 
@@ -7010,9 +7009,11 @@ cont_marks(int argc, Scheme_Object *argv[])
       if (SCHEME_NP_CHAPERONEP(argv[1])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
         prompt_tag = SCHEME_CHAPERONE_VAL(argv[1]);
-      else
+      else {
         scheme_wrong_contract("continuation-marks", "continuation-prompt-tag?",
-                          1, argc, argv);
+                              1, argc, argv);
+        return NULL;
+      }
     } else
       prompt_tag = argv[1];
   } else
@@ -7096,9 +7097,11 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
       if (SCHEME_NP_CHAPERONEP(argv[2])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[2])))
         prompt_tag = SCHEME_CHAPERONE_VAL(argv[2]);
-      else
+      else {
         scheme_wrong_contract("continuation-mark-set->list", "continuation-prompt-tag?",
                           2, argc, argv);
+        return NULL;
+      }
     } else
       prompt_tag = argv[2];
   } else
@@ -7160,9 +7163,11 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
       if (SCHEME_NP_CHAPERONEP(argv[3])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[3])))
         prompt_tag = SCHEME_CHAPERONE_VAL(argv[3]);
-      else
+      else {
         scheme_wrong_contract("continuation-mark-set->list*", "continuation-prompt-tag?",
-                          3, argc, argv);
+                              3, argc, argv);
+        return NULL;
+      }
     } else
       prompt_tag = argv[3];
   } else
