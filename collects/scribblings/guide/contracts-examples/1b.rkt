@@ -13,7 +13,6 @@
   (if (pair? x) (car x) x))
 
 (define (active? c)
-  (define f (find c))
   (pair? (find c)))
 
 (define not-active? (compose not active? basic-customer-id))
