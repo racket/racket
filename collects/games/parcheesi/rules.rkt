@@ -242,7 +242,7 @@
   (define board-snip%
     (class snip%
       (init-field board)
-      (define/override (find-scroll-step y) (inexact->exact (quotient y scroll-step-pixels)))
+      (define/override (find-scroll-step y) (inexact->exact (round (/ y scroll-step-pixels))))
       (define/override (get-num-scroll-steps) (quotient board-size scroll-step-pixels))
       (define/override (get-scroll-step-offset step) (* step scroll-step-pixels))
       (define/override (get-extent dc x y w h descent space lspace rspace)
