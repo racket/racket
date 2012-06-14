@@ -1320,7 +1320,7 @@
            (quasisyntax/loc stx
              #,(wrap (quasisyntax/loc stx
                        (derived-id #,stx fold-bind (bind ...)
-                                   #,(combine #'(let () expr1 expr ...)))))))]
+                                   #,(combine (syntax/loc stx (let () expr1 expr ...))))))))]
         ;; Let `derived-id' complain about the missing bindings and body expression:
         [(_ . rest)
          #`(derived-id #,stx fold-bind . rest)])))
