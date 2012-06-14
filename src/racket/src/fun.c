@@ -6108,18 +6108,17 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
   scheme_check_proc_arity("call-with-continuation-prompt", argc, 0, in_argc, in_argv);
   if (in_argc > 1) {
-    /*
-     * Check if the prompt tag is proxied
-     */
+    /* Check if the prompt tag is proxied */
     if (!SCHEME_PROMPT_TAGP(in_argv[1])) {
       if (SCHEME_NP_CHAPERONEP(in_argv[1])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(in_argv[1]))) {
         is_chaperoned = 1;
         prompt_tag = SCHEME_CHAPERONE_VAL(in_argv[1]);
-      }
-      else
+      } else {
         scheme_wrong_contract("call-with-continuation-prompt", "continuation-prompt-tag?",
                           1, in_argc, in_argv);
+        return NULL;
+      }
     } else
       prompt_tag = in_argv[1];
   } else
@@ -6613,9 +6612,11 @@ static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int
       if (SCHEME_NP_CHAPERONEP(argv[1])
           && SCHEME_PROMPT_TAGP(SCHEME_CHAPERONE_VAL(argv[1])))
         prompt_tag = SCHEME_CHAPERONE_VAL(argv[1]);
-      else
+      else {
         scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
                           1, argc, argv);
+        return NULL;
+      }
     } else
       prompt_tag = argv[1];
   } else
