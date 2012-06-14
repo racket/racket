@@ -557,7 +557,7 @@ refer back to an already matched subpattern in the pattern.
 @litchar{\}@math{n} stands for an exact repeat of the @math{n}th
 submatch. Note that @litchar{\0}, which is useful in an insert string,
 makes no sense within the regexp pattern, because the entire regexp
-has not matched yet that you could refer back to it.}
+has not matched yet so you cannot refer back to it.}
 
 @interaction[
 (regexp-match #px"([a-z]+) and \\1"

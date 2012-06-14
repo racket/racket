@@ -393,7 +393,7 @@ multiple identifiers, @racket[for] can bind multiple sequence elements
 to multiple iteration identifiers:
 
 @margin-note{While @racket[let] must be changed to @racket[let-values]
-             to bind multiple identifier, @racket[for] simply allows a
+             to bind multiple identifiers, @racket[for] simply allows a
              parenthesized list of identifiers instead of a single
              identifier in any clause.}
 

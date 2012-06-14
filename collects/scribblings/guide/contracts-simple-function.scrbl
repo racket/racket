@@ -124,7 +124,7 @@ that the function produces a single value. That is,
 
 @racketblock[(-> integer? any)]
 
-describes a function that accepts and integer and returns any number of
+describes a function that accepts an integer and returns any number of
 values, while
 
 @racketblock[(-> integer? any/c)]

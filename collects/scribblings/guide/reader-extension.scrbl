@@ -165,7 +165,7 @@ specifications in terms of a character, a type of mapping for the
 character, and (for certain types of mappings) a parsing
 procedure. For example, to extend the readtable so that @litchar{$}
 can be used to start and end infix expressions, implement a
-@racket[parse-dollar] function and use:
+@racket[read-dollar] function and use:
 
 @racketblock[
 (make-readtable (current-readtable)
@@ -182,9 +182,9 @@ additional arguments that provide the source location of the
 character.
 
 The following @filepath{dollar.rkt} module defines a
-@racket[parse-dollar] function in terms of the @racketidfont{read} and
+@racket[read-dollar] function in terms of the @racketidfont{read} and
 @racketidfont{read-syntax} functions provided by @filepath{arith.rkt},
-and it puts @racket[parse-dollar] together with new @racketidfont{read} and
+and it puts @racket[read-dollar] together with new @racketidfont{read} and
 @racketidfont{read-syntax} functions that install the readtable and
 chain to Racket's @racket[read] or @racket[read-syntax]:
 

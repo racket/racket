@@ -1,12 +1,12 @@
 #lang scribble/base
-@(require scribble/manual 
+@(require scribble/manual
           "guide-utils.rkt")
 
 @title[#:tag "dialects" #:style 'toc]{Dialects of Racket and Scheme}
 
 We use ``Racket'' to refer to a specific dialect of the Lisp language,
 and one that is based on the Scheme branch of the Lisp family.
-Despite Racket's similarly to Scheme, the @hash-lang[] prefix on
+Despite Racket's similarity to Scheme, the @hash-lang[] prefix on
 modules is a particular feature of Racket, and programs that start
 with @hash-lang[] are unlikely to run in other implementations of
 Scheme. At the same time, programs that do not start with @hash-lang[]

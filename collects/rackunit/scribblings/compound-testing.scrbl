@@ -161,7 +161,7 @@ the name @racket["example-suite"]:
 ]
 
 @defform[(define/provide-test-suite name test ...)]{ This
-for is just like @racket[define-test-suite], and in addition
+form is just like @racket[define-test-suite], and in addition
 it @racket[provide]s the test suite.}
 
 @;{
@@ -177,4 +177,3 @@ body expressions.
 As far I know no-one uses this macro, so it might disappear
 in future versions of RackUnit.}
 }
-

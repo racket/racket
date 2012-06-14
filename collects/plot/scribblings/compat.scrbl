@@ -139,10 +139,10 @@ calculation.}
 @defproc[(gradient [f (real? real? . -> . real?)] [h real? .000001])
          ((vector/c real? real?) . -> . (vector/c real? real?))]{
 
-Creates a vector-valued function that the numeric gradient of
+Creates a vector-valued function that computes the numeric gradient of
 @racket[f].}
 
 @defproc[(make-vec [fx (real? real? . -> . real?)] [fy (real? real? . -> . real?)])
          ((vector/c real? real?) . -> . (vector/c real? real?))]{
 
-Creates a vector-values function from two parts.}
+Creates a vector-valued function from two parts.}

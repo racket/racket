@@ -81,7 +81,7 @@ is itself a list, then no quote mark is printed for the inner list:
 ]
 
 For nested lists, especially, the @racket[quote] form lets you write a
-list as an expression in essentially the same way that the list it
+list as an expression in essentially the same way that the list
 prints:
 
 @interaction[

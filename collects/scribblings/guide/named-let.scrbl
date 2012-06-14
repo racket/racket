@@ -8,7 +8,7 @@ same syntactic keyword @racket[let] as for local binding, but an
 identifier after the @racket[let] (instead of an immediate open
 parenthesis) triggers a different parsing.
 
-@specform[
+@racketblock[
 (let _proc-id ([_arg-id _init-expr] ...)
   _body ...+)
 ]

@@ -2544,7 +2544,7 @@ by @racket[make-rename-transformer] or as an instance of a structure
 type with the @racket[prop:rename-transformer] property, then this
 form is expanded by replacing @racket[id] with the target identifier
 (e.g., the one provided to @racket[make-rename-transformer]). If a
-transformer binding has both @racket[prop:set!-transformer] ad
+transformer binding has both @racket[prop:set!-transformer] and
 @racket[prop:rename-transformer] properties, the latter takes
 precedence.
 

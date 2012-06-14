@@ -30,7 +30,7 @@ procedure:
 
 Instead of using @racket[syntax-rules], you can write your own macro
 transformer procedure directly using @racket[lambda]. The argument to
-the procedure is a values that represents the source form, and the
+the procedure is a value that represents the source form, and the
 result of the procedure must be a value that represents the
 replacement form.
 

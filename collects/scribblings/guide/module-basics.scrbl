@@ -214,7 +214,7 @@ sense. In that case, you have two options:
        unquoted path, just like libraries that are included with the
        Racket distribution.}
 
- @item{Add the library a new or existing @|PLaneT| package. Libraries
+ @item{Add the library to a new or existing @|PLaneT| package. Libraries
        in a @|PLaneT| package are referenced with a path of the form
        @racket[(planet ....)] path.
        @margin-note*{See @other-doc['(lib "planet/planet.scrbl")]
@@ -269,7 +269,7 @@ top-level name like @filepath{molly} that identifies the producer.
 Use a collection name like @filepath{bakery} when producing the
 definitive collection of baked-goods libraries.
 
-After your libraries are in a @tech{collection}, then you can still
+After your libraries are put in a @tech{collection} you can still
 use @exec{raco make} to compile the library sources, but it's better
 and more convenient to use @exec{raco setup}. The @exec{raco setup}
 command takes a collection name (as opposed to a file name) and

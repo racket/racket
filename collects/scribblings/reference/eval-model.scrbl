@@ -502,7 +502,7 @@ both @racket[y] and @racket[x] are @tech{variables}. The @racket[y]
 a @tech{local variable}. When this code is evaluated, a
 @tech{location} is created for @racket[x] to hold the value
 @racket[5], and a @tech{location} is also created for @racket[y] to
-hold the value @racket[6].
+hold the value @racket[11].
 
 The replacement of a @tech{variable} with a @tech{location} during
 evaluation implements Racket's @deftech{lexical scoping}. For example,

@@ -297,7 +297,7 @@ and make them more accessible to potential clients.
 
 Going back to the bank-account example, suppose that we generalize the
 module to support multiple accounts and that we also include a
-withdrawal operation. The improved bank-account module includes a
+withdrawal operation. The improved bank-account module includes an
 @racket[account] structure type and the following functions:
 
 @racketblock[

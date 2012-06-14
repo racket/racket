@@ -362,24 +362,24 @@ above, we'll generate
 and redirect a function call @racket[(f x y)] to
 
 @racketblock[
-(do-f (lambda () x) 
+(do-f (lambda () x)
       (lambda () y)
-      (lambda (v) (set! x v)) 
+      (lambda (v) (set! x v))
       (lambda (v) (set! y v)))
 ]
 
 Clearly, then @racket[define-cbr] is a macro-generating macro, which
 binds @racket[f] to a macro that expands to a call of @racket[do-f].
-That is, @racket[(define-cbr (f a b) (swap ab))] needs to generate the
+That is, @racket[(define-cbr (f a b) (swap a b))] needs to generate the
 definition
 
 @racketblock[
 (define-syntax f
   (syntax-rules ()
     [(id actual ...)
-     (do-f (lambda () actual) 
+     (do-f (lambda () actual)
            ...
-           (lambda (v) 
+           (lambda (v)
              (set! actual v))
            ...)]))
 ]
@@ -415,7 +415,7 @@ converts
 
 to the function definition @racket[do-f] above. Most of the work is
 generating a @racket[define-get/put-id] declaration for each argument,
-@racket[a] ad @racket[b], and putting them before the body. Normally,
+@racket[a] and @racket[b], and putting them before the body. Normally,
 that's an easy task for @racket[...] in a pattern and template, but
 this time there's a catch: we need to generate the names
 @racket[get-a] and @racket[put-a!] as well as @racket[get-b] and

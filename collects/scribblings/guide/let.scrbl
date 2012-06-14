@@ -148,7 +148,7 @@ While the @racket[_expr]s of a @racket[letrec] form are typically
 expressions are evaluated in order, and after each value is obtained,
 it is immediately associated with its corresponding @racket[_id]. If
 an @racket[_id] is referenced before its value is ready, the result is
-@|undefined-const|, as just as for internal definitions.
+@|undefined-const|, just as for internal definitions.
 
 @interaction[
 (letrec ([quicksand quicksand])

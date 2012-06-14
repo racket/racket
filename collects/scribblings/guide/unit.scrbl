@@ -589,12 +589,12 @@ As a form for modularity, @racket[unit] complements @racket[module]:
        @racketmodname[racket/base]---the one that extracts the first
        element of an instance of the built-in pair datatype---as
        opposed to any number of other functions with the name
-       @racket[car]. In other word, the @racket[module] construct lets
+       @racket[car]. In other words, the @racket[module] construct lets
        you refer to @emph{the} binding that you want.}
 
  @item{The @racket[unit] form is for parameterizing a code fragment
        with respect to most any kind of run-time value. For example,
-       it allows a code fragment for work with a @racket[car]
+       it allows a code fragment to work with a @racket[car]
        function that accepts a single argument, where the specific
        function is determined later by linking the fragment to
        another. In other words, the @racket[unit] construct lets you
