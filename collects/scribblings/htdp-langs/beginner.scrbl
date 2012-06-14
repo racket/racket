@@ -29,6 +29,7 @@
       name
       (code:line @#,elem{@racketvalfont{'}@racket[name]})
       number
+      boolean 
       string
       character]
 ]

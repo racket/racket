@@ -32,6 +32,7 @@
       (code:line @#,elem{@racketvalfont{'}@racket[_quoted]})
       (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]})
       number
+      boolean	
       string
       character]
 ]
