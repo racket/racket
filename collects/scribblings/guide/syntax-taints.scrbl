@@ -60,7 +60,7 @@ with a @deftech{dye pack}. When a syntax object is armed, then
 @racket[syntax-e] taints any syntax object in its result. Similarly,
 @racket[datum->syntax] taints its result when its first argument is
 armed. Finally, if any part of a quoted syntax object is armed, then
-the corresponding part taints the resulting syntax constant.
+the corresponding part is tainted in the resulting syntax constant.
 
 Of course, the macro expander itself must be able to @deftech{disarm}
 a taint on a syntax object, so that it can further expand an
