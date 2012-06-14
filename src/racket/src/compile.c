@@ -5488,6 +5488,14 @@ scheme_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
   return compile_expand_expr_lift_to_let(form, env, erec, drec);
 }
 
+static Scheme_Object *beginify(Scheme_Comp_Env *env, Scheme_Object *lst)
+{
+  return scheme_datum_to_syntax(scheme_make_pair(begin_symbol, lst),
+                                lst, 
+                                scheme_sys_wraps(env), 
+                                0, 0);
+}
+
 static Scheme_Object *
 compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env, 
                      Scheme_Compile_Expand_Info *rec, int drec,
@@ -5537,7 +5545,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
   SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
 
   if (!SCHEME_STX_PAIRP(forms)) {
-    scheme_wrong_syntax(scheme_begin_stx_string, NULL, forms, "bad syntax");
+    scheme_wrong_syntax(scheme_begin_stx_string, NULL, beginify(env, forms), "bad syntax");
     return NULL;
   }
 
@@ -5836,7 +5844,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	more = 0;
       } else {
 	/* Empty body: illegal. */
-	scheme_wrong_syntax(scheme_begin_stx_string, NULL, orig, 
+	scheme_wrong_syntax(scheme_begin_stx_string, NULL, beginify(env, orig), 
 			    "no expression after a sequence of internal definitions");
       }
     } else if (mixed) {
@@ -5931,7 +5939,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     forms = scheme_datum_to_syntax(newforms, orig, orig, 0, -1);
     
     if (scheme_stx_proper_list_length(forms) < 0)
-      scheme_wrong_syntax(scheme_begin_stx_string, NULL, forms, "bad syntax");
+      scheme_wrong_syntax(scheme_begin_stx_string, NULL, beginify(env, forms), "bad syntax");
     
     SCHEME_EXPAND_OBSERVE_BLOCK_TO_LIST(rec[drec].observer, forms);
     forms = scheme_expand_list(forms, env, recs, 0);
