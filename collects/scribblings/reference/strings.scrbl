@@ -478,7 +478,7 @@ which defaults to whitespace. A string @racket[sep] is matched literally
 Use @racket[#:left? #f] or @racket[#:right? #f] to suppress trimming
 the corresponding side.  When @racket[repeat?] is @racket[#f] (the
 default), only one match is removed from each side; when
-@racket[repeat?] it is true, all initial or trailing matches are
+@racket[repeat?] is true, all initial or trailing matches are
 trimmed (which is an alternative to using a @tech{regular expression}
 @racket[sep] that contains @litchar{+}).
 
