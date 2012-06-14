@@ -246,6 +246,20 @@
                                       (unsafe-fl+ (unsafe-fl* c.real-binding c.real-binding)
                                                   (unsafe-fl* c.imag-binding c.imag-binding)))))))
 
+  (pattern (#%plain-app (~and op (~literal exp)) c:unboxed-float-complex-opt-expr)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
+           #:with scaling-factor (unboxed-gensym "unboxed-scaling-")
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
+                  (add-disappeared-use #'op)
+                  #`(c.bindings ...
+                     ((scaling-factor) (unsafe-flexp c.real-binding))
+                     ((real-binding)   (unsafe-fl* (unsafe-flcos c.imag-binding) scaling-factor))
+                     ((imag-binding)   (unsafe-fl* (unsafe-flsin c.imag-binding) scaling-factor)))))
+
   (pattern (#%plain-app (~and op (~or (~literal real-part) (~literal unsafe-flreal-part)))
                         c:unboxed-float-complex-opt-expr)
            #:with real-binding #'c.real-binding
@@ -398,7 +412,7 @@
 
 (define-syntax-class float-complex-op
   #:commit
-  (pattern (~or (~literal +) (~literal -) (~literal *) (~literal /) (~literal conjugate))))
+  (pattern (~or (~literal +) (~literal -) (~literal *) (~literal /) (~literal conjugate) (~literal exp))))
 
 (define-syntax-class float-complex->float-op
   #:commit
