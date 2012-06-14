@@ -1,6 +1,7 @@
-(module paint-by-numbers mzscheme
+#lang racket/base
+
   (require "gui.rkt"
-           (prefix solve: "solve.rkt")
+           (prefix-in solve: "solve.rkt")
            "all-problems.rkt"
            "problem.rkt"
            "../show-scribbling.rkt"
@@ -12,6 +13,13 @@
            mred)
   
   (provide game@)
+
+  (application-preferences-handler void) 
+  ;; reset this after the framework sets it.
+  ;; we don't want to open the preferences window, 
+  ;; because other games then cannot call 
+  ;; preferences:set-default
+
   
   (define default-font (send the-font-list find-or-create-font 10 'roman 'normal 'normal #f))
   (preferences:set-default 'paint-by-numbers:font default-font (lambda (f) (is-a? f font%)))
@@ -115,6 +123,13 @@
     (class (frame:standard-menus-mixin frame:basic%) 
       (inherit set-label get-label get-area-container)
       (define filename #f)
+      (define/override (edit-menu:create-preferences?) #f)
+      
+      ;; don't open the preferences window, 
+      ;; because other games then cannot call 
+      ;; preferences:set-default
+      (define/override (edit-menu:preferences-callback item control) (void))
+      
       [define/public update-filename
         (lambda (new-name)
           (set! filename new-name)
@@ -504,7 +519,7 @@
       (let ([f (instantiate pbn-frame% () (problem problem))])
 	(send f show #t))]
      [(problem state)
-      (let ([f (make-object pbn-frame% () (problem problem))])
+      (let ([f (instantiate pbn-frame% () (problem problem))])
 	(send (send f get-canvas) set-grid state)
 	(send f show #t))]))
   
@@ -514,4 +529,4 @@
       (export)
       (player)
       ;(editor #f)
-      )))
+      ))

@@ -1,3 +1,4 @@
+#lang racket/base
 #|
 
 The paint-by-numbers-canavas% class accepts two initalization
@@ -35,7 +36,6 @@ paint by numbers.
 
 |#
 
-(module gui mzscheme
   (require mred
            framework
            mzlib/etc
@@ -863,6 +863,6 @@ paint by numbers.
           (set! update-row-col? #t)
           (update-all-rows-cols))]
       
-      (super-instantiate () (row-numbers null) (col-numbers null))
+      (super-new (row-numbers null) (col-numbers null))
       (set! row-numbers (vector->list (make-vector height null)))
-      (set! col-numbers (vector->list (make-vector width null))))))
+      (set! col-numbers (vector->list (make-vector width null)))))
