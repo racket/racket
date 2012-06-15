@@ -96,12 +96,12 @@ path/s is either such a string or a list of them.
 ;; ----------------------------------------------------------------------------
 
 ;; This could use `meta/tree/tree' in the future, it's pretty similar.
-(define-struct tree (name [subs #:mutable] [props #:mutable]))
+(struct Tree (name [subs #:mutable] [props #:mutable]))
 
 ;; Descriptors for known properties
-(define-struct prop (name description parse unparse))
+(struct Prop (name description parse unparse))
 
-(define props-tree (make-tree #f '() '()))
+(define props-tree (Tree #f '() '()))
 (define known-props #f)
 
 ;; used to throw an error message that fits uses as a program and when running
@@ -121,10 +121,10 @@ path/s is either such a string or a list of them.
   (fprintf (current-error-port) "warning: ~a\n" (apply format fmt args)))
 
 (define (find-prop who pname [error-message "unknown property: ~.s"])
-  (if (prop? pname)
+  (if (Prop? pname)
     pname ; might happen when `set-prop!' calls `get-prop'
     (or (for/or ([p (in-list known-props)])
-          (and (eq? pname (prop-name p)) p))
+          (and (eq? pname (Prop-name p)) p))
         (error* who error-message pname))))
 
 (define (path->symbols path-string)
@@ -161,35 +161,33 @@ path/s is either such a string or a list of them.
 (define (parse-prop-string prop str who)
   (with-handlers ([exn? (lambda (e)
                           (error* who "bad value for `~a', ~a: ~s"
-                                  (prop-name prop) (exn-message e) str))])
-    ((prop-parse prop) str)))
+                                  (Prop-name prop) (exn-message e) str))])
+    ((Prop-parse prop) str)))
 
 (define (get-prop path-string prop-name [default get-prop]
                   #:strict? [strict? #f] #:as-string? [as-string? #f])
   (validate-path-string path-string 'get-prop #t) ; no errors
-  (let ([upchain
-         ;; take the chain going up from the most specific node, so that
-         ;; properties of a directory apply to subpaths
-         (let loop ([path (path->symbols path-string)]
-                    [upchain (list props-tree)])
-           (let ([sub (and (pair? path)
-                           (let ([fst (car path)])
-                             (ormap (lambda (sub)
-                                      (and (eq? (tree-name sub) fst) sub))
-                                    (tree-subs (car upchain)))))])
-             (cond [sub (loop (cdr path) (cons sub upchain))]
-                   [(not strict?) upchain]
-                   [(pair? path) '()]
-                   [else (list (car upchain))])))]
-        [prop (find-prop 'get-prop prop-name)])
-    (cond [(ormap (lambda (tree) (assq prop-name (tree-props tree))) upchain)
-           => (lambda (x)
-                ((if as-string? (prop-unparse prop) values) (cdr x)))]
-          [(eq? get-prop default)
-           (error* 'get-prop "no `~s' property for \"~a\""
-                   prop-name path-string)]
-          [(procedure? default) (default)]
-          [else default])))
+  (define upchain
+    ;; take the chain going up from the most specific node, so that properties
+    ;; of a directory apply to subpaths
+    (let loop ([path (path->symbols path-string)]
+               [upchain (list props-tree)])
+      (define sub
+        (and (pair? path)
+             (let ([fst (car path)])
+               (ormap (lambda (sub) (and (eq? (Tree-name sub) fst) sub))
+                      (Tree-subs (car upchain))))))
+      (cond [sub (loop (cdr path) (cons sub upchain))]
+            [(not strict?) upchain]
+            [(pair? path) '()]
+            [else (list (car upchain))])))
+  (define prop (find-prop 'get-prop prop-name))
+  (cond [(ormap (lambda (tree) (assq prop-name (Tree-props tree))) upchain)
+         => (lambda (x) ((if as-string? (Prop-unparse prop) values) (cdr x)))]
+        [(eq? get-prop default)
+         (error* 'get-prop "no `~s' property for \"~a\"" prop-name path-string)]
+        [(procedure? default) (default)]
+        [else default]))
 
 (define (single->list x) (if (list? x) x (list x)))
 
@@ -205,17 +203,17 @@ path/s is either such a string or a list of them.
             "a value it already has (possibly via a containing directory)")
       ;; otherwise set it blindly (will be normalized away when written)
       (let ([tree (tree-find path #t)])
-        (set-tree-props! tree (cons (cons prop-name val)
-                                    (tree-props tree)))))))
+        (set-Tree-props! tree (cons (cons prop-name val)
+                                    (Tree-props tree)))))))
 
 (define (del-prop! path-string/s prop-name #:warn? [warn? #t])
   (define prop (find-prop 'set-prop! prop-name))
   (for ([path (in-list (single->list path-string/s))])
     (validate-path-string path 'del-prop!)
     (let* ([tree  (tree-find path #f)]
-           [props (if tree (tree-props tree) '())])
+           [props (if tree (Tree-props tree) '())])
       (cond [(assq prop-name props)
-             (set-tree-props! tree (filter (lambda (p)
+             (set-Tree-props! tree (filter (lambda (p)
                                              (not (eq? prop-name (car p))))
                                            props))]
             [warn? (warn "no `~s' property on ~s" prop-name path)]))))
@@ -225,11 +223,11 @@ path/s is either such a string or a list of them.
     (if (null? path)
       tree
       (let* ([fst (car path)]
-             [sub (or (ormap (lambda (sub) (and (eq? (tree-name sub) fst) sub))
-                             (tree-subs tree))
+             [sub (or (ormap (lambda (sub) (and (eq? (Tree-name sub) fst) sub))
+                             (Tree-subs tree))
                       (and create?
-                           (let ([new (make-tree fst '() '())])
-                             (set-tree-subs! tree (cons new (tree-subs tree)))
+                           (let ([new (Tree fst '() '())])
+                             (set-Tree-subs! tree (cons new (Tree-subs tree)))
                              new)))])
         (and sub (loop (cdr path) sub))))))
 
@@ -267,7 +265,7 @@ path/s is either such a string or a list of them.
              (malformed "unexpected text found at the end of the file"))]
           [prop-name
            ;; register a given property value
-           (set-tree-props! tree (cons (cons prop-name x) (tree-props tree)))
+           (set-Tree-props! tree (cons (cons prop-name x) (Tree-props tree)))
            (loop tree #f)]
           [(string? x)
            ;; new path, find the node or create if none
@@ -286,38 +284,38 @@ path/s is either such a string or a list of them.
               "beginning markup not found while writing new file"))
     (write-bytes (car m) new)
     (let loop ([tree props-tree] [path ""])
-      (when (pair? (tree-props tree))
+      (when (pair? (Tree-props tree))
         (fprintf new "~s" path)
-        (for ([p (in-list (tree-props tree))])
+        (for ([p (in-list (Tree-props tree))])
           (fprintf new " ~s ~s" (car p) (cdr p)))
         (newline new))
-      (for ([sub (in-list (tree-subs tree))])
-        (loop sub (let ([s (symbol->string (tree-name sub))])
+      (for ([sub (in-list (Tree-subs tree))])
+        (loop sub (let ([s (symbol->string (Tree-name sub))])
                     (if (equal? "" path) s (string-append path "/" s))))))
     (fprintf new "\n~s |#\n" props-end-token)))
 
 (define (write-props)
-  (define known-prop-names (map prop-name known-props))
+  (define known-prop-names (map Prop-name known-props))
   ;; normalize the tree, to minimize changes to the file and remove redundant
   ;; entries that could be added manually
   (let loop ([tree props-tree] [up-props '()])
     (define normalized-props
       (for*/list ([p (in-list known-prop-names)]
-                  [p (in-value (let ([cur (assq p (tree-props tree))])
+                  [p (in-value (let ([cur (assq p (Tree-props tree))])
                                  (and cur (not (member cur up-props)) cur)))]
                   #:when p)
         p))
-    (set-tree-props! tree normalized-props)
-    (when (pair? (tree-subs tree))
+    (set-Tree-props! tree normalized-props)
+    (when (pair? (Tree-subs tree))
       (let ([up-props (append normalized-props up-props)]
-            [subs (sort (tree-subs tree) string<?
-                        #:key (lambda (t) (symbol->string (tree-name t)))
+            [subs (sort (Tree-subs tree) string<?
+                        #:key (lambda (t) (symbol->string (Tree-name t)))
                         #:cache-keys? #t)])
-        (set-tree-subs! tree (for*/list ([sub (in-list subs)]
+        (set-Tree-subs! tree (for*/list ([sub (in-list subs)]
                                          [sub (in-value (loop sub up-props))]
                                          #:when sub)
                                sub))))
-    (and (or (pair? (tree-subs tree)) (pair? (tree-props tree))) tree))
+    (and (or (pair? (Tree-subs tree)) (pair? (Tree-props tree))) tree))
   (let (;; temp file in the same directory => fail early if cannot write to it
         ;; and make a rename possible; copy from this file to preserve being
         ;; executable
@@ -371,14 +369,15 @@ path/s is either such a string or a list of them.
     (for ([v (in-list (verbs))]) (printf "  ~a\n" (cadr v)))
     (printf "\nKnown properties:\n")
     (for ([p (in-list known-props)])
-      (printf "  ~s: ~a\n" (prop-name p) (prop-description p)))
+      (printf "  ~s: ~a\n" (Prop-name p) (Prop-description p)))
     (para "See in-script comments for a racket interface"))
   (define (verbs)
     `([("help" "h" "-h" "--help") "help: show this help" ,help]
       [("get") "get <prop> <path/s>" ,get]
       [("set") "set <prop> <val> <path/s>" ,set]
       [("del") "del <prop> <path/s>" ,del]
-      [("mv")  "mv  <path> <path>" ,mv]))
+      [("mv")  "mv  <path> <path>" ,mv]
+      [("verify") "verify: check that paths exist" ,verify]))
   (define (find-root)
     (let loop ([p this-file] [n 3]) ; look only a few level up
       (let-values ([(base _1 _2) (split-path p)])
@@ -434,22 +433,39 @@ path/s is either such a string or a list of them.
     (let ([nonesuch (gensym 'none)]
           [from (paths->list from null)]
           [to (paths->list to null)])
-      (for ([p (in-list (map prop-name known-props))])
+      (for ([p (in-list (map Prop-name known-props))])
         (let ([v (get-prop from p nonesuch #:strict? #t)])
           (unless (eq? v nonesuch)
             (set-prop! to p v)
             (del-prop! from p)))))
     (write-props))
+  (define (verify)
+    (define root (find-root))
+    (printf "Root: ~a\n" root)
+    (parameterize ([current-directory root])
+      (let loop ([tree props-tree] [path '("  ")])
+        (for ([sub (in-list (Tree-subs tree))])
+          (define name (symbol->string (Tree-name sub)))
+          (define (print-path more)
+            (for ([x (in-list (reverse path))]) (printf "~a/" x))
+            (printf "~a: ~a\n" name more))
+          (cond [(equal? "" name)
+                 (print-path "empty name")]
+                [(directory-exists? name)
+                 (parameterize ([current-directory name])
+                   (loop sub (cons name path)))]
+                [(not (file-exists? name))
+                 (print-path "Missing file/directory")])))))
   (set! running-as-script? #t)
   ;; (perhaps add some `--force' flag to (set! check-existing-paths? #f))
-  (let* ([verb (if (pair? args) (car args) (usage "missing subcommand"))]
-         [args (cdr args)]
-         [proc (or (for/or ([v (in-list (verbs))] #:when (member verb (car v)))
-                     (caddr v))
-                   (usage (format "unknown subcommand ~s" verb)))])
-    (if (procedure-arity-includes? proc (length args))
-      (apply proc args)
-      (usage (format "bad number of arguments for ~s" verb)))))
+  (define verb (if (pair? args) (car args) (usage "missing subcommand")))
+  (define verb-args (cdr args))
+  (define proc
+    (or (for/or ([v (in-list (verbs))] #:when (member verb (car v))) (caddr v))
+        (usage (format "unknown subcommand ~s" verb))))
+  (if (procedure-arity-includes? proc (length verb-args))
+    (apply proc verb-args)
+    (usage (format "bad number of arguments for ~s" verb))))
 
 ;; ----------------------------------------------------------------------------
 
@@ -457,7 +473,7 @@ path/s is either such a string or a list of them.
  known-props
  (list
   ;; --------------------
-  (make-prop
+  (Prop
    'responsible
    "responsible person/people (comma separated names)"
    (lambda (str)
@@ -472,10 +488,10 @@ path/s is either such a string or a list of them.
    (lambda (syms)
      (apply string-append (add-between (map symbol->string syms) ","))))
   ;; --------------------
-  (make-prop
+  (Prop
    'drdr:command-line
    (string-append
-    "command-line string (space-separated, missing => default execution,"
+    "command-line string (space-separated,\n    missing => default execution,"
     " empty => no execution, \"~s\" => the file)")
    (lambda (str)
      (define (bad) (error "expecting an empty string, or one with `~s'"))
@@ -513,7 +529,7 @@ path/s is either such a string or a list of them.
                                            [else (bad)]))
                                    cmd))])))
   ;; --------------------
-  (make-prop
+  (Prop
    'drdr:timeout
    "timeout in seconds"
    (lambda (str)
@@ -522,7 +538,7 @@ path/s is either such a string or a list of them.
        (error "expecting an integer")))
    number->string)
    ;; --------------------
-  (make-prop
+  (Prop
    'drdr:random
    "is file output random?"
    (lambda (str)
