@@ -19,7 +19,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
 |#
 
 
-(provide (except-out (all-defined-out) dtsi* let-internal: define-for-variants define-for*-variants with-handlers: for/annotation for*/annotation define-for/sum:-variants)
+(provide (except-out (all-defined-out) dtsi* let-internal: define-for-variants define-for*-variants 
+                     with-handlers: for/annotation for*/annotation define-for/sum:-variants
+                     -lambda -define)
          :
          (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
