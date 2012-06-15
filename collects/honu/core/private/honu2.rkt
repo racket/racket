@@ -45,7 +45,7 @@
 
 (provide honu-function)
 (define-honu-syntax honu-function
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name:identifier (#%parens (~seq arg:identifier (~optional honu-comma)) ...)
           (#%braces code ...) . rest)
@@ -64,7 +64,7 @@
 
 (provide honu-if)
 (define-honu-syntax honu-if
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (else honu-then)
       [(_ (#%parens condition:honu-expression) true:honu-expression
@@ -76,7 +76,7 @@
 
 (provide honu-val)
 (define-honu-syntax honu-val
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code
       [(_ rest ...)
        (define-values (parsed unparsed)
@@ -85,14 +85,14 @@
 
 (provide honu-quote)
 (define-honu-syntax honu-quote
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code
       [(_ expression rest ...)
        (values (racket-syntax (quote expression)) #'(rest ...) #f)])))
 
 (provide honu-quasiquote)
 (define-honu-syntax honu-quasiquote
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code
       [(_ expression rest ...)
        (values (racket-syntax (quasiquote expression))
@@ -137,7 +137,7 @@
 
 (provide define-make-honu-operator)
 (define-honu-syntax define-make-honu-operator 
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code
       [(_ name:id level:number association:honu-expression function:honu-expression/phase+1 . rest)
        (debug "Operator function ~a\n" (syntax->datum #'function.result))
@@ -274,7 +274,7 @@
 
 (provide honu-require)
 (define-honu-syntax honu-require
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code
       [(_ form1:require-form form:require-form ... . rest)
        (values
@@ -289,7 +289,7 @@
 
 (provide honu-provide)
 (define-honu-syntax honu-provide
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ name:honu-identifier ... (~optional semicolon) . rest)
        (debug "Provide matched names ~a\n" (syntax->datum #'(name.result ...)))
@@ -300,7 +300,7 @@
 
 (provide honu-with-input-from-file)
 (define-honu-syntax honu-with-input-from-file
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ file:honu-expression something:honu-expression . rest)
        (define with (racket-syntax (with-input-from-file file.result
@@ -312,7 +312,7 @@
 
 (provide honu-while)
 (define-honu-syntax honu-while
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ condition:honu-expression body:honu-body . rest)
        (values
@@ -325,7 +325,7 @@
 (provide honu-with honu-match)
 (define-literal honu-with)
 (define-honu-syntax honu-match
-  (lambda (code context)
+  (lambda (code)
     (define-splicing-syntax-class match-clause
                                   #:literal-sets (cruft)
                                   #:literals (else)
@@ -392,7 +392,7 @@
 
 (provide honu-var)
 (define-honu-syntax honu-var
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(var:honu-declaration . rest)
        (define result 
@@ -402,7 +402,7 @@
 
 (provide (rename-out [honu-with-syntax withSyntax]))
 (define-honu-syntax honu-with-syntax
-  (lambda (code context)
+  (lambda (code)
     (define-splicing-syntax-class clause
                                   #:literal-sets (cruft)
                                   #:literals [(ellipses ...) honu-equal]
@@ -425,7 +425,7 @@
 
 (provide honu-for)
 (define-honu-syntax honu-for
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-in)
       [(_ (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
@@ -437,7 +437,7 @@
 
 (provide honu-fold)
 (define-honu-syntax honu-fold
-  (lambda (code context)
+  (lambda (code)
     (define-splicing-syntax-class sequence-expression
                                   #:literals (honu-in honu-in-lines)
        [pattern (~seq iterator:id honu-in stuff:honu-expression)

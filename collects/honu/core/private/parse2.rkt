@@ -296,8 +296,7 @@
                                      [(rest ...) rest])
                          (datum->syntax #'head
                                         (syntax->list #'(head rest ...))
-                                        #'head #'head))
-                       #f)])
+                                        #'head #'head)))])
           #;
           (emit-remark parsed)
           #;

@@ -10,11 +10,11 @@
          (prefix-in parse: syntax/parse))
 
 (define-honu-syntax syntax-parse
-  (lambda (code context)
+  (lambda (code)
 
     (parse:define-splicing-syntax-class a-pattern #:literals (cruft)
       [parse:pattern (parse:~seq var:parse:id %colon class:parse:id)
-                     #:with pattern #'(parse:~var var class)])
+                     #:with pattern #'(parse:~var var class #:attr-name-separator "_")])
 
     (parse:syntax-parse code #:literals (cruft)
       [(_ data:honu-expression (#%braces (#%brackets something:a-pattern action:honu-delayed) ...) . rest)

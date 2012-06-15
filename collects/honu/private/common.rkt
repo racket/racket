@@ -19,7 +19,7 @@
 
 (provide honu-cond)
 (define-honu-syntax honu-cond
-  (lambda (code context)
+  (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
       [(_ (~seq clause:honu-expression colon body:honu-expression (~optional honu-comma)) ...
           . rest)
