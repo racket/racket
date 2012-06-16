@@ -707,8 +707,7 @@
             (ret (apply -lst* tys)))]))]
     ;; special case for `list*'
     [(#%plain-app list* . args)
-     (match-let* ([(list last tys-r ...) (reverse (map tc-expr/t (syntax->list #'args)))]
-                  [tys (reverse tys-r)])
+     (match-let* ([(list tys ... last) (map tc-expr/t (syntax->list #'args))])
        (ret (foldr make-Pair last tys)))]
     ;; special case for `reverse' to propagate expected type info
     [(#%plain-app (~or reverse k:reverse) arg)
@@ -748,6 +747,10 @@
          (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
                         #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
                         expected)))]
+    [else (tc/app/regular form expected)])))
+
+(define (tc/app/regular form expected)
+  (syntax-parse form #:literals (#%plain-app)
     [(#%plain-app f . args)
      (let* ([f-ty (single-value #'f)])
        (match f-ty
@@ -777,15 +780,3 @@
 (define (tc/app/check form expected)
     (define t (tc/app/internal form expected))
     (check-below t expected))
-
-(define (object-index os i)
-  (unless (number? i)
-    (int-err "object-index for keywords NYI"))
-  (list-ref os i))
-
-;; in-indexes : Listof[Type] -> Sequence[index/c]
-(define (in-indexes dom)
-  (in-range (length dom)))
-
-
-
