@@ -180,6 +180,22 @@
         (tc-e (- -23524623547234734568) -PosInt)
         (tc-e (- 241.3) -NegFlonum)
         (tc-e (- -24.3) -PosFlonum)
+
+        (tc-e (- (ann 1000 Index) 1) -Fixnum)
+        (tc-e (- (ann 1000 Positive-Index) 1) -Index)
+        (tc-e (- (ann 1000 Fixnum) 1) -Int)
+        (tc-e (- (ann 1000 Nonnegative-Fixnum) 1) -Fixnum)
+        (tc-e (- (ann 1000 Positive-Fixnum) 1) -NonNegFixnum)
+        (tc-e (- (ann 1000 Exact-Positive-Integer) 1) -Nat)
+
+        (tc-e (fx- (ann 1000 Index) 1) -Fixnum)
+        (tc-e (fx- (ann 1000 Positive-Index) 1) -Index)
+        (tc-e (fx- (ann 1000 Fixnum) 1) -Fixnum)
+        (tc-e (fx- (ann 1000 Nonnegative-Fixnum) 1) -Fixnum)
+        (tc-e (fx- (ann 1000 Positive-Fixnum) 1) -NonNegFixnum)
+        (tc-e (fx- (ann 1000 Exact-Positive-Integer) 1) -NonNegFixnum)
+
+
         (tc-e (*) -One)
 
         (tc-e (gcd 1/2) -PosRat)
