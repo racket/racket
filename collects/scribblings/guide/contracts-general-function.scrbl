@@ -274,11 +274,11 @@ The following is an excerpt from an imaginary numerics module:
                   [result (argument) (<=/c argument)])]))
 ]
  
-@margin-note{The word ``indy'' was originally chosen in response
- to two existing words in the research literature: ``lax'' and
- ``picky'' that check contracts slightly differently; ``indy'' 
- is meant to suggest that blame may be assigned to the contract itself;
- e.g. the contract is an independent operator and can itself be blamed.}
+@margin-note{The word ``indy'' is meant to suggest that blame may be
+ assigned to the contract itself, because the contract must be considered an
+ independent component. The name was chosen in
+ response to two existing labels---``lax'' and ``picky''---for different
+ semantics of function contracts in the research literature.}
 The contract for the exported function @racket[real-sqrt] uses the
 @racket[->i] rather than @racket[->*] function contract. The ``i''
 stands for an @italic{indy dependent} contract, meaning the contract for the
