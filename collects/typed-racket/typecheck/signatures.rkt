@@ -31,6 +31,9 @@
   ([cond-contracted tc/app (syntax? . -> . tc-results?)]
    [cond-contracted tc/app/check (syntax? tc-results? . -> . tc-results?)]))
 
+(define-signature tc-app-hetero^
+  ([cond-contracted tc/app-hetero (syntax? (or/c #f tc-results?). -> . (or/c #f tc-results?))]))
+
 (define-signature tc-apply^
   ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))
 

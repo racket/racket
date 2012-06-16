@@ -6,6 +6,7 @@
                   provide-signature-elements
                   define-values/invoke-unit/infer link)
          "signatures.rkt"
+         "tc-app/tc-app-hetero.rkt" "signatures.rkt"
          "tc-if.rkt" "tc-lambda-unit.rkt" "tc-app.rkt"
          "tc-let-unit.rkt" "tc-apply.rkt"
          "tc-expr-unit.rkt" "check-subforms-unit.rkt")
@@ -13,4 +14,5 @@
 (provide-signature-elements tc-expr^ check-subforms^)
 
 (define-values/invoke-unit/infer
-  (link tc-if@ tc-lambda@ tc-app@ tc-let@ tc-expr@ check-subforms@ tc-apply@))
+  (link tc-if@ tc-lambda@ tc-app@ tc-let@ tc-expr@ check-subforms@ tc-apply@
+        tc-app-hetero@))

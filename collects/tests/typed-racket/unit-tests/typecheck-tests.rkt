@@ -229,6 +229,8 @@
         [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer -Boolean))]
         [tc-e (vector 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
         [tc-e (vector-immutable 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
+        [tc-e (make-vector 4 1) (-vec -Integer)]
+        [tc-e (build-vector 4 (lambda (x) 1)) (-vec -Integer)]
         [tc-e (range 4) (-lst -Byte)]
         [tc-e (range 2 4 1) (-lst -PosByte)]
         [tc-e (range 0 4 1) (-lst -Byte)]
@@ -880,9 +882,9 @@
               #:ret (ret -Number -true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x)))
               #:ret (ret -One (-FS -top -top))]
-        [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
+        [tc-e (let: ([x : (U (Vectorof Integer) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
-         -Number]
+         -Integer]
         [tc-e (let ()
                 (define: foo : (Integer * -> Integer) +)
                 (foo 1 2 3 4 5))
