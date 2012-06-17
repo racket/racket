@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual "utils.rkt"
+          "struct-hierarchy.rkt" 
           (for-label scribble/manual-struct
                      file/convertible
                      setup/main-collects
@@ -48,9 +49,32 @@ None of the passes mutate the document representation. Instead, the
  @tech{resolve pass} are effectively specialized version of
  @tech{traverse pass} that work across separately built documents.
 
+ 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "parts"]{Parts}
+@section[#:tag "parts"]{Parts, Flows, Blocks, and Paragraphs}
+
+This diagram shows the large-scale structure of the
+type hierarchy for Scribble documents. A box represents
+a struct; for example @racket[part] is a struct. The substruct relationship
+is shown vertically with lines connected by a triangle;
+for example, a @racket[compound-paragraph] is a @racket[block]. 
+The types of values on fields are shown via lines in the diagram.
+Doubled lines represent lists and tripled lines represent lists
+of lists; for example, the @racket[blocks] field of 
+@racket[compound-paragraph] is a list of @racket[blocks].
+Dotted lists represent functions that compute elements of
+a given field; for example, the @racket[block] field of 
+a @racket[traverse-block] struct is a function that
+computes a @racket[block]. 
+
+The diagram is not completely
+accurate; a few fields are omitted and sometimes the types
+are simplified (e.g., a @racket[table] may have @racket['cont]
+in place of a block).
+A prose description with more detail follows the diagram.
+
+@(mk-diagram)
 
 A @deftech{part} is an instance of @racket[part]; among other things,
  it has a title @techlink{content}, an initial @techlink{flow}, and a
