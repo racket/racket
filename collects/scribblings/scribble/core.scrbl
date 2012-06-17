@@ -607,6 +607,9 @@ The following @tech{style properties} are currently recognized:
        rendering form for @tech{boxing contexts} (such as a table cell); see
        @racket[box-mode].}
 
+ @item{@racket['decorative] --- The content of the nested flow is intended
+       for decoration. Text output skips a decorative nested flow.}
+
 ]}
 
 

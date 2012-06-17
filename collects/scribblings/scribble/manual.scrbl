@@ -671,7 +671,7 @@ sub-sections.}
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}
 
-@defform/subs[(defproc prototype
+@defform/subs[(defproc maybe-kind prototype
                        result-contract-expr-datum
                        pre-flow ...)
               ([prototype (id arg-spec ...)
@@ -682,6 +682,8 @@ sub-sections.}
                          (keyword arg-id contract-expr-datum default-expr)
                          ellipses
                          ellipses+]
+               [maybe-kind code:blank
+                           (code:line #:kind kind-string-expr)]
                [ellipses @#,lit-ellipses]
                [ellipses+ @#,lit-ellipses+])]{
 
@@ -739,10 +741,18 @@ The typesetting of all information before the @racket[pre-flow]s
 ignores the source layout, except that the local formatting is
 preserved for contracts and default-values expressions. The information
 is formatted to fit (if possible) in the number of characters specified
-by the @racket[current-display-width] parameter.}
+by the @racket[current-display-width] parameter.
+
+An optional @racket[#:kind] specification chooses the decorative
+label, which defaults to @racket["procedure"]. A @racket[#f]
+result for @racket[kind-string-expr] uses the default, otherwise
+@racket[kind-string-expr] should produce a string. An alternate
+label should be all lowercase, although the current documentation
+style converts the string to all uppercase.}
 
 
-@defform[(defproc* ([prototype
+@defform[(defproc* maybe-kind
+                   ([prototype
                      result-contract-expr-datum] ...)
                    pre-flow ...)]{
 
@@ -756,9 +766,12 @@ can also be defined by a single @racket[defproc*], for the case that
 it's best to document a related group of procedures at once.}
 
 
-@defform/subs[(defform maybe-id maybe-literals form-datum maybe-contracts
+@defform/subs[(defform maybe-kind maybe-id maybe-literals form-datum 
+                maybe-contracts
                 pre-flow ...)
-              ([maybe-id code:blank
+              ([maybe-kind code:blank
+                           (code:line #:kind kind-string-expr)]
+               [maybe-id code:blank
                          (code:line #:id id)
                          (code:line #:id [id id-expr])]
                [maybe-literals code:blank
@@ -773,6 +786,10 @@ result of @racket[id-expr]) whose syntax is described by
 @racket[form-datum]. If no @racket[#:id] is used to specify
 @racket[id], then @racket[form-datum] must have the form @racket[(id
 . _datum)].
+
+If @racket[#:kind kind-string-expr] is supplied, it is used in the
+same way as for @racket[defproc], but the default kind is
+@racket["syntax"].
 
 If @racket[#:id [id id-expr]] is supplied, then @racket[id] is the
 identifier as it appears in the @racket[form-datum] (to be replaced by
@@ -808,13 +825,14 @@ The typesetting of @racket[form-datum], @racket[subform-datum], and
 @racket[contract-expr-datum] preserves the source layout, like
 @racket[racketblock].}
 
-@defform[(defform* maybe-id maybe-literals [form-datum ...+] maybe-contracts
+@defform[(defform* maybe-kind maybe-id maybe-literals [form-datum ...+] 
+           maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform], but for multiple forms using the same
 @racket[_id].}
 
-@defform[(defform/subs maybe-id maybe-literals form-datum
+@defform[(defform/subs maybe-kind maybe-id maybe-literals form-datum
            ([nonterm-id clause-datum ...+] ...)
            maybe-contracts
            pre-flow ...)]{
@@ -826,20 +844,20 @@ non-terminals shown with the @racket[_id] form. Each
 @racket[clause-datum] is preserved.}
 
 
-@defform[(defform*/subs maybe-id maybe-literals [form-datum ...]
+@defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...]
            maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform/subs], but for multiple forms for @racket[_id].}
 
 
-@defform[(defform/none maybe-literal form-datum maybe-contracts
+@defform[(defform/none maybe-kind maybe-literal form-datum maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform], but without registering a definition.}
 
 
-@defform[(defidform id pre-flow ...)]{
+@defform[(defidform maybe-kind id pre-flow ...)]{
 
 Like @racket[defform], but with a plain @racket[id] as the form.}
 
@@ -917,9 +935,14 @@ Like @racket[defparam], but the contract on a parameter argument is
 @racket[boolean?].}
 
 
-@defform[(defthing id contract-expr-datum pre-flow ...)]{
+@defform[(defthing maybe-kind id contract-expr-datum pre-flow ...)]{
 
-Like @racket[defproc], but for a non-procedure binding.}
+Like @racket[defproc], but for a non-procedure binding.
+
+If @racket[#:kind kind-string-expr] is supplied as
+@racket[maybe-kind], it is used in the same way as for
+@racket[defproc], but the default kind is @racket["value"].}
+
 
 @deftogether[(
 @defform[       (defstruct* struct-name ([field-name contract-expr-datum] ...)

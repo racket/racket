@@ -100,6 +100,7 @@
                                      not-in-ns))
                                (let ([desc-strs (cddr func)])
                                  (defthing/proc
+                                   (if (pair? (cadr func)) "function" "constant")
                                    id
                                    (to-paragraph (typeset-type (cadr func)))
                                    desc-strs)))))

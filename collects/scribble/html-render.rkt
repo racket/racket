@@ -141,8 +141,13 @@
                  (style-properties style)))])
     (let ([name (style-name style)])
       (if (string? name)
-          (cons `[class ,name]
-                a)
+          (if (assq 'class a)
+              (for/list ([i (in-list a)])
+                (if (eq? (car i) 'class)
+                    (list 'class (string-append name " " (cadr i)))
+                    i))
+              (cons `[class ,name]
+                    a))
           a))))
 
 ;; combine a 'class attribute from both cl and al
@@ -681,7 +686,8 @@
                                    css-addition-path)
                                   (list style-file)
                                   style-extra-files))
-                   ,(scribble-js-contents script-file (lookup-path script-file alt-paths)))
+                   ,(scribble-js-contents script-file (lookup-path script-file alt-paths))
+                   ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]"))
                  (body ([id ,(or (extract-part-body-id d ri)
                                  "scribble-racket-lang-org")])
                    ,@(render-toc-view d ri)
@@ -1316,19 +1322,20 @@
                      (extract-table-cell-styles t))))))
 
     (define/override (render-nested-flow t part ri starting-item?)
-      `((blockquote [,@(combine-class
-                        (cond
-                         [(eq? 'code-inset (style-name (nested-flow-style t)))
-                          `([class "SCodeFlow"])]
-                         [(eq? 'vertical-inset (style-name (nested-flow-style t)))
-                          `([class "SVInsetFlow"])]
-                         [(and (not (string? (style-name (nested-flow-style t))))
-                               (not (eq? 'inset (style-name (nested-flow-style t)))))
-                          `([class "SubFlow"])]
-                         [else null])
-                        (style->attribs (nested-flow-style t)))]
-                    ,@(apply append
-                             (super render-nested-flow t part ri starting-item?)))))
+      `((,(or (style->tag (nested-flow-style t)) 'blockquote)
+         [,@(combine-class
+             (cond
+              [(eq? 'code-inset (style-name (nested-flow-style t)))
+               `([class "SCodeFlow"])]
+              [(eq? 'vertical-inset (style-name (nested-flow-style t)))
+               `([class "SVInsetFlow"])]
+              [(and (not (string? (style-name (nested-flow-style t))))
+                    (not (eq? 'inset (style-name (nested-flow-style t)))))
+               `([class "SubFlow"])]
+              [else null])
+             (style->attribs (nested-flow-style t)))]
+         ,@(apply append
+                  (super render-nested-flow t part ri starting-item?)))))
 
     (define/override (render-compound-paragraph t part ri starting-item?)
       (let ([style (compound-paragraph-style t)])

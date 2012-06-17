@@ -630,7 +630,8 @@ defined with " (racket define) " or " (racket define-struct) ", or any one of:")
                                            (namespace-syntax-introduce (datum->syntax #f (car func))))))
                                       not-in-ns))
                                 (let ([desc-strs (cddr func)])
-3                                  (defthing/proc
+                                  (defthing/proc
+                                    (if (pair? (cadr func)) "function" "constant")
                                     id
                                     (to-paragraph (typeset-type (cadr func)))
                                     desc-strs)))))

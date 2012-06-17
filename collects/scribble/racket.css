@@ -14,6 +14,11 @@
   font-family: serif;
 }
 
+/* Sans-serif: */
+.RBackgroundLabelInner {
+  font-family: sans-serif;
+}
+
 /* ---------------------------------------- */
 /* Inherited methods, left margin */
 
@@ -198,4 +203,31 @@
 
 .Rfilecontent {
   margin: 0em 0em 0em 0em;
+}
+
+/* ---------------------------------------- */
+/* For background labels */
+
+.RBackgroundLabel {
+   float: right;
+   width: 0px;
+}
+
+.RBackgroundLabelInner {
+   position: relative;
+   width: 25em;
+   left: -25.5em;
+   top: 0px;
+   text-align: right;
+   color: white;
+   z-index: 0;
+   font-weight: bold;
+   text-transform: uppercase;
+}
+
+.RForeground {
+   position: relative;
+   left: 0px;
+   top: 0px;
+   z-index: 1;
 }

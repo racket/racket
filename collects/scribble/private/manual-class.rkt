@@ -14,6 +14,7 @@
          "manual-bind.rkt"
          "manual-method.rkt"
          "manual-proc.rkt"
+         "manual-vars.rkt"
          scheme/list
          (for-syntax scheme/base)
          (for-label scheme/base
@@ -187,39 +188,41 @@
 
 (define (*class-doc kind stx-id super intfs ranges whole-page? make-index-desc)
   (make-table
-   'boxed
+   boxed-style
    (append
     (list
-     (list (make-flow
-            (list
-             (make-omitable-paragraph
-              (list (let ([target-maker (id-to-target-maker stx-id #t)]
-                          [content (list (annote-exporting-library
-                                          (to-element stx-id)))])
-                      (if target-maker
-                        (target-maker
-                         content
-                         (lambda (tag)
-                           ((if whole-page?
+     (list 
+      ((add-background-label (symbol->string kind))
+       (make-flow
+        (list
+         (make-omitable-paragraph
+          (list (let ([target-maker (id-to-target-maker stx-id #t)]
+                      [content (list (annote-exporting-library
+                                      (to-element stx-id)))])
+                  (if target-maker
+                      (target-maker
+                       content
+                       (lambda (tag)
+                         ((if whole-page?
                               make-page-target-element
                               make-toc-target-element)
-                            #f
-                            (list
-                             (make-index-element
-                              #f content tag
-                              (list (datum-intern-literal
-                                     (symbol->string (syntax-e stx-id))))
-                              content
-                              (with-exporting-libraries
-                               (lambda (libs)
-                                 (make-index-desc (syntax-e stx-id) libs)))))
-                            tag)))
-                        (car content)))
-                    spacer ":" spacer
-                    (case kind
-                      [(class) (racket class?)]
-                      [(interface) (racket interface?)]
-                      [(mixin) (racketblockelem (class? . -> . class?))])))))))
+                          #f
+                          (list
+                           (make-index-element
+                            #f content tag
+                            (list (datum-intern-literal
+                                   (symbol->string (syntax-e stx-id))))
+                            content
+                            (with-exporting-libraries
+                             (lambda (libs)
+                               (make-index-desc (syntax-e stx-id) libs)))))
+                          tag)))
+                      (car content)))
+                spacer ":" spacer
+                (case kind
+                  [(class) (racket class?)]
+                  [(interface) (racket interface?)]
+                  [(mixin) (racketblockelem (class? . -> . class?))]))))))))
     (if super
       (list
        (list (make-flow

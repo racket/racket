@@ -113,29 +113,38 @@
                            "expected a result contract, found a string" #'c)
        #'(racketblock0 c))]))
 
-(define-syntax-rule (defproc (id arg ...) result desc ...)
-  (defproc* [[(id arg ...) result]] desc ...))
+(define-syntax defproc
+  (syntax-rules ()
+    [(_ #:kind kind (id arg ...) result desc ...)
+     (defproc* #:kind kind [[(id arg ...) result]] desc ...)]
+    [(_ (id arg ...) result desc ...)
+     (defproc* [[(id arg ...) result]] desc ...)]))
 
 (define-syntax defproc*
   (syntax-rules ()
-    [(_ [[proto result] ...] desc ...)
-     (defproc* #:mode procedure #:within #f [[proto result] ...] desc ...)]
-    [(_ #:mode m #:within cl [[proto result] ...] desc ...)
+    [(_ #:kind kind #:mode m #:within cl [[proto result] ...] desc ...)
      (with-togetherable-racket-variables
       ()
       ([proc proto] ...)
-      (*defproc 'm (quote-syntax/loc cl)
+      (*defproc kind
+                'm (quote-syntax/loc cl)
                 (list (extract-proc-id proto) ...)
                 '[proto ...]
                 (list (arg-contracts proto) ...)
                 (list (arg-defaults proto) ...)
                 (list (lambda () (result-contract result)) ...)
-                (lambda () (list desc ...))))]))
+                (lambda () (list desc ...))))]
+    [(_ #:mode m #:within cl [[proto result] ...] desc ...)
+     (defproc* #:kind #f #:mode m #:within cl [[proto result] ...] desc ...)]
+    [(_ #:kind kind [[proto result] ...] desc ...)
+     (defproc* #:kind kind #:mode procedure #:within #f [[proto result] ...] desc ...)]
+    [(_ [[proto result] ...] desc ...)
+     (defproc* #:kind #f #:mode procedure #:within #f [[proto result] ...] desc ...)]))
 
 (define-struct arg
   (special? kw id optional? starts-optional? ends-optional? num-closers))
 
-(define (*defproc mode within-id
+(define (*defproc kind mode within-id
                   stx-ids prototypes arg-contractss arg-valss result-contracts
                   content-thunk)
   (define max-proto-width (current-display-width))
@@ -336,91 +345,97 @@
        . >= . (- max-proto-width 7)))
     (define end (list flow-spacer (to-flow 'rarr)
                       flow-spacer (make-flow (list res))))
+    (define (get-label)
+      (case mode
+        [(new make) "constructor"]
+        [(send) "method"]
+        [else (or kind "procedure")]))
     (append
      (list
       (list
-       (make-flow
-        (if short?
-          ;; The single-line case:
-          (make-table-if-necessary
-           "prototype"
-           (list
-            (cons
-             (to-flow
-              (make-element
-               #f
-               `(,(make-openers (add1 p-depth))
-                 ,tagged
-                 ,@(if (null? args)
-                     (list (make-closers p-depth))
-                     (append-map (lambda (arg)
-                                   (list spacer ((arg->elem #t) arg)))
-                                 args))
-                 ,(racketparenfont ")"))))
-             (if result-next-line? null end))))
-          ;; The multi-line case:
-          (let ([not-end (if result-next-line?
-                           (list flow-spacer)
-                           (list flow-spacer flow-spacer
-                                 flow-spacer flow-spacer))]
-                [one-ok? (and (not (eq? mode 'new)) (tagged+arg-width . < . 60))])
-            (list
-             (make-table
+       ((if first? (add-background-label (get-label)) values)
+        (make-flow
+         (if short?
+             ;; The single-line case:
+             (make-table-if-necessary
               "prototype"
-              (cons
+              (list
                (cons
                 (to-flow
                  (make-element
                   #f
-                  (list
-                   (make-openers (add1 p-depth))
-                   tagged)))
-                (if one-ok?
-                  (list*
-                   (if (arg-starts-optional? (car args))
-                     (to-flow (make-element #f (list spacer "[")))
-                     flow-spacer)
-                   (to-flow ((arg->elem #f) (car args)))
-                   not-end)
-                  (list* 'cont 'cont not-end)))
-               (let loop ([args (if one-ok? (cdr args) args)])
-                 (if (null? args)
-                   null
-                   (let ([dots-next?
-                          (or (and (pair? (cdr args))
-                                   (arg-special? (cadr args))
-                                   (not (eq? '_...superclass-args...
-                                             (arg-id (cadr args))))))])
-                     (cons
-                      (list*
-                       (if (eq? mode 'new)
-                           (flow-spacer/n 3)
-                           flow-spacer)
-                       (if (arg-starts-optional? (car args))
-                         (to-flow (make-element #f (list spacer "[")))
-                         flow-spacer)
-                       (let ([a ((arg->elem #f) (car args))]
-                             [next (if dots-next?
-                                     (make-element
-                                      #f (list spacer
-                                               ((arg->elem #f)
-                                                (cadr args))))
-                                     "")])
-                         (to-flow
-                          (cond
-                            [(null? ((if dots-next? cddr cdr) args))
-                             (make-element
-                              #f
-                              (list a next (racketparenfont ")")))]
-                            [(equal? next "") a]
-                            [else
-                             (make-element #f (list a next))])))
-                       (if (and (null? ((if dots-next? cddr cdr) args))
-                                (not result-next-line?))
-                         end
-                         not-end))
-                      (loop ((if dots-next? cddr cdr)
-                             args))))))))))))))
+                  `(,(make-openers (add1 p-depth))
+                    ,tagged
+                    ,@(if (null? args)
+                          (list (make-closers p-depth))
+                          (append-map (lambda (arg)
+                                        (list spacer ((arg->elem #t) arg)))
+                                      args))
+                    ,(racketparenfont ")"))))
+                (if result-next-line? null end))))
+             ;; The multi-line case:
+             (let ([not-end (if result-next-line?
+                                (list flow-spacer)
+                                (list flow-spacer flow-spacer
+                                      flow-spacer flow-spacer))]
+                   [one-ok? (and (not (eq? mode 'new)) (tagged+arg-width . < . 60))])
+               (list
+                (make-table
+                 "prototype"
+                 (cons
+                  (cons
+                   (to-flow
+                    (make-element
+                     #f
+                     (list
+                      (make-openers (add1 p-depth))
+                      tagged)))
+                   (if one-ok?
+                       (list*
+                        (if (arg-starts-optional? (car args))
+                            (to-flow (make-element #f (list spacer "[")))
+                            flow-spacer)
+                        (to-flow ((arg->elem #f) (car args)))
+                        not-end)
+                       (list* 'cont 'cont not-end)))
+                  (let loop ([args (if one-ok? (cdr args) args)])
+                    (if (null? args)
+                        null
+                        (let ([dots-next?
+                               (or (and (pair? (cdr args))
+                                        (arg-special? (cadr args))
+                                        (not (eq? '_...superclass-args...
+                                                  (arg-id (cadr args))))))])
+                          (cons
+                           (list*
+                            (if (eq? mode 'new)
+                                (flow-spacer/n 3)
+                                flow-spacer)
+                            (if (arg-starts-optional? (car args))
+                                (to-flow (make-element #f (list spacer "[")))
+                                flow-spacer)
+                            (let ([a ((arg->elem #f) (car args))]
+                                  [next (if dots-next?
+                                            (make-element
+                                             #f (list spacer
+                                                      ((arg->elem #f)
+                                                       (cadr args))))
+                                            "")])
+                              (to-flow
+                               (cond
+                                [(null? ((if dots-next? cddr cdr) args))
+                                 (make-element
+                                  #f
+                                  (list a next (racketparenfont ")")))]
+                                [(equal? next "") a]
+                                [else
+                                 (make-element #f (list a next))])))
+                            (if (and (null? ((if dots-next? cddr cdr) args))
+                                     (not result-next-line?))
+                                end
+                                not-end))
+                           (loop ((if dots-next? cddr cdr)
+                                  args)))))))))))))))
      (if result-next-line?
        (list (list (make-flow (make-table-if-necessary "prototype"
                                                        (list end)))))
@@ -489,11 +504,11 @@
     (content-thunk))))
 
 (define-syntax-rule (defparam id arg contract desc ...)
-  (defproc* ([(id) contract] [(id [arg contract]) void?]) desc ...))
+  (defproc* #:kind "parameter" ([(id) contract] [(id [arg contract]) void?]) desc ...))
 (define-syntax-rule (defparam* id arg in-contract out-contract desc ...)
-  (defproc* ([(id) out-contract] [(id [arg in-contract]) void?]) desc ...))
+  (defproc* #:kind "parameter" ([(id) out-contract] [(id [arg in-contract]) void?]) desc ...))
 (define-syntax-rule (defboolparam id arg desc ...)
-  (defproc* ([(id) boolean?] [(id [arg any/c]) void?]) desc ...))
+  (defproc* #:kind "parameter" ([(id) boolean?] [(id [arg any/c]) void?]) desc ...))
 
 ;; ----------------------------------------
 
@@ -585,229 +600,231 @@
     (make-table
      boxed-style
      (cons
-      (list (make-flow
-             (list
-              (let* ([the-name
-                      (let ([just-name
-                             (make-target-element*
-                              make-toc-target-element
-                              (if (pair? name)
-                                (car (syntax-e stx-id))
-                                stx-id)
-                              (annote-exporting-library
-                               (to-element
-                                (if (pair? name)
-                                  (make-just-context (car name)
-                                                     (car (syntax-e stx-id)))
-                                  stx-id)))
-                              (let ([name (if (pair? name) (car name) name)])
-                                (list* (list 'info name)
-                                       (list 'type 'struct: name)
-                                       (list 'predicate name '?)
-                                       (append
-                                        (if cname-id
-                                            (list (list 'constructor (syntax-e cname-id)))
-                                            null)
-                                        (map (lambda (f)
-                                               (list 'accessor name '-
-                                                     (field-name f)))
-                                             fields)
-                                        (filter-map
-                                         (lambda (f)
-                                           (if (or (not immutable?)
-                                                   (and (pair? (car f))
-                                                        (memq '#:mutable
-                                                              (car f))))
-                                             (list 'mutator 'set- name '-
-                                                   (field-name f) '!)
-                                             #f))
-                                         fields)))))])
-                        (if (pair? name)
-                            (make-element
-                             #f
-                             (list just-name
-                                   (hspace 1)
-                                   (to-element
-                                    (make-just-context
-                                     (cadr name)
-                                     (cadr (syntax-e stx-id))))))
-                            just-name))]
-                     [sym-length (lambda (s)
-                                   (string-length (symbol->string s)))]
-                     [short-width
-                      (apply + (length fields) 8
-                             (append
-                              (map sym-length
-                                   (append (if (pair? name) name (list name))
-                                           (map field-name fields)))
-                              (map (lambda (f)
-                                     (if (pair? (car f))
-                                       (+ 3 2 (string-length (keyword->string
-                                                              (cadar f))))
-                                       0))
-                                   fields)))])
-                (if (and (short-width . < . max-proto-width)
-                         immutable?
-                         (not transparent?)
-                         (not cname-id))
-                  (make-omitable-paragraph
-                   (list
-                    (to-element
-                     `(,(racket struct)
-                       ,the-name
-                       ,(map field-view fields)))))
-                  (let* ([one-right-column?
-                          (or (null? fields)
-                              (short-width . < . max-proto-width))]
-                         [a-right-column
-                          (lambda (c)
-                            (if one-right-column?
-                                (list flow-spacer flow-spacer c)
-                                (list flow-spacer flow-spacer c 'cont 'cont)))]
-                         [split-field-line?
-                          (max-proto-width . < . (+ 8
-                                                    (if (pair? name)
-                                                        (+ (sym-length (car name))
-                                                           1
-                                                           (sym-length (cadr name)))
-                                                        (sym-length name))
-                                                    1
-                                                    (if (pair? fields)
-                                                        (sym-length (field-name (car fields)))
-                                                        0)
-                                                    1))])
-                    (make-table
-                     (if one-right-column?
+      (list 
+       ((add-background-label "struct")
+        (make-flow
+         (list
+          (let* ([the-name
+                  (let ([just-name
+                         (make-target-element*
+                          make-toc-target-element
+                          (if (pair? name)
+                              (car (syntax-e stx-id))
+                              stx-id)
+                          (annote-exporting-library
+                           (to-element
+                            (if (pair? name)
+                                (make-just-context (car name)
+                                                   (car (syntax-e stx-id)))
+                                stx-id)))
+                          (let ([name (if (pair? name) (car name) name)])
+                            (list* (list 'info name)
+                                   (list 'type 'struct: name)
+                                   (list 'predicate name '?)
+                                   (append
+                                    (if cname-id
+                                        (list (list 'constructor (syntax-e cname-id)))
+                                        null)
+                                    (map (lambda (f)
+                                           (list 'accessor name '-
+                                                 (field-name f)))
+                                         fields)
+                                    (filter-map
+                                     (lambda (f)
+                                       (if (or (not immutable?)
+                                               (and (pair? (car f))
+                                                    (memq '#:mutable
+                                                          (car f))))
+                                           (list 'mutator 'set- name '-
+                                                 (field-name f) '!)
+                                           #f))
+                                     fields)))))])
+                    (if (pair? name)
+                        (make-element
                          #f
-                         ;; Shift all extra width to last column:
-                         (make-style #f (list
-                                         (make-table-columns
-                                          (for/list ([i 5])
-                                            (if (i . < . 4)
-                                                (make-style #f (list (column-attributes '((width . "0*")))))
-                                                (make-style #f null)))))))
+                         (list just-name
+                               (hspace 1)
+                               (to-element
+                                (make-just-context
+                                 (cadr name)
+                                 (cadr (syntax-e stx-id))))))
+                        just-name))]
+                 [sym-length (lambda (s)
+                               (string-length (symbol->string s)))]
+                 [short-width
+                  (apply + (length fields) 8
+                         (append
+                          (map sym-length
+                               (append (if (pair? name) name (list name))
+                                       (map field-name fields)))
+                          (map (lambda (f)
+                                 (if (pair? (car f))
+                                     (+ 3 2 (string-length (keyword->string
+                                                            (cadar f))))
+                                     0))
+                               fields)))])
+            (if (and (short-width . < . max-proto-width)
+                     immutable?
+                     (not transparent?)
+                     (not cname-id))
+                (make-omitable-paragraph
+                 (list
+                  (to-element
+                   `(,(racket struct)
+                     ,the-name
+                     ,(map field-view fields)))))
+                (let* ([one-right-column?
+                        (or (null? fields)
+                            (short-width . < . max-proto-width))]
+                       [a-right-column
+                        (lambda (c)
+                          (if one-right-column?
+                              (list flow-spacer flow-spacer c)
+                              (list flow-spacer flow-spacer c 'cont 'cont)))]
+                       [split-field-line?
+                        (max-proto-width . < . (+ 8
+                                                  (if (pair? name)
+                                                      (+ (sym-length (car name))
+                                                         1
+                                                         (sym-length (cadr name)))
+                                                      (sym-length name))
+                                                  1
+                                                  (if (pair? fields)
+                                                      (sym-length (field-name (car fields)))
+                                                      0)
+                                                  1))])
+                  (make-table
+                   (if one-right-column?
+                       #f
+                       ;; Shift all extra width to last column:
+                       (make-style #f (list
+                                       (make-table-columns
+                                        (for/list ([i 5])
+                                          (if (i . < . 4)
+                                              (make-style #f (list (column-attributes '((width . "0*")))))
+                                              (make-style #f null)))))))
+                   (append
+                    (list
                      (append
-                      (list
-                       (append
-                        (list (to-flow (make-element #f 
-                                                     (list
-                                                      (racketparenfont "(")
-                                                      (racket struct))))
-                              flow-spacer)
-                        (if one-right-column?
-                            (list (to-flow (make-element
-                                            #f
-                                            (list* the-name
-                                                   spacer
-                                                   (to-element (map field-view
-                                                                    fields))
-                                                   (if (and immutable?
-                                                            (not transparent?)
-                                                            (not cname-id))
-                                                       (list (racketparenfont ")"))
-                                                       null)))))
-                            (if split-field-line?
-                                (list (to-flow (make-element 'no-break the-name))
-                                      'cont
-                                      'cont)
-                                (list (to-flow (make-element 'no-break the-name))
-                                      (to-flow (make-element
-                                                #f (list spacer (racketparenfont "("))))
-                                      (to-flow (make-element 'no-break 
-                                                             (let ([f (to-element (field-view (car fields)))])
-                                                               (if (null? (cdr fields))
-                                                                   (list f (racketparenfont ")"))
-                                                                   f)))))))))
-                      (if split-field-line?
-                          (list
-                           (list flow-spacer flow-spacer flow-spacer
-                                 (to-flow (make-element
-                                           #f (list spacer (racketparenfont "("))))
-                                 (to-flow (make-element 'no-break 
-                                                        (let ([f (to-element (field-view (car fields)))])
-                                                          (if (null? (cdr fields))
-                                                              (list f (racketparenfont ")"))
-                                                              f))))))
-                          null)
-                      (if (short-width . < . max-proto-width)
-                          null
-                          (let loop ([fields (if (null? fields)
-                                                 fields (cdr fields))])
-                            (if (null? fields)
-                                null
-                                (cons
-                                 (let ([fld (car fields)])
-                                   (list flow-spacer flow-spacer
-                                         flow-spacer flow-spacer
-                                         (to-flow
-                                          (let ([e (to-element (field-view fld))])
-                                            (if (null? (cdr fields))
-                                                (make-element
-                                                 #f
-                                                 (list e (racketparenfont
-                                                          (if (and immutable?
-                                                                   (not transparent?)
-                                                                   (not cname-id))
-                                                              "))" 
-                                                              ")"))))
-                                                e)))))
-                                 (loop (cdr fields))))))
-                      (if cname-id
-                          (let ([kw (to-element (if extra-cname?
-                                                    '#:extra-constructor-name
-                                                    '#:constructor-name))]
-                                [nm (to-element cname-id)]
-                                [close? (and immutable?
-                                             (not transparent?))])
-                            (if (max-proto-width . < . (+ 8 ; "(struct "
-                                                          1 ; space between kw & name
-                                                          (element-width kw) 
-                                                          (element-width nm)
-                                                          (if close? 1 0)))
-                                ;; use two lines
-                                (list (a-right-column (to-flow kw))
-                                      (a-right-column 
+                      (list (to-flow (make-element #f 
+                                                   (list
+                                                    (racketparenfont "(")
+                                                    (racket struct))))
+                            flow-spacer)
+                      (if one-right-column?
+                          (list (to-flow (make-element
+                                          #f
+                                          (list* the-name
+                                                 spacer
+                                                 (to-element (map field-view
+                                                                  fields))
+                                                 (if (and immutable?
+                                                          (not transparent?)
+                                                          (not cname-id))
+                                                     (list (racketparenfont ")"))
+                                                     null)))))
+                          (if split-field-line?
+                              (list (to-flow (make-element 'no-break the-name))
+                                    'cont
+                                    'cont)
+                              (list (to-flow (make-element 'no-break the-name))
+                                    (to-flow (make-element
+                                              #f (list spacer (racketparenfont "("))))
+                                    (to-flow (make-element 'no-break 
+                                                           (let ([f (to-element (field-view (car fields)))])
+                                                             (if (null? (cdr fields))
+                                                                 (list f (racketparenfont ")"))
+                                                                 f)))))))))
+                    (if split-field-line?
+                        (list
+                         (list flow-spacer flow-spacer flow-spacer
+                               (to-flow (make-element
+                                         #f (list spacer (racketparenfont "("))))
+                               (to-flow (make-element 'no-break 
+                                                      (let ([f (to-element (field-view (car fields)))])
+                                                        (if (null? (cdr fields))
+                                                            (list f (racketparenfont ")"))
+                                                            f))))))
+                        null)
+                    (if (short-width . < . max-proto-width)
+                        null
+                        (let loop ([fields (if (null? fields)
+                                               fields (cdr fields))])
+                          (if (null? fields)
+                              null
+                              (cons
+                               (let ([fld (car fields)])
+                                 (list flow-spacer flow-spacer
+                                       flow-spacer flow-spacer
                                        (to-flow
-                                        (if close?
-                                            (make-element #f (list nm (racketparenfont ")")))
-                                            nm))))
-                                ;; use one line
-                                (list (a-right-column
-                                       (to-flow (make-element 
+                                        (let ([e (to-element (field-view fld))])
+                                          (if (null? (cdr fields))
+                                              (make-element
+                                               #f
+                                               (list e (racketparenfont
+                                                        (if (and immutable?
+                                                                 (not transparent?)
+                                                                 (not cname-id))
+                                                            "))" 
+                                                            ")"))))
+                                              e)))))
+                               (loop (cdr fields))))))
+                    (if cname-id
+                        (let ([kw (to-element (if extra-cname?
+                                                  '#:extra-constructor-name
+                                                  '#:constructor-name))]
+                              [nm (to-element cname-id)]
+                              [close? (and immutable?
+                                           (not transparent?))])
+                          (if (max-proto-width . < . (+ 8 ; "(struct "
+                                                        1 ; space between kw & name
+                                                        (element-width kw) 
+                                                        (element-width nm)
+                                                        (if close? 1 0)))
+                              ;; use two lines
+                              (list (a-right-column (to-flow kw))
+                                    (a-right-column 
+                                     (to-flow
+                                      (if close?
+                                          (make-element #f (list nm (racketparenfont ")")))
+                                          nm))))
+                              ;; use one line
+                              (list (a-right-column
+                                     (to-flow (make-element 
+                                               #f
+                                               (append
+                                                (list kw
+                                                      (hspace 1)
+                                                      nm)
+                                                (if close?
+                                                    (list (racketparenfont ")"))
+                                                    null))))))))
+                        null)
+                    (cond
+                     [(and (not immutable?) transparent?)
+                      (list
+                       (a-right-column (to-flow (to-element '#:mutable)))
+                       (a-right-column (to-flow (make-element
                                                  #f
-                                                 (append
-                                                  (list kw
-                                                        (hspace 1)
-                                                        nm)
-                                                  (if close?
-                                                      (list (racketparenfont ")"))
-                                                      null))))))))
-                          null)
-                      (cond
-                       [(and (not immutable?) transparent?)
-                        (list
-                         (a-right-column (to-flow (to-element '#:mutable)))
-                         (a-right-column (to-flow (make-element
-                                                   #f
-                                                   (list (if prefab?
-                                                             (to-element '#:prefab)
-                                                             (to-element '#:transparent))
-                                                         (racketparenfont ")"))))))]
-                       [(not immutable?)
-                        (list
-                         (a-right-column (to-flow (make-element
-                                                   #f
-                                                   (list (to-element '#:mutable)
-                                                         (racketparenfont ")"))))))]
-                       [transparent?
-                        (list
-                         (a-right-column (to-flow (make-element
-                                                   #f
-                                                   (list (if prefab?
-                                                             (to-element '#:prefab)
-                                                             (to-element '#:transparent))
-                                                         (racketparenfont ")"))))))]
-                       [else null])))))))))
+                                                 (list (if prefab?
+                                                           (to-element '#:prefab)
+                                                           (to-element '#:transparent))
+                                                       (racketparenfont ")"))))))]
+                     [(not immutable?)
+                      (list
+                       (a-right-column (to-flow (make-element
+                                                 #f
+                                                 (list (to-element '#:mutable)
+                                                       (racketparenfont ")"))))))]
+                     [transparent?
+                      (list
+                       (a-right-column (to-flow (make-element
+                                                 #f
+                                                 (list (if prefab?
+                                                           (to-element '#:prefab)
+                                                           (to-element '#:transparent))
+                                                       (racketparenfont ")"))))))]
+                     [else null]))))))))))
       (map (lambda (v field-contract)
              (cond
                [(pair? v)
@@ -832,23 +849,33 @@
 
 ;; ----------------------------------------
 
-(define-syntax-rule (defthing id result desc ...)
-  (with-togetherable-racket-variables
-   ()
-   ()
-   (*defthing (list (quote-syntax/loc id)) (list 'id) #f
-              (list (racketblock0 result))
-              (lambda () (list desc ...)))))
+(define-syntax defthing
+  (syntax-rules ()
+    [(_ #:kind kind id result desc ...)
+     (with-togetherable-racket-variables
+      ()
+      ()
+      (*defthing kind
+                 (list (quote-syntax/loc id)) (list 'id) #f
+                 (list (racketblock0 result))
+                 (lambda () (list desc ...))))]
+    [(_ id result desc ...)
+     (defthing #:kind #f id result desc ...)]))
 
-(define-syntax-rule (defthing* ([id result] ...) desc ...)
-  (with-togetherable-racket-variables
-   ()
-   ()
-   (*defthing (list (quote-syntax/loc id) ...) (list 'id ...) #f
-              (list (racketblock0 result) ...)
-              (lambda () (list desc ...)))))
+(define-syntax defthing* 
+  (syntax-rules ()
+    [(_ #:kind kind ([id result] ...) desc ...)
+     (with-togetherable-racket-variables
+      ()
+      ()
+      (*defthing kind
+                 (list (quote-syntax/loc id) ...) (list 'id ...) #f
+                 (list (racketblock0 result) ...)
+                 (lambda () (list desc ...))))]
+    [(_ ([id result] ...) desc ...)
+     (defthing* #:kind #f ([id result] ...) desc ...)]))
 
-(define (*defthing stx-ids names form? result-contracts content-thunk
+(define (*defthing kind stx-ids names form? result-contracts content-thunk
                    [result-values (map (lambda (x) #f) result-contracts)])
   (make-box-splice
    (cons
@@ -857,9 +884,13 @@
      (list
       (make-table
        boxed-style
-       (map
-        (lambda (stx-id name result-contract result-value)
-          (list
+       (for/list ([stx-id (in-list stx-ids)]
+                  [name (in-list names)]
+                  [result-contract (in-list result-contracts)]
+                  [result-value (in-list result-values)]
+                  [i (in-naturals)])
+         (list
+          ((if (zero? i) (add-background-label (or kind "value")) values)
            (make-flow
             (make-table-if-necessary
              "argcontract"
@@ -930,12 +961,11 @@
                               (to-flow (make-element #f (list spacer "=" spacer)))
                               (make-flow (list result-block)))))
                       'cont))
-                    null)))))))
-        stx-ids names result-contracts result-values))))
+                    null)))))))))))
     (content-thunk))))
 
-(define (defthing/proc id contract descs)
-  (*defthing (list id) (list (syntax-e id)) #f (list contract)
+(define (defthing/proc kind id contract descs)
+  (*defthing kind (list id) (list (syntax-e id)) #f (list contract)
              (lambda () descs)))
 
 (define (make-target-element* inner-make-target-element stx-id content wrappers)

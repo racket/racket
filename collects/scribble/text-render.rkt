@@ -145,12 +145,13 @@
 
     (define/override (render-nested-flow i part ri starting-item?)
       (define s (nested-flow-style i))
-      (if (and s (or (eq? (style-name s) 'inset)
-                     (eq? (style-name s) 'code-inset)))
-          (begin (printf "  ")
-                 (parameterize ([current-indent (make-indent 2)])
-                   (super render-nested-flow i part ri starting-item?)))
-          (super render-nested-flow i part ri starting-item?)))
+      (unless (memq 'decorative (style-properties s))
+        (if (and s (or (eq? (style-name s) 'inset)
+                       (eq? (style-name s) 'code-inset)))
+            (begin (printf "  ")
+                   (parameterize ([current-indent (make-indent 2)])
+                     (super render-nested-flow i part ri starting-item?)))
+            (super render-nested-flow i part ri starting-item?))))
 
     (define/override (render-other i part ht)
       (cond

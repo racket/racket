@@ -3,8 +3,9 @@
          "../scheme.rkt"
          "../struct.rkt"
          (only-in "../core.rkt" 
-                  make-style style-name 
-                  nested-flow? nested-flow-blocks nested-flow-style)
+                  make-style style-name style-properties
+                  nested-flow? nested-flow-blocks nested-flow-style
+                  make-nested-flow)
          "../html-properties.rkt"
          racket/contract/base
          (for-syntax scheme/base
@@ -21,13 +22,52 @@
          with-racket-variables
          with-togetherable-racket-variables
          vertical-inset-style
-         boxed-style)
+         boxed-style
+         add-background-label)
 
 (define vertical-inset-style 
   (make-style 'vertical-inset null))
 
 (define boxed-style 
   (make-style 'boxed (list (make-attributes (list (cons 'class "RBoxed"))))))
+
+(define ((add-background-label what) l)
+  (list
+   (make-nested-flow
+    (make-style "RBackgroundLabel" (list 'decorative 'command (alt-tag "div")
+                                         (make-attributes '((class . "SIEHidden")))))
+    (list
+     (make-nested-flow
+      (make-style "RBackgroundLabelInner" (list (alt-tag "div")))
+      (list (make-omitable-paragraph what)))))
+   (let* ([a (car l)]
+          [remake (if (paragraph? a)
+                      (lambda (sa)
+                        (paragraph
+                         (sa (paragraph-style a))
+                         (paragraph-content a)))
+                      (lambda (sa)
+                        (table
+                         (sa (table-style a))
+                         (table-blockss a))))])
+     (remake
+      (lambda (s)
+        (make-style (style-name s)
+                    (let ([p (style-properties s)])
+                      (if (ormap attributes? p)
+                          (for/list ([i (in-list p)])
+                            (if (attributes? i)
+                                (let ([al (attributes-assoc i)])
+                                  (if (assq 'class al)
+                                      (for/list ([a (in-list al)])
+                                        (if (eq? (car a) 'class)
+                                            (cons 'class (string-append (cdr a) " RForeground"))
+                                            a))
+                                      (attributes (cons '(class . "RForeground")
+                                                        al))))
+                                i))
+                          (cons (attributes '((class . "RForeground")))
+                                p)))))))))
 
 (begin-for-syntax (define-struct deftogether-tag () #:omit-define-syntaxes))
 
