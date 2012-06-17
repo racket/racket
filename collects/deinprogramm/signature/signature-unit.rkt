@@ -92,10 +92,10 @@
 (define (make-property-signature name access signature syntax)
   (let ((enforce (signature-enforcer signature)))
     (make-signature name
-		   (lambda (self obj)
-		     (enforce self (access obj)) ; #### problematic: enforcement doesn't stick
-		     obj)
-		   syntax)))
+		    (lambda (self obj)
+		      (enforce self (access obj)) ; #### problematic: enforcement doesn't stick
+		      obj)
+		    (delay syntax))))
 
 (define (make-predicate-signature name predicate-promise syntax)
   (make-signature
@@ -159,7 +159,7 @@
 		  (go-on))))
 	(else
 	 (go-on)))))
-   syntax
+   (delay syntax)
    #:arbitrary-promise
    (delay
      (lift->arbitrary arbitrary-list arg-signature))
@@ -211,7 +211,7 @@
 		(check old-sigs))))
       (else
        (check '()))))
-   syntax
+   (delay syntax)
    #:arbitrary-promise
    (delay
      (lift->arbitrary arbitrary-vector arg-signature))
