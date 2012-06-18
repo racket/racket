@@ -29,7 +29,9 @@ at least theoretically.
 
 (define-syntax do-contract-req
   (if enable-contracts?
-      (lambda (stx) (datum->syntax stx '(require racket/contract/base)))
+      (lambda (stx) (datum->syntax stx '(begin
+                                         (require racket/contract/base)
+                                         (require racket/contract/region))))
       (syntax-rules () [(_) (begin)])))
 (do-contract-req)
 

@@ -27,7 +27,7 @@
    [cond-contracted c-meet ((c? c?) (symbol?) . ->* . c?)]))
 
 (define-signature restrict^
-  ([cond-contracted restrict (Type/c Type/c . -> . Type/c)]))
+  ([cond-contracted restrict ((Type/c Type/c) ((or/c 'new 'orig)) ->* Type/c)]))
 
 (define-signature infer^
   ([cond-contracted infer ((;; variables from the forall
@@ -39,9 +39,9 @@
                             ;; domain
                             (listof Type/c)
                             ;; range
-                            (or/c #f Type?))
+                            (or/c #f Values? ValuesDots? Result? Type/c))
                            ;; optional expected type
-                           ((or/c #f Type?))
+                           ((or/c #f Values? ValuesDots? Result? Type/c))
                            . ->* . any)]
    [cond-contracted infer/vararg ((;; variables from the forall
                                    (listof symbol?)
@@ -54,9 +54,9 @@
                                    ;; rest
                                    (or/c #f Type/c)
                                    ;; range
-                                   (or/c #f Type?))
+                                   (or/c #f Values? ValuesDots? Result? Type/c))
                                   ;; [optional] expected type
-                                  ((or/c #f Type?)) . ->* . any)]
+                                  ((or/c #f Values? ValuesDots? Result? Type/c)) . ->* . any)]
    [cond-contracted infer/dots (((listof symbol?)
                                  symbol?
                                  (listof Type/c) (listof Type/c) Type/c Type? (listof symbol?))
