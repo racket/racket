@@ -97,6 +97,10 @@ path/s is either such a string or a list of them.
 
 ;; This could use `meta/tree/tree' in the future, it's pretty similar.
 (struct Tree (name [subs #:mutable] [props #:mutable]))
+(define (Tree-subs/sorted tree)
+  (sort (Tree-subs tree) string<?
+        #:key (lambda (t) (symbol->string (Tree-name t)))
+        #:cache-keys? #t))
 
 ;; Descriptors for known properties
 (struct Prop (name description parse unparse))
@@ -308,9 +312,7 @@ path/s is either such a string or a list of them.
     (set-Tree-props! tree normalized-props)
     (when (pair? (Tree-subs tree))
       (let ([up-props (append normalized-props up-props)]
-            [subs (sort (Tree-subs tree) string<?
-                        #:key (lambda (t) (symbol->string (Tree-name t)))
-                        #:cache-keys? #t)])
+            [subs (Tree-subs/sorted tree)])
         (set-Tree-subs! tree (for*/list ([sub (in-list subs)]
                                          [sub (in-value (loop sub up-props))]
                                          #:when sub)
@@ -330,6 +332,62 @@ path/s is either such a string or a list of them.
         (delete-file this-file)
         (rename-file-or-directory temp this-file))
       (lambda () (when (file-exists? temp) (delete-file temp))))))
+
+;; ----------------------------------------------------------------------------
+;; Verify props
+
+(define no-responsible-needed
+  '(#rx"/compiled$"
+    #rx"/[.]gitignore$"
+    #rx"^collects/info-domain$"
+    #rx"^doc/[^/]*$"))
+
+(define ((verify find-root))
+  (define errors 0)
+  (define (path-error path err)
+    (when (= 0 errors) (newline) (flush-output))
+    (set! errors (add1 errors))
+    (eprintf "  ~a: ~a\n" path err))
+  (define (verify-responsibles tree path)
+    (define alist (map (lambda (t) (cons (Tree-name t) (Tree-props t)))
+                       (Tree-subs tree)))
+    (for* ([f (directory-list path)]
+           [s (in-value (path-element->string f))]
+           [p (in-value (string-append path "/" s))]
+           ;; check dirs too, since we might not get into them if
+           ;; there are no entries for them
+           ;; #:when (file-exists? p)
+           [s (in-value (string->symbol s))])
+      (unless (or (for/or ([sub (in-list (Tree-subs tree))])
+                    (and (eq? s (Tree-name sub))
+                         (or (assq 'responsible (Tree-props sub))
+                             ;; if it has subs, then we'll get there eventually
+                             (pair? (Tree-subs sub)))))
+                  (for/or ([rx (in-list no-responsible-needed)])
+                    (regexp-match? rx p)))
+        (path-error p "no responsible"))))
+  (define (loop tree path responsible)
+    (unless (equal? (reverse (Tree-subs tree)) (Tree-subs/sorted tree))
+      (path-error path "unsorted sub-paths"))
+    (for ([sub (in-list (Tree-subs tree))])
+      (define name (symbol->string (Tree-name sub)))
+      (define path* (string-append path name))
+      (define responsible* (or responsible
+                               (assq 'responsible (Tree-props sub))))
+      (cond [(equal? "" name)
+             (path-error path* "empty name")]
+            [(directory-exists? path*)
+             (unless responsible* (verify-responsibles sub path*))
+             (loop sub (string-append path* "/") responsible*)]
+            [(not (file-exists? path*))
+             (path-error path* "Missing file/directory")])))
+  (define root (find-root))
+  (printf "Root: ~a..." root)
+  (flush-output)
+  (parameterize ([current-directory root]) (loop props-tree "" #f))
+  (if (errors . > . 0)
+    (error* 'verify "~s path errors" errors)
+    (printf " no errors.\n")))
 
 ;; ----------------------------------------------------------------------------
 ;; Main
@@ -377,7 +435,7 @@ path/s is either such a string or a list of them.
       [("set") "set <prop> <val> <path/s>" ,set]
       [("del") "del <prop> <path/s>" ,del]
       [("mv")  "mv  <path> <path>" ,mv]
-      [("verify") "verify: check that paths exist" ,verify]))
+      [("verify") "verify: check that paths exist" ,(verify find-root)]))
   (define (find-root)
     (let loop ([p this-file] [n 3]) ; look only a few level up
       (let-values ([(base _1 _2) (split-path p)])
@@ -439,31 +497,6 @@ path/s is either such a string or a list of them.
             (set-prop! to p v)
             (del-prop! from p)))))
     (write-props))
-  (define (verify)
-    (define root (find-root))
-    (printf "Root: ~a..." root)
-    (flush-output)
-    (parameterize ([current-directory root])
-      (define errors 0)
-      (let loop ([tree props-tree] [path '()])
-        (for ([sub (in-list (Tree-subs tree))])
-          (define name (symbol->string (Tree-name sub)))
-          (define (path-error more)
-            (when (= 0 errors) (newline) (flush-output))
-            (set! errors (add1 errors))
-            (eprintf "  ")
-            (for ([x (in-list (reverse path))]) (eprintf "~a/" x))
-            (eprintf "~a: ~a\n" name more))
-          (cond [(equal? "" name)
-                 (path-error "empty name")]
-                [(directory-exists? name)
-                 (parameterize ([current-directory name])
-                   (loop sub (cons name path)))]
-                [(not (file-exists? name))
-                 (path-error "Missing file/directory")])))
-      (if (errors . > . 0)
-        (error* 'verify "~s path errors" errors)
-        (printf " no errors.\n"))))
   (set! running-as-script? #t)
   ;; (perhaps add some `--force' flag to (set! check-existing-paths? #f))
   (define verb (if (pair? args) (car args) (usage "missing subcommand")))
