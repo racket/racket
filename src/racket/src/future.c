@@ -2797,12 +2797,47 @@ void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Sch
   future->source_of_request = who;
   future->source_type = src_type;
 
-  future_do_runtimecall(fts, (void*)f, 1, 1);
+  future_do_runtimecall(fts, (void*)f, 1, 0);
 
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
 
   future->arg_s0 = NULL;
+}
+
+Scheme_Object *scheme_rtcall_tail_apply(const char *who, int src_type, 
+                                        Scheme_Object *rator, int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+/* Called in future thread */
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  future_t *future = fts->thread->current_ft;
+  Scheme_Object *retval;
+
+  future->prim_protocol = SIG_TAIL_APPLY;
+
+  future->arg_s0 = rator;
+  future->arg_i0 = argc;
+  future->arg_S0 = argv;
+
+  future->time_of_request = get_future_timestamp();
+  future->source_of_request = who;
+  future->source_type = src_type;
+
+  future_do_runtimecall(fts, (void*)scheme_void, 1, 0);
+
+  /* Fetch the future again, in case moved by a GC */ 
+  future = fts->thread->current_ft;
+
+  future->arg_s0 = NULL;
+  future->arg_S0 = NULL;
+
+  retval = future->retval_s;
+  future->retval_s = NULL;
+
+  receive_special_result(future, retval, 1);
+
+  return retval;
 }
 
 #ifdef MZ_PRECISE_GC 
@@ -3074,6 +3109,22 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
         future->arg_s0 = NULL;
 
         func(future->arg_i0, (Scheme_Thread *)arg_s0);
+
+        break;
+      }
+    case SIG_TAIL_APPLY:
+      {
+        GC_CAN_IGNORE Scheme_Object *arg_s0 = future->arg_s0;
+        GC_CAN_IGNORE Scheme_Object **arg_S0 = future->arg_S0;
+        GC_CAN_IGNORE Scheme_Object *retval;
+
+        future->arg_s0 = NULL;
+        future->arg_S0 = NULL;
+
+        retval = _scheme_tail_apply(arg_s0, future->arg_i0, arg_S0);
+
+        future->retval_s = retval;
+        send_special_result(future, retval);
 
         break;
       }

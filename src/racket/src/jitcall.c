@@ -149,6 +149,30 @@ Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v)
 
 #endif
 
+#ifdef MZ_USE_FUTURES
+static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall) {
+    /* try thread-local allocation: */
+    Scheme_Object **a;    
+    a = MALLOC_N(Scheme_Object *, argc);
+    if (a) {
+      Scheme_Thread *p = scheme_current_thread;
+      memcpy(a, argv, argc * sizeof(Scheme_Object*));
+      p->ku.apply.tail_rator = rator;
+      p->ku.apply.tail_num_rands = argc;
+      p->ku.apply.tail_rands = a;
+      return SCHEME_TAIL_CALL_WAITING;
+    } else
+      return scheme_rtcall_tail_apply("[tail-call]", FSRC_OTHER, rator, argc, argv);
+  } else
+    return _scheme_tail_apply_from_native(rator, argc, argv);
+}
+#else
+# define ts__scheme_tail_apply_from_native _scheme_tail_apply_from_native
+#endif
+
 static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
                                                                 int argc,
                                                                 Scheme_Object **argv)

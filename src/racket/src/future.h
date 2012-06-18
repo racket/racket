@@ -229,6 +229,7 @@ typedef struct fsemaphore_t {
 #define SIG_MAKE_FSEMAPHORE    5
 #define SIG_FUTURE             6
 #define SIG_WRONG_TYPE_EXN     7
+#define SIG_TAIL_APPLY         8
 
 # include "jit_ts_protos.h"
 
@@ -241,6 +242,7 @@ extern void scheme_rtcall_allocate_values(const char *who, int src_type, int cou
                                           prim_allocate_values_t f);
 extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready);
 extern Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_Object *proc);
+extern Scheme_Object *scheme_rtcall_tail_apply(const char *who, int src_type, Scheme_Object *rator, int argc, Scheme_Object **argv);
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();

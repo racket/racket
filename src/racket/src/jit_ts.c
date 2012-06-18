@@ -94,7 +94,6 @@ define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 #endif
 
 #ifdef JITCALL_TS_PROCS
-define_ts_siS_s(_scheme_tail_apply_from_native, FSRC_RATOR)
 define_ts_s_s(scheme_force_value_same_mark, FSRC_MARKS)
 define_ts_s_s(scheme_force_one_value_same_mark, FSRC_MARKS)
 #endif
@@ -129,7 +128,6 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 #else
 # define ts__scheme_apply_multi_from_native _scheme_apply_multi_from_native
 # define ts__scheme_apply_from_native _scheme_apply_from_native
-# define ts__scheme_tail_apply_from_native _scheme_tail_apply_from_native
 # define ts_scheme_force_value_same_mark scheme_force_value_same_mark
 # define ts_scheme_force_one_value_same_mark scheme_force_one_value_same_mark
 # define ts_scheme_force_value_same_mark scheme_force_value_same_mark
