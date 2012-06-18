@@ -2011,6 +2011,7 @@ path/s is either such a string or a list of them.
 "collects/tests/typed-racket/optimizer/run.rkt" drdr:timeout 1200
 "collects/tests/typed-racket/optimizer/transform.rkt" drdr:command-line #f
 "collects/tests/typed-racket/run.rkt" drdr:command-line (racket "-t" * "--" "--nightly") drdr:timeout 1800
+"collects/tests/typed-racket/succeed/submodules.rkt" drdr:command-line (racket * "1")
 "collects/tests/typed-racket/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)
 "collects/tests/units/multi-mod-sigs.rktl" drdr:command-line (racket "-f" *)
