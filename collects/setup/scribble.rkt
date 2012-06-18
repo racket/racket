@@ -67,7 +67,7 @@
          worker-count       ; number of cores to use to create documentation
          program-name       ; name of program that calls setup-scribblings
          only-dirs          ; limits doc builds
-         latex-dest         ; #f => html, 'text => text, otherwise Latex output
+         latex-dest         ; if not #f, generate Latex output
          auto-start-doc?    ; if #t, expands `only-dir' with [user-]start to
                                         ;  catch new docs
          make-user?         ; are we making user stuff?
@@ -383,39 +383,8 @@
     (for ([i infos] #:when (info-need-in-write? i)) (write-in/info latex-dest i))))
 
 (define (make-renderer latex-dest doc)
-  (cond
-    [(not latex-dest)
-     (let* ([flags (doc-flags doc)]
-            [multi? (memq 'multi-page flags)]
-            [main?  (doc-under-main? doc)]
-            [ddir   (doc-dest-dir doc)]
-            [root?  (or (memq 'main-doc-root flags)
-                        (memq 'user-doc-root flags))])
-       (new ((if multi? html:render-multi-mixin values)
-             (html:render-mixin render%))
-            [dest-dir (if multi?
-                          (let-values ([(base name dir?) (split-path ddir)]) base)
-                          ddir)]
-            [alt-paths   (if main?
-                             (let ([std-path (lambda (s)
-                                               (cons (collection-file-path s "scribble")
-                                                     (format "../~a" s)))])
-                               (list (std-path "scribble.css")
-                                     (std-path "scribble-style.css")
-                                     (std-path "racket.css")
-                                     (std-path "scribble-common.js")))
-                             null)]
-            ;; For main-directory, non-start files, up-path is #t, which makes the
-            ;; "up" link go to the (user's) start page using cookies. For other files,
-            ;; 
-            [up-path     (and (not root?)
-                              (if main?
-                                  #t
-                                  (build-path (find-user-doc-dir) "index.html")))]
-            [search-box? #t]))]
-    [(eq? latex-dest 'text) 'not-a-renderer]
-    [(path? latex-dest)
-     (new (latex:render-mixin render%)
+  (if latex-dest
+      (new (latex:render-mixin render%)
            [dest-dir latex-dest]
            ;; Use PLT manual style:
            [prefix-file (collection-file-path "manual-prefix.tex" "scribble")]
@@ -424,23 +393,45 @@
            ;; generated/copied file names to keep them separate:
            [helper-file-prefix (let-values ([(base name dir?) (split-path
                                                                (doc-dest-dir doc))])
-                                 (path-element->string name))])]))
+                                 (path-element->string name))])
+      (let* ([flags (doc-flags doc)]
+             [multi? (memq 'multi-page flags)]
+             [main?  (doc-under-main? doc)]
+             [ddir   (doc-dest-dir doc)]
+             [root?  (or (memq 'main-doc-root flags)
+                         (memq 'user-doc-root flags))])
+        (new ((if multi? html:render-multi-mixin values)
+              (html:render-mixin render%))
+             [dest-dir (if multi?
+                           (let-values ([(base name dir?) (split-path ddir)]) base)
+                           ddir)]
+             [alt-paths   (if main?
+                              (let ([std-path (lambda (s)
+                                                (cons (collection-file-path s "scribble")
+                                                      (format "../~a" s)))])
+                                (list (std-path "scribble.css")
+                                      (std-path "scribble-style.css")
+                                      (std-path "racket.css")
+                                      (std-path "scribble-common.js")))
+                              null)]
+             ;; For main-directory, non-start files, up-path is #t, which makes the
+             ;; "up" link go to the (user's) start page using cookies. For other files,
+             ;; 
+             [up-path     (and (not root?)
+                               (if main?
+                                   #t
+                                   (build-path (find-user-doc-dir) "index.html")))]
+             [search-box? #t]))))
 
 (define (pick-dest latex-dest doc)
-  (cond [(eq? latex-dest 'text) (build-path (doc-dest-dir doc) "doc.txt")]
-        [latex-dest
+  (cond [latex-dest
          (let-values ([(base name dir?) (split-path (doc-src-file doc))])
            (build-path latex-dest (path-replace-suffix name #".tex")))]
-        [else
-         (cond
-           [(memq 'multi-page (doc-flags doc)) (doc-dest-dir doc)]
-           [else (build-path (doc-dest-dir doc) "index.html")])]))
+        [(memq 'multi-page (doc-flags doc)) (doc-dest-dir doc)]
+        [else (build-path (doc-dest-dir doc) "index.html")]))
 
 (define (sxref-path latex-dest doc file)
-  (cond [(eq? latex-dest 'text)
-         ;; can this be the same as the last case?
-         (build-path (doc-dest-dir doc) "txt" file)]
-        [latex-dest
+  (cond [latex-dest
          (let-values ([(base name dir?) (split-path (doc-src-file doc))])
            (build-path latex-dest (path-replace-suffix name (string-append "." file))))]
         [else (build-path (doc-dest-dir doc) file)]))
@@ -519,7 +510,7 @@
   (let* ([info-out-file (sxref-path latex-dest doc "out.sxref")]
          [info-in-file  (sxref-path latex-dest doc "in.sxref")]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
-         [out-file (build-path (doc-dest-dir doc) "index.html")] ;; this is suspicious: what if we are building .pdfs?
+         [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
                    (build-path base "compiled" (path-add-suffix name ".zo")))]
          [renderer (make-renderer latex-dest doc)]
@@ -535,10 +526,9 @@
          [renderer-path (build-path (collection-path "scribble")
                                     "compiled"
                                     (path-add-suffix
-                                     (cond
-                                       [(eq? latex-dest 'text) "text-render.rkt"]
-                                       [latex-dest "latex-render.rkt"]
-                                       [else "html-render.rkt"])
+                                     (if latex-dest
+                                         "latex-render.rkt"
+                                         "html-render.rkt")
                                      ".zo"))]
          [css-path (collection-file-path "scribble.css" "scribble")]
          [aux-time (max (file-or-directory-modify-seconds/stamp
@@ -569,7 +559,6 @@
                    ;; it runs some documents without rendering them:
                    (info-time . >= . src-time)))]
          [can-run? (and (or (not latex-dest)
-                            (eq? latex-dest 'text)
                             (not (omit? (doc-category doc))))
                         (or can-run?
                             (and auto-main?
@@ -738,8 +727,7 @@
 
 (define (build-again! latex-dest info with-record-error)
   (define (cleanup-dest-dir doc)
-    (when (or (not latex-dest)
-              (eq? latex-dest 'text))
+    (unless latex-dest
       (let ([dir (doc-dest-dir doc)])
         (if (not (directory-exists? dir))
             (make-directory*/ignore-exists-exn dir)
