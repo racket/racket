@@ -133,6 +133,8 @@
                 (lambda (all one) "expects a "))
           (list #rx"list or cyclic list"
                 (lambda (all) "list"))
+          (list #rx"cannot set variable before its definition\n  variable:"
+                (lambda (all) "cannot set variable before its definition:"))
           ;; When do these show up? I see only `#<image>' errors, currently.
           (list (regexp-quote "#(struct:object:image% ...)")
                 (lambda (all) "an image"))

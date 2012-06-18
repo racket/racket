@@ -70,8 +70,11 @@
 (htdp-syntax-test #'(set! set! 2) "set!: expected a variable after set!, but found a set!")
 (htdp-syntax-test #'(set! x 1) "x: this variable is not defined")
 (htdp-syntax-test #'(lambda (x) (set! x 2)) "set!: expected a mutable variable after set!, but found a variable that cannot be modified: x")
-
 (htdp-syntax-test #'(let ([x 5]) (lambda (x) (set! x 2))) "set!: expected a mutable variable after set!, but found a variable that cannot be modified")
+
+(htdp-top (set! x 5))
+(htdp-err/rt-test (define x 10) "set!: cannot set variable before its definition: x")
+(htdp-top-pop 1)
 
 (htdp-top (define x 5))
 (htdp-top (set! x 'hello))
