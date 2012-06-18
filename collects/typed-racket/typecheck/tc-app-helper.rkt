@@ -182,7 +182,8 @@
     (ormap (lambda (x) (subtype x fun-ty))
            others))
 
-  (define expected-ty (and expected (match expected [(tc-result1: t) t])))
+  ;; currently does not take advantage of multi-valued expected types
+  (define expected-ty (and expected (match expected [(tc-result1: t) t] [_ #f])))
   (define (returns-subtype-of-expected? fun-ty)
     (or (not expected)
         (match fun-ty
