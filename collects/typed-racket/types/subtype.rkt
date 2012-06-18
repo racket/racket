@@ -40,13 +40,14 @@
 
 ;; is s a subtype of t?
 ;; type type -> boolean
-(define (subtype s t)
+(define/cond-contract (subtype s t)
+  (c-> Type/c Type/c boolean?)
   (define k (cons (Type-seq s) (Type-seq t)))
   (define lookup? (hash-ref subtype-cache k 'no))
   (if (eq? 'no lookup?)
       (let ([result (with-handlers
                         ([exn:subtype? (lambda _ #f)])
-                      (subtype* (current-seen) s t))])
+                      (and (subtype* (current-seen) s t) #t))])
         (hash-set! subtype-cache k result)
         result)
       lookup?))
@@ -193,7 +194,7 @@
        [(not (apply = (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
-       [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
+       [else (make-arr (apply map *Un (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 (define-match-expander NameStruct:
@@ -458,7 +459,11 @@
   (define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
 
-(provide subtype type-compare? subtypes/varargs subtypes)
+
+(provide/cond-contract
+ [subtype (c-> Type/c Type/c boolean?)])
+(provide
+  type-compare? subtypes/varargs subtypes)
 
 ;(trace subtype*)
 ;(trace supertype-of-one/arr)
