@@ -1794,7 +1794,7 @@ const char *scheme_hostname_error(int err)
 
 static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 {
-  char * volatile address = "", * volatile src_address, * volatile errmsg = "";
+  char * volatile address = "", * volatile src_address, * volatile errmsg = NULL;
   unsigned short origid, id, src_origid, src_id;
   int errpart = 0, errid = 0;
   volatile int nameerr = 0, no_local_spec;
@@ -1982,25 +1982,30 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     } else {
       errpart = 2;
       nameerr = 1;
-      errmsg = "; local host not found";
+      errmsg = "local host not found";
     } 
     if (tcp_connect_dest)
       mz_freeaddrinfo(tcp_connect_dest);
   } else {
     errpart = 1;
     nameerr = 1;
-    errmsg = "; host not found";
+    errmsg = "host not found";
   }
 #endif
 
 #ifdef USE_TCP
   scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		   "tcp-connect: connection failed\n"
+                   "%s%s%s"
                    "  address: %s\n"
                    "  port number: %d\n"
                    "  step: %d\n"
                    "  system error: %N",
-		   address, origid, errmsg, errpart, nameerr, errid);
+                   errmsg ? "  detail: " : "",
+                   errmsg ? errmsg : "",
+                   errmsg ? "\n" : "",
+		   address, origid, errpart, 
+                   nameerr, errid);
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		   "tcp-connect: not supported on this platform");
