@@ -822,7 +822,15 @@
 
 
         [tc-e
-         (call-with-values (lambda () (time-apply + (list 1 2)))
+         (call-with-values (lambda () ((inst time-apply Number Number Number) + (list 1 2)))
+                           (lambda: ([v : (Listof Number)]
+                                     [cpu : Number]
+                                     [user : Number]
+                                     [gc : Number])
+                             'whatever))
+         #:ret (ret (-val 'whatever) -true-filter)]
+        [tc-e
+         (call-with-values (lambda () ((inst time-apply Number Number Number Number Number Number Number) + (list 1 2 3 4 5 6)))
                            (lambda: ([v : (Listof Number)]
                                      [cpu : Number]
                                      [user : Number]

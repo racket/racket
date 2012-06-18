@@ -25,12 +25,14 @@
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
  (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
- (only-in (rep type-rep) make-MPairTop
+ (only-in (rep type-rep)
+          make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
           make-ThreadCellTop
           make-Ephemeron
           make-CustodianBox
-          make-HeterogenousVector))
+          make-HeterogenousVector
+          make-ListDots))
 
 ;Section 9.2
 
@@ -564,20 +566,12 @@
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [new-apply-proc (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
-[time-apply (-poly (a b c)
-                   (cl->*
-                    (->
-                     (-> a)
-                     (-Tuple (list))
-                     (-values (list (-pair a (-val '())) -Nat -Nat -Nat)))
-                    (->
-                     (-> b a)
-                     (-Tuple (list b))
-                     (-values (list (-pair a (-val '())) -Nat -Nat -Nat)))
-                    (->
-                     (-> b c a)
-                     (-Tuple (list b c))
-                     (-values (list (-pair a (-val '())) -Nat -Nat -Nat)))))]
+[time-apply
+ (-polydots (b a) (cl->*
+                   (-> (-> b) (-val '()) (-values (list (-pair b (-val '())) -Nat -Nat -Nat)))
+                   (-> (->... '() (a a) b)
+                       (make-ListDots a 'a)
+                       (-values (list (-pair b (-val '())) -Nat -Nat -Nat)))))]
 
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
