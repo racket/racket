@@ -490,9 +490,8 @@
      (let ()
        (define info (get-struct-info #'id stx))
        (define (ensure-valid-field sel-id)
-         (define selector-candidate (id->sel-id #'id sel-id))
          (unless (for/or ([selector (in-list (list-ref info 3))])
-                   (and selector (free-identifier=? selector-candidate selector)))
+                   (and selector (free-identifier=? sel-id selector)))
            (raise-syntax-error #f 
                                "expected an identifier that names a field"
                                stx
@@ -511,14 +510,19 @@
        (define parsed-clauses
          (for/list ([clause (in-list (syntax->list #'(clauses ...)))])
            (syntax-case clause ()
-             [(sel-id (dep-id ...) stuff1 . stuff) ;; need stuff1 here so that things like [a (>=/c x)] do not fall into this case
+             [(fld-id (dep-id ...) stuff1 . stuff) ;; need stuff1 here so that things like [a (>=/c x)] do not fall into this case
               (let ()
-                (unless (identifier? #'sel-id)
-                  (raise-syntax-error #f "expected an identifier (naming a field)" stx #'sel-id))
+                (unless (identifier? #'fld-id)
+                  (raise-syntax-error #f "expected an identifier (naming a field)" stx #'fld-id))
                 (for ([id (in-list (syntax->list #'(dep-id ...)))])
                   (unless (identifier? id)
                     (raise-syntax-error #f "expected an identifier (naming a field)" stx id)))
-                (ensure-valid-field #'sel-id)
+                (define selector (fld-id->sel-id #'id #'fld-id))
+                (define dependent-selectors
+                  (for/list ((dep-id (syntax->list #'(dep-id ...))))
+                    (fld-id->sel-id #'id dep-id)))
+
+                (ensure-valid-field selector)
                 (define-values (ctc-exp lazy? type depends-on-state?)
                   (let loop ([stuff  #'(stuff1 . stuff)]
                              [lazy? #f]
@@ -535,21 +539,22 @@
                       [(#:lazy . more-stuff) (loop #'more-stuff #t type depends-on-state?)]
                       [_ (raise-syntax-error #f "could not parse clause" stx clause)])))
                 (dep-clause ctc-exp lazy?
-                            #'sel-id
+                            selector
                             (if type (syntax-e type) '#:chaperone)
                             depends-on-state?
-                            (syntax->list #'(dep-id ...))))]
-             [(sel-id . rest)
+                            dependent-selectors))]
+             [(fld-id . rest)
               (let ()
-                (unless (identifier? #'sel-id)
-                  (raise-syntax-error #f "expected an identifier (naming a field)" stx #'sel-id))
-                (ensure-valid-field #'sel-id)
+                (unless (identifier? #'fld-id)
+                  (raise-syntax-error #f "expected an identifier (naming a field)" stx #'fld-id))
+                (define selector (fld-id->sel-id #'id #'fld-id))
+                (ensure-valid-field selector)
                 (define-values (lazy? exp)
                   (syntax-case #'rest ()
                     [(#:lazy exp) (values #t #'exp)]
                     [(exp) (values #f #'exp)]
                     [else (raise-syntax-error #f "could not parse clause" stx clause)]))
-                (indep-clause exp lazy? #'sel-id))]
+                (indep-clause exp lazy? selector))]
              [_ (raise-syntax-error #f "could not parse clause" stx #'clause)])))
        
        
@@ -569,13 +574,13 @@
                    (raise-syntax-error 
                     #f
                     (format "the dependent clause for ~a is not lazy, but depends on ~a"
-                            (syntax-e (clause-sel-id clause))
+                            (sel-id->fld-sym #'id (clause-sel-id clause))
                             (syntax-e dep-id))
                     stx
                     dep-id))))))
          
          (for ([clause (in-list parsed-clauses)])
-           (define this-sel (id->sel-id #'id (clause-sel-id clause)))
+           (define this-sel (clause-sel-id clause))
            (for ([sel (in-list (list-ref info 3))]
                  [mut (in-list (list-ref info 4))])
              (when (and sel
@@ -584,14 +589,14 @@
                
                ;; check that fields depended on actually exist
                (when (dep-clause? clause)
-                 (for ([id (in-list (dep-clause-deps clause))])
+                 (for ([dep-id (in-list (dep-clause-deps clause))])
                    (free-identifier-mapping-get
                     lazy-mapping
-                    id
+                    dep-id
                     (λ () (raise-syntax-error #f
                                               (format "the field: ~a is depended on (by the contract on the field: ~a), but it has no contract"
-                                                      (syntax-e id)
-                                                      (syntax-e (clause-sel-id clause)))
+                                                      (syntax-e dep-id)
+                                                      (sel-id->fld-sym #'id (clause-sel-id clause)))
                                               stx
                                               (clause-sel-id clause))))))
                
@@ -601,7 +606,7 @@
                  (unless mut
                    (raise-syntax-error #f
                                        (format "the ~a field is immutable, so the contract cannot be an impersonator contract"
-                                               (syntax-e (clause-sel-id clause)))
+                                               (sel-id->fld-sym #'id (clause-sel-id clause)))
                                        stx
                                        (clause-sel-id clause))))
 
@@ -609,19 +614,30 @@
                (when (and (clause-lazy? clause) mut)
                  (raise-syntax-error #f 
                                      (format "the ~a field is mutable, so the contract cannot be lazy"
-                                             (syntax-e (clause-sel-id clause)))
+                                             (sel-id->fld-sym #'id (clause-sel-id clause)))
                                      stx
                                      (clause-sel-id clause)))))))
                           
        (values info #'id parsed-clauses))]))
 
-(define-for-syntax (id->sel-id struct-id id) 
+(define-for-syntax (fld-id->sel-id struct-id fld-id)
   (datum->syntax
-   id
+   fld-id
    (string->symbol
     (format "~a-~a" 
             (syntax-e struct-id)
-            (syntax-e id)))))
+            (syntax-e fld-id)))))
+
+(define-for-syntax (sel-id->fld-sym struct-id sel-id)
+  (define strip-reg
+    (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e struct-id))))))
+  (string->symbol (regexp-replace strip-reg (symbol->string (syntax-e sel-id)) "")))
+
+(define-for-syntax (sel-id->fld-id struct-id sel-id)
+ (datum->syntax sel-id (sel-id->fld-sym struct-id sel-id)))
+
+
+
 
 (define-for-syntax (top-sort/clauses stx clauses)
   (define id->children (make-free-identifier-mapping))
@@ -644,8 +660,7 @@
               (raise-syntax-error #f "found cyclic dependencies"
                                   stx))))
 
-(define-for-syntax (do-struct/dc struct/c? stx)
-  (define-values (info struct-id clauses) (parse-struct/dc stx))
+(define-for-syntax (do-struct/dc stx struct/c? info struct-id clauses)
   (define sorted-clauses (top-sort/clauses stx clauses))
   
   ;; maps the sel-ids to #t when they are depended on
@@ -665,14 +680,7 @@
 
   ;; find-selector/mutator : clause -> (values identifier? identifier?)
   (define (find-selector/mutator clause)
-    (define fld-name (clause-sel-id clause))
-    (define this-selector 
-      (datum->syntax fld-name
-                     (string->symbol
-                      (string-append 
-                       (symbol->string (syntax-e struct-id))
-                       "-"
-                       (symbol->string (syntax-e fld-name))))))
+    (define this-selector (clause-sel-id clause))
     (define mutator (for/or ([selector (in-list (list-ref info 3))]
                              [mutator (in-list (list-ref info 4))])
                       (and (free-identifier=? this-selector selector)
@@ -741,7 +749,9 @@
                                (clause-sel-id clause)
                                (λ () #f)))
          (define subcontract-args 
-           (list #`'#,(clause-sel-id clause) selector depended-on?))
+           (list #`'#,(sel-id->fld-sym struct-id (clause-sel-id clause))
+                 selector
+                 depended-on?))
          (define indep/dep-args
            (if (dep-clause? clause)
                (list #`(λ (#,@dep-args) #,(clause-exp clause))
@@ -754,7 +764,7 @@
                                                    (list mutator)
                                                    '()))
                (loop (if depended-on?
-                         (cons (clause-sel-id clause) dep-args)
+                         (cons (sel-id->fld-id struct-id (clause-sel-id clause)) dep-args)
                          dep-args)
                      (cdr clauses)))])))
   
@@ -765,7 +775,9 @@
                      '#,struct-id
                      #,struct/c?))
 
-(define-syntax (-struct/dc stx) (do-struct/dc #f stx))
+(define-syntax (-struct/dc stx)
+  (define-values (info struct-id clauses) (parse-struct/dc stx))
+  (do-struct/dc stx #f info struct-id clauses))
 
 (define-for-syntax (traverse-no-neg-blame-identifiers no-neg-blame)
   (for/and ([id (in-list no-neg-blame)])
@@ -819,16 +831,16 @@
                        [no-negative-blame #t])
                       ([clause (in-list (syntax->list #'(clause ...)))])
               
-              (define-values (sel-id lazy? dep-vars exp)
+              (define-values (fld-id lazy? dep-vars exp)
                 (syntax-case clause ()
-                  [(sel-id #:lazy exp) (values #'sel-id #t #f #'exp)]
-                  [(sel-id exp) (values #'sel-id #f #f #'exp)]
-                  [(sel-id (dep-id ...) #:lazy exp)
+                  [(fld-id #:lazy exp) (values #'fld-id #t #f #'exp)]
+                  [(fld-id exp) (values #'fld-id #f #f #'exp)]
+                  [(fld-id (dep-id ...) #:lazy exp)
                    (andmap identifier? (syntax->list #'(dep-id ...)))
-                   (values #'sel-id #t #'(dep-id ...) #'exp)]
-                  [(sel-id (dep-id ...) exp)
+                   (values #'fld-id #t #'(dep-id ...) #'exp)]
+                  [(fld-id (dep-id ...) exp)
                    (andmap identifier? (syntax->list #'(dep-id ...)))
-                   (values #'sel-id #f #'(dep-id ...) #'exp)]
+                   (values #'fld-id #f #'(dep-id ...) #'exp)]
                   [other (give-up)]))
               
               (define sub-val (car (generate-temporaries '(struct/dc))))
@@ -837,13 +849,13 @@
               
               (when dep-vars
                 (for ([dep-var (in-list (syntax->list dep-vars))])
-                  (free-identifier-mapping-put! depended-on-fields dep-var sel-id)))
-              (free-identifier-mapping-put! no-negative-blame-fields sel-id (optres-no-negative-blame? this-optres))
+                  (free-identifier-mapping-put! depended-on-fields dep-var fld-id)))
+              (free-identifier-mapping-put! no-negative-blame-fields fld-id (optres-no-negative-blame? this-optres))
               
               (define this-body-code 
                 (cond
                   [dep-vars
-                   (with-syntax ([(sel ...) (map (λ (var) (id->sel-id #'struct-id var)) 
+                   (with-syntax ([(sel ...) (map (λ (var) (fld-id->sel-id #'struct-id var))
                                                  (syntax->list dep-vars))]
                                  [(dep-var ...) dep-vars])
                      #`(let ([dep-var (sel #,(opt/info-val opt/info))] ...)
@@ -862,14 +874,14 @@
                      (with-syntax ([proc-name (string->symbol
                                                (format "~a-~a-chap" 
                                                        (syntax-e #'struct-id)
-                                                       (syntax-e sel-id)))])
+                                                       (syntax-e fld-id)))])
                        (if lazy?
                            #`(let ([proc-name
                                     (cache-λ (strct #,sub-val)
                                              #,this-body-code)])
                                proc-name)
                            #`(let ([answer (let ([#,sub-val 
-                                                  (#,(id->sel-id #'struct-id sel-id)
+                                                  (#,(fld-id->sel-id #'struct-id fld-id)
                                                    #,(opt/info-val opt/info))])
                                              #,this-body-code)])
                                (let ([proc-name (λ (strct fld) answer)])
@@ -879,7 +891,7 @@
                 (and (and (optres-flat this-optres)
                           (not lazy?))
                      #`(let ([#,sub-val 
-                              (#,(id->sel-id #'struct-id sel-id)
+                              (#,(fld-id->sel-id #'struct-id fld-id)
                                #,(opt/info-val opt/info))])
                          #,this-body-code)))
 
@@ -887,7 +899,7 @@
                           (cons this-fo-code s-fo-code)
                           s-fo-code)
                       (if this-chap-code 
-                          (list* this-chap-code (id->sel-id #'struct-id sel-id) s-chap-code)
+                          (list* this-chap-code (fld-id->sel-id #'struct-id fld-id) s-chap-code)
                           s-chap-code)
                       (if dep-vars s-lifts (append (optres-lifts this-optres) s-lifts))
                       (if dep-vars s-super-lifts (append (optres-superlifts this-optres) s-super-lifts))
@@ -973,8 +985,7 @@
             [predicate-id (third si)]
             [selector-ids (reverse (fourth si))]
             [mutator-ids (reverse (fifth si))]
-            [ctcs (syntax->list #'(args ...))]
-            [ctc-names (generate-temporaries #'(args ...))])
+            [ctcs (syntax->list #'(args ...))])
        (unless (= (length selector-ids) (length ctcs))
          (raise-syntax-error 'struct/c 
                              (format "expected ~a contracts because struct ~a has ~a fields"
@@ -991,14 +1002,10 @@
                              (format "could not determine selectors for ~s" (syntax-e #'struct-name))
                              stx))
        
-       (define strip-reg (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e #'struct-name))))))
-       (define (selector-id->field sel)
-         (datum->syntax #'struct-name
-                        (string->symbol (regexp-replace strip-reg (symbol->string (syntax-e sel)) ""))))
        
        (do-struct/dc
-        #t
-        (with-syntax ([(fields ...) (map selector-id->field selector-ids)])
-          #`(-struct/dc struct-name [fields args] ...))))]
+        stx #t si #'struct-name
+        (for/list ((ctc ctcs) (sel-id selector-ids))
+          (indep-clause ctc #f sel-id))))]
     [(_ struct-name anything ...)
      (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
