@@ -1778,7 +1778,8 @@ constructed by @racket[build-flat-contract-property].
 These properties attach a contract value to the protected structure,
 chaperone, or impersonator value.  The function @racket[has-contract?]
 returns @racket[#t] for values that have one of these properties, and
-@racket[value-contract] extracts the contract value.
+@racket[value-contract] extracts the value from the property (which
+is expected to be the contract on the value).
 }
 
 @deftogether[(
@@ -2095,11 +2096,17 @@ Produces the name used to describe the contract in error messages.
 @defproc[(value-contract [v has-contract?]) contract?]{
   Returns the contract attached to @racket[v], if recorded.
   Otherwise it returns @racket[#f].
+  
+  To support @racket[value-contract] and @racket[has-contract?]
+  in your own contract combinators, use @racket[prop:contracted] or
+  @racket[impersonator-prop:contracted].
 }
 
 @defproc[(has-contract? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a value that
   has a recorded contract attached to it.
+  
+  See also @racket[value-contract].
 }
 
 
