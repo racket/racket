@@ -69,7 +69,8 @@
                      [idtbl-map (s '-map)]
                      [idtbl-for-each (s '-for-each)]
                      [idtbl-mutable-methods (s '-mutable-methods)]
-                     [idtbl-immutable-methods (s '-immutable-methods)])
+                     [idtbl-immutable-methods (s '-immutable-methods)]
+                     [idtbl/c (s '/c)])
          #'(begin
 
              ;; Struct defs at end, so that dict methods can refer to earlier procs
@@ -119,6 +120,29 @@
                (list idtbl-immutable-methods
                      dict-contract-methods))
 
+             (define (mutable-idtbl/c value/c)
+               (struct/c mutable-idtbl
+                         (hash/c any/c
+                                 (listof (cons/c any/c value/c))
+                                 #:immutable #f)
+                         any/c))
+
+             (define (immutable-idtbl/c value/c)
+               (struct/c immutable-idtbl
+                         (hash/c any/c
+                                 (listof (cons/c any/c value/c))
+                                 #:immutable #t)
+                         any/c))
+
+
+             (define (idtbl/c value/c #:immutable (immutable 'dont-care))
+               (case immutable
+                ((dont-care) (or/c (mutable-idtbl/c value/c)
+                                   (immutable-idtbl/c value/c)))
+                ((#t) (immutable-idtbl/c value/c))
+                ((#f) (mutable-idtbl/c value/c))))
+               
+
              (provide/contract
               [make-idtbl
                (->* () (dict? #:phase (or/c #f exact-integer?)) mutable-idtbl?)]
@@ -153,7 +177,11 @@
               [idtbl-map
                (-> idtbl? (-> identifier? any/c any) list?)]
               [idtbl-for-each
-               (-> idtbl? (-> identifier? any/c any) any)]))))]))
+               (-> idtbl? (-> identifier? any/c any) any)]
+              [idtbl/c
+               (->* (contract?)
+                    (#:immutable (or/c 'dont-care #t #f))
+                    contract?)]))))]))
 
 (make-code bound-id-table)
 (make-code free-id-table)
