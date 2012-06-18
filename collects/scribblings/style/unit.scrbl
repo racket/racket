@@ -282,7 +282,11 @@ Pick a rule for consistently naming your functions, classes, and
 Pick a rule for consistently naming and ordering the parameters of your
  functions and methods. Stick to it. For example, if your module implements
  an abstract data type (ADT), all functions on the ADT should consume the
- ADT-argument first or last.
+ ADT-argument first or last. Furthermore, if all of these functions accept
+ the same kind of information they should do so in the same position and
+ with the same name. See @filepath{collects/setup/scribble} and search for
+ occurrences of @racket[latex-dest]---they all refer to the same kind of
+ data.
 
 @subsection{Sections and Sub-modules}
 
