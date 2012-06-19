@@ -1054,14 +1054,14 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/item.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/loadtest.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/mem.rkt" drdr:command-line #f
-"collects/tests/gracket/paramz.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/gracket/paramz.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/png.rktl" drdr:command-line #f
 "collects/tests/gracket/showkey.rkt" drdr:command-line #f
 "collects/tests/gracket/sixlib.rktl" drdr:command-line #f
 "collects/tests/gracket/testing.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/text-scale.rktl" drdr:command-line #f
 "collects/tests/gracket/unflushed-circle.rkt" drdr:command-line #f
-"collects/tests/gracket/windowing.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/wxme-doc-random.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/wxme-random.rkt" drdr:command-line #f
 "collects/tests/honu" responsible (rafkind)
