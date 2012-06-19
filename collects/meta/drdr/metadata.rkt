@@ -10,15 +10,10 @@
   (define suffix (filename-extension a-path))
   (define default-cmd
     (and suffix
-         (cond
-           [(ormap (lambda (bs) (bytes=? suffix bs))
-                   (list #"ss" #"scm" #"scrbl" #"rkt" #"sls"))
-            '(racket "-qt" *)]
-           [(ormap (lambda (bs) (bytes=? suffix bs))
-                   (list #"rktl"))
-            '(racket "-f" *)]
-           [else
-            #f])))
+         (case (string->symbol (bytes->string/utf-8 suffix))
+           [(ss scm scrbl rkt sls) '(racket *)]
+           [(rktl)                 '(racket "-f" *)]
+           [else                   #f])))
   (define (replace-* s)
     (if (eq? '* s)
         (path->string* a-path)

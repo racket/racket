@@ -531,9 +531,12 @@ path/s is either such a string or a list of them.
   ;; --------------------
   (Prop
    'drdr:command-line
-   (string-append
-    "command-line string (space-separated,\n    missing => default execution,"
-    " empty => no execution, \"~s\" => the file)")
+   (string-join
+    '("command-line string"
+      "space-separated with \"~s\" for the file, empty => no execution,"
+      "missing => use the default (\"racket ~s\" for *.rkt etc,"
+      "\"racket -f ~s\" for *.rktl)")
+    "\n      ")
    (lambda (str)
      (define (bad) (error "expecting an empty string, or one with `~s'"))
      (if (equal? str "")
