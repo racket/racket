@@ -6,8 +6,8 @@
 
 ;; ----------------------------------------
 
-(define-struct collect-info (fp ht ext-ht parts tags gen-prefix relatives parents))
-(define-struct resolve-info (ci delays undef searches))
+(define-struct collect-info (fp ht ext-ht parts tags gen-prefix relatives parents) #:transparent)
+(define-struct resolve-info (ci delays undef searches) #:transparent)
 
 (define (part-collected-info part ri)
   (hash-ref (collect-info-parts (resolve-info-ci ri))
@@ -219,7 +219,8 @@
        (vector (traverse-block-block d ri))))
    #'deserialize-traverse-block
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (define block-traverse-procedure/c
   (recursive-contract
@@ -268,7 +269,8 @@
        (vector (traverse-element-content d ri))))
    #'deserialize-traverse-element
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (define element-traverse-procedure/c
   (recursive-contract
@@ -322,7 +324,8 @@
          (vector (delayed-element-content d ri)))))
    #'deserialize-delayed-element
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (provide/contract
  (struct delayed-element ([resolve (any/c part? resolve-info? . -> . content?)]
@@ -365,7 +368,8 @@
           (part-relative-element-content d ri)))))
    #'deserialize-part-relative-element
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (provide/contract
  (struct part-relative-element ([collect (collect-info? . -> . content?)]
@@ -407,7 +411,8 @@
           (delayed-element-content d ri)))))
    #'deserialize-delayed-index-desc
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (provide/contract
  (struct delayed-index-desc ([resolve (any/c part? resolve-info? . -> . any)])))
@@ -429,7 +434,8 @@
               (element-content d))))
    #'deserialize-collect-element
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (provide deserialize-collect-element)
 (define deserialize-collect-element
@@ -452,7 +458,8 @@
               (element-content d))))
    #'deserialize-render-element
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (provide deserialize-render-element)
 (define deserialize-render-element
@@ -481,7 +488,8 @@
                   "serialization failed (wrong resolve info?)")))))
    #'deserialize-generated-tag
    #f
-   (or (current-load-relative-directory) (current-directory))))
+   (or (current-load-relative-directory) (current-directory)))
+  #:transparent)
 
 (provide (struct-out generated-tag))
 

@@ -9,7 +9,7 @@
   (syntax-case stx ()
     [(_ (id ([field ct] ...)) ...)
      #`(begin
-         (define-serializable-struct id (field ...)) ...
+         (define-serializable-struct id (field ...) #:transparent) ...
          (provide/contract
           #,@(let ([ids (syntax->list #'(id ...))]
                    [fields+cts (syntax->list #'(([field ct] ...) ...))])
