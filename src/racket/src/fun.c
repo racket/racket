@@ -7855,8 +7855,7 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
                                                      intptr_t min_stacksize) 
   XFORM_SKIP_PROC
 {
-  intptr_t len, cm_len, cm_pos_delta, cm_delta, i, cm;
-  Scheme_Cont_Mark *seg;
+  intptr_t len, cm_delta, i, cm;
   Scheme_Object **rs;
 
   len = lw->saved_lwc->runstack_start - lw->saved_lwc->runstack_end;
@@ -7882,18 +7881,13 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
   scheme_current_lwc->cont_mark_stack_start = MZ_CONT_MARK_STACK;
   scheme_current_lwc->cont_mark_pos_start = MZ_CONT_MARK_POS + 2;
 
-  cm_len = lw->saved_lwc->cont_mark_stack_end - lw->saved_lwc->cont_mark_stack_start;
-  if (cm_len) {
-    /* install captured continuation marks, adjusting the pos
-       to match the new context: */
-    seg = lw->cont_mark_stack_slice;
-    cm_pos_delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
-    for (i = 0; i < cm_len; i++) {
-      MZ_CONT_MARK_POS = seg[i].pos + cm_pos_delta;
-      scheme_set_cont_mark(seg[i].key, seg[i].val);
-    }
-    MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
-  }
+#ifdef MZ_USE_FUTURES
+  jit_future_storage[3] = result;
+#endif      
+  lw = scheme_restore_lightweight_continuation_marks(lw); /* can trigger GC */
+#ifdef MZ_USE_FUTURES
+  result = (Scheme_Object *)jit_future_storage[3];
+#endif      
 
   cm_delta = (intptr_t)MZ_CONT_MARK_STACK - (intptr_t)lw->saved_lwc->cont_mark_stack_end;
 
@@ -7916,6 +7910,35 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
     result = (Scheme_Object *)(rs + 2);
 
   return scheme_apply_lightweight_continuation_stack(lw->saved_lwc, lw->stack_slice, result);
+}
+
+Scheme_Lightweight_Continuation *scheme_restore_lightweight_continuation_marks(Scheme_Lightweight_Continuation *lw)
+  XFORM_SKIP_PROC
+/* Called by any thread, but this function can trigger a GC in the runtime thread */
+{
+  intptr_t cm_len, i, cm_pos_delta;
+  Scheme_Cont_Mark *seg;
+
+  cm_len = lw->saved_lwc->cont_mark_stack_end - lw->saved_lwc->cont_mark_stack_start;
+  if (cm_len) {
+    /* install captured continuation marks, adjusting the pos
+       to match the new context: */
+    seg = lw->cont_mark_stack_slice;
+    cm_pos_delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
+    for (i = 0; i < cm_len; i++) {
+      MZ_CONT_MARK_POS = seg[i].pos + cm_pos_delta;
+#ifdef MZ_USE_FUTURES
+      jit_future_storage[2] = lw;
+#endif      
+      scheme_set_cont_mark(seg[i].key, seg[i].val); /* can trigger a GC */
+#ifdef MZ_USE_FUTURES
+      lw = (Scheme_Lightweight_Continuation *)jit_future_storage[2];
+#endif      
+    }
+    MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
+  }
+
+  return lw;
 }
 
 int scheme_push_marks_from_lightweight_continuation(Scheme_Lightweight_Continuation *lw, 

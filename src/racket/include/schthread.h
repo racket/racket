@@ -238,7 +238,7 @@ typedef struct Thread_Local_Variables {
   int scheme_did_gc_count_;
   struct Scheme_Future_State *scheme_future_state_;
   struct Scheme_Future_Thread_State *scheme_future_thread_state_;
-  void *jit_future_storage_[2];
+  void *jit_future_storage_[4];
   struct Scheme_Object **scheme_current_runstack_start_;
   struct Scheme_Object **scheme_current_runstack_;
   intptr_t scheme_current_cont_mark_stack_;

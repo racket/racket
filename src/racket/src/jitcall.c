@@ -199,6 +199,45 @@ static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *r
   return ts__scheme_tail_apply_from_native(rator, argc + already, base);
 }
 
+#if defined(MZ_USE_FUTURES) && defined(MZ_PRECISE_GC)
+
+static Scheme_Object *try_future_local_stack_overflow(Scheme_Object *rator, int argc, Scheme_Object **argv, int multi)
+  XFORM_SKIP_PROC
+{
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_native_closure_type)
+      && scheme_can_apply_native_in_future(rator)) {
+    /* the only reason to get here is stack overflow, 
+       either for the runstack or C stack */
+    return scheme_rtcall_apply_with_new_stack(rator, argc, argv, multi);
+  } else if (multi)
+    return ts__scheme_apply_multi_from_native(rator, argc, argv);
+  else
+    return ts__scheme_apply_from_native(rator, argc, argv);
+}
+
+static Scheme_Object *x_ts__scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall)
+    return try_future_local_stack_overflow(rator, argc, argv, 1);
+  else
+    return _scheme_apply_multi_from_native(rator, argc, argv);
+}
+
+static Scheme_Object *x_ts__scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall)
+    return try_future_local_stack_overflow(rator, argc, argv, 0);
+  else
+    return _scheme_apply_from_native(rator, argc, argv);
+}
+
+#else
+# define x_ts__scheme_apply_multi_from_native ts__scheme_apply_multi_from_native
+# define x_ts__scheme_apply_from_native ts__scheme_apply_from_native
+#endif
+
 static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
                                            int in_short_jumps,
                                            int gc_reg, /* must not be JIT_R1 */
@@ -913,9 +952,9 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   jit_pusharg_p(JIT_V1);
   if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
   if (multi_ok) {
-    (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
+    (void)mz_finish_lwe(x_ts__scheme_apply_multi_from_native, refrts);
   } else {
-    (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
+    (void)mz_finish_lwe(x_ts__scheme_apply_from_native, refrts);
   }
   CHECK_LIMIT();
   mz_patch_ucbranch(ref5);

@@ -819,6 +819,37 @@ We should also test deep continuations.
     (check-equal? (unbox b2) #false)
     (neg-good)
     (check-equal? (unbox b2) #true))
+
+  ;; check handling of marks in stack-overflow handling:
+  (let ()
+    (define (maybe-add1 n)
+      (if (number? n)
+          (add1 n)
+          n))
+    (define (loop n)
+      (if (zero? n)
+          (continuation-mark-set->list (current-continuation-marks) 'x)
+          (with-continuation-mark
+              'x
+              n
+            (maybe-add1 (loop (sub1 n))))))
+    (define f (func (lambda () (loop 10000))))
+    (check-equal? 10000 (length (touch f))))
+
+  ;; check arity error in overflow handling:
+  (let ()
+    (define (loop n)
+      (if (zero? n)
+          (values 0 0)
+          (add1 (loop (sub1 n)))))
+    
+    (for ([i (in-range 1340 1320 -1)])
+      (define f (func (lambda () (loop i))))
+      (sleep 0.1)
+      (with-handlers ([exn:fail? (lambda (exn)
+                                   (unless (regexp-match #rx"context" (exn-message exn))
+                                     (raise exn)))])
+        (touch f))))
   )
 
 (run-tests future)

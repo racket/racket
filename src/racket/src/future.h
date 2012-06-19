@@ -8,14 +8,27 @@ typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
 typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 
+/* PENDING is ready to run: */
 #define PENDING 0
+/* RUNNING is running in some thread: */
 #define RUNNING 1
+/* WAITING_FOR_PRIM is waiting for the runtime thread to start runnin
+   a primitive -- possibiliy atomic, possibly not, and possibly a LWC
+   capture happens while waiting: */
 #define WAITING_FOR_PRIM 2
+/* FINISHED means the result (or failure) is ready: */
 #define FINISHED 3
+/* PENDING is ready to run, but won't work in a future thread: */
 #define PENDING_OVERSIZE 4
+/* WAITING_FOR_PRIM is the runtime thread working on a primitive: */
 #define HANDLING_PRIM 5
+/* WAITING_FOR_FSEMA is in the queue of an fsemaphore: */
 #define WAITING_FOR_FSEMA 6
+/* SUSPENDED is the owning custodian is gone, so the future will never finish: */
 #define SUSPENDED 7
+/* WAITING_FOR_OVERFLOW is waiting for an LCW capture to continue
+   for a stack overflow: */
+#define WAITING_FOR_OVERFLOW 8
 
 /* FSRC_OTHER means: descriptive string is provided for logging,
    called function *DOES NOT NEED* to lookup continuation marks. */
@@ -88,7 +101,6 @@ typedef struct future_t {
      that case */
 
   Scheme_Object *orig_lambda;
-  void *code;
 
   Scheme_Custodian *cust; /* an approximate custodian; don't use a future
                              thread if this custodian is shut down */
@@ -178,6 +190,8 @@ typedef struct future_t {
      extra flag avoids spinning if the suspended continuation
      cannot be resumed in the main thread for some reason */
 
+  void **suspended_lw_stack; /* for overflow handling */
+
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */
   MZ_MARK_STACK_TYPE retval_m;
@@ -228,6 +242,7 @@ typedef struct fsemaphore_t {
 #define SIG_FUTURE             6
 #define SIG_WRONG_TYPE_EXN     7
 #define SIG_TAIL_APPLY         8
+#define SIG_APPLY_AFRESH       9
 
 # include "jit_ts_protos.h"
 
@@ -240,6 +255,9 @@ extern void scheme_rtcall_allocate_values(int count, Scheme_Thread *t);
 extern Scheme_Object *scheme_rtcall_make_fsemaphore(Scheme_Object *ready);
 extern Scheme_Object *scheme_rtcall_make_future(Scheme_Object *proc);
 extern Scheme_Object *scheme_rtcall_tail_apply(Scheme_Object *rator, int argc, Scheme_Object **argv);
+extern Scheme_Object *scheme_rtcall_apply_with_new_stack(Scheme_Object *rator, int argc, Scheme_Object **argv, int multi);
+
+int scheme_can_apply_native_in_future(Scheme_Object *proc);
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();

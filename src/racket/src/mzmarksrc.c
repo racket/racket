@@ -2474,6 +2474,7 @@ future {
   gcMARK2(f->next_waiting_lwc, gc);
   gcMARK2(f->next_waiting_touch, gc);
   gcMARK2(f->suspended_lw, gc);
+  gcMARK2(f->suspended_lw_stack, gc);
   gcMARK2(f->prev_in_fsema_queue, gc);
   gcMARK2(f->next_in_fsema_queue, gc);
   gcMARK2(f->touching, gc);

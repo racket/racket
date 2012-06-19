@@ -188,7 +188,11 @@ a data value that is an instance of a @racket[future-event]
 @tech{prefab} structure:
 
 @racketblock[
-(define-struct future-event (future-id proc-id action time unsafe-op-name)
+(define-struct future-event (future-id
+                             proc-id
+                             action
+                             time
+                             unsafe-op-name)
   #:prefab)
 ]
 
@@ -222,6 +226,10 @@ The @racket[action] field is a symbol:
        started in a process other than 0 (e.g., the thunk requires too
        much local storage to start).}
 
+ @item{@racket['start-overflow-work]: like @racket['start-work], where
+       the future thunk's work was previously stopped due to an
+       internal stack overflow.}
+
  @item{@racket['sync]: blocking (processes other than 0) or initiation
        of handing (process 0) for an ``unsafe'' operation in a future
        thunk's evaluation; the operation must run in process 0.}
@@ -234,6 +242,10 @@ The @racket[action] field is a symbol:
  @item{@racket['touch] (never in process 0): like @racket['sync] or
        @racket['block], but for a @racket[touch] operation within a
        future thunk.}
+
+ @item{@racket['overflow] (never in process 0): like @racket['sync] or
+       @racket['block], but for the case that a process encountered an
+       internal stack overflow while evaluating a future thunk.}
 
  @item{@racket['result] or @racket['abort]: waiting or handling for
        @racket['sync], @racket['block], or @racket['touch] ended with
@@ -255,15 +267,15 @@ The @racket[action] field is a symbol:
 
 ]
 
-Assuming no @racket['missing] events, then @racket['start-work] or
-@racket['start-0-work] is always paired with @racket['end-work],
+Assuming no @racket['missing] events, then @racket['start-work],
+@racket['start-0-work], @racket['start-overflow-work] is always paired with @racket['end-work];
 @racket['sync], @racket['block], and @racket['touch] are always paired
-with @racket['result], @racket['abort], or @racket['suspend], and
+with @racket['result], @racket['abort], or @racket['suspend]; and
 @racket['touch-pause] is always paired with @racket['touch-resume].
 
 In process 0, some event pairs can be nested within other event pairs:
 @racket['sync], @racket['block], or @racket['touch] with
-@racket['result] or @racket['abort], and @racket['touch-pause] with
+@racket['result] or @racket['abort]; and @racket['touch-pause] with
 @racket['touch-resume].
 
 An @racket[block] in process 0 is generated when an unsafe operation 
