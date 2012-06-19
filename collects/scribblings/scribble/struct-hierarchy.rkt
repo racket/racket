@@ -1,8 +1,9 @@
 #lang racket/base
 
 (require "class-diagrams.rkt"
+         (only-in slideshow/pict pin-arrow-line)
          texpict/mrpict
-         texpict/utils
+         (except-in texpict/utils pin-arrow-line)
          racket/system
          racket/class
          racket/draw)
@@ -15,7 +16,7 @@
 
 (define (mk-diagram)
   
-  (define part-name (class-name "part"))
+  (define part-name (class-name "part" #:spacing-word "subparts"))
   (define part-blocks-field (field-spec #f "blocks"))
   (define part-subparts-field (field-spec #f "subparts"))
   (define part-title-field (field-spec #f "title"))
@@ -60,10 +61,6 @@
   (define content-name (class-name "content"))
   (define content-box (class-box content-name #f #f))
   
-  (define element-name (class-name "element"))
-  (define element-style (field-spec #f "style"))
-  (define element-box (class-box element-name (list element-style) #f))
-  
   (define string-name (class-name "string"))
   (define string-box (class-box string-name #f #f))
 
@@ -73,58 +70,83 @@
   (define pict-name (class-name "pict"))
   (define pict-box (class-box pict-name #f #f))
 
+  (define convertible-name (class-name "convertible"))
+  (define convertible-box (class-box convertible-name #f #f))
+  
   (define list-name (class-name "list"))
   (define list-box (class-box list-name #f #f))
   
-  (define target-element-name (class-name "target-\nelement"))
-  (define target-tag (field-spec #f "tag"))
-  (define target-content (field-spec #f "content"))
-  (define target-element-box (class-box target-element-name 
-                                        (list target-tag target-content)
-                                        #f))
+  (define delayed-element-name (class-name "delayed-\nelement"))
+  (define delayed-element-content (field-spec #f "content"))
+  (define delayed-element-box (class-box delayed-element-name (list delayed-element-content) #f))
+  
+  (define render-element-name (class-name "render-\nelement"))
+  (define render-element-content (field-spec #f "content"))
+  (define render-element-box (class-box render-element-name (list render-element-content) #f))
+  
+  (define traverse-element-name (class-name "traverse-\nelement"))
+  (define traverse-element-content (field-spec #f "content"))
+  (define traverse-element-box (class-box traverse-element-name (list traverse-element-content) #f))
+  
+  (define part-relative-element-name (class-name "part-\nrelative-\nelement"))
+  (define part-relative-element-resolve (field-spec #f "resolve"))
+  (define part-relative-element-box (class-box part-relative-element-name (list part-relative-element-resolve) #f))
+  
+  (define element-name (class-name "element"))
+  (define element-style (field-spec #f "style"))
+  (define element-content (field-spec #f "content"))
+  (define element-box (class-box element-name (list element-style element-content) #f))
   
   (define link-element-name (class-name "link-\nelement"))
   (define link-tag (field-spec #f "tag"))
-  (define link-content (field-spec #f "content"))
   (define link-element-box (class-box link-element-name
-                                      (list link-tag link-content)
+                                      (list link-tag)
                                       #f))
   
-  (define delayed-element-name (class-name "delayed-\nelement"))
-  (define delayed-content (field-spec #f "content"))
-  (define delayed-element-box (class-box delayed-element-name (list delayed-content) #f))
-  
-  (define render-element-name (class-name "render-\nelement"))
-  (define render-content (field-spec #f "content"))
-  (define render-element-box (class-box render-element-name (list render-content) #f))
-  
-  (define traverse-element-name (class-name "traverse-\nelement"))
-  (define traverse-content (field-spec #f "content"))
-  (define traverse-element-box (class-box traverse-element-name (list traverse-content) #f))
-  
   (define collect-element-name (class-name "collect-\nelement"))
-  (define collect-content (field-spec #f "content"))
-  (define collect-element-box (class-box collect-element-name (list collect-content) #f))
+  (define collect-element-collect (field-spec #f "collect"))
+  (define collect-element-box (class-box collect-element-name (list collect-element-collect) #f))
   
-  (define index-element-name (class-name "index-\nelement"))
+  (define index-element-name (class-name "index-\nelement" #:spacing-word "keywords"))
   (define index-element-tag (field-spec #f "tag"))
   (define index-element-keywords (field-spec #f "keywords"))
-  (define index-element-content (field-spec #f "content"))
   (define index-element-box (class-box index-element-name
-                                       (list index-element-tag index-element-keywords index-element-content)
+                                       (list index-element-tag index-element-keywords)
                                        #f))
   
-  (define image-element-name (class-name "image-\nelement"))
-  (define image-element-box (class-box image-element-name (list) #f))
+  (define image-element-name (class-name "image-\nelement" #:spacing-word "suffixes"))
+  (define image-element-path (field-spec #f "path"))
+  (define image-element-suffixes (field-spec #f "suffixes"))
+  (define image-element-scale (field-spec #f "scale"))
+  (define image-element-box (class-box image-element-name 
+                                       (list image-element-path
+                                             image-element-suffixes
+                                             image-element-scale)
+                                       #f))
   
   (define multi-arg-element-name (class-name "multi-arg-\nelement"))
   (define multi-arg-element-tag (field-spec #f "tag"))
-  (define multi-arg-element-content (field-spec #f "content"))
-  (define multi-arg-element-box (class-box multi-arg-element-name (list multi-arg-element-tag multi-arg-element-content) #f))
+  (define multi-arg-element-box (class-box multi-arg-element-name (list multi-arg-element-tag) #f))
 
-  (define part-relative-element-name (class-name "part-relative-\nelement"))
-  (define part-relative-element-resolve (field-spec #f "resolve"))
-  (define part-relative-element-box (class-box part-relative-element-name (list part-relative-element-resolve) #f))
+  (define target-element-name (class-name "target-\nelement"))
+  (define target-tag (field-spec #f "tag"))
+  (define target-element-box (class-box target-element-name 
+                                        (list target-tag)
+                                        #f))
+
+  (define redirect-target-element-name (class-name "redirect-target-\nelement"))
+  (define redirect-target-alt-path (field-spec #f "alt-path"))
+  (define redirect-target-alt-anchor (field-spec #f "alt-anchor"))
+  (define redirect-target-element-box (class-box redirect-target-element-name 
+                                                 (list redirect-target-alt-path redirect-target-alt-anchor)
+                                                 #f))
+  
+  (define toc-target-element-name (class-name "toc-target-\nelement"))
+  (define toc-target-element-box (class-box toc-target-element-name (list) #f))
+  
+  (define page-target-element-name (class-name "page-target-\nelement"))
+  (define page-target-element-box (class-box page-target-element-name (list) #f))
+  
   
   (define block-hierarchy
     (hierarchy
@@ -151,73 +173,87 @@
            delayed-block-box
            traverse-block-box)))
 
-  (define target-element-parent-link (blank))
-  (define render-element-parent-link (blank))
-  (define delayed-element-parent-link (blank))
-  (define part-relative-element-parent-link (blank))
-  (define traverse-element-parent-link (blank))
+  (define target-element-hierarchy
+    (hierarchy
+     (vc-append target-element-box
+                (blank 0 50)
+                (ht-append 20 
+                           toc-target-element-box
+                           page-target-element-box
+                           redirect-target-element-box))
+     (list target-element-box)
+     (list toc-target-element-box
+           page-target-element-box
+           redirect-target-element-box)))
   
   (define element-hierarchy
     (hierarchy
      (vc-append element-box
                 (blank 0 50)
-                (ht-append 20 
-                           (hc-append collect-element-box (blank 30 0))
-                           (vc-append (blank 0 10) multi-arg-element-box)
-                           (vc-append (blank 0 20) index-element-box)
-                           (vc-append (blank 0 10) image-element-box)
-                           link-element-box)
-                (blank 0 20)
-                (ht-append 10
-                           (rt-superimpose target-element-box 
-                                           (ht-append target-element-parent-link
-                                                      (blank 8 0)))
-                           (lt-superimpose render-element-box 
-                                           (ht-append (blank 8 0)
-                                                      render-element-parent-link))
-                           (blank 250 0))
-                (ht-append 10
-                           (blank 130 0)
-                           (vc-append (blank 0 60) 
-                                      (rt-superimpose delayed-element-box
-                                                      (ht-append delayed-element-parent-link
-                                                                 (blank 15 0))))
-                           (vc-append (blank 0 30) 
-                                      (ct-superimpose part-relative-element-box
-                                                      (ht-append (blank 20 0) 
-                                                                 part-relative-element-parent-link)))
-                           (ct-superimpose traverse-element-box
-                                           (ht-append traverse-element-parent-link
-                                                      (blank 30 0)))))
+                (inset (ht-append 20 
+                                  collect-element-box
+                                  multi-arg-element-box
+                                  (refocus target-element-hierarchy target-element-box)
+                                  link-element-box
+                                  image-element-box
+                                  index-element-box)
+                       0 0 -400 0))
      (list element-box)
      (list collect-element-box
            index-element-box
            image-element-box
-           target-element-parent-link
+           target-element-box
            multi-arg-element-box
            link-element-box
-           delayed-element-parent-link
-           traverse-element-parent-link
-           part-relative-element-parent-link
-           render-element-parent-link
-           link-element-box)))
+           )))
 
+    (define render-element-parent-link (blank))
+  (define delayed-element-parent-link (blank))
+  (define part-relative-element-parent-link (blank))
+  (define traverse-element-parent-link (blank))
+  (define element-parent-link (blank))
+  
+  (define (drop-and-link box parent-link i)
+    (vc-append
+     (blank 0 (+ 40 (* i 20)))
+     (refocus (ct-superimpose box parent-link)
+              parent-link)))
+  
   (define content-hierarchy
     (hierarchy
      (vc-append content-box
                 (blank 0 50)
-                (ht-append (ht-append 20
-                                      string-box
-                                      symbol-box)
-                           (inset element-hierarchy -130 0)
-                           (ht-append 20
-                                      pict-box
-                                      list-box)))
+                (ht-append 15
+                           (drop-and-link (refocus element-hierarchy element-box)
+                                          element-parent-link
+                                          4)
+                           convertible-box
+                           (drop-and-link render-element-box 
+                                          render-element-parent-link
+                                          4)
+                           pict-box
+                           (drop-and-link delayed-element-box
+                                          delayed-element-parent-link
+                                          3)
+                           symbol-box
+                           (drop-and-link part-relative-element-box
+                                          part-relative-element-parent-link
+                                          1)
+                           string-box
+                           (drop-and-link traverse-element-box
+                                          traverse-element-parent-link
+                                          0)
+                           list-box))
      (list content-box)
-     (list string-box
+     (list element-box
+           string-box
            symbol-box
+           convertible-box
            pict-box
-           element-box
+           traverse-element-parent-link
+           part-relative-element-parent-link
+           delayed-element-parent-link
+           render-element-parent-link
            list-box)))
     
   (define raw
@@ -232,44 +268,31 @@
      right-right-reference
      (double
       left-left-reference
-      (double
-       left-left-reference
-       (double
-        left-left-reference
+      (triple
+       right-right-reference
+       (triple
+        right-right-reference
         (double
-         right-right-reference
+         left-left-reference
          (double
           left-left-reference
           (double
-           left-left-reference
-           (triple
-            right-right-reference
-            (triple
-             right-right-reference
-             (double
-              left-left-reference
-              (double
-               left-left-reference
-               (double
-                right-right-reference 
-                (double
-                 left-left-reference 
-                 (double
-                  left-left-reference 
-                  raw
-                  part-box part-title-field content-box content-name 21)
-                 part-box part-blocks-field block-box block-name)
-                part-box part-subparts-field part-box part-name 2)
-               para-box para-content content-box content-name 2)
-              compound-para-box compound-para-blocks block-box block-name 3)
-             table-box table-cells block-box block-name 2)
-            itemization-box itemization-items block-box block-name 10)
-           nested-flow-box nested-flow-blocks block-box block-name 1)
-          target-element-box target-content content-box content-name 8)
-         link-element-box link-content content-box content-name)
-        multi-arg-element-box multi-arg-element-content content-box content-name 14)
-       index-element-box index-element-content content-box content-name 26)
-      collect-element-box collect-content content-box content-name 1)
+           right-right-reference 
+           (double
+            left-left-reference 
+            (double
+             left-left-reference 
+             (left-left-reference 
+              raw
+              element-box element-content content-box content-name 1 #:dot-delta -1)
+             part-box part-title-field content-box content-name 21)
+            part-box part-blocks-field block-box block-name)
+           part-box part-subparts-field part-box part-name 2)
+          para-box para-content content-box content-name 2)
+         compound-para-box compound-para-blocks block-box block-name 3)
+        table-box table-cells block-box block-name 2)
+       itemization-box itemization-items block-box block-name 10)
+      nested-flow-box nested-flow-blocks block-box block-name 1)
      list-box list-box content-box content-name))
   
   (define w/delayed-connections 
@@ -280,12 +303,12 @@
         (dotted-right-right-reference
          (dotted-right-right-reference
           w/connections
-          render-element-box render-content content-box content-name 31)
+          render-element-box render-element-content content-box content-name 30)
          traverse-block-box traverse-block-block block-box block-name 1)
         delayed-block-box delayed-block-block block-box block-name 17)
-       traverse-element-box traverse-content content-box content-name 5)
-      delayed-element-box delayed-content content-box content-name 27)
-     part-relative-element-box part-relative-element-resolve content-box content-name 14))
+       traverse-element-box traverse-element-content content-box content-name 3)
+      delayed-element-box delayed-element-content content-box content-name 22)
+     part-relative-element-box part-relative-element-resolve content-box content-name 12))
   
   ;; one extra pixel on the right so we get the
   ;; line drawn to the outermost turning point
@@ -331,7 +354,7 @@
              (λ (dc dx dy)
                (let ([pen (send dc get-pen)])
                  (send dc set-pen
-                       (send pen get-color)
+                       type-link-color ;(send pen get-color)
                        (if (is-a? dc post-script-dc%)
                            4
                            2)
@@ -350,7 +373,7 @@
                              (let-values ([(x y) (cc-find pict dot2)])
                                (values (+ x 2) y)))
                       dot2 cc-find
-                      #f #f #f #f)
+                      #:color type-link-color)
       base)))
 
 (define (dotted-right-right-reference p0 a b c d [count 1])
@@ -358,7 +381,13 @@
 
 (module+ slideshow
   (require slideshow)
-  (define p (mk-diagram))
-  (slide (scale p
-                (min (/ client-w (pict-width p))
-                     (/ client-h (pict-height p))))))
+  (define p (inset (mk-diagram) 0 0 0 1))
+  (define c (blank client-w client-h))
+  (slide (lt-superimpose (t "top") (clip (refocus (ct-superimpose p c) c))))
+  (slide (lt-superimpose (t "bottom") (clip (refocus (cb-superimpose p c) c))))
+  (slide (lt-superimpose (t "all")
+                         (ct-superimpose 
+                          c
+                          (scale p
+                                 (min (/ client-w (pict-width p))
+                                      (/ client-h (pict-height p))))))))

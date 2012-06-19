@@ -1,7 +1,8 @@
 #lang racket/base
 (require (prefix-in etc: mzlib/etc)
          texpict/mrpict
-         texpict/utils
+         (only-in slideshow/pict pin-line pin-arrow-line)
+         (except-in texpict/utils pin-line pin-arrow-line)
          racket/class
          racket/runtime-path
          racket/draw
@@ -19,6 +20,9 @@
 (define dot-edge-spacing 10)
 
 (define field-arrowhead-size 10)
+
+(define hierarchy-color "navy")
+(define type-link-color "firebrick")
 
 #|
 (define font-family "Palatino")
@@ -108,13 +112,21 @@
     [else (user-type-font str)]))
 
 ;; class-name : string -> pict
-(define (class-name txt) 
-  (apply vl-append (map var-font (regexp-split #rx"\n" txt))))
+(define (class-name txt #:spacing-word [spacing-word txt]) 
+  (define p (colorize (lt-superimpose (ghost (var-font spacing-word))
+                                      (apply vl-append (map var-font (regexp-split #rx"\n" txt))))
+                      "white"))
+  (refocus (cc-superimpose (colorize (filled-rectangle (+ class-box-margin class-box-margin (pict-width p))
+                                                       (+ class-box-margin class-box-margin (pict-height p)))
+                                     "black")
+                           p)
+           p))
+
+(define class-box-margin 4)
 
 ;; class-box : pict (or/c #f (listof pict)) (or/c #f (listof pict)) -> pict
 (define (class-box name fields methods)
-  (let* ([spacing 4]
-         [mk-blank (λ () (blank 0 spacing))])
+  (let* ([mk-blank (λ () (blank 0 (+ class-box-margin class-box-margin)))])
     (cond
       [(and methods fields)
        (let* ([top-spacer (mk-blank)]
@@ -129,7 +141,7 @@
                                    (blank 0 4)
                                    (apply vl-append methods)))])
          (add-hline
-          (add-hline (frame (inset main spacing))
+          (add-hline (frame (inset main class-box-margin))
                      top-spacer)
           bottom-spacer))]
       [fields
@@ -139,10 +151,10 @@
                                (if (null? fields)
                                    (blank)
                                    (apply vl-append fields)))])
-         (add-hline (frame (inset main spacing))
+         (add-hline (frame (inset main class-box-margin))
                     top-spacer))]
       [methods (class-box name methods fields)]
-      [else (frame (inset name spacing))])))
+      [else (frame (inset name class-box-margin))])))
 
 (define (add-hline main sub)
   (let-values ([(x y) (cc-find main sub)])
@@ -159,13 +171,14 @@
       (error 'hierarchy "expected supers to be on top of subs, supers bottom is at ~a, and subs tops is at ~a"
              supers-bottoms
              subs-tops))
-    (let* ([main-line-y (/ (+ supers-bottoms subs-tops) 2)]
+    (let* ([main-line-y (max (- subs-tops 20) (/ (+ supers-bottoms subs-tops) 2))]
            [main-line-start-x (center-x  main (car sorted-subs))]
            [main-line-end-x (center-x main (last sorted-subs))]
            [w/main-line
             (pin-line main
                       main (λ (_1 _2) (values main-line-start-x main-line-y))
-                      main (λ (_1 _2) (values main-line-end-x main-line-y)))]
+                      main (λ (_1 _2) (values main-line-end-x main-line-y))
+                      #:color hierarchy-color)]
            [super-lines
             (map (λ (super) 
                    (let-values ([(x y) (cb-find main super)])
@@ -183,7 +196,8 @@
                    (let-values ([(x y) (ct-find main sub)])
                      (pin-line (ghost main)
                                sub ct-find
-                               main (λ (_1 _2) (values x main-line-y)))))
+                               main (λ (_1 _2) (values x main-line-y))
+                               #:color hierarchy-color)))
                  subs)])
       (apply cc-superimpose 
              w/main-line
@@ -196,13 +210,15 @@
   (let ([points (list (make-object point% (/ triangle-width 2) 0)
                       (make-object point% 0 triangle-height)
                       (make-object point% triangle-width triangle-height))])
-    (dc (λ (dc dx dy)
-          (let ([brush (send dc get-brush)])
-            (send dc set-brush (send brush get-color) 'solid)
-            (send dc draw-polygon points dx dy)
-            (send dc set-brush brush)))
-        triangle-width
-        triangle-height)))
+    (colorize 
+     (dc (λ (dc dx dy)
+           (let ([brush (send dc get-brush)])
+             (send dc set-brush (send brush get-color) 'solid)
+             (send dc draw-polygon points dx dy)
+             (send dc set-brush brush)))
+         triangle-width
+         triangle-height)
+     hierarchy-color)))
 
 (define (center-x main pict)
   (let-values ([(x y) (cc-find main pict)])
@@ -271,11 +287,12 @@
       (pin-arrow-line field-arrowhead-size pict
                       dot1 cc-find
                       dot2 cc-find
-                      #f #f #f #f
-                      #:hide-arrowhead? (not show-arrowhead?))
+                      #:hide-arrowhead? (not show-arrowhead?)
+                      #:color type-link-color)
       (pin-line pict
                 dot1 cc-find
-                dot2 cc-find)))
+                dot2 cc-find
+                #:color type-link-color)))
 
 (define (hierarchy/layout tops bottoms 
                           #:every-other-space [every-other-space 0]
@@ -423,9 +440,10 @@
 
 (define connect-dots-contract (->* (boolean? pict? pict?) () #:rest (listof pict?) (values pict?)))
 
+(provide type-link-color)
 (provide/contract
  [field-spec (->* ((or/c #f string?) string?) (string? #:default string?) pict?)]
- [class-name (-> string? pict?)]
+ [class-name (->* (string?) (#:spacing-word string?) pict?)]
  [class-box (-> pict? (or/c false/c (listof pict?)) (or/c false/c (listof pict?)) pict?)]
  [hierarchy/layout 
   (->* ((cons/c pict? (listof pict?)) (cons/c pict? (listof pict?)))

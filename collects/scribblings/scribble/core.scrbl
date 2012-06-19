@@ -56,10 +56,14 @@ None of the passes mutate the document representation. Instead, the
 
 This diagram shows the large-scale structure of the
 type hierarchy for Scribble documents. A box represents
-a struct; for example @racket[part] is a struct. The substruct relationship
-is shown vertically with lines connected by a triangle;
+a struct or a built-in Racket type; for example @racket[part] is a struct.
+The bottom portion of a box shows the fields; for example
+@racket[part] has three fields, @racket[title], @racket[blocks], 
+and @racket[subparts].
+The substruct relationship
+is shown vertically with navy blue lines connected by a triangle;
 for example, a @racket[compound-paragraph] is a @racket[block]. 
-The types of values on fields are shown via lines in the diagram.
+The types of values on fields are shown via dark red lines in the diagram.
 Doubled lines represent lists and tripled lines represent lists
 of lists; for example, the @racket[blocks] field of 
 @racket[compound-paragraph] is a list of @racket[blocks].
@@ -69,9 +73,10 @@ a @racket[traverse-block] struct is a function that
 computes a @racket[block]. 
 
 The diagram is not completely
-accurate; a few fields are omitted and sometimes the types
-are simplified (e.g., a @racket[table] may have @racket['cont]
-in place of a block).
+accurate: a @racket[table] may have @racket['cont]
+in place of a block in its @racket[cells] field, and
+the types of fields are only shown if they are other structs
+in the diagram.
 A prose description with more detail follows the diagram.
 
 @(mk-diagram)
