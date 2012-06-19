@@ -5106,8 +5106,13 @@ static void read_module_directory(Scheme_Object *port, Scheme_Hash_Table *ht, in
                     "read (compiled): multi-module directory tree is imbalanced");
   
   len = read_simple_number_from_port(port);
+  if (len < 0) 
+    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+                    "read (compiled): directory module name read failed");
+
   s = scheme_malloc_atomic(len + 1);
   got = scheme_get_bytes(port, len, s, 0);
+
   if (got != len)
     v = NULL;
   else {

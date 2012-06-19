@@ -1432,6 +1432,7 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     obj = SCHEME_CDR(obj);
     nve = scheme_null;
     while (!SCHEME_NULLP(e)) {
+      if (!SCHEME_PAIRP(e)) return_NULL();
       ne = read_module(SCHEME_CAR(e));
       nve = scheme_make_pair(ne, nve);
       e = SCHEME_CDR(e);
@@ -1484,8 +1485,8 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (cnt < 1) return_NULL();
-
+  if (cnt < 1 || cnt > 1000) return_NULL();
+  
   m->num_phases = cnt;
   exp_infos = MALLOC_N(Scheme_Module_Export_Info *, cnt);
   while (cnt--) {
@@ -1499,6 +1500,8 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   if (!SCHEME_PAIRP(obj)) return_NULL();
   cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
+
+  if (cnt < 1 || cnt > 1000) return_NULL();
   
   while (cnt--) {
     Scheme_Object *phase;
