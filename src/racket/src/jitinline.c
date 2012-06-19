@@ -40,7 +40,7 @@ static Scheme_Object *ts_scheme_make_fsemaphore(int argc, Scheme_Object **argv)
   XFORM_SKIP_PROC
 {
   if (scheme_use_rtcall) { 
-    return scheme_rtcall_make_fsemaphore("[make_fsemaphore]", FSRC_OTHER, argv[0]);
+    return scheme_rtcall_make_fsemaphore(argv[0]);
   } 
   
   return scheme_make_fsemaphore_inl(argv[0]);

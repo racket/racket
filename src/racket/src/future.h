@@ -3,12 +3,10 @@
 
 #ifdef MZ_USE_FUTURES
 
-typedef Scheme_Object **(*prim_on_demand_t)(Scheme_Object **, Scheme_Object **, int);
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
 typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
-typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
 
 #define PENDING 0
 #define RUNNING 1
@@ -235,14 +233,13 @@ typedef struct fsemaphore_t {
 
 extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 
-extern Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_demand_t f, Scheme_Object **argv);
-extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
+extern Scheme_Object **scheme_rtcall_on_demand(Scheme_Object **argv);
+extern uintptr_t scheme_rtcall_alloc(void);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
-extern void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
-                                          prim_allocate_values_t f);
-extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready);
-extern Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_Object *proc);
-extern Scheme_Object *scheme_rtcall_tail_apply(const char *who, int src_type, Scheme_Object *rator, int argc, Scheme_Object **argv);
+extern void scheme_rtcall_allocate_values(int count, Scheme_Thread *t);
+extern Scheme_Object *scheme_rtcall_make_fsemaphore(Scheme_Object *ready);
+extern Scheme_Object *scheme_rtcall_make_future(Scheme_Object *proc);
+extern Scheme_Object *scheme_rtcall_tail_apply(Scheme_Object *rator, int argc, Scheme_Object **argv);
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();

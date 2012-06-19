@@ -165,7 +165,7 @@ static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, in
       p->ku.apply.tail_rands = a;
       return SCHEME_TAIL_CALL_WAITING;
     } else
-      return scheme_rtcall_tail_apply("[tail-call]", FSRC_OTHER, rator, argc, argv);
+      return scheme_rtcall_tail_apply(rator, argc, argv);
   } else
     return _scheme_tail_apply_from_native(rator, argc, argv);
 }

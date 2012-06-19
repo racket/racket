@@ -1253,6 +1253,8 @@ void scheme_generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
 Scheme_Object **scheme_on_demand(Scheme_Object **argv);
 Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv, int argv_delta);
 
+void scheme_jit_allocate_values(int count, Scheme_Thread *p);
+
 void scheme_prepare_branch_jump(mz_jit_state *jitter, Branch_Info *for_branch);
 void scheme_branch_for_true(mz_jit_state *jitter, Branch_Info *for_branch);
 void scheme_add_or_patch_branch_true_uc(mz_jit_state *jitter, Branch_Info *for_branch, jit_insn *ref);

@@ -141,6 +141,11 @@ static void allocate_values(int count, Scheme_Thread *p)
   p->values_buffer_size = count;
 }
 
+void scheme_jit_allocate_values(int count, Scheme_Thread *p)
+{
+  allocate_values(count, p);
+}
+
 #ifdef MZ_USE_FUTURES
 static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
 {
@@ -152,7 +157,7 @@ static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
       p->values_buffer = a;
       p->values_buffer_size = count;
     } else
-      scheme_rtcall_allocate_values("[allocate_values]", FSRC_OTHER, count, p, allocate_values);
+      scheme_rtcall_allocate_values(count, p);
   } else
     allocate_values(count, p);
 }
@@ -168,7 +173,7 @@ static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
 static Scheme_Object **ts_scheme_on_demand(Scheme_Object **rs) XFORM_SKIP_PROC
 {
   if (scheme_use_rtcall) {
-    return scheme_rtcall_on_demand("[jit_on_demand]", FSRC_OTHER, scheme_on_demand_with_args, rs);
+    return scheme_rtcall_on_demand(rs);
   } else
     return scheme_on_demand(rs);
 }

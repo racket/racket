@@ -1267,10 +1267,10 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
         /* It would be nice to encourage allocation of a page for
            the future thread in this case, since it might try to
            allocate more futures. */
-        return scheme_rtcall_make_future("future", FSRC_OTHER, proc);
+        return scheme_rtcall_make_future(proc);
       }
     } else {
-      return scheme_rtcall_make_future("future", FSRC_OTHER, proc);
+      return scheme_rtcall_make_future(proc);
     }
   }
 }
@@ -2675,13 +2675,13 @@ void scheme_wrong_contract_from_ft(const char *who, const char *expected_type, i
 
   future->time_of_request = get_future_timestamp();
   future->source_of_request = who;
-  future_do_runtimecall(fts, (void*)scheme_wrong_contract, 0, 1);
+  future_do_runtimecall(fts, NULL, 0, 1);
   
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
 }
 
-Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_demand_t f, Scheme_Object **argv)
+Scheme_Object **scheme_rtcall_on_demand(Scheme_Object **argv)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -2701,10 +2701,10 @@ Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_d
   future->arg_S0 = MZ_RUNSTACK;
 
   future->time_of_request = get_future_timestamp();
-  future->source_of_request = who;
-  future->source_type = src_type;
+  future->source_of_request = "[jit_on_demand]";
+  future->source_type = FSRC_OTHER;
 
-  future_do_runtimecall(fts, (void*)f, 1, 1);
+  future_do_runtimecall(fts, NULL, 1, 1);
 
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
@@ -2715,7 +2715,7 @@ Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_d
   return MZ_RUNSTACK + 2;
 }
 
-Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready)
+Scheme_Object *scheme_rtcall_make_fsemaphore(Scheme_Object *ready)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -2727,8 +2727,8 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Sche
   future->prim_protocol = SIG_MAKE_FSEMAPHORE;
   future->arg_s1 = ready;
   future->time_of_request = get_future_timestamp();
-  future->source_of_request = who;
-  future->source_type = src_type;
+  future->source_of_request = "[make_fsemaphore]";
+  future->source_type = FSRC_OTHER;
 
   /* conservative check for when creation can succeed atomically: */
   if (SCHEME_INT_VAL(ready) 
@@ -2738,7 +2738,7 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Sche
   else
     is_atomic = 0;
   
-  future_do_runtimecall(fts, (void*)scheme_make_fsemaphore_inl, is_atomic, 1);
+  future_do_runtimecall(fts, NULL, is_atomic, 1);
 
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
@@ -2749,7 +2749,7 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Sche
   return retval;
 }
 
-Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_Object *proc)
+Scheme_Object *scheme_rtcall_make_future(Scheme_Object *proc)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -2766,10 +2766,10 @@ Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_O
   future->prim_protocol = SIG_FUTURE;
   future->arg_s1 = proc;
   future->time_of_request = get_future_timestamp();
-  future->source_of_request = who;
-  future->source_type = src_type;
+  future->source_of_request = "future";
+  future->source_type = FSRC_OTHER;
   
-  future_do_runtimecall(fts, (void*)scheme_future, is_atomic, 1);
+  future_do_runtimecall(fts, NULL, is_atomic, 1);
 
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
@@ -2780,8 +2780,7 @@ Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_O
   return retval;  
 }
 
-void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
-                                   prim_allocate_values_t f)
+void scheme_rtcall_allocate_values(int count, Scheme_Thread *t)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -2794,10 +2793,10 @@ void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Sch
   future->arg_s0 = (Scheme_Object *)t;
 
   future->time_of_request = get_future_timestamp();
-  future->source_of_request = who;
-  future->source_type = src_type;
+  future->source_of_request = "[allocate_values]";
+  future->source_type = FSRC_OTHER;
 
-  future_do_runtimecall(fts, (void*)f, 1, 0);
+  future_do_runtimecall(fts, NULL, 1, 0);
 
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
@@ -2805,8 +2804,7 @@ void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Sch
   future->arg_s0 = NULL;
 }
 
-Scheme_Object *scheme_rtcall_tail_apply(const char *who, int src_type, 
-                                        Scheme_Object *rator, int argc, Scheme_Object **argv)
+Scheme_Object *scheme_rtcall_tail_apply(Scheme_Object *rator, int argc, Scheme_Object **argv)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -2821,10 +2819,10 @@ Scheme_Object *scheme_rtcall_tail_apply(const char *who, int src_type,
   future->arg_S0 = argv;
 
   future->time_of_request = get_future_timestamp();
-  future->source_of_request = who;
-  future->source_type = src_type;
+  future->source_of_request = "[tail-call]";
+  future->source_type = FSRC_OTHER;
 
-  future_do_runtimecall(fts, (void*)scheme_void, 1, 0);
+  future_do_runtimecall(fts, NULL, 1, 0);
 
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
@@ -2841,7 +2839,7 @@ Scheme_Object *scheme_rtcall_tail_apply(const char *who, int src_type,
 }
 
 #ifdef MZ_PRECISE_GC 
-uintptr_t scheme_rtcall_alloc(const char *who, int src_type)
+uintptr_t scheme_rtcall_alloc()
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -2874,13 +2872,13 @@ uintptr_t scheme_rtcall_alloc(const char *who, int src_type)
   while (1) {
     future = fts->thread->current_ft;
     future->time_of_request = get_future_timestamp();
-    future->source_of_request = who;
-    future->source_type = src_type;
+    future->source_of_request = "[allocate memory]";
+    future->source_type = FSRC_OTHER;
   
     future->prim_protocol = SIG_ALLOC;
     future->arg_i0 = fts->gen0_size;
 
-    future_do_runtimecall(fts, (void*)GC_make_jit_nursery_page, 1, 0);
+    future_do_runtimecall(fts, NULL, 1, 0);
 
     future = fts->thread->current_ft;
     retval = future->alloc_retval;
@@ -2916,7 +2914,7 @@ void scheme_rtcall_new_mark_segment(Scheme_Thread *p)
   future->prim_protocol = SIG_ALLOC_MARK_SEGMENT;
   future->arg_s0 = (Scheme_Object *)p;
   
-  future_do_runtimecall(fts, (void*)scheme_new_mark_segment, 1, 0);
+  future_do_runtimecall(fts, NULL, 1, 0);
 }
 
 static int push_marks(future_t *f, Scheme_Cont_Frame_Data *d)
@@ -3000,7 +2998,7 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
 /* Does the work of actually invoking a primitive on behalf of a 
    future.  This function is always invoked on the main (runtime) 
    thread. */
-static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_atomic)
+static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
 /* Called in runtime thread */
 {
   Scheme_Cont_Frame_Data mark_d;
@@ -3052,14 +3050,13 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
     {
     case SIG_ON_DEMAND:
       {
-        prim_on_demand_t func = (prim_on_demand_t)future->prim_func;
         GC_CAN_IGNORE Scheme_Object **arg_S0 = future->arg_S0;
 
         future->arg_S0 = NULL;
 
         ADJUST_RS_ARG(future, arg_S0);
 
-        func(arg_S0, arg_S0, 2);
+        scheme_on_demand_with_args(arg_S0, arg_S0, 2);
 
         future->retval_is_rs_plus_two = 1;
 
@@ -3103,12 +3100,11 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
       }
     case SIG_ALLOC_VALUES:
       {
-        prim_allocate_values_t func = (prim_allocate_values_t)future->prim_func;
         GC_CAN_IGNORE Scheme_Object *arg_s0 = future->arg_s0;
 
         future->arg_s0 = NULL;
 
-        func(future->arg_i0, (Scheme_Thread *)arg_s0);
+        scheme_jit_allocate_values(future->arg_i0, (Scheme_Thread *)arg_s0);
 
         break;
       }
@@ -3189,7 +3185,7 @@ static void *do_invoke_rtcall_k(void)
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   
-  do_invoke_rtcall(fs, future, p->ku.k.i1);
+  do_invoke_rtcall(fs, future);
 
   return scheme_void;
 }
@@ -3201,6 +3197,7 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
   mz_jmp_buf newbuf, * volatile savebuf;
 
   FUTURE_ASSERT(!future->want_lw);
+  FUTURE_ASSERT(!is_atomic || future->rt_prim_is_atomic);
 
   savebuf = p->error_buf;
   p->error_buf = &newbuf;
@@ -3232,12 +3229,11 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
     scheme_longjmp(*savebuf, 1);
   } else {
     if (future->rt_prim_is_atomic) {
-      do_invoke_rtcall(fs, future, is_atomic);
+      do_invoke_rtcall(fs, future);
     } else {
       /* call with continuation barrier. */
       p->ku.k.p1 = fs;
       p->ku.k.p2 = future;
-      p->ku.k.i1 = is_atomic;
 
       (void)scheme_top_level_do(do_invoke_rtcall_k, 1);
     }
