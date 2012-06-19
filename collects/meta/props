@@ -788,11 +788,9 @@ path/s is either such a string or a list of them.
 "collects/mred/private/wx/cocoa" drdr:command-line #f
 "collects/mred/private/wx/win32" drdr:command-line #f
 "collects/mrlib" responsible (mflatt robby)
-"collects/mrlib/private/aligned-pasteboard/tests/actual-bigger.rktl" drdr:command-line (racket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/edit-sequence-loop.rktl" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/actual-bigger.rkt" drdr:command-line (gracket *)
 "collects/mrlib/private/aligned-pasteboard/tests/example-min.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/example.rkt" drdr:command-line #f
-"collects/mrlib/private/aligned-pasteboard/tests/insertion-without-display.rktl" drdr:command-line (racket "-f" *)
 "collects/mrlib/private/aligned-pasteboard/tests/minimal.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin-aligned.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin.rkt" drdr:command-line #f
@@ -800,14 +798,13 @@ path/s is either such a string or a list of them.
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests-min.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests-text.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/old-bugs" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test-min.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test.rkt" drdr:command-line #f
-"collects/mrlib/private/aligned-pasteboard/tests/test-alignment.rktl" drdr:command-line (racket "-f" *)
 "collects/mrlib/private/aligned-pasteboard/tests/test-locked-pasteboard.rkt" drdr:command-line #f
-"collects/mrlib/private/aligned-pasteboard/tests/test-pasteboard-lib.rktl" drdr:command-line (racket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rktl" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test.rktl" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test2.rktl" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line (gracket *)
+"collects/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (gracket *)
+"collects/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (gracket *)
 "collects/mysterx" responsible (mflatt)
 "collects/mysterx/main.rkt" drdr:command-line (mzc *)
 "collects/mysterx/mysterx.rkt" drdr:command-line (mzc *)
@@ -981,15 +978,6 @@ path/s is either such a string or a list of them.
 "collects/teachpack/htdp/graphing.ss" drdr:command-line (mzc *)
 "collects/test-box-recovery" responsible (mflatt)
 "collects/test-engine" responsible (kathyg)
-"collects/tests/aligned-pasteboard" responsible (mflatt robby)
-"collects/tests/aligned-pasteboard/example.rktl" drdr:command-line #f
-"collects/tests/aligned-pasteboard/old-bugs/big-min.rktl" drdr:command-line #f
-"collects/tests/aligned-pasteboard/old-bugs/missing-min.rktl" drdr:command-line #f
-"collects/tests/aligned-pasteboard/test-alignment.rktl" drdr:command-line #f
-"collects/tests/aligned-pasteboard/test-pasteboard-lib.rktl" drdr:command-line #f
-"collects/tests/aligned-pasteboard/test-snip-lib.rktl" drdr:command-line #f
-"collects/tests/aligned-pasteboard/test.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/aligned-pasteboard/test2.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/demodularizer/demod-test.rkt" drdr:timeout 600
 "collects/tests/compiler/regression.rkt" responsible (mflatt)

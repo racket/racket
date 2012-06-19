@@ -1,9 +1,6 @@
-(require
- mzlib/class
- mred
- mzlib/etc
- "../aligned-pasteboard.rkt"
- "../aligned-editor-container.rkt")
+#lang racket/gui
+
+(require "../aligned-pasteboard.rkt" "../aligned-editor-container.rkt")
 
 (define f (new frame% (label "") (width 400) (height 400)))
 (define e (new horizontal-pasteboard%))
