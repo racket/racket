@@ -268,13 +268,20 @@
         ;  - lhs = ellipses, rhs = last-rhs-exps
         ; when lhs = ellipses, and highlight-stack != null,
         ; pop step from stack and use lhs
-        (define (send-step lhs-exps lhs-finished-exps 
-                           rhs-exps rhs-finished-exps
-                           step-kind lhs-posn-info rhs-posn-info)
+        (define/contract 
+          (send-step lhs-exps lhs-finished-exps 
+                     rhs-exps rhs-finished-exps
+                     step-kind lhs-posn-info rhs-posn-info)
+          (-> (listof syntax?)
+              (listof syntax?)
+              (listof syntax?)
+              (listof syntax?)
+              any/c any/c any/c 
+              any)
           
           (define (send-it)
             (receive-result
-             (make-before-after-result
+             (before-after-result
               (append lhs-finished-exps lhs-exps)
               (append rhs-finished-exps rhs-exps)
               step-kind
@@ -414,7 +421,8 @@
                      (for-each 
                       (λ (x) (printf "RHS (unwound): ~a\n" 
                                      (syntax->hilite-datum x)))
-                      rhs-unwound)))
+                      rhs-unwound))
+                   rhs-unwound)
                  (match held-exp-list
                    [(struct skipped-step ())
                     (when DEBUG (printf "LHS = skipped, so skipping RHS\n"))
@@ -519,11 +527,11 @@
   (define (err-display-handler message exn)
     (match held-exp-list
       [(struct no-sexp ())
-        (receive-result (make-error-result message))]
+        (receive-result (error-result message))]
       [(struct held (exps dc posn-info))
        (begin
          (receive-result
-          (make-before-error-result (append held-finished-list exps)
+          (before-error-result (append held-finished-list exps)
                                     message
                                     posn-info))
          (set! held-exp-list the-no-sexp))]))
@@ -536,7 +544,7 @@
      (r:reset-special-values)
      (if (eof-object? expanded)
          (begin
-           (receive-result (make-finished-stepping)))
+           (receive-result (finished-stepping)))
          (step-through-expression expanded continue-thunk)))))
 
 

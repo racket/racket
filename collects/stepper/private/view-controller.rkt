@@ -95,16 +95,29 @@
      (lambda ()
        (let loop ()
          (define new-result (async-channel-get view-channel))
-         (define new-step (format-result new-result))
-         (parameterize ([current-eventspace stepper-frame-eventspace])
-           (queue-callback
-            (lambda ()
-              (set! view-history (append view-history (list new-step)))
-              (set! num-steps-available (length view-history))
-              ;; this is only necessary the first time, but it's cheap:
-              (semaphore-post first-step-sema)
-              (update-status-bar))))
+         (receive-result-from-target new-result)
          (loop)))))
+  
+  ;; handles an incoming result. Either adds it to the list of 
+  ;; steps, or prompts user to see whether to continue running.
+  (define (receive-result-from-target result)
+    (cond [(runaway-process? result)
+           (parameterize ([current-eventspace stepper-frame-eventspace])
+             (queue-callback
+              (lambda ()
+                (when (confirm-running)
+                  (semaphore-post (runaway-process-sema result)))
+                (void))))]
+          [else
+           (define new-step (format-result result))
+           (parameterize ([current-eventspace stepper-frame-eventspace])
+             (queue-callback
+              (lambda ()
+                (set! view-history (append view-history (list new-step)))
+                (set! num-steps-available (length view-history))
+                ;; this is only necessary the first time, but it's cheap:
+                (semaphore-post first-step-sema)
+                (update-status-bar))))]))
     
   
   ;; find-later-step : given a predicate on history-entries, search through
@@ -348,21 +361,24 @@
   
   ;; code for dealing with runaway processes:
   
-  (define runaway-counter-limit 1000)
+  (define runaway-counter-limit 500)
   (define disable-runaway-counter #f)
   (define runaway-counter 0)
-  
-  (define (result-handler result)
+
+  ;; runs on the stepped-process side.
+  ;; checks to see if the process has taken too
+  ;; many steps. If so, send a message and block
+  ;; for a response, then send the result. Otherwise,
+  ;; just send the result.
+  (define (deliver-result-to-gui result)
     (when (not disable-runaway-counter)
       (set! runaway-counter (+ runaway-counter 1)))
     (when (= runaway-counter runaway-counter-limit)
       (define runaway-semaphore (make-semaphore 0))
-      (async-channel-put view-channel (list 'runaway-block runaway-semaphore))
+      (async-channel-put view-channel 
+                         (list 'runaway-block runaway-semaphore))
       ;; wait for a signal to continue running:
-      (match (semaphore-wait runaway-semaphore)
-        ['continue-for-now (set! runaway-counter 0)]
-        ['continue-forever (set! runaway-counter 0)
-                           (set! disable-runaway-counter #t)]))
+      (semaphore-wait runaway-semaphore))
     (async-channel-put view-channel result))
   
   (define keep-running-message
@@ -383,14 +399,20 @@
        '(stop disallow-close default=1)
        ))
     (match message-box-result
-      [1 'continue-for-now]
-      [2 'halt]
-      [3 'continue-forever]))
+      ;; continue-for-now:
+      [1 (set! runaway-counter 0)
+         #t]
+      ;; halt:
+      [2 #f]
+      ;; continue-forever:
+      [3 (set! runaway-counter 0)
+         (set! disable-runaway-counter #t)
+         #t]))
   
   
 
   ;; translates a result into a step
-  ;; format-result : result -> step?
+  ;; format-result : step-result -> step?
   (define (format-result result)
     (match result
       [(struct before-after-result (pre-exps post-exps kind pre-src post-src))
@@ -443,7 +465,7 @@
   (model:go
    program-expander-prime 
    ;; what do do with the results:
-   result-handler
+   deliver-result-to-gui
    (get-render-settings render-to-string
                         render-to-sexp 
                         (send language-level stepper:enable-let-lifting?)
