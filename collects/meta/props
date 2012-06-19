@@ -974,6 +974,7 @@ path/s is either such a string or a list of them.
 "collects/teachpack/2htdp/scribblings/image-util.rkt" responsible (robby)
 "collects/teachpack/2htdp/scribblings/image.scrbl" responsible (robby)
 "collects/teachpack/balls.ss" drdr:command-line (mzc *)
+"collects/teachpack/deinprogramm" responsible (sperber)
 "collects/teachpack/htdp/graphing.ss" drdr:command-line (mzc *)
 "collects/test-box-recovery" responsible (mflatt)
 "collects/test-engine" responsible (kathyg)
