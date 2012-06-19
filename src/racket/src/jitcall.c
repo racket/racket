@@ -155,8 +155,12 @@ static Scheme_Object *ts__scheme_tail_apply_from_native(Scheme_Object *rator, in
 {
   if (scheme_use_rtcall) {
     /* try thread-local allocation: */
-    Scheme_Object **a;    
+    Scheme_Object **a;
+#ifdef MZ_PRECISE_GC
     a = MALLOC_N(Scheme_Object *, argc);
+#else
+    a = NULL; /* future-local allocation is not supported */
+#endif
     if (a) {
       Scheme_Thread *p = scheme_current_thread;
       memcpy(a, argv, argc * sizeof(Scheme_Object*));

@@ -1240,6 +1240,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
     return do_make_future(argc, argv);
   else {
     Scheme_Object *proc = argv[0];
+#ifdef MZ_PRECISE_GC
     if (SAME_TYPE(SCHEME_TYPE(proc), scheme_native_closure_type)
         && scheme_native_arity_check(proc, 0)
         && (((Scheme_Native_Closure *)proc)->code->start_code != scheme_on_demand_jit_code)
@@ -1272,6 +1273,10 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
     } else {
       return scheme_rtcall_make_future(proc);
     }
+#else
+    /* future-local allocation is not supported */
+    return scheme_rtcall_make_future(proc);
+#endif
   }
 }
 
