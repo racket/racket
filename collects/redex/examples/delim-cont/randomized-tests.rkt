@@ -7,6 +7,7 @@
 
 (provide (all-defined-out))
 
+(module+ main (apply main (vector->list (current-command-line-arguments))))
 (define (main . args)
   (define from-grammar-tests #f)
   (define from-rules-tests #f)

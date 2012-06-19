@@ -10,12 +10,11 @@ reflects the (broken) spec).
 
 |#
 
-(require redex/reduction-semantics) 
+(require redex/reduction-semantics)
 
 (provide run-tests
          run-big-test
-         reductions
-         main)
+         reductions)
 
 #|
   
@@ -932,3 +931,5 @@ reflects the (broken) spec).
 (define (main)
   (run-tests)
   (run-big-test))
+
+(module+ main (main))

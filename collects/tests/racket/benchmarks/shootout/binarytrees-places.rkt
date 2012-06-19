@@ -4,7 +4,8 @@
 ;;; http://shootout.alioth.debian.org/
 ;;; Derived from the Chicken variant by Sven Hartrumpf
 
-(require racket/cmdline racket/require (for-syntax racket/base) racket/place (only-in racket/fixnum make-shared-fxvector)
+(require racket/cmdline racket/require (for-syntax racket/base)
+         racket/place (only-in racket/fixnum make-shared-fxvector)
          (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
                       racket/unsafe/ops))
 
@@ -45,7 +46,7 @@
                            (check (make (fx- 0 i) d))))))))
 
 (define min-depth 4)
-(define (main* n)  
+(define (main n)
   (define max-depth (max (+ min-depth 2) n))
   (define stretch-depth (+ max-depth 1))
   (printf "stretch tree of depth ~a\t check: ~a\n"
@@ -67,4 +68,5 @@
   (printf "long lived tree of depth ~a\t check: ~a\n"
           max-depth
           (check long-lived-tree)))
-(define (main a) (main* (string->number a))) (provide main)
+
+(module+ main (command-line #:args (n) (main (string->number n))))

@@ -869,12 +869,11 @@ path/s is either such a string or a list of them.
 "collects/readline" responsible (mflatt)
 "collects/redex" responsible (clklein robby)
 "collects/redex/examples/arithmetic.rkt" drdr:command-line (racket * "--no-print")
-"collects/redex/examples/beginner.rkt" drdr:command-line (racket "-t" * "-m")
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/combinators.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/compatible-closure.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/delim-cont/randomized-tests-test.rkt" drdr:timeout 240 drdr:random #t
-"collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:command-line (racket "-tm" * "--" "--rules" "2250" "--size" "3") drdr:timeout 240 drdr:random #t
+"collects/redex/examples/delim-cont/randomized-tests.rkt" drdr:command-line (racket * "--rules" "2250" "--size" "3") drdr:timeout 240 drdr:random #t
 "collects/redex/examples/delim-cont/test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/list-machine/slides.rkt" drdr:command-line (raco "make" *)
@@ -884,7 +883,7 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/r6rs/show-examples.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/racket-machine/examples.rkt" drdr:command-line (racket * "--no-pop-ups")
 "collects/redex/examples/racket-machine/impl-exec.rkt" drdr:command-line (raco "make" *)
-"collects/redex/examples/racket-machine/randomized-tests.rkt" drdr:command-line (racket "-t" * "-m") drdr:timeout 300
+"collects/redex/examples/racket-machine/randomized-tests.rkt" drdr:command-line (racket *) drdr:timeout 300
 "collects/redex/examples/racket-machine/reduction-test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/racket-machine/verification-test.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/semaphores.rkt" drdr:command-line (mzc *)
@@ -983,7 +982,7 @@ path/s is either such a string or a list of them.
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
 "collects/tests/compiler/test" drdr:command-line (raco "test" "-r" "--" *)
 "collects/tests/compiler/zo-test-worker.rkt" drdr:command-line #f
-"collects/tests/compiler/zo-test.rkt" drdr:command-line (racket "-t" * "--" "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
+"collects/tests/compiler/zo-test.rkt" drdr:command-line (racket * "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
 "collects/tests/data" responsible (ryanc)
 "collects/tests/datalog" responsible (jay)
 "collects/tests/db" responsible (ryanc)
@@ -1119,7 +1118,7 @@ path/s is either such a string or a list of them.
 "collects/tests/plai/gc/bad-mutators/mutator5.rkt" drdr:command-line #f
 "collects/tests/plai/gc/bad-mutators/void-app.rkt" drdr:command-line #f
 "collects/tests/plai/gc/other-mutators" drdr:command-line #f
-"collects/tests/plai/gc/run-test.rkt" drdr:command-line (racket "-qt" * "--" "-g")
+"collects/tests/plai/gc/run-test.rkt" drdr:command-line (racket * "-g")
 "collects/tests/plai/gc2/bad-mutators/mut-1.rkt" drdr:command-line #f
 "collects/tests/plai/gc2/bad-mutators/mutator0.rkt" drdr:command-line #f
 "collects/tests/plai/gc2/bad-mutators/mutator1.rkt" drdr:command-line #f
@@ -1128,7 +1127,7 @@ path/s is either such a string or a list of them.
 "collects/tests/plai/gc2/bad-mutators/mutator5.rkt" drdr:command-line #f
 "collects/tests/plai/gc2/bad-mutators/void-app.rkt" drdr:command-line #f
 "collects/tests/plai/gc2/other-mutators" drdr:command-line #f
-"collects/tests/plai/gc2/run-test.rkt" drdr:command-line (racket "-qt" * "--" "-g")
+"collects/tests/plai/gc2/run-test.rkt" drdr:command-line (racket * "-g")
 "collects/tests/plai/test-random-mutator.rkt" responsible (jay robby)
 "collects/tests/plai/web.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/planet" responsible (robby jay)
@@ -1181,122 +1180,122 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/mz/redsem.rktl" drdr:command-line (racket "-f" * "--" "--skip-struct-test")
 "collects/tests/racket/benchmarks/mz/ssax.rktl" drdr:command-line (racket "-f" *) drdr:timeout 900
 "collects/tests/racket/benchmarks/places" drdr:command-line #f
-"collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket "-t" * "--" "racket" "simple") drdr:timeout 600
-"collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/auto.rkt" drdr:command-line (racket "-qt" * "--" "hello")
-"collects/tests/racket/benchmarks/shootout/binarytrees-places.rkt" drdr:command-line (racket "-tm" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/fannkuch-redux.rkt" drdr:command-line (racket "-t" * "--" "4")
-"collects/tests/racket/benchmarks/shootout/fannkuch.rkt" drdr:command-line (racket "-t" * "--" "4")
-"collects/tests/racket/benchmarks/shootout/fasta-new.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/hash2.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/mandelbrot-futures.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/mandelbrot-generic.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/mandelbrot.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/meteor.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/nbody-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/nbody-vec-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/nbody-vec.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/nbody.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/nestedloop.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/nsieve.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/nsievebits.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/partialsums.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket * "racket" "simple") drdr:timeout 600
+"collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/auto.rkt" drdr:command-line (racket * "hello")
+"collects/tests/racket/benchmarks/shootout/binarytrees-places.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/fannkuch-redux.rkt" drdr:command-line (racket * "4")
+"collects/tests/racket/benchmarks/shootout/fannkuch.rkt" drdr:command-line (racket * "4")
+"collects/tests/racket/benchmarks/shootout/fasta-new.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/hash2.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/mandelbrot-futures.rkt" drdr:command-line (racket * "15")
+"collects/tests/racket/benchmarks/shootout/mandelbrot-generic.rkt" drdr:command-line (racket * "15")
+"collects/tests/racket/benchmarks/shootout/mandelbrot.rkt" drdr:command-line (racket * "15")
+"collects/tests/racket/benchmarks/shootout/meteor.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/nbody-generic.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/nbody-vec-generic.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/nbody-vec.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/nbody.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/nestedloop.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/nsieve.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/nsievebits.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/partialsums.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/pidigits-gmp.rkt" drdr:command-line (racket * "10")
-"collects/tests/racket/benchmarks/shootout/pidigits.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/random.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/recursive.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/pidigits.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/random.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/recursive.rkt" drdr:command-line (racket * "2")
 "collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/spectralnorm-par.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/spectralnorm-par.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/spellcheck.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/thread-ring.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/thread-ring.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed" responsible (stamourv samth)
-"collects/tests/racket/benchmarks/shootout/typed/ackermann-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/ackermann-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/ackermann-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/ackermann-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/ackermann.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/ary.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/binarytrees-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/binarytrees-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/binarytrees-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/binarytrees-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/binarytrees.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/chameneos-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/chameneos-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/chameneos-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/chameneos-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/chameneos.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/cheapconcurrency-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/cheapconcurrency-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/cheapconcurrency-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/cheapconcurrency-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/cheapconcurrency.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/echo.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/except.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/fannkuch-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "4")
-"collects/tests/racket/benchmarks/shootout/typed/fannkuch-optimizing.rkt" drdr:command-line (racket "-t" * "--" "4")
-"collects/tests/racket/benchmarks/shootout/typed/fannkuch-redux-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "4")
-"collects/tests/racket/benchmarks/shootout/typed/fannkuch-redux-optimizing.rkt" drdr:command-line (racket "-t" * "--" "4")
+"collects/tests/racket/benchmarks/shootout/typed/fannkuch-non-optimizing.rkt" drdr:command-line (racket * "4")
+"collects/tests/racket/benchmarks/shootout/typed/fannkuch-optimizing.rkt" drdr:command-line (racket * "4")
+"collects/tests/racket/benchmarks/shootout/typed/fannkuch-redux-non-optimizing.rkt" drdr:command-line (racket * "4")
+"collects/tests/racket/benchmarks/shootout/typed/fannkuch-redux-optimizing.rkt" drdr:command-line (racket * "4")
 "collects/tests/racket/benchmarks/shootout/typed/fannkuch-redux.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/fannkuch.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/fasta-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/fasta-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/fasta-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/fasta-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/fasta.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/fibo.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/hash-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/hash-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/hash-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/hash-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/hash.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/hash2-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/hash2-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/hash2-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/hash2-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/hash2.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/heapsort.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/hello.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/k-nucleotide.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/lists.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-generic-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-generic-optimizing.rkt" drdr:command-line (racket "-t" * "--" "15")
+"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-generic-non-optimizing.rkt" drdr:command-line (racket * "15")
+"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-generic-optimizing.rkt" drdr:command-line (racket * "15")
 "collects/tests/racket/benchmarks/shootout/typed/mandelbrot-generic.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "15")
-"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-optimizing.rkt" drdr:command-line (racket "-t" * "--" "15")
+"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-non-optimizing.rkt" drdr:command-line (racket * "15")
+"collects/tests/racket/benchmarks/shootout/typed/mandelbrot-optimizing.rkt" drdr:command-line (racket * "15")
 "collects/tests/racket/benchmarks/shootout/typed/mandelbrot.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/matrix.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/meteor-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/meteor-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/meteor-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/meteor-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/meteor.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/moments.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/nbody-generic-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-generic-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-generic-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-generic-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/nbody-generic.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/nbody-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-generic-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-generic-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-generic-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-generic-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/nbody-vec-generic.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
-"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-optimizing.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-non-optimizing.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/typed/nbody-vec-optimizing.rkt" drdr:command-line (racket * "10")
 "collects/tests/racket/benchmarks/shootout/typed/nbody-vec.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/nbody.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/nestedloop-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/typed/nestedloop-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/typed/nestedloop-non-optimizing.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/typed/nestedloop-optimizing.rkt" drdr:command-line (racket * "2")
 "collects/tests/racket/benchmarks/shootout/typed/nestedloop.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/nsieve-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/typed/nsieve-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/typed/nsieve-non-optimizing.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/typed/nsieve-optimizing.rkt" drdr:command-line (racket * "2")
 "collects/tests/racket/benchmarks/shootout/typed/nsieve.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/nsievebits-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/typed/nsievebits-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/typed/nsievebits-non-optimizing.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/typed/nsievebits-optimizing.rkt" drdr:command-line (racket * "2")
 "collects/tests/racket/benchmarks/shootout/typed/nsievebits.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/partialsums-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/partialsums-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/partialsums-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/partialsums-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/partialsums.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/pidigits-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/pidigits-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/pidigits-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/pidigits-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/pidigits.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/pidigits1.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/random-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/random-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/random-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/random-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/random.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/recursive-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/typed/recursive-optimizing.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/typed/recursive-non-optimizing.rkt" drdr:command-line (racket * "2")
+"collects/tests/racket/benchmarks/shootout/typed/recursive-optimizing.rkt" drdr:command-line (racket * "2")
 "collects/tests/racket/benchmarks/shootout/typed/recursive.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/regexmatch.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/regexpdna.rktl" drdr:command-line #f
@@ -1305,21 +1304,21 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/typed/reversecomplement.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/reversefile.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/sieve.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-generic-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-generic-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-generic-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-generic-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/spectralnorm-generic.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/spectralnorm-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/spectralnorm.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/spellcheck-non-optimizing.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/shootout/typed/spellcheck-optimizing.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/shootout/typed/spellcheck.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/strcat-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/strcat-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/strcat-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/strcat-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/strcat.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/sumcol.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/shootout/typed/thread-ring-non-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
-"collects/tests/racket/benchmarks/shootout/typed/thread-ring-optimizing.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/typed/thread-ring-non-optimizing.rkt" drdr:command-line (racket * "25")
+"collects/tests/racket/benchmarks/shootout/typed/thread-ring-optimizing.rkt" drdr:command-line (racket * "25")
 "collects/tests/racket/benchmarks/shootout/typed/thread-ring.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/wc-non-optimizing.rkt" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/wc-optimizing.rkt" drdr:command-line #f
@@ -1438,7 +1437,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/stress" responsible (jay)
 "collects/tests/racket/stress/contract-lifting.rkt" responsible (robby sstrickl)
 "collects/tests/racket/stress/dict.rkt" drdr:timeout 180
-"collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket "-t" * "--" "-c") drdr:timeout 300 drdr:random #t
+"collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 300 drdr:random #t
 "collects/tests/racket/stress/module-stack.rkt" drdr:timeout 180
 "collects/tests/racket/string-mzlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/string.rktl" drdr:command-line (racket "-f" *)
@@ -1541,7 +1540,7 @@ path/s is either such a string or a list of them.
 "collects/tests/typed-racket/optimizer" responsible (stamourv)
 "collects/tests/typed-racket/optimizer/run.rkt" drdr:timeout 1200
 "collects/tests/typed-racket/optimizer/transform.rkt" drdr:command-line #f
-"collects/tests/typed-racket/run.rkt" drdr:command-line (racket "-t" * "--" "--nightly") drdr:timeout 1800
+"collects/tests/typed-racket/run.rkt" drdr:command-line (racket * "--nightly") drdr:timeout 1800
 "collects/tests/typed-racket/succeed/submodules.rkt" drdr:command-line (racket * "1")
 "collects/tests/typed-racket/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)
