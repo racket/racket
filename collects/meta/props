@@ -96,16 +96,15 @@ path/s is either such a string or a list of them.
 ;; ----------------------------------------------------------------------------
 
 ;; This could use `meta/tree/tree' in the future, it's pretty similar.
-(struct Tree (name [subs #:mutable] [props #:mutable]))
+(struct Tree (name [subs #:mutable] [props #:mutable] in-db?))
 (define (Tree-subs/sorted tree)
   (sort (Tree-subs tree) string<?
-        #:key (lambda (t) (symbol->string (Tree-name t)))
-        #:cache-keys? #t))
+        #:key (λ (t) (symbol->string (Tree-name t))) #:cache-keys? #t))
 
 ;; Descriptors for known properties
 (struct Prop (name description parse unparse))
 
-(define props-tree (Tree #f '() '()))
+(define props-tree (Tree #f '() '() #f))
 (define known-props #f)
 
 ;; used to throw an error message that fits uses as a program and when running
@@ -163,9 +162,8 @@ path/s is either such a string or a list of them.
               " script needs to be exteded to allow them)"))))
 
 (define (parse-prop-string prop str who)
-  (with-handlers ([exn? (lambda (e)
-                          (error* who "bad value for `~a', ~a: ~s"
-                                  (Prop-name prop) (exn-message e) str))])
+  (with-handlers ([exn? (λ (e) (error* who "bad value for `~a', ~a: ~s"
+                                       (Prop-name prop) (exn-message e) str))])
     ((Prop-parse prop) str)))
 
 (define (get-prop path-string prop-name [default get-prop]
@@ -179,15 +177,15 @@ path/s is either such a string or a list of them.
       (define sub
         (and (pair? path)
              (let ([fst (car path)])
-               (ormap (lambda (sub) (and (eq? (Tree-name sub) fst) sub))
+               (ormap (λ (sub) (and (eq? (Tree-name sub) fst) sub))
                       (Tree-subs (car upchain))))))
       (cond [sub (loop (cdr path) (cons sub upchain))]
             [(not strict?) upchain]
             [(pair? path) '()]
             [else (list (car upchain))])))
   (define prop (find-prop 'get-prop prop-name))
-  (cond [(ormap (lambda (tree) (assq prop-name (Tree-props tree))) upchain)
-         => (lambda (x) ((if as-string? (Prop-unparse prop) values) (cdr x)))]
+  (cond [(ormap (λ (tree) (assq prop-name (Tree-props tree))) upchain)
+         => (λ (x) ((if as-string? (Prop-unparse prop) values) (cdr x)))]
         [(eq? get-prop default)
          (error* 'get-prop "no `~s' property for \"~a\"" prop-name path-string)]
         [(procedure? default) (default)]
@@ -211,14 +209,13 @@ path/s is either such a string or a list of them.
                                     (Tree-props tree)))))))
 
 (define (del-prop! path-string/s prop-name #:warn? [warn? #t])
-  (define prop (find-prop 'set-prop! prop-name))
+  (define prop (find-prop 'del-prop! prop-name))
   (for ([path (in-list (single->list path-string/s))])
     (validate-path-string path 'del-prop!)
     (let* ([tree  (tree-find path #f)]
            [props (if tree (Tree-props tree) '())])
       (cond [(assq prop-name props)
-             (set-Tree-props! tree (filter (lambda (p)
-                                             (not (eq? prop-name (car p))))
+             (set-Tree-props! tree (filter (λ (p) (not (eq? prop-name (car p))))
                                            props))]
             [warn? (warn "no `~s' property on ~s" prop-name path)]))))
 
@@ -227,13 +224,29 @@ path/s is either such a string or a list of them.
     (if (null? path)
       tree
       (let* ([fst (car path)]
-             [sub (or (ormap (lambda (sub) (and (eq? (Tree-name sub) fst) sub))
+             [rst (cdr path)]
+             [sub (or (ormap (λ (sub) (and (eq? (Tree-name sub) fst) sub))
                              (Tree-subs tree))
                       (and create?
-                           (let ([new (Tree fst '() '())])
+                           ;; keep track of properties that are actually in the
+                           ;; db, for verification
+                           (let ([new (Tree fst '() '()
+                                            (and (null? rst) create?))])
                              (set-Tree-subs! tree (cons new (Tree-subs tree)))
                              new)))])
         (and sub (loop (cdr path) sub))))))
+
+(define (find-root)
+  (let loop ([p this-file] [n 3]) ; look only a few level up
+    (let-values ([(base _1 _2) (split-path p)])
+      (and base
+           (or (and (andmap (λ (d) (directory-exists? (build-path p d)))
+                            '("collects" "doc" "man" "src"))
+                    p)
+               (if (> n 0)
+                 (loop base (sub1 n))
+                 (error* #f "could not find the racket root from ~a"
+                         (path-only this-file))))))))
 
 ;; ----------------------------------------------------------------------------
 ;; Reading and writing
@@ -324,69 +337,101 @@ path/s is either such a string or a list of them.
         [temp (make-temporary-file (format "~a~~a" this-file) this-file)])
     (dynamic-wind
       void
-      (lambda ()
-        (call-with-output-file* temp #:exists 'truncate
-          (lambda (new)
-            (call-with-input-file* this-file
-              (lambda (old) (*write-props old new)))))
-        (delete-file this-file)
-        (rename-file-or-directory temp this-file))
-      (lambda () (when (file-exists? temp) (delete-file temp))))))
+      (λ () (call-with-output-file* temp #:exists 'truncate
+              (λ (new) (call-with-input-file* this-file
+                         (λ (old) (*write-props old new)))))
+            (delete-file this-file)
+            (rename-file-or-directory temp this-file))
+      (λ () (when (file-exists? temp) (delete-file temp))))))
 
 ;; ----------------------------------------------------------------------------
-;; Verify props
+;; Verify this database
 
-(define no-responsible-needed
+(define no-props-needed
   '(#rx"/compiled$"
-    #rx"/[.]gitignore$"
+    #rx"(?:^|/)[.]git"
+    #rx"^(?:README|bin|lib|include|[.]mailmap)$"
     #rx"^collects/info-domain$"
     #rx"^doc/[^/]*$"))
 
-(define ((verify find-root))
+(define (verify)
   (define errors 0)
-  (define (path-error path err)
+  (define (path-error path fmt . more)
     (when (= 0 errors) (newline) (flush-output))
     (set! errors (add1 errors))
-    (eprintf "  ~a: ~a\n" path err))
-  (define (verify-responsibles tree path)
-    (define alist (map (lambda (t) (cons (Tree-name t) (Tree-props t)))
-                       (Tree-subs tree)))
-    (for* ([f (directory-list path)]
-           [s (in-value (path-element->string f))]
-           [p (in-value (string-append path "/" s))]
-           ;; check dirs too, since we might not get into them if
-           ;; there are no entries for them
-           ;; #:when (file-exists? p)
-           [s (in-value (string->symbol s))])
-      (unless (or (for/or ([sub (in-list (Tree-subs tree))])
-                    (and (eq? s (Tree-name sub))
-                         (or (assq 'responsible (Tree-props sub))
-                             ;; if it has subs, then we'll get there eventually
-                             (pair? (Tree-subs sub)))))
-                  (for/or ([rx (in-list no-responsible-needed)])
-                    (regexp-match? rx p)))
-        (path-error p "no responsible"))))
-  (define (loop tree path responsible)
+    (eprintf "  ~a: ~a\n" (or path "<ROOT>") (apply format fmt more)))
+  (define (uncovered-subs path/ subs)
+    (for*/list ([fn (in-list (directory-list (if (equal? path/ "") "." path/)))]
+                [str (in-value (path-element->string fn))]
+                #:unless (memq (string->symbol str) subs)
+                [subp (in-value (string-append path/ str))]
+                #:unless (for/or ([rx (in-list no-props-needed)])
+                           (regexp-match? rx subp)))
+      subp))
+  (define prop-names (map Prop-name known-props))
+  (define (merge-props propss path/ others)
+    ;; Used to detect collapsible properties, might be disabled, or
+    ;; maybe just output them to stderr if that leads to an email only
+    ;; when there are changes.
+    (filter
+     values
+     (for/list ([pname (in-list prop-names)])
+       (define values
+         (for*/list ([props (in-list propss)]
+                     [a (in-value (assq pname props))]
+                     #:when a)
+           (cdr a)))
+       (cond [(null? values) #f]
+             [(memq (void) values) (cons pname (void))]
+             [else
+              (define value (car values))
+              (define rest  (cdr values))
+              (define same? (andmap (λ (v) (equal? value v)) rest))
+              (when (and same? (pair? rest) (null? others))
+                (path-error (string-append path/ "...")
+                            "all ~s sub-properties are ~s" pname value)
+                ;; Printing the others is usually too verbose.
+                ;; (define rx (regexp (string-append "^" (regexp-quote path/))))
+                ;; (define os (map (λ (o) (regexp-replace rx o "")) others))
+                ;; (define os*
+                ;;   (if (> (length os) 20) (append (take os 20) '("...")) os))
+                ;; (eprintf "   others: ~a\n" (string-join os* ", "))
+                )
+              (cons pname (if same? (car values) (void)))]))))
+  (define (loop tree base-path base-props)
+    (define name (Tree-name tree))
+    (define path (and name (string-append base-path (symbol->string name))))
+    (define props (Tree-props tree))
+    (define all-props (append props base-props))
+    (define subs (Tree-subs tree))
+    (when (eq? '|| name) (path-error base-path "empty name (trailing slash?)"))
     (unless (equal? (reverse (Tree-subs tree)) (Tree-subs/sorted tree))
       (path-error path "unsorted sub-paths"))
-    (for ([sub (in-list (Tree-subs tree))])
-      (define name (symbol->string (Tree-name sub)))
-      (define path* (string-append path name))
-      (define responsible* (or responsible
-                               (assq 'responsible (Tree-props sub))))
-      (cond [(equal? "" name)
-             (path-error path* "empty name")]
-            [(directory-exists? path*)
-             (unless responsible* (verify-responsibles sub path*))
-             (loop sub (string-append path* "/") responsible*)]
-            [(not (file-exists? path*))
-             (path-error path* "Missing file/directory")])))
+    (when (and (Tree-in-db? tree) (null? props))
+      (path-error path "no properties"))
+    (for ([p (in-list props)] #:when (member p base-props))
+      (path-error path "redundant property: ~s := ~s" (car p) (cdr p)))
+    (define path/ ; #f for a file, "" for the root
+      (cond [(not path) ""]
+            [(directory-exists? path) (string-append path "/")]
+            [(file-exists? path) #f]
+            [else (path-error path "Missing file/directory")]))
+    (define others (if path/ (uncovered-subs path/ (map Tree-name subs)) '()))
+    (unless (assq 'responsible all-props)
+      (define (bad p) (path-error p "no responsible"))
+      (if path/ (for-each bad others) (bad path)))
+    (if path/
+      (let* ([rs (for/list ([sub (in-list subs)]) (loop sub path/ all-props))]
+             [others (append others (map (λ (x) (string-append path/ x))
+                                         (append-map car rs)))])
+        (cons others (merge-props (cons props (map cdr rs)) path/ others)))
+      (cons others props)))
   (define root (find-root))
   (printf "Root: ~a..." root)
   (flush-output)
-  (parameterize ([current-directory root]) (loop props-tree "" #f))
+  (parameterize ([current-directory root]) (loop props-tree #f '()))
   (if (errors . > . 0)
-    (error* 'verify "~s path errors" errors)
+    (error* #f "~s path errors" errors)
     (printf " no errors.\n")))
 
 ;; ----------------------------------------------------------------------------
@@ -435,18 +480,7 @@ path/s is either such a string or a list of them.
       [("set") "set <prop> <val> <path/s>" ,set]
       [("del") "del <prop> <path/s>" ,del]
       [("mv")  "mv  <path> <path>" ,mv]
-      [("verify") "verify: check that paths exist" ,(verify find-root)]))
-  (define (find-root)
-    (let loop ([p this-file] [n 3]) ; look only a few level up
-      (let-values ([(base _1 _2) (split-path p)])
-        (and base
-             (or (and (andmap (lambda (d) (directory-exists? (build-path p d)))
-                              '("collects" "doc" "man" "src"))
-                      p)
-                 (if (> n 0)
-                   (loop base (sub1 n))
-                   (error* #f "could not find the racket root from ~a"
-                           (path-only this-file))))))))
+      [("verify") "verify: check that paths exist" ,verify]))
   (define check-existing-paths? #t)
   (define (paths->list path paths)
     (if (and (equal? "-" path) (null? paths))
@@ -517,17 +551,15 @@ path/s is either such a string or a list of them.
   (Prop
    'responsible
    "responsible person/people (comma separated names)"
-   (lambda (str)
+   (λ (str)
      (let* ([strs (remove* '("") (regexp-split #rx" *, *" str))]
             [syms (map string->symbol strs)])
-       (cond [(ormap (lambda (s) (and (not (regexp-match? #rx"^[a-z]+" s)) s))
-                     strs)
-              => (lambda (s) (error (format "~s is an invalid name" s)))]
+       (cond [(ormap (λ (s) (and (not (regexp-match? #rx"^[a-z]+" s)) s)) strs)
+              => (λ (s) (error (format "~s is an invalid name" s)))]
              [(not (= (length syms) (length (remove-duplicates syms eq?))))
               (error "repeated names")]
              [else syms])))
-   (lambda (syms)
-     (apply string-append (add-between (map symbol->string syms) ","))))
+   (λ (syms) (string-join (map symbol->string syms) ",")))
   ;; --------------------
   (Prop
    'drdr:command-line
@@ -537,7 +569,7 @@ path/s is either such a string or a list of them.
       "missing => use the default (\"racket ~s\" for *.rkt etc,"
       "\"racket -f ~s\" for *.rktl)")
     "\n      ")
-   (lambda (str)
+   (λ (str)
      (define (bad) (error "expecting an empty string, or one with `~s'"))
      (if (equal? str "")
        #f
@@ -548,8 +580,7 @@ path/s is either such a string or a list of them.
            #f
            (let* ([xs (regexp-split #rx" " str)]
                   [xs (cons (string->symbol (car xs))
-                            (map (lambda (x) (if (equal? x "~s") '* x))
-                                 (cdr xs)))]
+                            (map (λ (x) (if (equal? x "~s") '* x)) (cdr xs)))]
                   [*-tail (memq '* xs)]
                   [commands '(racket gracket gracket-text raco mzc)])
              (unless (memq (car xs) commands)
@@ -561,38 +592,38 @@ path/s is either such a string or a list of them.
              (when (memq '* (cdr *-tail))
                (error "can't use more than a single `~s'"))
              xs)))))
-   (lambda (cmd)
+   (λ (cmd)
      (define (bad)
        (error 'drdr:command-line "bad command-line value: ~.s" cmd))
      (cond [(not cmd) ""]
            [(not (list? cmd)) (bad)]
-           [else (string-join (map (lambda (x)
-                                     (cond [(eq? x '*) "~s"]
-                                           [(symbol? x) (symbol->string x)]
-                                           [(string? x) x]
-                                           [else (bad)]))
-                                   cmd))])))
+           [else (string-join (for/list ([x (in-list cmd)])
+                                (cond [(eq? x '*) "~s"]
+                                      [(symbol? x) (symbol->string x)]
+                                      [(string? x) x]
+                                      [else (bad)])))])))
   ;; --------------------
   (Prop
    'drdr:timeout
    "timeout in seconds"
-   (lambda (str)
-     (if (regexp-match? #rx"^ *[0-9]+ *$" str)
-       (string->number str)
-       (error "expecting an integer")))
+   (λ (str) (if (regexp-match? #rx"^ *[0-9]+ *$" str)
+              (string->number str)
+              (error "expecting an integer")))
    number->string)
    ;; --------------------
   (Prop
    'drdr:random
    "is file output random?"
-   (lambda (str)
-     (cond [(equal? str "yes") #t]
-           [(equal? str "no")  #f]
-           [else (error "expecting \"yes\" or \"no\"")]))
-   (lambda (b) (if b "yes" "no")))))
+   (λ (str) (cond [(equal? str "yes") #t]
+                  [(equal? str "no")  #f]
+                  [else (error "expecting \"yes\" or \"no\"")]))
+   (λ (b) (if b "yes" "no")))))
 
 ;; read the arguments here, so just requiring this file verifies the data
 (read-props)
+
+;; if we're running directly, do a verification
+(module+ main (verify))
 
 ;; ----------------------------------------------------------------------------
 
@@ -785,6 +816,7 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
+"collects/meta/props" drdr:command-line (racket *) responsible (eli jay)
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
