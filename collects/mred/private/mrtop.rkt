@@ -44,6 +44,7 @@
 (define basic-top-level-window%
   (class* (make-area-container-window% (make-window% #t (make-container% area%))) (top-level-window<%>)
     (init mk-wx mismatches label parent)
+    (init-rest)
     (inherit show)
     (rename-super [super-set-label set-label])
     (private*
@@ -146,7 +147,16 @@
 
 (define frame%
   (class basic-top-level-window%
-    (init label [parent #f] [width #f] [height #f] [x #f] [y #f] [style null])
+    (init label [parent #f] [width #f] [height #f] [x #f] [y #f] [style null]
+          ;; for inherited keywords
+          [enabled #t]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
     (inherit on-traverse-char on-system-menu-char
              do-create-status-line do-set-status-text)
     (let ([cwho '(constructor frame)])
@@ -192,24 +202,45 @@
                    (send wx set-modified m)]))])
     (as-entry
      (lambda ()
-       (super-make-object
-        (lambda (finish)
-          (set! wx (finish (make-object wx-frame% this this
-                                        (and parent (mred->wx parent)) label
-                                        (or x -11111) (or y -11111)
-                                        (or width -1) (or height -1)
-                                        style)
-                           #f))
-          (send wx set-mdi-parent #f)
-          wx)
-        (lambda ()
-          (let ([cwho '(constructor frame)])
-            (check-container-ready cwho parent)))
-        label parent)))))
+       (super-new
+        [mk-wx
+         (lambda (finish)
+           (set! wx (finish (make-object wx-frame% this this
+                                         (and parent (mred->wx parent)) label
+                                         (or x -11111) (or y -11111)
+                                         (or width -1) (or height -1)
+                                         style)
+                            #f))
+           (send wx set-mdi-parent #f)
+           wx)]
+        [mismatches
+         (lambda ()
+           (let ([cwho '(constructor frame)])
+             (check-container-ready cwho parent)))]
+        [label label]
+        [parent parent]
+        ;; for inherited inits
+        [enabled enabled]
+        [border border]
+        [spacing spacing]
+        [alignment alignment]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))))
 
 (define dialog%
   (class basic-top-level-window%
-    (init label [parent #f] [width #f] [height #f] [x #f] [y #f] [style null])
+    (init label [parent #f] [width #f] [height #f] [x #f] [y #f] [style null]
+          ;; for inherited keywords
+          [enabled #t]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
     (inherit on-traverse-char on-system-menu-char center)
     (let ([cwho '(constructor dialog)])
       (check-label-string cwho label)
@@ -230,18 +261,30 @@
                               (on-traverse-char event)))])
     (as-entry
      (lambda ()
-       (super-make-object
-        (lambda (finish)
-          (set! wx (finish (make-object wx-dialog% this this
-                                        (and parent (mred->wx parent)) label
-                                        (or x -11111) (or y -11111) (or width 0) (or height 0)
-                                        style)
-                           #f))
-          wx)
-        (lambda ()
-          (let ([cwho '(constructor dialog)])
-            (check-container-ready cwho parent)))
-        label parent)))))
+       (super-new
+        [mk-wx
+         (lambda (finish)
+           (set! wx (finish (make-object wx-dialog% this this
+                                         (and parent (mred->wx parent)) label
+                                         (or x -11111) (or y -11111) (or width 0) (or height 0)
+                                         style)
+                            #f))
+           wx)]
+        [mismatches
+         (lambda ()
+           (let ([cwho '(constructor dialog)])
+             (check-container-ready cwho parent)))]
+        [label label]
+        [parent parent]
+        ;; for inherited inits
+        [enabled enabled]
+        [border border]
+        [spacing spacing]
+        [alignment alignment]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))))
 
 (define (get-top-level-windows)
   (remq root-menu-frame (map wx->mred (wx:get-top-level-windows))))

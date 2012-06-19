@@ -25,7 +25,17 @@
 
 (define pane%
   (class (make-subarea% (make-container% area%))
-    (init parent)
+    (init parent
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (define wx #f)
     (let* ([who (cond ; yuck! - we do this to make h-p and v-p subclasses of p
                  [(is-a? this vertical-pane%) 'vertical-pane]
@@ -36,27 +46,106 @@
       (check-container-parent cwho parent)
       (as-entry
        (lambda ()
-         (super-make-object
-          (lambda ()
-            (set! wx (make-object (case who
-                                    [(vertical-pane) wx-vertical-pane%]
-                                    [(horizontal-pane) wx-horizontal-pane%]
-                                    [(grow-box-spacer-pane) wx-grow-box-pane%]
-                                    [else wx-pane%])
-                                  this this (mred->wx-container parent) null
-                                  #f))
-            wx)
-          (lambda () wx)
-          (lambda () wx)
-          (lambda ()
-            (check-container-ready cwho parent))
-          parent)
+         (super-new
+          [mk-wx
+           (lambda ()
+             (set! wx (make-object (case who
+                                     [(vertical-pane) wx-vertical-pane%]
+                                     [(horizontal-pane) wx-horizontal-pane%]
+                                     [(grow-box-spacer-pane) wx-grow-box-pane%]
+                                     [else wx-pane%])
+                                   this this (mred->wx-container parent) null
+                                   #f))
+             wx)]
+          [get-wx-pan (lambda () wx)]
+          [get-outer-wx-pan (lambda () wx)]
+          [mismatches
+           (lambda ()
+             (check-container-ready cwho parent))]
+          [parent parent]
+          [vert-margin vert-margin]
+          [horiz-margin horiz-margin]
+          [border border]
+          [spacing spacing]
+          [alignment alignment]
+          [min-width min-width]
+          [min-height min-height]
+          [stretchable-width stretchable-width]
+          [stretchable-height stretchable-height])
          (send (send wx area-parent) add-child wx)))
       (send parent after-new-child this))))
 
-(define vertical-pane% (class pane% (init parent) (super-make-object parent)))
-(define horizontal-pane% (class pane% (init parent) (super-make-object parent)))
-(define grow-box-spacer-pane% (class pane% (init parent) (super-make-object parent)))
+(define vertical-pane%
+  (class pane%
+    (init parent
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
+    (super-new [parent parent]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [border border]
+               [spacing spacing]
+               [alignment alignment]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])))
+
+(define horizontal-pane%
+  (class pane%
+    (init parent
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
+    (super-new [parent parent]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [border border]
+               [spacing spacing]
+               [alignment alignment]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])))
+
+(define grow-box-spacer-pane%
+  (class pane%
+    (init parent
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
+    (super-new [parent parent]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [border border]
+               [spacing spacing]
+               [alignment alignment]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])))
 
 (define panel%
   (class* (make-subwindow%
@@ -77,8 +166,8 @@
           [min-width no-val]
           [min-height no-val]
           [stretchable-width no-val]
-          [stretchable-height no-val]
-          )
+          [stretchable-height no-val])
+    (init-rest)
     (define wx #f)
     (public* [get-initial-label (lambda () #f)])
     (let* ([who (cond ; yuck! - we do this to make h-p and v-p subclasses of p
@@ -135,8 +224,7 @@
           [min-width min-width]
           [min-height min-height]
           [stretchable-width stretchable-width]
-          [stretchable-height stretchable-height]
-          )
+          [stretchable-height stretchable-height])
          (unless (memq 'deleted style)
            (send (send wx area-parent) add-child wx))))
       (send parent after-new-child this))))
@@ -154,17 +242,19 @@
           [min-height no-val]
           [stretchable-width no-val]
           [stretchable-height no-val])
-    (super-instantiate (parent style)
-                       [enabled enabled]
-                       [vert-margin vert-margin]
-                       [horiz-margin horiz-margin]
-                       [border border]
-                       [spacing spacing]
-                       [alignment alignment]
-                       [min-width min-width]
-                       [min-height min-height]
-                       [stretchable-width stretchable-width]
-                       [stretchable-height stretchable-height])
+    (init-rest)
+    (super-new [parent parent]
+               [style style]
+               [enabled enabled]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [border border]
+               [spacing spacing]
+               [alignment alignment]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])
     (public* [set-orientation (λ (x) (send (mred->wx this) set-orientation x))]
              [get-orientation (λ () (send (mred->wx this) get-orientation))])))
 (define horizontal-panel%
@@ -180,17 +270,19 @@
           [min-height no-val]
           [stretchable-width no-val]
           [stretchable-height no-val])
-    (super-instantiate (parent style)
-                       [enabled enabled]
-                       [vert-margin vert-margin]
-                       [horiz-margin horiz-margin]
-                       [border border]
-                       [spacing spacing]
-                       [alignment alignment]
-                       [min-width min-width]
-                       [min-height min-height]
-                       [stretchable-width stretchable-width]
-                       [stretchable-height stretchable-height])
+    (init-rest)
+    (super-new [parent parent]
+               [style style]
+               [enabled enabled]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [border border]
+               [spacing spacing]
+               [alignment alignment]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])
     (public* [set-orientation (λ (x) (send (mred->wx this) set-orientation x))]
              [get-orientation (λ () (send (mred->wx this) get-orientation))])))
 
@@ -198,7 +290,19 @@
 
 (define tab-panel%
   (class vertical-panel%
-    (init choices parent [callback (lambda (b e) (void))] [style null] [font no-val])
+    (init choices parent [callback (lambda (b e) (void))] [style null] [font no-val]
+          ;; inherited inits
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (define save-choices choices)
     (override* [get-initial-label (lambda () save-choices)])
 
@@ -209,11 +313,23 @@
       (check-container-parent cwho parent)
       (check-style cwho #f '(deleted no-border) style)
       (check-font cwho font))
-    (super-make-object parent (if (memq 'no-border style)
-                                  (if (eq? (car style) 'no-border)
-                                      (cdr style)
-                                      (list (car style)))
-                                  (cons 'border style)))
+    (super-new [parent parent]
+               [style
+                (if (memq 'no-border style)
+                    (if (eq? (car style) 'no-border)
+                        (cdr style)
+                        (list (car style)))
+                    (cons 'border style))]
+               [enabled enabled]
+               [vert-margin vert-margin]
+               [horiz-margin horiz-margin]
+               [border border]
+               [spacing spacing]
+               [alignment alignment]
+               [min-width min-width]
+               [min-height min-height]
+               [stretchable-width stretchable-width]
+               [stretchable-height stretchable-height])
     (send (mred->wx this) set-callback (lambda (wx e) (callback (wx->mred wx) e)))
 
     (public*
@@ -281,8 +397,16 @@
           ;; used below, we have to supply it here (even though it's
           ;; handled by the subarea init args)
           [enabled #t]
+          [vert-margin no-val]
           [horiz-margin no-val]
-          [vert-margin no-val])
+          [border no-val]
+          [spacing no-val]
+          [alignment no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (define lbl label)
     (override* [get-initial-label (lambda () lbl)])
 
@@ -304,7 +428,14 @@
           null))
      [enabled enabled]
      [horiz-margin horiz-margin]
-     [vert-margin vert-margin])
+     [vert-margin vert-margin]
+     [border border]
+     [spacing spacing]
+     [alignment alignment]
+     [min-width min-width]
+     [min-height min-height]
+     [stretchable-width stretchable-width]
+     [stretchable-height stretchable-height])
 
     (override*
      [set-label (entry-point

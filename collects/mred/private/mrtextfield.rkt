@@ -50,7 +50,12 @@
             [font no-val]
             [enabled #t]
             [vert-margin no-val]
-            [horiz-margin no-val])
+            [horiz-margin no-val]
+            [min-width no-val]
+            [min-height no-val]
+            [stretchable-width no-val]
+            [stretchable-height no-val])
+      (init-rest)
       (check-text-field-args '(constructor text-field)
                              label 
                              #f #f
@@ -76,30 +81,47 @@
       (when (eq? vert-margin no-val) (set! vert-margin 2))
       (as-entry
        (lambda ()
-         (super-instantiate
-          ((lambda () 
-             (set! wx (make-object wx-text-field% this this
-                                   (mred->wx-container parent) (wrap-callback callback)
-                                   label init-value 
-                                   (if (memq combo-flag style)
-                                       (cons 'combo (remq combo-flag style))
-                                       style)
-                                   (no-val->#f font)))
-             wx)
+         (super-new
+          [mk-wx
            (lambda ()
-             (let ([cwho '(constructor text-field)])
-               (check-container-ready cwho parent)))
-           label parent callback ibeam)
+            (set! wx (make-object wx-text-field% this this
+                                  (mred->wx-container parent) (wrap-callback callback)
+                                  label init-value
+                                  (if (memq combo-flag style)
+                                      (cons 'combo (remq combo-flag style))
+                                      style)
+                                  (no-val->#f font)))
+            wx)]
+          [mismatches
+           (lambda ()
+            (let ([cwho '(constructor text-field)])
+              (check-container-ready cwho parent)))]
+          [lbl label]
+          [parent parent]
+          [cb callback]
+          [cursor ibeam]
           [font font]
           [enabled enabled]
           [vert-margin vert-margin]
-          [horiz-margin horiz-margin])))))
+          [horiz-margin horiz-margin]
+          [min-width min-width]
+          [min-height min-height]
+          [stretchable-width stretchable-width]
+          [stretchable-height stretchable-height])))))
 
   (define combo-field%
     (class text-field%
       (init label choices parent [callback (lambda (b e) (void))] [init-value ""] [style '()]
             ;; this is handled by a superclass, but we put it here due to the check below
-            [font no-val])
+            [font no-val]
+            [enabled #t]
+            [vert-margin no-val]
+            [horiz-margin no-val]
+            [min-width no-val]
+            [min-height no-val]
+            [stretchable-width no-val]
+            [stretchable-height no-val])
+      (init-rest)
       (inherit set-value popup-menu get-size focus get-editor)
       (check-text-field-args '(constructor combo-field)
                              label 
@@ -141,8 +163,19 @@
                                 command
                                 (make-object wx:control-event% 'text-field)))])
       (define menu (new popup-menu% [font font]))
-      (super-instantiate (label parent callback init-value (list* combo-flag 'single style))
-                         [font font])
+      (super-new [label label]
+                 [parent parent]
+                 [callback callback]
+                 [init-value init-value]
+                 [style (list* combo-flag 'single style)]
+                 [font font]
+                 [enabled enabled]
+                 [horiz-margin horiz-margin]
+                 [vert-margin vert-margin]
+                 [min-width min-width]
+                 [min-height min-height]
+                 [stretchable-width stretchable-width]
+                 [stretchable-height stretchable-height])
       (send (mred->wx this) 
             set-on-popup
             (lambda ()

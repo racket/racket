@@ -109,13 +109,14 @@
           ;; normally can't happen.
           [font no-val]
           [enabled #t]
-          [horiz-margin no-val]
           [vert-margin no-val]
+          [horiz-margin no-val]
           [min-width no-val]
           [min-height no-val]
           [stretchable-width no-val]
           [stretchable-height no-val]
           [auto-resize #f])
+    (init-rest)
     (rename-super [super-min-width min-width]
                   [super-min-height min-height]
                   [super-get-label get-label])
@@ -228,7 +229,14 @@
   (class* basic-control% ()
     (init label parent [callback (lambda (b e) (void))] [style null]
           ;; This is a vestige of the old class100 keyword macro
-          [font no-val])
+          [font no-val]
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
     (override*
      [label-checker  (lambda () check-label-string-or-bitmap)]) ; module-local method
     (let ([cwho '(constructor button)])
@@ -239,21 +247,41 @@
       (check-font cwho font))
     (as-entry
      (lambda ()
-       (super-instantiate
-        ((lambda () (make-object wx-button% this this
+       (super-new
+        [mk-wx
+         (lambda () (make-object wx-button% this this
                                  (mred->wx-container parent) (wrap-callback callback)
-                                 label -1 -1 -1 -1 style (no-val->#f font)))
+                                 label -1 -1 -1 -1 style (no-val->#f font)))]
+        [mismatches
          (lambda ()
            (let ([cwho '(constructor button)])
-             (check-container-ready cwho parent)))
-         label parent callback #f)
-        [font font])))))
+             (check-container-ready cwho parent)))]
+        [cursor #f]
+        [lbl label]
+        [parent parent]
+        [cb callback]
+        [font font]
+        [enabled enabled]
+        [horiz-margin horiz-margin]
+        [vert-margin vert-margin]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))))
 
 (define check-box%
   (class basic-control%
     (init label parent [callback (lambda (b e) (void))] [style null] [value #f]
           ;; This is a vestige of the old class100 keyword macro
-          [font no-val])
+          [font no-val]
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (let ([cwho '(constructor check-box)])
       (check-label-string-or-bitmap cwho label)
       (check-container-parent cwho parent)
@@ -268,24 +296,44 @@
      [set-value (entry-point (lambda (v) (send wx set-value v)))])
     (as-entry
      (lambda ()
-       (super-instantiate
-        ((lambda ()
+       (super-new
+        [mk-wx
+         (lambda ()
            (set! wx (make-object wx-check-box% this this
                                  (mred->wx-container parent) (wrap-callback callback)
                                  label -1 -1 -1 -1 style (no-val->#f font)))
-           wx)
+           wx)]
+        [mismatches
          (lambda ()
            (let ([cwho '(constructor check-box)])
-             (check-container-ready cwho parent)))
-         label parent callback #f)
-        [font font])))
+             (check-container-ready cwho parent)))]
+        [lbl label]
+        [parent parent]
+        [cb callback]
+        [cursor #f]
+        [font font]
+        [enabled enabled]
+        [horiz-margin horiz-margin]
+        [vert-margin vert-margin]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))
     (when value (set-value #t))))
 
 (define radio-box%
   (class basic-control%
     (init label choices parent [callback (lambda (b e) (void))] [style '(vertical)] [selection 0]
           ;; This is a vestige of the old class100 keyword macro
-          [font no-val])
+          [font no-val]
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (define chcs choices)
     (let ([cwho '(constructor radio-box)])
       (check-label-string/false cwho label)
@@ -356,7 +404,14 @@
                                                (length choices))
                                        selection)))))
          label parent callback #f)
-        [font font])))
+        [font font]
+        [enabled enabled]
+        [horiz-margin horiz-margin]
+        [vert-margin vert-margin]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))
     (when (or (not selection) (positive? selection))
       (set-selection selection))))
 
@@ -364,7 +419,15 @@
   (class basic-control%
     (init label min-value max-value parent [callback (lambda (b e) (void))] [init-value min-value] [style '(horizontal)]
           ;; This is a vestige of the old class100 keyword macro
-          [font no-val])
+          [font no-val]
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (define minv min-value)
     (define maxv max-value)
     (let ([cwho '(constructor slider)])
@@ -400,23 +463,43 @@
                    (send wx set-value v)))])
     (as-entry
      (lambda ()
-       (super-instantiate
-        ((lambda ()
+       (super-new
+        [mk-wx
+         (lambda ()
            (set! wx (make-object wx-slider% this this
                                  (mred->wx-container parent) (wrap-callback callback)
                                  label init-value minv maxv style (no-val->#f font)))
-           wx)
+           wx)]
+        [mismatches
          (lambda ()
            (let ([cwho '(constructor slider)])
-             (check-container-ready cwho parent)))
-         label parent callback #f)
-        [font font])))))
+             (check-container-ready cwho parent)))]
+        [lbl label]
+        [parent parent]
+        [cb callback]
+        [cursor #f]
+        [font font]
+        [enabled enabled]
+        [horiz-margin horiz-margin]
+        [vert-margin vert-margin]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))))
 
 (define gauge%
   (class basic-control%
     (init label range parent [style '(horizontal)]
           ;; This is a vestige of the old class100 keyword macro
-          [font no-val])
+          [font no-val]
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (let ([cwho '(constructor gauge)])
       (check-label-string/false cwho label)
       (check-container-parent cwho parent)
@@ -441,17 +524,29 @@
                    (send wx set-range v)))])
     (as-entry
      (lambda ()
-       (super-instantiate
-        ((lambda ()
+       (super-new
+        [mk-wx
+         (lambda ()
            (set! wx (make-object wx-gauge% this this
                                  (mred->wx-container parent)
                                  label range style (no-val->#f font)))
-           wx)
+           wx)]
+        [mismatches
          (lambda ()
            (let ([cwho '(constructor gauge)])
-             (check-container-ready cwho parent)))
-         label parent void #f)
-        [font font])))))
+             (check-container-ready cwho parent)))]
+        [lbl label]
+        [parent parent]
+        [cb void]
+        [cursor #f]
+        [font font]
+        [enabled enabled]
+        [horiz-margin horiz-margin]
+        [vert-margin vert-margin]
+        [min-width min-width]
+        [min-height min-height]
+        [stretchable-width stretchable-width]
+        [stretchable-height stretchable-height])))))
 
 ;; List controls ----------------------------------------
 
@@ -564,32 +659,60 @@
   (class basic-list-control%
     (init label choices parent [callback (lambda (b e) (void))] [style null] [selection 0]
           ;; This is a vestige of the old class100 keyword macro
-          [font no-val])
+          [font no-val]
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (let ([cwho '(constructor choice)])
       (check-list-control-args cwho label choices parent callback)
       (check-style cwho #f '(vertical-label horizontal-label deleted) style)
       (check-non-negative-integer cwho selection)
       (check-font cwho font))
-    (super-instantiate
-     ((lambda () (make-object wx-choice% this this
-                              (mred->wx-container parent) (wrap-callback callback)
-                              label -1 -1 -1 -1 choices style (no-val->#f font)))
+    (super-new
+     [mk-wx
+      (lambda () (make-object wx-choice% this this
+                             (mred->wx-container parent) (wrap-callback callback)
+                             label -1 -1 -1 -1 choices style (no-val->#f font)))]
+     [mismatches
       (lambda ()
-        (let ([cwho '(constructor choice)])
-          (check-container-ready cwho parent)
-          (unless (= 0 selection)
-            (check-list-control-selection cwho choices selection))))
-      label parent
-      (and (positive? selection) selection)
-      callback
-      choices)
-     [font font])))
+       (let ([cwho '(constructor choice)])
+         (check-container-ready cwho parent)
+         (unless (= 0 selection)
+           (check-list-control-selection cwho choices selection))))]
+     [label label]
+     [parent parent]
+     [selection (and (positive? selection) selection)]
+     [callback callback]
+     [init-choices choices]
+     [font font]
+     [enabled enabled]
+     [horiz-margin horiz-margin]
+     [vert-margin vert-margin]
+     [min-width min-width]
+     [min-height min-height]
+     [stretchable-width stretchable-width]
+     [stretchable-height stretchable-height])))
 
 (define list-box%
   (class basic-list-control%
     (init label choices parent [callback (lambda (b e) (void))] [style '(single)]
           [selection #f] [font no-val] [label-font no-val]
+          ;; inherited inits
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val]
+          ;; post inits
           [columns (list "Column")] [column-order #f])
+    (init-rest)
     (let ([cwho '(constructor list-box)])
       (check-list-control-args cwho label choices parent callback)
       (check-style cwho '(single multiple extended)
@@ -785,25 +908,38 @@
                                        (format "list has only ~a items, indexed 0 to ~a; given out-of-range index: "
                                                m (sub1 m)))
                                    n)))))])
-    (super-make-object
-     (lambda ()
-       (let-values ([(kind style)
-                     (cond
-                      [(memq 'single style) (values 'single (remq 'single style))]
-                      [(memq 'multiple style) (values 'multiple (remq 'multiple style))]
-                      [else (values 'extended (remq 'extended style))])])
-         (set! wx (make-object wx-list-box% this this
-                               (mred->wx-container parent) (wrap-callback callback)
-                               label kind
-                               -1 -1 -1 -1 choices style
-                               (no-val->#f font) (no-val->#f label-font)
-                               column-labels
-                               column-order)))
-       wx)
-     (lambda ()
-       (let ([cwho '(constructor list-box)])
-         (check-container-ready cwho parent)
-         (when selection
-           (check-list-control-selection cwho choices selection))))
-     label parent (and (pair? choices) selection) callback
-     choices)))
+    (super-new
+     [mk-wx
+      (lambda ()
+        (let-values ([(kind style)
+                      (cond
+                       [(memq 'single style) (values 'single (remq 'single style))]
+                       [(memq 'multiple style) (values 'multiple (remq 'multiple style))]
+                       [else (values 'extended (remq 'extended style))])])
+          (set! wx (make-object wx-list-box% this this
+                                (mred->wx-container parent) (wrap-callback callback)
+                                label kind
+                                -1 -1 -1 -1 choices style
+                                (no-val->#f font) (no-val->#f label-font)
+                                column-labels
+                                column-order)))
+        wx)]
+     [mismatches
+      (lambda ()
+        (let ([cwho '(constructor list-box)])
+          (check-container-ready cwho parent)
+          (when selection
+            (check-list-control-selection cwho choices selection))))]
+     [label label]
+     [parent parent]
+     [selection (and (pair? choices) selection)]
+     [callback callback]
+     [init-choices choices]
+     [font font]
+     [enabled enabled]
+     [horiz-margin horiz-margin]
+     [vert-margin vert-margin]
+     [min-width min-width]
+     [min-height min-height]
+     [stretchable-width stretchable-width]
+     [stretchable-height stretchable-height])))

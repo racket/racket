@@ -95,7 +95,16 @@
 
 (define canvas%
   (class basic-canvas%
-    (init parent [style null] [paint-callback default-paint-cb] [label #f] [gl-config #f])
+    (init parent [style null] [paint-callback default-paint-cb] [label #f] [gl-config #f]
+          ;; inherited inits
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (define paint-cb paint-callback)
     (define has-x? (and (list? style) (memq 'hscroll style)))
     (define has-y? (and (list? style) (memq 'vscroll style)))
@@ -231,26 +240,35 @@
             (resume-flush)))
         (when flush? (flush))))
     (define wx #f)
-    (super-make-object
-     (lambda () 
-       (let ([ds (+ (cond
-                     [(memq 'control-border style) (+ 4 canvas-control-border-extra)]
-                     [(memq 'border style) 4]
-                     [else 0])
-                    (if (or has-x? has-y?)
-                        canvas-default-size
-                        1))])
-         (set! wx (make-object wx-canvas% this this
-                               (mred->wx-container parent)
-                               -1 -1 
-                               (+ ds (if (memq 'combo style) side-combo-width 0)) ds
-                               style
-                               gl-config)))
-       wx)
-     (lambda ()
-       (let ([cwho '(constructor canvas)])
-         (check-container-ready cwho parent)))
-     parent)
+    (super-new
+     [mk-wx
+      (lambda ()
+        (let ([ds (+ (cond
+                      [(memq 'control-border style) (+ 4 canvas-control-border-extra)]
+                      [(memq 'border style) 4]
+                      [else 0])
+                     (if (or has-x? has-y?)
+                         canvas-default-size
+                         1))])
+          (set! wx (make-object wx-canvas% this this
+                                (mred->wx-container parent)
+                                -1 -1
+                                (+ ds (if (memq 'combo style) side-combo-width 0)) ds
+                                style
+                                gl-config)))
+        wx)]
+     [mismatches
+      (lambda ()
+        (let ([cwho '(constructor canvas)])
+          (check-container-ready cwho parent)))]
+     [parent parent]
+     [enabled enabled]
+     [horiz-margin horiz-margin]
+     [vert-margin vert-margin]
+     [min-width min-width]
+     [min-height min-height]
+     [stretchable-width stretchable-width]
+     [stretchable-height stretchable-height])
     (when label
       (set-label label))
     (send parent after-new-child this)))
@@ -259,7 +277,16 @@
   (class basic-canvas%
     (init parent [editor #f] [style null] [scrolls-per-page 100] [label #f]
           [wheel-step no-val] [line-count no-val]
-          [horizontal-inset 5] [vertical-inset 5])
+          [horizontal-inset 5] [vertical-inset 5]
+          ;; inherited inits
+          [enabled #t]
+          [vert-margin no-val]
+          [horiz-margin no-val]
+          [min-width no-val]
+          [min-height no-val]
+          [stretchable-width no-val]
+          [stretchable-height no-val])
+    (init-rest)
     (let ([cwho '(constructor editor-canvas)])
       (check-container-parent cwho parent)
       (check-instance cwho internal-editor<%> "text% or pasteboard%" #t editor)
@@ -372,36 +399,45 @@
           (as-exit (lambda () (send wx set-x-margin m)))])))
     (public [hi horizontal-inset]) 
     (define wx #f)
-    (super-make-object
-     (lambda () 
-       (let* ([no-h? (or (memq 'no-vscroll style)
-                         (memq 'hide-vscroll style))]
-              [no-v? (or (memq 'no-hscroll style)
-                         (memq 'hide-hscroll style))]
-              [get-ds (lambda (no-this? no-other?)
-                        (+ (if (memq 'control-border style)
-                               canvas-control-border-extra
-                               0)
-                           (cond
-                            [(and no-this? no-other?) 14]
-                            [no-this? canvas-default-size]
-                            [else (+ canvas-scroll-size canvas-default-size)])))])
-         (set! wx (make-object wx-editor-canvas% this this
-                               (mred->wx-container parent) -1 -1
-                               (+ (get-ds no-h? no-v?) (if (memq 'combo style) side-combo-width 0))
-                               (get-ds no-v? no-h?)
-                               #f 
-                               (append
-                                (if (memq 'no-border style)
-                                    null
-                                    '(border))
-                                (remq 'no-border style))
-                               scrolls-per-page #f))
-         wx))
-     (lambda () 
-       (let ([cwho '(constructor editor-canvas)])
-         (check-container-ready cwho parent)))
-     parent)
+    (super-new
+     [mk-wx
+      (lambda ()
+        (let* ([no-h? (or (memq 'no-vscroll style)
+                          (memq 'hide-vscroll style))]
+               [no-v? (or (memq 'no-hscroll style)
+                          (memq 'hide-hscroll style))]
+               [get-ds (lambda (no-this? no-other?)
+                         (+ (if (memq 'control-border style)
+                                canvas-control-border-extra
+                                0)
+                            (cond
+                             [(and no-this? no-other?) 14]
+                             [no-this? canvas-default-size]
+                             [else (+ canvas-scroll-size canvas-default-size)])))])
+          (set! wx (make-object wx-editor-canvas% this this
+                                (mred->wx-container parent) -1 -1
+                                (+ (get-ds no-h? no-v?) (if (memq 'combo style) side-combo-width 0))
+                                (get-ds no-v? no-h?)
+                                #f
+                                (append
+                                 (if (memq 'no-border style)
+                                     null
+                                     '(border))
+                                 (remq 'no-border style))
+                                scrolls-per-page #f))
+          wx))]
+     [mismatches
+      (lambda ()
+        (let ([cwho '(constructor editor-canvas)])
+          (check-container-ready cwho parent)))]
+     [parent parent]
+     [enabled enabled]
+     [horiz-margin horiz-margin]
+     [vert-margin vert-margin]
+     [min-width min-width]
+     [min-height min-height]
+     [stretchable-width stretchable-width]
+     [stretchable-height stretchable-height])
     (unless (eq? wheel-step no-val)
       (ws wheel-step))
     (when label

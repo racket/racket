@@ -1061,6 +1061,7 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/testing.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/text-scale.rktl" drdr:command-line #f
 "collects/tests/gracket/unflushed-circle.rkt" drdr:command-line #f
+"collects/tests/gracket/widget-init.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/wxme-doc-random.rkt" drdr:command-line (mzc *)
 "collects/tests/gracket/wxme-random.rkt" drdr:command-line #f
