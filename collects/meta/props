@@ -704,19 +704,7 @@ path/s is either such a string or a list of them.
 "collects/dynext" responsible (mflatt)
 "collects/dynext/private/stdio.rkt" drdr:command-line #f
 "collects/embedded-gui" responsible (mflatt)
-"collects/embedded-gui/private/tests/alignment-test.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/info.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/not-stetching.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/only-one-child.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/peer-stretchables.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/stretching-in-alignment.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/target-not-object.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/test-alignment.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/test-case-box.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/test-macro.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/test-show-feature-for-test-case.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/test-show-feature.rkt" drdr:command-line #f
-"collects/embedded-gui/private/tests/unaligned-childless-redux.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests" drdr:command-line #f
 "collects/eopl" responsible (dvanhorn)
 "collects/errortrace" responsible (mflatt)
 "collects/ffi" responsible (eli mflatt)
@@ -756,9 +744,7 @@ path/s is either such a string or a list of them.
 "collects/frtime/demos/tetris.rkt" drdr:command-line (mzc *)
 "collects/frtime/demos/tile-game.rkt" drdr:command-line (mzc *)
 "collects/frtime/demos/ufo.rkt" drdr:command-line (mzc *)
-"collects/frtime/gui/demo/bindec.rkt" drdr:command-line (mzc *)
-"collects/frtime/gui/demo/instr.rkt" drdr:command-line (mzc *)
-"collects/frtime/gui/demo/timer.rkt" drdr:command-line (mzc *)
+"collects/frtime/gui/demo" drdr:command-line (mzc *)
 "collects/frtime/gui.rkt" drdr:command-line (mzc *)
 "collects/games" responsible (mflatt robby)
 "collects/games/chat-noir" responsible (robby matthias)
@@ -925,15 +911,13 @@ path/s is either such a string or a list of them.
 "collects/redex/examples/subject-reduction.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/threads.rkt" drdr:command-line (mzc *)
 "collects/redex/examples/types.rkt" drdr:command-line (mzc *)
-"collects/redex/private/compiler/match.rkt" drdr:command-line #f
-"collects/redex/private/compiler/redextomatrix.rkt" drdr:command-line #f
+"collects/redex/private/compiler" drdr:command-line #f
 "collects/redex/redex.scrbl" drdr:timeout 300
 "collects/redex/scribblings/tut.scrbl" drdr:timeout 300
 "collects/redex/tests/bitmap-test.rkt" drdr:command-line (mzc "-k" *)
 "collects/redex/tests/check-syntax-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/color-test.rkt" drdr:command-line (mzc *)
-"collects/redex/tests/compiler/matrix-tests.rkt" drdr:command-line #f
-"collects/redex/tests/compiler/redex-tests.rkt" drdr:command-line #f
+"collects/redex/tests/compiler" drdr:command-line #f
 "collects/redex/tests/core-layout-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/hole-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/keyword-macros-test.rkt" drdr:command-line (mzc *)
@@ -1136,22 +1120,10 @@ path/s is either such a string or a list of them.
 "collects/tests/net/websocket.rkt" responsible (jay)
 "collects/tests/openssl" responsible (mflatt)
 "collects/tests/plai" responsible (jay)
-"collects/tests/plai/gc/bad-mutators/mut-1.rkt" drdr:command-line #f
-"collects/tests/plai/gc/bad-mutators/mutator0.rkt" drdr:command-line #f
-"collects/tests/plai/gc/bad-mutators/mutator1.rkt" drdr:command-line #f
-"collects/tests/plai/gc/bad-mutators/mutator2.rkt" drdr:command-line #f
-"collects/tests/plai/gc/bad-mutators/mutator3.rkt" drdr:command-line #f
-"collects/tests/plai/gc/bad-mutators/mutator5.rkt" drdr:command-line #f
-"collects/tests/plai/gc/bad-mutators/void-app.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators" drdr:command-line #f
 "collects/tests/plai/gc/other-mutators" drdr:command-line #f
 "collects/tests/plai/gc/run-test.rkt" drdr:command-line (racket * "-g")
-"collects/tests/plai/gc2/bad-mutators/mut-1.rkt" drdr:command-line #f
-"collects/tests/plai/gc2/bad-mutators/mutator0.rkt" drdr:command-line #f
-"collects/tests/plai/gc2/bad-mutators/mutator1.rkt" drdr:command-line #f
-"collects/tests/plai/gc2/bad-mutators/mutator2.rkt" drdr:command-line #f
-"collects/tests/plai/gc2/bad-mutators/mutator3.rkt" drdr:command-line #f
-"collects/tests/plai/gc2/bad-mutators/mutator5.rkt" drdr:command-line #f
-"collects/tests/plai/gc2/bad-mutators/void-app.rkt" drdr:command-line #f
+"collects/tests/plai/gc2/bad-mutators" drdr:command-line #f
 "collects/tests/plai/gc2/other-mutators" drdr:command-line #f
 "collects/tests/plai/gc2/run-test.rkt" drdr:command-line (racket * "-g")
 "collects/tests/plai/test-random-mutator.rkt" responsible (jay robby)
@@ -1363,8 +1335,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/embed-planet-1/alt.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/main.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/other.rkt" drdr:command-line #f
-"collects/tests/racket/embed-planet-2/main.ss" drdr:command-line #f
-"collects/tests/racket/embed-planet-2/private/sub.rkt" drdr:command-line #f
+"collects/tests/racket/embed-planet-2" drdr:command-line #f
 "collects/tests/racket/embed.rktl" drdr:command-line #f
 "collects/tests/racket/expand.rktl" drdr:command-line #f
 "collects/tests/racket/file.rktl" drdr:command-line #f
