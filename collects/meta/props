@@ -1045,9 +1045,9 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket" responsible (mflatt)
 "collects/tests/gracket/auto.rktl" drdr:command-line #f
 "collects/tests/gracket/blits.rkt" drdr:command-line #f
-"collects/tests/gracket/dc.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/dc.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/draw.rkt" drdr:command-line (mzc *)
-"collects/tests/gracket/editor.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/editor.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/flush-stress.rkt" drdr:command-line #f
 "collects/tests/gracket/gui-main.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/gracket/gui.rktl" drdr:command-line (racket "-f" *)
@@ -1074,7 +1074,7 @@ path/s is either such a string or a list of them.
 "collects/tests/htdp-lang/bega-adv.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/beginner-abbr.rktl" drdr:command-line (racket "-f" *) drdr:timeout 300
 "collects/tests/htdp-lang/beginner.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/htdp-lang/htdp-image.rktl" responsible (robby) drdr:command-line (gracket "-f" *)
+"collects/tests/htdp-lang/htdp-image.rktl" responsible (robby) drdr:command-line (racket "-f" *)
 "collects/tests/htdp-lang/htdp-test.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/htdp-lang/htdp.rktl" drdr:command-line #f
 "collects/tests/htdp-lang/intermediate-lambda.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
@@ -1328,7 +1328,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/typed/wordfreq.rktl" drdr:command-line #f
 "collects/tests/racket/binc.rktl" drdr:command-line #f
 "collects/tests/racket/boundmap-test.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/cache-image-snip-test.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/racket/cache-image-snip-test.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/censor.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/chaperone.rktl" drdr:command-line #f
 "collects/tests/racket/char-set.rktl" drdr:command-line (racket "-f" *)

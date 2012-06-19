@@ -1,6 +1,7 @@
 (load-relative "loadtest.rktl")
 
-(require mrlib/cache-image-snip
+(require racket/gui/base
+         mrlib/cache-image-snip
          mzlib/unit)
 
 (invoke-unit

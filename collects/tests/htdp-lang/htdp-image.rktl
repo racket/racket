@@ -1,7 +1,8 @@
 ;; Load this one with GRacket
 
 (load-relative "../racket/loadtest.rktl")
-(require teachpack/htdp/image
+(require racket/gui/base
+         teachpack/htdp/image
          htdp/error
          lang/posn
          mzlib/list
