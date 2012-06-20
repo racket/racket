@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide valid-version? version->list version<? version<=? alpha-version?
          version->integer)
@@ -17,16 +17,15 @@
 
 ;; returns a list of 4 integers (see src/mzscheme/src/schvers.h)
 (define (version->list str)
-  (let ([ver (map string->number (regexp-split #rx"[.]" str))])
-    (case (length ver)
-      [(2) (append ver '(0 0))]
-      [(3) (append ver '(0))]
-      [(4) ver]
-      [else (error 'version->list "bad version: ~e" str)])))
+  (define ver (map string->number (regexp-split #rx"[.]" str)))
+  (case (length ver)
+    [(2) (append ver '(0 0))]
+    [(3) (append ver '(0))]
+    [(4) ver]
+    [else (error 'version->list "bad version: ~e" str)]))
 
 (define (version<? a b)
-  (let loop ([a (version->list a)]
-             [b (version->list b)])
+  (let loop ([a (version->list a)] [b (version->list b)])
     (cond [(null? a) #f]
           [(< (car a) (car b)) #t]
           [(> (car a) (car b)) #f]
@@ -36,10 +35,10 @@
   (or (equal? a b) (version<? a b)))
 
 (define (alpha-version? v)
-  (let ([l (version->list v)])
-    (or ((list-ref l 1) . >= . 90)
-        ((list-ref l 2) . >= . 900)
-        ((list-ref l 3) . >= . 900))))
+  (define l (version->list v))
+  (or ((list-ref l 1) . >= . 90)
+      ((list-ref l 2) . >= . 900)
+      ((list-ref l 3) . >= . 900)))
 
 ;; returns an integer representing the version (XXYYZZZWWW) or #f if invalid
 ;; works for pre v4 versions too
@@ -54,20 +53,19 @@
           [(< n 49) ver]
           ;; old versions (earliest useful is 49, changed at 3.99)
           [(<= 49 n 379)
-           (let*-values
-               ([(q r) (quotient/remainder n 100)]
-                [(sfx) (substring ver (cdar m))]
-                [(sfx) (cond [(equal? sfx "") ""]
-                             ;; NNNpN -> N.NN.N
-                             [(regexp-match? #rx"^p[0-9]" sfx)
-                              (string-append "." (substring sfx 1))]
-                             ;; NNN.N -> N.NN.0.N (not a release version)
-                             [(regexp-match? #rx"^[.]" sfx)
-                              (string-append ".0" sfx)]
-                             [else #f])])
-             (and sfx (format "~a.~a~a" q r sfx)))]
+           (define-values [q r] (quotient/remainder n 100))
+           (define sfx (let ([sfx (substring ver (cdar m))])
+                         (cond [(equal? sfx "") ""]
+                               ;; NNNpN -> N.NN.N
+                               [(regexp-match? #rx"^p[0-9]" sfx)
+                                (string-append "." (substring sfx 1))]
+                               ;; NNN.N -> N.NN.0.N (not a release version)
+                               [(regexp-match? #rx"^[.]" sfx)
+                                (string-append ".0" sfx)]
+                               [else #f])))
+           (and sfx (format "~a.~a~a" q r sfx))]
           ;; bad strings
           [else #f]))
   (and v (valid-version? v)
-       (foldl (lambda (ver mul acc) (+ ver (* mul acc))) 0
+       (foldl (λ (ver mul acc) (+ ver (* mul acc))) 0
               (version->list v) '(0 100 1000 1000))))

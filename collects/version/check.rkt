@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (define version-url "http://download.racket-lang.org/version.txt")
 (define timeout 30)
@@ -13,9 +13,9 @@
 
 (require scheme/tcp)
 (define (url->port url)
-  (define-values (host path)
+  (define-values [host path]
     (apply values (cdr (regexp-match #rx"^http://([^/:@]+)(/.*)$" url))))
-  (define-values (i o) (tcp-connect host 80))
+  (define-values [i o] (tcp-connect host 80))
   (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" path host)
   (flush-output o)
   (close-output-port o)
@@ -27,29 +27,26 @@
   (case-lambda
     [(what) `(error ,what)]
     [(what more)
-     `(error ,what
-             ,(cond [(list? more) (format "~a" more)]
-                    [(exn? more)  (format "(~a)" (exn-message more))]
-                    [else         (format "(~a)" more)]))]))
+     `(error ,what ,(cond [(list? more) (format "~a" more)]
+                          [(exn? more)  (format "(~a)" (exn-message more))]
+                          [else         (format "(~a)" more)]))]))
 
 (define (with-timeout timeout thunk)
   (define result #f)
-  (let ([r (sync/timeout timeout
-             (thread (lambda ()
-                       (set! result
-                             (with-handlers
-                                 ([void (lambda (e)
-                                          (error-value "internal error" e))])
-                               (thunk))))))])
-    (if r result (error-value "timeout"))))
+  (define r (sync/timeout timeout
+              (thread (λ ()
+                        (set! result
+                              (with-handlers
+                                  ([void (λ (e)
+                                           (error-value "internal error" e))])
+                                (thunk)))))))
+  (if r result (error-value "timeout")))
 
 (define (check-version-raw)
   (let/ec escape
     (define (err . args) (escape (apply error-value args)))
-    (define-syntax try
-      (syntax-rules ()
-        [(_ expr error-message)
-         (with-handlers ([void (lambda (e) (err error-message e))]) expr)]))
+    (define-syntax-rule (try expr error-message)
+      (with-handlers ([void (λ (e) (err error-message e))]) expr))
     ;; Get server information, carefully
     (define version-info
       (parameterize ([current-input-port
@@ -60,38 +57,35 @@
       (cond [(assq key version-info) => cadr]
             [else (err (format "no `~s' in response" key) version-info)]))
     (define (getver key)
-      (let ([ver (get key)])
-        (if (valid-version? ver)
-          ver
-          (err "bad version string from server" key))))
+      (define ver (get key))
+      (if (valid-version? ver) ver (err "bad version string from server" key)))
     (unless (and (list? version-info)
-                 (andmap (lambda (x)
-                           (and (list? x)
-                                (= 2 (length x))
-                                (symbol? (car x))
-                                (string? (cadr x))))
+                 (andmap (λ (x) (and (list? x)
+                                     (= 2 (length x))
+                                     (symbol? (car x))
+                                     (string? (cadr x))))
                          version-info))
       (err "bad response from server" version-info))
     ;; Make a decision
-    (let ([current (version)]
-          [stable (getver 'stable)]
-          [recent (getver 'recent)])
-      (cond
-        ;; we have the newest version (can be > if we have a build from git)
-        [(version<=? recent current) 'ok]
-        ;; we're stable, but there's a newer version
-        [(version<=? stable current) `(ok-but ,recent)]
-        ;; new version out -- no alphas or we have an alpha => show recent
-        [(or (equal? recent stable)
-             (and (alpha-version? current)
-                  ;; but if we have an alpha that is older then the current
-                  ;; stable then go to the next case
-                  (version<=? stable current)))
-         `(newer ,recent)]
-        ;; new version out, we have an outdated stable, there is also an alpha
-        ;; (alternatively, we have an alpha that is older than the current
-        ;; stable)
-        [else `(newer ,stable ,recent)]))))
+    (define current (version))
+    (define stable  (getver 'stable))
+    (define recent  (getver 'recent))
+    (cond
+      ;; we have the newest version (can be > if we have a build from git)
+      [(version<=? recent current) 'ok]
+      ;; we're stable, but there's a newer version
+      [(version<=? stable current) `(ok-but ,recent)]
+      ;; new version out -- no alphas or we have an alpha => show recent
+      [(or (equal? recent stable)
+           (and (alpha-version? current)
+                ;; but if we have an alpha that is older then the current
+                ;; stable then go to the next case
+                (version<=? stable current)))
+       `(newer ,recent)]
+      ;; new version out, we have an outdated stable, there is also an alpha
+      ;; (alternatively, we have an alpha that is older than the current
+      ;; stable)
+      [else `(newer ,stable ,recent)])))
 
 ;; Check the version on the server and compare to our version.  Possible return
 ;; values (message is always a string):
