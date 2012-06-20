@@ -70,13 +70,27 @@
              (-> Univ (-seq a b) (seq-vals (list a b))))))]
   ;; in-range
   [(make-template-identifier 'in-range 'racket/private/for)
-   (cl->* (-Byte [-Byte -Byte] . ->opt . (-seq -Byte))
-          (-PosFixnum -Fixnum [-Nat] . ->opt . (-seq -PosFixnum))
-          (-NonNegFixnum [-Fixnum -Nat] . ->opt . (-seq -NonNegFixnum))
-          (-Fixnum [-Fixnum -Int] . ->opt . (-seq -Fixnum))
-          (-PosInt -Int [-Nat] . ->opt . (-seq -PosInt))
-          (-Nat [-Int -Nat] . ->opt . (-seq -Nat))
-          (-Int [-Int -Int] . ->opt . (-seq -Int)))]
+   (cl->* (-> -Byte (-seq -Byte))
+          (-> -Index (-seq -Index))
+          (-> -Fixnum (-seq -Fixnum))
+          (-> -Real (-seq -Int))
+          (->opt -PosInt -Byte [-Int] (-seq -PosByte))
+          (->opt -Nat -Byte [-Int] (-seq -Byte))
+          (->opt -PosInt -Index [-Int] (-seq -PosIndex))
+          (->opt -Nat -Index [-Int] (-seq -Index))
+          (->opt -Nat -NonNegFixnum [-Int] (-seq -NonNegFixnum))
+          (->opt -PosInt -Fixnum [-Nat] (-seq -PosFixnum))
+          (->opt -Nat -Fixnum [-Nat] (-seq -NonNegFixnum))
+          (->opt -Nat -Nat [-Int] (-seq -Nat))
+          (->opt -PosInt -Int [-Nat] (-seq -PosInt))
+          (->opt -Nat -Int [-Nat] (-seq -Nat))
+          ;; could add cases that guarantee lists of negatives, etc.
+          (->opt -Int -Real [-Int] (-seq -Int))
+          (->opt -Rat -Real [-Rat] (-seq -Rat))
+          (->opt -Flonum -Real [-Flonum] (-seq -Flonum))
+          (->opt -SingleFlonum -Real [-SingleFlonum] (-seq -SingleFlonum))
+          (->opt -InexactReal -Real [-InexactReal] (-seq -InexactReal))
+          (->opt -Real -Real [-Real] (-seq -Real)))]
   ;; in-naturals
   [(make-template-identifier 'in-naturals 'racket/private/for)
    (cl->* (-> -PosInt (-seq -PosInt))

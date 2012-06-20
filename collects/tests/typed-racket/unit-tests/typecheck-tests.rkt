@@ -207,6 +207,10 @@
         [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer -Boolean))]
         [tc-e (vector 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
         [tc-e (vector-immutable 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
+        [tc-e (range 4) (-lst -Byte)]
+        [tc-e (range 2 4 1) (-lst -PosByte)]
+        [tc-e (range 0 4 1) (-lst -Byte)]
+        [tc-e (range 0.0 4/2 0.5) (-lst -Flonum)]
         [tc-e/t '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]

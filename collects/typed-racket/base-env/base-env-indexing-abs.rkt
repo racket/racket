@@ -215,6 +215,29 @@
 
 
 
+   [range (cl->* (-> (Un -Zero -NegInt) (-val '()))
+                 (-> -One  (-pair -One (-val '())))
+                 (-> -Byte (-lst -Byte))
+                 (-> -Index (-lst -Index))
+                 (-> -Fixnum (-lst -Fixnum))
+                 (-> -Real (-lst -Int))
+                 (->opt -PosInt -Byte [-Int] (-lst -PosByte))
+                 (->opt -Nat -Byte [-Int] (-lst -Byte))
+                 (->opt -PosInt -Index [-Int] (-lst -PosIndex))
+                 (->opt -Nat -Index [-Int] (-lst -Index))
+                 (->opt -Nat -NonNegFixnum [-Int] (-lst -NonNegFixnum))
+                 (->opt -PosInt -Fixnum [-Nat] (-lst -PosFixnum))
+                 (->opt -Nat -Fixnum [-Nat] (-lst -NonNegFixnum))
+                 (->opt -Nat -Nat [-Int] (-lst -Nat))
+                 (->opt -PosInt -Int [-Nat] (-lst -PosInt))
+                 (->opt -Nat -Int [-Nat] (-lst -Nat))
+                 ;; could add cases that guarantee lists of negatives, etc.
+                 (->opt -Int -Real [-Int] (-lst -Int))
+                 (->opt -Rat -Real [-Rat] (-lst -Rat))
+                 (->opt -Flonum -Real [-Flonum] (-lst -Flonum))
+                 (->opt -SingleFlonum -Real [-SingleFlonum] (-lst -SingleFlonum))
+                 (->opt -InexactReal -Real [-InexactReal] (-lst -InexactReal))
+                 (->opt -Real -Real [-Real] (-lst -Real)))]
    [take   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [drop   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [take-right   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
