@@ -601,7 +601,8 @@ path/s is either such a string or a list of them.
                                 (cond [(eq? x '*) "~s"]
                                       [(symbol? x) (symbol->string x)]
                                       [(string? x) x]
-                                      [else (bad)])))])))
+                                      [else (bad)]))
+                              " ")])))
   ;; --------------------
   (Prop
    'drdr:timeout
@@ -623,7 +624,11 @@ path/s is either such a string or a list of them.
 (read-props)
 
 ;; if we're running directly, do a verification
-(module+ main (verify))
+;; Use this only when supported
+(require (for-syntax racket/base version/utils))
+(define-syntax (add-main stx)
+  (if ((version) . version<=? . "5.2.1") #'(begin) #'(module+ main (verify))))
+(add-main)
 
 ;; ----------------------------------------------------------------------------
 
