@@ -18,6 +18,11 @@
     [(bytes? x) (bytes->path x)]
     [else x]))
 
+(define (path-bytes->string x)
+  (cond
+    [(bytes? x) (bytes->string/locale x)]
+    [else x]))
+
 (define (->path x)
   (cond [(path? x) x]
         [(string? x) (string->path x)]
@@ -31,7 +36,10 @@
 
 (define (->module-path x)
   (cond [(path? x) x]
-        [(list? x) (map path-bytes->path x)]
+        [(and (list? x) (pair? x))
+         (cond
+           [(equal? (car x) 'file) (map path-bytes->string x)]
+           [else (map path-bytes->path x)])]
         [(bytes? x) (bytes->path x)]
         [(string? x) (string->path x)]))
 

@@ -9,6 +9,8 @@
          racket/vector
          racket/place/private/th-place
          mzlib/private/streams
+         unstable/lazy-require
+
 
          (for-syntax racket/base
                      racket/syntax))
@@ -33,6 +35,7 @@
          place-dead-evt
          )
 
+(lazy-require [racket/place/distributed (supervise-dynamic-place-at)])
 
 (define (place-channel-put/get ch msg)
   (place-channel-put ch msg)
@@ -59,9 +62,13 @@
       (pl-place-pumper-threads p (vector t-in t-out t-err))]
     [else (void)]))
 
-(define (dynamic-place module-path function)
-  (start-place 'dynamic-place module-path function
-               #f (current-output-port) (current-error-port)))
+(define (dynamic-place module-path function #:at [node #f])
+  (cond
+    [node
+      (supervise-dynamic-place-at node module-path function)]
+    [else
+      (start-place 'dynamic-place module-path function
+                   #f (current-output-port) (current-error-port))]))
 
 (define (dynamic-place* module-path
                         function

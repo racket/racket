@@ -201,9 +201,21 @@ values (like @racket[spawn-node-supervise-dynamic-place-at]): the new
            [#:listen-port port port-no? DEFAULT-ROUTER-PORT]
            [#:racket-path racket-path string-path? (racket-path)]
            [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
-           [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)])  (is-a?/c remote-node%)]{
+           [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
+           [#:use-current-ports use-current-ports #f])  (is-a?/c remote-node%)]{
 
 Spawns a new remote node at @racket[hostname] and returns a @racket[remote-node%] handle.}
+
+@defproc[(create-place-node
+           [hostname string?]
+           [#:listen-port port port-no? DEFAULT-ROUTER-PORT]
+           [#:racket-path racket-path string-path? (racket-path)]
+           [#:ssh-bin-path ssh-path string-path? (ssh-bin-path)]
+           [#:distributed-launch-path launcher-path string-path? (path->string distributed-launch-path)]
+           [#:use-current-ports use-current-ports #t])  (is-a?/c remote-node%)]{
+
+Like @racket[spawn-remote-racket-node], but the @racket[current-output-port] and @racket[current-error-port]
+are used as the standard ports for the spawned process instead of new pipe ports.}
 
 @defproc[(supervise-dynamic-place-at
            [remote-node (is-a?/c remote-node%)]
@@ -493,6 +505,8 @@ Sends @racket[node] a message telling it to exit immediately.
 Returns the @racket[remote-connection%] instance of the first place spawned at this node
 }
 
+@defproc[(distributed-place-wait [remote-connection% place]) void?]{
+Waits for @racket[place] to terminate.}
 
 @defclass[remote-connection% object% (event-container<%>)]{
 

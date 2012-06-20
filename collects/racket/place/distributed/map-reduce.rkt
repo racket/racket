@@ -6,18 +6,10 @@
          racket/place/distributed)
 
 
-(provide make-mr-workers
+(provide make-map-reduce-workers
          map-reduce
-         map-reduce-worker)
-
-(define-syntax define/provide
-  (syntax-rules ()
-    [(_ (name x ...) body ...)
-     (begin (provide name)
-            (define (name x ...) body ...))]
-    [(_ name val)
-     (begin (provide name)
-            (define name val))]))
+         map-reduce-worker
+         default-sorter)
 
 (define (map-coalesce-values kvl)
   (let loop ([sl kvl]
@@ -32,7 +24,7 @@
                (loop slt curk (cons slhv curv) nl)
                (loop sl null null (cons (cons curk (reverse curv)) nl))))]
       [(list)
-       (reverse 
+       (reverse
          (if (null? curk)
              nl
              (cons (cons curk (reverse curv)) nl)))])))
@@ -68,11 +60,11 @@
   (dynamic-require (->module-path mp) sym))
 
 (define (map-reduce-worker ch)
-  (let loop ([map-val null])
+  (let loop ([map-vals null])
     (define msg (place-channel-get ch))
     (match msg
-      [(list (list 'map mapper key-less-than t) rch)
-        (define nmv1 ((apply-dynamic-require mapper) t))
+      [(list (list 'map mapper key-less-than task) rch)
+        (define nmv1 ((apply-dynamic-require mapper) task))
         (define less-than (apply-dynamic-require key-less-than))
         (define nmv2 (sort nmv1 less-than))
         (define nmv (map-coalesce-values nmv2))
@@ -80,17 +72,17 @@
         (loop (cons rch nmv))]
       [(list (list 'reduce-to reducer sorter addr) rch)
         (define reduce-ch (mr-connect-to ch (take addr 2) (third addr)))
-        (place-channel-put reduce-ch (list 'reduce reducer sorter (cdr map-val)))
+        (place-channel-put reduce-ch (list 'reduce reducer sorter (cdr map-vals)))
         (place-channel-put rch (list 'reduce-done))
         (loop null)]
       [(list (list 'reduce reducer sorter kvs) rch)
         (define less-than (apply-dynamic-require sorter))
-        (define nmvc (coalesce-values (cdr map-val) kvs less-than))
+        (define nmvc (coalesce-values (cdr map-vals) kvs less-than))
         (define nmv ((apply-dynamic-require reducer) nmvc))
-        (place-channel-put (car map-val) (list 'reduce-ready))
-        (loop (cons (car map-val) nmv))]
+        (place-channel-put (car map-vals) (list 'reduce-ready))
+        (loop (cons (car map-vals) nmv))]
       [(list (list 'get-results) rch)
-        (place-channel-put rch (list 'results (cdr map-val)))
+        (place-channel-put rch (list 'results (cdr map-vals)))
         (loop null)]
     )))
 
@@ -98,7 +90,7 @@
   (string->symbol (string-append "mpw" (number->string i))))
 
 
-(define (make-mr-workers config)
+(define (make-map-reduce-workers config)
   (define nodes (spawn-nodes/join/local config))
   (for ([n nodes]
         [i (in-naturals)])
@@ -109,7 +101,7 @@
 
   nodes)
 
-(define/provide (default-sorter a b)
+(define (default-sorter a b)
   (cond
     [(number? a) (< a b)]
     [(string? a) (string<? a b)]
@@ -135,7 +127,7 @@
       (define npch (mr-connect-to ch (list host port) name))
       (list c npch)))
 
-  (define result 
+  (define result
     (let loop ([ts tasks]
              [idle-mappers connections]
              [mapping null]
@@ -150,8 +142,6 @@
         (loop tst imt (cons imh mapping) rtr r)]
       [(list ts im m (cons rtr1 (cons rtr2 rtrt)) r)
         (*channel-put (second rtr1) (list 'reduce-to reducer sorter (first rtr2)))
-        ;
-        ;(*channel-put rtr2 (list 'reduce-from rtr1))
         (loop ts im m rtrt (cons rtr1 (cons rtr2 r)))]
       [(list (list) im (list) (list rtr) (list))
         (*channel-put (second rtr) (list 'get-results))

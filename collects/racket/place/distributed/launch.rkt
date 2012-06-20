@@ -10,7 +10,7 @@
   (match args
     [(list "spawn" node-port)
        (define listener (tcp-listen (->number node-port) 4 #t))
-       (write-flush (list (->number node-port)))
+       (printf/f "~a\n" (list (->number node-port)))
        (start-spawned-node-router listener)]
 
     ;; Used to launch Design Pattern 1, MPI style distributed system.

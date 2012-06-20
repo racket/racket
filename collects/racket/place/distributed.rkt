@@ -52,6 +52,10 @@
          node-send-exit
          node-get-first-place
 
+         ;; without message router api
+         create-place-node
+         distributed-place-wait
+
          ;; low-level API
          write-flush
          printf/f
@@ -120,6 +124,11 @@
          *channel?
          port-no?
          )
+
+(define in-message-router-mark (cons #f #f))
+(define (call-in-message-router thunk)
+  (with-continuation-mark in-message-router-mark #f
+                           (call-with-continuation-prompt thunk)))
 
 (define-runtime-path distributed-launch-path "distributed/launch.rkt")
 (define (build-distributed-launch-path [collects-path
@@ -340,13 +349,13 @@
       object% (event-container<%>)
       (init-field cmdline-list)
       (init-field [parent #f])
-      (field [s #f]
-             [i #f]
-             [o #f]
-             [e #f]
-             [pid #f])
+      (init-field [s #f]
+                  [i #f]
+                  [o #f]
+                  [e #f])
+      (field [pid #f])
 
-      (let-values ([(_s _o _i _e) (apply subprocess #f #f #f cmdline-list)])
+      (let-values ([(_s _o _i _e) (apply subprocess o i e cmdline-list)])
         (set! pid (subprocess-pid _s))
         (set! s _s)
         (set! o (box _o))
@@ -395,6 +404,11 @@
                   sch
                   id
                   node)
+      (field [msg-queue null])
+
+      (define (queue-had-died-message?)
+        (for/or ([msg msg-queue])
+          (= (dcgm-type msg) DCGM-DPLACE-DIED)))
 
       (define/public (register nes)
         (cons
@@ -414,9 +428,20 @@
       (define/public (get-raw-msg)
         (let loop ()
           (define msg (send sch read-message))
-          (if (= (dcgm-type msg) DCGM-DPLACE-DIED)
-            (loop)
-          (dcgm-msg msg))))
+          (cond
+            [(= (dcgm-type msg) DCGM-DPLACE-DIED)
+              (set! msg-queue (append msg-queue (list msg)))
+              (loop)]
+            [else
+              (dcgm-msg msg)])))
+      (define/public (wait-to-die)
+        (or
+          (queue-had-died-message?)
+          (let loop ()
+            (define msg (send sch read-message))
+            (unless (= (dcgm-type msg) DCGM-DPLACE-DIED)
+              (loop))))
+        (void))
       (define/public (put-msg msg)
         ;(printf/f "PSB3 ~a ~a ~a\n" sch id msg)
         (sconn-write-flush sch (dcgm DCGM-TYPE-INTER-DCHANNEL id id msg)))
@@ -786,7 +811,9 @@
 
       (define/public (read-message)
         (when (equal? out #f) (ensure-connected))
-        (read in))
+        (define m (read in))
+        ;(printf/f "MESSAGE ~a\n" m)
+        m)
       (define/public (register nes)
         (raise "Not-implemented/needed")
         (cons (wrap-evt in void) nes))
@@ -817,6 +844,7 @@
       (init-field [cmdline-list #f])
       (init-field [sc #f]) ;socket-connection
       (init-field [restart-on-exit #f])
+      (init-field [use-current-ports #f])
       (field [sp #f]) ;spawned-process
       (field [id 0])
       (field [remote-places null])
@@ -831,7 +859,12 @@
         (set! remote-places (append remote-places(list rp))))
       (define (spawn-node)
         (and cmdline-list
-          (set! sp (new spawned-process% [cmdline-list cmdline-list] [parent this]))))
+          (set! sp 
+            (if use-current-ports
+              (new spawned-process% [cmdline-list cmdline-list] [parent this]
+                   [o (current-output-port)]
+                   [e (current-error-port)])
+              (new spawned-process% [cmdline-list cmdline-list] [parent this])))))
       (define (setup-socket-connection)
         (set! sc (new socket-connection% [host host-name] [port listen-port] [remote-node this]))
         (sconn-write-flush sc (dcgm DCGM-TYPE-SET-OWNER -1 -1 "")))
@@ -976,6 +1009,7 @@
 
 (define (node-send-exit node) (send node send-exit))
 (define (node-get-first-place node) (send node get-first-place))
+(define (distributed-place-wait p) (send p place-wait))
 
 (define remote-connection%
   (backlink
@@ -1045,7 +1079,7 @@
                                             (cond
                                               [k
                                                (lambda (e)
-                                                 (call-with-continuation-prompt (lambda ()
+                                                 (call-in-message-router(lambda ()
                                                    (begin0
                                                      (k e)
                                                      (set! k #f)))))]
@@ -1071,6 +1105,8 @@
             (set! k _k)
             (abort-current-continuation (default-continuation-prompt-tag) void))))
       (define/public (put-msg msg) (send psb put-msg msg))
+      (define/public (place-wait)
+        (send psb wait-to-die))
 
       (super-new)
       )))
@@ -1088,7 +1124,7 @@
       (field [running #f])
       (define (default-on-place-dead e)
         (set! pd #f)
-        (set! psb #f)
+        ;(set! psb #f)
         (sconn-write-flush sc (dcgm DCGM-DPLACE-DIED -1 -1 ch-id))
         (sconn-remove-subchannel sc ch-id))
 
@@ -1195,7 +1231,7 @@
             (wrap-evt (alarm-evt fire-time)
                         (lambda (x)
                           (set! fire-time (+ (current-inexact-milliseconds) (* seconds 1000)))
-                          (thunk)))
+                          (call-in-message-router  thunk)))
             es)
           es))
 
@@ -1216,7 +1252,7 @@
             (wrap-evt (alarm-evt fire-time)
                         (lambda (x)
                           (set! fire-time #f)
-                          (call-with-continuation-prompt thunk)))
+                          (call-in-message-router thunk)))
             es)
           es))
 
@@ -1455,11 +1491,25 @@
 (define (spawn-remote-racket-node host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                                        #:racket-path [racketpath (racket-path)]
                                        #:ssh-bin-path [sshpath (ssh-bin-path)]
-                                       #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)])
+                                       #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
+                                       #:use-current-ports [use-current-ports #f])
   (new remote-node%
        [host-name host]
        [listen-port listen-port]
-       [cmdline-list (list sshpath host racketpath "-tm" distributedlaunchpath "spawn" (->string listen-port))]))
+       [cmdline-list (list sshpath host racketpath "-tm" distributedlaunchpath "spawn" (->string listen-port))]
+       [use-current-ports use-current-ports]))
+
+(define (create-place-node host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
+                                       #:racket-path [racketpath (racket-path)]
+                                       #:ssh-bin-path [sshpath (ssh-bin-path)]
+                                       #:distributed-launch-path [distributedlaunchpath (->module-path-bytes distributed-launch-path)]
+                                       #:use-current-ports [use-current-ports #t])
+  (spawn-remote-racket-node host
+                            #:listen-port listen-port
+                            #:racket-path racketpath
+                            #:ssh-bin-path sshpath
+                            #:distributed-launch-path distributedlaunchpath
+                            #:use-current-ports use-current-ports))
 
 (define (supervise-dynamic-place-at remote-node place-path place-func)
   (send remote-node launch-place (list 'dynamic-place (->module-path-bytes  place-path) place-func)))
@@ -1592,7 +1642,12 @@
     [(place-channel? ch) (place-channel-get ch)]
     [(async-bi-channel? ch) (async-bi-channel-get ch)]
     [(channel? ch) (channel-get ch)]
-    [(is-a? ch remote-connection%) (send ch get-msg)]
+    [(is-a? ch remote-connection%) 
+     (cond
+       [(continuation-mark-set-first #f in-message-router-mark)
+         (send ch get-msg)]
+       [else
+         (send ch get-raw-msg)])]
     [else (raise (format "unknown channel type ~a" ch))]))
 
 (define/provide (mr-spawn-remote-node mrch host #:listen-port [listen-port DEFAULT-ROUTER-PORT]
@@ -1688,6 +1743,28 @@
     object% ()
     (init-field ch)
     (field [msgs null])
+    (define/public (get-evt type)
+      (cond
+        [(has-type type) => (lambda (x)
+                              (wrap-evt always-evt (lambda (e) x)))]
+        [else
+          (wrap-evt ch (lambda (v)
+                         (set! msgs (append msgs (list v)))
+                         (cond 
+                           [(has-type type) => (lambda (x) x)]
+                           [else #f])))]))
+                     
+    (define (has-type type)
+      (let loop ([l msgs]
+                 [nl null])
+        (cond
+          [(null? l) #f]
+          [(equal? type (caaar l))
+           (set! msgs (append (reverse nl) (cdr l)))
+           (car l)]
+          [else
+           (loop (cdr l) (cons (car l) nl))])))
+
     (define/public (get type)
       (let loop ([l msgs]
                  [nl null])

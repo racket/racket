@@ -32,26 +32,24 @@
   (define tc (new named-place-typed-channel% [ch ch]))
   (match-define (list (list 'rmpi-id id config) return-ch) (tc-get 'rmpi-id tc))
   (match-define (list (list 'args args) src-ch) (tc-get 'args tc))
+
   (define mpi-comm-vector
     (for/vector #:length (length config) ([c config])
       (match-define (list dest dest-port dest-name dest-id) c)
       (cond
         [(< id dest-id)
-         ;(printf/f "sending connect to dest-id ~a from id ~a over ~a" dest-id id ch)
          (send-new-place-channel-to-named-dest ch id (list dest dest-port dest-name))]
         [else null])))
+
   (for ([i (length config)])
-    (cond
-      [(> id i)
-        (match-define (list (list 'new-place-channel src-id) src-ch) (tc-get 'new-place-channel tc))
-        ;(printf/f "received connect from id ~a ~a" src-id src-ch)
-        (vector-set! mpi-comm-vector src-id src-ch)]
-      [else null]))
+    (when (> id i)
+      (match-define (list (list 'new-place-channel src-id) src-ch) (tc-get 'new-place-channel tc))
+      (vector-set! mpi-comm-vector src-id src-ch)))
+
   (values
     (rmpi-comm id (length config) mpi-comm-vector)
     args
-    tc
-    ))
+    tc))
 
 
 (define rmpi-broadcast 
@@ -161,7 +159,7 @@
 ;      (displayln (keyword? kw))
       (values kw kwa)))))
 
-(define (rmpi-launch default config)
+(define (rmpi-launch default config #:no-wait [no-wait #f])
   (define (lookup-config-value rest key-str)
     (define key
       (string->keyword key-str))
@@ -227,12 +225,19 @@
     (*channel-put npch (list 'rmpi-id id simple-config))
     (*channel-put npch (list 'args (or (lookup-config-value rest "mpi-args") null))))
 
-  (for/first ([c config])
-    (match-define (list-rest host port name id rest) c)
-    (define npch (mr-connect-to ch (list host port) name))
-    (*channel-put npch (list 'done?))
-    ;Wait for 'done message from mpi node id 0
-    (*channel-get npch)))
+  (cond
+    [no-wait
+      (for/first ([c config])
+        (match-define (list-rest host port name id rest) c)
+        (define npch (mr-connect-to ch (list host port) name))
+        (list npch))]
+    [else
+      (for/first ([c config])
+        (match-define (list-rest host port name id rest) c)
+        (define npch (mr-connect-to ch (list host port) name))
+        (*channel-put npch (list 'done?))
+        ;Wait for 'done message from mpi node id 0
+        (*channel-get npch))]))
 
 
 (define (rmpi-finish comm tc)
