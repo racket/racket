@@ -1,7 +1,7 @@
 #lang racket/base
 
-(provide (rename-out [-struct/dc struct/dc])
-         struct/c)
+(provide (rename-out [-struct/dc struct/dc]
+                     [-struct/c struct/c]))
 
 (require (for-syntax racket/base
                      racket/list
@@ -958,13 +958,13 @@
                      '(expected "a struct of type ~a")
                      what))
 
-(define-syntax (struct/c stx)
+(define-syntax (-struct/c stx)
   (syntax-case stx ()
     [(_ . args) 
-     (with-syntax ([x (syntax/loc stx (do-struct/c . args))])
+     (with-syntax ([x (syntax/loc stx (struct/c . args))])
        (syntax/loc stx (#%expression x)))]))
 
-(define-syntax (do-struct/c stx)
+(define-syntax (struct/c stx)
   (syntax-case stx ()
     [(_ struct-name args ...)
      (and (identifier? (syntax struct-name))
@@ -993,7 +993,7 @@
        
        (define strip-reg (regexp (format "^~a-" (regexp-quote (symbol->string (syntax-e #'struct-name))))))
        (define (selector-id->field sel)
-         (datum->syntax #'struct-name
+         (datum->syntax sel
                         (string->symbol (regexp-replace strip-reg (symbol->string (syntax-e sel)) ""))))
        
        (do-struct/dc

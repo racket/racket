@@ -14004,6 +14004,33 @@ so that propagation occurs.
              (provide (contract-out garbage))
              (λ)))
    #rx"contract-out")
+
+  (test/pos-blame
+   'contract-struct/c-1
+   '(begin
+      (eval '(module contract-struct/c-1a racket/base
+               (struct s (field))
+               (provide s)))
+      (eval '(module contract-struct/c-1b racket/base
+               (require 'contract-struct/c-1a racket/contract)
+               (contract (struct/c s boolean?)
+                         (s 1)
+                         'pos 'neg)))
+      (eval '(require 'contract-struct/c-1b))))
+  
+  (test/spec-passed
+   'contract-struct/c-2
+   '(begin
+      (eval '(module contract-struct/c-2a racket/base
+               (struct s (field))
+               (provide s)))
+      (eval '(module contract-struct/c-2b racket/base
+               (require 'contract-struct/c-2a racket/contract)
+               (contract (struct/c s any/c)
+                         (s 1)
+                         'pos 'neg)))
+      (eval '(require 'contract-struct/c-2b))))
+
   
 ;                                                            
 ;                                                            
