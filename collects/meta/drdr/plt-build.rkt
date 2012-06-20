@@ -153,7 +153,7 @@
         (thread
          (lambda ()
            (subprocess-wait the-process)
-           (printf "Killing parent because wrapper is dead...\n")
+           (eprintf "Killing parent because wrapper (~a) is dead...\n" (list* command args))
            (kill-thread parent))))
 
       ;; Run without stdin
@@ -400,14 +400,17 @@
                    (with-running-program
                     "/usr/bin/Xorg" (list (format ":~a" i))
                     (lambda ()
-                      (sleep 2)
-                      (notify! "Starting fluxbox #~a" i)
-                      (with-running-program
-                       (fluxbox-path)
-                       (list "-display"
-                             (format ":~a" i)
-                             "-rc" "/home/pltdrdr/.fluxbox/init")
-                       inner))))
+                      (with-env
+                       (["DISPLAY" (format ":~a" i)])
+                       (sleep 2)
+                       (notify! "Starting fluxbox #~a" i)
+                       (with-running-program
+                        (fluxbox-path)
+                        empty
+                        #;(list "-display"
+                              (format ":~a" i)
+                              "-rc" "/home/pltdrdr/.fluxbox/init")
+                        inner)))))
 
                  (start-x-server
                   ROOTX

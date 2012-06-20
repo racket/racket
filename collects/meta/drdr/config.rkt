@@ -9,7 +9,7 @@
 (drdr-directory "/opt/svn/drdr")
 (git-path "/usr/bin/git")
 (Xvfb-path "/usr/bin/Xnest")
-(fluxbox-path "/usr/bin/fluxbox")
+(fluxbox-path "/usr/bin/dwm")
 (vncviewer-path "/usr/bin/vncviewer")
 (current-make-install-timeout-seconds (* 90 60))
 (current-make-timeout-seconds (* 90 60))                                       
