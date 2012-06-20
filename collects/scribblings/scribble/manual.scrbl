@@ -747,8 +747,7 @@ An optional @racket[#:kind] specification chooses the decorative
 label, which defaults to @racket["procedure"]. A @racket[#f]
 result for @racket[kind-string-expr] uses the default, otherwise
 @racket[kind-string-expr] should produce a string. An alternate
-label should be all lowercase, although the current documentation
-style converts the string to all uppercase.}
+label should be all lowercase.}
 
 
 @defform[(defproc* maybe-kind
