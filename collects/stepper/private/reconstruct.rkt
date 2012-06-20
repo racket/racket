@@ -13,6 +13,7 @@
            "marks.rkt"
            "model-settings.rkt"
            "shared.rkt"
+           "syntax-property.rkt"
            "my-macros.rkt"
            (for-syntax scheme/base)
            racket/private/promise)

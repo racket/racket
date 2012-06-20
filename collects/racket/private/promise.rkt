@@ -174,7 +174,7 @@
   ;; stepper-syntax-property : like syntax property, but adds properties to an
   ;; association list associated with the syntax property 'stepper-properties
   ;; Had to re-define this because of circular dependencies
-  ;; (also defined in stepper/private/shared.rkt)
+  ;; (also defined in stepper/private/syntax-property.rkt)
   (define-for-syntax stepper-syntax-property
     (case-lambda 
       [(stx tag) 

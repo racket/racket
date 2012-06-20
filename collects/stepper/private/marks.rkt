@@ -4,6 +4,7 @@
          mzlib/contract
          "my-macros.rkt"
          "shared.rkt"
+         "syntax-property.rkt"
          #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
 
 (define-struct full-mark-struct (source label bindings values))

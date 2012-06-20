@@ -1,11 +1,9 @@
-#lang scheme
+#lang racket
 
-(require mzlib/class
-         mred
+(require mred
          (prefix-in f: framework)
-         mzlib/pretty
-         #;"testing-shared.rkt"
-         "shared.rkt"
+         racket/pretty
+         "syntax-property.rkt"
          images/compile-time
          (for-syntax images/icons/control images/icons/style))
 

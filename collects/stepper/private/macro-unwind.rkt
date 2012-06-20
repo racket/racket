@@ -2,7 +2,8 @@
 
 (require (only-in syntax/kerncase kernel-syntax-case)
          "model-settings.rkt"
-         "shared.rkt")
+         "shared.rkt"
+         "syntax-property.rkt")
 
 (provide/contract [unwind (syntax? render-settings? . -> . syntax?)])
 ;

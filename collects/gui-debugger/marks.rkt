@@ -2,9 +2,7 @@
 
   (require mzlib/list
 	   mzlib/contract
-           (prefix-in mz: mzscheme)
-           stepper/private/my-macros
-           stepper/private/shared)
+           (prefix-in mz: mzscheme))
 
   (define-struct full-mark-struct (module-name source label bindings values))
 
@@ -57,7 +55,7 @@
   (define skipto-mark? skipto-mark-struct?)
   (define skipto-mark (make-skipto-mark-struct))
   (define (strip-skiptos mark-list)
-    (filter (lx (#%plain-app not (skipto-mark? _))) mark-list))
+    (filter (lambda (x) (#%plain-app not (skipto-mark? x))) mark-list))
   
     
   ; debug-key: this key will be used as a key for the continuation marks.

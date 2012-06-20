@@ -12,7 +12,7 @@
 	 (except-in deinprogramm/signature/signature-syntax property))
 
 (require (for-syntax scheme/base)
-	 (for-syntax stepper/private/shared))
+	 (for-syntax stepper/private/syntax-property))
 
 (require deinprogramm/define-record-procedures)
 

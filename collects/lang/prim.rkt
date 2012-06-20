@@ -8,7 +8,7 @@
            (rename lang/htdp-beginner beginner-app #%app))
   
   (require-for-syntax (prefix fo: "private/firstorder.rkt")
-                      stepper/private/shared)
+                      stepper/private/syntax-property)
   
   (provide define-primitive
 	   define-higher-order-primitive

@@ -1,6 +1,6 @@
 #lang racket
 
-(require rackunit)
+(require "syntax-property.rkt")
 
 ; CONTRACTS
 
@@ -85,16 +85,7 @@
  finished-xml-box-table
  language-level->name
  saved-code-inspector
- stepper-syntax-property
- with-stepper-syntax-properties
  
- skipto/cdr
- skipto/cddr
- skipto/first
- skipto/second
- skipto/third
- skipto/fourth
- skipto/firstarg
  
  (struct-out annotated-proc)
  
@@ -102,67 +93,6 @@
  stepper-frame^
  )
 
-;; stepper-syntax-property : like syntax property, but adds properties to an association
-;; list associated with the syntax property 'stepper-properties
-
-(define stepper-syntax-property
-  (case-lambda 
-    [(stx tag)
-     (unless (member tag known-stepper-syntax-property-names)
-       (raise-type-error 'stepper-syntax-property "known stepper property symbol" 1 stx tag))
-     (let ([stepper-props (syntax-property stx 'stepper-properties)])
-       (if stepper-props
-           (let ([table-lookup (assq tag stepper-props)])
-             (if table-lookup
-                 (cadr table-lookup)
-                 #f))
-           #f))]
-    [(stx tag new-val) 
-     (unless (member tag known-stepper-syntax-property-names)
-       (raise-type-error 'stepper-syntax-property "known stepper property symbol" 1 
-                         stx tag new-val))
-     (syntax-property stx 'stepper-properties
-                      (cons (list tag new-val)
-                            (or (syntax-property stx 'stepper-properties)
-                                null)))]))
-
-;; if the given property name isn't in this list, signal an error...
-(define known-stepper-syntax-property-names 
-  '(stepper-skip-completely
-    stepper-hint
-    stepper-define-type
-    stepper-xml-hint
-    stepper-xml-value-hint
-    stepper-proc-define-name
-    stepper-orig-name
-    stepper-prim-name
-    stepper-binding-type
-    stepper-no-lifting-info
-    stepper-and/or-clauses-consumed
-    stepper-skipto
-    stepper-skipto/discard
-    stepper-replace
-    stepper-else
-    stepper-black-box-expr
-    stepper-test-suite-hint
-    stepper-highlight
-    stepper-fake-exp
-    stepper-args-of-call
-    stepper-hide-completed
-    stepper-hide-reduction
-    stepper-use-val-as-final
-    stepper-lifted-name
-    lazy-op
-    ))
-  
-  ;; with-stepper-syntax-properties : like stepper-syntax-property, but in a "let"-like form
-  (define-syntax (with-stepper-syntax-properties stx)
-    (syntax-case stx ()
-      [(_ ([property val] ...) body)
-       (foldl (lambda (property val b) #`(stepper-syntax-property #,b #,property #,val))
-              #'body
-              (syntax->list #`(property ...))
-              (syntax->list #`(val ...)))]))
   
   ; A step-result is either:
   ; (make-before-after-result finished-exps exp redex reduct)
@@ -495,14 +425,6 @@
                            'rebuild)
                    `(a . (b ((2) c . 3) d))))
   
-  ;; commonly used values for stepper-syntax-property:
-  (define skipto/cdr `(syntax-e cdr))
-  (define skipto/cddr `(syntax-e cdr cdr))
-  (define skipto/first `(syntax-e car))
-  (define skipto/second `(syntax-e cdr car))
-  (define skipto/third `(syntax-e cdr cdr car))
-  (define skipto/fourth `(syntax-e cdr cdr cdr car))
-  (define skipto/firstarg (append skipto/cdr skipto/second))
   
   ;; skipto/auto : syntax?
   ;;               (symbols 'rebuild 'discard)
@@ -517,7 +439,10 @@
     (cond [(or (stepper-syntax-property stx 'stepper-skipto)
 	       (stepper-syntax-property stx 'stepper-skipto/discard))
            =>
-           (lambda (x) (update x stx (lambda (y) (skipto/auto y traversal transformer)) traversal))]
+           (lambda (x) (update x stx 
+                               (lambda (y) 
+                                 (skipto/auto y traversal transformer)) 
+                               traversal))]
           [else (transformer stx)]))
 
   ;  small test case:
@@ -772,10 +697,3 @@
   
   (define-signature view-controller^ (go))
   (define-signature stepper-frame^ (stepper-frame%))
-  
- 
-  
-
-  
-
-

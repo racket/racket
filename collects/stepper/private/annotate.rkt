@@ -4,6 +4,7 @@
          racket/contract
          "marks.rkt"
          "shared.rkt"
+         "syntax-property.rkt"
          "my-macros.rkt"
          #;"xml-box.rkt"
          (prefix-in beginner-defined: "beginner-defined.rkt")

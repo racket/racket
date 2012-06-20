@@ -2,7 +2,7 @@
 
 (require "stepper-language-interface.rkt"
          "debugger-language-interface.rkt"
-         stepper/private/shared
+         stepper/private/syntax-property
          scheme/class
          scheme/contract
          test-engine/scheme-tests

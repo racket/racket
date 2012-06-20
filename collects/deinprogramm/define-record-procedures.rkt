@@ -17,5 +17,5 @@
 
 (require (for-syntax scheme/base)
          (for-syntax deinprogramm/syntax-checkers)
-         (for-syntax stepper/private/shared))
+         (for-syntax stepper/private/syntax-property))
 (include "define-record-procedures.scm")

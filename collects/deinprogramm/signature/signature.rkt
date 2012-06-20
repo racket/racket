@@ -20,7 +20,7 @@
 (require scheme/promise
 	 mzlib/struct
 	 (for-syntax scheme/base)
-	 (for-syntax stepper/private/shared))
+	 (for-syntax stepper/private/syntax-property))
 
 (require deinprogramm/quickcheck/quickcheck)
 

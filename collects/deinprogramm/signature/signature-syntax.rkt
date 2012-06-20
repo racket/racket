@@ -11,7 +11,7 @@
 	 scheme/promise
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)
-	 (for-syntax stepper/private/shared))
+	 (for-syntax stepper/private/syntax-property))
 
 (define-for-syntax (phase-lift stx)
   (with-syntax ((?stx stx))

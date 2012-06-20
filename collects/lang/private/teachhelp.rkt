@@ -1,10 +1,8 @@
 (module teachhelp mzscheme
   (require "firstorder.rkt"
            "rewrite-error-message.rkt"
-           stepper/private/shared
+           stepper/private/syntax-property
            (for-template (prefix r: racket/base)))
-
-  (require-for-syntax stepper/private/shared)
 
   (provide make-undefined-check
            make-first-order-function)

@@ -32,8 +32,6 @@
          "debugger-language-interface.rkt"
          "run-teaching-program.rkt"
          "htdp-langs-save-file-prefix.rkt"
-         
-         stepper/private/shared
 
          (only-in test-engine/scheme-gui make-formatter)
          (only-in test-engine/scheme-tests

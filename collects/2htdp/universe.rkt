@@ -17,7 +17,7 @@
 |#
 
 (require (for-syntax "private/clauses-spec-and-process.rkt"
-                     stepper/private/shared)
+                     stepper/private/syntax-property)
          "private/define-keywords.rkt"
          "private/clauses-spec-aux.rkt" 
          ;; ---

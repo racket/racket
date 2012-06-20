@@ -44,6 +44,7 @@
          (prefix-in a: "annotate.rkt")
          (prefix-in r: "reconstruct.rkt")
          "shared.rkt"
+         "syntax-property.rkt"
          "marks.rkt"
          "model-settings.rkt"
          "macro-unwind.rkt"

@@ -1,7 +1,8 @@
 #lang racket
 
 (require rackunit
-         stepper/private/shared)
+         stepper/private/shared
+         stepper/private/syntax-property)
   
 ; test cases taken from shared.rkt
 ;

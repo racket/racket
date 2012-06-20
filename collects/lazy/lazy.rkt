@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require (for-syntax racket/base))
-(require (for-syntax stepper/private/shared))
+(require (for-syntax racket/base)
+         (for-syntax stepper/private/syntax-property))
 
   ;; ~ = lazy (or delayed)
   ;; ! = strict (or forced)

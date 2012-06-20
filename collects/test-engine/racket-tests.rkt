@@ -10,7 +10,7 @@
 	 "test-info.scm"
          )
 
-(require (for-syntax stepper/private/shared))
+(require (for-syntax stepper/private/syntax-property))
 
 (provide
  check-expect ;; syntax : (check-expect <expression> <expression>)

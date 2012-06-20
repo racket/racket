@@ -25,7 +25,6 @@
 	 lang/debugger-language-interface
 	 lang/run-teaching-program
 	 lang/private/continuation-mark-key
-	 stepper/private/shared
 	 
 	 (only-in test-engine/scheme-gui make-formatter)
 	 test-engine/scheme-tests

@@ -70,7 +70,7 @@
                       (only racket/base syntax->datum datum->syntax)
                       (rename racket/base kw-app #%app)
                       racket/struct-info
-                      stepper/private/shared
+                      stepper/private/syntax-property
                       test-engine/racket-tests)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

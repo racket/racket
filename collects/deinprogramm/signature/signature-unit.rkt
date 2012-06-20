@@ -7,7 +7,7 @@
 	 mzlib/struct
          (only-in mzlib/list first rest)
 	 (for-syntax scheme/base)
-	 (for-syntax stepper/private/shared))
+	 (for-syntax stepper/private/syntax-property))
 
 (require deinprogramm/signature/signature)
 
