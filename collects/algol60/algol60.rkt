@@ -20,7 +20,7 @@
      (require "runtime.rkt" "prims.rkt")
 
 
-     (provide include-algol)
+     (provide include-algol literal-algol)
 
      (define-syntax (include-algol stx)
        (syntax-case stx ()
@@ -34,5 +34,22 @@
 			     (or
 			      (current-load-relative-directory)
 			      (current-directory))))
+	    #'here)
+	   #'here)]))
+     
+     (define-syntax (literal-algol stx)
+       (syntax-case stx ()
+         [(_ strs ...)
+          (andmap (λ (x) (string? (syntax-e x))) 
+                  (syntax->list (syntax (strs ...))))
+          
+	  (compile-simplified
+	   (simplify 
+	    (parse-a60-port
+             (open-input-string 
+              (apply 
+               string-append
+               (map syntax-e (syntax->list #'(strs ...)))))
+             (syntax-source stx))
 	    #'here)
 	   #'here)])))

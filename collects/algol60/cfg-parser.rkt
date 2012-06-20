@@ -485,7 +485,7 @@
       [(_ clause ...)
        (let ([clauses (syntax->list #'(clause ...))])
          (let-values ([(start grammar cfg-error parser-clauses)
-		       (let ([all-toks (apply
+                       (let ([all-toks (apply
 					append
 					(map (lambda (clause)
 					       (syntax-case clause (tokens)

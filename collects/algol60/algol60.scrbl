@@ -26,6 +26,25 @@ closed (i.e., it doesn't see any bindings in the included context),
 and the result is always @|void-const|.}
 
 
+@defform[(literal-algol string ...)]{
+
+Evaluates the Algol 60 program indicated by the literal @racket[string]s
+as an expression in a Racket program. The Algol 60 program is
+closed (i.e., it doesn't see any bindings in the included context),
+and the result is always @|void-const|.
+
+This is generally useful when combined with the @racketmodname[at-exp] reader,
+e.g.,
+@codeblock|{
+#lang at-exp racket
+@literal-algol{
+  begin
+    printsln (`hello world')
+  end
+}
+}|
+}
+
 @section{Language}
 
 The DrRacket and @racket[include-algol] implementation departs from
