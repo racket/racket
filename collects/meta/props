@@ -1478,6 +1478,7 @@ path/s is either such a string or a list of them.
 "collects/tests/xml" responsible (jay)
 "collects/tests/xml/test-clark.rkt" drdr:command-line #f drdr:timeout 300
 "collects/tests/xrepl" responsible (eli)
+"collects/tests/xrepl/main.rkt" drdr:command-line #f
 "collects/tests/zo-path.rkt" responsible (mflatt)
 "collects/tests/zo-size.rkt" responsible (jay)
 "collects/tex2page" responsible (jay)
