@@ -605,7 +605,11 @@
                                                           and "tests" every push to the Racket code base.}
                                    
                                    @h1{What kind of server?}
-                                   @p{A 64-bit Linux 2.6.32-24-server running Ubuntu 10.04.3 LTS with @,(number->string (number-of-cpus)) cores.}
+                                   @p{Here is the result of calling @code{uname -a}:}
+                                   @pre{@,(with-output-to-string (λ () (system "uname -a")))}
+                                   @p{Here is the result of calling @code{cat /etc/issue}:}
+                                   @pre{@,(with-output-to-string (λ () (system "cat /etc/issue")))}
+                                   @p{The machine has @,(number->string (number-of-cpus)) cores and runs Racket @,(version).}
                                    
                                    @h1{How is the build run?}
                                    @p{Every push is built from a clean checkout with the standard separate build directory command sequence, except that @code{make}
