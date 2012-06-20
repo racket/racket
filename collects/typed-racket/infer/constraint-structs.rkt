@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require "../utils/utils.rkt" (rep type-rep) scheme/contract racket/match (for-syntax scheme/base syntax/parse))
+(require "../utils/utils.rkt" (rep type-rep) racket/contract racket/match (for-syntax racket/base syntax/parse))
 
 ;; S, T types
 ;; X a var

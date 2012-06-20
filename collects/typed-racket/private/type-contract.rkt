@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide type->contract define/fixup-contract? change-contract-fixups)
 
@@ -12,12 +12,12 @@
  (types resolve utils)
  (prefix-in t: (types convenience abbrev))
  (private parse-type)
- racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax scheme/list
- (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
- (for-template scheme/base racket/contract racket/set (utils any-wrap)
+ racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax racket/list
+ (only-in racket/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
+ (for-template racket/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
                (only-in unstable/contract sequence/c)
-	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
+	       (only-in racket/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)

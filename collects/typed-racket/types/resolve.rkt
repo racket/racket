@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "../utils/utils.rkt")
 
 (require (rep type-rep rep-utils)
@@ -6,7 +6,7 @@
 	 (utils tc-utils)
          (types utils)
          racket/match
-         scheme/contract)
+         racket/contract)
 
 (provide resolve-name resolve-app needs-resolving? resolve)
 (provide/cond-contract [resolve-once (Type/c . -> . (or/c Type/c #f))])

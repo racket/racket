@@ -1,15 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../utils/utils.rkt"
 	 (except-in (rep type-rep) make-arr)
          (rename-in (types convenience union utils printer filter-ops) [make-arr* make-arr])
          (utils tc-utils stxclass-util)
-         syntax/stx (prefix-in c: scheme/contract)
+         syntax/stx (prefix-in c: racket/contract)
          syntax/parse
          (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)
          racket/match
          "parse-classes.rkt"
-         (for-template scheme/base "../base-env/colon.rkt")
+         (for-template racket/base "../base-env/colon.rkt")
          ;; needed at this phase for tests
          (combine-in (prefix-in t: "../base-env/base-types-extra.rkt") "../base-env/colon.rkt")
          (for-template (prefix-in t: "../base-env/base-types-extra.rkt")))

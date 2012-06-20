@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Top-level type environment
 ;; maps identifiers to their types, updated by mutation

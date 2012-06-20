@@ -1812,7 +1812,7 @@
                  (varop (Un -PosReal -NegReal) -PosReal)
                  (varop -Real -NonNegReal))]
 
-;; scheme/math
+;; racket/math
 
 [sgn (cl->* (-Zero . -> . -Zero)
             (-PosRat . -> . -One)
@@ -1937,7 +1937,7 @@
                 (-val #f))
             (-> -Real B))]
 
-;; scheme/fixnum
+;; racket/fixnum
 [fx+ (fx+-type)]
 [fx- (fx--type)]
 [fx* (fx*-type)]

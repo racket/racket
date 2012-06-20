@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 (require "../utils/utils.rkt")
 
 (require (utils tc-utils)
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          mzlib/trace racket/match mzlib/etc
-         scheme/contract
-         (for-syntax scheme/base syntax/parse))
+         racket/contract
+         (for-syntax racket/base syntax/parse))
 
 (define name-table (make-weak-hasheq))
 
@@ -334,7 +334,7 @@
 (def-type StructTop ([name Struct?]) [#:key 'struct])
 (def-type ThreadCellTop () [#:fold-rhs #:base] [#:key 'thread-cell])
 
-;; v : Scheme Value
+;; v : Racket Value
 (def-type Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
                                                                   [(boolean? v) 'boolean]
                                                                   [(null? v) 'null]

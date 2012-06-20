@@ -24,7 +24,7 @@
           "internal-forms.rkt"
           syntax/location
           mzlib/contract
-          scheme/base))
+          racket/base))
 
 (c:provide/contract
  [type-check (syntax? . c:-> . syntax?)]

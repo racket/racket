@@ -2,7 +2,7 @@
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer]))
 
-(require (for-syntax scheme/base syntax/parse)
+(require (for-syntax racket/base syntax/parse)
          (utils tc-utils)
          (env init-envs)
          (r:infer infer)

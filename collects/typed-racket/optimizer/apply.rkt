@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (require syntax/parse
-         (for-template scheme/unsafe/ops racket/base (prefix-in k: '#%kernel))
+         (for-template racket/unsafe/ops racket/base (prefix-in k: '#%kernel))
          "../utils/utils.rkt"
          (utils tc-utils)
          (optimizer utils logging))

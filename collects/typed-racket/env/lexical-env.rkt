@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 ;; this environment maps *lexical* variables to types
 ;; it also contains the proposition environment
 
-;; these environments are unified in "Logical Types for Scheme"
+;; these environments are unified in "Logical Types for Untyped Languages"
 ;; but split here for performance
 
 (require "../utils/utils.rkt"
@@ -13,7 +13,7 @@
 	 syntax/id-table
          racket/keyword-transform racket/list
          (for-syntax syntax/parse syntax/parse/experimental/contract racket/base)
-         (only-in scheme/contract ->* -> or/c any/c listof cons/c)
+         (only-in racket/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils mutated-vars)
          (only-in (rep type-rep) Type/c)
          (typecheck tc-metafunctions)

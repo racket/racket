@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/parse unstable/syntax
          racket/pretty
-         (for-template scheme/base)
+         (for-template racket/base)
          "../utils/utils.rkt"
          (optimizer utils logging
                     number fixnum float float-complex vector string list pair

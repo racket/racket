@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base syntax/parse "internal.rkt" "../utils/tc-utils.rkt")
+(require (for-syntax racket/base syntax/parse "internal.rkt" "../utils/tc-utils.rkt")
          "../typecheck/internal-forms.rkt"
          (prefix-in t: "base-types-extra.rkt"))
 

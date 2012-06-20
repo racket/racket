@@ -205,7 +205,7 @@ don't depend on any other portion of the system
 
 ;; id: identifier
 ;; sym: a symbol
-;; mod: a quoted require spec like 'scheme/base
+;; mod: a quoted require spec like 'racket/base
 ;; is id the name sym defined in mod?
 (define (id-from? id sym mod)
   (and (eq? (syntax-e id) sym)

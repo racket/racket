@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/parse unstable/syntax
-         scheme/list scheme/dict racket/match
+         racket/list racket/dict racket/match
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
-         (for-template scheme/base)
+         (for-template racket/base)
          (types numeric-tower utils type-table)
          (rep type-rep)
          (optimizer utils logging float-complex))

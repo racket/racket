@@ -6,7 +6,7 @@
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
          racket/match
-         scheme/contract)
+         racket/contract)
 
 (provide subst-all substitute substitute-dots substitute-dotted subst
          (struct-out t-subst) (struct-out i-subst) (struct-out i-subst/starred) (struct-out i-subst/dotted)

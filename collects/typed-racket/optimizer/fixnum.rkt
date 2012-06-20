@@ -1,8 +1,8 @@
-#lang scheme
+#lang racket/base
 
-(require syntax/parse
+(require syntax/parse racket/dict
          "../utils/utils.rkt"
-         (for-template scheme/base scheme/fixnum scheme/unsafe/ops)
+         (for-template racket/base racket/fixnum racket/unsafe/ops)
          (utils tc-utils)
          (types numeric-tower)
          (optimizer utils logging))

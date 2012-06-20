@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
-(require syntax/parse syntax/id-table scheme/dict unstable/syntax
+(require syntax/parse syntax/id-table racket/dict unstable/syntax
          "../utils/utils.rkt" racket/unsafe/ops
-         (for-template scheme/base scheme/math racket/flonum scheme/unsafe/ops)
+         (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)
          (types numeric-tower)
          (optimizer utils numeric-utils logging float))

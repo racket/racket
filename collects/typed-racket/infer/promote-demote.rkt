@@ -1,10 +1,10 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require "../utils/utils.rkt")
 (require (rep type-rep rep-utils)
 	 (types convenience union utils)
          "signatures.rkt"
-         scheme/list racket/match)
+         racket/list racket/match)
 
 (import)
 (export promote-demote^)

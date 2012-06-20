@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base)
+(require (for-syntax racket/base)
 	 syntax/parse)
 
 (define-syntax-rule (internal-forms set-name nms ...)

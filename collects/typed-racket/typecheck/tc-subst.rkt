@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../utils/utils.rkt")
 (require (rename-in (types subtype convenience remove-intersect union utils filter-ops)
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
-         (rep type-rep filter-rep rep-utils) scheme/list
-         scheme/contract racket/match unstable/match
-         (for-syntax scheme/base)
+         (rep type-rep filter-rep rep-utils) racket/list
+         racket/contract racket/match unstable/match
+         (for-syntax racket/base)
          "tc-metafunctions.rkt")
 
 (provide (all-defined-out))

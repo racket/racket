@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/parse
-         (for-template scheme/base)
+         (for-template racket/base)
          "../utils/utils.rkt"
          (utils tc-utils)
          (optimizer utils logging))

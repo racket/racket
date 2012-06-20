@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require "test-utils.rkt"
-         (for-syntax scheme/base)
-         (for-template scheme/base))
+         (for-syntax racket/base)
+         (for-template racket/base))
 (require (private type-annotation parse-type)
          (except-in 
           (base-env prims

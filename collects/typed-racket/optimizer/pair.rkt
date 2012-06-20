@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/parse unstable/syntax
          racket/match
-         (for-template scheme/base scheme/unsafe/ops racket/list)
+         (for-template racket/base racket/unsafe/ops racket/list)
          "../utils/utils.rkt"
          (utils tc-utils)
          (rep type-rep)

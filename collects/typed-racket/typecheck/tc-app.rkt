@@ -4,16 +4,16 @@
          "signatures.rkt" "tc-metafunctions.rkt" "check-below.rkt"
          "tc-app-helper.rkt" "find-annotation.rkt" "tc-funapp.rkt"
          "tc-subst.rkt" (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/trace scheme/list
+         syntax/parse racket/match racket/trace racket/list
          unstable/sequence  unstable/list
          ;; fixme - don't need to be bound in this phase - only to make tests work
-         scheme/bool
+         racket/bool
          racket/unsafe/ops
          (only-in racket/private/class-internal do-make-object)
          (only-in syntax/location module-name-fixup)
          (only-in '#%kernel [apply k:apply] [reverse k:reverse])
          ;; end fixme
-         (for-syntax syntax/parse scheme/base (utils tc-utils))
+         (for-syntax syntax/parse racket/base (utils tc-utils))
          (private type-annotation)
          (types utils abbrev union subtype resolve convenience type-table substitute)
          (utils tc-utils)
@@ -25,7 +25,7 @@
          (for-template
           racket/unsafe/ops racket/fixnum racket/flonum
           (only-in '#%kernel [apply k:apply] [reverse k:reverse])
-          "internal-forms.rkt" scheme/base scheme/bool '#%paramz
+          "internal-forms.rkt" racket/base racket/bool '#%paramz
           (only-in racket/private/class-internal do-make-object)
           (only-in syntax/location module-name-fixup)))
 
@@ -690,8 +690,8 @@
       mp1
       (#%plain-lambda ()
         (#%plain-app mp2 (#%plain-app call-with-values (#%plain-lambda () e) list))))
-     #:declare mp1 (id-from 'make-promise 'scheme/promise)
-     #:declare mp2 (id-from 'make-promise 'scheme/promise)
+     #:declare mp1 (id-from 'make-promise 'racket/promise)
+     #:declare mp2 (id-from 'make-promise 'racket/promise)
      (ret (-Promise (tc-expr/t #'e)))]
     ;; special case for `list'
     [(#%plain-app list . args)

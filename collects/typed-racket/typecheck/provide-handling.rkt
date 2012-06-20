@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../utils/utils.rkt"
 	 (only-in srfi/1/list s:member)
@@ -12,9 +12,9 @@
          (for-syntax syntax/parse racket/base)
          racket/contract/private/provide unstable/list
           syntax/id-table racket/dict
-         racket/syntax scheme/struct-info racket/match
+         racket/syntax racket/struct-info racket/match
          "def-binding.rkt" syntax/parse
-         (for-template scheme/base "def-export.rkt" scheme/contract))
+         (for-template racket/base "def-export.rkt" racket/contract))
 
 (provide remove-provides provide? generate-prov get-alternate)
 

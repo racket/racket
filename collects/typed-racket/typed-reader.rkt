@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Provides raise-read-error and raise-read-eof-error
 (require syntax/readerr)

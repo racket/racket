@@ -1,13 +1,13 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt"
          "tc-metafunctions.rkt"
          "tc-subst.rkt" "check-below.rkt"
          mzlib/trace racket/dict
-         scheme/list syntax/parse "parse-cl.rkt"
+         racket/list syntax/parse "parse-cl.rkt"
          racket/syntax unstable/struct syntax/stx
-         (rename-in scheme/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
+         (rename-in racket/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
          (except-in (rep type-rep) make-arr)
          (rename-in (types convenience utils union)
                     [make-arr* make-arr])
@@ -17,7 +17,7 @@
 	 (utils tc-utils)
 
          racket/match)
-(require (for-template scheme/base "internal-forms.rkt"))
+(require (for-template racket/base "internal-forms.rkt"))
 
 (import tc-expr^)
 (export tc-lambda^)

@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/parse
-         (for-template scheme/base racket/flonum racket/fixnum)
+         (for-template racket/base racket/flonum racket/fixnum)
          "../utils/utils.rkt"
          (types type-table)
          (utils tc-utils)

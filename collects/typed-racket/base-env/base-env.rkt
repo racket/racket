@@ -13,7 +13,7 @@
   (only-in '#%kernel [apply kernel:apply] [reverse kernel:reverse]
            [memq kernel:memq] [memv kernel:memv] [member kernel:member])
   (only-in racket/private/pre-base new-apply-proc)
-  scheme/promise scheme/system
+  racket/promise racket/system
   racket/function
   racket/mpair
   racket/base
@@ -235,7 +235,7 @@
 [prop:equal+hash -Struct-Type-Property]
 
 
-;; scheme/bool
+;; racket/bool
 [true (-val #t)]
 [false (-val #f)]
 [boolean=? (B B . -> . B)]
@@ -1353,7 +1353,7 @@
 |#
 
 
-;; scheme/function
+;; racket/function
 [identity (-poly (a) (->acc (list a) a null))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
 [negate (-polydots (b) (-> ((list) [b b] . ->... . Univ)
@@ -1362,7 +1362,7 @@
 (primitive-closure? (-> Univ B))
 
 
-;; scheme/cmdline
+;; racket/cmdline
 
 [parse-command-line
  (let ([mode-sym (one-of/c 'once-each 'once-any 'multi 'final 'help-labels)])
@@ -1374,7 +1374,7 @@
                       (-lst -String)
                       . -> . b))))]
 
-;; scheme/list
+;; racket/list
 [filter-map (-polydots (c a b)
                        ((list
                          ((list a) (b b) . ->... . (-opt c))
@@ -1463,7 +1463,7 @@
 
 
 
-;; scheme/path
+;; racket/path
 
 [explode-path (-SomeSystemPathlike . -> . (-lst (Un -SomeSystemPath (one-of/c 'up 'same))))]
 [simple-form-path (-Pathlike . -> . -Path)]
@@ -1492,7 +1492,7 @@
                     (->* (list (-lst a)) (-lst a))))]
 
 
-;; scheme/vector
+;; racket/vector
 [vector-count (-polydots (a b)
                          ((list
                            ((list a) (b b) . ->... . Univ)

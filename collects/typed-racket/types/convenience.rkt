@@ -1,14 +1,14 @@
-#lang scheme/base
+#lang racket/base
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         "abbrev.rkt" "numeric-tower.rkt" (only-in scheme/contract current-blame-format)
+         "abbrev.rkt" "numeric-tower.rkt" (only-in racket/contract current-blame-format)
 	 (types comparison printer union subtype utils substitute)
-         scheme/list racket/match
-         (for-syntax syntax/parse scheme/base)
-         syntax/id-table scheme/dict
+         racket/list racket/match
+         (for-syntax syntax/parse racket/base)
+         syntax/id-table racket/dict
          racket/trace
-         (for-template scheme/base))
+         (for-template racket/base))
 
 (provide (all-defined-out)
          (all-from-out "abbrev.rkt" "numeric-tower.rkt")

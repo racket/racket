@@ -1,8 +1,8 @@
-#lang scheme/unit
+#lang racket/unit
 
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
-         racket/match (prefix-in - scheme/contract)
+         racket/match (prefix-in - racket/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
          (types utils convenience union subtype remove-intersect type-table filter-ops)
@@ -17,13 +17,13 @@
          (only-in srfi/1 split-at)
          (for-template "internal-forms.rkt"))
 
-(require (for-template scheme/base racket/private/class-internal))
+(require (for-template racket/base racket/private/class-internal))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)
 
 ;; return the type of a literal value
-;; scheme-value [type] -> type
+;; racket-value [type] -> type
 (define (tc-literal v-stx [expected #f])
   (define-syntax-class exp
     (pattern (~and i (~or :number :str :bytes))

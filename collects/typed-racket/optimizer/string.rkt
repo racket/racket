@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require syntax/parse
-         (for-template scheme/base scheme/unsafe/ops)
+         (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
          (utils tc-utils)
          (types abbrev)

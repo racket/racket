@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../utils/utils.rkt"
 	 (except-in (rep type-rep free-variance) Dotted)
@@ -19,10 +19,10 @@
                   [-> c->])
          (for-syntax
           syntax/parse
-          scheme/base))
+          racket/base))
 
 
-(require (for-template scheme/base
+(require (for-template racket/base
                        "internal-forms.rkt"))
 
 (provide tc/struct tc/poly-struct names-of-struct d-s)
