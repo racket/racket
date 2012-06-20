@@ -2173,11 +2173,12 @@
         [hidden?
          (unhide-search #f)
          (set-replace-visible? #t)
-         (send replace-edit set-position 0 (send find-edit last-position))
+         (send replace-edit set-position 0 (send replace-edit last-position))
          (send (send replace-edit get-canvas) focus)]
         [else
          (set-replace-visible? (not replace-visible?))
          (when replace-visible?
+           (send replace-edit set-position 0 (send replace-edit last-position))
            (send (send replace-edit get-canvas) focus))])
       #t)
     (define/override (edit-menu:show/hide-replace-string)
