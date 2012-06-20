@@ -376,7 +376,7 @@
     (when (= runaway-counter runaway-counter-limit)
       (define runaway-semaphore (make-semaphore 0))
       (async-channel-put view-channel 
-                         (list 'runaway-block runaway-semaphore))
+                         (runaway-process runaway-semaphore))
       ;; wait for a signal to continue running:
       (semaphore-wait runaway-semaphore))
     (async-channel-put view-channel result))
