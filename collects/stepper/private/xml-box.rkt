@@ -1,6 +1,7 @@
 (module xml-box scheme/base
   (require mzlib/contract
            "shared.rkt"
+           "syntax-property.rkt"
            (prefix-in kernel: syntax/kerncase))
   
   (provide/contract [rewrite-xml-box (syntax?                  ; stx to rewrite
