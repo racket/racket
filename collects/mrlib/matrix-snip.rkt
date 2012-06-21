@@ -43,7 +43,7 @@
           [(pair? M_0) M_0]
           [else
            (error 'visible% "expects matrix or rectangle, given: ~e" M_0)])])
-                  
+
     (define/public (get-M) (if M M R))
     
     ;; create a matrix from this instance 

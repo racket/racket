@@ -132,7 +132,7 @@
               ((merge-helper '((2 . 2) (4 . 4) (6 . 7) (9 . 9) (11 . 11))
                       '((1 . 1) (3 . 3) (5 . 5) (8 . 8) (10 . 10) (12 . 12)))
                '((1 . 12))))
-                      
+
   ;; merge : integer-set integer-set -> integer-set
   ;; Union of s1 and s2
   (define (merge s1 s2)
@@ -283,8 +283,8 @@
               ((c '((1 . 5) (7 . 12)) 2 8) '((6 . 6)))
               ((c '((1 . 5) (7 . 12)) 6 6) '((6 . 6)))
               ((c '((1 . 5) (7 . 12)) 7 7) '()))
-                                           
-  
+
+
   ;; member?-helper : int (listof (cons int int)) -> bool
   (define (member?-helper i is)
     (and

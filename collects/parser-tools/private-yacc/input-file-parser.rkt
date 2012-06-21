@@ -122,7 +122,7 @@
                   end))
                (syntax-e end))
              ends))
-                     
+           
            ;; Get the list of terminals out of input-terms
            
            (list-of-non-terms

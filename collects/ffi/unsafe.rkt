@@ -1636,7 +1636,8 @@
                                (if (regexp? (caar rs))
                                  (object-name (caar rs)) (caar rs)))
                regexp-replace regexp-replace*)
-             (caar rs) str (cadar rs)) (cdr rs)))))
+             (caar rs) str (cadar rs))
+            (cdr rs)))))
 
 (define killer-thread #f)
 

@@ -432,13 +432,13 @@
                (unless (or (string? string)
                            (bytes? string))
                  (raise-argument-error 'regexp-replace* "(or/c string? bytes?)"
-                                   string))
+                                       string))
                (unless (or (string? replacement)
                            (bytes? replacement)
                            (procedure? replacement))
                  (raise-argument-error 'regexp-replace*
-                                   "(or/c string? bytes? procedure?)"
-                                   replacement))
+                                       "(or/c string? bytes? procedure?)"
+                                       replacement))
                (when (and needs-string? (bytes? replacement))
                  (raise-mismatch-error
                   'regexp-replace*

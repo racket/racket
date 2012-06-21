@@ -37,8 +37,7 @@
                  (cons (cons range-start (sub1 i)) (loop i (add1 i) #f)))
                 (else
                  (loop i (add1 i) #t))))))))))
-                     
-  
+
   (define (compute-ranges x?)
     (delay (get-chars-for (lambda (x) (x? (integer->char x))) mapped-chars)))
   
@@ -54,10 +53,9 @@
   (define blank-ranges        (compute-ranges char-blank?))       ;; 9
   #;(define hexadecimal-ranges  (compute-ranges char-hexadecimal?))
   (define iso-control-ranges  (compute-ranges char-iso-control?)) ;; 2
-  
-  
-                   
-       
+
+
+
   (test-block ()
               ((get-chars-for odd? '()) '())
               ((get-chars-for odd? '((1 4 #f) (8 13 #f))) '((1 . 1) (3 . 3) (9 . 9) (11 . 11) (13 . 13)))

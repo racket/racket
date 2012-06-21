@@ -1100,7 +1100,7 @@
         (string-append (string-downcase one) "y"
                        (string-upcase two))))
 (test #"fox in socks, blue seal. trout in socks, blue fish!"
-      regexp-replace*                                     
+      regexp-replace*
       #rx#"([a-z]+) ([a-z]+)"
       #"red fox, blue seal. red trout, blue trout!"
       (lambda (total color what)

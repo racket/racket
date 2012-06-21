@@ -161,7 +161,7 @@ needed to really make this work:
                                      (send output-text last-position))
                                     (hash-ref range-ht stx-object (λ () null))))))))
                 (pop!))])
-                  
+
         ;; reset `path' and `next-push' for use in pp hooks.
         (set! path '())
         (set! next-push 0)

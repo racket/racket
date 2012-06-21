@@ -24,20 +24,20 @@ instead of this scaling code, we use the dc<%>'s scaling code.
 (provide/contract [scale-bitmap
                    (-> bytes? natural-number/c natural-number/c (and/c real? (not/c negative?)) 
                        bytes?)])
- 
-                  
+
+
 ; bmbytes: a bytes which represents an image -- 
 ; its size is a multiple of 4, and each
 ; four consecutive bytes represent alpha,r,g,b.
 
-                  
+
 ; scale: given a bmbytes,
 ; return a new bmbytes scaled by k in each direction.
 ;
 ; TODO: this code is meant for scaling by (>= k 1);
 ; if (< k 1) then the result will ignore ~ (1-k) of the original's pixels.
 ; We should really do a proper averaging for that case.
-;                  
+;
 (define (scale-bitmap bmbytes w h k)
   (let* {[new-w (round/e (* w k))]
          [new-h (round/e (* h k))]
