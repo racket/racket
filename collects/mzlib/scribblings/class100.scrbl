@@ -6,6 +6,9 @@
 
 @mzlib[#:mode title class100]
 
+@deprecated[@racketmodname[racket/class]]{This library will be
+removed in a future version.}
+
 The @racket[class100] and @racket[class100*] forms provide a syntax
 close to that of @racket[class] and @racket[class*] in Racket
 versions 100 through 103, but with the semantics of the current
