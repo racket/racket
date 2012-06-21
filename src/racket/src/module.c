@@ -4311,8 +4311,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     }
 
     scheme_wrong_syntax("link", stx, symbol, 
-                        "module mismatch\n"
-                        "  possible explanation: bytecode file needs re-compile because dependencies changed\n"
+                        "module mismatch;\n"
+                        " possibly, bytecode file needs re-compile because dependencies changed\n"
                         "%s%t%s"
                         "  exporting module: %D\n"
                         "  exporting phase level: %d\n"
@@ -6539,7 +6539,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   if (!scheme_is_toplevel(env))
-    scheme_wrong_syntax(NULL, NULL, form, "illegal use (not at top-level)");
+    scheme_wrong_syntax(NULL, NULL, form, "not in a module-definition context");
 
   fm = SCHEME_STX_CDR(form);
   if (!SCHEME_STX_PAIRP(fm))
@@ -7404,7 +7404,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
     scheme_wrong_syntax(NULL, NULL, form, "illegal use (not a module body)");
 
   if (scheme_stx_proper_list_length(form) < 0)
-    scheme_wrong_syntax(NULL, NULL, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+    scheme_wrong_syntax(NULL, NULL, form, IMPROPER_LIST_FORM);
 
   if (!env->genv->module)
     scheme_wrong_syntax(NULL, NULL, form, "not currently transforming a module");
@@ -10109,7 +10109,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
   Scheme_Object *phase;
 
   if (scheme_stx_proper_list_length(e) < 0)
-    scheme_wrong_syntax(NULL, e, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+    scheme_wrong_syntax(NULL, e, form, IMPROPER_LIST_FORM);
   
   for (l = SCHEME_STX_CDR(e); !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
     Scheme_Object *a, *midx, *name, *av;
@@ -10125,7 +10125,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
           av = NULL;
         if (SAME_OBJ(protect_symbol, av)) {
           if (protect_cnt)
-            scheme_wrong_syntax(NULL, a, e, "bad syntax (nested protect)");
+            scheme_wrong_syntax(NULL, a, e, "nested `protect' not allowed");
           protect_stx = a;
           a = SCHEME_STX_CDR(a);
           a = scheme_flatten_syntax_list(a, NULL);
@@ -10147,10 +10147,10 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
           if (mode_cnt)
             scheme_wrong_syntax(NULL, a, e, 
                                 (SAME_OBJ(av, for_syntax_symbol)
-                                 ? "bad syntax (nested `for-syntax')"
+                                 ? "nested `for-syntax' not allowed"
                                  : (SAME_OBJ(av, for_label_symbol)
-                                    ? "bad syntax (nested `for-label')"
-                                    : "bad syntax (nested `for-meta')")));
+                                    ? "nested `for-label' not allowed"
+                                    : "nested `for-meta' not allowed")));
           
           mode_stx = a;
           a = SCHEME_STX_CDR(a);
@@ -10217,9 +10217,9 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
           p = SCHEME_STX_CAR(rest);
           rest = SCHEME_STX_CDR(rest);
           if (!SCHEME_STX_NULLP(rest))
-            scheme_wrong_syntax(NULL, a, e, "bad syntax (extra forms after one to expand)");
+            scheme_wrong_syntax(NULL, a, e, "extra forms after one to expand");
         } else {
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (missing form to expand)");
+          scheme_wrong_syntax(NULL, a, e, "missing form to expand");
           return;
         }
 
@@ -10269,12 +10269,12 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         rest = SCHEME_STX_CDR(rest);
         enm = SCHEME_STX_CAR(rest);
         if (!SCHEME_STX_SYMBOLP(inm))
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (internal name is not an identifier)");
+          scheme_wrong_syntax(NULL, a, e, "internal name is not an identifier");
         if (!SCHEME_STX_SYMBOLP(enm))
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (external name is not an identifier)");
+          scheme_wrong_syntax(NULL, a, e, "external name is not an identifier");
         rest = SCHEME_STX_CDR(rest);
         if (!SCHEME_STX_NULLP(rest))
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (data following external name)");
+          scheme_wrong_syntax(NULL, a, e, "data following external name");
 		
         enm = SCHEME_STX_VAL(enm);
 		
@@ -10286,11 +10286,11 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         Scheme_Object *reprovided;
         
         if (protect_cnt)
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (not allowed as protected)");
+          scheme_wrong_syntax(NULL, a, e, "not allowed as protected");
         if (!SCHEME_STX_PAIRP(rest))
           scheme_wrong_syntax(NULL, a, e, "bad syntax");
         if (!SCHEME_STX_NULLP(SCHEME_STX_CDR(rest)))
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (data following `all-from')");
+          scheme_wrong_syntax(NULL, a, e, "data following `all-from'");
 		
         midx = SCHEME_STX_CAR(rest);
         midx = scheme_make_modidx(scheme_syntax_to_datum(midx, 0, NULL),
@@ -10312,14 +10312,14 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         int len;
 		
         if (protect_cnt)
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (not allowed as protected)");
+          scheme_wrong_syntax(NULL, a, e, "not allowed as protected");
 		
         len = scheme_stx_proper_list_length(a);
 
         if (len < 0)
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
+          scheme_wrong_syntax(NULL, a, e, IMPROPER_LIST_FORM);
         else if (len == 1)
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (missing module name)");
+          scheme_wrong_syntax(NULL, a, e, "missing module name");
 		
         midx = SCHEME_STX_CAR(rest);
         midx = scheme_make_modidx(scheme_syntax_to_datum(midx, 0, NULL),
@@ -10332,7 +10332,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
           p = SCHEME_STX_CAR(el);
           if (!SCHEME_STX_SYMBOLP(p)) {
             scheme_wrong_syntax(NULL, p, e,
-                                "bad syntax (excluded name is not an identifier)");
+                                "excluded name is not an identifier");
           }
         }
 		
@@ -10352,11 +10352,11 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         len = scheme_stx_proper_list_length(rest);
         if (len != 2) {
           if (len < 0)
-            scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
+            scheme_wrong_syntax(NULL, a, e, IMPROPER_LIST_FORM);
           else
-            scheme_wrong_syntax(NULL, a, e, "bad syntax "
-                                "(not a struct identifier followed by "
-                                "a sequence of field identifiers)");
+            scheme_wrong_syntax(NULL, a, e,
+                                "not a struct identifier followed by "
+                                "a sequence of field identifiers");
         }
 
         base = SCHEME_STX_CAR(rest);
@@ -10365,19 +10365,18 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
 		
         if (!SCHEME_STX_SYMBOLP(base))
           scheme_wrong_syntax(NULL, base, e,
-                              "bad syntax (struct name is not an identifier)");
+                              "struct name is not an identifier");
 
         /* Check all field names are identifiers: */
         for (el = fields; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
           p = SCHEME_STX_CAR(el);
           if (!SCHEME_STX_SYMBOLP(p)) {
             scheme_wrong_syntax(NULL, p, e,
-                                "bad syntax (field name is not an identifier)");
+                                "field name is not an identifier");
           }
         }
         if (!SCHEME_STX_NULLP(el))
-          scheme_wrong_syntax(NULL, fields, e,
-                              "bad syntax (" IMPROPER_LIST_FORM ")");
+          scheme_wrong_syntax(NULL, fields, e, IMPROPER_LIST_FORM);
 		
         prnt_base = base;
         base = SCHEME_STX_VAL(base);
@@ -10421,7 +10420,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
 		
         if (!SCHEME_STX_SYMBOLP(prefix)) {
           scheme_wrong_syntax(NULL, a, e,
-                              "bad syntax (prefix is not an identifier)");
+                              "prefix is not an identifier");
         }
         prefix = SCHEME_STX_VAL(prefix);
 
@@ -10446,15 +10445,15 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
         len = scheme_stx_proper_list_length(a);
 
         if (len < 0)
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
+          scheme_wrong_syntax(NULL, a, e, IMPROPER_LIST_FORM);
 		
         if (is_prefix && (len < 2))
-          scheme_wrong_syntax(NULL, a, e, "bad syntax (missing prefix)");
+          scheme_wrong_syntax(NULL, a, e, "missing prefix");
 
         if (is_prefix) {
           prefix = SCHEME_STX_CAR(rest);
           if (!SCHEME_STX_SYMBOLP(prefix))
-            scheme_wrong_syntax(NULL, a, e, "bad syntax (prefix is not an identifier)");
+            scheme_wrong_syntax(NULL, a, e, "prefix is not an identifier");
           prefix = SCHEME_STX_VAL(prefix);
           rest = SCHEME_STX_CDR(rest);
         }
@@ -10466,7 +10465,7 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
           p = SCHEME_STX_CAR(el);
           if (!SCHEME_STX_SYMBOLP(p)) {
             scheme_wrong_syntax(NULL, p, e,
-                                "bad syntax (excluded name is not an identifier)");
+                                "excluded name is not an identifier");
           }
         }
 		
@@ -11109,7 +11108,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
     is_mpi = 1;
   } else {
     if (scheme_stx_proper_list_length(form) < 0)
-      scheme_wrong_syntax(NULL, NULL, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+      scheme_wrong_syntax(NULL, NULL, form, IMPROPER_LIST_FORM);
     is_mpi = 0;
   }
   
@@ -11143,15 +11142,15 @@ void parse_requires(Scheme_Object *form, int at_phase,
         if (mode_cnt)
           scheme_wrong_syntax(NULL, i, form, 
                               (SAME_OBJ(for_syntax_symbol, aav)
-                               ? "bad syntax (nested `for-syntax')"
+                               ? "nested `for-syntax' not allowed"
                                : (SAME_OBJ(for_template_symbol, aav)
-                                  ? "bad syntax (nested `for-template')"
+                                  ? "nested `for-template' not allowed"
                                   : (SAME_OBJ(for_label_symbol, aav)
-                                     ? "bad syntax (nested `for-label')"
-                                     : "bad syntax (nested `for-meta')"))));
+                                     ? "nested `for-label' not allowed"
+                                     : "nested `for-meta' not allowed"))));
       } else {
         if (just_mode_cnt)
-          scheme_wrong_syntax(NULL, i, form, "bad syntax (nested `just-meta')");
+          scheme_wrong_syntax(NULL, i, form, "nested `just-meta' not allowed");
       }
       
       aa = scheme_flatten_syntax_list(i, NULL);
@@ -11210,13 +11209,13 @@ void parse_requires(Scheme_Object *form, int at_phase,
 	GC_CAN_IGNORE const char *reason;
 	
 	if (len < 0)
-	  reason = "bad syntax (" IMPROPER_LIST_FORM ")";
+	  reason = IMPROPER_LIST_FORM;
 	else if (len < 2)
-	  reason = "bad syntax (prefix missing)";
+	  reason = "prefix missing";
 	else if (len < 3)
-	  reason = "bad syntax (module name missing)";
+	  reason = "module name missing";
 	else
-	  reason = "bad syntax (extra data after module name)";
+	  reason = "extra data after module name";
 	scheme_wrong_syntax(NULL, i, form, reason);
 	return;
       }
@@ -11248,11 +11247,11 @@ void parse_requires(Scheme_Object *form, int at_phase,
 
       len = scheme_stx_proper_list_length(i);
       if (len < 0)
-	scheme_wrong_syntax(NULL, i, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+	scheme_wrong_syntax(NULL, i, form, IMPROPER_LIST_FORM);
       else if (has_prefix && (len < 2))
-	scheme_wrong_syntax(NULL, i, form, "bad syntax (prefix missing)");
+	scheme_wrong_syntax(NULL, i, form, "prefix missing");
       else if (len < (has_prefix ? 3 : 2))
-	scheme_wrong_syntax(NULL, i, form, "bad syntax (module name missing)");
+	scheme_wrong_syntax(NULL, i, form, "module name missing");
 
       idxstx = SCHEME_STX_CDR(i);
       if (has_prefix) {
@@ -11260,7 +11259,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
 	idxstx = SCHEME_STX_CDR(idxstx);
 
 	if (!SCHEME_SYMBOLP(SCHEME_STX_VAL(prefix))) {
-	  scheme_wrong_syntax(NULL, prefix, form, "bad prefix (not an identifier)");
+	  scheme_wrong_syntax(NULL, prefix, form, "prefix is not an identifier");
 	  return;
 	}
 	prefix = SCHEME_STX_VAL(prefix);
@@ -11273,7 +11272,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
 	if (!SCHEME_STX_SYMBOLP(SCHEME_STX_CAR(l))) {
 	  l = SCHEME_STX_CAR(l);
 	  scheme_wrong_syntax(NULL, l, form,
-			      "bad syntax (excluded name is not an identifier)");
+			      "excluded name is not an identifier");
 	}
       }
       if (SCHEME_STX_NULLP(exns))
@@ -11291,9 +11290,9 @@ void parse_requires(Scheme_Object *form, int at_phase,
 	GC_CAN_IGNORE const char *reason;
 	
 	if (len < 0)
-	  reason = "bad syntax (" IMPROPER_LIST_FORM ")";
+	  reason = IMPROPER_LIST_FORM;
 	else
-	  reason = "bad syntax (module name missing)";
+	  reason = "module name missing";
 	scheme_wrong_syntax(NULL, i, form, reason);
 	return;
       }
@@ -11306,7 +11305,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
       while (SCHEME_STX_PAIRP(rest)) {
 	nm = SCHEME_STX_CAR(rest);
 	if (!SCHEME_STX_SYMBOLP(nm)) {
-	  scheme_wrong_syntax(NULL, nm, form, "bad syntax (name for `only' is not an identifier)");
+	  scheme_wrong_syntax(NULL, nm, form, "name for `only' is not an identifier");
 	}
 	scheme_hash_set(onlys, SCHEME_STX_VAL(nm), nm);
 	rest = SCHEME_STX_CDR(rest);
@@ -11328,15 +11327,15 @@ void parse_requires(Scheme_Object *form, int at_phase,
 	GC_CAN_IGNORE const char *reason;
 	
 	if (len < 0)
-	  reason = "bad syntax (" IMPROPER_LIST_FORM ")";
+	  reason = IMPROPER_LIST_FORM;
 	else if (len < 2)
-	  reason = "bad syntax (module name missing)";
+	  reason = "module name missing";
 	else if (len < 3)
-	  reason = "bad syntax (internal name missing)";
+	  reason = "internal name missing";
 	else if (len < 4)
-	  reason = "bad syntax (external name missing)";
+	  reason = "external name missing";
 	else
-	  reason = "bad syntax (extra data after external name)";
+	  reason = "extra data after external name";
 	scheme_wrong_syntax(NULL, i, form, reason);
 	return;
       }
@@ -11349,9 +11348,9 @@ void parse_requires(Scheme_Object *form, int at_phase,
       ename = SCHEME_STX_CAR(rest);
 
       if (!SCHEME_STX_SYMBOLP(iname))
-	scheme_wrong_syntax(NULL, i, form, "bad syntax (internal name is not an identifier)");
+	scheme_wrong_syntax(NULL, i, form, "internal name is not an identifier");
       if (!SCHEME_STX_SYMBOLP(ename))
-	scheme_wrong_syntax(NULL, i, form, "bad syntax (external name is not an identifier)");
+	scheme_wrong_syntax(NULL, i, form, "external name is not an identifier");
 
       mark_src = iname;
 

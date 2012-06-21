@@ -21,24 +21,55 @@ particular required arity (e.g., @racket[call-with-input-file],
 @racket[call/cc]) check the argument's arity immediately, raising
 @racket[exn:fail:contract] if the arity is incorrect.
 
+@;----------------------------------------------------------------------
+@section{Error Message Conventions}
+
 Racket's @deftech{error message convention} is to produce error
 messages with the following shape:
 
 @racketblock[
-  @#,nonterm{name}: @#,nonterm{message}
+  @#,nonterm{srcloc}: @#,nonterm{name}: @#,nonterm{message}@#,tt{;}
+   @#,nonterm{continued-message} ...
     @#,nonterm{field}: @#,nonterm{detail}
     ...
 ]
 
-The message starts with a @nonterm{name} that identifies the
-complaining function, syntactic form, or other entity. The
-@nonterm{message} should be relatively short, and it should be largely
-independent of specific values that triggered the error.  Specific
-values that triggered the error should appear in separate
-@nonterm{field} lines, each of which is indented by two spaces. If a
-@nonterm{detail} is especially long or takes multiple lines, it should
-start on its own line after the @nonterm{field} label, and each of its
-lines should be indented by three spaces.
+The message starts with an optional source location, @nonterm{srcloc},
+which is followed by a colon and space when present. The message
+continues with an optional @nonterm{name} that usually identifies the
+complaining function, syntactic form, or other entity, but may also
+refer to an entity being complained about; the @nonterm{name} is also
+followed by a colon and space when present.
+
+The @nonterm{message} should be relatively short, and it should be
+largely independent of specific values that triggered the error. More
+detailed explanation that requires multiple lines should continue with
+each line indented by a single space, in which case @nonterm{message}
+should end in a semi-colon (but the semi-colon should be omitted if
+@nonterm{continued-message} is not present). Message text should be
+lowercase---using semi-colons to separate sentences if needed,
+although long explanations may be better deferred to extra fields.
+
+Specific values that triggered the error or other helpful information
+should appear in separate @nonterm{field} lines, each of which is
+indented by two spaces. If a @nonterm{detail} is especially long or
+takes multiple lines, it should start on its own line after the
+@nonterm{field} label, and each of its lines should be indented by
+three spaces. Field names should be all lowercase.
+
+A @nonterm{field} name should end with @litchar{...} if the field
+provides relatively detailed information that might be distracting in
+common cases but useful in others. For example, when a contract
+failure is reported for a particular argument of a function, other
+arguments to the function might be shown in an ``other arguments...''
+field. The intent is that fields whose names end in @litchar{...}
+might be hidden by default in an environment such as DrRacket.
+
+Make @nonterm{field} names as short as possible, relying on
+@nonterm{message} or @nonterm{continued message} text to clarify the
+meaning for a field. For example, prefer ``given'' to ``given turtle''
+as a field name, where @nonterm{message} is something like ``given
+turtle is too sleepy'' to clarify that ``given'' refers to a turtle.
 
 @;------------------------------------------------------------------------
 @section[#:tag "errorproc"]{Raising Exceptions}
@@ -182,7 +213,9 @@ as a ``result'' instead of an ``argument.''}
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
 an exception.  The @racket[name] is used as the source procedure's
 name in the error message. The @racket[message] is the error
-message. Each @racket[field] must have a corresponding @racket[v],
+message; if @racket[message] contains newline characters, each new line is
+suitably indented (by adding one extra space at the start).
+Each @racket[field] must have a corresponding @racket[v],
 and the two are rendered on their own
 line in the error message, with each @racket[v] formatted 
 using the error value conversion handler (see
@@ -191,8 +224,8 @@ using the error value conversion handler (see
 @examples[
   (raise-arguments-error 'eat 
                          "fish is smaller than its given meal"
-                         "fish size" 12
-                         "given meal size" 13)
+                         "fish" 12
+                         "meal" 13)
 ]}
 
 
@@ -279,7 +312,9 @@ exception.  Macros use this procedure to report syntax errors.
 
 The @racket[name] argument is usually @racket[#f] when @racket[expr]
 is provided; it is described in more detail below. The
-@racket[message] is used as the main body of the error message.
+@racket[message] is used as the main body of the error message; if
+@racket[message] contains newline characters, each new line is
+suitably indented (by adding one extra space at the start).
 
 The optional @racket[expr] argument is the erroneous source syntax
 object or S-expression (but the expression @racket[#f] cannot be

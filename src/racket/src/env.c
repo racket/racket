@@ -1603,7 +1603,8 @@ namespace_variable_value(int argc, Scheme_Object *argv[])
       return NULL;
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, argv[0],
-		       "namespace-variable-value: is not defined\n  name: %S",
+		       "namespace-variable-value: given name is not defined\n"
+                       "  name: %S",
 		       argv[0]);
       return NULL;
     }
@@ -1664,7 +1665,8 @@ namespace_undefine_variable(int argc, Scheme_Object *argv[])
     bucket->val = NULL;
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, argv[0],
-		     "namespace-undefine-variable!: not defined\n  name: %S",
+		     "namespace-undefine-variable!: given name is not defined\n"
+                     "  name: %S",
 		     argv[0]);
   }
 

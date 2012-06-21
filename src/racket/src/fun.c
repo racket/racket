@@ -1785,8 +1785,8 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     if (!SCHEME_STXP(code)) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "%S: return value from syntax expander was not syntax\n"
-                       "  return value: %V",
+                       "%S: received value from syntax expander was not syntax\n"
+                       "  received: %V",
                        SCHEME_STX_SYM(name),
                        code);
     }
@@ -3273,10 +3273,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                     "procedure %s: incorrect number of results from wrapper\n"
+                     "procedure %s: arity mismatch;\n"
+                     " expected number of results not received from wrapper on the orignal\n"
+                     " procedure's arguments\n"
                      "  wrapper: %V\n"
-                     "  expected number of results: %d or %d\n"
-                     "  received number of results: %d",
+                     "  expected: %d or %d\n"
+                     "  received: %d",
                      what,
                      SCHEME_CAR(px->redirects),
                      argc, argc + 1,
@@ -3328,10 +3330,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     /* First element is a filter for the result(s) */
     if (!SCHEME_PROCP(post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure %s: wrapper's first result is not a procedure\n"
+                       "procedure %s: wrapper's first result is not a procedure;\n"
+                       " extra result compared to original argument count should be\n"
+                       " a wrapper for the original procedure's result\n"
                        "  wrapper: %V\n"
-                       "  received first result: %V\n"
-                       "  explanation: extra result compared to original argument count should be a result wrapper",
+                       "  received: %V",
                        what,
                        what,
                        SCHEME_CAR(px->redirects),
@@ -3383,10 +3386,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     
     if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure-result chaperone: wrapper does not accept the number"
-                       " of values produced by the chaperoned procedure\n"
+                       "procedure-result chaperone: arity mismatch;\n"
+                       " wrapper does not accept the number of values produced by\n"
+                       " the original procedure\n"
                        "  wrapper: %V\n"
-                       "  number of values produced by procedure: %d",
+                       "  number of values: %d",
                        post,
                        c);
     
@@ -3423,13 +3427,15 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       }
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                       "procedure-result %s: wrapper returned wrong number of values\n"
+                       "procedure-result %s: result arity mismatch;\n"
+                       " expected number of values not received from wrapper on the original\n"
+                       " procedure's result\n"
                        "  wrapper: %V\n"
-                       "  number of returned values: %d\n"
-                       "  expected number of returned values: %d",
+                       "  expected: %d\n"
+                       "  received: %d",
                        what,
                        post,
-                       argc, c);
+                       c, argc);
       return NULL;
     }
 
@@ -8261,9 +8267,9 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
             return jump_to_alt_continuation();
           }
           scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-                           "jump to escape continuation in progress,"
-                           " but the target is not in the current continuation"
-                           " after a `dynamic-wind' post-thunk return");
+                           "continuation application: lost target;\n"
+                           " jump to escape continuation in progress, and the target is not in the\n"
+                           " current continuation after a `dynamic-wind' post-thunk return");
           return NULL;
         }
       }

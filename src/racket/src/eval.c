@@ -1738,6 +1738,8 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
 /*                     evaluation of various forms                        */
 /*========================================================================*/
 
+#define CANNOT_SET_ERROR_STR "assignment disallowed"
+
 void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 			      int set_undef)
 {
@@ -1754,11 +1756,13 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
       int is_set;
 
       if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-	msg = ("%s: cannot %s\n"
+	msg = ("%s: " CANNOT_SET_ERROR_STR ";\n"
+               " cannot %s\n"
                "  %s: %S\n"
                "  in module: %D");
       else
-	msg = ("%s: cannot %s\n"
+	msg = ("%s: " CANNOT_SET_ERROR_STR ";\n"
+               " cannot %s\n"
                "  %s: %S");
 
       is_set = !strcmp(who, "set!");
@@ -1782,7 +1786,8 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 		       home->module->modsrc);
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
-		       "%s: cannot %s\n"
+		       "%s: " CANNOT_SET_ERROR_STR ";\n"
+                       " cannot %s\n"
                        "  %s: %S",
 		       who,
                        (val
@@ -1945,9 +1950,9 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 			      i, g,
 			      (g == 1) ? (Scheme_Object **)vals : scheme_current_thread->ku.multiple.array,
 			      "%s%s%s",
-			      show_any ? "defining \"" : "0 names",
+			      show_any ? "\n  defining: " : "0 names",
 			      symname,
-			      show_any ? ((i == 1) ? "\"" : "\", ...") : "");
+			      show_any ? ((i == 1) ? "" : " ...") : "");
   }
 
   return NULL;

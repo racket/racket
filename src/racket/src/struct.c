@@ -1301,9 +1301,9 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
       /* ok */
     } else {
       scheme_contract_error("make-struct-type", 
-                            "contract failed for prop:procedure value", 
-                            "expected matching",  0, "(or/c procedure? exact-nonnegative-integer?)",
-                            "value", 1, orig_v, 
+                            "given value did not satisfy the contract for prop:procedure", 
+                            "expected",  0, "(or/c procedure? exact-nonnegative-integer?)",
+                            "given", 1, orig_v, 
                             NULL);
     }
 
@@ -1363,8 +1363,8 @@ typedef int (*Check_Val_Proc)(Scheme_Object *);
 static void wrong_property_contract(const char *name, const char *contract, Scheme_Object *v)
 {
   scheme_contract_error(name, 
-                        "contract violation for property value",
-                        "expected matching", 0, contract,
+                        "contract violation for given property value",
+                        "expected", 0, contract,
                         "given", 1, v,
                         NULL);
 }
@@ -1885,10 +1885,10 @@ static void wrong_struct_type(char *name,
 {
   if (SAME_OBJ(expected, received))
     scheme_contract_error(name,
-                          "contract failure",
-                          "expected matching", 0, pred_name_string(expected),
+                          "contract violation;\n"
+                          " given value instantiates a different structure type with the same name",
+                          "expected", 0, pred_name_string(expected),
                           "given", 1, argv[which],
-                          "explanation", 0, "given value instantiates a different structure type with the same name",
                           NULL);
   else
     scheme_wrong_contract(name,
@@ -2498,13 +2498,16 @@ static Scheme_Object *apply_chaperones(const char *who, Scheme_Object *procs, in
 
     if (cnt != argc) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                       "%s: chaperone returned wrong number of values\n"
-                       "  chaperone: %V\n"
-                       "  expected count: %d\n"
-                       "  returned count: %d",
+                       "%s: arity mismatch;\n"
+                       " received wrong number of values from %s replacement procedure\n"
+                       "  expected: %d\n"
+                       "  received: %d\n"
+                       "  %s: %V\n",
                        who,
+                       is_impersonator ? "an impersonator's" : "an chaperone's",
                        SCHEME_CAR(procs),
-                       argc, cnt);
+                       argc, cnt,
+                       is_impersonator ? "impersonator" : "chaperone");
     }
 
     if (!is_impersonator) {
@@ -3266,8 +3269,8 @@ static Scheme_Object *do_chaperone_guard_proc(int is_impersonator, void *data, i
       scheme_wrong_chaperoned("evt chaperone", "value", evt, vals[0]);
   if (!scheme_check_proc_arity(NULL, 1, 1, 1, vals))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "evt %s: contract failure for second %s result\n"
-                     "  expected matching: (any/c any/c . -> . any)\n"
+                     "evt %s: contract violation for second %s result\n"
+                     "  expected: (any/c any/c . -> . any)\n"
                      "  received: %V",
                      (is_impersonator ? "impersonator" : "chaperone"),
                      (is_impersonator ? "impersonator" : "chaperone"),
@@ -4123,8 +4126,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
 	  && ((struct_type->num_slots < parent_type->num_slots)
 	      || (struct_type->num_islots < parent_type->num_islots)))) {
     /* Too many fields. */
-    scheme_raise_exn(MZEXN_FAIL,
-		     "too many fields for struct-type\n"
+    scheme_raise_exn(MZEXN_FAIL, "too many fields for struct-type\n"
                      "  maximum total field count: " MAX_STRUCT_FIELD_COUNT_STR);
     return NULL;
   }
@@ -4333,8 +4335,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
   if (guard) {
     if (!scheme_check_proc_arity(NULL, struct_type->num_islots + 1, -1, 0, &guard)) {
       scheme_contract_error("make-struct-type",
-                            "guard procedure does not accept correct number of arguments",
-                            "explanation", 0, "should accept one more than the number of constructor arguments",
+                            "guard procedure does not accept correct number of arguments;\n"
+                            " should accept one more than the number of constructor arguments",
                             "guard procedure", 1, guard,
                             "expected arity", 1, scheme_make_integer(struct_type->num_islots + 1),
                             NULL);
@@ -4472,8 +4474,8 @@ static char* immutable_pos_list_to_immutable_array(Scheme_Object *immutable_pos_
       a_val = SCHEME_INT_VAL(a); 
     if (a_val < 0) {
       scheme_contract_error("make-struct-type",
-                            "contract failure at index for immutable field",
-                            "expected matching", 0, "(and/c exact-nonnegative-integer? fixnum?)",
+                            "contract violation for index of immutable field",
+                            "expected:", 0, "(and/c exact-nonnegative-integer? fixnum?)",
                             "given", 1, a,
                             "in list", 1, immutable_pos_list,
                             NULL);
@@ -5335,7 +5337,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       scheme_contract_error(name,
                             "operation's redirection procedure does not match the expected arity",
                             "given", 1, proc,
-                            "expected matching", 0, buf,
+                            "expected", 0, buf,
                             "operation kind", 0, kind,
                             "operation procedure", 1, a[0],
                             NULL);

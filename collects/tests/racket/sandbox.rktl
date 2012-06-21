@@ -263,7 +263,7 @@
    ;; test source locations too
    --top--
    (make-base-evaluator! 0 1 2 '(define foo))
-   =err> "define:.*  source:\n   program:4:0"
+   =err> "^program:4:0: define:"
 
    ;; empty program for clean repls
    --top--
@@ -471,7 +471,7 @@
    (make-base-evaluator! "(define l null)")
    --eval--
    (cond [null? l 0]) => 0
-   (last-pair l) =err> "reference to an identifier"
+   (last-pair l) =err> "last-pair: undefined"
    --top--
    (make-evaluator! '(special beginner)
                     (make-prog "(define l null)" "(define x 3.5)"))

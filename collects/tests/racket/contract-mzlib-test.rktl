@@ -2730,7 +2730,14 @@ of the contract library does not change over time.
             m
             1
             2))
-   "application: wrong number of arguments\n  procedure: m method\n  expected number of arguments: 1\n  given number of arguments: 2\n  arguments:\n   1\n   2")
+   (string-append
+    "m method: arity mismatch;\n"
+    " the expected number of arguments does not match the given number\n"
+    "  expected: 1\n"
+    "  given: 2\n"
+    "  arguments...:\n"
+    "   1\n"
+    "   2"))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;

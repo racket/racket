@@ -1366,8 +1366,8 @@
 		   (eval (syntax-property #'(lambda (a b) a) 'method-arity-error #t)))]
 	   [check-arity-error
 	    (lambda (f cl?)
-	      (test (if cl? '("given number of arguments: 0")  '("expected number of arguments: 1\n"))
-                    regexp-match #rx"expected number of arguments: 1\n|given number of arguments: 0$"
+	      (test (if cl? '("given: 0")  '("expected: 1\n"))
+                    regexp-match #rx"expected: 1\n|given: 0$"
 		    (exn-message (with-handlers ([values values])
 				   ;; Use `apply' to avoid triggering
 				   ;; compilation of f:
@@ -1390,8 +1390,8 @@
             [meth (procedure->method f)]
             [check-arity-error
              (lambda (f cl?)
-               (test (if cl? '("given number of arguments: 0")  '("expected number of arguments: 1\n"))
-                    regexp-match #rx"expected number of arguments: 1\n|given number of arguments: 0$"
+               (test (if cl? '("given: 0")  '("expected: 1\n"))
+                    regexp-match #rx"expected: 1\n|given: 0$"
                      (exn-message (with-handlers ([values values])
                                     ;; Use `apply' to avoid triggering
                                     ;; compilation of f:

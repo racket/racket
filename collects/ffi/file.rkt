@@ -30,12 +30,12 @@
                   ((execute) (set! execute? SCHEME_GUARD_FILE_EXECUTE))
                   ((delete) (set! delete? SCHEME_GUARD_FILE_DELETE))
                   ((exists) (set! exists? SCHEME_GUARD_FILE_EXISTS))
-                  (else (raise-argument-error who "bad permission symbol" "symbol" guard))))
+                  (else (raise-arguments-error who "bad permission symbol" "symbol" guard))))
               guards)
     (when (and (positive? exists?)
                (positive? (+ read? write? execute? delete?)))
-      (raise-argument-error who "permission 'exists must occur alone" 
-                            "permissions" guards))
+      (raise-arguments-error who "permission 'exists must occur alone" 
+                             "permissions" guards))
     (+ read? write? execute? delete? exists?)))
 
 (define (security-guard-check-file who path modes)

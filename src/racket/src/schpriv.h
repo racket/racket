@@ -3298,6 +3298,8 @@ char *scheme_submodule_path_to_string(Scheme_Object *p, intptr_t *_len);
 /*                         errors and exceptions                          */
 /*========================================================================*/
 
+#define NOT_SUPPORTED_STR "unsupported on this platform"
+
 void scheme_read_err(Scheme_Object *port,
 		     Scheme_Object *stxsrc,
 		     intptr_t line, intptr_t column, intptr_t pos, intptr_t span,

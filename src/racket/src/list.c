@@ -2997,8 +2997,8 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
             red = o;
             if (!scheme_check_proc_arity(NULL, 3, 1, 2, vals))
               scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                               "%s: chaperone produced invalid second value\n"
-                               "  expected matching: (procedure-arity-includes/c 2)\n"
+                               "%s: chaperone produced a second value that does not match the expected contract\n"
+                               "  expected: (procedure-arity-includes/c 2)\n"
                                "  received: %V", 
                                who,
                                red);

@@ -2764,7 +2764,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 	  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 			   "%s: path element is an empty string\n"
                            "  argument position: %d%s\n"
-                           "  other arguments:%t", 
+                           "  other arguments...:%t", 
                            who,
 			   i + 1,
 			   scheme_number_suffix(i + 1),
@@ -4755,7 +4755,7 @@ static Scheme_Object *current_drive(int argc, Scheme_Object *argv[])
 
   return scheme_make_sized_path(drive, strlen(drive), 0);
 #else
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "current-drive: not supported");
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "current-drive: " NOT_SUPPORTED_STR);
   return NULL;
 #endif
 }
@@ -5365,8 +5365,8 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
 
 #if defined(DOS_FILE_SYSTEM)
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "make-file-or-directory-link: link creation not supported on this platform; "
-		   "cannot create link\n"
+		   "make-file-or-directory-link: " NOT_SUPPORTED_STR ";\n"
+		   " cannot create link\n"
                    "  path: %Q",
 		   argv[1]);
 #else
@@ -5689,7 +5689,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
           || ((new_bits & MZ_UNC_WRITE) != ((new_bits & (MZ_UNC_WRITE << 6)) >> 6))
           || (new_bits >= (1 << 9)))
         scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                         "file-or-directory-permissions: update of failed:"
+                         "file-or-directory-permissions: update failed due to"
                          " unsupported bit combination\n"
                          "  path: %c\n"
                          "  permission value: %d",

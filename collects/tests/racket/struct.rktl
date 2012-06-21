@@ -239,16 +239,16 @@
 	(err/rt-test (bad3 1) exn:application:arity?)
 	(err/rt-test (bad11 1) exn:application:arity?)
 
-	(test '("procedure: p") regexp-match "procedure: p"
+	(test '("p") regexp-match "^p"
 	      (with-handlers ([exn:fail? exn-message])
 		(bad1)))
-	(test '("procedure: q") regexp-match "procedure: q"
+	(test '("q") regexp-match "^q"
 	      (with-handlers ([exn:fail? exn-message])
 		(bad2)))
-	(test '("procedure: r") regexp-match "procedure: r"
+	(test '("r") regexp-match "^r"
 	      (with-handlers ([exn:fail? exn-message])
 		(bad3)))
-	(test '("procedure: p") regexp-match "procedure: p"
+	(test '("p") regexp-match "^p"
 	      (with-handlers ([exn:fail? exn-message])
 		(bad11))))
 
@@ -286,23 +286,23 @@
 	(test 1-2-value cons3 1 2)
 	(test 1-2-value cons11 1 2)
 
-	(test #f not (regexp-match (re "procedure: p")
+	(test #f not (regexp-match (re "^p")
 				   (with-handlers ([exn:fail? exn-message])
 				     (cons1))))
-	(test #f not (regexp-match (re "procedure: q")
+	(test #f not (regexp-match (re "^q")
 				   (with-handlers ([exn:fail? exn-message])
 				     (cons2))))
-	(test #f not (regexp-match (re "procedure: r")
+	(test #f not (regexp-match (re "^r")
 				   (with-handlers ([exn:fail? exn-message])
 				     (cons3))))
-	(test #f not (regexp-match (re "procedure: p")
+	(test #f not (regexp-match (re "^p")
 				   (with-handlers ([exn:fail? exn-message])
 				     (cons11)))))
       
       'done))
 
-  (try-proc-structs 0 0 null (lambda (x) 'cons) (lambda (x) "procedure: cons") '(1 . 2) (current-inspector))
-  (try-proc-structs 0 0 null (lambda (x) 'cons) (lambda (x) "procedure: cons") '(1 . 2) t-insp)
+  (try-proc-structs 0 0 null (lambda (x) 'cons) (lambda (x) "^cons") '(1 . 2) (current-inspector))
+  (try-proc-structs 0 0 null (lambda (x) 'cons) (lambda (x) "^cons") '(1 . 2) t-insp)
   (try-proc-structs (lambda (s a b) 
 		      (when (and (struct? s) (not (arity-at-least? s)))
 			(error "should be opaque"))

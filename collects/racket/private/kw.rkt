@@ -359,7 +359,7 @@
             (syntax bad))]
           [else
            (raise-syntax-error
-            #f "bad argument sequence" stx (syntax args))]))))
+            #f "bad argument sequence" stx args)]))))
   
   ;; The new `lambda' form:
   (define-for-syntax (parse-lambda stx local-name non-kw-k kw-k)
@@ -871,7 +871,7 @@
                        (null? (cdr l)))
                   (raise-syntax-error
                    #f
-                   "missing procedure expression; probably originally (), which is an illegal empty application"
+                   "missing procedure expression;\nprobably originally (), which is an illegal empty application"
                    stx)
                   (begin
                     (when l

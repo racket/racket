@@ -3477,7 +3477,7 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
     scheme_tell_all(port, &xl, &xc, &xp);
     scheme_read_err(port, stxsrc, xl, xc, xp,
 		    1, 0, indentation,
-		    "read: illegal use of \".\"");
+		    "read: illegal use of `.'");
     return NULL;
   }
 

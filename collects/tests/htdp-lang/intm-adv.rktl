@@ -1,7 +1,7 @@
 
 (htdp-err/rt-test (/) "/: expects at least 1 argument, but found none")
 (htdp-err/rt-test (pi) #px"function call: expected a function after the open parenthesis, but received 3[.]14\\d+$")
-(htdp-err/rt-test (pi 1 2) #px"function call: expected a function after the open parenthesis, but received 3[.]14\\d+\n  arguments:\n   1\n   2$")
+(htdp-err/rt-test (pi 1 2) #px"function call: expected a function after the open parenthesis, but received 3[.]14\\d+$")
 
 (htdp-top (define (f x) x))
 (htdp-err/rt-test (f 1 2) "f: expects only 1 argument, but found 2")

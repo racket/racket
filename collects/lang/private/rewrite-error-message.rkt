@@ -104,10 +104,10 @@
 
 (define (rewrite-contract-error-message msg)
   (define replacements
-    (list (list #rx"application: expected procedure\n  given: ([^\n]*)(?:\n  arguments: [[]none[]])?"
-                (lambda (all one) 
+    (list (list #rx"application: not a procedure;\n [^\n]*?\n  given: ([^\n]*)(?:\n  arguments[.][.][.]:(?: [[]none[]]|(?:\n   [^\n]*)*))?"
+                (lambda (all one)
                   (format "function call: expected a function after the open parenthesis, but received ~a" one)))
-          (list #rx"reference to an identifier before its definition\n  identifier: ([^\n]*)"
+          (list #rx"([^\n]*): undefined;\n cannot reference an identifier before its definition"
                 (lambda (all one) (format "~a is used here before its definition" one)))
           (list #rx"expects argument of type (<([^>]+)>)"
                 (lambda (all one two) (format "expects a ~a" two)))
@@ -115,9 +115,9 @@
                 (lambda (all one two) (format "expects a ~a" two)))
           (list #rx"expects type (<([^>]+)>)"
                 (lambda (all one two) (format "expects a ~a" two)))
-          (list #px"application: wrong number of arguments.*\n  procedure: ([^\n]*)\n  expected[^:]*: at least (\\d+)\n  given[^:]*: (\\d+)(?:\n  arguments:(?:\n   [^\n]*)*)?"
+          (list #px"([^\n]*): arity mismatch;\n[^\n]*\n  expected[^:]*: at least (\\d+)\n  given[^:]*: (\\d+)(?:\n  arguments[.][.][.]:(?:\n   [^\n]*)*)?"
                 (lambda (all one two three) (argcount-error-message one two three #t)))
-          (list #px"application: wrong number of arguments.*\n  procedure: ([^\n]*)\n  expected[^:]*: (\\d+)\n  given[^:]*: (\\d+)(?:\n  arguments:(?:\n   [^\n]*)*)?"
+          (list #px"([^\n]*): arity mismatch;\n[^\n]*\n  expected[^:]*: (\\d+)\n  given[^:]*: (\\d+)(?:\n  arguments[.][.][.]:(?:\n   [^\n]*)*)?"
                 (lambda (all one two three) (argcount-error-message one two three)))
           (list #px"contract violation\n  expected: (.*?)\n  given: ([^\n]*)(?:\n  argument position: ([^\n]*))?"
                 (lambda (all ctc given pos) (contract-error-message ctc given pos)))
@@ -127,13 +127,13 @@
                 (lambda (all) ", given "))
           (list #rx"; other arguments were:.*"
                 (lambda (all) ""))
-          (list #px"(?:\n  other arguments:(?:\n   [^\n]*)*)"
+          (list #px"(?:\n  other arguments[.][.][.]:(?:\n   [^\n]*)*)"
                 (lambda (all) ""))
           (list #rx"expects a (struct:)"
                 (lambda (all one) "expects a "))
           (list #rx"list or cyclic list"
                 (lambda (all) "list"))
-          (list #rx"cannot set variable before its definition\n  variable:"
+          (list #rx"assignment disallowed;\n cannot set variable before its definition\n  variable:"
                 (lambda (all) "cannot set variable before its definition:"))
           ;; When do these show up? I see only `#<image>' errors, currently.
           (list (regexp-quote "#(struct:object:image% ...)")

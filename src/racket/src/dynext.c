@@ -118,6 +118,8 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *fullpath_loaded_extensions;) /* hash
 /* For precise GC, make a proc ptr look like a fixnum: */
 #define mzPROC_TO_HASH_OBJ(f) ((Scheme_Object *)(((intptr_t)f) | 0x1))
 
+#define BAD_VERSION_STR "found version does not match the expected version"
+
 void scheme_init_dynamic_extension(Scheme_Env *env)
 {
   if (scheme_starting_up) {
@@ -261,9 +263,9 @@ static Scheme_Object *do_load_extension(const char *filename,
       vers = copy_vers(vers);
       dlclose(dl);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_VERSION,
-		       "load-extension: bad version\n"
-                       "  found version: %s\n"
-                       "  expected version: %s\n"
+		       "load-extension: " BAD_VERSION_STR "\n"
+                       "  found: %s\n"
+                       "  expected: %s\n"
                        "  path: %s",
 		       vers, VERSION_AND_VARIANT, filename);
     }
@@ -328,9 +330,9 @@ static Scheme_Object *do_load_extension(const char *filename,
       vers = copy_vers(vers);
       FreeLibrary(dl);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_VERSION,
-		       "load-extension: bad version\n"
-                       "  found version: %s\n"
-                       "  expected version: %s\n"
+		       "load-extension: " BAD_VERSION_STR "\n"
+                       "  found: %s\n"
+                       "  expected: %s\n"
                        "  path: %s",
 		       vers, VERSION_AND_VARIANT, filename);
     }
@@ -377,9 +379,9 @@ static Scheme_Object *do_load_extension(const char *filename,
 	
 	if (!vers || strcmp(vers, VERSION_AND_VARIANT))
           scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_VERSION,
-                           "load-extension: bad version\n"
-                           "  found version: %s\n"
-                           "  expected version: %s\n"
+                           "load-extension: " BAD_VERSION "\n"
+                           "  found: %s\n"
+                           "  expected: %s\n"
                            "  path: %s",
                            vers, VERSION_AND_VARIANT, filename);
 	
@@ -418,7 +420,7 @@ static Scheme_Object *do_load_extension(const char *filename,
 #endif
 #ifdef NO_DYNAMIC_LOAD
     scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		     "load-extension: not supported on this platform");
+		     "load-extension: " NOT_SUPPORTED_STR);
     return NULL;
 #else
 

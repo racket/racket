@@ -130,17 +130,6 @@
           (loop (cdr strs)
                 new-so-far
                 (regexp-match #rx" $" nxt))]))]))
-                
-
-(define (given/produced blame)
-  (if (blame-original? blame)
-      "produced"
-      "given"))
-
-(define (expected/promised blame)
-  (if (blame-original? blame)
-      "expected"
-      "promised"))
               
 (define (default-blame-format blme x custom-message)
   (define source-message (source-location->string (blame-source blme)))

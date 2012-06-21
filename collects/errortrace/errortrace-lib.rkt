@@ -504,7 +504,7 @@
       (if (exn? exn)
           (let ([p (open-output-string)])
             (display (exn-message exn) p)
-            (display "\n  errortrace:" p)
+            (display "\n  errortrace...:" p)
             (print-error-trace p exn)
             (orig (get-output-string p) exn))
           (orig msg exn)))))

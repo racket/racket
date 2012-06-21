@@ -771,7 +771,7 @@ static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
 #endif
 
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "custodian-require-memory: not supported");
+		   "custodian-require-memory: " NOT_SUPPORTED_STR);
   return NULL; /* doesn't get here */
 }
 
@@ -815,7 +815,7 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
 #endif
 
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "custodian-limit-memory: not supported");
+		   "custodian-limit-memory: " NOT_SUPPORTED_STR);
   return NULL; /* doesn't get here */
 }
 

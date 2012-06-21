@@ -4470,7 +4470,8 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 
       astr = scheme_make_args_string("other ", i, argc, argv, &alen);
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: bad mode: %s%t", name,
+		       "%s: bad mode symbol\n"
+                       "  given symbol: %s%t", name,
 		       scheme_make_provided_string(argv[i], 1, NULL),
 		       astr, alen);
     }
@@ -4481,8 +4482,8 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 
       astr = scheme_make_args_string("", -1, argc, argv, &alen);
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: conflicting or redundant "
-		       "file modes given%t", name,
+		       "%s: conflicting or redundant file modes given%t", 
+                       name,
 		       astr, alen);
     }
   }
@@ -4677,7 +4678,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
       astr = scheme_make_args_string("other ", i, argc, argv, &alen);
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: bad mode: %s%s", name,
+		       "%s: bad mode symbol\n"
+                       "  given symbol: : %s%s", name,
 		       scheme_make_provided_string(argv[i], 1, NULL),
 		       astr, alen);
     }
@@ -4688,8 +4690,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
       astr = scheme_make_args_string("", -1, argc, argv, &alen);
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: conflicting or redundant "
-		       "file modes given%t", name,
+		       "%s: conflicting or redundant file modes given%t", 
+                       name,
 		       astr, alen);
     }
   }
@@ -4909,7 +4911,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
   if (and_read) {
     scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		     "%s: not supported on this platform",
+		     "%s: " NOT_SUPPORTED_STR,
 		     name);
     return NULL;
   }
@@ -8395,7 +8397,7 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
   }
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "%s: not supported on this platform",
+		   "%s: " NOT_SUPPORTED_STR,
 		   "subprocess-status");
 #endif
 }
@@ -8424,7 +8426,7 @@ static Scheme_Object *subprocess_wait(int argc, Scheme_Object **argv)
   }
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-                 "%s: not supported on this platform",
+                 "%s: " NOT_SUPPORTED_STR,
                  "subprocess-wait");
 #endif
 }
@@ -8516,7 +8518,8 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
 #endif
 
   if (can_error)
-    scheme_raise_exn(MZEXN_FAIL, "subprocess-kill: failed\n"
+    scheme_raise_exn(MZEXN_FAIL, 
+                     "subprocess-kill: operation failed\n"
                      "  system error: %E", errno);
 
   return NULL;
@@ -8542,7 +8545,7 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
   return do_subprocess_kill(argv[0], argv[1], 1);
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "%s: not supported on this platform",
+		   "%s: " NOT_SUPPORTED_STR,
 		   "subprocess-wait");
   return NULL;
 #endif
@@ -9403,7 +9406,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*--------------------------------------*/
 
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "%s: not supported on this platform",
+		   "%s: " NOT_SUPPORTED_STR,
 		   name);
   return NULL;
 # endif
@@ -9537,7 +9540,7 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
   }
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "shell-execute: not supported on this platform");
+		   "shell-execute: " NOT_SUPPORTED_STR);
   return NULL;
 #endif
 }

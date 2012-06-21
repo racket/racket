@@ -4520,8 +4520,9 @@ static Scheme_Object *do_load_handler(void *data)
           Scheme_Input_Port *ip;
           ip = scheme_input_port_record(port);
           scheme_raise_exn(MZEXN_FAIL,
-                           "default-load-handler: expected only a `module' declaration,"
-                           " but found an extra form\n  in: %V",
+                           "default-load-handler: expected only a `module' declaration;\n"
+                           " found an extra form\n"
+                           "  in: %V",
                            modname,
                            ip->name);
 
@@ -4572,7 +4573,9 @@ static Scheme_Object *do_load_handler(void *data)
     Scheme_Input_Port *ip;
     ip = scheme_input_port_record(port);
     scheme_raise_exn(MZEXN_FAIL,
-		     "default-load-handler: expected a `module' declaration, but found end-of-file\n  in: %V",
+		     "default-load-handler: expected a `module' declaration;\n"
+                     " found end-of-file\n"
+                     "  in: %V",
 		     modname,
 		     ip->name);
 
@@ -4773,7 +4776,8 @@ static Scheme_Object *abs_directory_p(const char *name, Scheme_Object *d)
 
     if (!scheme_is_complete_path(s, len, SCHEME_PLATFORM_PATH_KIND))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: path is not a complete path\n  path: %q",
+		       "%s: path is not a complete path\n"
+                       "  path: %q",
 		       name,
 		       s);
 
