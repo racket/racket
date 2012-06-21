@@ -357,9 +357,9 @@ path/s is either such a string or a list of them.
 (define (verify)
   (define errors 0)
   (define (path-error path fmt . more)
-    (when (= 0 errors) (newline) (flush-output))
+    (when (= 0 errors) (newline))
     (set! errors (add1 errors))
-    (eprintf "  ~a: ~a\n" (or path "<ROOT>") (apply format fmt more)))
+    (printf "  ~a: ~a\n" (or path "<ROOT>") (apply format fmt more)))
   (define (uncovered-subs path/ subs)
     (for*/list ([fn (in-list (directory-list (if (equal? path/ "") "." path/)))]
                 [str (in-value (path-element->string fn))]
@@ -395,7 +395,7 @@ path/s is either such a string or a list of them.
                 ;; (define os (map (λ (o) (regexp-replace rx o "")) others))
                 ;; (define os*
                 ;;   (if (> (length os) 20) (append (take os 20) '("...")) os))
-                ;; (eprintf "   others: ~a\n" (string-join os* ", "))
+                ;; (printf "   others: ~a\n" (string-join os* ", "))
                 )
               (cons pname (if same? (car values) (void)))]))))
   (define (loop tree base-path base-props)
@@ -428,7 +428,6 @@ path/s is either such a string or a list of them.
       (cons others props)))
   (define root (find-root))
   (printf "Root: ~a..." root)
-  (flush-output)
   (parameterize ([current-directory root]) (loop props-tree #f '()))
   (if (errors . > . 0)
     (error* #f "~s path errors" errors)
@@ -663,7 +662,7 @@ path/s is either such a string or a list of them.
 "collects/2htdp/uchat/server.rkt" drdr:command-line (mzc "-k" *)
 "collects/2htdp/utest/balls.rkt" drdr:command-line (mzc *)
 "collects/2htdp/utest/sam.rkt" drdr:command-line (mzc *)
-"collects/algol60" responsible (mflatt)
+"collects/algol60" responsible (mflatt robby)
 "collects/at-exp" responsible (eli mflatt)
 "collects/browser" responsible (robby)
 "collects/combinator-parser" responsible (kathyg)
@@ -1002,6 +1001,7 @@ path/s is either such a string or a list of them.
 "collects/teachpack/htdp/graphing.ss" drdr:command-line (mzc *)
 "collects/test-box-recovery" responsible (mflatt)
 "collects/test-engine" responsible (kathyg)
+"collects/tests/algol60" responsible (mflatt robby)
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/demodularizer/demod-test.rkt" drdr:timeout 600
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
