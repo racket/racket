@@ -1,5 +1,5 @@
 #lang racket
-
+ 
 (require mred
          (prefix-in f: framework)
          racket/pretty
@@ -235,7 +235,7 @@
            ;; jbc : this could be fixed in the same way that inexact-number printing is handled....
            [read-case-sensitive #t]
            )
-        (pretty-print sexp text-port)))
+        (pretty-write sexp text-port)))
     
     (define/public (format-whole-step)
       (lock #f)

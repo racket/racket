@@ -1,5 +1,12 @@
 #lang racket/unit
 
+;; this module implements the UI side of the stepper; it 
+;; opens a window, starts the stepper thread running, 
+;; and handles the resulting calls to 'break'.
+
+;; this module lies outside of the "testing boundary"
+;; of through-tests; it is not tested automatically at all.
+
 ;; this version of the view-controller just collects the steps up front rather
 ;; than blocking until the user presses the "next" button.
 
@@ -91,6 +98,9 @@
   ;; wait for steps to show up on the channel.  
   ;; When they do, add them to the list.
   (define (start-listener-thread stepper-frame-eventspace)
+    ;; as of 2012-06-20, I no longer believe there's any
+    ;; need for this thread, as the queue-callback handles
+    ;; the needed separation.
     (thread
      (lambda ()
        (let loop ()
@@ -514,15 +524,17 @@
                      (< overlap-begin overlap-end))])))]))
 
 ;; a few unit tests.  Use them if changing span-overlap.
-#;(and
-;; zero-length selection cases:
-(equal? ((span-overlap 13 13) (model:make-posn-info 14 4)) #f)
-(equal? ((span-overlap 14 14) (model:make-posn-info 14 4)) #t)
-(equal? ((span-overlap 18 18) (model:make-posn-info 14 4)) #f)
-;; nonzero-length selection cases:
-(equal? ((span-overlap 13 14) (model:make-posn-info 14 4)) #f)
-(equal? ((span-overlap 13 15) (model:make-posn-info 14 4)) #t)
-(equal? ((span-overlap 13 23) (model:make-posn-info 14 4)) #t)
-(equal? ((span-overlap 16 17) (model:make-posn-info 14 4)) #t)
-(equal? ((span-overlap 16 24)  (model:make-posn-info 14 4)) #t)
-(equal? ((span-overlap 18 21)  (model:make-posn-info 14 4)) #f))
+;; ...oops, can't use module+ inside of a unit.
+#;(module+ test
+  (require rackunit)
+  ;; zero-length selection cases:
+  (check-equal? ((span-overlap 13 13) (model:make-posn-info 14 4)) #f)
+  (check-equal? ((span-overlap 14 14) (model:make-posn-info 14 4)) #t)
+  (check-equal? ((span-overlap 18 18) (model:make-posn-info 14 4)) #f)
+  ;; nonzero-length selection cases:
+  (check-equal? ((span-overlap 13 14) (model:make-posn-info 14 4)) #f)
+  (check-equal? ((span-overlap 13 15) (model:make-posn-info 14 4)) #t)
+  (check-equal? ((span-overlap 13 23) (model:make-posn-info 14 4)) #t)
+  (check-equal? ((span-overlap 16 17) (model:make-posn-info 14 4)) #t)
+  (check-equal? ((span-overlap 16 24)  (model:make-posn-info 14 4)) #t)
+  (check-equal? ((span-overlap 18 21)  (model:make-posn-info 14 4)) #f))
