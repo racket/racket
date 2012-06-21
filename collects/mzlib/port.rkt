@@ -1032,13 +1032,15 @@
   (-read-bytes!-evt bstr input-port peek-offset prog-evt))
 
 (define (-read-bytes-evt len input-port peek-offset prog-evt)
-  (let ([bstr (make-bytes len)])
-    (wrap-evt
-     (-read-bytes!-evt bstr input-port peek-offset prog-evt)
-     (lambda (v)
-       (if (number? v)
-         (if (= v len) bstr (subbytes bstr 0 v))
-         v)))))
+  (guard-evt
+   (lambda ()
+     (let ([bstr (make-bytes len)])
+       (wrap-evt
+        (-read-bytes!-evt bstr input-port peek-offset prog-evt)
+        (lambda (v)
+          (if (number? v)
+              (if (= v len) bstr (subbytes bstr 0 v))
+              v)))))))
 
 (define (read-bytes-evt len input-port)
   (-read-bytes-evt len input-port #f #f))
@@ -1049,44 +1051,46 @@
 (define (-read-string-evt goal input-port peek-offset prog-evt)
   (if (zero? goal)
     (wrap-evt always-evt (lambda (x) ""))
-    (let ([bstr (make-bytes goal)]
-          [c (bytes-open-converter "UTF-8-permissive" "UTF-8")])
-      (wrap-evt
-       (read-at-least-bytes!-evt
-        bstr input-port
-        (lambda (bstr v)
-          (if (= v (bytes-length bstr))
-            ;; We can't easily use bytes-utf-8-length here,
-            ;; because we may need more bytes to figure out
-            ;; the true role of the last byte. The
-            ;; `bytes-convert' function lets us deal with
-            ;; the last byte properly.
-            (let-values ([(bstr2 used status)
-                          (bytes-convert c bstr 0 v)])
-              (let ([got (bytes-utf-8-length bstr2)])
-                (if (= got goal)
-                  ;; Done:
-                  #f
-                  ;; Need more bytes:
-                  (let ([bstr2 (make-bytes (+ v (- goal got)))])
-                    (bytes-copy! bstr2 0 bstr)
-                    bstr2))))
-            ;; Need more bytes in bstr:
-            bstr))
-        (lambda (bstr v)
-          ;; We may need one less than v,
-          ;; because we may have had to peek
-          ;; an extra byte to discover an
-          ;; error in the stream.
-          (if ((bytes-utf-8-length bstr #\? 0 v) . > . goal) (sub1 v) v))
-        cons
-        peek-offset prog-evt)
-       (lambda (bstr+v)
-         (let ([bstr (car bstr+v)]
-               [v (cdr bstr+v)])
-           (if (number? v)
-             (bytes->string/utf-8 bstr #\? 0 v)
-             v)))))))
+    (guard-evt
+     (lambda ()
+       (let ([bstr (make-bytes goal)]
+             [c (bytes-open-converter "UTF-8-permissive" "UTF-8")])
+         (wrap-evt
+          (read-at-least-bytes!-evt
+           bstr input-port
+           (lambda (bstr v)
+             (if (= v (bytes-length bstr))
+                 ;; We can't easily use bytes-utf-8-length here,
+                 ;; because we may need more bytes to figure out
+                 ;; the true role of the last byte. The
+                 ;; `bytes-convert' function lets us deal with
+                 ;; the last byte properly.
+                 (let-values ([(bstr2 used status)
+                               (bytes-convert c bstr 0 v)])
+                   (let ([got (bytes-utf-8-length bstr2)])
+                     (if (= got goal)
+                         ;; Done:
+                         #f
+                         ;; Need more bytes:
+                         (let ([bstr2 (make-bytes (+ v (- goal got)))])
+                           (bytes-copy! bstr2 0 bstr)
+                           bstr2))))
+                 ;; Need more bytes in bstr:
+                 bstr))
+           (lambda (bstr v)
+             ;; We may need one less than v,
+             ;; because we may have had to peek
+             ;; an extra byte to discover an
+             ;; error in the stream.
+             (if ((bytes-utf-8-length bstr #\? 0 v) . > . goal) (sub1 v) v))
+           cons
+           peek-offset prog-evt)
+          (lambda (bstr+v)
+            (let ([bstr (car bstr+v)]
+                  [v (cdr bstr+v)])
+              (if (number? v)
+                  (bytes->string/utf-8 bstr #\? 0 v)
+                  v)))))))))
 
 (define (read-string-evt goal input-port)
   (-read-string-evt goal input-port #f #f))

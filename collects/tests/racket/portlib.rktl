@@ -893,6 +893,59 @@
     (flush-output out)
     (test "hello world" read in))
 
+;; --------------------------------------------------
+;; check that string and byte-string evts can be reused
+
+(let ()
+  (define (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?)
+    (define N 10)
+    (define M 160)
+    (define PORT 5999)
+
+    (define (make-alarm-e)
+      (alarm-evt (+ (current-inexact-milliseconds) 5)))
+
+    (define ((connection-handler in out with-alarm?))
+      (let loop ((alarm-e (make-alarm-e))
+                 (read-e (read-bytes-evt 16 in)))
+        (sync (if with-alarm?
+                  (wrap-evt alarm-e (lambda (_) (loop (make-alarm-e) read-e)))
+                  never-evt)
+              (wrap-evt read-e
+                        (lambda (bs)
+                          (when (bytes? bs)
+                            (sleep 0.01)
+                            (write-bytes bs out)
+                            (flush-output out))
+                          (loop alarm-e read-e)))
+              (wrap-evt (eof-evt in)
+                        (lambda (_)
+                          (close-input-port in)
+                          (close-output-port out))))))
+
+    (define listener (tcp-listen PORT 4 #t))
+    (define server
+      (thread
+       (lambda ()
+         (for ([i N])
+           (define-values (in out) (tcp-accept listener))
+           ((connection-handler in out #t))))))
+
+    (let ([s (list->bytes
+              (for/list ([i M])
+                (integer->byte (random 512))))])
+      (for ([i N])
+        (define-values (i o) (tcp-connect "localhost" PORT))
+        (write-bytes s o)
+        (close-output-port o)
+        (test s read-bytes M i)))
+
+    (sync server)
+    (tcp-close listener))
+
+  (let ([integer->byte (lambda (s) (bitwise-and s #xFF))])
+    (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?))
+  (check-can-reuse read-string-evt read-string write-string integer->char list->string string?))
 
 ;; --------------------------------------------------
 
