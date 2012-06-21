@@ -433,7 +433,7 @@ used to represent various atomic types:
 
  @item{@racket['com-object] --- a @tech{COM object} as in @racket[com-object?]}
 
- @item{@racket['iunknown] --- an @cpp{IUnknown} pointer as in @racket[com-iunknown?]}
+ @item{@racket['iunknown] --- like @racket['com-object], but also accepts an @cpp{IUnknown} pointer as in @racket[com-iunknown?]}
 
  @item{@racket['com-enumeration] --- a 32-bit signed integer}
 

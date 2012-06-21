@@ -1049,8 +1049,8 @@
     ;; that the caller and callee have agreed upon.  For our purposes,
     ;; it is an IUnknown pointer.
     (if is-opt?
-        'iunknown
-        '(opt iunknown))]
+        '(opt iunknown)
+        'iunknown)]
    [(bit-and? vt VT_ARRAY)
     (define array-desc (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 1)
                              _pointer
@@ -1363,7 +1363,8 @@
       [(date) (date? arg)]
       [(boolean) #t]
       [(scode) (signed-int? arg 32)]
-      [(iunknown) (IUnknown? arg)]
+      [(iunknown) (or (IUnknown? arg)
+                      (com-object? arg))]
       [(com-object) (com-object? arg)]
       [(any) #t]
       [(com-enumeration) (signed-int? arg 32)]
@@ -1558,6 +1559,19 @@
 			  (variant-to-scheme var))
 			(loop (cdr dims) (add1 level) (cons i index))))))))
 
+(define _IUnknown-pointer-or-com-object
+  (make-ctype 
+   _IUnknown-pointer
+   (lambda (v)
+     (if (com-object? v)
+         (com-object-get-iunknown v)
+         v))
+   (lambda (p) 
+     (((allocator Release) (lambda () p)))
+     (define obj (make-com-object p))
+     (register-with-custodian obj)
+     obj)))
+
 (define (to-ctype type)
   (cond
    [(symbol? type)
@@ -1578,7 +1592,7 @@
       [(date) _date]
       [(boolean) _bool]
       [(scode) _SCODE]
-      [(iunknown) _IUnknown-pointer]
+      [(iunknown) _IUnknown-pointer-or-com-object]
       [(com-object) _com-object]
       [(any) (error "internal error: cannot marshal to any")]
       [(com-enumeration) _int]
