@@ -1011,10 +1011,25 @@ is little-endian.}
 
 @note-lib[racket/math]
 
-@defthing[pi real?]{
+@defthing[pi flonum?]{
 
-An approximation to the ratio of a circle's circumference to its
-diameter: @number->string[pi].}
+An approximation of π, the ratio of a circle's circumference to its
+diameter.
+@examples[
+#:eval math-eval
+pi
+(cos pi)
+]}
+
+@defthing[pi.f single-flonum?]{
+
+Like @racket[pi], but in single precision.
+@examples[
+#:eval math-eval
+pi.f
+(* 2.0f0 pi)
+(* 2.0f0 pi.f)
+]}
 
 @defproc[(degrees->radians [x real?]) real?]{
 
@@ -1109,11 +1124,11 @@ Hence also:
 
 @defproc[(nan? [x real?]) boolean?]{
 
-Returns @racket[#t] if @racket[x] is @racket[eqv?] to @racket[+nan.0] or @racket[+nan.f], @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[x] is @racket[eqv?] to @racket[+nan.0] or @racket[+nan.f]; otherwise @racket[#f].}
 
 @defproc[(infinite? [x real?]) boolean?]{
 
-Returns @racket[#t] if @racket[z] is @racket[+inf.0], @racket[-inf.0], @racket[+inf.f], @racket[-inf.f]; @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[z] is @racket[+inf.0], @racket[-inf.0], @racket[+inf.f], @racket[-inf.f]; otherwise @racket[#f].}
 
 @; ----------------------------------------------------------------------
 @close-eval[math-eval]
