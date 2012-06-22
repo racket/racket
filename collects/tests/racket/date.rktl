@@ -5,6 +5,9 @@
 
 (require mzlib/date)
 
+(test #t date? (date* 0 0 0 1 1 -3000 0 0 #f -1000 0 "AST"))
+(test #t date? (date* 60 59 23 31 12 3000 6 365 #t 1000 999999999 "ZST"))
+
 (define (test-find s m h d mo y)
   (for ([local-time? (in-list '(#f #t))])
     (let* ([secs (find-seconds s m h d mo y local-time?)]

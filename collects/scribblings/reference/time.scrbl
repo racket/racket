@@ -38,7 +38,7 @@ The resulting @racket[date*] reflects the time according to the local
 time zone if @racket[local-time?] is @racket[#t], otherwise it
 reflects a date in UTC.}
 
-@defstruct[date ([second (integer-in 0 61)]
+@defstruct[date ([second (integer-in 0 60)]
                  [minute (integer-in 0 59)]
                  [hour (integer-in 0 23)]
                  [day (integer-in 1 31)]
@@ -50,10 +50,9 @@ reflects a date in UTC.}
                  [time-zone-offset exact-integer?])
                 #:inspector #f]{
 
-Represents a date. For the @racket[second] field, values of
-@racket[60] and @racket[61] are for unusual, but possible for
-leap-seconds. The @racket[year-day] field reaches @racket[365] only in
-leap years.
+Represents a date. The @racket[second] field reaches @racket[60] only
+for leap seconds. The @racket[year-day] field reaches @racket[365]
+only in leap years.
 
 The @racket[dst?] field is @racket[#t] if the date reflects a
 daylight-saving adjustment. The @racket[time-zone-offset] field

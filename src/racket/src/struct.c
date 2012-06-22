@@ -5032,8 +5032,8 @@ static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv)
   Scheme_Object *a, *args[10];
 
   a = argv[0];
-  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 61))
-    scheme_wrong_field_contract(argv[10], "(integer-in 0 61)", a);
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 60))
+    scheme_wrong_field_contract(argv[10], "(integer-in 0 60)", a);
   a = argv[1];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 59))
     scheme_wrong_field_contract(argv[10], "(integer-in 0 59)", a);
