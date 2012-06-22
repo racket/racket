@@ -5,6 +5,8 @@ racket/control: added call/prompt, call/comp, abort/cc and
 racket/future: handling of internal stack overflow without
  necessarily blocking on process 0; added 'overflow and
  'start-overflow-work log events
+racket/base: guarantee portable results for current-seconds
+ and file-or-directory-modify-seconds
 
 Version 5.3.0.10
 racket/base: add progress-evt?, thread-cell-values?, prefab-key?,

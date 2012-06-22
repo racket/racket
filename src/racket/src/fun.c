@@ -8542,6 +8542,7 @@ intptr_t scheme_get_thread_milliseconds(Scheme_Object *thrd)
 intptr_t scheme_get_seconds(void)
 {
 #ifdef USE_MACTIME
+  /* This is wrong, since it's not since January 1, 1970 */
   unsigned long secs;
   GetDateTime(&secs);
   return secs;

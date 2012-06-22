@@ -281,12 +281,13 @@ existing @racket[new].}
                                            [fail-thunk (-> any) (lambda () (raise (make-exn:fail:filesystem ....)))])
          any]{
 
-Returns the file or directory's last modification date as
-platform-specific seconds (see also @secref["time"]) when
-@racket[secs-n] is not provided or is @racket[#f]. (For FAT
-filesystems on Windows, directories do not have modification
+Returns the file or directory's last modification date in seconds
+since midnight UTC, January 1, 1970 (see also @secref["time"]) when
+@racket[secs-n] is not provided or is @racket[#f].
+
+For FAT filesystems on Windows, directories do not have modification
 dates. Therefore, the creation date is returned for a directory, but
-the modification date is returned for a file.)
+the modification date is returned for a file.
 
 If @racket[secs-n] is provided and not @racket[#f], the access and
 modification times of @racket[path] are set to the given time.
