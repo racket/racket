@@ -237,6 +237,9 @@ MZ_EXTERN void scheme_wrong_contract(const char *name, const char *expected,
 MZ_EXTERN void scheme_wrong_field_type(Scheme_Object *c_name,
 				       const char *expected,
 				       Scheme_Object *o);
+MZ_EXTERN void scheme_wrong_field_contract(Scheme_Object *c_name,
+                                           const char *expected,
+                                           Scheme_Object *o);
 MZ_EXTERN void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o);
 MZ_EXTERN void scheme_contract_error(const char *name, const char *msg, ...);
 MZ_EXTERN void scheme_wrong_return_arity(const char *where,

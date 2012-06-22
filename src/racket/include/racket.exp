@@ -110,6 +110,7 @@ scheme_case_lambda_wrong_count
 scheme_wrong_type
 scheme_wrong_contract
 scheme_wrong_field_type
+scheme_wrong_field_contract
 scheme_arg_mismatch
 scheme_contract_error
 scheme_wrong_return_arity

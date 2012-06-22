@@ -118,6 +118,7 @@
 #define scheme_wrong_type (scheme_extension_table->scheme_wrong_type)
 #define scheme_wrong_contract (scheme_extension_table->scheme_wrong_contract)
 #define scheme_wrong_field_type (scheme_extension_table->scheme_wrong_field_type)
+#define scheme_wrong_field_contract (scheme_extension_table->scheme_wrong_field_contract)
 #define scheme_arg_mismatch (scheme_extension_table->scheme_arg_mismatch)
 #define scheme_contract_error (scheme_extension_table->scheme_contract_error)
 #define scheme_wrong_return_arity (scheme_extension_table->scheme_wrong_return_arity)

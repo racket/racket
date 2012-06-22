@@ -1655,6 +1655,17 @@ void scheme_wrong_field_type(Scheme_Object *c_name,
   scheme_wrong_type(s, expected, -1, 0, a);
 }
 
+void scheme_wrong_field_contract(Scheme_Object *c_name,
+                                 const char *expected,
+                                 Scheme_Object *o)
+{
+  const char *s;
+  Scheme_Object *a[1];
+  a[0] = o;
+  s = scheme_symbol_name(c_name);
+  scheme_wrong_contract(s, expected, -1, 0, a);
+}
+
 void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
 {
   char *s;

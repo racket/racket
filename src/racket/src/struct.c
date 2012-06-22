@@ -4995,13 +4995,13 @@ int scheme_is_location(Scheme_Object *o)
 static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv)
 {
   if (SCHEME_TRUEP(argv[1]) && !exact_pos_integer(argv[1]))
-    scheme_wrong_field_type(argv[5], "exact positive integer or #f", argv[1]);
+    scheme_wrong_field_contract(argv[5], "(or/c exact-positive-integer? #f)", argv[1]);
   if (SCHEME_TRUEP(argv[2]) && !exact_nneg_integer(argv[2]))
-    scheme_wrong_field_type(argv[5], "exact non-negative integer or #f", argv[2]);
+    scheme_wrong_field_contract(argv[5], "(or/c exact-nonnegative-integer #f)", argv[2]);
   if (SCHEME_TRUEP(argv[3]) && !exact_pos_integer(argv[3]))
-    scheme_wrong_field_type(argv[5], "exact positive integer or #f", argv[3]);
+    scheme_wrong_field_contract(argv[5], "(or/c exact-positive-integer? #f)", argv[3]);
   if (SCHEME_TRUEP(argv[4]) && !exact_nneg_integer(argv[4]))
-    scheme_wrong_field_type(argv[5], "exact non-negative integer or #f", argv[4]);
+    scheme_wrong_field_contract(argv[5], "(or/c exact-nonnegative-integer? #f)", argv[4]);
   
   return scheme_values(5, argv);
 }
@@ -5023,7 +5023,7 @@ static Scheme_Object *check_arity_at_least_fields(int argc, Scheme_Object **argv
       return a;
   }
 
-  scheme_wrong_field_type(argv[1], "exact non-negative integer", a);
+  scheme_wrong_field_contract(argv[1], "exact-nonnegative-integer?", a);
   return NULL;
 }
 
@@ -5033,31 +5033,31 @@ static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv)
 
   a = argv[0];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 61))
-    scheme_wrong_field_type(argv[10], "exact integer in [0, 61]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 0 61)", a);
   a = argv[1];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 59))
-    scheme_wrong_field_type(argv[10], "exact integer in [0, 59]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 0 59)", a);
   a = argv[2];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 23))
-    scheme_wrong_field_type(argv[10], "exact integer in [0, 23]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 0 23)", a);
   a = argv[3];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 31))
-    scheme_wrong_field_type(argv[10], "exact integer in [1, 31]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 1 31)", a);
   a = argv[4];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 12))
-    scheme_wrong_field_type(argv[10], "exact integer in [1, 12]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 1 12)", a);
   a = argv[5];
   if (!SCHEME_INTP(a) && !SCHEME_BIGNUMP(a))
-    scheme_wrong_field_type(argv[10], "exact integer", a);
+    scheme_wrong_field_contract(argv[10], "exact-integer?", a);
   a = argv[6];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 6))
-    scheme_wrong_field_type(argv[10], "exact integer in [0, 6]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 0 6)", a);
   a = argv[7];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 365))
-    scheme_wrong_field_type(argv[10], "exact integer in [0, 365]", a);
+    scheme_wrong_field_contract(argv[10], "(integer-in 0 365)", a);
   a = argv[9];
   if (!SCHEME_INTP(a) && !SCHEME_BIGNUMP(a))
-    scheme_wrong_field_type(argv[10], "exact integer", a);
+    scheme_wrong_field_contract(argv[10], "exact-integer?", a);
 
   /* Normalize dst? boolean: */
   memcpy(args, argv, sizeof(Scheme_Object *) * 10);
@@ -5073,11 +5073,11 @@ static Scheme_Object *check_date_star_fields(int argc, Scheme_Object **argv)
   a = argv[10];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0)
       || (SCHEME_INT_VAL(a) > 999999999))
-    scheme_wrong_field_type(argv[12], "exact integer in [0, 999999999]", a);
+    scheme_wrong_field_contract(argv[12], "(integer-in 0 999999999)", a);
   
   a = argv[11];
   if (!SCHEME_CHAR_STRINGP(a)) 
-    scheme_wrong_field_type(argv[12], "string", a);
+    scheme_wrong_field_contract(argv[12], "string?", a);
 
   memcpy(args, argv, sizeof(Scheme_Object *) * 12);
   if (!SCHEME_IMMUTABLEP(argv[11])) {

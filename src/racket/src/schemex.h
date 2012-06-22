@@ -176,6 +176,9 @@ void (*scheme_wrong_contract)(const char *name, const char *expected,
 void (*scheme_wrong_field_type)(Scheme_Object *c_name,
 				       const char *expected,
 				       Scheme_Object *o);
+void (*scheme_wrong_field_contract)(Scheme_Object *c_name,
+                                           const char *expected,
+                                           Scheme_Object *o);
 void (*scheme_arg_mismatch)(const char *name, const char *msg, Scheme_Object *o);
 void (*scheme_contract_error)(const char *name, const char *msg, ...);
 void (*scheme_wrong_return_arity)(const char *where,
