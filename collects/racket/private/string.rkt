@@ -358,10 +358,8 @@
   ;; Like splitting, but insert a replacement between matches
   (define -regexp-replace*
     (let ([regexp-replace*
-           (lambda (pattern string orig-replacement [ipre #""])
+           (lambda (pattern string orig-replacement [start 0] [end #f] [ipre #""])
              (define-values [buf sub] (get-buf+sub string pattern))
-             (define start 0)
-             (define end #f)
              (define needs-string?
                (and (or (string? pattern) (regexp? pattern)) (string? string)))
              (define replacement
@@ -444,26 +442,30 @@
                   'regexp-replace*
                   "cannot replace a string with a byte string: "
                   replacement)))
+             (define r
+               (regexp-loop regexp-replace* loop start end pattern buf ipre
+                 ;; success-choose:
+                 (lambda (start ms acc)
+                   (list* (if (procedure? replacement)
+                            (check
+                             replacement
+                             (for/list ([m ms])
+                               (and m (sub buf (car m) (cdr m)))))
+                            (replac ms replacement))
+                          (sub buf start (caar ms))
+                          acc))
+                 ;; failure-k:
+                 (lambda (acc start end)
+                   (cons (if end (sub buf start end) (sub buf start)) acc))
+                 ;; port functions: use string case
+                 #f #f #f
+                 ;; flags
+                 #t #f))
              (apply
               (if (bytes? buf) bytes-append string-append)
-              (regexp-loop regexp-replace* loop start end pattern buf ipre
-                ;; success-choose:
-                (lambda (start ms acc)
-                  (list* (if (procedure? replacement)
-                           (check
-                            replacement
-                            (for/list ([m ms])
-                              (and m (sub buf (car m) (cdr m)))))
-                           (replac ms replacement))
-                         (sub buf start (caar ms))
-                         acc))
-                ;; failure-k:
-                (lambda (acc start end)
-                  (cons (if end (sub buf start end) (sub buf start)) acc))
-                ;; port functions: use string case
-                #f #f #f
-                ;; flags
-                #t #f)))])
+              (cond [(and (= start 0) (not end)) r]
+                    [(not end) (cons (sub string 0 start) r)]
+                    [else `(,(sub string 0 start) ,@r ,(sub string end))])))])
       regexp-replace*))
 
   ;; Returns all the matches for the pattern in the string, optionally

@@ -864,6 +864,8 @@ before the @litchar{\}. For example, the Racket constant
                           [insert (or/c string? bytes? 
                                         ((string?) () #:rest (listof string?) . ->* . string?)
                                         ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))]
+                          [start-pos exact-nonnegative-integer? 0]
+                          [end-pos (or/c exact-nonnegative-integer? #f) #f]
                           [input-prefix bytes? #""])
          (or/c string? bytes?)]{
 
@@ -875,6 +877,10 @@ instead of just the first match. Only non-overlapping instances of
 recursively. Zero-length matches are treated the same as in
 @racket[regexp-match*].
 
+The optional @racket[start-pos] and @racket[end-pos] arguments select
+a portion of @racket[input] for matching; the default is the entire
+string or the stream up to an end-of-file.
+
 @examples[
 (regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi" 
                  "\\1y \\2")
@@ -882,6 +888,7 @@ recursively. Zero-length matches are treated the same as in
                  (lambda (all one two)
                    (string-append (string-downcase one) "y"
                                   (string-upcase two))))
+(regexp-replace* #px"\\w" "hello world" string-upcase 0 5)
 (display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
 ]}
 
