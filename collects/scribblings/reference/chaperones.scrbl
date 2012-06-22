@@ -277,7 +277,7 @@ or override impersonator-property values of @racket[box].}
 Returns an impersonator of @racket[hash], which redirects the
 @racket[hash-ref], @racket[hash-set!] or @racket[hash-set] (as
 applicable), and @racket[hash-remove] or @racket[hash-remove!] (as
-application) operations. When
+applicable) operations. When
 @racket[hash-set] or @racket[hash-remove] is used on an impersonator of a hash
 table, the result is an impersonator with the same redirecting procedures. 
 In addition, operations like
