@@ -155,7 +155,12 @@
                ;; info-result : (or/c #f   [#lang without a known language]
                ;;                     (vector <get-info-proc>) [no #lang line, so we use the '#lang racket' info proc]
                ;;                     <get-info-proc>  [the get-info proc for the program in the definitions]
-               [info-result (with-handlers ((exn:fail? (λ (x) #f)))
+               [info-result (with-handlers ((exn:fail? 
+                                             (λ (x)
+                                               (log-debug (format "DrRacket: error duing call to read-language for ~a:\n  ~a"
+                                                                  (or (send this get-filename) "<<unsaved file>>")
+                                                                  (regexp-replace* #rx"\n(.)" (exn-message x) "\n\\1  ")))
+                                               #f)))
                               (read-language 
                                port
                                (lambda () 

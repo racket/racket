@@ -273,6 +273,9 @@ as the @racket[_key] argument to the @racket[_get-info] function to do so:
           @item{@language-info-ref[drracket:opt-out-toolbar-buttons]}
           @item{@language-info-ref[color-lexer]}]
 
+If the call to @racket[read-language] raises an error, DrRacket logs the
+error via @racket[log-debug].
+
 @language-info-def[color-lexer]{
   When a language's @racket[_get-info] procedure responds to @racket['color-lexer], it
   is expected to return a procedure suitable to pass as the @racket[_get-token]
