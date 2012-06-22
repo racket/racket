@@ -1624,21 +1624,6 @@
         [else (error 'cblock->vector
                      "expecting a non-void pointer, got ~s" cblock)]))
 
-;; Useful for automatic definitions
-;; If a provided regexp begins with a "^" or ends with a "$", then
-;; `regexp-replace' is used, otherwise use `regexp-replace*'.
-(define* (regexp-replaces x rs)
-  (let loop ([str (if (bytes? x) (bytes->string/utf-8 x) (format "~a" x))]
-             [rs rs])
-    (if (null? rs)
-      str
-      (loop ((if (regexp-match #rx"^\\^|\\$$"
-                               (if (regexp? (caar rs))
-                                 (object-name (caar rs)) (caar rs)))
-               regexp-replace regexp-replace*)
-             (caar rs) str (cadar rs))
-            (cdr rs)))))
-
 (define killer-thread #f)
 
 (define* register-finalizer 

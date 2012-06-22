@@ -9,7 +9,8 @@
            regexp-split
            regexp-match-exact?
            regexp-try-match
-           -regexp-replace*)
+           -regexp-replace*
+           regexp-replaces)
   (require (for-syntax "stxcase-scheme.rkt"))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -569,5 +570,11 @@
                      (if (path? s)
                        (string-length (path->string s))
                        (string-length s))])))))
+
+  (define (regexp-replaces string replacements)
+    (let loop ([str string] [rs replacements])
+      (if (null? rs)
+        str
+        (loop (regexp-replace* (caar rs) str (cadar rs)) (cdr rs)))))
 
   )

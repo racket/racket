@@ -357,8 +357,17 @@
         (and ((* 100 (- bcpu bgc)) . < . (- scpu sgc))
              "suspiciously long time for regexp string split")))
 
+;; ---------- regexp-replaces ----------
+(let ()
+  (test "foo" regexp-replaces "foo" '())
+  (test "is_zero_or_more"
+        regexp-replaces "zero-or-more?"
+        '([#rx"-" "_"] [#rx"(.*)\\?$" "is_\\1"]))
+  (test "zooroo-oor-mooroo?"
+        regexp-replaces "zero-or-more?" '(["e" "o"] ["o" "oo"])))
+
 ;; ---------- string-append* ----------
-(let ([t (λ (x . xs) (test ))])
+(let ()
   (test ""           string-append* '())
   (test ""           string-append* '(""))
   (test ""           string-append* '("" ""))

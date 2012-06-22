@@ -30,10 +30,10 @@ The other options support further wrapping and configuration:
 @itemize[
 
  @item{Before the extracted result is bound as @racket[_id], it is
-      passed to the result of @racket[_wrap-expr], which defaults to
-      @racket[values]. Expressions such as @racket[(allocator
-      _delete)] or @racket[(deallocator)] are useful as
-      @racket[_wrap-expr]s.}
+       passed to the result of @racket[_wrap-expr], which defaults to
+       @racket[values]. Expressions such as @racket[(allocator
+       _delete)] or @racket[(deallocator)] are useful as
+       @racket[_wrap-expr]s.}
 
  @item{The @racket[#:make-fail] and @racket[#:fail] options are
        mutually exclusive; if @racket[_make-fail-expr] is provided, it

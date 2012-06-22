@@ -793,7 +793,7 @@ an end-of-file if @racket[input] is an input port).
 
 @defproc[(regexp-replace [pattern (or/c string? bytes? regexp? byte-regexp?)]
                          [input (or/c string? bytes?)]
-                         [insert (or/c string? bytes? 
+                         [insert (or/c string? bytes?
                                        ((string?) () #:rest (listof string?) . ->* . string?)
                                        ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))]
                          [input-prefix bytes? #""])
@@ -861,7 +861,7 @@ before the @litchar{\}. For example, the Racket constant
 
 @defproc[(regexp-replace* [pattern (or/c string? bytes? regexp? byte-regexp?)]
                           [input (or/c string? bytes?)]
-                          [insert (or/c string? bytes? 
+                          [insert (or/c string? bytes?
                                         ((string?) () #:rest (listof string?) . ->* . string?)
                                         ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))]
                           [start-pos exact-nonnegative-integer? 0]
@@ -882,14 +882,35 @@ a portion of @racket[input] for matching; the default is the entire
 string or the stream up to an end-of-file.
 
 @examples[
-(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi" 
+(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
                  "\\1y \\2")
-(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi" 
+(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
                  (lambda (all one two)
                    (string-append (string-downcase one) "y"
                                   (string-upcase two))))
 (regexp-replace* #px"\\w" "hello world" string-upcase 0 5)
 (display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
+]}
+
+@defproc[(regexp-replaces [input (or/c string? bytes?)]
+                          [replacements
+                           (listof
+                            (list/c (or/c string? bytes? regexp? byte-regexp?)
+                                    (or/c string? bytes?
+                                        ((string?) () #:rest (listof string?) . ->* . string?)
+                                        ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))))])
+         (or/c string? bytes?)]{
+
+Performs a chain of @racket[regexp-replace*] operations, where each
+element in @racket[replacements] specifies a replacement as a
+@racket[(list pattern replacement)].  The replacements are done in
+order, so later replacements can apply to previous insertions.
+
+@examples[
+(regexp-replaces "zero-or-more?"
+                  '([#rx"-" "_"] [#rx"(.*)\\?$" "is_\\1"]))
+(regexp-replaces "zero-or-more?"
+                  '(["e" "o"] ["o" "oo"]))
 ]}
 
 @defproc*[([(regexp-replace-quote [str string?]) string?]
@@ -905,4 +926,3 @@ Concretely, every @litchar{\} and @litchar{&} in @racket[str] or
 (regexp-replace "UT" "Go UT!" "A&M")
 (regexp-replace "UT" "Go UT!" (regexp-replace-quote "A&M"))
 ]}
-

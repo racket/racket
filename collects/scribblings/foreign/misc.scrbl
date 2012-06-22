@@ -3,41 +3,6 @@
 
 @title{Miscellaneous Support}
 
-
-@defproc[(regexp-replaces [objname (or/c string? bytes? symbol?)]
-                          [substs (listof (list regexp? string?))])
-         string?]{
-
-A function that is convenient for many interfaces where the foreign
-library has some naming convention that you want to use in your
-interface as well.  The @racket[objname] argument can be any value
-that will be used to name the foreign object; it is first converted
-into a string, and then modified according to the given
-@racket[substs] list in sequence, where each element in this list is a
-list of a regular expression and a substitution string.  Usually,
-@racket[regexp-replace*] is used to perform the substitution, except
-for cases where the regular expression begins with a @litchar{^} or
-ends with a @litchar{$}, in which case @racket[regexp-replace] is
-used.
-
-For example, the following makes it convenient to define Racket
-bindings such as @racket[foo-bar] for foreign names like
-@racket[MyLib_foo_bar]:
-
-@racketblock[
-(define mylib (ffi-lib "mylib"))
-(define-syntax defmyobj
-  (syntax-rules (:)
-    [(_ name : type ...)
-     (define name
-       (get-ffi-obj 
-        (regexp-replaces 'name '((#rx"-" "_") 
-                                 (#rx"^" "MyLib_")))
-        mylib (_fun type ...)))]))
-(defmyobj foo-bar : _int -> _int)
-]}
-
-
 @defproc[(list->cblock [lst list?] [type ctype?]) any]{
 
 Allocates a memory block of an appropriate size, and initializes it
