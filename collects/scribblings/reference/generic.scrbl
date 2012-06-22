@@ -40,6 +40,12 @@ Defines
        corresponding method on values where
        @racket[id]@racketidfont{?} is true.}
 
+ @item{@racket[id]@racketidfont{/c} as a contract combinator that
+       recognizes instances of structure types which implement the
+       @racketidfont{gen:}@racket[id] generic interface. The combinator
+       takes pairs of @racket[method-id]s and contracts. The contracts
+       will be applied to each of the corresponding method implementations.}
+
 ]
 
 Each @racket[method-id]'s @racket[kw-formals*] must include a required
@@ -55,6 +61,9 @@ implemented by the instance. This table is intended for use by
 higher-level APIs to adapt their behavior depending on method
 availability.}
 
+The @racket[id]@racketidfont{/c} combinator is intended to be used to
+contract the range of a constructor procedure for a struct type that
+implements the generic interface.
 
 @defform[(define/generic local-id method-id)
          #:contracts
@@ -77,6 +86,7 @@ syntax error.}
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
      (e '(require (for-syntax racket/base)
+                  racket/contract
                   racket/generic))
      e))
 
@@ -121,6 +131,19 @@ syntax error.}
 (gen-print y)
 (gen-port-print (current-output-port) y)
 (gen-print* y #:width 100 #:height 90)
+
+(define/contract make-num-contracted
+  (-> number?
+      (printable/c
+        [gen-print (->* (printable?) (output-port?) void?)]
+        [gen-port-print (-> output-port? printable? void?)]
+        [gen-print* (->* (printable? #:width exact-nonnegative-integer?)
+                         (output-port? #:height exact-nonnegative-integer?)
+                         void?)]))
+   make-num)
+
+(define z (make-num-contracted 10))
+(gen-print* z #:width "not a number" #:height 5)
 ]
 
 @close-eval[evaluator]

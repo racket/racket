@@ -8,4 +8,5 @@
          (submod "struct-form.rkt" test)
          (submod "equal+hash.rkt" test)
          (submod "custom-write.rkt" test)
+         "contract.rkt"
          "from-unstable.rkt")
