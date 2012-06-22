@@ -211,7 +211,12 @@ The protocol for a @racket[redirect-proc] depends on the corresponding
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-struct] must be odd) add impersonator properties
-or override impersonator-property values of @racket[v].}
+or override impersonator-property values of @racket[v].
+
+Each @racket[orig-proc] must indicate a distinct operation. If no
+@racket[orig-proc]s are supplied, then no @racket[prop]s must be
+supplied, and @racket[v] is returned unimpersonated.}
+
 
 @defproc[(impersonate-vector [vec (and/c vector? (not/c immutable?))]
                              [ref-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
@@ -443,16 +448,13 @@ Like @racket[impersonate-struct], but with the following refinements:
        corresponding @racket[redirect-proc] must accept two values,
        which are the results of @racket[struct-info] on @racket[v]; it
        must return each values or a chaperone of each value. The
-       @racket[redirect-proc] is not called if @racket[struct-info] would
-       return @racket[#f] as its first argument.}
+       @racket[redirect-proc] is not called if @racket[struct-info]
+       would return @racket[#f] as its first argument. An
+       @racket[orig-proc] can be @racket[struct-info] only if some
+       other @racket[orig-proc] is supplied.}
 
-]
+]}
 
-An @racket[orig-proc] can be @racket[struct-info] only if some other
-@racket[orig-proc] is supplied, and each @racket[orig-proc] must
-indicate a distinct operation. If no @racket[orig-proc]s are supplied,
-then no @racket[prop]s must be supplied, and @racket[v] is returned
-unchaperoned.}
 
 @defproc[(chaperone-vector [vec vector?]
                            [ref-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
