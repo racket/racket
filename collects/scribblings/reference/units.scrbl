@@ -151,7 +151,8 @@ the corresponding import. Each @racket[tagged-sig-id] in an
 @racket[import] clause.}
 
 @defform/subs[
-#:literals (define-syntaxes define-values define-values-for-export open extends contracted)
+#:literals (define-syntaxes define-values define-values-for-export
+            open extends contracted struct)
 (define-signature id extension-decl
   (sig-elem ...))
 
@@ -405,7 +406,7 @@ See @racket[unit] for information on @racket[tagged-sig-spec],
 @racket[init-depends-decl], and @racket[unit-body-expr-or-defn].}
 
 @defform/subs[
-#:literals (import export :)
+#:literals (import export link tag :)
 (compound-unit/infer
   (import tagged-infer-link-import ...)
   (export tagged-infer-link-export ...)
@@ -517,7 +518,7 @@ current context.  If given a link form containing multiple
 @racket[define-compound-unit/infer].}
 
 @defform/subs[
-#:literals (link)
+#:literals (export link)
 (define-values/invoke-unit/infer maybe-exports unit-spec)
 [(maybe-exports code:blank (export tagged-sig-spec ...))
  (unit-spec unit-id (link link-unit-id ...))]]{
