@@ -51,11 +51,13 @@
 (define (*function ret name types args rest-thunk)
   (let ([spacer (hspace 1)]
         [pair-type (lambda (t v)
-                     (make-element #f
-                                   (list
-                                    t
-                                    (hspace 1)
-                                    v)))]
+                     (if (equal? "..." (element->string t))
+                         t
+                         (make-element #f
+                                       (list
+                                        t
+                                        (hspace 1)
+                                        v))))]
         [super-long? ((+ (element-width ret)
                          1
                          (element-width name)

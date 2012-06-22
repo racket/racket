@@ -237,11 +237,17 @@ for @cpp{printf}, but with the following format directives:
 
  @item{@FormatD{c} : a Unicode character (of type @cpp{mzchar})}
 
- @item{@FormatD{d} : an integer}
+ @item{@FormatD{d} : an @cpp{int}}
+
+ @item{@FormatD{o} : an @cpp{int} formatted in octal}
 
  @item{@FormatD{gd} : a @cpp{long} integer}
 
- @item{@FormatD{ld} : a @cpp{intptr_t} integer}
+ @item{@FormatD{gx} : a @cpp{long} integer formatted in hexadecimal}
+
+ @item{@FormatD{ld} : an @cpp{intptr_t} integer}
+
+ @item{@FormatD{lx} : an @cpp{intptr_t} integer formatted in hexadecimal}
 
  @item{@FormatD{f} : a floating-point @cpp{double}}
 
@@ -271,6 +277,12 @@ for @cpp{printf}, but with the following format directives:
  @item{@FormatD{V} : a Racket value  (a @cpp{Scheme_Object*}),
  truncated according to the current error print width.}
 
+ @item{@FormatD{D} : a Racket value  (a @cpp{Scheme_Object*}),
+ to @racket[display].}
+
+ @item{@FormatD["@"] : a Racket value (a @cpp{Scheme_Object*}),
+ that is a list whose printed elements are spliced into the result.}
+
  @item{@FormatD{e} : an @cpp{errno} value, to be printed as a text
  message.}
 
@@ -282,6 +294,10 @@ for @cpp{printf}, but with the following format directives:
  value is ignored, otherwise the error value is used as for @FormatD{E}.}
 
  @item{@FormatD{%} : a percent sign}
+
+ @item{@FormatD{_} : a pointer to ignore}
+
+ @item{@FormatD{-} : an @cpp{int} to ignore}
 
 ]
 
@@ -308,12 +324,6 @@ but prefixed with ``MZ'', all letters are capitalized, and all ``:'s',
 @cpp{MZEXN_FAIL_FILESYSTEM} is the exception id for a filesystem
 exception.}
 
-@function[(void scheme_warning
-           [char* msg]
-           [... ...])]{
-
-Signals a warning. The parameters are roughly as for @cpp{printf}; see
-@cpp{scheme_signal_error} above for more details.}
 
 @function[(void scheme_wrong_count
            [char* name]
@@ -331,6 +341,26 @@ is the minimum number of expected arguments; @var{maxc} is the maximum
 number of expected arguments, or -1 if there is no maximum; @var{argc}
 and @var{argv} contain all of the received arguments.}
 
+
+@function[(void scheme_wrong_contract
+           [char* name]
+           [char* contract]
+           [int which]
+           [int argc]
+           [Scheme_Object** argv])]{
+
+Signals that an argument was received that does not satisfy a
+contract and escapes (like @cpp{scheme_signal_error}).  The
+@var{name} argument is the name of the procedure that was given the
+wrong argument; @var{expected} is the contract; @var{which} is the
+offending argument in the @var{argv} array; @var{argc} and @var{argv}
+contain all of the received arguments. If the original @var{argc} and
+@var{argv} are not available, provide -1 for @var{which} and a pointer
+to the bad value in @var{argv}, in which case the magnitude (but not
+sign) of @var{argc} is ignored. Negate @var{argc} if the exception
+corresponds to a result contract instead of an argument contract.}
+
+
 @function[(void scheme_wrong_type
            [char* name]
            [char* expected]
@@ -338,14 +368,12 @@ and @var{argv} contain all of the received arguments.}
            [int argc]
            [Scheme_Object** argv])]{
 
-Signals that an argument of the wrong type was received, and escapes
-(like @cpp{scheme_signal_error}).  The @var{name} argument is the name
-of the procedure that was given the wrong type of argument;
-@var{expected} is the name of the expected type; @var{which} is the
-offending argument in the @var{argv} array; @var{argc} and @var{argv}
-contain all of the received arguments. If the original @var{argc} and
-@var{argv} are not available, provide -1 for @var{which} and a pointer
-to the bad value in @var{argv}; @var{argc} is ignored in this case.}
+Signals that an argument of the wrong type was received and
+escapes. Use @cpp{scheme_wrong_contract}, instead.
+
+The arguments are the same as for @cpp{scheme_wrong_contract},
+except that @var{expected} is the name of the expected type.}
+
 
 @function[(void scheme_wrong_return_arity
            [char* name]
@@ -363,11 +391,27 @@ additional arguments) to describe the context of the error; see
 @cpp{scheme_signal_error} above for more details about the
 @cpp{printf}-style string.}
 
+
 @function[(void scheme_unbound_global
            [char* name])]{
 
 Signals an unbound-variable error, where @var{name} is the name of the
 variable.}
+
+
+@function[(void scheme_contract_error
+           [const-char* name]
+           [const-char* msg]
+           [... ...])]{
+
+Raises a contract-violation exception. The @var{msg} string is static,
+instead of a format string. After @var{msg}, any number of triples can
+be provided to add fields (each on its own line) to the error message;
+each triple is a string for the field name, a @cpp{0} or @cpp{1} to
+indicate whether the field value is a literal string or a Racket
+value, and either a literal string or a Racket value. The sequence of
+field triples must be terminated with @cpp{NULL}.}
+
 
 @function[(char* scheme_make_provided_string
            [Scheme_Object* o]
@@ -381,7 +425,7 @@ value can be scaled appropriately). If @var{len} is not @cpp{NULL}, it
 is filled with the length of the returned string.}
 
 
-@function[(char* scheme_make_args_string
+@function[(char* scheme_make_arg_lines_string
            [char* s]
            [int which]
            [int argc]
@@ -389,11 +433,30 @@ is filled with the length of the returned string.}
            [intptr_t* len])]{
 
 Converts an array of Racket values into a byte string, skipping the
-array element indicated by @var{which}. This function is used to
-specify the ``other'' arguments to a function when one argument is bad
-(thus giving the user more information about the state of the program
-when the error occurred).  If @var{len} is not @cpp{NULL}, it is
-filled with the length of the returned string.}
+array element indicated by @var{which} if @var{which} is not -1. This
+function is used to format the ``other'' arguments to a function when
+one argument is bad (thus giving the user more information about the
+state of the program when the error occurred).  If @var{len} is not
+@cpp{NULL}, it is filled with the length of the returned string.
+
+If the arguments are shown on multiple lines, then the result string
+starts with a newline character and each line is indented by three
+spaces. Otherwise, the result string starts with a space. If the
+result would contain no arguments, it contains @litchar{[none]},
+instead.}
+
+
+@function[(char* scheme_make_args_string
+           [char* s]
+           [int which]
+           [int argc]
+           [Scheme_Object** argv]
+           [intptr_t* len])]{
+
+Like @cpp{scheme_make_arg_lines_string}, but for old-style messages
+where the arguments are always shown within a single line. The result
+does not include a leading space.}
+
 
 @function[(void scheme_check_proc_arity
            [char* where]
@@ -407,6 +470,7 @@ procedure that can take @var{a} arguments. If there is an error, the
 @var{where}, @var{which}, @var{argc}, and @var{argv} arguments are
 passed on to @cpp{scheme_wrong_type}. As in @cpp{scheme_wrong_type},
 @var{which} can be -1, in which case @cpp{*}@var{argv} is checked.}
+
 
 @function[(Scheme_Object* scheme_dynamic_wind
            [Pre_Post_Proc pre]
@@ -437,17 +501,20 @@ The function @var{jmp_handler} is called when an error is signaled (or
 The pointer @var{data} can be anything; it is passed along in calls to
  @var{action}, @var{pre}, @var{post}, and @var{jmp_handler}.}
 
+
 @function[(void scheme_clear_escape)]{
 
 Clears the ``jumping to escape continuation'' flag associated with a
 thread. Call this function when blocking escape continuation hops (see
 the first example in @secref["imz:tempcatch"]).}
 
+
 @function[(void scheme_set_can_break
            [int on])]{
 
 Enables or disables breaks in the same way as
 calling @racket[break-enabled].}
+
 
 @function[(void scheme_push_break_enable
            [Scheme_Cont_Frame_Data* cframe]
@@ -461,6 +528,7 @@ disable breaks in the same way as
 from @var{cframe}. If @var{pre_check} is non-zero and breaks are
 currently enabled, any pending break exception is raised.}
 
+
 @function[(void scheme_pop_break_enable
            [Scheme_Cont_Frame_Data* cframe]
            [int post_check])]{
@@ -468,6 +536,7 @@ currently enabled, any pending break exception is raised.}
 Use this function with @cpp{scheme_push_break_enable}.  If
 @var{post_check} is non-zero and breaks are enabled after restoring
 the previous state, then any pending break exception is raised.}
+
 
 @function[(Scheme_Object* scheme_current_continuation_marks
            [Scheme_Object* prompt_tag])]{
@@ -477,3 +546,12 @@ Like @racket[current-continuation-marks]. Passing @cpp{NULL} as
 prompt tag.}
 
 
+@function[(void scheme_warning
+           [char* msg]
+           [... ...])]{
+
+Writes a warning message. The parameters are roughly as for
+@cpp{printf}; see @cpp{scheme_signal_error} above for more details.
+
+Normally, Racket's logging facilities should be used instead of this
+function.}
