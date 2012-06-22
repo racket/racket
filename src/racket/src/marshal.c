@@ -1485,10 +1485,10 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (cnt < 1 || cnt > 1000) return_NULL();
+  if (cnt < 1) return_NULL();
   
   m->num_phases = cnt;
-  exp_infos = MALLOC_N(Scheme_Module_Export_Info *, cnt);
+  exp_infos = (Scheme_Module_Export_Info **)scheme_malloc_fail_ok(scheme_malloc, scheme_check_overflow(cnt, sizeof(Scheme_Module_Export_Info *), 0));
   while (cnt--) {
     exp_info = MALLOC_ONE_RT(Scheme_Module_Export_Info);
     SET_REQUIRED_TAG(exp_info->type = scheme_rt_export_info);
@@ -1501,7 +1501,7 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (cnt < 1 || cnt > 1000) return_NULL();
+  if (cnt < 1) return_NULL();
   
   while (cnt--) {
     Scheme_Object *phase;
