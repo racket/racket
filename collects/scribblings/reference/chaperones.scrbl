@@ -11,10 +11,10 @@
 @title[#:tag "chaperones"]{Impersonators and Chaperones}
 
 An @deftech{impersonator} is a wrapper for a value where the wrapper
-redirects certain of the value's operations. Impersonators apply only to procedures,
+redirects some of the value's operations. Impersonators apply only to procedures,
 @tech{structures} for which an accessor or mutator is available,
 @tech{structure types}, @tech{hash tables}, @tech{vectors},
-and @tech{box}es. An impersonator is @racket[equal?] to the original
+@tech{box}es, and @tech{prompt tag}s. An impersonator is @racket[equal?] to the original
 value, but not @racket[eq?] to the original value.
 
 A @deftech{chaperone} is a kind of impersonator whose refinement of a value's
@@ -28,13 +28,13 @@ slot, but it cannot redirect @racket[vector-ref] to produce a value
 that is arbitrarily different from the value in the vector slot.
 
 A non-@tech{chaperone} @tech{impersonator}, in contrast, can refine an operation to swap one
-value for any another. An impersonator cannot be applied to an immutable value
+value for any other. An impersonator cannot be applied to an immutable value
 or refine the access to an immutable field in an instance of a @tech{structure
-type}, since arbitrary replacement of an operation's value amounts to
+type}, since arbitrary redirection of an operation amounts to
 mutation of the impersonated value.
 
-Beware that each of the following operations can be redirected to
-arbitrary procedure through impersonators on the operation's
+Beware that each of the following operations can be redirected to an
+arbitrary procedure through an impersonator on the operation's
 argument---assuming that the operation is available to the creator of
 the impersonator:
 
@@ -176,7 +176,7 @@ of impersonators with respect to wrapping impersonators to be detected within
                              [prop-val any] ... ...)
           any/c]{
 
-Returns an impersonator of @racket[v], with redirect certain
+Returns an impersonator of @racket[v], which redirects certain
 operations on the impersonated value. The @racket[orig-proc]s
 indicate the operations to redirect, and the corresponding
 @racket[redirect-proc]s supply the redirections.
@@ -288,7 +288,7 @@ from the table. Operations like @racket[hash-iterate-value] or
 therefore redirect through @racket[ref-proc].
 
 The @racket[ref-proc] must accept @racket[hash] and a key passed
-@racket[hash-ref]. It must return a replacement key
+to @racket[hash-ref]. It must return a replacement key
 as well as a procedure. The returned procedure is called only if the
 returned key is found in @racket[hash] via @racket[hash-ref], in which
 case the procedure is called with @racket[hash], the previously
