@@ -2018,12 +2018,11 @@ void scheme_read_err(Scheme_Object *port,
 		       ? MZEXN_FAIL_READ_NON_CHAR 
 		       : MZEXN_FAIL_READ)),
 		   scheme_make_pair(loc, scheme_null),
-		   "%t%s%t%s%s%s",
-                   fn, fnlen,
+		   "%t%s%s%t%s%s",
+                   fn, fnlen, ls,
                    fnlen ? ": " : "",
 		   s, slen, 
-                   (*suggests ? "\n  possible cause: " : ""), suggests,
-                   ls);
+                   (*suggests ? "\n  possible cause: " : ""), suggests);
 }
 
 static void do_wrong_syntax(const char *where,
