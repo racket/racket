@@ -202,9 +202,11 @@
 
 (define-form-struct all-from-module ([path module-path-index?] 
                                      [phase (or/c exact-integer? #f)] 
-                                     [src-phase any/c] ; should be (or/c exact-integer? #f)
-                                     [exceptions (or/c (listof (or/c symbol? number?)) #f)] ; should be (listof symbol?)
-                                     [prefix (or/c (vector/c (or/c symbol? #f)) #f)])) ; should be (or/c symbol? #f)
+                                     [src-phase (or/c exact-integer? #f)]
+                                     [exceptions (listof symbol?)]
+                                     [prefix (or/c symbol? #f)]
+                                     [context (or/c (listof exact-integer?) 
+                                                    (vector/c (listof exact-integer?) any/c))]))
 
 (define-form-struct nominal-path ())
 (define-form-struct (simple-nominal-path nominal-path) ([value module-path-index?]))

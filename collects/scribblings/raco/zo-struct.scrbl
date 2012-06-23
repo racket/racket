@@ -549,8 +549,11 @@ structures that are produced by @racket[zo-parse] and consumed by
             ([path module-path-index?]
              [phase (or/c exact-integer? #f)]
              [src-phase (or/c exact-integer? #f)]
-             [exceptions (listof (or/c symbol? number?))]
-             [prefix (or/c symbol? #f)])]{
+             [exceptions (listof symbol?)]
+             [prefix (or/c symbol? #f)]
+             [context (or/c (listof exact-integer?) 
+                            (vector/c (listof exact-integer?) any/c) 
+                            #f)])]{
   Represents a set of simple imports from one module within a
   @racket[module-rename].}
 

@@ -406,11 +406,13 @@
 
 (define (encode-all-from-module afm)
   (match afm
-    [(struct all-from-module (path phase src-phase #f #f))
+    [(struct all-from-module (path phase src-phase null #f null))
      (list* path phase src-phase)]
-    [(struct all-from-module (path phase src-phase exns #f))
+    [(struct all-from-module (path phase src-phase null #f context))
+     (list* path phase context src-phase)]
+    [(struct all-from-module (path phase src-phase exns #f null))
      (list* path phase exns src-phase)]
-    [(struct all-from-module (path phase src-phase exns (vector prefix)))
+    [(struct all-from-module (path phase src-phase exns prefix null))
      (list* path phase src-phase exns prefix)]))
 
 (define (encode-wraps wraps)
