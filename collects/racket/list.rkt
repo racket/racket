@@ -175,29 +175,50 @@
           [(pair? sexp) (loop (car sexp) (loop (cdr sexp) acc))]
           [else (cons sexp acc)])))
 
-;; General note: many non-tail recursive, which are just as fast in mzscheme
+;; General note: many non-tail recursive, which are just as fast in racket
 
-(define (add-between l x)
-  (cond [(not (list? l)) (raise-argument-error 'add-between "list?" 0 l x)]
-        [(null? l) null]
-        [(null? (cdr l)) l]
-        [else (cons (car l)
-                    (let loop ([l (cdr l)])
-                      (if (null? l)
-                        null
-                        (list* x (car l) (loop (cdr l))))))]))
-
-;; This is nice for symmetry, but confusing to use, and we can get it using
-;; something like (append* (add-between l ls)), or even `flatten' for an
-;; arbitrary nesting.
-;; (define (lists-join ls l)
-;;   (cond [(null? ls) ls]
-;;         [(null? l) ls] ; empty separator
-;;         [else (append (car ls)
-;;                       (let loop ([ls (cdr ls)])
-;;                         (if (null? ls)
-;;                           ls
-;;                           (append l (car ls) (loop (cdr ls))))))]))
+(define none (gensym 'none))
+(define (add-between l x #:splice? [splice? #f]
+                         #:first [first none] #:last [last none]
+                         #:before-last [before-last none])
+  (unless (list? l)
+    (raise-argument-error 'add-between "list?" 0 l x))
+  (when splice?
+    (unless (list? x)
+      (raise-argument-error 'add-between "list?" 1 l x)))
+  (if (or (null? l) (null? (cdr l)))
+    (let* ([r (cond [(eq? last none) '()] [splice? last] [else (list last)])]
+           [r (cond [(null? l) r] [(null? r) l] [(cons (car l) r)])]
+           [r (cond [(eq? first none) r]
+                    [splice? (append first r)]
+                    [else (cons first r)])])
+      r)
+    (let* ([r ; main loop (two loops for efficiency, maybe not needed)
+            (if splice?
+              (let ([x (reverse x)]
+                    [bl (and (not (eq? before-last none))
+                             (reverse before-last))])
+                (let loop ([i (cadr l)] [l (cddr l)] [r '()])
+                  (cond [(pair? l) (loop (car l) (cdr l) (cons i (append x r)))]
+                        [bl (cons i (append bl r))]
+                        [else (cons i (append x r))])))
+              (let loop ([i (cadr l)] [l (cddr l)] [r '()])
+                (cond [(pair? l) (loop (car l) (cdr l) (cons i (cons x r)))]
+                      [(eq? before-last none) (cons i (cons x r))]
+                      [else (cons i (cons before-last r))])))]
+           ;; add `last'
+           [r (cond [(eq? last none) r]
+                    [splice? (append (reverse last) r)]
+                    [else (cons last r)])]
+           ;; reverse
+           [r (reverse r)]
+           ;; add first item
+           [r (cons (car l) r)]
+           ;; add `first'
+           [r (cond [(eq? first none) r]
+                    [splice? (append first r)]
+                    [else (cons first r)])])
+      r)))
 
 (define (remove-duplicates l [=? equal?] #:key [key #f])
   ;; `no-key' is used to optimize the case for long lists, it could be done for
