@@ -847,7 +847,7 @@ We should also test deep continuations.
       (define f (func (lambda () (loop i))))
       (sleep 0.1)
       (with-handlers ([exn:fail? (lambda (exn)
-                                   (unless (regexp-match #rx"context" (exn-message exn))
+                                   (unless (regexp-match #rx"expected number of values not received" (exn-message exn))
                                      (raise exn)))])
         (touch f))))
   )

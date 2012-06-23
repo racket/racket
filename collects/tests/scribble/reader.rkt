@@ -687,7 +687,7 @@ foo
 ---
 ;; -------------------- errors
 ---
-(  -@error-> "read: expected a `)' to close `('\n  source:\n   inp:1:0" ; check -@error->
+(  -@error-> "inp:1:0: read: expected a `)' to close `('" ; check -@error->
 ---
 @foo{ -@error-> #rx":1:0: missing closing `}'$"
 ---
@@ -707,10 +707,10 @@ foo
 ---
 \foo{\bar|-{} -\error-> #rx":1:5: missing closing `}-\\|'$"
 ---
-@foo{@" -@error-> #rx"read: expected a closing '\"'\n  source:\n   #f:1:6$"
+@foo{@" -@error-> #rx":1:6: read: expected a closing '\"'$"
 ;; " <-- (balance this file)
 ---
-\foo{\" -\error-> #rx"read: expected a closing '\"'\n  source:\n   inp:1:6$"
+\foo{\" -\error-> #rx":1:6: read: expected a closing '\"'$"
 ---
 @|1 2|
 -@error->
