@@ -2430,7 +2430,12 @@ Note that the @racket[#t] variant can look a little bit strange if
 multi-line right-hand sides.
 }
 
-@defparam[render-reduction-relation-rules rules (or/c false/c (listof (or/c symbol? string? exact-nonnegative-integer?)))]{
+@defparam[render-reduction-relation-rules 
+          rules 
+          (or/c false/c 
+                (listof (or/c symbol? 
+                              string?
+                              exact-nonnegative-integer?)))]{
   This parameter controls which rules in a reduction relation
   will be rendered. The strings and symbols match the names of
   the rules and the integers match the position of the rule in
@@ -2584,7 +2589,8 @@ where the other parameters aren't used.
 
 @deftogether[[
 @defparam[label-font-size size (and/c (between/c 1 255) integer?)]{}
-@defparam[metafunction-font-size size (and/c (between/c 1 255) integer?)]{}
+@defparam[metafunction-font-size size (and/c (between/c 1 255)
+                                             integer?)]{}
 @defparam[default-font-size size (and/c (between/c 1 255) integer?)]{}]]{
 
 These parameters control the various font sizes. The
