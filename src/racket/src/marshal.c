@@ -1501,7 +1501,7 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   cnt = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (cnt < 1) return_NULL();
+  if (cnt < 0) return_NULL();
   
   while (cnt--) {
     Scheme_Object *phase;
