@@ -403,10 +403,13 @@
                       (with-env
                        (["DISPLAY" (format ":~a" i)])
                        (sleep 2)
-                       (notify! "Starting fluxbox #~a" i)
+                       (notify! "Starting WM #~a" i)
                        (with-running-program
                         (fluxbox-path)
-                        empty
+                        (list "-d" (format ":~a" i)
+                              "--sm-disable"
+                              "--no-composite")
+                        #;empty
                         #;(list "-display"
                               (format ":~a" i)
                               "-rc" "/home/pltdrdr/.fluxbox/init")
