@@ -135,6 +135,12 @@
   (and (string? s)
        (not (regexp-match? #rx"\n" s))))
 
+(define (same-lengths? ls)
+  (or (null? ls)
+      (let ([l1 (length (car ls))])
+        (andmap (λ (l) (= l1 (length l)))
+                (cdr ls)))))
+
 (provide-structs
  [part ([tag-prefix (or/c false/c string?)]
         [tags (listof tag?)]
@@ -146,7 +152,8 @@
  [paragraph ([style style?]
              [content content?])]
  [table ([style style?]
-         [blockss (listof (listof (or/c block? (one-of/c 'cont))))])]
+         [blockss (and/c (listof (listof (or/c block? (one-of/c 'cont))))
+                         same-lengths?)])]
  [delayed-block ([resolve (any/c part? resolve-info? . -> . block?)])]
  [itemization ([style style?]
                [blockss (listof (listof block?))])]

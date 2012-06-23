@@ -76,7 +76,7 @@
         #f
         (append
          (if super-long?
-             (list (list (to-flow ret) 'cont 'cont 'cont 'cont))
+             (list (list (to-flow ret) 'cont 'cont))
              null)
          (list
           (append
