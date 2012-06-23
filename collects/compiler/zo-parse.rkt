@@ -694,25 +694,31 @@
          [else (error 'parse "bad phase shift: ~e" a)])]
       [else (error 'decode-wraps "bad wrap element: ~e" a)])))
 
+(define (afm-context? v)
+  (or (and (list? v) (andmap exact-integer? v))
+      (and (vector? v) 
+           (= 2 (vector-length v))
+           (list? (vector-ref v 0))
+           (andmap exact-integer? (vector-ref v 0)))))
+
 (define all-from-module-memo (make-memo))
 (define (decode-all-from-module cp afm)
   (define (phase? v)
     (or (number? v) (not v)))
   (with-memo all-from-module-memo afm
     (match afm
-      [(list* path (? phase? phase) (? phase? src-phase) 
-              (list exn ...) prefix)
+      [(list* path (? phase? phase) (? phase? src-phase) (list exn ...) prefix)
        (make-all-from-module
         (parse-module-path-index cp path)
-        phase src-phase exn (vector prefix))]
-      [(list* path (? phase? phase) (list exn ...) (? phase? src-phase))
+        phase src-phase exn prefix null)]
+      [(list* path (? phase? phase) (? afm-context? context) (? phase? src-phase))
        (make-all-from-module
         (parse-module-path-index cp path)
-        phase src-phase exn #f)]
+        phase src-phase null #f context)]
       [(list* path (? phase? phase) (? phase? src-phase))
        (make-all-from-module
         (parse-module-path-index cp path)
-        phase src-phase #f #f)])))
+        phase src-phase null #f null)])))
 
 (define wraps-memo (make-memo))
 (define (decode-wraps cp w)
