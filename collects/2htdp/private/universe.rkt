@@ -251,9 +251,7 @@
 
 ;; IPort OPort Sexp -> IWorld 
 (define (create-iworld i o info)
-  (if (string? info)
-      (make-iworld i o info "info field not available")
-      (make-iworld i o (symbol->string (gensym 'iworld)) "info field not available")))
+  (make-iworld i o info "info field not available"))
 
 ;; Player S-exp -> Void
 (define (iworld-send p sexp)

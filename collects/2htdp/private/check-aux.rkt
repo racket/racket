@@ -131,7 +131,7 @@
           x))))
 
 ;; InPort OutPort (X -> Y) -> (U Y Void)
-;; process a registration from a potential client, invoke k if it is okay
+;; process a registration from a potential client, invoke k on name if it is okay
 (define (tcp-process-registration in out k)
   (define next (tcp-receive in))
   (match next
@@ -140,9 +140,9 @@
      (k name)]))
   
 ;; InPort OutPort (U #f String) -> Void 
-;; register with the server 
+;; register with the server, send the given name or make up a symbol 
 (define (tcp-register in out name)
-  (define msg `(REGISTER ((name ,(if name name (symbol->string (gensym 'world)))))))
+  (define msg `(REGISTER ((name ,(if name name (gensym 'world))))))
   (tcp-send out msg)
   (define ackn (tcp-receive in))
   (unless (equal? ackn '(OKAY))

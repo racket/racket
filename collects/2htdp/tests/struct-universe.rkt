@@ -1,4 +1,4 @@
-#lang racket/load
+#lang racket
 
 (module shared racket/base
   (require 2htdp/universe 2htdp/image)
@@ -7,7 +7,7 @@
   (provide s s-t (all-from-out 2htdp/universe 2htdp/image)))
 
 (module client racket
-  (require 'shared)
+  (require (submod ".." shared))
 
   ;; Color -> Boolean 
   (define (client c)
@@ -15,6 +15,7 @@
     (big-bang #true
               (to-draw (lambda (w) (text (if w "hello world" "good bye") 22 c)))
               (register LOCALHOST)
+              #;
               (stop-when (lambda (w) (> count 3)))
               (on-receive 
                (lambda (w msg)
@@ -22,10 +23,10 @@
                  ;; send out a prefabed struct to the server 
                  (make-package (not w) (s count)))))) 
   
-  (launch-many-worlds (client 'blue) (client 'red)))
+  (provide client))
 
 (module server racket 
-  (require 'shared)
+  (require (submod ".." shared))
   
   (define (server)
     (universe '()
@@ -41,8 +42,12 @@
                  (displayln (s-t msg))
                  (make-bundle state '() '())))))
   
-  (thread server))
+  
+  (provide server))
 
-(require 'server)
+(module run racket/base
+  (require (submod ".." client) (submod ".." server) (submod ".." shared))
+  
+  (launch-many-worlds (client 'blue) (client 'red) (server)))
 
-(require 'client)
+(require (submod "." run))
