@@ -567,6 +567,14 @@ namespace.
     (cerr 'string-lower-case? (string? s) "string" s)
     (andmap char-lower-case? (string->list s))))
 
+;; -----------------------------------------------------------------------------
+
+(define-teach beginner string-contains? 
+  (lambda (s t)
+    (cerr 'string-contains? (string? s) "string" s)
+    (cerr 'string-contains? (string? t) "string" t)
+    (cons? (regexp-match s t))))
+
 (provide
  beginner-string-ith
  beginner-replicate
@@ -578,4 +586,6 @@ namespace.
  beginner-string-alphabetic?
  beginner-string-whitespace?
  beginner-string-upper-case?
- beginner-string-lower-case?)
+ beginner-string-lower-case?
+ beginner-string-contains?
+ )
