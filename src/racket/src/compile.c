@@ -361,7 +361,7 @@ static int check_form(Scheme_Object *form, Scheme_Object *base_form)
 static void bad_form(Scheme_Object *form, int l)
 { 
   scheme_wrong_syntax(NULL, NULL, form, 
-		      "bad syntax;\nhas %d part%s after keyword", 
+		      "bad syntax;\n has %d part%s after keyword", 
 		      l - 1, (l != 2) ? "s" : "");
 }
 
@@ -4814,13 +4814,13 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       scheme_wrong_syntax(scheme_compile_stx_string, 
                           orig_unbound_name, form, 
                           "unbound identifier%s;\n"
-                          "also, no %S syntax transformer is bound",
+                          " also, no %S syntax transformer is bound",
                           phase,
                           SCHEME_STX_VAL(stx));
     } else {
       scheme_wrong_syntax(scheme_compile_stx_string, NULL, form, 
                           "%s is not allowed;\n"
-                          "no %S syntax transformer is bound%s",
+                          " no %S syntax transformer is bound%s",
                           not_allowed,
                           SCHEME_STX_VAL(stx),
                           phase);

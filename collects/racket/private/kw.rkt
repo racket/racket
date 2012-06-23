@@ -871,7 +871,7 @@
                        (null? (cdr l)))
                   (raise-syntax-error
                    #f
-                   "missing procedure expression;\nprobably originally (), which is an illegal empty application"
+                   "missing procedure expression;\n probably originally (), which is an illegal empty application"
                    stx)
                   (begin
                     (when l

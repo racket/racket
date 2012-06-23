@@ -213,8 +213,8 @@ as a ``result'' instead of an ``argument.''}
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
 an exception.  The @racket[name] is used as the source procedure's
 name in the error message. The @racket[message] is the error
-message; if @racket[message] contains newline characters, each new line is
-suitably indented (by adding one extra space at the start).
+message; if @racket[message] contains newline characters, each extra line should be
+suitably indented (with one extra space at the start of each line), but it should not end with a newline character.
 Each @racket[field] must have a corresponding @racket[v],
 and the two are rendered on their own
 line in the error message, with each @racket[v] formatted 
@@ -313,8 +313,8 @@ exception.  Macros use this procedure to report syntax errors.
 The @racket[name] argument is usually @racket[#f] when @racket[expr]
 is provided; it is described in more detail below. The
 @racket[message] is used as the main body of the error message; if
-@racket[message] contains newline characters, each new line is
-suitably indented (by adding one extra space at the start).
+@racket[message] contains newline characters, each new line should be
+suitably indented (with one space at the start), and it should not end with a newline character.
 
 The optional @racket[expr] argument is the erroneous source syntax
 object or S-expression (but the expression @racket[#f] cannot be

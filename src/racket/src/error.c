@@ -1821,8 +1821,6 @@ void scheme_contract_error(const char *name, const char *msg, ...)
   nlen = strlen(name);
   seplen = strlen(sep);
 
-  msg = indent_lines(msg, &mlen, 0, 1);
-
   len += mlen + nlen + seplen + 10;
 
   s = scheme_malloc_atomic(len);
@@ -1857,7 +1855,7 @@ void scheme_wrong_chaperoned(const char *who, const char *what, Scheme_Object *o
 
   sprintf(buf, 
           "non-chaperone result;\n"
-          "received a %s that is not a chaperone of the original %s", 
+          " received a %s that is not a chaperone of the original %s", 
           what, what);
 
   scheme_contract_error(who,
@@ -2164,8 +2162,6 @@ static void do_wrong_syntax(const char *where,
       where = scheme_symbol_val(who);
   }
   
-  s = (char *)indent_lines(s, &slen, 0, 1);
-
   if (v) {
     if (dv)
       blen = scheme_sprintf(buffer, blen, 
@@ -2742,11 +2738,6 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
         s = scheme_char_string_to_byte_string(argv[i+offset]);
         st = SCHEME_BYTE_STR_VAL(s);
         slen = SCHEME_BYTE_STRLEN_VAL(s);
-        if (i == 1) {
-          intptr_t fl = slen;
-          st = (char *)indent_lines(st, &fl, 0, 1);
-          slen = fl;
-        }
         if (!mismatch)
           total += 5;
       } else {
@@ -2781,7 +2772,6 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
     } else {
       s2 = SCHEME_BYTE_STR_VAL(s);
       l2 = SCHEME_BYTE_STRLEN_VAL(s);
-      s2 = (char *)indent_lines(s2, &l2, 0, 1);
     }
     
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
