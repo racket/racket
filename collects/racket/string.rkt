@@ -8,7 +8,7 @@
          string-replace)
 
 (define string-append*
-  (case-lambda [(strs) (apply string-append strs)] ; optimize common case
+  (case-lambda [(strs) (apply string-append strs)] ; optimize common cases
                [(s1 strs) (apply string-append s1 strs)]
                [(s1 s2 strs) (apply string-append s1 s2 strs)]
                [(s1 s2 s3 strs) (apply string-append s1 s2 s3 strs)]
@@ -17,19 +17,25 @@
 
 (require (only-in racket/list add-between))
 
-(define (string-join strs [sep " "])
-  (cond [(not (and (list? strs) (andmap string? strs)))
-         (raise-argument-error 'string-join "(listof string?)" strs)]
-        [(not (string? sep))
-         (raise-argument-error 'string-join "string?" sep)]
-        [(null? strs) ""]
-        [(null? (cdr strs)) (car strs)]
-        [else (apply string-append (add-between strs sep))]))
+(define none (gensym))
+
+(define (string-join strs [sep " "]
+                     #:first [first none] #:last [last none]
+                     #:before-last [before-last none])
+  (unless (and (list? strs) (andmap string? strs))
+    (raise-argument-error 'string-join "(listof string?)" strs))
+  (unless (string? sep)
+    (raise-argument-error 'string-join "string?" sep))
+  (let* ([r (cond [(or (null? strs) (null? (cdr strs))) strs]
+                  [(eq? before-last none) (add-between strs sep)]
+                  [else (add-between strs sep #:before-last before-last)])]
+         [r (if (eq? last  none) r (append r (list last)))]
+         [r (if (eq? first none) r (cons first r))])
+    (apply string-append r)))
 
 ;; Utility for the functions below: get a string or a regexp and return a list
 ;; of the regexp (strings are converted using `regexp-quote'), the and versions
 ;; that matches at the beginning/end.
-(define none (gensym))
 (define get-rxs
   (let ([t (make-weak-hasheq)] [t+ (make-weak-hasheq)])
     (let ([spaces '(#px"\\s+" #px"^\\s+" #px"\\s+$")])
