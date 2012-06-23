@@ -170,7 +170,7 @@
                           (define (with-record-error cc go fail-k)
                             (with-handlers ([exn:fail?
                                              (lambda (exn)
-                                               (eprintf "~a\n" (exn-message exn))
+                                               ((error-display-handler) (exn-message exn) exn)
                                                (raise exn))])
                               (go)))
                           (s-exp->fasl (serialize 
@@ -360,7 +360,7 @@
                  (define (with-record-error cc go fail-k)
                    (with-handlers ([exn:fail?
                                     (lambda (x)
-                                      (eprintf "~a\n" (exn-message x))
+                                      ((error-display-handler) (exn-message x) x)
                                       (raise x))])
                      (go)))
                  (verbose verbosev)

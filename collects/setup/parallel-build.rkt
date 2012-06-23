@@ -263,7 +263,10 @@
              [x (send/error (format "DIDNT MATCH C ~v\n" x))]
              [else (send/error (format "DIDNT MATCH C\n"))]))
          (with-handlers ([exn:fail? (lambda (x)
-                          (send/resp (list 'ERROR (exn-message x))))])
+                                      (define sp (open-output-string))
+                                      (parameterize ([current-error-port sp])
+                                        ((error-display-handler) (exn-message x) x))
+                                      (send/resp (list 'ERROR (get-output-string sp))))])
            (parameterize ([parallel-lock-client lock-client]
                           [compile-context-preservation-enabled (member 'disable-inlining options )]
                           [manager-trace-handler
