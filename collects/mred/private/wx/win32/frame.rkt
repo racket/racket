@@ -318,7 +318,8 @@
 			 (void))
       (stdret 0 1)]
      [(= msg WM_MOVE)
-      (queue-window-event this (lambda () (queue-on-size)))
+      (unless (iconized?)
+        (queue-window-event this (lambda () (queue-on-size))))
       (stdret 0 1)]
      [(= msg WM_ACTIVATE)
       (let ([state (LOWORD wParam)]
