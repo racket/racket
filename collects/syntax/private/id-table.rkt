@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/syntax)
+         (for-meta 2 racket/base)
          racket/private/dict)
 
 ;; No-contract version.
@@ -225,162 +226,155 @@ Notes (FIXME?):
 (define not-given (gensym 'not-given))
 
 ;; ========
+(begin-for-syntax
+  (define (replace old new template)
+    (datum->syntax new
+      (string->symbol
+        (regexp-replace
+          (regexp-quote old)
+          (symbol->string template)
+          (regexp-replace-quote (symbol->string (syntax-e new)))))))
+  (define-syntax (define-templates stx)
+    (syntax-case stx ()
+      [(_ old new (template ...))
+       #`(begin
+           (define/with-syntax template (replace old new 'template)) ...)])))
 
 (define-syntax (make-code stx)
   (syntax-case stx ()
     [(_ idtbl
         identifier->symbol
         identifier=?)
-     (with-syntax ([mutable-idtbl
-                    (format-id #'idtbl "mutable-~a" (syntax-e #'idtbl))]
-                   [immutable-idtbl
-                    (format-id #'idtbl "immutable-~a" (syntax-e #'idtbl))]
-                   [make-idtbl
-                    (format-id #'idtbl "make-~a" (syntax-e #'idtbl))]
-                   [make-mutable-idtbl
-                    (format-id #'idtbl "make-mutable-~a" (syntax-e #'idtbl))]
-                   [make-immutable-idtbl
-                    (format-id #'idtbl "make-immutable-~a" (syntax-e #'idtbl))]
-                   [mutable-idtbl?
-                    (format-id #'idtbl "mutable-~a?" (syntax-e #'idtbl))]
-                   [immutable-idtbl?
-                    (format-id #'idtbl "immutable-~a?" (syntax-e #'idtbl))]
-                   [chaperone-idtbl
-                    (format-id #'idtbl "chaperone-~a" (syntax-e #'idtbl))])
-       (define (s x) (format-id #'idtbl "~a~a" (syntax-e #'idtbl) x))
-       (with-syntax ([idtbl? (s '?)]
-                     [idtbl-ref (s '-ref)]
-                     [idtbl-set! (s '-set!)]
-                     [idtbl-set (s '-set)]
-                     [idtbl-remove! (s '-remove!)]
-                     [idtbl-remove (s '-remove)]
-                     [idtbl-set/constructor (s '-set/constructor)]
-                     [idtbl-remove/constructor (s '-remove/constructor)]
-                     [idtbl-count (s '-count)]
-                     [idtbl-iterate-first (s '-iterate-first)]
-                     [idtbl-iterate-next (s '-iterate-next)]
-                     [idtbl-iterate-key (s '-iterate-key)]
-                     [idtbl-iterate-value (s '-iterate-value)]
-                     [idtbl-map (s '-map)]
-                     [idtbl-for-each (s '-for-each)]
-                     [idtbl-mutable-methods (s '-mutable-methods)]
-                     [idtbl-immutable-methods (s '-immutable-methods)]
-                     [idtbl-chaperone-keys+values/constructor
-                       (s 'idtbl-chaperone-keys+values/constructor)])
-         #'(begin
+     (let ()
+       (define-templates "idtbl" #'idtbl
+         (mutable-idtbl immutable-idtbl
+          make-idtbl make-mutable-idtbl make-immutable-idtbl
+          idtbl? immutable-idtbl? mutable-idtbl?
+          idtbl-hash idtbl-phase
+          idtbl-ref
+          idtbl-set! idtbl-set
+          idtbl-remove! idtbl-remove
+          idtbl-set/constructor idtbl-remove/constructor
+          idtbl-count
+          idtbl-iterate-first idtbl-iterate-next
+          idtbl-iterate-key idtbl-iterate-value
+          idtbl-map idtbl-for-each
+          idtbl-mutable-methods idtbl-immutable-methods
+          chaperone-idtbl idtbl-chaperone-keys+values/constructor))
+       #'(begin
 
-             ;; Struct defs at end, so that dict methods can refer to earlier procs
-             (define (make-idtbl [init-dict null]
-                                 #:phase [phase (syntax-local-phase-level)])
-               (make-id-table/constructor 'make-idtbl init-dict phase mutable-idtbl
-                                          identifier->symbol identifier=?))
+           ;; Struct defs at end, so that dict methods can refer to earlier procs
+           (define (make-idtbl [init-dict null]
+                               #:phase [phase (syntax-local-phase-level)])
+             (make-id-table/constructor 'make-idtbl init-dict phase mutable-idtbl
+                                        identifier->symbol identifier=?))
 
-             (define (make-immutable-idtbl [init-dict null]
-                                           #:phase [phase (syntax-local-phase-level)])
-               (make-immutable-id-table/constructor 'make-immutable-idtbl init-dict phase immutable-idtbl
-                                                    identifier->symbol identifier=?))
+           (define (make-immutable-idtbl [init-dict null]
+                                         #:phase [phase (syntax-local-phase-level)])
+             (make-immutable-id-table/constructor 'make-immutable-idtbl init-dict phase immutable-idtbl
+                                                  identifier->symbol identifier=?))
 
-             (define (chaperone-idtbl d ref set! remove! key . args)
-               (apply chaperone-struct d
-                 id-table-phase (lambda (d p) p)
-                 prop:id-table-impersonator
-                 (vector d ref set! remove! key)
-                 args))
+           (define (chaperone-idtbl d ref set! remove! key . args)
+             (apply chaperone-struct d
+               id-table-phase (lambda (d p) p)
+               prop:id-table-impersonator
+               (vector d ref set! remove! key)
+               args))
 
 
-             (define (idtbl-ref d id [default not-given])
-               (id-table-ref 'idtbl-ref d id default identifier->symbol identifier=?))
-             (define (idtbl-set! d id v)
-               (id-table-set! 'idtbl-set! d id v identifier->symbol identifier=?))
-             (define (idtbl-set/constructor d id v constructor)
-               (id-table-set/constructor 'idtbl-set d id v constructor identifier->symbol identifier=?))
-             (define (idtbl-set d id v)
-               (idtbl-set/constructor d id v immutable-idtbl))
-             (define (idtbl-remove! d id)
-               (id-table-remove! 'idtbl-remove! d id identifier->symbol identifier=?))
+           (define (idtbl-ref d id [default not-given])
+             (id-table-ref 'idtbl-ref d id default identifier->symbol identifier=?))
+           (define (idtbl-set! d id v)
+             (id-table-set! 'idtbl-set! d id v identifier->symbol identifier=?))
+           (define (idtbl-set/constructor d id v constructor)
+             (id-table-set/constructor 'idtbl-set d id v constructor identifier->symbol identifier=?))
+           (define (idtbl-set d id v)
+             (idtbl-set/constructor d id v immutable-idtbl))
+           (define (idtbl-remove! d id)
+             (id-table-remove! 'idtbl-remove! d id identifier->symbol identifier=?))
 
-             (define (idtbl-remove/constructor d id constructor)
-               (id-table-remove/constructor 'idtbl-remove d id constructor identifier->symbol identifier=?))
-             (define (idtbl-remove d id)
-               (idtbl-remove/constructor d id immutable-idtbl))
-             (define (idtbl-count d)
-               (id-table-count d))
-             (define (idtbl-for-each d p)
-               (id-table-for-each d p))
-             (define (idtbl-map d f)
-               (id-table-map d f))
-             (define (idtbl-iterate-first d)
-               (id-table-iterate-first d))
-             (define (idtbl-iterate-next d pos)
-               (id-table-iterate-next 'idtbl-iterate-next d pos))
-             (define (idtbl-iterate-key d pos)
-               (id-table-iterate-key 'idtbl-iterate-key d pos))
-             (define (idtbl-iterate-value d pos)
-               (id-table-iterate-value 'idtbl-iterate-value d pos))
+           (define (idtbl-remove/constructor d id constructor)
+             (id-table-remove/constructor 'idtbl-remove d id constructor identifier->symbol identifier=?))
+           (define (idtbl-remove d id)
+             (idtbl-remove/constructor d id immutable-idtbl))
+           (define (idtbl-count d)
+             (id-table-count d))
+           (define (idtbl-for-each d p)
+             (id-table-for-each d p))
+           (define (idtbl-map d f)
+             (id-table-map d f))
+           (define (idtbl-iterate-first d)
+             (id-table-iterate-first d))
+           (define (idtbl-iterate-next d pos)
+             (id-table-iterate-next 'idtbl-iterate-next d pos))
+           (define (idtbl-iterate-key d pos)
+             (id-table-iterate-key 'idtbl-iterate-key d pos))
+           (define (idtbl-iterate-value d pos)
+             (id-table-iterate-value 'idtbl-iterate-value d pos))
 
-             (define (idtbl-chaperone-keys+values/constructor d wrap-key wrap-value constructor)
-               (constructor
-                 (for/hasheq (((sym alist) (idtbl-hash d)))
-                   (for/list (((key value) (in-dict alist)))
-                     (cons (wrap-key key) (wrap-value value))))
-                 (idtbl-phase d)))
+           (define (idtbl-chaperone-keys+values/constructor d wrap-key wrap-value constructor)
+             (constructor
+               (for/hasheq (((sym alist) (id-table-hash d)))
+                 (for/list (((key value) (in-dict alist)))
+                   (cons (wrap-key key) (wrap-value value))))
+               (id-table-phase d)))
 
-             (define idtbl-mutable-methods
-               (vector-immutable idtbl-ref
-                                 idtbl-set!
-                                 #f
-                                 idtbl-remove!
-                                 #f
-                                 id-table-count
-                                 idtbl-iterate-first
-                                 idtbl-iterate-next
-                                 idtbl-iterate-key
-                                 idtbl-iterate-value))
+           (define idtbl-mutable-methods
+             (vector-immutable idtbl-ref
+                               idtbl-set!
+                               #f
+                               idtbl-remove!
+                               #f
+                               id-table-count
+                               idtbl-iterate-first
+                               idtbl-iterate-next
+                               idtbl-iterate-key
+                               idtbl-iterate-value))
 
-             (define idtbl-immutable-methods
-               (vector-immutable idtbl-ref
-                                 #f
-                                 idtbl-set
-                                 #f
-                                 idtbl-remove
-                                 id-table-count
-                                 idtbl-iterate-first
-                                 idtbl-iterate-next
-                                 idtbl-iterate-key
-                                 idtbl-iterate-value))
+           (define idtbl-immutable-methods
+             (vector-immutable idtbl-ref
+                               #f
+                               idtbl-set
+                               #f
+                               idtbl-remove
+                               id-table-count
+                               idtbl-iterate-first
+                               idtbl-iterate-next
+                               idtbl-iterate-key
+                               idtbl-iterate-value))
 
-             (struct idtbl id-table ())
-             (struct mutable-idtbl idtbl ()
-               #:property prop:dict idtbl-mutable-methods)
-             (struct immutable-idtbl idtbl ()
-               #:property prop:dict idtbl-immutable-methods)
+           (struct idtbl id-table ())
+           (struct mutable-idtbl idtbl ()
+             #:property prop:dict idtbl-mutable-methods)
+           (struct immutable-idtbl idtbl ()
+             #:property prop:dict idtbl-immutable-methods)
 
-             (provide make-idtbl
-                      make-immutable-idtbl
-                      idtbl?
-                      mutable-idtbl?
-                      immutable-idtbl?
-                      idtbl-ref
-                      idtbl-set!
-                      idtbl-set
-                      idtbl-remove!
-                      idtbl-remove
-                      idtbl-count
-                      idtbl-iterate-first
-                      idtbl-iterate-next
-                      idtbl-iterate-key
-                      idtbl-iterate-value
-                      idtbl-map
-                      idtbl-for-each
+           (provide make-idtbl
+                    make-immutable-idtbl
+                    idtbl?
+                    mutable-idtbl?
+                    immutable-idtbl?
+                    idtbl-ref
+                    idtbl-set!
+                    idtbl-set
+                    idtbl-remove!
+                    idtbl-remove
+                    idtbl-count
+                    idtbl-iterate-first
+                    idtbl-iterate-next
+                    idtbl-iterate-key
+                    idtbl-iterate-value
+                    idtbl-map
+                    idtbl-for-each
 
-                      ;; just for use/extension by syntax/id-table
-                      chaperone-idtbl
-                      idtbl-chaperone-keys+values/constructor
-                      idtbl-set/constructor
-                      idtbl-remove/constructor
-                      idtbl-mutable-methods
-                      mutable-idtbl
-                      immutable-idtbl))))]))
+                    ;; just for use/extension by syntax/id-table
+                    chaperone-idtbl
+                    idtbl-chaperone-keys+values/constructor
+                    idtbl-set/constructor
+                    idtbl-remove/constructor
+                    idtbl-mutable-methods
+                    mutable-idtbl
+                    immutable-idtbl)))]))
 
 (define (bound-identifier->symbol id phase) (syntax-e id))
 
