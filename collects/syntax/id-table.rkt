@@ -2,6 +2,7 @@
 (require (for-syntax racket/base
                      racket/syntax)
          racket/contract/base
+         racket/contract/combinator
          racket/dict
          (rename-in (except-in "private/id-table.rkt"
                                make-free-id-table
@@ -49,7 +50,9 @@
                    [mutable-idtbl?
                     (format-id #'idtbl "mutable-~a?" (syntax-e #'idtbl))]
                    [immutable-idtbl?
-                    (format-id #'idtbl "immutable-~a?" (syntax-e #'idtbl))])
+                    (format-id #'idtbl "immutable-~a?" (syntax-e #'idtbl))]
+                   [chaperone-idtbl
+                    (format-id #'idtbl "chaperone-~a" (syntax-e #'idtbl))])
        (define (s x) (format-id #'idtbl "~a~a" (syntax-e #'idtbl) x))
        (with-syntax ([idtbl? (s '?)]
                      [idtbl-hash (s '-hash)]
@@ -111,6 +114,131 @@
                                  idtbl-iterate-key
                                  idtbl-iterate-value))
 
+             (define-struct base-idtbl/c (dom rng immutable))
+
+             (define (idtbl/c-name ctc)
+               (apply
+                build-compound-type-name
+                'idtbl/c (base-idtbl/c-dom ctc) (base-idtbl/c-rng ctc)
+                (append
+                 (if (flat-idtbl/c? ctc)
+                     (list '#:flat? #t)
+                     null)
+                 (case (base-idtbl/c-immutable ctc)
+                   [(dont-care) null]
+                   [(#t)
+                    (list '#:immutable #t)]
+                   [(#f)
+                    (list '#:immutable #f)]))))
+
+             (define-values (idtbl/c-dom-pos-proj
+                             idtbl/c-dom-neg-proj
+                             idtbl/c-rng-pos-proj
+                             idtbl/c-rng-neg-proj)
+               (let ()
+                 (define (proj acc location swap)
+                   (lambda (ctc blame)
+                     ((contract-projection (acc ctc))
+                      (blame-add-context blame "the keys of" #:swap swap))))
+                 (values
+                   (proj base-idtbl/c-dom "the keys of" #f)
+                   (proj base-idtbl/c-dom "the keys of" #t)
+                   (proj base-idtbl/c-rng "the values of" #f)
+                   (proj base-idtbl/c-rng "the values of" #t))))
+
+             (define (idtbl/c-first-order ctc)
+               (define dom-ctc (base-idtbl/c-dom ctc))
+               (define rng-ctc (base-idtbl/c-rng ctc))
+               (define immutable (base-idtbl/c-immutable ctc))
+               (λ (val)
+                 (and (idtbl? val)
+                      (case immutable
+                        [(#t) (immutable? val)]
+                        [(#f) (not (immutable? val))]
+                        [else #t])
+                      (for/and ([(k v) (in-dict val)])
+                        (and (contract-first-order-passes? dom-ctc k)
+                             (contract-first-order-passes? rng-ctc v))))))
+
+             (define (check-idtbl/c ctc val blame)
+               (define immutable (base-idtbl/c-immutable ctc))
+               (unless (idtbl? val)
+                 (raise-blame-error blame val
+                   '(expected "a ~a," given: "~e") 'idtbl val))
+               (case immutable
+                 [(#t)
+                  (unless (immutable? val)
+                    (raise-blame-error blame val
+                      '(expected "an immutable ~a," given: "~e") 'idtbl val))]
+                 [(#f)
+                  (when (immutable? val)
+                    (raise-blame-error blame val
+                      '(expected "a mutable ~a," given: "~e") 'idtbl val))]
+                 [(dont-care) (void)]))
+
+             (define ho-projection
+               (lambda (ctc)
+                 (lambda (blame)
+                  (lambda (b)
+                    (define pos-dom-proj (idtbl/c-dom-pos-proj ctc blame))
+                    (define neg-dom-proj (idtbl/c-dom-pos-proj ctc blame))
+                    (define pos-rng-proj (idtbl/c-dom-pos-proj ctc blame))
+                    (define neg-rng-proj (idtbl/c-dom-pos-proj ctc blame))
+                    (lambda (tbl)
+                      (check-idtbl/c ctc tbl blame)
+                      (if (immutable? tbl)
+                        (error 'idtbl/c "Not Yet implemented")
+                        (chaperone-idtbl tbl
+                          (λ (t k)
+                            (values (neg-dom-proj k)
+                                    (λ (h k v)
+                                      (pos-rng-proj v))))
+                          (λ (t k v)
+                            (values (neg-dom-proj k)
+                                    (neg-rng-proj v)))
+                          (λ (t k)
+                            (neg-dom-proj k))
+                          (λ (t k)
+                            (pos-dom-proj k))
+                          impersonator-prop:contracted ctc)))))))
+
+
+
+             (struct flat-idtbl/c base-idtbl/c ()
+               #:omit-define-syntaxes
+               #:property prop:flat-contract
+               (build-flat-contract-property
+                #:name idtbl/c-name
+                #:first-order idtbl/c-first-order
+                #:projection
+                (λ (ctc)
+                  (λ (blame)
+                    (λ (val)
+                      (check-idtbl/c ctc val blame)
+                      (define dom-proj (idtbl/c-dom-pos-proj ctc))
+                      (define rng-proj (idtbl/c-rng-pos-proj ctc))
+                      (for ([(k v) (in-dict val)])
+                        (dom-proj k)
+                        (rng-proj v))
+                      val)))))
+
+             (struct chaperone-idtbl/c base-idtbl/c ()
+               #:omit-define-syntaxes
+               #:property prop:chaperone-contract
+               (build-chaperone-contract-property
+                #:name idtbl/c-name
+                #:first-order idtbl/c-first-order
+                #:projection ho-projection))
+
+             (struct impersonator-idtbl/c base-idtbl/c ()
+               #:omit-define-syntaxes
+               #:property prop:contract
+               (build-contract-property
+                #:name idtbl/c-name
+                #:first-order idtbl/c-first-order
+                #:projection ho-projection))
+
+
              (struct mutable-idtbl mutable-idtbl* ()
                #:property prop:dict/contract
                (list idtbl-mutable-methods
@@ -120,28 +248,18 @@
                (list idtbl-immutable-methods
                      dict-contract-methods))
 
-             (define (mutable-idtbl/c value/c)
-               (struct/c mutable-idtbl
-                         (hash/c any/c
-                                 (listof (cons/c any/c value/c))
-                                 #:immutable #f)
-                         any/c))
-
-             (define (immutable-idtbl/c value/c)
-               (struct/c immutable-idtbl
-                         (hash/c any/c
-                                 (listof (cons/c any/c value/c))
-                                 #:immutable #t)
-                         any/c))
-
-
-             (define (idtbl/c value/c #:immutable (immutable 'dont-care))
-               (case immutable
-                ((dont-care) (or/c (mutable-idtbl/c value/c)
-                                   (immutable-idtbl/c value/c)))
-                ((#t) (immutable-idtbl/c value/c))
-                ((#f) (mutable-idtbl/c value/c))))
-               
+             (define (idtbl/c key/c value/c #:immutable (immutable 'dont-care))
+               (define key/ctc (coerce-contract 'idtbl/c key/c))
+               (define value/ctc (coerce-contract 'idtbl/c value/c))
+               (cond
+                ((and (eq? immutable #t)
+                      (flat-contract? key/ctc)
+                      (flat-contract? value/ctc))
+                 (flat-idtbl/c key/ctc value/ctc immutable))
+                ((chaperone-contract? value/ctc)
+                 (chaperone-idtbl/c key/ctc value/ctc immutable))
+                (else
+                 (impersonator-idtbl/c key/ctc value/ctc immutable))))
 
              (provide/contract
               [make-idtbl
@@ -179,7 +297,7 @@
               [idtbl-for-each
                (-> idtbl? (-> identifier? any/c any) any)]
               [idtbl/c
-               (->* (contract?)
+               (->* (chaperone-contract? contract?)
                     (#:immutable (or/c 'dont-care #t #f))
                     contract?)]))))]))
 
