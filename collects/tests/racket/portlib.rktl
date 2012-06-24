@@ -894,6 +894,28 @@
     (test "hello world" read in))
 
 ;; --------------------------------------------------
+;; check that `read-bytes-evt' gets
+
+(let ()
+  (define-values (i o) (make-pipe))
+  (define res #f)
+  
+  (define t
+    (thread
+     (lambda ()
+       (set! res (sync (read-bytes-evt 2 i))))))
+  
+  (write-bytes #"1" o)
+  (sleep 0.1)
+  (write-bytes #"2" o)
+  (test #"1" read-bytes 1 i)
+  (sleep)
+  (write-bytes #"34" o)
+  
+  (sync t)
+  (test #"23" values res))
+
+;; --------------------------------------------------
 ;; check that string and byte-string evts can be reused
 
 (let ()
@@ -944,7 +966,16 @@
     (tcp-close listener))
 
   (let ([integer->byte (lambda (s) (bitwise-and s #xFF))])
-    (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?))
+    #;
+    (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?)
+    ;; the following should work because we use the same evt only after
+    ;; success or to start at the same point in the input stream:
+    (check-can-reuse (lambda (n in)
+                       (define bstr (make-bytes n))
+                       (wrap-evt (read-bytes!-evt bstr in)
+                                 (lambda (v) (if (eof-object? v) v bstr))))
+                     read-bytes write-bytes integer->byte list->bytes bytes?))
+  #;
   (check-can-reuse read-string-evt read-string write-string integer->char list->string string?))
 
 ;; --------------------------------------------------

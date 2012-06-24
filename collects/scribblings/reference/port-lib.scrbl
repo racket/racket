@@ -626,7 +626,8 @@ a special non-byte value during the read attempt.}
 
 
 @defproc[(read-bytes!-evt [bstr (and/c bytes? (not/c immutable?))]
-                          [in input-port?]) 
+                          [in input-port?]
+                          [progress-evt (or/c progress-evt? #f)])
          evt?]{
 
 Like @racket[read-bytes-evt], except that the read bytes are placed
@@ -635,12 +636,15 @@ into @racket[bstr], and the number of bytes to read corresponds to
 @racket[eof] or the number of read bytes.
 
 The @racket[bstr] may be mutated any time after the first
-synchronization attempt on the event. If the event is not synchronized
-multiple times concurrently, @racket[bstr-bytes] is never mutated by
-the event after it is chosen in a synchronization (no matter how many
-synchronization attempts preceded the choice). Thus, the event may be
-sensibly used multiple times until a successful choice, but should not
-be used in multiple concurrent synchronizations.}
+synchronization attempt on the event and until either the event is
+selected, a non-@racket[#f] @racket[progress-evt] is ready, or the
+current @tech{custodian} (at the time of synchronization) is shut
+down. Note that there is no time bound otherwise on when @racket[bstr]
+might be mutated if the event is not selected by a synchronzation;
+nevertheless, multiple synchronization attempts can use the same
+result from @racket[read-bytes!-evt] as long as there is no
+intervening read on @racket[in] until one of the synchronization
+attempts selects the event.}
 
 
 @defproc[(read-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [in input-port?]) 
@@ -689,20 +693,20 @@ Like @racket[read-line-evt], but returns a byte string instead of a
 string.}
 
 @defproc*[([(peek-bytes-evt [k exact-nonnegative-integer?] [skip exact-nonnegative-integer?]
-                            [progress (or/c evt? #f)] [in input-port?]) evt?]
+                            [progress-evt (or/c progress-evt? #f)] [in input-port?]) evt?]
            [(peek-bytes!-evt [bstr (and/c bytes? (not/c immutable?))] [skip exact-nonnegative-integer?]
-                             [progress (or/c evt? #f)] [in input-port?]) evt?]
+                             [progress-evt (or/c progress-evt? #f)] [in input-port?]) evt?]
            [(peek-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [skip exact-nonnegative-integer?]
-                                   [progress (or/c evt? #f)] [in input-port?]) evt?]
+                                   [progress-evt (or/c progress-evt? #f)] [in input-port?]) evt?]
            [(peek-string-evt [k exact-nonnegative-integer?] [skip exact-nonnegative-integer?]
-                             [progress (or/c evt? #f)] [in input-port?]) evt?]
+                             [progress-evt (or/c progress-evt? #f)] [in input-port?]) evt?]
            [(peek-string!-evt [str (and/c string? (not/c immutable?))] [skip exact-nonnegative-integer?]
-                              [progress (or/c evt? #f)] [in input-port?]) evt?])]{
+                              [progress-evt (or/c progress-evt? #f)] [in input-port?]) evt?])]{
 
 Like the @racket[read-...-evt] functions, but for peeking. The
 @racket[skip] argument indicates the number of bytes to skip, and
-@racket[progress] indicates an event that effectively cancels the peek
-(so that the event never becomes ready). The @racket[progress]
+@racket[progress-evt] indicates an event that effectively cancels the peek
+(so that the event never becomes ready). The @racket[progress-evt]
 argument can be @racket[#f], in which case the event is never
 canceled.}
 

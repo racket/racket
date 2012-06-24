@@ -959,21 +959,30 @@
   ;; go is the main reading function, either called directly for
   ;; a poll, or called in a thread for a non-poll read
   (define (go nack ch poll?)
-    (let try-again ([pos 0][bstr orig-bstr])
-      (let* ([progress-evt (or prog-evt (port-progress-evt input-port))]
-             [v ((if poll? peek-bytes-avail!* peek-bytes-avail!)
-                 bstr (+ pos (or peek-offset 0)) progress-evt input-port pos)])
+    (let try-again ([pos 0] [bstr orig-bstr] [progress-evt #f])
+      (let* ([progress-evt 
+              ;; if no progress event is given, get one to ensure that
+              ;; consecutive bytes are read and can be committed:
+              (or progress-evt prog-evt (port-progress-evt input-port))]
+             [v (and 
+                 ;; to implement weak support for reusing the buffer in `read-bytes!-evt',
+                 ;; need to check nack after getting progress-evt:
+                 (not (sync/timeout 0 nack)) 
+                 ;; try to get bytes:
+                 ((if poll? peek-bytes-avail!* peek-bytes-avail!)
+                  bstr (+ pos (or peek-offset 0)) progress-evt input-port pos))])
         (cond
           ;; the first two cases below are shortcuts, and not
           ;;  strictly necessary
-          [(sync/timeout 0 nack) (void)]
+          [(sync/timeout 0 nack)
+           (void)]
           [(sync/timeout 0 progress-evt)
            (cond [poll? #f]
                  [prog-evt (void)]
-                 [else (try-again pos bstr)])]
+                 [else (try-again 0 bstr #f)])]
           [(and poll? (equal? v 0)) #f]
           [(and (number? v) (need-more? bstr (+ pos v)))
-           => (lambda (bstr) (try-again (+ v pos) bstr))]
+           => (lambda (bstr) (try-again (+ v pos) bstr progress-evt))]
           [else
            (let* ([v2 (cond [(number? v) (shrink bstr (+ v pos))]
                             [(positive? pos) pos]
@@ -999,7 +1008,7 @@
                 (let ([result (combo bstr eof)])
                   (if poll? result (channel-put ch result)))]
                [poll? #f]
-               [else (try-again 0 orig-bstr)]))]))))
+               [else (try-again 0 orig-bstr #f)]))]))))
   (if (zero? (bytes-length orig-bstr))
     (wrap-evt always-evt (lambda (x) 0))
     (poll-or-spawn go)))
@@ -1025,8 +1034,8 @@
                             (lambda (bstr v) v)
                             peek-offset prog-evt))
 
-(define (read-bytes!-evt bstr input-port)
-  (-read-bytes!-evt bstr input-port #f #f))
+(define (read-bytes!-evt bstr input-port [progress-evt #f])
+  (-read-bytes!-evt bstr input-port #f progress-evt))
 
 (define (peek-bytes!-evt bstr peek-offset prog-evt input-port)
   (-read-bytes!-evt bstr input-port peek-offset prog-evt))
