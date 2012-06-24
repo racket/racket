@@ -73,6 +73,8 @@
                      [idtbl-for-each (s '-for-each)]
                      [idtbl-mutable-methods (s '-mutable-methods)]
                      [idtbl-immutable-methods (s '-immutable-methods)]
+                     [idtbl-chaperone-keys+values/constructor
+                       (s 'idtbl-chaperone-keys+values/constructor)]
                      [idtbl/c (s '/c)])
          #'(begin
 
@@ -187,7 +189,8 @@
                     (lambda (tbl)
                       (check-idtbl/c ctc tbl blame)
                       (if (immutable? tbl)
-                        (error 'idtbl/c "Not Yet implemented")
+                        (idtbl-chaperone-keys+values/constructor
+                          tbl pos-dom-proj pos-rng-proj immutable-idtbl)
                         (chaperone-idtbl tbl
                           (λ (t k)
                             (values (neg-dom-proj k)
