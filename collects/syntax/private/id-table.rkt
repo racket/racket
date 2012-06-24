@@ -264,7 +264,9 @@ Notes (FIXME?):
                      [idtbl-map (s '-map)]
                      [idtbl-for-each (s '-for-each)]
                      [idtbl-mutable-methods (s '-mutable-methods)]
-                     [idtbl-immutable-methods (s '-immutable-methods)])
+                     [idtbl-immutable-methods (s '-immutable-methods)]
+                     [idtbl-chaperone-keys+values/constructor
+                       (s 'idtbl-chaperone-keys+values/constructor)])
          #'(begin
 
              ;; Struct defs at end, so that dict methods can refer to earlier procs
@@ -316,6 +318,13 @@ Notes (FIXME?):
              (define (idtbl-iterate-value d pos)
                (id-table-iterate-value 'idtbl-iterate-value d pos))
 
+             (define (idtbl-chaperone-keys+values/constructor d wrap-key wrap-value constructor)
+               (constructor
+                 (for/hasheq (((sym alist) (idtbl-hash d)))
+                   (for/list (((key value) (in-dict alist)))
+                     (cons (wrap-key key) (wrap-value value))))
+                 (idtbl-phase d)))
+
              (define idtbl-mutable-methods
                (vector-immutable idtbl-ref
                                  idtbl-set!
@@ -366,6 +375,7 @@ Notes (FIXME?):
 
                       ;; just for use/extension by syntax/id-table
                       chaperone-idtbl
+                      idtbl-chaperone-keys+values/constructor
                       idtbl-set/constructor
                       idtbl-remove/constructor
                       idtbl-mutable-methods
