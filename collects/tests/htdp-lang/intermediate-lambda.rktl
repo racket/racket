@@ -8,7 +8,9 @@
 (define no-extra-if-tests? #t)
 
 ;; Check export names:
+#;
 (require syntax/docprovide)
+#;
 (let ([docs (lookup-documentation '(lib "htdp-intermediate-lambda.rkt" "lang") 'procedures)])
   (for-each
    (lambda (row)
