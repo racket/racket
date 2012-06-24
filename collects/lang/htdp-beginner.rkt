@@ -10,6 +10,9 @@
          (for-syntax "private/rewrite-error-message.rkt")
          (for-syntax scheme/base))
 
+(require "private/provide-and-scribble.rkt")
+
+
 ;; Implements the forms:
 (require "private/teach.rkt"
          "private/teach-module-begin.rkt"
@@ -54,34 +57,8 @@
          ; 	   Property
          ; 	   check-property for-all ==> expect expect-within expect-member-of expect-range
          )
-
-(require (for-syntax "private/firstorder.rkt"))
-
-
-(define-syntax (in-rator-position-only stx)
-  (syntax-case stx ()
-    [(_ new-name orig-name)
-     (let ([new (syntax new-name)]
-           [orig (syntax orig-name)])
-       ;; Some things are not really functions:
-       (if (memq (syntax-e orig) '(beginner:pi beginner:e beginner:null beginner:eof))
-           #'(define new-name orig-name)
-           #'(define-syntax new-name 
-               (make-first-order
-                (lambda (stx)
-                  (syntax-case stx ()
-                    [(id . args)
-                     (syntax/loc stx (beginner-app orig-name . args))]
-                    [_else
-                     (raise-syntax-error
-                      #f
-                      (format
-                       "expected a function call, but there is no open parenthesis before this function")
-                      stx)]))
-                #'orig-name))))]))
-
+ 
 ;; procedures:
-(provide-and-document/wrap
+(provide-and-scribble
  procedures
- in-rator-position-only
- (all-from beginner: lang/private/beginner-funs procedures))
+ (all-from beginner: (submod "private/beginner-funs.rkt" with-wrapper) procedures))
