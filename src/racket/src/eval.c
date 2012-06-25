@@ -1949,8 +1949,8 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 			       : "define-values"),
 			      i, g,
 			      (g == 1) ? (Scheme_Object **)vals : scheme_current_thread->ku.multiple.array,
-			      "%s%s%s",
-			      show_any ? "\n  defining: " : "0 names",
+			      "\n  in: %s%s%s",
+			      show_any ? "definition of " : "definition of 0 identifiers",
 			      symname,
 			      show_any ? ((i == 1) ? "" : " ...") : "");
   }
@@ -3383,7 +3383,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    if (c2 != c) {
 	      scheme_wrong_return_arity(NULL, c, c2, 
 					(c2 == 1) ? (Scheme_Object **)value : p->ku.multiple.array,
-					"lexical binding");
+					"\n  in: local-binding form");
 	      return NULL;
 	    }
 
