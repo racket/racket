@@ -244,7 +244,7 @@
     (let loop ([p p])
       (if (symbol? (car p)) (car p) (loop (car p)))))
   (define (do-one stx-id prototype args arg-contracts arg-vals result-contract
-                  first?)
+                  first? add-background-label?)
     (let ([names (remq* '(... ...+) (map arg-id args))])
       (unless (= (length names) (length (remove-duplicates names eq?)))
         (error 'defproc "duplicate argument names in prototype for ~s: ~s"
@@ -353,7 +353,7 @@
     (append
      (list
       (list
-       ((if first? (add-background-label (get-label)) values)
+       ((if add-background-label? (add-background-label (get-label)) values)
         (make-flow
          (if short?
              ;; The single-line case:
@@ -500,7 +500,10 @@
                 [(ormap (lambda (a) (eq? (extract-id (car ps)) a)) accum)
                  (cons #f (loop (cdr ps) accum))]
                 [else (cons #t (loop (cdr ps)
-                                     (cons (extract-id (car ps)) accum)))]))))))
+                                     (cons (extract-id (car ps)) accum)))]))
+        (for/list ([p (in-list prototypes)]
+                   [i (in-naturals)])
+          (= i 0))))))
     (content-thunk))))
 
 (define-syntax-rule (defparam id arg contract desc ...)
