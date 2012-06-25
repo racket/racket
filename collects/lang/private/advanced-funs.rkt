@@ -12,9 +12,6 @@
 (require "provide-and-scribble.rkt" scribble/manual)
 
 (define pp (let ([pretty-print (lambda (v) (pretty-write v))]) pretty-print))
-  
-;; somehow null got lost during the scribblization 
-(provide null)
 
 (provide-and-scribble
    procedures

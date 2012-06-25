@@ -166,6 +166,7 @@
   @defproc[(cons? [x any/c]) boolean?]{Determines whether some value is a constructed list.}
   @defproc[(empty? [x any/c]) boolean?]{Determines whether some value is the empty list.}
   @defproc[(null? [x any/c]) boolean?]{Determines whether some value is the empty list.}
+  @defproc[(null) list]{Another name for the empty list}
   @defproc[((beginner-cons cons) [x any/x][y list?]) list?]{Constructs a list.}
   @defproc[((beginner-first first) [x cons?]) any/c]{Selects the first item of a non-empty list.}
   @defproc[((beginner-car car) [x cons?]) any/c]{Selects the first item of a non-empty list.}
