@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/unit racket/contract racket/require
-         "constraint-structs.rkt" (path-up "utils/utils.rkt" "rep/type-rep.rkt"))
+         "constraint-structs.rkt" 
+         (path-up "utils/utils.rkt" "utils/unit-utils.rkt" "rep/type-rep.rkt"))
 (provide (all-defined-out))
 
 (define-signature dmap^

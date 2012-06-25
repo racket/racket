@@ -270,7 +270,7 @@
               [((or (? Struct? s1) (NameStruct: s1)) (or (? Struct? s2) (NameStruct: s2)))
                (=> unmatch)
                (cond [(unrelated-structs s1 s2)
-                      (dprintf "found unrelated structs: ~a ~a\n" s1 s2)
+                      ;(dprintf "found unrelated structs: ~a ~a\n" s1 s2)
                       (fail! s t)]
                      [else (unmatch)])]
               ;; similar case for structs and base types, which are obviously unrelated

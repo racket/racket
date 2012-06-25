@@ -6,12 +6,11 @@ at least theoretically.
 |#
 
 (require (for-syntax racket/base syntax/parse racket/string)
-         racket/require-syntax racket/unit
-         racket/provide-syntax (prefix-in d: unstable/debug)
-         racket/struct-info)
+         racket/require-syntax racket/provide-syntax         
+         racket/struct-info "timing.rkt")
 
 ;; to move to unstable
-(provide reverse-begin list-update list-set debugf debugging? dprintf)
+(provide list-update list-set)
 
 (provide
  ;; optimization
@@ -94,9 +93,6 @@ at least theoretically.
 (define-requirer optimizer optimizer-out)
 (define-requirer base-env base-env-out)
 
-;; run `h' last, but drop its return value
-(define-syntax-rule (reverse-begin h . forms) (begin0 (begin . forms) h))
-
 ;; conditionalized logging
 ;; there's some logging code in the source
 ;; which was used for gathering statistics about various programs
@@ -109,41 +105,6 @@ at least theoretically.
         [(_ fmt . args)
 	 #'(log-debug (format fmt . args))])
       #'(void)))
-
-;; some macros to do some timing, only when `timing?' is #t
-(define-for-syntax timing? #f)
-
-(define last-time #f) (define initial-time #f)
-(define (set!-initial-time t) (set! initial-time t))
-(define (set!-last-time t) (set! last-time t))
-(define (pad str len pad-char)
-  (define l (string-length str))
-  (if (>= l len)
-      str
-      (string-append str (make-string (- len l) pad-char))))
-(define-syntaxes (start-timing do-time)
-  (if timing?
-      (values
-       (syntax-rules ()
-         [(_ msg)
-          (begin
-            (when last-time
-              (error 'start-timing "Timing already started"))
-            (set!-last-time (current-process-milliseconds))
-            (set!-initial-time last-time)
-            (log-debug (format "TR Timing: ~a at ~a" (pad "Starting" 32 #\space) initial-time)))])
-       (syntax-rules ()
-         [(_ msg)
-          (begin
-            (unless last-time
-              (start-timing msg))
-            (let* ([t (current-process-milliseconds)]
-                   [old last-time]
-                   [diff (- t old)]
-                   [new-msg (pad msg 32 #\space)])
-              (set!-last-time t)
-              (log-debug (format "TR Timing: ~a at ~a\tlast step: ~a\ttotal: ~a" new-msg t diff (- t initial-time)))))]))
-      (values (lambda _ #'(void)) (lambda _ #'(void)))))
 
 ;; custom printing
 ;; this requires lots of work for two reasons:
@@ -180,8 +141,7 @@ at least theoretically.
 ;; turn contracts on and off - off by default for performance.
 (provide (for-syntax enable-contracts?)
          provide/cond-contract
-         with-cond-contract
-         cond-contracted
+         with-cond-contract         
          define-struct/cond-contract
          define/cond-contract
          contract-req
@@ -242,13 +202,6 @@ at least theoretically.
         [(_ hd ([i c] ...) . opts)
          (define-struct hd (i ...) . opts)])))
 
-(define-signature-form (cond-contracted stx)
-  (syntax-case stx ()
-    [(_ nm cnt)
-     (if enable-contracts?
-         (list #'[contracted (nm cnt)])
-         (list #'nm))]))
-
 (define (list-update l i f)
   (cond [(null? l) (error 'list-update "list not long enough" l i f)]
         [(zero? i) (cons (f (car l)) (cdr l))]
@@ -258,10 +211,6 @@ at least theoretically.
   (if (zero? k)
       (cons v (cdr l))
       (cons (car l) (list-set (cdr l) (sub1 k) v))))
-
-(define debugging? (make-parameter #f))
-(define-syntax-rule (debugf f . args) (if (debugging?) (d:debugf f . args) (f . args)))
-(define (dprintf . args) (when (debugging?) (apply d:dprintf args)))
 
 
 (provide make-struct-info-self-ctor)

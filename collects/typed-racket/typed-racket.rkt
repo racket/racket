@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require
- (for-syntax racket/base "utils/utils.rkt") ;; only for timing/debugging
+ (for-syntax racket/base "utils/timing.rkt") ;; only for timing/debugging
  ;; the below requires are needed since they provide identifiers
  ;; that may appear in the residual program
  (for-syntax "typecheck/renamer.rkt" "types/type-table.rkt")

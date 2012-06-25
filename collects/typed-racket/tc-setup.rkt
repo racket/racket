@@ -8,7 +8,7 @@
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env)
          (r:infer infer)
-         (utils tc-utils disarm mutated-vars)
+         (utils tc-utils disarm mutated-vars debug)
          (rep type-rep)
          (except-in (utils utils) infer)
          (only-in (r:infer infer-dummy) infer-param)

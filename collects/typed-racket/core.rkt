@@ -11,7 +11,7 @@
          (rep type-rep)
          (for-template (only-in (base-env prims) :type :print-type :query-result-type))
          (utils utils tc-utils arm)
-         "tc-setup.rkt")
+         "tc-setup.rkt" "utils/debug.rkt")
 
 (provide mb-core ti-core wt-core)
 
