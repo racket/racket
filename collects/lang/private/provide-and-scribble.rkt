@@ -59,7 +59,7 @@
                 [prefix prefix]
                 [(f ...) (syntax->list f*)]
                 [(rows ...) (syntax->list row*)])
-    (values #'((require (submod path nested-tag ... label))
+    (values #'((require (rename-in (submod path nested-tag ... label) (docs mydocs)))
                ;; import from path with prefix, exclude f ...
                (require (prefix-in prefix (except-in (submod path nested-tag ...) f ...)))
                ;; export the bindings without prefix 
@@ -72,7 +72,7 @@
                ;; on to the rest
                (provide-and-scribble doc-tag rows ...))     
             (lambda ()  ;; delay the syntax creation until add-sections is set
-              #`(for ((s (docs #'f ...)))
+              #`(for ((s (mydocs #'f ...)))
                   (#,*add (car s) (cadr s)))))))
 
 ;; Identifier [-> Syntax] Syntax -> Syntax 
@@ -92,18 +92,26 @@
                              ;; Identfier ... *-> Sections 
                              ;; retrieve the document without the specified identfiers
                              docs
-                             ;; Sections -> [Listof ScribbleBox]
-                             ;; render the sections as a scribble list of splice-boxes 
+                             ;; Sections String -> [Listof ScribbleBox]
+                             ;; render the sections as a scribble list of splice-boxes: #:tag-prefix p
                              render-sections)
                             ;; -----------------------------------------------------------------------
                             ;;
-                            (define (render-sections s)
+                            (define (render-sections s p)
                               (cond
                                 [(null? s) '()]
                                 [else 
+                                 (define section1 (car s))
+                                 (define others (render-sections (cdr s) p))
                                  (define-values (section-title stuff) (apply values (car s)))
-                                 (cons @section{@section-title}
-                                       (cons (map cdr @stuff) (render-sections (cdr s))))]))
+                                 (define sorted (sort-category stuff))
+                                 (cons @subsection[#:tag-prefix @p]{@section-title}
+                                       (cons (map cdr sorted) others))]))
+                            
+                            (define (sort-category category)
+                              (define (key x) (symbol->string (syntax-e (car x))))
+                              (sort category string<=? #:key key))
+                            
                             ;;
                             (define (docs . exceptions)
                               (define s (reverse *sections))
@@ -115,12 +123,20 @@
                                   (filter (lambda (i) (not (is-exception (car i)))) sectn))
                                 (cons (list (first s) clean) result)))
                             ;; 
-                            ;; state variable Sections
+                            ;; state variable: Sections
                             (define *sections '())
-                            ;; String Sections -> Void 
+                            ;; String Section -> Void 
                             ;; add _scontent_ section to *sections in the doc submodule 
                             (define (#,*add stitle scontent)
-                              (set! *sections (cons (list stitle scontent) *sections)))
+                              (define exists (assoc stitle *sections))
+                              (if exists 
+                                  (set! *sections 
+                                        (for/list ((s *sections))
+                                          (if (string=? (first s) stitle)
+                                              (list stitle (append scontent (second s)))
+                                              s)))
+                                  (set! *sections (cons (list stitle scontent) *sections))))
+                            
                             #,(add-docs-and-provide))
                    #,@provides)]))
 
