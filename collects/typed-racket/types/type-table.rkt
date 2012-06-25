@@ -63,13 +63,16 @@
 (define (make-struct-table-code)
   (parameterize ([current-print-convert-hook converter]
                  [show-sharing #f])
-    #`(begin #,@(for/list ([(k v) (in-dict struct-fn-table)]
+    #`(when (unbox typed-context?)
+        (define add! (dynamic-require 'typed-racket/types/type-table 'add-struct-fn!))
+        #,@(for/list ([(k v) (in-dict struct-fn-table)]
                            #:when (bound-in-this-module k))
                   (match v
                     [(list pe mut?)
-                     #`(add-struct-fn! (quote-syntax #,k)
-                                       #,(print-convert pe)
-                                       #,mut?)])))))
+                     #`(add! (quote-syntax #,k)
+                              #,(print-convert pe)
+                              #,mut?)]))
+        (void))))
 
 
 ;; keeps track of expressions that always evaluate to true or always evaluate

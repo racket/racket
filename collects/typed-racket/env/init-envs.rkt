@@ -1,6 +1,7 @@
 #lang racket/base
 (provide (all-defined-out))
 (require "../utils/utils.rkt"
+         "../utils/tc-utils.rkt"
          "global-env.rkt"
 	 "type-name-env.rkt"
 	 "type-alias-env.rkt"
@@ -71,40 +72,56 @@
           (not mp))
         #f)))
 
+(define (when-typed stx)
+  (syntax-case stx ()
+    [(def) #'(begin)]
+    [(def body0 body ...)
+     ;; FIXME workaround for submodule issue
+     #'(when #true #;(unbox typed-context?) def body0 body ...)]))
+
 (define (tname-env-init-code)
+  (define/with-syntax register (generate-temporary 'register))
   (define (f id ty)
     (if (bound-in-this-module id)
-        #`(register-type-name #'#,id #,(datum->syntax #'here (print-convert ty)))
+        #`(register #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
                  (booleans-as-true/false #f))
-    (with-syntax ([registers (filter (lambda (x) x) (type-name-env-map f))])
-      #'(begin-for-syntax  . registers))))
+    (with-syntax ([registers (filter values (type-name-env-map f))])
+      (when-typed
+         #'((define register (dynamic-require 'typed-racket/env/type-name-env 'register-type-name))
+            . registers)))))
 
 (define (talias-env-init-code)
+  (define/with-syntax register (generate-temporary 'register))
   (define (f id ty)
     (if (bound-in-this-module id)
-        #`(register-resolved-type-alias #'#,id #,(datum->syntax #'here (print-convert ty)))
+        #`(register #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
                  (booleans-as-true/false #f))
-    (with-syntax ([registers (filter (lambda (x) x) (type-alias-env-map f))])
-      #'(begin-for-syntax  . registers))))
+    (with-syntax ([registers (filter values (type-alias-env-map f))])
+      (when-typed
+       #'((define register (dynamic-require 'typed-racket/env/type-alias-env 'register-resolved-type-alias))
+         . registers)))))
 
 (define (env-init-code syntax-provide? provide-tbl def-tbl)
+  (define/with-syntax register (generate-temporary 'register))
   (define (f id ty)
     (if (and (bound-in-this-module id)
              ;; if there are no syntax provides, then we only need this identifier if it's provided
              #;(or syntax-provide? (dict-ref provide-tbl id #f)))
-        #`(register-type #'#,id #,(datum->syntax #'here (print-convert ty)))
+        #`(register #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
                  (booleans-as-true/false #f))
     (with-syntax ([registers (filter values (type-env-map f))])
-      #'(begin-for-syntax . registers))))
+      (when-typed          
+       #'((define register (dynamic-require 'typed-racket/env/global-env 'register-type))
+          . registers)))))
 
 
 

@@ -18,7 +18,8 @@
           ...
           (provide nm) ...
           (begin-for-syntax
-           (initialize-type-name-env
+           ((dynamic-require 'typed-racket/env/init-envs 
+                             'initialize-type-name-env)
             (list (list #'nm ty) ...)))))]))
 
 (provide #%module-begin
