@@ -181,7 +181,7 @@
   (syntax-rules (:)
     [(_ name : type ...)
      (define name
-       (get-ffi-obj (regexp-replaces 'name '((#rx"-" "_")))
+       (get-ffi-obj (regexp-replaces (symbol->string 'name) '((#rx"-" "_")))
                     libsndfile (_fun type ...)))]))
 
 (define (n-split l n)
