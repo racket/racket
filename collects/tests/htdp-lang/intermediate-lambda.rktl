@@ -8,6 +8,17 @@
 (define no-extra-if-tests? #t)
 
 ;; Check export names:
+;; based on new docs: 
+(require (submod lang/htdp-intermediate-lambda procedures))
+(for ((s (docs)))
+  (for ((rows (cdr s)))
+    (for ((r rows))
+      (define sy (syntax-e (car r)))
+      (define vv (dynamic-require 'lang/htdp-intermediate-lambda sy))
+      (when (procedure? vv) 
+	(test sy object-name vv)))))
+
+;; based on old docs: 
 #;
 (require syntax/docprovide)
 #;
