@@ -1009,17 +1009,26 @@
 (define (get-var-type-from-elem-desc elem-desc)
   (define param-desc (union-ref (ELEMDESC-u elem-desc) 1))
   (define flags (PARAMDESC-wParamFlags param-desc))
+  (define (fixup-vt vt)
+    (cond
+     [(= vt (bitwise-ior VT_USERDEFINED VT_BYREF))
+      VT_UNKNOWN]
+     [(= vt VT_USERDEFINED)
+      VT_INT]
+     [else vt]))
   (cond
    [(and (bit-and? flags PARAMFLAG_FOPT)
          (bit-and? flags PARAMFLAG_FHASDEFAULT))
-    (VARIANT-vt (PARAMDESCEX-varDefaultValue (PARAMDESC-pparamdescex param-desc)))]
+    (fixup-vt
+     (VARIANT-vt (PARAMDESCEX-varDefaultValue (PARAMDESC-pparamdescex param-desc))))]
    [(= (TYPEDESC-vt (ELEMDESC-tdesc elem-desc)) VT_PTR)
-    (bitwise-ior VT_BYREF
-                 (TYPEDESC-vt (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 0) 
-                                    _pointer 
-                                    _TYPEDESC-pointer)))]
+    (fixup-vt
+     (bitwise-ior VT_BYREF
+		  (TYPEDESC-vt (cast (union-ref (TYPEDESC-u (ELEMDESC-tdesc elem-desc)) 0) 
+				     _pointer 
+				     _TYPEDESC-pointer))))]
    [else
-    (TYPEDESC-vt (ELEMDESC-tdesc elem-desc))]))
+    (fixup-vt (TYPEDESC-vt (ELEMDESC-tdesc elem-desc)))]))
 
 (define (elem-desc-has-default? elem-desc)
   (define param-desc (union-ref (ELEMDESC-u elem-desc) 1))
@@ -1040,7 +1049,8 @@
 
 (define (elem-desc-to-scheme-type elem-desc ignore-by-ref? is-opt? internal?)
   (define vt (let ([vt (get-var-type-from-elem-desc elem-desc)])
-               (if ignore-by-ref?
+               (if (and ignore-by-ref?
+			(not (bit-and? vt VT_USERDEFINED)))
                    (- vt (bitwise-and vt VT_BYREF))
                    vt)))
   (cond
@@ -1063,10 +1073,13 @@
                                                   _SAFEARRAYBOUND))
               ,base))]
    [else
-    (define base (vt-to-scheme-type (- vt (bitwise-and vt VT_BYREF))))
+    (define base (vt-to-scheme-type (if (bit-and? vt VT_USERDEFINED)
+					vt
+					(- vt (bitwise-and vt VT_BYREF)))))
     (define new-base
-      (if (bit-and? vt VT_BYREF)
-          `(box ,base)
+      (if (and (not (bit-and? vt VT_USERDEFINED))
+	       (bit-and? vt VT_BYREF))
+	  `(box ,base)
           base))
     (if is-opt?
         `(opt ,new-base)
@@ -1106,9 +1119,13 @@
     'com-enumeration]
    [VT_VOID 'void]
    [else 
-    (if (= VT_ARRAY (bitwise-and vt VT_ARRAY))
-	`(array ? ,(vt-to-scheme-type (- vt VT_ARRAY)))
-	(string->symbol (format "COM-0x~x" vt)))]))
+    (cond
+     [(= VT_ARRAY (bitwise-and vt VT_ARRAY))
+      `(array ? ,(vt-to-scheme-type (- vt VT_ARRAY)))]
+     [(= vt (bitwise-ior VT_USERDEFINED VT_BYREF))
+      'iunknown]
+     [else
+      (string->symbol (format "COM-0x~x" vt))])]))
 
 (define (arg-to-type arg [in-array 0])
   (cond
@@ -1568,7 +1585,7 @@
          v))
    (lambda (p) 
      (((allocator Release) (lambda () p)))
-     (define obj (make-com-object p))
+     (define obj (make-com-object p #f))
      (register-with-custodian obj)
      obj)))
 
@@ -1636,6 +1653,7 @@
     [(iunknown) VT_UNKNOWN]
     [(com-object) VT_DISPATCH]
     [(any) VT_VARIANT]
+    [(com-enumeration) VT_INT]
     [else 
      (case (and (pair? type)
 		(car type))
