@@ -9,14 +9,15 @@
          racket/match
          racket/function
          racket/pretty
-         racket/place
+         ;; avoid the other dependencies of `racket/place`
+         '#%place
          unstable/function
          racket/udp
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
-         racket/pretty racket/udp racket/place
+         racket/pretty racket/udp
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
