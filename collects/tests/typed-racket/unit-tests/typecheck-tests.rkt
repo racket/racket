@@ -337,6 +337,9 @@
            (let: ([v : String "a"])
                  (string-append "foo" (a v))))
          -String]
+        [tc-e (string-join '("hello" "world") " ") -String]
+        [tc-e (string-join '("hello" "world")) -String]
+        [tc-e (string-join '("hello" "world") #:first "a") -String]
 
         [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -PosByte)]
         [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -PosByte)]

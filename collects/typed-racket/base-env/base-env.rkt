@@ -363,7 +363,10 @@
  (cl->* (-> (-lst -String) -String)
         (-> -String (-lst -String) -String))]
 
-[string-join (-> (-lst -String) -String -String)]
+[string-join
+ (->optkey (-lst -String) [-String]
+           #:before-last -String #f #:first -String #f #:last -String #f
+           -String)]
 
 
 ;Section 3.6
