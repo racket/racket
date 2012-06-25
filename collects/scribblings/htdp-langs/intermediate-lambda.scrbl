@@ -119,4 +119,7 @@ level as they did in the @secref["intermediate"] level.
 
 @section[#:tag "intm-w-lambda-pre-defined"]{Pre-defined Functions}
 
-@prim-op-defns['(lib "htdp-intermediate-lambda.rkt" "lang") #'here '()]
+@(require (submod lang/htdp-intermediate-lambda procedures))
+@(render-sections (docs) "htdp-intermediate-lambda")
+
+@;prim-op-defns['(lib "htdp-intermediate-lambda.rkt" "lang") #'here '()]

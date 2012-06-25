@@ -83,4 +83,7 @@ Abbreviations} level as they did in the @secref["beginner"] level.
 
 @section[#:tag "beginner-abbr-pre-defined"]{Pre-defined Functions}
 
-@prim-op-defns['(lib "htdp-beginner-abbr.rkt" "lang") #'here '()]
+@(require (submod lang/htdp-beginner-abbr procedures))
+@(render-sections (docs) "htdp-beginner-abbr")
+
+@;prim-op-defns['(lib "htdp-beginner-abbr.rkt" "lang") #'here '()]
