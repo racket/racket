@@ -4,7 +4,7 @@
  (for-syntax racket/base "utils/timing.rkt") ;; only for timing/debugging
  ;; the below requires are needed since they provide identifiers
  ;; that may appear in the residual program
- (for-syntax "typecheck/renamer.rkt" "types/type-table.rkt")
+ (for-syntax "typecheck/renamer.rkt")
  "utils/any-wrap.rkt" unstable/contract)
 
 (provide (rename-out [module-begin #%module-begin]
