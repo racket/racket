@@ -2,7 +2,7 @@
 
 (provide render)
 
-(require "analyzer.rkt" "utils.rkt" racket/list)
+(require "analyzer.rkt" "utils.rkt" racket/list racket/string)
 
 (define (f:msec msec)
   (number->string (round (inexact->exact msec))))
@@ -14,30 +14,31 @@
   ;; * thunks are used for cells that are ignored when inspecting widths
   ;; * chars are used for filler cells
   (define (display-line strings)
-    (printf "~a\n" (regexp-replace #rx" +$" (apply string-append strings) "")))
-  (let ([widths (let loop ([table table])
-                  (let ([table (filter pair? table)])
-                    (if (null? table) '()
-                        (cons (apply max (filter-map
-                                          (lambda (x)
-                                            (and (string? (car x))
-                                                 (string-length (car x))))
-                                          table))
-                              (loop (map cdr table))))))])
-    (for ([row (in-list table)])
-      (display-line
-       (for/list ([cell (in-list row)]
-                  [width (in-list widths)]
-                  [align (in-list aligns)])
-         (let* ([cell (cond [(char? cell) (make-string width cell)]
-                            [(procedure? cell) (cell)]
-                            [else cell])]
-                [pad  (make-string (max 0 (- width (string-length cell)))
-                                   #\space)])
-           (case align
-             [(l) (string-append cell pad)]
-             [(r) (string-append pad cell)]
-             [else (error 'internal-error "poof")])))))))
+    (printf "~a\n" (regexp-replace #rx" +$" (string-append* strings) "")))
+  (define widths
+    (let loop ([table table])
+      (define table* (filter pair? table))
+      (if (null? table*) '()
+          (cons (apply max
+                       (filter-map
+                        (λ (x) (and (string? (car x)) (string-length (car x))))
+                        table*))
+                (loop (map cdr table*))))))
+  (for ([row (in-list table)])
+    (display-line
+     (for/list ([cell  (in-list row)]
+                [width (in-list widths)]
+                [align (in-list aligns)])
+       (define cell*
+         (cond [(char? cell) (make-string width cell)]
+               [(procedure? cell) (cell)]
+               [else cell]))
+       (define pad
+         (make-string (max 0 (- width (string-length cell*))) #\space))
+       (case align
+         [(l) (string-append cell* pad)]
+         [(r) (string-append pad cell*)]
+         [else (error 'internal-error "poof")])))))
 
 (define (render profile
                 #:truncate-source [truncate-source 50]
@@ -61,10 +62,10 @@
   (define node->
     (let ([t (make-hasheq)])
       (for ([node (in-list nodes)] [idx (in-naturals 1)])
-        (let ([index (format "[~a]" idx)]
-              [label (format "~a" (or (node-id node) '???))])
-          (hash-set! t node (list index label @string-append{@label @index}))))
-      (lambda (mode node)
+        (define index (format "[~a]" idx))
+        (define label (format "~a" (or (node-id node) '???)))
+        (hash-set! t node (list index label @string-append{@label @index})))
+      (λ (mode node)
         ((case mode [(index) car] [(label) cadr] [(sub-label) caddr])
          (hash-ref t node)))))
   (define (sep ch) (list ch ch ch ch ch ch ch ch ch ch))
@@ -79,14 +80,14 @@
   (when (> (length threads+times) 1)
     @show{  Threads observed:        @(length threads+times)})
   (when (pair? hidden)
-    (let* ([hidden (length hidden)]
-           [nodes (length (profile-nodes profile))]
-           [self% @string-append{self<@(format-percent (or hide-self% 0))}]
-           [subs% @string-append{local<@(format-percent (or hide-subs% 0))}]
-           [%s (cond [(not hide-self%) subs%]
-                     [(not hide-subs%) self%]
-                     [else @string-append{@self% and @subs%}])])
-      @show{  (Hiding functions with @|%s|: @|hidden| of @nodes hidden)}))
+    (define hidden# (length hidden))
+    (define nodes#  (length (profile-nodes profile)))
+    (define self%   @string-append{self<@(format-percent (or hide-self% 0))})
+    (define subs%   @string-append{local<@(format-percent (or hide-subs% 0))})
+    (define %s      (cond [(not hide-self%) subs%]
+                          [(not hide-subs%) self%]
+                          [else @string-append{@self% and @subs%}]))
+    @show{  (Hiding functions with @|%s|: @hidden# of @nodes# hidden)})
   (newline)
   (display-table
    '(r l r l l r l l l r l l)
@@ -133,6 +134,6 @@
         (,(node-> 'index node)
          " " ,totalS ,total%
          " " ,selfS  ,self%
-         " " ,(lambda () name+src))
+         " " ,(λ () name+src))
         ,@(sub node-callees edge-callee edge-callee-time)
         ,-sep)))))

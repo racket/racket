@@ -56,15 +56,15 @@
   ;; intern the entries (which are (cons id/#f srcloc/#f))
   (define entry-table (make-hash))
   (define (intern-entry entry)
-    (let* ([key (or (cdr entry) (car entry))]
-           [en  (hash-ref entry-table key #f)])
-      (if en
-        ;; ELI: is this sanity check needed?
-        ;; (if (equal? en entry)
-        ;;   en
-        ;;   (error 'profile "internal error: assumption invalid"))
-        en
-        (begin (hash-set! entry-table key entry) entry))))
+    (define key (or (cdr entry) (car entry)))
+    (define en  (hash-ref entry-table key #f))
+    (if en
+      ;; ELI: is this sanity check needed?
+      ;; (if (equal? en entry)
+      ;;   en
+      ;;   (error 'profile "internal error: assumption invalid"))
+      en
+      (begin (hash-set! entry-table key entry) entry)))
   (define (validate to-track who)
     (let loop ([t to-track])
       (cond
@@ -74,13 +74,13 @@
          (raise-type-error
           who "thread, custodian, or a list of threads/csutodians" to-track)]
         ;; test that it's subordinate
-        [(with-handlers ([exn:fail:contract? (lambda (_) #t)])
+        [(with-handlers ([exn:fail:contract? (λ (_) #t)])
            (custodian-managed-list t super-cust) #f)
          (error who "got an insubordinate custodian")])))
   (define paused 0)
   (define thread-id
     (let ([next-id 0] [t (make-weak-hasheq)])
-      (lambda (thd)
+      (λ (thd)
         (or (hash-ref t thd #f)
             (let ([id next-id])
               (set! next-id (add1 next-id))
@@ -109,9 +109,9 @@
   (define start-time (current-process-milliseconds))
   (define (add-time)
     (when (paused . <= . 0)
-      (let ([cur (current-process-milliseconds)])
-        (set! cpu-time (+ cpu-time (- cur start-time)))
-        (set! start-time cur))))
+      (define cur (current-process-milliseconds))
+      (set! cpu-time (+ cpu-time (- cur start-time)))
+      (set! start-time cur)))
   (define (ignore-time)
     (when (paused . <= . 0)
       (set! start-time (current-process-milliseconds))))
@@ -123,7 +123,7 @@
   (define sema (make-semaphore 1))
   (define (sampler-controller msg [arg #f])
     (define-syntax-rule (w/sema body ...)
-      (call-with-semaphore sema (lambda () body ...)))
+      (call-with-semaphore sema (λ () body ...)))
     (case msg
       [(pause)  (w/sema (add-time) (set! paused (add1 paused)))]
       [(resume) (w/sema (set! paused (sub1 paused)) (ignore-time))]

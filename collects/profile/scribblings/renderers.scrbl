@@ -29,26 +29,27 @@ function that consumes a @racket[profile] instance.  See the
 
 Prints the given @racket[profile] results as a textual table.
 
-The printout begins with some general details about the profile, and
-then a table that represents the call-graph is printed.  Each row in
-this table looks like:
+The printout begins with general information about the profile,
+followed by a table with an entry for each function in the call graph.
+The entries are displayed in a topological order (roughly, since the
+graph can have cycles).  This means that it is usually easy to find
+the callers and callees of a function in its close environment.
 
+Each row in the table has the following format:
 @verbatim[#:indent 2]{
                           B [M1] M2%
   [N1] N2(N3%) N4(N5%)  A ...path/to/source.rkt:12:34
                           C [M3] M4%}
-
-where actual numbers appear in the printout.  The meaning of the
-numbers and labels is as follows:
+with the following meaning of the numbers and labels:
 @itemize[
 @item{@tt{A} --- the name of the function that this node represents,
   followed by the source location for the function if it is known.
-  The name can be ``???'' for anonymous functions, but in this case
-  the source location will identify them.}
-@item{@tt{N1} --- an index number associated with this node.  This is
-  useful in references to this function, since the symbolic names are
-  not unique (and some can be missing).  The number itself has no
-  significance.}
+  The name can be ``???'' for anonymous functions, which will be
+  identified with their source location.}
+@item{@tt{N1} --- an integer label associated with this node in the
+  printout.  This label is used to mark references to this function,
+  since symbolic names are not unique (and they can be missing or very
+  long).  The labels are assigned from the top.}
 @item{@tt{N2} --- the time (in milliseconds) that this function has
   been anywhere in a stack snapshot.  This is the total time that the
   execution was somewhere in this function or in its callees.

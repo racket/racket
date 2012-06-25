@@ -10,9 +10,8 @@
 (provide format-percent)
 (define format-percent
   (case-lambda
-    [(percent)
-     (let ([percent (inexact->exact (round (* percent 1000)))])
-       (format "~a.~a%" (quotient percent 10) (modulo percent 10)))]
+    [(percent) (define p (inexact->exact (round (* percent 1000))))
+               (format "~a.~a%" (quotient p 10) (modulo p 10))]
     [(x y) (format-percent (if (zero? y) 0 (/ x y)))]))
 
 (provide format-source)
@@ -36,9 +35,9 @@
   (define (hide? node)
     (define (hide-sub? get-subs edge-sub edge-sub-time)
       (define %s
-        (map (lambda (edge)
-               (let ([total (node-total (edge-sub edge))])
-                 (if (zero? total) 0 (/ (edge-sub-time edge) total))))
+        (map (λ (edge)
+               (define total (node-total (edge-sub edge)))
+               (if (zero? total) 0 (/ (edge-sub-time edge) total)))
              (get-subs node)))
       (subs% . >= . (apply max %s)))
     (and (self% . >= . (/ (node-self node) total-time))
@@ -54,8 +53,8 @@
 ;; item in the first level, so it is not included in the result.  This is done
 ;; by assigning layers to nodes in a similar way to section 9.1 of "Graph
 ;; Drawing: Algorithms for the Visualization of Graphs" by Tollis, Di Battista,
-;; Eades, and Tamassia.  It uses a similar technique to the one described in
-;; section 9.4 to remove cycles in the input graph, but improved by the fact
+;; Eades, and Tamassia.  It uses a technique similar to the one described in
+;; section 9.4 for removing cycles in the input graph, but improved by the fact
 ;; that we have weights on input/output edges (this is the only point that is
 ;; specific to the fact that it's a profiler graph).  Note that this is useful
 ;; for a graphical rendering of the results, but it's also useful to sort the
@@ -69,9 +68,9 @@
   (define (get-node+io node)
     (define (sum node-callers/lees edge-caller/lee edge-callee/ler-time)
       (for/fold ([sum 0]) ([e (in-list (node-callers/lees node))])
-        (let ([n (edge-caller/lee e)])
-          (if (or (eq? n node) (eq? n root)) sum
-              (+ sum (edge-callee/ler-time e))))))
+        (define n (edge-caller/lee e))
+        (if (or (eq? n node) (eq? n root)) sum
+            (+ sum (edge-callee/ler-time e)))))
     (cons node (mcons (sum node-callers edge-caller edge-callee-time)
                       (sum node-callees edge-callee edge-caller-time))))
   (define nodes+io-times
@@ -80,11 +79,11 @@
         (let* ([cur (car todo)] [todo (cdr todo)]
                [r (if (eq? cur root) r (cons (get-node+io cur) r))])
           (loop (append todo ; append new things in the end, so it's a BFS
-                        (filter-map (lambda (e)
-                                      (let ([lee (edge-callee e)])
-                                        (and (not (memq lee todo))
-                                             (not (assq lee r))
-                                             lee)))
+                        (filter-map (λ (e)
+                                      (define lee (edge-callee e))
+                                      (and (not (memq lee todo))
+                                           (not (assq lee r))
+                                           lee))
                                     (node-callees cur)))
                 r))
         ;; note: the result does not include the root node
@@ -108,9 +107,9 @@
                 (loop rest (list 1st) ratio)
                 (loop rest (if (ratio . > . best) r (cons 1st r)) best))))))
       (if (pair? todo)
-        (let* ([sinks   (filter (lambda (x) (zero? (mcdr (cdr x)))) todo)]
+        (let* ([sinks   (filter (λ (x) (zero? (mcdr (cdr x)))) todo)]
                [todo    (remq* sinks todo)]
-               [sources (filter (lambda (x) (zero? (mcar (cdr x)))) todo)]
+               [sources (filter (λ (x) (zero? (mcar (cdr x)))) todo)]
                ;; if we have no sources and sinks, use the heuristic
                [sources (if (and (null? sinks) (null? sources))
                           (best-sources) sources)]
@@ -121,13 +120,13 @@
           (for* ([nodes (in-list (list sources sinks))]
                  [n (in-list nodes)])
             (for ([e (in-list (node-callees n))])
-              (let ([x (assq (edge-callee e) todo)])
-                (when x (set-mcar! (cdr x) (- (mcar (cdr x))
-                                              (edge-callee-time e))))))
+              (define x (assq (edge-callee e) todo))
+              (when x
+                (set-mcar! (cdr x) (- (mcar (cdr x)) (edge-callee-time e)))))
             (for ([e (in-list (node-callers n))])
-              (let ([x (assq (edge-caller e) todo)])
-                (when x (set-mcdr! (cdr x) (- (mcdr (cdr x))
-                                              (edge-caller-time e)))))))
+              (define x (assq (edge-caller e) todo))
+              (when x
+                (set-mcdr! (cdr x) (- (mcdr (cdr x)) (edge-caller-time e))))))
           (loop todo (append (reverse sources) rev-left) (append sinks right)))
         ;; all done, get the order
         (append (reverse rev-left) right))))
@@ -138,36 +137,37 @@
     (let ([t (make-hasheq)])
       (let loop ([nodes acyclic-order])
         (when (pair? nodes)
-          (let ([ler (car nodes)] [rest (cdr nodes)])
-            (unless (hash-ref t ler #f) (hash-set! t ler '()))
-            (for ([e (in-list (node-callees ler))])
-              (let ([lee (edge-callee e)])
-                (when (memq lee rest) ; only consistent edges
-                  ;; note that we connect each pair of nodes at most once, and
-                  ;; never a node with itself
-                  (hash-set! t lee (cons ler (hash-ref t lee '()))))))
-            (loop rest))))
+          (define ler (car nodes))
+          (define rest (cdr nodes))
+          (unless (hash-ref t ler #f) (hash-set! t ler '()))
+          (for ([e (in-list (node-callees ler))])
+            (define lee (edge-callee e))
+            (when (memq lee rest) ; only consistent edges
+              ;; note that we connect each pair of nodes at most once, and
+              ;; never a node with itself
+              (hash-set! t lee (cons ler (hash-ref t lee '())))))
+          (loop rest)))
       t))
 
   ;; finally, assign layers using the simple method from section 9.1: sources
   ;; are at 0, and other nodes are placed at one layer after their parents
-  (let ([height 0])
-    (for ([node (in-list acyclic-order)])
-      (let loop ([node node])
-        (define x (hash-ref t node))
-        (if (number? x)
-          x
-          (let ([max (add1 (for/fold ([m -1]) ([ler (in-list x)])
-                             (max m (loop ler))))])
-            (when (max . > . height) (set! height max))
-            (hash-set! t node max)
-            max))))
-    (let ([layers (make-vector (add1 height) '())])
-      (for ([node (in-list acyclic-order)])
-        (unless (eq? node root) ; filter out the root
-          (let ([l (hash-ref t node)])
-            (vector-set! layers l (cons node (vector-ref layers l))))))
-      ;; in almost all cases, the root is the full first layer (in a few cases
-      ;; it can be there with another node, eg (* -> A 2-> B 3-> A)), but be
-      ;; safe and look for any empty layer
-      (filter pair? (vector->list layers)))))
+  (define height 0)
+  (for ([node (in-list acyclic-order)])
+    (let loop ([node node])
+      (define x (hash-ref t node))
+      (if (number? x)
+        x
+        (let ([max (add1 (for/fold ([m -1]) ([ler (in-list x)])
+                           (max m (loop ler))))])
+          (when (max . > . height) (set! height max))
+          (hash-set! t node max)
+          max))))
+  (define layers (make-vector (add1 height) '()))
+  (for ([node (in-list acyclic-order)])
+    (unless (eq? node root) ; filter out the root
+      (define l (hash-ref t node))
+      (vector-set! layers l (cons node (vector-ref layers l)))))
+  ;; in almost all cases, the root is the full first layer (in a few cases it
+  ;; can be there with another node, eg (* -> A 2-> B 3-> A)), but be safe and
+  ;; look for any empty layer
+  (filter pair? (vector->list layers)))

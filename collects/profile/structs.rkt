@@ -34,7 +34,7 @@
 (define-struct node (id src thread-ids total self callers callees)
   #:mutable
   #:property prop:custom-write
-  (lambda (node o w?)
+  (λ (node o w?)
     (fprintf o "#<node:~s>"
              (or (node-id node) (if (node-src node) '??? 'ROOT)))))
 
@@ -49,7 +49,7 @@
 (define-struct edge (total caller caller-time callee callee-time)
   #:mutable
   #:property prop:custom-write
-  (lambda (edge o w?)
+  (λ (edge o w?)
     (fprintf o "#<edge:~s-~s>"
              (or (node-id (edge-caller edge)) '???)
              (or (node-id (edge-callee edge)) '???))))

@@ -59,9 +59,11 @@ can customize the profiling:
   accumulated data is analyzed (by @racket[analyze-samples]) and the
   resulting profile value is sent to the @racket[renderer] function.
   See @secref["renderers"] for available renderers.  You can also use
-  @racket[values] as a ``renderer''---in this case the
+  @racket[values] as a ``renderer''---in this case
   @racket[profile-thunk] returns the analyzed information which can
-  now be rendered multiple times, or saved for future rendering.}
+  now be rendered multiple times, or saved for rendering directly
+  using one of the renderers, perhaps multiple times for different
+  views.}
 
 @item{To provide feedback information during execution, specify a
   @racket[periodic-renderer].  This should be a list holding a delay

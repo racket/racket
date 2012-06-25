@@ -21,17 +21,16 @@
     (and periodic-renderer
          (let ([delay (car periodic-renderer)]
                [renderer (cadr periodic-renderer)])
-           (thread (lambda ()
-                     (let loop ()
-                       (sleep delay)
-                       (renderer (analyze-samples (sampler 'get-snapshots)))
-                       (loop)))))))
+           (define (loop)
+             (sleep delay)
+             (renderer (analyze-samples (sampler 'get-snapshots)))
+             (loop))
+           (thread loop))))
   (define (run) (for ([i (in-range rpt)]) (thunk)))
-  (with-handlers ([void (lambda (e)
-                          (eprintf "profiled thunk error: ~a\n"
-                                   (if (exn? e)
-                                     (exn-message e)
-                                     (format "~e" e))))])
+  (with-handlers ([void (λ (e) (eprintf "profiled thunk error: ~a\n"
+                                        (if (exn? e)
+                                          (exn-message e)
+                                          (format "~e" e))))])
     (if threads?
       (parameterize ([current-custodian cust]) (run))
       (run)))
@@ -47,7 +46,7 @@
          [(null? xs)
           (if expr
             (with-syntax ([expr expr] [kwds (reverse kwds)])
-              #'(profile-thunk (lambda () expr) . kwds))
+              #'(profile-thunk (λ () expr) . kwds))
             (raise-syntax-error 'profile "missing expression" stx))]
          [(keyword? (syntax-e (car xs)))
           (if (pair? (cdr xs))

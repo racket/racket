@@ -14,15 +14,16 @@
   (define node->
     (let ([t (make-hasheq)])
       (for ([node (in-list nodes)] [idx (in-naturals 1)])
-        (let ([id (node-id node)] [src (node-src node)])
+        (define id (node-id node))
+        (define src (node-src node))
         (hash-set! t node
                    (list (format "node~a" idx)
                          (if id
                            (format "~a" id)
                            (regexp-replace #rx"^.*/"
                                            (format-source (node-src node))
-                                           ""))))))
-      (lambda (mode node)
+                                           "")))))
+      (λ (mode node)
         ((case mode [(index) car] [(label) cadr]) (hash-ref t node)))))
   (define max-self%
     (/ (for/fold ([m 0]) ([node (in-list nodes)]) (max m (node-self node)))
