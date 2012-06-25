@@ -8,9 +8,7 @@
 	 (utils tc-utils)
          "def-binding.rkt"
          syntax/kerncase
-         syntax/struct
-         mzlib/trace
-
+         syntax/struct         
          racket/function
          racket/match
          (only-in racket/contract

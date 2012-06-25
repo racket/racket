@@ -7,7 +7,7 @@
          (except-in (types subtype union convenience resolve utils comparison) -> ->* one-of/c)
          (private parse-type)
          (contract-req)
-         racket/match mzlib/trace)
+         racket/match)
 
 (provide type-annotation
          get-type

@@ -1,8 +1,7 @@
 #lang racket/base
 (require "../utils/utils.rkt")
 
-(require syntax/boundmap
-         mzlib/trace
+(require syntax/boundmap         
          (env type-alias-env)
          (utils tc-utils)
          (rep type-rep)

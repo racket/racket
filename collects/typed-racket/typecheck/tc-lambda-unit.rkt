@@ -4,7 +4,7 @@
          "signatures.rkt"
          "tc-metafunctions.rkt"
          "tc-subst.rkt" "check-below.rkt"
-         mzlib/trace racket/dict
+         racket/dict
          racket/list syntax/parse "parse-cl.rkt"
          racket/syntax unstable/struct syntax/stx
          (rename-in racket/contract [-> -->] [->* -->*] [one-of/c -one-of/c])

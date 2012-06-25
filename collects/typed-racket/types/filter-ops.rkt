@@ -8,7 +8,6 @@
          racket/list racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict
-         racket/trace
          (for-template racket/base))
 
 (provide (all-defined-out))

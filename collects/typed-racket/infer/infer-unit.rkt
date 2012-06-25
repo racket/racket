@@ -13,7 +13,7 @@
 	 "signatures.rkt"
          racket/match
          mzlib/etc
-         racket/trace racket/contract
+         racket/contract
 	 unstable/sequence unstable/list unstable/hash
          racket/list)
 

@@ -12,7 +12,7 @@
  (types resolve utils)
  (prefix-in t: (types convenience abbrev))
  (private parse-type)
- racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax racket/list
+ racket/match unstable/match syntax/struct syntax/stx racket/syntax racket/list
  (only-in racket/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))

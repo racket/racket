@@ -3,7 +3,7 @@
 
 (require (utils tc-utils)
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         mzlib/trace racket/match mzlib/etc
+         racket/match mzlib/etc
          racket/contract
          (for-syntax racket/base syntax/parse))
 

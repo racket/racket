@@ -8,14 +8,14 @@
 
 (define-syntax (#%module-begin stx)
   (syntax-parse stx #:literals (require provide)
-    [(mb (require . args) ... (provide . args2) ... [nm ty] ...)
-     (unless (andmap identifier? (syntax->list #'(nm ...)))
-       (raise-syntax-error #f "not all ids"))
+    [(mb (require . args) ... (provide . args2) ... [nm:id ty] ...)
      #'(#%plain-module-begin
         (begin
           (require . args) ...
           (provide . args2) ...
-          (define-syntax nm (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))) ...
+          (define-syntax (nm stx)            
+            (raise-syntax-error 'type-check "type name used out of context" stx))
+          ...
           (provide nm) ...
           (begin-for-syntax
            (initialize-type-name-env

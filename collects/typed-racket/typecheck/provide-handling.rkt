@@ -3,10 +3,9 @@
 (require "../utils/utils.rkt"
 	 (only-in srfi/1/list s:member)
          syntax/kerncase syntax/boundmap
-         (env type-name-env type-alias-env)
-         mzlib/trace
+         (env type-name-env type-alias-env)         
          (only-in (private type-contract) type->contract)
-         (private typed-renaming)
+         "renamer.rkt"
          (rep type-rep)
 	 (utils tc-utils)
          (for-syntax syntax/parse racket/base)

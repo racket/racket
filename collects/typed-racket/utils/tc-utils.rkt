@@ -180,6 +180,7 @@ don't depend on any other portion of the system
 ;; are we currently expanding in a typed module (or top-level form)?
 (define typed-context? (box #f))
 
+
 ;; list of syntax objects that should count as disappeared uses
 (define disappeared-use-todo (make-parameter '()))
 (define (add-disappeared-use t)

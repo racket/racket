@@ -9,6 +9,7 @@
 		       (types union)
 		       racket/shared racket/base)
 	 (types union convenience)
+         racket/syntax
 	 mzlib/pconvert racket/match)
 
 (define (initialize-type-name-env initial-type-names)

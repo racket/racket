@@ -2,8 +2,7 @@
 
 (require "../utils/utils.rkt"
 	 syntax/boundmap
-         (utils tc-utils)
-         mzlib/trace
+         (utils tc-utils)         
          racket/match)
 
 (provide register-type-alias

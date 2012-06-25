@@ -2,6 +2,7 @@
 
 (require syntax/id-table racket/dict racket/match mzlib/pconvert
          "../utils/utils.rkt"
+         "../utils/tc-utils.rkt"
          (contract-req)
          (rep type-rep object-rep)
          (types utils union)

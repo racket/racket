@@ -4,7 +4,7 @@
          syntax/location
          (for-syntax racket/base
                      syntax/parse
-                     (prefix-in tr: "../private/typed-renaming.rkt")))
+                     (prefix-in tr: "../typecheck/renamer.rkt")))
 
 (provide require/contract define-ignored)
 

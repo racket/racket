@@ -1,9 +1,9 @@
 #lang racket/base
 
 (provide #%module-begin provide require rename-in rename-out prefix-in only-in all-from-out except-out except-in
-         providing begin subtract-in)
+         providing begin)
 
-(require (for-syntax racket/base) racket/require)
+(require (for-syntax racket/base))
 
 (define-for-syntax ts-mod 'typed-racket/typed-racket)
 

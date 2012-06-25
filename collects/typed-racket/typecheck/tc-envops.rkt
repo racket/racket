@@ -12,7 +12,7 @@
          (only-in (env type-env-structs lexical-env)
                   env? update-type/lexical env-map env-props replace-props)
          racket/contract racket/match
-         mzlib/trace  unstable/struct
+         unstable/struct
          "tc-metafunctions.rkt"
          (for-syntax racket/base))
 

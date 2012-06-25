@@ -10,7 +10,6 @@
          "tc-envops.rkt" "tc-metafunctions.rkt"
          (types type-table)
          syntax/kerncase
-         racket/trace
          racket/match)
 
 ;; if typechecking

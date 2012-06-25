@@ -8,7 +8,6 @@
 	 (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep)
          syntax/free-vars
-         ;racket/trace
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse unstable/syntax

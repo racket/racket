@@ -4,7 +4,7 @@
          "signatures.rkt" "tc-metafunctions.rkt" "check-below.rkt"
          "tc-app-helper.rkt" "find-annotation.rkt" "tc-funapp.rkt"
          "tc-subst.rkt" (prefix-in c: racket/contract)
-         syntax/parse racket/match racket/trace racket/list
+         syntax/parse racket/match racket/list
          unstable/sequence  unstable/list
          ;; fixme - don't need to be bound in this phase - only to make tests work
          racket/bool

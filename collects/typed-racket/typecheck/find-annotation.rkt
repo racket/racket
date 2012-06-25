@@ -71,6 +71,3 @@
 	 (find #'body))]
     [e:core-expr
      (ormap find (syntax->list #'(e.expr ...)))]))
-
-; (require racket/trace)
-; (trace find-annotation)

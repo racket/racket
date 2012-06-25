@@ -7,18 +7,17 @@
 ;; to types representing the type variable
 ;; technically, the mapped-to type is unnecessary, but it's convenient to have it around? maybe?
 
-(require racket/set)
 (provide (all-defined-out))
 
 ;; the initial type variable environment - empty
 ;; this is used in the parsing of types
-(define initial-tvar-env (seteq))
+(define initial-tvar-env (list))
 
 ;; a parameter for the current type variables
 (define current-tvars (make-parameter initial-tvar-env))
 
 ;; takes a list of vars
 (define-syntax-rule (extend-tvars vars . body)
- (parameterize ([current-tvars (foldr (λ (v s) (set-add s v)) (current-tvars) vars)]) . body))
+ (parameterize ([current-tvars (append vars (current-tvars))]) . body))
 
-(define (bound-tvar? v) (set-member? (current-tvars) v))
+(define (bound-tvar? v) (memq v (current-tvars)))

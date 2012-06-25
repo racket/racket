@@ -4,7 +4,7 @@
 (require (rep type-rep)
 	 (types utils union subtype remove-intersect resolve substitute abbrev)
          "signatures.rkt"
-         racket/match mzlib/trace)
+         racket/match)
 
 (import infer^)
 (export restrict^)
