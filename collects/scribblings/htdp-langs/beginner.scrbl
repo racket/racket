@@ -78,6 +78,6 @@ A quoted @racket[name] is a symbol. A symbol is a value, just like
 @section[#:tag "beginner-pre-defined"]{Pre-defined Functions}
 
 @(require (submod lang/htdp-beginner procedures))
-@(render-sections (docs) "htdp-beginner")
+@(render-sections (docs) #'here "htdp-beginner")
 
 @;prim-op-defns[ #'here '()]

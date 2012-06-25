@@ -314,6 +314,6 @@ level as they did in the @secref["intermediate-lam"] level.
 @section[#:tag "advanced-pre-defined"]{Pre-Defined Functions}
 
 @(require (submod lang/htdp-advanced procedures))
-@(render-sections (docs) "htdp-advanced")
+@(render-sections (docs) #'here "htdp-advanced")
 
 @;prim-op-defns['(lib "htdp-advanced.rkt" "lang") #'here '()]

@@ -28,4 +28,4 @@ fully tested; it simply means that each part of the program has been run
 
 @;------------------------------------------------------------------------
 
-@index-section[]
+@;index-section[]

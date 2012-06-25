@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
-          (for-label lang/htdp-beginner-abbr))
 
-
+@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt" (for-label lang/htdp-beginner-abbr))
 
 @title[#:tag "beginner-abbr"]{Beginning Student with List Abbreviations}
 
@@ -84,6 +82,6 @@ Abbreviations} level as they did in the @secref["beginner"] level.
 @section[#:tag "beginner-abbr-pre-defined"]{Pre-defined Functions}
 
 @(require (submod lang/htdp-beginner-abbr procedures))
-@(render-sections (docs) "htdp-beginner-abbr")
+@(render-sections (docs) #'here "htdp-beginner-abbr")
 
 @;prim-op-defns['(lib "htdp-beginner-abbr.rkt" "lang") #'here '()]

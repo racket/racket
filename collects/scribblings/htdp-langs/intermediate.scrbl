@@ -98,7 +98,7 @@ did in the @secref["beginner-abbr"] level.
 @section[#:tag "intermediate-pre-defined" ]{Pre-defined Functions}
 
 @(require (submod lang/htdp-intermediate procedures))
-@(render-sections (docs) "htdp-intermediate")
+@(render-sections (docs) #'here "htdp-intermediate")
 
 @;prim-op-defns['(lib "htdp-intermediate.rkt" "lang") #'here '()]
 
