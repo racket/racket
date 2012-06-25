@@ -92,20 +92,28 @@
          [s (regexp-replace* #rx" $" s "")])
     (datum-intern-literal s)))
 
+
 (define (decode-string s)
-  (let loop ([l '((#rx"---" mdash)
-                  (#rx"--" ndash)
-                  (#rx"``" ldquo)
-                  (#rx"''" rdquo)
-                  (#rx"'" rsquo))])
-    (cond [(null? l) (list s)]
-          [(regexp-match-positions (caar l) s)
-           => (lambda (m)
-                (datum-intern-literal
-                 (append (decode-string (substring s 0 (caar m)))
-                         (cdar l)
-                         (decode-string (substring s (cdar m))))))]
-          [else (loop (cdr l))])))
+  (define pattern #rx"(---|--|``|''|')")
+  (let loop ([start 0])
+    (cond
+     [(regexp-match-positions pattern s start)
+      => (lambda (m)
+           (define the-match (substring s (caar m) (cdar m)))
+           (list* (datum-intern-literal (substring s start (caar m)))
+                  (cond
+                   [(string=? the-match "---") 'mdash]
+                   [(string=? the-match "--") 'ndash]
+                   [(string=? the-match "``") 'ldquo]
+                   [(string=? the-match "''") 'rdquo]
+                   [(string=? the-match "'") 'rsquo])
+                  (loop (cdar m))))]
+     ;; Common case: nothing to decode, so don't copy strings.
+     [(= start 0)
+      (list (datum-intern-literal s))]
+     [else
+      (list (datum-intern-literal (substring s start)))])))
+   
 
 (define (line-break? v)
   (equal? v "\n"))
