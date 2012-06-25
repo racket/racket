@@ -21,7 +21,9 @@
                                          ((v.ann-name ...) seq-expr))))
     ;; when clause
     (pattern (~seq #:when guard:expr)
-             #:with (expand ...) (list #'#:when #'guard)))
+             #:with (expand ...) (list #'#:when #'guard))
+    (pattern (~seq #:unless guard:expr)
+             #:with (expand ...) (list #'#:unless #'guard)))
 
 ;; intersperses "#:when #t" clauses to emulate the for* variants' semantics
 (define-splicing-syntax-class for*-clause
@@ -40,4 +42,6 @@
                                        #'#:when #'#t))
     ;; when clause
     (pattern (~seq #:when guard:expr)
-             #:with (expand ...) (list #'#:when #'guard)))
+             #:with (expand ...) (list #'#:when #'guard))
+    (pattern (~seq #:unless guard:expr)
+             #:with (expand ...) (list #'#:unless #'guard)))

@@ -37,6 +37,13 @@
                    #:when (odd? i))
                   (+ i j 10))
        '(21 43))
+(check equal?
+       (for/list: : (Listof Integer)
+                  ((i : Integer '(1 2 3))
+                   (j : Integer '(10 20 30))
+                   #:unless (odd? i))
+                  (+ i j 10))
+       '(32))
 
 (check equal?
        (for/or: : Boolean
@@ -113,6 +120,15 @@
                     (k : Integer '(100 200 300)))
                    (+ acc i j k))
        1998)
+(check =
+       (for*/fold: : Integer
+                   ((acc : Integer 0))
+                   ((i : Integer '(1 2 3))
+                    #:unless (even? i)
+                    (j : Integer '(10 20 30))
+                    (k : Integer '(100 200 300)))
+                   (+ acc i j k))
+       3996)
 
 (check =
        (for/sum: : Integer
