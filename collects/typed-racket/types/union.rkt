@@ -4,7 +4,7 @@
          (rep type-rep rep-utils)
          (utils tc-utils)
          (prefix-in c: (contract-req))
-         (types utils subtype abbrev printer comparison)
+         (types utils subtype abbrev comparison)
          racket/match)
 
 

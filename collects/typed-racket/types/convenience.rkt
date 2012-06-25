@@ -3,7 +3,7 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "abbrev.rkt" "numeric-tower.rkt" (only-in racket/contract current-blame-format)
-	 (types comparison printer union subtype utils substitute)
+	 (types comparison union subtype utils substitute)
          racket/list racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict
