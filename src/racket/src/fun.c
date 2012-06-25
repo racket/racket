@@ -1977,7 +1977,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
       if (a >= 0) {
         bign = scheme_make_integer(a);
         if (drop)
-          bign = scheme_bin_plus(bign, scheme_make_integer(a));
+          bign = scheme_bin_plus(bign, scheme_make_integer(drop));
       }
       if (a == -1)
         return clone_arity(((Scheme_Structure *)p)->slots[1], drop);

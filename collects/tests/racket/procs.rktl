@@ -87,13 +87,17 @@
                   (test-values (list (caddr p) (cadddr p))
                                (lambda ()
                                  (procedure-keywords (car p))))
-                  (let ([1-ok? (let loop ([a a])
-                                 (or (equal? a 1)
-                                     (and (arity-at-least? a)
-                                          ((arity-at-least-value a) . <= . 1))
-                                     (and (list? a)
-                                          (ormap loop a))))])
+                  (define (check-ok n a)
+                    (let loop ([a a])
+                      (or (equal? a n)
+                          (and (arity-at-least? a)
+                               ((arity-at-least-value a) . <= . n))
+                          (and (list? a)
+                               (ormap loop a)))))
+                  (let ([1-ok? (check-ok 1 a)]
+                        [0-ok? (check-ok 0 a)])
                     (test 1-ok? procedure-arity-includes? (car p) 1 #t)
+                    (test 0-ok? procedure-arity-includes? (car p) 0 #t)
                     ;; While we're here test renaming, etc.:
                     (test 'other object-name (procedure-rename (car p) 'other))
                     (test (procedure-arity (car p)) procedure-arity (procedure-rename (car p) 'other))
@@ -292,6 +296,17 @@
 (let ()
   (define (f2 #:x [x 8]) (list x))
   (test 'f2 object-name f2))
+
+;; ----------------------------------------
+;; Check `procedure-arity-includes?' with method-style `prop:procedure' value
+;; and `procedure-arity-reduce':
+
+(let ()
+  (struct a ()
+    #:property prop:procedure (procedure-reduce-arity 
+                               (lambda (x y [z 5]) (+ y z))
+                               3))
+  (test #t procedure-arity-includes? (a) 2))
 
 ;; ----------------------------------------
 
