@@ -18,6 +18,7 @@
   racket/mpair
   racket/base
   racket/set
+  racket/place
   syntax/stx racket/private/stx
   (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
@@ -2548,7 +2549,8 @@
 
 [place? (make-pred-ty -Place)]
 [place-channel? (make-pred-ty -Place-Channel)]
-[dynamic-place (-> -Module-Path Sym -Place)]
+;; FIXME: the `#:at` keyword is for remote places, not supported yet
+[dynamic-place (->key -Module-Path Sym #:at (-val #f) #f -Place)]
 [place-wait (-> -Place -Int)]
 [place-break (-> -Place -Void)]
 [place-kill (-> -Place -Void)]
