@@ -36,10 +36,10 @@ The following kinds of values are serializable:
        structures with the @racket[prop:serializable] property (see
        @racket[prop:serializable] for more information);}
 
- @item{structures that instantiate @techlink{prefab} structure types;}
+ @item{@techlink{prefab} structures;}
 
  @item{instances of classes defined with @racket[define-serializable-class]
-       or @racket[define-serializable-class];}
+       or @racket[define-serializable-class*];}
 
  @item{@tech{booleans}, @tech{numbers}, @tech{characters}, @tech{interned} symbols,
        @tech{unreadable symbols}, @tech{strings}, @tech{byte strings}, @tech{paths} (for a
