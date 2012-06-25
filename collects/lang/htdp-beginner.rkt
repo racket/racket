@@ -61,4 +61,4 @@
 ;; procedures:
 (provide-and-scribble
  procedures
- (all-from beginner: (submod "private/beginner-funs.rkt" with-wrapper) procedures))
+ (all-from beginner: (submod lang/private/beginner-funs with-wrapper) procedures))

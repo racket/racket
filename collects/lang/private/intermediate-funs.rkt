@@ -10,7 +10,7 @@
 
 (provide-and-scribble
  procedures
- (all-from-except beginner: (submod "beginner-funs.rkt" without-wrapper) procedures + * - / append) 
+ (all-from-except beginner: (submod lang/private/beginner-funs without-wrapper) procedures + * - / append) 
  
  ("Numbers (relaxed conditions)"
   @defproc[(+ [x number] ...) number]{Adds all given numbers.}
