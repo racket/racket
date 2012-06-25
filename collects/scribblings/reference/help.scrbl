@@ -16,13 +16,12 @@
 
 @note-init-lib[racket/help]
 
-@deftogether[(
-@defidform[help]
-@defform/none[#:literals (help) (help string ...)]
-@defform/none[#:literals (help) (help id)]
-@defform/none[#:literals (help) (help id #:from module-path)]
-@defform/none[#:literals (help) (help #:search datum ...)]
-)]{
+@defform*[#:id help
+          [help
+           (help string ...)
+           (help id)
+           (help id #:from module-path)
+           (help #:search datum ...)]]{
 
 @emph{For general help, see the @|main-doc-page|.}
 
