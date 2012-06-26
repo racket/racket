@@ -44,8 +44,8 @@ The built-in classes provide various mechanisms for handling GUI
 (new button% [parent frame] 
              [label "Click Me"]
              (code:comment @#,t{Callback procedure for a button click:})
-             (callback (lambda (button event) 
-                         (send msg #,(method message% set-label) "Button click"))))
+             [callback (lambda (button event) 
+                         (send msg #,(method message% set-label) "Button click"))])
 
 (code:comment @#,t{Show the frame by calling its @racket[show] method})
 (send frame #,(:: top-level-window<%> show) #t)
