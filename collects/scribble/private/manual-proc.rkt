@@ -17,7 +17,8 @@
          "on-demand.rkt"
          scheme/string
          scheme/list
-         (for-syntax racket/base)
+         (for-syntax racket/base
+                     syntax/parse)
          (for-label racket/base
                     racket/contract
                     racket/class))
@@ -78,11 +79,14 @@
 
 (define-syntax (extract-proc-id stx)
   (syntax-case stx ()
-    [(_ id)
+    [(_ k e id)
      (identifier? #'id)
-     #`(quote-syntax/loc id)]
-    [(_ (proto arg ...))
-     #'(extract-proc-id proto)]
+     (if (and (syntax-e #'k)
+              (free-identifier=? #'k #'id))
+         #'e
+         #`(quote-syntax/loc id))]
+    [(_ k e (proto arg ...))
+     #'(extract-proc-id k e proto)]
     [(_ thing) (raise-syntax-error 'defproc "bad prototype" #'thing)]))
 
 (define-syntax (arg-contracts stx)
@@ -113,39 +117,62 @@
                            "expected a result contract, found a string" #'c)
        #'(racketblock0 c))]))
 
-(define-syntax defproc
-  (syntax-rules ()
-    [(_ #:kind kind (id arg ...) result desc ...)
-     (defproc* #:kind kind [[(id arg ...) result]] desc ...)]
-    [(_ (id arg ...) result desc ...)
-     (defproc* [[(id arg ...) result]] desc ...)]))
+(begin-for-syntax
+ (define-splicing-syntax-class kind-kw
+   #:description "#:kind keyword"
+   (pattern (~optional (~seq #:kind kind)
+                       #:defaults ([kind #'#f]))))
 
-(define-syntax defproc*
-  (syntax-rules ()
-    [(_ #:kind kind #:mode m #:within cl [[proto result] ...] desc ...)
-     (with-togetherable-racket-variables
-      ()
-      ([proc proto] ...)
-      (*defproc kind
-                'm (quote-syntax/loc cl)
-                (list (extract-proc-id proto) ...)
-                '[proto ...]
-                (list (arg-contracts proto) ...)
-                (list (arg-defaults proto) ...)
-                (list (lambda () (result-contract result)) ...)
-                (lambda () (list desc ...))))]
-    [(_ #:mode m #:within cl [[proto result] ...] desc ...)
-     (defproc* #:kind #f #:mode m #:within cl [[proto result] ...] desc ...)]
-    [(_ #:kind kind [[proto result] ...] desc ...)
-     (defproc* #:kind kind #:mode procedure #:within #f [[proto result] ...] desc ...)]
-    [(_ [[proto result] ...] desc ...)
-     (defproc* #:kind #f #:mode procedure #:within #f [[proto result] ...] desc ...)]))
+ (define-syntax-class id-or-false
+   (pattern i:id)
+   (pattern #f #:with i #'#f))
+   
+ (define-splicing-syntax-class id-kw
+   #:description "#:id keyword"
+   (pattern (~optional (~seq #:id [key:id-or-false expr])
+                       #:defaults ([key #'#f]
+                                   [expr #'#f]))))
+ 
+ (define-splicing-syntax-class mode-kw
+   #:description "#:mode keyword"
+   (pattern (~optional (~seq #:mode m:id)
+                       #:defaults ([m #'procedure]))))
+
+ (define-splicing-syntax-class within-kw
+   #:description "#:within keyword"
+   (pattern (~optional (~seq #:within cl:id)
+                       #:defaults ([cl #'#f]))))
+ )
+
+(define-syntax (defproc stx)
+  (syntax-parse stx
+    [(_ kind:kind-kw i:id-kw (id arg ...) result desc ...)
+     (syntax/loc stx
+       (defproc* #:kind kind.kind #:id [i.key i.expr] [[(id arg ...) result]] desc ...))]))
+
+(define-syntax (defproc* stx)
+  (syntax-parse stx
+    [(_ kind:kind-kw d:id-kw mode:mode-kw within:within-kw [[proto result] ...] desc ...)
+     (syntax/loc stx
+       (with-togetherable-racket-variables
+        ()
+        ([proc proto] ...)
+        (let ([alt-id d.expr])
+          (*defproc kind.kind
+                    'mode.m (quote-syntax/loc within.cl)
+                    (list (extract-proc-id d.key alt-id proto) ...)
+                    'd.key
+                    '[proto ...]
+                    (list (arg-contracts proto) ...)
+                    (list (arg-defaults proto) ...)
+                    (list (lambda () (result-contract result)) ...)
+                    (lambda () (list desc ...))))))]))
 
 (define-struct arg
   (special? kw id optional? starts-optional? ends-optional? num-closers))
 
 (define (*defproc kind mode within-id
-                  stx-ids prototypes arg-contractss arg-valss result-contracts
+                  stx-ids sym prototypes arg-contractss arg-valss result-contracts
                   content-thunk)
   (define max-proto-width (current-display-width))
   (define ((arg->elem show-opt-start?) arg)
@@ -240,9 +267,14 @@
                                       (arg-id (cadr s)))))
                      (+ 1 (string-length (symbol->string (arg-id (cadr s)))))
                      0)))))))))
-  (define (extract-id p)
+  (define (extract-id p stx-id)
     (let loop ([p p])
-      (if (symbol? (car p)) (car p) (loop (car p)))))
+      (if (symbol? (car p)) 
+          (let ([s (car p)])
+            (if (eq? s sym)
+                (syntax-e stx-id)
+                (car p)))
+          (loop (car p)))))
   (define (do-one stx-id prototype args arg-contracts arg-vals result-contract
                   first? add-background-label?)
     (let ([names (remq* '(... ...+) (map arg-id args))])
@@ -262,7 +294,7 @@
           (list (racket send) spacer
                 (name-this-object (syntax-e within-id)) spacer
                 (if first?
-                  (let* ([mname (extract-id prototype)]
+                  (let* ([mname (extract-id prototype stx-id)]
                          [target-maker (id-to-target-maker within-id #f)]
                          [content (list (*method mname within-id))])
                     (if target-maker
@@ -285,11 +317,11 @@
                                        libs mname ctag)))))
                             tag))))
                       (car content)))
-                  (*method (extract-id prototype) within-id))))]
+                  (*method (extract-id prototype stx-id) within-id))))]
         [first?
+         (define the-id (extract-id prototype stx-id))
          (let ([target-maker (id-to-target-maker stx-id #t)]
-               [content (list (definition-site (extract-id prototype)
-                                               stx-id #f))])
+               [content (list (definition-site the-id stx-id #f))])
            (if target-maker
              (target-maker
               content
@@ -298,21 +330,20 @@
                  #f
                  (list (make-index-element
                         #f content tag
-                        (list (datum-intern-literal (symbol->string (extract-id prototype))))
+                        (list (datum-intern-literal (symbol->string the-id)))
                         content
                         (with-exporting-libraries
                          (lambda (libs)
-                           (make-procedure-index-desc (extract-id prototype)
-                                                      libs)))))
+                           (make-procedure-index-desc the-id libs)))))
                  tag)))
              (car content)))]
         [else
+         (define the-id (extract-id prototype stx-id))
          (annote-exporting-library
           (let ([sig (current-signature)])
             (if sig
-              (*sig-elem (sig-id sig) (extract-id prototype))
-              (to-element (make-just-context (extract-id prototype)
-                                             stx-id)))))]))
+              (*sig-elem (sig-id sig) the-id)
+              (to-element (make-just-context the-id stx-id)))))]))
     (define p-depth (prototype-depth prototype))
     (define flat-size (+ (prototype-size args + + #f)
                          p-depth
@@ -495,12 +526,13 @@
        (append-map
         do-one
         stx-ids prototypes all-args arg-contractss arg-valss result-contracts
-        (let loop ([ps prototypes] [accum null])
+        (let loop ([ps prototypes] [stx-ids stx-ids] [accum null])
           (cond [(null? ps) null]
-                [(ormap (lambda (a) (eq? (extract-id (car ps)) a)) accum)
-                 (cons #f (loop (cdr ps) accum))]
+                [(ormap (lambda (a) (eq? (extract-id (car ps) (car stx-ids)) a)) accum)
+                 (cons #f (loop (cdr ps) (cdr stx-ids) accum))]
                 [else (cons #t (loop (cdr ps)
-                                     (cons (extract-id (car ps)) accum)))]))
+                                     (cdr stx-ids)
+                                     (cons (extract-id (car ps) (car stx-ids)) accum)))]))
         (for/list ([p (in-list prototypes)]
                    [i (in-naturals)])
           (= i 0))))))

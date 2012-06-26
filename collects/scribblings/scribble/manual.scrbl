@@ -671,7 +671,7 @@ sub-sections.}
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}
 
-@defform/subs[(defproc maybe-kind prototype
+@defform/subs[(defproc maybe-kind maybe-id prototype
                        result-contract-expr-datum
                        pre-flow ...)
               ([prototype (id arg-spec ...)
@@ -684,6 +684,8 @@ sub-sections.}
                          ellipses+]
                [maybe-kind code:blank
                            (code:line #:kind kind-string-expr)]
+               [maybe-id code:blank
+                         (code:line #:id [src-id dest-id-expr])]
                [ellipses @#,lit-ellipses]
                [ellipses+ @#,lit-ellipses+])]{
 
@@ -747,10 +749,17 @@ An optional @racket[#:kind] specification chooses the decorative
 label, which defaults to @racket["procedure"]. A @racket[#f]
 result for @racket[kind-string-expr] uses the default, otherwise
 @racket[kind-string-expr] should produce a string. An alternate
-label should be all lowercase.}
+label should be all lowercase.
 
+If @racket[#:id [src-id dest-id-expr]] is supplied, then
+@racket[src-id] is the identifier as it appears in the
+@racket[prototype] (to be replaced by a defining instance), and
+@racket[dest-id-expr] produces the identifier to be documented in
+place of @racket[src-id]. This split between @racket[src-id] and
+@racket[dest-id-expr] roles is useful for functional abstraction of
+@racket[defproc].}
 
-@defform[(defproc* maybe-kind
+@defform[(defproc* maybe-kind maybe-id
                    ([prototype
                      result-contract-expr-datum] ...)
                    pre-flow ...)]{

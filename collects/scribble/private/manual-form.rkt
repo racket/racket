@@ -10,7 +10,9 @@
          "manual-scheme.rkt"
          "manual-bind.rkt"
          scheme/list
-         (for-syntax scheme/base)
+         (for-syntax scheme/base
+                     syntax/parse
+                     racket/syntax)
          (for-label scheme/base))
 
 (provide defform defform* defform/subs defform*/subs defform/none
@@ -24,226 +26,123 @@
                      [racketgrammar* schemegrammar*])
          var svar)
 
+(begin-for-syntax
+ (define-splicing-syntax-class kind-kw
+   #:description "#:kind keyword"
+   (pattern (~optional (~seq #:kind kind)
+                       #:defaults ([kind #'#f]))))
+   
+ (define-splicing-syntax-class id-kw
+   #:description "#:id keyword"
+   (pattern (~seq #:id [defined-id:id defined-id-expr]))
+   (pattern (~seq #:id defined-id:id)
+            #:with defined-id-expr #'(quote-syntax defined-id))
+   (pattern (~seq #:id [#f #f])
+            #:with defined-id #'#f
+            #:with defined-id-expr #'#f)
+   (pattern (~seq)
+            #:with defined-id #'#f
+            #:with defined-id-expr #'#f))
+ 
+ (define-splicing-syntax-class literals-kw
+   #:description "#:literals keyword"
+   (pattern (~optional (~seq #:literals (lit:id ...))
+                       #:defaults ([(lit 1) '()]))))
+
+ (define-splicing-syntax-class contracts-kw
+   #:description "#:contracts keyword"
+   (pattern (~optional (~seq #:contracts ([contract-nonterm:id contract-expr] ...))
+                       #:defaults ([(contract-nonterm 1) '()]
+                                   [(contract-expr 1) '()]))))
+
+ (define-syntax-class grammar
+   (pattern ([non-term-id:id non-term-form ...] ...)))
+ )
+
 (define-syntax (defform*/subs stx)
-  (syntax-case stx ()
-    [(_ #:kind kind #:id defined-id #:literals (lit ...) [spec spec1 ...]
-        ([non-term-id non-term-form ...] ...)
-        #:contracts ([contract-nonterm contract-expr] ...)
+  (syntax-parse stx
+    [(_ k:kind-kw d:id-kw l:literals-kw [spec spec1 ...]
+        g:grammar
+        c:contracts-kw
         desc ...)
-     (with-syntax ([(defined-id defined-id-expr)
-                    (if (identifier? #'defined-id)
-                        (syntax [defined-id (quote-syntax defined-id)])
-                        #'defined-id)])
-       (with-syntax ([new-spec
-                      (let loop ([spec #'spec])
-                        (if (and (identifier? spec)
-                                 (free-identifier=? spec #'defined-id))
-                            (datum->syntax #'here '(unsyntax x) spec spec)
-                            (syntax-case spec ()
-                              [(a . b)
-                               (datum->syntax spec
-                                              (cons (loop #'a) (loop #'b))
-                                              spec
-                                              spec)]
-                              [_ spec])))])
-         (for-each (lambda (id)
-                     (unless (identifier? id)
-                       (raise-syntax-error #f
-                                           "expected an identifier for a literal"
-                                           stx
-                                           id)))
-                   (syntax->list #'(lit ...)))
+     (with-syntax* ([defined-id (if (syntax-e #'d.defined-id)
+                                    #'d.defined-id
+                                    (syntax-case #'spec ()
+                                      [(spec-id . _) #'spec-id]))]
+                    [defined-id-expr (if (syntax-e #'d.defined-id-expr)
+                                         #'d.defined-id-expr
+                                         #'(quote-syntax defined-id))]
+                    [new-spec
+                     (let loop ([spec #'spec])
+                       (if (and (identifier? spec)
+                                (free-identifier=? spec #'defined-id))
+                           (datum->syntax #'here '(unsyntax x) spec spec)
+                           (syntax-case spec ()
+                             [(a . b)
+                              (datum->syntax spec
+                                             (cons (loop #'a) (loop #'b))
+                                             spec
+                                             spec)]
+                             [_ spec])))])
          #'(with-togetherable-racket-variables
-            (lit ...)
+            (l.lit ...)
             ([form [defined-id spec]] [form [defined-id spec1]] ...
-             [non-term (non-term-id non-term-form ...)] ...)
-            (*defforms kind defined-id-expr
+             [non-term (g.non-term-id g.non-term-form ...)] ...)
+            (*defforms k.kind defined-id-expr
                        '(spec spec1 ...)
                        (list (lambda (x) (racketblock0/form new-spec))
                              (lambda (ignored) (racketblock0/form spec1)) ...)
-                       '((non-term-id non-term-form ...) ...)
-                       (list (list (lambda () (racket non-term-id))
-                                   (lambda () (racketblock0/form non-term-form))
+                       '((g.non-term-id g.non-term-form ...) ...)
+                       (list (list (lambda () (racket g.non-term-id))
+                                   (lambda () (racketblock0/form g.non-term-form))
                                    ...)
                              ...)
-                       (list (list (lambda () (racket contract-nonterm))
-                                   (lambda () (racketblock0 contract-expr)))
+                       (list (list (lambda () (racket c.contract-nonterm))
+                                   (lambda () (racketblock0 c.contract-expr)))
                              ...)
-                       (lambda () (list desc ...))))))]
-    [(fm #:id defined-id #:literals (lit ...) [spec spec1 ...]
-         ([non-term-id non-term-form ...] ...)
-         #:contracts ([contract-nonterm contract-expr] ...)
-         desc ...)
-     (syntax/loc stx
-       (fm #:kind #f #:id defined-id #:literals (lit ...) [spec spec1 ...]
-           ([non-term-id non-term-form ...] ...)
-           #:contracts ([contract-nonterm contract-expr] ...)
-           desc ...))]
-    [(fm #:id defined-id #:literals (lit ...) [spec spec1 ...]
-         ([non-term-id non-term-form ...] ...)
-         desc ...)
-     (syntax/loc stx
-       (fm #:id defined-id #:literals (lit ...) [spec spec1 ...]
-           ([non-term-id non-term-form ...] ...)
-           #:contracts ()
-           desc ...))]
-    [(fm #:kind kind #:id defined-id #:literals (lit ...) [spec spec1 ...]
-         ([non-term-id non-term-form ...] ...)
-         desc ...)
-     (syntax/loc stx
-       (fm #:kind kind #:id defined-id #:literals (lit ...) [spec spec1 ...]
-           ([non-term-id non-term-form ...] ...)
-           #:contracts ()
-           desc ...))]
-    [(fm #:id id [spec spec1 ...] ([non-term-id non-term-form ...] ...)
-         desc ...)
-     (syntax/loc stx
-       (fm #:kind #f #:id id #:literals () [spec spec1 ...]
-           ([non-term-id non-term-form ...] ...)
-           #:contracts ()
-           desc ...))]
-    [(fm #:kind kind #:literals lits [(spec-id . spec-rest) spec1 ...]
-         ([non-term-id non-term-form ...] ...)
-         desc ...)
-     (with-syntax ([(_ _ _ _ _ [spec . _] . _) stx])
-       (syntax/loc stx
-         (fm #:kind kind #:id spec-id #:literals lits [spec spec1 ...]
-             ([non-term-id non-term-form ...] ...)
-             desc ...)))]
-    [(fm #:literals lits [(spec-id . spec-rest) spec1 ...]
-         ([non-term-id non-term-form ...] ...)
-         desc ...)
-     (with-syntax ([(_ _ _ [spec . _] . _) stx])
-       (syntax/loc stx
-         (fm #:kind #f #:id spec-id #:literals lits [spec spec1 ...]
-             ([non-term-id non-term-form ...] ...)
-             desc ...)))]
-    [(fm #:kind kind [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
-     (syntax/loc stx
-       (fm #:kind kind #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...)
-           desc ...))]
-    [(fm [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
-     (syntax/loc stx
-       (fm #:kind #f #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...)
-           desc ...))]))
+                       (lambda () (list desc ...)))))]))
 
 (define-syntax (defform* stx)
-  (syntax-case stx ()
-    [(_ #:kind kind #:id id #:literals lits [spec ...] desc ...)
+  (syntax-parse stx
+    [(_ k:kind-kw d:id-kw l:literals-kw [spec ...] desc ...)
      (syntax/loc stx
-       (defform*/subs #:kind kind #:id id #:literals lits [spec ...] () desc ...))]
-    [(_ #:id id #:literals lits [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs #:id id #:literals lits [spec ...] () desc ...))]
-    [(_ #:kind kind #:literals lits [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind #:literals lits [spec ...] () desc ...))]
-    [(_ #:literals lits [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs #:literals lits [spec ...] () desc ...))]
-    [(_ #:kind kind #:id id [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind #:id id [spec ...] () desc ...))]
-    [(_ #:id id [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs #:id id [spec ...] () desc ...))]
-    [(_ #:kind kind [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind [spec ...] () desc ...))]
-    [(_ [spec ...] desc ...)
-     (syntax/loc stx
-       (defform*/subs [spec ...] () desc ...))]))
+       (defform*/subs #:kind k.kind 
+         #:id [d.defined-id d.defined-id-expr] 
+         #:literals (l.lit ...)
+         [spec ...] () desc ...))]))
 
 (define-syntax (defform stx)
-  (syntax-case stx ()
-    [(_ #:kind kind #:id id #:literals (lit ...) spec desc ...)
+  (syntax-parse stx
+    [(_ k:kind-kw d:id-kw l:literals-kw spec desc ...)
      (syntax/loc stx
-       (defform*/subs #:kind kind #:id id #:literals (lit ...) [spec] () desc ...))]
-    [(_ #:id id #:literals (lit ...) spec desc ...)
-     (syntax/loc stx
-       (defform*/subs #:id id #:literals (lit ...) [spec] () desc ...))]
-    [(_ #:kind kind #:id id spec desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind #:id id #:literals () [spec] () desc ...))]
-    [(_ #:id id spec desc ...)
-     (syntax/loc stx
-       (defform*/subs #:id id #:literals () [spec] () desc ...))]
-    [(_ #:literals (lit ...) spec desc ...)
-     (syntax/loc stx
-       (defform*/subs #:literals (lit ...) [spec] () desc ...))]
-    [(_ #:kind kind #:literals (lit ...) spec desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind #:literals (lit ...) [spec] () desc ...))]
-    [(_ #:kind kind spec desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind [spec] () desc ...))]
-    [(_ spec desc ...)
-     (syntax/loc stx
-       (defform*/subs [spec] () desc ...))]))
+       (defform*/subs #:kind k.kind 
+         #:id [d.defined-id d.defined-id-expr] 
+         #:literals (l.lit ...)
+         [spec] () desc ...))]))
 
 (define-syntax (defform/subs stx)
-  (syntax-case stx ()
-    [(_ #:kind kind #:id id #:literals lits spec subs desc ...)
+  (syntax-parse stx
+    [(_ k:kind-kw d:id-kw l:literals-kw spec subs desc ...)
      (syntax/loc stx
-       (defform*/subs #:kind kind #:id id #:literals lits [spec] subs desc ...))]
-    [(_ #:id id #:literals lits spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs #:id id #:literals lits [spec] subs desc ...))]
-    [(_ #:kind kind #:id id spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind #:id id #:literals () [spec] subs desc ...))]
-    [(_ #:id id spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs #:id id #:literals () [spec] subs desc ...))]
-    [(_ #:kind kind #:literals lits spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind #:literals lits [spec] subs desc ...))]
-    [(_ #:literals lits spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs #:literals lits [spec] subs desc ...))]
-    [(_ #:kind kind spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs #:kind kind [spec] subs desc ...))]
-    [(_ spec subs desc ...)
-     (syntax/loc stx
-       (defform*/subs [spec] subs desc ...))]))
+       (defform*/subs #:kind k.kind 
+         #:id [d.defined-id d.defined-id-expr] 
+         #:literals (l.lit ...)
+         [spec] subs desc ...))]))
 
 (define-syntax (defform/none stx)
-  (syntax-case stx ()
-    [(_ #:kind kind #:literals (lit ...) spec #:contracts ([contract-id contract-expr] ...) desc ...)
-     (begin
-       (for-each (lambda (id)
-                   (unless (identifier? id)
-                     (raise-syntax-error #f
-                                         "expected an identifier for a literal"
-                                         stx
-                                         id)))
-                 (syntax->list #'(lit ...)))
-       #'(with-togetherable-racket-variables
-          (lit ...)
-          ([form/none spec])
-          (*defforms kind #f
-                     '(spec) (list (lambda (ignored) (racketblock0/form spec)))
-                     null null
-                     (list (list (lambda () (racket contract-id))
-                                 (lambda () (racketblock0 contract-expr)))
-                           ...)
-                     (lambda () (list desc ...)))))]
-    [(fm #:literals (lit ...) spec #:contracts ([contract-id contract-expr] ...) desc ...)
+  (syntax-parse stx
+    [(_ k:kind-kw l:literals-kw spec c:contracts-kw desc ...)
      (syntax/loc stx
-       (fm #:kind #f #:literals (lit ...) spec #:contracts ([contract-id contract-expr] ...) desc ...))]
-    [(fm #:kind kind #:literals (lit ...) spec desc ...)
-     (syntax/loc stx
-       (fm #:kind kind #:literals (lit ...) spec #:contracts () desc ...))]
-    [(fm #:literals (lit ...) spec desc ...)
-     (syntax/loc stx
-       (fm #:literals (lit ...) spec #:contracts () desc ...))]
-    [(fm #:kind kind spec desc ...)
-     (syntax/loc stx
-       (fm #:kind kind #:literals () spec desc ...))]
-    [(fm spec desc ...)
-     (syntax/loc stx
-       (fm #:literals () spec desc ...))]))
+       (with-togetherable-racket-variables
+        (l.lit ...)
+        ([form/none spec])
+        (*defforms k.kind #f
+                   '(spec) (list (lambda (ignored) (racketblock0/form spec)))
+                   null null
+                   (list (list (lambda () (racket c.contract-id))
+                               (lambda () (racketblock0 c.contract-expr)))
+                         ...)
+                   (lambda () (list desc ...)))))]))
 
 (define-syntax (defidform/inline stx)
   (syntax-case stx (unsyntax)
@@ -254,21 +153,18 @@
      #'(defform-site id-expr)]))
 
 (define-syntax (defidform stx)
-  (syntax-case stx ()
-    [(_ #:kind kind spec-id desc ...)
+  (syntax-parse stx
+    [(_ k:kind-kw spec-id desc ...)
      #'(with-togetherable-racket-variables
         ()
         ()
-        (*defforms kind (quote-syntax/loc spec-id)
+        (*defforms k.kind (quote-syntax/loc spec-id)
                    '(spec-id)
                    (list (lambda (x) (make-omitable-paragraph (list x))))
                    null
                    null
                    null
-                   (lambda () (list desc ...))))]
-    [(fm spec-id desc ...)
-     (syntax/loc stx
-       (fm #:kind #f spec-id desc ...))]))
+                   (lambda () (list desc ...))))]))
 
 (define (into-blockquote s)
   (make-blockquote "leftindent"
@@ -284,46 +180,40 @@
   (syntax-case stx ()
     [(_ . rest) #'(into-blockquote (defform* . rest))]))
 
-(define-syntax spec?form/subs
-  (syntax-rules ()
-    [(_ has-kw? #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
-        #:contracts ([contract-nonterm contract-expr] ...)
+(define-syntax (spec?form/subs stx)
+  (syntax-parse stx
+    [(_ has-kw? l:literals-kw spec g:grammar
+        c:contracts-kw
         desc ...)
-     (with-racket-variables
-      (lit ...)
-      ([form/maybe (has-kw? spec)]
-       [non-term (non-term-id non-term-form ...)] ...)
-      (*specsubform 'spec '(lit ...) (lambda () (racketblock0/form spec))
-                    '((non-term-id non-term-form ...) ...)
-                    (list (list (lambda () (racket non-term-id))
-                                (lambda () (racketblock0/form non-term-form))
-                                ...)
-                          ...)
-                    (list (list (lambda () (racket contract-nonterm))
-                                (lambda () (racketblock0 contract-expr)))
-                          ...)
-                    (lambda () (list desc ...))))]
-    [(_ has-kw? #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
-        desc ...)
-     (spec?form/subs has-kw? #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
-                     #:contracts ()
-                     desc ...)]))
+     (syntax/loc stx
+       (with-racket-variables
+        (l.lit ...)
+        ([form/maybe (has-kw? spec)]
+         [non-term (g.non-term-id g.non-term-form ...)] ...)
+        (*specsubform 'spec '(l.lit ...) (lambda () (racketblock0/form spec))
+                      '((g.non-term-id g.non-term-form ...) ...)
+                      (list (list (lambda () (racket g.non-term-id))
+                                  (lambda () (racketblock0/form g.non-term-form))
+                                  ...)
+                            ...)
+                      (list (list (lambda () (racket c.contract-nonterm))
+                                  (lambda () (racketblock0 c.contract-expr)))
+                            ...)
+                      (lambda () (list desc ...)))))]))
 
-(define-syntax specsubform
-  (syntax-rules ()
-    [(_ #:literals (lit ...) spec desc ...)
-     (spec?form/subs #f #:literals (lit ...) spec () desc ...)]
-    [(_ spec desc ...)
-     (specsubform #:literals () spec desc ...)]))
+(define-syntax (specsubform stx)
+  (syntax-parse stx
+    [(_ l:literals-kw spec desc ...)
+     (syntax/loc stx
+       (spec?form/subs #f #:literals (l.lit ...) spec () desc ...))]))
 
-(define-syntax specsubform/subs
-  (syntax-rules ()
-    [(_ #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
-        desc ...)
-     (spec?form/subs #f #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
-                     desc ...)]
-    [(_ spec subs desc ...)
-     (specsubform/subs #:literals () spec subs desc ...)]))
+(define-syntax (specsubform/subs stx)
+  (syntax-parse stx
+    [(_ l:literals-kw spec g:grammar desc ...)
+     (syntax/loc stx
+       (spec?form/subs #f #:literals (l.lit ...) spec 
+                       ([g.non-term-id g.non-term-form ...] ...) 
+                       desc ...))]))
 
 (define-syntax-rule (specspecsubform spec desc ...)
   (make-blockquote "leftindent" (list (specsubform spec desc ...))))
@@ -338,15 +228,13 @@
     [(_ spec desc ...)
      (specform #:literals () spec desc ...)]))
 
-(define-syntax specform/subs
-  (syntax-rules ()
-    [(_ #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
+(define-syntax (specform/subs stx)
+  (syntax-parse stx
+    [(_ l:literals-kw spec g:grammar
         desc ...)
-     (spec?form/subs #t #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
-                     desc ...)]
-    [(_ spec ([non-term-id non-term-form ...] ...) desc ...)
-     (specform/subs #:literals () spec ([non-term-id non-term-form ...] ...)
-                    desc ...)]))
+     (syntax/loc stx
+       (spec?form/subs #t #:literals (l.lit ...) spec ([g.non-term-id g.non-term-form ...] ...)
+                       desc ...))]))
 
 (define-syntax-rule (specsubform/inline spec desc ...)
   (with-racket-variables
