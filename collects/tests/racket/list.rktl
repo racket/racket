@@ -245,17 +245,19 @@
         [r3 (in-list '(() (x) (x (5) y) (x (5) y (5) z)
                        (x (5) y (5) z (5) w)))])
     (test r1 add-between l 5)
-    (test `(0 ,@r1) add-between l 5 #:first 0)
-    (test `(,@r1 9) add-between l 5 #:last 9)
-    (test `(0 ,@r1 9) add-between l 5 #:first 0 #:last 9)
+    (test `(0 ,@r1) add-between l 5 #:before-first 0)
+    (test `(,@r1 9) add-between l 5 #:after-last 9)
+    (test `(0 ,@r1 9) add-between l 5 #:before-first 0 #:after-last 9)
     (test r2 add-between l 5 #:before-last 7)
-    (test `(0 ,@r2) add-between l 5 #:first 0 #:before-last 7)
-    (test `(,@r2 9) add-between l 5 #:last 9 #:before-last 7)
-    (test `(0 ,@r2 9) add-between l 5 #:first 0 #:last 9 #:before-last 7)
+    (test `(0 ,@r2) add-between l 5 #:before-first 0 #:before-last 7)
+    (test `(,@r2 9) add-between l 5 #:after-last 9 #:before-last 7)
+    (test `(0 ,@r2 9) add-between l 5 #:before-first 0 #:after-last 9 #:before-last 7)
     (test r3 add-between l '(5))
-    (test `(0 ,@r3) add-between l '(5) #:first 0)
-    (test `(,@r3 9) add-between l '(5) #:last 9)
-    (test `(0 ,@r3 9) add-between l '(5) #:first 0 #:last 9))
+    (test `(0 ,@r3) add-between l '(5) #:before-first 0)
+    (test `(,@r3 9) add-between l '(5) #:after-last 9)
+    (test `(0 ,@r3 9) add-between l '(5) #:before-first 0 #:after-last 9)
+    (test r1 add-between l 5 #:nothing #f #:before-first #f)
+    (test r1 add-between l 5 #:nothing #f #:after-last #f))
   ;; spliced cases
   (for* ([x (in-list '(() (4) (4 5)))]
          [y (in-list '(() (6) (6 7)))])
@@ -268,20 +270,20 @@
       (test r2 add-between l x #:splice? #t #:before-last y)
       (for ([fst (in-list '(() (0) (0 1)))])
         (test `(,@fst ,@r1) add-between l x
-              #:splice? #t #:first fst)
+              #:splice? #t #:before-first fst)
         (test `(,@fst ,@r2) add-between l x
-              #:splice? #t #:first fst #:before-last y))
+              #:splice? #t #:before-first fst #:before-last y))
       (for ([lst (in-list '(() (9) (8 9)))])
         (test `(,@r1 ,@lst) add-between l x
-              #:splice? #t #:last lst)
+              #:splice? #t #:after-last lst)
         (test `(,@r2 ,@lst) add-between l x
-              #:splice? #t #:last lst #:before-last y))
+              #:splice? #t #:after-last lst #:before-last y))
       (for* ([fst (in-list '(() (0) (0 1)))]
              [lst (in-list '(() (9) (8 9)))])
         (test `(,@fst ,@r1 ,@lst) add-between l x
-              #:splice? #t #:first fst #:last lst)
+              #:splice? #t #:before-first fst #:after-last lst)
         (test `(,@fst ,@r2 ,@lst) add-between l x
-              #:splice? #t #:first fst #:last lst #:before-last y)))))
+              #:splice? #t #:before-first fst #:after-last lst #:before-last y)))))
 
 ;; ---------- remove-duplicates ----------
 (let ()

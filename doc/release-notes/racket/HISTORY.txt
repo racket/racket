@@ -10,6 +10,8 @@ racket/future: handling of internal stack overflow without
 racket/base: guarantee portable results for current-seconds
  and file-or-directory-modify-seconds
 compiler/zo-structs: added a context field to all-from-module
+racket/list: added optional arguments to add-between, including
+ #:splice?, #:before-first, #:before-last, and #:after-last
 
 Version 5.3.0.10
 racket/base: add progress-evt?, thread-cell-values?, prefab-key?,

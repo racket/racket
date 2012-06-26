@@ -860,39 +860,45 @@ except that it can be faster.
 (split-at-right '(1 2 3 4 5 6) 4)
 ]}
 
+
 @defproc[(add-between [lst list?] [v any/c]
-                      [#:before-last before-last any/c v]
-                      [#:first       first       any/c ....]
-                      [#:last        last        any/c ....]
+                      [#:nothing nothing any/c (gensym)]
+                      [#:before-first before-first any/c nothing]
+                      [#:before-last  before-last  any/c v]
+                      [#:after-last   after-last   any/c nothing]
                       [#:splice? splice? any/c #f])
          list?]{
 
 Returns a list with the same elements as @racket[lst], but with
-@racket[v] between each pair of items in @racket[lst].  The last pair of
-items will have @racket[before-last] between them, which defaults to
-@racket[v].  Giving a value for @racket[first] (or @racket[last])
-will make the result have that value added to its beginning (or end).
+@racket[v] between each pair of elements in @racket[lst]; the last
+pair of elements will have @racket[before-last] between them, instead
+of @racket[v] (but @racket[before-last] defaults to @racket[v]). In
+addition, if @racket[before-first] is supplied as a value other than
+@racket[nothing], then @racket[before-first] is inserted before the first
+element; if @racket[after-last] is supplied as a value other than
+@racket[nothing], then @racket[after-last] is inserted after the last
+element.
+
+If @racket[splice?] is true, then @racket[v], @racket[before-first],
+@racket[before-last], and @racket[after-last] should be lists, and
+the list elements are spliced into the result.
 
 @mz-examples[#:eval list-eval
   (add-between '(x y z) 'and)
   (add-between '(x) 'and)
   (add-between '("a" "b" "c" "d") "," #:before-last "and")
-  (add-between #:first "Todo:"
+  (add-between #:before-first "Todo:"
                '("a" "b" "c") "," #:before-last "and"
-               #:last ".")
-]
-
-If @racket[splice?] is true, then @racket[v], @racket[before-last],
-@racket[first], and @racket[last] should be lists, and their values are
-spliced into the result.
-
-@mz-examples[#:eval list-eval
+               #:after-last ".")
   (add-between '(x y z) '(-) #:before-last '(- -)
-               #:first '(begin) #:last '(end LF)
+               #:before-first '(begin) #:after-last '(end LF)
                #:splice? #t)
-]
+  (add-between '("a" "b" "c" "d") "," 
+               #:nothing #f #:before-first #f #:after-last "!")
+  (add-between '("a" "b" "c" "d") "," 
+               #:before-first #f #:after-last "!")
+]}
 
-}
 
 @defproc*[([(append* [lst list?] ... [lsts (listof list?)]) list?]
            [(append* [lst list?] ... [lsts list?]) any/c])]{

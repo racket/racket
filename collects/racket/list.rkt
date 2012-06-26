@@ -177,26 +177,37 @@
 
 ;; General note: many non-tail recursive, which are just as fast in racket
 
-(define none (gensym 'none))
-(define (add-between l x #:splice? [splice? #f]
-                         #:first [first none] #:last [last none]
-                         #:before-last [before-last none])
+(define default-nothing (gensym 'nothing))
+(define (add-between l x 
+                     #:splice? [splice? #f]
+                     #:nothing [nothing default-nothing]
+                     #:before-first [before-first nothing]
+                     #:before-last [before-last x]
+                     #:after-last [after-last nothing])
   (unless (list? l)
     (raise-argument-error 'add-between "list?" 0 l x))
   (when splice?
-    (unless (list? x)
-      (raise-argument-error 'add-between "list?" 1 l x)))
+    (define (check-list x which)
+      (unless (list? x)
+        (raise-arguments-error 'add-between
+                               (string-append "list needed in splicing mode" which)
+                               "given" x
+                               "given list..." l)))
+    (check-list x "")
+    (unless (eq? nothing before-first) (check-list before-first " for #:before-first"))
+    (check-list before-last " for #:before-last")
+    (unless (eq? nothing after-last) (check-list after-last " for #:after-last")))
   (if (or (null? l) (null? (cdr l)))
-    (let* ([r (cond [(eq? last none) '()] [splice? last] [else (list last)])]
+    (let* ([r (cond [(eq? after-last nothing) '()] [splice? after-last] [else (list after-last)])]
            [r (cond [(null? l) r] [(null? r) l] [(cons (car l) r)])]
-           [r (cond [(eq? first none) r]
-                    [splice? (append first r)]
-                    [else (cons first r)])])
+           [r (cond [(eq? before-first nothing) r]
+                    [splice? (append before-first r)]
+                    [else (cons before-first r)])])
       r)
     (let* ([r ; main loop (two loops for efficiency, maybe not needed)
             (if splice?
               (let ([x (reverse x)]
-                    [bl (and (not (eq? before-last none))
+                    [bl (and (not (eq? before-last x))
                              (reverse before-last))])
                 (let loop ([i (cadr l)] [l (cddr l)] [r '()])
                   (cond [(pair? l) (loop (car l) (cdr l) (cons i (append x r)))]
@@ -204,20 +215,19 @@
                         [else (cons i (append x r))])))
               (let loop ([i (cadr l)] [l (cddr l)] [r '()])
                 (cond [(pair? l) (loop (car l) (cdr l) (cons i (cons x r)))]
-                      [(eq? before-last none) (cons i (cons x r))]
                       [else (cons i (cons before-last r))])))]
-           ;; add `last'
-           [r (cond [(eq? last none) r]
-                    [splice? (append (reverse last) r)]
-                    [else (cons last r)])]
+           ;; add `after-last'
+           [r (cond [(eq? after-last nothing) r]
+                    [splice? (append (reverse after-last) r)]
+                    [else (cons after-last r)])]
            ;; reverse
            [r (reverse r)]
            ;; add first item
            [r (cons (car l) r)]
-           ;; add `first'
-           [r (cond [(eq? first none) r]
-                    [splice? (append first r)]
-                    [else (cons first r)])])
+           ;; add `before-first'
+           [r (cond [(eq? before-first nothing) r]
+                    [splice? (append before-first r)]
+                    [else (cons before-first r)])])
       r)))
 
 (define (remove-duplicates l [=? equal?] #:key [key #f])
