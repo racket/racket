@@ -45,7 +45,11 @@
          (define name* (syntax->list #'(name ...)))
          (values (cons (lambda ()  ;; delay the syntax creation until add-sections is set
                          (with-syntax ([(ex ...) (extract-external-name name*)])
-                           #`(#,*add title (list (cons #'ex (defproc (ex args ...) range w ...)) ...))))
+                           #`(#,*add title (list (cons #'ex 
+                                                       (lambda (c)
+                                                         (defproc #:id [ex (datum->syntax c 'ex)]
+                                                           (ex args ...) range w ...)))
+                                                 ...))))
                        add-docs-and-provide)
                  (cons #`(provide #,@(optional-rename-out name*))
                        provides))])))
@@ -124,9 +128,8 @@
                               (cons @section[#:tag-prefix p]{@section-title}
                                     (cons typed others))]))
 
-			 ;; this is not going to work 
                          (define (re-context c id defproc)
-                           defproc)
+                           (defproc c))
                          
                          ;;
                          (define (docs . exceptions)
