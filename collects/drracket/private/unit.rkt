@@ -76,15 +76,15 @@ module browser threading seems wrong.
                                         images/icons/stickman images/logos))))
 
 (define execute-bitmap
-  (icons:compiled-bitmap (icons:play-icon icons:run-icon-color (icons:toolbar-icon-height))))
+  (icons:compiled-bitmap (icons:play-icon #:color icons:run-icon-color
+                                          #:height (icons:toolbar-icon-height))))
 (define break-bitmap
-  (icons:compiled-bitmap (icons:stop-icon icons:halt-icon-color (icons:toolbar-icon-height))))
+  (icons:compiled-bitmap (icons:stop-icon #:color icons:halt-icon-color
+                                          #:height (icons:toolbar-icon-height))))
 (define small-save-bitmap
-  (icons:compiled-bitmap (icons:small-save-icon icons:syntax-icon-color "gold"
-                                                (icons:toolbar-icon-height))))
+  (icons:compiled-bitmap (icons:small-save-icon #:height (icons:toolbar-icon-height))))
 (define save-bitmap
-  (icons:compiled-bitmap (icons:save-icon icons:syntax-icon-color "gold"
-                                          (icons:toolbar-icon-height))))
+  (icons:compiled-bitmap (icons:save-icon #:height (icons:toolbar-icon-height))))
 
 (begin-for-syntax
   (define stickman-height 18)
@@ -93,17 +93,15 @@ module browser threading seems wrong.
 (define running-frame-list
   (icons:compiled-bitmap-list
    (for/list ([t  (in-range 0 1 (/ 1 num-running-frames))])
-     (icons:running-stickman-icon t icons:run-icon-color "white" icons:run-icon-color
-                                  stickman-height))))
+     (icons:running-stickman-icon t #:height stickman-height))))
 (define running-frames (list->vector running-frame-list))
 
 (define standing-frame
   (icons:compiled-bitmap
-   (icons:standing-stickman-icon icons:run-icon-color "white" icons:run-icon-color
-                                 stickman-height)))
+   (icons:standing-stickman-icon #:height stickman-height)))
 
 (define very-small-planet-bitmap
-  (icons:compiled-bitmap (icons:planet-logo (icons:toolbar-icon-height))))
+  (icons:compiled-bitmap (icons:planet-logo #:height (icons:toolbar-icon-height))))
 
 ;; ===================================================================================================
 

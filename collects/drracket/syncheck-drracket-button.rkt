@@ -12,9 +12,9 @@
 (define-local-member-name syncheck:button-callback)
 
 (define syncheck-bitmap
-  (compiled-bitmap (check-syntax-icon (toolbar-icon-height))))
+  (compiled-bitmap (check-syntax-icon #:height (toolbar-icon-height))))
 (define syncheck-small-bitmap
-  (compiled-bitmap (small-check-syntax-icon (toolbar-icon-height))))
+  (compiled-bitmap (small-check-syntax-icon #:height (toolbar-icon-height))))
 
 (define syncheck-drracket-button
   (list 

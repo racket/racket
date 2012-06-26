@@ -116,7 +116,7 @@ This conceptual model allows us to treat flomaps as if they were multi-valued fu
 For example, we might plot the red component of an ARGB icon:
 @interaction[#:eval flomap-eval
                     (require images/icons/misc plot)
-                    (define icon-fm (bomb-flomap "azure" "orange" 48))
+                    (define icon-fm (bomb-flomap #:bomb-color "orange" #:height 48))
                     (flomap->bitmap icon-fm)
                     (define-values (icon-width icon-height) (flomap-size icon-fm))
                     (plot3d-bitmap (contour-intervals3d

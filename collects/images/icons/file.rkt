@@ -16,10 +16,11 @@
           small-load-icon small-load-flomap)
          (only-doc-out (all-defined-out)))
 
-(defproc (floppy-disk-flomap [color (or/c string? (is-a?/c color%))]
-                             [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                             [material deep-flomap-material-value? (default-icon-material)]
-                             ) flomap?
+(defproc (floppy-disk-flomap
+          [#:color color (or/c string? (is-a?/c color%)) "slategray"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height color material]
    (define scale (/ height 32))
@@ -107,53 +108,57 @@
           [fm  (flomap-ct-superimpose fm label-fm)])
      fm)))
 
-(defproc (save-flomap [arrow-color (or/c string? (is-a?/c color%))]
-                      [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
+(defproc (save-flomap [#:disk-color disk-color (or/c string? (is-a?/c color%)) "gold"]
+                      [#:arrow-color arrow-color (or/c string? (is-a?/c color%)) syntax-icon-color]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
                       ) flomap?
-  (flomap-hc-append (right-arrow-flomap arrow-color (* 3/4 height) material)
-                    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-                    (floppy-disk-flomap color height material))) 
+  (flomap-hc-append
+   (right-arrow-flomap #:color arrow-color #:height (* 3/4 height) #:material material)
+   (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
+   (floppy-disk-flomap #:color disk-color #:height height #:material material)))
 
-(defproc (load-flomap [arrow-color (or/c string? (is-a?/c color%))]
-                      [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
+(defproc (load-flomap [#:disk-color disk-color (or/c string? (is-a?/c color%)) "gold"]
+                      [#:arrow-color arrow-color (or/c string? (is-a?/c color%)) syntax-icon-color]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
                       ) flomap?
-  (flomap-hc-append (floppy-disk-flomap color height material)
-                    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-                    (right-arrow-flomap arrow-color (* 3/4 height) material)))
+  (flomap-hc-append
+   (floppy-disk-flomap #:color disk-color #:height height #:material material)
+   (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
+   (right-arrow-flomap #:color arrow-color #:height (* 3/4 height) #:material material)))
 
-(defproc (small-save-flomap [arrow-color (or/c string? (is-a?/c color%))]
-                            [color (or/c string? (is-a?/c color%))]
-                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                            [material deep-flomap-material-value? (default-icon-material)]
-                            ) flomap?
+(defproc (small-save-flomap
+          [#:disk-color disk-color (or/c string? (is-a?/c color%)) "gold"]
+          [#:arrow-color arrow-color (or/c string? (is-a?/c color%)) syntax-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (flomap-pin* 0 0 11/16 0
-               (floppy-disk-flomap color height material)
-               (right-arrow-flomap arrow-color (* 3/4 height) material)))
+               (floppy-disk-flomap #:color disk-color #:height height #:material material)
+               (right-arrow-flomap #:color arrow-color #:height (* 3/4 height) #:material material)))
 
-(defproc (small-load-flomap [arrow-color (or/c string? (is-a?/c color%))]
-                            [color (or/c string? (is-a?/c color%))]
-                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                            [material deep-flomap-material-value? (default-icon-material)]
-                            ) flomap?
+(defproc (small-load-flomap
+          [#:disk-color disk-color (or/c string? (is-a?/c color%)) "gold"]
+          [#:arrow-color arrow-color (or/c string? (is-a?/c color%)) syntax-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (flomap-pin* 1 1 5/16 1
-               (floppy-disk-flomap color height material)
-               (right-arrow-flomap arrow-color (* 3/4 height) material)))
+               (floppy-disk-flomap #:color disk-color #:height height #:material material)
+               (right-arrow-flomap #:color arrow-color #:height (* 3/4 height) #:material material)))
 
 (define-icon-wrappers
-  ([color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
+  ([#:color color (or/c string? (is-a?/c color%)) "slategray"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [floppy-disk-icon floppy-disk-flomap])
 
 (define-icon-wrappers
-  ([arrow-color (or/c string? (is-a?/c color%))]
-   [color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
+  ([#:disk-color disk-color (or/c string? (is-a?/c color%)) "gold"]
+   [#:arrow-color arrow-color (or/c string? (is-a?/c color%)) syntax-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [save-icon save-flomap]
   [load-icon load-flomap]
   [small-save-icon small-save-flomap]

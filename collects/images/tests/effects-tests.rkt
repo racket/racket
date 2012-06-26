@@ -19,11 +19,11 @@
   (flomap-cc-superimpose (flomap-shadow fm σ color) fm))
 
 (define plt-fm
-  (flomap-shadowed (flomap-inset (plt-flomap (- size (* 4 blur))) (* 2 blur))
+  (flomap-shadowed (flomap-inset (plt-flomap #:height (- size (* 4 blur))) (* 2 blur))
                    blur #(1/2 0 0 1/8)))
 
 (define racket-fm
-  (flomap-shadowed (flomap-inset (racket-flomap (- size (* 4 blur))) (* 2 blur))
+  (flomap-shadowed (flomap-inset (racket-flomap #:height (- size (* 4 blur))) (* 2 blur))
                    blur #(1/2 1/8 0 0)))
 
 (define logo-flomap* (flomap-whirl-morph plt-fm racket-fm))

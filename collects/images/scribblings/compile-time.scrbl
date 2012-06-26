@@ -29,7 +29,9 @@ The literal bitmap values are encoded in @link["http://en.wikipedia.org/wiki/Por
 To get the most from compiled bitmaps during development, it is best to put them in files that are changed infrequently.
 For example, for games, we suggest having a separate module called something like @tt{images.rkt} or @tt{resources.rkt} that @racket[provide]s all the game's images.
 
-@defform[(compiled-bitmap expr [quality])]{
+@defform[(compiled-bitmap expr [quality])
+         #:contracts ([expr (is-a?/c bitmap%)]
+                      [quality (integer-in 0 100)])]{
 Evaluates @racket[expr] at expansion time, which must return a @racket[bitmap%], and returns to the bitmap at run time.
 Keep in mind that @racket[expr] has access only to expansion-time values, not run-time values.
 
@@ -45,7 +47,7 @@ For example, suppose we are computing a large PLT logo at run time:
 @racketblock+eval[#:eval ctime-eval
 (require images/logos)
 
-(define the-logo (plt-logo 384))
+(define the-logo (plt-logo #:height 384))
 ]
 Running this takes several seconds. It produces
 @interaction[#:eval ctime-eval the-logo]
@@ -57,14 +59,16 @@ To move the cost to expansion time, we change the program to
 (require images/compile-time
          (for-syntax images/logos))
          
-(define the-logo (compiled-bitmap (plt-logo 384)))
+(define the-logo (compiled-bitmap (plt-logo #:height 384)))
 }|
 The logo is unchanged, but now @italic{expanding} (and thus compiling) the program takes several seconds, and running it takes a few milliseconds.
-Note that @racketmodname[images/logos] is now required @racket[for-syntax], so that the expansion-phase expression @racket[(plt-logo 384)]
+Note that @racketmodname[images/logos] is now required @racket[for-syntax], so that the expansion-phase expression @racket[(plt-logo #:height 384)]
 has access to the identifier @racket[plt-logo].
 }
 
-@defform[(compiled-bitmap-list expr [quality])]{
+@defform[(compiled-bitmap-list expr [quality])
+         #:contracts ([expr (listof (is-a?/c bitmap%))]
+                      [quality (integer-in 0 100)])]{
 Like @racket[compiled-bitmap], but it expects @racket[expr] to return a @racket[list] of @racket[bitmap%]s, and it returns the list at run time.
 The @racket[quality] argument works as in @racket[compiled-bitmap], but is applied to all the images in the list.
 
@@ -80,7 +84,10 @@ Use this for animations. For example,
 (define running-stickman-frames
   (compiled-bitmap-list
    (for/list ([t  (in-range 0 1 (/ 1 num-stickman-frames))])
-     (running-stickman-icon t "red" "white" "red" 32))
+     (running-stickman-icon t #:height 32
+                            #:body-color "red"
+                            #:arm-color "white"
+                            #:head-color "red"))
    50))
 ]
 This computes

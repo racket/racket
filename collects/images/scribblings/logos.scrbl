@@ -3,7 +3,7 @@
 @(require scribble/eval
           unstable/latent-contract/defthing
           (for-label images/logos
-                     racket)
+                     racket racket/draw)
           images/logos)
 
 @(define (author-email) "neil.toronto@gmail.com")
@@ -26,7 +26,7 @@ The default height is the size used for DrRacket splash screen.
 Returns an unofficial PLaneT logo. This is used as the PLaneT icon when DrRacket downloads PLaneT packages.
 @examples[#:eval logos-eval
                  (planet-logo)
-                 (planet-logo (default-icon-height))]
+                 (planet-logo #:height (default-icon-height))]
 }
 
 @doc-apply[stepper-logo]{

@@ -27,19 +27,19 @@
 ;; Compiled-in assets (button icons)
 
 (define navigate-up-icon
-  (compiled-bitmap (up-arrow-icon syntax-icon-color (toolbar-icon-height))))
+  (compiled-bitmap (up-arrow-icon #:color syntax-icon-color #:height (toolbar-icon-height))))
 (define navigate-to-start-icon
-  (compiled-bitmap (search-backward-icon syntax-icon-color (toolbar-icon-height))))
+  (compiled-bitmap (search-backward-icon #:color syntax-icon-color #:height (toolbar-icon-height))))
 (define navigate-previous-icon
-  (compiled-bitmap (step-back-icon syntax-icon-color (toolbar-icon-height))))
+  (compiled-bitmap (step-back-icon #:color syntax-icon-color #:height (toolbar-icon-height))))
 (define navigate-next-icon
-  (compiled-bitmap (step-icon syntax-icon-color (toolbar-icon-height))))
+  (compiled-bitmap (step-icon #:color syntax-icon-color #:height (toolbar-icon-height))))
 (define navigate-to-end-icon
-  (compiled-bitmap (search-forward-icon syntax-icon-color (toolbar-icon-height))))
+  (compiled-bitmap (search-forward-icon #:color syntax-icon-color #:height (toolbar-icon-height))))
 (define navigate-down-icon
-  (compiled-bitmap (down-arrow-icon syntax-icon-color (toolbar-icon-height))))
+  (compiled-bitmap (down-arrow-icon #:color syntax-icon-color #:height (toolbar-icon-height))))
 
-(define small-logo (compiled-bitmap (macro-stepper-logo 32)))
+(define small-logo (compiled-bitmap (macro-stepper-logo #:height 32)))
 (define large-logo (compiled-bitmap (macro-stepper-logo)))
 
 (define (show-about-dialog parent)

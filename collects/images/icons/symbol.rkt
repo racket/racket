@@ -7,7 +7,7 @@
          "../private/utils.rkt"
          "style.rkt")
 
-(provide flat-x-flomap
+(provide flat-x-flomap flat-check-flomap
          (activate-contract-out
           text-icon text-flomap
           recycle-icon recycle-flomap
@@ -44,13 +44,14 @@
                          0 0))
    32 32 (/ height 32)))
 
-(defproc (text-flomap [str string?] [font (is-a?/c font%)]
-                      [color (or/c string? (is-a?/c color%))]
-                      [trim? boolean? #t]
-                      [outline (or/c 'auto (and/c rational? (>=/c 0))) 'auto]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]) flomap?
-  (define size (max 32 (send font get-point-size)))
+(defproc (text-flomap [str string?]
+                      [font (is-a?/c font%) (make-font)]
+                      [#:trim? trim? boolean? #t]
+                      [#:color color (or/c string? (is-a?/c color%)) "white"]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
+                      [#:outline outline (and/c rational? (>=/c 0)) (/ height 32)]
+                      ) flomap?
   (define family (send font get-family))
   (define style (send font get-style))
   (define weight (send font get-weight))
@@ -58,26 +59,26 @@
   (define smoothing (send font get-smoothing))
   
   (make-cached-flomap
-   [height str family style weight underline? smoothing color trim? outline material]
-   (let ([font  (make-object font% size family style weight underline? smoothing #t)]
-         [outline  (if (equal? outline 'auto) (/ height 32) outline)])
+   [height str family style weight underline? smoothing trim? outline color material]
+   (let ([font  (make-object font% (min height 1024) family style weight underline? smoothing #t)])
      (define outline-color (icon-color->outline-color color))
-     (define r (/ (send outline-color red) 255.0))
-     (define g (/ (send outline-color green) 255.0))
-     (define b (/ (send outline-color blue) 255.0))
+     (define r (real->double-flonum (/ (send outline-color red) 255)))
+     (define g (real->double-flonum (/ (send outline-color green) 255)))
+     (define b (real->double-flonum (/ (send outline-color blue) 255)))
      (define-values (w h) (get-text-size str font))
-     (define ceiling-amt (inexact->exact (ceiling outline)))
+     (define ceiling-amt (inexact->exact (min (/ height 2) (ceiling outline))))
      (let* ([fm  (draw-flomap
                   (λ (dc)
-                        (send dc set-font font)
-                        (send dc set-text-foreground color)
-                        (send dc draw-text str 0 0 #t))
-                  w h)]
+                    (send dc scale 2 2)
+                    (send dc set-font font)
+                    (send dc set-text-foreground color)
+                    (send dc draw-text str 0 0 #t))
+                  (* w 2) (* h 2))]
             [fm  (if trim? (flomap-trim fm) fm)]
             [fm  (flomap-resize fm #f (- height (* 2 ceiling-amt)))]
             [fm  (flomap-inset fm ceiling-amt)]
             [fm  (cond [(outline . > . 0)
-                        (flomap-cc-superimpose (flomap-outline fm outline (flvector 1.0 r g b)) fm)]
+                        (flomap-cc-superimpose (flomap-outline fm outline (vector 1.0 r g b)) fm)]
                        [else  fm])])
        (flomap-render-icon fm material)))))
 
@@ -132,9 +133,10 @@
     (l -11.71875 0.0)
     (c -0.6322314 0.0 -0.8622934 -0.175155 -1.0625 -0.34375)))
 
-(defproc (recycle-flomap [color (or/c string? (is-a?/c color%))]
-                         [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                         [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (recycle-flomap [#:color color (or/c string? (is-a?/c color%)) "forestgreen"]
+                         [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                         [#:material material deep-flomap-material-value? (default-icon-material)]
+                         ) flomap?
   (make-cached-flomap
    [height color material]
    (draw-short-rendered-icon-flomap
@@ -144,9 +146,10 @@
       (draw-path-commands dc recycle-path-commands 0 0))
     32 32 (/ height 32) material)))
 
-(defproc (x-flomap [color (or/c string? (is-a?/c color%))]
-                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                   [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (x-flomap [#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
+                   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                   [#:material material deep-flomap-material-value? (default-icon-material)]
+                   ) flomap?
   (make-cached-flomap
    [height color material]
    (define scale (/ height 32))
@@ -156,9 +159,10 @@
           [dfm  (deep-flomap-raise dfm (* -8 scale))])
      (deep-flomap-render-icon dfm material))))
 
-(defproc (check-flomap [color (or/c string? (is-a?/c color%))]
-                       [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                       [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (check-flomap [#:color color (or/c string? (is-a?/c color%)) run-icon-color]
+                       [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                       [#:material material deep-flomap-material-value? (default-icon-material)]
+                       ) flomap?
   (make-cached-flomap
    [height color material]
    (define scale (/ height 32))
@@ -225,9 +229,10 @@
        -0.9645608778761062 -0.1662308436578171
        -1.451858010619469 -0.16614886324483774)))
 
-(defproc (lambda-flomap [color (or/c string? (is-a?/c color%))]
-                        [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                        [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (lambda-flomap [#:color color (or/c string? (is-a?/c color%)) "white"]
+                        [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                        [#:material material deep-flomap-material-value? (default-icon-material)]
+                        ) flomap?
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
@@ -240,9 +245,10 @@
       (draw-path-commands dc lambda-path-commands 4 0))
     32 32 (/ height 32) material)))
 
-(defproc (hash-quote-flomap [color (or/c string? (is-a?/c color%))]
-                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                            [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (hash-quote-flomap
+          [#:color color (or/c string? (is-a?/c color%)) "mediumseagreen"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]) flomap?
   (make-cached-flomap
    [height color material]
    (define (draw-hash-quote dc)
@@ -271,21 +277,42 @@
 ;; ===================================================================================================
 ;; Bitmaps (icons)
 
-(defproc (text-icon [str string?] [font (is-a?/c font%)]
-                    [color (or/c string? (is-a?/c color%))]
-                    [trim? boolean? #t]
-                    [outline (or/c 'auto (and/c rational? (>=/c 0))) 'auto]
-                    [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                    [material deep-flomap-material-value? (default-icon-material)]
-                    ) (is-a?/c bitmap%)
-  (flomap->bitmap (text-flomap str font color trim? outline height material)))
+(define-icon-wrappers
+  ([str string?]
+   [font (is-a?/c font%) (make-font)]
+   [#:trim? trim? boolean? #t]
+   [#:color color (or/c string? (is-a?/c color%)) "white"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)]
+   [#:outline outline (and/c rational? (>=/c 0)) (/ height 32)])
+  [text-icon text-flomap])
 
 (define-icon-wrappers
-  ([color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
-  [recycle-icon recycle-flomap]
-  [x-icon x-flomap]
-  [check-icon check-flomap]
-  [lambda-icon lambda-flomap]
+  ([#:color color (or/c string? (is-a?/c color%)) "forestgreen"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [recycle-icon recycle-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [x-icon x-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%)) run-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [check-icon check-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [lambda-icon lambda-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%)) "mediumseagreen"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [hash-quote-icon hash-quote-flomap])

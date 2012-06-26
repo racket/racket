@@ -516,7 +516,7 @@
   (strip-regular stx))
 
 ;; the bitmap to use in a horizontal or vertical toolbar:
-(define step-img (compiled-bitmap (step-icon run-icon-color (toolbar-icon-height))))
+(define step-img (compiled-bitmap (step-icon #:color run-icon-color #:height (toolbar-icon-height))))
 
 ;; testing code
 

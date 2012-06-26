@@ -32,7 +32,7 @@
 
 (compiled-bitmap-list
  (for/list ([t  (in-range 0 1 (/ 1 num-running-frames))])
-   (running-stickman-icon t run-icon-color "white" run-icon-color stickman-height)))
+   (running-stickman-icon t #:height stickman-height)))
 
 ;; ===================================================================================================
 ;; Other icons, various colors
@@ -44,17 +44,19 @@
         (list right-arrow-icon left-arrow-icon up-arrow-icon down-arrow-icon
               right-over-arrow-icon left-over-arrow-icon right-under-arrow-icon left-under-arrow-icon)
         (list floppy-disk-icon
-              (λ (color) (save-icon syntax-icon-color color))
-              (λ (color) (load-icon syntax-icon-color color))
-              (λ (color) (small-save-icon syntax-icon-color color))
-              (λ (color) (small-load-icon syntax-icon-color color)))
+              (λ (#:color color) (save-icon #:arrow-color syntax-icon-color #:disk-color color))
+              (λ (#:color color) (load-icon #:arrow-color syntax-icon-color #:disk-color color))
+              (λ (#:color color) (small-save-icon #:arrow-color syntax-icon-color #:disk-color color))
+              (λ (#:color color) (small-load-icon #:arrow-color syntax-icon-color #:disk-color color)))
         (list x-icon check-icon recycle-icon lambda-icon hash-quote-icon)
-        (list octagon-icon stop-sign-icon stop-signs-icon foot-icon
-              (λ (color) (magnifying-glass-icon metal-icon-color color))
-              (λ (color) (left-magnifying-glass-icon metal-icon-color color))
-              (λ (color) (bomb-icon metal-icon-color color))
-              (λ (color) (left-bomb-icon metal-icon-color color))
-              (λ (color) (stopwatch-icon (default-icon-height) color)))))
+        (list stop-sign-icon stop-signs-icon foot-icon
+              (λ (#:color color) (magnifying-glass-icon #:frame-color metal-icon-color
+                                                        #:handle-color color))
+              (λ (#:color color) (left-magnifying-glass-icon #:frame-color metal-icon-color
+                                                             #:handle-color color))
+              (λ (#:color color) (bomb-icon #:bomb-color color))
+              (λ (#:color color) (left-bomb-icon #:bomb-color color))
+              (λ (#:color color) (stopwatch-icon #:height (default-icon-height) #:face-color color)))))
 
 (define tool-icon-procs
   (list check-syntax-icon small-check-syntax-icon
@@ -64,7 +66,7 @@
 (define (icons color)
   (for/list ([fs  icon-procss])
     (for/list ([f   fs])
-      (f color))))
+      (f #:color color))))
 
 (define (colored-icons-test)
   (printf "~v~n" (for/list ([f  tool-icon-procs])

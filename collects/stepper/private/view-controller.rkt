@@ -284,19 +284,21 @@
   
   (define logo-canvas
     (new (class bitmap-canvas%
-           (super-new [parent top-panel] [bitmap (compiled-bitmap (stepper-logo 32))])
+           (super-new [parent top-panel] [bitmap (compiled-bitmap (stepper-logo #:height 32))])
            (define/override (on-event evt)
              (when (eq? (send evt get-event-type) 'left-up)
                (show-about-dialog s-frame))))))
   
-  (define prev-img (compiled-bitmap (step-back-icon run-icon-color (toolbar-icon-height))))
+  (define prev-img (compiled-bitmap (step-back-icon #:color run-icon-color
+                                                    #:height (toolbar-icon-height))))
   (define previous-button (new button%
                                [label (list prev-img (string-constant stepper-previous) 'left)]
                                [parent button-panel]
                                [callback (λ (_1 _2) (previous))]
                                [enabled #f]))
   
-  (define next-img (compiled-bitmap (step-icon run-icon-color (toolbar-icon-height))))
+  (define next-img (compiled-bitmap (step-icon #:color run-icon-color
+                                               #:height (toolbar-icon-height))))
   (define next-button (new button%
                            [label (list next-img (string-constant stepper-next) 'right)]
                            [parent button-panel]

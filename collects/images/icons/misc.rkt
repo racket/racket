@@ -10,18 +10,18 @@
 
 (provide (activate-contract-out
           regular-polygon-icon regular-polygon-flomap
-          octagon-icon octagon-flomap
           stop-sign-icon stop-sign-flomap
           stop-signs-icon stop-signs-flomap
           foot-icon foot-flomap
           magnifying-glass-icon magnifying-glass-flomap
-          left-magnifying-glass-icon  left-magnifying-glass-flomap
+          left-magnifying-glass-icon left-magnifying-glass-flomap
           bomb-icon bomb-flomap
           left-bomb-icon left-bomb-flomap
           clock-icon clock-flomap
           stopwatch-icon stopwatch-flomap
           stethoscope-icon stethoscope-flomap
-          short-stethoscope-icon short-stethoscope-flomap)
+          short-stethoscope-icon short-stethoscope-flomap
+          lock-icon lock-flomap)
          (only-doc-out (all-defined-out)))
 
 (define (flat-regular-polygon-flomap sides start color size)
@@ -39,25 +39,22 @@
                                      (+ 15.5 (/ (* 15.5 (sin θ)) max-frac))))))
      32 32 (/ size 32))))
 
-(defproc (regular-polygon-flomap [sides exact-positive-integer?]
-                                 [start real?]
-                                 [color (or/c string? (is-a?/c color%))]
-                                 [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                 [material deep-flomap-material-value? (default-icon-material)]
-                                 ) flomap?
+(defproc (regular-polygon-flomap
+          [sides exact-positive-integer?]
+          [start real? (- (/ pi sides) (* 1/2 pi))]
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height sides start color material]
    (flomap-render-icon (flat-regular-polygon-flomap sides start color height) material)))
 
-(defproc (octagon-flomap [color (or/c string? (is-a?/c color%))]
-                         [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                         [material deep-flomap-material-value? (default-icon-material)]) flomap?
-  #:document-body
-  (regular-polygon-flomap 8 (/ (* 2 pi) 16) color height material))
-
-(defproc (stop-sign-flomap [color (or/c string? (is-a?/c color%))]
-                           [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                           [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (stop-sign-flomap
+          [#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height color material]
    (define scale (/ height 32))
@@ -68,18 +65,23 @@
           [dfm  (deep-flomap-icon-style dfm)]
           [dfm  (deep-flomap-cc-superimpose 'add dfm indent-dfm)]
           [fm  (deep-flomap-render-icon dfm material)])
-     (flomap-cc-superimpose fm (x-flomap light-metal-icon-color (* 22 scale) metal-icon-material)))))
+     (flomap-cc-superimpose fm (x-flomap #:color light-metal-icon-color
+                                         #:height (* 22 scale)
+                                         #:material metal-icon-material)))))
 
-(defproc (stop-signs-flomap [color (or/c string? (is-a?/c color%))]
-                            [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                            [material deep-flomap-material-value? (default-icon-material)]) flomap?
-  (define fm (stop-sign-flomap color (* height 2/3) material))
-  (flomap-pin* 3/16 1/4 0 0
-               fm (flomap-pin* 3/16 1/4 0 0 fm fm)))
+(defproc (stop-signs-flomap
+          [#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
+  (define fm (stop-sign-flomap #:color color #:height (* height 2/3) #:material material))
+  (flomap-pin* 3/16 1/4 0 0 fm fm fm))
 
-(defproc (foot-flomap [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]) flomap?
+(defproc (foot-flomap
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height color material]
    (draw-rendered-icon-flomap
@@ -104,11 +106,12 @@
    0.25 0.25 0.0
    0.0))
 
-(defproc (magnifying-glass-flomap [frame-color (or/c string? (is-a?/c color%))]
-                                  [handle-color (or/c string? (is-a?/c color%))]
-                                  [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                  [material deep-flomap-material-value? (default-icon-material)]
-                                  ) flomap?
+(defproc (magnifying-glass-flomap
+          [#:frame-color frame-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:handle-color handle-color (or/c string? (is-a?/c color%)) "brown"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height frame-color handle-color material]
    (define scale (/ height 32))
@@ -168,21 +171,25 @@
                 handle-fm
                 (flomap-pin* 1/2 1/2 1/2 1/2 circle-fm glass-fm))))
 
-(defproc (left-magnifying-glass-flomap [frame-color (or/c string? (is-a?/c color%))]
-                                       [handle-color (or/c string? (is-a?/c color%))]
-                                       [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                       [material deep-flomap-material-value? (default-icon-material)]
-                                       ) flomap?
-  (flomap-flip-horizontal (magnifying-glass-flomap frame-color handle-color height material)))
+(defproc (left-magnifying-glass-flomap
+          [#:frame-color frame-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:handle-color handle-color (or/c string? (is-a?/c color%)) "brown"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
+  (flomap-flip-horizontal
+   (magnifying-glass-flomap #:frame-color frame-color #:handle-color handle-color
+                            #:height height #:material material)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Bomb
 
-(defproc (left-bomb-flomap [cap-color (or/c string? (is-a?/c color%))]
-                           [bomb-color (or/c string? (is-a?/c color%))]
-                           [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                           [material deep-flomap-material-value? (default-icon-material)]
-                           ) flomap?
+(defproc (left-bomb-flomap
+          [#:cap-color cap-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:bomb-color bomb-color (or/c string? (is-a?/c color%)) dark-metal-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height cap-color bomb-color material]
    (define scale (/ height 32))
@@ -247,12 +254,15 @@
        (deep-flomap-render-icon sphere-dfm material)))
    (flomap-lt-superimpose sphere-fm cap-fm fuse-fm)))
 
-(defproc (bomb-flomap [cap-color (or/c string? (is-a?/c color%))]
-                      [bomb-color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
-                      ) flomap?
-  (flomap-flip-horizontal (left-bomb-flomap cap-color bomb-color height material)))
+(defproc (bomb-flomap
+          [#:cap-color cap-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:bomb-color bomb-color (or/c string? (is-a?/c color%)) dark-metal-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
+  (flomap-flip-horizontal
+   (left-bomb-flomap #:cap-color cap-color #:bomb-color bomb-color
+                     #:height height #:material material)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Clock
@@ -264,11 +274,13 @@
    0.1 0.1 0.6
    0.0))
 
-(defproc (clock-flomap [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                       [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
-                       [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
-                       [hours (integer-in 0 11) 1]
-                       [minutes (real-in 0 60) 47]) flomap?
+(defproc (clock-flomap
+          [hours (integer-in 0 11) 1]
+          [minutes (real-in 0 60) 47]
+          [#:face-color face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:hand-color hand-color (or/c string? (is-a?/c color%)) "firebrick"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          ) flomap?
   (make-cached-flomap
    [height face-color hand-color hours minutes]
    (define R 12.5)
@@ -301,7 +313,8 @@
                  (+ 15.5 (* R (sin θ))))))
        32 32 scale)
       ;; lambda logo
-      (fm* 0.33 (lambda-flomap face-color (* 1/2 height) glass-icon-material))
+      (fm* 0.33 (lambda-flomap #:color face-color #:height (* 1/2 height)
+                               #:material glass-icon-material))
       ;; minute hand
       (draw-rendered-icon-flomap
        (λ (dc)
@@ -349,14 +362,19 @@
       face-fm
       (deep-flomap-render-icon dfm clock-shell-material face-fm)))))
 
-(defproc (stopwatch-flomap [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                           [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
-                           [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
-                           [hours (integer-in 0 11) 0]
-                           [minutes (real-in 0 60) 47]) flomap?
+(defproc (stopwatch-flomap
+          [hours (integer-in 0 11) 0]
+          [minutes (real-in 0 60) 47]
+          [#:face-color face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:hand-color hand-color (or/c string? (is-a?/c color%)) "firebrick"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          ) flomap?
   (make-cached-flomap
    [height face-color hand-color hours minutes]
-   (define clock-fm (clock-flomap (* 30/32 height) face-color hand-color hours minutes))
+   (define clock-fm (clock-flomap hours minutes
+                                  #:face-color face-color
+                                  #:hand-color hand-color
+                                  #:height (* 30/32 height)))
    (define buttons-fm
      (draw-rendered-icon-flomap
       (λ (dc)
@@ -394,15 +412,9 @@
   '((m 25 1.5)
     (c 4 2 0 5.5 0 11.5)))
 
-(define rubber-material
-  (deep-flomap-material-value
-   'cubic-zirconia 2.0 0.0 1.0
-   1.5 0.25 1.0
-   0.25 0.5 0.0
-   0.03))
-
-(defproc (stethoscope-flomap [color (or/c string? (is-a?/c color%)) "black"]
-                             [height (and/c rational? (>=/c 0)) (default-icon-height)]) flomap?
+(defproc (stethoscope-flomap
+          [#:color color (or/c string? (is-a?/c color%)) "black"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]) flomap?
   (define scale (/ height 32))
   (flomap-ct-superimpose
    (draw-rendered-icon-flomap
@@ -414,7 +426,7 @@
       (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
       (send dc draw-line 23.5 1 25 1.5)
       (send dc draw-line 7.5 1 6 1.5))
-    32 32 scale rubber-material)
+    32 32 scale rubber-icon-material)
    (draw-rendered-icon-flomap
     (λ (dc)
       (send dc set-pen (make-object pen% dark-metal-icon-color 2.5 'solid 'round 'round))
@@ -443,9 +455,10 @@
        -7 0 -6.5 4.5 6 4
        12.5 -0.5 14.5 -5 14.5 -5)))
 
-(defproc (short-stethoscope-flomap [color (or/c string? (is-a?/c color%)) "black"]
-                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                   ) flomap?
+(defproc (short-stethoscope-flomap
+          [#:color color (or/c string? (is-a?/c color%)) "black"]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          ) flomap?
   (define scale (/ height 32))
   (flomap-ct-superimpose
    (draw-rendered-icon-flomap
@@ -458,7 +471,7 @@
       (send dc set-pen (make-object pen% "black" 3 'solid 'round 'round))
       (send dc draw-line 4.5 1 3 1.5)
       (send dc draw-line 26.5 1 28 1.5))
-    32 32 scale rubber-material)
+    32 32 scale rubber-icon-material)
    (draw-rendered-icon-flomap
     (λ (dc)
       (send dc translate 0 6)
@@ -477,53 +490,142 @@
       (send dc draw-ellipse 22.25 16.25 8 8))
     32 32 scale metal-icon-material)))
 
+;; ---------------------------------------------------------------------------------------------------
+;; Lock
+
+(define shackle-commands
+  '((m 10.5 0)
+    (c -6 0 -10 4 -10 10)
+    (l 0 5)
+    (l 4 0)
+    (l 0 -5)
+    (c 0 -4 2 -6 6 -6)
+    (c 4 0 6 2 6 6)
+    (l 0 5)
+    (l 4 0)
+    (l 0 -5)
+    (c 0 -6 -4 -10 -10 -10)))
+
+(defproc (lock-flomap
+          [open? boolean? #f]
+          [#:body-color body-color (or/c string? (is-a?/c color%)) "orange"]
+          [#:shackle-color shackle-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
+  (make-cached-flomap
+   [height open? body-color shackle-color material]
+   (define scale (/ height 32))
+   
+   (define body-fm
+     (draw-icon-flomap
+      (λ (dc)
+        (set-icon-pen dc (icon-color->outline-color body-color) 1 'solid)
+        (send dc set-brush body-color 'solid)
+        (send dc draw-rounded-rectangle 2 0 27 19 2))
+      32 20 scale))
+   
+   (define face-fm
+     (draw-icon-flomap
+      (λ (dc)
+        (send dc set-pen "black" 1 'transparent)
+        (send dc set-brush "black" 'solid)
+        (send dc draw-ellipse 13 4.5 5 5)
+        (send dc draw-polygon '((14.5 . 8)
+                                (16.5 . 8)
+                                (17.5 . 15.5)
+                                (13.5 . 15.5)))
+        (send dc set-alpha 1/8)
+        (for ([i  (in-range 4)])
+          (send dc draw-rectangle 3.5 (+ 3 (* 4 i)) 24 1)))
+      32 20 scale))
+   
+   (define face-alpha-fm (flomap-ref-component face-fm 0))
+   
+   (define body-rfm
+     (let* ([dfm  (flomap->deep-flomap body-fm)]
+            [dfm  (deep-flomap-bulge-horizontal dfm (* scale 6))]
+            [dfm  (deep-flomap-emboss dfm (* scale 3) (* scale 2))]
+            [dfm  (deep-flomap-raise dfm (* scale 20))]
+            [dfm  (deep-flomap-raise dfm (fm* (* scale -1/2) (flomap-blur face-alpha-fm
+                                                                          (* 1/2 scale))))])
+       (flomap-cc-superimpose (deep-flomap-render-icon dfm material)
+                              face-fm)))
+   
+   (define shackle-fm
+     (draw-icon-flomap
+      (λ (dc)
+        (set-icon-pen dc (icon-color->outline-color shackle-color) 1 'solid)
+        (send dc set-brush shackle-color 'solid)
+        (draw-path-commands dc shackle-commands 0 0))
+      22 16 scale))
+   
+   (define shackle-rfm
+     (let* ([dfm  (flomap->deep-flomap shackle-fm)]
+            [dfm  (deep-flomap-emboss dfm (* scale 3) (* scale 10))])
+       (deep-flomap-render-icon dfm metal-icon-material)))
+   
+   (flomap-pin* 1/2 3/4 (if open? 1 1/2) 0 shackle-rfm body-rfm)))
+
 ;; ===================================================================================================
 ;; Bitmaps (icons)
 
-(defproc (regular-polygon-icon [sides exact-positive-integer?]
-                               [start real?]
-                               [color (or/c string? (is-a?/c color%))]
-                               [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                               [material deep-flomap-material-value? (default-icon-material)]
-                               ) (is-a?/c bitmap%)
-  (flomap->bitmap (regular-polygon-flomap sides start color height material)))
+(define-icon-wrappers
+  ([sides exact-positive-integer?]
+   [start real? (- (/ pi sides) (* 1/2 pi))]
+   [#:color color (or/c string? (is-a?/c color%))]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [regular-polygon-icon regular-polygon-flomap])
 
 (define-icon-wrappers
-  ([height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
-   [hand-color (or/c string? (is-a?/c color%)) "firebrick"]
-   [hours (integer-in 0 11) 0]
-   [minutes (real-in 0 60) 47])
+  ([hours (integer-in 0 11) 0]
+   [minutes (real-in 0 60) 47]
+   [#:face-color face-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+   [#:hand-color hand-color (or/c string? (is-a?/c color%)) "firebrick"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)])
   [clock-icon clock-flomap]
   [stopwatch-icon stopwatch-flomap])
 
 (define-icon-wrappers
-  ([color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
-  [octagon-icon octagon-flomap]
+  ([#:color color (or/c string? (is-a?/c color%)) halt-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [stop-sign-icon stop-sign-flomap]
-  [stop-signs-icon stop-signs-flomap]
+  [stop-signs-icon stop-signs-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%))]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [foot-icon foot-flomap])
 
 (define-icon-wrappers
-  ([frame-color (or/c string? (is-a?/c color%))]
-   [handle-color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
+  ([#:frame-color frame-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+   [#:handle-color handle-color (or/c string? (is-a?/c color%)) "brown"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [magnifying-glass-icon magnifying-glass-flomap]
   [left-magnifying-glass-icon  left-magnifying-glass-flomap])
 
 (define-icon-wrappers
-  ([cap-color (or/c string? (is-a?/c color%))]
-   [bomb-color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
+  ([#:cap-color cap-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+   [#:bomb-color bomb-color (or/c string? (is-a?/c color%)) dark-metal-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [bomb-icon bomb-flomap]
   [left-bomb-icon left-bomb-flomap])
 
 (define-icon-wrappers
-  ([color (or/c string? (is-a?/c color%)) "black"]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)])
+  ([open? boolean? #f]
+   [#:body-color body-color (or/c string? (is-a?/c color%)) "orange"]
+   [#:shackle-color shackle-color (or/c string? (is-a?/c color%)) light-metal-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [lock-icon lock-flomap])
+
+(define-icon-wrappers
+  ([#:color color (or/c string? (is-a?/c color%)) "black"]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)])
   [stethoscope-icon stethoscope-flomap]
   [short-stethoscope-icon short-stethoscope-flomap])

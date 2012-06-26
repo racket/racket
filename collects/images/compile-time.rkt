@@ -45,6 +45,10 @@
     (values alpha-bs rgb-bs))
   
   (define (make-3d-bitmap ctxt bm quality)
+    (unless (is-a? bm bitmap%)
+      (raise-type-error 'make-3d-bitmap "bitmap%" 0 bm quality))
+    (unless (and (exact-integer? quality) (<= 0 quality 100))
+      (raise-type-error 'make-3d-bitmap "(integer-in 0 100)" 1 bm quality))
     (cond [(= quality 100)
            (with-syntax ([bs  (datum->syntax ctxt (save-png bm))])
              (syntax/loc ctxt (load-png bs)))]

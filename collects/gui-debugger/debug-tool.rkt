@@ -1111,21 +1111,19 @@
     (define over-bitmap
       (compiled-bitmap
         (pict->bitmap
-          (cc-superimpose (bitmap (text-icon "()"
-                                             (make-object font%)
-                                             syntax-icon-color))
-                          (bitmap (right-over-arrow-icon run-icon-color))))))
+          (cc-superimpose (bitmap (text-icon "()" #:color syntax-icon-color))
+                          (bitmap (right-over-arrow-icon #:color run-icon-color))))))
     (define out-bitmap
       (compiled-bitmap
         (pict->bitmap
           (hc-append
             -8
-            (bitmap (text-icon "()" (make-object font%) syntax-icon-color))
-            (bitmap (right-arrow-icon run-icon-color 19))))))
+            (bitmap (text-icon "()" #:color syntax-icon-color))
+            (bitmap (right-arrow-icon #:color run-icon-color #:height 19))))))
 
-    (define pause-bitmap (compiled-bitmap (pause-icon run-icon-color)))
-    (define resume-bitmap (compiled-bitmap (play-icon run-icon-color)))
-    (define step-bitmap (compiled-bitmap (step-icon run-icon-color)))
+    (define pause-bitmap (compiled-bitmap (pause-icon #:color run-icon-color)))
+    (define resume-bitmap (compiled-bitmap (play-icon #:color run-icon-color)))
+    (define step-bitmap (compiled-bitmap (step-icon #:color run-icon-color)))
 
     (define make-pause-label (bitmap-label-maker "Pause" pause-bitmap))
     (define make-resume-label (bitmap-label-maker "Go" resume-bitmap))

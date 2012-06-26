@@ -110,14 +110,15 @@
           (+ standing-right-elbow-angle standing-torso-angle standing-right-hand-angle)
           lower-arm-length)))
 
-(defproc (standing-stickman-flomap [color (or/c string? (is-a?/c color%))]
-                                   [arm-color (or/c string? (is-a?/c color%))]
-                                   [head-color (or/c string? (is-a?/c color%))]
-                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                   [material deep-flomap-material-value? (default-icon-material)]
-                                   ) flomap?
+(defproc (standing-stickman-flomap
+          [#:body-color body-color (or/c string? (is-a?/c color%)) run-icon-color]
+          [#:arm-color arm-color (or/c string? (is-a?/c color%)) "white"]
+          [#:head-color head-color (or/c string? (is-a?/c color%)) run-icon-color]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
-   [height color arm-color head-color material]
+   [height body-color arm-color head-color material]
    (flomap-lt-superimpose
     (draw-short-rendered-icon-flomap 
      (λ (dc)
@@ -133,11 +134,11 @@
      26 32 (/ height 32) material)
     (draw-short-rendered-icon-flomap 
      (λ (dc)
-       (send dc set-pen (icon-color->outline-color color)
+       (send dc set-pen (icon-color->outline-color body-color)
              (+ body-width (* 2 line-width)) 'solid)
        (send dc draw-lines (list standing-neck-point standing-hip-point))
        
-       (send dc set-pen (icon-color->outline-color color)
+       (send dc set-pen (icon-color->outline-color body-color)
              (+ leg-width (* 2 line-width)) 'solid)
        (send dc draw-lines (list standing-hip-point
                                  standing-left-knee-point
@@ -146,10 +147,10 @@
                                  standing-right-knee-point
                                  standing-right-foot-point))
        
-       (send dc set-pen color body-width 'solid)
+       (send dc set-pen body-color body-width 'solid)
        (send dc draw-lines (list standing-neck-point standing-hip-point))
        
-       (send dc set-pen color leg-width 'solid)
+       (send dc set-pen body-color leg-width 'solid)
        (send dc draw-lines (list standing-hip-point
                                  standing-left-knee-point
                                  standing-left-foot-point))
@@ -294,37 +295,40 @@
       (draw-running-arm dc t color arm-width))
     26 32 (/ height 32) material)))
 
-(defproc (running-stickman-flomap [t rational?]
-                                  [color (or/c string? (is-a?/c color%))]
-                                  [arm-color (or/c string? (is-a?/c color%))]
-                                  [head-color (or/c string? (is-a?/c color%))]
-                                  [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                  [material deep-flomap-material-value? (default-icon-material)]
-                                  ) flomap?
+(defproc (running-stickman-flomap
+          [t rational?]
+          [#:body-color body-color (or/c string? (is-a?/c color%))]
+          [#:arm-color arm-color (or/c string? (is-a?/c color%))]
+          [#:head-color head-color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
-   [height t color arm-color head-color material]
+   [height t body-color arm-color head-color material]
    (flomap-lt-superimpose (running-arm-flomap (+ t 0.5) arm-color height material)
-                          (running-leg-flomap (+ t 0.5) #f color height material)
-                          (running-leg-flomap t #t color height material)
+                          (running-leg-flomap (+ t 0.5) #f body-color height material)
+                          (running-leg-flomap t #t body-color height material)
                           (running-head-flomap t head-color height material)
                           (running-arm-flomap t arm-color height material))))
 
-(defproc (standing-stickman-icon [color (or/c string? (is-a?/c color%))]
-                                 [arm-color (or/c string? (is-a?/c color%))]
-                                 [head-color (or/c string? (is-a?/c color%))]
-                                 [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                 [material deep-flomap-material-value? (default-icon-material)]
-                                 ) (is-a?/c bitmap%)
-  (flomap->bitmap (standing-stickman-flomap color arm-color head-color height material)))
+;; ---------------------------------------------------------------------------------------------------
 
-(defproc (running-stickman-icon [t rational?]
-                                [color (or/c string? (is-a?/c color%))]
-                                [arm-color (or/c string? (is-a?/c color%))]
-                                [head-color (or/c string? (is-a?/c color%))]
-                                [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                [material deep-flomap-material-value? (default-icon-material)]
-                                ) (is-a?/c bitmap%)
-  (flomap->bitmap (running-stickman-flomap t color arm-color head-color height material)))
+(define-icon-wrappers
+  ([#:body-color body-color (or/c string? (is-a?/c color%)) run-icon-color]
+   [#:arm-color arm-color (or/c string? (is-a?/c color%)) "white"]
+   [#:head-color head-color (or/c string? (is-a?/c color%)) run-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [standing-stickman-icon standing-stickman-flomap])
+
+(define-icon-wrappers
+  ([t rational?]
+   [#:body-color body-color (or/c string? (is-a?/c color%)) run-icon-color]
+   [#:arm-color arm-color (or/c string? (is-a?/c color%)) "white"]
+   [#:head-color head-color (or/c string? (is-a?/c color%)) run-icon-color]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
+  [running-stickman-icon running-stickman-flomap])
 
 #;; FOR TESTING ONLY: Do not let this find its way into the repo uncommented!
 (begin

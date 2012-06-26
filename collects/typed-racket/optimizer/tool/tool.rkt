@@ -13,7 +13,7 @@
 ;; DrRacket tool for reporting missed optimizations in the editor.
 
 (define performance-report-bitmap
-  (compiled-bitmap (stopwatch-icon (toolbar-icon-height))))
+  (compiled-bitmap (stopwatch-icon #:height (toolbar-icon-height))))
 
 ;; performance-report-callback : drracket:unit:frame<%> -> void
 (define (performance-report-callback drr-frame)

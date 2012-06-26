@@ -3,7 +3,8 @@
 (require racket/draw unstable/parameter-group
          racket/contract unstable/latent-contract unstable/latent-contract/defthing
          "../private/flomap.rkt"
-         "../private/deep-flomap.rkt")
+         "../private/deep-flomap.rkt"
+         (for-syntax syntax/parse))
 
 (provide light-metal-icon-color
          metal-icon-color
@@ -12,6 +13,7 @@
          halt-icon-color
          run-icon-color
          plastic-icon-material
+         rubber-icon-material
          glass-icon-material
          metal-icon-material
          bitmap-render-icon
@@ -50,6 +52,13 @@
    0.8 0.2 0.0
    0.0))
 
+(defthing rubber-icon-material deep-flomap-material-value?
+  (deep-flomap-material-value
+   'cubic-zirconia 2.0 0.0 1.0
+   1.5 0.25 1.0
+   0.25 0.5 0.0
+   0.03))
+
 (defthing glass-icon-material deep-flomap-material-value?
   (deep-flomap-material-value
    'cubic-zirconia 1.0 0.75 0.2
@@ -76,7 +85,9 @@
     (flomap->bitmap (deep-flomap-render-icon dfm material))))
 
 (defproc (icon-color->outline-color [color (or/c string? (is-a?/c color%))]) (is-a?/c color%)
-  (cond [(string? color)  (icon-color->outline-color (send the-color-database find-color color))]
+  (cond [(string? color)  (define c (send the-color-database find-color color))
+                          (cond [c  (icon-color->outline-color c)]
+                                [else  (icon-color->outline-color "black")])]
         [else
          (define r (send color red))
          (define g (send color green))
@@ -155,12 +166,19 @@
 ;; ===================================================================================================
 ;; Syntax for writing icon functions
 
+(define-for-syntax (arg-actual arg-stx)
+  (syntax-parse arg-stx
+    [[arg-kw:keyword arg-name:id arg-props:expr ...]
+     (list #'arg-kw #'arg-name)]
+    [[arg-name:id arg-props:expr ...]
+     (list #'arg-name)]))
+
 (define-syntax (define-icon-wrappers stx)
   (syntax-case stx ()
-    [(_ ([arg-name arg-props ...] ...)
-        [icon-fun flomap-fun] ...)
-     (syntax/loc stx
-       (begin
-         (defproc (icon-fun [arg-name arg-props ...] ...) (is-a?/c bitmap%)
-           (flomap->bitmap (flomap-fun arg-name ...)))
-         ...))]))
+    [(_ (arg ...) [icon-fun flomap-fun] ...)
+     (with-syntax ([(actual-args ...)  (apply append (map arg-actual (syntax->list #'(arg ...))))])
+       (syntax/loc stx
+         (begin
+           (defproc (icon-fun arg ...) (is-a?/c bitmap%)
+             (flomap->bitmap (flomap-fun actual-args ...)))
+           ...)))]))

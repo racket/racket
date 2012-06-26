@@ -45,21 +45,22 @@ Its shape and color are a visual metaphor for an action or a message.
 Icons should be @bold{easily recognizable}, @bold{distinguishable}, @bold{visually consistent}, and @bold{metaphorically appropriate} for the actions and messages they are used with.
 It can be difficult to meet all four requirements at once (``distinguishable'' and ``visually consistent' are often at odds), but good examples, good abstractions, and an existing icon library help considerably.
 
-@(define (hash-quote) (hash-quote-icon macro-stepper-hash-color 16))
-@(define (step) (step-icon syntax-icon-color 16))
-@(define (play) (play-icon syntax-icon-color 16))
-@(define (bar) (bar-icon syntax-icon-color 16))
-@(define (macro-stepper) (macro-stepper-icon 16))
+@(define (hash-quote) (hash-quote-icon #:color macro-stepper-hash-color #:height 16))
+@(define (step) (step-icon #:color syntax-icon-color #:height 16))
+@(define (play) (play-icon #:color syntax-icon-color #:height 16))
+@(define (bar) (bar-icon #:color syntax-icon-color #:height 16))
+@(define (macro-stepper) (macro-stepper-icon #:height 16))
 
 Example: The Macro Stepper icon is composed by appending a text icon @(hash-quote) and a step icon @(step) to get @(macro-stepper).
 The syntax quote icon @(hash-quote) is the color that DrRacket colors syntax quotes by default.
 The step icon @(step) is colored like DrRacket colors identifier syntax by default, and is shaped using metaphors used in debugger toolbars, TV remotes, and music players around the world.
 It is composed of @(play) to connote starting and @(bar) to connote immediately stopping.
 
-It would not do to have just @(step) as the Macro Stepper icon: it would be too easily confused with the Debugger icon @(step-icon run-icon-color 16),
+It would not do to have just @(step) as the Macro Stepper icon: it would be too easily confused with the Debugger icon @(step-icon #:color run-icon-color #:height 16),
 especially for new users and people with certain forms of color-blindness, and thus fail to be distinguishable enough.
 
-As another example, the Check Syntax icon @(check-syntax-icon 16) connotes inspecting and passing. Note that the check mark is also the color of syntax.
+As another example, the Check Syntax icon @(check-syntax-icon #:height 16) connotes inspecting and passing.
+Notice that the check mark is also the color of syntax.
 
 @;====================================================================================================
 
@@ -72,12 +73,14 @@ For example, a media player application might create a large ``step'' button by 
                     (require slideshow/pict images/icons/control images/icons/style)
                     (pict->bitmap
                      (cc-superimpose
-                      (bitmap (record-icon "forestgreen" 96 glass-icon-material))
-                      (bitmap (step-icon light-metal-icon-color 48 metal-icon-material))))]
+                      (bitmap (record-icon #:color "forestgreen" #:height 96
+                                           #:material glass-icon-material))
+                      (bitmap (step-icon #:color light-metal-icon-color #:height 48
+                                         #:material metal-icon-material))))]
 
 All the icons in this collection are first drawn using standard @racket[dc<%>] drawing commands.
 Then, to get lighting effects, they are turned into 3D objects and @link["http://en.wikipedia.org/wiki/Ray_tracing_%28graphics%29"]{ray traced}.
-Many are afterward composed to create new icons; for example, the @racket[stop-signs-icon] @(stop-signs-icon halt-icon-color 16) superimposes three @racket[stop-sign-icon]s, and the @racket[magnifying-glass-icon] @(magnifying-glass-icon metal-icon-color "orange" 16) is composed of three others (frame, glass and handle).
+Many are afterward composed to create new icons; for example, the @racket[stop-signs-icon] @(stop-signs-icon #:height 16) superimposes three @racket[stop-sign-icon]s, and the @racket[magnifying-glass-icon] @(magnifying-glass-icon #:height 16) is composed of three others (frame, glass and handle).
 
 The ray tracer helps keep icons visually consistent with each other and with physical objects in day-to-day life.
 As an example of the latter, the @racket[record-icon], when rendered in clear glass, looks like the clear, round button on a @link["http://en.wikipedia.org/wiki/Wiimote"]{Wii Remote}.
@@ -110,16 +113,19 @@ Good colors to use with @racket[metal-icon-material]. See @racket[bomb-icon] and
 Standard toolbar icon colors.
 
 Use @racket[syntax-icon-color] in icons that connote macro expansion or syntax. Example:
-@interaction[#:eval icons-eval (step-icon syntax-icon-color 32)]
+@interaction[#:eval icons-eval (step-icon #:color syntax-icon-color #:height 32)]
 
 Use @racket[halt-icon-color] in icons that connote stopping or errors. Example:
-@interaction[#:eval icons-eval (stop-icon halt-icon-color 32)]
+@interaction[#:eval icons-eval (stop-icon #:color halt-icon-color #:height 32)]
 
 Use @racket[run-icon-color] in icons that connote executing programs or evaluation. Examples:
 @interaction[#:eval icons-eval
-                    (play-icon run-icon-color 32)
+                    (play-icon #:color run-icon-color #:height 32)
                     (require images/icons/stickman)
-                    (running-stickman-icon 0.9 run-icon-color "white" run-icon-color 32)]
+                    (running-stickman-icon 0.9 #:height 32
+                                           #:body-color run-icon-color
+                                           #:arm-color "white"
+                                           #:head-color run-icon-color)]
 
 For new users and for accessibility reasons, do not try to differentiate icons for similar functions only by color.
 }
@@ -138,11 +144,14 @@ If you cannot, as with the Macro Stepper, send a thinner icon as the @racket[alt
 }
 
 @doc-apply[plastic-icon-material]
+@doc-apply[rubber-icon-material]
 @doc-apply[glass-icon-material]
 @doc-apply[metal-icon-material]{
 Materials for icons.
 
 Plastic is opaque and reflects a little more than glass.
+
+Rubber is also opaque, reflects more light than plastic, but diffuses less.
 
 Glass is transparent but frosted, so it scatters refracted light.
 It has the high refractive index of @link["http://en.wikipedia.org/wiki/Cubic_zirconia"]{cubic zirconia}, or fake diamond.
@@ -150,15 +159,15 @@ The ``glassy look'' cannot actually be achieved using glass.
 
 Metal reflects the most, its @link["http://en.wikipedia.org/wiki/Specular_highlight"]{specular highlight} is nearly the same color as the material (in the others, the highlight is white),
 and it diffuses much more ambient light than directional.
-This is because, while plastic and glass mostly reflect light directly, metal mostly absorbs light and re-emits it.
+This is because while plastic and glass mostly reflect light directly, metal mostly absorbs light and re-emits it.
 
 @examples[#:eval icons-eval
                  (require images/icons/misc)
                  (for/list ([material  (list plastic-icon-material
+                                             rubber-icon-material
                                              glass-icon-material
                                              metal-icon-material)])
-                   (bomb-icon light-metal-icon-color dark-metal-icon-color 32
-                              material))]
+                   (bomb-icon #:height 32 #:material material))]
 }
 
 @doc-apply[default-icon-material]{
@@ -195,7 +204,8 @@ As an example, here is how to duplicate the @racket[record-icon] using @racketmo
                      (pict->bitmap (inset (cc-superimpose brush-pict pen-pict) 1))
                      5/8 glass-icon-material)
                     
-                    (record-icon "forestgreen" 64 glass-icon-material)]
+                    (record-icon #:color "forestgreen" #:height 64
+                                 #:material glass-icon-material)]
 
 The outline width is usually @racket[(/ height 32)] (in this case, @racket[2]), but not always.
 (For example, @racket[recycle-icon] is an exception, as are parts of @racket[floppy-disk-icon].)
@@ -214,10 +224,12 @@ The outline width is usually @racket[(/ height 32)] (in this case, @racket[2]), 
 @doc-apply[down-arrow-icon]{
 Standard directional arrows.
 @examples[#:eval icons-eval
-                 (list (right-arrow-icon syntax-icon-color (toolbar-icon-height))
-                       (left-arrow-icon run-icon-color)
-                       (up-arrow-icon halt-icon-color 37)
-                       (down-arrow-icon "lightblue" 44 glass-icon-material))]
+                 (list (right-arrow-icon #:color syntax-icon-color
+                                         #:height (toolbar-icon-height))
+                       (left-arrow-icon #:color run-icon-color)
+                       (up-arrow-icon #:color halt-icon-color #:height 37)
+                       (down-arrow-icon #:color "lightblue" #:height 44
+                                        #:material glass-icon-material))]
 }
 
 @doc-apply[right-over-arrow-icon]
@@ -226,10 +238,12 @@ Standard directional arrows.
 @doc-apply[left-under-arrow-icon]{
 Standard bent arrows.
 @examples[#:eval icons-eval
-                 (list (right-over-arrow-icon metal-icon-color (toolbar-icon-height))
-                       (left-over-arrow-icon dark-metal-icon-color)
-                       (right-under-arrow-icon run-icon-color 37)
-                       (left-under-arrow-icon "lightgreen" 44 glass-icon-material))]
+                 (list (right-over-arrow-icon #:color metal-icon-color
+                                              #:height (toolbar-icon-height))
+                       (left-over-arrow-icon #:color dark-metal-icon-color)
+                       (right-under-arrow-icon #:color run-icon-color #:height 37)
+                       (left-under-arrow-icon #:color "lightgreen" #:height 44
+                                              #:material glass-icon-material))]
 }
 
 @;====================================================================================================
@@ -240,22 +254,22 @@ Standard bent arrows.
 @interaction-eval[#:eval icons-eval (require images/icons/control)]
 
 @doc-apply[bar-icon]{
-@examples[#:eval icons-eval (bar-icon run-icon-color 32)]
+@examples[#:eval icons-eval (bar-icon #:color run-icon-color #:height 32)]
 This is not a ``control'' icon @italic{per se}, but is used to make many others.
 }
-@doc-apply[play-icon]{ @examples[#:eval icons-eval (play-icon run-icon-color 32)] }
-@doc-apply[back-icon]{ @examples[#:eval icons-eval (back-icon run-icon-color 32)] }
-@doc-apply[fast-forward-icon]{ @examples[#:eval icons-eval (fast-forward-icon syntax-icon-color 32)] }
-@doc-apply[rewind-icon]{ @examples[#:eval icons-eval (rewind-icon syntax-icon-color 32)] }
-@doc-apply[stop-icon]{ @examples[#:eval icons-eval (stop-icon halt-icon-color 32)] }
-@doc-apply[record-icon]{ @examples[#:eval icons-eval (record-icon "red" 32)] }
-@doc-apply[pause-icon]{ @examples[#:eval icons-eval (pause-icon halt-icon-color 32)] }
-@doc-apply[step-icon]{ @examples[#:eval icons-eval (step-icon run-icon-color 32)] }
-@doc-apply[step-back-icon]{ @examples[#:eval icons-eval (step-back-icon run-icon-color 32)] }
-@doc-apply[continue-forward-icon]{ @examples[#:eval icons-eval (continue-forward-icon run-icon-color 32)] }
-@doc-apply[continue-backward-icon]{ @examples[#:eval icons-eval (continue-backward-icon run-icon-color 32)] }
-@doc-apply[search-forward-icon]{ @examples[#:eval icons-eval (search-forward-icon syntax-icon-color 32)] }
-@doc-apply[search-backward-icon]{ @examples[#:eval icons-eval (search-backward-icon syntax-icon-color 32)] }
+@doc-apply[play-icon]{ @examples[#:eval icons-eval (play-icon #:color run-icon-color #:height 32)] }
+@doc-apply[back-icon]{ @examples[#:eval icons-eval (back-icon #:color run-icon-color #:height 32)] }
+@doc-apply[fast-forward-icon]{ @examples[#:eval icons-eval (fast-forward-icon #:color syntax-icon-color #:height 32)] }
+@doc-apply[rewind-icon]{ @examples[#:eval icons-eval (rewind-icon #:color syntax-icon-color #:height 32)] }
+@doc-apply[stop-icon]{ @examples[#:eval icons-eval (stop-icon #:color halt-icon-color #:height 32)] }
+@doc-apply[record-icon]{ @examples[#:eval icons-eval (record-icon #:color "red" #:height 32)] }
+@doc-apply[pause-icon]{ @examples[#:eval icons-eval (pause-icon #:color halt-icon-color #:height 32)] }
+@doc-apply[step-icon]{ @examples[#:eval icons-eval (step-icon #:color run-icon-color #:height 32)] }
+@doc-apply[step-back-icon]{ @examples[#:eval icons-eval (step-back-icon #:color run-icon-color #:height 32)] }
+@doc-apply[continue-forward-icon]{ @examples[#:eval icons-eval (continue-forward-icon #:color run-icon-color #:height 32)] }
+@doc-apply[continue-backward-icon]{ @examples[#:eval icons-eval (continue-backward-icon #:color run-icon-color #:height 32)] }
+@doc-apply[search-forward-icon]{ @examples[#:eval icons-eval (search-forward-icon #:color syntax-icon-color #:height 32)] }
+@doc-apply[search-backward-icon]{ @examples[#:eval icons-eval (search-backward-icon #:color syntax-icon-color #:height 32)] }
 
 @;====================================================================================================
 
@@ -264,11 +278,11 @@ This is not a ``control'' icon @italic{per se}, but is used to make many others.
 @defmodule[images/icons/file]
 @interaction-eval[#:eval icons-eval (require images/icons/file)]
 
-@doc-apply[floppy-disk-icon]{ @examples[#:eval icons-eval (floppy-disk-icon "crimson" 32 glass-icon-material)] }
-@doc-apply[save-icon]{ @examples[#:eval icons-eval (save-icon syntax-icon-color run-icon-color 32)] }
-@doc-apply[load-icon]{ @examples[#:eval icons-eval (load-icon syntax-icon-color metal-icon-color 32)] }
-@doc-apply[small-save-icon]{ @examples[#:eval icons-eval (small-save-icon syntax-icon-color halt-icon-color 32)] }
-@doc-apply[small-load-icon]{ @examples[#:eval icons-eval (small-load-icon syntax-icon-color dark-metal-icon-color 32)] }
+@doc-apply[floppy-disk-icon]{ @examples[#:eval icons-eval (floppy-disk-icon #:height 32 #:material glass-icon-material)] }
+@doc-apply[save-icon]{ @examples[#:eval icons-eval (save-icon #:height 32)] }
+@doc-apply[load-icon]{ @examples[#:eval icons-eval (load-icon #:height 32)] }
+@doc-apply[small-save-icon]{ @examples[#:eval icons-eval (small-save-icon #:height 32)] }
+@doc-apply[small-load-icon]{ @examples[#:eval icons-eval (small-load-icon #:height 32)] }
 
 @;====================================================================================================
 
@@ -281,57 +295,44 @@ This is not a ``control'' icon @italic{per se}, but is used to make many others.
 Renders a text string as an icon. For example,
 @interaction[#:eval icons-eval
                     (text-icon "An Important Point!"
-                               (make-object font% 48 'decorative 'normal 'bold #t)
-                               "lightskyblue" #t 'auto 48)]
+                               (make-font #:weight 'bold #:underlined? #t)
+                               #:color "lightskyblue" #:height 44)]
 
-Before rendering, the drawn text is scaled so that it is exactly @racket[height] pixels tall.
-Make sure the font is large enough that scaling does not create blurry and jagged edge artifacts, as in the following example:
-@interaction[#:eval icons-eval
-                    (text-icon "Q" (make-object font% 32 'default 'normal 'bold)
-                               "green" #t 0 96)]
-When @racket[str] contains tall letters or @racket[trim?] is @racket[#f], using @racket[height] as the font size should be sufficient.
-
-To make it easy to create a large enough font, @racket[text-icon] always interpets font sizes as being in pixels, never points.
-See @racket[font%] for details on font sizes.
-
-If @racket[trim?] is @racket[#f], the drawn text is not cropped before rendering.
+The size of @racket[font] is ignored. If @racket[trim?] is @racket[#f], the drawn text is not cropped before rendering.
 Otherwise, it is cropped to the smallest rectangle containing all the non-zero-alpha pixels.
 Rendering very small glyphs shows the difference dramatically:
 @interaction[#:eval icons-eval
-                    (define font (make-object font% 32 'default))
-                    (list (text-icon "." font "white")
-                          (text-icon "." font "white" #f))]
-Note that both icons are @racket[(default-icon-height)] pixels tall.
+                    (list (text-icon "." #:trim? #t)
+                          (text-icon "." #:trim? #f))]
+Notice that both icons are @racket[(default-icon-height)] pixels tall.
 
-When @racket[outline] is @racket['auto], the outline drawn around the text is @racket[(/ height 32)] pixels wide.
-
-Because different platforms have different fonts, @racket[text-icon] cannot guarantee the icons it returns have a consistent look or width across all platforms, or that the unicode characters will exist.
+Because different platforms have different fonts, @racket[text-icon] cannot guarantee the icons it returns have a consistent look or width across all platforms, or that any unicode characters in @racket[str] will exist.
 }
 
 @doc-apply[recycle-icon]{
 Returns the universal recycling symbol, rendered as an icon.
-@examples[#:eval icons-eval (recycle-icon (make-object color% 0 153 0) 48)]
+@examples[#:eval icons-eval (recycle-icon #:height 48)]
 }
 
 @doc-apply[x-icon]{
 Returns an ``x'' icon that is guaranteed to look the same on all platforms.
 (Anything similar that would be constructed by @racket[text-icon] would differ at least slightly across platforms.)
-@examples[#:eval icons-eval (x-icon "red" 32)]
+@examples[#:eval icons-eval (x-icon #:height 32)]
 }
 
 @doc-apply[check-icon]{
-@examples[#:eval icons-eval (check-icon "darkgreen" 32)]
+@examples[#:eval icons-eval (check-icon #:height 32)]
 }
 
 @doc-apply[lambda-icon]{
 @examples[#:eval icons-eval
-                 (lambda-icon light-metal-icon-color 32 metal-icon-material)]
+                 (lambda-icon #:height 32 #:material metal-icon-material)]
 }
 
 @doc-apply[hash-quote-icon]{
 @examples[#:eval icons-eval
                  (require (only-in images/icons/tool macro-stepper-hash-color))
-                 (hash-quote-icon macro-stepper-hash-color 32)]
+                 (hash-quote-icon #:color macro-stepper-hash-color #:height 32)]
 }
 
 @;====================================================================================================
@@ -343,62 +344,77 @@ Returns an ``x'' icon that is guaranteed to look the same on all platforms.
 
 @doc-apply[regular-polygon-icon]{
 Renders the largest regular polygon with @racket[sides] sides, with the first vertex at angle @racket[start], that can be centered in a @racket[height] × @racket[height] box.
+The default @racket[start] angle is chosen so that the polygon has a horizontal bottom edge.
 @examples[#:eval icons-eval (for/list ([sides  (in-range 1 9)]
                                        [material  (in-cycle (list plastic-icon-material
                                                                   glass-icon-material))])
-                              (regular-polygon-icon sides (* 1/4 pi) "cornflowerblue" 32
-                                                    material))]
-}
-
-@doc-apply[octagon-icon]{
-Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height material)].
-@examples[#:eval icons-eval (octagon-icon halt-icon-color 32)]
+                              (regular-polygon-icon sides #:color "cornflowerblue" #:height 32
+                                                    #:material material))]
 }
 
 @doc-apply[stop-sign-icon]{
 @examples[#:eval icons-eval
-                 (stop-sign-icon halt-icon-color 32 glass-icon-material)]
+                 (stop-sign-icon #:height 32 #:material glass-icon-material)]
 }
 
 @doc-apply[stop-signs-icon]{
 @examples[#:eval icons-eval
-                 (stop-signs-icon halt-icon-color 32 plastic-icon-material)]
+                 (stop-signs-icon #:height 32 #:material plastic-icon-material)]
 }
 
 @doc-apply[foot-icon]{
 @examples[#:eval icons-eval
-                 (foot-icon "chocolate" 32 glass-icon-material)]
+                 (foot-icon #:color "chocolate" #:height 32
+                            #:material glass-icon-material)]
 }
 
 @doc-apply[magnifying-glass-icon]{
 @examples[#:eval icons-eval
-                 (magnifying-glass-icon light-metal-icon-color "lightblue" 32
-                                        glass-icon-material)]
+                 (magnifying-glass-icon #:height 32)]
 }
 
 @doc-apply[left-magnifying-glass-icon]{
 @examples[#:eval icons-eval
-                 (left-magnifying-glass-icon metal-icon-color "red" 32)]
+                 (left-magnifying-glass-icon #:height 32)]
 }
 
 @doc-apply[bomb-icon]{
 @examples[#:eval icons-eval
-                 (bomb-icon light-metal-icon-color "black" 32 glass-icon-material)]
+                 (bomb-icon #:height 48 #:material glass-icon-material)]
 }
 
 @doc-apply[left-bomb-icon]{
 @examples[#:eval icons-eval
-                 (left-bomb-icon metal-icon-color dark-metal-icon-color 32)]
+                 (left-bomb-icon #:height 48)]
 }
 
 @doc-apply[clock-icon]{
 @examples[#:eval icons-eval
-                 (clock-icon 96)
-                 (clock-icon 48 "lightblue" "darkblue" 3 21)]
+                 (clock-icon #:height 96)
+                 (clock-icon 3 21 #:height 48
+                             #:face-color "lightblue"
+                             #:hand-color "darkblue")]
 }
 
 @doc-apply[stopwatch-icon]{
-@examples[#:eval icons-eval (stopwatch-icon 96)]
+@examples[#:eval icons-eval (stopwatch-icon #:height 96)]
+}
+
+@doc-apply[stethoscope-icon]{
+@examples[#:eval icons-eval (stethoscope-icon #:height 96)]
+}
+
+@doc-apply[short-stethoscope-icon]{
+@examples[#:eval icons-eval (short-stethoscope-icon #:color "purple" #:height 96)]
+}
+
+@doc-apply[lock-icon]{
+@examples[#:eval icons-eval
+                 (lock-icon #:height 32)
+                 (lock-icon #t #:height 48
+                            #:body-color "navajowhite"
+                            #:shackle-color "lemonchiffon"
+                            #:material glass-icon-material)]
 }
 
 @;====================================================================================================
@@ -410,7 +426,7 @@ Equivalent to @racket[(regular-polygon-icon 8 (/ (* 2 pi) 16) color height mater
 
 @doc-apply[standing-stickman-icon]{
 Returns the icon displayed in DrRacket's lower-right corner when no program is running.
-@examples[#:eval icons-eval (standing-stickman-icon run-icon-color "white" run-icon-color 64)]
+@examples[#:eval icons-eval (standing-stickman-icon #:height 64)]
 }
 
 @doc-apply[running-stickman-icon]{
@@ -420,7 +436,7 @@ The frame returned is for time @racket[t] of a run cycle with a one-second perio
 The following example samples the run cycle at 12 Hz, or every @racket[1/12] second:
 @interaction[#:eval icons-eval
                     (for/list ([t  (in-range 0 1 1/12)])
-                      (running-stickman-icon t run-icon-color "white" run-icon-color 32))]
+                      (running-stickman-icon t #:height 32))]
 
 The stickman's joint angles are defined by continuous periodic functions, so the run cycle can be sampled at any resolution, or at any real-valued time @racket[t].
 The cycle is modeled after the run cycle of the player's avatar in the Commodore 64 game @link["http://en.wikipedia.org/wiki/Impossible_Mission"]{Impossible Mission}.
@@ -436,19 +452,22 @@ The cycle is modeled after the run cycle of the player's avatar in the Commodore
 @doc-apply[check-syntax-icon]
 @doc-apply[small-check-syntax-icon]{
 Icons for Check Syntax. The @racket[small-check-syntax-icon] is used when the toolbar is on the side.
-@examples[#:eval icons-eval (list (check-syntax-icon 32) (small-check-syntax-icon 32))]
+@examples[#:eval icons-eval (list (check-syntax-icon #:height 32)
+                                  (small-check-syntax-icon #:height 32))]
 }
 
 @doc-apply[macro-stepper-icon]
 @doc-apply[small-macro-stepper-icon]{
 Icons for the Macro Stepper. The @racket[small-macro-stepper-icon] is used when the toolbar is on the side.
-@examples[#:eval icons-eval (list (macro-stepper-icon 32) (small-macro-stepper-icon 32))]
+@examples[#:eval icons-eval (list (macro-stepper-icon #:height 32)
+                                  (small-macro-stepper-icon #:height 32))]
 }
 
 @doc-apply[debugger-icon]
 @doc-apply[small-debugger-icon]{
 Icons for the Debugger. The @racket[small-debugger-icon] is used when the toolbar is on the side.
-@examples[#:eval icons-eval (list (debugger-icon 32) (small-debugger-icon 32))]
+@examples[#:eval icons-eval (list (debugger-icon #:height 32)
+                                  (small-debugger-icon #:height 32))]
 }
 
 @doc-apply[debugger-bomb-color]

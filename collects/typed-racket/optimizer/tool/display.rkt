@@ -70,8 +70,8 @@
   (define message-text (new text:basic% [auto-wrap #t]))
   (send message-text insert
         (make-object image-snip% (if (missed-opt-report-entry? s)
-                                     (x-icon "red" 20)
-                                     (check-icon "green" 20))))
+                                     (x-icon #:height 20)
+                                     (check-icon #:height 20))))
   (send message-text insert-port
         (open-input-string (string-append "  " msg)))
   ;; adjust display

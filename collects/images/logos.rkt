@@ -110,7 +110,7 @@
   (match-define (flomap _ c w h) fm)
   (fm+ fm (fm* z-amt (make-random-flomap c w h))))
 
-(defproc (plt-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
+(defproc (plt-flomap [#:height height (and/c rational? (>=/c 0)) 256]) flomap?
   (make-cached-flomap
    [height]
    (define scale (/ height 256))
@@ -258,7 +258,7 @@
      (draw-path-commands dc continents-path-commands 0 -17))
    32 32 scale))
 
-(defproc (planet-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
+(defproc (planet-flomap [#:height height (and/c rational? (>=/c 0)) 256]) flomap?
   (make-cached-flomap
    [height]
    (define scale (/ height 32))
@@ -302,20 +302,23 @@
 ;; ===================================================================================================
 ;; Algebraic stepper logo
 
-(defproc (stepper-flomap [height (and/c rational? (>=/c 0)) 96]) flomap?
+(defproc (stepper-flomap [#:height height (and/c rational? (>=/c 0)) 96]) flomap?
   (flomap-pin*
    1/2 20/32 1/2 1/2
-   (foot-flomap "forestgreen" height glass-icon-material)
-   (lambda-flomap light-metal-icon-color (* 5/8 height) metal-icon-material)))
+   (foot-flomap #:color "forestgreen" #:height height #:material glass-icon-material)
+   (lambda-flomap #:color light-metal-icon-color
+                  #:height (* 5/8 height) #:material metal-icon-material)))
 
 ;; ===================================================================================================
 ;; Macro stepper logo
 
-(defproc (macro-stepper-logo-flomap [height (and/c rational? (>=/c 0)) 96]) flomap?
+(defproc (macro-stepper-logo-flomap [#:height height (and/c rational? (>=/c 0)) 96]) flomap?
   (flomap-pin*
    1/2 20/32 15/36 1/2
-   (foot-flomap (make-object color% 34 42 160) height glass-icon-material)
-   (hash-quote-flomap light-metal-icon-color (* 1/2 height) metal-icon-material)))
+   (foot-flomap #:color (make-object color% 34 42 160) #:height height #:material glass-icon-material)
+   (hash-quote-flomap #:color light-metal-icon-color
+                      #:height (* 1/2 height)
+                      #:material metal-icon-material)))
 
 ;; ===================================================================================================
 ;; Racket logo
@@ -351,7 +354,7 @@
    0.5 0.25 0.0
    0.01))
 
-(defproc (racket-flomap [height (and/c rational? (>=/c 0)) 256]) flomap?
+(defproc (racket-flomap [#:height height (and/c rational? (>=/c 0)) 256]) flomap?
   (make-cached-flomap
    [height]
    (define scale (/ height 32))
@@ -404,30 +407,12 @@
 ;; Bitmaps
 
 (define-icon-wrappers
-  ([height (and/c rational? (>=/c 0)) 256])
+  ([#:height height (and/c rational? (>=/c 0)) 256])
   [plt-logo plt-flomap]
   [racket-logo racket-flomap])
 
 (define-icon-wrappers
-  ([height (and/c rational? (>=/c 0)) 96])
+  ([#:height height (and/c rational? (>=/c 0)) 96])
   [planet-logo planet-flomap]
   [stepper-logo stepper-flomap]
   [macro-stepper-logo macro-stepper-logo-flomap])
-
-
-#|
-(define steth-flomap
-  (short-stethoscope-flomap (make-object color% 16 32 48) 256))
-
-(define drracket-logo1
-  (flomap->bitmap
-   (flomap-cc-superimpose (plt-flomap 256) steth-flomap)))
-
-drracket-logo1
-
-(define drracket-logo2
-  (flomap->bitmap
-   (flomap-ct-superimpose (racket-flomap 212) steth-flomap)))
-
-drracket-logo2
-|#

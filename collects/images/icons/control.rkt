@@ -34,19 +34,20 @@
                                  (cons 4 31) (cons 0 31))))
    24 32 (/ height 32)))
 
-(defproc (play-flomap [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
+(defproc (play-flomap [#:color color (or/c string? (is-a?/c color%))]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
                       ) flomap?
   (make-cached-flomap
    [height color material]
    (define fm (flat-play-flomap color height))
    (flomap-render-icon fm material)))
 
-(defproc (fast-forward-flomap [color (or/c string? (is-a?/c color%))]
-                              [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                              [material deep-flomap-material-value? (default-icon-material)]
-                              ) flomap?
+(defproc (fast-forward-flomap
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (make-cached-flomap
    [height color material]
    (define fm
@@ -60,9 +61,9 @@
       20 32 (/ height 32) material))
    (flomap-hc-append fm fm)))
 
-(defproc (stop-flomap [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
+(defproc (stop-flomap [#:color color (or/c string? (is-a?/c color%))]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
                       ) flomap?
   (make-cached-flomap
    [height color material]
@@ -73,9 +74,9 @@
       (send dc draw-polygon (list '(0 . 0) '(31 . 0) '(31 . 31) '(0 . 31))))
     32 32 (/ height 32) material)))
 
-(defproc (record-flomap [color (or/c string? (is-a?/c color%))]
-                        [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                        [material deep-flomap-material-value? (default-icon-material)]
+(defproc (record-flomap [#:color color (or/c string? (is-a?/c color%))]
+                        [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                        [#:material material deep-flomap-material-value? (default-icon-material)]
                         ) flomap?
   (make-cached-flomap
    [height color material]
@@ -86,9 +87,9 @@
       (send dc draw-ellipse 0 0 31 31))
     32 32 (/ height 32) material)))
 
-(defproc (bar-flomap [color (or/c string? (is-a?/c color%))]
-                     [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                     [material deep-flomap-material-value? (default-icon-material)]
+(defproc (bar-flomap [#:color color (or/c string? (is-a?/c color%))]
+                     [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                     [#:material material deep-flomap-material-value? (default-icon-material)]
                      ) flomap?
   (make-cached-flomap
    [height color material]
@@ -99,85 +100,87 @@
       (send dc draw-polygon (list '(0 . 0) '(7 . 0) '(7 . 31) '(0 . 31))))
     8 32 (/ height 32) material)))
 
-(defproc (back-flomap [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
+(defproc (back-flomap [#:color color (or/c string? (is-a?/c color%))]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
                       ) flomap?
-  (flomap-flip-horizontal (play-flomap color height material)))
+  (flomap-flip-horizontal (play-flomap #:color color #:height height #:material material)))
 
-(defproc (rewind-flomap [color (or/c string? (is-a?/c color%))]
-                        [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                        [material deep-flomap-material-value? (default-icon-material)]
+(defproc (rewind-flomap [#:color color (or/c string? (is-a?/c color%))]
+                        [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                        [#:material material deep-flomap-material-value? (default-icon-material)]
                         ) flomap?
-  (flomap-flip-horizontal (fast-forward-flomap color height material)))
+  (flomap-flip-horizontal (fast-forward-flomap #:color color #:height height #:material material)))
 
-(defproc (pause-flomap [color (or/c string? (is-a?/c color%))]
-                       [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                       [material deep-flomap-material-value? (default-icon-material)]
+(defproc (pause-flomap [#:color color (or/c string? (is-a?/c color%))]
+                       [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                       [#:material material deep-flomap-material-value? (default-icon-material)]
                        ) flomap?
-  (flomap-hc-append
-   (bar-flomap color height material)
-   (make-flomap 4 (max 1 (inexact->exact (round (* 1/8 height)))) 0)
-   (bar-flomap color height material)))
+  (define bar (bar-flomap #:color color #:height height #:material material))
+  (flomap-hc-append bar (make-flomap 4 (max 1 (inexact->exact (round (* 1/8 height)))) 0) bar))
 
-(defproc (step-flomap [color (or/c string? (is-a?/c color%))]
-                      [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                      [material deep-flomap-material-value? (default-icon-material)]
+(defproc (step-flomap [#:color color (or/c string? (is-a?/c color%))]
+                      [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                      [#:material material deep-flomap-material-value? (default-icon-material)]
                       ) flomap?
   (flomap-hc-append
-   (play-flomap color height material)
+   (play-flomap #:color color #:height height #:material material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (bar-flomap color height material)))
+   (bar-flomap #:color color #:height height #:material material)))
 
-(defproc (step-back-flomap [color (or/c string? (is-a?/c color%))]
-                           [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                           [material deep-flomap-material-value? (default-icon-material)]
+(defproc (step-back-flomap [#:color color (or/c string? (is-a?/c color%))]
+                           [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+                           [#:material material deep-flomap-material-value? (default-icon-material)]
                            ) flomap?
   (flomap-hc-append
-   (bar-flomap color height material)
+   (bar-flomap #:color color #:height height #:material material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (back-flomap color height material)))
+   (back-flomap #:color color #:height height #:material material)))
 
-(defproc (continue-forward-flomap [color (or/c string? (is-a?/c color%))]
-                                  [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                  [material deep-flomap-material-value? (default-icon-material)]
-                                  ) flomap?
+(defproc (continue-forward-flomap
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (flomap-hc-append
-   (bar-flomap color height material)
+   (bar-flomap #:color color #:height height #:material material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (play-flomap color height material)))
+   (play-flomap #:color color #:height height #:material material)))
 
-(defproc (continue-backward-flomap [color (or/c string? (is-a?/c color%))]
-                                   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                   [material deep-flomap-material-value? (default-icon-material)]
-                                   ) flomap?
+(defproc (continue-backward-flomap
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (flomap-hc-append
-   (back-flomap color height material)
+   (back-flomap #:color color #:height height #:material material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (bar-flomap color height material)))
+   (bar-flomap #:color color #:height height #:material material)))
 
-(defproc (search-forward-flomap [color (or/c string? (is-a?/c color%))]
-                                [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                [material deep-flomap-material-value? (default-icon-material)]
-                                ) flomap?
+(defproc (search-forward-flomap
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (flomap-hc-append
-   (fast-forward-flomap color height material)
+   (fast-forward-flomap #:color color #:height height #:material material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (bar-flomap color height material)))
+   (bar-flomap #:color color #:height height #:material material)))
 
-(defproc (search-backward-flomap [color (or/c string? (is-a?/c color%))]
-                                 [height (and/c rational? (>=/c 0)) (default-icon-height)]
-                                 [material deep-flomap-material-value? (default-icon-material)]
-                                 ) flomap?
+(defproc (search-backward-flomap
+          [#:color color (or/c string? (is-a?/c color%))]
+          [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+          [#:material material deep-flomap-material-value? (default-icon-material)]
+          ) flomap?
   (flomap-hc-append
-   (bar-flomap color height material)
+   (bar-flomap #:color color #:height height #:material material)
    (make-flomap 4 (max 1 (inexact->exact (round (* 1/16 height)))) 0)
-   (rewind-flomap color height material)))
+   (rewind-flomap #:color color #:height height #:material material)))
 
 (define-icon-wrappers
-  ([color (or/c string? (is-a?/c color%))]
-   [height (and/c rational? (>=/c 0)) (default-icon-height)]
-   [material deep-flomap-material-value? (default-icon-material)])
+  ([#:color color (or/c string? (is-a?/c color%))]
+   [#:height height (and/c rational? (>=/c 0)) (default-icon-height)]
+   [#:material material deep-flomap-material-value? (default-icon-material)])
   [play-icon play-flomap]
   [back-icon back-flomap]
   [fast-forward-icon fast-forward-flomap]
