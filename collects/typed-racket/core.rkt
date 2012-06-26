@@ -6,7 +6,7 @@
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list
-         (types utils convenience)
+         (types utils convenience generalize)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
          (for-template (only-in (base-env prims) :type :print-type :query-result-type))

@@ -1,10 +1,10 @@
 #lang racket/base
 
-(require "../utils/utils.rkt"
-         (for-syntax (env init-envs)
+(require "../utils/utils.rkt"                  
+         (for-syntax "../env/global-env.rkt"
                      racket/base syntax/parse
                      (except-in (rep filter-rep type-rep) make-arr)
-                     (rename-in (types union convenience) [make-arr* make-arr])))
+                     (rename-in (types numeric-tower abbrev convenience))))
 
 (define-syntax (#%module-begin stx)
   (syntax-parse stx #:literals (require provide)
@@ -25,7 +25,7 @@
 (provide #%module-begin
          require
          (all-from-out racket/base)
-         (for-syntax
-          (types-out convenience union)
+         (for-syntax          
           (rep-out type-rep)
+          (types-out numeric-tower abbrev convenience)
           (all-from-out racket/base)))

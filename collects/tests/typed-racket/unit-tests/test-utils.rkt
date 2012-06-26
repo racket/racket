@@ -6,7 +6,8 @@
          scheme/gui/dynamic
 	 typed-racket/utils/utils
          (for-syntax scheme/base)
-         (types comparison utils)
+         (types utils)
+         (rep type-rep)
          rackunit rackunit/text-ui)
 
 (provide private typecheck (rename-out [infer r:infer]) utils env rep types base-env)

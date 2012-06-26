@@ -3,16 +3,15 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         "substitute.rkt"
+         "substitute.rkt" "tc-result.rkt"
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
          racket/match
          racket/list
-         racket/contract
-         (for-syntax racket/base syntax/parse))
+         racket/contract)
 
 
-(provide effects-equal?) ;;Never Used
+(provide (all-from-out "tc-result.rkt"))
 
 
 ;; unfold : Type -> Type
@@ -53,119 +52,6 @@
      (let ([body* (subst-all (make-simple-substitution fixed types) body)])
        (substitute-dotted image var dotted body*))]
     [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))
-
-
-;; this structure represents the result of typechecking an expression
-(define-struct/cond-contract tc-result
-  ([t Type/c] [f FilterSet/c] [o Object?])
-  #:transparent)
-(define-struct/cond-contract tc-results
-  ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)])
-  #:transparent)
-
-(define-match-expander tc-result:
-  (syntax-parser
-   [(_ tp fp op) #'(struct tc-result (tp fp op))]
-   [(_ tp) #'(struct tc-result (tp _ _))]))
-
-(define-match-expander tc-results:
-  (syntax-parser
-   [(_ tp fp op)
-    #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
-                          #f))]
-   [(_ tp fp op dty dbound)
-    #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...))
-                          (cons dty dbound)))]
-   [(_ tp)
-    #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...))
-                          #f))]))
-
-(define-match-expander tc-result1:
-  (syntax-parser
-   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op)))
-                                       #f))]
-   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _)))
-                                 #f))]))
-
-(define (tc-results-t tc)
-  (match tc
-    [(tc-results: t) t]))
-
-(provide tc-result: tc-results: tc-result1: Result1: Results:)
-
-(define-match-expander Result1:
-  (syntax-parser
-   [(_ tp) #'(Values: (list (Result: tp _ _)))]
-   [(_ tp fp op) #'(Values: (list (Result: tp fp op)))]))
-
-(define-match-expander Results:
-  (syntax-parser
-   [(_ tp) #'(Values: (list (Result: tp _ _) (... ...)))]
-   [(_ tp fp op) #'(Values: (list (Result: tp fp op) (... ...)))]))
-
-;; convenience function for returning the result of typechecking an expression
-(define ret
-  (case-lambda [(t)
-                (let ([mk (lambda (t) (make-FilterSet (make-Top) (make-Top)))])
-                  (make-tc-results
-                   (cond [(Type? t)
-                          (list (make-tc-result t (mk t) (make-Empty)))]
-                         [else
-                          (for/list ([i t])
-                            (make-tc-result i (mk t) (make-Empty)))])
-                   #f))]
-               [(t f)
-                (make-tc-results
-                 (if (Type? t)
-                     (list (make-tc-result t f (make-Empty)))
-                     (for/list ([i t] [f f])
-                               (make-tc-result i f (make-Empty))))
-                 #f)]
-               [(t f o)
-                (make-tc-results
-                 (if (and (list? t) (list? f) (list? o))
-                     (map make-tc-result t f o)
-                     (list (make-tc-result t f o)))
-                 #f)]
-               [(t f o dty)
-                (int-err "ret used with dty without dbound")]
-               [(t f o dty dbound)
-                (make-tc-results
-                 (if (and (list? t) (list? f) (list? o))
-                     (map make-tc-result t f o)
-                     (list (make-tc-result t f o)))
-                 (cons dty dbound))]))
-
-;(trace ret)
-
-(provide/cond-contract
- [ret
-  (->i ([t (or/c Type/c (listof Type/c))])
-       ([f (t) (if (list? t)
-                   (listof FilterSet/c)
-                   FilterSet/c)]
-        [o (t) (if (list? t)
-                   (listof Object?)
-                   Object?)]
-        [dty Type/c]
-        [dbound symbol?])
-       [res tc-results?])])
-
-(define (combine-results tcs)
-  (match tcs
-    [(list (tc-result1: t f o) ...)
-     (ret t f o)]))
-
-
-;; type comparison
-
-;; equality - good
-
-(define tc-result-equal? equal?)
-(define (effects-equal? fs1 fs2)
-  (and
-   (= (length fs1) (length fs2))
-   (andmap eq? fs1 fs2)))
 
 
 ;; fv : Type -> Listof[Symbol]
@@ -217,21 +103,14 @@
  [unfold (Mu? . -> . Type/c)]
  [instantiate-poly ((or/c Poly? PolyDots?) (listof Type/c) . -> . Type/c)]
  [instantiate-poly-dotted
-  (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)]
- [tc-result? (any/c . -> . boolean?)]
- [tc-result-t (tc-result? . -> . Type/c)]
- [tc-result-equal? (tc-result? tc-result? . -> . boolean?)]
- [tc-results? (any/c . -> . boolean?)]
+  (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)] 
  [tc-error/expr ((string?) (#:return any/c #:stx syntax?) #:rest (listof any/c)
                  . ->* . any/c)]
-
  [fv (Rep? . -> . (listof symbol?))]
  [fi (Rep? . -> . (listof symbol?))]
  [fv/list ((listof Type/c) . -> . (listof symbol?))]
  [lookup-fail (identifier? . -> . Type/c)]
- [lookup-type-fail (identifier? . -> . Type/c)]
- [combine-results ((listof tc-results?) . -> . tc-results?)]
+ [lookup-type-fail (identifier? . -> . Type/c)] 
  [current-poly-struct (parameter/c (or/c #f poly?))]
-
  )
 

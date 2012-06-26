@@ -5,7 +5,8 @@
          racket/match (prefix-in - racket/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils convenience union subtype remove-intersect type-table filter-ops)
+         (types utils convenience union subtype remove-intersect 
+                type-table filter-ops generalize)
          (private-in parse-type type-annotation)
          (rep type-rep)
          (only-in (infer infer) restrict)

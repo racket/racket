@@ -1,1 +1,1 @@
-#lang typed-scheme
+#lang typed/racket/base
