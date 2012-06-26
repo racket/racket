@@ -12,7 +12,7 @@
 
 @title{Version: Racket Version Checking}
 
-The @racketmodname[version] collection contains several version-related
+The @filepath{version} collection contains several version-related
 pieces that are used by Racket.  See also @racket[version] from
 @racketmodname[racket/base].
 
