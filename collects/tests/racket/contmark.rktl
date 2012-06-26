@@ -954,6 +954,12 @@
      (lambda (x) (if (number? x) x (error "fail")))
      (lambda (x) x)))
 
+  (define cha2-mark
+    (chaperone-continuation-mark-key
+     (make-continuation-mark-key)
+     (lambda (x) x)
+     (lambda (x) (if (number? x) x (error "fail")))))
+
   (define bad-mark
     (chaperone-continuation-mark-key
      (make-continuation-mark-key)
@@ -969,6 +975,10 @@
   (define (do-test mark val)
     (with-continuation-mark mark val
       (extract-current-continuation-marks mark)))
+
+  (define (do-test/no-lookup mark val)
+    (with-continuation-mark mark val
+      'ok))
 
   (define (do-test* mark val)
     (with-continuation-mark mark val
@@ -994,6 +1004,8 @@
   (wcm-test 5 (lambda () (do-test/first cha-mark 5)))
   (wcm-test 5 (lambda () (do-test/immediate cha-mark 5)))
   (err/rt-test (do-test cha-mark #t) exn:fail?)
+  (test 'ok do-test/no-lookup cha-mark #t)
+  (err/rt-test (do-test/no-lookup cha2-mark #t) exn:fail?)
   (err/rt-test (do-test bad-mark 5) exn:fail?)
   (err/rt-test (do-test bad-mark-2 5) exn:fail?))
 

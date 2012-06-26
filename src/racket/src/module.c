@@ -8694,7 +8694,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     Scheme_Object *prev = NULL, *next;
     for (p = first; !SCHEME_NULLP(p); p = next) {
       next = SCHEME_CDR(p);
-      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, -1)) {
+      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, -1, 0)) {
 	if (prev)
 	  SCHEME_CDR(prev) = next;
 	else

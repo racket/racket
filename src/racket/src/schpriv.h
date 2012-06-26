@@ -1284,11 +1284,12 @@ typedef struct Scheme_Toplevel {
 
 /* The MASK pull out one of the levels for reference (CONST,
    FIXED, READY, or UNKNOWN) or one of the two levels for a
-   reference (SEAL or not) */
+   definition (SEAL or not) */
 #define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
 
-/* CONST means that a toplevel is READY and always has the same value,
-   even for different instantiations or phases. */
+/* CONST means that a toplevel is READY and always has the "same" value,
+   even for different instantiations or phases. "Same" means that the result
+   is a procedure or would be ok to duplicate in the source. */
 #define SCHEME_TOPLEVEL_CONST   3
 /* FIXED is READY plus a promise of no mutation, but the value is
    not necessarily constant across different instantations or phases. */
@@ -2863,7 +2864,7 @@ int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *warn_info, int deeper_than);
+                          Optimize_Info *warn_info, int deeper_than, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator);
 

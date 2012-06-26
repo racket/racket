@@ -508,7 +508,7 @@ static Scheme_Object *look_for_letv_change(Scheme_Sequence *s)
     v = s->array[i];
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_let_value_type)) {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)v;
-      if (scheme_omittable_expr(lv->body, 1, -1, 0, NULL, -1)) {
+      if (scheme_omittable_expr(lv->body, 1, -1, 0, NULL, -1, 0)) {
 	int esize = s->count - (i + 1);
 	int nsize = i + 1;
 	Scheme_Object *nv, *ev;
@@ -1229,7 +1229,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         }
         if (j >= 0)
           break;
-        if (!scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, -1))
+        if (!scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, -1, 0))
           break;
       }
       if (i < 0) {

@@ -4182,15 +4182,14 @@
    'continuation-mark-key/c-fo-2
    '(contract (continuation-mark-key/c string?) 5 'pos 'neg))
 
-  ;; TODO: Does not pass due to compiler optimization
-  ;(test/neg-blame
-  ; 'continuation-mark-key/c-ho-1
-  ; '(let ([mark (contract (continuation-mark-key/c number?)
-  ;                        (make-continuation-mark-key)
-  ;                        'pos
-  ;                        'neg)])
-  ;    (with-continuation-mark mark "bad"
-  ;      42)))
+  (test/neg-blame
+   'continuation-mark-key/c-ho-1
+   '(let ([mark (contract (continuation-mark-key/c number?)
+                          (make-continuation-mark-key)
+                          'pos
+                          'neg)])
+      (with-continuation-mark mark "bad"
+        42)))
 
   (test/spec-passed
    'continuation-mark-key/c-ho-2
