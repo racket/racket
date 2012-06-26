@@ -1050,7 +1050,7 @@
 (define (elem-desc-to-scheme-type elem-desc ignore-by-ref? is-opt? internal?)
   (define vt (let ([vt (get-var-type-from-elem-desc elem-desc)])
                (if (and ignore-by-ref?
-			(not (bit-and? vt VT_USERDEFINED)))
+			(not (= vt (bitwise-ior VT_USERDEFINED VT_BYREF))))
                    (- vt (bitwise-and vt VT_BYREF))
                    vt)))
   (cond
@@ -1073,11 +1073,12 @@
                                                   _SAFEARRAYBOUND))
               ,base))]
    [else
-    (define base (vt-to-scheme-type (if (bit-and? vt VT_USERDEFINED)
+    (define as-iunk? (= vt (bitwise-ior VT_USERDEFINED VT_BYREF)))
+    (define base (vt-to-scheme-type (if as-iunk?
 					vt
 					(- vt (bitwise-and vt VT_BYREF)))))
     (define new-base
-      (if (and (not (bit-and? vt VT_USERDEFINED))
+      (if (and (not as-iunk?)
 	       (bit-and? vt VT_BYREF))
 	  `(box ,base)
           base))
@@ -1149,6 +1150,7 @@
    [(com-object? arg) 'com-object]
    [(IUnknown? arg) 'iunknown]
    [(eq? com-omit arg) 'any]
+   [(box? arg) `(box ,(arg-to-type (unbox arg)))]
    [else (error 'com "cannot infer marshal format for value: ~e" arg)]))
 
 (define (elem-desc-ref func-desc i)
@@ -1509,20 +1511,29 @@
               (lambda (v) v)))
 
 (define (_box/permanent _t)
+  (define (extract p)
+    (if (eq? _t _VARIANT)
+	(variant-to-scheme (cast p _pointer _VARIANT-pointer))
+	(ptr-ref p _t)))
   (make-ctype _pointer
               (lambda (v)
                 (define p (malloc 'raw 1 _t))
-                (register-cleanup! 
+                (if (eq? _t _VARIANT)
+		    (let ([p (cast p _pointer _VARIANT-pointer)]
+			  [v (unbox v)])
+		      (VariantInit p)
+		      (scheme-to-variant! p v #f (arg-to-type v)))
+		    (ptr-set! p _t (unbox v)))
+		(register-cleanup! 
                  (lambda ()
-                   (set-box! v (ptr-ref p _t))
+                   (set-box! v (extract p))
                    (free p)))
-                (ptr-set! p _t (unbox v))
                 p)
               (lambda (p)
-                (ptr-ref p _t))))
+                (extract p))))
 
-(define (make-a-VARIANT)
-  (define var (cast (malloc _VARIANT 'atomic-interior)
+(define (make-a-VARIANT [mode 'atomic-interior])
+  (define var (cast (malloc _VARIANT mode)
 		    _pointer 
 		    _VARIANT-pointer))
   (VariantInit var)
@@ -1589,7 +1600,7 @@
      (register-with-custodian obj)
      obj)))
 
-(define (to-ctype type)
+(define (to-ctype type [as-boxed? #f])
   (cond
    [(symbol? type)
     (case type
@@ -1611,13 +1622,15 @@
       [(scode) _SCODE]
       [(iunknown) _IUnknown-pointer-or-com-object]
       [(com-object) _com-object]
-      [(any) (error "internal error: cannot marshal to any")]
+      [(any) (if as-boxed?
+		 _VARIANT
+		 (error "internal error: cannot marshal to any"))]
       [(com-enumeration) _int]
-      [else (error 'to-ctype "Internal error: unknown type ~s" type)])]
+      [else (error 'to-ctype "internal error: unknown type ~s" type)])]
    [(eq? 'opt (car type))
     (to-ctype (cadr type))]
    [(eq? 'box (car type))
-    (_box/permanent (to-ctype (cadr type)))]
+    (_box/permanent (to-ctype (cadr type) #t))]
    [(eq? 'array (car type))
     (define-values (dims base)
       (let loop ([t type])
@@ -1660,8 +1673,9 @@
        [(array) (bitwise-ior VT_ARRAY (to-vt (caddr type)))]
        [(opt) (to-vt (cadr type))]
        [(variant) VT_VARIANT]
+       [(box) (bitwise-ior VT_BYREF (to-vt (cadr type)))]
        [else
-	(error 'to-vt "Internal error: unsupported type ~s" type)])]))
+	(error 'to-vt "internal error: unsupported type ~s" type)])]))
 
 (define (build-method-arguments-using-function-desc func-desc scheme-types inv-kind args)
   (define lcid-index (and func-desc (get-lcid-param-index func-desc)))
