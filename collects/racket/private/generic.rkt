@@ -168,7 +168,7 @@
   (syntax-case stx ()
     [(_ name name? accessor (generic generic-idx) ...)
      (with-syntax ([name/c (format-id #'name "~a/c" #'name)])
-       #'(define-syntax (name/c stx)
+       #`(define-syntax (name/c stx)
            (syntax-case stx ()
              [(_ [method-id ctc] (... ...))
               (andmap (λ (id) (and (identifier? id)
@@ -177,6 +177,7 @@
                                    (member (syntax-e id) (list 'generic ...))))
                       (syntax->list #'(method-id  (... ...))))
               #'(make-generic-instance/c
+                 (quote #,(syntax-e #'name/c))
                  name?
                  accessor
                  (list 'method-id (... ...))
@@ -185,7 +186,7 @@
                   (list (cons 'generic generic-idx) ...)))])))]))
 
 ;; make a generic instance contract
-(define (make-generic-instance/c name? accessor ids ctc-args method-map)
+(define (make-generic-instance/c name name? accessor ids ctc-args method-map)
   (define ctcs (coerce-contracts 'generic-instance/c ctc-args))
   ;; map method table indices to ids & projections
   (define id+ctc-map
@@ -194,10 +195,10 @@
               (cons id (contract-projection ctc)))))
   (cond [(andmap chaperone-contract? ctcs)
          (chaperone-generic-instance/c
-          name? ids ctcs accessor id+ctc-map method-map)]
+          name name? ids ctcs accessor id+ctc-map method-map)]
         [else
          (impersonator-generic-instance/c
-          name? ids ctcs accessor id+ctc-map method-map)]))
+          name name? ids ctcs accessor id+ctc-map method-map)]))
 
 (define (generic-instance/c-name ctc)
   (define method-names
@@ -205,7 +206,7 @@
          (base-generic-instance/c-ids ctc)
          (base-generic-instance/c-ctcs ctc)))
   (apply build-compound-type-name
-         (cons 'generic-instance/c method-names)))
+         (cons (base-generic-instance/c-name ctc) method-names)))
 
 ;; redirect for use with chaperone-vector
 (define ((method-table-redirect ctc blame) vec idx val)
@@ -252,6 +253,7 @@
             (vector-ref method-table (hash-ref method-map id))))]
         [else #f]))
 
+;; name        - for building ctc name
 ;; name?       - for first-order checks
 ;; ids         - for method names (used to build the ctc name)
 ;; ctcs        - for the contract name
@@ -259,7 +261,7 @@
 ;; id+ctc-map  - for chaperoning the method table vector
 ;; method-map  - for first-order checks
 (struct base-generic-instance/c
-  (name? ids ctcs accessor id+ctc-map method-map))
+  (name name? ids ctcs accessor id+ctc-map method-map))
 
 (struct chaperone-generic-instance/c base-generic-instance/c ()
   #:property prop:chaperone-contract
