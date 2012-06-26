@@ -391,24 +391,26 @@ one between @racket[list] and @racket[list*].
 
 
 @defproc[(string-join [strs (listof string?)] [sep string? " "]
-                      [#:before-last before-last string? sep]
-                      [#:first       first       string? ....]
-                      [#:last        last        string? ....])
+                      [#:before-first before-first string? ""]
+                      [#:before-last  before-last  string? sep]
+                      [#:after-last   after-last   string? ""])
          string?]{
 
 Appends the strings in @racket[strs], inserting @racket[sep] between
 each pair of strings in @racket[strs].  @racket[before-last],
-@racket[first], and @racket[last] are analogous to the inputs of
-@racket[add-between]: they specify an alternate separator between the
-last two strings, a prefix string, and a suffix string respectively.
+@racket[before-first], and @racket[after-last] are analogous to the
+inputs of @racket[add-between]: they specify an alternate separator
+between the last two strings, a prefix string, and a suffix string
+respectively.
 
 @mz-examples[#:eval string-eval
   (string-join '("one" "two" "three" "four"))
   (string-join '("one" "two" "three" "four") ", ")
   (string-join '("one" "two" "three" "four") " potato ")
-  (string-join #:first "Todo: "
-               '("x" "y" "z") ", " #:before-last " and "
-               #:last ".")
+  (string-join '("x" "y" "z") ", "
+               #:before-first "Todo: "
+               #:before-last " and "
+               #:after-last ".")
 ]}
 
 

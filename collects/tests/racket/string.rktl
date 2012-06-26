@@ -398,13 +398,13 @@
           ", " #:before-last " and ")
     (test (string-append "Todo: " (cadr strs+res))
           string-join (car strs+res)
-          #:first "Todo: " ", " #:before-last " and ")
+          #:before-first "Todo: " ", " #:before-last " and ")
     (test (string-append (cadr strs+res) ".")
           string-join (car strs+res)
-          ", " #:before-last " and " #:last ".")
+          ", " #:before-last " and " #:after-last ".")
     (test (string-append "Todo: " (cadr strs+res) ".")
           string-join (car strs+res)
-          #:first "Todo: " ", " #:before-last " and " #:last ".")))
+          #:before-first "Todo: " ", " #:before-last " and " #:after-last ".")))
 
 ;; ---------- string-trim & string-normalize-spaces ----------
 (let ()

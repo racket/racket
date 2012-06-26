@@ -20,17 +20,18 @@
 (define none (gensym))
 
 (define (string-join strs [sep " "]
-                     #:first [first none] #:last [last none]
-                     #:before-last [before-last none])
+                     #:before-first [before-first none]
+                     #:before-last  [before-last sep]
+                     #:after-last   [after-last none])
   (unless (and (list? strs) (andmap string? strs))
     (raise-argument-error 'string-join "(listof string?)" strs))
   (unless (string? sep)
     (raise-argument-error 'string-join "string?" sep))
-  (let* ([r (cond [(or (null? strs) (null? (cdr strs))) strs]
-                  [(eq? before-last none) (add-between strs sep)]
-                  [else (add-between strs sep #:before-last before-last)])]
-         [r (if (eq? last  none) r (append r (list last)))]
-         [r (if (eq? first none) r (cons first r))])
+  (let* ([r (if (or (null? strs) (null? (cdr strs)))
+              strs
+              (add-between strs sep #:before-last before-last))]
+         [r (if (eq? after-last   none) r (append r (list after-last)))]
+         [r (if (eq? before-first none) r (cons before-first r))])
     (apply string-append r)))
 
 ;; Utility for the functions below: get a string or a regexp and return a list
