@@ -10,20 +10,17 @@
 
 (require "utils.rkt")
 
-(provide make-logo make-icon make-style
+(provide make-resource-files
          navbar-style page-sizes font-family) ; needed for the blog template
 
-(define ((make-file-copier file) dir)
-  (copyfile-resource (in-here file) (web-path dir file)))
-
-(define make-logo (make-file-copier "logo.png"))
-(define make-icon (make-file-copier "plticon.ico"))
-
-(define (make-style dir)
-  (resource/referrer (web-path dir "plt.css")
-                     (file-writer output (list racket-style "\n"))
-                     (λ (url) (link rel: "stylesheet" type: "text/css"
-                                    href: url title: "default"))))
+(define (make-resource-files dir)
+  (define (copyfile file)
+    (copyfile-resource (in-here file) (web-path dir file)))
+  (define (writefile file contents)
+    (resource (web-path dir file) (file-writer output (list contents "\n"))))
+  `([logo  ,(copyfile  "logo.png")]
+    [icon  ,(copyfile  "plticon.ico")]
+    [style ,(writefile "plt.css" racket-style)]))
 
 (define page-sizes
   @list{

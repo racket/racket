@@ -178,30 +178,33 @@
 
 (define (html-head-maker style favicon)
   (define headers
-    @list{@meta[name: "generator" content: "Racket"]
-          @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
-          @favicon
-          @style})
+    @list{
+      @meta[name: "generator" content: "Racket"]
+      @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
+      @favicon
+      @link[rel: "stylesheet" type: "text/css" href: style title: "default"]})
   (λ (title* more-headers)
     (head "\n" (title title*)
           "\n" headers
           (and more-headers (list "\n" more-headers))
           "\n")))
 
-(define (make-resources icon logo style)
-  (let* ([favicon     (html-favicon-maker icon)]
-         [make-head   (html-head-maker style favicon)]
-         [make-navbar (navbar-maker logo)])
-    (λ (what . more)
-      (apply (case what
-               [(head)   make-head]
-               [(navbar) make-navbar]
-               [(favicon-headers) favicon]
-               [(icon-path)  (λ () (url-of icon))]
-               [(logo-path)  (λ () (url-of logo))]
-               [(style-path) (λ () (url-of style))]
-               [else (error 'resources "internal error")])
-             more))))
+(define (make-resources files)
+  (define (getfile what) (cadr (assq what files)))
+  (define favicon     (html-favicon-maker (getfile 'icon)))
+  (define make-head   (html-head-maker (getfile 'style) favicon))
+  (define make-navbar (navbar-maker (getfile 'logo)))
+  (λ (what . more)
+    (apply (case what
+             [(head)   make-head]
+             [(navbar) make-navbar]
+             [(favicon-headers) favicon]
+             [(icon-path logo-path style-path)
+              (λ () (let* ([x (symbol->string what)]
+                           [x (regexp-replace #rx"-path$" x "")])
+                      (url-of (getfile (string->symbol x)))))]
+             [else (error 'resources "internal error")])
+           more)))
 
 ;; `define+provide-context' should be used in each toplevel directory (= each
 ;; site) to have its own resources (and possibly other customizations).
@@ -214,10 +217,8 @@
                   [copyfile-id  (datum->syntax stx 'copyfile)]
                   [symlink-id   (datum->syntax stx 'symlink)]
                   [resources-id (datum->syntax stx 'the-resources)])
-      (with-syntax ([resources (or resources
-                                   #'(make-resources (make-icon dir)
-                                                     (make-logo dir)
-                                                     (make-style dir)))]
+      (with-syntax ([resources (or resources #'(make-resources
+                                                (make-resource-files dir)))]
                     [provides (if provide?
                                 #'(provide page-id plain-id copyfile-id
                                            symlink-id resources-id)
