@@ -7,11 +7,10 @@
 
 (require mzlib/etc mzlib/list mzlib/math syntax/docprovide
          (for-syntax "firstorder.rkt")
-         (for-syntax syntax/parse)
-         "provide-and-scribble.rkt")
+         (for-syntax syntax/parse))
 
 ;; Implements the procedures:
-(require "teachprims.rkt" "teach.rkt" lang/posn lang/imageeq)
+(require "teachprims.rkt" "teach.rkt" lang/posn lang/imageeq "provide-and-scribble.rkt")
 
 ;; Documents the procedures:
 (require scribble/manual scribble/eval "sl-eval.rkt")
@@ -483,7 +482,7 @@
     }
     @defproc[((beginner-append append) [x list?][y list?][z list?]  ...) list?]{
     Creates a single list from several, by juxtaposition of the items.  
-    @interaction[#:eval (bsl) (append x y)]
+    @interaction[#:eval (bsl) (append (cons 1 (cons 2 empty)) (cons "a" (cons "b" empty)))]
     }
     @defproc[(length (l list?)) natural-number?]{
     Evaluates the number of items on a list.
