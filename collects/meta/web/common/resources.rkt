@@ -13,14 +13,25 @@
 (provide make-resource-files
          navbar-style page-sizes font-family) ; needed for the blog template
 
-(define (make-resource-files dir)
+(define (make-resource-files dir robots.txt)
   (define (copyfile file)
     (copyfile-resource (in-here file) (web-path dir file)))
-  (define (writefile file contents)
+  (define (writefile file . contents)
     (resource (web-path dir file) (file-writer output (list contents "\n"))))
   `([logo  ,(copyfile  "logo.png")]
     [icon  ,(copyfile  "plticon.ico")]
-    [style ,(writefile "plt.css" racket-style)]))
+    [style ,(writefile "plt.css" racket-style)]
+    [verification:google
+     @,writefile["google5b2dc47c0b1b15cb.html"]{
+       google-site-verification: google5b2dc47c0b1b15cb.html}]
+    [verification:bing
+     @,writefile["BingSiteAuth.xml"]{
+       <?xml version="1.0"?>
+       <users><user>140BE58EEC31CB97382E1016E21C405A</user></users>}]
+    [robots
+     ;; #t (the default) => no-op file, good to avoid error-log lines
+     ,(let ([t (if (eq? #t robots.txt) "User-agent: *\nDisallow:" robots.txt)])
+        (and t (writefile "robots.txt" t)))]))
 
 (define page-sizes
   @list{

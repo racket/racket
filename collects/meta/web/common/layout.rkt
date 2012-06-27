@@ -1,6 +1,6 @@
 #lang at-exp racket/base
 
-(require scribble/html (for-syntax racket/base syntax/name)
+(require scribble/html (for-syntax racket/base syntax/name syntax/parse)
          "utils.rkt" "resources.rkt")
 
 (define-for-syntax (process-contents who layouter stx xs)
@@ -210,33 +210,36 @@
 ;; site) to have its own resources (and possibly other customizations).
 (provide define+provide-context define-context)
 (define-for-syntax (make-define+provide-context stx provide?)
-  (define (make-it dir [resources #f])
-    (with-syntax ([dir dir]
-                  [page-id      (datum->syntax stx 'page)]
-                  [plain-id     (datum->syntax stx 'plain)]
-                  [copyfile-id  (datum->syntax stx 'copyfile)]
-                  [symlink-id   (datum->syntax stx 'symlink)]
-                  [resources-id (datum->syntax stx 'the-resources)])
-      (with-syntax ([resources (or resources #'(make-resources
-                                                (make-resource-files dir)))]
-                    [provides (if provide?
-                                #'(provide page-id plain-id copyfile-id
-                                           symlink-id resources-id)
-                                #'(begin))])
-        #'(begin
-            (define resources-id resources)
-            (define-syntax-rule (page-id . xs)
-              (page #:resources resources-id #:dir dir . xs))
-            (define-syntax-rule (plain-id . xs)
-              (plain #:dir dir . xs))
-            (define (copyfile-id source [target #f])
-              (copyfile-resource source target #:dir dir))
-            (define (symlink-id source [target #f])
-              (symlink-resource source target #:dir dir))
-            provides))))
-  (syntax-case stx ()
-    [(_ dir) (make-it #'dir)]
-    [(_ dir #:resources resources) (make-it #'dir #'resources)]))
+  (syntax-parse stx
+    [(_ (~or (~optional dir:expr)
+             (~optional (~seq #:resources resources))
+             (~optional (~seq #:robots.txt robots.txt)
+                        #:defaults ([robots.txt #'#t])))
+        ...)
+     (unless (attribute dir)
+       (raise-syntax-error 'define-context "missing <dir>"))
+     (with-syntax ([page-id      (datum->syntax stx 'page)]
+                   [plain-id     (datum->syntax stx 'plain)]
+                   [copyfile-id  (datum->syntax stx 'copyfile)]
+                   [symlink-id   (datum->syntax stx 'symlink)]
+                   [resources-id (datum->syntax stx 'the-resources)])
+       (with-syntax ([resources  (or (attribute resources)
+                                     #'(make-resources (make-resource-files
+                                                        dir robots.txt)))]
+                     [provides   (if provide?
+                                   #'(provide page-id plain-id copyfile-id
+                                              symlink-id resources-id)
+                                   #'(begin))])
+         #'(begin (define resources-id resources)
+                  (define-syntax-rule (page-id . xs)
+                    (page #:resources resources-id #:dir dir . xs))
+                  (define-syntax-rule (plain-id . xs)
+                    (plain #:dir dir . xs))
+                  (define (copyfile-id source [target #f])
+                    (copyfile-resource source target #:dir dir))
+                  (define (symlink-id source [target #f])
+                    (symlink-resource source target #:dir dir))
+                  provides)))]))
 (define-syntax (define+provide-context stx)
   (make-define+provide-context stx #t))
 (define-syntax (define-context stx)

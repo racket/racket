@@ -1,6 +1,9 @@
 #lang meta/web
 
-(define-context "stubs/git")
+(define-context "stubs/git"
+  #:robots.txt @list{User-agent: *
+                     @(add-newlines (for/list ([d '(plt libs testing play)])
+                                      @list{Disallow: /@|d|/}))})
 
 (provide git)
 (define git
@@ -26,11 +29,6 @@
     @p{This is the Racket git server.}
     @p{See the "brief", PLT-oriented @intro{introduction to git}.}}))
 (define home-file @plain[#:file "home-text.html" home-text])
-
-(define robots.txt
-  @plain{User-agent: *
-         @(add-newlines (for/list ([d '(plt libs testing play)])
-                          @list{Disallow: /@|d|/}))})
 
 (define gitweb-config
   @plain[#:file "gitweb_config.perl"]{
