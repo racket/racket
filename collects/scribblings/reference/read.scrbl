@@ -135,8 +135,9 @@ function (if any) exported by the same module. The result of the
 The function produced by @racketidfont{get-info} reflects information
 about the expected syntax of the input stream. The first argument to the
 function serves as a key on such information; acceptable keys and the
-interpretation of results is up to external tools, such as DrRacket (see 
-@hyperlink["http://docs.racket-lang.org/tools/drracket_module-language-tools.html"]{module-language-tools}). 
+interpretation of results is up to external tools, such as DrRacket (see
+@secref[#:doc '(lib "scribblings/tools/tools.scrbl")
+        "drracket:module-language-tools"]).
 If no information is available for a given key, the result should be
 the second argument.
 @mz-examples[
