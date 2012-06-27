@@ -7353,7 +7353,8 @@ extract_cc_markses(int argc, Scheme_Object *argv[])
         is_chaperoned = 1;
         orig_key = keys[i];
         keys[i] = SCHEME_CHAPERONE_VAL(orig_key);
-      }
+      } else
+        orig_key = NULL;
       if (SAME_OBJ(chain->key, keys[i])) {
 	intptr_t pos;
 	pos = (intptr_t)chain->pos;
