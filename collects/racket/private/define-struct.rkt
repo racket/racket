@@ -41,7 +41,7 @@
                       (lambda (v stx)
                         (raise-syntax-error
                          #f
-                         "identifier for static struct-type information cannot be used as an expression"
+                         "bad syntax;\n identifier for static struct-type information cannot be used as an expression"
                          stx))
                       null
                       (lambda (proc autos info)
@@ -153,7 +153,7 @@
                        (not (keyword? (syntax-e (car nps)))))
             (raise-syntax-error
              #f
-             (format "expected ~a ~a~a after keyword~a"
+             (format "bad syntax;\n expected ~a ~a~a after keyword~a"
                      orig-n
                      (or what "expression")
                      (if (= orig-n 1) "" "s")
@@ -203,7 +203,7 @@
         [_else
          (raise-syntax-error
           #f
-          "expected a field identifier or a parenthesized identifier and field-specification sequence"
+          "bad syntax;\n expected a field identifier or a parenthesized identifier and field-specification sequence"
           stx
           f)]))
 
@@ -244,8 +244,9 @@
             (raise-syntax-error
              #f
              (string-append
-              "#:super specification disallowed because a struct supertype id"
-              " was supplied with the struct type id")
+              "bad syntax;\n"
+              " #:super specification disallowed because a struct supertype id was\n"
+              " supplied with the struct type id")
              stx
              (car p)))
           (loop (cddr p)
@@ -344,7 +345,7 @@
               (eq? '#:extra-constructor-name (syntax-e (car p))))
           (check-exprs 1 p "identifier")
           (when (lookup config '#:constructor-name)
-            (bad "multiple" "#:constructor-name or #:extra-constructor-name keys" (car p)))
+            (bad "multiple" "#:constructor-name or #:extra-constructor-name" "s" (car p)))
           (unless (identifier? (cadr p))
             (bad "need an identifier after" (car p) (cadr p)))
           (loop (cddr p)
@@ -402,7 +403,7 @@
                            [else
                             (raise-syntax-error 
                              #f
-                             "bad syntax; expected <id> for structure-type name or (<id> <id>) for name and supertype name"
+                             "bad syntax;\n expected <id> for structure-type name or (<id> <id>) for name and supertype\n name"
                              stx
                              #'id)]))])
          (let-values ([(super-info super-autos super-info-checked?)
@@ -418,8 +419,7 @@
 				  #f
 				  (format "parent struct type not defined~a"
 					  (if v
-					      (format " (~a does not name struct type information)"
-						      (syntax-e super-id))
+					      ";\n identifier does not name struct type information"
 					      ""))
 				  stx
 				  super-id)))
@@ -681,7 +681,7 @@
                      (andmap identifier? (syntax->list #'id)))))
        (raise-syntax-error
         #f
-        "bad syntax; expected <id> for structure-type name or (<id> <id>) for name and supertype name"
+        "bad syntax;\n expected <id> for structure-type name or (<id> <id>) for name and supertype\n name"
         stx
         #'id)]
       [(_ _ id (field ...) . _)
@@ -694,13 +694,13 @@
       [(_ _ id fields . _)
        (raise-syntax-error
         #f
-        "bad syntax; expected a parenthesized sequence of field descriptions"
+        "bad syntax;\n expected a parenthesized sequence of field descriptions"
         stx
         #'fields)]
       [(_ _ id)
        (raise-syntax-error
         #f
-        "bad syntax; missing fields"
+        "bad syntax;\n missing fields"
         stx)]
       [_
        (raise-syntax-error
@@ -738,7 +738,10 @@
                                                   #'field))]
                            [_
                             (raise-syntax-error #f
-                                                "expected a field update of the form (<field-id> <expr>) or (<field-id> #:parent <parent-id> <expr>)"
+                                                (string-append
+                                                 "bad syntax;\n"
+                                                 " expected a field update of the form (<field-id> <expr>)\n"
+                                                 " or (<field-id> #:parent <parent-id> <expr>)")
                                                 stx
                                                 an)]))
                        ans)

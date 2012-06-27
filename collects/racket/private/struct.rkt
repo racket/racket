@@ -40,5 +40,5 @@
         [(_ thing . _)
          (raise-syntax-error #f
                              "expected an identifier for the structure type name"
-                             #'thing
-                             stx)]))))
+                             stx
+                             #'thing)]))))
