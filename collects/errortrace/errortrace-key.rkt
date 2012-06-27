@@ -5,7 +5,12 @@
   ;; various annotations inserted by this 
   ;; library.
   
-  (define-values (errortrace-key) (gensym 'key))
+  ;; Defining `errortrace-key' as a funciton is a performance hack:
+  ;; the compiler can track function constants, and in particular the
+  ;; fact that it's not an impersonated/chaperoned mark key, so that a
+  ;; `with-continuation-mark' using this key can be dropped if the
+  ;; body expression is simple.
+  (define-values (errortrace-key) (lambda () 'anything))
   
   (define-values (test-coverage-info) 
     (make-parameter
