@@ -43,7 +43,7 @@
     ;; a single sub.
     (define labels+filters
       `(("Report missed optimizations?" . ,missed-opt-report-entry?)
-        ("Report optimization?"         . ,opt-report-entry?)))
+        ("Report optimizations?"        . ,opt-report-entry?)))
     (define filters (map cdr labels+filters)) ; all enabled by default
     (define check-boxes
       ;; We can't create the actual check-box% here since we don't know its
