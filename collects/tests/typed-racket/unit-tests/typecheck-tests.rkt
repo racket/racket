@@ -339,7 +339,10 @@
          -String]
         [tc-e (string-join '("hello" "world") " ") -String]
         [tc-e (string-join '("hello" "world")) -String]
-        [tc-e (string-join '("hello" "world") #:first "a") -String]
+        [tc-e (string-join '("hello" "world") #:before-first "a") -String]
+        [tc-e (add-between '(1 2 3) 0) (-lst -Byte)]
+        [tc-e (add-between '(1 2 3) 'a) (-lst (t:Un -PosByte (-val 'a)))]
+        [tc-e ((inst add-between Positive-Byte Symbol) '(1 2 3) 'a #:before-first 'b) (-lst (t:Un -PosByte -Symbol))]
 
         [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -PosByte)]
         [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -PosByte)]

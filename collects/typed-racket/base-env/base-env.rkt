@@ -366,7 +366,7 @@
 
 [string-join
  (->optkey (-lst -String) [-String]
-           #:before-last -String #f #:first -String #f #:last -String #f
+           #:before-last -String #f #:before-first -String #f #:after-last -String #f
            -String)]
 
 
@@ -1393,7 +1393,13 @@
                      (-> (make-pred-ty a) (-lst b) (-values (list (-lst a) (-lst b))))))]
 
 [last   (-poly (a) ((-lst a) . -> . a))]
-[add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
+[add-between (-poly (a b) ((-lst a) b
+                           #:splice? -Boolean #f
+                           #:nothing Univ #f ; default is gensym
+                           #:before-first b #f
+                           #:before-last b #f
+                           #:after-last b #f
+                           . ->key . (-lst (Un a b))))]
 
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> .
