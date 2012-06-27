@@ -62,7 +62,7 @@
                    [_else
                     (raise-syntax-error
                      #f
-                     "expected a function call but there is no open parenthesis before this function"
+                     "expected a function call, but there is no open parenthesis before this function"
                      stx)]))
                #'orig-name))]))]))
 
