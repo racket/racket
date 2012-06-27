@@ -813,9 +813,12 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     
     if (!menv) {
       scheme_wrong_syntax("link", NULL, varname,
-			  "namespace mismatch; reference (phase %d) to a module"
-                          " %D that is not available (phase level %d); reference"
-			  " appears in module: %D", 
+			  "namespace mismatch;\n"
+                          " reference to a module that is not available\n"
+                          "  reference phase: %d\n"
+                          "  referenced module: %D\n"
+                          "  referenced phase level: %d\n"
+                          "  reference in module: %D",
 			  env->phase,
                           modname,
                           mod_phase,
@@ -834,10 +837,11 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     if (self) {
       exprs[which] = varname;
     } else {
+      Scheme_Object *v = modname;
       if (mod_phase != 0)
-        modname = scheme_make_pair(modname, scheme_make_integer(mod_phase));
-      modname = scheme_make_pair(varname, modname);
-      exprs[which] = modname;
+        v = scheme_make_pair(v, scheme_make_integer(mod_phase));
+      v = scheme_make_pair(varname, v);
+      exprs[which] = v;
     }
   }
 
@@ -845,14 +849,18 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
   if (!self) {
     if (!bkt->val) {
       scheme_wrong_syntax("link", NULL, varname,
-                          "reference (phase %d) to a variable in module"
-                          " %D that is uninitialized (phase level %d); reference"
-                          " appears in module: %D", 
+                          "bad variable linkage;\n"
+                          " reference to a variable that is uninitialized\n"
+                          "  reference phase level: %d\n"
+                          "  variable module: %D\n"
+                          "  variable phase: %d\n"
+                          "  reference in module: %D",
                           env->phase,
-                          exprs ? SCHEME_CDR(modname) : modname,
+                          modname,
                           mod_phase,
-                          env->module ? env->module->modsrc : scheme_false);    
+                          env->module ? env->module->modsrc : scheme_false);
     }
+    
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
       ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
   }

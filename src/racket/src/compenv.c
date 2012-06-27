@@ -1888,9 +1888,12 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	}
 
 	if (!genv) {
-	  scheme_wrong_syntax("require", NULL, src_find_id, 
-                              "namespace mismatch; reference (phase %d) to a module"
-                              " %D that is not available (phase level %d)", 
+          scheme_wrong_syntax("require", NULL, src_find_id,
+                              "namespace mismatch;\n"
+                              " reference to a module that is not available\n"
+                              "  reference phase: %d\n"
+                              "  referenced module: %D\n"
+                              "  referenced phase level: %d",
 			      env->genv->phase, modname, SCHEME_INT_VAL(mod_defn_phase));
 	  return NULL;
 	}

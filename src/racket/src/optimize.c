@@ -208,7 +208,10 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         -1 for vals means that any return count is ok.
         Also used with fully resolved expression by `module' to check
         for "functional" bodies.
-        If warn_info is supplied, complain when a mismatch is detected. */
+        If warn_info is supplied, complain when a mismatch is detected.
+        If no_id is 1, then an identifier doesn't count as omittable,
+        unless the identifier is a consistent top-level; currently, this
+        is used to imply the absece of a continuation-mark impersonator. */
 {
   Scheme_Type vtype;
 

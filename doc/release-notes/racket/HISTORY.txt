@@ -1,7 +1,7 @@
 Version 5.3.0.12
 racket/base: added impersonate-continuation-mark-key,
-chaperone-continuation-mark-key, make-continuation-mark-key,
-continuation-mark-key?
+ chaperone-continuation-mark-key, make-continuation-mark-key,
+ continuation-mark-key?
 racket/contract: added prompt-tag/c and continuation-mark-key/c
 
 Version 5.3.0.11
