@@ -41,9 +41,6 @@
 
 (define-namespace-anchor anchor)
 
-(namespace-require 'racket/base)
-(namespace-require '(for-syntax racket/base))
-
 (define (literal-string style s)
   (let ([m (regexp-match #rx"^(.*)(  +|^ )(.*)$" s)])
     (if m
