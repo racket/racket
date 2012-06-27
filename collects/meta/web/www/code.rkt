@@ -107,7 +107,8 @@
        (define style (caar tokens))
        (define s     (substring* bstr (cadar tokens) (caddar tokens)))
        (cons (if (pair? style)
-               (a href: (cdr style) class: @list{code@(car style)} s)
+               (a href: (cdr style) class: @list{code@(car style)}
+                  rel: 'nofollow s)
                (span class: @list{code@style} s))
              (loop (caddar tokens) (cdr tokens)))]
       [(> pos (cadar tokens)) (loop pos (cdr tokens))]
