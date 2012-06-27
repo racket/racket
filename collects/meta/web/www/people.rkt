@@ -95,7 +95,8 @@
 
 (provide people)
 (define people
-  @page[#:part-of 'community]{
+  @page[#:window-title "Racket People: The PLT Group" #:part-of 'community
+        #:description "PLT: the group that is the Racket development team."]{
     @p{“PLT” refers to the group that is the core of the Racket development
        team.  PLT consists of numerous people distributed across several
        different universities in the USA:

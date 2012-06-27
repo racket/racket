@@ -7,7 +7,10 @@
 
 (provide community)
 (define community
-  @page[#:part-of 'community]{
+  @page[#:window-title "Racket Community Resources" #:part-of 'community
+        #:description
+        @'{Racket-related community resources: mailing lists, IRC channel, @;
+           resources for developers, RacketCon, blog, and more.}]{
     @mailing-lists-quick
     @irc-quick
     @parlist[@strong{PLT Scheme Inc.}

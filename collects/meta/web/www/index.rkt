@@ -260,8 +260,14 @@
 
 (provide index)
 (define index
-  (page #:link-title "About" #:window-title "Racket"
-        #:extra-headers @list{@meta[name: 'description content: blurb]
+  (page #:link-title "About" #:window-title "The Racket Language"
+        #:description
+        @'{Racket is a modern programming language in the Lisp/Scheme family, @;
+           suitable for a wide range of applications.  @;
+           Racket provides a rich language extension API, the DrRacket @;
+           integrated development environment, and many batteries-included @;
+           libraries.}
+        #:extra-headers @list{@meta[name: "robots" content: "NOODP"]
                               @(lazy more.css)}
     @div[class: 'leftpane]{
       @span[style: "font-size: large; font-weight: bold;"]{Racket}

@@ -4,7 +4,11 @@
 
 (provide learning)
 (define learning
-  @page[#:part-of 'learning]{
+  @page[#:window-title "Racket Learning" #:part-of 'learning
+        #:description
+        '@{Racket-related learning resources.  Introductions to Racket, @;
+           the Racket Guide, Computer Science textbooks that use Racket, @;
+           outreach programs, and graduate studies.}]{
     @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-htdp — a textbook for introductory programming, but also

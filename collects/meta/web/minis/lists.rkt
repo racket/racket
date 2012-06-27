@@ -21,6 +21,8 @@
 
 (define lists
   @page[#:title "Mailing Lists" #:file "" #:part-of 'community
+        #:description
+        @'{Racket mailing lists for users, developers, announcements, and more.}
     (define (list-cells what) (map (λ (r) (r what)) list-renderers))
     ]{
     @p{This is the Racket mailing list server.  We have several public mailing

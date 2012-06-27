@@ -67,7 +67,8 @@
                ;; can be #f (default), 'full: full page (and no div),
                ;; otherwise, a css width
                #:width [width #f]
-               #:extra-headers [headers #f]
+               #:description [description #f] ; for a meta tag
+               #:extra-headers [extra-headers #f]
                #:extra-body-attrs [body-attrs #f]
                #:resources resources ; see below
                #:referrer [referrer
@@ -75,24 +76,29 @@
                              (a href: url (if (null? more) linktitle more)))]
                ;; will be used instead of `this' to determine navbar highlights
                #:part-of [part-of #f]
-               content)
+               content0)
   (define (page)
-    (let* ([head    (resources 'head wintitle headers)]
-           [navbar  (resources 'navbar (or part-of this))]
-           [content (case width
-                      [(full) content]
-                      [(#f) (div class: 'bodycontent content)]
-                      [else (div class: 'bodycontent
-                                 style: @list{width: @|width|@";"}
-                                 content)])]
-           [content @list{@navbar
-                          @content}])
-      @xhtml{@||
-             @head
-             @(if body-attrs
-                (apply body `(,@body-attrs ,content))
-                (body content))
-             @||}))
+    (define desc
+      (and description (meta name: 'description content: description)))
+    (define headers
+      (if (and extra-headers desc)
+        (list desc "\n" extra-headers)
+        (or desc extra-headers)))
+    (define head   (resources 'head wintitle headers))
+    (define navbar (resources 'navbar (or part-of this)))
+    (define content
+      (list navbar "\n"
+            (case width
+              [(full) content0]
+              [(#f) (div class: 'bodycontent content0)]
+              [else (div class: 'bodycontent style: @list{width: @|width|@";"}
+                      content0)])))
+    @xhtml{@||
+           @head
+           @(if body-attrs
+              (apply body `(,@body-attrs ,content))
+              (body content))
+           @||})
   (define this (and (not html-only?)
                     (resource/referrer (get-path 'plain id file "html" dir)
                                        (file-writer output-xml page)

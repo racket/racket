@@ -12,7 +12,11 @@
 
 (provide index)
 (define index
-  @page[#:link-title "Downloads" #:part-of 'download]{
+  @page[#:link-title "Downloads" #:part-of 'download
+        #:description
+        @'{Download Racket, a modern dialect of Lisp/Scheme.  @;
+           Available for Windows, Mac, Linux, and other Unix platforms.  @;
+           Includes the DrRacket IDE.}]{
     @div[style: "float: right;"]{@download-button}
     Use these links to browse the download directories directly:
     @ul{@li{Current @a[href: `(,installers "/recent")]{installers}
