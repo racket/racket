@@ -35,8 +35,8 @@
          none/c
          make-none/c
 
-         prompt/c
-         continuation-mark/c
+         prompt-tag/c
+         continuation-mark-key/c
 
          chaperone-contract?
          impersonator-contract?
@@ -946,21 +946,24 @@
 
 (define/final-prop none/c (make-none/c 'none/c))
 
-;; prompt/c
-(define/subexpression-pos-prop (prompt/c . ctc-args)
+;; prompt-tag/c
+(define/subexpression-pos-prop (prompt-tag/c . ctc-args)
   (define ctcs
     (map (λ (ctc-arg)
-           (coerce-contract 'prompt/c ctc-arg))
+           (coerce-contract 'prompt-tag/c ctc-arg))
          ctc-args))
-  (cond [(andmap chaperone-contract? ctcs) (chaperone-prompt/c ctcs)]
-        [else (impersonator-prompt/c ctcs)]))
+  (cond [(andmap chaperone-contract? ctcs)
+         (chaperone-prompt-tag/c ctcs)]
+        [else
+         (impersonator-prompt-tag/c ctcs)]))
 
-(define (prompt/c-name ctc)
+(define (prompt-tag/c-name ctc)
   (apply build-compound-type-name
-         (cons 'prompt/c (base-prompt/c-ctcs ctc))))
+         (cons 'prompt-tag/c (base-prompt-tag/c-ctcs ctc))))
 
-(define ((prompt/c-proj proxy) ctc)
-  (define ho-projs (map contract-projection (base-prompt/c-ctcs ctc)))
+(define ((prompt-tag/c-proj proxy) ctc)
+  (define ho-projs
+    (map contract-projection (base-prompt-tag/c-ctcs ctc)))
   (λ (blame)
     (define proj1
       (λ vs
@@ -981,47 +984,50 @@
          val))
       (proxy val proj1 proj2))))
 
-(define ((prompt/c-first-order ctc) v)
+(define ((prompt-tag/c-first-order ctc) v)
   (continuation-prompt-tag? v))
 
-(define (prompt/c-stronger? this that)
-  (and (base-prompt/c? that)
+(define (prompt-tag/c-stronger? this that)
+  (and (base-prompt-tag/c? that)
        (andmap (λ (this that) (contract-stronger? this that))
-               (base-prompt/c-ctcs this)
-               (base-prompt/c-ctcs that))))
+               (base-prompt-tag/c-ctcs this)
+               (base-prompt-tag/c-ctcs that))))
 
-(define-struct base-prompt/c (ctcs))
+(define-struct base-prompt-tag/c (ctcs))
 
-(define-struct (chaperone-prompt/c base-prompt/c) ()
+(define-struct (chaperone-prompt-tag/c base-prompt-tag/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection (prompt/c-proj chaperone-prompt-tag)
-   #:first-order prompt/c-first-order
-   #:stronger prompt/c-stronger?
-   #:name prompt/c-name))
+   #:projection (prompt-tag/c-proj chaperone-prompt-tag)
+   #:first-order prompt-tag/c-first-order
+   #:stronger prompt-tag/c-stronger?
+   #:name prompt-tag/c-name))
 
-(define-struct (impersonator-prompt/c base-prompt/c) ()
+(define-struct (impersonator-prompt-tag/c base-prompt-tag/c) ()
   #:property prop:contract
   (build-contract-property
-   #:projection (prompt/c-proj impersonate-prompt-tag)
-   #:first-order prompt/c-first-order
-   #:stronger prompt/c-stronger?
-   #:name prompt/c-name))
+   #:projection (prompt-tag/c-proj impersonate-prompt-tag)
+   #:first-order prompt-tag/c-first-order
+   #:stronger prompt-tag/c-stronger?
+   #:name prompt-tag/c-name))
 
 
-;; continuation-mark/c
-(define/subexpression-pos-prop (continuation-mark/c ctc-arg)
-  (define ctc (coerce-contract 'continuation-mark/c ctc-arg))
-  (cond [(chaperone-contract? ctc) (chaperone-continuation-mark/c ctc)]
-        [else (impersonator-continuation-mark/c ctc)]))
+;; continuation-mark-key/c
+(define/subexpression-pos-prop (continuation-mark-key/c ctc-arg)
+  (define ctc (coerce-contract 'continuation-mark-key/c ctc-arg))
+  (cond [(chaperone-contract? ctc)
+         (chaperone-continuation-mark-key/c ctc)]
+        [else
+         (impersonator-continuation-mark-key/c ctc)]))
 
-(define (continuation-mark/c-name ctc)
+(define (continuation-mark-key/c-name ctc)
   (build-compound-type-name
-   'continuation-mark/c
-   (base-continuation-mark/c-ctc ctc)))
+   'continuation-mark-key/c
+   (base-continuation-mark-key/c-ctc ctc)))
 
-(define ((continuation-mark/c-proj proxy) ctc)
-  (define ho-proj (contract-projection (base-continuation-mark/c-ctc ctc)))
+(define ((continuation-mark-key/c-proj proxy) ctc)
+  (define ho-proj
+    (contract-projection (base-continuation-mark-key/c-ctc ctc)))
   (λ (blame)
     (define proj1 (λ (v) ((ho-proj blame) v)))
     (define proj2 (λ (v) ((ho-proj (blame-swap blame)) v)))
@@ -1034,32 +1040,36 @@
          val))
       (proxy val proj1 proj2))))
 
-(define ((continuation-mark/c-first-order ctc) v)
+(define ((continuation-mark-key/c-first-order ctc) v)
   (continuation-mark-key? v))
 
-(define (continuation-mark/c-stronger? this that)
-  (and (base-continuation-mark/c? that)
+(define (continuation-mark-key/c-stronger? this that)
+  (and (base-continuation-mark-key/c? that)
        (contract-stronger?
-        (base-continuation-mark/c-ctc this)
-        (base-continuation-mark/c-ctc that))))
+        (base-continuation-mark-key/c-ctc this)
+        (base-continuation-mark-key/c-ctc that))))
 
-(define-struct base-continuation-mark/c (ctc))
+(define-struct base-continuation-mark-key/c (ctc))
 
-(define-struct (chaperone-continuation-mark/c base-continuation-mark/c) ()
+(define-struct (chaperone-continuation-mark-key/c
+                base-continuation-mark-key/c)
+  ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection (continuation-mark/c-proj chaperone-continuation-mark-key)
-   #:first-order continuation-mark/c-first-order
-   #:stronger continuation-mark/c-stronger?
-   #:name continuation-mark/c-name))
+   #:projection (continuation-mark-key/c-proj chaperone-continuation-mark-key)
+   #:first-order continuation-mark-key/c-first-order
+   #:stronger continuation-mark-key/c-stronger?
+   #:name continuation-mark-key/c-name))
 
-(define-struct (impersonator-continuation-mark/c base-continuation-mark/c) ()
+(define-struct (impersonator-continuation-mark-key/c
+                base-continuation-mark-key/c)
+  ()
   #:property prop:contract
   (build-contract-property
-   #:projection (continuation-mark/c-proj impersonate-continuation-mark-key)
-   #:first-order continuation-mark/c-first-order
-   #:stronger continuation-mark/c-stronger?
-   #:name continuation-mark/c-name))
+   #:projection (continuation-mark-key/c-proj impersonate-continuation-mark-key)
+   #:first-order continuation-mark-key/c-first-order
+   #:stronger continuation-mark-key/c-stronger?
+   #:name continuation-mark-key/c-name))
 
 
 (define (flat-contract-predicate x)

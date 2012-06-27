@@ -490,7 +490,7 @@ to the input.  The result will be a copy for immutable hash tables, and either a
 }
 
 
-@defproc[(prompt/c [contract contract?] ...) contract?]{
+@defproc[(prompt-tag/c [contract contract?] ...) contract?]{
 Takes any number of contracts and returns a contract that recognizes
 continuation prompt tags and will check any aborts or prompt handlers that
 use the contracted prompt tag.
@@ -505,7 +505,7 @@ an @tech{impersonator} contract.
 
 @examples[#:eval (contract-eval)
   (define/contract tag
-    (prompt/c (-> number? string?))
+    (prompt-tag/c (-> number? string?))
     (make-continuation-prompt-tag))
 
   (call-with-continuation-prompt
@@ -520,7 +520,7 @@ an @tech{impersonator} contract.
 }
 
 
-@defproc[(continuation-mark/c [contract contract?]) contract?]{
+@defproc[(continuation-mark-key/c [contract contract?]) contract?]{
 Takes a single contract and returns a contract that recognizes
 continuation marks and will check any mappings of marks to values
 or any accesses of the mark value.
@@ -531,7 +531,7 @@ an @tech{impersonator} contract.
 
 @examples[#:eval (contract-eval)
   (define/contract mark-key
-    (continuation-mark/c (-> symbol (listof symbol?)))
+    (continuation-mark-key/c (-> symbol? (listof symbol?)))
     (make-continuation-mark-key))
 
   (with-continuation-mark

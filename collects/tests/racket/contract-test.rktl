@@ -4046,23 +4046,23 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
-  ;;  prompt/c
+  ;;  prompt-tag/c
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (test/spec-passed
-   'prompt/c-fo-1
-   '(contract (prompt/c string?)
+   'prompt-tag/c-fo-1
+   '(contract (prompt-tag/c string?)
               (make-continuation-prompt-tag)
               'pos 'neg))
 
   (test/pos-blame
-   'prompt/c-fo-2
-   '(contract (prompt/c string?) 5 'pos 'neg))
+   'prompt-tag/c-fo-2
+   '(contract (prompt-tag/c string?) 5 'pos 'neg))
 
   (test/spec-passed
-   'prompt/c-ho-1
-   '(let ([pt (contract (prompt/c number?)
+   'prompt-tag/c-ho-1
+   '(let ([pt (contract (prompt-tag/c number?)
                         (make-continuation-prompt-tag)
                         'pos
                         'neg)])
@@ -4072,8 +4072,8 @@
         (λ (x) (+ x 1)))))
 
   (test/neg-blame
-   'prompt/c-ho-2
-   '(let ([pt (contract (prompt/c string?)
+   'prompt-tag/c-ho-2
+   '(let ([pt (contract (prompt-tag/c string?)
                         (make-continuation-prompt-tag)
                         'pos
                         'neg)])
@@ -4083,8 +4083,8 @@
         (λ (x) (+ x 1)))))
 
   (test/neg-blame
-   'prompt/c-ho-3
-   '(let ([pt (contract (prompt/c (-> string? number?))
+   'prompt-tag/c-ho-3
+   '(let ([pt (contract (prompt-tag/c (-> string? number?))
                         (make-continuation-prompt-tag)
                         'pos
                         'neg)])
@@ -4094,8 +4094,8 @@
         (λ (x) (x 8)))))
 
   (test/neg-blame
-   'prompt/c-ho-4
-   '(let ([pt (contract (prompt/c (-> string? number?))
+   'prompt-tag/c-ho-4
+   '(let ([pt (contract (prompt-tag/c (-> string? number?))
                         (make-continuation-prompt-tag)
                         'pos
                         'neg)])
@@ -4105,10 +4105,10 @@
        (λ (x) (x "potato")))))
 
   (test/pos-blame
-   'prompt/c-ho-5
+   'prompt-tag/c-ho-5
    '(let* ([pt (make-continuation-prompt-tag)]
            [do-prompt (contract
-                        (-> (-> (prompt/c (-> number? number?))
+                        (-> (-> (prompt-tag/c (-> number? number?))
                                 any)
                                 number?)
                         (λ (f) (call-with-continuation-prompt
@@ -4121,10 +4121,10 @@
                   (abort-current-continuation pt (λ (v) (+ v 1)))))))
 
   (test/spec-failed
-   'prompt/c-ho-5
+   'prompt-tag/c-ho-5
    '(let* ([pt (make-continuation-prompt-tag)]
            [do-prompt (contract
-                        (-> (-> (prompt/c (-> number? number?))
+                        (-> (-> (prompt-tag/c (-> number? number?))
                                 any)
                                 number?)
                         (λ (f) (call-with-continuation-prompt
@@ -4134,7 +4134,7 @@
                         'A
                         'B)]
            [do-prompt2 (contract
-                         (-> (-> (prompt/c (-> string? number?))
+                         (-> (-> (prompt-tag/c (-> string? number?))
                                  any)
                                  number?)
                          do-prompt
@@ -4145,8 +4145,8 @@
    "B")
 
   (test/neg-blame
-   'prompt/c-ho-6
-   '(let ([pt (contract (prompt/c string? number?)
+   'prompt-tag/c-ho-6
+   '(let ([pt (contract (prompt-tag/c string? number?)
                         (make-continuation-prompt-tag)
                         'pos
                         'neg)])
@@ -4156,8 +4156,8 @@
         (λ (x y) (values x y)))))
 
   (test/spec-passed
-   'prompt/c-ho-7
-   '(let ([pt (contract (prompt/c string? number?)
+   'prompt-tag/c-ho-7
+   '(let ([pt (contract (prompt-tag/c string? number?)
                         (make-continuation-prompt-tag)
                         'pos
                         'neg)])
@@ -4168,24 +4168,24 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
-  ;;  prompt/c
+  ;;  continuation-mark-key/c
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (test/spec-passed
-   'continuation-mark/c-fo-1
-   '(contract (continuation-mark/c string?)
+   'continuation-mark-key/c-fo-1
+   '(contract (continuation-mark-key/c string?)
               (make-continuation-mark-key)
               'pos 'neg))
 
   (test/pos-blame
-   'continuation-mark/c-fo-2
-   '(contract (continuation-mark/c string?) 5 'pos 'neg))
+   'continuation-mark-key/c-fo-2
+   '(contract (continuation-mark-key/c string?) 5 'pos 'neg))
 
   ;; TODO: Does not pass due to compiler optimization
   ;(test/neg-blame
-  ; 'continuation-mark/c-ho-1
-  ; '(let ([mark (contract (continuation-mark/c number?)
+  ; 'continuation-mark-key/c-ho-1
+  ; '(let ([mark (contract (continuation-mark-key/c number?)
   ;                        (make-continuation-mark-key)
   ;                        'pos
   ;                        'neg)])
@@ -4193,8 +4193,8 @@
   ;      42)))
 
   (test/spec-passed
-   'continuation-mark/c-ho-2
-   '(let ([mark (contract (continuation-mark/c number?)
+   'continuation-mark-key/c-ho-2
+   '(let ([mark (contract (continuation-mark-key/c number?)
                           (make-continuation-mark-key)
                           'pos
                           'neg)])
@@ -4203,8 +4203,8 @@
          (current-continuation-marks) mark))))
 
   (test/neg-blame
-   'continuation-mark/c-ho-3
-   '(let ([mark (contract (continuation-mark/c number?)
+   'continuation-mark-key/c-ho-3
+   '(let ([mark (contract (continuation-mark-key/c number?)
                           (make-continuation-mark-key)
                           'pos
                           'neg)])
@@ -4213,9 +4213,9 @@
          (current-continuation-marks) mark))))
 
   (test/neg-blame
-   'continuation-mark/c-ho-4
+   'continuation-mark-key/c-ho-4
    '(let* ([mark (make-continuation-mark-key)]
-           [do-mark (contract (-> (-> (continuation-mark/c (-> number? number?))
+           [do-mark (contract (-> (-> (continuation-mark-key/c (-> number? number?))
                                       number?)
                                   number?)
                               (lambda (f)
@@ -4230,9 +4230,9 @@
           "bad")))))
 
   (test/pos-blame
-   'continuation-mark/c-ho-5
+   'continuation-mark-key/c-ho-5
    '(let* ([mark (make-continuation-mark-key)]
-           [do-mark (contract (-> (-> (continuation-mark/c (-> number? number?))
+           [do-mark (contract (-> (-> (continuation-mark-key/c (-> number? number?))
                                       number?)
                                   number?)
                               (lambda (f)
@@ -4247,9 +4247,9 @@
           0)))))
 
   (test/spec-passed
-   'continuation-mark/c-ho-6
+   'continuation-mark-key/c-ho-6
    '(let* ([mark (make-continuation-mark-key)]
-           [do-mark (contract (-> (-> (continuation-mark/c (-> number? number?))
+           [do-mark (contract (-> (-> (continuation-mark-key/c (-> number? number?))
                                       number?)
                                   number?)
                               (lambda (f)
@@ -4264,8 +4264,8 @@
           0)))))
 
   (test/neg-blame
-   'continuation-mark/c-ho-7
-   '(let ([mark (contract (continuation-mark/c (-> number? number?))
+   'continuation-mark-key/c-ho-7
+   '(let ([mark (contract (continuation-mark-key/c (-> number? number?))
                           (make-continuation-mark-key)
                           'pos
                           'neg)])
@@ -4275,8 +4275,8 @@
          5))))
 
   (test/spec-passed
-   'continuation-mark/c-ho-8
-   '(let ([mark (contract (continuation-mark/c (-> number? number?))
+   'continuation-mark-key/c-ho-8
+   '(let ([mark (contract (continuation-mark-key/c (-> number? number?))
                           (make-continuation-mark-key)
                           'pos
                           'neg)])
@@ -4286,9 +4286,9 @@
          0))))
 
   (test/pos-blame
-   'continuation-mark/c-ho-9
+   'continuation-mark-key/c-ho-9
    '(let* ([mark (make-continuation-mark-key)]
-           [do-mark (contract (-> (continuation-mark/c (-> number? number?))
+           [do-mark (contract (-> (continuation-mark-key/c (-> number? number?))
                                   number?)
                               (lambda (mark)
                                 ((continuation-mark-set-first
