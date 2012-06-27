@@ -141,7 +141,9 @@ includes @racket[constructor-id] as an export. If
 @racket[constructor-id] is supplied via @racket[#:constructor-name]
 and it is not the same as @racket[id], then @racket[id] does not serve
 as a constructor, and @racket[object-name] on the constructor produces
-the symbolic form of @racket[constructor-id].
+the symbolic form of @racket[constructor-id]. Only one of 
+@racket[#:extra-constructor-name] and @racket[#:constructor-name]
+can be provided within a @racket[struct] form.
 
 If @racket[#:reflection-name symbol-expr] is provided, then
 @racket[symbol-expr] must produce a symbol that is used to identify
@@ -230,9 +232,11 @@ position within the structure declaration of the field named by
                                (id super-id)])]{
 
 Like @racket[struct], except that the syntax for supplying a
-@racket[super-id] is different, and a @racket[_constructor-id] that has
-a @racketidfont{make-} prefix on @racket[id] is implicitly supplied
-via @racket[#:extra-constructor-name].
+@racket[super-id] is different, and a @racket[_constructor-id] that
+has a @racketidfont{make-} prefix on @racket[id] is implicitly
+supplied via @racket[#:extra-constructor-name] if neither
+@racket[#:extra-constructor-name] nor @racket[#:constructor-name] is
+provided.
 
 This form is provided for backwards compatibility; @racket[struct] is
 preferred.
