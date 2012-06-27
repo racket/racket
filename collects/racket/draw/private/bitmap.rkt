@@ -545,10 +545,10 @@
                  (let ([w (create-png-writer out width height #t #f)])
                    (write-png w rows)
                    (destroy-png-writer w)))]
-              [(and (not alpha-channel?) 
-                    loaded-mask
-                    (= width (send loaded-mask get-width))
-                    (= height (send loaded-mask get-height)))
+              [else #;(and (not alpha-channel?) 
+                           loaded-mask
+                           (= width (send loaded-mask get-width))
+                           (= height (send loaded-mask get-height)))
                (let ([bstr (make-bytes (* width height 4))])
                  (get-argb-pixels 0 0 width height bstr)
                  (when loaded-mask
@@ -568,6 +568,7 @@
                    (let ([w (create-png-writer out width height #f #t)])
                      (write-png w rows)
                      (destroy-png-writer w))))]
+              #;
               [else
                ;; Use Cairo built-in support:
                (let ([proc (lambda (ignored bstr len)

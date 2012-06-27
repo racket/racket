@@ -306,7 +306,7 @@
                                                                      -> _int)
                                                                (_pointer = #f)
                                                                -> _cairo_surface_t/null))
-
+;; Not recommended, unless it makes sense to make the allback atomic:
 (define-cairo cairo_surface_write_to_png_stream (_fun _cairo_surface_t
                                                       (_fun _pointer
                                                             (s : _pointer)
