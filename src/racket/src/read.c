@@ -4706,7 +4706,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	mv->modidx = mod;
 	mv->sym = var;
         if (pos == -2) {
-          mv->mod_phase = 1;
+          pos = read_compact_number(port);
+          mv->mod_phase = pos;
           pos = read_compact_number(port);
           mv->pos = pos;
         } else

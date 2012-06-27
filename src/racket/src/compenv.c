@@ -1879,24 +1879,13 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       genv = scheme_module_access(modname, env->genv, SCHEME_INT_VAL(mod_defn_phase));
 
       if (!genv) {
-	if (env->genv->phase) {
-	  /* The failure might be due a laziness in required-syntax
-	     execution. Force all laziness at the prior level 
-	     and try again. */
-	  scheme_module_force_lazy(env->genv, 1);
-	  genv = scheme_module_access(modname, env->genv, SCHEME_INT_VAL(mod_defn_phase));
-	}
-
-	if (!genv) {
-          scheme_wrong_syntax("require", NULL, src_find_id,
-                              "namespace mismatch;\n"
-                              " reference to a module that is not available\n"
-                              "  reference phase: %d\n"
-                              "  referenced module: %D\n"
-                              "  referenced phase level: %d",
-			      env->genv->phase, modname, SCHEME_INT_VAL(mod_defn_phase));
-	  return NULL;
-	}
+        scheme_wrong_syntax("require", NULL, src_find_id,
+                            "namespace mismatch;\n"
+                            " reference to a module that is not available\n"
+                            "  reference phase: %d\n"
+                            "  referenced module: %D\n"
+                            "  referenced phase level: %d",
+                            env->genv->phase, modname, SCHEME_INT_VAL(mod_defn_phase));
       }
     }
   } else {

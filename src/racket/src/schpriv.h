@@ -3228,7 +3228,6 @@ int scheme_is_module_env(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx, int load_it);
 Scheme_Env *scheme_module_access(Scheme_Object *modname, Scheme_Env *env, intptr_t rev_mod_phase);
-void scheme_module_force_lazy(Scheme_Env *env, int previous);
 
 int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *varname);
 

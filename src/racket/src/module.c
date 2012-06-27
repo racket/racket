@@ -4428,11 +4428,6 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env,
   }
 }
 
-void scheme_module_force_lazy(Scheme_Env *env, int previous)
-{
-  /* not anymore */
-}
-
 static int wait_registry(Scheme_Env *env)
 {
   Scheme_Object *lock, *a[2];
@@ -4904,23 +4899,53 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
       setup_accessible_table(m);
 
       /* Create provided global variables: */
-      {
+      if ((menv->phase <= 0)
+          && ((menv->phase + m->num_phases) > 0)) {
+        Scheme_Module_Phase_Exports *pt;
         Scheme_Object **exss, **exsns;
         int i, count;
+        Scheme_Env *menv2 = menv;
+        int pl;
 
-        exsns = m->me->rt->provide_src_names;
-        exss = m->me->rt->provide_srcs;
-        count = m->me->rt->num_var_provides;
+        pl = -menv->phase;
 
-        for (i = 0; i < count; i++) {
-          if (SCHEME_FALSEP(exss[i]))
-            scheme_add_to_table(menv->toplevel, (const char *)exsns[i], NULL, 0);
+        for (i = 0; i < pl; i++) {
+          scheme_prepare_exp_env(menv2);
+          menv2 = menv2->exp_env;
         }
 
-        count = m->exp_infos[0]->num_indirect_provides;
-        exsns = m->exp_infos[0]->indirect_provides;
-        for (i = 0; i < count; i++) {
-          scheme_add_to_table(menv->toplevel, (const char *)exsns[i], NULL, 0);
+        switch(pl) {
+        case 0:
+          pt = m->me->rt;
+          break;
+        case 1:
+          pt = m->me->et;
+          break;
+        default:
+          if (m->me->other_phases)
+            pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(m->me->other_phases, scheme_make_integer(pl));
+          else
+            pt = NULL;
+          break;
+        }
+
+        if (pt) {
+          exsns = pt->provide_src_names;
+          exss = pt->provide_srcs;
+          count = pt->num_var_provides;
+          
+          for (i = 0; i < count; i++) {
+            if (SCHEME_FALSEP(exss[i]))
+              scheme_add_to_table(menv2->toplevel, (const char *)exsns[i], NULL, 0);
+          }
+        }
+
+        if (m->exp_infos[pl]) {
+          count = m->exp_infos[pl]->num_indirect_provides;
+          exsns = m->exp_infos[pl]->indirect_provides;
+          for (i = 0; i < count; i++) {
+            scheme_add_to_table(menv2->toplevel, (const char *)exsns[i], NULL, 0);
+          }
         }
       }
     }
@@ -5124,7 +5149,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     for (i = menv->module->num_phases; i-- ; ) {
       if (env->phase + i == base_phase) {
         if (eval_exp) {
-          if (base_phase < menv->module->num_phases) {
+          if (i + 1 < menv->module->num_phases) {
             if (eval_exp > 0) {
               show("exp=", menv, eval_exp, eval_run, i, base_phase);
               expstart_module(menv, env, i+1, restart);

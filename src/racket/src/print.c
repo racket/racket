@@ -2896,8 +2896,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         }
 	print(mv->sym, notdisplay, 1, ht, mt, pp);
         if (((Module_Variable *)obj)->mod_phase) {
-          /* mod_phase must be 1 */
           print_compact_number(pp, -2);
+          print_compact_number(pp, mv->mod_phase);
         }
         print_compact_number(pp, mv->pos);
 

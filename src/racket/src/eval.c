@@ -803,14 +803,6 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
   } else {
     menv = scheme_module_access(modname, env, mod_phase);
     
-    if (!menv && env->phase) {
-      /* The failure might be due a laziness in required-syntax
-	 execution. Force all laziness at the prior level 
-	 and try again. */
-      scheme_module_force_lazy(env, 1);
-      menv = scheme_module_access(modname, env, mod_phase);
-    }
-    
     if (!menv) {
       scheme_wrong_syntax("link", NULL, varname,
 			  "namespace mismatch;\n"

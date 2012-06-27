@@ -789,5 +789,36 @@
 (require 'uses-uses-variable-reference->namespace)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check reference to phase-2 definition:
+
+(let ()
+  (define m1-expr
+    '(module m1 racket/base
+       (require (for-syntax racket/base))
+       (begin-for-syntax
+        (require (for-syntax racket/base))
+        (begin-for-syntax
+         (define m1 2)
+         (provide m1)))))
+  
+  (define m2-expr
+    '(module m2 racket/base
+       (require (for-meta -2 'm1))
+       m1))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval m1-expr)
+    (eval m2-expr))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (define (compile-eval e)
+      (define-values (i o) (make-pipe))
+      (write (compile e) o)
+      (parameterize ([read-accept-compiled #t])
+        (eval (read i))))
+    (compile-eval m1-expr)
+    (compile-eval m2-expr)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

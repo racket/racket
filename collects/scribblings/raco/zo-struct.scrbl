@@ -72,7 +72,7 @@ structures that are produced by @racket[zo-parse] and consumed by
             ([modidx module-path-index?]
              [sym symbol?]
              [pos exact-integer?]
-             [phase (or/c 0 1)])]{
+             [phase exact-nonnegative-integer?])]{
   Represents a top-level variable, and used only in a @racket[prefix].
   The @racket[pos] may record the variable's offset within its module,
   or it can be @racket[-1] if the variable is always located by name.
