@@ -18,6 +18,7 @@
 
       if (!pf->next_final) {
         /* We're the first to look at this prefix... */
+        gcMARK2(pf->import_map, gc);
         if (pf->num_stxes) {
           /* Mark all syntax-object references */
           for (i = pf->num_stxes+1; i--;) {

@@ -147,7 +147,7 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
   if (jitter->nc) {
     if (SAME_TYPE(SCHEME_TYPE(o), scheme_toplevel_type)) {
       Scheme_Object *p;
-      p = scheme_extract_global(o, jitter->nc);
+      p = scheme_extract_global(o, jitter->nc, 0);
       p = ((Scheme_Bucket *)p)->val;
       return check_val_struct_prim(p, arity);
     } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_local_type)) {

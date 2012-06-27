@@ -1282,7 +1282,7 @@ int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int 
 # define CLOSURE_CONTENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, data->num_params)
 #endif
 
-Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc);
+Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only);
 Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push);
 
 void scheme_jit_register_traversers(void);

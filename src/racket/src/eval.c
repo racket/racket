@@ -786,7 +786,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 					   int check_access, Scheme_Object *insp,
 					   int pos, int mod_phase,
 					   Scheme_Env *env, 
-                                           Scheme_Object **exprs, int which)
+                                           Scheme_Object **exprs, int which,
+                                           char *import_map)
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
@@ -856,6 +857,9 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
       ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
   }
+
+  if (!self && !(import_map[which >> 3] & (1 << (which & 0x7))))
+    import_map[which >> 3] |= (1 << (which & 0x7));
   
   return (Scheme_Object *)bkt;
 }
@@ -863,7 +867,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env *env,
                                     Scheme_Object *src_modidx, 
                                     Scheme_Object *dest_modidx,
-                                    Scheme_Object *insp)
+                                    Scheme_Object *insp,
+                                    char *import_map)
 {
   Scheme_Object *expr = exprs[which];
 
@@ -896,14 +901,15 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
       if (SCHEME_PAIRP(modname)) {
         mod_phase = SCHEME_INT_VAL(SCHEME_CDR(modname));
         modname = SCHEME_CAR(modname);
-      }
+      } 
     }
     return link_module_variable(modname,
                                 varname,
                                 0, NULL,
                                 -1, mod_phase,
                                 env, 
-                                NULL, 0);
+                                NULL, 0,
+                                import_map);
   } else if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
     Scheme_Bucket *b = (Scheme_Bucket *)expr;
     Scheme_Env *home;
@@ -918,7 +924,8 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				  1, home->module->insp,
 				  -1, home->mod_phase,
 				  env, 
-                                  exprs, which);
+                                  exprs, which,
+                                  import_map);
   } else {
     Module_Variable *mv = (Module_Variable *)expr;
 
@@ -931,7 +938,8 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 				mv->sym, 1, (mv->insp ? mv->insp : insp),
 				mv->pos, mv->mod_phase,
 				env,
-                                exprs, which);
+                                exprs, which,
+                                import_map);
   }
 }
 
@@ -5437,7 +5445,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 {
   Scheme_Object **rs_save, **rs, *v;
   Scheme_Prefix *pf;
-  int i, j, tl_map_len;
+  char *import_map;
+  int i, j, tl_map_len, import_map_len;
 
   rs_save = rs = MZ_RUNSTACK;
 
@@ -5458,6 +5467,13 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     i += rp->num_lifts;
 
     tl_map_len = ((rp->num_toplevels + rp->num_lifts) + 31) / 32;
+    import_map_len = (rp->num_toplevels + 7) / 8;
+
+    if (import_map_len) {
+      import_map = GC_malloc_atomic(import_map_len);
+      memset(import_map, 0, import_map_len);
+    } else
+      import_map = NULL;
 
     pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
                               + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -5466,6 +5482,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     pf->num_slots = i;
     pf->num_toplevels = rp->num_toplevels;
     pf->num_stxes = rp->num_stxes;
+    pf->import_map = import_map;
     --rs;
     MZ_RUNSTACK = rs;
     rs[0] = (Scheme_Object *)pf;
@@ -5473,7 +5490,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     for (i = 0; i < rp->num_toplevels; i++) {
       v = rp->toplevels[i];
       if (genv || SCHEME_FALSEP(v))
-	v = link_toplevel(rp->toplevels, i, genv ? genv : dummy_env, src_modidx, now_modidx, insp);
+	v = link_toplevel(rp->toplevels, i, genv ? genv : dummy_env, src_modidx, now_modidx, insp, import_map);
       pf->a[i] = v;
     }
 

@@ -458,14 +458,28 @@ static int no_sync_change(Scheme_Object *obj, int fuel)
   }
 }
 
-Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc)
+Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only)
 {
   /* GLOBAL ASSUMPTION: we assume that globals are the last thing
      in the closure; grep for "GLOBAL ASSUMPTION" in fun.c. */
   Scheme_Prefix *globs;
+  int pos;
 
   globs = (Scheme_Prefix *)nc->vals[nc->code->u2.orig_code->closure_size - 1];
-  return globs->a[SCHEME_TOPLEVEL_POS(o)];
+  pos = SCHEME_TOPLEVEL_POS(o);
+
+  if (local_only) {
+    /* Usually, we look for local bindings only, because module caching means
+       that JIT-generated code can be linked to different other modules that
+       may have different bindings, even though we expect them binding to be
+       consistent. */
+    if (pos < globs->num_toplevels) {
+      if (globs->import_map[pos >> 3] & (1 << (pos & 7)))
+        return NULL;
+    }
+  }
+
+  return globs->a[pos];
 }
 
 Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
@@ -511,17 +525,19 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
       && SAME_TYPE(SCHEME_TYPE(a), scheme_toplevel_type)
       && ((SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
     Scheme_Object *p;
-    p = scheme_extract_global(a, jitter->nc);
-    p = ((Scheme_Bucket *)p)->val;
-    if (p && SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
-      Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
-      if (ndata->closure_size >= 0) { /* not case-lambda */
-        if (lambda_has_been_jitted(ndata)) {
-          if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
-            return 1;
-        } else {
-          if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
-            return 1;
+    p = scheme_extract_global(a, jitter->nc, 1);
+    if (p) {
+      p = ((Scheme_Bucket *)p)->val;
+      if (p && SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
+        Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
+        if (ndata->closure_size >= 0) { /* not case-lambda */
+          if (lambda_has_been_jitted(ndata)) {
+            if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
+              return 1;
+          } else {
+            if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
+              return 1;
+          }
         }
       }
     }
@@ -731,9 +747,11 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
       if (jitter->nc) {
 	Scheme_Object *p;
         
-	p = scheme_extract_global(v, jitter->nc);
-	p = ((Scheme_Bucket *)p)->val;
-	return SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type);
+	p = scheme_extract_global(v, jitter->nc, 1);
+        if (p) {
+          p = ((Scheme_Bucket *)p)->val;
+          return SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type);
+        }
       }
     }
   }

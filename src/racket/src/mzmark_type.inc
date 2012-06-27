@@ -2356,6 +2356,7 @@ static int prefix_val_MARK(void *p, struct NewGC *gc) {
   int i;
   for (i = pf->num_slots; i--; )
     gcMARK2(pf->a[i], gc);
+  gcMARK2(pf->import_map, gc);
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -2368,6 +2369,7 @@ static int prefix_val_FIXUP(void *p, struct NewGC *gc) {
   int i;
   for (i = pf->num_slots; i--; )
     gcFIXUP2(pf->a[i], gc);
+  gcFIXUP2(pf->import_map, gc);
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))

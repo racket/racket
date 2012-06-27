@@ -1468,35 +1468,29 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	}
       }
     } else if (t == scheme_toplevel_type) {
-      if (0 && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
+      if ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
         /* We can re-order evaluation of the rator. */
         reorder_ok = 1;
 
-        if (jitter->nc && 0
+        if (jitter->nc
             && ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
           Scheme_Object *p;
 
-          p = scheme_extract_global(rator, jitter->nc);
-          p = ((Scheme_Bucket *)p)->val;
-          if (can_direct_native(p, num_rands, &extract_case)) {
-            direct_native = 1;
+          p = scheme_extract_global(rator, jitter->nc, 1);
+          if (p) {
+            p = ((Scheme_Bucket *)p)->val;
+            if (can_direct_native(p, num_rands, &extract_case)) {
+              direct_native = 1;
             
-            if ((SCHEME_TOPLEVEL_POS(rator) == jitter->self_toplevel_pos)
-                && (num_rands < MAX_SHARED_CALL_RANDS)) {
-              if (is_tail)
-                direct_self = 1;
-              else if (jitter->self_nontail_code)
-                nontail_self = 1;
+              if ((SCHEME_TOPLEVEL_POS(rator) == jitter->self_toplevel_pos)
+                  && (num_rands < MAX_SHARED_CALL_RANDS)) {
+                if (is_tail)
+                  direct_self = 1;
+                else if (jitter->self_nontail_code)
+                  nontail_self = 1;
+              }
             }
           }
-        }
-      } else if (jitter->nc) {
-        Scheme_Object *p;
-
-        p = scheme_extract_global(rator, jitter->nc);
-        if (((Scheme_Bucket_With_Flags *)p)->flags & GLOB_IS_CONSISTENT) {
-          if (can_direct_native(((Scheme_Bucket *)p)->val, num_rands, &extract_case))
-            direct_native = 1;
         }
       }
     } else if (SAME_TYPE(t, scheme_closure_type)) {

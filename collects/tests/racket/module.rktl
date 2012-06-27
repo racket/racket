@@ -820,5 +820,63 @@
     (compile-eval m2-expr)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check JIT treatement of seemingly constant imports
+
+(let ()
+  (define (a-expr mut?)
+    `(module a racket/base
+       ,(if mut?
+            `(define a 5)
+            `(define (a x)
+               ;; long enough to not be inlined:
+               (list x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x)))
+       (provide a)))
+  (define b-expr
+    `(module b racket/base
+       (require 'a)
+       (define (b q) (a q))
+       (provide b)))
+
+  (define (compile-m e strs)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (for ([str (in-list strs)])
+        (parameterize ([read-accept-compiled #t])
+          (eval (read (open-input-bytes str)))))
+      (define o (open-output-bytes))
+      (write (compile e) o)
+      (define s (get-output-bytes o))
+      (define vlen (bytes-ref s 2))
+      ;; Add a hash, so that loading this module in two contexts tries to
+      ;; use the same loaded bytecode and same JIT-generated code:
+      (bytes-copy! s (+ 4 vlen)
+                   (subbytes
+                    (bytes-append (string->bytes/utf-8 (format "~s" (bytes-length s)))
+                                  (make-bytes 20 0))
+                    0
+                    20))
+      s))
+
+  (define a-s (compile-m (a-expr #f) '()))
+  (define am-s (compile-m (a-expr #t) '()))
+  (define b-s (compile-m b-expr (list a-s)))
+
+  (define (go a-s)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (parameterize ([read-accept-compiled #t])
+        (eval (read (open-input-bytes a-s)))
+        (define temp-dir (find-system-path 'temp-dir))
+        (define dir (build-path temp-dir "compiled"))
+        (make-directory* dir)
+        (with-output-to-file (build-path dir "check-gen_rkt.zo")
+          #:exists 'truncate
+          (lambda () (write-bytes b-s)))
+        ((dynamic-require (build-path temp-dir "check-gen.rkt") 'b) 10)
+        (delete-file (build-path dir "check-gen_rkt.zo")))))
+  ;; Triger JIT generation with constant function as `a':
+  (go a-s)
+  ;; Check that we don't crash when trying to use a different `a':
+  (err/rt-test (go am-s)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
