@@ -859,7 +859,7 @@
                [pos (read-compact-number cp)])
            (let-values ([(mod-phase pos)
                          (if (= pos -2)
-                           (values 1 (read-compact-number cp))
+                           (values (read-compact-number cp) (read-compact-number cp))
                            (values 0 pos))])
              (make-module-variable mod var pos mod-phase)))]
         [(local-unbox)

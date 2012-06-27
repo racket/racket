@@ -43,7 +43,7 @@
 (define-form-struct module-variable ([modidx module-path-index?] 
                                      [sym symbol?] 
                                      [pos exact-integer?] 
-                                     [phase (or/c 0 1)])) ; direct access to exported id
+                                     [phase exact-nonnegative-integer?]))
 
 ;; Syntax object
 (define ((alist/c k? v?) l)

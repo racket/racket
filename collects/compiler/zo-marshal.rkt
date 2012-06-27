@@ -610,7 +610,8 @@
         (out-anything modidx out)
         (out-anything sym out)
         (unless (zero? phase)
-          (out-number -2 out))
+          (out-number -2 out)
+          (out-number phase out))
         (out-number pos out)]
        [(struct closure (lam gen-id))
         (out-byte CPT_CLOSURE out)
