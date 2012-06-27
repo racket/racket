@@ -1156,6 +1156,33 @@ is the same as
   (send o end-edit-sequence))
 ]}
 
+@defform/subs[(send+ obj-expr msg ...)
+              ([msg (method-id arg ...)
+                    (method-id arg ... . arg-list-expr)])]{
+
+Calls methods (in order) starting with the object produced by
+@racket[obj-expr]. Each method call will be invoked on the result of
+the last method call, which is expected to be an object. Each
+@racket[msg] corresponds to a use of @racket[send].
+
+This is the functional analogue of @racket[send*].
+
+@defexamples[#:eval class-eval
+(define point%
+  (class object%
+    (super-new)
+    (init-field [x 0] [y 0])
+    (define/public (move-x dx)
+      (new this% [x (+ x dx)]))
+    (define/public (move-y dy)
+      (new this% [y (+ y dy)]))))
+
+(send+ (new point%)
+       (move-x 5)
+       (move-y 7)
+       (move-x 12))
+]}
+
 @defform[(with-method ((id (obj-expr method-id)) ...)
            body ...+)]{
 

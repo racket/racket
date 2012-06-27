@@ -1189,6 +1189,7 @@
                          (super-make-object))])
 	      (test 100 'priv (send (make-object c% 100) priv))
 	      (test 100 'priv (send* (make-object c% 100) (priv)))
+              (test 100 'priv (send+ (make-object c% 100) (priv)))
 	      (test 100 'priv (with-method ([p ((make-object c% 100) priv)]) (p)))
 	      (test 100 'gen-priv-cls (send-generic (make-object c% 100) (generic c% priv)))
               (test 100 'gen-priv-intf (send-generic (make-object c% 100) (generic i<%> priv)))
@@ -1197,6 +1198,7 @@
   (test #t object? (make-object c% 10))
   (err/rt-test (send (make-object c% 10) priv) exn:fail:object?)
   (err/rt-test (send* (make-object c% 10) (priv)) exn:fail:object?)
+  (err/rt-test (send+ (make-object c% 10) (priv)) exn:fail:object?)
   (err/rt-test (with-method ([p ((make-object c% 100) priv)]) (p)) exn:fail:object?)
   (err/rt-test (generic c% priv) exn:fail:object?)
   (err/rt-test (make-generic c% 'priv) exn:fail:object?))
@@ -1210,6 +1212,19 @@
 	      (define/public (pub y) (send this priv (* 2 y)))
 	      (super-new)))])
   (test 16 'send-using-local (send (new c%) pub 3)))
+
+;; ------------------------------------------------------------
+;; `send+' tests
+
+(let ([c% (class object%
+            (define/public (m . args) this)
+            (super-new))])
+  (syntax-test #'(send+ (new c%) (m 5) (m 10)))
+  (syntax-test #'(send+ (new c%) (m . (1 2 3))))
+  (syntax-test #'(send+ (new c%) (m 5) (m . (1 2 3))))
+
+  (test #t object? (send+ (new c%) (m 5) (m 15)))
+  (test #t object? (send+ (new c%) (m 5) (m . (1 2 3 4)))))
 
 ;; ------------------------------------------------------------
 ;; `new' tests

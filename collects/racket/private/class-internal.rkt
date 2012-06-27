@@ -37,7 +37,7 @@
            object% object? externalizable<%> printable<%> writable<%> equal<%>
            object=?
            new make-object instantiate
-           send send/apply send/keyword-apply send* dynamic-send
+           send send/apply send/keyword-apply send* send+ dynamic-send
            class-field-accessor class-field-mutator with-method
            get-field set-field! field-bound? field-names
            private* public*  pubment*
@@ -4195,6 +4195,7 @@ An example
      (unless (symbol? method-name) (raise-argument-error 'dynamic-send "symbol?" method-name))
      (keyword-apply (find-method/who 'dynamic-send obj method-name) kws kw-vals obj args))))
 
+;; imperative chained send
 (define-syntax (send* stx)
   (syntax-case stx ()
     [(form obj clause ...)
@@ -4210,6 +4211,18 @@ An example
                [_ (raise-syntax-error
                    #f "bad method call" stx clause-stx)]))
            (syntax->list (syntax (clause ...)))))))]))
+
+;; functional chained send
+(define-syntax (send+ stx)
+  (define-syntax-class send-clause
+    #:description "method clause"
+    (pattern [name:id . args]))
+  (syntax-parse stx
+    [(_ obj:expr clause-0:send-clause clause:send-clause ...)
+     (quasisyntax/loc stx
+       (let ([o (send obj clause-0.name . clause-0.args)])
+         (send+ o clause ...)))]
+    [(_ obj:expr) (syntax/loc stx obj)]))
 
 ;; find-method/who : symbol[top-level-form/proc-name]
 ;;                   any[object] 
@@ -5112,7 +5125,7 @@ An example
          object% object? object=? externalizable<%> printable<%> writable<%> equal<%>
          new make-object instantiate
          get-field set-field! field-bound? field-names
-         send send/apply send/keyword-apply send* dynamic-send
+         send send/apply send/keyword-apply send* send+ dynamic-send
          class-field-accessor class-field-mutator with-method
          private* public*  pubment*
          override* overment*
