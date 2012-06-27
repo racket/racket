@@ -11,11 +11,6 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 
-;; **********************************************************************************
-;; this needs something like a @defmodule[localname] but perhaps
-;; this should be added when I require the doc submodule
-;; **********************************************************************************
-
 (define-for-syntax *add #f)
 
 (define-syntax-rule 
@@ -133,7 +128,7 @@
                          
                          ;;
                          (define (docs . exceptions)
-                           (define s (reverse *sections))
+                           (define s *sections)
                            (define (is-exception i)
                              (memf (lambda (j) (eq? (syntax-e j) (syntax-e i))) exceptions))
                            (for/fold ((result '())) ((s *sections))
