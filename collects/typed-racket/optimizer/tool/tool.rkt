@@ -83,7 +83,7 @@
                         (loop (cdr report)))])))
       (set! highlights new-highlights))
 
-    (define/private (clear-highlights)
+    (define/public (clear-highlights)
       (for ([h (in-list highlights)])
         (match h
           [`(,start ,end . ,rest )
@@ -156,6 +156,10 @@
                        [parent (send this get-area-container)]
                        [stretchable-height #f]))
         (set! panel p)
+        (new button%
+             [label "Clear"]
+             [parent panel]
+             [callback (lambda _ (send definitions clear-highlights))])
         (for ([(l f) (in-pairs check-boxes)])
           (new check-box%
                [label l]
