@@ -584,16 +584,28 @@
         (content->port op (part-relative-element-content c ri) renderer sec ri)]
        [else (content->port op c)])]))
 
+(define (simple-content->string c)
+  ;; `content->string' is commonly used on a list containing a single string
+  (cond
+   [(string? c) c]
+   [(and (pair? c)
+         (string? (car c))
+         (null? (cdr c)))
+    (car c)]
+   [else #f]))
+
 (define content->string
   (case-lambda
     [(c)
-     (define op (open-output-string))
-     (content->port op c)
-     (get-output-string op)]
+     (or (simple-content->string c)
+         (let ([op (open-output-string)])
+           (content->port op c)
+           (get-output-string op)))]
     [(c renderer sec ri)
-     (define op (open-output-string))
-     (content->port op c renderer sec ri)
-     (get-output-string op)]))
+     (or (simple-content->string c)
+         (let ([op (open-output-string)])
+           (content->port op c renderer sec ri)
+           (get-output-string op)))]))
 
 
 (define (aux-element? e)

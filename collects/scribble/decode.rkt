@@ -109,8 +109,9 @@
                    [(string=? the-match "'") 'rsquo])
                   (loop (cdar m))))]
      ;; Common case: nothing to decode, so don't copy strings.
+     ;; Assume that the input is already interned.
      [(= start 0)
-      (list (datum-intern-literal s))]
+      (list s)]
      [else
       (list (datum-intern-literal (substring s start)))])))
    
