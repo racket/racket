@@ -1,5 +1,5 @@
 #lang scheme/base
-(require scheme/gui/base
+(require racket/snip
          mrlib/cache-image-snip
          (prefix-in 2htdp/image: mrlib/image-core)
          mzlib/class)
