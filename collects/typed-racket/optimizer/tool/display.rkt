@@ -29,7 +29,7 @@
 ;; each sub-entry is displayed in its own text%, contained in the main
 ;; editor, to simplify irritant highlighting
 (define ((format-sub-report-entry pane) s)
-  (match-define (sub-report-entry stx msg) s)
+  (match-define (sub-report-entry stx msg provenance) s)
 
   (define usable-width (- popup-width 20)) ; minus the scrollbar
 

@@ -42,8 +42,12 @@
     ;; Note: at the point where these are called, report entries have
     ;; a single sub.
     (define check-boxes
-        `(("Report missed optimizations?" . ,missed-opt-report-entry?)
-          ("Report optimizations?"        . ,opt-report-entry?)))
+      `(("Report Typed Racket optimizations?" .
+         ,(match-lambda [(sub-report-entry s m 'typed-racket) #t]
+                        [_ #f]))
+        ("Report inlining optimizations?" .
+         ,(match-lambda [(sub-report-entry s m 'mzc) #t]
+                        [_ #f]))))
     (define/public (get-check-boxes) check-boxes)
     (define filters (map cdr check-boxes)) ; all enabled by default
     ;; called by the frame, where the check-boxes are

@@ -45,6 +45,7 @@
   (inliner-log-entry kind kind
                      forged-stx forged-stx
                      (syntax-position forged-stx)
+                     'mzc
                      evt))
 
 (define inlining-event-regexp
@@ -158,7 +159,7 @@
                 #:when (not (null? group)))
       (define head (car group))
       (match head ; events are grouped, first element is representative
-        [(log-entry kind msg stx located-stx pos)
+        [(log-entry kind msg stx located-stx pos provenance)
 
          ;; We consider that a function is a loop if it gets inlined in itself
          ;; at least once.
@@ -224,13 +225,13 @@
               kind
               (format "Missed Inlining ~a\n~a"
                       aggregation-string recommendation)
-              stx located-stx pos
+              stx located-stx pos provenance
               '() '()
               (+ n-failures (- n-out-of-fuels n-successes))) ; badness
              (opt-log-entry
               kind
               (format "Inlining ~a" aggregation-string)
-              stx located-stx pos))])))
+              stx located-stx pos provenance))])))
   (append tr-logs new-inline-log-entries))
 
 (define (format-aggregation-string

@@ -31,7 +31,7 @@
 (define optimization-log-key 'log-message-coming-from-the-TR-optimizer)
 
 ;; msg is for consumption by the DrRacket tool
-(struct log-entry (kind msg stx located-stx pos) #:prefab)
+(struct log-entry (kind msg stx located-stx pos provenance) #:prefab)
 ;; for optimizations only (not missed optimizations, those are below)
 (struct opt-log-entry log-entry () #:prefab)
 
@@ -39,7 +39,8 @@
 (define (log-optimization kind msg stx)
   (when (anyone-listening?)
     (emit-log-message
-     (opt-log-entry kind msg stx (locate-stx stx) (syntax-position stx)))))
+     (opt-log-entry kind msg stx (locate-stx stx) (syntax-position stx)
+                    'typed-racket))))
 
 ;;--------------------------------------------------------------------
 
@@ -70,6 +71,7 @@
       (emit-log-message
        (missed-opt-log-entry kind msg
                              stx (locate-stx stx) (syntax-position stx)
+                             'typed-racket
                              irritants '() 1)))))
 
 

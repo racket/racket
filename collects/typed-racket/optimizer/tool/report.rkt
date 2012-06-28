@@ -21,7 +21,8 @@
 ;;   otherwise, it's the sum for all the subs
 (struct report-entry (subs start end badness))
 ;; multiple of these can be contained in a report-entry
-(struct sub-report-entry (stx msg))
+;; provenance is one of: 'typed-racket 'mzc
+(struct sub-report-entry (stx msg provenance))
 (struct opt-report-entry        sub-report-entry ())
 (struct missed-opt-report-entry sub-report-entry (badness irritants))
 
@@ -87,14 +88,14 @@
 (define (log->report log)
   (define (log-entry->report-entry l)
     (match l
-      [(log-entry kind msg stx located-stx (? number? pos))
+      [(log-entry kind msg stx located-stx (? number? pos) provenance)
        (define start     (sub1 pos))
        (define end       (+ start (syntax-span stx)))
        ;; When we first create report entries, they have a single sub.
        (report-entry (list (if (opt-log-entry? l)
-                               (opt-report-entry located-stx msg)
+                               (opt-report-entry located-stx msg provenance)
                                (missed-opt-report-entry
-                                located-stx msg
+                                located-stx msg provenance
                                 (missed-opt-log-entry-badness   l)
                                 (missed-opt-log-entry-irritants l))))
                      start end
@@ -139,6 +140,7 @@
    (log-entry-stx         parent) ; we report the outermost one
    (log-entry-located-stx parent)
    (log-entry-pos         parent)
+   (log-entry-provenance  parent)
 
    (remove-duplicates
     (append (remove (log-entry-stx child)
