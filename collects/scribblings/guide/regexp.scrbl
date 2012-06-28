@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval scribble/core "guide-utils.rkt")
 
+@(define rx-eval (make-base-eval))
+
 @title[#:tag "regexp" #:style 'toc]{Regular Expressions}
 
 @margin-note{This chapter is a modified version of @cite["Sitaram05"].}
@@ -72,6 +74,7 @@ as regexp metacharacters are escaped with a backslash, so that they
 safely match only themselves.
 
 @interaction[
+#:eval rx-eval
 (regexp-quote "cons")
 (regexp-quote "list?")
 ]
@@ -91,6 +94,7 @@ did not match the string. A successful match produces a list of
 @deftech{index pairs}.
 
 @examples[
+#:eval rx-eval
 (regexp-match-positions #rx"brain" "bird")
 (regexp-match-positions #rx"needle" "hay needle stack")
 ]
@@ -101,6 +105,7 @@ starting (inclusive) index, and @racket[10] the ending (exclusive)
 index of the matching substring:
 
 @interaction[
+#:eval rx-eval
 (substring "hay needle stack" 4 10)
 ]
 
@@ -115,6 +120,7 @@ fourth arguments that specify the indices of the @tech{text string} within
 which the matching should take place.
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions 
  #rx"needle" 
  "his needle stack -- my needle stack -- her needle stack"
@@ -129,6 +135,7 @@ The @racket[regexp-match] function is like
 it returns the matching substrings:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"brain" "bird")
 (regexp-match #rx"needle" "hay needle stack")
 ]
@@ -137,6 +144,7 @@ When @racket[regexp-match] is used with byte-string regexp, the result
 is a matching byte substring:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx#"needle" #"hay needle stack")
 ]
 
@@ -165,6 +173,7 @@ The @racket[regexp-match?] function is like
 indicating whether the match succeeded:
 
 @interaction[
+#:eval rx-eval
 (regexp-match? #rx"brain" "bird")
 (regexp-match? #rx"needle" "hay needle stack")
 ]
@@ -175,6 +184,7 @@ substrings of the text string; the pattern identifies the delimiter
 separating the substrings.
 
 @interaction[
+#:eval rx-eval
 (regexp-split #rx":" "/bin:/usr/bin:/usr/bin/X11:/usr/local/bin")
 (regexp-split #rx" " "pea soup")
 ]
@@ -183,6 +193,7 @@ If the first argument matches empty strings, then the list of all the
 single-character substrings is returned.
 
 @interaction[
+#:eval rx-eval
 (regexp-split #rx"" "smithereens")
 ]
 
@@ -190,6 +201,7 @@ Thus, to identify one-or-more spaces as the delimiter, take care to
 use the regexp @racket[#rx"\u20+"], not @racket[#rx"\u20*"].
 
 @interaction[
+#:eval rx-eval
 (regexp-split #rx" +" "split pea     soup")
 (regexp-split #rx" *" "split pea     soup")
 ]
@@ -200,6 +212,7 @@ the second the text string, and the third is either the string to be
 inserted or a procedure to convert matches to the insert string.
 
 @interaction[
+#:eval rx-eval
 (regexp-replace #rx"te" "liberte" "ty") 
 (regexp-replace #rx"." "racket" string-upcase)
 ]
@@ -211,6 +224,7 @@ The @racket[regexp-replace*] function replaces @emph{all} matches in
 the text string by the insert string:
 
 @interaction[
+#:eval rx-eval
 (regexp-replace* #rx"te" "liberte egalite fraternite" "ty")
 (regexp-replace* #rx"[ds]" "drracket" string-upcase)
 ]
@@ -225,6 +239,7 @@ that their adjoining regexps match at one or other end of the text
 string:
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"^contact" "first contact")
 ]
 
@@ -232,6 +247,7 @@ The @tech{regexp} above fails to match because @litchar{contact} does
 not occur at the beginning of the text string. In
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"laugh$" "laugh laugh laugh laugh")
 ]
 
@@ -241,6 +257,7 @@ The metasequence @litchar{\b} asserts that a word boundary exists, but
 this metasequence works only with @litchar{#px} syntax. In
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #px"yack\\b" "yackety yack")
 ]
 
@@ -252,6 +269,7 @@ opposite effect to @litchar{\b}; it asserts that a word boundary does
 not exist. In
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #px"an\\B" "an analysis")
 ]
 
@@ -271,6 +289,7 @@ The @tech{metacharacter} @litchar{.} matches @emph{any} character
 @secref["regexp-cloister"]):
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"p.t" "pet")
 ]
 
@@ -341,6 +360,7 @@ Remember to include a double backslash when putting these
 metasequences in a Racket string:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #px"\\d\\d" 
  "0 dear, 1 have 2 read catch 22 before 9")
 ]
@@ -390,6 +410,7 @@ For example, the @racket[#px"[[:alpha:]_]"] matches a letter or
 underscore.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #px"[[:alpha:]_]" "--x--")
 (regexp-match #px"[[:alpha:]_]" "--_--")
 (regexp-match #px"[[:alpha:]_]" "--:--")
@@ -403,6 +424,7 @@ characters @litchar{:}, @litchar{a}, @litchar{l}, @litchar{p},
 @litchar{h}.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #px"[:alpha:]" "--a--")
 (regexp-match #px"[:alpha:]" "--x--")
 ]
@@ -416,6 +438,7 @@ match respectively: zero or more, one or more, and zero or one
 instances of the preceding subpattern.
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"c[ad]*r" "cadaddadddr")
 (regexp-match-positions #rx"c[ad]*r" "cr")
 
@@ -452,6 +475,7 @@ It is evident that @litchar{+} and @litchar{?} are abbreviations for
 abbreviates @litchar{{,}}, which is the same as @litchar{{0,}}.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #px"[aeiou]{3}" "vacuous")
 (regexp-match #px"[aeiou]{3}" "evolve")
 (regexp-match #px"[aeiou]{2,3}" "evolve")
@@ -463,6 +487,7 @@ the maximal number of instances that would still lead to an overall
 match for the full pattern.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"<.*>" "<tag1> <tag2> <tag3>")
 ]
 
@@ -471,6 +496,7 @@ to them.  Non-greedy quantifiers match the minimal number of instances
 needed to ensure an overall match.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"<.*?>" "<tag1> <tag2> <tag3>")
 ]
 
@@ -490,6 +516,7 @@ capture the @deftech{submatch}, or the portion of the string matching
 the subpattern, in addition to the overall match:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"([a-z]+) ([0-9]+), ([0-9]+)" "jan 1, 1970")
 ]
 
@@ -497,6 +524,7 @@ Clustering also causes a following quantifier to treat the entire
 enclosed subpattern as an entity:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"(poo )*" "poo poo platter")
 ]
 
@@ -505,6 +533,7 @@ subpatterns specified in the regexp, even if a particular subpattern
 happens to match more than one substring or no substring at all.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"([a-z ]+;)*" "lather; rinse; repeat;")
 ]
 
@@ -516,6 +545,7 @@ if the overall pattern matches.  In such cases, the failing submatch
 is represented by @racket[#f]
 
 @interaction[
+#:eval rx-eval
 (define date-re
   (code:comment @#,t{match `month year' or `month day, year';})
   (code:comment @#,t{subpattern matches day, if present})
@@ -535,6 +565,7 @@ that matched the @math{n}th subpattern.  A @litchar{\0} refers to the
 entire match, and it can also be specified as @litchar{\&}.
 
 @interaction[
+#:eval rx-eval
 (regexp-replace #rx"_(.+?)_" 
   "the _nina_, the _pinta_, and the _santa maria_"
   "*\\1*")
@@ -560,6 +591,7 @@ makes no sense within the regexp pattern, because the entire regexp
 has not matched yet so you cannot refer back to it.}
 
 @interaction[
+#:eval rx-eval
 (regexp-match #px"([a-z]+) and \\1"
               "billions and billions")
 ]
@@ -574,6 +606,7 @@ the subpattern it harks back to---@litchar{([a-z]+)}---would have had
 no problem doing so:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #px"([a-z]+) and \\1"
               "billions and millions")
 ]
@@ -582,6 +615,7 @@ The following example marks all immediately repeating patterns in a
 number string:
 
 @interaction[
+#:eval rx-eval
 (regexp-replace* #px"(\\d+)\\1"
   "123340983242432420980980234"
   "{\\1,\\1}")
@@ -590,6 +624,7 @@ number string:
 The following example corrects doubled words:
 
 @interaction[
+#:eval rx-eval
 (regexp-replace* #px"\\b(\\S+) \\1\\b"
   (string-append "now is the the time for all good men to "
                  "to come to the aid of of the party")
@@ -612,6 +647,7 @@ cluster identifies the basename.
  @racket[split-path], instead.}
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"^(?:[a-z]*/)*([a-z]+)$" 
               "/usr/local/bin/racket")
 ]
@@ -628,6 +664,7 @@ to match case-insensitively:
 cute, coinage from the abbots of Perl.}
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"(?i:hearth)" "HeartH")
 ]
 
@@ -637,6 +674,7 @@ character, @litchar{^} can match just after a newline, and @litchar{$}
 can match just before a newline.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"." "\na\n")
 (regexp-match #rx"(?m:.)" "\na\n")
 (regexp-match #rx"^A plan$" "A man\nA plan\nA canal")
@@ -646,6 +684,7 @@ can match just before a newline.
 You can put more than one modifier in the cloister:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"(?mi:^A Plan$)" "a man\na plan\na canal")
 ]
 
@@ -654,6 +693,7 @@ A minus sign before a modifier inverts its meaning.  Thus, you can use
 case-insensitivities caused by an enclosing cluster.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"(?i:the (?-i:TeX)book)"
               "The TeXbook")
 ]
@@ -672,6 +712,7 @@ separating them by @litchar{|}.  The @litchar{|} separates
 pattern string if there are no enclosing parens).
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"f(ee|i|o|um)" "a small, final fee")
 (regexp-replace* #rx"([yi])s(e[sdr]?|ing|ation)"
                  (string-append
@@ -685,6 +726,7 @@ of alternate subpatterns but do not want the submatch, use
 @litchar{(?:} instead of @litchar{(}.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"f(?:ee|i|o|um)" "fun for all")
 ]
 
@@ -694,6 +736,7 @@ of the alternates is a prefix of a later alternate, the latter may not
 have a chance to match.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"call|call-with-current-continuation" 
               "call-with-current-continuation")
 ]
@@ -702,6 +745,7 @@ To allow the longer alternate to have a shot at matching, place it
 before the shorter one:
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"call-with-current-continuation|call"
               "call-with-current-continuation")
 ]
@@ -712,6 +756,7 @@ alternate still wins, because its preferred shorter prefix fails to
 yield an overall match.
 
 @interaction[
+#:eval rx-eval
 (regexp-match
  #rx"(?:call|call-with-current-continuation) constrained"
  "call-with-current-continuation constrained")
@@ -726,6 +771,7 @@ times, but the overriding priority is that the overall match succeed.
 Consider
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"a*a" "aaaa")
 ]
 
@@ -744,6 +790,7 @@ less greedy match of three @litchar{a}'s.  If even this fails, as in
 the call
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"a*aa" "aaaa")
 ]
 
@@ -764,6 +811,7 @@ fruitless.  A nonbacktracking regexp is enclosed in
 @litchar{(?>}...@litchar{)}.
 
 @interaction[
+#:eval rx-eval
 (regexp-match #rx"(?>a+)." "aaaa")
 ]
 
@@ -793,6 +841,7 @@ Positive lookahead with @litchar{?=} peeks ahead to ensure that
 its subpattern @emph{could} match.  
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"grey(?=hound)" 
   "i left my grey socks at the greyhound") 
 ]
@@ -805,6 +854,7 @@ Negative lookahead with @litchar{?!} peeks ahead to ensure that its
 subpattern @emph{could not} possibly match.
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"grey(?!hound)"
   "the gray greyhound ate the grey socks") 
 ]
@@ -820,6 +870,7 @@ Positive lookbehind with @litchar{?<=} checks that its subpattern
 the text string.
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"(?<=grey)hound"
   "the hound in the picture is not a greyhound") 
 ]
@@ -831,6 +882,7 @@ Negative lookbehind with @litchar{?<!} checks that its subpattern
 could not possibly match immediately to the left.
 
 @interaction[
+#:eval rx-eval
 (regexp-match-positions #rx"(?<!grey)hound"
   "the greyhound in the picture is not a hound")
 ]
@@ -951,3 +1003,4 @@ The regexp @racket[ip-re] will match all and only valid IP addresses.
 ]
 
 @close-eval[ex-eval]
+@close-eval[rx-eval]
