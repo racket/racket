@@ -36,7 +36,7 @@
     (define highlights  '())
     (define color-table #f)
 
-    ;; filters : Listof (report-entry -> Bool)
+    ;; filters : Listof (sub-report-entry -> Bool)
     ;; If any of these predicates return true for a given log entry's
     ;; sub, show it.
     ;; Note: at the point where these are called, report entries have
