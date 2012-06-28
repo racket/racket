@@ -24,6 +24,16 @@
 
       (define one (list 1))
 
+      ;; b 69, c 42, e 61
+      (define list-for-hash '((b . 69) (c . 42) (e . 61) (r . 999)))
+
+      (define hsh (make-hash list-for-hash))
+      (define heq (make-hasheq list-for-hash))
+      (define heqv (make-hasheqv list-for-hash))
+      (define ish (make-immutable-hash list-for-hash))
+      (define ieq (make-immutable-hasheq list-for-hash))
+      (define ieqv (make-immutable-hasheqv list-for-hash))
+
       (define q (make-posn "bye" 2))
       (define p (make-posn 2 -3))
       
@@ -225,88 +235,162 @@
     @defproc[((advanced-make-hash make-hash)) (hash X Y)]{
     Constructs a mutable hash table from an optional list of mappings that
     uses equal? for comparisions.
+    @interaction[#:eval (asl)
+		  (make-hash)
+		  (make-hash '((b 69) (e 61) (i 999)))
+		  ]
     } 
     @defproc[((advanced-make-hasheq make-hasheq)) (hash X Y)]{
     Constructs a mutable hash table from an optional list of mappings that
     uses eq? for comparisions.
+    @interaction[#:eval (asl)
+		  (make-hasheq)
+		  (make-hasheq '((b 69) (e 61) (i 999)))
+		  ] 
     } 
     @defproc[((advanced-make-hasheqv make-hasheqv)) (hash X Y)]{
     Constructs a mutable hash table from an optional list of mappings that
     uses eqv? for comparisions.
+    @interaction[#:eval (asl)
+		  (make-hasheqv)
+		  (make-hasheqv '((b 69) (e 61) (i 999)))
+		  ]    
     } 
     @defproc[((advanced-make-immutable-hash make-immutable-hash)) (hash X Y)]{
     Constructs an immutable hash table from an optional list of mappings
     that uses equal? for comparisions.
+    @interaction[#:eval (asl)
+		  (make-immutable-hash)
+		  (make-immutable-hash '((b 69) (e 61) (i 999)))
+		  ]    
     } 
     @defproc[((advanced-make-immutable-hasheq make-immutable-hasheq)) (hash X Y)]{
     Constructs an immutable hash table from an optional list of mappings
     that uses eq? for comparisions.
+    @interaction[#:eval (asl)
+		  (make-immutable-hasheq)
+		  (make-immutable-hasheq '((b 69) (e 61) (i 999)))
+		  ] 
     } 
     @defproc[((advanced-make-immutable-hasheqv make-immutable-hasheqv)) (hash X Y)]{
     Constructs an immutable hash table from an optional list of mappings
     that uses eqv? for comparisions.
+    @interaction[#:eval (asl)
+		  (make-immutable-hasheqv)
+		  (make-immutable-hasheqv '((b 69) (e 61) (i 999)))
+		  ]    
     } 
     @defproc[(hash-set! [h (hash X Y)] [k X] [v Y]) void?]{
     Updates a mutable hash table with a new mapping.
+    @interaction[#:eval (asl) hsh (hash-set! hsh 'a 23) hsh]
     } 
     @defproc[(hash-set  [h (hash X Y)] [k X] [v Y]) (hash X Y)]{
     Constructs an immutable hash table with one new mapping from an
     existing immutable hash table.
+    @interaction[#:eval (asl) (hash-set ish 'a 23)]
     } 
     @defproc[(hash-ref  [h (hash X Y)] [k X]) Y]{
     Extracts the value associated with a key from a hash table; the three
     ; argument case allows a default value or default value computation.
+    @interaction[#:eval (asl) hsh (hash-ref hsh 'b)]
     } 
     @defproc[(hash-ref! [h (hash X Y)] [k X] [v Y]) Y]{
     Extracts the value associated with a key from a mutable hash table; if
     ; the key does not have an mapping, the third argument is used as the
     ; value (or used to compute the value) and is added to the hash table
     ; associated with the key.
+    @interaction[#:eval (asl) hsh (hash-ref! hsh 'd 99) hsh]
     } 
     @defproc[(hash-update! [h (hash X Y)] [k X] [f (Y -> Y)]) void?]{
     Composes hash-ref and hash-set! to update an existing mapping; the
     ; third argument is used to compute the new mapping value; the fourth
     ; argument is used as the third argument to hash-ref.
+    @interaction[#:eval (asl) hsh (hash-update! hsh 'b (lambda (old-b) (+ old-b 1))) hsh]    
     } 
     @defproc[(hash-update  [h (hash X Y)] [k X] [f (Y -> Y)]) (hash X Y)]{
     Composes hash-ref and hash-set to update an existing mapping; the third
     ; argument is used to compute the new mapping value; the fourth
     ; argument is used as the third argument to hash-ref.
+    @interaction[#:eval (asl) (hash-update ish 'b (lambda (old-b) (+ old-b 1)))]        
     } 
     @defproc[(hash-has-key? [h (hash X Y)] [x X]) boolean]{
     Determines if a key is associated with a value in a hash table.
+    @interaction[#:eval (asl)
+		  ish
+		  (hash-has-key? ish 'a)
+		  hsh
+		  (hash-has-key? hsh 'd)]
     } 
     @defproc[(hash-remove! [h (hash X Y)] [x X]) void]{
     Removes an mapping from a mutable hash table.
+    @interaction[#:eval (asl)
+		  hsh
+		  (hash-remove! hsh 'r)
+		  hsh]
     } 
     @defproc[(hash-remove [h (hash X Y)] [k X]) (hash X Y)]{
     Constructs an immutable hash table with one less mapping than an
     existing immutable hash table.
+    @interaction[#:eval (asl)
+		  ish
+		  (hash-remove ish 'b)]
     } 
     @defproc[(hash-map [h (hash X Y)] [f (X Y -> Z)]) (listof Z)]{
     Constructs a new list by applying a function to each mapping of a hash
     table.
+    @interaction[#:eval (asl)
+		  ish
+		  (hash-map ish list)]
     } 
     @defproc[(hash-for-each [h (hash X Y)] [f (X Y -> any)]) void?]{
     Applies a function to each mapping of a hash table for effect only.
+    @interaction[#:eval (asl)
+		  hsh
+		  (hash-for-each hsh (lambda (ky vl) (hash-set! hsh ky (+ vl 1))))
+		  hsh]
     } 
     @defproc[(hash-count [h hash]) integer]{
     Determines the number of keys mapped by a hash table.
+    @interaction[#:eval (asl)
+		  ish
+		  (hash-count ish)]
     } 
     @defproc[(hash-copy [h hash]) hash]{
     Copies a hash table.
     } 
     @defproc[(hash? [x any]) boolean]{
     Determines if a value is a hash table.
+    @interaction[#:eval (asl)
+		  ish
+		  (hash? ish)
+		  (hash? 42)]
     } 
     @defproc[(hash-equal? [h hash?]) boolean]{
     Determines if a hash table uses equal? for comparisons.
+    @interaction[#:eval (asl)
+		  ish
+		  (hash-equal? ish)
+		  ieq
+		  (hash-equal? ieq)
+		  ]
     } 
     @defproc[(hash-eq? [h hash]) boolean]{
     Determines if a hash table uses eq? for comparisons.
+    @interaction[#:eval (asl)
+		  hsh
+		  (hash-eq? hsh)
+		  heq
+		  (hash-eq? heq)
+		  ]
     } 
     @defproc[(hash-eqv? [h hash]) boolean]{
     Determines if a hash table uses eqv? for comparisons.
+    @interaction[#:eval (asl)
+		  heq
+		  (hash-eqv? heq)
+		  heqv
+		  (hash-eqv? heqv)
+		  ]
     })) 
 
 #|
