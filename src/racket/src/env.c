@@ -1053,6 +1053,9 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
 
   menv2->require_names = menv->require_names;
   menv2->et_require_names = menv->et_require_names;
+  menv2->tt_require_names = menv->tt_require_names;
+  menv2->dt_require_names = menv->dt_require_names;
+  menv2->other_require_names = menv->other_require_names;
 
   if (menv->phase <= clone_phase) {
     menv2->toplevel = menv->toplevel;

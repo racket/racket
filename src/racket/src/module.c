@@ -3768,10 +3768,32 @@ Scheme_Object *module_resolve_in_namespace(Scheme_Object *modidx, Scheme_Env *en
   return _module_resolve(modidx, NULL, env, load_it);
 }
 
-static Scheme_Object *do_modidx_shift(Scheme_Object *modidx, 
-                                      Scheme_Object *shift_from_modidx,
-                                      Scheme_Object *shift_to_modidx,
-                                      int must_clone)
+static Scheme_Object *clone_modidx(Scheme_Object *modidx, Scheme_Object *src_modidx)
+{
+  Scheme_Object *base;
+
+  if (SAME_OBJ(modidx, src_modidx))
+    return modidx;
+
+  if (!SAME_TYPE(SCHEME_TYPE(modidx), scheme_module_index_type))
+    return modidx;
+  
+  /* Need to shift relative part? */
+  base = ((Scheme_Modidx *)modidx)->base;
+  if (!SCHEME_FALSEP(base)) {
+    /* FIXME: depth */
+    base = clone_modidx(base, src_modidx);
+  }
+
+  return scheme_make_modidx(((Scheme_Modidx *)modidx)->path,
+                            base,
+                            scheme_false);
+}
+
+
+Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx, 
+                                   Scheme_Object *shift_from_modidx,
+                                   Scheme_Object *shift_to_modidx)
 {
   Scheme_Object *base;
 
@@ -3789,7 +3811,7 @@ static Scheme_Object *do_modidx_shift(Scheme_Object *modidx,
   if (!SCHEME_FALSEP(base)) {
     /* FIXME: depth */
     Scheme_Object *sbase;
-    sbase = do_modidx_shift(base, shift_from_modidx, shift_to_modidx, must_clone);
+    sbase = scheme_modidx_shift(base, shift_from_modidx, shift_to_modidx);
 
     if (!SAME_OBJ(base, sbase)) {
       /* There was a shift in the relative part. */
@@ -3872,23 +3894,9 @@ static Scheme_Object *do_modidx_shift(Scheme_Object *modidx,
 
       return smodidx;
     }
-  } else if (must_clone) {
-    /* cloning here ensures that module resolution doesn't mutate
-       module-declaration code that might be cached */
-    modidx = scheme_make_modidx(((Scheme_Modidx *)modidx)->path,
-                                scheme_false,
-                                scheme_false);
-    
   }
 
   return modidx;
-}
-
-Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx, 
-                                   Scheme_Object *shift_from_modidx,
-                                   Scheme_Object *shift_to_modidx)
-{
-  return do_modidx_shift(modidx, shift_from_modidx, shift_to_modidx, 0);
 }
 
 void scheme_clear_modidx_cache(void)
@@ -4529,6 +4537,76 @@ static void show_done(const char *what, Scheme_Env *menv, int v1, int v2, int i,
 # define show_done(w, m, v1, v2, i, bp) /* nothing */
 #endif
 
+static void clone_require_names(Scheme_Module *m, Scheme_Object *phase)
+{
+  Scheme_Object *np, *np_first, *np_last, *l, *reqs;
+
+  if (SAME_OBJ(phase, scheme_make_integer(0))) {
+    reqs = m->requires;
+  } else if (SAME_OBJ(phase, scheme_make_integer(1))) {
+    reqs = m->et_requires;
+  } else if (SAME_OBJ(phase, scheme_make_integer(-1))) {
+    reqs = m->tt_requires;
+  } else if (SAME_OBJ(phase, scheme_false)) {
+    reqs = m->dt_requires;
+  } else {
+    if (m->other_requires) {
+      reqs = scheme_hash_get(m->other_requires, phase);
+      if (!reqs)
+        reqs = scheme_null;
+    } else
+      reqs = scheme_null;
+  }
+
+  if (SCHEME_NULLP(reqs)) return;
+
+  np_first = scheme_null;
+  np_last = NULL;
+
+  for (l = reqs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    np = cons(clone_modidx(SCHEME_CAR(l), m->me->src_modidx), scheme_null);
+    if (np_last)
+      SCHEME_CDR(np_last) = np;
+    else
+      np_first = np;
+    np_last = np;
+  }
+
+  np = np_first;
+
+  if (SAME_OBJ(phase, scheme_make_integer(0))) {
+    m->requires = np;
+  } else if (SAME_OBJ(phase, scheme_make_integer(1))) {
+    m->et_requires = np;
+  } else if (SAME_OBJ(phase, scheme_make_integer(-1))) {
+    m->tt_requires = np;
+  } else if (SAME_OBJ(phase, scheme_false)) {
+    m->dt_requires = np;
+  } else {
+    scheme_hash_set(m->other_requires, phase, np);
+  }
+}
+
+static void clone_all_require_names(Scheme_Module *m)
+{
+  clone_require_names(m, scheme_make_integer(0));
+  clone_require_names(m, scheme_make_integer(1));
+  clone_require_names(m, scheme_make_integer(-1));
+  clone_require_names(m, scheme_false);
+
+  if (m->other_requires) {
+    Scheme_Hash_Table *ht;
+    intptr_t i;
+    ht = scheme_clone_hash_table(m->other_requires);
+    m->other_requires = ht;
+    for (i = 0; i < ht->size; i++) {
+      if (ht->vals[i]) {
+        clone_require_names(m, ht->keys[i]);
+      }
+    }
+  }
+}
+
 static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase, 
                                   Scheme_Env *load_env, Scheme_Object *syntax_idx)
 {
@@ -4571,10 +4649,9 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
   np_last = NULL;
 
   for (l = reqs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    midx = do_modidx_shift(SCHEME_CAR(l), 
-                           menv->module->me->src_modidx, 
-                           (syntax_idx ? syntax_idx : menv->link_midx),
-                           1);
+    midx = scheme_modidx_shift(SCHEME_CAR(l), 
+                               menv->module->me->src_modidx, 
+                               (syntax_idx ? syntax_idx : menv->link_midx));
 
     if (load_env)
       module_load(scheme_module_resolve(midx, 1), load_env, NULL);
@@ -5942,6 +6019,12 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
                         (const char *)m->code_key,
                         scheme_make_ephemeron(m->code_key, data),
                         0);
+  }
+
+  if (m->code_key) {
+    /* clone `requires', etc., so that different uses of the cached
+       module don't share resolution of modiule paths in modidxs */
+    clone_all_require_names(m);
   }
 
   config = scheme_current_config();
