@@ -23,7 +23,15 @@
           (define interactions (send drr-frame get-interactions-text))
           (send interactions reset-console)
           (send interactions run-in-evaluation-thread (lambda () (raise e))))])
-    (send (send drr-frame get-definitions-text) add-highlights drr-frame)))
+    (send (send drr-frame get-definitions-text) add-highlights)))
+
+(define check-boxes
+  `(("Report Typed Racket optimizations?" .
+     ,(match-lambda [(sub-report-entry s m 'typed-racket) #t]
+                    [_ #f]))
+    ("Report inlining optimizations?" .
+     ,(match-lambda [(sub-report-entry s m 'mzc) #t]
+                    [_ #f]))))
 
 (define highlights-mixin
   (mixin ((class->interface text%)) ()
@@ -32,25 +40,15 @@
              insert
              get-text)
 
-    (define drr-frame   #f) ; set when the frame calls `add-highlights'
-    (define highlights  '())
-    (define color-table #f)
+    (define highlights     '())
+    (define color-table    #f)
 
     ;; filters : Listof (sub-report-entry -> Bool)
     ;; If any of these predicates return true for a given log entry's
     ;; sub, show it.
     ;; Note: at the point where these are called, report entries have
     ;; a single sub.
-    (define check-boxes
-      `(("Report Typed Racket optimizations?" .
-         ,(match-lambda [(sub-report-entry s m 'typed-racket) #t]
-                        [_ #f]))
-        ("Report inlining optimizations?" .
-         ,(match-lambda [(sub-report-entry s m 'mzc) #t]
-                        [_ #f]))))
-    (define/public (get-check-boxes) check-boxes)
     (define filters (map cdr check-boxes)) ; all enabled by default
-    ;; called by the frame, where the check-boxes are
     (define/public (get-filters) filters)
     (define/public (set-filters! new-fs) (set! filters new-fs))
 
@@ -66,10 +64,9 @@
            (list start end color))]))
 
     (define report-cache #f)
-    (define/public (add-highlights [frame #f] #:use-cache? [use-cache? #f])
-      (when frame (set! drr-frame frame))
+    (define/public (add-highlights #:use-cache? [use-cache? #f])
       (clear-highlights)
-      (and drr-frame (send drr-frame show-performance-report-panel))
+      (send (send this get-tab) show-performance-report-panel)
       (unless (and report-cache use-cache?)
         (set! report-cache (generate-report this)))
       (define report
@@ -98,7 +95,7 @@
            (send this unhighlight-range . h)
            (send this remove-clickback start end)]))
       (set! highlights '())
-      (and drr-frame (send drr-frame hide-performance-report-panel)))
+      (send (send this get-tab) hide-performance-report-panel))
 
     (define/augment (on-insert start len)
       (clear-highlights))
@@ -138,26 +135,26 @@
   (drracket:get/extend:extend-unit-frame button-mixin)
 
   (define toolbar-mixin
-    (mixin (drracket:unit:frame<%>) ()
+    (mixin (drracket:unit:tab<%>) ()
       (super-new)
 
-      (inherit get-definitions-text)
-
-      (define definitions (send this get-definitions-text))
+      (inherit get-defs)
 
       (define panel #f)
+      (define/public (get-panel) panel) ; called when switching tabs
 
       (define/public (show-performance-report-panel)
-        (define p (new horizontal-panel%
-                       [parent (send this get-area-container)]
-                       [stretchable-height #f]))
-        (set! panel p)
+        (set! panel
+              (new horizontal-panel%
+                   [parent (send (send this get-frame) get-area-container)]
+                   [stretchable-height #f]))
+        (define definitions (send this get-defs))
         (new button%
              [label "Clear"]
              [parent panel]
              [callback (lambda _ (send definitions clear-highlights))])
         (define filters (send definitions get-filters))
-        (for ([(l f) (in-pairs (send definitions get-check-boxes))])
+        (for ([(l f) (in-pairs check-boxes)])
           (new check-box%
                [label l]
                [parent panel]
@@ -168,11 +165,24 @@
                                                      (cons f filters)))
                   ;; redraw
                   (send definitions add-highlights #:use-cache? #t))]
-               [value (memq f filters)])))
+               [value (memq f filters)]))
+        panel) ; return panel, so that the other mixing can hide it
 
-      (define/public (hide-performance-report-panel)
+      (define/public (hide-performance-report-panel [close #t])
         (when panel
-          (send (send this get-area-container) delete-child panel)
-          (set! panel #f)))))
+          (send (send (send this get-frame) get-area-container)
+                delete-child panel)
+          (when close ; if we just switch tabs, keep panel around to restore it
+            (set! panel #f))))))
 
-  (drracket:get/extend:extend-unit-frame toolbar-mixin))
+  (drracket:get/extend:extend-tab toolbar-mixin)
+
+  (define tab-switch-mixin
+    (mixin (drracket:unit:frame<%>) ()
+      (super-new)
+      (define/augment (on-tab-change old-tab new-tab)
+        (send old-tab hide-performance-report-panel #f) ; don't close it
+        (when (send new-tab get-panel) ; if it was open before
+          (send new-tab show-performance-report-panel)))))
+
+  (drracket:get/extend:extend-unit-frame tab-switch-mixin))
