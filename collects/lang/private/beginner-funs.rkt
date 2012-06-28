@@ -861,7 +861,7 @@
     }
     @defproc[((beginner-struct? struct?) [x any/c]) boolean?]{
     Determines whether some value is a structure. 
-    @interaction[#:eval (bsl) (struct? (posn 1 2)) (struct? 43)]
+    @interaction[#:eval (bsl) (struct? (make-posn 1 2)) (struct? 43)]
     }
     @defproc[((beginner-equal? equal?) [x any/c][y any/c]) boolean?]{
     Determines whether two values are structurally equal where basic values

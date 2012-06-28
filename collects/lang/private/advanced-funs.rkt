@@ -26,14 +26,12 @@
 
       (define q (make-posn "bye" 2))
       (define p (make-posn 2 -3))
+      
+      (define v (vector "a" "b" "c" "d" "e"))
+      
+      (define b (box 33))
 
       (define s "hello world")
-
-      (define a (list (list 'a 22) (list 'b 8) (list 'c 70)))
-      (define v (list 1 2 3 4 5 6 7 8 9 'A))
-      (define w (list (list (list (list "bye") 3) true) 42))
-      (define z (list (list (list (list 'a 'b) 2 3) ) (list false true) "world"))
-      (define y (list (list (list 1 2 3) false "world")))
       (define x (list 2 "hello" true))))
   (set! asl (lambda () *bsl))
   *bsl)
@@ -109,30 +107,38 @@
    
    ("Lists"
     @defproc[(list? [x any]) boolean]{
-    Determines whether some value is a list.
+    Determines whether some value is a list. 
+    In ASL, @racket[list?] also deals with cyclic lists. 
     } 
     @defproc[((advanced-list* list*) [x any] ... [l (listof any)]) (listof any)]{
     Constructs a list by adding multiple items to a list.
+    In ASL, @racket[list*] also deals with cyclic lists. 
     } 
     @defproc[((advanced-cons cons) [x X] [l (listof X)]) (listof X)]{
     Constructs a list.
+    In ASL, @racket[cons] creates a mutable list. 
     } 
     @defproc[((advanced-append append) [l (listof any)] ...) (listof any)]{
     Creates a single list from several.
+    In ASL, @racket[list*] also deals with cyclic lists. 
     } 
     @defproc[(assoc [x any] [l (listof any)]) (union (listof any) false)]{
-    Produces the first element on the list whose first is equal? to v; otherwise it produces false.
+    Produces the first pair on @racket[l] whose @racket[first] is @racket[equal?] to @racket[x];
+     otherwise it produces @racket[false].
+    @interaction[#:eval (asl) (assoc "hello" '(("world" 2) ("hello" 3) ("good" 0)))]
     }) 
    
    ("Misc"
     @defproc[(gensym) symbol?]{
     Generates a new symbol, different from all symbols in the program.
+    @interaction[#:eval (asl) (gensym)]
     } 
     @defproc[(sleep [sec positive-num]) void]{
     Causes the program to sleep for the given number of seconds.
     } 
     @defproc[(current-milliseconds) exact-integer]{
     Returns the current “time” in fixnum milliseconds (possibly negative).
+    @interaction[#:eval (asl) (current-milliseconds)]
     } 
     @defproc[(force [v any]) any]{
     Finds the delayed value; see also delay.
@@ -142,57 +148,77 @@
     } 
     @defproc[(void) void?]{
     Produces a void value.
+    @interaction[#:eval (asl) (void)]
     } 
     @defproc[(void? [x any]) boolean?]{
     Determines if a value is void.
+    @interaction[#:eval (asl) (void? (void)) (void? 42)]
     }) 
    
    ("Posns"
     @defproc[(set-posn-x! [p posn] [x any]) void?]{
     Updates the x component of a posn.
+    @interaction[#:eval (asl) p (set-posn-x! p 678) p]
     } 
     @defproc[(set-posn-y! [p posn] [x any]) void]{
     Updates the y component of a posn.
+    @interaction[#:eval (asl) q (set-posn-y! q 678) q]
     }) 
    
    ("Vectors"
     @defproc[(vector [x X] ...) (vector X ...)]{
-    Constructs a vector.
+    Constructs a vector from the given values.
+    @interaction[#:eval (asl) (vector 1 2 3 -1 -2 -3)]
     } 
     @defproc[(make-vector [n number] [x X]) (vectorof X)]{
-    Constructs a vector.
+    Constructs a vector of @racket[n] copies of @racket[x].
+    @interaction[#:eval (asl) (make-vector 5 0)]
     } 
     @defproc[(build-vector [n nat] [f (nat -> X)]) (vectorof X)]{
-    Constructs a vector.
+    Constructs a vector by applying @racket[f] to the numbers @racket[0] through @racket[(- n 1)]. 
+    @interaction[#:eval (asl) (build-vector 5 add1)]
     }	 
     @defproc[(vector-ref [v (vector X)] [n nat]) X]{
-    Extracts an element from a vector.
+    Extracts the @racket[n]th element from @racket[v].
+    @interaction[#:eval (asl) v (vector-ref v 3)]
     } 
     @defproc[(vector-length [v (vector X)]) nat]{
-    Determines the length of a vector.
+    Determines the length of @racket[v].
+    @interaction[#:eval (asl) v (vector-length v)]
     }	 
     @defproc[(vector-set! [v (vectorof X)][n nat][x X]) void]{
-    Updates a vector.
+    Updates @racket[v] at position @racket[n] to be @racket[x].
+    @interaction[#:eval (asl) v (vector-set! v 3 77) v]
     } 
     @defproc[(vector->list [v (vectorof X)]) (listof X)]{
-    creates a list of values from the vector of values.
+    Transforms @racket[v] into a list. 
+    @interaction[#:eval (asl) (vector->list (vector 'a 'b 'c))]
+    } 
+    @defproc[(list->vector [l (listof X)]) (vectorof X)]{
+    Transforms @racket[l] into a vector. 
+    @interaction[#:eval (asl) (list->vector (list "hello" "world" "good" "bye"))]
     } 
     @defproc[(vector? [x any]) boolean]{
     Determines if a value is a vector.
+    @interaction[#:eval (asl) v (vector? v) (vector? 42)]
     }) 
    
    ("Boxes"
     @defproc[(box [x any/c]) box?]{
     Constructs a box.
+    @interaction[#:eval (asl) (box 42)]
     } 
     @defproc[(unbox [b box?]) any]{
     Extracts the boxed value.
+    @interaction[#:eval (asl) b (unbox b)]
     } 
     @defproc[(set-box! [b box?][x any/c]) void]{
     Updates a box.
+    @interaction[#:eval (asl) b (set-box! b 31) b]
     } 
     @defproc[(box? [x any/c]) boolean?]{
     Determines if a value is a box.
+    @interaction[#:eval (asl) b (box? b) (box? 42)]
     }) 
    
    ("Hash Tables"
