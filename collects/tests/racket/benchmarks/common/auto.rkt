@@ -47,6 +47,9 @@ exec racket -qu "$0" ${1+"$@"}
         (compile-file name
                       (build-path "compiled" (path-add-suffix name #".zo"))))))
 
+  (define (mk-mz-old bm)
+    (system (format "mz-old -l- raco make ~a.rkt" bm)))
+
   (define (clean-up-zo bm)
     (when (directory-exists? "compiled")
       (delete-directory/files "compiled")))
@@ -362,7 +365,7 @@ exec racket -qu "$0" ${1+"$@"}
                 mutable-pair-progs)
      (make-impl 'mz-old
                 void
-                mk-racket
+                mk-mz-old
                 (lambda (bm)
                   (system (format "mz-old -u ~a.rkt" bm)))
                 extract-racket-times
