@@ -663,8 +663,7 @@
                (lambda (in)
                  (copy-port in (current-output-port)))))
           (parameterize ([xml:empty-tag-shorthand xml:html-empty-tags])
-            (xml:write-xml/content
-             (xml:xexpr->xml
+            (xml:write-xexpr
               `(html ()
                  (head ()
                    (meta ([http-equiv "content-type"]
@@ -698,7 +697,7 @@
                        ,@(navigation d ri #t)
                        ,@(render-part d ri)
                        ,@(navigation d ri #f)))
-                   (div ([id "contextindicator"]) nbsp)))))))))
+                   (div ([id "contextindicator"]) nbsp))))))))
 
     (define/private (part-parent d ri)
       (collected-info-parent (part-collected-info d ri)))
