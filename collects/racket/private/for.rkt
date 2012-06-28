@@ -1413,7 +1413,7 @@
                                                                expr1
                                                                expr ...)])
                                        (values* (cons id2 id) ...)))])
-               (values* (reverse id) ...))))]))
+               (values* (alt-reverse id) ...))))]))
 
   (define-syntax (for/lists stx) (do-for/lists #'for/fold/derived stx))
   (define-syntax (for*/lists stx) (do-for/lists #'for*/fold/derived stx))
