@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 (require racket/snip
          mrlib/cache-image-snip
          (prefix-in 2htdp/image: mrlib/image-core)
-         mzlib/class)
+         racket/class)
 
 (provide scene? image? image=? 
          coerce-to-cache-image-snip
