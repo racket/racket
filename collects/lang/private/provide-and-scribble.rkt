@@ -66,12 +66,12 @@
                 [(f ...) (syntax->list f*)]
                 [mydocs (gensym 'mydocs)])
     (values (lambda ()  ;; delay the syntax creation until add-sections is set
-	      ;; ******************************************************************
+              ;; ******************************************************************
               ;; I was really hoping to make 
               ;;   (local-require (only-in (submod path nested-tag ... label) (docs mydocs)))
               ;; to work but that gave me problems about 'docs' already required before
               ;; so I went with dynamic-require. Argh. 
-	      ;; ******************************************************************
+              ;; ******************************************************************
               #`(for ((s ((dynamic-require '(submod path nested-tag ... label) 'docs) #'f ...)))
                   (#,*add (car s) (cadr s))))
             #`(;; import from path with prefix, exclude f ...
@@ -110,46 +110,51 @@
                          ;;
                          
                          (define (render-sections s c p)
-                           (cond
-                             [(null? s) '()]
-                             [else 
-                              (define section1 (car s))
-                              (define others (render-sections (cdr s) c p))
-                              (define-values (section-title stuff) (apply values section1))
-                              (define sorted 
-                                (sort stuff string<=? 
-                                      #:key (lambda (x) (symbol->string (syntax-e (car x))))))
-                              (define typed (for/list ((s sorted)) (re-context c (car s) (cdr s))))
-                              (cons @section[#:tag-prefix p]{@section-title}
-                                    (cons typed others))]))
-
+                           (let render-sections ([s s])
+                             (cond
+                               [(null? s) '()]
+                               [else 
+                                (define section1 (car s))
+                                (define others (render-sections (cdr s)))
+                                (define-values (section-title stuff) (apply values section1))
+                                (define sorted 
+                                  (sort stuff string<=? 
+                                        #:key (lambda (x) (symbol->string (syntax-e (car x))))))
+                                (define typed (for/list ((s sorted)) (re-context c (car s) (cdr s))))
+                                (cons @section[#:tag-prefix p]{@section-title}
+                                      (cons typed others))])))
+                         
                          (define (re-context c id defproc)
                            (defproc c))
                          
                          ;;
                          (define (docs . exceptions)
-                           (define s *sections)
                            (define (is-exception i)
                              (memf (lambda (j) (eq? (syntax-e j) (syntax-e i))) exceptions))
-                           (for/fold ((result '())) ((s *sections))
+                           (for/list ((s *sections))
                              (define sectn (second s))
-                             (define clean 
-                               (filter (lambda (i) (not (is-exception (car i)))) sectn))
-                             (cons (list (first s) clean) result)))
+                             (define clean (filter (lambda (i) (not (is-exception (car i)))) sectn))
+                              (list (first s) clean)))
                          ;; 
                          ;; state variable: Sections
                          (define *sections '())
                          ;; String Section -> Void 
                          ;; add _scontent_ section to *sections in the doc submodule 
                          (define (#,*add stitle scontent)
-                           (define exists (assoc stitle *sections))
-                           (if exists 
-                               (set! *sections 
-                                     (for/list ((s *sections))
-                                       (if (string=? (first s) stitle)
-                                           (list stitle (append scontent (second s)))
-                                           s)))
-                               (set! *sections (cons (list stitle scontent) *sections))))
+                           (displayln stitle)
+                           (pretty-print scontent)
+                           (pretty-print *sections)
+                           (define exists #f)
+                           (define sections
+                             (for/list ((s *sections))
+                               (cond
+                                 [(string=? (first s) stitle)
+                                  (set! exists #t)
+                                  (list stitle (append (second s) scontent))]
+                                 [else s])))
+                           (if exists
+                               (set! *sections sections)
+                               (set! *sections (append sections (list (list stitle scontent))))))
                          
                          #,@(map (lambda (adp) (adp)) add-docs-and-provide))
                 p* ...)])))
