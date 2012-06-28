@@ -3,7 +3,6 @@
 (require "../utils/utils.rkt")
 
 (require (rename-in (rep type-rep object-rep filter-rep rep-utils) [make-Base make-Base*])
-         "resolve.rkt"
          (utils tc-utils)
          racket/list
          racket/match
@@ -13,6 +12,7 @@
          '#%place
          unstable/function
          racket/udp
+         unstable/lazy-require
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)
@@ -20,6 +20,8 @@
          racket/pretty racket/udp
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
+
+(lazy-require ["resolve.rkt" (resolve)])
 
 (provide (except-out (all-defined-out) Promise make-Base)
          (rename-out [make-Listof -lst]
@@ -74,7 +76,6 @@
   (foldr -pair b l))
 
 (define (untuple t)
-  ;; FIXME - do we really need resolution here?
   (match (resolve t)
     [(Value: '()) null]
     [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]

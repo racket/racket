@@ -4,11 +4,10 @@
 ;; maps identifiers to their types, updated by mutation
 
 (require "../utils/utils.rkt"
+         "../types/tc-error.rkt"
 	 syntax/id-table
          (rep type-rep)
-         (utils tc-utils)
-         (types utils comparison))
-
+         (utils tc-utils)) 
 (provide register-type register-type-if-undefined
          finish-register-type
          maybe-finish-register-type

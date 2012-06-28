@@ -2,7 +2,7 @@
 
 (require "test-utils.rkt" (for-syntax scheme/base)
          (rep type-rep)
-         (types comparison abbrev numeric-tower union)
+         (types abbrev numeric-tower union)
          rackunit)
 
 (provide type-equal-tests)

@@ -1,8 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"                  
-         (for-syntax "../env/global-env.rkt"
-                     racket/base syntax/parse
+         (for-syntax racket/base syntax/parse
                      (except-in (rep filter-rep type-rep) make-arr)
                      (rename-in (types numeric-tower abbrev convenience))))
 
@@ -23,7 +22,7 @@
             (list (list #'nm ty) ...)))))]))
 
 (provide #%module-begin
-         require
+         require provide
          (all-from-out racket/base)
          (for-syntax          
           (rep-out type-rep)

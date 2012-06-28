@@ -3,7 +3,7 @@
          (utils tc-utils)
          (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
          (rep type-rep)
-         (rename-in (types comparison subtype union utils convenience)
+         (rename-in (types subtype union utils convenience)
                     [Un t:Un] [-> t:->] [->* t:->*])
          (base-env base-types base-types-extra colon)
          (for-template (base-env base-types base-types-extra base-env colon))

@@ -3,8 +3,7 @@
          racket/match
          (contract-req)
          "free-variance.rkt"
-         "interning.rkt"
-         unstable/match unstable/struct
+         "interning.rkt" unstable/struct
          racket/stxparam
          (for-syntax
           racket/match

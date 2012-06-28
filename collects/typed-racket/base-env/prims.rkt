@@ -52,7 +52,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
-          "../env/type-name-env.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
@@ -207,7 +206,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern #:name-exists))
   (syntax-parse stx
     [(_ ty:id pred:id lib (~optional ne:name-exists-kw) ...)
-     (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
+     ((dynamic-require 'typed-racket/env/type-name-env 'register-type-name)
+      #'ty (make-Opaque #'pred (syntax-local-certifier)))
      (with-syntax ([hidden (generate-temporary #'pred)])
        (quasisyntax/loc stx
          (begin

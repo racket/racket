@@ -1,5 +1,8 @@
 #lang racket/base
 
+(require (for-syntax typed-racket/env/global-env) typed-racket/env/global-env
+         (for-template typed-racket/env/global-env)
+         (for-meta 2 typed-racket/env/global-env))
 (require "test-utils.rkt"
          (for-syntax racket/base)
          (for-template racket/base))
@@ -27,6 +30,8 @@
                      (env global-env)
                      (base-env base-env-indexing))
          racket/file racket/port racket/flonum
+         (env global-env)
+         (for-meta 2 (env global-env))
          (for-template
           racket/file racket/port
             (base-env base-types base-types-extra base-env-indexing))

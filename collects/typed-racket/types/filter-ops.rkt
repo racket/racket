@@ -4,7 +4,7 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils) (only-in (infer infer) restrict)
          "abbrev.rkt" (only-in racket/contract current-blame-format [-> -->] listof)
-	 (types comparison printer union subtype utils remove-intersect)
+	 (types printer union subtype utils remove-intersect)
          racket/list racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict
