@@ -41,10 +41,14 @@
     ;; sub, show it.
     ;; Note: at the point where these are called, report entries have
     ;; a single sub.
-    (define filters '())
+    (define check-boxes
+        `(("Report missed optimizations?" . ,missed-opt-report-entry?)
+          ("Report optimizations?"        . ,opt-report-entry?)))
+    (define/public (get-check-boxes) check-boxes)
+    (define filters (map cdr check-boxes)) ; all enabled by default
     ;; called by the frame, where the check-boxes are
-    (define/public (set-filters new-fs)
-      (set! filters new-fs))
+    (define/public (get-filters) filters)
+    (define/public (set-filters! new-fs) (set! filters new-fs))
 
     (define/private (highlight-entry l)
       (match l
@@ -61,7 +65,7 @@
     (define/public (add-highlights [frame #f] #:use-cache? [use-cache? #f])
       (when frame (set! drr-frame frame))
       (clear-highlights)
-      (and drr-frame (send drr-frame show-performance-report-panel #t))
+      (and drr-frame (send drr-frame show-performance-report-panel))
       (unless (and report-cache use-cache?)
         (set! report-cache (generate-report this)))
       (define report
@@ -90,7 +94,7 @@
            (send this unhighlight-range . h)
            (send this remove-clickback start end)]))
       (set! highlights '())
-      (and drr-frame (send drr-frame show-performance-report-panel #f)))
+      (and drr-frame (send drr-frame hide-performance-report-panel)))
 
     (define/augment (on-insert start len)
       (clear-highlights))
@@ -137,21 +141,9 @@
 
       (define definitions (send this get-definitions-text))
 
-      ;; filters : Listof (report-entry -> Bool)
-      ;; If any of these predicates return true for a given log entry's
-      ;; sub, show it.
-      ;; Note: at the point where these are called, report entries have
-      ;; a single sub.
-      (define check-boxes
-        `(("Report missed optimizations?" . ,missed-opt-report-entry?)
-          ("Report optimizations?"        . ,opt-report-entry?)))
-      (define filters (map cdr check-boxes)) ; all enabled by default
-      (define/public (get-filters) filters)
-      (send definitions set-filters filters) ; push changes
-
       (define panel #f)
 
-      (define (show-panel)
+      (define/public (show-performance-report-panel)
         (define p (new horizontal-panel%
                        [parent (send this get-area-container)]
                        [stretchable-height #f]))
@@ -160,25 +152,23 @@
              [label "Clear"]
              [parent panel]
              [callback (lambda _ (send definitions clear-highlights))])
-        (for ([(l f) (in-pairs check-boxes)])
+        (define filters (send definitions get-filters))
+        (for ([(l f) (in-pairs (send definitions get-check-boxes))])
           (new check-box%
                [label l]
                [parent panel]
-               [callback (lambda _
-                           (if (memq f filters)
-                               (set! filters (remq f filters))
-                               (set! filters (cons f filters)))
-                           ;; push changes
-                           (send definitions set-filters filters)
-                           ;; redraw
-                           (send definitions add-highlights #:use-cache? #t))]
+               [callback
+                (lambda _
+                  (send definitions set-filters! (if (memq f filters)
+                                                     (remq f filters)
+                                                     (cons f filters)))
+                  ;; redraw
+                  (send definitions add-highlights #:use-cache? #t))]
                [value (memq f filters)])))
-      (define (hide-panel)
+
+      (define/public (hide-performance-report-panel)
         (when panel
           (send (send this get-area-container) delete-child panel)
-          (set! panel #f)))
-
-      (define/public (show-performance-report-panel t/f)
-        (if t/f (show-panel) (hide-panel)))))
+          (set! panel #f)))))
 
   (drracket:get/extend:extend-unit-frame toolbar-mixin))
