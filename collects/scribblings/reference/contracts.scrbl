@@ -1158,8 +1158,9 @@ instead of at the end of the enclosing module.}
    (code:line #:result contract-expr)
    (code:line #:results (contract-expr ...))]
   [free-var-list
-   (code:line #:freevars ([id contract-expr] ...))
-   (code:line #:freevar id contract-expr)])]{
+   (code:line)
+   (code:line #:freevar id contract-expr)
+   (code:line #:freevars ([id contract-expr] ...))])]{
 Generates a local contract boundary.
 
 The first @racket[with-contract] form cannot appear in expression position.
