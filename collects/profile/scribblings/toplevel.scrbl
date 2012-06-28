@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label racket/base profile profile/sampler
+          (for-label racket/base racket/contract profile profile/sampler
                      (only-in profile/analyzer analyze-samples profile?)
                      (prefix-in text: profile/render-text)))
 
@@ -16,12 +16,13 @@ intended as a convenient tool for profiling code.
 
 @defproc[(profile-thunk
           [thunk (-> any/c)]
-          [#:delay   delay      nonnegative-number?        0.05]
+          [#:delay   delay      (>=/c 0.0)        0.05]
           [#:repeat  iterations exact-nonnegative-integer? 1]
           [#:threads threads?   any/c                      #f]
           [#:render  renderer   (profile? . -> . any/c)    text:render]
           [#:periodic-renderer periodic-renderer
-           (or/c #f (list/c nonnegative-number? (profile? . -> . any/c)))
+           (or/c #f (list/c (>=/c 0.0)
+                            (profile? . -> . any/c)))
            #f])
          void?]{
 

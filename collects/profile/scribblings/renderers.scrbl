@@ -2,6 +2,7 @@
 
 @(require scribble/manual
           (for-label racket/base
+                     racket/contract
                      profile/analyzer
                      (prefix-in text: profile/render-text)
                      (prefix-in graphviz: profile/render-graphviz)))

@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label racket/base profile/sampler profile/analyzer))
+          (for-label racket/base racket/contract profile/sampler profile/analyzer))
 
 @title[#:tag "sampler"]{Collecting Profile Information}
 
@@ -9,7 +9,7 @@
 
 @defproc[(create-sampler [to-track (or/c thread? custodian?
                                          (listof (or/c thread? custodian?)))]
-                         [delay nonnegative-number?]
+                         [delay (>=/c 0.0)]
                          [super-cust custodian? (current-custodian)])
          ((symbol?) (any/c) . ->* . any/c)]{
 

@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label racket/base profile/analyzer))
+          (for-label racket/base racket/contract profile/analyzer))
 
 @title[#:tag "analyzer"]{Analyzing Profile Data}
 
