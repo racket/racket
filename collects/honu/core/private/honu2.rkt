@@ -41,7 +41,7 @@
 (define-syntax (parse-body stx)
   (syntax-parse stx
     [(_ stuff ...)
-     (honu->racket (parse-all #'(stuff ...)))]))
+     (parse-all #'(stuff ...))]))
 
 (provide honu-function)
 (define-honu-syntax honu-function
@@ -269,9 +269,6 @@
                              #'name)
              #:when (not ((literal-set->predicate cruft) #'x))]))
 
-(define-for-syntax (racket-names->honu name)
-  (regexp-replace* #rx"-" "_"))
-
 (provide honu-require)
 (define-honu-syntax honu-require
   (lambda (code)
@@ -456,3 +453,14 @@
                             body.result))
                #'rest
                #t)])))
+
+(provide honu-primitive-macro)
+(define-honu-syntax honu-primitive-macro
+  (lambda (code)
+    (syntax-parse code
+      [(_ name:id transformer:honu-expression/phase+1 . rest)
+       (values
+         (racket-syntax (define-honu-syntax name transformer.result))
+         #'rest
+         #t)])))
+

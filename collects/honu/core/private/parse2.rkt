@@ -347,13 +347,14 @@
     (debug "parse ~a precedence ~a left ~a current ~a properties ~a\n"
            (syntax->datum stream) precedence left current
            (syntax-property-symbol-keys stream))
-    (define final (if current current #f))
+    (define final (if current current #'(void)))
     (if (parsed-syntax? stream)
       (values (left stream) #'())
     (syntax-parse stream #:literal-sets (cruft)
       #;
       [x:id (values #'x #'())]
       [()
+       (debug "Empty input out: left ~a ~a\n" left (left final))
        (values (left final) #'())]
       ;; dont reparse pure racket code
       [(%racket racket)

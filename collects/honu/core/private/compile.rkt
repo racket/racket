@@ -111,7 +111,9 @@
     syntax))
 
 (define (parsed-syntax? syntax)
-  (syntax-property syntax parsed-property))
+  (if syntax
+    (syntax-property syntax parsed-property)
+    syntax))
 
 (define-syntax (racket-syntax stx)
   (syntax-case stx ()
