@@ -339,7 +339,7 @@ A parameter whose value is called for each file that is loaded and
 @defproc[(file-stamp-in-paths [p path?] [paths (listof path?)]) (or/c (cons/c number? promise?) #f)]{
 
 Returns the file-modification date and @racket[delay]ed hash of
- @racket[p]or its bytecode form (i.e., @filepath{.zo} file), whichever
+ @racket[p] or its bytecode form (i.e., @filepath{.zo} file), whichever
  exists and is newer, if @racket[p] is an extension of any path in
  @racket[paths] (i.e., exists in the directory, a subdirectory,
  etc.). Otherwise, the result is @racket[#f].
