@@ -1,5 +1,32 @@
 #lang at-exp racket
 
+#|
+FIX THESE: 
+
+1. the links within documentations don't work
+   example: see list? in Advanced; 
+   example: printing is pre-determined via the eval in the doc file 
+   Robby suggests using a macro to generate documentation and to expand it
+   in the context where the documentation is placed 
+
+2. need to expand the allowed scribble entries to 
+     defproc* for case-> in Advanced 
+     defthing for e, pi, null, and eof in Beginner (and possibly elsewhere)
+
+     then rewrite the case-> based things in Advanced 
+
+3. Fix up how primitives are "overwritten" in Advanced and friends 
+
+4. clean up primitive functions:
+   list? in Intermediate, others like that 
+   possibly legacy issues: 
+     why do we need eof or eof-object? in Beginner
+     why do we need eq? in Beginner
+
+tests to run: 
+ collects/tests/htdp-lang/
+|#
+
 (require (for-syntax syntax/parse) scribble/manual scribble/eval racket/sandbox)
 
 (require racket/provide)
@@ -89,9 +116,9 @@
 ;; the first time it adds functions to (module+ doc-tag ...) that help render the docs
 ;; export the provides list 
 (define-for-syntax (provide-and-scribble-code doc-tag add-docs-and-provide provides)
-  (with-syntax ([(p* ...) provides])
+  (with-syntax ([(p* ...) (reverse provides)])
     (cond 
-      [*add #`(begin p* ... (module+ #,doc-tag #,@(map (lambda (adp) (adp)) add-docs-and-provide)))]
+      [*add #`(begin p* ... (module+ #,doc-tag #,@(map (lambda (adp) (adp)) (reverse add-docs-and-provide))))]
       [else
        (set! *add (syntax-local-introduce #'add-sections))
        #`(begin (module+ #,doc-tag 
@@ -118,8 +145,7 @@
                                 (define others (render-sections (cdr s)))
                                 (define-values (section-title stuff) (apply values section1))
                                 (define sorted 
-                                  (sort stuff string<=? 
-                                        #:key (lambda (x) (symbol->string (syntax-e (car x))))))
+                                  (sort stuff string<=? #:key (compose symbol->string syntax-e car)))
                                 (define typed (for/list ((s sorted)) (re-context c (car s) (cdr s))))
                                 (cons @section[#:tag-prefix p]{@section-title}
                                       (cons typed others))])))
@@ -141,14 +167,11 @@
                          ;; String Section -> Void 
                          ;; add _scontent_ section to *sections in the doc submodule 
                          (define (#,*add stitle scontent)
-                           (displayln stitle)
-                           (pretty-print scontent)
-                           (pretty-print *sections)
                            (define exists #f)
                            (define sections
                              (for/list ((s *sections))
                                (cond
-                                 [(string=? (first s) stitle)
+                                 [(string=? (first s) stitle) 
                                   (set! exists #t)
                                   (list stitle (append (second s) scontent))]
                                  [else s])))
@@ -156,7 +179,7 @@
                                (set! *sections sections)
                                (set! *sections (append sections (list (list stitle scontent))))))
                          
-                         #,@(map (lambda (adp) (adp)) add-docs-and-provide))
+                         #,@(map (lambda (adp) (adp)) (reverse add-docs-and-provide)))
                 p* ...)])))
 
 ;; [Listof (u Identifier (Identifier Identifier))] -> [Listof Identifier]

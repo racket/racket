@@ -317,7 +317,7 @@
     Determines if a key is associated with a value in a hash table.
     @interaction[#:eval (asl)
 		  ish
-		  (hash-has-key? ish 'a)
+		  (hash-has-key? ish 'b)
 		  hsh
 		  (hash-has-key? hsh 'd)]
     } 
