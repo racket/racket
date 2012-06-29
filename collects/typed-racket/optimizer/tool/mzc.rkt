@@ -58,7 +58,9 @@
    ;; _What_ gets inlined (or not).
    (string-append ; either a vector with name and source info, or just name
     "("
-    "#\\(([^ ]+) #<path:(.+)> ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)"
+    "#\\(([^ ]+) "
+    "(" "#<path:(.+)>" "|" "([^ ]+)" ")"
+    " ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) [^ ]+\\)"
     "|"
     "([^ ]+)" ; just name, we won't be able to do much with it
     ")")
@@ -83,7 +85,7 @@
 (define (parse-inlining-event l)
   (match (regexp-match inlining-event-regexp l)
     [`(,all ,kind
-            ,what ,name ,path ,line ,col ,pos ,span
+            ,what ,name ,path ,file-path ,unsaved-path ,line ,col ,pos ,span
                   ,only-name
             ,where ,where-loc ,where-path ,where-line ,where-col ,where-name
             ,maybe-module-info
@@ -92,7 +94,7 @@
                      (string->symbol (or name only-name))
                      (if only-name
                         #f ; no source location
-                        (list path
+                        (list (or file-path unsaved-path)
                               (string->number line)
                               (string->number col)
                               (string->number pos)
