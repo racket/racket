@@ -185,7 +185,9 @@
                                      (if (path? p)
                                          (let ([d (current-load-relative-directory)])
                                            (path->string (if d
-                                                             (find-relative-path d p #:more-than-root? #t)
+                                                             (find-relative-path (simplify-path d #t)
+                                                                                 (simplify-path p #f) 
+                                                                                 #:more-than-root? #t)
                                                              p)))
                                          p)))
                          (if (eq? 0 (car req))
