@@ -66,12 +66,14 @@
         (define data (cdr (vector-ref l 2))) ; get the log-entry part
         (set! log (cons data log)))
       (lambda ()
+        (define port-name (send this get-port-name))
         (parameterize
             ([current-namespace  (make-base-namespace)]
              [current-load-relative-directory
-              (let-values ([(base name _)
-                            (split-path (send this get-port-name))])
-                base)]
+              (if (path-string? port-name)
+                  (let-values ([(base name _) (split-path port-name)])
+                    base)
+                  (current-load-relative-directory))]
              [read-accept-reader #t])
           (void (expand (tr:read-syntax portname input))))))))
   (filter right-file? (reverse log)))
