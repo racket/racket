@@ -3,6 +3,8 @@
 #|
 FIX THESE: 
 
+0. close 10498; ok
+
 1. the links within documentations don't work
    example: see list? in Advanced; 
    example: printing is pre-determined via the eval in the doc file 
