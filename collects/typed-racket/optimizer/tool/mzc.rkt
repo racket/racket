@@ -169,7 +169,8 @@
          ;; For instance, if `f' is a loop, and gets inlined in `g' multiple
          ;; times, it's likely to be unrolling. Same for out-of-fuels in `g'.
          ;; Therefore, we don't want to report these as inlinings (or failed
-         ;; inlinings).
+         ;; inlinings). If `g' has multiple call sites for `f', we lose
+         ;; precision, and may discard actual inlinings.
          ;; However, we care about `f' being unrolled at least once in `g'.
          ;; If we run out of fuel trying to inline `f' in `g' for the first
          ;; time, we report. The reason for this is that it's possible to
