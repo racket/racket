@@ -281,7 +281,7 @@ interface @racket[(class->interface object%)], and is transparent
 
 [init-decl
   id
-  (maybe-renamed)
+  renamed
   (maybe-renamed default-value-expr)]
 
 [field-decl
