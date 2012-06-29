@@ -13,12 +13,13 @@
 
 (define-syntax (defclassforms stx)
   (syntax-case stx (*)
-    [(_ [* (form ...) (also ...)])
+    [(_ [* (form ...) (also ...) more ...])
      #'(defform* (form  ...)
          "See " @racket[class*] (sees also ...) "; use"
-         " outside the body of a " @racket[class*] " form is a syntax error.")]
-    [(_ [form (also ...)])
-     #'(defclassforms [* (form) (also ...)])]
+         " outside the body of a " @racket[class*] " form is a syntax error."
+         more ...)]
+    [(_ [form (also ...) more ...])
+     #'(defclassforms [* (form) (also ...) more ...])]
     [(_ form ...)
      #'(begin (defclassforms form) ...)]))
 
@@ -437,23 +438,199 @@ a syntax error.
 
 @defclassforms[
   [(inspect inspector-expr) ()]
-  [(init init-decl ...) ("clinitvars")]
-  [(init-field init-decl ...) ("clinitvars" "clfields")]
-  [(field field-decl ...) ("clfields")]
-  [(inherit-field maybe-renamed ...) ("clfields")]
-  [* ((init-rest id) (init-rest)) ("clinitvars")]
-  [(public maybe-renamed ...) ("clmethoddefs")]
-  [(pubment maybe-renamed ...) ("clmethoddefs")]
-  [(public-final maybe-renamed ...) ("clmethoddefs")]
-  [(override maybe-renamed ...) ("clmethoddefs")]
-  [(overment maybe-renamed ...) ("clmethoddefs")]
-  [(override-final maybe-renamed ...) ("clmethoddefs")]
-  [(augment maybe-renamed ...) ("clmethoddefs")]
+  [(init init-decl ...) ("clinitvars")
+   @defexamples[#:eval class-eval
+     (class object%
+       (super-new)
+       (init turnip
+             [(internal-potato potato)]
+             [carrot 'good]
+             [(internal-rutabaga rutabaga) 'okay]))]]
+  [(init-field init-decl ...) ("clinitvars" "clfields")
+   @defexamples[#:eval class-eval
+     (class object%
+       (super-new)
+       (init-field turkey
+                   [(internal-ostrich ostrich)]
+                   [chicken 7]
+                   [(internal-emu emu) 13]))]]
+  [(field field-decl ...) ("clfields")
+   @defexamples[#:eval class-eval
+     (class object%
+       (super-new)
+       (field [minestrone 'ready]
+              [(internal-coq-au-vin coq-au-vin) 'stewing]))]]
+  [(inherit-field maybe-renamed ...) ("clfields")
+   @defexamples[#:eval class-eval
+     (define cookbook%
+       (class object%
+         (super-new)
+         (field [recipes '(caldo-verde oyakodon eggs-benedict)]
+                [pages 389])))
+     (class cookbook%
+       (super-new)
+       (inherit-field recipes
+                      [internal-pages pages]))]]
+  [* ((init-rest id) (init-rest)) ("clinitvars")
+   @defexamples[#:eval class-eval
+     (define fruit-basket%
+       (class object%
+         (super-new)
+         (init-rest fruits)
+         (displayln fruits)))
+     (make-object fruit-basket% 'kiwi 'lychee 'melon)]]
+  [(public maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define jumper%
+        (class object%
+          (super-new)
+          (define (skip) 'skip)
+          (define (hop) 'hop)
+          (public skip [hop jump])))
+      (send (new jumper%) skip)
+      (send (new jumper%) jump)]]
+  [(pubment maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define runner%
+        (class object%
+          (super-new)
+          (define (run) 'run)
+          (define (trot) 'trot)
+          (pubment run [trot jog])))
+      (send (new runner%) run)
+      (send (new runner%) jog)]]
+  [(public-final maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define point%
+        (class object%
+          (super-new)
+          (init-field [x 0] [y 0])
+          (define (get-x) x)
+          (define (do-get-y) y)
+          (public-final get-x [do-get-y get-y])))
+      (send (new point% [x 1] [y 3]) get-y)
+      (class point%
+        (super-new)
+        (define (get-x) 3.14)
+        (override get-x))]]
+  [(override maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define sheep%
+        (class object%
+          (super-new)
+          (define/public (bleat)
+            (displayln "baaaaaaaaah"))))
+      (define confused-sheep%
+        (class sheep%
+          (super-new)
+          (define (bleat)
+            (super bleat)
+            (displayln "???"))
+          (override bleat)))
+      (send (new sheep%) bleat)
+      (send (new confused-sheep%) bleat)]]
+  [(overment maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define turkey%
+        (class object%
+          (super-new)
+          (define/public (gobble)
+            (displayln "gobble gobble"))))
+      (define extra-turkey%
+        (class turkey%
+          (super-new)
+          (define (gobble)
+            (super gobble)
+            (displayln "gobble gobble gobble")
+            (inner (void) gobble))
+          (overment gobble)))
+      (define cyborg-turkey%
+        (class extra-turkey%
+          (super-new)
+          (define/augment (gobble)
+            (displayln "110011111011111100010110001011011001100101"))))
+      (send (new extra-turkey%) gobble)
+      (send (new cyborg-turkey%) gobble)]]
+  [(override-final maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define meeper%
+        (class object%
+          (super-new)
+          (define/public (meep)
+            (displayln "meep"))))
+      (define final-meeper%
+        (class meeper%
+          (super-new)
+          (define (meep)
+            (super meep)
+            (displayln "This meeping ends with me"))
+          (override-final meep)))
+      (send (new meeper%) meep)
+      (send (new final-meeper%) meep)]]
+  [(augment maybe-renamed ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define buzzer%
+        (class object%
+          (super-new)
+          (define/pubment (buzz)
+            (displayln "bzzzt")
+            (inner (void) buzz))))
+      (define loud-buzzer%
+        (class buzzer%
+          (super-new)
+          (define (buzz)
+            (displayln "BZZZZZZZZZT"))
+          (augment buzz)))
+      (send (new buzzer%) buzz)
+      (send (new loud-buzzer%) buzz)]]
   [(augride maybe-renamed ...) ("clmethoddefs")]
   [(augment-final maybe-renamed ...) ("clmethoddefs")]
-  [(private id ...) ("clmethoddefs")]
-  [(abstract id ...) ("clmethoddefs")]
-  [(inherit maybe-renamed ...) ("classinherit")]
+  [(private id ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define light%
+        (class object%
+          (super-new)
+          (define on? #t)
+          (define (toggle) (set! on? (not on?)))
+          (private toggle)
+          (define (flick) (toggle))
+          (public flick)))
+      (send (new light%) toggle)
+      (send (new light%) flick)]]
+  [(abstract id ...) ("clmethoddefs")
+    @defexamples[#:eval class-eval
+      (define train%
+        (class object%
+          (super-new)
+          (abstract get-speed)
+          (init-field [position 0])
+          (define/public (move)
+            (new this% [position (+ position (get-speed))]))))
+      (define acela%
+        (class train%
+          (super-new)
+          (define/override (get-speed) 241)))
+      (define talgo-350%
+        (class train%
+          (super-new)
+          (define/override (get-speed) 330)))
+      (new train%)
+      (send (new acela%) move)]]
+  [(inherit maybe-renamed ...) ("classinherit")
+    @defexamples[#:eval class-eval
+      (define alarm%
+        (class object%
+          (super-new)
+          (define/public (alarm)
+            (displayln "beeeeeeeep"))))
+      (define car-alarm%
+        (class alarm%
+          (super-new)
+          (init-field proximity)
+          (inherit alarm)
+          (when (< proximity 10)
+            (alarm))))
+      (new car-alarm% [proximity 5])]]
   [(inherit/super maybe-renamed ...)  ("classinherit")]
   [(inherit/inner maybe-renamed ...) ("classinherit")]
   [(rename-super renamed ...) ("classinherit")]
