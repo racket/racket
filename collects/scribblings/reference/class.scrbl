@@ -67,10 +67,14 @@
       #'(begin (defdefshorthands form) ...)]))
 
 (define class-eval (make-base-eval))
+(define class-ctc-eval (make-base-eval))
 
 )
 
 @(interaction-eval #:eval class-eval (require racket/class))
+@(interaction-eval
+  #:eval class-ctc-eval
+  (require racket/class racket/contract))
 
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
@@ -193,11 +197,13 @@ superinterfaces specify inconsistent derivation requirements, the
 @exnraise[exn:fail:object].
 
 @defexamples[
-#:eval class-eval
-(define file-interface
+#:eval class-ctc-eval
+(define file-interface<%>
   (interface () open close read-byte write-byte))
-(define directory-interface
-  (interface (file-interface) file-list parent-directory))
+(define directory-interface<%>
+  (interface (file-interface<%>)
+    [file-list (-> (listof (is-a?/c file-interface<%>)))]
+    parent-directory))
 ]}
 
 @defform/subs[(interface* (super-interface-expr ...)
@@ -222,9 +228,9 @@ structure type property's guard, if any).
 
 @defexamples[
 #:eval class-eval
-(define i (interface* () ([prop:custom-write 
-                           (lambda (obj port mode) (void))])
-            method1 method2 method3))
+(define i<%> (interface* () ([prop:custom-write
+                              (lambda (obj port mode) (void))])
+               method1 method2 method3))
 ]}
 
 @; ------------------------------------------------------------------------
@@ -281,7 +287,7 @@ interface @racket[(class->interface object%)], and is transparent
 
 [init-decl
   id
-  renamed
+  (renamed)
   (maybe-renamed default-value-expr)]
 
 [field-decl
@@ -381,7 +387,7 @@ Like @racket[class*], but omits the @racket[_interface-expr]s, for the case that
 
 @defexamples[
 #:eval class-eval
-(define book-class
+(define book-class%
   (class object%
     (field (pages 5))
     (define/public (letters)
@@ -400,12 +406,12 @@ a syntax error.
 #:eval class-eval
 (define (describe obj)
   (printf "Hello ~a\n" obj))
-(define table
+(define table%
   (class object%
     (define/public (describe-self)
       (describe this))
     (super-new)))
-(send (new table) describe-self)
+(send (new table%) describe-self)
 ]}
 
 @defidform[this%]{
@@ -2158,77 +2164,179 @@ A @racket[print] request is directed to @racket[custom-write].}
 
 @defproc[(object? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is an object, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an object, @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (object? (new object%))
+  (object? object%)
+  (object? "clam chowder")
+]}
 
 
 @defproc[(class? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is a class, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a class, @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (class? object%)
+  (class? (class object% (super-new)))
+  (class? (new object%))
+  (class? "corn chowder")
+]}
 
 
 @defproc[(interface? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is an interface, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an interface, @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (interface? (interface () empty cons first rest))
+  (interface? object%)
+  (interface? "gazpacho")
+]}
 
 
 @defproc[(generic? [v any/c]) boolean?]{
 
-Returns @racket[#t] if @racket[v] is a @tech{generic}, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{generic}, @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (define c%
+    (class object%
+      (super-new)
+      (define/public (m x)
+        (+ 3.14 x))))
+
+  (generic? (generic c% m))
+  (generic? c%)
+  (generic? "borscht")
+]}
 
 
 @defproc[(object=? [a object?] [b object?]) boolean?]{
 
 Determines if two objects are the same object, or not; this procedure uses
-@racket[eq?], but also works properly with contracts.}
+@racket[eq?], but also works properly with contracts.
+
+@defexamples[#:eval class-ctc-eval
+  (define obj-1 (new object%))
+  (define/contract obj-2 (object/c) obj-1)
+  (object=? obj-1 obj-1)
+  (object=? (new object%) obj-1)
+  (object=? obj-1 obj-2)
+  (object=? obj-1 (new (class object% (super-new))))
+]}
 
 
 @defproc[(object->vector [object object?] [opaque-v any/c #f]) vector?]{
 
 Returns a vector representing @racket[object] that shows its
-inspectable fields, analogous to @racket[struct->vector].}
+inspectable fields, analogous to @racket[struct->vector].
+
+@defexamples[#:eval class-eval
+  (object->vector (new object%))
+  (object->vector (new (class object%
+                         (super-new)
+                         (field [x 5] [y 10]))))
+]}
 
 
 @defproc[(class->interface [class class?]) interface?]{
 
-Returns the interface implicitly defined by @racket[class].}
+Returns the interface implicitly defined by @racket[class].
+
+@defexamples[#:eval class-eval
+  (class->interface object%)
+]}
 
 
 @defproc[(object-interface [object object?]) interface?]{
 
 Returns the interface implicitly defined by the class of
-@racket[object].}
+@racket[object].
+
+@defexamples[#:eval class-eval
+  (object-interface (new object%))
+]}
 
  
 @defproc[(is-a? [v any/c] [type (or/c interface? class?)]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is an instance of a class
 @racket[type] or a class that implements an interface @racket[type],
-@racket[#f] otherwise.}
+@racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (define point<%> (interface () get-x get-y))
+  (define 2d-point%
+    (class* object% (point<%>)
+      (super-new)
+      (field [x 0] [y 0])
+      (define/public (get-x) x)
+      (define/public (get-y) y)))
+
+  (is-a? (new 2d-point%) 2d-point%)
+  (is-a? (new 2d-point%) point<%>)
+  (is-a? (new object%) 2d-point%)
+  (is-a? (new object%) point<%>)
+]}
 
 
 @defproc[(subclass? [v any/c] [class class?]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a class derived from (or equal
-to) @racket[class], @racket[#f] otherwise.}
+to) @racket[class], @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (subclass? (class object% (super-new)) object%)
+  (subclass? object% (class object% (super-new)))
+  (subclass? object% object%)
+]}
 
 
 @defproc[(implementation? [v any/c] [interface interface?]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a class that implements
-@racket[interface], @racket[#f] otherwise.}
+@racket[interface], @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (define i<%> (interface () go))
+  (define c%
+    (class* object% (i<%>)
+      (super-new)
+      (define/public (go) 'go)))
+
+  (implementation? c% i<%>)
+  (implementation? object% i<%>)
+]}
 
 
 @defproc[(interface-extension? [v any/c] [interface interface?]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is an interface that extends
-@racket[interface], @racket[#f] otherwise.}
+@racket[interface], @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+  (define point<%> (interface () get-x get-y))
+  (define colored-point<%> (interface (point<%>) color))
+
+  (interface-extension? colored-point<%> point<%>)
+  (interface-extension? point<%> colored-point<%>)
+  (interface-extension? (interface () get-x get-y get-z) point<%>)
+]}
 
 
 @defproc[(method-in-interface? [sym symbol?] [interface interface?]) boolean?]{
 
 Returns @racket[#t] if @racket[interface] (or any of its ancestor
 interfaces) includes a member with the name @racket[sym], @racket[#f]
-otherwise.}
+otherwise.
+
+@defexamples[#:eval class-eval
+  (define i<%> (interface () get-x get-y))
+  (method-in-interface? 'get-x i<%>)
+  (method-in-interface? 'get-z i<%>)
+]}
 
 
 @defproc[(interface->method-names [interface interface?]) (listof symbol?)]{
@@ -2236,14 +2344,32 @@ otherwise.}
 Returns a list of symbols for the method names in @racket[interface],
 including methods inherited from superinterfaces, but not including
 methods whose names are local (i.e., declared with
-@racket[define-local-member-names]).}
+@racket[define-local-member-names]).
+
+@defexamples[#:eval class-eval
+  (define i<%> (interface () get-x get-y))
+  (interface->method-names i<%>)
+]}
 
 
 @defproc[(object-method-arity-includes? [object object?] [sym symbol?] [cnt exact-nonnegative-integer?])
          boolean?]{
 
 Returns @racket[#t] if @racket[object] has a method named @racket[sym]
-that accepts @racket[cnt] arguments, @racket[#f] otherwise.}
+that accepts @racket[cnt] arguments, @racket[#f] otherwise.
+
+@defexamples[#:eval class-eval
+(define c%
+  (class object%
+    (super-new)
+    (define/public (m x [y 0])
+      (+ x y))))
+
+(object-method-arity-includes? (new c%) 'm 1)
+(object-method-arity-includes? (new c%) 'm 2)
+(object-method-arity-includes? (new c%) 'm 3)
+(object-method-arity-includes? (new c%) 'n 1)
+]}
 
 
 @defproc[(field-names [object object?]) (listof symbol?)]{
@@ -2251,7 +2377,12 @@ that accepts @racket[cnt] arguments, @racket[#f] otherwise.}
 Returns a list of all of the names of the fields bound in
 @racket[object], including fields inherited from superinterfaces, but
 not including fields whose names are local (i.e., declared with
-@racket[define-local-member-names]).}
+@racket[define-local-member-names]).
+
+@defexamples[#:eval class-eval
+  (field-names (new object%))
+  (field-names (new (class object% (super-new) (field [x 0] [y 0]))))
+]}
 
 
 @defproc[(object-info [object any/c]) (values (or/c class? #f) boolean?)]{
