@@ -1,9 +1,8 @@
 #lang meta/web
 
 (define-context "stubs/git"
-  #:robots.txt @list{User-agent: *
-                     @(add-newlines (for/list ([d '(plt libs testing play)])
-                                      @list{Disallow: /@|d|/}))})
+  #:robots (add-newlines (for/list ([d '(plt libs testing play)])
+                           @list{Disallow: /@|d|/})))
 
 (provide git)
 (define git

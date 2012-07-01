@@ -70,7 +70,7 @@
                #:description [description #f] ; for a meta tag
                #:extra-headers [extra-headers #f]
                #:extra-body-attrs [body-attrs #f]
-               #:resources resources ; see below
+               #:resources resources0 ; see below
                #:referrer [referrer
                            (λ (url . more)
                              (a href: url (if (null? more) linktitle more)))]
@@ -84,6 +84,7 @@
       (if (and extra-headers desc)
         (list desc "\n" extra-headers)
         (or desc extra-headers)))
+    (define resources (force resources0))
     (define head   (resources 'head wintitle headers))
     (define navbar (resources 'navbar (or part-of this)))
     (define content
@@ -100,7 +101,7 @@
               (body content))
            @||})
   (define this (and (not html-only?)
-                    (resource/referrer (get-path 'plain id file "html" dir)
+                    (resource/referrer (get-path 'page id file "html" dir)
                                        (file-writer output-xml page)
                                        referrer)))
   (when this (pages->part-of this (or part-of this)))
@@ -213,8 +214,8 @@
   (syntax-parse stx
     [(_ (~or (~optional dir:expr)
              (~optional (~seq #:resources resources))
-             (~optional (~seq #:robots.txt robots.txt)
-                        #:defaults ([robots.txt #'#t])))
+             (~optional (~seq #:robots robots) #:defaults ([robots #'#t]))
+             (~optional (~seq #:htaccess htaccess) #:defaults ([htaccess #'#t])))
         ...)
      (unless (attribute dir)
        (raise-syntax-error 'define-context "missing <dir>"))
@@ -223,13 +224,19 @@
                    [copyfile-id  (datum->syntax stx 'copyfile)]
                    [symlink-id   (datum->syntax stx 'symlink)]
                    [resources-id (datum->syntax stx 'the-resources)])
-       (with-syntax ([resources  (or (attribute resources)
-                                     #'(make-resources (make-resource-files
-                                                        dir robots.txt)))]
-                     [provides   (if provide?
+       (with-syntax ([provides   (if provide?
                                    #'(provide page-id plain-id copyfile-id
                                               symlink-id resources-id)
-                                   #'(begin))])
+                                   #'(begin))]
+                     [resources
+                      (or (attribute resources)
+                          #'(make-resources
+                             (make-resource-files
+                              (λ (id . content)
+                                (page* #:id id #:dir dir
+                                       #:resources (lazy resources-id)
+                                       content))
+                              dir robots htaccess)))])
          #'(begin (define resources-id resources)
                   (define-syntax-rule (page-id . xs)
                     (page #:resources resources-id #:dir dir . xs))
