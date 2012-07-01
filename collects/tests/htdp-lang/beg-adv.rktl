@@ -269,6 +269,10 @@
 (htdp-test 1 'ok-dots (if true 1 ...))
 (htdp-error-test #'(set! ... true))
 
+(htdp-top (check-expect 1))
+(htdp-syntax-test #'1 "check-expect: expects 2 arguments, but found only 1")
+(htdp-top-pop 1)
+
 (htdp-syntax-test #'(cons (check-expect 1 1) empty))
 (htdp-syntax-test #'(define (f x) (check-expect 1 x)))
 (htdp-syntax-test #'(define (f x) (check-expect 1 x) x))

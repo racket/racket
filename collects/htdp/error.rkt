@@ -36,7 +36,7 @@
 ;; check-arity : sym num (list-of TST) -> void
 (define (check-arity name arg# args)
   (unless (= (length args) arg#)
-    (tp-error name (argcount-error-message arg# (length args)))))
+    (tp-error name (argcount-error-message #f arg# (length args)))))
 
 ;; check-proc : sym (... *->* ...) num (union sym str) (union sym str) -> void
 (define (check-proc name f exp-arity arg# arg-err)
