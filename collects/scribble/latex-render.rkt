@@ -120,6 +120,8 @@
                       (if (null? auths) "Empty" ""))
               (render-content (part-title-content d) d ri)
               (printf "}{~a}{" vers)
+              (unless (null? auths)
+                (printf "\\SNumberOfAuthors{~a}" (length auths)))
               (for/fold ([first? #t]) ([auth (in-list auths)])
                 (unless first? (printf "\\SAuthorSep{}"))
                 (do-render-paragraph auth d ri #t #f)
