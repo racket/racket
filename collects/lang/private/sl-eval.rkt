@@ -4,6 +4,10 @@
 
 (provide
  ;; syntax: 
+ ;; use with (define-module-local-eval e) ... (eval 'foo e)
+ define-module-local-eval 
+
+ ;; syntax: 
  ;; use with @interaction[#:eval (*sl-eval (define x ...) ...) ...] to create interactive examples 
  bsl-eval
  bsl+-eval
@@ -93,3 +97,17 @@
   (*sl-eval 'lang/htdp-advanced 'htdp/asl/lang/reader def ...))
 
 ; (isl-eval+)
+
+;; -----------------------------------------------------------------------------
+
+;; (define-module-local-eval name-of-evaluator)
+;; a make-base-eval whose namespace is initialized with the module where the macro is used 
+(define-syntax-rule 
+  (define-module-local-eval name)
+  (begin
+    (define-namespace-anchor ns)
+    (define name 
+      (parameterize ([sandbox-namespace-specs (list (lambda () (namespace-anchor->namespace ns)))]
+                     [sandbox-error-output 'string]
+                     [sandbox-output 'string])
+        (make-base-eval)))))

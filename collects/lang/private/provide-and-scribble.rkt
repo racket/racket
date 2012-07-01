@@ -34,7 +34,6 @@ tests to run:
 (require racket/provide)
 
 (provide 
- define-module-local-eval 
  provide-and-scribble all-from all-from-except
  )
 
@@ -201,16 +200,3 @@ tests to run:
            [name:id #'name]))
        lon))
 
-;; ---------------------------------------------------------------------------------------------------
-
-;; (define-module-local-eval name-of-evaluator)
-;; a make-base-eval whose namespace is initialized with the module where the macro is used 
-(define-syntax-rule 
-  (define-module-local-eval name)
-  (begin
-    (define-namespace-anchor ns)
-    (define name 
-      (parameterize ([sandbox-namespace-specs (list (lambda () (namespace-anchor->namespace ns)))]
-                     [sandbox-error-output 'string]
-                     [sandbox-output 'string])
-        (make-base-eval)))))
