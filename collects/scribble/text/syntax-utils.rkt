@@ -12,7 +12,7 @@
   (define stoplist (append definition-ids (kernel-form-identifier-list)))
   (define (definition-id? id)
     (and (identifier? id)
-         (ormap (lambda (i) (free-identifier=? id i)) definition-ids)))
+         (ormap (λ (i) (free-identifier=? id i)) definition-ids)))
   (define (definition? x)
     (syntax-case x () [(id . rest) (and (definition-id? #'id) #'id)] [_ #f]))
   (define (begin?->list x)
@@ -34,20 +34,20 @@
                 [(or cur (pair? after)) (loop xs '() x '() (add))]
                 [else (loop xs before x '() r)])))))
   (define (group-stxs stxs fun)
-    (group-by (lambda (stx)
-                (let ([p (syntax-property stx 'scribble)])
-                  (cond [(and (pair? p) (eq? (car p) 'newline)) '>]
-                        [(eq? 'indentation p) '<]
-                        [else #f])))
+    (group-by (λ (stx)
+                (define p (syntax-property stx 'scribble))
+                (cond [(and (pair? p) (eq? (car p) 'newline)) '>]
+                      [(eq? 'indentation p) '<]
+                      [else #f]))
               stxs fun))
   #; ; tests for this
   (for-each
-   (lambda (t)
-     (let ([r (group-by (lambda (x)
-                          (cond [(number? x) '<] [(symbol? x) '>] [else #f]))
-                        (car t)
-                        list)])
-       (unless (equal? r (cadr t)) (printf "FAILURE: ~s -> ~s\n" (car t) r))))
+   (λ (t)
+     (define r (group-by (λ (x)
+                           (cond [(number? x) '<] [(symbol? x) '>] [else #f]))
+                         (car t)
+                         list))
+     (unless (equal? r (cadr t)) (printf "FAILURE: ~s -> ~s\n" (car t) r)))
    '([() ()]
      [("a") ((() "a" ()))]
      [("a" "b") ((() "a" ()) (() "b" ()))]
@@ -83,7 +83,7 @@
                     #,@(if post? #'((decor 'post) ...) #'()))
            expr))
        (cond [(begin?->list expr*)
-              => (lambda (xs)
+              => (λ (xs)
                    (if (null? xs)
                      (if (or pre? post?)
                        #'(begin (decor 'pre) ... (decor 'post) ...)
@@ -97,7 +97,7 @@
   (define (process-body decor body)
     (group-stxs
      (syntax->list body)
-     (lambda (pre expr post)
+     (λ (pre expr post)
        (with-syntax ([decor decor])
          (if (not expr) ; no need to decorate these
            (with-syntax ([(x ...) (append pre post)]) #`(decor '(x ...)))
@@ -146,7 +146,7 @@
              (values (reverse ds) (reverse es) exprs))]
           [_ (loop (cdr exprs) ds (cons expr* es))])))))
 (define-syntax (begin/collect* stx) ; helper, has a boolean flag first
-  (define-values (exprs always-list?)
+  (define-values [exprs always-list?]
     (let ([exprs (syntax->list stx)])
       (if (and (pair? exprs) (pair? (cdr exprs)))
         (values (cddr exprs) (syntax-e (cadr exprs)))
@@ -178,7 +178,7 @@
   (begin/text
    (include-at/relative-to/reader path-spec path-spec path-spec
      (let ([xs #f])
-       (lambda (src inp)
+       (λ (src inp)
          (unless xs
            (set! xs (scribble:read-syntax-inside src inp))
            (when (syntax? xs) (set! xs (or (syntax->list xs) (list xs)))))

@@ -22,7 +22,7 @@
 ;; resource that uses this value.  Creating a resource registers the `renderer'
 ;; to be executed when rendering is initiated by `render-all'.  Note that more
 ;; resources can be created while rendering; they will also be rendered in turn
-;; until no more resources are created.
+;; until no more new resources are created.
 
 (require scribble/text)
 
@@ -34,12 +34,13 @@
 (define rendered-dirpath (make-parameter '()))
 
 ;; A mapping from path prefixes to urls (actually, any string) -- when two
-;; paths are in the same prefix, links from one to the other are relative, but
-;; if they're in different prefixes, the url will be used instead; the roots
-;; are expected to be disjoint (= no "/foo" and "/foo/bar" roots).
-;; Additionally, optional symbol flags can appear in each entry, currently only
-;; 'abs is used below for roots that should always use absolute links (needed
-;; for some skeleton pages that are used in nested subdirectories).
+;; paths are in the same prefix, links from one to the other are relative
+;; (unless absolute links are requested) , but if they're in different
+;; prefixes, the url will be used instead; the roots are expected to be
+;; disjoint (= no "/foo" and "/foo/bar" roots).  Additionally, optional symbol
+;; flags can appear in each entry, currently only 'abs is used below for roots
+;; that should always use absolute links (needed for some skeleton pages that
+;; are used in nested subdirectories).
 (provide url-roots)
 (define url-roots (make-parameter #f))
 

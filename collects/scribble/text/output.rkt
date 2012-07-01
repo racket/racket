@@ -4,7 +4,7 @@
 
 (provide output)
 
-;; Outputs some value for the `scribble/text' language:
+;; Outputs values for the `scribble/text' language:
 ;; - several atomic values are printed as in `display',
 ;; - promises, thunks, and boxes are indirections for the value they contain
 ;;   (useful in various cases),
@@ -87,12 +87,12 @@
             [nls (regexp-match-positions* #rx"\n" x)])
         (let loop ([start 0] [nls nls] [lpfx (mcdr pfxs)] [col (getcol)])
           (cond [(pair? nls)
-                 (let ([nl (car nls)])
-                   (if (regexp-match? #rx"^ *$" x start (car nl))
-                     (newline p) ; only spaces before the end of the line
-                     (begin (output-pfx col pfx lpfx)
-                            (write x p start (cdr nl))))
-                   (loop (cdr nl) (cdr nls) 0 0))]
+                 (define nl (car nls))
+                 (if (regexp-match? #rx"^ *$" x start (car nl))
+                   (newline p) ; only spaces before the end of the line
+                   (begin (output-pfx col pfx lpfx)
+                          (write x p start (cdr nl))))
+                 (loop (cdr nl) (cdr nls) 0 0)]
                 ;; last substring from here (always set lpfx state when done)
                 [(start . = . len)
                  (set-mcdr! pfxs lpfx)]
@@ -101,23 +101,24 @@
                  ;; the prefix was already shown, no accumulation needed
                  (write x p start)]
                 [else
-                 (let ([m (regexp-match-positions #rx"^ +" x start)])
-                   ;; accumulate spaces to lpfx, display if it's not all spaces
-                   (let ([lpfx (if m (pfx+ lpfx (- (cdar m) (caar m))) lpfx)])
-                     (set-mcdr! pfxs lpfx)
-                     (unless (and m (= len (cdar m)))
-                       (output-pfx col pfx lpfx)
-                       ;; the spaces were already added to lpfx
-                       (write x p (if m (cdar m) start)))))])))))
+                 (define m (regexp-match-positions #rx"^ +" x start))
+                 ;; accumulate spaces to lpfx, display if it's not all spaces
+                 (define lpfx* (if m (pfx+ lpfx (- (cdar m) (caar m))) lpfx))
+                 (set-mcdr! pfxs lpfx*)
+                 (unless (and m (= len (cdar m)))
+                   (output-pfx col pfx lpfx*)
+                   ;; the spaces were already added to lpfx
+                   (write x p (if m (cdar m) start)))])))))
   ;; blocks and splices
   (define (output-block c)
-    (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
-           [npfx (pfx+col (pfx+ pfx lpfx))])
-      (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
-      (if (list? c)
-        (for ([c (in-list c)]) (loop c))
-        (begin (loop (car c)) (loop (cdr c))))
-      (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx)))
+    (define pfx  (mcar pfxs))
+    (define lpfx (mcdr pfxs))
+    (define npfx (pfx+col (pfx+ pfx lpfx)))
+    (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
+    (if (list? c)
+      (for ([c (in-list c)]) (loop c))
+      (begin (loop (car c)) (loop (cdr c))))
+    (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))
   (define (output-splice c)
     (for-each loop c))
   ;; main loop
@@ -136,92 +137,97 @@
       [(box?     x) (loop (unbox x))]
       ;; special output wrappers
       [(special? x)
-       (let ([c (special-contents x)])
-         (case (special-flag x)
-           ;; preserve tailness & avoid `set!' for blocks/splices if possible
-           [(block) (if list=block?
-                      (output-block c)
-                      (begin (set! list=block? #t)
-                             (output-block c)
-                             (set! list=block? #f)))]
-           [(splice) (if list=block?
-                      (begin (set! list=block? #f)
-                             (output-splice c)
-                             (set! list=block? #t))
-                      (output-splice c))]
-           [(flush) ; useful before `disable-prefix'
-            (output-pfx (getcol) (mcar pfxs) (mcdr pfxs))]
-           [(disable-prefix) ; save the previous pfxs
-            (let ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)])
-              (set-mcar! pfxs #f)  (set-mcdr! pfxs (cons pfx lpfx))
-              (for-each loop c)
-              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(restore-prefix) ; restore the previous pfxs
-            (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
-                   [npfx (pfx+col (if (and (not pfx) (pair? lpfx))
-                                    (pfx+ (car lpfx) (cdr lpfx))
-                                    (pfx+ pfx lpfx)))])
-              (set-mcar! pfxs npfx)  (set-mcdr! pfxs 0)
-              (for-each loop c)
-              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(add-prefix) ; add to the current prefix (unless it's #f)
-            (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
-                   [npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c))])
-              (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
-              (for-each loop (cdr c))
-              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(set-prefix)
-            (let ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)])
-              (set-mcar! pfxs (car c)) (set-mcdr! pfxs 0)
-              (for-each loop (cdr c))
-              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(with-writer)
-            (let ([old write])
-              (set! write (or (car c) write-string))
-              (for-each loop (cdr c))
-              (set! write old))]
-           #; ; no need for this hack yet
-           [(with-writer-change)
-            ;; The function gets the old writer and return a new one (useful to
-            ;; save the current writer and restore it inside).  Could also be
-            ;; used to extend a writer, but that shows why a customizable
-            ;; writer is a bad choice: instead, it should be a list of
-            ;; substitutions that can be extended more conveniently.  A simple
-            ;; implementation would be to chain functions that do
-            ;; substitutions.  But that runs into problems when functions want
-            ;; to substitute the same thing, and worse: when the output of one
-            ;; function would get substituted again by another.  Another
-            ;; approach would be to join matcher regexps with "|" after
-            ;; wrapping each one with parens, then find out which one matched
-            ;; by looking at the result and applying its substitution, but the
-            ;; problem with that is that is that it forbids having parens in
-            ;; the regexps -- this could be fixed by not parenthesizing each
-            ;; expression, and instead running the found match against each of
-            ;; the input regexps to find the matching one, but that can be very
-            ;; inefficient.  Yet another issue is that in some cases we might
-            ;; *want* the "worse" feature mentioned earlier: for example, when
-            ;; we want to do some massaging of the input texts yet still have
-            ;; the result encoded for HTML output -- so perhaps the simple
-            ;; approach is still better.  The only difference from the current
-            ;; `with-writer' is using a substituting function, so it can be
-            ;; composed with the current one instead of replacing it
-            ;; completely.
-            (let ([old write])
-              (set! write ((car c) write))
-              (for-each loop (cdr c))
-              (set! write old))]
-           [else (error 'output "unknown special value flag: ~e"
-                        (special-flag x))]))]
+       (define c (special-contents x))
+       (case (special-flag x)
+         ;; preserve tailness & avoid `set!' for blocks/splices if possible
+         [(block) (if list=block?
+                    (output-block c)
+                    (begin (set! list=block? #t)
+                           (output-block c)
+                           (set! list=block? #f)))]
+         [(splice) (if list=block?
+                     (begin (set! list=block? #f)
+                            (output-splice c)
+                            (set! list=block? #t))
+                     (output-splice c))]
+         [(flush) ; useful before `disable-prefix'
+          (output-pfx (getcol) (mcar pfxs) (mcdr pfxs))]
+         [(disable-prefix) ; save the previous pfxs
+          (define pfx  (mcar pfxs))
+          (define lpfx (mcdr pfxs))
+          (set-mcar! pfxs #f)  (set-mcdr! pfxs (cons pfx lpfx))
+          (for-each loop c)
+          (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx)]
+         [(restore-prefix) ; restore the previous pfxs
+          (define pfx  (mcar pfxs))
+          (define lpfx (mcdr pfxs))
+          (define npfx (pfx+col (if (and (not pfx) (pair? lpfx))
+                                  (pfx+ (car lpfx) (cdr lpfx))
+                                  (pfx+ pfx lpfx))))
+          (set-mcar! pfxs npfx)  (set-mcdr! pfxs 0)
+          (for-each loop c)
+          (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx)]
+         [(add-prefix) ; add to the current prefix (unless it's #f)
+          (define pfx  (mcar pfxs))
+          (define lpfx (mcdr pfxs))
+          (define npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c)))
+          (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
+          (for-each loop (cdr c))
+          (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx)]
+         [(set-prefix)
+          (define pfx  (mcar pfxs))
+          (define lpfx (mcdr pfxs))
+          (set-mcar! pfxs (car c)) (set-mcdr! pfxs 0)
+          (for-each loop (cdr c))
+          (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx)]
+         [(with-writer)
+          (define old write)
+          (set! write (or (car c) write-string))
+          (for-each loop (cdr c))
+          (set! write old)]
+         #; ; no need for this hack yet
+         [(with-writer-change)
+          ;; The function gets the old writer and return a new one (useful to
+          ;; save the current writer and restore it inside).  Could also be
+          ;; used to extend a writer, but that shows why a customizable writer
+          ;; is a bad choice: instead, it should be a list of substitutions
+          ;; that can be extended more conveniently.  A simple implementation
+          ;; would be to chain functions that do substitutions.  But that runs
+          ;; into problems when functions want to substitute the same thing,
+          ;; and worse: when the output of one function would get substituted
+          ;; again by another.  Another approach would be to join matcher
+          ;; regexps with "|" after wrapping each one with parens, then find
+          ;; out which one matched by looking at the result and applying its
+          ;; substitution, but the problem with that is that is that it forbids
+          ;; having parens in the regexps -- this could be fixed by not
+          ;; parenthesizing each expression, and instead running the found
+          ;; match against each of the input regexps to find the matching one,
+          ;; but that can be very inefficient.  Yet another issue is that in
+          ;; some cases we might *want* the "worse" feature mentioned earlier:
+          ;; for example, when we want to do some massaging of the input texts
+          ;; yet still have the result encoded for HTML output -- so perhaps
+          ;; the simple approach is still better.  The only difference from the
+          ;; current `with-writer' is using a substituting function, so it can
+          ;; be composed with the current one instead of replacing it
+          ;; completely.
+          (define old write)
+          (set! write ((car c) write))
+          (for-each loop (cdr c))
+          (set! write old)]
+         [else (error 'output "unknown special value flag: ~e"
+                      (special-flag x))])]
       [else
        (output-string
-        (cond [(string? x)  x]
-              [(bytes? x)   (bytes->string/utf-8 x)]
-              [(symbol? x)  (symbol->string      x)]
-              [(path? x)    (path->string        x)]
+        (cond [(string?  x) x]
+              [(bytes?   x) (bytes->string/utf-8 x)]
+              [(symbol?  x) (symbol->string      x)]
+              [(path?    x) (path->string        x)]
               [(keyword? x) (keyword->string     x)]
-              [(number? x)  (number->string      x)]
-              [(char? x)    (string              x)]
-              ;; generic fallback: throw an error
+              [(number?  x) (number->string      x)]
+              [(char?    x) (string              x)]
+              ;; generic fallback: throw an error (could use `display' so new
+              ;; values can define how they're shown, but the same
+              ;; functionality can be achieved with thunks and prop:procedure)
               [else (error 'output "don't know how to render value: ~v" x)]))]))
   ;;
   (port-count-lines! p)
@@ -231,7 +237,7 @@
 (define port->state
   (let ([t (make-weak-hasheq)]
         [last '(#f #f)]) ; cache for the last port, to avoid a hash lookup
-    (lambda (p)
+    (λ (p)
       (if (eq? p (car last)) (cdr last)
           (let ([s (or (hash-ref t p #f)
                        (let ([s (mcons 0 0)]) (hash-set! t p s) s))])
@@ -269,7 +275,7 @@
 
 (define make-spaces ; (efficiently)
   (let ([t (make-hasheq)] [v (make-vector 200 #f)])
-    (lambda (n)
+    (λ (n)
       (or (if (< n 200) (vector-ref v n) (hash-ref t n #f))
           (let ([spaces (make-string n #\space)])
             (if (< n 200) (vector-set! v n spaces) (hash-set! t n spaces))
