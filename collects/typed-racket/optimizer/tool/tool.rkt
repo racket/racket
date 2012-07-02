@@ -46,7 +46,8 @@
     (mixin (text:basic<%> drracket:unit:definitions-text<%>) ()
       (inherit highlight-range unhighlight-range
                set-clickback remove-clickback
-               get-tab)
+               get-tab get-canvas get-pos/text
+               position-line line-end-position)
 
       (define highlights     '())
       (define color-table    #f)
@@ -64,10 +65,29 @@
            (let ([color (if (= badness 0)
                             "lightgreen"
                             (vector-ref color-table badness))])
-             (highlight-range start end color #f 'high)
-             (set-clickback start end (popup-callback l))
-             ;; record highlight to undo it later
-             (list start end color))]))
+             (highlight-to-end-of-text start end color l))]))
+
+      ;; highlight-range, for ranges that span multiple lines, highlights
+      ;; to the end of the first n-1 lines. Since the space at end of lines
+      ;; does not have editor positions, I can't figure out how to make the
+      ;; popup menu appear there (I can only make it appear in places that
+      ;; have positions). To work around that, we highlight only the code
+      ;; proper, not the space at the end of lines. That way, everywhere in
+      ;; the highlight has a position, and can spawn popup menus.
+      (define/private (highlight-to-end-of-text start end color l)
+        (define (highlight-part start end)
+          (highlight-range start end color #f 'high)
+          (set-clickback start end (popup-callback l))
+          ;; record highlight to undo it later
+          (set! highlights (cons (list start end color) highlights)))
+        (let loop ([start start])
+          (define line        (position-line start))
+          (define end-of-line (line-end-position line))
+          (cond [(>= end-of-line end)
+                 (highlight-part start end)] ; done
+                [else
+                 (highlight-part start end-of-line)
+                 (loop (add1 end-of-line))])))
 
       (define report-cache #f)
       (define/public (add-highlights #:use-cache? [use-cache? #f])
@@ -86,18 +106,12 @@
           (apply max (cons 0 (map report-entry-badness report))))
         (unless (= max-badness 0) ; no missed opts, color table code would error
           (set! color-table (make-color-table max-badness)))
-        (define new-highlights
-          (let loop ([report report])
-            (cond
-             [(null? report) highlights]
-             [else (cons (highlight-entry (car report))
-                         (loop (cdr report)))])))
-        (set! highlights new-highlights))
+        (for ([r (in-list report)]) (highlight-entry r)))
 
       (define/public (clear-highlights)
         (for ([h (in-list highlights)])
           (match h
-            [`(,start ,end . ,rest )
+            [`(,start ,end . ,rest)
              (unhighlight-range . h)
              (remove-clickback start end)]))
         (set! highlights '())
