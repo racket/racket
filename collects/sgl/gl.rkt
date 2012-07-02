@@ -1,7 +1,8 @@
 #lang mzscheme
 (require mzlib/foreign
          "gl-types.rkt"
-         "gl-vectors.rkt")
+         "gl-vectors.rkt"
+         "init.rkt")
 
 (unsafe!)
 

@@ -23,5 +23,6 @@ method.
 @include-section["main.scrbl"]
 @include-section["gl-vectors.scrbl"]
 @include-section["bitmap.scrbl"]
+@include-section["init.scrbl"]
 
 @index-section[]
