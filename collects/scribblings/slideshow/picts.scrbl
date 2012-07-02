@@ -506,11 +506,11 @@ Like @racket[pin-over], but @racket[pict] is drawn before
 
 
 @defproc[(table [ncols exact-positive-integer?]
-                [picts (listof pict?)]
-                [col-aligns (table-list-of (pict? pict? -> pict?))]
-                [row-aligns (table-list-of (pict? pict? -> pict?))]
-                [col-seps (table-list-of real?)]
-                [row-seps (table-list-of real?)])
+                [picts (non-empty-listof pict?)]
+                [col-aligns (list*of (pict? pict? -> pict?))]
+                [row-aligns (list*of (pict? pict? -> pict?))]
+                [col-seps (list*of real?)]
+                [row-seps (list*of real?)])
          pict?]{
 
 Creates a table given a list of picts. The @racket[picts] list is a
@@ -525,7 +525,7 @@ columns and @math{r} rows, the first two should have @math{c} and
 @math{r} superimpose procedures, and the last two should have
 @math{c-1} and @math{r-1} numbers, respectively. The lists can be
 ``improper'' (i.e., ending in a number instead of an empty list), in
-which case the non-pair cdr is used as the value for all remaining
+which case the non-pair @racket[cdr] is used as the value for all remaining
 list items that were expected. The @racket[col-aligns] and
 @racket[row-aligns] procedures are used to superimpose all of the
 cells in a column or row; this superimposition determines the total
