@@ -104,11 +104,13 @@
                                              (bound-identifier-mapping-put! ht arg #t))
                                            (syntax-case arg ()
                                              [(kw arg . rest)
-                                              (keyword? (syntax-e #'kw))
+                                              (and (keyword? (syntax-e #'kw))
+                                                   (identifier? #'arg))
                                               (bound-identifier-mapping-put! ht #'arg #t)]
                                              [(arg . rest)
                                               (identifier? #'arg)
-                                              (bound-identifier-mapping-put! ht #'arg #t)])))
+                                              (bound-identifier-mapping-put! ht #'arg #t)]
+                                             [else (void)])))
                                      (cdr s-exp))
                                   (unless (identifier? (car s-exp))
                                     ;; Curried:
