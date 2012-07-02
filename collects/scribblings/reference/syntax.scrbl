@@ -269,8 +269,9 @@ form. See also @racket[module-compiled-language-info],
 If a @racket[module] form has a single body @racket[form] and if the
 form is a @racket[#%plain-module-begin] form, then the body
 @racket[form] is traversed to find @racket[module] and
-@racket[module*] forms that are either immediate or under
-@racket[begin-for-syntax]. (That is, the body is search before adding
+@racket[module*] forms that are either immediate, under
+@racket[begin], or under @racket[begin-for-syntax]. (That is, the 
+body is searched before adding
 any lexical context due to the module's initial @racket[module-path]
 import.) Each such module form is given a @indexed-racket['submodule]
 @tech{syntax property} that whose value is the initial module form.

@@ -6402,6 +6402,15 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase)
           changed = 1;
           a = v;
         }
+      } else if (scheme_stx_module_eq3(scheme_begin_stx, v, 
+                                       scheme_make_integer(0), scheme_make_integer(phase), 
+                                       NULL)) {
+        /* found `begin' */
+        v = do_annotate_submodules(a, phase);
+        if (!SAME_OBJ(v, a)) {
+          changed = 1;
+          a = v;
+        }
       }
     }
   }

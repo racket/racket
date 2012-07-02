@@ -356,6 +356,19 @@
          (require (submod ".." X))
          (define y (add1 x)))))))
 
+;; Check that we can wrap a `begin' around a submodule:
+(parameterize ([current-namespace (make-base-namespace)])
+  (define m (expand
+             '(module m racket/base
+                (module sub racket/base
+                  (require (for-syntax racket/base))
+                  (define-syntax (sym-app stx)
+                    (syntax-case stx ()
+                      [() 10]))))))
+  (eval (syntax-case m ()
+          [(md m r/b (m-b mod))
+           #`(md m r/b (m-b (begin 10 mod)))])))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 
