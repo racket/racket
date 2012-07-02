@@ -45,12 +45,11 @@
   (define highlights-mixin
     (mixin (text:basic<%> drracket:unit:definitions-text<%>) ()
       (inherit highlight-range unhighlight-range
-               set-clickback remove-clickback
                get-tab get-canvas get-pos/text
                position-line line-end-position)
 
-      (define highlights     '())
-      (define color-table    #f)
+      (define highlights  '()) ; (listof `(,start ,end ,color ,popup-fun))
+      (define color-table #f)
 
       ;; filters : Listof (sub-report-entry -> Bool)
       ;; If any of these predicates return true for a given log entry's
@@ -73,9 +72,9 @@
                           (vector-ref color-table badness)))
         (define (highlight-part start end)
           (highlight-range start end color #f 'high)
-          (set-clickback start end (popup-callback l))
           ;; record highlight to undo it later
-          (set! highlights (cons (list start end color) highlights)))
+          (set! highlights (cons (list start end color (popup-callback l))
+                                 highlights)))
         (let loop ([start start])
           (define line        (position-line start))
           (define end-of-line (line-end-position line))
@@ -108,8 +107,7 @@
         (for ([h (in-list highlights)])
           (match h
             [`(,start ,end . ,rest)
-             (unhighlight-range . h)
-             (remove-clickback start end)]))
+             (unhighlight-range . h)]))
         (set! highlights '())
         (send (get-tab) hide-performance-report-panel))
 
@@ -117,6 +115,35 @@
         (clear-highlights))
       (define/augment (on-delete start len)
         (clear-highlights))
+
+      (define/override (on-event event)
+        (if (send event button-down? 'right)
+            (let-values ([(pos text) (get-pos/text event)])
+              (define menu (build-performance-report-popup-menu pos text))
+              (if menu
+                  (send (get-canvas) popup-menu menu
+                        (+ 1 (inexact->exact (floor (send event get-x))))
+                        (+ 1 (inexact->exact (floor (send event get-y)))))
+                  ;; not for us, pass it on
+                  (super on-event event)))
+            ;; not a right click, pass it on
+            (super on-event event)))
+
+      (define (build-performance-report-popup-menu pos text)
+        (and pos
+             (is-a? text text%)
+             ;; pos is in a highlight
+             (for/fold ([menu #f])
+                 ([h (in-list highlights)])
+               (match-define `(,start ,end ,color ,popup-fun) h)
+               (or menu
+                   (and (<= start pos end)
+                        (let ([menu (make-object popup-menu% #f)])
+                          (new menu-item%
+                               [label "Show optimization info"]
+                               [parent menu]
+                               [callback (lambda _ (popup-fun text start end))])
+                          menu))))))
 
       (super-new)))
 
