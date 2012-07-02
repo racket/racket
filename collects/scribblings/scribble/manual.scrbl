@@ -852,7 +852,8 @@ non-terminals shown with the @racket[_id] form. Each
 @racket[clause-datum] is preserved.}
 
 
-@defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...]
+@defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...+]
+           ([nonterm-id clause-datum ...+] ...)
            maybe-contracts
            pre-flow ...)]{
 
