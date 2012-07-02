@@ -38,6 +38,11 @@ h3, h4, h5, h6, h7, h8 {
   margin-bottom: 0.5em;
 }
 
+.SSubSubSubSection {
+  font-weight: bold;
+  font-size: 0.83em; /* should match h5; from HTML 4 reference */
+}
+
 /* Needed for browsers like Opera, and eventually for HTML 4 conformance.
    This means that multiple paragraphs in a table element do not have a space
    between them. */

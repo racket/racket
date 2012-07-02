@@ -107,7 +107,7 @@
   (let ([content (decode-content str)])
     (make-paragraph plain 
                     (list
-                     (make-element 'bold
+                     (make-element "SSubSubSubSection"
                                    (if tag
                                        (make-target-element #f content `(part ,tag))
                                        content))))))
