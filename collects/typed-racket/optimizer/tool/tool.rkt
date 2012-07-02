@@ -48,7 +48,8 @@
                get-tab get-canvas get-pos/text
                position-line line-end-position)
 
-      (define highlights  '()) ; (listof `(,start ,end ,color ,popup-fun))
+      (define highlights  '()) ; (listof `(,start ,end ,popup-fun))
+      (define undo-thunks '()) ; list of thunks that undo highlights
       (define color-table #f)
 
       ;; filters : Listof (sub-report-entry -> Bool)
@@ -71,18 +72,18 @@
                           "lightgreen"
                           (vector-ref color-table badness)))
         (define (highlight-part start end)
-          (highlight-range start end color #f 'high)
-          ;; record highlight to undo it later
-          (set! highlights (cons (list start end color (popup-callback l))
-                                 highlights)))
+          (highlight-range start end color #f 'high))
+        ;; record highlight for popup menus
+        (set! highlights (cons (list start end (popup-callback l))
+                               highlights))
         (let loop ([start start])
           (define line        (position-line start))
           (define end-of-line (line-end-position line))
           (cond [(>= end-of-line end)
-                 (highlight-part start end)] ; done
+                 (list (highlight-part start end))] ; done
                 [else
-                 (highlight-part start end-of-line)
-                 (loop (add1 end-of-line))])))
+                 (cons (highlight-part start end-of-line)
+                       (loop (add1 end-of-line)))])))
 
       (define report-cache #f)
       (define/public (add-highlights #:use-cache? [use-cache? #f])
@@ -101,13 +102,12 @@
           (apply max (cons 0 (map report-entry-badness report))))
         (unless (= max-badness 0) ; no missed opts, color table code would error
           (set! color-table (make-color-table max-badness)))
-        (for ([r (in-list report)]) (highlight-entry r)))
+        (set! undo-thunks (for/fold ([res '()])
+                              ([r (in-list report)])
+                            (append (highlight-entry r) res))))
 
       (define/public (clear-highlights)
-        (for ([h (in-list highlights)])
-          (match h
-            [`(,start ,end . ,rest)
-             (unhighlight-range . h)]))
+        (for ([h (in-list undo-thunks)]) (h))
         (set! highlights '())
         (send (get-tab) hide-performance-report-panel))
 
@@ -135,7 +135,7 @@
              ;; pos is in a highlight
              (for/fold ([menu #f])
                  ([h (in-list highlights)])
-               (match-define `(,start ,end ,color ,popup-fun) h)
+               (match-define `(,start ,end ,popup-fun) h)
                (or menu
                    (and (<= start pos end)
                         (let ([menu (make-object popup-menu% #f)])
