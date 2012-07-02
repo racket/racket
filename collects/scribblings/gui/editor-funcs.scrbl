@@ -93,7 +93,7 @@ See also
 
 @defproc[(append-editor-font-menu-items [menu (or/c (is-a?/c menu%) (is-a?/c popup-menu%))])
          void?]{
-Appends menu items to a given menu (not a popup menu) to implement a
+Appends menu items to @racket[menu] to implement a
  standard set of font-manipulation operations, such as changing the
  font face or style. The callback for each menu item uses
 @xmethod[top-level-window<%> get-edit-target-object] (finding the frame by following a chain of parents until a frame is
@@ -105,7 +105,7 @@ Appends menu items to a given menu (not a popup menu) to implement a
 @defproc[(append-editor-operation-menu-items [menu (or/c (is-a?/c menu%) (is-a?/c popup-menu%))]
                                              [text-only? any/c #t])
          void?]{
-Appends menu items to a given menu (not a popup menu) to implement the
+Appends menu items to @racket[menu] to implement the
  standard editor operations, such as cut and paste. The callback for
  each menu item uses
 @xmethod[top-level-window<%> get-edit-target-object] (finding the frame by following a chain of parents until a frame is
