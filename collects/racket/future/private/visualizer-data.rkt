@@ -19,7 +19,10 @@
          raw-log-output
          organize-output 
          build-trace 
-         event-has-duration?
+         event-has-duration? 
+         touch-event?
+         allocation-event? 
+         jitcompile-event? 
          final-event? 
          relative-time)
 
@@ -106,6 +109,16 @@
   (case (event-type evt) 
     [(start-work start-0-work) #t] 
     [else #f]))
+
+(define (touch-event? evt) 
+  (equal? (event-prim-name evt) 'touch))
+
+;;allocation-event? : event -> bool
+(define (allocation-event? evt) 
+  (equal? (event-prim-name evt) '|[allocate memory|))
+
+(define (jitcompile-event? evt) 
+  (equal? (event-prim-name evt) '|[jit_on_demand]|))
 
 ;;final-event? : event -> bool
 (define (final-event? evt) 

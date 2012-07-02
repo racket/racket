@@ -58,11 +58,13 @@
                                                                                   (event-start-time evt)))))] 
           [(block sync) 
            (when (= (event-proc-id evt) RT-THREAD-ID) 
-             (send data-label1 set-label (format "Primitive: ~a" (symbol->string (event-prim-name evt))))) 
-           (when (equal? (event-prim-name evt) 'touch) 
-             (send data-label2 set-label (format "Touching future ~a" (event-user-data evt)))) 
-           (when (equal? (event-prim-name evt) (string->symbol "[allocate memory]")) 
-             (send data-label2 set-label (format "Size: ~a" (event-user-data evt))))] 
+             (send data-label1 set-label (format "Primitive: ~a" (symbol->string (event-prim-name evt)))))
+           (define label2-txt (cond 
+                                [(touch-event? evt) (format "Touching future ~a" (event-user-data evt))]
+                                [(allocation-event? evt) (format "Size: ~a" (event-user-data evt))] 
+                                [(jitcompile-event? evt) (format "Jitting: ~a" (event-user-data evt))] 
+                                [else ""]))
+           (send data-label2 set-label label2-txt)] 
           [(create) 
            (send data-label1 set-label (format "Creating future ~a" (event-user-data evt)))] 
           [(touch) 
