@@ -59,14 +59,6 @@
       ;; a single sub.
       (init-field [filters (map cdr check-boxes)]) ; all enabled by default
 
-      (define/private (highlight-entry l)
-        (match l
-          [(report-entry subs start end badness)
-           (let ([color (if (= badness 0)
-                            "lightgreen"
-                            (vector-ref color-table badness))])
-             (highlight-to-end-of-text start end color l))]))
-
       ;; highlight-range, for ranges that span multiple lines, highlights
       ;; to the end of the first n-1 lines. Since the space at end of lines
       ;; does not have editor positions, I can't figure out how to make the
@@ -74,7 +66,11 @@
       ;; have positions). To work around that, we highlight only the code
       ;; proper, not the space at the end of lines. That way, everywhere in
       ;; the highlight has a position, and can spawn popup menus.
-      (define/private (highlight-to-end-of-text start end color l)
+      (define/private (highlight-entry l)
+        (match-define (report-entry subs start end badness) l)
+        (define color (if (= badness 0)
+                          "lightgreen"
+                          (vector-ref color-table badness)))
         (define (highlight-part start end)
           (highlight-range start end color #f 'high)
           (set-clickback start end (popup-callback l))
