@@ -96,7 +96,7 @@ The normal @racket[require]s of the enclosing library are effectively
 converted into @racket[for-label] @racket[require]s when generating
 documentation, so that identifiers in the @racket[contract]s are
 linked to their corresponding documentation. Similarly, any binding
-that is available in the run-time phase of of the enclosing library
+that is available in the run-time phase of the enclosing library
 can be referenced in documentation prose using the @racket[racket]
 form.}
 

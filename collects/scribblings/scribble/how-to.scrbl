@@ -374,6 +374,6 @@ Latex output.
 When using @racket[local-table-of-contents], it often makes sense to
 include introductory text before the call of
 @racket[local-table-of-contents]. When the introductory text is less
-important and when when local table of contents is short, putting the
+important and when local table of contents is short, putting the
 introductory text after the call of @racket[local-table-of-contents]
 may be appropriate.

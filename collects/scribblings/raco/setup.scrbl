@@ -291,7 +291,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    ]
 
    is provided for the optional @racket[_aux] argument (for icons,
-   etc.) to @racket[make-racket-launcher], where where
+   etc.) to @racket[make-racket-launcher], where
    @nonterm{suffixless-file} is @nonterm{file} without its suffix.
 
    If @racket[racket-launcher-flags] is provided, it is used as a
@@ -539,7 +539,7 @@ form.}
   
 @defparam[specific-collections colls (listof (listof path-string?))]{
   A list of collections to set up; the empty list means set-up all
-  collections if the archives list and @racket[specific-planet-dirs] is
+  collections if the archives list and @racket[specific-planet-dirs]
   is also @racket['()]. @defaults[@racket['()]]}
 
   @defparam[specific-planet-dirs dir (listof (list/c string?

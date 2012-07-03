@@ -525,7 +525,7 @@ enclosed subpattern as an entity:
 
 @interaction[
 #:eval rx-eval
-(regexp-match #rx"(poo )*" "poo poo platter")
+(regexp-match #rx"(pu )*" "pu pu platter")
 ]
 
 The number of submatches returned is always equal to the number of

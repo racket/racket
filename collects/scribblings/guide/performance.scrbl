@@ -299,7 +299,7 @@ important advantages of the @tech{JIT} compiler. For example, when
 @racket[+] is applied to two arguments, the generated machine code
 tests whether the two arguments are fixnums, and if so, it uses the
 machine's instruction to add the numbers (and check for overflow). If
-the two numbers are not fixnums, then it checks whether whether
+the two numbers are not fixnums, then it checks whether
 both are flonums; in that case, the machine's floating-point
 operations are used directly. For functions that take any number of
 arguments, such as @racket[+], inlining works for two or more

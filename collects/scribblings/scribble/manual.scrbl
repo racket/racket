@@ -185,7 +185,7 @@ produces the typeset result
               ([maybe-escape code:blank
                             (code:line #:escape escape-id)])]{
 
-Typesets the @racket[datum] sequence as a table of Racket code inset
+Typesets the @racket[datum] sequence as a table of Racket code
 inset via @racket[nested] with the style @racket['code-inset]. The
 source locations of the @racket[datum]s determine the generated
 layout. For example,
@@ -223,7 +223,7 @@ Like other forms defined via @racket[define-code],
 @tech{element transformers}.
 
 An @racket[#:escape] clause specifies an identifier to escape back to
-an expression that produces produces an @racket[element]. But default,
+an expression that produces an @racket[element]. By default,
 the escape identifier is @racket[unsyntax]. For example,
 
 @racketblock[
@@ -435,7 +435,7 @@ linked, even if it is not an identifier.}
 
 @defproc[(litchar [str string?] ...) element?]{Typesets @racket[str]s as a
 representation of literal text. Use this when you have to talk about
-the individual characters in a stream of text, as as when documenting
+the individual characters in a stream of text, as when documenting
 a reader extension.}
 
 @defproc[(racketfont [pre-content pre-content?] ...) element?]{Typesets
@@ -1226,7 +1226,7 @@ Typesets the given combination of a GUI's menu and item name.}
 
 @defproc[(filepath [pre-content pre-content?] ...) element?]{Typesets the
 @tech{decode}d @racket[pre-content] as a file name (e.g., in
-typewriter font and in in quotes).}
+typewriter font and in quotes).}
 
 @defproc[(exec [pre-content pre-content?] ...) element?]{Typesets the
 @tech{decode}d @racket[pre-content] as a command line (e.g., in

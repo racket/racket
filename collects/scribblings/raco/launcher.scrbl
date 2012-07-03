@@ -69,7 +69,7 @@ For Unix/X, the script created by @racket[make-mred-launcher] detects
 and handles X Windows flags specially when they appear as the initial
 arguments to the script. Instead of appending these arguments to the
 end of @racket[args], they are spliced in after any X Windows flags
-already listed listed in @racket[args]. The remaining arguments (i.e.,
+already listed in @racket[args]. The remaining arguments (i.e.,
 all script flags and arguments after the last X Windows flag or
 argument) are then appended after the spliced @racket[args].}
 
