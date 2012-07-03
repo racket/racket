@@ -107,7 +107,7 @@ See also @racket[some-system-path->string].}
 
 Produces @racket[path]'s byte string representation. No information is
 lost in this translation, so that @racket[(bytes->path (path->bytes
-path) (path-convention-type path))] always produces a path is that is
+path) (path-convention-type path))] always produces a path that is
 @racket[equal?] to @racket[path]. The @racket[path] argument can be a
 path for any platform.
 
@@ -516,8 +516,8 @@ the list is a root.}
 @defproc[(file-name-from-path [path (or/c path-string? path-for-some-system?)])
          (or/c path-for-some-system? #f)]{
 
-Returns the last element of @racket[path]. If @racket[path]
-syntactically a directory path (see @racket[split-path]), then then
+Returns the last element of @racket[path]. If @racket[path] is
+syntactically a directory path (see @racket[split-path]), then the
 result is @racket[#f].}
 
 @defproc[(filename-extension [path (or/c path-string? path-for-some-system?)])

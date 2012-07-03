@@ -595,7 +595,7 @@ within modules. For example, @racket[define] within @racket[begin-for-syntax] cr
 @tech{phase} 1 variable. Furthermore, reflective operations like
 @racket[make-base-namespace] and @racket[eval] provide access to
 top-level variables in higher @tech{phases}, while module
-@tech{instantiations} (triggered by with @racket[require]) relative to such
+@tech{instantiations} (triggered by @racket[require]) relative to such
 top-levels are in corresponding higher @tech{phase}s.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

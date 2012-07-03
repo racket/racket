@@ -1721,7 +1721,7 @@ application and function declaration, an identifier in the expansion
 of the function application is tagged with a @tech{syntax property}
 accessible via @racket[syntax-procedure-alias-property] if it is effectively an alias
 for the original identifier. An identifier in the expansion is tagged with a
-a @tech{syntax property} accessible via @racket[syntax-procedure-converted-arguments-property] if it
+@tech{syntax property} accessible via @racket[syntax-procedure-converted-arguments-property] if it
 is like the original identifier except that the arguments are converted to a
 flattened form: keyword arguments, required by-position arguments,
 by-position optional arguments, and rest arguments---all as required,

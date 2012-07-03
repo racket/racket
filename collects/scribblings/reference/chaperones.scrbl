@@ -381,7 +381,7 @@ Returns an impersonator of @racket[key], which redirects
 @racket[with-continuation-mark] and continuation mark accessors such
 as @racket[continuation-mark-set->list].
 
-The @racket[get-proc] must accept the the value attached to a
+The @racket[get-proc] must accept the value attached to a
 continuation mark and it must produce a replacement
 value, which will be returned by the continuation mark accessor.
 

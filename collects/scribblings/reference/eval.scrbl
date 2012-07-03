@@ -409,7 +409,7 @@ The default @tech{print handler} @racket[print]s the value to the
 
 A parameter that determines the current @deftech{compilation handler}.
 The @tech{compilation handler} is a procedure that takes a top-level form and
-returns a compiled form; see see @secref["compilation-model"] for
+returns a compiled form; see @secref["compilation-model"] for
 more information on compilation.
 
 The @tech{compilation handler} is called by @racket[compile], and

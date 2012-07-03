@@ -53,7 +53,7 @@ A @racket[_rel-string] in @racket[(lib _rel-string)] consists of one
 or more path elements that name collections, and then a final path
 element that names a library file; the path elements are separated by
 @litchar{/}. If @racket[_rel-string] contains no @litchar{/}s, then
-then @litchar{/main.rkt} is implicitly appended to the path. If
+@litchar{/main.rkt} is implicitly appended to the path. If
 @racket[_rel-string] contains @litchar{/} but does not end with a file
 suffix, then @litchar{.rkt} is implicitly appended to the path.
 
