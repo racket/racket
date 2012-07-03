@@ -3,7 +3,7 @@
 
 (require (utils tc-utils)
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         racket/match mzlib/etc
+         racket/match ;mzlib/etc
          racket/contract
          (for-syntax racket/base syntax/parse))
 
@@ -83,11 +83,11 @@
           (hash-ref t n))))]))
 
 (define (apply-variance v tbl)
-  (evcase v
-    [(Constant) (make-constant tbl)]
-    [(Covariant) tbl]
-    [(Invariant) (make-invariant tbl)]
-    [(Contravariant) (flip-variances tbl)]))
+  (match v
+    [(== Constant) (make-constant tbl)]
+    [(== Covariant) tbl]
+    [(== Invariant) (make-invariant tbl)]
+    [(== Contravariant) (flip-variances tbl)]))
 
 ;; left and right are Types
 (def-type Pair ([left Type/c] [right Type/c]) [#:key 'pair])
