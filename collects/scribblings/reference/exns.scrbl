@@ -106,7 +106,7 @@ exception handler obtains control, and the handler itself is
 
 @defproc*[([(error [sym symbol?]) any]
            [(error [msg string?] [v any/c] ...) any]
-           [(error [src symbol?] [frmat string?] [v any/c] ...) any])]{
+           [(error [src symbol?] [format string?] [v any/c] ...) any])]{
 
 Raises the exception @racket[exn:fail], which contains an error
 string. The different forms produce the error string in different
