@@ -1727,8 +1727,8 @@ the @racket[b] argument has been swapped or not (see @racket[blame-swap]).
 }
 
 @defstruct[(exn:fail:contract:blame exn:fail:contract) ([object blame?])]{
-  This exception is raised to signal a contract error. The @racket[blame]
-  field extracts the @racket[blame?] object associated with a contract violation.
+  This exception is raised to signal a contract error. The @racket[object]
+  field contains a @tech{blame object} associated with a contract violation.
 }
 
 @defparam[current-blame-format
