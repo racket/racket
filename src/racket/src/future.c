@@ -2660,6 +2660,18 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   void *storage[4];
   int insist_to_suspend, prefer_to_suspend, fid;
 
+#ifdef MZ_PRECISE_GC 
+  if (for_overflow && (!GC_gen0_alloc_page_ptr || fts->local_capture_failed)) {
+    /* To increase the chance that later overflows can be handled
+       without blocking, get more memory for this future thread. The
+       `local_capture_failed' flag is a heuristic that might be
+       improved by checking the available memory against an estimate
+       of the needed memory. */
+    fts->local_capture_failed = 0;
+    GC_gen0_alloc_page_ptr = scheme_rtcall_alloc();
+  }
+#endif
+
   /* Fetch the future descriptor for this thread */
   future = fts->thread->current_ft;
 
@@ -2729,6 +2741,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
     } else {
       future->status = WAITING_FOR_OVERFLOW;
       future->arg_i1 = for_overflow;
+      fts->local_capture_failed = 1;
     }
   } else {
     /* Set up the arguments for the runtime call
@@ -3051,12 +3064,17 @@ Scheme_Object *scheme_rtcall_apply_with_new_stack(Scheme_Object *rator, int argc
 #ifdef MZ_PRECISE_GC 
 uintptr_t scheme_rtcall_alloc()
   XFORM_SKIP_PROC
-/* Called in future thread */
+/* Called in future thread, possibly during future_do_runtimecall()  */
 {
   future_t *future;
   uintptr_t retval;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   intptr_t align, sz;
+  double time_of_request;
+  const char *source_of_request;
+  int source_type;
+  int prim_protocol;
+  int arg_i0;
   
   align = GC_alloc_alignment();
 
@@ -3079,15 +3097,22 @@ uintptr_t scheme_rtcall_alloc()
   if (fts->gen0_size < 16)
     fts->gen0_size <<= 1;
 
+  future = fts->thread->current_ft;
+  time_of_request = future->time_of_request;
+  source_of_request = future->source_of_request;
+  source_type = future->source_type;
+  prim_protocol = future->prim_protocol;
+  arg_i0 = future->arg_i0;
+
   while (1) {
-    future = fts->thread->current_ft;
     future->time_of_request = get_future_timestamp();
     future->source_of_request = "[allocate memory]";
     future->source_type = FSRC_OTHER;
-  
+
     future->prim_protocol = SIG_ALLOC;
     future->arg_i0 = fts->gen0_size;
 
+    /* don't suspend, because this might be a nested call: */
     future_do_runtimecall(fts, NULL, 1, 0, 0);
 
     future = fts->thread->current_ft;
@@ -3102,11 +3127,16 @@ uintptr_t scheme_rtcall_alloc()
     }
   }
 
+  future->time_of_request = time_of_request;
+  future->source_of_request = source_of_request;
+  future->source_type = source_type;
+  future->prim_protocol = prim_protocol;
+  future->arg_i0 = arg_i0;
+
   GC_gen0_alloc_page_end = retval + sz;
 
   return retval;
 }
-
 #endif
 
 void scheme_rtcall_new_mark_segment(Scheme_Thread *p)

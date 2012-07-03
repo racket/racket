@@ -78,6 +78,8 @@ typedef struct Scheme_Future_Thread_State {
   uintptr_t gen0_size;
   uintptr_t gen0_initial_offset;
 
+  int local_capture_failed;
+
   int use_fevents1;
   Fevent_Buffer fevents1;
   Fevent_Buffer fevents2;
