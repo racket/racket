@@ -1092,8 +1092,8 @@ int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push)
   int offset;
 
   if (jitter->flostack_offset == jitter->flostack_space) {
-    int space = 4 * sizeof(double);
-    jitter->flostack_space += 4;
+    int space = FLOSTACK_SPACE_CHUNK * sizeof(double);
+    jitter->flostack_space += FLOSTACK_SPACE_CHUNK;
     jit_subi_l(JIT_SP, JIT_SP, space);
   }
 
@@ -3292,11 +3292,21 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 #ifdef USE_FLONUM_UNBOXING
   /* Unpack flonum arguments */
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+    GC_CAN_IGNORE jit_insn *zref;
+    int f_offset;
+
+    /* In the case of an inline_direct_native call, the flonums are
+       already unpacked and JIT_SP is set up. Check whether JIT_SP
+       is already different than the 0 flonums. */
+    f_offset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_offset * sizeof(double));
+    jit_subr_p(JIT_R1, JIT_SP, JIT_FP);
+    zref = jit_bnei_l(jit_forward(), JIT_R1, f_offset);
+        
     for (i = data->num_params; i--; ) {
       if (CLOSURE_ARGUMENT_IS_FLONUM(data, i)) {
         mz_rs_ldxi(JIT_R1, i);
         jit_ldxi_d_fppush(JIT_FPR0, JIT_R1, &((Scheme_Double *)0x0)->double_val);  
-        scheme_generate_flonum_local_unboxing(jitter, 1);
+        scheme_generate_flonum_local_unboxing(jitter, 1);        
         CHECK_LIMIT();
       } else {
         mz_runstack_pushed(jitter, 1);
@@ -3304,6 +3314,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     }
     jitter->self_pos = 0;
     jitter->depth = 0;
+
+    mz_patch_branch(zref);
   }
 #endif
 

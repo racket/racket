@@ -826,6 +826,8 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_repush_threadlocal() /* empty */
 #endif
 
+#define FLOSTACK_SPACE_CHUNK 4
+
 #define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
 #define mz_patch_ucbranch(a) mz_patch_ucbranch_at(a, (_jit.x.pc))
 

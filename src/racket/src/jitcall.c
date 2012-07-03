@@ -1410,6 +1410,68 @@ static jit_direct_arg *check_special_direct_args(Scheme_App_Rec *app, Scheme_Obj
   return inline_direct_args;
 }
 
+
+int generate_fp_argument_shuffle(int direct_flostack_offset, mz_jit_state *jitter)
+{
+  int i, j;
+
+  /* Copy unboxed flonums into place where the target code expects them,
+     which is shifted and reverse of the order that we pushed. */
+
+# define mz_ld_fppush(r, i) jit_ldxi_d_fppush(r, JIT_FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double))))
+# define mz_st_fppop(i, r) (void)jit_stxi_d_fppop((JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double))), JIT_FP, r)
+
+  if (direct_flostack_offset
+      && ((direct_flostack_offset > 1)
+          || (direct_flostack_offset != jitter->flostack_offset))) {
+    /* If the source and target areas don't overlap (or if they
+       overlap only by one item), we can do it in one step, otherwise
+       reverse then shift. */
+    if (jitter->flostack_offset >= ((2 * direct_flostack_offset) - 1)) {
+      /* one step: */
+      if (direct_flostack_offset != jitter->flostack_offset) {
+        /* shift: */
+        for (i = 0; i < direct_flostack_offset; i++) {
+          int i_pos, a_pos;
+          i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
+          a_pos = direct_flostack_offset - i;
+          if (i_pos != a_pos) {
+            mz_ld_fppush(JIT_FPR0, i_pos);
+            mz_st_fppop(a_pos, JIT_FPR0);
+            CHECK_LIMIT();
+          }
+        }
+      }
+    } else {
+      /* reverse: */          
+      for (i = 0, j = direct_flostack_offset-1; i < j; i++, j--) {
+        int i_pos, j_pos;
+        i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
+        j_pos = jitter->flostack_offset - direct_flostack_offset + j + 1;
+        mz_ld_fppush(JIT_FPR1, i_pos);
+        mz_ld_fppush(JIT_FPR0, j_pos);
+        mz_st_fppop(i_pos, JIT_FPR0);
+        mz_st_fppop(j_pos, JIT_FPR1);
+        CHECK_LIMIT();
+      }
+     
+      if (direct_flostack_offset != jitter->flostack_offset) {
+        /* shift: */
+        for (i = 0; i < direct_flostack_offset; i++) {
+          int i_pos, a_pos;
+          i_pos = jitter->flostack_offset - direct_flostack_offset + i + 1;
+          mz_ld_fppush(JIT_FPR0, i_pos);
+          a_pos = i + 1;
+          mz_st_fppop(a_pos, JIT_FPR0);
+          CHECK_LIMIT();
+        }
+      }
+    }
+  }
+
+  return 1;
+}
+
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
 			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call)
 /* de-sync'd ok 
@@ -1419,6 +1481,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   int i, offset, need_safety = 0, apply_to_list = 0;
   int direct_prim = 0, need_non_tail = 0, direct_native = 0, direct_self = 0, nontail_self = 0;
   Scheme_Native_Closure *inline_direct_native = NULL;
+  Scheme_Closure_Data *direct_data = NULL;
+  int direct_flostack_offset = 0;
   jit_direct_arg *inline_direct_args = NULL;
   int proc_already_in_place = 0;
   Scheme_Object *rator, *v, *arg;
@@ -1525,6 +1589,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             if (nc->code->start_code != scheme_on_demand_jit_code) {
               if (nc->code->max_let_depth > jitter->max_tail_depth)
                 jitter->max_tail_depth = nc->code->max_let_depth;
+
+              direct_data = data; /* for flonum handling */
 
               inline_direct_native = nc;
             }
@@ -1646,6 +1712,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     }
   }
   /* not sync'd...*/
+  
+  if (direct_self && is_tail)
+    direct_data = jitter->self_data;
 
   for (i = 0; i < num_rands; i++) {
     PAUSE_JIT_DATA();
@@ -1658,11 +1727,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       need_safety = 0;
     }
 #ifdef USE_FLONUM_UNBOXING
-    if (direct_self 
-        && is_tail
-        && (SCHEME_CLOSURE_DATA_FLAGS(jitter->self_data) & CLOS_HAS_TYPED_ARGS)
-        && (CLOSURE_ARGUMENT_IS_FLONUM(jitter->self_data, i+args_already_in_place))) {
-      
+    if (direct_data
+        && (SCHEME_CLOSURE_DATA_FLAGS(direct_data) & CLOS_HAS_TYPED_ARGS)
+        && (CLOSURE_ARGUMENT_IS_FLONUM(direct_data, i+args_already_in_place))) {
       int directly;
       jitter->unbox++;
       if (scheme_can_unbox_inline(arg, 5, JIT_FPR_NUM-1, 0))
@@ -1685,6 +1752,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       } else {
         (void)jit_movi_p(JIT_R0, NULL);
       }
+      direct_flostack_offset++;
     } else
 #endif
       if (inline_direct_args) {
@@ -1795,7 +1863,17 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	CHECK_LIMIT();
       } else if (inline_direct_native) {
         LOG_IT(("<-native-tail\n"));
-        scheme_mz_flostack_restore(jitter, 0, 0, 1, 1);
+#ifdef USE_FLONUM_UNBOXING
+        /* Copy unboxed flonums into place where the target code expects them: */
+        generate_fp_argument_shuffle(direct_flostack_offset, jitter);
+        CHECK_LIMIT();
+#endif
+        scheme_mz_flostack_restore(jitter, 
+                                   FLOSTACK_SPACE_CHUNK * ((direct_flostack_offset + (FLOSTACK_SPACE_CHUNK - 1)) 
+                                                           / FLOSTACK_SPACE_CHUNK),
+                                   direct_flostack_offset, 
+                                   1, 1);
+        /* move args and call function: */
         if (args_already_in_place) {
           jit_movi_l(JIT_R2, args_already_in_place);
           mz_set_local_p(JIT_R2, JIT_LOCAL2);
