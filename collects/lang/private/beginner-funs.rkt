@@ -832,7 +832,11 @@
     }
     @defproc[(format [f string] [x any/c] ...) string]{
     Formats a string, possibly embedding values. 
-    @interaction[#:eval (bsl) (format "Dear Dr. ~a:" "Flatt") (format "the value of ~s is ~a" '(+ 1 1) 2)]
+    @interaction[#:eval (bsl)
+		  (format "Dear Dr. ~a:" "Flatt")
+		  (format "Dear Dr. ~s:" "Flatt")
+		  (format "the value of ~s is ~a" '(+ 1 1) (+ 1 1))
+		  ]
     })
 
   ("Images"
