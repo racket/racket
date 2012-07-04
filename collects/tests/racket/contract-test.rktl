@@ -9246,6 +9246,15 @@
       x)
    1)
   
+  (test/spec-passed/result
+   'promise/c5
+   '(let ([a (delay 7)])
+      (equal? a
+              (contract (promise/c integer?)
+                        a
+                        'pos
+                        'neg)))
+   #t)
 
   
 ;                                                                 
@@ -11354,6 +11363,9 @@ so that propagation occurs.
   
   (ctest #t flat-contract? (list/c integer?))
   (ctest #t chaperone-contract? (list/c (-> integer? integer?)))
+  
+  (ctest #t chaperone-contract? (promise/c integer?))
+  (ctest #f chaperone-contract? (promise/c (new-∃/c 'alpha)))
   
   ;; Make sure that impersonators cannot be used as the element contract in set/c.
   (contract-error-test

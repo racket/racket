@@ -8,6 +8,7 @@
 (#%provide force promise? promise-forced? promise-running?
            ;; provided to create extensions
            (struct promise ()) pref pset! prop:force reify-result
+           promise-forcer
            promise-printer
            (struct running ()) (struct reraise ())
            (for-syntax make-delayer))

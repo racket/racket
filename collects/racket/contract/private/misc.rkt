@@ -2,6 +2,7 @@
 
 (require (for-syntax racket/base)
          racket/promise
+         (only-in "../../private/promise.rkt" prop:force promise-forcer)
          "prop.rkt"
          "blame.rkt"
          "guts.rkt"
@@ -825,7 +826,8 @@
   (λ (ctc-in)
     (let* ([ctc (coerce-contract 'promise/c ctc-in)]
            [ctc-proc (contract-projection ctc)])
-      (make-contract
+      (define chap? (chaperone-contract? ctc))
+      ((if chap? make-chaperone-contract make-contract)
        #:name (build-compound-type-name 'promise/c ctc)
        #:projection
        (λ (blame)
@@ -837,7 +839,15 @@
                 val
                 '(expected "<promise>," given: "~e")
                 val))
-             (delay (p-app (force val))))))
+                   (if chap?
+                       (chaperone-struct
+                        val
+                        promise-forcer (λ (_ proc) 
+                                         (chaperone-procedure
+                                          proc
+                                          (λ (promise)
+                                            (values p-app promise)))))
+                       (delay (p-app (force val)))))))
        #:first-order promise?))))
 
 (define/subexpression-pos-prop (parameter/c x)
