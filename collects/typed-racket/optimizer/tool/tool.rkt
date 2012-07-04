@@ -11,11 +11,11 @@
 
 ;; DrRacket tool for reporting missed optimizations in the editor.
 
-(define performance-report-bitmap
+(define optimization-coach-bitmap
   (compiled-bitmap (stopwatch-icon #:height (toolbar-icon-height))))
 
-;; performance-report-callback : drracket:unit:frame<%> -> void
-(define (performance-report-callback drr-frame)
+;; optimization-coach-callback : drracket:unit:frame<%> -> void
+(define (optimization-coach-callback drr-frame)
   (with-handlers
       ([exn?
         ;; typechecking failed, report in the interactions window
@@ -88,7 +88,7 @@
       (define report-cache #f)
       (define/public (add-highlights #:use-cache? [use-cache? #f])
         (clear-highlights)
-        (send (get-tab) show-performance-report-panel)
+        (send (get-tab) show-optimization-coach-panel)
         (unless (and report-cache use-cache?)
           (set! report-cache (generate-report this)))
         (define report
@@ -109,7 +109,7 @@
       (define/public (clear-highlights)
         (for ([h (in-list undo-thunks)]) (h))
         (set! highlights '())
-        (send (get-tab) hide-performance-report-panel))
+        (send (get-tab) hide-optimization-coach-panel))
 
       (define/augment (on-insert start len)
         (clear-highlights))
@@ -119,7 +119,7 @@
       (define/override (on-event event)
         (if (send event button-down? 'right)
             (let-values ([(pos text) (get-pos/text event)])
-              (define menu (build-performance-report-popup-menu pos text))
+              (define menu (build-optimization-coach-popup-menu pos text))
               (if menu
                   (send (get-canvas) popup-menu menu
                         (+ 1 (inexact->exact (floor (send event get-x))))
@@ -129,7 +129,7 @@
             ;; not a right click, pass it on
             (super on-event event)))
 
-      (define (build-performance-report-popup-menu pos text)
+      (define (build-optimization-coach-popup-menu pos text)
         (and pos
              (is-a? text text%)
              ;; pos is in a highlight
@@ -155,11 +155,11 @@
       (inherit get-button-panel register-toolbar-button)
       (let ([btn
              (new switchable-button%
-                  [label "Performance Report"]
+                  [label "Optimization Coach"]
                   [callback (lambda (btn)
-                              (performance-report-callback this))]
+                              (optimization-coach-callback this))]
                   [parent (get-button-panel)]
-                  [bitmap performance-report-bitmap])])
+                  [bitmap optimization-coach-bitmap])])
         (register-toolbar-button btn)
         (send (get-button-panel) change-children
               (λ (l)
@@ -175,7 +175,7 @@
 
       (init-field [panel #f])
 
-      (define/public (show-performance-report-panel)
+      (define/public (show-optimization-coach-panel)
         (set! panel
               (new horizontal-panel%
                    [parent (send (send this get-frame) get-area-container)]
@@ -200,7 +200,7 @@
                [value (memq f filters)]))
         panel) ; return panel, so that the other mixing can hide it
 
-      (define/public (hide-performance-report-panel [close #t])
+      (define/public (hide-optimization-coach-panel [close #t])
         (when panel
           (send (send (get-frame) get-area-container) delete-child panel)
           (when close ; if we just switch tabs, keep panel around to restore it
@@ -212,8 +212,8 @@
     (mixin (drracket:unit:frame<%>) ()
       (super-new)
       (define/augment (on-tab-change old-tab new-tab)
-        (send old-tab hide-performance-report-panel #f) ; don't close it
+        (send old-tab hide-optimization-coach-panel #f) ; don't close it
         (when (get-field panel new-tab) ; if it was open before
-          (send new-tab show-performance-report-panel)))))
+          (send new-tab show-optimization-coach-panel)))))
 
   (drracket:get/extend:extend-unit-frame tab-switch-mixin))

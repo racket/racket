@@ -16,7 +16,7 @@
 
 (define ((popup-callback entry) ed start end)
   (match-define (report-entry subs start end badness) entry)
-  (define win (new frame% [label "Performance Report"]
+  (define win (new frame% [label "Optimization Coach"]
                    [width popup-width] [height popup-height]))
   (define pane (new text% [auto-wrap #t]))
   (define canvas

@@ -164,8 +164,8 @@ cases.
 Typed Racket provides performance debugging support to help you get the
 most of its optimizer.
 
-The @deftech{Performance Report} DrRacket plugin can be used when editing a
-Typed Racket program in DrRacket. Clicking the Performance Report button
+The @deftech{Optimization Coach} DrRacket plugin can be used when editing a
+Typed Racket program in DrRacket. Clicking the Optimization Coach button
 runs the optimizer and reports the results. All performed optimizations are
 highlighted in green in the editor. In addition, the optimizer also reports
 cases where an optimization was close to happening, but was not ultimately safe
