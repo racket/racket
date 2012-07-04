@@ -244,8 +244,8 @@ void scheme_init_futures(Scheme_Env *newenv)
   FUTURE_PRIM_W_ARITY("future?",          future_p,         1, 1, newenv);
   FUTURE_PRIM_W_ARITY("future",           scheme_future,    1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  0, 0, newenv);
-  FUTURE_PRIM_W_ARITY("current-future",   scheme_current_future,   0, 0, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("current-future",   scheme_current_future,   0, 0, newenv);
   FUTURE_PRIM_W_ARITY("make-fsemaphore",  scheme_make_fsemaphore,  1, 1, newenv);
   FUTURE_PRIM_W_ARITY("fsemaphore?",      scheme_fsemaphore_p,     1, 1, newenv);
   FUTURE_PRIM_W_ARITY("fsemaphore-post",  scheme_fsemaphore_post,  1, 1, newenv);
