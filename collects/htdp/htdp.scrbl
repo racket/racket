@@ -2,6 +2,7 @@
 
 @(require scribble/manual 
           (for-label [except-in racket require]
+                     htdp/color-structs
                      [only-in lang/htdp-beginner require]))
 
 @title[#:style 'toc #:tag "htdp"]{Implementing HtDP Teachpacks, Libraries, and Customized Teaching Languages}
@@ -58,3 +59,16 @@ of DrRacket's teaching languages.
 @include-section["error-reporting.scrbl"]
 @include-section["testing.scrbl"]
 @include-section["htdp-lib.scrbl"]
+
+@section{Color and Alpha Color Structs}
+
+@defmodule[htdp/color-structs]
+
+@defstruct[color ([red any/c] [green any/c] [blue any/c])]{
+  This is the color sturct that is also exported by @racketmodname[htdp/image],
+  but here it is exported via @racket[(provide (struct-out color))].
+}
+@defstruct[alpha-color ([alpha any/c] [red any/c] [green any/c] [blue any/c])]{
+  This is the color sturct that is also exported by @racketmodname[htdp/image],
+  but here it is exported via @racket[(provide (struct-out alpha-color))].
+}
