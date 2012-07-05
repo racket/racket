@@ -143,7 +143,8 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
    just unbox it without using more than `regs' registers? There
    cannot be any errors or function calls, unless we've specifically
    instrumented them to save/pop floating-point values before
-   jumping. */
+   jumping. If the result is true, then arguments must be evaluated in
+   order. */
 {
   Scheme_Type t;
 
@@ -932,11 +933,9 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       if (!(inlined_flonum1 && inlined_flonum2)) {
         if ((can_direct1 || (unsafe_fl > 0)) && !inlined_flonum2) {
 #ifdef USE_FLONUM_UNBOXING
-          int aoffset;
           int fpr0;
           fpr0 = JIT_FPR_0(jitter->unbox_depth);
-          aoffset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_offset * sizeof(double));
-          jit_ldxi_d_fppush(fpr0, JIT_FP, aoffset);
+          mz_ld_fppush(fpr0, jitter->flostack_offset);
           scheme_mz_flostack_restore(jitter, flostack, flopos, 1, 1);
           CHECK_LIMIT();
           jitter->unbox_depth++;

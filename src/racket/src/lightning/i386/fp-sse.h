@@ -98,7 +98,7 @@
 
 #define jit_ldxr_d(f0, r0, r1) MOVSDmr(0, r0, r1, _SCL1, f0)
 
-#define jit_ldxi_d(f0, r0, i0) MOVSDmr(i0, r0, _NOREG, _SCL1, f0);
+#define jit_ldxi_d(f0, r0, i0) MOVSDmr(i0, r0, _NOREG, _SCL1, f0)
 
 #define jit_str_d(r0, f0) MOVSDrm(f0, 0, r0, _NOREG, _SCL1)
 

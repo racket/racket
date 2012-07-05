@@ -971,7 +971,7 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   CHECK_LIMIT();
   JIT_UPDATE_THREAD_RSPTR();
   __END_SHORT_JUMPS__(1);
-  scheme_generate_non_tail_call(jitter, 3, 0, 0, 0, 0, 0, 1);
+  scheme_generate_non_tail_call(jitter, 3, 0, 0, 0, 0, 0, 1, 0);
   __START_SHORT_JUMPS__(1);
   CHECK_LIMIT();
   if (setter) {
@@ -2844,7 +2844,7 @@ static int more_common0(mz_jit_state *jitter, void *_data)
     mz_rs_sync();
 
     __END_SHORT_JUMPS__(1);
-    scheme_generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0, 0);
+    scheme_generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0, 0, 0);
     CHECK_LIMIT();
     __START_SHORT_JUMPS__(1);
 
@@ -3279,7 +3279,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
 
       __END_SHORT_JUMPS__(1);
     
-      scheme_generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 1, 0);
+      scheme_generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 1, 0, 0);
 
       scheme_jit_register_sub_func(jitter, code, scheme_false);
     }

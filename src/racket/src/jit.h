@@ -210,7 +210,7 @@ struct scheme_jit_common_record {
 
 #define MAX_SHARED_CALL_RANDS 25
   void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
-  void *shared_non_tail_code[4][MAX_SHARED_CALL_RANDS][2];
+  void *shared_non_tail_code[5][MAX_SHARED_CALL_RANDS][2];
   void *shared_non_tail_retry_code[2];
   void *shared_non_tail_argc_code[2];
   void *shared_tail_argc_code;
@@ -683,13 +683,16 @@ int check_location;
 # define NEED_LOCAL4
 #endif
 
+#define mz_set_local_p(x, l) mz_set_local_p_x(x, l, JIT_FP)
+#define mz_get_local_p(x, l) mz_get_local_p_x(x, l, JIT_FP)
+
 #ifdef MZ_USE_JIT_PPC
 /* JIT_LOCAL1, JIT_LOCAL2, and JIT_LOCAL3 are offsets in the stack frame. */
 # define JIT_LOCAL1 56
 # define JIT_LOCAL2 60
 # define JIT_LOCAL3 64
-# define mz_set_local_p(x, l) jit_stxi_p(l, JIT_FP, x)
-# define mz_get_local_p(x, l) jit_ldxi_p(x, JIT_FP, l)
+# define mz_set_local_p_x(x, l, FP) jit_stxi_p(l, FP, x)
+# define mz_get_local_p_x(x, l, FP) jit_ldxi_p(x, FP, l)
 # define mz_patch_branch_at(a, v) (_jitl.long_jumps ? (void)jit_patch_movei(a-4, a-3, v) : (void)jit_patch_branch(a-1, v))
 # define mz_patch_ucbranch_at(a, v) (_jitl.long_jumps ? (void)jit_patch_movei(a-4, a-3, v) : (void)jit_patch_ucbranch(a-1, v))
 # define mz_prolog(x) (MFLRr(x), mz_set_local_p(x, JIT_LOCAL2))
@@ -741,8 +744,8 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
    1 word (for the return address) below alignment. */
 # define JIT_LOCAL1 -(JIT_WORD_SIZE * 4)
 # define JIT_LOCAL2 -(JIT_WORD_SIZE * 5)
-# define mz_set_local_p(x, l) jit_stxi_p((l), JIT_FP, (x))
-# define mz_get_local_p(x, l) jit_ldxi_p((x), JIT_FP, (l))
+# define mz_set_local_p_x(x, l, FP) jit_stxi_p((l), FP, (x))
+# define mz_get_local_p_x(x, l, FP) jit_ldxi_p((x), FP, (l))
 # define mz_patch_branch_at(a, v) jit_patch_branch_at(a, v)
 # define mz_patch_ucbranch_at(a, v) jit_patch_ucbranch_at(a, v)
   /* The ABI for _CALL_DARWIN or JIT_X86_64 requires alignment. Even
@@ -826,7 +829,23 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_repush_threadlocal() /* empty */
 #endif
 
+#if 0
+static jit_insn *fp_tmpr;
+# define check_fp_depth(i, FP) \
+  (jit_addi_l(FP, FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double)))), \
+   fp_tmpr = jit_bger_l(0, FP, JIT_SP),                               \
+   jit_ldi_p(FP, 0),                                                    \
+   mz_patch_branch(fp_tmpr),                                            \
+   jit_subi_l(FP, FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double)))))
+#else
+# define check_fp_depth(i, FP) (void)0
+#endif
+
 #define FLOSTACK_SPACE_CHUNK 4
+# define mz_ld_fppush_x(r, i, FP) (check_fp_depth(i, FP), jit_ldxi_d_fppush(r, FP, (JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double)))))
+# define mz_ld_fppush(r, i) mz_ld_fppush_x(r, i, JIT_FP) 
+# define mz_st_fppop_x(i, r, FP) (check_fp_depth(i, FP), (void)jit_stxi_d_fppop((JIT_FRAME_FLONUM_OFFSET - ((i) * sizeof(double))), FP, r))
+# define mz_st_fppop(i, r) mz_st_fppop_x(i, r, JIT_FP) 
 
 #define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
 #define mz_patch_ucbranch(a) mz_patch_ucbranch_at(a, (_jit.x.pc))
@@ -1198,14 +1217,14 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 typedef struct jit_direct_arg jit_direct_arg;
 
 void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
-				  int direct_prim, int direct_native, int nontail_self);
+				  int direct_prim, int direct_native, int nontail_self, int unboxed_args);
 void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok);
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
 			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
                               int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined);
+				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined, int unboxed_args);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
 void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol);
 void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code);
@@ -1242,8 +1261,6 @@ int scheme_generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
 int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int wcm_may_replace, int multi_ok, int target,
                     Branch_Info *for_branch);
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
-void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
-				  int direct_prim, int direct_native, int nontail_self);
 
 #ifdef USE_FLONUM_UNBOXING
 int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push);

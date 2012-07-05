@@ -1089,8 +1089,6 @@ static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local
 int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push)
 /* Move FPR0 onto C stack */
 {
-  int offset;
-
   if (jitter->flostack_offset == jitter->flostack_space) {
     int space = FLOSTACK_SPACE_CHUNK * sizeof(double);
     jitter->flostack_space += FLOSTACK_SPACE_CHUNK;
@@ -1102,8 +1100,7 @@ int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push)
     mz_runstack_flonum_pushed(jitter, jitter->flostack_offset);
   CHECK_LIMIT();
 
-  offset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_offset * sizeof(double));
-  (void)jit_stxi_d_fppop(offset, JIT_FP, JIT_FPR0);
+  mz_st_fppop(jitter->flostack_offset, JIT_FPR0);
 
   return 1;
 }
@@ -2278,7 +2275,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (is_tail) {
         if (!sjc.shared_tail_argc_code) {
-          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0);
+          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0, 0);
         }
         mz_set_local_p(JIT_R0, JIT_LOCAL2);
         (void)jit_jmpi(sjc.shared_tail_argc_code);
@@ -2287,7 +2284,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         void *code;
         if (!sjc.shared_non_tail_argc_code[mo]) {
           scheme_ensure_retry_available(jitter, multi_ok);
-          code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0);
+          code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0, 0);
           sjc.shared_non_tail_argc_code[mo] = code;
         }
         code = sjc.shared_non_tail_argc_code[mo];
@@ -3295,10 +3292,10 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     GC_CAN_IGNORE jit_insn *zref;
     int f_offset;
 
-    /* In the case of an inline_direct_native call, the flonums are
-       already unpacked and JIT_SP is set up. Check whether JIT_SP
-       is already different than the 0 flonums. */
-    f_offset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_offset * sizeof(double));
+    /* In the case of an direct native call, the flonums can be
+       already unpacked, in which case JIT_SP is set up. Check whether
+       JIT_SP is already different than the 0-flonums case. */
+    f_offset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_space * sizeof(double));
     jit_subr_p(JIT_R1, JIT_SP, JIT_FP);
     zref = jit_bnei_l(jit_forward(), JIT_R1, f_offset);
         

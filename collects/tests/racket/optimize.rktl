@@ -1980,5 +1980,52 @@
             (+ n1 n2)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check JIT handling of unboxed arguments in loops,
+;;   including a loop starts in tail and non-tail positions.
+
+(let ()
+  (define N 100000)
+
+  (define (non-tail)
+    (define-values (a b)
+      (let loop ([n N] [x -1.0] [y 1.0])
+        (cond
+         [(zero? n) (values x y)]
+         [else (loop (sub1 n)
+                     (fl+ x -1.0)
+                     (fl+ y 1.0))])))
+    (values a b))
+
+  (define (non-tail2)
+    (for/fold ([v 0.0]) ([i (in-range N)])
+      (define-values (a b)
+        (let loop ([n 10] [x -1.0] [y 1.0])
+          (cond
+           [(zero? n) (values x y)]
+           [else (loop (sub1 n)
+                       (fl+ x -1.0)
+                       (fl+ y 1.0))])))
+      (fl+ v (fl- a b))))
+
+  (define (tail)
+    (let loop ([n N] [x -1.0] [y 1.0])
+      (cond
+       [(zero? n) (values x y)]
+       [else (loop (sub1 n)
+                   (fl+ x -1.0)
+                   (fl+ y 1.0))])))
+
+  (define x-tail #f)
+  (define x-non-tail #f)
+  (define x-non-tail2 #f)
+  (set! x-tail tail)
+  (set! x-non-tail non-tail)
+  (set! x-non-tail2 non-tail2)
+
+  (test-values '(-100001.0 100001.0) non-tail)
+  (test -2200000.0 non-tail2)
+  (test-values '(-100001.0 100001.0) tail))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
