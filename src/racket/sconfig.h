@@ -763,9 +763,13 @@
 # define MZ_USE_JIT_I386
 # ifndef MZ_NO_JIT_SSE
 #  define MZ_USE_JIT_SSE
-#  define ASM_DBLPREC_CONTROL_87
 # endif
 #endif
+
+#ifdef MZ_NO_JIT_SSE
+# define ASM_DBLPREC_CONTROL_87
+#endif
+
 # define MZ_JIT_USE_MPROTECT
 
 # define FLAGS_ALREADY_SET

@@ -213,32 +213,11 @@ static void to_extended_prec(void)
 }
 #endif
 
-void
-scheme_init_number (Scheme_Env *env)
-{
-  Scheme_Object *p;
 
-  REGISTER_SO(scheme_pi);
-  REGISTER_SO(scheme_half_pi);
-  REGISTER_SO(scheme_zerod);
-  REGISTER_SO(scheme_nzerod);
-#ifdef MZ_USE_SINGLE_FLOATS
-  REGISTER_SO(scheme_single_pi);
-  REGISTER_SO(scheme_zerof);
-  REGISTER_SO(scheme_nzerof);
-#endif
-  REGISTER_SO(scheme_plus_i);
-  REGISTER_SO(scheme_minus_i);
-  REGISTER_SO(scheme_inf_object);
-  REGISTER_SO(scheme_minus_inf_object);
-  REGISTER_SO(scheme_nan_object);
-#ifdef MZ_USE_SINGLE_FLOATS
-  REGISTER_SO(scheme_single_inf_object);
-  REGISTER_SO(scheme_single_minus_inf_object);
-  REGISTER_SO(scheme_single_nan_object);
-#endif
-    
-  START_XFORM_SKIP;
+void scheme_configure_floating_point(void)
+  XFORM_SKIP_PROC
+/* can be called in any thread */
+{    
 #ifndef DONT_IGNORE_FPE_SIGNAL
   MZ_SIGSET(SIGFPE, SIG_IGN);
 #endif
@@ -270,7 +249,35 @@ scheme_init_number (Scheme_Env *env)
 #ifdef ASM_DBLPREC_CONTROL_87
   to_double_prec();
 #endif
-  END_XFORM_SKIP;
+}
+
+
+void
+scheme_init_number (Scheme_Env *env)
+{
+  Scheme_Object *p;
+
+  REGISTER_SO(scheme_pi);
+  REGISTER_SO(scheme_half_pi);
+  REGISTER_SO(scheme_zerod);
+  REGISTER_SO(scheme_nzerod);
+#ifdef MZ_USE_SINGLE_FLOATS
+  REGISTER_SO(scheme_single_pi);
+  REGISTER_SO(scheme_zerof);
+  REGISTER_SO(scheme_nzerof);
+#endif
+  REGISTER_SO(scheme_plus_i);
+  REGISTER_SO(scheme_minus_i);
+  REGISTER_SO(scheme_inf_object);
+  REGISTER_SO(scheme_minus_inf_object);
+  REGISTER_SO(scheme_nan_object);
+#ifdef MZ_USE_SINGLE_FLOATS
+  REGISTER_SO(scheme_single_inf_object);
+  REGISTER_SO(scheme_single_minus_inf_object);
+  REGISTER_SO(scheme_single_nan_object);
+#endif
+
+  scheme_configure_floating_point();
 
 #if defined(HUGE_VAL) && !defined(USE_DIVIDE_MAKE_INFINITY)
   scheme_infinity_val = HUGE_VAL;

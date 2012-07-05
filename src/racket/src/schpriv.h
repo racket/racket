@@ -1773,6 +1773,8 @@ intptr_t scheme_get_semaphore_init(const char *who, int n, Scheme_Object **p);
 # define scheme_exact_one scheme_make_integer(1)
 #endif
 
+void scheme_configure_floating_point(void);
+
 /****** Bignums *******/
 
 #ifdef USE_LONG_LONG_FOR_BIGDIG

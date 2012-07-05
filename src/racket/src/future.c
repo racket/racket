@@ -2151,6 +2151,8 @@ void *worker_thread_future_loop(void *arg)
     mzrt_mutex_unlock(fs->future_mutex);
   */
 
+  scheme_configure_floating_point();
+
   mzrt_sema_create(&fts->worker_can_continue_sema, 0);
 
   scheme_use_rtcall = 1;
