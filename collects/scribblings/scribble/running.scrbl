@@ -45,7 +45,8 @@ its file suffix:
 Use @DFlag{dest-name} to specify a @|fn| other than the default name,
 but only when a single source file is provided. Use the @DFlag{dest}
 flag to specify a destination directory (for any number of source
-files).
+files). Use @DFlag{dest-base} to add a prefix to the name of each
+support file that is generated or copied to the destination.
 
 After all flags, provide one or more document sources. When multiple
 documents are rendered at the same time, cross-reference information

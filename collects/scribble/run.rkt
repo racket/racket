@@ -25,6 +25,7 @@
 (define current-redirect           (make-parameter #f))
 (define current-redirect-main      (make-parameter #f))
 (define current-quiet              (make-parameter #f))
+(define helper-file-prefix         (make-parameter #f))
 
 (define (read-one str)
   (let ([i (open-input-string str)])
@@ -58,6 +59,8 @@
     (current-dest-directory dir)]
    [("--dest-name") name "write output as <name>"
     (current-dest-name name)]
+   [("--dest-base") prefix "start support-file names with <prefix>"
+    (helper-file-prefix prefix)]
    #:multi
    [("++style") file "add given .css/.tex file after others"
     (current-style-extra-files (cons file (current-style-extra-files)))]
@@ -100,6 +103,9 @@
                  files))))
 
 (define (build-docs docs files)
+  (when (and (current-dest-name)
+             ((length files) . > . 1))
+    (raise-user-error 'scribble "cannot supply a destination name with multiple inputs"))
   (render docs
           (map (lambda (fn)
                  (let-values ([(base name dir?) (split-path fn)])
@@ -111,6 +117,7 @@
           #:style-file (current-style-file)
           #:style-extra-files (reverse (current-style-extra-files))
           #:extra-files (reverse (current-extra-files))
+          #:helper-file-prefix (helper-file-prefix)
           #:redirect (current-redirect)
           #:redirect-main (current-redirect-main)
           #:quiet? (current-quiet)

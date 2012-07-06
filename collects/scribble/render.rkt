@@ -14,6 +14,7 @@
           (#:render-mixin
            (class? . -> . class?)
            #:dest-dir (or/c #f path-string?)
+           #:helper-file-prefix (or/c #f string?)
            #:prefix-file (or/c #f path-string?)
            #:style-file (or/c #f path-string?)
            #:style-extra-files (listof path-string?)
@@ -30,6 +31,7 @@
                 names
                 #:render-mixin [render-mixin html:render-mixin]
                 #:dest-dir [dest-dir #f]
+                #:helper-file-prefix [helper-file-prefix #f]
                 #:prefix-file [prefix-file #f]
                 #:style-file [style-file #f]
                 #:style-extra-files [style-extra-files null]
@@ -47,7 +49,8 @@
                        [prefix-file prefix-file]
                        [style-file style-file]
                        [style-extra-files style-extra-files]
-                       [extra-files extra-files])])
+                       [extra-files extra-files]
+                       [helper-file-prefix helper-file-prefix])])
     (when redirect
       (send renderer set-external-tag-path redirect))
     (when redirect-main

@@ -43,6 +43,7 @@ function to render a document.
                  [names (listof path-string?)]
                  [#:render-mixin render-mixin (class? . -> . class?) @#,html:render-mixin]
                  [#:dest-dir dest-dir (or/c #f path-string?) #f]
+                 [#:helper-file-prefix helper-file-prefix (or/c #f string?) #f]
                  [#:prefix-file prefix-file (or/c #f path-string?) #f]
                  [#:style-file style-file (or/c #f path-string?) #f]
                  [#:style-extra-files style-extra-files (listof path-string?) #f]
@@ -68,9 +69,10 @@ The @racket[dest-dir] argument determines the output directory, which
 is created using @racket[make-directory*] if it is non-@racket[#f] and
 does not exist already.
 
-The @racket[prefix-file], @racket[style-file],
-@racket[extra-style-files], and @racket[extra-files] arguments are
-passed on to the @racket[render%] constructor.
+The @racket[helper-file-prefix], @racket[prefix-file],
+@racket[style-file], @racket[extra-style-files], and
+@racket[extra-files] arguments are passed on to the @racket[render%]
+constructor.
 
 The @racket[xrefs] argument provides extra cross-reference information
 to be used during the documents' @tech{resolve pass}. The
@@ -122,7 +124,8 @@ Represents a renderer.
                  [prefix-file (or/c path-string? #f) #f]
                  [style-file (or/c path-string? #f) #f]
                  [style-extra-files (listof path-string?) null]
-                 [extra-files (listof path-string?) null])]{
+                 [extra-files (listof path-string?) null]
+                 [helper-file-prefix (or/c string? #f) #f])]{
 
 Creates a renderer whose output will go to @racket[dest-dir]. For
 example, @racket[dest-dir] could name the directory containing the
@@ -148,7 +151,13 @@ styles in a formal-specific way; see @secref["config-style"] for more
 information.
 
 The @racket[extra-files] argument names files to be copied to the
-output location, such as image files or extra configuration files.}
+output location, such as image files or extra configuration files.
+
+The @racket[helper-file-prefix] argument specifies a string that is
+added as a prefix to the name of each support file that is generated
+or copied to the destination---not including files specified in
+@racket[extra-files], but including @racket[prefix-file],
+@racket[style-file], and @racket[style-extra-files].}
 
 
 @defmethod[(traverse [srcs (listof part?)]
