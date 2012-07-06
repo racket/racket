@@ -367,32 +367,40 @@ Installs @racket[f] as the @tech{exception handler} for the
 is raised during the evaluation of @racket[thunk] (in an extension of
 the current continuation that does not have its own exception
 handler), then @racket[f] is applied to the @racket[raise]d value in
-the continuation of the @racket[raise] call (but normally extended
+the continuation of the @racket[raise] call (but the continuation is 
+normally extended
 with a @tech{continuation barrier}; see @secref["prompt-model"] and
 @racket[raise]).
 
-Any procedure that takes one argument can be an exception handler.  If
-the exception handler returns a value when invoked by @racket[raise],
-then @racket[raise] propagates the value to the ``previous'' exception
-handler (still in the dynamic extent of the call to @racket[raise],
-and under the same barrier, if any). The previous exception handler is
-the exception handler associated with the rest of the continuation
-after the point where the called exception handler was associated with
-the continuation; if no previous handler is available, the
-uncaught-exception handler is used (see below). In all cases, a call
-to an exception handler is @racket[parameterize-break]ed to disable
-breaks, and it is wrapped with @racket[call-with-exception-handler] to
-install the exception handler that reports both the original and
-newly raised exceptions.}
+Any procedure that takes one argument can be an exception handler.
+Normally, an exception handler escapes from the context of the
+@racket[raise] call via @racket[abort] or some other escape
+mechanism. To propagate an exception to the ``previous'' exception
+handler---that is, the exception handler associated with the rest of
+the continuation after the point where the called exception handler
+was associated with the continuation---an exception handler can simply
+return a result instead of escaping, in which case the @racket[raise] call
+propagates the value to the previous exception handler (still in the
+dynamic extent of the call to @racket[raise], and under the same
+barrier, if any). If an exception handler returns a result and no
+previous handler is available, the @tech{uncaught-exception handler}
+is used.
+
+A call to an exception handler is @racket[parameterize-break]ed to
+disable breaks, and it is wrapped with
+@racket[call-with-exception-handler] to install an exception handler
+that reports both the original and newly raised exceptions before
+@racket[abort]ing.}
+
 
 @defparam[uncaught-exception-handler f (any/c . -> . any)]{
 
-A @tech{parameter} that determines an exception handler used by
+A @tech{parameter} that determines an @deftech{uncaught-exception handler} used by
 @racket[raise] when the relevant continuation has no exception handler
 installed with @racket[call-with-exception-handler] or
 @racket[with-handlers]. Unlike exception handlers installed with
-@racket[call-with-exception-handler], the handler for uncaught
-exceptions must not return a value when called by @racket[raise]; if
+@racket[call-with-exception-handler], the uncaught-exception
+handler must not return a value when called by @racket[raise]; if
 it returns, an exception is raised (to be handled by an exception
 handler that reports both the original and newly raised exception).
 
@@ -411,6 +419,7 @@ When the current @tech{error display handler} is the default handler, then the
 error-display call is parameterized to install an emergency error
 display handler that logs an error (see @racket[log-error]) and never
 fails.}
+
 
 @defform[(with-handlers ([pred-expr handler-expr] ...)
            body ...+)]{
