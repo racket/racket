@@ -34,6 +34,7 @@ libffi/libffi@FOREIGN_CONVENIENCE@.la:
 	cd libffi; $(MAKE) libffi@FOREIGN_CONVENIENCE@.la
 
 foreign.@LTO@: $(srcdir)/foreign.c \
+           $(srcdir)/../racket/sconfig.h \
            $(srcdir)/../racket/include/scheme.h \
            $(srcdir)/../racket/include/schthread.h \
            $(srcdir)/../racket/src/schemef.h \

@@ -417,6 +417,9 @@ void *scheme_jit_get_threadlocal_table();
 #  define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
 #  define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
 #  define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
+#  define mz_tl_addr_tmp_i(tmp_reg, addr) (jit_movr_l(JIT_R10, tmp_reg), mz_tl_addr(tmp_reg, addr))
+#  define mz_tl_addr_untmp_i(tmp_reg) jit_movr_l(tmp_reg, JIT_R10)
+#  define mz_tl_tmp_reg_i(tmp_reg) tmp_reg
 # else
 #  define THREAD_LOCAL_USES_JIT_V2
 #  ifdef THREAD_LOCAL_USES_JIT_V2
@@ -436,12 +439,15 @@ void *scheme_jit_get_threadlocal_table();
 #   define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
 #   define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
 #  endif
+#  define mz_tl_addr_tmp_i(tmp_reg, addr) mz_tl_addr_tmp(tmp_reg, addr)
+#  define mz_tl_addr_untmp_i(tmp_reg) mz_tl_addr_untmp(tmp_reg)
+#  define mz_tl_tmp_reg_i(tmp_reg) mz_tl_tmp_reg(tmp_reg)
 # endif
 
 /* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
 # define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_p(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_l(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
-# define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_i(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp_i(tmp_reg, addr), _mz_tl_str_i(addr, mz_tl_tmp_reg_i(tmp_reg), reg), mz_tl_addr_untmp_i(tmp_reg))
 # define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
 # define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
 # define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_i(reg, reg))
@@ -1264,6 +1270,7 @@ int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inline
 
 #ifdef USE_FLONUM_UNBOXING
 int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push);
+int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offset, int target);
 #endif
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 int scheme_generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);

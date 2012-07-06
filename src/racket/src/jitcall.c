@@ -1165,18 +1165,19 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
         GC_CAN_IGNORE jit_insn *iref;
         mz_pushr_p(JIT_R0);
         mz_ld_runstack_base_alt(JIT_R2);
-        jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands + closure_size + args_already_in_place)); 
-        jit_ldxi_p(JIT_R0, JIT_R2, WORDS_TO_BYTES(i+closure_size));
+        jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands + args_already_in_place)); 
+        jit_ldxi_p(JIT_R0, JIT_R2, WORDS_TO_BYTES(i));
         mz_rs_sync();
         __START_TINY_JUMPS__(1);
         iref = jit_bnei_p(jit_forward(), JIT_R0, NULL);
         __END_TINY_JUMPS__(1);
         {
-          mz_ld_fppush(JIT_FPR0, arg_tmp_offset);
+          int aoffset = JIT_FRAME_FLONUM_OFFSET - (arg_tmp_offset * sizeof(double));
+          jit_movi_l(JIT_R0, aoffset);
           (void)jit_calli(sjc.box_flonum_from_stack_code);
           mz_ld_runstack_base_alt(JIT_R2);
-          jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands + closure_size + args_already_in_place)); 
-          jit_stxi_p(WORDS_TO_BYTES(i+closure_size), JIT_R2, JIT_R0);
+          jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands + args_already_in_place)); 
+          jit_stxi_p(WORDS_TO_BYTES(i), JIT_R2, JIT_R0);
         }
         __START_TINY_JUMPS__(1);
         mz_patch_branch(iref);
@@ -1501,7 +1502,7 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
                                            GC_CAN_IGNORE jit_insn **_refdone,
                                            int num_rands, Scheme_Closure_Data *direct_data, Scheme_Object *rator)
 {
-  GC_CAN_IGNORE jit_insn *refdone, *refgo, *refcopy, *ref;
+  GC_CAN_IGNORE jit_insn *refdone, *refgo, *refcopy;
   int i, k, offset;
 
   refgo = jit_jmpi(jit_forward());
@@ -1547,16 +1548,7 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
       offset = jitter->flostack_offset - direct_flostack_offset + k;
       offset = JIT_FRAME_FLONUM_OFFSET - (offset * sizeof(double));
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(i));
-      __START_TINY_JUMPS__(1);
-      ref = jit_bnei_p(jit_forward(), JIT_R0, NULL);
-      __END_TINY_JUMPS__(1);
-      CHECK_LIMIT();
-      jit_movi_l(JIT_R0, offset);
-      (void)jit_calli(sjc.box_flonum_from_stack_code);
-      jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
-      __START_TINY_JUMPS__(1);
-      mz_patch_branch(ref);
-      __END_TINY_JUMPS__(1);
+      scheme_generate_flonum_local_boxing(jitter, i, offset, JIT_R0);
     }
   }
 

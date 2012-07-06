@@ -597,7 +597,9 @@
 # define NO_SLEEP
 # define WINDOWS_PROCESSES
 # define WINDOWS_FILE_HANDLES
-# define USE_WIN32_THREAD_TIMER
+# ifndef MZ_USE_DETERMINSTIC_FUEL
+#  define USE_WIN32_THREAD_TIMER
+# endif
 
 # define SIGSET_IS_SIGNAL
 # define SIGSET_NEEDS_REINSTALL
@@ -728,8 +730,10 @@
 # define SYSTEM_TYPE_NAME "macosx"
 #endif
 
-# undef USE_ITIMER
-# define USE_PTHREAD_THREAD_TIMER
+# ifndef MZ_USE_DETERMINSTIC_FUEL
+#  undef USE_ITIMER
+#  define USE_PTHREAD_THREAD_TIMER
+# endif
 
 # define USE_MAP_ANON
 

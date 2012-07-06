@@ -375,7 +375,7 @@ int scheme_generate_unboxing(mz_jit_state *jitter, int target)
   int fpr0;
 
   fpr0 = JIT_FPR_0(jitter->unbox_depth);
-  jit_ldxi_d_fppush(fpr0, target, &((Scheme_Double *)0x0)->double_val);  
+  jit_ldxi_d_fppush(fpr0, target, &((Scheme_Double *)0x0)->double_val);
   jitter->unbox_depth++;
 
   return 1;

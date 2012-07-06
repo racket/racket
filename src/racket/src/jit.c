@@ -1058,6 +1058,23 @@ static int finish_branch(mz_jit_state *jitter, int target, Branch_Info *for_bran
 
 #ifdef USE_FLONUM_UNBOXING
 
+int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offset, int target)
+{
+  GC_CAN_IGNORE jit_insn *ref;
+  __START_TINY_JUMPS__(1);
+  ref = jit_bnei_p(jit_forward(), target, NULL);
+  __END_TINY_JUMPS__(1);
+  CHECK_LIMIT();
+  jit_movi_l(JIT_R0, offset);
+  (void)jit_calli(sjc.box_flonum_from_stack_code);
+  mz_rs_stxi(pos, JIT_R0);
+  __START_TINY_JUMPS__(1);
+  mz_patch_branch(ref);
+  __END_TINY_JUMPS__(1);
+
+  return 1;
+}
+
 static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local_pos, int target)
 {
   int offset;
@@ -1069,18 +1086,8 @@ static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local
     jit_ldxi_d_fppush(fpr0, JIT_FP, offset);
     jitter->unbox_depth++;
   } else {
-    GC_CAN_IGNORE jit_insn *ref;
     mz_rs_sync();
-    __START_TINY_JUMPS__(1);
-    ref = jit_bnei_p(jit_forward(), target, NULL);
-    __END_TINY_JUMPS__(1);
-    CHECK_LIMIT();
-    jit_movi_l(JIT_R0, offset);
-    (void)jit_calli(sjc.box_flonum_from_stack_code);
-    mz_rs_stxi(pos, JIT_R0);
-    __START_TINY_JUMPS__(1);
-    mz_patch_branch(ref);
-    __END_TINY_JUMPS__(1);
+    scheme_generate_flonum_local_boxing(jitter, pos, offset, target);
   }
 
   return 1;
@@ -3292,7 +3299,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     GC_CAN_IGNORE jit_insn *zref;
     int f_offset;
 
-    /* In the case of an direct native call, the flonums can be
+    /* In the case of a direct native call, the flonums can be
        already unpacked, in which case JIT_SP is set up. Check whether
        JIT_SP is already different than the 0-flonums case. */
     f_offset = JIT_FRAME_FLONUM_OFFSET - (jitter->flostack_space * sizeof(double));

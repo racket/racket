@@ -360,6 +360,13 @@ Configuration Options
 Athough `configure' flags control most options, some configrations
 options can be modified by setting flags in "racket/sconfig.h".
 
+Some CPP flags control default settings in "racket/sconfig.h":
+
+ * MZ_{USE_,NO_}JIT_SSE - {en,dis}ables use of SSE floating point
+
+ * MZ_USE_DETERMINSTIC_FUEL - disables use of itimer or pthread for
+   Racket thread scheduling.
+
 Modifying Racket
 ----------------
 
