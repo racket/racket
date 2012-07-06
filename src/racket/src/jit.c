@@ -102,7 +102,7 @@ static void call_set_global_bucket(Scheme_Bucket *b, Scheme_Object *val, int set
 
 static void lexical_binding_wrong_return_arity(int expected, int got, Scheme_Object **argv)
 {
-  scheme_wrong_return_arity(NULL, expected, got, argv, "lexical binding");
+  scheme_wrong_return_arity(NULL, expected, got, argv, "\n  in: local-binding form");
 }
 
 static void wrong_argument_count(Scheme_Object *proc, int argc, Scheme_Object **argv)
