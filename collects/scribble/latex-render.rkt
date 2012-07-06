@@ -388,7 +388,12 @@
                   (let ([v (car l)])
                     (cond
                      [(target-url? v)
-                      (printf "\\href{~a}{" (regexp-replace* #rx"%" (target-url-addr v) "\\\\%"))
+                      (printf "\\href{~a}{" (regexp-replace* #rx"%"
+                                                             (let ([p (target-url-addr v)])
+                                                               (if (path? p)
+                                                                   (path->string p)
+                                                                   p))
+                                                             "\\\\%"))
                       (loop (cdr l) #t)
                       (printf "}")]
                      [(color-property? v)
