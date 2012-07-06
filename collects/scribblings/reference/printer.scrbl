@@ -527,7 +527,7 @@ representation. @tech{Unreadable symbols}, which are typically
 generated indirectly during expansion and compilation, are saved and
 restored consistently through @litchar{#~}.
 
-The dynamic nature @tech{uninterned} symbols and their localization
+The dynamic nature of @tech{uninterned} symbols and their localization
 within @litchar{#~} can cause problems when @racket[gensym] or
 @racket[string->uninterned-symbol] is used to construct an identifier
 for a top-level or module binding (depending on how the identifier and

@@ -771,7 +771,7 @@
   }
 
   @defmethod*[#:mode override (((get-editor<%>) interface))]{
-    Returns @racket[text:delegate].
+    Returns @racket[text:delegate<%>].
   }
 
   @defmethod*[#:mode override (((get-editor%) (is-a?/c text:delegate<%>)))]{

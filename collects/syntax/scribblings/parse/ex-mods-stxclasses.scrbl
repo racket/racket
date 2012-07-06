@@ -72,7 +72,7 @@ class in a separate module and require that module
 (macro (1 2 3))
 ]
 
-If a syntax classes refers to literal identifiers, or if it computes
+If a syntax class refers to literal identifiers, or if it computes
 expressions via syntax templates, then the module containing the
 syntax class must generally require @racket[for-template] the bindings
 referred to in the patterns and templates.
