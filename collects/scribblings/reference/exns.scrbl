@@ -374,7 +374,7 @@ with a @tech{continuation barrier}; see @secref["prompt-model"] and
 
 Any procedure that takes one argument can be an exception handler.
 Normally, an exception handler escapes from the context of the
-@racket[raise] call via @racket[abort] or some other escape
+@racket[raise] call via @racket[abort-current-continuation] or some other escape
 mechanism. To propagate an exception to the ``previous'' exception
 handler---that is, the exception handler associated with the rest of
 the continuation after the point where the called exception handler
@@ -389,8 +389,9 @@ is used.
 A call to an exception handler is @racket[parameterize-break]ed to
 disable breaks, and it is wrapped with
 @racket[call-with-exception-handler] to install an exception handler
-that reports both the original and newly raised exceptions before
-@racket[abort]ing.}
+that reports both the original and newly raised exceptions via the
+@tech{error display handler} and then escapes via the @tech{error
+escape handler}.}
 
 
 @defparam[uncaught-exception-handler f (any/c . -> . any)]{
