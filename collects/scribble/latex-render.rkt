@@ -103,7 +103,9 @@
                     (lambda ()
                       (copy-port (current-input-port) (current-output-port))))))
             (for ([style-file (in-list all-style-files)])
-              (install-file style-file)))
+              (if (bytes? style-file)
+                  (display style-file)
+                  (install-file style-file))))
         (when whole-doc?
           (printf "\\begin{document}\n\\preDoc\n")
           (when (part-title-content d)

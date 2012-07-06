@@ -1383,11 +1383,14 @@ script alternative to the element content.}
 
 
 @defstruct[css-addition ([path (or/c path-string? 
-                                     (cons/c 'collects (listof bytes?)))])]{
+                                     (cons/c 'collects (listof bytes?))
+                                     bytes?)])]{
 
-Used as a @tech{style property} to supply a CSS file to be referenced
-in the generated HTML. This property can be attached to any style, and
-all additions are collected to the top of the generated HTML page.
+Used as a @tech{style property} to supply a CSS file (if @racket[path]
+is a path, string, or list) or content (if @racket[path] is a byte
+string) to be referenced or included in the generated HTML. This
+property can be attached to any style, and all additions are collected
+to the top of the generated HTML page.
 
 The @racket[path] field can be a result of
 @racket[path->main-collects-relative].}
@@ -1421,12 +1424,14 @@ Like @racket[latex-defaults], but use for the
 
 
 @defstruct[tex-addition ([path (or/c path-string? 
-                                     (cons/c 'collects (listof bytes?)))])]{
+                                     (cons/c 'collects (listof bytes?))
+                                     bytes?)])]{
 
-Used as a @tech{style property} to supply a @filepath{.tex} file to be
-included in the generated Latex. This property can be attached to any
-style, and all additions are collected to the top of the generated
-Latex file.
+Used as a @tech{style property} to supply a @filepath{.tex} file (if
+@racket[path] is a path, string, or list) or content (if @racket[path]
+is a byte string) to be included in the generated Latex. This property
+can be attached to any style, and all additions are collected to the
+top of the generated Latex file.
 
 The @racket[path] field can be a result of
 @racket[path->main-collects-relative].}

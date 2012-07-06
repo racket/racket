@@ -76,7 +76,7 @@
                            (unless (stop-at-part? p)
                              (loop p #f #f)))
                          (part-parts p)))))
-        (for/list ([k (in-hash-keys ht)]) (main-collects-relative->path k))))
+        (for/list ([k (in-hash-keys ht)]) (if (bytes? k) k (main-collects-relative->path k)))))
 
     (define/private (extract-style-style-files s ht pred extract)
       (for ([v (in-list (style-properties s))])
