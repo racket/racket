@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require
- (for-syntax racket/base "utils/timing.rkt") ;; only for timing/debugging
+ (for-syntax racket/base "utils/timing.rkt" "env/env-req.rkt") ;; only for timing/debugging
  ;; the below requires are needed since they provide identifiers
  ;; that may appear in the residual program
  (for-syntax "typecheck/renamer.rkt")
@@ -26,7 +26,8 @@
     (do-time "Finshed base-env-numeric")
     ((dynamic-require 'typed-racket/base-env/base-special-env 'initialize-special))
     (do-time "Finished base-special-env")
-    (set! initialized #t)))
+    (set! initialized #t))
+  (do-requires))
 
 (define-syntax-rule (drivers [name sym] ...)
   (begin

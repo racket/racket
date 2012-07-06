@@ -9,6 +9,7 @@
          (types utils convenience generalize)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
+         (env env-req)
          (for-template (only-in (base-env prims) :type :print-type :query-result-type))
          (utils utils tc-utils arm)
          "tc-setup.rkt" "utils/debug.rkt")
@@ -24,7 +25,7 @@
        (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
                                      (and (attribute opt?) (syntax-e (attribute opt?))))])
          (tc-setup
-          stx pmb-form 'module-begin new-mod init tc-module after-code
+          stx pmb-form 'module-begin new-mod init tc-module before-code after-code
           (with-syntax*
            (;; pmb = #%plain-module-begin
             [(pmb . body2) new-mod]
@@ -42,7 +43,7 @@
                                 'disappeared-use (disappeared-use-todo))])
            ;; reconstruct the module with the extra code
            ;; use the regular %#module-begin from `racket/base' for top-level printing
-           (arm #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))))]))
+           (arm #`(#%module-begin #,before-code optimized-body ... #,after-code check-syntax-help))))))]))
 
 (define did-I-suggest-:print-type-already? #f)
 (define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
@@ -55,14 +56,14 @@
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
      #`(display #,(format "~a\n"
-                          (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form type
+                          (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
                                     (match type
                                       [(tc-result1: t f o) t]
                                       [(tc-results: t) (cons 'Values t)]))))]
     ;; given a function and a desired return type, fill in the blanks
     [(_ . ((~literal :query-result-type) op:expr desired-type:expr))
      (let ([expected (parse-type #'desired-type)])
-       (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form type
+       (tc-setup #'stx #'op 'top-level expanded init tc-toplevel-form before type
                  (match type
                    [(tc-result1: (and t (Function: _)) f o)
                     (let ([cleaned (cleanup-type t expected)])
@@ -75,7 +76,7 @@
                    [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
     [(_ . form)
      (tc-setup
-      stx #'form 'top-level body2 init tc-toplevel-form type
+      stx #'form 'top-level body2 init tc-toplevel-form before type
       (with-syntax*
        ([optimized-body (car (maybe-optimize #`(#,body2)))])
        (syntax-parse body2

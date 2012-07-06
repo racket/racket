@@ -7,7 +7,13 @@
          (rep type-rep object-rep)
          (types utils union)
          (utils tc-utils)
-         (env init-envs))
+         (env init-envs)
+         (for-template 
+          racket/base          
+          (rep type-rep object-rep)
+          (types utils union)
+          (utils tc-utils)
+          (env init-envs)))
 
 
 (define table (make-hasheq))

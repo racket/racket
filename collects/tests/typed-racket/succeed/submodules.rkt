@@ -5,7 +5,7 @@
 
 (provide g)
 
-(module+ main
+(module* main #f
   (g (assert (string->number 
 	      (vector-ref (current-command-line-arguments) 0)))))
 

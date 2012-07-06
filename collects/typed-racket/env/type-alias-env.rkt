@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 syntax/boundmap
+	 syntax/id-table racket/dict
          (utils tc-utils)         
          racket/match)
 
@@ -17,9 +17,9 @@
 
 ;; a mapping from id -> alias-def (where id is the name of the type)
 (define the-mapping
-  (make-module-identifier-mapping))
+  (make-free-id-table))
 
-(define (mapping-put! id v) (module-identifier-mapping-put! the-mapping id v))
+(define (mapping-put! id v) (dict-set! the-mapping id v))
 
 ;(trace mapping-put!)
 
@@ -34,7 +34,7 @@
 
 (define (lookup-type-alias id parse-type [k (lambda () (tc-error "Unknown type alias: ~a" (syntax-e id)))])
   (let/ec return
-    (match (module-identifier-mapping-get the-mapping id (lambda () (return (k))))
+    (match (dict-ref the-mapping id (lambda () (return (k))))
       [(struct unresolved (stx #f))
        (resolve-type-alias id parse-type)]
       [(struct unresolved (stx #t))
@@ -42,7 +42,7 @@
       [(struct resolved (t)) t])))
 
 (define (resolve-type-alias id parse-type)
-  (define v (module-identifier-mapping-get the-mapping id))
+  (define v (dict-ref the-mapping id))
   (match v
     [(struct unresolved (stx _))
      (set-unresolved-in-process! v #t)
@@ -53,13 +53,17 @@
      t]))
 
 (define (resolve-type-aliases parse-type)
-  (module-identifier-mapping-for-each the-mapping (lambda (id _) (resolve-type-alias id parse-type))))
+    (free-id-table-for-each
+     the-mapping
+     (lambda (id k)
+       (resolve-type-alias id parse-type)))
+    #; ;; fixme – bug in free-id-mapping dict handling
+  (for ([(id _) (in-dict the-mapping)])
+    (resolve-type-alias id parse-type)))
 
 ;; map over the-mapping, producing a list
 ;; (id type -> T) -> listof[T]
-(define (type-alias-env-map f)
-  (define sym (gensym))
-  (filter (lambda (e) (not (eq? sym e)))
-          (module-identifier-mapping-map the-mapping (lambda (id t) (if (resolved? t)
-                                                                        (f id (resolved-ty t))
-                                                                        sym)))))
+(define (type-alias-env-map f)  
+  (for/list ([(id t) (in-dict the-mapping)]
+             #:when (resolved? t))
+    (f id (resolved-ty t))))

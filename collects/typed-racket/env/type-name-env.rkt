@@ -1,7 +1,8 @@
 #lang racket/base
 (require "../utils/utils.rkt")
 
-(require syntax/boundmap         
+(require syntax/boundmap        
+         racket/dict
          (env type-alias-env)
          (utils tc-utils)
          (rep type-rep)
@@ -23,7 +24,6 @@
 ;; add a name to the mapping
 ;; identifier Type -> void
 (define (register-type-name id [type #t])
-  ;(printf "registering type ~a\n~a\n" (syntax-e id) id)
   (mapping-put! id type))
 
 ;; add a bunch of names to the mapping
@@ -46,5 +46,5 @@
   (module-identifier-mapping-map the-mapping f))
 
 (define (add-alias from to)
-  (when (lookup-type-name to (lambda () #f))
+  (when (lookup-type-name to (lambda () #f))    
     (register-resolved-type-alias from (make-Name to))))
