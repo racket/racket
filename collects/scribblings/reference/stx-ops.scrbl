@@ -285,9 +285,10 @@ must be a syntax pair that can be flattened into a list. The elements
 of @racket[stx-pair] can be anything, but string, symbol, keyword
 (possibly wrapped as syntax), and identifier elements will be embedded
 in the corresponding generated name, which is useful for debugging
-purposes. The generated identifiers are built with interned symbols
-(not @racket[gensym]s), so the limitations described with
-@racket[current-compile] do not apply.}
+purposes.
+
+The generated identifiers are built with interned symbols (not
+@racket[gensym]s); see also @secref["print-compiled"].}
 
 
 @defproc[(identifier-prune-lexical-context [id-stx identifier?]
