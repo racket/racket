@@ -252,11 +252,11 @@
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 
 
-[ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
+[ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #f))))]
 [andmap (-polydots (a c d b) (cl->*
                               ;; 1 means predicate on second argument
                               (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
-                              (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
+                              (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) (Un c (-val #t)))))]
 
 [box (-poly (a) (a . -> . (-box a)))]
 [box-immutable (-poly (a) (a . -> . (-box a)))]

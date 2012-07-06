@@ -230,6 +230,8 @@
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -PosByte (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
         [tc-e (map #{values @ Symbol} '(a b c)) (-pair Sym (make-Listof  Sym))]
+        [tc-e (andmap add1 (ann '() (Listof Number))) (t:Un (-val #t) N)]
+        [tc-e (ormap add1 (ann '() (Listof Number))) (t:Un (-val #f) N)]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
               N]
