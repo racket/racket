@@ -6,7 +6,7 @@
          (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
-         (env tvar-env type-name-env type-alias-env)
+         (env tvar-env type-name-env type-alias-env env-req)
          (r:infer infer)
          (utils tc-utils disarm mutated-vars debug)
          (rep type-rep)
@@ -32,7 +32,7 @@
           (do-time "Optimized")))
       body))
 
-(define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker result . body)
+(define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker pre-result post-result . body)
   (let ()
     (set-box! typed-context? #t)
     ;(start-timing (syntax-property stx 'enclosing-module-name))
@@ -47,6 +47,8 @@
                      [delay-errors? #t]
                      ;; do we print the fully-expanded syntax?
                      [print-syntax? #f]
+                     ;; the name of this module:
+                     [module-name (syntax-property orig-stx 'enclosing-module-name)]
                      ;; this parameter is just for printing types
                      ;; this is a parameter to avoid dependency issues
                      [current-type-names
@@ -70,6 +72,6 @@
                        [expanded-module-stx fully-expanded-stx]
                        [debugging? #f])
           (do-time "Starting `checker'")
-          (define result (checker fully-expanded-stx))
+          (define-values (pre-result post-result) (checker fully-expanded-stx))
           (do-time "Typechecking Done")
           (let () . body))))))

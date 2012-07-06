@@ -11,11 +11,4 @@
      #'(define-syntax export-id
          (if (unbox typed-context?)
              (renamer #'id #'cnt-id)
-             (renamer #'cnt-id)))]
-    [(def-export export-id:identifier id:identifier cnt-id:identifier #:alias)
-     #'(define-syntax export-id
-         (if (unbox typed-context?)
-             (begin
-               (add-alias #'export-id #'id)
-               (renamer #'id #'cnt-id))
              (renamer #'cnt-id)))]))

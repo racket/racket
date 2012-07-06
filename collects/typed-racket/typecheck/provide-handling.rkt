@@ -45,38 +45,42 @@
   ;; maps ids defined in this module to an identifier which is the possibly-contracted version of the key
   (define mapping (make-free-id-table))
 
-  ;; mk : id [id] -> (values syntax id)
+  ;; mk : id [id] -> (values syntax id aliases)
   (define (mk internal-id [new-id (generate-temporary internal-id)])
     (define (mk-untyped-syntax b defn-id internal-id)
       (match b
         [(def-struct-stx-binding _ (? struct-info? si))
          (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
-         (match-let ([(list type-desc constr pred (list accs ...) muts super) (extract-struct-info si)])
-           (let-values ([(defns new-ids) (map/values 2 (lambda (e) (if (identifier? e)
-                                                                       (mk e)
-                                                                       (values #'(begin) e)))
-                                                     (list* type-desc constr pred super accs))])
-             (with-syntax ([(type-desc* constr* pred* super* accs* ...) (for/list ([i new-ids])
-                                                                          (if (identifier? i)
-                                                                              #`(syntax #,i)
-                                                                              i))])
-               #`(begin
-                   #,@defns
-                   (define-syntax #,defn-id
-                     (let ((info (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*)))
-                      #,(if type-is-constructor?
-                            #'(make-struct-info-self-ctor constr* info)
-                            #'info)))))))]
+         (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
+         (define-values (defns new-ids aliases) 
+           (map/values 3 
+                       (lambda (e) (if (identifier? e)
+                                       (mk e)
+                                       (values #'(begin) e null)))
+                       (list* type-desc constr pred super accs)))
+         (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
+           (for/list ([i new-ids]) (if (identifier? i) #`(syntax #,i) i)))
+         (values 
+          #`(begin
+              #,@defns
+              (define-syntax #,defn-id
+                (let ((info (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*)))
+                  #,(if type-is-constructor?
+                        #'(make-struct-info-self-ctor constr* info)
+                        #'info))))
+          (apply append aliases))]
         [_
-         #`(define-syntax #,defn-id
-             (lambda (stx)
-               (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'#,internal-id))))]))
+         (values 
+          #`(define-syntax #,defn-id
+              (lambda (stx)
+                (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'#,internal-id))))
+          null)]))
     (cond
       ;; if it's already done, do nothing
       [(dict-ref mapping internal-id
                  ;; if it wasn't there, put it in, and skip this case
                  (λ () (dict-set! mapping internal-id new-id) #f))
-       => (λ (mapped-id) (values #'(begin) mapped-id))]
+       => (λ (mapped-id) (values #'(begin) mapped-id null))]
       [(dict-ref defs internal-id #f)
        =>
        (match-lambda
@@ -96,7 +100,8 @@
                     (quote-syntax export-id)
                     (quote-syntax module-source)))
                  (def-export export-id id cnt-id)))
-           new-id)]
+           new-id
+           null)]
          [(def-binding id ty)
           (values
            (with-syntax* ([id internal-id]
@@ -106,21 +111,26 @@
                    (define-syntax (error-id stx)
                      (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))
                    (def-export export-id id error-id)))
-           new-id)]
+           new-id
+           null)]
          [(and b (def-stx-binding _))
           (with-syntax* ([id internal-id]
                          [export-id new-id]
-                         [untyped-id (generate-temporary #'id)]
-                         [def (mk-untyped-syntax b #'untyped-id internal-id)])
+                         [untyped-id (generate-temporary #'id)])
+            (define-values (d aliases)
+              (mk-untyped-syntax b #'untyped-id internal-id))
+            (define/with-syntax def d)
             (values
-             #`(begin def (def-export export-id id untyped-id #:alias))
-             new-id))])]
+             #`(begin def (def-export export-id id untyped-id))
+             new-id
+             (cons (list #'export-id #'id) aliases)))])]
       ;; otherwise, not defined in this module, not our problem
-      [else (values #'(begin) internal-id)]))
+      [else (values #'(begin) internal-id null)]))
   ;; Build the final provide with auxilliary definitions
-  (for/list ([(internal-id external-ids) (in-dict provs)])
-    (define-values (defs id) (mk internal-id))
+  (for/lists (l l*) ([(internal-id external-ids) (in-dict provs)])
+    (define-values (defs id alias) (mk internal-id))
     (define provide-forms
       (for/list ([external-id (in-list external-ids)])
         #`(rename-out [#,id #,external-id])))
-    #`(begin #,defs (provide #,@provide-forms))))
+    (values #`(begin #,defs (provide #,@provide-forms))
+            alias)))

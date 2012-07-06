@@ -5,7 +5,7 @@
          (rename-in (types convenience union utils printer filter-ops) [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: racket/contract)
-         syntax/parse
+         syntax/parse racket/dict
          (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)
          racket/match
          "parse-classes.rkt"
@@ -328,7 +328,7 @@
          [(free-identifier=? #'id #'t:->)
           (tc-error/delayed "Incorrect use of -> type constructor")
           Err]
-         [else
+         [else          
           (tc-error/delayed
            "Unbound type name ~a"
            (syntax-e #'id))

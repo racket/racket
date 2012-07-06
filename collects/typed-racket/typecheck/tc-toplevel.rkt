@@ -3,7 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          syntax/kerncase
          unstable/list racket/syntax syntax/parse
-         mzlib/etc
+         mzlib/etc racket/list
          racket/match
          "signatures.rkt"
          "tc-structs.rkt"
@@ -13,13 +13,14 @@
          (rep type-rep)
          (types utils convenience type-table)
          (private parse-type type-annotation type-contract)
-         (env global-env init-envs type-name-env type-alias-env lexical-env)
+         (env global-env init-envs type-name-env type-alias-env lexical-env env-req)
 	 syntax/id-table
          (utils tc-utils mutated-vars)
          "provide-handling.rkt"
          "def-binding.rkt"
          (prefix-in c: racket/contract)
          racket/dict
+         syntax/location
          (for-template
           "internal-forms.rkt"
           syntax/location
@@ -27,9 +28,9 @@
           racket/base))
 
 (c:provide/contract
- [type-check (syntax? . c:-> . syntax?)]
- [tc-module (syntax? . c:-> . syntax?)]
- [tc-toplevel-form (syntax? . c:-> . c:any/c)])
+ [type-check (syntax? . c:-> . (values syntax? syntax?))]
+ [tc-module (syntax? . c:-> . (values syntax? syntax?))]
+ [tc-toplevel-form (syntax? . c:-> . (values #f c:any/c))])
 
 (define unann-defs (make-free-id-table))
 
@@ -264,6 +265,9 @@
      (values #'nm #'ty)]
     [_ (int-err "not define-type-alias")]))
 
+;; actually do the work on a module
+;; produces prelude and post-lude syntax objects
+;; syntax-list -> (values syntax syntax)
 (define (type-check forms0)
   (define forms (syntax->list forms0))
   (define-values (type-aliases struct-defs stx-defs0 val-defs0 provs reqs)
@@ -328,25 +332,38 @@
                [_ (int-err "unknown provide form")])))]
         [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
   ;; compute the new provides
-  (define new-stx 
+  (define-values (new-stx/pre new-stx/post) 
     (with-syntax*
-        ([the-variable-reference (generate-temporary #'blame)]
-         [(new-provs ...)
-          (generate-prov def-tbl provide-tbl #'the-variable-reference)])
+     ([the-variable-reference (generate-temporary #'blame)])
+     (define-values (code aliasess)
+       (generate-prov def-tbl provide-tbl #'the-variable-reference))
+     (define aliases (apply append aliasess))
+     (define/with-syntax (new-provs ...) code)
+     (values
+      #`(begin
+          (begin-for-syntax
+            (module* type-decl #f    
+              (require typed-racket/types/numeric-tower typed-racket/env/type-name-env
+                       typed-racket/env/global-env typed-racket/env/type-alias-env)
+              #,(env-init-code syntax-provide? provide-tbl def-tbl)              
+              #,(talias-env-init-code)              
+              #,(tname-env-init-code)
+              #,(make-struct-table-code)
+              #,@(for/list ([a (in-list aliases)])
+                   (match a
+                     [(list from to)
+                      #`(add-alias (quote-syntax #,from) (quote-syntax #,to))]))))
+          (begin-for-syntax (add-mod! (quote-module-path))))
       #`(begin
           #,(if (null? (syntax-e #'(new-provs ...)))
                 #'(begin)
-                #'(define the-variable-reference (quote-module-name)))          
-          (begin-for-syntax #,(env-init-code syntax-provide? provide-tbl def-tbl)
-                            #,(tname-env-init-code)
-                            #,(talias-env-init-code)
-                            #,(make-struct-table-code))
-          (begin new-provs ...))))
+                #'(define the-variable-reference (quote-module-name)))
+          new-provs ...))))
   (do-time "finished provide generation")
-  new-stx)
+  (values new-stx/pre new-stx/post))
 
 ;; typecheck a whole module
-;; syntax -> syntax
+;; syntax -> (values syntax syntax)
 (define (tc-module stx)
   (syntax-parse stx
     [(pmb . forms) (type-check #'forms)]))
@@ -356,6 +373,6 @@
 ;; syntax -> void
 (define (tc-toplevel-form form)
   (tc-toplevel/pass1 form)
-  (begin0 (tc-toplevel/pass2 form)
+  (begin0 (values #f (tc-toplevel/pass2 form))
           (report-all-errors)))
 
