@@ -47,16 +47,16 @@
 (struct indexed-fevent (index fevent) #:transparent)
 
 ;The whole trace, with a start/end time and list of process timelines
-(struct trace (start-time 
-               end-time
-               proc-timelines 
-               future-timelines
-               all-events
-               real-time ;TODO: What is this
-               num-futures ;TODO: (length future-timelines)
-               num-blocks
-               num-syncs 
-               blocked-futures 
+(struct trace (start-time ;Absolute start time (in process milliseconds)
+               end-time ;Absolute end time
+               proc-timelines ;(listof process-timeline)
+               future-timelines ;Hash of (future id --o--> (listof event))
+               all-events ;(listof event)
+               real-time ;Total amount of time for the trace (in ms)
+               num-futures ;Number of futures created
+               num-blocks ;Number of barricades hit
+               num-syncs ;Number of 'atomic' ops done
+               blocked-futures ;Number of futures which encountered a barricade at some point
                avg-syncs-per-future 
                block-counts ;prim name --o--> number of blocks 
                sync-counts ;op name --o--> number of syncs 
@@ -73,12 +73,14 @@
                   start 
                   end 
                   events))
+
 ;(struct process-timeline timeline (proc-index))
 (struct process-timeline (proc-id 
-                          proc-index ;Why do we need this
+                          proc-index
                           start-time 
                           end-time 
                           events))
+
 ;(struct future-timeline timeline ())
 (struct future-timeline (future-id 
                          start-time 
@@ -90,12 +92,12 @@
                start-time 
                end-time 
                proc-id 
-               proc-index ;TODO: why here?
+               proc-index ;The id of the process in which this event occurred
                future-id 
                user-data
                type 
                prim-name
-               timeline-position ;TODO: what is this
+               timeline-position ;The event's position among all events occurring in its process (sorted by time)
                [prev-proc-event #:mutable] 
                [next-proc-event #:mutable]
                [prev-future-event #:mutable]
@@ -117,6 +119,7 @@
 (define (allocation-event? evt) 
   (equal? (event-prim-name evt) '|[allocate memory|))
 
+;;jitcompile-event : event -> bool
 (define (jitcompile-event? evt) 
   (equal? (event-prim-name evt) '|[jit_on_demand]|))
 
@@ -125,13 +128,6 @@
   (case (event-timeline-position evt) 
     [(end singleton) #t] 
     [else #f]))
-
-(define (get-log-events) 
-  (let ([info (sync/timeout 0 recv)]) 
-    (if info 
-        (let ([v (vector-ref info 2)]) 
-          (cons v (get-log-events)))
-        '())))
 
 ;;get-relative-start-time : trace float -> float
 (define (relative-time trace abs-time) 
@@ -149,29 +145,16 @@
               (raw-log-output index))) 
         '())))
 
-(define (print-blocks raw-output) 
-  (for ([fe (in-list raw-output)]) 
-    (when (equal? (future-event-what fe) 'block) 
-      (printf "~a\n" (future-event-prim-name fe)))))
-
 ;Produces a vector of vectors, where each inner vector contains 
 ;all the log output messages for a specific process
 ;;organize-output : (listof indexed-fevent) -> (vectorof (vectorof future-event))
-(define (organize-output raw-log-output)  
-  ;TODO: Try using for/set here, does calling code depend on ordering
-  #;(define unique-proc-ids (for/set ([ie (in-list raw-log-output)]) 
+(define (organize-output raw-log-output)
+  (define unique-proc-ids (for/set ([ie (in-list raw-log-output)]) 
                                      (future-event-process-id (indexed-fevent-fevent ie))))
-  (let ([unique-proc-ids (sort (for/fold ([ids '()]) ([ie (in-list raw-log-output)]) 
-                                 (let* ([evt (indexed-fevent-fevent ie)]
-                                        [procid (future-event-process-id evt)])
-                                   (if (member procid ids)
-                                       ids 
-                                       (cons procid ids)))) 
-                               <)]) 
-    (for/vector ([procid (in-list unique-proc-ids)])
-      (for/vector ([e (in-list raw-log-output)] 
-                   #:when (eq? procid (future-event-process-id (indexed-fevent-fevent e)))) 
-        e))))
+  (for/vector ([procid (in-list (sort (set->list unique-proc-ids) <))])
+    (for/vector ([e (in-list raw-log-output)] 
+                 #:when (eq? procid (future-event-process-id (indexed-fevent-fevent e)))) 
+      e)))
   
 ;;build-trace : (listof indexed-fevent) -> trace
 (define (build-trace log-output) 
@@ -315,9 +298,7 @@
                                     (λ () 1)) 
                       ri))))
   (values block-hash sync-hash rt-hash))
-                      
-
-                 
+                                
 ;;connect-event-chains! : trace -> void
 (define (connect-event-chains! trace) 
   (for ([tl (in-list (trace-proc-timelines trace))]) 

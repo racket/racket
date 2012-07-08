@@ -3,8 +3,7 @@
          racket/vector
          racket/future/private/visualizer-drawing
          racket/future/private/visualizer-data 
-         racket/future/private/display
-         "bad-trace1.rkt")  
+         racket/future/private/display)  
 
 (define (compile-trace-data logs) 
   (define tr (build-trace logs)) 
@@ -158,11 +157,6 @@
              (do-seg-check tr seg tick = "equal to")]
             [(> evt-rel-time ttime) 
              (do-seg-check tr seg tick >= "after")]))))
-
-;Test layout for 'bad' mandelbrot trace 
-(let-values ([(tr finfo segs ticks) (compile-trace-data BAD-TRACE-1)]) 
-  (sanity-check-ticks ticks)
-  (check-seg-layout tr segs ticks))
              
 (let* ([future-log (list (indexed-fevent 0 (future-event #f 0 'create 0.05 #f 42)) 
                          (indexed-fevent 1 (future-event 42 1 'start-work 0.09 #f #f)) 
