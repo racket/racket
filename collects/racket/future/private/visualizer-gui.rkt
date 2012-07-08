@@ -85,8 +85,7 @@
           (min screen-h DEF-WINDOW-HEIGHT)))
 
 (define (show-visualizer-for-trace logs) 
-  ;TODO: Just set initial sizes, not minimum sizes
-  ;If for some reason the log is empty, error? 
+  ;If for some reason the log is empty, error
   (when (empty? logs) 
       (error 'show-visualizer "No future log messages found."))
   (define the-trace (build-trace logs))  
@@ -191,7 +190,7 @@
                                  [pict-builder (λ (vregion) 
                                                  (draw-creategraph-pict vregion 
                                                                          creation-tree-layout))]
-                                 [hover-handler (λ (x y vregion) 
+                                 [hover-handler #f #;(λ (x y vregion) 
                                                   (set! hovered-graph-node 
                                                         (find-node-for-coords x 
                                                                               y 

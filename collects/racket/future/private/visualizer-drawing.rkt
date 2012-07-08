@@ -302,8 +302,6 @@
                                                (event-segment (event-next-targ-future-event evt)) 
                                                #f)))))
 
-(struct acc (delta last-right-edge) #:transparent)
-
 ;;build-seg-layout : flonum (listof event) trace -> (values (listof segment) uint uint)
 (define (build-seg-layout timeToPixModifier events tr)
   (define last-right-edges (build-vector (length (trace-proc-timelines tr)) (λ (n) 0)))
@@ -545,7 +543,6 @@
 ;;draw-arrows : pict viewable-region segment -> pict
 (define (draw-arrows base-pct vregion seg) 
   (let ([fst (get-seg-previous-to-vregion vregion seg)])
-    ;(printf "~s ~s\n" (event-index (segment-event fst)) (event-type (segment-event fst)))
     (let loop ([pct base-pct] 
                [cur-seg fst])
         (if (not cur-seg)
@@ -757,9 +754,6 @@
                                  (create-graph-node-strokecolor) 
                                  (drawable-node-width dnode)) 
                     (colorize (text ntext) (create-graph-node-forecolor)))))
-
-;Cache the creation graph pict after first drawing
-(define cg-pict #f)
 
 ;;draw-creategraph-pict : (or/c viewable-region #f) tree-layout -> pict
 ;; if vregion is #f, return a pict that includes the entire tree

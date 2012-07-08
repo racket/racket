@@ -1856,10 +1856,6 @@ static int future_in_runtime(Scheme_Future_State *fs, future_t * volatile ft, in
   future_t * volatile old_ft;
   int done;
 
-  //FUTURE_ASSERT((!scheme_future_thread_state && !p->current_ft) || scheme_future_thread_state);
-  //FUTURE_ASSERT(scheme_future_thread_state->thread == p);
-  //FUTURE_ASSERT(scheme_future_thread_state->thread->current_ft == p->current_ft);
-
   old_ft = p->current_ft;
   p->current_ft = ft;
 
@@ -2739,8 +2735,6 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   runtime thread so we can log all of its primitive applications). */ 
 {
   future_t *future;
-  future_t *targ_future;
-  Scheme_Object **prim_argv;
   Scheme_Future_State *fs = scheme_future_state;
   void *storage[4];
   int insist_to_suspend, prefer_to_suspend, fid;
