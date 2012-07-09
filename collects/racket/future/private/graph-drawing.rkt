@@ -1,14 +1,15 @@
 #lang racket
-(require rackunit)
+(require rackunit 
+         "constants.rkt")
 (provide (struct-out point) 
          (struct-out node) 
          (struct-out drawable-node) 
-         (struct-out graph-layout)
+         (struct-out graph-layout) 
+         (struct-out attributed-node)
          draw-tree
-         drawable-node-center)
+         drawable-node-center 
+         build-attr-tree)
 
-(define DEFAULT-WIDTH 10)
-(define PADDING 5)
 (define-struct/contract point ([x integer?] [y integer?]) #:transparent)
 (struct node (data children))
 (struct graph-layout (width height nodes) #:transparent)
@@ -169,8 +170,8 @@
 ;;draw-tree : node [symbol] [uint] [uint] [uint] -> tree-layout 
 (define (draw-tree root 
                    #:style [style 'standard]
-                   #:node-width [node-width DEFAULT-WIDTH] 
-                   #:padding [padding PADDING] 
+                   #:node-width [node-width CREATE-GRAPH-NODE-DIAMETER] 
+                   #:padding [padding CREATE-GRAPH-PADDING] 
                    #:zoom [zoom-level 1])
   (let* ([scaled-node-w (* node-width zoom-level)] 
          [scaled-padding (* padding zoom-level)] 
@@ -194,247 +195,3 @@
     (graph-layout (+ (graph-layout-width layout) scaled-padding) 
                   (+ (graph-layout-height layout) scaled-padding) 
                   (graph-layout-nodes layout))))
-
-
-;Tests
-(let* ([nodea (drawable-node (node 'a '()) 5 5 10 0 0 '() 10)]
-       [center (drawable-node-center nodea)]) 
-  (check-equal? (point-x center) 10.0) 
-  (check-equal? (point-y center) 10.0))
-
-
-(define test-padding 5)
-(define test-width 10)
-
-(define (tree root-data . children) 
-  (node root-data children))
-
-(define (get-node data layout) 
-  (first (filter (λ (dn) (equal? (node-data (drawable-node-node dn)) data)) (graph-layout-nodes layout))))
-
-#|
-   a
-   |
-   b
-|#
-(define tree0 (tree 'a (tree 'b)))
-(let* ([layout (draw-tree tree0 #:node-width test-width #:padding test-padding)]
-       [dnode-a (get-node 'a layout)]
-       [dnode-b (get-node 'b layout)])
-  (check-equal? (graph-layout-width layout) (+ (* test-padding 2) test-width))
-  (check-equal? (graph-layout-height layout) (+ (* test-padding 3) (* test-width 2)))
-  (check-equal? (drawable-node-x dnode-a) test-padding) 
-  (check-equal? (drawable-node-y dnode-a) test-padding) 
-  (check-equal? (drawable-node-x dnode-b) test-padding) 
-  (check-equal? (drawable-node-y dnode-b) (+ test-padding test-width test-padding)))
-(let ([atree (build-attr-tree tree0 0)]) 
-  (check-equal? (attributed-node-num-leaves atree) 1))
-
-#|
-      a
-     / \
-    b   c
-|# 
-(define tree1 (tree 'a 
-                    (tree 'b) 
-                    (tree 'c)))
-(define layout (draw-tree tree1 #:node-width test-width #:padding test-padding)) 
-(for ([dnode (in-list (graph-layout-nodes layout))]) 
-  (check-equal? (drawable-node-width dnode) test-width))
-(define dnode-a (get-node 'a layout)) 
-(define dnode-b (get-node 'b layout)) 
-(define dnode-c (get-node 'c layout))
-
-(define slot-one-pos (+ test-padding test-width test-padding))
-(define square-sz (+ (* test-padding 3) (* test-width 2)))
-(check-equal? (graph-layout-width layout) square-sz) 
-(check-equal? (graph-layout-height layout) square-sz)
-(check-equal? (drawable-node-x dnode-b) test-padding) 
-(check-equal? (drawable-node-y dnode-b) slot-one-pos)
-(check-equal? (drawable-node-x dnode-c) slot-one-pos)
-(check-equal? (drawable-node-y dnode-c) slot-one-pos) 
-(check-equal? (drawable-node-x dnode-a) (/ 25 2)) 
-(check-equal? (drawable-node-y dnode-a) test-padding) 
-(check-equal? (length (drawable-node-children dnode-a)) 2)
-(let ([atree (build-attr-tree tree1 0)]) 
-  (check-equal? (attributed-node-num-leaves atree) 2))
-
-#|
-         a
-       /  \
-      b    d
-      |   / \
-      c   e f
-            |
-            g
-|#
-(define tree2 (tree 'a 
-                    (tree 'b 
-                          (tree 'c)) 
-                    (tree 'd 
-                          (tree 'e) 
-                          (tree 'f 
-                                (tree 'g)))))
-(let* ([layout (draw-tree tree2 #:node-width test-width #:padding test-padding)] 
-       [nodes (graph-layout-nodes layout)] 
-       [dnode-a (get-node 'a layout)] 
-       [dnode-b (get-node 'b layout)] 
-       [dnode-c (get-node 'c layout)] 
-       [dnode-d (get-node 'd layout)] 
-       [dnode-e (get-node 'e layout)] 
-       [dnode-f (get-node 'f layout)] 
-       [dnode-g (get-node 'g layout)])
-  (check-equal? (node-data (drawable-node-node dnode-a)) 'a) 
-  (check-equal? (node-data (drawable-node-node dnode-b)) 'b) 
-  (check-equal? (node-data (drawable-node-node dnode-c)) 'c) 
-  (check-equal? (node-data (drawable-node-node dnode-d)) 'd) 
-  (check-equal? (node-data (drawable-node-node dnode-e)) 'e) 
-  (check-equal? (node-data (drawable-node-node dnode-f)) 'f) 
-  (check-equal? (node-data (drawable-node-node dnode-g)) 'g) 
-  (check-equal? (graph-layout-width layout) 50) 
-  (check-equal? (graph-layout-height layout) 65) 
-  (check-equal? (drawable-node-x dnode-a) (/ 65 4))
-  (check-equal? (drawable-node-y dnode-a) test-padding)
-  (check-equal? (drawable-node-x dnode-b) test-padding) 
-  (check-equal? (drawable-node-y dnode-b) (+ (* 2 test-padding) test-width)) 
-  (check-equal? (drawable-node-x dnode-c) test-padding) 
-  (check-equal? (drawable-node-y dnode-c) (+ (drawable-node-y dnode-b) test-width test-padding)) 
-  (check-equal? (drawable-node-x dnode-e) (+ (* 2 test-padding) test-width)) 
-  (check-equal? (drawable-node-y dnode-e) (+ (drawable-node-y dnode-d) test-width test-padding))
-  (check-equal? (drawable-node-x dnode-f) (+ (drawable-node-x dnode-e) test-width test-padding))
-  (check-equal? (drawable-node-y dnode-f) (drawable-node-y dnode-e))
-  (check-equal? (drawable-node-x dnode-g) (drawable-node-x dnode-f))
-  (check-equal? (drawable-node-y dnode-g) (+ (drawable-node-y dnode-f) test-width test-padding)))
-(let ([atree (build-attr-tree tree2 0)]) 
-  (check-equal? (attributed-node-num-leaves atree) 3))
-
-#|
-        a
-       /|\
-      b c e
-        |
-        d
-|#
-(define tree3 (tree 'a 
-                    (tree 'b) 
-                    (tree 'c 
-                          (tree 'd)) 
-                    (tree 'e)))
-(let* ([layout (draw-tree tree3 #:node-width test-width #:padding test-padding)] 
-       [nodes (graph-layout-nodes layout)] 
-       [dnode-a (get-node 'a layout)] 
-       [dnode-b (get-node 'b layout)] 
-       [dnode-c (get-node 'c layout)] 
-       [dnode-d (get-node 'd layout)] 
-       [dnode-e (get-node 'e layout)]) 
-  (check-equal? (graph-layout-width layout) 50) 
-  (check-equal? (graph-layout-height layout) 50) 
-  (check-equal? (drawable-node-x dnode-a) 20) 
-  (check-equal? (drawable-node-y dnode-a) 5)
-  (check-equal? (drawable-node-x dnode-b) test-padding) 
-  (check-equal? (drawable-node-y dnode-b) (+ (* 2 test-padding) test-width)) 
-  (check-equal? (drawable-node-x dnode-c) (+ (* 2 test-padding) test-width)) 
-  (check-equal? (drawable-node-y dnode-c) (drawable-node-y dnode-b)) 
-  (check-equal? (drawable-node-x dnode-e) (+ (* 3 test-padding) (* 2 test-width))) 
-  (check-equal? (drawable-node-y dnode-e) (drawable-node-y dnode-c)) 
-  (check-equal? (drawable-node-x dnode-d) (drawable-node-x dnode-c)) 
-  (check-equal? (drawable-node-y dnode-d) (+ (drawable-node-y dnode-c) test-padding test-width)))
-(let ([atree (build-attr-tree tree3 0)]) 
-  (check-equal? (attributed-node-num-leaves atree) 3))
-
-#| 
-        a
-     / | | \
-    b  c f  g 
-      / \
-     d   e
-|#
-(define tree4 (tree 'a 
-                    (tree 'b) 
-                    (tree 'c 
-                          (tree 'd) 
-                          (tree 'e)) 
-                    (tree 'f) 
-                    (tree 'g)))
-(let* ([layout (draw-tree tree4 #:node-width test-width #:padding test-padding)] 
-       [nodes (graph-layout-nodes layout)] 
-       [dnode-a (get-node 'a layout)] 
-       [dnode-b (get-node 'b layout)] 
-       [dnode-c (get-node 'c layout)] 
-       [dnode-d (get-node 'd layout)] 
-       [dnode-e (get-node 'e layout)] 
-       [dnode-f (get-node 'f layout)] 
-       [dnode-g (get-node 'g layout)]) 
-  (check-equal? (graph-layout-width layout) 80) 
-  (check-equal? (graph-layout-height layout) 50) 
-  (check-equal? (drawable-node-x dnode-b) test-padding) 
-  (check-equal? (drawable-node-y dnode-b) (+ (drawable-node-y dnode-a) test-width test-padding)) 
-  (check-equal? (drawable-node-y dnode-c) (drawable-node-y dnode-b)) 
-  (check-equal? (drawable-node-x dnode-d) (+ (drawable-node-x dnode-b) test-width test-padding)) 
-  (check-equal? (drawable-node-y dnode-d) (+ (drawable-node-y dnode-c) test-width test-padding)) 
-  (check-equal? (drawable-node-x dnode-e) (+ (drawable-node-x dnode-d) test-width test-padding)) 
-  (check-equal? (drawable-node-y dnode-e) (drawable-node-y dnode-d)) 
-  (check-equal? (drawable-node-x dnode-f) (+ (drawable-node-x dnode-e) test-width test-padding)) 
-  (check-equal? (drawable-node-y dnode-f) (drawable-node-y dnode-c)) 
-  (check-equal? (drawable-node-x dnode-g) (+ (drawable-node-x dnode-f) test-width test-padding)))
-(let ([atree (build-attr-tree tree4 0)]) 
-  (check-equal? (attributed-node-num-leaves atree) 5))
-
-#| 
-Layered-tree-draw example from Di Battista 
-         a
-        /   \
-       b      g
-       |     / \
-       c    h   k
-       |   / \
-       d  i   j
-      / \
-     e   f 
-|#
-(define tree5 (tree 'a 
-                    (tree 'b 
-                          (tree 'c 
-                                (tree 'd 
-                                      (tree 'e) 
-                                      (tree 'f)))) 
-                    (tree 'g 
-                          (tree 'h 
-                                (tree 'i) 
-                                (tree 'j)) 
-                          (tree 'k))))
-(let* ([layout (draw-tree tree5 #:node-width test-width #:padding test-padding)] 
-       [nodes (graph-layout-nodes layout)] 
-       [dnode-a (get-node 'a layout)] 
-       [dnode-b (get-node 'b layout)] 
-       [dnode-c (get-node 'c layout)] 
-       [dnode-d (get-node 'd layout)] 
-       [dnode-e (get-node 'e layout)] 
-       [dnode-f (get-node 'f layout)] 
-       [dnode-g (get-node 'g layout)] 
-       [dnode-h (get-node 'h layout)] 
-       [dnode-i (get-node 'i layout)] 
-       [dnode-j (get-node 'j layout)] 
-       [dnode-k (get-node 'k layout)]) 
-  (check-equal? (graph-layout-width layout) 80) 
-  (check-equal? (graph-layout-height layout) 80) 
-  (check-equal? (drawable-node-x dnode-e) test-padding) 
-  (check-equal? (drawable-node-y dnode-e) 65) 
-  (check-equal? (drawable-node-x dnode-f) (+ (drawable-node-x dnode-e) test-width test-padding)) 
-  (check-equal? (drawable-node-x dnode-i) (+ (drawable-node-x dnode-f) test-width test-padding)) 
-  (check-equal? (drawable-node-x dnode-j) (+ (drawable-node-x dnode-i) test-width test-padding)) 
-  (check-equal? (drawable-node-x dnode-k) (+ (drawable-node-x dnode-j) test-width test-padding)))
-(let ([atree (build-attr-tree tree5 0)]) 
-  (check-equal? (attributed-node-num-leaves atree) 5))
-       
-
-                                
-  
-
-      
-   
-  
-  
-  
-  
-  

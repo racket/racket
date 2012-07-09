@@ -10,19 +10,17 @@
          "display.rkt" 
          "constants.rkt")
 
-(provide seg-in-vregion 
+(provide timeline-pict 
+         timeline-pict-for-trace-data 
+         timeline-overlay 
+         seg-in-vregion 
          calc-segments 
          calc-ticks
          calc-row-mid-y 
          find-seg-for-coords 
          segment-edge
          segs-equal-or-later
-         build-timeline-pict
-         build-timeline-bmp-from-log
-         build-timeline-pict-from-log 
-         build-timeline-overlay 
-         build-timeline-with-overlay 
-         build-timeline-bmp-with-overlay 
+         creation-tree-pict
          draw-creategraph-pict 
          zoom-level->factor
          graph-overlay-pict
@@ -581,104 +579,59 @@
                     (loop next-targ-arr next)
                     next-targ-arr)))))))
 
-
-;;timeline-bmp-from-log : (listof indexed-fevent) (or uint bool) (or uint bool) -> bitmap%
-(define (build-timeline-bmp-from-log logs 
-                                     #:max-width [max-width #f] 
-                                     #:max-height [max-height #f]) 
-  (define vregion (if (or (not max-width) (not max-height)) 
-                      #f 
-                      (viewable-region 0 
-                                       0 
-                                       max-width 
-                                       max-height)))
-  
-  (define p (build-timeline-pict-from-log logs vregion)) 
-  (pict->bitmap p))
-
-(define (truncate-bmp bmp width height)
-  (define w (min width (send bmp get-width))) 
-  (define h (min height (send bmp get-height)))
-  (let ([buf (make-bytes (* width height 4))]) 
-    (send bmp 
-          get-argb-pixels 
-          0 
-          0 
-          w 
-          h 
-          buf) 
-    (let ([new-b (make-bitmap w h)]) 
-      (send new-b 
-            set-argb-pixels 
-            0 
-            0 
-            w 
-            h 
-            buf) 
-      new-b)))
-
-;;build-timeline-bmp-with-overlay : (listof indexed-fevent) uint vregion [uint] [uint] -> bitmap%
-(define (build-timeline-bmp-with-overlay logs 
-                                         event-index 
-                                         vregion
-                                         #:max-width [max-width #f] 
-                                         #:max-height [max-height #f]) 
-  (define p (build-timeline-with-overlay logs event-index vregion)) 
-  (define-values (w h) 
-    (values (if max-width (min max-width (pict-width p)) (pict-width p)) 
-            (if max-height (min max-height (pict-height p)) (pict-height p))))
-  (truncate-bmp (pict->bitmap p) w h))
-  
-
-;;build-timeline-pict-from-trace : trace viewable-region -> pict
-(define (build-timeline-pict-from-trace tr vregion) 
+;;timeline-pict : (listof indexed-future-event) [viewable-region] [integer] -> pict
+(define (timeline-pict logs 
+                       #:x [x #f]
+                       #:y [y #f]
+                       #:width [width #f] 
+                       #:height [height #f]
+                       #:selected-event-index [selected-event-index #f]) 
+  (define tr (build-trace logs))
   (define-values (finfo segments) (calc-segments tr))
-  (build-timeline-pict vregion 
-                       tr 
-                       finfo 
-                       segments))
+  (define vregion (if x 
+                      (viewable-region x y width height) 
+                      (viewable-region 0 0 (frame-info-adjusted-width finfo) (frame-info-adjusted-height finfo))))
+  (timeline-pict-for-trace-data vregion 
+                                tr 
+                                finfo 
+                                segments 
+                                #:selected-event-index selected-event-index))
 
-;;build-timeline-pict : (or viewable-region #f) trace frame-info (listof segment) -> pict
-(define (build-timeline-pict vregion tr finfo segments) 
+;;timeline-pict : (or viewable-region #f) trace frame-info (listof segment) -> pict
+(define (timeline-pict-for-trace-data vregion 
+                                      tr 
+                                      finfo 
+                                      segments 
+                                      #:selected-event-index [selected-event-index #f]) 
   (define vr (if (not vregion) 
                  (viewable-region 0 
                                   0 
                                   (frame-info-adjusted-width finfo) 
                                   (frame-info-adjusted-height finfo)) 
                  vregion))
-  (for/fold ([pct (frame-bg vr finfo tr)]) 
-    ([seg (in-list (filter (seg-in-vregion vr) segments))])                 
-    (pin-over pct
-              (- (segment-x seg) (viewable-region-x vr)) 
-              (- (segment-y seg) (viewable-region-y vr)) 
-              (pict-for-segment seg))))
-
-;;build-timeline-pict-from-log : (listof indexed-fevent) viewable-region -> pict
-(define (build-timeline-pict-from-log logs vregion)
-  (build-timeline-pict-from-trace (build-trace logs) vregion)) 
-
-;;build-timeline-with-overlay : (listof indexed-fevent) uint -> pict
-(define (build-timeline-with-overlay logs event-index vregion)
-  (define tr (build-trace logs)) 
-  (define-values (finfo segments) (calc-segments tr))
-  (define timeline-p (build-timeline-pict vregion
-                                          tr 
-                                          finfo 
-                                          segments))
-  (define overlay (build-timeline-overlay vregion
-                                          #f 
-                                          (list-ref segments event-index) 
-                                          finfo 
-                                          tr)) 
-  (pin-over timeline-p 
-            0 
-            0 
-            overlay))
+  (define tp (for/fold ([pct (frame-bg vr finfo tr)]) 
+               ([seg (in-list (filter (seg-in-vregion vr) segments))])                 
+               (pin-over pct
+                         (- (segment-x seg) (viewable-region-x vr)) 
+                         (- (segment-y seg) (viewable-region-y vr)) 
+                         (pict-for-segment seg))))  
+  (cond 
+    [selected-event-index 
+     (define overlay (timeline-overlay vregion
+                                              #f 
+                                              (list-ref segments selected-event-index) 
+                                              finfo 
+                                              tr)) 
+     (pin-over tp 
+               0 
+               0 
+               overlay)] 
+    [else tp]))
 
 ;Draws the pict that is layered on top of the exec. timeline canvas 
 ;to highlight a specific future's event sequence
-;;build-timeline-overlay : uint uint (or segment #f) (or segment #f) frame-info trace -> pict
-(define (build-timeline-overlay vregion tacked hovered finfo tr)
+;;timeline-overlay : uint uint (or segment #f) (or segment #f) frame-info trace -> pict
+(define (timeline-overlay vregion tacked hovered finfo tr)
   (define-values (width height) (values (viewable-region-width vregion) 
                                         (viewable-region-height vregion)))
   (define base (blank (viewable-region-width vregion) 
@@ -754,6 +707,32 @@
                                  (create-graph-node-strokecolor) 
                                  (drawable-node-width dnode)) 
                     (colorize (text ntext) (create-graph-node-forecolor)))))
+
+;;creation-tree-pict : (listof indexed-future-event) [enni] [enni] [enni] [enni] [enni] [enni] [enni] -> pict
+(define (creation-tree-pict events 
+                             #:x [x #f] 
+                             #:y [y #f] 
+                             #:width [width #f] 
+                             #:height [height #f]
+                             #:node-width [node-width #f] 
+                             #:padding [padding #f] 
+                             #:zoom [zoom CREATE-GRAPH-MIN-ZOOM]) 
+  (define tr (build-trace events)) 
+  (define node-diam (if node-width 
+                        node-width 
+                        CREATE-GRAPH-NODE-DIAMETER)) 
+  (define graph-padding (if padding 
+                            padding 
+                            CREATE-GRAPH-PADDING))
+  (define layout (draw-tree (trace-creation-tree tr) 
+                            #:node-width node-diam 
+                            #:padding graph-padding 
+                            #:zoom zoom)) 
+  (define vregion (if x 
+                      (viewable-region x y width height) 
+                      #f))
+  (draw-creategraph-pict vregion layout))
+  
 
 ;;draw-creategraph-pict : (or/c viewable-region #f) tree-layout -> pict
 ;; if vregion is #f, return a pict that includes the entire tree
