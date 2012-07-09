@@ -926,6 +926,38 @@
 [make-immutable-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 [make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 
+;Section 3.14 (Sequences and Streams)
+[sequence? (make-pred-ty (-seq Univ))]
+[stop-before (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
+[stop-after (-poly (a) ((-seq a) (a . -> . Univ) . -> . (-seq a)))]
+[make-do-sequence (-poly (a b) ((-> (-values (list (a . -> . b)
+                                                   (a . -> . a)
+                                                   a
+                                                   (Un (a . -> . Univ) (-val #f))
+                                                   (Un (b . -> . Univ) (-val #f))
+                                                   (Un (a b . -> . Univ) (-val #f)))))
+                                . -> . (-seq b)))]
+[sequence-generate (-poly (a) ((-seq a) . -> . (-values (list (-> -Boolean) (-> a)))))]
+;; Doesn't work (mu types are single-valued only):
+;[sequence-generate*  (-poly (a) ((-seq a) . -> . (-mu t (-values (list (Un (-lst a) (-val #f)) t)))))]
+;; Doesn't render nicely (but seems to work fine):
+;[empty-sequence (-poly (a) (-seq a))]
+[sequence->list (-poly (a) ((-seq a) . -> . (-lst a)))]
+[sequence-length (-poly (a) ((-seq a) . -> . -Integer))]
+[sequence-ref (-poly (a) ((-seq a) -Integer . -> . a))]
+[sequence-tail (-poly (a) ((-seq a) -Integer . -> . (-seq a)))]
+[sequence-append (-poly (a) (->* (list) (-seq a) (-seq a)))]
+[sequence-map (-poly (a b) ((a . -> . b) (-seq a) . -> . (-seq b)))]
+[sequence-andmap (-poly (a b t) (make-pred-ty (list (make-pred-ty (list a) b t) (-seq a))
+                                              (Un b (-val #t))
+                                              (-seq t)))]
+[sequence-ormap (-poly (a b) ((a . -> . b) (-seq a) . -> . (Un b (-val #f))))]
+[sequence-for-each (-poly (a) ((a . -> . Univ) (-seq a) . -> . -Void))]
+[sequence-fold (-poly (a b) ((b a . -> . b) b (-seq a) . -> . b))]
+[sequence-count (-poly (a) ((a . -> . Univ) (-seq a) . -> . -Nat))]
+[sequence-filter (-poly (a) ((a . -> . Univ) (-seq a) . -> . (-seq a)))]
+[sequence-add-between (-poly (a) ((-seq a) a . -> . (-seq a)))]
+
 ;Section 3.16 (Sets)
 [set (-poly (e) (->* (list) e (-set e)))]
 [seteqv (-poly (e) (->* (list) e (-set e)))]
@@ -2405,7 +2437,7 @@
 ; Writing
 [write   (Univ [-Output-Port] . ->opt . -Void)]
 [display (Univ [-Output-Port] . ->opt . -Void)]
-[print   (Univ [-Output-Port] . ->opt . -Void)]
+[print   (Univ [-Output-Port (one-of/c 0 1)] . ->opt . -Void)]
 [displayln (Univ [-Output-Port] . ->opt . -Void)]
 [fprintf (->* (list -Output-Port -String) Univ -Void)]
 [printf (->* (list -String) Univ -Void)]
@@ -2459,7 +2491,7 @@
 [pretty-format (Univ [-Output-Port] . ->opt . -Void)]
 [pretty-print-handler (-> Univ -Void)]
 
-[pretty-print-columns (-Param (-opt -Nat) (-opt -Nat))]
+[pretty-print-columns (-Param (Un -Nat (-val 'infinity)) (Un -Nat (-val 'infinity)))]
 [pretty-print-depth (-Param (-opt -Nat) (-opt -Nat))]
 [pretty-print-exact-as-decimal (-Param Univ B)]
 [pretty-print-.-symbol-without-bars (-Param Univ B)]
