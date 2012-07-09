@@ -8,7 +8,7 @@
          color-green
          color-blue
          color-alpha
-         (rename-out [color-database-intf color-database<%>])
+         color-database<%>
          the-color-database
          color->immutable-color)
 
@@ -98,13 +98,10 @@
 
 (define color-objects (make-hash))
 
-(define color-database-intf
-  (let ([color-database<%> (interface ()
-                             find-color
-                             get-names)])
-    color-database<%>))
+(define color-database<%>
+  (interface () find-color get-names))
 
-(defclass* color-database<%> object% (color-database-intf)
+(defclass* color-database% object% (color-database<%>)
   (super-new)
   (def/public (find-color [string? name])
     (let ([name (string-downcase name)])
@@ -120,7 +117,7 @@
   (def/public (get-names)
     (sort (hash-map colors (lambda (k v) k)) string<?)))
 
-(define the-color-database (new color-database<%>))
+(define the-color-database (new color-database%))
 
 (define colors
   #hash(("aliceblue" . #(240 248 255))
