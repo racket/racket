@@ -9,8 +9,8 @@
          "display.rkt" 
          "constants.rkt")    
 
-(provide (contract-out [show-visualizer (-> void?)]) 
-         show-visualizer-for-trace) 
+(provide show-visualizer 
+         show-visualizer-for-events) 
 
 ;;rebuild-mouse-index : frame-info trace (listof segment) -> interval-map of (range --> interval-map)
 (define (rebuild-mouse-index frameinfo tr segs) 
@@ -84,7 +84,8 @@
   (values (min screen-w DEF-WINDOW-WIDTH) 
           (min screen-h DEF-WINDOW-HEIGHT)))
 
-(define (show-visualizer-for-trace logs) 
+;;show-visualizer-for-events : (listof indexed-fevent) -> void
+(define (show-visualizer-for-events logs) 
   ;If for some reason the log is empty, error
   (when (empty? logs) 
       (error 'show-visualizer "No future log messages found."))
@@ -148,23 +149,21 @@
   (define timeline-panel (new pict-canvas% 
                               [parent timeline-container] 
                               [redraw-on-resize #f] 
-                              [pict-builder (λ (vregion) (build-timeline-pict vregion the-trace frameinfo segments))] 
+                              [pict-builder (λ (vregion) (timeline-pict-for-trace-data vregion the-trace frameinfo segments))] 
                               [hover-handler (λ (x y vregion) 
-                                               (let ([seg (find-seg-for-coords x y timeline-mouse-index)])
+                                               (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
                                                  (set! hover-seg seg) 
-                                                 ;(send timeline-panel set-redraw-overlay! #t)
                                                  (post-event listener-table 'segment-hover timeline-panel seg)))]
                               [click-handler (λ (x y vregion) 
                                                (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
-                                                 (set! tacked-seg seg) 
-                                                 ;(send timeline-panel set-redraw-overlay! #t) 
-                                                 (post-event listener-table 'segment-click timeline-panel seg)))]
+                                                 (set! tacked-seg seg)  
+                                                 (post-event listener-table 'segment-click timeline-panel seg)))] 
                               [overlay-builder (λ (vregion scale-factor) 
-                                                 (build-timeline-overlay vregion 
-                                                                         tacked-seg 
-                                                                         hover-seg 
-                                                                         frameinfo 
-                                                                         the-trace))]
+                                                 (timeline-overlay vregion 
+                                                                   tacked-seg 
+                                                                   hover-seg 
+                                                                   frameinfo 
+                                                                   the-trace))]
                               [min-width 500] 
                               [min-height (inexact->exact (round (* winh .7)))] 
                               [style '(hscroll vscroll)] 
@@ -357,4 +356,4 @@
   (send f show #t))
 
 (define (show-visualizer)
-  (show-visualizer-for-trace (raw-log-output 0)))
+  (show-visualizer-for-events (timeline-events)))
