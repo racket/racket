@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
-         "syntax.rkt")
+         racket/contract/base
+         (except-in "syntax.rkt" real-in integer-in))
 
 (provide color%
          make-color
@@ -16,65 +17,66 @@
   r g b a
   set-immutable)
 
-(defclass color% object%
-  (field [r 0]
-         [g 0]
-         [b 0]
-         [a 1.0])
-  (define immutable? #f)
+(define color%
+  (class object%
+    (field [r 0]
+           [g 0]
+           [b 0]
+           [a 1.0])
+    (define immutable? #f)
 
-  (init-rest args)
-  (super-new)
-  (case-args 
-   args
-   [() (void)]
-   [([string? s])
-    (let ([v (hash-ref colors (string-foldcase s) #f)])
-      (if v
+    (init-rest args)
+    (super-new)
+    (case-args
+     args
+     [() (void)]
+     [([string? s])
+      (let ([v (hash-ref colors (string-foldcase s) #f)])
+        (if v
+            (begin
+              (set! r (vector-ref v 0))
+              (set! g (vector-ref v 1))
+              (set! b (vector-ref v 2)))
+            (error 'color% "unknown color name: ~e" (car args))))]
+     [([color% c])
+      (set! r (color-red c))
+      (set! g (color-green c))
+      (set! b (color-blue c))
+      (set! a (color-alpha c))]
+     [([byte? _r] [byte? _g] [byte? _b])
+      (set! r _r)
+      (set! g _g)
+      (set! b _b)]
+     [([byte? _r] [byte? _g] [byte? _b] [(real-in 0 1) _a])
+      (set! r _r)
+      (set! g _g)
+      (set! b _b)
+      (set! a (exact->inexact _a))]
+     (init-name 'color%))
+
+    (define/public (red) r)
+    (define/public (green) g)
+    (define/public (blue) b)
+    (define/public (alpha) a)
+
+    (define/public (set rr rg rb [ra 1.0])
+      (if immutable?
+          (error (method-name 'color% 'set) "object is immutable")
           (begin
-            (set! r (vector-ref v 0))
-            (set! g (vector-ref v 1))
-            (set! b (vector-ref v 2)))
-          (error 'color% "unknown color name: ~e" (car args))))]
-   [([color% c])
-    (set! r (color-red c))
-    (set! g (color-green c))
-    (set! b (color-blue c))
-    (set! a (color-alpha c))]
-   [([byte? _r] [byte? _g] [byte? _b])
-    (set! r _r)
-    (set! g _g)
-    (set! b _b)]
-   [([byte? _r] [byte? _g] [byte? _b] [(real-in 0 1) _a])
-    (set! r _r)
-    (set! g _g)
-    (set! b _b)
-    (set! a (exact->inexact _a))]
-   (init-name 'color%))
+            (set! r rr)
+            (set! g rg)
+            (set! b rb)
+            (set! a (exact->inexact ra)))))
 
-  (def/public (red) r)
-  (def/public (green) g)
-  (def/public (blue) b)
-  (def/public (alpha) a)
+    (define/public (ok?) #t)
+    (define/public (is-immutable?) immutable?)
+    (define/public (set-immutable) (set! immutable? #t))
 
-  (define/public (set rr rg rb [ra 1.0])
-    (if immutable?
-        (error (method-name 'color% 'set) "object is immutable")
-        (begin
-          (set! r rr)
-          (set! g rg)
-          (set! b rb)
-          (set! a (exact->inexact ra)))))
-
-  (define/public (ok?) #t)
-  (define/public (is-immutable?) immutable?)
-  (define/public (set-immutable) (set! immutable? #t))
-  
-  (define/public (copy-from c)
-    (if immutable?
-        (error (method-name 'color% 'copy-from) "object is immutable")
-        (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))
-               this))))
+    (define/public (copy-from c)
+      (if immutable?
+          (error (method-name 'color% 'copy-from) "object is immutable")
+          (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))
+                 this)))))
 
 (define color-red (class-field-accessor color% r))
 (define color-green (class-field-accessor color% g))
@@ -99,23 +101,26 @@
 (define color-objects (make-hash))
 
 (define color-database<%>
-  (interface () find-color get-names))
+  (interface ()
+    [find-color (->m string? (or/c (is-a?/c color%) #f))]
+    [get-names (->m (listof string?))]))
 
-(defclass* color-database% object% (color-database<%>)
-  (super-new)
-  (def/public (find-color [string? name])
-    (let ([name (string-downcase name)])
-      (or (hash-ref color-objects name #f)
-          (let ([v (hash-ref colors (string-foldcase name) #f)])
-            (if v
-                (let ([c (new color%)])
-                  (send c set (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))
-                  (send c set-immutable)
-                  (hash-set! color-objects name c)
-                  c)
-                #f)))))
-  (def/public (get-names)
-    (sort (hash-map colors (lambda (k v) k)) string<?)))
+(define color-database%
+  (class* object% (color-database<%>)
+    (super-new)
+    (define/public (find-color name)
+      (let ([name (string-downcase name)])
+        (or (hash-ref color-objects name #f)
+            (let ([v (hash-ref colors (string-foldcase name) #f)])
+              (if v
+                  (let ([c (new color%)])
+                    (send c set (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))
+                    (send c set-immutable)
+                    (hash-set! color-objects name c)
+                    c)
+                  #f)))))
+    (define/public (get-names)
+      (sort (hash-map colors (lambda (k v) k)) string<?))))
 
 (define the-color-database (new color-database%))
 

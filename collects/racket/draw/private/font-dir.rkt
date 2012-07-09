@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         "syntax.rkt"
+         racket/contract/base
          "font-syms.rkt")
 
 (provide font-name-directory<%>
@@ -26,25 +26,23 @@
               '(default decorative roman script
                  swiss modern symbol system))
 
-    (def/public (find-family-default-font-id [family-symbol? family])
+    (define/public (find-family-default-font-id family)
       (intern family))
 
-    (def/public (find-or-create-font-id [string? name]
-                                        [family-symbol? family])
+    (define/public (find-or-create-font-id name family)
       (intern (cons name family)))
 
-    (def/public (get-face-name [exact-integer? id])
+    (define/public (get-face-name id)
       (let ([v (hash-ref reverse-table id #f)])
         (and v (pair? v) (car v))))
     
-    (def/public (get-family [exact-integer? id])
+    (define/public (get-family id)
       (let ([v (hash-ref reverse-table id #f)])
         (or (and (pair? v) (cdr v))
             (and (symbol? v) v)
             'default)))
 
-    (def/public (get-font-id [string? name]
-                             [family-symbol? family])
+    (define/public (get-font-id name family)
       (hash-ref table (cons string family) 0))
 
     (define/private (default-font s)
@@ -69,9 +67,7 @@
                 [(macosx) "Lucida Grande"]
                 [else "Sans"])]))
 
-    (def/public (get-post-script-name [exact-integer? id]
-                                      [weight-symbol? w]
-                                      [style-symbol? s])
+    (define/public (get-post-script-name id w s)
       (let ([s (or (hash-ref ps-table (list id w s) #f)
                    (hash-ref reverse-table id #f))])
         (cond
@@ -79,9 +75,7 @@
          [(symbol? s) (default-font s)]
          [else "Serif"])))
 
-    (def/public (get-screen-name [exact-integer? id]
-                                 [weight-symbol? w]
-                                 [style-symbol? s])
+    (define/public (get-screen-name id w s)
       (let ([s (or (hash-ref screen-table (list id w s) #f)
                    (hash-ref reverse-table id #f))])
         (cond
@@ -89,22 +83,29 @@
          [(symbol? s) (default-font s)]
          [else "Serif"])))
 
-    (def/public (set-post-script-name [exact-integer? id]
-                                      [weight-symbol? w]
-                                      [style-symbol? s]
-                                      [string? name])
+    (define/public (set-post-script-name id w s name)
       (hash-set! ps-table (list id w s) name))
 
-    (def/public (set-screen-name [exact-integer? id]
-                                 [weight-symbol? w]
-                                 [style-symbol? s]
-                                 [string? name])
+    (define/public (set-screen-name id w s name)
       (hash-set! screen-table (list id w s) name))
 
     (super-new)))
 
 (define font-name-directory<%>
-  (class->interface font-name-directory%))
+  (interface ()
+    [find-family-default-font-id (->m font-family/c exact-integer?)]
+    [fint-or-create-font-id (->m string? font-family/c exact-integer?)]
+    [get-face-name (->m exact-integer? (or/c string? #f))]
+    [get-family (->m exact-integer? font-family/c)]
+    [get-font-id (->m string? font-family/c exact-integer?)]
+    [get-post-script-name
+     (->m exact-integer? font-weight/c font-style/c (or/c string? #f))]
+    [get-screen-name
+     (->m exact-integer? font-weight/c font-style/c (or/c string? #f))]
+    [set-post-script-name
+     (->m exact-integer? font-weight/c font-style/c string? any)]
+    [set-screen-name
+     (->m exact-integer? font-weight/c font-style/c string? any)]))
 
 (define the-font-name-directory (new font-name-directory%))
 
