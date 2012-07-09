@@ -123,7 +123,7 @@ determine the url for downloading the package.
 To find the url for version @tt{(1 1)} of the plai package,
 do this:
 
-@tt{% planet url plai plai.plt 1 1}
+@tt{% raco planet url plai plai.plt 1 1}
 
 and get this as a response:
 
@@ -136,7 +136,7 @@ call the file something else. Rename it to @tt{plai.plt}.}
 
 @item{Now run the command-line tool one more time to install the plt file:
 
-@tt{% planet fileinject plai plai.plt 1 1}
+@tt{% raco planet fileinject plai plai.plt 1 1}
 
 This command should be run from the same directory where you saved @tt{plai.plt}.
 
