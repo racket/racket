@@ -15,7 +15,7 @@
          (define/override (get-brush . b) #f)
          (define/override (set-clipping-rect . b) (void))
          (define/override (get-clipping-region . b) #f)
-         (define/override (draw-text s x y combine? offset count) (void))
+         (define/override (draw-text s x y [combine? #f] [offset 0] [angle 0.0]) (void))
          (define/override (cache-font-metrics-key) 100))))
          
 
