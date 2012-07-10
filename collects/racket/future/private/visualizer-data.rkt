@@ -127,17 +127,21 @@
 (define (relative-time trace abs-time) 
   (- abs-time (trace-start-time trace)))
 
-;Gets log events for an execution timeline
-;;timeline-events : (listof indexed-future-event)
-(define (timeline-events) 
+;;timeline-events/private : integer -> (listof indexed-future-event)
+(define (timeline-events/private index) 
   (let ([index 0] 
         [info (sync/timeout 0 recv)]) 
     (if info 
         (let ([v (vector-ref info 2)]) 
           (if (future-event? v) 
-              (cons (indexed-future-event index v) (timeline-events (add1 index))) 
-              (timeline-events index))) 
+              (cons (indexed-future-event index v) (timeline-events/private (add1 index))) 
+              (timeline-events/private index))) 
         '())))
+
+;Gets log events for an execution timeline
+;;timeline-events : (listof indexed-future-event)
+(define (timeline-events) 
+  (timeline-events/private 0))
 
 ;Produces a vector of vectors, where each inner vector contains 
 ;all the log output messages for a specific process
