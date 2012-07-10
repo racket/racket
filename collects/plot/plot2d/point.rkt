@@ -29,6 +29,7 @@
                  [#:line-width line-width (>=/c 0) (point-line-width)]
                  [#:alpha alpha (real-in 0 1) (point-alpha)]
                  [#:label label (or/c string? #f) #f]
+                 [#:add-ticks? add-ticks? boolean? #t]
                  ) renderer2d?
   (let ([vs  (filter vrational? vs)])
     (cond
@@ -39,7 +40,8 @@
                    [y-min  (if y-min y-min (apply min* ys))]
                    [y-max  (if y-max y-max (apply max* ys))])
                (renderer2d
-                (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+                (vector (ivl x-min x-max) (ivl y-min y-max)) #f
+                (if add-ticks? default-ticks-fun #f)
                 (points-render-fun vs sym color (cond [(eq? fill-color 'auto)  (->pen-color color)]
                                                       [else  fill-color])
                                    size line-width alpha label)))])))
@@ -100,10 +102,12 @@
           [#:line-style line-style plot-pen-style/c (vector-field-line-style)]
           [#:alpha alpha (real-in 0 1) (vector-field-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (let ([f  (cond [(procedure-arity-includes? f 2 #t)  f]
                   [else  (λ (x y) (f (vector x y)))])])
-    (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+    (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f
+                (if add-ticks? default-ticks-fun #f)
                 (vector-field-render-fun f samples scale color line-width line-style alpha label))))
 
 ;; ===================================================================================================
@@ -134,6 +138,7 @@
           [#:line-style line-style plot-pen-style/c (error-bar-line-style)]
           [#:width width (>=/c 0) (error-bar-width)]
           [#:alpha alpha (real-in 0 1) (error-bar-alpha)]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (let ([bars  (filter vrational? bars)])
     (cond [(empty? bars)  (renderer2d #f #f #f #f)]
@@ -143,6 +148,7 @@
                  [x-max  (if x-max x-max (apply max* xs))]
                  [y-min  (if y-min y-min (apply min* (map - ys hs)))]
                  [y-max  (if y-max y-max (apply max* (map + ys hs)))])
-             (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+             (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f
+                         (if add-ticks? default-ticks-fun #f)
                          (error-bars-render-fun xs ys hs
                                                 color line-width line-style width alpha)))])))

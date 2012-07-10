@@ -44,11 +44,12 @@
           [#:style style plot-pen-style/c (line-style)]
           [#:alpha alpha (real-in 0 1) (line-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
   (define g (2d-function->sampler f (vector x-ivl y-ivl)))
-  (renderer2d (vector x-ivl y-ivl) #f default-ticks-fun
+  (renderer2d (vector x-ivl y-ivl) #f (if add-ticks? default-ticks-fun #f)
               (isoline-render-proc g z samples color width style alpha label)))
 
 ;; ===================================================================================================
@@ -100,11 +101,12 @@
           [#:styles styles (plot-pen-styles/c (listof real?)) (contour-styles)]
           [#:alphas alphas (alphas/c (listof real?)) (contour-alphas)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
   (define g (2d-function->sampler f (vector x-ivl y-ivl)))
-  (renderer2d (vector x-ivl y-ivl) #f default-ticks-fun
+  (renderer2d (vector x-ivl y-ivl) #f (if add-ticks? default-ticks-fun #f)
               (contours-render-proc g levels samples colors widths styles alphas label)))
 
 ;; ===================================================================================================
@@ -180,11 +182,12 @@
           [#:contour-styles contour-styles (plot-pen-styles/c (listof real?)) (contour-styles)]
           [#:alphas alphas (alphas/c (listof ivl?)) (contour-interval-alphas)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
   (define g (2d-function->sampler f (vector x-ivl y-ivl)))
-  (renderer2d (vector x-ivl y-ivl) #f default-ticks-fun
+  (renderer2d (vector x-ivl y-ivl) #f (if add-ticks? default-ticks-fun #f)
               (contour-intervals-render-proc g levels samples colors styles
                                              contour-colors contour-widths contour-styles
                                              alphas label)))
