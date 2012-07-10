@@ -51,42 +51,45 @@
  (variable-reference->module-source
   (#%variable-reference)))
 
-(define-syntax (quote-module-name stx)
+(define-for-syntax (do-quote-module stx fixup)
   (syntax-case stx ()
-    [(_) #'(module-name-fixup (module-source) null)]
-    [(_ "." path ...) #'(module-name-fixup (module-source) (list path ...))]
-    [(_ ".." path ...) #'(module-name-fixup (module-source) (list ".." path ...))]
-    [(_ path ...) #'(module-name-fixup null (list path ...))]))
+    [(_ path ...) 
+     (for ([path (in-list (syntax->list #'(path ...)))]
+           [i (in-naturals)])
+       (unless (or (symbol? (syntax-e path))
+                   (equal? (syntax-e path) ".."))
+         (raise-syntax-error #f "not a submodule path element" stx path)))
+     (with-syntax ([fixup fixup])
+       #'(fixup (module-source) (list 'path ...)))]))
+
+(define-syntax (quote-module-name stx)
+  (do-quote-module stx #'module-name-fixup))
 
 (define (module-name-fixup src path)
-  (or
-    (cond 
-      [(null? path) src]
-      [(list? src) (append src path)]
-      [else (append (list src) path)])
-    'top-level))
+  (do-fixup src path #f))
 
 (define-syntax (quote-module-path stx)
-  (syntax-case stx ()
-    [(_) #'(module-path-fixup (module-source) null)]
-    [(_ "." path ...) #'(module-path-fixup (module-source) (list path ...))]
-    [(_ ".." path ...) #'(module-path-fixup (module-source) (list ".." path ...))]
-    [(_ path ...) #'(module-path-fixup null (list path ...))]))
-
+  (do-quote-module stx #'module-path-fixup))
+    
 (define (module-path-fixup src path)
-  (define (map-path->string l)
-    (for/list ([i l])
-      (cond 
-        [(path? i) (path->bytes i)]
-        [else i])))
+  (do-fixup src path #t))
+
+(define (do-fixup src path as-modpath?)
   (define (last-pass src)
     (cond
-     [(path? src) `(file ,(path->bytes src))]
-     [(symbol? src) `(quote ,src)]
-     [(list? src) (map-path->string `(submod ,@src))]
+     [(path? src) src]
+     [(symbol? src) (if as-modpath?
+                        `(quote ,src)
+                        src)]
+     [(list? src) 
+      (define base (last-pass (car src)))
+      (define sm (cdr src))
+      (if as-modpath?
+          `(submod ,base ,@sm)
+          (cons base sm))]
      [else 'top-level]))
   (last-pass
     (cond 
       [(null? path) src]
-      [(list? src) (append src path)]
-      [else (append (list src) path)])))
+      [(pair? src) (append src path)]
+      [else (cons src path)])))

@@ -293,39 +293,35 @@ the whole macro application if no @racket[form] is given.
 }
 
 @(define (p . l) (decode-paragraph l))
-@(define submod-note
-  (make-splice
-    (list
-      @p{Optional submod path arguments, such as @racket["."].
-         @racket[".."]. @racket['D 'E], can be supplied to reference a submodule.})))
 
-@defform[(quote-module-name optional-submod-path ...)]{
+@defform[(quote-module-name submod-path-element ...)]{
 
 Quotes the name of the module in which the form is compiled as a path,
-symbol, submodule path, or @racket['top-level] when used outside of a
-module. @|submod-note| To produce a name suitable for use in printed messages,
-apply @racket[path->relative-string/library] when the result is a
-path.
+symbol, list, or @racket['top-level], where @racket['top-level] is
+produced when used outside of a module. A list corresponds to a
+submodule in the same format as the result of
+@racket[variable-reference->module-name]. Any given
+@racket[submod-path-element]s (as in a @racket[submod] form) are added
+to form a result submodule path.
+
+To produce a name suitable for use in printed messages, apply
+@racket[path->relative-string/library] when the result is a path.
 
 @defexamples[#:eval (new-evaluator)
 (module A racket
   (require syntax/location)
   (define-syntax-rule (name) (quote-module-name))
   (define a-name (name))
-  (define a-name1 (quote-module-name "."))
   (module+ C
     (require syntax/location)
     (define c-name (quote-module-name))
-    (define c-name1 (quote-module-name "."))
     (define c-name2 (quote-module-name ".."))
-    (provide c-name c-name1 c-name2))
+    (provide c-name c-name2))
   (provide (all-defined-out)))
 (require 'A)
 a-name
-a-name1
 (require (submod 'A C))
 c-name
-c-name1
 c-name2
 (module B racket
   (require syntax/location)
@@ -335,38 +331,36 @@ c-name2
 (require 'B)
 b-name
 (quote-module-name)
-[current-namespace (module->namespace (quote 'A))]
+(current-namespace (module->namespace (quote 'A)))
 (quote-module-name)
 ]
 
 }
 
-@defform[(quote-module-path optional-submod-path ...)]{
+@defform[(quote-module-path submod-path-element ...)]{
 
 Quotes the name of the module in which the form is compiled as a
-@tech[#:doc reference-path]{module path} using @racket[quote] or @racket[file],
-@racket[submod], or produces @racket['top-level] when used outside of a module.
-@|submod-note|
+@tech[#:doc reference-path]{module path} using @racket[quote], a path,
+@racket[submod], or @racket['top-level], where @racket['top-level] is
+produced when used outside of a module. Any given
+@racket[submod-path-element]s (as in a @racket[submod] form) are added
+to form a result submodule path.
 
 @defexamples[#:eval (new-evaluator)
 (module A racket
   (require syntax/location)
   (define-syntax-rule (path) (quote-module-path))
   (define a-path (path))
-  (define a-path1 (quote-module-path "."))
   (module+ C
     (require syntax/location)
     (define c-path (quote-module-path))
-    (define c-path1 (quote-module-path "."))
     (define c-path2 (quote-module-path ".."))
-    (provide c-path c-path1 c-path2))
+    (provide c-path c-path2))
   (provide (all-defined-out)))
 (require 'A)
 a-path
-a-path1
 (require (submod 'A C))
 c-path
-c-path1
 c-path2
 (module B racket
   (require syntax/location)
@@ -376,7 +370,7 @@ c-path2
 (require 'B)
 b-path
 (quote-module-path)
-[current-namespace (module->namespace (quote 'A))]
+(current-namespace (module->namespace (quote 'A)))
 (quote-module-path)
 ]
 
