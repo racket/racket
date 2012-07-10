@@ -89,11 +89,12 @@
 ;; ===================================================================================================
 ;; Discrete histograms
 
-(define ((discrete-histogram-ticks-fun cats tick-xs far-ticks? maybe-invert) r)
+(define ((discrete-histogram-ticks-fun cats tick-xs add-ticks? far-ticks? maybe-invert) r)
   (match-define (vector _ (ivl y-min y-max)) (apply maybe-invert (vector->list r)))
   (define-values (x-ticks x-far-ticks)
-    (let ([ticks  (for/list ([cat  (in-list cats)] [x  (in-list tick-xs)])
-                    (tick x #t (->plot-label cat)))])
+    (let ([ticks  (cond [add-ticks?  (for/list ([cat  (in-list cats)] [x  (in-list tick-xs)])
+                                       (tick x #t (->plot-label cat)))]
+                        [else  empty])])
       (if far-ticks? (values empty ticks) (values ticks empty))))
   (match-let*
       ([(vector plot-x-ticks plot-y-ticks)          (maybe-invert (plot-x-ticks)
@@ -118,6 +119,7 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           [#:far-ticks? far-ticks? boolean? #f]
           ) renderer2d?
   (match-define (list (vector cats ys) ...) cat-vals)
@@ -141,7 +143,7 @@
        (define maybe-invert (if invert? (λ (x y) (vector y x)) vector))
        (renderer2d
         (maybe-invert (ivl x-min x-max) (ivl y-min y-max)) #f
-        (discrete-histogram-ticks-fun cats tick-xs far-ticks? maybe-invert)
+        (discrete-histogram-ticks-fun cats tick-xs add-ticks? far-ticks? maybe-invert)
         (rectangles-render-proc (map maybe-invert x-ivls y-ivls)
                                 color style line-color line-width line-style alpha label)))]))
 
@@ -159,6 +161,7 @@
           [#:line-styles line-styles (plot-pen-styles/c nat/c) (stacked-histogram-line-styles)]
           [#:alphas alphas (alphas/c nat/c) (stacked-histogram-alphas)]
           [#:labels labels (labels/c nat/c) '(#f)]
+          [#:add-ticks? add-ticks? boolean? #t]
           [#:far-ticks? far-ticks? boolean? #f]
           ) (listof renderer2d?)
   (match-define (list (vector cats ys) ...) cat-vals)
@@ -180,4 +183,5 @@
      #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
      #:gap gap #:skip skip #:invert? invert?
      #:color color #:style style #:line-color line-color #:line-width line-width
-     #:line-style line-style #:alpha alpha #:label label #:far-ticks? far-ticks?)))
+     #:line-style line-style #:alpha alpha #:label label
+     #:add-ticks? add-ticks? #:far-ticks? far-ticks?)))

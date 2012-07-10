@@ -223,13 +223,13 @@
  (parameterize ([plot-x-ticks  (currency-ticks)])
    (plot (discrete-histogram (list (vector '(a . a) 1) (vector '(a . b) 2)
                                    (vector '(b . b) 3) (vector '(b . a) 4))
-                             #:invert? #t))))
+                             #:invert? #t #:add-ticks? #f))))
 
 (time
  (parameterize ([plot-x-ticks  (currency-ticks)])
    (plot (stacked-histogram (list (vector '(a . a) '(1 2 1)) (vector '(a . b) '(2 1 3))
                                   (vector '(b . b) '()) (vector '(b . a) '(4 4 2)))
-                            #:invert? #t))))
+                            #:invert? #t #:add-ticks? #f))))
 
 (time
  (plot (rectangles
