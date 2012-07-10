@@ -34,6 +34,7 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (match-define (list (vector (ivl x1s x2s) (ivl y1s y2s)) ...) rects)
   (define rxs (filter rational? (append x1s x2s)))
@@ -45,7 +46,8 @@
            [x-max  (if x-max x-max (apply max* rxs))]
            [y-min  (if y-min y-min (apply min* rys))]
            [y-max  (if y-max y-max (apply max* rys))])
-       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
+       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f
+                   (if add-ticks? default-ticks-fun #f)
                    (rectangles-render-proc rects color style line-color line-width line-style alpha
                                            label)))]))
 
@@ -65,6 +67,7 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (let* ([bin-bounds  (filter rational? bin-bounds)]
          [bin-bounds  (sort bin-bounds <)])
@@ -84,7 +87,7 @@
                         (bounds->intervals bin-bounds) heights)
                    #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
                    #:color color #:style style #:line-color line-color #:line-width line-width
-                   #:line-style line-style #:alpha alpha #:label label)])))
+                   #:line-style line-style #:alpha alpha #:label label #:add-ticks? add-ticks?)])))
 
 ;; ===================================================================================================
 ;; Discrete histograms
@@ -118,6 +121,7 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-ticks? add-ticks? boolean? #t]
           [#:far-ticks? far-ticks? boolean? #f]
           ) renderer2d?
   (match-define (list (vector cats ys) ...) cat-vals)
@@ -141,7 +145,7 @@
        (define maybe-invert (if invert? (λ (x y) (vector y x)) vector))
        (renderer2d
         (maybe-invert (ivl x-min x-max) (ivl y-min y-max)) #f
-        (discrete-histogram-ticks-fun cats tick-xs far-ticks? maybe-invert)
+        (if add-ticks? (discrete-histogram-ticks-fun cats tick-xs far-ticks? maybe-invert) #f)
         (rectangles-render-proc (map maybe-invert x-ivls y-ivls)
                                 color style line-color line-width line-style alpha label)))]))
 
@@ -159,6 +163,7 @@
           [#:line-styles line-styles (plot-pen-styles/c nat/c) (stacked-histogram-line-styles)]
           [#:alphas alphas (alphas/c nat/c) (stacked-histogram-alphas)]
           [#:labels labels (labels/c nat/c) '(#f)]
+          [#:add-ticks? add-ticks? boolean? #t]
           [#:far-ticks? far-ticks? boolean? #f]
           ) (listof renderer2d?)
   (match-define (list (vector cats ys) ...) cat-vals)
@@ -180,4 +185,5 @@
      #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
      #:gap gap #:skip skip #:invert? invert?
      #:color color #:style style #:line-color line-color #:line-width line-width
-     #:line-style line-style #:alpha alpha #:label label #:far-ticks? far-ticks?)))
+     #:line-style line-style #:alpha alpha #:label label
+     #:add-ticks? add-ticks? #:far-ticks? far-ticks?)))
