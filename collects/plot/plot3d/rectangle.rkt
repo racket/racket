@@ -56,15 +56,18 @@
 ;; ===================================================================================================
 ;; Discrete histograms
 
-(define ((discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys x-far-ticks? y-far-ticks?) r)
+(define ((discrete-histogram3d-ticks-fun
+          c1s c2s tick-xs tick-ys add-x-ticks? add-y-ticks? x-far-ticks? y-far-ticks?) r)
   (match-define (vector _xi _yi (ivl z-min z-max)) r)
   (define-values (x-ticks x-far-ticks)
-    (let ([ts  (for/list ([cat  (in-list c1s)] [x  (in-list tick-xs)])
-                 (tick x #t (->plot-label cat)))])
+    (let ([ts  (cond [add-x-ticks?  (for/list ([cat  (in-list c1s)] [x  (in-list tick-xs)])
+                                      (tick x #t (->plot-label cat)))]
+                     [else  empty])])
       (if x-far-ticks? (values empty ts) (values ts empty))))
   (define-values (y-ticks y-far-ticks)
-    (let ([ts  (for/list ([cat  (in-list c2s)] [y  (in-list tick-ys)])
-                 (tick y #t (->plot-label cat)))])
+    (let ([ts  (cond [add-y-ticks?  (for/list ([cat  (in-list c2s)] [y  (in-list tick-ys)])
+                                      (tick y #t (->plot-label cat)))]
+                     [else  empty])])
       (if y-far-ticks? (values empty ts) (values ts empty))))
   (values x-ticks x-far-ticks
           y-ticks y-far-ticks
@@ -88,6 +91,8 @@
           [#:line-style line-style plot-pen-style/c (rectangle-line-style)]
           [#:alpha alpha (real-in 0 1) (rectangle-alpha)]
           [#:label label (or/c string? #f) #f]
+          [#:add-x-ticks? add-x-ticks? boolean? #t]
+          [#:add-y-ticks? add-y-ticks? boolean? #t]
           [#:x-far-ticks? x-far-ticks? boolean? #f]
           [#:y-far-ticks? y-far-ticks? boolean? #f]
           ) renderer3d?
@@ -129,10 +134,12 @@
                                     (adjust/gap (ivl y1 y2) gap)
                                     (if (ivl? z) z (ivl 0 z))))
                           x1s x2s y1s y2s all-zs))
-       (renderer3d (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
-                   (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys x-far-ticks? y-far-ticks?)
-                   (rectangles3d-render-proc rects color style line-color line-width line-style
-                                             alpha label)))]))
+       (renderer3d
+        (vector (ivl x-min x-max) (ivl y-min y-max) (ivl z-min z-max)) #f
+        (discrete-histogram3d-ticks-fun c1s c2s tick-xs tick-ys
+                                        add-x-ticks? add-y-ticks? x-far-ticks? y-far-ticks?)
+        (rectangles3d-render-proc rects color style line-color line-width line-style
+                                  alpha label)))]))
 
 (defproc (stacked-histogram3d
           [cat-vals (listof (vector/c any/c any/c (listof real?)))]
@@ -147,6 +154,8 @@
           [#:line-styles line-styles (plot-pen-styles/c nat/c) (stacked-histogram-line-styles)]
           [#:alphas alphas (alphas/c nat/c) (stacked-histogram-alphas)]
           [#:labels labels (labels/c nat/c) '(#f)]
+          [#:add-x-ticks? add-x-ticks? boolean? #t]
+          [#:add-y-ticks? add-y-ticks? boolean? #t]
           [#:x-far-ticks? x-far-ticks? boolean? #f]
           [#:y-far-ticks? y-far-ticks? boolean? #f]
           ) (listof renderer3d?)
@@ -169,4 +178,5 @@
      #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max #:z-min z-min #:z-max z-max #:gap gap
      #:color color #:style style #:line-color line-color #:line-width line-width
      #:line-style line-style #:alpha alpha #:label label
+     #:add-x-ticks? add-x-ticks? #:add-y-ticks? add-y-ticks?
      #:x-far-ticks? x-far-ticks? #:y-far-ticks? y-far-ticks?)))
