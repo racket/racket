@@ -11,7 +11,7 @@ those constructs, however, is limited by several factors, and the
 current implementation is best suited to numerical tasks.
 
 @margin-note{Other functions, such as @racket[thread], support the
-creation of reliably concurrent tasks. However, thread never run truly
+creation of reliably concurrent tasks. However, threads never run truly
 in parallel, even if the hardware and operating system support
 parallelism.}
 
