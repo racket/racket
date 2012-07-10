@@ -941,16 +941,14 @@
 ;; Doesn't work (mu types are single-valued only):
 ;[sequence-generate*  (-poly (a) ((-seq a) . -> . (-mu t (-values (list (Un (-lst a) (-val #f)) t)))))]
 ;; Doesn't render nicely (but seems to work fine):
-;[empty-sequence (-poly (a) (-seq a))]
+[empty-sequence (-poly (a) (-seq a))]
 [sequence->list (-poly (a) ((-seq a) . -> . (-lst a)))]
-[sequence-length (-poly (a) ((-seq a) . -> . -Integer))]
+[sequence-length (-poly (a) ((-seq a) . -> . -Nat))]
 [sequence-ref (-poly (a) ((-seq a) -Integer . -> . a))]
 [sequence-tail (-poly (a) ((-seq a) -Integer . -> . (-seq a)))]
 [sequence-append (-poly (a) (->* (list) (-seq a) (-seq a)))]
 [sequence-map (-poly (a b) ((a . -> . b) (-seq a) . -> . (-seq b)))]
-[sequence-andmap (-poly (a b t) (make-pred-ty (list (make-pred-ty (list a) b t) (-seq a))
-                                              (Un b (-val #t))
-                                              (-seq t)))]
+[sequence-andmap (-poly (a b) ((a . -> . b) (-seq a) . -> . (Un b (-val #t))))]
 [sequence-ormap (-poly (a b) ((a . -> . b) (-seq a) . -> . (Un b (-val #f))))]
 [sequence-for-each (-poly (a) ((a . -> . Univ) (-seq a) . -> . -Void))]
 [sequence-fold (-poly (a b) ((b a . -> . b) b (-seq a) . -> . b))]
