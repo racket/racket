@@ -47,7 +47,6 @@
           [#:line2-style line2-style plot-pen-style/c (interval-line2-style)]
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
-          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define rvs (filter vrational? (append v1s v2s)))
   (cond
@@ -58,8 +57,7 @@
            [x-max  (if x-max x-max (apply max* rxs))]
            [y-min  (if y-min y-min (apply min* rys))]
            [y-max  (if y-max y-max (apply max* rys))])
-       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f
-                   (if add-ticks? default-ticks-fun #f)
+       (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
                    (lines-interval-render-proc v1s v2s color style
                                                line1-color line1-width line1-style
                                                line2-color line2-width line2-style
@@ -82,7 +80,6 @@
           [#:line2-style line2-style plot-pen-style/c (interval-line2-style)]
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
-          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (lines-interval
    (map f1 (linear-seq t-min t-max samples))
@@ -91,7 +88,7 @@
    #:color color #:style style
    #:line1-color line1-color #:line1-width line1-width #:line1-style line1-style
    #:line2-color line2-color #:line2-width line2-width #:line2-style line2-style
-   #:alpha alpha #:label label #:add-ticks? add-ticks?))
+   #:alpha alpha #:label label))
 
 (defproc (polar-interval
           [f1 (real? . -> . real?)] [f2 (real? . -> . real?)]
@@ -109,7 +106,6 @@
           [#:line2-style line2-style plot-pen-style/c (interval-line2-style)]
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
-          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define θs (linear-seq θ-min θ-max samples))
   (lines-interval
@@ -119,7 +115,7 @@
    #:color color #:style style
    #:line1-color line1-color #:line1-width line1-width #:line1-style line1-style
    #:line2-color line2-color #:line2-width line2-width #:line2-style line2-style
-   #:alpha alpha #:label label #:add-ticks? add-ticks?))
+   #:alpha alpha #:label label))
 
 ;; ===================================================================================================
 ;; Function
@@ -156,7 +152,6 @@
           [#:line2-style line2-style plot-pen-style/c (interval-line2-style)]
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
-          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
@@ -164,7 +159,7 @@
   (define g2 (function->sampler f2 x-ivl))
   (renderer2d (vector x-ivl y-ivl)
               (function-interval-bounds-fun g1 g2 samples)
-              (if add-ticks? default-ticks-fun #f)
+              default-ticks-fun
               (function-interval-render-proc g1 g2 samples color style
                                              line1-color line1-width line1-style
                                              line2-color line2-width line2-style
@@ -205,7 +200,6 @@
           [#:line2-style line2-style plot-pen-style/c (interval-line2-style)]
           [#:alpha alpha (real-in 0 1) (interval-alpha)]
           [#:label label (or/c string? #f) #f]
-          [#:add-ticks? add-ticks? boolean? #t]
           ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
@@ -213,7 +207,7 @@
   (define g2 (inverse->sampler f2 y-ivl))
   (renderer2d (vector x-ivl y-ivl)
               (inverse-interval-bounds-fun g1 g2 samples)
-              (if add-ticks? default-ticks-fun #f)
+              default-ticks-fun
               (inverse-interval-render-proc g1 g2 samples color style
                                             line1-color line1-width line1-style
                                             line2-color line2-width line2-style
