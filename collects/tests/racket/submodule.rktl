@@ -369,6 +369,17 @@
           [(md m r/b (m-b mod))
            #`(md m r/b (m-b (begin 10 mod)))])))
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   (expand
+    (expand
+     '(module foo2 racket
+        (begin-for-syntax 
+         (define here 'here))
+        
+        (module+ m2
+          (begin-for-syntax here)))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 

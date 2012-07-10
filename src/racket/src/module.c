@@ -6544,6 +6544,8 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, Scheme_Obje
           if (SAME_OBJ(naya, v1) && SAME_OBJ(v2, v3))
             return fm;
           else {
+            if (SAME_OBJ(naya, v1))
+              naya = phase_shift_tail(naya, ps);
             if (SAME_OBJ(v2, v3))
               v3 = phase_shift_tail(v3, ps);
             return rebuild_with_phase_shift(fm, naya, v3, ps);
