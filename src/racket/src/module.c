@@ -6064,8 +6064,16 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   if (!SCHEME_FALSEP(src)) {
     src = scheme_intern_resolved_module_path(src);
     m->modsrc = src;
-  } else
-    m->modsrc = m->modname;
+  } else {
+    src = m->modname;
+    if (m->submodule_path && !SCHEME_NULLP(m->submodule_path)) {
+      src = scheme_resolved_module_path_value(src);
+      if (SCHEME_PAIRP(src))
+        src = SCHEME_CAR(src);
+      src = scheme_intern_resolved_module_path(src);
+    }
+    m->modsrc = src;
+  }
 
   if (genv)
     env = genv;

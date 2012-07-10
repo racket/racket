@@ -497,6 +497,22 @@
 (test 3 dynamic-require '(submod 'module+-example-2 a b) 'x)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check module-source for submodule:
+
+(let ()
+  (define (go set-name get-name)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (parameterize ([current-module-declare-source set-name])
+        (eval '(module m racket/base
+                 (module+ sub
+                   (provide v)
+                   (define v (variable-reference->module-source
+                              (#%variable-reference))))))
+        (test get-name dynamic-require '(submod 'm sub) 'v))))
+  (go #f 'm)
+  (go 'other 'other))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that various shaodwings are allowed:
 
 (module subm-example-20 racket/base
