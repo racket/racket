@@ -389,12 +389,8 @@ portions of the program.}
  @item{@defmenuitem{Insert Racket Splice Box} Inserts a box to contain Racket
    code, typically used inside an XML box; see also @secref["xml-boxes"].}
 
- @item{@defmenuitem{Insert Pict Box} Creates a box for generating a
-   Slideshow picture. Inside the pict box, insert and arrange Racket
-   boxes that produce picture values.}
+]
 
-]  
- 
 @; ----------------------------------------
 
 @section{@onscreen{Windows}}
