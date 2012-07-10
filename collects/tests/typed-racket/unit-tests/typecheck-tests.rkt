@@ -1436,6 +1436,46 @@
               #:ret (ret -Boolean (-FS -top -top) (make-Empty))]
         
         [tc-e/t (ann (lambda: ([x : Boolean]) (if x x #t)) (Boolean -> #t)) (t:-> -Boolean (-val #t))]
+        
+        [tc-e (sequence? 'foo)
+              -Boolean]
+        [tc-err (stop-before (inst empty-sequence Symbol) zero?)]
+        [tc-e (stop-before (inst empty-sequence Integer) zero?)
+              (-seq -Int)]
+        [tc-e (stop-after (inst empty-sequence Integer) zero?)
+              (-seq -Int)]
+        [tc-e (sequence->list (inst empty-sequence Symbol))
+              (-lst -Symbol)]
+        [tc-e (sequence-length (inst empty-sequence Symbol))
+              -Nat]
+        [tc-e (sequence-ref (inst empty-sequence Symbol) 0)
+              -Symbol]
+        [tc-e (sequence-tail (inst empty-sequence Symbol) 0)
+              (-seq -Symbol)]
+        [tc-e (sequence-append empty-sequence (inst empty-sequence Symbol))
+              (-seq -Symbol)]
+        [tc-e (sequence-append (inst empty-sequence Symbol) (inst empty-sequence Integer))
+              (-seq (t:Un -Symbol -Int))]
+        [tc-e (sequence-map add1 (inst empty-sequence Integer))
+              (-seq -Int)]
+        [tc-err (sequence-andmap zero? (inst empty-sequence Symbol))]
+        [tc-e (sequence-andmap zero? (inst empty-sequence Integer))
+              -Boolean]
+        [tc-e (sequence-andmap add1 (inst empty-sequence Integer))
+              (t:Un -Int (-val #t))]
+        [tc-e (sequence-ormap zero? (inst empty-sequence Integer))
+              -Boolean]
+        [tc-e (sequence-ormap add1 (inst empty-sequence Integer))
+              (t:Un -Int (-val #f))]
+        [tc-e (sequence-fold (lambda: ([y : (Listof Symbol)] [x : Symbol]) (cons x y))
+                             null empty-sequence)
+              (-lst -Symbol)]
+        [tc-e (sequence-count zero? (inst empty-sequence Integer))
+              -Nat]
+        [tc-e (sequence-filter zero? (inst empty-sequence Integer))
+              (-seq -Int)]
+        [tc-e (sequence-add-between (inst empty-sequence Integer) 'foo)
+              (-seq (t:Un -Int (-val 'foo)))]
         )
   (test-suite
    "check-type tests"
