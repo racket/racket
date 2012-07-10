@@ -55,3 +55,42 @@
 
 (define matrix-fl+ (make-matrix-pointwise2 'matrix-fl+ array-fl+))
 (define matrix-fl- (make-matrix-pointwise1/2 'matrix-fl- array-fl-))
+
+(module* test typed/racket
+  (require typed/rackunit 
+           (submod "..")
+           "../../array.rkt")
+  
+  (define-syntax (check-matrix= stx)
+    ; Note: Does define-simple-check work with Typed Racket?
+    (syntax-case stx ()
+      [(_ a b) 
+       (syntax/loc stx (check-equal? (array->list a) (array->list b)))]))
+  
+  (: matrix : (Rec T (U Real (Listof T))) -> (Array Real))
+  (define (matrix rows) (list->array real? rows))
+  
+  (: flmatrix : (Rec T (U Float (Listof T))) -> (Array Float))
+  (define (flmatrix rows) (list->array flonum? rows))
+  
+  (: rows->flrows : (Listof (Listof Real)) -> (Listof (Listof Float)))
+  (define (rows->flrows rows)
+    (: row->flrow : (Listof Real) -> (Listof Float))
+    (define (row->flrow row) (map real->double-flonum row))
+    (map row->flrow rows))
+  
+  (let ()
+    (define-values (A B A+B) (values '[[1 2] [3 4]] '[[5 6] [7 8]] '[[6 8] [10 12]]))
+    (define-values (A.0 B.0 A+B.0) (values (rows->flrows A) (rows->flrows B) (rows->flrows A+B)))
+    (check-matrix= (matrix+ (matrix A) (matrix B)) (matrix A+B))
+    (check-matrix= (matrix-fl+ (flmatrix A.0) (flmatrix B.0)) (flmatrix A+B.0)))
+  (let ()
+    (define-values (A B A-B) (values '[[1 2] [3 4]] '[[5 6] [7 8]] '[[-4 -4] [-4 -4]]))
+    (define-values (A.0 B.0 A-B.0) (values (rows->flrows A) (rows->flrows B) (rows->flrows A-B)))
+    (check-matrix= (matrix- (matrix A) (matrix B)) (matrix A-B))
+    (check-matrix= (matrix-fl- (flmatrix A.0) (flmatrix B.0)) (flmatrix A-B.0)))
+  (let ()
+    (define-values (A ~A) (values '[[1 2 3] [4 5 6]] '[[-1 -2 -3] [-4 -5 -6]]))
+    (define-values (A.0 ~A.0) (values (rows->flrows A) (rows->flrows ~A)))
+    (check-matrix= (matrix- (matrix A)) (matrix ~A))
+    (check-matrix= (matrix- (matrix A.0)) (matrix ~A.0))))
