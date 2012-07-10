@@ -27,7 +27,6 @@
                 [#:style style plot-pen-style/c (line-style)]
                 [#:alpha alpha (real-in 0 1) (line-alpha)]
                 [#:label label (or/c string? #f) #f]
-                [#:add-ticks? add-ticks? boolean? #t]
                 ) renderer2d?
   (define rvs (filter vrational? vs))
   (cond [(empty? rvs)  (renderer2d #f #f #f #f)]
@@ -37,8 +36,7 @@
                [x-max  (if x-max x-max (apply max* rxs))]
                [y-min  (if y-min y-min (apply min* rys))]
                [y-max  (if y-max y-max (apply max* rys))])
-           (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f
-                       (if add-ticks? default-ticks-fun #f)
+           (renderer2d (vector (ivl x-min x-max) (ivl y-min y-max)) #f default-ticks-fun
                        (lines-render-proc vs color width style alpha label)))]))
 
 (defproc (parametric [f (real? . -> . (vector/c real? real?))]
@@ -51,12 +49,11 @@
                      [#:style style plot-pen-style/c (line-style)]
                      [#:alpha alpha (real-in 0 1) (line-alpha)]
                      [#:label label (or/c string? #f) #f]
-                     [#:add-ticks? add-ticks? boolean? #t]
                      ) renderer2d?
   (lines (map f (linear-seq t-min t-max samples))
          #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
          #:color color #:width width #:style style #:alpha alpha
-         #:label label #:add-ticks? add-ticks?))
+         #:label label))
 
 (defproc (polar [f (real? . -> . real?)]
                 [θ-min real? 0] [θ-max real? (* 2 pi)]
@@ -68,13 +65,12 @@
                 [#:style style plot-pen-style/c (line-style)]
                 [#:alpha alpha (real-in 0 1) (line-alpha)]
                 [#:label label (or/c string? #f) #f]
-                [#:add-ticks? add-ticks? boolean? #t]
                 ) renderer2d?
   (lines (let ([θs  (linear-seq θ-min θ-max samples)])
            (map polar->cartesian θs (map* f θs)))
          #:x-min x-min #:x-max x-max #:y-min y-min #:y-max y-max
          #:color color #:width width #:style style #:alpha alpha
-         #:label label #:add-ticks? add-ticks?))
+         #:label label))
 
 ;; ===================================================================================================
 ;; Function
@@ -99,14 +95,13 @@
                    [#:style style plot-pen-style/c (line-style)]
                    [#:alpha alpha (real-in 0 1) (line-alpha)]
                    [#:label label (or/c string? #f) #f]
-                   [#:add-ticks? add-ticks? boolean? #t]
                    ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
   (let ([f  (function->sampler f x-ivl)])
     (renderer2d (vector x-ivl y-ivl)
                 (function-bounds-fun f samples)
-                (if add-ticks? default-ticks-fun #f)
+                default-ticks-fun
                 (function-render-proc f samples color width style alpha label))))
 
 ;; ===================================================================================================
@@ -132,14 +127,13 @@
                   [#:style style plot-pen-style/c (line-style)]
                   [#:alpha alpha (real-in 0 1) (line-alpha)]
                   [#:label label (or/c string? #f) #f]
-                  [#:add-ticks? add-ticks? boolean? #t]
                   ) renderer2d?
   (define x-ivl (ivl x-min x-max))
   (define y-ivl (ivl y-min y-max))
   (define g (inverse->sampler f y-ivl))
   (renderer2d (vector x-ivl y-ivl)
               (inverse-bounds-fun g samples)
-              (if add-ticks? default-ticks-fun #f)
+              default-ticks-fun
               (inverse-render-proc g samples color width style alpha label)))
 
 ;; ===================================================================================================
@@ -154,7 +148,6 @@
                   [#:style style plot-pen-style/c (line-style)]
                   [#:alpha alpha (real-in 0 1) (line-alpha)]
                   [#:label label (or/c string? #f) #f]
-                  [#:add-ticks? add-ticks? boolean? #t]
                   ) renderer2d?
   (define n (length xs))
   (define sd (sqrt (- (/ (sum sqr xs) n) (sqr (/ (sum values xs) n)))))
@@ -163,5 +156,4 @@
   (let ([x-min  (if x-min x-min fx-min)]
         [x-max  (if x-max x-max fx-max)])
     (function f x-min x-max #:y-min y-min #:y-max y-max #:samples samples
-              #:color color #:width width #:style style #:alpha alpha #:label label
-              #:add-ticks? add-ticks?)))
+              #:color color #:width width #:style style #:alpha alpha #:label label)))
