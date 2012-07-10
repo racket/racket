@@ -2,6 +2,7 @@
 (require scribble/manual
          racket/list
          racket/date
+         racket/class
          scribble/core
          scribble/decode
          scribble/html-properties
@@ -12,6 +13,7 @@
          setup/main-collects)
 
 (provide define-cite
+         author+date-style number-style
          make-bib in-bib (rename-out [auto-bib? bib?])
          proceedings-location journal-location book-location
          techrpt-location dissertation-location
@@ -25,8 +27,12 @@
      (make-css-addition (abs "autobib.css"))
      (make-tex-addition (abs "autobib.tex")))))
 
-(define bib-table-style (make-style "AutoBibliography" autobib-style-extras))
+(define bib-single-style (make-style "AutoBibliography" autobib-style-extras))
+(define bib-columns-style (make-style #f autobib-style-extras))
+
 (define bibentry-style (make-style "Autobibentry" autobib-style-extras))
+(define colbibnumber-style (make-style "Autocolbibnumber" autobib-style-extras))
+(define colbibentry-style (make-style "Autocolbibentry" autobib-style-extras))
 
 (define-struct auto-bib (author date title location url is-book? key specific))
 (define-struct bib-group (ht))
@@ -38,7 +44,7 @@
   (and x (author-element-names x)))
 
 ;; render the use of a citation.
-(define (add-cite group bib-entry which with-specific? disambiguation)
+(define (add-cite group bib-entry which with-specific? disambiguation style)
   (let ([key (auto-bib-key bib-entry)])
     (when disambiguation
       (for ([bib disambiguation])
@@ -50,7 +56,8 @@
        (define s (resolve-get part ri `(,which ,key)))
        (make-link-element #f
                           (list (or s "???")
-                                (cond [disambiguation ;; should be a list of bib-entries with same author/date
+                                (cond [(not (send style disambiguate-date?)) '()]
+                                      [disambiguation ;; should be a list of bib-entries with same author/date
                                        (define disambiguation*
                                          (add-between (for/list ([bib (in-list disambiguation)])
                                                         (define key (auto-bib-key bib))
@@ -70,17 +77,20 @@
      (lambda () "(???)")
      (lambda () "(???)"))))
 
-(define (add-date-cites group bib-entries delimiter maybe-date<? maybe-date=?)
+(define (add-date-cites group bib-entries delimiter style sort? maybe-date<? maybe-date=?)
   (define date<? (or maybe-date<? default-date<?))
   (define date=? (or maybe-date=? default-date=?))
-  (define sorted-by-date (sort bib-entries date<?))
+  (define sorted-by-date (if sort?
+                             (sort bib-entries date<?)
+                             bib-entries))
   (define partitioned-by-ambiguity
     (let-values ([(last last-ambiguous-list partition)
                   (for/fold ([last #f]
                              [currently-ambiguous '()]
                              [partition '()])
                       ([bib (reverse sorted-by-date)])
-                    (cond [(and last (date=? last bib) 
+                    (cond [(and (send style collapse-for-date?)
+                                last (date=? last bib) 
                                 (equal? (auto-bib-specific bib) "")
                                 (equal? (auto-bib-specific last) ""))
                            ;; can group
@@ -94,7 +104,7 @@
         [else
          (add-between
           (for/list ([part (in-list partitioned-by-ambiguity)])
-            (add-cite group (car part) 'autobib-date #t part))
+            (add-cite group (car part) 'autobib-date #t part style))
           delimiter)]))
 
 (define all-equal?
@@ -103,7 +113,7 @@
    [(a b) (equal? a b)]
    [(a . bs) (andmap (lambda (v) (equal? a v)) bs)]))
 
-(define (add-inline-cite group bib-entries bib-date<? bib-date=?)
+(define (add-inline-cite group bib-entries style bib-date<? bib-date=?)
   (for ([i bib-entries])
     (hash-set! (bib-group-ht group) (auto-bib-key i) i))
   (when (and (pair? (cdr bib-entries))
@@ -112,12 +122,16 @@
            (map (compose author-element-names* auto-bib-author) bib-entries)))
   (make-element
    #f
-   (list (add-cite group (car bib-entries) 'autobib-author #f #f)
+   (list (add-cite group (car bib-entries) 'autobib-author #f #f style)
          'nbsp
-         "(" (add-date-cites group bib-entries "; " bib-date<? bib-date=?) ")")))
+         (send style get-cite-open)
+         (add-date-cites group bib-entries 
+                         (send style get-group-sep)
+                         style #t bib-date<? bib-date=?)
+         (send style get-cite-close))))
 
 ;; This allows citing multiple sources in one @cite. Groups of citations are separated by semicolons.
-(define (add-cites group bib-entries sort? bib-date<? bib-date=?)
+(define (add-cites group bib-entries sort? style bib-date<? bib-date=?)
   (define-values (groups keys)
     (for/fold ([h (hash)] [ks null]) ([b (reverse bib-entries)])
       (let ([k (author-element-names* (auto-bib-author b))])
@@ -126,17 +140,18 @@
   (make-element
    #f
    (append
-    (list 'nbsp "(")
+    (list 'nbsp (send style get-cite-open))
     (add-between
      (for/list ([k (if sort? (sort keys string-ci<?) keys)])
        (let ([v (hash-ref groups k)])
          (make-element
           #f
-          (list*
-           (add-cite group (car v) 'autobib-author #f #f)
-           " " (add-date-cites group v ", " bib-date<? bib-date=?)))))
-     "; ")
-   (list ")"))))
+          (send style
+                render-author+dates
+                (add-cite group (car v) 'autobib-author #f #f style)
+                (add-date-cites group v (send style get-item-sep) style sort? bib-date<? bib-date=?)))))
+     (send style get-group-sep))
+   (list (send style get-cite-close)))))
 
 (define (extract-bib-author b)
   (or (auto-bib-author b)
@@ -163,7 +178,45 @@
     (error 'default-disambiguation "Citations too ambiguous for default disambiguation scheme."))
   (make-element #f (list (format "~a" (integer->char (+ 97 n))))))
 
-(define (gen-bib tag group sec-title maybe-disambiguator maybe-render-date-bib maybe-render-date-cite maybe-date<? maybe-date=?)
+(define author+date-style
+  (new
+   (class object%
+     (define/public (bibliography-table-style) bib-single-style)
+     (define/public (entry-style) bibentry-style)
+     (define/public (disambiguate-date?) #t)
+     (define/public (collapse-for-date?) #t)
+     (define/public (get-cite-open) "(")
+     (define/public (get-cite-close) ")")
+     (define/public (get-group-sep) "; ")
+     (define/public (get-item-sep) ", ")
+     (define/public (render-citation date-cite i) date-cite)
+     (define/public (render-author+dates author dates) (list* author " " dates))
+     (define/public (bibliography-line i e) (list e))
+     (super-new))))
+
+(define number-style
+  (new
+   (class object%
+     (define/public (bibliography-table-style) bib-columns-style)
+     (define/public (entry-style) colbibentry-style)
+     (define/public (disambiguate-date?) #f)
+     (define/public (collapse-for-date?) #f)
+     (define/public (get-cite-open) "[")
+     (define/public (get-cite-close) "]")
+     (define/public (get-group-sep) ", ")
+     (define/public (get-item-sep) ", ")
+     (define/public (render-citation date-cite i) (number->string i))
+     (define/public (render-author+dates author dates) dates)
+     (define/public (bibliography-line i e)
+       (list (make-paragraph plain
+                             (make-element colbibnumber-style (list "[" (number->string i) "]")))
+             e))
+     (super-new))))
+
+(define (gen-bib tag group sec-title 
+                 style maybe-disambiguator 
+                 maybe-render-date-bib maybe-render-date-cite 
+                 maybe-date<? maybe-date=?)
   (define disambiguator (or maybe-disambiguator default-disambiguation))
   (define date<? (or maybe-date<? default-date<?))
   (define date=? (or maybe-date=? default-date=?))
@@ -191,11 +244,11 @@
                      author/date<?))
   (define disambiguated
     (let ()
-      (define (bib->para bib [disambiguation #f])
+      (define (bib->para bib disambiguation i)
         (define collect-target
           (list (make-target-element
                   #f
-                  (list (bib->entry bib disambiguation render-date-bib))
+                  (bib->entry bib style disambiguation render-date-bib i)
                   `(autobib ,(auto-bib-key bib)))))
         ;; Communicate to scribble's resolve step.
         (define (collect ci)
@@ -209,18 +262,27 @@
           (when (auto-bib-date bib)
             (collect-put! ci
                           `(autobib-date ,(auto-bib-key bib)) ;; (list which key)
-                          (make-element #f (list (render-date-cite (auto-bib-date bib))))))
+                          (make-element #f (list 
+                                            (send style
+                                                  render-citation
+                                                  (render-date-cite (auto-bib-date bib))
+                                                  i)))))
           ;; store how to disambiguate it from other like citations.
           (collect-put! ci
                         `(autobib-disambiguation ,(auto-bib-key bib))
                         (or disambiguation 'unambiguous)))
-        (list
-         (make-paragraph plain
-                         (list (make-collect-element #f collect-target collect)))))
+        (send style
+              bibliography-line
+              i
+              (make-paragraph plain
+                              (list (make-collect-element #f collect-target collect)))))
       ;; create the bibliography with disambiguations added.
       (define-values (last num-ambiguous rev-disambiguated*)
-        (for/fold ([last #f] [num-ambiguous 0] [rev-disambiguated '()]) ([bib (in-list bibs)])
-          (define ambiguous?? (and last (ambiguous? last bib)))
+        (for/fold ([last #f] [num-ambiguous 0] [rev-disambiguated '()]) ([bib (in-list bibs)]
+                                                                         [i (in-naturals 1)])
+          (define ambiguous?? (and (send style disambiguate-date?)
+                                   last 
+                                   (ambiguous? last bib)))
           (define num-ambiguous*
             (cond [ambiguous?? (add1 num-ambiguous)]
                   [else 0]))
@@ -228,11 +290,11 @@
           ;; to have the first disambiguation.
           (define rev-disambiguated*
             (cond [(and ambiguous?? (= 0 num-ambiguous))
-                   (cons (bib->para last (disambiguator num-ambiguous))
+                   (cons (bib->para last (disambiguator num-ambiguous) i)
                          (cdr rev-disambiguated))]
                   [else rev-disambiguated]))
           (define para*
-            (bib->para bib (and ambiguous?? (disambiguator num-ambiguous*))))
+            (bib->para bib (and ambiguous?? (disambiguator num-ambiguous*)) i))
           (values bib num-ambiguous* (cons para* rev-disambiguated*))))
       (reverse rev-disambiguated*)))
   (make-part #f
@@ -240,10 +302,10 @@
              (list sec-title)
              (make-style #f '(unnumbered))
              null
-             (list (make-table bib-table-style disambiguated))
+             (list (make-table (send style bibliography-table-style) disambiguated))
              null))
 
-(define (bib->entry bib disambiguation render-date-bib)
+(define (bib->entry bib style disambiguation render-date-bib i)
   (define-values (author date title location url is-book?)
     (values (auto-bib-author bib)
             (auto-bib-date bib)
@@ -251,7 +313,7 @@
             (auto-bib-location bib)
             (auto-bib-url bib)
             (auto-bib-is-book? bib)))
-  (make-element bibentry-style
+  (make-element (send style entry-style)
                 (append
                  (if author
                      `(,author
@@ -281,7 +343,8 @@
 (define-syntax (define-cite stx)
   (syntax-parse stx
     [(_ (~var ~cite) citet generate-bibliography
-        (~or (~optional (~seq #:disambiguate fn) #:defaults ([fn #'#f]))
+        (~or (~optional (~seq #:style style) #:defaults ([style #'author+date-style]))
+             (~optional (~seq #:disambiguate fn) #:defaults ([fn #'#f]))
              (~optional (~seq #:render-date-in-bib render-date-bib) #:defaults ([render-date-bib #'#f]))
              (~optional (~seq #:render-date-in-cite render-date-cite) #:defaults ([render-date-cite #'#f]))
              (~optional (~seq #:date<? date<?) #:defaults ([date<? #'#f]))
@@ -289,12 +352,13 @@
      (syntax/loc stx
        (begin
          (define group (make-bib-group (make-hasheq)))
+         (define the-style style)
          (define (~cite #:sort? [sort? #t] bib-entry . bib-entries)
-           (add-cites group (cons bib-entry bib-entries) sort? date<? date=?))
+           (add-cites group (cons bib-entry bib-entries) sort? the-style date<? date=?))
          (define (citet bib-entry . bib-entries)
-           (add-inline-cite group (cons bib-entry bib-entries) date<? date=?))
+           (add-inline-cite group (cons bib-entry bib-entries) the-style date<? date=?))
          (define (generate-bibliography #:tag [tag "doc-bibliography"] #:sec-title [sec-title "Bibliography"])
-           (gen-bib tag group sec-title fn render-date-bib render-date-cite date<? date=?))))]))
+           (gen-bib tag group sec-title the-style fn render-date-bib render-date-cite date<? date=?))))]))
 
 (define (ends-in-punc? e)
   (regexp-match? #rx"[.!?,]$" (content->string e)))
@@ -329,7 +393,7 @@
   (define parsed-date (understand-date date))
   (make-auto-bib author* parsed-date title location url is-book?
                  (content->string
-                  (make-element bibentry-style
+                  (make-element #f
                                 (append
                                  (if author* (list author*) null)
                                  (list title)
