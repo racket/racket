@@ -47,8 +47,16 @@
   [quote-character-position source-location-position]
   [quote-character-span source-location-span])
 
+(define (variable-reference->module-source/submod vr)
+  (define src (variable-reference->module-source vr))
+  (define rname (variable-reference->resolved-module-path vr))
+  (define name (and rname (resolved-module-path-name rname)))
+  (if (pair? name)
+      (cons src (cdr name))
+      src))
+
 (define-syntax-rule (module-source)
- (variable-reference->module-source
+ (variable-reference->module-source/submod
   (#%variable-reference)))
 
 (define-for-syntax (do-quote-module stx fixup)

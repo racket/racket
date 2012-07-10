@@ -413,9 +413,9 @@ result is @racket[#f].}
 
 If @racket[varref] refers to a @tech{module-level variable}, the
 result is a path or symbol naming the module's source (which is
-typically, but not always, the same as in the resolved module path).
-If the module is a submodule, the result corresponds to the enclosing
-top-level module's source.
+typically, but not always, the same as in the @tech{resolved module
+path}).  If the relevant module is a @tech{submodule}, the result
+corresponds to the enclosing top-level module's source.
 
 If @racket[varref] refers to a @tech{top-level variable}, then the
 result is @racket[#f].}
