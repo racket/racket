@@ -62,6 +62,7 @@
 
 (provide-and-scribble 
  procedures
+ (begin)
  (all-from beginner: lang/private/intermediate-funs procedures))
 
 (provide

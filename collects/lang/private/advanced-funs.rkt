@@ -10,44 +10,46 @@
            (for-syntax scheme/base))
 
 ;; Documents the procedures:
-(require scribble/manual scribble/eval "sl-eval.rkt"  "provide-and-scribble.rkt")
+(require "provide-and-scribble.rkt")
 
 (define pp (let ([pretty-print (lambda (v) (pretty-write v))]) pretty-print))
 
-(define (asl)
-  (define *bsl
-    (asl-eval
-      (require 2htdp/image)
-      (define c1 (circle 10 "solid" "green"))
-
-      (define zero 0)
-
-      (define one (list 1))
-
-      ;; b 69, c 42, e 61
-      (define list-for-hash '((b . 69) (c . 42) (e . 61) (r . 999)))
-
-      (define hsh (make-hash list-for-hash))
-      (define heq (make-hasheq list-for-hash))
-      (define heqv (make-hasheqv list-for-hash))
-      (define ish (make-immutable-hash list-for-hash))
-      (define ieq (make-immutable-hasheq list-for-hash))
-      (define ieqv (make-immutable-hasheqv list-for-hash))
-
-      (define q (make-posn "bye" 2))
-      (define p (make-posn 2 -3))
-      
-      (define v (vector "a" "b" "c" "d" "e"))
-      
-      (define b (box 33))
-
-      (define s "hello world")
-      (define x (list 2 "hello" true))))
-  (set! asl (lambda () *bsl))
-  *bsl)
-
 (provide-and-scribble
    procedures
+
+   (begin
+     (require scribble/manual scribble/eval "sl-eval.rkt")
+     (define (asl)
+       (define *bsl
+         (asl-eval
+          (require 2htdp/image)
+          (define c1 (circle 10 "solid" "green"))
+
+          (define zero 0)
+
+          (define one (list 1))
+
+          ;; b 69, c 42, e 61
+          (define list-for-hash '((b . 69) (c . 42) (e . 61) (r . 999)))
+
+          (define hsh (make-hash list-for-hash))
+          (define heq (make-hasheq list-for-hash))
+          (define heqv (make-hasheqv list-for-hash))
+          (define ish (make-immutable-hash list-for-hash))
+          (define ieq (make-immutable-hasheq list-for-hash))
+          (define ieqv (make-immutable-hasheqv list-for-hash))
+
+          (define q (make-posn "bye" 2))
+          (define p (make-posn 2 -3))
+          
+          (define v (vector "a" "b" "c" "d" "e"))
+          
+          (define b (box 33))
+
+          (define s "hello world")
+          (define x (list 2 "hello" true))))
+       (set! asl (lambda () *bsl))
+       *bsl))
    
    ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
     @defproc[(random [x integer]) integer]{

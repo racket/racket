@@ -56,4 +56,5 @@
 ;; procedures:
 (provide-and-scribble
  procedures
+ (begin)
  (all-from beginner: (submod lang/private/beginner-funs with-wrapper) procedures))

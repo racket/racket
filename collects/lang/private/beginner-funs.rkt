@@ -12,12 +12,9 @@
 ;; Implements the procedures:
 (require "teachprims.rkt" "teach.rkt" lang/posn lang/imageeq "provide-and-scribble.rkt")
 
-;; Documents the procedures:
-(require scribble/manual scribble/eval "sl-eval.rkt")
-
 (define-syntax (provide-and-wrap stx)
   (syntax-parse stx 
-    [(provide-and-wrap wrap doc-tag:id (title (defproc (name args ...) range w ...) ...) ...)
+    [(provide-and-wrap wrap doc-tag:id requires (title (defproc (name args ...) range w ...) ...) ...)
      (with-syntax ([((f ...) ...) (map generate-temporaries (syntax->list #'((name ...) ...)))]
                    [((internal-name ...) ...)
                     (map (lambda (x)
@@ -40,11 +37,15 @@
            (module+ with-wrapper 
                     (wrap f internal-name) ... ...
                     (provide-and-scribble 
-                     doc-tag (title (defproc ((f external-name) args ...) range w ...) ...) ...))
+                     doc-tag
+                     requires
+                     (title (defproc ((f external-name) args ...) range w ...) ...) ...))
            ;; and one that doesn't
            (module+ without-wrapper 
                     (provide-and-scribble
-                     doc-tag (title (defproc (name args ...) range w ...) ...) ...))))]))
+                     doc-tag
+                     requires
+                     (title (defproc (name args ...) range w ...) ...) ...))))]))
 
 (define-syntax (in-rator-position-only stx)
   (syntax-case stx ()
@@ -69,32 +70,34 @@
                #'orig-name))]))]))
 
 
-(define (bsl)
-  (define *bsl
-    (bsl+-eval
-      (require 2htdp/image)
-      (define c1 (circle 10 "solid" "green"))
-
-      (define zero 0)
-
-      (define one (list 1))
-
-      (define q (make-posn "bye" 2))
-      (define p (make-posn 2 -3))
-
-      (define a (list (list 'a 22) (list 'b 8) (list 'c 70)))
-      (define v (list 1 2 3 4 5 6 7 8 9 'A))
-      (define w (list (list (list (list "bye") 3) true) 42))
-      (define z (list (list (list (list 'a 'b) 2 3) ) (list false true) "world"))
-      (define y (list (list (list 1 2 3) false "world")))
-      (define x (list 2 "hello" true))))
-  (set! bsl (lambda () *bsl))
-  *bsl)
-
 ;; procedures with documentation:
 (provide-and-wrap
   in-rator-position-only
   procedures
+
+  (begin
+    (require scribble/manual scribble/eval "sl-eval.rkt")
+    (define (bsl)
+      (define *bsl
+        (bsl+-eval
+         (require 2htdp/image)
+         (define c1 (circle 10 "solid" "green"))
+
+         (define zero 0)
+
+         (define one (list 1))
+
+         (define q (make-posn "bye" 2))
+         (define p (make-posn 2 -3))
+
+         (define a (list (list 'a 22) (list 'b 8) (list 'c 70)))
+         (define v (list 1 2 3 4 5 6 7 8 9 'A))
+         (define w (list (list (list (list "bye") 3) true) 42))
+         (define z (list (list (list (list 'a 'b) 2 3) ) (list false true) "world"))
+         (define y (list (list (list 1 2 3) false "world")))
+         (define x (list 2 "hello" true))))
+      (set! bsl (lambda () *bsl))
+      *bsl))
  
   ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
     @defproc[(number? [n any/c]) boolean?]{

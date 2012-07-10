@@ -29,32 +29,30 @@ tests to run:
  collects/tests/htdp-lang/
 |#
 
-(require (for-syntax syntax/parse) scribble/manual scribble/eval racket/sandbox)
+(require (for-syntax syntax/parse))
 
 (require racket/provide)
 
 (provide 
- provide-and-scribble all-from all-from-except
- )
+ provide-and-scribble 
+ all-from all-from-except defproc)
 
 ;; ---------------------------------------------------------------------------------------------------
 
 (define-for-syntax *add #f)
 
-(define-syntax-rule 
-  (all-from a ...)
-  (raise-syntax-error "use with provide-and-scribble only"))
-
-(define-syntax-rule 
-  (all-from-except a ...)
-  (raise-syntax-error "use with provide-and-scribble only"))
+(define-for-syntax (provide-and-scribble-only stx)
+  (raise-syntax-error #f "use with provide-and-scribble only" stx))
+(define-syntax all-from provide-and-scribble-only)
+(define-syntax all-from-except provide-and-scribble-only)
+(define-syntax defproc provide-and-scribble-only)
 
 (define-syntax (provide-and-scribble stx)
-  (syntax-parse stx #:literals (defproc)
-    [(provide-and-scribble doc-tag:id rows ...)
-     (provide-and-scribble-proc #'doc-tag #'(rows ...))]))
+  (syntax-parse stx #:literals ()
+    [(provide-and-scribble doc-tag:id requires rows ...)
+     (provide-and-scribble-proc #'requires #'doc-tag #'(rows ...))]))
 
-(define-for-syntax (provide-and-scribble-proc doc-tag row*)
+(define-for-syntax (provide-and-scribble-proc requires doc-tag row*)
   (define-values (add-docs-and-provide provides)
     (for/fold ((add-docs-and-provide '()) (provides '())) ((row (syntax->list row*)))
       (syntax-parse row #:literals (defproc all-from all-from-except)
@@ -76,7 +74,7 @@ tests to run:
                        add-docs-and-provide)
                  (cons #`(provide #,@(optional-rename-out name*))
                        provides))])))
-  (provide-and-scribble-code doc-tag add-docs-and-provide provides))
+  (provide-and-scribble-code requires doc-tag add-docs-and-provide provides))
 
 ;; Path Identifier Identifier [Listof Identifier] ->* [-> Syntax] Syntax[List]
 ;; create the require and provide clauses AND
@@ -116,13 +114,15 @@ tests to run:
 ;; generate (module+ doc-tag ...) with the documentation in add-docs-and-provide, 
 ;; the first time it adds functions to (module+ doc-tag ...) that help render the docs
 ;; export the provides list 
-(define-for-syntax (provide-and-scribble-code doc-tag add-docs-and-provide provides)
+(define-for-syntax (provide-and-scribble-code requires doc-tag add-docs-and-provide provides)
   (with-syntax ([(p* ...) (reverse provides)])
     (cond 
       [*add #`(begin p* ... (module+ #,doc-tag #,@(map (lambda (adp) (adp)) (reverse add-docs-and-provide))))]
       [else
        (set! *add (syntax-local-introduce #'add-sections))
        #`(begin (module+ #,doc-tag 
+                         (require scribble/manual)
+                         #,requires
                          ;; -----------------------------------------------------------------------
                          ;; Section  = [Listof (cons Identifier Doc)]
                          ;; Sections = [Listof (list Title Section)]

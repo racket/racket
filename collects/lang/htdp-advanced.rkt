@@ -73,5 +73,6 @@
 ;; procedures:
 (provide-and-scribble
  procedures
+ (begin)
  (all-from-except intermediate: lang/private/intermediate-funs procedures cons list* append random)
  (all-from        advanced:     lang/private/advanced-funs    procedures))

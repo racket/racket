@@ -61,6 +61,5 @@
 ;; procedures:
 (provide-and-scribble 
  procedures
+ (begin)
  (all-from intermediate: lang/private/intermediate-funs procedures))
-
-
