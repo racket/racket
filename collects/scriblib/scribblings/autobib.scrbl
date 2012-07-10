@@ -28,7 +28,8 @@ function. See below for an example.
       #:title    "Reference: Racket"
       #:author   (authors "Matthew Flatt" "PLT")
       #:date     "2010"
-      #:location (techrpt-location #:institution "PLT Inc." #:number "PLT-TR-2010-1")
+      #:location (techrpt-location #:institution "PLT Inc." 
+                                   #:number "PLT-TR-2010-1")
       #:url      "http://racket-lang.org/tr1/"))
 
   Racket is fun@~cite[plt-tr1].
@@ -36,30 +37,20 @@ function. See below for an example.
   @(generate-bibliography)
 }|
 
-@defform[(define-cite ~cite-id citet-id generate-bibliography-id
-                      [#:disambiguate disambiguator]
-                      [#:render-date-bib render-date]
-                      [#:render-date-cite render-date]
-                      [#:date<? date-compare]
-                      [#:date=? date-compare])]{
+@defform/subs[(define-cite ~cite-id citet-id generate-bibliography-id
+                           option ...)
+              ([option (code:line #:disambiguate disambiguator-expr)
+                       (code:line #:render-date-bib render-date-expr)
+                       (code:line #:render-date-cite render-date-expr)
+                       (code:line #:date<? date-compare-expr)
+                       (code:line #:date=? date-compare-expr)])
+              #:contracts ([disambiguator-expr (-> exact-nonnegative-integer? element?)]
+                           [render-date-expr (-> date? element?)]
+                           [date-compare-expr (-> date? date? boolean?)])]{
 
 Binds @racket[~cite-id], @racket[citet-id], and
-@racket[generate-bibliography-id], which share state to accumulate and render
-citations. If two citations' references would render the same (as judged by equal authors and dates are @racket[date=?]) but are
-different, the optionally provided disambiguation function is used to add an
-extra element after the date. The default disambiguator will add "a", "b", etc
-until "z". Anything more ambiguous will throw an error. It has the contract
-
-@racketblock[(-> exact-nonnegative-integer? element?)]
-
-Dates in citations and dates in the bibliography may be rendered differently,
-as specified by the optionally given @racket[render-date] functions, which have the contract
-
-@racketblock[(-> date? element?)]
-
-The dates of citations are stored as @racket[date] values, and the granularity in which they are compared and rendered are, by default, by year. The comparison functions have contract
-
-@racketblock[(-> date? date? boolean?)]
+@racket[generate-bibliography-id], which share state to accumulate and
+render citations.
 
 The function bound to @racket[~cite-id] produces a citation referring
 to one or more bibliography entries with a preceding non-breaking
@@ -87,7 +78,16 @@ section for the bibliography. It has the contract
 
 The default value for the @racket[#:tag] argument is @racket["doc-bibliography"]
 and for @racket[#:sec-title] is @racket["Bibliography"].
-}
+
+If two citations' references would render the same (as judged by equal
+authors and dates that are considered the same) but are different, the
+optionally provided function from @racket[disambiguator-expr] is used
+to add an extra element after the date; the default disambiguator adds
+@litchar{a}, @litchar{b}, @etc until @litchar{z}, and anything more
+ambiguous raises an exception. Date comparison is controlled by
+@racket[date-compare-expr]s. Dates in citations and dates in the
+bibliography may be rendered differently, as specified by the
+optionally given @racket[render-date-expr] functions.}
 
 
 @defproc[(bib? [v any/c]) boolean?]{

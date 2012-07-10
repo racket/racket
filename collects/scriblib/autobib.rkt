@@ -48,25 +48,25 @@
      (lambda (renderer part ri)
        ;; (list which key) should be mapped to the bibliography element.
        (define s (resolve-get part ri `(,which ,key)))
-       (cons (make-link-element #f
-                                (list (or s "???")
-                                      (if with-specific?
-                                          (auto-bib-specific bib-entry)
-                                          ""))
-                                `(autobib ,(auto-bib-key bib-entry)))
-             (cond [disambiguation ;; should be a list of bib-entries with same author/date
-                    (define disambiguation*
-                      (add-between (for/list ([bib (in-list disambiguation)])
-                                     (define key (auto-bib-key bib))
-                                     (define maybe-disambiguation
-                                       (resolve-get part ri `(autobib-disambiguation ,key)))
-                                     (case maybe-disambiguation
-                                       [(unambiguous) #f]
-                                       [else (make-link-element #f maybe-disambiguation `(autobib ,key))]))
-                                   ","))
-                    (cond [(not (car disambiguation*)) '()] ;; the bib was unambiguous
-                          [else disambiguation*])]
-                   [else '()])))
+       (make-link-element #f
+                          (list (or s "???")
+                                (cond [disambiguation ;; should be a list of bib-entries with same author/date
+                                       (define disambiguation*
+                                         (add-between (for/list ([bib (in-list disambiguation)])
+                                                        (define key (auto-bib-key bib))
+                                                        (define maybe-disambiguation
+                                                          (resolve-get part ri `(autobib-disambiguation ,key)))
+                                                        (case maybe-disambiguation
+                                                          [(unambiguous) #f]
+                                                          [else (make-link-element #f maybe-disambiguation `(autobib ,key))]))
+                                                      ","))
+                                       (cond [(not (car disambiguation*)) '()] ;; the bib was unambiguous
+                                             [else disambiguation*])]
+                                      [else '()])
+                                (if with-specific?
+                                    (auto-bib-specific bib-entry)
+                                    ""))
+                          `(autobib ,(auto-bib-key bib-entry))))
      (lambda () "(???)")
      (lambda () "(???)"))))
 
@@ -80,13 +80,16 @@
                              [currently-ambiguous '()]
                              [partition '()])
                       ([bib (reverse sorted-by-date)])
-                    (cond [(and last (date=? last bib)) ;; ambiguous! group.
+                    (cond [(and last (date=? last bib) 
+                                (equal? (auto-bib-specific bib) "")
+                                (equal? (auto-bib-specific last) ""))
+                           ;; can group
                            (values bib (cons bib currently-ambiguous) partition)]
                           ;; first element.
                           [(not last) (values bib (list bib) partition)]
                           ;; not ambiguous. Start next group.
                           [else (values bib (list bib) (cons currently-ambiguous partition))]))])
-      (reverse (cons last-ambiguous-list partition))))
+      (cons last-ambiguous-list partition)))
   (cond [(null? bib-entries) '()]
         [else
          (add-between
@@ -94,11 +97,17 @@
             (add-cite group (car part) 'autobib-date #t part))
           delimiter)]))
 
+(define all-equal?
+  (case-lambda
+   [(a) #t]
+   [(a b) (equal? a b)]
+   [(a . bs) (andmap (lambda (v) (equal? a v)) bs)]))
+
 (define (add-inline-cite group bib-entries bib-date<? bib-date=?)
   (for ([i bib-entries])
     (hash-set! (bib-group-ht group) (auto-bib-key i) i))
   (when (and (pair? (cdr bib-entries))
-             (not (apply equal? (map (compose author-element-names* auto-bib-author) bib-entries))))
+             (not (apply all-equal? (map (compose author-element-names* auto-bib-author) bib-entries))))
     (error 'citet "citet must be used with identical authors, given ~a"
            (map (compose author-element-names* auto-bib-author) bib-entries)))
   (make-element
@@ -161,16 +170,18 @@
   (define render-date-bib (or maybe-render-date-bib default-render-date-bib))
   (define render-date-cite (or maybe-render-date-cite default-render-date-cite))
   (define (author/date<? a b)
-    ;; comparing just the authors causes non-deterministic render order.
-    ;; We still have to use the authors first in order for last name order.
-    ;; If there is a collision for names, then disambiguate with the keys and then the date.
+    ;; Compare author names, then date, then full key
     (or (string-ci<? (extract-bib-key a) (extract-bib-key b))
         (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
-             (or (string-ci<? (auto-bib-key a) (auto-bib-key b))
-                 (and (string-ci=? (auto-bib-key a) (auto-bib-key b))
-                      (auto-bib-date a)
-                      (auto-bib-date b)
-                      (date<? a b))))))
+             (cond
+              [(not (auto-bib-date a))
+               (if (auto-bib-date b)
+                   #f
+                   (string-ci<? (auto-bib-key a) (auto-bib-key b)))]
+              [(not (auto-bib-date b)) #t]
+              [(date<? a b) #t]
+              [(date<? b a) #f]
+              [else (string-ci<? (auto-bib-key a) (auto-bib-key b))]))))
   (define (ambiguous? a b)
     (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
          (auto-bib-date a)
@@ -261,7 +272,7 @@
                      null)
                  (if date `(" "
                             ,@(if disambiguation
-                                  `("(" ,@(decode-content (list (render-date-bib date))) ,disambiguation ")")
+                                  `(,@(decode-content (list (render-date-bib date))) ,disambiguation)
                                   (decode-content (list (render-date-bib date))))
                             ".")
                      null)
