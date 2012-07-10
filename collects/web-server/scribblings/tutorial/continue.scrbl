@@ -468,20 +468,23 @@ in a new browser window.  What happens when you try this?
 @section{Share and Share Alike}
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-4)]
 
-The problem with our application is that each browser
-window keeps track of its own distinct blog.  For most people, this defeats
-the purpose of a blog, which is to share with others!  When we insert a
-new post, rather than creating a new blog value, we'd like to make a
-structural change to the existing
-blog. (@italic{@link["http://www.htdp.org/"]{How to Design Programs}},
-Chapter 41).  So let's add mutation to the mix.
+The problem with our application is that each browser window keeps
+track of its own distinct blog.  For most people, this defeats the
+purpose of a blog, which is to share with others!  When we insert a
+new post, rather than creating a new blog value, we'd like to modify
+@emph{the} blog. In other words, we'd like to make a structural
+change. (@italic{@link["http://www.htdp.org/"]{How to Design
+Programs}}, Chapter 41).  So let's switch from just the @racket[BLOG]
+binding to a list and instead bind it to a mutable structure. If we
+were to just use a structure, we'd write the following:
 
-There's one small detail we need to touch on: by default, structures in the
-@racket[web-server] language are immutable.  To gain access to structure
-mutators, we'll need to override this default, by adding the @racket[#:mutable]
-keyword to some of our structure definitions. In particular, if we want to
-allow changes to a blog, we must change our definition of the blog structure to
-the following:
+@racketblock[(struct blog (posts))]
+
+But, by default, structures in Racket are immutable.  To gain access
+to structure mutators, we'll need to override this default, by adding
+the @racket[#:mutable] keyword to some of our structure
+definitions. In particular, if we want to allow changes to a blog, we
+must change our definition of the blog structure to the following:
 
 @racketblock[(struct blog (posts) #:mutable)]
 
@@ -499,7 +502,7 @@ which allows us to change the posts of a blog:
 
 @defthing[blog-insert-post! (blog? post? . -> . void)]
 
-whose intended side effect is to extend a blog's post.
+whose intended side effect is to extend a blog's posts.
 
 @centerline{------------}
 
