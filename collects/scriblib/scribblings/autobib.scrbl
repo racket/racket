@@ -39,14 +39,16 @@ function. See below for an example.
 
 @defform/subs[(define-cite ~cite-id citet-id generate-bibliography-id
                            option ...)
-              ([option (code:line #:disambiguate disambiguator-expr)
+              ([option (code:line #:style style-expr)
+                       (code:line #:disambiguate disambiguator-expr)
                        (code:line #:render-date-bib render-date-expr)
                        (code:line #:render-date-cite render-date-expr)
                        (code:line #:date<? date-compare-expr)
                        (code:line #:date=? date-compare-expr)])
-              #:contracts ([disambiguator-expr (-> exact-nonnegative-integer? element?)]
-                           [render-date-expr (-> date? element?)]
-                           [date-compare-expr (-> date? date? boolean?)])]{
+              #:contracts ([style-expr (or/c author+date-style number-style)]
+                           [disambiguator-expr (or/c #f (-> exact-nonnegative-integer? element?))]
+                           [render-date-expr (or/c #f (-> date? element?))]
+                           [date-compare-expr (or/c #f (-> date? date? boolean?))])]{
 
 Binds @racket[~cite-id], @racket[citet-id], and
 @racket[generate-bibliography-id], which share state to accumulate and
@@ -79,7 +81,13 @@ section for the bibliography. It has the contract
 The default value for the @racket[#:tag] argument is @racket["doc-bibliography"]
 and for @racket[#:sec-title] is @racket["Bibliography"].
 
-If two citations' references would render the same (as judged by equal
+The optional @racket[style-expr] determines the way that citations and
+the bibliography are rendered.@margin-note*{Programmer-defined styles
+may be supported in the future.} Currently, two built-in style are
+provided, and @racket[author+date-style] is the default.
+
+For @racket[author+date-style], 
+if two citations' references would render the same (as judged by equal
 authors and dates that are considered the same) but are different, the
 optionally provided function from @racket[disambiguator-expr] is used
 to add an extra element after the date; the default disambiguator adds
@@ -88,6 +96,13 @@ ambiguous raises an exception. Date comparison is controlled by
 @racket[date-compare-expr]s. Dates in citations and dates in the
 bibliography may be rendered differently, as specified by the
 optionally given @racket[render-date-expr] functions.}
+
+@deftogether[(
+@defthing[author+date-style any/c]
+@defthing[number-style any/c]
+)]{
+
+Styles for use with @racket[define-cite].}
 
 
 @defproc[(bib? [v any/c]) boolean?]{
