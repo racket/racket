@@ -39,22 +39,26 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (rename-in racket/contract/base [-> c->] [case-> c:case->])
          "base-types.rkt"
          "base-types-extra.rkt"
-         racket/flonum ; for for/flvector and for*/flvector
+         racket/flonum ; for for/flvector and for*/flvector         
          mzlib/etc
          (for-syntax
+          unstable/lazy-require
           syntax/parse
           racket/syntax
           racket/base
           syntax/define
           racket/struct-info
           syntax/struct
-          "../rep/type-rep.rkt"
+          ;"../rep/type-rep.rkt"
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
+
+(begin-for-syntax 
+  (lazy-require ["../rep/type-rep.rkt" (make-Opaque)]))
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
 

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/match racket/vector racket/contract/base racket/contract/combinator)
+(require racket/match racket/contract/base racket/contract/combinator)
 
 (define-struct any-wrap (val)
   #:property prop:custom-write
@@ -19,7 +19,9 @@
                 (keyword? e) (bytes? e) (boolean? e) (void? e))))
        v]
       [(cons x y) (cons (t x) (t y))]
-      [(and (? immutable?) (? vector?)) (vector-map t v)]
+      [(and (? immutable?) (? vector?)) 
+       (for/vector #:length (vector-length v)
+         ([i (in-vector v)]) (t i))]
       [(and (? immutable?) (box v)) (box (t v))]
       [(and (? immutable?) (? hash? v))
        ((cond [(hash-eq? v) make-immutable-hasheq]
