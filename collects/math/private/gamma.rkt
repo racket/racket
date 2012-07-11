@@ -114,3 +114,31 @@ Error on exact nonpositive integers
         [(exact-positive-integer? x)  (factorial (- x 1))]
         [(single-flonum? x)  (real->single-flonum (flgamma (real->double-flonum x)))]
         [else  (flgamma (real->double-flonum x))]))
+
+(module* test typed/racket
+  (require (submod "..")
+           typed/rackunit
+           math/constants)
+  (define ε +epsilon.0)
+  (: relative-error : Float Float -> Float)
+  (define (relative-error x correct)
+    (/ (abs (- x correct)) correct))
+  (: relative-error<= : Float Float Float -> Boolean)
+  (define (relative-error<= x correct epsilon)
+    (<= (relative-error x correct) epsilon))  
+  
+  (check-equal? (flgamma 0.0) +nan.0)
+  (check-equal? (flgamma 1.0) 1.0)
+  (check-equal? (flgamma 2.0) 1.0)
+  (check-equal? (flgamma 3.0) 2.0)
+  (check-equal? (flgamma 4.0) 6.0)
+  (check-= (flgamma -21.5) 1.31844491832155110297694106059e-20 ε)
+  (check-true (relative-error<= (flgamma 1e-15) 9.9999999999999942278433509847e14 ε))
+  (check-true (relative-error<= (flgamma 142.5) 2.25990910998653224305124991671e244 ε))
+  (check-equal? (flgamma 172.0) 1.24101807021766782342484052410e309) ; = +inf.0
+  (check-true (relative-error<= (flgamma -1e-5) -100000.577225555552235029678062 ε))
+  
+  (check-equal? (gamma 0) +nan.0)
+  (check-equal? (gamma 4) 6)
+  (check-equal? (gamma 4.0) (flgamma 4.0))
+  (check-equal? (gamma 4.0f0) (real->single-flonum (flgamma 4.0))))
