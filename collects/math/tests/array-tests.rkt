@@ -1,7 +1,8 @@
 #lang typed/racket
 
 (require racket/flonum
-         math/array)
+         math/array
+         typed/rackunit)
 
 (printf "starting...~n")
 
@@ -59,39 +60,42 @@
     (match js
       [(list j0 j1)  (list (* 2 (floor (/ j1 2))) j0)]))))
 
-(equal? (list-shape flonum? 0.0) '())
-(equal? (list-shape flonum? '()) '(0))
-(equal? (list-shape flonum? '(0.0)) '(1))
-(equal? (list-shape flonum? '(0.0 0.0)) '(2))
-(equal? (list-shape flonum? '((0.0 0.0 0.0) (0.0 0.0 0.0))) '(2 3))
-(equal? (list-shape flonum? '((0.0 0.0 0.0) (0.0 0.0))) #f)
-(equal? (list-shape flonum? '(() () ())) '(3 0))
-(equal? (list-shape flonum? '((()) (()) (()))) '(3 1 0))
-(equal? (list-shape flonum? '(((0.0)))) '(1 1 1))
 
-(equal? (vector-shape flonum? 0.0) '())
-(equal? (vector-shape flonum? #()) '(0))
-(equal? ((inst vector-shape Float) flonum? #(0.0)) '(1))
-(equal? ((inst vector-shape Float) flonum? #(0.0 0.0)) '(2))
-(equal? ((inst vector-shape Float) flonum? #(#(0.0 0.0 0.0) #(0.0 0.0 0.0))) '(2 3))
-(equal? ((inst vector-shape Float) flonum? #(#(0.0 0.0 0.0) #(0.0 0.0))) #f)
-(equal? ((inst vector-shape Float) flonum? #(#() #() #())) '(3 0))
-(equal? ((inst vector-shape Float) flonum? #(#(#()) #(#()) #(#()))) '(3 1 0))
-(equal? ((inst vector-shape Float) flonum? #(#(#(0.0)))) '(1 1 1))
+(check-equal? (list-shape flonum? 0.0) '())
+(check-equal? (list-shape flonum? '()) '(0))
+(check-equal? (list-shape flonum? '(0.0)) '(1))
+(check-equal? (list-shape flonum? '(0.0 0.0)) '(2))
+(check-equal? (list-shape flonum? '((0.0 0.0 0.0) (0.0 0.0 0.0))) '(2 3))
+(check-equal? (list-shape flonum? '((0.0 0.0 0.0) (0.0 0.0))) #f)
+(check-equal? (list-shape flonum? '(() () ())) '(3 0))
+(check-equal? (list-shape flonum? '((()) (()) (()))) '(3 1 0))
+(check-equal? (list-shape flonum? '(((0.0)))) '(1 1 1))
 
-(let ([arr  (make-strict-array '(2 3 2) (vector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0))])
-  (values (equal? (array->vector arr)
-                  #(#(#(1.0 2.0) #(3.0 4.0) #(5.0 6.0))
-                    #(#(7.0 8.0) #(9.0 10.0) #(11.0 12.0))))
-          (equal? arr (array-strict (vector->array flonum? (array->vector arr))))
-          (equal? (array->list arr)
-                  '(((1.0 2.0) (3.0 4.0) (5.0 6.0))
-                    ((7.0 8.0) (9.0 10.0) (11.0 12.0))))
-          (equal? arr (list->array flonum? (array->list arr)))))
+(check-equal? (vector-shape flonum? 0.0) '())
+(check-equal? (vector-shape flonum? #()) '(0))
+(check-equal? ((inst vector-shape Float) flonum? #(0.0)) '(1))
+(check-equal? ((inst vector-shape Float) flonum? #(0.0 0.0)) '(2))
+(check-equal? ((inst vector-shape Float) flonum? #(#(0.0 0.0 0.0) #(0.0 0.0 0.0))) '(2 3))
+(check-equal? ((inst vector-shape Float) flonum? #(#(0.0 0.0 0.0) #(0.0 0.0))) #f)
+(check-equal? ((inst vector-shape Float) flonum? #(#() #() #())) '(3 0))
+(check-equal? ((inst vector-shape Float) flonum? #(#(#()) #(#()) #(#()))) '(3 1 0))
+(check-equal? ((inst vector-shape Float) flonum? #(#(#(0.0)))) '(1 1 1))
 
-(let ([arr  (make-strict-array '(3 0 0) (vector))])
-  (values (equal? (array->vector arr) #(#() #() #()))
-          (equal? (array->list arr) '(() () ()))))
+(define arr2  (make-strict-array '(2 3 2) (vector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0)))
+(check-equal? (array->vector arr2)
+              #(#(#(1.0 2.0) #(3.0 4.0) #(5.0 6.0))
+                #(#(7.0 8.0) #(9.0 10.0) #(11.0 12.0))))
+(check-equal? arr2 (array-strict (vector->array flonum? (array->vector arr2))))
+(check-equal? (array->list arr2)
+              '(((1.0 2.0) (3.0 4.0) (5.0 6.0))
+                ((7.0 8.0) (9.0 10.0) (11.0 12.0))))
+
+; comparing two equal strict arrays with equal? does not work ?
+(check-equal? arr2 (array-strict (list->array flonum? (array->list arr2))))
+
+(define arr3  (make-strict-array '(3 0 0) (vector)))
+(check-equal? (array->vector arr3) #(#() #() #()))
+(check-equal? (array->list arr3) '(() () ()))
 
 ;; Timing tests
 #|
