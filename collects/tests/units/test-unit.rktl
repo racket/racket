@@ -1,5 +1,5 @@
-(require (for-syntax mzlib/private/unit-compiletime
-                     mzlib/private/unit-syntax))
+(require (for-syntax racket/private/unit-compiletime
+                     racket/private/unit-syntax))
 (require "test-harness.rkt"
          ;unit
          scheme/unit)

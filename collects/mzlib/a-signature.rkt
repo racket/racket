@@ -1,6 +1,6 @@
 (module a-signature mzscheme
-  (require-for-syntax "private/unit-compiletime.rkt"
-                      "private/unit-syntax.rkt")
+  (require-for-syntax racket/private/unit-compiletime
+                      racket/private/unit-syntax)
   (require "unit.rkt")
   
   (provide (rename module-begin #%module-begin)

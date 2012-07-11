@@ -8,7 +8,7 @@
          racket/flonum
          racket/vector
          racket/place/private/th-place
-         mzlib/private/streams
+         racket/private/streams
          unstable/lazy-require
 
 

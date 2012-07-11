@@ -28,7 +28,7 @@ Units with suitably matching signatures can be @deftech{linked}
 together to form a larger unit, and a unit with no imports can be
 @deftech{invoked} to execute its body.
 
-@note-lib[racket/unit #:use-sources (mzlib/unit)]{ The
+@note-lib[racket/unit #:use-sources (racket/unit)]{ The
 @racketmodname[racket/unit] module name can be used as a language name
 with @racketfont{#lang}; see @secref["single-unit"].}
 
@@ -783,7 +783,7 @@ name before @racketidfont{-sig}. Otherwise, the module name serves as
 
 @section{Transformer Helpers}
 
-@defmodule[racket/unit-exptime #:use-sources (mzlib/unit-exptime)]
+@defmodule[racket/unit-exptime #:use-sources (racket/unit-exptime)]
 
 The @racketmodname[racket/unit-exptime] library provides procedures
 that are intended for use by macro transformers. In particular, the

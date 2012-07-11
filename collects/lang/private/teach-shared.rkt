@@ -20,4 +20,4 @@
     (with-syntax ([undefined undefined-expr])
       ;; Include the implementation.
       ;; See private/shared-body.rkt.
-      (include (lib "mzlib/private/shared-body.rkt")))))
+      (include (lib "racket/private/shared-body.rkt")))))

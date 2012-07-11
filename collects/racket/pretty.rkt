@@ -10,7 +10,7 @@
 ;;      (current-print pretty-print-handler)
 
 (module pretty racket/base
-   (require mzlib/private/port)
+   (require racket/private/port)
 
    (provide pretty-print
             pretty-write

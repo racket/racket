@@ -3,7 +3,7 @@
 ;;  used by contract.rkt, which is used by port.rkt --- so we
 ;;  break the cycle with this module.
 ;;
-;; copy-port is used by mzlib/private/streams.rkt, which is used by
+;; copy-port is used by racket/private/streams.rkt, which is used by
 ;;  racket/place.rkt, which we want to load without loading contracts
 ;;  --- so copy port is place in this module.
 

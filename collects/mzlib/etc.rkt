@@ -3,6 +3,7 @@
          racket/local
          racket/bool
          racket/block
+         racket/private/this-expression-source-directory
          (only racket/function
                identity)
          (only racket/base
@@ -10,7 +11,6 @@
                build-list
                build-vector
                compose)
-         "private/this-expression-source-directory.rkt"
          (rename racket/base base-else else))
 
 (require-for-syntax syntax/name
