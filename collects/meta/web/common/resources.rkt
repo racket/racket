@@ -46,7 +46,7 @@
        @h1[style: '("text-align: center; margin: 3em 0 1em 0;")]{
          Page not found}
        @(λ xs (table align: 'center (tr (td (pre xs))))){
-         > (@a[href: "/"]{uncaught-exception-handler}
+         > (@a[href: "/"]{(uncaught-exception-handler)}
             (*(+(*)(*(+(*)(*)(*)(*)(*))(+(*)(*)(*)(*)(*))(+(*)(*)(*)(*))))@;
               (+(*)(*)(*)(*))))
          uncaught exception: 404}}]
