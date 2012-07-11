@@ -9,7 +9,7 @@ protect abstractions, ensuring that clients of your module
 cannot depend on the precise representation choices you make
 for your data structures.
 
-@; @ctc-section{Getting Started, with a Stack Example}
+@; @ctc-section{Getting Started, with a Queue Example}
 
 @margin-note{
   You can type @racket[#:exists] instead of @racket[#:∃] if you 
@@ -21,7 +21,7 @@ The @racket[contract-out] form allows you to write
 introduces the variable @racket[_name-of-a-new-contract], binding it to a new
 contract that hides information about the values it protects.
 
-As an example, consider this (simple) implementation of a stack datastructure:
+As an example, consider this (simple) implementation of a queue datastructure:
 @racketmod[racket
            (define empty '())
            (define (enq top queue) (append queue (list top)))
@@ -42,16 +42,16 @@ data structure (perhaps accidentally) and thus any change in the representation
 (say to a more efficient representation that supports amortized constant time
 enqueue and dequeue operations) might break client code.
 
-To ensure that the stack representation is abstract, we can use @racket[#:∃] in the
+To ensure that the queue representation is abstract, we can use @racket[#:∃] in the
 @racket[contract-out] expression, like this:
 @racketblock[(provide
               (contract-out
-               #:∃ stack
-               [empty stack]
-               [enq (-> integer? stack stack)]
-               [next (-> stack integer?)]
-               [deq (-> stack (listof integer?))]
-               [empty? (-> stack boolean?)]))]
+               #:∃ queue
+               [empty queue]
+               [enq (-> integer? queue queue)]
+               [next (-> queue integer?)]
+               [deq (-> queue (listof integer?))]
+               [empty? (-> queue boolean?)]))]
 
 Now, if clients of the data structure try to use @racket[car] and @racket[cdr], they
 receive an error, rather than mucking about with the internals of the queues.
