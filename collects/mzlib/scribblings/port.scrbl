@@ -4,6 +4,8 @@
 
 @mzlib[#:mode title port]
 
+@deprecated[@racketmodname[racket/port]]{}
+
 The @racketmodname[mzlib/port] library mostly re-provides
 @racketmodname[racket/port].
 

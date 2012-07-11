@@ -4,6 +4,8 @@
 
 @mzlib[#:mode title list]
 
+@deprecated[@racketmodname[racket/list]]{}
+
 The @racketmodname[mzlib/list] library re-exports several functions
 from @racketmodname[scheme/base] and @racketmodname[scheme/list]:
 

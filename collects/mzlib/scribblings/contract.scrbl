@@ -27,9 +27,11 @@
 
 @mzlib[#:mode title contract]
 
-This library is designed as a backwards compatible library
-for old uses of contracts. It should not be used for new
-libraries; use @racketmodname[racket/contract] instead.
+@deprecated[@racketmodname[racket/contract]]{
+  This library is designed as a backwards compatible library
+  for old uses of contracts. It should not be used for new
+  libraries.
+}
 
 The main differences: the function contract syntax is more
 regular and function contracts now support keywords, and

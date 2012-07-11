@@ -12,6 +12,8 @@
 
 @mzlib[#:mode title match]
 
+@deprecated[@racketmodname[racket/match]]{}
+
 The @racketmodname[mzlib/match] library provides a @racket[match] form
 similar to that of @racketmodname[racket/match], but with an different
 (older and less extensible) syntax of patterns.

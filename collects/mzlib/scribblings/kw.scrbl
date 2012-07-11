@@ -18,6 +18,10 @@
 
 @mzlib[#:mode title kw]
 
+@deprecated[@racketmodname[racket/base]]{The Racket base language
+supports keyword arguments. Using the built-in keyword arguments
+in Racket is highly recommended.}
+
 @margin-note{The @base-lambda and procedure-application forms of
              @racket[scheme/base] support keyword arguments, and it is
              @emph{not} compatible with the @racket[mzlib/kw]

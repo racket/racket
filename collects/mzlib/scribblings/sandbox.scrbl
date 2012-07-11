@@ -12,6 +12,8 @@
 
 @mzlib[#:mode title sandbox]
 
+@deprecated[@racketmodname[racket/sandbox]]{}
+
 The @racketmodname[mzlib/sandbox] library mostly re-exports
 @racketmodname[racket/sandbox], but it provides a slightly different
 @racket[make-evaluator] function.

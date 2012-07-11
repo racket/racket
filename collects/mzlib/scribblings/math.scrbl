@@ -4,6 +4,8 @@
 
 @mzlib[#:mode title math]
 
+@deprecated[@racketmodname[racket/math]]{}
+
 Re-exports @racketmodname[scheme/math], and also exports @racket[e].
 
 @defthing[e real?]{

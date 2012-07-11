@@ -10,6 +10,8 @@
 
 @mzlib[#:mode title cmdline]
 
+@deprecated[@racketmodname[racket/cmdline]]{}
+
 Provides a @racket[command-line] from that is similar to the one in
 @racketmodname[racket/cmdline], but without using keywords.  The
 @racket[parse-command-line] procedure from

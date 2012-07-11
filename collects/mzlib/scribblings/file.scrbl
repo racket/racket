@@ -6,6 +6,8 @@
 
 @mzlib[#:mode title file]
 
+@deprecated[@racketmodname[racket/file]]{}
+
 The @racketmodname[mzlib/file] library mostly re-exports from
 @racketmodname[scheme/file]:
 

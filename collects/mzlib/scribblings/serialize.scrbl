@@ -13,6 +13,8 @@
 
 @mzlib[#:mode title serialize]
 
+@deprecated[@racketmodname[racket/serialize]]{}
+
 The @racketmodname[mzlib/serialize] library provides the same bindings
 as @racketmodname[racket/serialize], except that
 @racket[define-serializable-struct] and

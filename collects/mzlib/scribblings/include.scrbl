@@ -4,6 +4,8 @@
 
 @mzlib[#:mode title include]
 
+@deprecated[@racketmodname[racket/include]]{}
+
 Similar to @racketmodname[scheme/include], but with a different syntax
 for paths.
 

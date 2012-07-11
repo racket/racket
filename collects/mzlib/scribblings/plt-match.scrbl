@@ -4,6 +4,8 @@
 
 @mzlib[#:mode title plt-match]
 
+@deprecated[@racketmodname[racket/match]]{}
+
 The @racketmodname[mzlib/plt-match] library mostly re-provides
 @racket[scheme/match].
 

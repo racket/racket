@@ -5,6 +5,8 @@
 
 @mzlib[#:mode title pregexp]
 
+@deprecated[@racketmodname[racket/base]]{}
+
 The @racketmodname[mzlib/pregexp] library provides wrappers around
 @racket[regexp-match], @|etc| that coerce string and byte-string
 arguments to @racket[pregexp] matchers instead of @racket[regexp]

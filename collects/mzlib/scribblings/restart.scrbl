@@ -5,8 +5,10 @@
 
 @mzlib[#:mode title restart]
 
-@margin-note{See @racket[scheme/sandbox] for a more general way to
-             simulate running a new Racket process.}
+@deprecated[@racketmodname[racket/sandbox]]{
+The @racket[racket/sandbox] library provides a more general way to
+simulate running a new Racket process.
+}
 
 @defproc[(restart-mzscheme [init-argv (vectorof string?)]
                            [adjust-flag-table (any/c . -> . any/c)]

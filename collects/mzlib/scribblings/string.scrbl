@@ -7,6 +7,10 @@
 
 @mzlib[#:mode title string]
 
+@deprecated[@racketmodname[racket/base]]{
+Also see @racketmodname[racket/string]
+}
+
 The @racketmodname[mzlib/string] library re-exports several functions
 from @racketmodname[scheme/base]:
 

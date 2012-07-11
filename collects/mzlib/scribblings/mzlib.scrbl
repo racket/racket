@@ -15,6 +15,8 @@ libraries reside in the @filepath{scheme} collection.
 
 @mzlib[a-signature]
 
+@deprecated[@racketmodname[racket/signature]]{}
+
 Like @racketmodname[scheme/signature] in @hash-lang[] form for
 defining a single signature within a module, but based on
 @racketmodname[mzscheme] instead of @racketmodname[scheme/base].
@@ -23,6 +25,8 @@ defining a single signature within a module, but based on
 
 @mzlib[a-unit]
 
+@deprecated[@racketmodname[racket/unit]]{}
+
 Like @racketmodname[scheme/unit] in @hash-lang[] form for defining a
 single unit within a module, but based on @racketmodname[mzscheme]
 instead of @racketmodname[scheme/base].
@@ -30,6 +34,8 @@ instead of @racketmodname[scheme/base].
 @; ----------------------------------------------------------------------
 
 @mzlib[async-channel]
+
+@deprecated[@racketmodname[racket/async-channel]]{}
 
 Re-exports @racketmodname[scheme/async-channel].
 
@@ -40,6 +46,8 @@ Re-exports @racketmodname[scheme/async-channel].
 @; ----------------------------------------------------------------------
 
 @mzlib[class]
+
+@deprecated[@racketmodname[racket/class]]{}
 
 Re-exports @racketmodname[scheme/class], except for the contract
 constructors.
@@ -52,11 +60,15 @@ constructors.
 
 @mzlib[cm]
 
+@deprecated[@racketmodname[compiler/cm]]{}
+
 Re-exports @racketmodname[compiler/cm].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[cm-accomplice]
+
+@deprecated[@racketmodname[compiler/cm-accomplice]]{}
 
 Re-exports @racketmodname[compiler/cm-accomplice].
 
@@ -84,17 +96,23 @@ Re-exports @racketmodname[compiler/cm-accomplice].
 
 @mzlib[control]
 
+@deprecated[@racketmodname[racket/control]]{}
+
 Re-exports @racketmodname[scheme/control].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[date]
 
+@deprecated[@racketmodname[racket/date]]{}
+
 Re-exports @racketmodname[scheme/date].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[deflate]
+
+@deprecated[@racketmodname[file/gzip]]{}
 
 Re-exports @racketmodname[file/gzip].
 
@@ -118,6 +136,8 @@ Re-exports @racketmodname[file/gzip].
 
 @mzlib[foreign]
 
+@deprecated[@racketmodname[ffi/unsafe]]{}
+
 Re-exports @racketmodname[scheme/foreign].
 
 @; ----------------------------------------------------------------------
@@ -127,6 +147,8 @@ Re-exports @racketmodname[scheme/foreign].
 @; ----------------------------------------------------------------------
 
 @mzlib[inflate]
+
+@deprecated[@racketmodname[file/gunzip]]{}
 
 Re-exports @racketmodname[file/gunzip].
 
@@ -153,6 +175,8 @@ Re-exports @racketmodname[file/gunzip].
 @; ----------------------------------------------------------------------
 
 @mzlib[md5]
+
+@deprecated[@racketmodname[file/md5]]{}
 
 Re-exports @racketmodname[file/md5].
 
@@ -184,11 +208,15 @@ Re-exports @racketmodname[file/md5].
 
 @mzlib[pretty]
 
+@deprecated[@racketmodname[racket/pretty]]{}
+
 Re-exports @racketmodname[scheme/pretty].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[process]
+
+@deprecated[@racketmodname[racket/system]]{}
 
 Re-exports @racketmodname[scheme/system].
 
@@ -199,6 +227,8 @@ Re-exports @racketmodname[scheme/system].
 @; ----------------------------------------------------------------------
 
 @mzlib[runtime-path]
+
+@deprecated[@racketmodname[racket/runtime-path]]{}
 
 Re-exports @racketmodname[scheme/runtime-path].
 
@@ -218,6 +248,8 @@ Re-exports @racketmodname[scheme/runtime-path].
 
 @mzlib[shared]
 
+@deprecated[@racketmodname[racket/shared]]{}
+
 Re-exports @racketmodname[scheme/shared].
 
 @; ----------------------------------------------------------------------
@@ -232,6 +264,10 @@ Re-exports @racketmodname[scheme/shared].
 
 @mzlib[stxparam]
 
+@deprecated[@racketmodname[racket/stxparam]]{
+Also see @racketmodname[racket/stxparam-exptime].
+}
+
 Re-exports @racketmodname[scheme/stxparam] and
 @racketmodname[scheme/stxparam-exptime] (both at phase level 0).
 
@@ -239,11 +275,15 @@ Re-exports @racketmodname[scheme/stxparam] and
 
 @mzlib[surrogate]
 
+@deprecated[@racketmodname[racket/surrogate]]{}
+
 Re-exports @racketmodname[scheme/surrogate].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[tar]
+
+@deprecated[@racketmodname[file/tar]]{}
 
 Re-exports @racketmodname[file/tar].
 
@@ -255,6 +295,8 @@ Re-exports @racketmodname[file/tar].
 
 @mzlib[trace]
 
+@deprecated[@racketmodname[racket/trace]]{}
+
 Re-exports @racketmodname[racket/trace].
 
 @; ----------------------------------------------------------------------
@@ -264,6 +306,8 @@ Re-exports @racketmodname[racket/trace].
 @; ----------------------------------------------------------------------
 
 @mzlib[trait]
+
+@deprecated[@racketmodname[racket/trait]]{}
 
 Re-exports @racketmodname[scheme/trait].
 
@@ -279,11 +323,15 @@ Re-exports @racketmodname[scheme/trait].
 
 @mzlib[unit-exptime]
 
+@deprecated[@racketmodname[racket/unit-exptime]]{}
+
 Re-exports @racketmodname[scheme/unit-exptime].
 
 @; ----------------------------------------
 
 @mzlib[unit200]
+
+@deprecated[@racketmodname[racket/unit]]{}
 
 The @racketmodname[mzlib/unit200] library provides an old
 implementation of units. See archived version 360 documentation on the
@@ -294,6 +342,8 @@ information about this library.
 
 @mzlib[unitsig200]
 
+@deprecated[@racketmodname[racket/unit]]{}
+
 The @racketmodname[mzlib/unit200] library provides an old
 implementation of units. See archived version 360 documentation on the
 @filepath{unitsig.ss} library of the @filepath{mzlib} collection for
@@ -302,6 +352,8 @@ information about this library.
 @; ----------------------------------------
 
 @mzlib[zip]
+
+@deprecated[@racketmodname[file/zip]]{}
 
 Re-exports @racketmodname[file/zip].
 

@@ -4,6 +4,8 @@
 
 @mzlib[#:mode title for]
 
+@deprecated[@racketmodname[racket/base]]{}
+
 The @racketmodname[mzlib/for] library re-exports from
 @racketmodname[scheme/base]:
 

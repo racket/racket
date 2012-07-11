@@ -16,6 +16,8 @@
 
 @mzlib[#:mode title unit]
 
+@deprecated[@racketmodname[racket/unit]]{}
+
 The @racketmodname[mzlib/unit] library mostly re-provides
 @racketmodname[racket/unit], except for @racket-struct and
 @racket-struct/ctc from @racketmodname[racket/unit].
