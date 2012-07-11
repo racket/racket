@@ -57,7 +57,7 @@
 
 (define (stream->list s)
   (for/list ([v (in-stream s)]) v))
-  
+
 (define (stream-length s)
   (unless (stream? s) (raise-argument-error 'stream-length "stream?" s))
   (let loop ([s s] [len 0])
@@ -80,7 +80,7 @@
       (stream-first s)]
      [else
       (loop (sub1 n) (stream-rest s))])))
-  
+
 (define (stream-tail st i)
   (unless (stream? st) (raise-argument-error 'stream-tail "stream?" st))
   (unless (exact-nonnegative-integer? i)
@@ -109,31 +109,30 @@
     (make-do-stream (lambda () #f)
                     (lambda () (stream-first (car l)))
                     (lambda () (streams-append (cons (stream-rest (car l)) (cdr l)))))]))
-  
+
 (define (stream-map f s)
   (unless (procedure? f) (raise-argument-error 'stream-map "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-map "stream?" s))
   (let loop ([s s])
-    (cond
-     [(stream-empty? s) empty-stream]
-     [else (stream-cons (call-with-values (lambda () (stream-first s)) f)
-                        (loop (stream-rest s)))])))
-  
+    (if (stream-empty? s)
+      empty-stream
+      (stream-cons (f (stream-first s)) (loop (stream-rest s))))))
+
 (define (stream-andmap f s)
   (unless (procedure? f) (raise-argument-error 'stream-andmap "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-andmap "stream?" s))
   (sequence-andmap f s))
-  
+
 (define (stream-ormap f s)
   (unless (procedure? f) (raise-argument-error 'stream-ormap "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-ormap "stream?" s))
   (sequence-ormap f s))
-  
+
 (define (stream-for-each f s)
   (unless (procedure? f) (raise-argument-error 'stream-for-each "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-for-each "stream?" s))
   (sequence-for-each f s))
-  
+
 (define (stream-fold f i s)
   (unless (procedure? f) (raise-argument-error 'stream-fold "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-fold "stream?" s))
@@ -143,7 +142,7 @@
   (unless (procedure? f) (raise-argument-error 'stream-count "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-count "stream?" s))
   (sequence-count f s))
-  
+
 (define (stream-filter f s)
   (unless (procedure? f) (raise-argument-error 'stream-filter "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-filter "stream?" s))
