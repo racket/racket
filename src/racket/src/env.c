@@ -2573,10 +2573,11 @@ static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])
 
   env = scheme_current_thread->current_local_env;
   local_mark = scheme_current_thread->current_local_mark;
-  phase = env->genv->phase;
 
   if (!env)
     not_currently_transforming("syntax-local-lift-require");
+
+  phase = env->genv->phase;
 
   return scheme_local_lift_require(argv[0], argv[1], phase, local_mark, env);
 }
