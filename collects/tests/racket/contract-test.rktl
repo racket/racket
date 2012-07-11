@@ -9255,6 +9255,16 @@
                         'pos
                         'neg)))
    #t)
+  
+  (test/spec-passed/result
+   'promise/c6
+   '(let ([a (delay 7)])
+      (equal? a
+              (contract (promise/c (new-∃/c 'α))
+                        a
+                        'pos
+                        'neg)))
+   #t)
 
   
 ;                                                                 

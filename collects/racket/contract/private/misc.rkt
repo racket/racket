@@ -827,6 +827,8 @@
     (let* ([ctc (coerce-contract 'promise/c ctc-in)]
            [ctc-proc (contract-projection ctc)])
       (define chap? (chaperone-contract? ctc))
+      (define c/i-struct (if chap? chaperone-struct impersonate-struct))
+      (define c/i-procedure (if chap? chaperone-procedure impersonate-procedure))
       ((if chap? make-chaperone-contract make-contract)
        #:name (build-compound-type-name 'promise/c ctc)
        #:projection
@@ -839,15 +841,13 @@
                 val
                 '(expected "<promise>," given: "~e")
                 val))
-                   (if chap?
-                       (chaperone-struct
-                        val
-                        promise-forcer (λ (_ proc) 
-                                         (chaperone-procedure
-                                          proc
-                                          (λ (promise)
-                                            (values p-app promise)))))
-                       (delay (p-app (force val)))))))
+             (c/i-struct
+              val
+              promise-forcer (λ (_ proc) 
+                               (c/i-procedure
+                                proc
+                                (λ (promise)
+                                  (values p-app promise))))))))
        #:first-order promise?))))
 
 (define/subexpression-pos-prop (parameter/c x)
