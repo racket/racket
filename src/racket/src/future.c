@@ -2062,11 +2062,10 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   if (fts->is_runtime_thread) {
     future_t *ft;
-    future_t *targ_ft;
     if (fts->thread 
         && (ft = fts->thread->current_ft) 
         && ft->in_tracing_mode) { 
-      targ_ft = (future_t*)argv[0];
+      future_t *targ_ft = (future_t*)argv[0];
       Scheme_Future_State *fs = scheme_future_state;
       Scheme_Object *targid_obj;
       targid_obj = scheme_make_integer(targ_ft->id);
