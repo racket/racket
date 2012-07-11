@@ -342,7 +342,7 @@
      (values
       #`(begin
           (begin-for-syntax
-            (module* type-decl #f    
+            (module* #%type-decl #f    
               (require typed-racket/types/numeric-tower typed-racket/env/type-name-env
                        typed-racket/env/global-env typed-racket/env/type-alias-env)
               #,(env-init-code syntax-provide? provide-tbl def-tbl)              

@@ -18,6 +18,6 @@
     (for ([m (in-list to-require)]
           #:when m)
       ;(printf ">> loading ~a\n" m)
-      (dynamic-require `(submod ,(fix m) type-decl) #f))))
+      (dynamic-require `(submod ,(fix m) #%type-decl) #f))))
 
 (provide add-mod! do-requires module-name)
