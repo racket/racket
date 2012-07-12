@@ -7,14 +7,14 @@ Move racket/math functions here; racket/math reexports
 |#
 
 (require racket/flonum
-         "private/factorial.rkt"
-         "private/hyperbolic.rkt"
-         "private/inverse-hyperbolic.rkt"
+         "private/functions/factorial.rkt"
+         "private/functions/hyperbolic.rkt"
+         "private/functions/inverse-hyperbolic.rkt"
          "constants.rkt")
 
-(provide (all-from-out "private/factorial.rkt"
-                       "private/hyperbolic.rkt"
-                       "private/inverse-hyperbolic.rkt")
+(provide (all-from-out "private/functions/factorial.rkt"
+                       "private/functions/hyperbolic.rkt"
+                       "private/functions/inverse-hyperbolic.rkt")
          flhypot hypot
          fllog/base)
 

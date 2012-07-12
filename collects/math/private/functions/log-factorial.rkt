@@ -3,7 +3,7 @@
 (require racket/unsafe/ops
          racket/math racket/flonum racket/fixnum
          "factorial.rkt"
-         "utils.rkt")
+         "../utils.rkt")
 
 (provide fllog-factorial
          log-factorial

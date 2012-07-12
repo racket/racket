@@ -1,16 +1,16 @@
 #lang typed/racket/base
 
-(require "private/log1p.rkt"
-         "private/expm1.rkt"
-         "private/gamma.rkt"
-         "private/log-factorial.rkt"
-         "private/log-gamma.rkt")
+(require "private/functions/log1p.rkt"
+         "private/functions/expm1.rkt"
+         "private/functions/gamma.rkt"
+         "private/functions/log-factorial.rkt"
+         "private/functions/log-gamma.rkt")
 
-(provide (all-from-out "private/log1p.rkt"
-                       "private/expm1.rkt"
-                       "private/gamma.rkt"
-                       "private/log-factorial.rkt"
-                       "private/log-gamma.rkt"))
+(provide (all-from-out "private/functions/log1p.rkt"
+                       "private/functions/expm1.rkt"
+                       "private/functions/gamma.rkt"
+                       "private/functions/log-factorial.rkt"
+                       "private/functions/log-gamma.rkt"))
 
 ;; reciprocal gamma
 ;; upper and lower gamma

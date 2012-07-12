@@ -9,8 +9,8 @@ Error on exact nonpositive integers
 |#
 
 (require (only-in racket/math pi) racket/flonum racket/fixnum
-         "../constants.rkt"
-         "utils.rkt"
+         "../../constants.rkt"
+         "../utils.rkt"
          "factorial.rkt"
          "polyfun.rkt"
          "sinpx.rkt")
@@ -114,7 +114,7 @@ Error on exact nonpositive integers
         [(exact-positive-integer? x)  (factorial (- x 1))]
         [(single-flonum? x)  (real->single-flonum (flgamma (real->double-flonum x)))]
         [else  (flgamma (real->double-flonum x))]))
-
+#;
 (module* test typed/racket
   (require (submod "..")
            typed/rackunit

@@ -7,7 +7,7 @@ Error in acosh when exact x < 1
 |#
 
 (require racket/flonum
-         "../constants.rkt"
+         "../../constants.rkt"
          "log1p.rkt"
          "sqrt1pm1.rkt")
 
