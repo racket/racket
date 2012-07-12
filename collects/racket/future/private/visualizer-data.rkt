@@ -111,7 +111,7 @@
 
 ;;allocation-event? : event -> bool
 (define (allocation-event? evt) 
-  (equal? (event-prim-name evt) '|[allocate memory|))
+  (equal? (event-prim-name evt) '|[allocate memory]|))
 
 ;;jitcompile-event : event -> bool
 (define (jitcompile-event? evt) 
