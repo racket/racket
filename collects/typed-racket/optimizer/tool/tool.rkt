@@ -39,7 +39,17 @@
   (import drracket:tool^)
   (export drracket:tool-exports^)
 
-  (define (phase1) (void))
+  (define (phase1)
+    (drracket:module-language-tools:add-opt-out-toolbar-button
+     (lambda (frame parent)
+       (new switchable-button%
+            [label "Optimization Coach"]
+            [callback (lambda (btn)
+                        (optimization-coach-callback frame))]
+            [parent parent]
+            [bitmap optimization-coach-bitmap]))
+     'optimization-coach
+     #:number 75))
   (define (phase2) (void))
 
   (define highlights-mixin
@@ -148,24 +158,6 @@
       (super-new)))
 
   (drracket:get/extend:extend-definitions-text highlights-mixin)
-
-  (define button-mixin
-    (mixin (drracket:unit:frame<%>) ()
-      (super-new)
-      (inherit get-button-panel register-toolbar-button)
-      (let ([btn
-             (new switchable-button%
-                  [label "Optimization Coach"]
-                  [callback (lambda (btn)
-                              (optimization-coach-callback this))]
-                  [parent (get-button-panel)]
-                  [bitmap optimization-coach-bitmap])])
-        (register-toolbar-button btn)
-        (send (get-button-panel) change-children
-              (λ (l)
-                (cons btn (remq btn l)))))))
-
-  (drracket:get/extend:extend-unit-frame button-mixin)
 
   (define toolbar-mixin
     (mixin (drracket:unit:tab<%>) ()
