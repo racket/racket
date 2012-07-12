@@ -44,5 +44,9 @@ setuid on /usr/bin/Xorg
 6. 
 
 sudo apt-get install postfix
+
+# https://help.ubuntu.com/10.04/serverguide/certificates-and-security.html
+# https://www.wormly.com/blog/2008/11/05/relay-gmail-google-smtp-postfix/
+
 # Use the Internet site setup
 # Set a relyhost of mail.cs.byu.edu
