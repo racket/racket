@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         "../constants.rkt"
+         "../../constants.rkt"
          "polyfun.rkt")
 
 (provide flexpm1 expm1)
@@ -58,7 +58,7 @@
         [(double-flonum? x)  (flexpm1 x)]
         [(single-flonum? x)  (real->single-flonum (flexpm1 (real->double-flonum x)))]
         [else  (flexpm1 (real->double-flonum x))]))
-
+#;
 (module* test typed/racket
   (require (submod "..") typed/rackunit math/constants)
   (define ε (* 2 +epsilon.0))

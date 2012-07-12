@@ -2,7 +2,7 @@
 
 (require racket/unsafe/ops
          racket/math racket/flonum
-         "utils.rkt")
+         "../utils.rkt")
 
 (provide factorial binomial permutations multinomial)
 
@@ -70,7 +70,7 @@
                                           n ks)]
         [else  (define m (apply / (factorial n) (map factorial ks)))
                (with-asserts ([m  exact-nonnegative-integer?]) m)]))
-
+#;
 (module* test typed/racket
   (require (submod "..") typed/rackunit)
   
