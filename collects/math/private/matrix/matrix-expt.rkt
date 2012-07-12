@@ -32,6 +32,8 @@
     [(= n 0)  (identity-matrix (square-matrix-size a))]
     [(= n 1)  a]
     [(= n 2)  (matrix* a a)]
+    [(even? n) (let ([a^n/2 (matrix-expt a (quotient n 2))])
+                 (matrix* a^n/2 a^n/2))]
     [else     (matrix* a (matrix-expt a (sub1 n)))]))
 
 (: flmatrix-expt : (Matrix Real) Integer -> (Matrix Real))
@@ -44,6 +46,8 @@
     [(= n 0)  (flidentity-matrix (square-matrix-size a))]
     [(= n 1)  a]
     [(= n 2)  (matrix* a a)]
+    [(even? n) (let ([a^n/2 (flmatrix-expt a (quotient n 2))])
+                 (matrix* a^n/2 a^n/2))]
     [else     (matrix* a (flmatrix-expt a (sub1 n)))]))
 
 (module* test typed/racket
@@ -59,10 +63,12 @@
     (check-equal? (matrix->list (matrix-expt A 0)) (matrix->list (identity-matrix 2)))
     (check-equal? (matrix->list (matrix-expt A 1)) (matrix->list A))
     (check-equal? (matrix->list (matrix-expt A 2)) '[[7 10] [15 22]])
-    (check-equal? (matrix->list (matrix-expt A 3)) '[[37 54] [81 118]]))
+    (check-equal? (matrix->list (matrix-expt A 3)) '[[37 54] [81 118]])
+    (check-equal? (matrix->list (matrix-expt A 8)) '[[165751 241570] [362355 528106]]))
   (let ()
     (define A (fllist->matrix '[[1. 2.] [3. 4.]]))
     (check-equal? (matrix->list (flmatrix-expt A 0)) (matrix->list (flidentity-matrix 2)))
     (check-equal? (matrix->list (flmatrix-expt A 1)) (matrix->list A))
     (check-equal? (matrix->list (flmatrix-expt A 2)) '[[7. 10.] [15. 22.]])
-    (check-equal? (matrix->list (flmatrix-expt A 3)) '[[37. 54.] [81. 118.]])))
+    (check-equal? (matrix->list (flmatrix-expt A 3)) '[[37. 54.] [81. 118.]])
+    (check-equal? (matrix->list (flmatrix-expt A 8)) '[[165751. 241570.] [362355. 528106.]])))
