@@ -36,9 +36,15 @@
            (lambda (v) (loop))))))
 (define manager-t (thread/suspend-to-kill lock-manager))
 
+(define gl-context<%>
+  (interface ()
+    [call-as-current (->*m [(-> any)] any)]
+    [ok? (->m boolean?)]
+    [swap-buffers (->m any)]))
+
 ;; Implemented by subclasses:
 (define gl-context%
-  (class object%
+  (class* object% (gl-context<%>)
     (define/private (with-gl-lock t)
       (thread-resume manager-t (current-thread))
       (if (eq? (current-thread) (channel-get lock-holder-ch))
@@ -67,9 +73,3 @@
     (define/public (do-swap-buffers t) (void))
 
     (super-new)))
-
-(define gl-context<%>
-  (interface ()
-    [call-as-current (->*m [(-> any)] [evt? any/c] any)]
-    [ok? (->m boolean?)]
-    [swap-buffers (->m any)]))
