@@ -841,7 +841,6 @@ path/s is either such a string or a list of them.
 "collects/mzlib/match.rkt" responsible (samth)
 "collects/mzlib/pconvert.rkt" responsible (robby)
 "collects/mzlib/plt-match.rkt" responsible (samth)
-"collects/mzlib/private/shared-body.rkt" drdr:command-line #f
 "collects/mzlib/shared.rkt" responsible (robby)
 "collects/mzlib/traceld.rkt" drdr:command-line #f
 "collects/mzscheme" responsible (mflatt)
@@ -881,6 +880,7 @@ path/s is either such a string or a list of them.
 "collects/racket/place" responsible (tewk)
 "collects/racket/place/distributed/examples/hello-world.rkt" drdr:command-line #f
 "collects/racket/private/generic.rkt" responsible (asumu stamourv)
+"collects/racket/private/shared-body.rkt" drdr:command-line #f
 "collects/racklog" responsible (jay)
 "collects/rackunit" responsible (jay noel ryanc)
 "collects/rackunit/gui.rkt" responsible (ryanc)
