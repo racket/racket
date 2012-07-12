@@ -1,5 +1,5 @@
 (require "test-harness.rkt"
-         mzlib/private/unit-runtime)
+         racket/private/unit-runtime)
 
 ;; check-unit
 (test-runtime-error exn:fail:contract? "check-unit: not a unit"
