@@ -53,7 +53,7 @@
 (define (vector->array pred? vec)
   (define (raise-shape-error)
     ;; don't have to worry about non-Index size - can't fit in memory anyway
-    (raise-type-error 'vector->array "rectangular (Vectorof* Float)" vec))
+    (raise-type-error 'vector->array "rectangular (Vectorof* A)" vec))
   
   (define ds (vector-shape pred?  vec))
   (cond [(pred? vec)  (unsafe-lazy-array #() (λ (js) vec))]

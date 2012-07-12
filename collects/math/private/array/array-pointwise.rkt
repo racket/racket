@@ -35,29 +35,10 @@
          array-min
          array-max
          
-         array-flabs
-         array-flround
-         array-flfloor
-         array-flceiling
-         array-fltruncate
-         array-flsqrt
-         array-fllog
-         array-flexp
-         array-flsin
-         array-flcos
-         array-fltan
-         array-flasin
-         array-flacos
-         array-flatan
-         array-fl+
-         array-fl-
-         array-fl*
-         array-fl/
-         array-flexpt
-         array-flmin
-         array-flmax
-         
-         array->flarray)
+         array-inexact->exact
+         array-exact->inexact
+         array-real->double-flonum
+         array-real->single-flonum)
 
 ;; ===================================================================================================
 ;; Lifting
@@ -125,58 +106,80 @@ array-number-exp.
 ;; ===================================================================================================
 ;; Lifted operations on Real and Number
 
-(: array-abs      ((Array Real)   -> (lazy-array Real)))
-(: array-round    ((Array Real)   -> (lazy-array Real)))
-(: array-floor    ((Array Real)   -> (lazy-array Real)))
-(: array-ceiling  ((Array Real)   -> (lazy-array Real)))
-(: array-truncate ((Array Real)   -> (lazy-array Real)))
-(: array-sqrt     ((Array Number) -> (lazy-array Number)))
-(: array-log      ((Array Number) -> (lazy-array Number)))
+(: array-abs      (case-> ((Array Float) -> (lazy-array Float))
+                          ((Array Real)  -> (lazy-array Real))))
+(: array-round    (case-> ((Array Float) -> (lazy-array Float))
+                          ((Array Real)  -> (lazy-array Real))))
+(: array-floor    (case-> ((Array Float) -> (lazy-array Float))
+                          ((Array Real)  -> (lazy-array Real))))
+(: array-ceiling  (case-> ((Array Float) -> (lazy-array Float))
+                          ((Array Real)  -> (lazy-array Real))))
+(: array-truncate (case-> ((Array Float) -> (lazy-array Float))
+                          ((Array Real)  -> (lazy-array Real))))
 
-(: array-exp  (case-> ((Array Real)   -> (lazy-array Real))
+(: array-sqrt ((Array Number) -> (lazy-array Number)))
+(: array-log  ((Array Number) -> (lazy-array Number)))
+
+(: array-exp  (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
-(: array-sin  (case-> ((Array Real)   -> (lazy-array Real))
+(: array-sin  (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
-(: array-cos  (case-> ((Array Real)   -> (lazy-array Real))
+(: array-cos  (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
-(: array-tan  (case-> ((Array Real)   -> (lazy-array Real))
+(: array-tan  (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
-(: array-asin (case-> ((Array Real)   -> (lazy-array Real))
+(: array-asin (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
-(: array-acos (case-> ((Array Real)   -> (lazy-array Real))
+(: array-acos (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
-(: array-atan (case-> ((Array Real)   -> (lazy-array Real))
+(: array-atan (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
 
-(: array+ (case-> ((Array Real)   (Array Real)   -> (lazy-array Real))
+(: array+ (case-> ((Array Float)  (Array Float)  -> (lazy-array Float))
+                  ((Array Real)   (Array Real)   -> (lazy-array Real))
                   ((Array Number) (Array Number) -> (lazy-array Number))))
-(: array* (case-> ((Array Real)   (Array Real)   -> (lazy-array Real))
-                  ((Array Number) (Array Number) -> (lazy-array Number))))
-
-(: array- (case-> ((Array Real) -> (lazy-array Real))
-                  ((Array Number) -> (lazy-array Number))
+(: array* (case-> ((Array Float)  (Array Float)  -> (lazy-array Float))
                   ((Array Real)   (Array Real)   -> (lazy-array Real))
                   ((Array Number) (Array Number) -> (lazy-array Number))))
 
-(: array/ (case-> ((Array Real)   -> (lazy-array Real))
+(: array- (case-> ((Array Float)  -> (lazy-array Float))
+                  ((Array Real)   -> (lazy-array Real))
                   ((Array Number) -> (lazy-array Number))
+                  ((Array Float)  (Array Float)  -> (lazy-array Float))
+                  ((Array Real)   (Array Real)   -> (lazy-array Real))
+                  ((Array Number) (Array Number) -> (lazy-array Number))))
+
+(: array/ (case-> ((Array Float)  -> (lazy-array Float))
+                  ((Array Real)   -> (lazy-array Real))
+                  ((Array Number) -> (lazy-array Number))
+                  ((Array Float)  (Array Float)  -> (lazy-array Float))
                   ((Array Real)   (Array Real)   -> (lazy-array Real))
                   ((Array Number) (Array Number) -> (lazy-array Number))))
 
 (: array-expt ((Array Number) (Array Number) -> (lazy-array Number)))
-(: array-min  ((Array Real)   (Array Real)   -> (lazy-array Real)))
-(: array-max  ((Array Real)   (Array Real)   -> (lazy-array Real)))
+
+(: array-min  (case-> ((Array Float) (Array Float) -> (lazy-array Float))
+                      ((Array Real)  (Array Real)  -> (lazy-array Real))))
+(: array-max  (case-> ((Array Float) (Array Float) -> (lazy-array Float))
+                      ((Array Real)  (Array Real)  -> (lazy-array Real))))
 
 (begin-encourage-inline
   
-  (define array-abs      (array-lift abs))
-  (define array-round    (array-lift round))
-  (define array-floor    (array-lift floor))
-  (define array-ceiling  (array-lift ceiling))
-  (define array-truncate (array-lift truncate))
+  (define array-abs      (inline-array-lift abs))
+  (define array-round    (inline-array-lift round))
+  (define array-floor    (inline-array-lift floor))
+  (define array-ceiling  (inline-array-lift ceiling))
+  (define array-truncate (inline-array-lift truncate))
   
-  (define array-sqrt (array-lift sqrt))
-  (define array-log  (array-lift log))
+  (define array-sqrt (inline-array-lift sqrt))
+  (define array-log  (inline-array-lift log))
   (define array-exp  (inline-array-lift exp))
   (define array-sin  (inline-array-lift sin))
   (define array-cos  (inline-array-lift cos))
@@ -198,76 +201,9 @@ array-number-exp.
       [(arr)        (array-map / arr)]
       [(arr1 arr2)  (array-map2 / arr1 arr2)]))
   
-  (define array-expt (array-lift2 'array-expt expt))
-  (define array-min  (array-lift2 'array-min  min))
-  (define array-max  (array-lift2 'array-max  max))
-  
-  )  ; begin-encourage-inline
-;; ===================================================================================================
-;; Lifted operations on Float
-
-(: array-flabs      ((Array Float) -> (lazy-array Float)))
-(: array-flround    ((Array Float) -> (lazy-array Float)))
-(: array-flfloor    ((Array Float) -> (lazy-array Float)))
-(: array-flceiling  ((Array Float) -> (lazy-array Float)))
-(: array-fltruncate ((Array Float) -> (lazy-array Float)))
-
-(: array-flsqrt ((Array Float) -> (lazy-array Float)))
-(: array-fllog  ((Array Float) -> (lazy-array Float)))
-(: array-flexp  ((Array Float) -> (lazy-array Float)))
-(: array-flsin  ((Array Float) -> (lazy-array Float)))
-(: array-flcos  ((Array Float) -> (lazy-array Float)))
-(: array-fltan  ((Array Float) -> (lazy-array Float)))
-(: array-flasin ((Array Float) -> (lazy-array Float)))
-(: array-flacos ((Array Float) -> (lazy-array Float)))
-(: array-flatan ((Array Float) -> (lazy-array Float)))
-
-(: array-fl+ ((Array Float) (Array Float) -> (lazy-array Float)))
-(: array-fl* ((Array Float) (Array Float) -> (lazy-array Float)))
-
-(: array-fl- (case-> ((Array Float) -> (lazy-array Float))
-                     ((Array Float) (Array Float) -> (lazy-array Float))))
-(: array-fl/ (case-> ((Array Float) -> (lazy-array Float))
-                     ((Array Float) (Array Float) -> (lazy-array Float))))
-
-(: array-flexpt ((Array Float) (Array Float) -> (lazy-array Float)))
-(: array-flmin  ((Array Float) (Array Float) -> (lazy-array Float)))
-(: array-flmin  ((Array Float) (Array Float) -> (lazy-array Float)))
-
-(begin-encourage-inline
-  
-  (define array-flabs      (array-lift unsafe-flabs))
-  (define array-flround    (array-lift unsafe-flround))
-  (define array-flfloor    (array-lift unsafe-flfloor))
-  (define array-flceiling  (array-lift unsafe-flceiling))
-  (define array-fltruncate (array-lift unsafe-fltruncate))
-  
-  (define array-flsqrt (array-lift unsafe-flsqrt))
-  (define array-fllog  (array-lift unsafe-fllog))
-  (define array-flexp  (array-lift unsafe-flexp))
-  (define array-flsin  (array-lift unsafe-flsin))
-  (define array-flcos  (array-lift unsafe-flcos))
-  (define array-fltan  (array-lift unsafe-fltan))
-  (define array-flasin (array-lift unsafe-flasin))
-  (define array-flacos (array-lift unsafe-flacos))
-  (define array-flatan (array-lift unsafe-flatan))
-  
-  (define array-fl+ (array-lift2 'array-fl+ unsafe-fl+))
-  (define array-fl* (array-lift2 'array-fl* unsafe-fl*))
-  
-  (define array-fl-
-    (case-lambda
-      [(arr)        (array-map (λ: ([x : Float]) (unsafe-fl- 0.0 x)) arr)]
-      [(arr1 arr2)  (array-map2 unsafe-fl- arr1 arr2)]))
-  
-  (define array-fl/
-    (case-lambda
-      [(arr)        (array-map (λ: ([x : Float]) (unsafe-fl/ 1.0 x)) arr)]
-      [(arr1 arr2)  (array-map2 unsafe-fl/ arr1 arr2)]))
-  
-  (define array-flexpt (array-lift2 'array-flexpt unsafe-flexpt))
-  (define array-flmin  (array-lift2 'array-flmin  unsafe-flmin))
-  (define array-flmax  (array-lift2 'array-flmax  unsafe-flmax))
+  (define array-expt (inline-array-lift2 'array-expt expt))
+  (define array-min  (inline-array-lift2 'array-min  min))
+  (define array-max  (inline-array-lift2 'array-max  max))
   
   )  ; begin-encourage-inline
 
@@ -276,7 +212,18 @@ array-number-exp.
 
 (begin-encourage-inline
   
-  (: array->flarray ((Array Real) -> (lazy-array Float)))
-  (define array->flarray (array-lift real->double-flonum))
+  (: array-inexact->exact (case-> ((Array Real)   -> (lazy-array Exact-Rational))
+                                  ((Array Number) -> (lazy-array Exact-Number))))
+  
+  (: array-exact->inexact (case-> ((Array Real)   -> (lazy-array Inexact-Real))
+                                  ((Array Number) -> (lazy-array Number))))
+  
+  (: array-real->double-flonum ((Array Real) -> (lazy-array Float)))
+  (: array-real->single-flonum ((Array Real) -> (lazy-array Single-Flonum)))
+  
+  (define array-inexact->exact (inline-array-lift inexact->exact))
+  (define array-exact->inexact (inline-array-lift exact->inexact))
+  (define array-real->double-flonum (array-lift real->double-flonum))
+  (define array-real->single-flonum (array-lift real->single-flonum))
   
   )  ; begin-encourage-inline
