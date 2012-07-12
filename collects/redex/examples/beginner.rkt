@@ -928,6 +928,7 @@ reflects the (broken) spec).
         true
         false)))))
 
+(provide main)
 (define (main)
   (run-tests)
   (run-big-test))
