@@ -8,7 +8,6 @@
          "array.rkt"
          "matrix.rkt"
          "vector.rkt"
-         "fft.rkt"
          "polynomial.rkt")
 
 (provide (all-from-out "constants.rkt"
@@ -19,5 +18,4 @@
                        "array.rkt"
                        "matrix.rkt"
                        "vector.rkt"
-                       "fft.rkt"
                        "polynomial.rkt"))

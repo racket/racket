@@ -1,0 +1,91 @@
+#lang typed/racket
+
+(require racket/flonum racket/fixnum
+         "../future.rkt")
+
+(provide (rename-out [fft5 fft]))
+
+(: init-d (-> Integer))
+(define (init-d)
+  (define pc (future-count))
+  (exact-ceiling (/ (log pc) (log 2))))
+
+(: fft5 ((Vectorof Number) -> (Vectorof Float-Complex)))
+(define (fft5 as)
+  (define n (vector-length as))
+  (define as-r (make-flvector n 0.0))
+  (define as-i (make-flvector n 0.0))
+  (let loop ([#{j : Nonnegative-Fixnum} 0])
+    (when (j . < . n)
+      (define a (vector-ref as j))
+      (flvector-set! as-r j (real->double-flonum (real-part a)))
+      (flvector-set! as-i j (real->double-flonum (imag-part a)))
+      (loop (+ j 1))))
+  (define xs-r (make-flvector n 0.0))
+  (define xs-i (make-flvector n 0.0))
+  (define d (init-d))
+  (fft5/depth as-r as-i xs-r xs-i n 0 d)
+  (define: bs : (Vectorof Float-Complex) (make-vector n 0.0+0.0i))
+  (let loop ([#{j : Nonnegative-Fixnum} 0])
+    (cond [(j . < . n)
+           (define r (flvector-ref xs-r j))
+           (define i (flvector-ref xs-i j))
+           (vector-set! bs j (make-rectangular r i))
+           (loop (+ j 1))]
+          [else  bs])))
+
+(: decimate-in-time (FlVector FlVector FlVector FlVector Integer Integer -> Void))
+(define (decimate-in-time as-r as-i xs-r xs-i n/2 start)
+  (for ([i (in-range n/2)])
+    (define si (+ start i))
+    (define si2 (+ si i))
+    (define si21 (+ si2 1))
+    (define sin2 (+ si n/2))
+    (flvector-set! xs-r si (flvector-ref as-r si2))
+    (flvector-set! xs-i si (flvector-ref as-i si2))
+    (flvector-set! xs-r sin2 (flvector-ref as-r si21))
+    (flvector-set! xs-i sin2 (flvector-ref as-i si21))))
+
+(: twiddle-factor (FlVector FlVector Integer Integer -> Void))
+(define (twiddle-factor cs-r cs-i n/2 start)
+  (define c (/ (* pi 0.0+1.0i) (->fl n/2)))
+  (for ([k (in-range n/2)])
+    (define k-start (+ k start))
+    (define res
+      (* (make-rectangular
+          (flvector-ref cs-r k-start)
+          (flvector-ref cs-i k-start))
+         (exp (* c (->fl k)))))
+    (flvector-set! cs-r k-start (real-part res))
+    (flvector-set! cs-i k-start (imag-part res))))
+
+(: fft5/depth (FlVector FlVector FlVector FlVector Integer Integer Integer -> Void))
+(define (fft5/depth as-r as-i xs-r xs-i n start d)
+  (unless (= n 1)
+    (define n/2 (quotient n 2))
+    (decimate-in-time as-r as-i xs-r xs-i n/2 start)
+    (cond
+      [(= d 0)
+       (fft5/depth xs-r xs-i as-r as-i n/2 start 0)
+       (fft5/depth xs-r xs-i as-r as-i n/2 (+ start n/2) 0)
+       (twiddle-factor xs-r xs-i n/2 (+ start n/2))]
+      [else
+       (define bs
+         (future (λ () (fft5/depth xs-r xs-i as-r as-i n/2 start (- d 1)))))
+       (define cs
+         (future (λ ()
+                   (fft5/depth xs-r xs-i as-r as-i n/2 (+ start n/2) (- d 1))
+                   (twiddle-factor xs-r xs-i n/2 (+ start n/2)))))
+       (touch bs)
+       (touch cs)])
+    (for ([k (in-range n/2)])
+      (define sk (+ start k))
+      (define sk2 (+ sk n/2))
+      (define br (flvector-ref xs-r sk))
+      (define bi (flvector-ref xs-i sk))
+      (define cr (flvector-ref xs-r sk2))
+      (define ci (flvector-ref xs-i sk2))
+      (flvector-set! as-r sk2 (- br cr))
+      (flvector-set! as-i sk2 (- bi ci))
+      (flvector-set! as-r sk (+ br cr))
+      (flvector-set! as-i sk (+ bi ci)))))
