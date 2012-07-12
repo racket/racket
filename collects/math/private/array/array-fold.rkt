@@ -8,7 +8,9 @@
          array-axis-sum
          array-axis-prod
          array-axis-min
-         array-axis-max)
+         array-axis-max
+         flarray-axis-sum
+         flarray-axis-prod)
 
 (: array-axis-fold (All (A B) ((A B -> B) B (Array A) Integer -> (lazy-array B))))
 (define (array-axis-fold f init arr k)
@@ -31,20 +33,24 @@
                                         (loop (+ i 1) (f (proc old-js) acc))]
                          [else  acc]))))])))
 
-(: array-axis-sum (case-> ((Array Real)   Integer -> (lazy-array Real))
-                          ((Array Number) Integer -> (lazy-array Number))))
-(define (array-axis-sum arr k)
-  (array-axis-fold + 0 arr k))
-
+(: array-axis-sum  (case-> ((Array Real)   Integer -> (lazy-array Real))
+                           ((Array Number) Integer -> (lazy-array Number))))
 (: array-axis-prod (case-> ((Array Real)   Integer -> (lazy-array Real))
                            ((Array Number) Integer -> (lazy-array Number))))
-(define (array-axis-prod arr k)
-  (array-axis-fold * 1 arr k))
 
-(: array-axis-min ((Array Real) Integer -> (lazy-array Real)))
-(define (array-axis-min arr k)
-  (array-axis-fold min +inf.0 arr k))
+(: array-axis-min (case-> ((Array Float) Integer -> (lazy-array Float))
+                          ((Array Real)  Integer -> (lazy-array Real))))
+(: array-axis-max (case-> ((Array Float) Integer -> (lazy-array Float))
+                          ((Array Real)  Integer -> (lazy-array Real))))
 
-(: array-axis-max ((Array Real) Integer -> (lazy-array Real)))
-(define (array-axis-max arr k)
-  (array-axis-fold max -inf.0 arr k))
+(: flarray-axis-sum  ((Array Float) Integer -> (lazy-array Float)))
+(: flarray-axis-prod ((Array Float) Integer -> (lazy-array Float)))
+
+(define (array-axis-sum  arr k) (array-axis-fold + 0 arr k))
+(define (array-axis-prod arr k) (array-axis-fold * 1 arr k))
+
+(define (array-axis-min  arr k) (array-axis-fold min +inf.0 arr k))
+(define (array-axis-max  arr k) (array-axis-fold max -inf.0 arr k))
+
+(define (flarray-axis-sum  arr k) (array-axis-fold unsafe-fl+ 0.0 arr k))
+(define (flarray-axis-prod arr k) (array-axis-fold unsafe-fl* 1.0 arr k))
