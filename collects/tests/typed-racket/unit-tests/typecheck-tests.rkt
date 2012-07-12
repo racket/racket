@@ -43,6 +43,7 @@
 (provide typecheck-tests g tc-expr/expand)
 
 (b:init) (n:init) (initialize-structs) (initialize-indexing) 
+(dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
 
 (define N -Number)
 (define B -Boolean)

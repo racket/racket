@@ -9,6 +9,8 @@
          (rep type-rep filter-rep object-rep)
          rackunit)
 
+(dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
+
 (provide type-annotation-tests)
 
 (define-syntax-rule (tat ann-stx ty)
