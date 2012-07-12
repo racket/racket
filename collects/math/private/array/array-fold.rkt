@@ -8,11 +8,7 @@
          array-axis-sum
          array-axis-prod
          array-axis-min
-         array-axis-max
-         array-axis-flsum
-         array-axis-flprod
-         array-axis-flmin
-         array-axis-flmax)
+         array-axis-max)
 
 (: array-axis-fold (All (A B) ((A B -> B) B (Array A) Integer -> (lazy-array B))))
 (define (array-axis-fold f init arr k)
@@ -52,19 +48,3 @@
 (: array-axis-max ((Array Real) Integer -> (lazy-array Real)))
 (define (array-axis-max arr k)
   (array-axis-fold max -inf.0 arr k))
-
-(: array-axis-flsum ((Array Float) Integer -> (lazy-array Float)))
-(define (array-axis-flsum arr k)
-  (array-axis-fold unsafe-fl+ 0.0 arr k))
-
-(: array-axis-flprod ((Array Float) Integer -> (lazy-array Float)))
-(define (array-axis-flprod arr k)
-  (array-axis-fold unsafe-fl* 1.0 arr k))
-
-(: array-axis-flmin ((Array Float) Integer -> (lazy-array Float)))
-(define (array-axis-flmin arr k)
-  (array-axis-fold unsafe-flmin +inf.0 arr k))
-
-(: array-axis-flmax ((Array Float) Integer -> (lazy-array Float)))
-(define (array-axis-flmax arr k)
-  (array-axis-fold unsafe-flmax -inf.0 arr k))
