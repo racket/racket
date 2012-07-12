@@ -7065,8 +7065,12 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   nt = NULL;
 #endif
 
-  if (first && (first_cmpos < first->pos))
-    scheme_signal_error("internal error: bad mark-stack position");
+  if (first && (first_cmpos < first->pos)) {
+    /* Don't use scheme_signal_error(), because that will try to get
+       a continuation mark... */
+    scheme_log_abort("internal error: bad mark-stack position");
+    abort();
+  }
 
   set = MALLOC_ONE_TAGGED(Scheme_Cont_Mark_Set);
   set->so.type = scheme_cont_mark_set_type;
@@ -8102,11 +8106,13 @@ Scheme_Lightweight_Continuation *scheme_restore_lightweight_continuation_marks(S
   Scheme_Cont_Mark *seg;
 
   cm_len = lw->saved_lwc->cont_mark_stack_end - lw->saved_lwc->cont_mark_stack_start;
+  cm_pos_delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
+  MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
+
   if (cm_len) {
     /* install captured continuation marks, adjusting the pos
        to match the new context: */
     seg = lw->cont_mark_stack_slice;
-    cm_pos_delta = MZ_CONT_MARK_POS + 2 - lw->saved_lwc->cont_mark_pos_start;
     for (i = 0; i < cm_len; i++) {
       MZ_CONT_MARK_POS = seg[i].pos + cm_pos_delta;
 #ifdef MZ_USE_FUTURES
@@ -8117,7 +8123,6 @@ Scheme_Lightweight_Continuation *scheme_restore_lightweight_continuation_marks(S
       lw = (Scheme_Lightweight_Continuation *)jit_future_storage[2];
 #endif      
     }
-    MZ_CONT_MARK_POS = lw->saved_lwc->cont_mark_pos_end + cm_pos_delta;
   }
 
   return lw;
