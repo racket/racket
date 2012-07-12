@@ -1,4 +1,4 @@
-#lang typed/racket/base
+#lang typed/racket
 
 (require racket/unsafe/ops
          racket/vector racket/flonum
@@ -84,10 +84,32 @@
                    [else
                     (define veci+1 (i-loop (+ i 1)))
                     (define veci (make-vector di veci+1))
-                    (let: j-loop : (Vectorof* A) ([ji : Nonnegative-Fixnum  1])
+                    (let: j-loop : (Vectorof* A) ([ji : Nonnegative-Fixnum  0])
                       (cond [(ji . < . di)
                              (unsafe-vector-set! js i ji)
                              (unsafe-vector-set! veci ji (i-loop (+ i 1)))
                              (j-loop (+ ji 1))]
                             [else  veci]))])]
             [else  (proc js)]))))
+
+(module* test typed/racket
+  (require typed/rackunit
+           (submod "..")
+           "array-struct.rkt")
+  (check-equal? (array->list (list->array flonum? '(1.0 2.0)))
+                '(1.0 2.0))
+  (check-equal? (array->list (list->array flonum? '((1.0 2.0) (3.0 4.0))))
+                '((1.0 2.0) (3.0 4.0)))
+  
+  (check-equal? (array->vector (list->array flonum? '(1.0 2.0)))
+                '#(1.0 2.0))
+  (check-equal? (array->vector (list->array flonum? '((1.0 2.0) (3.0 4.0))))
+                '#(#(1.0 2.0) #(3.0 4.0)))
+  
+  (check-equal? (array->vector ((inst vector->array Flonum) flonum? '#(1.0 2.0)))
+                '#(1.0 2.0))
+  (check-equal? (array->vector ((inst vector->array Flonum) flonum? '#(#(1.0 2.0) #(3.0 4.0))))
+                '#(#(1.0 2.0) #(3.0 4.0)))
+  
+  (check-equal? (array->list (list->array flonum? 1.0)) 1.0)
+  (check-equal? (array->vector (list->array flonum? 1.0)) 1.0))
