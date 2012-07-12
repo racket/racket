@@ -40,16 +40,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
          "base-types.rkt"
          "base-types-extra.rkt"
          racket/flonum ; for for/flvector and for*/flvector         
-         mzlib/etc
          (for-syntax
           unstable/lazy-require
           syntax/parse
           racket/syntax
           racket/base
-          syntax/define
           racket/struct-info
           syntax/struct
-          ;"../rep/type-rep.rkt"
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
@@ -58,7 +55,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (provide index?) ; useful for assert, and racket doesn't have it
 
 (begin-for-syntax 
-  (lazy-require ["../rep/type-rep.rkt" (make-Opaque)]))
+  (lazy-require ["../rep/type-rep.rkt" (make-Opaque)]
+                [syntax/define (normalize-definition)]))
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
 
@@ -304,7 +302,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (opt-lambda: stx)
   (syntax-parse stx
     [(opt-lambda: formals:opt-lambda-annotated-formals . body)
-     (syntax/loc stx (opt-lambda formals.ann-formals . body))]))
+     (syntax/loc stx (-lambda formals.ann-formals . body))]))
 
 (define-syntaxes (let-internal: let*: letrec:)
   (let ([mk (lambda (form)

@@ -47,8 +47,6 @@
                      [delay-errors? #t]
                      ;; do we print the fully-expanded syntax?
                      [print-syntax? #f]
-                     ;; the name of this module:
-                     [module-name (syntax-property orig-stx 'enclosing-module-name)]
                      ;; this parameter is just for printing types
                      ;; this is a parameter to avoid dependency issues
                      [current-type-names

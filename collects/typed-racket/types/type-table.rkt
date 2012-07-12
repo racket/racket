@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require syntax/id-table racket/dict racket/match mzlib/pconvert
-         "../utils/utils.rkt"
+         "../utils/utils.rkt" racket/syntax
          "../utils/tc-utils.rkt"
          (contract-req)
          (rep type-rep object-rep)
@@ -69,16 +69,13 @@
 (define (make-struct-table-code)
   (parameterize ([current-print-convert-hook converter]
                  [show-sharing #f])
-    #`(when (unbox typed-context?)
-        (define add! (dynamic-require 'typed-racket/types/type-table 'add-struct-fn!))
-        #,@(for/list ([(k v) (in-dict struct-fn-table)]
-                           #:when (bound-in-this-module k))
-                  (match v
-                    [(list pe mut?)
-                     #`(add! (quote-syntax #,k)
-                              #,(print-convert pe)
-                              #,mut?)]))
-        (void))))
+    (define/with-syntax (adds ...)      
+      (for/list ([(k v) (in-dict struct-fn-table)]
+                 #:when (bound-in-this-module k))
+        (match v
+          [(list pe mut?)
+           #`(add-struct-fn! (quote-syntax #,k) #,(print-convert pe) #,mut?)])))
+    #'(begin adds ...)))
 
 
 ;; keeps track of expressions that always evaluate to true or always evaluate

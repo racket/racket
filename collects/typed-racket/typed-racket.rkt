@@ -5,6 +5,7 @@
  (for-syntax "utils/timing.rkt") ;; only for timing/debugging
  ;; the below requires are needed since they provide identifiers
  ;; that may appear in the residual program
+ "utils/utils.rkt"
  "utils/any-wrap.rkt" unstable/contract)
 
 (provide (rename-out [module-begin #%module-begin]
