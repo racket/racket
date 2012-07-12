@@ -14,7 +14,6 @@
 (define (const-matrix m n x)
   (const-array (list m n) x))
 
-
 (module* test typed/racket
   (require typed/rackunit 
            (submod "..")
@@ -27,4 +26,5 @@
   (check-equal? (array->list (flidentity-matrix 2)) '[[1. 0.] [0. 1.]])
   (check-equal? (array->list (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]])
   
-  (check-equal? (array->list (const-matrix 2 3 0)) '((0 0 0) (0 0 0))))
+  (check-equal? (array->list (const-matrix 2 3 0)) '((0 0 0) (0 0 0)))
+  (check-equal? (array->list (const-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
