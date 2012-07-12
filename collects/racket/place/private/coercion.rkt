@@ -1,7 +1,7 @@
 #lang racket/base
 
 (provide ->path
-         ->module-path-bytes
+         ->writeable-module-path
          ->module-path
          ->number
          ->string
@@ -28,7 +28,7 @@
         [(string? x) (string->path x)]
         [(bytes? x) (bytes->path x)]))
 
-(define (->module-path-bytes x)
+(define (->writeable-module-path x)
   (cond [(path? x) (path->bytes x)]
       [(list? x) (map ->path-bytes x)]
       [(string? x) (string->bytes/locale x)]

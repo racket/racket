@@ -8,6 +8,7 @@
          racket/flonum
          racket/vector
          racket/place/private/th-place
+         racket/place/private/prop
          racket/private/streams
          unstable/lazy-require
 
@@ -35,25 +36,36 @@
          place-dead-evt
          )
 
+(define-syntax (define-pl-func stx)
+  (syntax-case stx ()
+    [(_ func p args ...)
+     (with-syntax [(func-sym #'(quote func))
+                   (pl-func  (string->symbol (string-append "pl-" (symbol->string (syntax->datum #'func)))))
+                   (th-func  (string->symbol (string-append "th-" (symbol->string (syntax->datum #'func)))))]
+       #'(define (func p args ...)
+           (cond
+             [(prop:place? p) ((prop:place-ref p) func-sym p args ...)]
+             [(pl-place-enabled?) (pl-func p args ...)]
+             [else (th-func p args ...)])))]))
+
 (lazy-require [racket/place/distributed (supervise-dynamic-place-at)])
 
 (define (place-channel-put/get ch msg)
   (place-channel-put ch msg)
   (place-channel-get ch))
 
-(define-syntax-rule (define-pl x p t) (define x (if (pl-place-enabled?) p t)))
+(define place-channel (if (pl-place-enabled?)  pl-place-channel th-place-channel))
 
-(define-pl place-sleep        pl-place-sleep        th-place-sleep)
-(define-pl place-wait         pl-place-wait         th-place-wait)
-(define-pl place-kill         pl-place-kill         th-place-kill)
-(define-pl place-break        pl-place-break        th-place-break)
-(define-pl place-channel      pl-place-channel      th-place-channel)
-(define-pl place-channel-put  pl-place-channel-put  th-place-channel-put)
-(define-pl place-channel-get  pl-place-channel-get  th-place-channel-get)
-(define-pl place-channel?     pl-place-channel?     th-place-channel?)
-(define-pl place?             pl-place?             th-place?)
-(define-pl place-message-allowed? pl-place-message-allowed? th-place-message-allowed?)
-(define-pl place-dead-evt     pl-place-dead-evt     th-place-dead-evt)
+(define-pl-func place-sleep p)
+(define-pl-func place-wait p)
+(define-pl-func place-kill p)
+(define-pl-func place-break p)
+(define-pl-func place-channel-put p msg)
+(define-pl-func place-channel-get p)
+(define-pl-func place-channel? p)
+(define-pl-func place? p)
+(define-pl-func place-message-allowed? p)
+(define-pl-func place-dead-evt p)
 
 (define (pump-place p pin pout perr in out err)
   (cond
