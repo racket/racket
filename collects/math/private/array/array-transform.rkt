@@ -183,6 +183,7 @@
             (raise-type-error 'array-transpose (format "Index less than ~a" dims) 1 arr i0 i1)]
            [(or (i1 . < . 0) (i1 . >= . dims))
             (raise-type-error 'array-transpose (format "Index less than ~a" dims) 2 arr i0 i1)]
+           [(= i0 i1)  (array-lazy arr)]
            [else
             (define new-ds (vector-copy-all ds))
             (unsafe-vector-set! new-ds i0 (unsafe-vector-ref ds i1))

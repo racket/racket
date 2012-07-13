@@ -1,4 +1,5 @@
 #lang typed/racket/base
 
-;; vector
-;; flvector
+(require "private/vector/vector-fft.rkt")
+
+(provide (all-from-out "private/vector/vector-fft.rkt"))

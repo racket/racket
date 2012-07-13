@@ -34,11 +34,12 @@
          array-expt
          array-min
          array-max
-         
+         ;; Number conversions
          array-inexact->exact
          array-exact->inexact
          array-real->double-flonum
-         array-real->single-flonum)
+         array-real->single-flonum
+         array-number->float-complex)
 
 ;; ===================================================================================================
 ;; Lifting
@@ -220,10 +221,12 @@ array-number-exp.
   
   (: array-real->double-flonum ((Array Real) -> (lazy-array Float)))
   (: array-real->single-flonum ((Array Real) -> (lazy-array Single-Flonum)))
+  (: array-number->float-complex ((Array Number) -> (lazy-array Float-Complex)))
   
   (define array-inexact->exact (inline-array-lift inexact->exact))
   (define array-exact->inexact (inline-array-lift exact->inexact))
   (define array-real->double-flonum (array-lift real->double-flonum))
   (define array-real->single-flonum (array-lift real->single-flonum))
+  (define array-number->float-complex (array-lift (λ: ([x : Number]) (+ x 0.0+0.0i))))
   
   )  ; begin-encourage-inline
