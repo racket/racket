@@ -27,7 +27,7 @@
    [cond-contracted c-meet ((c? c?) (symbol?) . ->* . c?)]))
 
 (define-signature restrict^
-  ([cond-contracted restrict ((Type/c Type/c) ((or/c 'new 'orig)) ->* Type/c)]))
+  ([cond-contracted restrict ((Type/c Type/c) ((or/c 'new 'orig)) . ->* . Type/c)]))
 
 (define-signature infer^
   ([cond-contracted infer ((;; variables from the forall
