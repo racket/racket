@@ -147,7 +147,7 @@
        [(Values: (list (Result: t
                                 (FilterSet: (TypeFilter: ft pth id)
                                             (NotTypeFilter: ft pth id))
-                                (Empty:))))
+                                (Empty:))))        
         (if (null? pth)
             (fp "-> ~a : ~a" t ft)
             (begin (fp "-> ~a : ~a @" t ft)

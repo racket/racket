@@ -307,7 +307,12 @@
                   [pred-id identifier?]
                   [cert procedure?]
                   [maker-id identifier?])
-  [#:intern (list name (and parent (Rep-seq parent)) (map Rep-seq flds) (and proc (Rep-seq proc)))]
+  [#:intern (list (hash-id name)
+                  (hash-id pred-id)
+                  (hash-id maker-id)
+                  (and parent (Rep-seq parent))
+                  (map Rep-seq flds)
+                  (and proc (Rep-seq proc)))]
   [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
                                                 (if parent (list parent) null)
                                                 flds))))]
