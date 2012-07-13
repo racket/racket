@@ -380,6 +380,15 @@
         (module+ m2
           (begin-for-syntax here)))))))
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   (expand
+    (expand '(module t racket
+               (begin-for-syntax)
+               (begin-for-syntax)
+               (define x 7)
+               (module* t #f x))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; `begin-for-syntax' doesn't affect `module' with non-#f language:
 

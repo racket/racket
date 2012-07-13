@@ -6548,7 +6548,7 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, Scheme_Obje
           /* found `begin-for-syntax': */
           naya = phase_shift_skip_submodules(v1, ps, phase+1);
           v2 = SCHEME_STX_CDR(fm);
-          v3 = phase_shift_skip_submodules(v2, ps, phase+1);
+          v3 = phase_shift_skip_submodules(v2, ps, phase);
           if (SAME_OBJ(naya, v1) && SAME_OBJ(v2, v3))
             return fm;
           else {
