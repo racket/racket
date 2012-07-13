@@ -665,7 +665,6 @@ path/s is either such a string or a list of them.
 "collects/algol60" responsible (mflatt robby)
 "collects/at-exp" responsible (eli mflatt)
 "collects/browser" responsible (robby)
-"collects/combinator-parser" responsible (kathyg)
 "collects/compiler" responsible (mflatt)
 "collects/compiler/commands/ctool.rkt" drdr:command-line #f
 "collects/compiler/commands/exe-dir.rkt" drdr:command-line #f
@@ -999,7 +998,6 @@ path/s is either such a string or a list of them.
 "collects/teachpack/balls.ss" drdr:command-line (mzc *)
 "collects/teachpack/deinprogramm" responsible (sperber)
 "collects/teachpack/htdp/graphing.ss" drdr:command-line (mzc *)
-"collects/test-box-recovery" responsible (mflatt)
 "collects/test-engine" responsible (kathyg)
 "collects/tests/algol60" responsible (mflatt robby)
 "collects/tests/compiler" responsible (jay)
@@ -1486,7 +1484,6 @@ path/s is either such a string or a list of them.
 "collects/tests/xrepl/main.rkt" drdr:command-line #f
 "collects/tests/zo-path.rkt" responsible (mflatt)
 "collects/tests/zo-size.rkt" responsible (jay)
-"collects/tex2page" responsible (jay)
 "collects/texpict" responsible (mflatt robby)
 "collects/texpict/face-demo.rkt" drdr:command-line (mzc *)
 "collects/trace" responsible (mflatt robby)
@@ -1563,7 +1560,6 @@ path/s is either such a string or a list of them.
 "man/man1/racket.1" responsible (mflatt)
 "man/man1/raco.1" responsible (mflatt)
 "man/man1/setup-plt.1" responsible (mflatt)
-"man/man1/tex2page.1" responsible (jay)
 "src" responsible (mflatt)
 "src/foreign" responsible (eli)
 

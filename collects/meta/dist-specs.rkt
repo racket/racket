@@ -543,9 +543,8 @@ mz-extras :+= (collects: "ffi/") (doc: "objc")
 ;; -------------------- preprocessor
 mz-extras :+= (package: "preprocessor/") (bin: "mzpp" "mztext")
 
-;; -------------------- tex2page & slatex
-plt-extras :+= (package: "tex2page")
-               (package: "slatex")
+;; -------------------- slatex
+plt-extras :+= (package: "slatex")
                (bin: "PDF SLaTeX")
                (doc+src: "slatex-wrap/")
 
@@ -587,9 +586,6 @@ plt-extras :+= (package: "macro-debugger")
 
 ;; -------------------- lazy
 plt-extras :+= (package: "lazy")
-
-;; -------------------- combinator-parser
-plt-extras :+= (collects: "combinator-parser")
 
 ;; -------------------- icons, images
 dr-extras :+= (collects: "icons/*.{jpg|png|gif|bmp|xbm|xpm}")
@@ -665,9 +661,6 @@ plt-extras :+= (- (+ (dll: "myssink")
                      (src: "myssink/" "worksp/myssink/")
                      (package: "mysterx"))
                   (cond (not win) => (src: "")))
-
-;; -------------------- temporary tool for converting old files
-plt-extras :+= (package: "test-box-recovery")
 
 ;; -------------------- redex
 plt-extras :+= (package: "redex")
