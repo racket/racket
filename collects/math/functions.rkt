@@ -16,7 +16,8 @@ Move racket/math functions here; racket/math reexports
                        "private/functions/hyperbolic.rkt"
                        "private/functions/inverse-hyperbolic.rkt")
          flhypot hypot
-         fllog/base)
+         fllog/base
+         power-of-two?)
 
 (: flhypot (Float Float -> Float))
 (define (flhypot x y)
@@ -43,6 +44,14 @@ Move racket/math functions here; racket/math reexports
 (: fllog/base (Float Float -> Float))
 (define (fllog/base b x)
   (/ (fllog x) (fllog b)))
+
+;; Returns #t if x is an integer power of 2
+(: power-of-two? (Exact-Rational -> Boolean))
+(define (power-of-two? x)
+  (cond [(not (positive? x))  #f]
+        [(integer? x)  (= x (expt 2 (- (integer-length x) 1)))]
+        [else  (and (= 1 (numerator x))
+                    (power-of-two? (denominator x)))]))
 
 ;; from plot:
 ;; floor-log/base
@@ -71,4 +80,11 @@ Move racket/math functions here; racket/math reexports
   (check-= (hypot 2 3) 3.6055512754639892931 ε)
   (check-= (hypot 3 2) 3.6055512754639892931 ε)
   
-  (check-equal? (fllog/base 2.0 (expt 2.0 5.0)) 5.0))
+  (check-equal? (fllog/base 2.0 (expt 2.0 5.0)) 5.0)
+  
+  (check-false (power-of-two? 3))
+  (check-true (power-of-two? 2))
+  (check-true (power-of-two? 1))
+  (check-true (power-of-two? 1/2))
+  (check-false (power-of-two? 0))
+  (check-false (power-of-two? -1)))
