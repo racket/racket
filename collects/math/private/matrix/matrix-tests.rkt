@@ -16,7 +16,10 @@
    (square-matrix? (list->array real? '[[1 2] [3 4]]))
    (not (square-matrix? (list->array real? '[[1 2 3] [4 5 6]])))
    'square-matrix-size
-   (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]])))))
+   (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]])))
+   'matrix=-
+   (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2] [3 4]]))
+   (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]])))))
 
 (begin "matrix-constructors.rkt"
   (list
