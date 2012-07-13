@@ -39,7 +39,9 @@
          array-exact->inexact
          array-real->double-flonum
          array-real->single-flonum
-         array-number->float-complex)
+         array-number->float-complex
+         array-real-part
+         array-imag-part)
 
 ;; ===================================================================================================
 ;; Lifting
@@ -221,12 +223,18 @@ array-number-exp.
   
   (: array-real->double-flonum ((Array Real) -> (lazy-array Float)))
   (: array-real->single-flonum ((Array Real) -> (lazy-array Single-Flonum)))
+  
   (: array-number->float-complex ((Array Number) -> (lazy-array Float-Complex)))
+  
+  (: array-real-part ((Array Number) -> (lazy-array Real)))
+  (: array-imag-part ((Array Number) -> (lazy-array Real)))
   
   (define array-inexact->exact (inline-array-lift inexact->exact))
   (define array-exact->inexact (inline-array-lift exact->inexact))
   (define array-real->double-flonum (array-lift real->double-flonum))
   (define array-real->single-flonum (array-lift real->single-flonum))
   (define array-number->float-complex (array-lift (λ: ([x : Number]) (+ x 0.0+0.0i))))
+  (define array-real-part (array-lift real-part))
+  (define array-imag-part (array-lift imag-part))
   
   )  ; begin-encourage-inline
