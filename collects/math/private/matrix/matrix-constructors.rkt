@@ -1,12 +1,16 @@
-#lang typed/racket/base
+#lang typed/racket
 
-(require "../../array.rkt"
+(require racket/unsafe/ops
+         math/array
          "matrix-types.rkt")
 
 (provide identity-matrix flidentity-matrix 
          matrix->list list->matrix fllist->matrix
          matrix->vector vector->matrix flvector->matrix
-         const-matrix)
+         const-matrix
+         matrix-row
+         matrix-col
+         submatrix)
 
 (: identity-matrix (Integer -> (Result-Matrix Real)))
 (define (identity-matrix size) (diagonal-array 2 size 1 0))
@@ -41,3 +45,21 @@
 (: matrix->vector : (All (A) (Matrix A) -> (Vectorof* A)))
 (define (matrix->vector a)
   (array->vector a))
+
+(: submatrix : (Matrix Number) (Sequenceof Index) (Sequenceof Index) -> (Result-Matrix Number))
+(define (submatrix a row-range col-range)
+  ((inst array-slice Number) a (list row-range col-range)))
+
+(: matrix-row : (Matrix Number) Index -> (Result-Matrix Number))
+(define (matrix-row a i)
+  (define ds (matrix-dimensions a))
+  (define col-dim (vector-ref ds 1))
+  ((inst array-slice Number) a (list (in-range i (add1 i)) (in-range col-dim))))
+
+(: matrix-col : (Matrix Number) Index -> (Result-Matrix Number))
+(define (matrix-col a j)
+  (define ds (matrix-dimensions a))
+  (define row-dim (vector-ref ds 0))
+  ((inst array-slice Number) a (list (in-range row-dim) (in-range j (add1 j)))))
+
+

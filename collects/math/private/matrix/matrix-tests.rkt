@@ -19,7 +19,9 @@
    (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]])))
    'matrix=-
    (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2] [3 4]]))
-   (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]])))))
+   (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]])))
+   'matrix-dimensions
+   (equal? (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]])) #(2 3))))
 
 (begin "matrix-constructors.rkt"
   (list
@@ -41,7 +43,23 @@
   (list
     'matrix->vector
     (equal? (matrix->vector (vector->matrix '#(#(1 2) #(3 4)))) '#(#(1 2) #(3 4)))
-    (equal? (matrix->vector (flvector->matrix '#(#(1. 2.) #(3. 4.)))) '#(#(1. 2.) #(3. 4.)))))
+    (equal? (matrix->vector (flvector->matrix '#(#(1. 2.) #(3. 4.)))) '#(#(1. 2.) #(3. 4.))))
+  (list
+   'matrix-row
+   (equal? (matrix-row (identity-matrix 3) 0) (list->matrix '[[1 0 0]]))
+   (equal? (matrix-row (identity-matrix 3) 1) (list->matrix '[[0 1 0]]))
+   (equal? (matrix-row (identity-matrix 3) 2) (list->matrix '[[0 0 1]])))
+  (list
+   'matrix-col
+   (equal? (matrix-col (identity-matrix 3) 0) (list->matrix '[[1] [0] [0]]))
+   (equal? (matrix-col (identity-matrix 3) 1) (list->matrix '[[0] [1] [0]]))
+   (equal? (matrix-col (identity-matrix 3) 2) (list->matrix '[[0] [0] [1]])))
+  (list
+   'submatrix
+   (equal? (submatrix (identity-matrix 3) 
+                      (in-range 0 1) (in-range 0 2)) (list->matrix '[[1 0]]))
+   (equal? (submatrix (identity-matrix 3) 
+                      (in-range 0 2) (in-range 0 3)) (list->matrix '[[1 0 0] [0 1 0]]))))
 
 (begin 
   "matrix-pointwise.rkt"
