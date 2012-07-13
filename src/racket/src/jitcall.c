@@ -2029,16 +2029,15 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         else
           (void)jit_calli(sjc.apply_to_list_code);
       } else {
-        GC_CAN_IGNORE jit_insn *refdone;
+        GC_CAN_IGNORE jit_insn *refdone = NULL;
 
 #ifdef USE_FLONUM_UNBOXING
         if (unboxed_code) {
           generate_call_path_with_unboxes(jitter, direct_flostack_offset, unboxed_code, &refdone,
                                           num_rands, direct_data, rator);
           CHECK_LIMIT();
-        } else
+        }
 #endif
-          refdone = NULL;
 
         (void)jit_calli(code);
 
