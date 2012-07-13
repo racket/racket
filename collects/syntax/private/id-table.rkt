@@ -2,13 +2,21 @@
 (require (for-syntax racket/base
                      racket/syntax)
          (for-meta 2 racket/base)
-         racket/private/dict)
+         racket/private/dict
+         racket/promise)
 
 ;; No-contract version.
 
 (define-struct id-table (hash phase))
 ;; where hash maps symbol => (listof (cons identifier value))
 ;;       phase is a phase-level (integer or #f)
+
+
+
+(define (id-table-hash-code d hash-code)
+  (+ (hash-code (id-table-phase d))
+     (for/sum (((k v) (in-dict d)))
+       (* (hash-code (syntax-e k)) (hash-code v)))))
 
 
 (define-values (prop:id-table-impersonator
@@ -44,47 +52,50 @@
     (id-table-set/constructor who t k v make identifier->symbol identifier=?)))
 
 (define (id-table-ref who d id default identifier->symbol identifier=?)
-  (if (id-table-impersonator? d)
-       (let-values (((new-id return-wrapper)
-                     ((id-table-imp-ref-wrapper d) d id)))
-         (return-wrapper
-           (id-table-ref (id-table-imp-wrapped d) new-id default)))
-       (let ([phase (id-table-phase d)])
-         (let ([i (for/first ([i (in-list (hash-ref (id-table-hash d)
-                                                    (identifier->symbol id phase)
-                                                    null))]
-                              #:when (identifier=? (car i) id phase))
-                    i)])
-           (if i
-               (cdr i)
-               (cond [(eq? default not-given)
-                      (error who "no mapping for ~e" id)]
-                     [(procedure? default) (default)]
-                     [else default]))))))
+  (let loop ((d d) (id id) (return values))
+    (if (id-table-impersonator? d)
+         (let-values (((new-id return-wrapper)
+                       ((id-table-imp-ref-wrapper d) d id)))
+             (loop (id-table-imp-wrapped d) new-id
+                   (lambda (new-v) (return-wrapper d new-id new-v))))
+         (let ([phase (id-table-phase d)])
+           (let ([i (for/first ([i (in-list (hash-ref (id-table-hash d)
+                                                      (identifier->symbol id phase)
+                                                      null))]
+                                #:when (identifier=? (car i) id phase))
+                      i)])
+             (if i
+                 (return (cdr i))
+                 (cond [(eq? default not-given)
+                        (error who "no mapping for ~e" id)]
+                       [(procedure? default) (default)]
+                       [else default])))))))
 
 (define (id-table-set! who d id v identifier->symbol identifier=?)
-  (if (id-table-impersonator? d)
-      (let-values (((new-id new-v)
-                    ((id-table-imp-set!-wrapper d) d id v)))
-        (id-table-set! (id-table-imp-wrapped d) new-id new-v))
-      (let* ([phase (id-table-phase d)]
-             [sym (identifier->symbol id phase)]
-             [l (hash-ref (id-table-hash d) sym null)]
-             [new-l (alist-set identifier=? phase l id v)])
-        (hash-set! (id-table-hash d) sym new-l))))
+  (let loop ((d d) (id id) (v v))
+    (if (id-table-impersonator? d)
+        (let-values (((new-id new-v)
+                      ((id-table-imp-set!-wrapper d) d id v)))
+          (loop (id-table-imp-wrapped d) new-id new-v))
+        (let* ([phase (id-table-phase d)]
+               [sym (identifier->symbol id phase)]
+               [l (hash-ref (id-table-hash d) sym null)]
+               [new-l (alist-set identifier=? phase l id v)])
+          (hash-set! (id-table-hash d) sym new-l)))))
 
 
 (define (id-table-remove! who d id identifier->symbol identifier=?)
-  (if (id-table-impersonator? d)
-      (let ((new-id ((id-table-imp-remove!-wrapper d) d id)))
-        (id-table-remove! (id-table-imp-wrapped d) new-id))
-      (let* ([phase (id-table-phase d)]
-             [sym (identifier->symbol id phase)]
-             [l (hash-ref (id-table-hash d) sym null)]
-             [newl (alist-remove identifier=? phase l id)])
-        (if (pair? newl)
-            (hash-set! (id-table-hash d) sym newl)
-            (hash-remove! (id-table-hash d) sym)))))
+  (let loop ((d d) (id id))
+    (if (id-table-impersonator? d)
+        (let ((new-id ((id-table-imp-remove!-wrapper d) d id)))
+          (loop (id-table-imp-wrapped d) new-id))
+        (let* ([phase (id-table-phase d)]
+               [sym (identifier->symbol id phase)]
+               [l (hash-ref (id-table-hash d) sym null)]
+               [newl (alist-remove identifier=? phase l id)])
+          (if (pair? newl)
+              (hash-set! (id-table-hash d) sym newl)
+              (hash-remove! (id-table-hash d) sym))))))
 
 (define (id-table-set/constructor who d id v constructor identifier->symbol identifier=?)
   (let* ([phase (id-table-phase d)]
@@ -107,14 +118,6 @@
 
 (define (id-table-count d)
   (apply + (hash-map (id-table-hash d) (lambda (k v) (length v)))))
-
-(define (id-table-for-each d p)
-  (define (pp i) (p (car i) (cdr i)))
-  (hash-for-each (id-table-hash d) (lambda (k v) (for-each pp v))))
-
-(define (id-table-map d f)
-  (define (fp i) (f (car i) (cdr i)))
-  (apply append (hash-map (id-table-hash d) (lambda (k v) (map fp v)))))
 
 
 (define-struct id-table-iter (d a br b))
@@ -154,20 +157,20 @@ Notes (FIXME?):
 (define (id-table-iterate-key who d pos)
   (if (id-table-impersonator? d)
       (let ((wrapper (id-table-imp-key-wrapper d)))
-        (wrapper (id-table-iterate-key (id-table-imp-wrapped d) pos)))
+        (wrapper d (id-table-iterate-key who (id-table-imp-wrapped d) pos)))
     (let-values ([(h a br b) (rebase-iter who d pos)])
       (caar b))))
 
 ;; TODO figure out how to provide API compatibility with hashes with regards
 ;; to iterate-key and provide the checking from rebase-iter
-(define (id-table-iterate-value who d pos)
+(define (id-table-iterate-value who d pos identifier->symbol identifier=?)
  (if (id-table-impersonator? d)
-     (id-table-ref d (id-table-iterate-key d pos))
+     (id-table-ref who d (id-table-iterate-key who d pos) not-given identifier->symbol identifier=?)
      (let-values ([(h a br b) (rebase-iter who d pos)])
        (cdar b))))
 
 (define (rebase-iter who d pos)
-  (unless (eq? d (id-table-iter-d pos))
+  (unless (chaperone-of? (id-table-iter-d pos) d)
     (error who "invalid iteration position for identifier table"))
   (let* ([h (id-table-hash d)]
          [a (id-table-iter-a pos)]
@@ -260,7 +263,7 @@ Notes (FIXME?):
           idtbl-iterate-key idtbl-iterate-value
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods
-          chaperone-idtbl idtbl-chaperone-keys+values/constructor))
+          chaperone-mutable-idtbl chaperone-immutable-idtbl))
        #'(begin
 
            ;; Struct defs at end, so that dict methods can refer to earlier procs
@@ -274,12 +277,25 @@ Notes (FIXME?):
              (make-immutable-id-table/constructor 'make-immutable-idtbl init-dict phase immutable-idtbl
                                                   identifier->symbol identifier=?))
 
-           (define (chaperone-idtbl d ref set! remove! key . args)
+           (define (chaperone-mutable-idtbl d ref set! remove! key . args)
              (apply chaperone-struct d
                id-table-phase (lambda (d p) p)
                prop:id-table-impersonator
                (vector d ref set! remove! key)
                args))
+
+           (define (chaperone-immutable-idtbl d wrap-key wrap-value . args)
+             (define cached-hash
+               (delay
+                 (for/hasheq (((sym alist) (id-table-hash d)))
+                   (values sym
+                     (for/list (((key value) (in-dict alist)))
+                       (cons (wrap-key key) (wrap-value value)))))))
+             (apply chaperone-struct d
+               id-table-hash (lambda (d h)
+                            (force cached-hash))
+               args))
+
 
 
            (define (idtbl-ref d id [default not-given])
@@ -300,9 +316,9 @@ Notes (FIXME?):
            (define (idtbl-count d)
              (id-table-count d))
            (define (idtbl-for-each d p)
-             (id-table-for-each d p))
+             (dict-for-each d p))
            (define (idtbl-map d f)
-             (id-table-map d f))
+             (dict-map d f))
            (define (idtbl-iterate-first d)
              (id-table-iterate-first d))
            (define (idtbl-iterate-next d pos)
@@ -310,13 +326,14 @@ Notes (FIXME?):
            (define (idtbl-iterate-key d pos)
              (id-table-iterate-key 'idtbl-iterate-key d pos))
            (define (idtbl-iterate-value d pos)
-             (id-table-iterate-value 'idtbl-iterate-value d pos))
+             (id-table-iterate-value 'idtbl-iterate-value d pos identifier->symbol identifier=?))
 
            (define (idtbl-chaperone-keys+values/constructor d wrap-key wrap-value constructor)
              (constructor
                (for/hasheq (((sym alist) (id-table-hash d)))
-                 (for/list (((key value) (in-dict alist)))
-                   (cons (wrap-key key) (wrap-value value))))
+                 (values sym
+                   (for/list (((key value) (in-dict alist)))
+                     (cons (wrap-key key) (wrap-value value)))))
                (id-table-phase d)))
 
            (define idtbl-mutable-methods
@@ -343,11 +360,22 @@ Notes (FIXME?):
                                idtbl-iterate-key
                                idtbl-iterate-value))
 
+           (define (idtbl-equal? left right equal?)
+             (let/ec k
+               (and (equal? (id-table-phase left) (id-table-phase right))
+                    (equal? (idtbl-count left) (idtbl-count right))
+                    (for/and (((l-key l-value) (in-dict left)))
+                      (equal? (idtbl-ref right l-key (lambda () (k #f))) l-value)))))
+
+
            (struct idtbl id-table ())
            (struct mutable-idtbl idtbl ()
-             #:property prop:dict idtbl-mutable-methods)
+             #:property prop:dict idtbl-mutable-methods
+             #:property prop:equal+hash (list idtbl-equal? id-table-hash-code id-table-hash-code))
+
            (struct immutable-idtbl idtbl ()
-             #:property prop:dict idtbl-immutable-methods)
+             #:property prop:dict idtbl-immutable-methods
+             #:property prop:equal+hash (list idtbl-equal? id-table-hash-code id-table-hash-code))
 
            (provide make-idtbl
                     make-immutable-idtbl
@@ -368,8 +396,8 @@ Notes (FIXME?):
                     idtbl-for-each
 
                     ;; just for use/extension by syntax/id-table
-                    chaperone-idtbl
-                    idtbl-chaperone-keys+values/constructor
+                    chaperone-mutable-idtbl
+                    chaperone-immutable-idtbl
                     idtbl-set/constructor
                     idtbl-remove/constructor
                     idtbl-mutable-methods

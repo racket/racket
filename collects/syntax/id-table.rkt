@@ -64,7 +64,7 @@
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods
           idtbl/c
-          chaperone-idtbl idtbl-chaperone-keys+values/constructor))
+          chaperone-mutable-idtbl chaperone-immutable-idtbl))
        #'(begin
 
            ;; Struct defs at end, so that dict methods can refer to earlier procs
@@ -130,7 +130,7 @@
                (define (proj acc location swap)
                  (lambda (ctc blame)
                    ((contract-projection (acc ctc))
-                    (blame-add-context blame "the keys of" #:swap swap))))
+                    (blame-add-context blame location #:swap? swap))))
                (values
                  (proj base-idtbl/c-dom "the keys of" #f)
                  (proj base-idtbl/c-dom "the keys of" #t)
@@ -144,8 +144,8 @@
              (λ (val)
                (and (idtbl? val)
                     (case immutable
-                      [(#t) (immutable? val)]
-                      [(#f) (not (immutable? val))]
+                      [(#t) (immutable-idtbl? val)]
+                      [(#f) (mutable-idtbl? val)]
                       [else #t])
                     (for/and ([(k v) (in-dict val)])
                       (and (contract-first-order-passes? dom-ctc k)
@@ -158,11 +158,11 @@
                  '(expected "a ~a," given: "~e") 'idtbl val))
              (case immutable
                [(#t)
-                (unless (immutable? val)
+                (unless (immutable-idtbl? val)
                   (raise-blame-error blame val
                     '(expected "an immutable ~a," given: "~e") 'idtbl val))]
                [(#f)
-                (when (immutable? val)
+                (unless (mutable-idtbl? val)
                   (raise-blame-error blame val
                     '(expected "a mutable ~a," given: "~e") 'idtbl val))]
                [(dont-care) (void)]))
@@ -170,29 +170,30 @@
            (define ho-projection
              (lambda (ctc)
                (lambda (blame)
-                (lambda (b)
-                  (define pos-dom-proj (idtbl/c-dom-pos-proj ctc blame))
-                  (define neg-dom-proj (idtbl/c-dom-pos-proj ctc blame))
-                  (define pos-rng-proj (idtbl/c-dom-pos-proj ctc blame))
-                  (define neg-rng-proj (idtbl/c-dom-pos-proj ctc blame))
-                  (lambda (tbl)
-                    (check-idtbl/c ctc tbl blame)
-                    (if (immutable? tbl)
-                      (idtbl-chaperone-keys+values/constructor
-                        tbl pos-dom-proj pos-rng-proj immutable-idtbl)
-                      (chaperone-idtbl tbl
-                        (λ (t k)
-                          (values (neg-dom-proj k)
-                                  (λ (h k v)
-                                    (pos-rng-proj v))))
-                        (λ (t k v)
-                          (values (neg-dom-proj k)
-                                  (neg-rng-proj v)))
-                        (λ (t k)
-                          (neg-dom-proj k))
-                        (λ (t k)
-                          (pos-dom-proj k))
-                        impersonator-prop:contracted ctc)))))))
+                 (define pos-dom-proj (idtbl/c-dom-pos-proj ctc blame))
+                 (define neg-dom-proj (idtbl/c-dom-neg-proj ctc blame))
+                 (define pos-rng-proj (idtbl/c-rng-pos-proj ctc blame))
+                 (define neg-rng-proj (idtbl/c-rng-neg-proj ctc blame))
+                 (lambda (tbl)
+                   (check-idtbl/c ctc tbl blame)
+                   ;TODO for immutable hash tables optimize this chaperone to a flat
+                   ;check if possible
+                   (if (immutable-idtbl? tbl)
+                     (chaperone-immutable-idtbl tbl pos-dom-proj pos-rng-proj
+                      impersonator-prop:contracted ctc)
+                     (chaperone-mutable-idtbl tbl
+                       (λ (t k)
+                         (values (neg-dom-proj k)
+                                 (λ (h k v)
+                                   (pos-rng-proj v))))
+                       (λ (t k v)
+                         (values (neg-dom-proj k)
+                                 (neg-rng-proj v)))
+                       (λ (t k)
+                         (neg-dom-proj k))
+                       (λ (t k)
+                         (pos-dom-proj k))
+                       impersonator-prop:contracted ctc))))))
 
 
 
@@ -207,8 +208,8 @@
                 (λ (blame)
                   (λ (val)
                     (check-idtbl/c ctc val blame)
-                    (define dom-proj (idtbl/c-dom-pos-proj ctc))
-                    (define rng-proj (idtbl/c-rng-pos-proj ctc))
+                    (define dom-proj (idtbl/c-dom-pos-proj ctc blame))
+                    (define rng-proj (idtbl/c-rng-pos-proj ctc blame))
                     (for ([(k v) (in-dict val)])
                       (dom-proj k)
                       (rng-proj v))

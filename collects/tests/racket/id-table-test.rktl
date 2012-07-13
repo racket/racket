@@ -241,6 +241,97 @@
                (lambda (x y)
                  (set! l (cons y l))))
               l))
-      )))
+      ))
+
+  (test #t contract? (free-id-table/c any/c number?))
+  (test #t contract? (bound-id-table/c any/c number?))
+  (test #t contract? (bound-id-table/c any/c number? #:immutable #t))
+  (test #t contract? (free-id-table/c any/c number? #:immutable #f))
+  (test #t contract? (bound-id-table/c any/c number? #:immutable 'dont-care))
+
+  (test #t chaperone-contract? (free-id-table/c any/c number?))
+  (test #f flat-contract? (free-id-table/c any/c number?))
+  (test #t flat-contract? (free-id-table/c any/c number? #:immutable #t))
+  (test #f flat-contract? (free-id-table/c any/c (vectorof number?) #:immutable #t))
+  (test #f chaperone-contract? (free-id-table/c any/c (new-∀/c 'v)))
+  (error-test #'(free-id-table/c (new-∀/c 'v) any/c))
+
+  (let ()
+
+    (define (app-ctc ctc value)
+      (contract ctc value 'positive 'negative))
+
+    (define (positive-error? exn)
+      (and exn:fail:contract?
+           (regexp-match? "blaming: positive" (exn-message exn))))
+    (define (negative-error? exn)
+      (and exn:fail:contract?
+           (regexp-match? "blaming: negative" (exn-message exn))))
+
+    (define-syntax-rule (test/blame-pos e)
+     (thunk-error-test (lambda () e) #'e positive-error?))
+    (define-syntax-rule (test/blame-neg e)
+     (thunk-error-test (lambda () e) #'e negative-error?))
+
+    (define-values (a b c d) (values 'A 'B 'C 'D))
+    (define tbl (make-free-id-table))
+    (free-id-table-set! tbl #'a a)
+    (free-id-table-set! tbl #'b b)
+    (free-id-table-set! tbl #'c c)
+    (free-id-table-set! tbl #'d d)
+
+    (define im-tbl
+      ((compose
+         (lambda (tbl) (free-id-table-set tbl #'a a))
+         (lambda (tbl) (free-id-table-set tbl #'b b))
+         (lambda (tbl) (free-id-table-set tbl #'c c))
+         (lambda (tbl) (free-id-table-set tbl #'d d)))
+       (make-immutable-free-id-table)))
+
+
+    (test #t free-id-table? (app-ctc (free-id-table/c any/c any/c) (make-free-id-table)))
+    (test #t bound-id-table? (app-ctc (bound-id-table/c identifier? number?) (make-bound-id-table)))
+    (test #t free-id-table? (app-ctc (free-id-table/c identifier? symbol?) tbl))
+    (test #t free-id-table? (app-ctc (free-id-table/c identifier? symbol?) im-tbl))
+    (test #t free-id-table? (app-ctc (free-id-table/c identifier? number?) tbl))
+
+
+    (test/blame-pos (app-ctc (free-id-table/c symbol? symbol? #:immutable #t) im-tbl))
+    (test/blame-pos (app-ctc (free-id-table/c identifier? number? #:immutable #t) im-tbl))
+    (test #t free-id-table? (app-ctc (free-id-table/c identifier? number?) im-tbl))
+    (test #t free-id-table? (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
+
+    ; These are not failures yet because they are not flat contracts
+    ; Looking at the hash ensures that the contract fails
+    ;(test/blame-pos (app-ctc (free-id-table/c identifier? number?) im-tbl))
+    ;(test/blame-pos (app-ctc (free-id-table/c symbol? symbol?) im-tbl))
+    (test/blame-pos (free-id-table-count (app-ctc (free-id-table/c identifier? number?) im-tbl)))
+    (test/blame-pos (free-id-table-count (app-ctc (free-id-table/c symbol? symbol?) im-tbl)))
+
+    (define (short-identifier? id)
+      (and (identifier? id) (equal? 1 (string-length (symbol->string (syntax-e id))))))
+    (define ctced-tbl (app-ctc (free-id-table/c short-identifier? number?) tbl))
+    (test/blame-pos (free-id-table-ref ctced-tbl #'a))
+    (test/blame-neg (free-id-table-ref ctced-tbl #'ab))
+    (test/blame-neg (free-id-table-set! ctced-tbl #'a 'c))
+    (test/blame-neg (free-id-table-set! ctced-tbl #'ab 2))
+    (test/blame-neg (free-id-table-remove! ctced-tbl #'ab))
+
+    (test/blame-pos
+      (let ((ctced-tbl (app-ctc (free-id-table/c symbol? number?) tbl)))
+        (free-id-table-iterate-key ctced-tbl (free-id-table-iterate-first ctced-tbl))))
+    
+    (define/contract ctc-tbl (free-id-table/c any/c number?) (make-free-id-table))
+    (test #t void? (free-id-table-set! ctc-tbl #'a 1))
+    (test #t void? (free-id-table-set! ctc-tbl #'b 2))
+    (test #t number? (free-id-table-ref ctc-tbl #'b))
+    (test #t string? (free-id-table-ref ctc-tbl #'c "3"))
+    (test #t void? (free-id-table-set! ctc-tbl #'a 4))
+    (test #t void? (free-id-table-remove! ctc-tbl #'b))
+    (test #t number? (free-id-table-count ctc-tbl))
+    (test #t list? (free-id-table-map ctc-tbl (λ (k v) v)))
+
+
+    ))
 
 (report-errs)
