@@ -7,7 +7,7 @@
 #|
 TODO
 
-Printing tests
+Printing tests?
 Moar FFT tests
 Ref tests
 Transform tests
@@ -18,6 +18,19 @@ Transform tests
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; array-strict
+
+(: make-index-vector (Integer Integer -> (Vectorof (Listof Integer))))
+(define (make-index-vector n dims)
+  (list->vector
+   (let: loop : (Listof (Listof Integer)) ([n : Integer  n])
+     (cond [(= n 0)  (list null)]
+           [else  (define lsts (loop (- n 1)))
+                  (append*
+                   (for/list: : (Listof (Listof (Listof Integer))) ([k  (in-range dims)])
+                     (map (λ: ([lst : (Listof Integer)]) (cons k lst)) lsts)))]))))
+
+(check-equal? (make-index-vector 2 3)
+              #((0 0) (0 1) (0 2) (1 0) (1 1) (1 2) (2 0) (2 1) (2 2)))
 
 (let ([arr  (make-strict-array '(4) #(a b c d))])
   (check-eq? arr (array-strict arr)))
@@ -36,21 +49,26 @@ Transform tests
 
 (let ([arr  (make-lazy-array '(3 3) (λ (js) js))])
   (check-equal? (unsafe-array-data (array-strict arr))
-                #((0 0) (0 1) (0 2) (1 0) (1 1) (1 2) (2 0) (2 1) (2 2))))
+                (make-index-vector 2 3)))
 
 (let ([arr  (make-lazy-array '(2 2 2) (λ (js) js))])
   (check-equal? (unsafe-array-data (array-strict arr))
-                #((0 0 0) (0 0 1) (0 1 0) (0 1 1) (1 0 0) (1 0 1) (1 1 0) (1 1 1))))
+                (make-index-vector 3 2)))
 
 (let ([arr  (make-lazy-array '(2 2 2 2) (λ (js) js))])
   (check-equal? (unsafe-array-data (array-strict arr))
-                (vector '(0 0 0 0) '(0 0 0 1) '(0 0 1 0) '(0 0 1 1)
-                        '(0 1 0 0) '(0 1 0 1) '(0 1 1 0) '(0 1 1 1)
-                        '(1 0 0 0) '(1 0 0 1) '(1 0 1 0) '(1 0 1 1)
-                        '(1 1 0 0) '(1 1 0 1) '(1 1 1 0) '(1 1 1 1))))
+                (make-index-vector 4 2)))
+
+(let ([arr  (make-lazy-array '(2 2 2 2 2) (λ (js) js))])
+  (check-equal? (unsafe-array-data (array-strict arr))
+                (make-index-vector 5 2)))
+
+(let ([arr  (make-lazy-array '(2 2 2 2 2 2) (λ (js) js))])
+  (check-equal? (unsafe-array-data (array-strict arr))
+                (make-index-vector 6 2)))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Printing
+;; Printing?
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conversion
@@ -259,6 +277,10 @@ Transform tests
   (check-true (array= arr (array-inverse-fft (array-fft arr)))))
 
 ;; ---------------------------------------------------------------------------------------------------
+;; Ref
+
+;; ---------------------------------------------------------------------------------------------------
+;; Transforms
 
 #|
 
