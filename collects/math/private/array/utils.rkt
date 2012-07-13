@@ -9,7 +9,6 @@
 
 (define-type (Listof* A) (Rec T (U A (Listof T))))
 (define-type (Vectorof* A) (Rec T (U A (Vectorof T))))
-;(define-predicate vectorof-vector? (Vectorof (Vectorof Any)))
 (define-predicate listof-index? (Listof Index))
 
 (begin-encourage-inline
@@ -36,26 +35,25 @@
   (define (array-shape? ds)
     (and (list? ds) (index? (apply * ds)) (listof-index? ds)))
   
-  (: unsafe-array-shape-size ((Vectorof Index) -> Nonnegative-Fixnum))
+  (: unsafe-array-shape-size ((Vectorof Index) -> Nonnegative-Integer))
   (define (unsafe-array-shape-size ds)
     (define dims (vector-length ds))
-    (let loop ([#{i : Nonnegative-Fixnum} 0] [#{n : Nonnegative-Fixnum} 1])
+    (let loop ([#{i : Nonnegative-Fixnum} 0] [#{n : Nonnegative-Integer} 1])
       (cond [(i . < . dims)  (define d (unsafe-vector-ref ds i))
-                             (loop (+ i 1) (unsafe-fx* n d))]
+                             (loop (+ i 1) (* n d))]
             [else  n])))
   
   (: array-shape-safe->unsafe ((Listof Integer) (-> Nothing) -> (Vectorof Index)))
   (define (array-shape-safe->unsafe ds fail)
     (define dims (length ds))
     (define: new-ds : (Vectorof Index) (make-vector dims 0))
-    (let loop ([ds ds] [#{i : Nonnegative-Fixnum} 0] [size 1])
+    (let loop ([ds ds] [#{i : Nonnegative-Fixnum} 0])
       (cond [(i . < . dims)
              (define di (unsafe-car ds))
              (cond [(index? di)  (unsafe-vector-set! new-ds i di)
-                                 (loop (unsafe-cdr ds) (+ i 1) (* size di))]
+                                 (loop (unsafe-cdr ds) (+ i 1))]
                    [else  (fail)])]
-            [(index? size)  new-ds]
-            [else  (fail)])))
+            [else  new-ds])))
   
   (: unsafe-array-index->value-index ((Vectorof Index) (Vectorof Index) -> Nonnegative-Fixnum))
   (define (unsafe-array-index->value-index ds js)
@@ -89,21 +87,23 @@
 
 (: array-index->value-index (Symbol (Vectorof Index) (Listof Integer) -> Nonnegative-Fixnum))
 (define (array-index->value-index name ds js)
+  (define (raise-index-error) (raise-array-index-error name ds js))
   (define dims (vector-length ds))
-  (unless (= dims (length js)) (raise-array-index-error name ds js))
+  (unless (= dims (length js)) (raise-index-error))
   (let loop ([#{i : Nonnegative-Fixnum} 0] [js js] [#{j : Nonnegative-Fixnum}  0])
     (cond [(i . < . dims)
            (define di (unsafe-vector-ref ds i))
            (define ji (unsafe-car js))
            (cond [(and (0 . <= . ji) (ji . < . di))
                   (loop (+ i 1) (unsafe-cdr js) (unsafe-fx+ ji (unsafe-fx* di j)))]
-                 [else  (raise-array-index-error name ds js)])]
+                 [else  (raise-index-error)])]
           [else  j])))
 
 (: check-array-indexes (Symbol (Vectorof Index) (Listof Integer) -> (Vectorof Index)))
 (define (check-array-indexes name ds js)
+  (define (raise-index-error) (raise-array-index-error name ds js))
   (define dims (vector-length ds))
-  (unless (= dims (length js)) (raise-array-index-error name ds js))
+  (unless (= dims (length js)) (raise-index-error))
   (define: new-js : (Vectorof Index) (make-vector dims 0))
   (let loop ([#{i : Nonnegative-Fixnum} 0] [js js])
     (cond [(i . < . dims)
@@ -112,7 +112,7 @@
            (cond [(and (0 . <= . ji) (ji . < . di))
                   (unsafe-vector-set! new-js i ji)
                   (loop (+ i 1) (unsafe-cdr js))]
-                 [else  (raise-array-index-error name ds js)])]
+                 [else  (raise-index-error)])]
           [else  new-js])))
 
 (: unsafe-check-equal-array-shape! (Symbol (Vectorof Index) (Vectorof Index) -> Void))
