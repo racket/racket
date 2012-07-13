@@ -12,24 +12,22 @@
 (: const-array (All (A) ((Listof Integer) A -> (lazy-array A))))
 (define (const-array ds v)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'const-array "(Listof Index) with Index product"
-                                         0 ds v)))])
+              ds (λ () (raise-type-error 'const-array "(Listof Index)" 0 ds v)))])
     (unsafe-lazy-array ds (λ (js) v))))
 
 (: index-array ((Listof Integer) Integer -> (lazy-array Integer)))
 (define (index-array ds i)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'index-array "(Listof Index) with Index product"
-                                         0 ds i)))])
+              ds (λ () (raise-type-error 'index-array "(Listof Index)" 0 ds i)))])
     (define dims (vector-length ds))
     (cond [(and (0 . <= . i) (i . < . dims))
            (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) (unsafe-vector-ref js i)))]
-          [else  (raise-type-error 'index-array (format "Index less than ~a" dims) 1 ds i)])))
+          [else  (raise-type-error 'index-array (format "Index < ~a" dims) 1 ds i)])))
 
 (: indexes-array ((Listof Integer) -> (lazy-array (Listof Integer))))
 (define (indexes-array ds)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'indexes-array "(Listof Index) with Index product" ds)))])
+              ds (λ () (raise-type-error 'indexes-array "(Listof Index)" ds)))])
     (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) (vector->list js)))))
 
 (: diagonal-array (All (A) (Integer Integer A A -> (lazy-array A))))

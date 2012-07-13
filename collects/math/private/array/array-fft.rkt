@@ -6,6 +6,7 @@
          "array-transform.rkt"
          "array-pointwise.rkt"
          "../../parameters.rkt"
+         "../../functions.rkt"
          "utils.rkt")
 
 (provide array-axis-fft
@@ -52,12 +53,14 @@
         [(= k (- dims 1))
          (array-last-axis-fft arr)]
         [else
-         (array-transpose (array-last-axis-fft (array-transpose arr k (- dims 1))) k (- dims 1))]))
+         (array-axis-swap (array-last-axis-fft (array-axis-swap arr k (- dims 1))) k (- dims 1))]))
 
 (: array-fft ((Array Number) -> (lazy-array Float-Complex)))
 (define (array-fft arr)
   (define dims (array-dims arr))
-  (cond [(= dims 0)  (array-number->float-complex arr)]
+  (cond [(= dims 0)  (raise-type-error 'array-fft "Array with at least one axis" arr)]
+        [(not (andmap power-of-two? (array-shape arr)))
+         (raise-type-error 'array-fft "Array with power-of-two shape" arr)]
         [else
          (let loop ([#{k : Nonnegative-Fixnum} 1] [arr  (array-axis-fft arr 0)])
            (cond [(k . < . dims)  (array-axis-fft arr k)]

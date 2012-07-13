@@ -33,7 +33,8 @@
   (define len (vector-length as))
   (define n (- end start))
   (cond
-    [(= start end n 0)  (void)]
+    [(not (power-of-two? n))
+     (error 'vector-fft "expected power-of-two length; given length ~e" n)]
     [(or (start . < . 0) (start . >= . len))
      (raise-type-error 'vector-fft (format "Index < ~e" len) 1 as start end)]
     [(or (n . < . 0) (n . > . len))
@@ -41,8 +42,6 @@
     [((- (vector-length bs) b-start) . < . n)
      (raise-type-error 'vector-fft! (format "Vector with length >= ~e" (+ n b-start))
                        3 as start end bs b-start)]
-    [(not (power-of-two? n))
-     (error 'vector-fft "expected power-of-two length; given length ~e" n)]
     [else
      (define as-r (make-flvector n 0.0))
      (define as-i (make-flvector n 0.0))

@@ -48,8 +48,15 @@
 ;; ===================================================================================================
 ;; Parent array data type
 
+(: array-guard ((Vectorof Index) Symbol -> (Vectorof Index)))
+(define (array-guard ds name)
+  (define size (unsafe-array-shape-size ds))
+  (cond [(index? size)  ds]
+        [else  (error name "array size ~e (shape ~e) is not an Index" size ds)]))
+
 (struct: (A) array ([shape : (Vectorof Index)])
-  #:property prop:equal+hash (list array-equal? array-hash array-hash))
+  #:property prop:equal+hash (list array-equal? array-hash array-hash)
+  #:guard array-guard)
 
 (: internal-array-size-error (All (A) ((Array A) Integer -> Nothing)))
 (define (internal-array-size-error arr n)
@@ -88,8 +95,7 @@
 (: make-lazy-array (All (A) ((Listof Integer) ((Listof Index) -> A) -> (lazy-array A))))
 (define (make-lazy-array ds proc)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'lazy-array "(Listof Index) with Index product"
-                                         0 ds proc)))])
+              ds (λ () (raise-type-error 'lazy-array "(Listof Index)" 0 ds proc)))])
     (lazy-array ds (λ: ([js : (Vectorof Index)]) (proc (vector->list js))))))
 
 ;; A version of lazy-array that isn't also a type and a match expander
@@ -109,8 +115,7 @@
 (: make-strict-array (All (A) ((Listof Integer) (Vectorof A) -> (strict-array A))))
 (define (make-strict-array ds vs)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'strict-array "(Listof Index) with Index product"
-                                         0 ds vs)))])
+              ds (λ () (raise-type-error 'strict-array "(Listof Index)" 0 ds vs)))])
     (define size (unsafe-array-shape-size ds))
     (unless (= size (vector-length vs))
       (raise-type-error 'strict-array (format "Vector of length ~e" size)
@@ -160,7 +165,7 @@
       [(lazy-array? arr)
        (define ds (unsafe-array-shape arr))
        (define proc (unsafe-array-proc arr))
-       (define size (unsafe-array-shape-size ds))
+       (define size (array-size arr))
        (define dims (vector-length ds))
        (define: vs : (Vectorof A)
          (if (= size 0)
