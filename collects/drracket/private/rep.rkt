@@ -758,8 +758,8 @@ TODO
         (inner (void) after-insert start len)
         (cond
           [(in-edit-sequence?) 
-           (set! had-an-insert (cons (cons start len) had-an-insert))]
-          [else (update-after-insert start len)]))
+           (set! had-an-insert (cons start had-an-insert))]
+          [else (update-after-inserts (list start))]))
       
       ;; private field
       (define had-an-insert '())
@@ -768,28 +768,14 @@ TODO
         (inner (void) after-edit-sequence)
         (let ([to-clean had-an-insert])
           (set! had-an-insert '())
-          (for-each
-           (lambda (pr)
-             (update-after-insert (car pr) (cdr pr)))
-           to-clean)))
+	  (update-after-inserts to-clean)))
       
-      (define/private (update-after-insert start len)
+      (define/private (update-after-inserts starts)
         (unless inserting-prompt?
           (reset-highlighting))
-        (when (and prompt-position (< start prompt-position))
-          
-          ;; trim extra space, according to preferences
-          #;
-          (let* ([start (get-repl-header-end)]
-                 [end (get-insertion-point)]
-                 [space (- end start)]
-                 [pref (preferences:get 'drracket:repl-buffer-size)])
-            (when (car pref)
-              (let ([max-space (* 1000 (cdr pref))])
-                (when (space . > . max-space)
-                  (let ([to-delete-end (+ start (- space max-space))])
-                    (delete/io start to-delete-end))))))
-          
+        (when (and prompt-position 
+		   (ormap (λ (start) (< start prompt-position))
+			  starts))
           (set! prompt-position (get-unread-start-point))
           (reset-regions (append (all-but-last (get-regions))
                                  (list (list prompt-position 'end))))))
