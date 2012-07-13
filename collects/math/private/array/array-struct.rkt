@@ -39,9 +39,28 @@
          array-custom-printer)
 
 ;; ===================================================================================================
+;; Equality
+
+(: array-equal? (All (A) ((Array A) (Array A) (Any Any -> Boolean) -> Boolean)))
+(define (array-equal? arr brr recur-equal?)
+  (let ([arr  (array-strict arr)]
+        [brr  (array-strict brr)])
+    (and (equal? (unsafe-array-shape arr)
+                 (unsafe-array-shape brr))
+         (recur-equal? (unsafe-array-data arr)
+                       (unsafe-array-data brr)))))
+
+(: array-hash (All (A) ((Array A) (Any -> Integer) -> Integer)))
+(define (array-hash arr recur-hash)
+  (let ([arr  (array-strict arr)])
+    (bitwise-xor (recur-hash (unsafe-array-shape arr))
+                 (recur-hash (unsafe-array-data arr)))))
+
+;; ===================================================================================================
 ;; Parent array data type
 
-(struct: array ([shape : (Vectorof Index)]))
+(struct: array ([shape : (Vectorof Index)])
+  #:property prop:equal+hash (list array-equal? array-hash array-hash))
 
 (: internal-array-size-error (All (A) ((Array A) Integer -> Nothing)))
 (define (internal-array-size-error arr n)

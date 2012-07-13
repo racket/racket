@@ -4,15 +4,18 @@
          racket/performance-hint
          (for-syntax racket/base)
          "array-struct.rkt"
+         "../vector/vector-pointwise.rkt"
          "utils.rkt")
 
-(provide inline-array-lift
+(provide array=
+         ;; Lifting
+         inline-array-lift
          inline-array-lift2
          array-lift
          array-lift2
          array-map
          array-map2
-         
+         ;; Lifted operators
          array-abs
          array-round
          array-floor
@@ -42,6 +45,18 @@
          array-number->float-complex
          array-real-part
          array-imag-part)
+
+;; ===================================================================================================
+;; Numeric equality
+
+(: array= ((Array Number) (Array Number) -> Boolean))
+(define (array= arr brr)
+  (let ([arr  (array-strict arr)]
+        [brr  (array-strict brr)])
+    (and (equal? (unsafe-array-shape arr)
+                 (unsafe-array-shape brr))
+         (vector= (unsafe-array-data arr)
+                  (unsafe-array-data brr)))))
 
 ;; ===================================================================================================
 ;; Lifting

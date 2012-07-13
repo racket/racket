@@ -91,25 +91,3 @@
                              (j-loop (+ ji 1))]
                             [else  veci]))])]
             [else  (proc js)]))))
-
-(module* test typed/racket
-  (require typed/rackunit
-           (submod "..")
-           "array-struct.rkt")
-  (check-equal? (array->list (list->array flonum? '(1.0 2.0)))
-                '(1.0 2.0))
-  (check-equal? (array->list (list->array flonum? '((1.0 2.0) (3.0 4.0))))
-                '((1.0 2.0) (3.0 4.0)))
-  
-  (check-equal? (array->vector (list->array flonum? '(1.0 2.0)))
-                '#(1.0 2.0))
-  (check-equal? (array->vector (list->array flonum? '((1.0 2.0) (3.0 4.0))))
-                '#(#(1.0 2.0) #(3.0 4.0)))
-  
-  (check-equal? (array->vector ((inst vector->array Flonum) flonum? '#(1.0 2.0)))
-                '#(1.0 2.0))
-  (check-equal? (array->vector ((inst vector->array Flonum) flonum? '#(#(1.0 2.0) #(3.0 4.0))))
-                '#(#(1.0 2.0) #(3.0 4.0)))
-  
-  (check-equal? (array->list (list->array flonum? 1.0)) 1.0)
-  (check-equal? (array->vector (list->array flonum? 1.0)) 1.0))
