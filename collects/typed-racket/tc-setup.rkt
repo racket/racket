@@ -2,7 +2,7 @@
 
 (require (rename-in "utils/utils.rkt" [infer r:infer])
          (except-in syntax/parse id)
-         racket/pretty
+         racket/pretty racket/promise
          (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
@@ -50,7 +50,7 @@
                      ;; this parameter is just for printing types
                      ;; this is a parameter to avoid dependency issues
                      [current-type-names
-                      (lambda ()
+                      (delay
                         (append
                          (type-name-env-map (lambda (id ty)
                                               (cons (syntax-e id) ty)))

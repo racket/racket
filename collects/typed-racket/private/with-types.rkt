@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/require
+(require racket/require racket/promise
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define)
           "../base-env/prims.rkt"
@@ -79,8 +79,8 @@
                  ;; this parameter is just for printing types
                  ;; this is a parameter to avoid dependency issues
                  [current-type-names
-                  (lambda ()
-                    (append
+                  (delay
+                    (append 
                      (type-name-env-map (lambda (id ty)
                                           (cons (syntax-e id) ty)))
                      (type-alias-env-map (lambda (id ty)

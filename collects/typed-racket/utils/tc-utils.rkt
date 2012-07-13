@@ -6,7 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out) (all-from-out "disappeared-use.rkt"))
-(require "syntax-traversal.rkt" racket/dict "disappeared-use.rkt"
+(require "syntax-traversal.rkt" racket/dict "disappeared-use.rkt" racket/promise
 	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
 
 ;; a parameter representing the original location of the syntax being
@@ -151,7 +151,7 @@ don't depend on any other portion of the system
 
 ;; parameter for currently-defined type aliases
 ;; this is used only for printing type names
-(define current-type-names (make-parameter (lambda () '())))
+(define current-type-names (make-parameter (delay '())))
 
 ;; for reporting internal errors in the type checker
 (define-struct (exn:fail:tc exn:fail) ())
