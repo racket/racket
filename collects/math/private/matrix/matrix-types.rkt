@@ -2,8 +2,10 @@
 
 (provide Matrix Result-Matrix
          array-matrix?
+         matrix=
          square-matrix? 
-         square-matrix-size)
+         square-matrix-size
+         matrix-dimensions)
 
 (require math/array)
 
@@ -23,4 +25,11 @@
 (: square-matrix-size : (All (A) (Matrix A) -> Index))
 (define (square-matrix-size a)
   (vector-ref (unsafe-array-shape a) 0))
-                  
+
+(: matrix= : (Matrix Number) (Matrix Number) -> Boolean)
+(define matrix= array=)
+
+(: matrix-dimensions : (Matrix Number) -> (Vector Index Index))
+(define (matrix-dimensions a)
+  (define sh (unsafe-array-shape a))
+  (vector (vector-ref sh 0) (vector-ref sh 1)))
