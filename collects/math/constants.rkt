@@ -7,8 +7,9 @@
          gamma.0 gamma.f
          phi.0 phi.f)
 
+;; Dog-fooding the exact constants...
 (begin-for-syntax
-
+  
   (define-values (pi.0 phi.0)
     (parameterize ([exact-bits 53])
       (values (real->double-flonum (exact-pi))

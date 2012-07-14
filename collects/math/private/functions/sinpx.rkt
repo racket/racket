@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require (only-in racket/math pi))
+(require "../../constants.rkt")
 
 (provide sinpx)
 
@@ -8,4 +8,4 @@
 (: sinpx (Float -> Float))
 (define (sinpx z)
   (let ([z  (abs z)])
-    (* z (sin (* (- z (* 2.0 (floor (* 0.5 z)))) pi)))))
+    (* z (sin (* (- z (* 2.0 (floor (* 0.5 z)))) pi.0)))))

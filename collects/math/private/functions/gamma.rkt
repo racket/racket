@@ -8,7 +8,7 @@ Extend domain to > -1.4846954180325517e-306 (generally do better around poles)
 Error on exact nonpositive integers
 |#
 
-(require (only-in racket/math pi) racket/flonum racket/fixnum
+(require racket/flonum racket/fixnum
          "../../constants.rkt"
          "../utils.rkt"
          "factorial.rkt"
@@ -35,15 +35,15 @@ Error on exact nonpositive integers
 ;; Calculates Gamma(x) using Euler's reflection formula Gamma(1-x) * Gamma(x) = pi / sin(pi*x)
 (: flgamma-large-negative (Float -> Float))
 (define (flgamma-large-negative x)
-  (/ (- pi) (* (flgamma (- x)) (sinpx x))))
+  (/ (- pi.0) (* (flgamma (- x)) (sinpx x))))
 
 ;; Calculates Gamma(x) using the first three terms of Gamma(x)'s Laurent expansion at 0
 ;; Error ε is O(x^2), and ε = 0.0 (though positive) when 0.0 < x < 1e-10
 (: flgamma-small-positive (Float -> Float))
 (define (flgamma-small-positive x)
   (+ (/ 1.0 x)
-     (- euler.0)
-     (* #i1/6 x (+ (* 3.0 euler.0 euler.0) (* 0.5 pi pi)))))
+     (- gamma.0)
+     (* #i1/6 x (+ (* 3.0 gamma.0 gamma.0) (* 0.5 pi.0 pi.0)))))
 
 ;; Lanczos polynomial for N=13 G=6.024680040776729583740234375
 ;; Max experimental error (with arbitary precision arithmetic) 1.196214e-17

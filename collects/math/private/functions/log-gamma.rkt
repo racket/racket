@@ -6,7 +6,8 @@ TODO
 Error on exact nonpositive integers in log-gamma
 |#
 
-(require (only-in racket/math pi) racket/flonum racket/fixnum
+(require racket/flonum racket/fixnum
+         "../../constants.rkt"
          "log-factorial.rkt"
          "gamma.rkt"
          "sinpx.rkt"
@@ -22,7 +23,7 @@ Error on exact nonpositive integers in log-gamma
          [log-x  (fllog x)])
     (+ (* x log-x)
        (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi)) log-x))
+       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x))
        (let ([1/x  (/ 1.0 x)])
          (* 1/x (+ (* #i-1/360 (* 1/x 1/x)) #i1/12))))))
 
@@ -34,7 +35,7 @@ Error on exact nonpositive integers in log-gamma
          [log-x  (fllog x)])
     (+ (* x log-x)
        (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi)) log-x)))))
+       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x)))))
 
 (define lanczos-sum-numer
   (make-polyfun
@@ -85,8 +86,8 @@ Error on exact nonpositive integers in log-gamma
   (cond #;[(integer? x)  (values (fllog-factorial (- (fl->fx x) 1)) 1.0)]
         [(x . < . 0.0)
          (define t (sinpx x))
-         (cond [(t . < . 0.0)  (values (- (log pi) (fllog-gamma (- x)) (log (- t))) 1.0)]
-               [else           (values (- (log pi) (fllog-gamma (- x)) (log t)) -1.0)])]
+         (cond [(t . < . 0.0)  (values (- (log pi.0) (fllog-gamma (- x)) (log (- t))) 1.0)]
+               [else           (values (- (log pi.0) (fllog-gamma (- x)) (log t)) -1.0)])]
         [(x . >= . 1.0e7)  (values (fllog-gamma/stirling3 x) 1.0)]
         [(x . >= . 143.0)  (values (fllog-gamma/stirling5 x) 1.0)]
         [(x . >= . 5.0)    (values (fllog (flgamma x)) 1.0)]

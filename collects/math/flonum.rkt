@@ -10,7 +10,7 @@ single-flonum versions of everything here
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between
          -max.0 -min.0 +min.0 +max.0 +epsilon.0
-         relative-error)
+         flulp flulp-error relative-error)
 
 ;; ===================================================================================================
 ;; Floating-point representation
@@ -65,6 +65,16 @@ single-flonum versions of everything here
 (define (flonums-between x y)
   (- (flonum->ordinal y) (flonum->ordinal x)))
 
+(: flulp (Float -> (U Float-Nan Nonnegative-Float)))
+(define (flulp x)
+  (let ([x  (abs x)])
+    (cond [(= x +inf.0)  +nan.0]
+          [(= x 0.0)  0.0]
+          [else
+           (define ulp (abs (- (flnext x) x)))
+           (cond [(= ulp +inf.0)  (abs (- x (flprev x)))]
+                 [else  ulp])])))
+
 ;; ===================================================================================================
 ;; Constants
 
@@ -74,11 +84,19 @@ single-flonum versions of everything here
 (define +max.0 (flprev +inf.0))
 
 ;; The smallest flonum that can be added to 1.0 to get a result != 1.0
-(define +epsilon.0 (expt 2.0 -52))
+(define +epsilon.0 (flulp 1.0))
 
 ;; ===================================================================================================
 ;; Error measurement
 
-(: relative-error : Float Float -> Float)
-(define (relative-error x correct)
-  (/ (abs (- x correct)) correct))
+(: flulp-error (Float Real -> Float))
+(define (flulp-error x r)
+  (real->double-flonum
+   (/ (abs (- (inexact->exact x) (inexact->exact r)))
+      (inexact->exact (flulp x)))))
+
+(: relative-error (Real Real -> Float))
+(define (relative-error x r)
+  (let ([x  (inexact->exact x)]
+        [r  (inexact->exact r)])
+    (real->double-flonum (/ (abs (- x r)) r))))
