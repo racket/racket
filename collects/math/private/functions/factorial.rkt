@@ -70,31 +70,3 @@
                                           n ks)]
         [else  (define m (apply / (factorial n) (map factorial ks)))
                (with-asserts ([m  exact-nonnegative-integer?]) m)]))
-#;
-(module* test typed/racket
-  (require (submod "..") typed/rackunit)
-  
-  (define fact-table-size 171)
-  (define simple-cutoff 244)
-  
-  (: test-factorial : Integer -> Integer)
-  (define (test-factorial n)
-    (if (= n 0) 1 (* n (test-factorial (- n 1)))))
-  
-  (check-equal? (map factorial (list 0 1 2 3 4 5)) '(1 1 2 6 24 120))
-  (check-equal? (factorial (+ fact-table-size 1)) (test-factorial (+ fact-table-size 1)))
-  (check-equal? (factorial (+ simple-cutoff 1)) (test-factorial (+ simple-cutoff 1)))
-  
-  (check-equal? (binomial 10 3) 120)
-  (check-equal? (binomial 10 11) 0)
-  (check-equal? (binomial 10 0) 1)
-  (check-equal? (binomial 10 10) 1)
-  (check-equal? (binomial 10 1) 10)
-  (check-equal? (binomial 10 9) 10)
-  
-  (check-equal? (permutations 10 3) 720)
-  (check-equal? (permutations 10 0) 1)
-  (check-equal? (permutations 10 10) 3628800)
-  (check-equal? (permutations 0 0) 1)
-  
-  (check-equal? (multinomial 20 3 4 5 8) 3491888400))

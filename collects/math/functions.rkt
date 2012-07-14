@@ -57,34 +57,3 @@ Move racket/math functions here; racket/math reexports
 ;; floor-log/base
 ;; ceiling-log/base
 
-(module* test typed/racket/base
-  (require (submod "..") 
-           typed/rackunit
-           math/constants)
-  
-  (define ε (* 2 +epsilon.0))
-  
-  (check-equal? (flhypot 0. 0.) 0.)
-  (check-equal? (flhypot 3. 0.) 3.)
-  (check-equal? (flhypot 3. 4.) 5.)
-  (check-equal? (flhypot -3. -4.) 5.)
-  (check-equal? (flhypot 4. 3.) 5.)
-  (check-= (flhypot 2. 3.) 3.6055512754639892931 ε)
-  (check-= (flhypot 3. 2.) 3.6055512754639892931 ε)
-  
-  (check-equal? (hypot 0 0) 0)
-  (check-equal? (hypot 3 0) 3)
-  (check-equal? (hypot 3 4) 5)
-  (check-equal? (hypot -3 -4) 5)
-  (check-equal? (hypot 4 3) 5)
-  (check-= (hypot 2 3) 3.6055512754639892931 ε)
-  (check-= (hypot 3 2) 3.6055512754639892931 ε)
-  
-  (check-equal? (fllog/base 2.0 (expt 2.0 5.0)) 5.0)
-  
-  (check-false (power-of-two? 3))
-  (check-true (power-of-two? 2))
-  (check-true (power-of-two? 1))
-  (check-true (power-of-two? 1/2))
-  (check-false (power-of-two? 0))
-  (check-false (power-of-two? -1)))

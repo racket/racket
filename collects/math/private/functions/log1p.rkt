@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         "../../constants.rkt")
+         "../../flonum.rkt")
 
 (provide fllog1p log1p)
 

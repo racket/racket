@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require racket/flonum
-         "../../constants.rkt"
+         "../../flonum.rkt"
          "expm1.rkt")
 
 (provide sinh flsinh
