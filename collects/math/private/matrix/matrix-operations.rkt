@@ -8,6 +8,9 @@
          matrix-swap-rows
          matrix-add-scaled-row
          matrix-gauss-eliminate
+         matrix-gauss-jordan-eliminate
+         matrix-row-echelon-form
+         matrix-reduced-row-echelon-form
          matrix-ref)
 
 (define-syntax (inline-matrix-scale-row stx)
@@ -105,20 +108,21 @@
   ((inst array-ref Number) M (list i j)))
 
 (: matrix-gauss-eliminate : 
-   (case-> ((Matrix Number) Boolean Boolean -> (Result-Matrix Number))
-           ((Matrix Number) Boolean         -> (Result-Matrix Number))
-           ((Matrix Number)                 -> (Result-Matrix Number))))
+   (case-> ((Matrix Number) Boolean Boolean -> (Values (Result-Matrix Number) (Listof Integer)))
+           ((Matrix Number) Boolean         -> (Values (Result-Matrix Number) (Listof Integer)))
+           ((Matrix Number)                 -> (Values (Result-Matrix Number) (Listof Integer)))))
 (define (matrix-gauss-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
   (define dims (matrix-dimensions M))
   (define m (vector-ref dims 0))
   (define n (vector-ref dims 1))
-  (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) -> (Matrix Number)))
+  (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
+                     -> (Values (Matrix Number) (Listof Integer))))
   (define (loop i j ; i from 0 to m
                 M
                 k   ; count rows without pivot
                 without-pivot) 
     (cond
-      [(or (= i m) (= j n)) M]
+      [(or (= i m) (= j n)) (values M without-pivot)]
       [else
        ; find row to become pivot
        (define p
@@ -148,7 +152,7 @@
           (loop i (+ j 1) M (+ k 1) (cons j without-pivot))]
          [(integer? p)
           ; swap if neccessary
-          (let* ([M (matrix-swap-rows M i p)]
+          (let* ([M (if (= i p) M (matrix-swap-rows M i p))]
                  ; now we now (i,j) is a pivot
                  [M ; maybe scale row
                   (if unitize-pivot-row?
@@ -166,5 +170,94 @@
                       (l-loop (+ l 1)
                               (if (zero? x_lj)
                                   M
-                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))))])]))
-  (array-lazy (loop 0 0 M 0 '())))
+                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))
+              ))])]))
+  (let-values ([(M without) (loop 0 0 M 0 '())])
+    (values (array-lazy M) without)))
+
+(: matrix-row-echelon-form : 
+   (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
+           ((Matrix Number) Boolean -> (Result-Matrix Number))
+           ((Matrix Number)         -> (Result-Matrix Number))))
+(define (matrix-row-echelon-form M [unitize-pivot-row? #f])
+  (let-values ([(M wp) (matrix-gauss-eliminate M unitize-pivot-row?)])
+    M))
+
+(: matrix-gauss-jordan-eliminate : 
+   (case-> ((Matrix Number) Boolean Boolean -> (Values (Result-Matrix Number) (Listof Integer)))
+           ((Matrix Number) Boolean         -> (Values (Result-Matrix Number) (Listof Integer)))
+           ((Matrix Number)                 -> (Values (Result-Matrix Number) (Listof Integer)))))
+(define (matrix-gauss-jordan-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
+  (define dims (matrix-dimensions M))
+  (define m (vector-ref dims 0))
+  (define n (vector-ref dims 1))
+  (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
+                     -> (Values (Matrix Number) (Listof Integer))))
+  (define (loop i j ; i from 0 to m
+                M
+                k   ; count rows without pivot
+                without-pivot) 
+    (cond
+      [(or (= i m) (= j n)) (values M without-pivot)]
+      [else
+       ; find row to become pivot
+       (define p
+         (if partial-pivoting?
+             ; find element with maximal absolute value
+             (let: max-loop : (U Boolean Integer) 
+               ([l : Integer i] ; i<=l<m
+                [max-current : Real -inf.0]
+                [max-index : Integer i])
+               (cond
+                 [(= l m) max-index]
+                 [else 
+                  (let ([v (magnitude (matrix-ref M l j))])
+                    (if (> (magnitude (matrix-ref M l j)) max-current)
+                        (max-loop (+ l 1) v l)
+                        (max-loop (+ l 1) max-current max-index)))]))
+             ; find non-zero element in column
+             (let: first-loop : (U Boolean Integer) 
+               ([l : Integer i]) ; i<=l<m
+               (cond
+                 [(= l m) #f]
+                 [(not (zero? (matrix-ref M l j))) l]
+                 [else (first-loop (+ l 1))]))))
+       (cond
+         [(boolean? p) ; p=#f
+          ; no pivot found - this implies the matrix is singular (not invertible)
+          (loop i (+ j 1) M (+ k 1) (cons j without-pivot))]
+         [(integer? p)
+          ; swap if neccessary
+          (let* ([M (if (= i p) M (matrix-swap-rows M i p))]
+                 ; now we now (i,j) is a pivot
+                 [M ; maybe scale row
+                  (if unitize-pivot-row?
+                      (let ([pivot (matrix-ref M i j)])
+                        (if (zero? pivot)
+                            M
+                            (matrix-scale-row M i (/ pivot))))
+                      M)])
+            (let ([pivot (matrix-ref M i j)])
+              ; remove elements above and below pivot
+              (let l-loop ([l 0] [M M])
+                (cond
+                  [(= l m) (loop (+ i 1) (+ j 1) M k without-pivot)]
+                  [(= l i) (l-loop (+ l 1) M)]
+                  [else
+                    (let ([x_lj (matrix-ref M l j)])
+                      (l-loop (+ l 1)
+                              (if (zero? x_lj)
+                                  M
+                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))]))))])]))
+  (let-values ([(M without) (loop 0 0 M 0 '())])
+    (values (array-lazy M) without)))
+
+(: matrix-reduced-row-echelon-form : 
+   (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
+           ((Matrix Number) Boolean -> (Result-Matrix Number))
+           ((Matrix Number)         -> (Result-Matrix Number))))
+(define (matrix-reduced-row-echelon-form M [unitize-pivot-row? #f])
+  (let-values ([(M wp) (matrix-gauss-jordan-eliminate M unitize-pivot-row?)])
+    M))
+
+

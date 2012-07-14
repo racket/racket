@@ -12,22 +12,27 @@
 (begin
   (begin
     "matrix-operations.rkt"
-    (list 'matrix-gauss-eliminate
-          (equal? (let ([M (list->matrix '[[1 2] [3 4]])])
-                    (matrix-gauss-eliminate M #f #f))
-                  (list->matrix '[[1 2] [0 -2]]))
-          (equal? (let ([M (list->matrix  '[[2 4] [3 4]])])
-                    (matrix-gauss-eliminate M #t #f))
-                  (list->matrix '[[1 2] [0 1]]))
-          (equal? (let ([M (list->matrix  '[[2. 4.] [3. 4.]])])
-                    (matrix-gauss-eliminate M #t #t))
-                  (list->matrix '[[1. 1.3333333333333333] [0. 1.]]))
-          (equal? (let ([M (list->matrix  '[[1 4] [2 4]])])
-                    (matrix-gauss-eliminate M #t #t))
-                  (list->matrix '[[1 2] [0 1]]))
-          (equal? (let ([M (list->matrix  '[[1 2] [2 4]])])
-                    (matrix-gauss-eliminate M #f #t))
-                  (list->matrix '[[2 4] [0 0]])))
+    (let ()
+      (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Result-Matrix Number))
+      (define (gauss-eliminate M u? p?)
+        (let-values ([(M wp) (matrix-gauss-eliminate M u? p?)])
+          M))
+      (list 'matrix-gauss-eliminate
+            (equal? (let ([M (list->matrix '[[1 2] [3 4]])])
+                      (gauss-eliminate M #f #f))
+                    (list->matrix '[[1 2] [0 -2]]))
+            (equal? (let ([M (list->matrix  '[[2 4] [3 4]])])
+                      (gauss-eliminate M #t #f))
+                    (list->matrix '[[1 2] [0 1]]))
+            (equal? (let ([M (list->matrix  '[[2. 4.] [3. 4.]])])
+                      (gauss-eliminate M #t #t))
+                    (list->matrix '[[1. 1.3333333333333333] [0. 1.]]))
+            (equal? (let ([M (list->matrix  '[[1 4] [2 4]])])
+                      (gauss-eliminate M #t #t))
+                    (list->matrix '[[1 2] [0 1]]))
+            (equal? (let ([M (list->matrix  '[[1 2] [2 4]])])
+                      (gauss-eliminate M #f #t))
+                    (list->matrix '[[2 4] [0 0]]))))
     (list 
      'matrix-scale-row
      (equal? (matrix-scale-row (identity-matrix 3) 0 2)
