@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require "convenience.rkt" "../rep/type-rep.rkt"
-         "union.rkt" "abbrev.rkt" "../utils/tc-utils.rkt"
-         racket/list racket/dict racket/set racket/match)
+         "union.rkt" "../utils/tc-utils.rkt"
+         racket/list racket/dict racket/match)
 
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type] [Option Type] -> (values Type Type)
 (define (convert kw-t plain-t opt-t rng rest drest split?)

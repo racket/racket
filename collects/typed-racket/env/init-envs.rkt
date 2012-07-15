@@ -3,15 +3,15 @@
 (require "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
          "global-env.rkt"
-	 "type-name-env.rkt"
-	 "type-alias-env.rkt"
+         "type-name-env.rkt"
+         "type-alias-env.rkt"
          (rep type-rep object-rep filter-rep rep-utils)
-	 (for-template (rep type-rep object-rep filter-rep)
-		       (types union numeric-tower)
-		       racket/shared racket/base)
-	 (types union convenience)
+         (for-template (rep type-rep object-rep filter-rep)
+                       (types union convenience)
+                       racket/shared racket/base)
+         (types union convenience)
          racket/syntax
-	 mzlib/pconvert racket/match)
+         mzlib/pconvert racket/match)
 
 (define (initialize-type-name-env initial-type-names)
   (for-each (lambda (nm/ty) (register-resolved-type-alias (car nm/ty) (cadr nm/ty))) initial-type-names))

@@ -12,9 +12,8 @@
          (rename-in (types convenience utils union)
                     [make-arr* make-arr])
          (private type-annotation)
-         (types abbrev utils)
-	 (env type-env-structs lexical-env tvar-env index-env)
-	 (utils tc-utils)
+         (env type-env-structs lexical-env tvar-env index-env)
+         (utils tc-utils)
 
          racket/match)
 (require (for-template racket/base "internal-forms.rkt"))

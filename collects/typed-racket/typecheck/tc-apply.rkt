@@ -5,7 +5,7 @@
          racket/match racket/list
          (for-syntax (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience type-table substitute)
+         (types utils union subtype resolve convenience type-table substitute)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)

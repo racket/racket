@@ -4,7 +4,7 @@
          (rep type-rep rep-utils)
          (utils tc-utils)
          (prefix-in c: (contract-req))
-         (types utils subtype abbrev)
+         (types utils subtype)
          racket/match)
 
 
@@ -24,6 +24,13 @@
     (cond [(null? ts*) (reverse result)]
           [(ormap (lambda (t) (subtype (car ts*) t)) result) (loop (cdr ts*) result)]
           [else (loop (cdr ts*) (cons (car ts*) result))])))
+
+(define (flat t)
+  (match t
+    [(Union: es) es]
+    [(Values: (list (Result: (Union: es) _ _))) es]
+    [(Values: (list (Result: t _ _))) (list t)]
+    [_ (list t)]))
 
 ;; Union constructor
 ;; Normalizes representation by sorting types.

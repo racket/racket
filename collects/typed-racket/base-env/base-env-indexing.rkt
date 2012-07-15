@@ -2,7 +2,7 @@
 
 (require
  (rename-in "../utils/utils.rkt" [infer r:infer])
- (types abbrev numeric-tower) (env init-envs) (r:infer infer-dummy infer)
+ (types convenience) (env init-envs) (r:infer infer-dummy infer)
  "base-env-indexing-abs.rkt")
 
 (define e (parameterize ([infer-param infer]) (indexing -Integer)))

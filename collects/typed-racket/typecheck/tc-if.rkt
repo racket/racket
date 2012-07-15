@@ -2,11 +2,10 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt" "check-below.rkt"
          (rep type-rep filter-rep object-rep)
-         (rename-in (types convenience subtype union utils remove-intersect abbrev filter-ops)
-                    [remove *remove])
+         (types convenience subtype union utils filter-ops)
          (env lexical-env type-env-structs)
          (r:infer infer)
-	 (utils tc-utils)
+         (utils tc-utils)
          "tc-envops.rkt" "tc-metafunctions.rkt"
          (types type-table)
          syntax/kerncase

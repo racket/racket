@@ -55,6 +55,7 @@
     [(Values: (list (Result: t _ _))) (list t)]
     [_ (list t)]))
 
+;; TODO make this file depend on union.rkt, and use the real Union constructor.
 ;; Simple union constructor.
 ;; Flattens nested unions and sorts types, but does not check for
 ;; overlapping subtypes.

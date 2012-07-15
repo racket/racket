@@ -4,7 +4,7 @@
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types abbrev)
+         (types convenience)
          (optimizer utils logging))
 
 (provide string-opt-expr string-expr bytes-expr)

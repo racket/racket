@@ -13,7 +13,7 @@
          ;; end fixme
          (for-syntax syntax/parse racket/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience type-table
+         (types utils union subtype resolve convenience type-table
                 substitute)
          (utils tc-utils)
          (except-in (env type-env-structs tvar-env index-env) extend)
