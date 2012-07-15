@@ -2027,5 +2027,88 @@
   (test-values '(-100001.0 100001.0) tail))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for corect fixpoint calculation when lifting
+
+;; This test is especilly fragile. It's a minimized(?) variant
+;; of PR 12910, where just enbought `with-continuation-mark's
+;; are needed to thwart inlining, and enough functions are 
+;; present in the right order to require enough fixpoint
+;; iterations.
+
+(define a-top-level-variable 5)
+(define (do-test-of-lift-fixpoint)
+  (define-syntax-rule (wcm e) (with-continuation-mark a-top-level-variable 'e e))
+  (define (parse-string input-string)
+
+    (let* ((nextTokenIsReady #f)
+
+           (nextCharacter #\space)
+           (nextCharacterIsReady #f)
+           (count 0)
+
+           (input-index 0)
+
+           (input-length (string-length input-string)))
+      
+      (define (scanner0)
+        (state0 (wcm (scanchar))))
+      
+      (define (state0 c)
+        (if (eq? c #\()
+            (begin
+              (consumechar)
+              'lparen)
+            (if (eq? c #\,)
+                (wcm (state1 (scanchar)))
+                (void))))
+      (define (state1 c)
+        (wcm (consumechar)))
+
+      (define (parse-datum)
+        (let ([t (next-token)])
+          (if (eq? t 'lparen)
+              (parse-compound-datum)
+              (wcm (parse-simple-datum)))))
+      
+      (define (parse-simple-datum)
+        (wcm (next-token)))
+      
+      (define (parse-compound-datum)
+        (wcm
+         (begin
+           (consume-token!)
+           (parse-datum))))
+
+      (define (next-token)
+        (wcm (scanner0)))
+      
+      (define (consume-token!)
+        (set! nextTokenIsReady #f))
+      
+      (define (scanchar)
+        (when (= count 4) (error "looped correctly"))
+        (begin
+          (set! count (add1 count))
+          (if nextCharacterIsReady
+              nextCharacter
+              (begin
+                (if (< input-index input-length)
+                    (set! nextCharacter
+                          (wcm (string-ref input-string input-index)))
+                    (set! nextCharacter #\~))
+                (set! nextCharacterIsReady #t)
+                (scanchar)))))
+      
+      (define (consumechar)
+        (when (wcm (not nextCharacterIsReady))
+          (scanchar)))
+
+      (parse-datum)))
+  (set! parse-string parse-string)
+  (parse-string "()"))
+(err/rt-test (do-test-of-lift-fixpoint) exn:fail?)
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
