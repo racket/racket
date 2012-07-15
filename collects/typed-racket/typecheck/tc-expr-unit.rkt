@@ -256,6 +256,15 @@
                           t))]
          [else (tc-error/expr #:return (ret (Un)) #:stx stx (syntax-e msg))]))
 
+;; check that `expr` doesn't evaluate any references 
+;; to `name` that aren't under `lambda`
+;; value-restriction? : syntax identifier -> boolean
+(define (value-restriction? expr name)
+  (syntax-parse expr
+    [((~literal #%plain-lambda) . _) #true]
+    [((~literal case-lambda) . _) #true]
+    [_ #false]))
+
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
   (--> syntax? tc-results? tc-results?)
@@ -356,7 +365,8 @@
         [(let-values ([(name ...) expr] ...) . body)
          (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         [(letrec-values ([(name) expr]) name*)
-         #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*))
+         #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*)
+                     (value-restriction? #'expr #'name))
          (match expected
            [(tc-result1: t)
             (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
