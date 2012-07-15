@@ -8,6 +8,31 @@
          "matrix-expt.rkt"
          "matrix-operations.rkt")
 
+(begin
+  (let ()
+    (define M (list->matrix '[[1  1  0  3]
+                              [2  1 -1  1]
+                              [3 -1 -1  2]
+                              [-1  2  3 -1]]))
+    (define LU (matrix-lu M))
+    (if (eq? LU #f)
+        (list 'matrix-lu #f)
+        (let ()  
+          (define L (if (list? LU) (first LU) #f))
+          (define V (if (list? LU) (second LU) #f))
+          (list
+           'matrix-lu
+           (equal? L (list->matrix
+                      '[[1 0 0 0]
+                        [2 1 0 0]
+                        [3 4 1 0]
+                        [-1 -3 0 1]]))
+           (equal? V (list->matrix
+                      '[[1  1  0   3]
+                        [0 -1 -1  -5]
+                        [0  0  3  13]
+                        [0  0  0 -13]]))
+           (equal? (matrix* L V) M))))))
 
 (begin
   (begin

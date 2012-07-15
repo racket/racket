@@ -16,6 +16,7 @@
          matrix-gauss-jordan-eliminate
          matrix-row-echelon-form
          matrix-reduced-row-echelon-form
+         matrix-lu
          matrix-ref)
 
 (define-syntax (inline-matrix-scale-row stx)
@@ -269,17 +270,16 @@
 ; If Gauss-elimination can be done without any row swaps,
 ; a LU-factorization is possible.
 
-(: matrix-gauss-eliminate-for-lu : 
+(: matrix-lu : 
    (Matrix Number) -> (U False (List (Result-Matrix Number) (Result-Matrix Number))))
-(define (matrix-gauss-eliminate-for-lu M)
+(define (matrix-lu M)
   (define dims (matrix-dimensions M))
   (define m (vector-ref dims 0))
-  (define b (vector-ref dims 1))
-  (define ms '())
+  (define: ms : (Listof Number) '())
   (define V
     (let/ec: return : (U False (Matrix Number))
       (let: i-loop : (Matrix Number)
-        ([i : Integer m]
+        ([i : Integer 0]
          [V : (Matrix Number) M])
         (cond
           [(= i m) V]
@@ -288,51 +288,43 @@
            ; LU:    this has to be the first
            (let ([x_ii (matrix-ref V i i)])
              (cond
-               [(zero? x_ii) (return #f)] ; no LU - factorization possible
+               [(zero? x_ii)
+                (return #f)] ; no LU - factorization possible
                [else
                 ; remove elements below pivot
                 (let j-loop ([j (+ i 1)] [V V])
                   (cond
                     [(= j m) (i-loop (+ i 1) V)]
                     [else
-                     (let* ([x_ji (matrix-ref M j i)]
+                     (let* ([x_ji (matrix-ref V j i)]
                             [m_ij (/ x_ji x_ii)])
                        (set! ms (cons m_ij ms))
                        (j-loop (+ j 1)
                                (if (zero? x_ji)
                                    V
-                                   (matrix-add-scaled-row M j (- m_ij) i))))]))]))]))))
-; Now M has been transformed to U.
-  #;(define: ms-vector : (Vectorof Number)
-    (list->vector (reverse ms)))
-  #;(define: L : (Matrix Number)
-    (let ([ds (unsafe-array-shape M)])
-      (unsafe-lazy-array
-       ds (λ: ([js : (Vectorof Index)])
-            (define i (unsafe-vector-ref js 0))
-            (define j (unsafe-vector-ref js 1))
-            (cond
-              [(= i j) 1]  ; 1 on diagonal
-              [(< i j) 0]  ; 0 above diagonal
-              [else 
-               ; TODO: Calculate proper index in ms-vector
-               (vector-ref ms-vector i)])))))
+                                   (matrix-add-scaled-row V j (- m_ij) i))))]))]))]))))
   
+  ; Now M has been transformed to U.  
   (if (eq? V #f)
-      #f      
-      (list (array-lazy V) 
-            (array-lazy V)))
-  
-  #;(if (eq? V #f)
       #f
-      (list (array-lazy L) 
-            (array-lazy V))))
-  
-#;(for*/matrix m n
-    ([j (in-range 0 n)]
-     [i (in-range (+ j 1) n)])
-    (matrix-set! L i j (car ms))
-    (set! ms (cdr ms)))
-  #;(cond
-      [(eq? V #f) #f]
-      [else  (array-lazy V)])
+      (let ()  
+        (define: L-matrix : (Vectorof Number) (make-vector (* m m) 0))
+        ; fill below diagonal
+        (set! ms (reverse ms))
+        (for*: ([j : Integer (in-range 0 m)]
+                [i : Integer (in-range (+ j 1) m)])
+          (vector-set! L-matrix (+ (* i m) j) (car ms))
+          (set! ms (cdr ms)))
+        ; fill diagonal
+        (for: ([i : Integer (in-range 0 m)])
+          (vector-set! L-matrix (+ (* i m) i) 1))
+        
+        (define: L : (Matrix Number)
+          (let ([ds (unsafe-array-shape M)])
+            (unsafe-lazy-array
+             ds (λ: ([js : (Vectorof Index)])
+                  (define i (unsafe-vector-ref js 0))
+                  (define j (unsafe-vector-ref js 1))
+                  (vector-ref L-matrix (+ (* i m) j))))))
+        (list (array-lazy L) 
+              (array-lazy V)))))
