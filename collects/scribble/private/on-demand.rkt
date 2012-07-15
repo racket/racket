@@ -5,8 +5,8 @@
 
 (define-syntax-rule (define-on-demand id rhs)
   (begin
-    (define val (delay rhs))
+    (define define-on-demand-bound-promise (delay rhs))
     (define-syntax (id stx)
       (if (identifier? stx)
-          #'(force val)
+          #'(force define-on-demand-bound-promise)
           (raise-syntax-error #f "bad syntax" stx)))))
