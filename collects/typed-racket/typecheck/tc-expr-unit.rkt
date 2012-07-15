@@ -121,7 +121,7 @@
                    [vs (hash-map h (lambda (x y) (tc-literal y)))])
               (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
       [_ Univ]))
-  
+
   (if expected
       (check-below r expected)
       r))
@@ -243,9 +243,10 @@
                [ty (add-typeof-expr form ty) ty])]
             ;; nothing to see here
             [checked? expected]
-            [else (let ([t (tc-expr/check/internal form* expected)])
-                    (add-typeof-expr form t)
-                    t)]))))
+            [else 
+             (define t (tc-expr/check/internal form* expected))
+             (add-typeof-expr form t)
+             t]))))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
@@ -299,7 +300,9 @@
         [(quote #t) (ret (-val #t) true-filter)]
         [(quote val)  (match expected
                         [(tc-result1: t)
-                         (ret (tc-literal #'val t) true-filter)])]
+                         (ret (tc-literal #'val t) true-filter)]
+                        [_ ;; this isn't going to work, defer error handling
+                         (check-below (ret (tc-literal #'val #f)) expected)])]
         ;; syntax
         [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
         ;; mutation!
@@ -354,8 +357,6 @@
          #:when (syntax-property form 'kw-lambda)
          (match expected
            [(tc-result1: (and f (Function: _))) 
-            ;(printf ">>> ~a\n" f)
-            ;(printf ">>>\t ~a\n" (kw-convert f #:split #t))
             (tc-expr/check/type #'fun (kw-convert f #:split #t))]
            [(tc-result1: (Poly-names: names (and f (Function: _))))
             (tc-expr/check/type #'fun (make-Poly names (kw-convert f #:split #t)))]
