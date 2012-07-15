@@ -242,14 +242,14 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
         if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
           int sz;
           sz = data->num_params;
-          a = MALLOC_N_ATOMIC(mzshort, (sz + 1));
-          a[0] = -sz;
+          new_a = MALLOC_N_ATOMIC(mzshort, (sz + 1));
+          new_a[0] = -sz;
           for (i = 0; i < sz; i++) {
             int bit = ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1)));
             if (data->closure_map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & bit)
-              a[i + 1] = 1;
+              new_a[i + 1] = 1;
             else
-              a[i + 1] = 0;
+              new_a[i + 1] = 0;
           }
         } else {
           new_a = (mzshort *)0x1;
