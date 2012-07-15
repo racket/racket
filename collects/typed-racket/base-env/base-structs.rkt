@@ -4,15 +4,15 @@
  "../utils/utils.rkt"
  (utils tc-utils)
  (env init-envs)
- (except-in (rep filter-rep object-rep type-rep) make-arr)
- (rename-in (types abbrev numeric-tower union) [make-arr* make-arr])
+ (rep filter-rep object-rep type-rep)
+ (types abbrev numeric-tower union)
  (typecheck tc-structs)
  ;;For tests
  (prefix-in k: '#%kernel))
 
 (require (for-template racket/base (prefix-in k: '#%kernel)))
 
-(provide initialize-structs)
+(provide initialize-structs -Date -Srcloc -Date -Arity-At-Least)
 
 (define-syntax define-hierarchy
   (syntax-rules (define-hierarchy)
@@ -36,6 +36,11 @@
          great
          ...)
        ...)]))
+
+(define -Srcloc (make-Name #'srcloc))
+(define -Date (make-Name #'date))
+(define -Arity-At-Least (make-Name #'arity-at-least))
+(define -Exn (make-Name #'exn))
 
 
 (define (initialize-structs)
