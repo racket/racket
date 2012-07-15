@@ -340,8 +340,8 @@ corresponding to @racket[trest], where @racket[bound]
 
 @defform[(Futureof t)]{A @rtech{future} which produce a value of type @racket[t] when touched.}
 
-@defform[(Sequenceof t ...)]{A @rtech{sequence} that produces values of the
-types @racket[_t ...] on each iteration.}
+@defform[(Sequenceof t)]{A @rtech{sequence} that produces values of
+type @racket[_t] on each iteration.}
 
 @defform[(Custodian-Boxof t)]{A @rtech{custodian box} of @racket[t].}
 @defform[(Thread-Cellof t)]{A @rtech{thread cell} of @racket[t].}
