@@ -10,7 +10,7 @@
  (utils tc-utils require-contract)
  (env type-name-env)
  (types resolve utils)
- (prefix-in t: (types convenience abbrev))
+ (prefix-in t: (types convenience))
  (private parse-type)
  racket/match unstable/match syntax/struct syntax/stx racket/syntax racket/list
  (only-in racket/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)

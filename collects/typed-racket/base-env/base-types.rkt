@@ -6,8 +6,7 @@
 ;; I don't understand this at all. :(
 ;; -- STH, 6/26/12
 (require (for-syntax "../env/global-env.rkt"))
-(require "../types/abbrev.rkt" "../types/convenience.rkt" "../types/numeric-tower.rkt"
-         "../rep/type-rep.rkt")
+(require "../types/convenience.rkt" "../rep/type-rep.rkt")
 
 [Complex -Number]
 [Number -Number]

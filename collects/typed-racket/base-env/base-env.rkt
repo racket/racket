@@ -25,7 +25,7 @@
   (only-in racket/match/runtime match:error matchable? match-equality-test))
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
- (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
+ (only-in (types convenience) [-Number N] [-Boolean B] [-Symbol Sym])
  (only-in (rep type-rep)
           make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop

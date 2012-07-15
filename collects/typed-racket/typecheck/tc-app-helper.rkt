@@ -6,7 +6,7 @@
          "check-below.rkt" "tc-subst.rkt"
          (utils tc-utils)
          (rep type-rep object-rep)
-         (types utils union abbrev subtype))
+         (types utils union convenience subtype))
 
 (provide (all-defined-out))
 

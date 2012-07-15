@@ -21,8 +21,7 @@
                              "infer/infer.rkt"
                              "utils/tc-utils.rkt"
                              "types/utils.rkt"
-                             "types/convenience.rkt"
-                             "types/abbrev.rkt")
+                             "types/convenience.rkt")
                     ->)
          (except-in (path-up "utils/utils.rkt") infer))
 

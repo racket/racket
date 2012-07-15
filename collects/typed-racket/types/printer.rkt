@@ -3,8 +3,8 @@
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
-                  "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
-                  "types/numeric-tower.rkt" "utils/utils.rkt"
+                  "rep/rep-utils.rkt" "types/convenience.rkt" "types/subtype.rkt"
+                  "utils/utils.rkt"
                   "utils/tc-utils.rkt"))
 
 ;; do we attempt to find instantiations of polymorphic types to print?

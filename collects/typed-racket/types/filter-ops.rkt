@@ -3,8 +3,8 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils) (only-in (infer infer) restrict)
-         "abbrev.rkt" (only-in racket/contract current-blame-format [-> -->] listof)
-	 (types printer union subtype utils remove-intersect)
+         (only-in racket/contract [-> -->] listof)
+         (types union subtype utils remove-intersect convenience)
          racket/list racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict

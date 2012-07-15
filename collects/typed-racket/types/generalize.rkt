@@ -3,8 +3,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (only-in racket/contract current-blame-format)
-         "abbrev.rkt" "numeric-tower.rkt" "subtype.rkt" "substitute.rkt" "union.rkt"
+         "convenience.rkt" "subtype.rkt" "substitute.rkt" "union.rkt"
          racket/match
          (for-syntax syntax/parse racket/base)
          syntax/id-table racket/dict)
@@ -18,7 +17,7 @@
     (let loop ([t* t])
       (match t*
         [(Value: '()) (-lst Univ)]
-	[(Value: 0) -Int]
+        [(Value: 0) -Int]
         [(List: ts) (-lst (apply Un ts))]
         [(? (lambda (t) (subtype t -Int))) -Int]
         [(? (lambda (t) (subtype t -Rat))) -Rat]

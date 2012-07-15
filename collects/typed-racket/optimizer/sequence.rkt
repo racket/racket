@@ -5,7 +5,7 @@
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt" "../utils/tc-utils.rkt"
          (rep type-rep)
-         (types abbrev type-table utils)
+         (types convenience type-table utils)
          (optimizer utils logging string
                     float)) ; for int-expr
 
