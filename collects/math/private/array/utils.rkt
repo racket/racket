@@ -1,8 +1,7 @@
 #lang typed/racket/base
 
 (require racket/unsafe/ops
-         racket/flonum
-         racket/list
+         racket/flonum racket/fixnum racket/list
          racket/performance-hint)
 
 (provide (all-defined-out))
@@ -64,6 +63,18 @@
              (define ji (unsafe-vector-ref js i))
              (loop (+ i 1) (unsafe-fx+ ji (unsafe-fx* di j)))]
             [else  j])))
+  
+  (: unsafe-value-index->array-index! ((Vectorof Index) Nonnegative-Fixnum (Vectorof Index) -> Void))
+  (define (unsafe-value-index->array-index! ds j js)
+    (with-asserts ([j index?])
+      (define dims (vector-length ds))
+      (let: loop : Index ([i : Nonnegative-Fixnum  dims] [s : Nonnegative-Fixnum  1])
+        (cond [(zero? i)  j]
+              [else  (let* ([i  (- i 1)]
+                            [j  (loop i (unsafe-fx* s (unsafe-vector-ref ds i)))])
+                       (unsafe-vector-set! js i (fxquotient j s))
+                       (unsafe-fxmodulo j s))]))
+      (void)))
   
   )  ; begin-encourage-inline
 
@@ -204,3 +215,36 @@
 (define (port-next-column port)
   (define-values (_line col _pos) (port-next-location port))
   (if col col 0))
+
+(: apply-permutation (All (A) ((Listof Integer) (Vectorof Index) (-> Nothing)
+                                                -> (Values (Vectorof Index) (Vectorof Index)))))
+(define (apply-permutation perm ds fail)
+  (define dims (vector-length ds))
+  (define: visited  : (Vectorof Boolean) (make-vector dims #f))
+  (define: new-perm : (Vectorof Index) (make-vector dims 0))
+  (define: new-ds   : (Vectorof Index) (make-vector dims 0))
+  ;; This loop fails if the length of perm isn't dims, it writes to a `visited' element twice,
+  ;; or an element of perm is not an Index < dims
+  (let loop ([perm perm] [#{i : Nonnegative-Fixnum} 0])
+    (cond [(i . < . dims)
+           (cond [(null? perm)  (fail)]
+                 [else
+                  (define k (car perm))
+                  (cond [(and (0 . <= . k) (k . < . dims))
+                         (cond [(unsafe-vector-ref visited k)  (fail)]
+                               [else  (unsafe-vector-set! visited k #t)])
+                         (unsafe-vector-set! new-ds i (unsafe-vector-ref ds k))
+                         (unsafe-vector-set! new-perm i k)]
+                        [else  (fail)])
+                  (loop (cdr perm) (+ i 1))])]
+          [(null? perm)  (values new-ds new-perm)]
+          [else  (fail)])))
+
+(: make-delayed-thread-cell (All (A) ((-> A) -> (-> A))))
+(define (make-delayed-thread-cell thnk)
+  (: val (Thread-Cellof (U #f A)))
+  (define val (make-thread-cell #f))
+  (λ () (or (thread-cell-ref val)
+            (let ([v  (thnk)])
+              (thread-cell-set! val v)
+              v))))

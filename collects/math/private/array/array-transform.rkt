@@ -13,7 +13,9 @@
          array-axis-permute
          array-axis-swap
          array-axis-insert
-         array-axis-remove)
+         array-axis-remove
+         array-reshape
+         array-flatten)
 
 ;; ===================================================================================================
 ;; Arbitrary transforms
@@ -125,43 +127,20 @@
 ;; ===================================================================================================
 ;; Back permutation and swap
 
-(: apply-back-perm (All (A) ((Listof Integer) (Vectorof Index) (-> Nothing)
-                                              -> (Values (Vectorof Index) (Vectorof Index)))))
-(define (apply-back-perm back-perm ds fail)
-  (define dims (vector-length ds))
-  (define: visited  : (Vectorof Boolean) (make-vector dims #f))
-  (define: new-perm : (Vectorof Index) (make-vector dims 0))
-  (define: new-ds   : (Vectorof Index) (make-vector dims 0))
-  ;; This loop fails if the length of back-perm isn't dims, it writes to a `visited' element twice,
-  ;; or an element of back-perm is not an Index < dims
-  (let loop ([back-perm back-perm] [#{i : Nonnegative-Fixnum} 0])
-    (cond [(i . < . dims)
-           (cond [(null? back-perm)  (fail)]
-                 [else
-                  (define k (car back-perm))
-                  (cond [(and (0 . <= . k) (k . < . dims))
-                         (cond [(unsafe-vector-ref visited k)  (fail)]
-                               [else  (unsafe-vector-set! visited k #t)])
-                         (unsafe-vector-set! new-ds i (unsafe-vector-ref ds k))
-                         (unsafe-vector-set! new-perm i k)]
-                        [else  (fail)])
-                  (loop (cdr back-perm) (+ i 1))])]
-          [(null? back-perm)  (values new-ds new-perm)]
-          [else  (fail)])))
-
 (: array-axis-permute (All (A) ((Array A) (Listof Integer) -> (lazy-array A))))
 (define (array-axis-permute arr perm)
   (define ds (unsafe-array-shape arr))
-  (let-values ([(ds perm) (apply-back-perm
+  (let-values ([(ds perm) (apply-permutation
                            perm ds (λ () (raise-type-error 'array-permute "permutation"
                                                            1 arr perm)))])
     (define dims (vector-length ds))
-    (define old-js (make-thread-cell (ann (make-vector dims 0) (Vectorof Index))))
+    (define old-js
+      (make-delayed-thread-cell (λ () (ann (make-vector dims 0) (Vectorof Index)))))
     
     (unsafe-array-transform
      arr ds
      (λ: ([js : (Vectorof Index)])
-       (let ([old-js  (thread-cell-ref old-js)])
+       (let ([old-js  (old-js)])
          (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
            (cond [(i . < . dims)  (unsafe-vector-set! old-js
                                                       (unsafe-vector-ref perm i)
@@ -232,27 +211,52 @@
             new-ds (λ: ([js : (Vectorof Index)])
                      (proc (unsafe-vector-insert js k jk)))))]))
 
-#|
 ;; ===================================================================================================
-;; Removing axes
+;; Reshape
 
-(: array-axis-remove (All (A) ((Array A) Integer Integer -> (lazy-array A))))
-(define (array-axis-remove arr k jk)
-  (define ds (unsafe-array-shape arr))
-  (define dims (vector-length ds))
-  (cond
-    [(or (k . < . 0) (k . >= . dims))
-     (raise-type-error 'array-axis-remove (format "Index < ~e" dims) 1 arr k jk)]
-    [else
-     (define dk (unsafe-vector-ref ds k))
-     (cond
-       [(or (jk . < . 0) (jk . >= . dk))
-                (raise-type-error 'array-axis-remove (format "Index < ~e" dk) 2 arr k jk)]
-       [else
-        (define new-ds (unsafe-vector-remove ds k))
-        
-        (define old-js (make-thread-cell (ann (make-vector dims 0) (Vectorof Index))))
-        (unsafe-array-transform
-         arr new-ds
-         (λ: ([
-|#
+(: array-reshape (All (A) (case-> ((lazy-array A) (Listof Integer) -> (lazy-array A))
+                                  ((strict-array A) (Listof Integer) -> (strict-array A))
+                                  ((Array A) (Listof Integer) -> (Array A)))))
+(define (array-reshape arr ds)
+  (let ([ds  (array-shape-safe->unsafe
+              ds (λ () (raise-type-error 'array-reshape "(Listof Index)" 1 arr ds)))])
+    (define size (array-size arr))
+    (unless (= size (unsafe-array-shape-size ds))
+      (raise-type-error 'array-reshape (format "(Listof Index) with product ~a" size) 1 arr ds))
+    (define old-ds (unsafe-array-shape arr))
+    (cond [(equal? ds old-ds)  arr]
+          [(lazy-array? arr)
+           (define old-dims (vector-length old-ds))
+           (define g (unsafe-array-proc arr))
+           (define old-js
+             (make-delayed-thread-cell (λ () (ann (make-vector old-dims 0) (Vectorof Index)))))
+           (unsafe-lazy-array
+            ds (λ: ([js : (Vectorof Index)])
+                 (let ([old-js  (old-js)])
+                   (define j (unsafe-array-index->value-index ds js))
+                   (unsafe-value-index->array-index! old-ds j old-js)
+                   (g old-js))))]
+          [else
+           (unsafe-strict-array ds (unsafe-array-data arr))])))
+
+(: array-flatten (All (A) (case-> ((lazy-array A) -> (lazy-array A))
+                                  ((strict-array A) -> (strict-array A))
+                                  ((Array A) -> (Array A)))))
+(define (array-flatten arr)
+  (define size (array-size arr))
+  (define: ds : (Vectorof Index) (vector size))
+  (define old-ds (unsafe-array-shape arr))
+  (cond [(equal? ds old-ds)  arr]
+        [(lazy-array? arr)
+         (define old-dims (vector-length old-ds))
+         (define g (unsafe-array-proc arr))
+         (define old-js
+           (make-delayed-thread-cell (λ () (ann (make-vector old-dims 0) (Vectorof Index)))))
+         (unsafe-lazy-array
+          ds (λ: ([js : (Vectorof Index)])
+               (let ([old-js  (old-js)])
+                 (define j (unsafe-vector-ref js 0))
+                 (unsafe-value-index->array-index! old-ds j old-js)
+                 (g old-js))))]
+        [else
+         (unsafe-strict-array ds (unsafe-array-data arr))]))

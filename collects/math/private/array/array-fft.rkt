@@ -5,6 +5,7 @@
          "array-struct.rkt"
          "array-transform.rkt"
          "array-pointwise.rkt"
+         "array-fold.rkt"
          "../../parameters.rkt"
          "../../functions.rkt"
          "utils.rkt")
@@ -63,7 +64,7 @@
          (raise-type-error 'array-fft "Array with power-of-two shape" arr)]
         [else
          (let loop ([#{k : Nonnegative-Fixnum} 1] [arr  (array-axis-fft arr 0)])
-           (cond [(k . < . dims)  (array-axis-fft arr k)]
+           (cond [(k . < . dims)  (loop (+ k 1) (array-axis-fft arr k))]
                  [else  arr]))]))
 
 ;; ---------------------------------------------------------------------------------------------------
