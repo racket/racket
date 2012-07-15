@@ -192,6 +192,7 @@
 (define -Promise make-promise-ty)
 
 (define -HashTop (make-HashtableTop))
+(define -VectorTop (make-VectorTop))
 
 (define Univ (make-Univ))
 (define Err (make-Error))

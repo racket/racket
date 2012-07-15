@@ -263,6 +263,12 @@
        (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
        expected)]))
 
+(define-syntax-class normal-op
+  (pattern i:identifier
+           #:when (not (syntax-property #'i 'type-inst))
+           #:when (not (syntax-property #'i 'type-ascription))))
+
+
 
 ;; the main dispatching function
 ;; syntax tc-results? -> tc-results?
@@ -304,7 +310,7 @@
                      (list (ret Univ) (single-value #'arg))
                      expected)])]
     ;; unsafe struct operations
-    [(#%plain-app (~and op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
+    [(#%plain-app (~and op:normal-op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'s)
          [(tc-result1:
@@ -339,7 +345,7 @@
          [s-ty
           (let ([arg-tys (list s-ty e-t)])
             (tc/funapp #'op #'(s e) (single-value #'op) arg-tys expected))]))]
-    [(#%plain-app (~and op (~or (~literal unsafe-struct-set!) (~literal unsafe-struct*-set!)))
+    [(#%plain-app (~and op:normal-op (~or (~literal unsafe-struct-set!) (~literal unsafe-struct*-set!)))
                   s e:expr val:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'s)
@@ -379,9 +385,9 @@
           (let ([arg-tys (list s-ty e-t (single-value #'val))])
             (tc/funapp #'op #'(s e val) (single-value #'op) arg-tys expected))]))]
     ;; vector-ref on het vectors
-    [(#%plain-app (~and op (~or (~literal vector-ref)
-                                (~literal unsafe-vector-ref)
-                                (~literal unsafe-vector*-ref)))
+    [(#%plain-app (~and op:normal-op (~or (~literal vector-ref)
+                                          (~literal unsafe-vector-ref)
+                                          (~literal unsafe-vector*-ref)))
                   v e:expr)
      (let ([e-t (single-value #'e)])
        (let loop ((v-t (single-value #'v)))
@@ -414,9 +420,9 @@
 	   [v-ty
 	    (let ([arg-tys (list v-ty e-t)])
 	      (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))])))]
-    [(#%plain-app (~and op (~or (~literal vector-set!)
-                                (~literal unsafe-vector-set!)
-                                (~literal unsafe-vector*-set!)))
+    [(#%plain-app (~and op:normal-op (~or (~literal vector-set!)
+                                          (~literal unsafe-vector-set!)
+                                          (~literal unsafe-vector*-set!)))
       v e:expr val:expr)
      (let ([e-t (single-value #'e)])
        (let loop ((v-t (single-value #'v)))
@@ -453,7 +459,7 @@
 	   [v-ty
 	    (let ([arg-tys (list v-ty e-t (single-value #'val))])
 	      (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))])))]
-    [(#%plain-app (~and op (~or (~literal vector-immutable) (~literal vector))) args:expr ...)
+    [(#%plain-app (~and op:normal-op (~or (~literal vector-immutable) (~literal vector))) args:expr ...)
      (let loop ([expected expected])
        (match expected
          [(tc-result1: (Vector: t))
@@ -490,7 +496,7 @@
          [_ (int-err "bad expected: ~a" expected)]))]
     ;; since vectors are mutable, if there is no expected type,
     ;; we want to generalize the element type
-    [(#%plain-app (~and op (~literal make-vector)) n elt)
+    [(#%plain-app (~and op:normal-op (~literal make-vector)) n elt)
      (match expected
        [(tc-result1: (Vector: t))
         (tc-expr/check #'n (ret -Integer))
@@ -503,7 +509,7 @@
                            [(tc-result1: t) (ret (generalize t))]))
                    expected)]
        [_ (int-err "bad expected: ~a" expected)])]
-    [(#%plain-app (~and op (~literal build-vector)) n proc)
+    [(#%plain-app (~and op:normal-op (~literal build-vector)) n proc)
      (match expected
        [(tc-result1: (Vector: t))
         (tc-expr/check #'n (ret -Integer))
@@ -520,7 +526,7 @@
                    expected)]
        [_ (int-err "bad expected: ~a" expected)])]
     ;; special case for `-' used like `sub1'
-    [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
+    [(#%plain-app (~and op:normal-op (~literal -)) v (~and arg2 ((~literal quote) 1)))
      (add-typeof-expr #'arg2 (ret -PosFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])
        (cond
@@ -530,7 +536,7 @@
         [else (tc/funapp #'op #'(v arg2) (single-value #'op)
                          (list (ret t) (single-value #'arg2)) expected)]))]
     ;; idem for fx-
-    [(#%plain-app (~and op (~or (~literal fx-) (~literal unsafe-fx-)))
+    [(#%plain-app (~and op:normal-op (~or (~literal fx-) (~literal unsafe-fx-)))
                   v (~and arg2 ((~literal quote) 1)))
      (add-typeof-expr #'arg2 (ret -PosFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])

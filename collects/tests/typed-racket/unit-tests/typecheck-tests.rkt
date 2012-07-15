@@ -1477,6 +1477,12 @@
               (-seq -Int)]
         [tc-e (sequence-add-between (inst empty-sequence Integer) 'foo)
               (-seq (t:Un -Int (-val 'foo)))]
+        [tc-e (let ()
+                (define: x : Any (vector 1 2 3))
+                (if (vector? x) (vector-ref x 0) #f))
+              Univ]
+        [tc-e ((inst vector Index) 0)
+              (-vec -Index)]
         )
   (test-suite
    "check-type tests"
