@@ -214,7 +214,8 @@
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
-               #`(flat-rec-contract n* #,(t->c b #:flat #t)))))]
+               #`(letrec ([n* (recursive-contract #,(t->c b))])
+                   n*))))]
         [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
          (when flat? (exit (fail)))
