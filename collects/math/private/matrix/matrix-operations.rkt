@@ -1,7 +1,12 @@
 #lang typed/racket
 
+;
+; TODO: matrix-gauss-eliminate-for-lu not done.
+;
+
 (require math/array)
-(require "matrix-types.rkt"
+(require racket/unsafe/ops
+         "matrix-types.rkt"
          "matrix-constructors.rkt")
 
 (provide matrix-scale-row
@@ -128,7 +133,7 @@
        (define p
          (if partial-pivoting?
              ; find element with maximal absolute value
-             (let: max-loop : (U Boolean Integer) 
+             (let: max-loop : (U False Integer) 
                ([l : Integer i] ; i<=l<m
                 [max-current : Real -inf.0]
                 [max-index : Integer i])
@@ -140,17 +145,17 @@
                         (max-loop (+ l 1) v l)
                         (max-loop (+ l 1) max-current max-index)))]))
              ; find non-zero element in column
-             (let: first-loop : (U Boolean Integer) 
+             (let: first-loop : (U False Integer) 
                ([l : Integer i]) ; i<=l<m
                (cond
                  [(= l m) #f]
                  [(not (zero? (matrix-ref M l j))) l]
                  [else (first-loop (+ l 1))]))))
        (cond
-         [(boolean? p) ; p=#f
+         [(eq? p #f)
           ; no pivot found
           (loop i (+ j 1) M (+ k 1) (cons j without-pivot))]
-         [(integer? p)
+         [else 
           ; swap if neccessary
           (let* ([M (if (= i p) M (matrix-swap-rows M i p))]
                  ; now we now (i,j) is a pivot
@@ -170,8 +175,7 @@
                       (l-loop (+ l 1)
                               (if (zero? x_lj)
                                   M
-                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))
-              ))])]))
+                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))))))])]))
   (let-values ([(M without) (loop 0 0 M 0 '())])
     (values (array-lazy M) without)))
 
@@ -204,7 +208,7 @@
        (define p
          (if partial-pivoting?
              ; find element with maximal absolute value
-             (let: max-loop : (U Boolean Integer) 
+             (let: max-loop : (U False Integer) 
                ([l : Integer i] ; i<=l<m
                 [max-current : Real -inf.0]
                 [max-index : Integer i])
@@ -216,17 +220,17 @@
                         (max-loop (+ l 1) v l)
                         (max-loop (+ l 1) max-current max-index)))]))
              ; find non-zero element in column
-             (let: first-loop : (U Boolean Integer) 
+             (let: first-loop : (U False Integer) 
                ([l : Integer i]) ; i<=l<m
                (cond
                  [(= l m) #f]
                  [(not (zero? (matrix-ref M l j))) l]
                  [else (first-loop (+ l 1))]))))
        (cond
-         [(boolean? p) ; p=#f
+         [(eq? p #f)
           ; no pivot found - this implies the matrix is singular (not invertible)
           (loop i (+ j 1) M (+ k 1) (cons j without-pivot))]
-         [(integer? p)
+         [else 
           ; swap if neccessary
           (let* ([M (if (= i p) M (matrix-swap-rows M i p))]
                  ; now we now (i,j) is a pivot
@@ -260,4 +264,75 @@
   (let-values ([(M wp) (matrix-gauss-jordan-eliminate M unitize-pivot-row?)])
     M))
 
+;;; LU Factorization
+; Not all matrices can be LU-factored.
+; If Gauss-elimination can be done without any row swaps,
+; a LU-factorization is possible.
 
+(: matrix-gauss-eliminate-for-lu : 
+   (Matrix Number) -> (U False (List (Result-Matrix Number) (Result-Matrix Number))))
+(define (matrix-gauss-eliminate-for-lu M)
+  (define dims (matrix-dimensions M))
+  (define m (vector-ref dims 0))
+  (define b (vector-ref dims 1))
+  (define ms '())
+  (define V
+    (let/ec: return : (U False (Matrix Number))
+      (let: i-loop : (Matrix Number)
+        ([i : Integer m]
+         [V : (Matrix Number) M])
+        (cond
+          [(= i m) V]
+          [else
+           ; Gauss: find non-zero element
+           ; LU:    this has to be the first
+           (let ([x_ii (matrix-ref V i i)])
+             (cond
+               [(zero? x_ii) (return #f)] ; no LU - factorization possible
+               [else
+                ; remove elements below pivot
+                (let j-loop ([j (+ i 1)] [V V])
+                  (cond
+                    [(= j m) (i-loop (+ i 1) V)]
+                    [else
+                     (let* ([x_ji (matrix-ref M j i)]
+                            [m_ij (/ x_ji x_ii)])
+                       (set! ms (cons m_ij ms))
+                       (j-loop (+ j 1)
+                               (if (zero? x_ji)
+                                   V
+                                   (matrix-add-scaled-row M j (- m_ij) i))))]))]))]))))
+; Now M has been transformed to U.
+  #;(define: ms-vector : (Vectorof Number)
+    (list->vector (reverse ms)))
+  #;(define: L : (Matrix Number)
+    (let ([ds (unsafe-array-shape M)])
+      (unsafe-lazy-array
+       ds (λ: ([js : (Vectorof Index)])
+            (define i (unsafe-vector-ref js 0))
+            (define j (unsafe-vector-ref js 1))
+            (cond
+              [(= i j) 1]  ; 1 on diagonal
+              [(< i j) 0]  ; 0 above diagonal
+              [else 
+               ; TODO: Calculate proper index in ms-vector
+               (vector-ref ms-vector i)])))))
+  
+  (if (eq? V #f)
+      #f      
+      (list (array-lazy V) 
+            (array-lazy V)))
+  
+  #;(if (eq? V #f)
+      #f
+      (list (array-lazy L) 
+            (array-lazy V))))
+  
+#;(for*/matrix m n
+    ([j (in-range 0 n)]
+     [i (in-range (+ j 1) n)])
+    (matrix-set! L i j (car ms))
+    (set! ms (cdr ms)))
+  #;(cond
+      [(eq? V #f) #f]
+      [else  (array-lazy V)])

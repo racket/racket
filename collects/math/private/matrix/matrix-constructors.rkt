@@ -61,5 +61,3 @@
   (define ds (matrix-dimensions a))
   (define row-dim (vector-ref ds 0))
   ((inst array-slice Number) a (list (in-range row-dim) (in-range j (add1 j)))))
-
-

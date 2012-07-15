@@ -49,15 +49,19 @@
          (list
           'array-matrix?
           (array-matrix? (list->array real? '[[1 2] [3 4]]))
-          (not (array-matrix? (list->array real? '[[[1 2] [3 4]] [[1 2] [3 4]]])))
+          (not (array-matrix? (list->array real? '[[[1 2] [3 4]] [[1 2] [3 4]]]))))
+         (list
           'square-matrix?
           (square-matrix? (list->array real? '[[1 2] [3 4]]))
-          (not (square-matrix? (list->array real? '[[1 2 3] [4 5 6]])))
+          (not (square-matrix? (list->array real? '[[1 2 3] [4 5 6]]))))
+         (list
           'square-matrix-size
-          (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]])))
+          (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]]))))
+         (list
           'matrix=-
           (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2] [3 4]]))
-          (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]])))
+          (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]]))))
+         (list
           'matrix-dimensions
           (equal? (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]])) #(2 3))))
   
