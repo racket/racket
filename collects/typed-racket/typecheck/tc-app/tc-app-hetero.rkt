@@ -15,7 +15,7 @@
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience type-table substitute)
+         (types utils abbrev union subtype resolve convenience type-table substitute generalize)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)
@@ -29,13 +29,18 @@
           (only-in racket/private/class-internal do-make-object)
           (only-in syntax/location module-name-fixup)))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^)
+(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app^)
 (export tc-app-hetero^)
+
+
+
 
 (define (tc/index expr)
   (syntax-parse expr
    [((~literal quote) i:number)
-    (values (tc-literal #'i) (syntax-e #'i))]
+    (let ((type (tc-literal #'i)))
+      (add-typeof-expr expr type)
+      (values type (syntax-e #'i)))]
    [_
     (match (tc-expr expr)
      [(and type (tc-result1: (Value: (? number? i))))
@@ -87,6 +92,10 @@
      (index-error i-val i-bound i-e vec-t expected) name]))
 
 
+(define-syntax-class special-op
+  (pattern i:identifier
+           #:when (or (syntax-property #'i 'type-inst)
+                      (syntax-property #'i 'type-ascription))))
 
 (define (tc/app-hetero form expected)
   (syntax-parse form
@@ -96,6 +105,7 @@
                 unsafe-struct-ref unsafe-struct*-ref
                 unsafe-struct-set! unsafe-struct*-set!
                 vector-immutable vector)
+    [(#%plain-app op:special-op args ...) #f]
     ;; unsafe struct-ref 
     [(#%plain-app (~or unsafe-struct-ref unsafe-struct*-ref) struct:expr index:expr)
      (match (single-value #'struct)
@@ -132,6 +142,17 @@
               [t (in-list ts)])
           (tc-expr/check e (ret t)))
         expected]
+       ;; If the expected type is a union, then we examine just the parts
+       ;; of the union that are vectors.  If there's only one of those,
+       ;; we re-run this whole algorithm with that.  Otherwise, we treat
+       ;; it like any other expected type.
+       [(tc-result1: (app resolve (Union: ts))) (=> continue)
+        (define u-ts (for/list ([t (in-list ts)]
+                                #:when (eq? 'vector (Type-key t)))
+                       t))
+        (match u-ts
+          [(list t0) (tc/app/check form (ret t0))]
+          [_ (continue)])]
        ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
        [(or #f (tc-result1: _))
         (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
