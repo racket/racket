@@ -7,4 +7,4 @@
 (define (thing)
   ((inst stuff)))
 
-(inst values)
+(inst values Any)
