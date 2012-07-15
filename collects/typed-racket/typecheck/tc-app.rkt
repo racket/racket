@@ -262,11 +262,6 @@
        (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
        expected)]))
 
-(define-syntax-class normal-op
-  (pattern i:identifier
-           #:when (not (syntax-property #'i 'type-inst))
-           #:when (not (syntax-property #'i 'type-ascription))))
-
 
 
 ;; the main dispatching function
