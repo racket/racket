@@ -477,22 +477,34 @@
           expected]
          [(tc-result1: (? needs-resolving? e) f o)
           (loop (ret (resolve-once e) f o))]
-         [(tc-result1: (and T (Union: (app (λ (ts)
-                                             (for/list ([t ts]
-                                                        #:when (let ([k (Type-key t)])
-                                                                 (eq? 'vector k)))
-                                               t))
-                                         ts))))
-          (if (null? ts)
-            (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
-              (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
-            (check-below (for/first ([t ts]) (loop (ret t)))
-                         expected))]
+         ;; If the expected type is a union, then we examine just the parts
+         ;; of the union that are vectors.  If there's only one of those,
+         ;; we re-run this whole algorithm with that.  Otherwise, we treat
+         ;; it like any other expected type.
+         [(tc-result1: (Union: ts))
+          (define u-ts (for/list ([t (in-list ts)]
+                                  #:when (eq? 'vector (Type-key t)))
+                         t))
+          (match u-ts 
+            [(list)
+             (define arg-tys (map single-value (syntax->list #'(args ...))))
+             (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected)]
+            [(list t0)
+             (check-below (loop (ret t0)) expected)]
+            [_
+             (check-below
+              (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
+                                                 (syntax->list #'(args ...)))))
+              expected)])]
+         
 	 ;; since vectors are mutable, if there is no expected type,
          ;; we want to generalize the element type
          [(or #f (tc-result1: _))
-	  (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
-					     (syntax->list #'(args ...)))))]
+	  ((if expected
+               (lambda (t) (check-below t expected))
+               values)
+           (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
+                                              (syntax->list #'(args ...))))))]
          [_ (int-err "bad expected: ~a" expected)]))]
     ;; since vectors are mutable, if there is no expected type,
     ;; we want to generalize the element type
