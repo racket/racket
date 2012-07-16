@@ -2,7 +2,8 @@
 
 (require racket/unsafe/ops
          racket/flonum racket/fixnum racket/list
-         racket/performance-hint)
+         racket/performance-hint
+         (for-syntax racket/base))
 
 (provide (all-defined-out))
 
@@ -199,16 +200,17 @@
 (: unsafe-vector-insert (All (I) ((Vectorof I) Index I -> (Vectorof I))))
 (define (unsafe-vector-insert vec k v)
   (define n (vector-length vec))
-  (define: new-vec : (Vectorof I) (make-vector (+ n 1) v))
+  (define: dst-vec : (Vectorof I) (make-vector (+ n 1) v))
   (let loop ([#{i : Nonnegative-Fixnum} 0])
     (when (i . < . k)
-      (unsafe-vector-set! new-vec i (unsafe-vector-ref vec i))
+      (unsafe-vector-set! dst-vec i (unsafe-vector-ref vec i))
       (loop (+ i 1))))
   (let loop ([#{i : Nonnegative-Fixnum} k])
-    (cond [(i . < . n)
-           (unsafe-vector-set! new-vec (+ i 1) (unsafe-vector-ref vec i))
-           (loop (+ i 1))]
-          [else  new-vec])))
+    (when (i . < . n)
+      (let ([i+1  (+ i 1)])
+        (unsafe-vector-set! dst-vec i+1 (unsafe-vector-ref vec i))
+        (loop i+1))))
+  dst-vec)
 
 (: port-next-column (Output-Port -> Nonnegative-Integer))
 ;; Helper to avoid the annoying #f column value
@@ -240,11 +242,16 @@
           [(null? perm)  (values new-ds new-perm)]
           [else  (fail)])))
 
-(: make-delayed-thread-cell (All (A) ((-> A) -> (-> A))))
-(define (make-delayed-thread-cell thnk)
-  (: val (Thread-Cellof (U #f A)))
-  (define val (make-thread-cell #f))
-  (λ () (or (thread-cell-ref val)
-            (let ([v  (thnk)])
-              (thread-cell-set! val v)
-              v))))
+(define-syntax (plet: stx)
+  (syntax-case stx (:)
+    [(_ (A ...) ([x : T  e] ...) body ...)
+     (syntax/loc stx
+       ((plambda: (A ...) ([x : T] ...) body ...) e ...))]))
+
+(: make-thread-local-indexes (Integer -> (-> (Vectorof Index))))
+(define (make-thread-local-indexes dims)
+  (let: ([val : (Thread-Cellof (U #f (Vectorof Index))) (make-thread-cell #f)])
+    (λ () (or (thread-cell-ref val)
+              (let: ([v : (Vectorof Index)  (make-vector dims 0)])
+                (thread-cell-set! val v)
+                v)))))

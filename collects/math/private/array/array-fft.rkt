@@ -4,10 +4,9 @@
          "../vector/vector-fft.rkt"
          "array-struct.rkt"
          "array-transform.rkt"
-         "array-pointwise.rkt"
-         "array-fold.rkt"
          "../../parameters.rkt"
          "../../functions.rkt"
+         "for-each.rkt"
          "utils.rkt")
 
 (provide array-axis-fft
@@ -29,18 +28,11 @@
        (define vs (unsafe-array-data arr))
        (define dk (vector-ref ds k))
        (define: new-vs : (Vectorof Float-Complex) (make-vector (array-size arr) 0.0+0.0i))
-       (let: i-loop : Nonnegative-Fixnum ([i : Nonnegative-Fixnum  0]
-                                          [j : Nonnegative-Fixnum  0])
-         (cond [(i . < . k)
-                (define di (unsafe-vector-ref ds i))
-                (let: ji-loop : Nonnegative-Fixnum ([ji : Nonnegative-Fixnum  0]
-                                                    [j : Nonnegative-Fixnum  j])
-                  (cond [(ji . < . di)  (ji-loop (+ ji 1) (i-loop (+ i 1) j))]
-                        [else  j]))]
-               [else
-                (define old-j (unsafe-fx* j dk))
-                (vector-fft! vs old-j (unsafe-fx+ old-j dk) new-vs old-j)
-                (unsafe-fx+ j 1)]))
+       (define new-ds (unsafe-vector-remove ds k))
+       (for-each-array+data-index
+        new-ds (λ (js j)
+                 (define old-j (unsafe-fx* j dk))
+                 (vector-fft! vs old-j (unsafe-fx+ old-j dk) new-vs old-j)))
        (array-lazy (unsafe-strict-array ds new-vs)))]))
 
 (: array-axis-fft ((Array Number) Integer -> (lazy-array Float-Complex)))

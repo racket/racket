@@ -3,6 +3,7 @@
 (require racket/unsafe/ops
          racket/performance-hint
          (for-syntax racket/base racket/syntax)
+         "for-each.rkt"
          "utils.rkt")
 
 (provide Array (rename-out [-array?        array?]
@@ -28,22 +29,51 @@
          array-custom-printer)
 
 ;; ===================================================================================================
-;; Equality
+;; Equality and hashing
+
+(: lazy-array-equal? (All (A) ((lazy-array A) (lazy-array A) (Vectorof Index) (Any Any -> Boolean)
+                                              -> Boolean)))
+(define (lazy-array-equal? arr brr ds recur-equal?)
+  (let/ec: return : Boolean
+    (define f (unsafe-array-proc arr))
+    (define g (unsafe-array-proc brr))
+    (for-each-array-index ds (λ (js) (unless (recur-equal? (f js) (g js))
+                                       (return #f))))
+    #t))
+
+(: mixed-array-equal? (All (A) ((lazy-array A) (strict-array A) (Vectorof Index) (Any Any -> Boolean)
+                                               -> Boolean)))
+(define (mixed-array-equal? arr brr ds recur-equal?)
+  (let/ec: return : Boolean
+    (define f (unsafe-array-proc arr))
+    (define vs (unsafe-array-data brr))
+    (for-each-array+data-index ds (λ (js j) (unless (recur-equal? (f js) (unsafe-vector-ref vs j))
+                                              (return #f))))
+    #t))
 
 (: array-equal? (All (A) ((Array A) (Array A) (Any Any -> Boolean) -> Boolean)))
 (define (array-equal? arr brr recur-equal?)
-  (let ([arr  (array-strict arr)]
-        [brr  (array-strict brr)])
-    (and (equal? (unsafe-array-shape arr)
-                 (unsafe-array-shape brr))
-         (recur-equal? (unsafe-array-data arr)
-                       (unsafe-array-data brr)))))
+  (define ds (unsafe-array-shape arr))
+  (and (equal? ds (unsafe-array-shape brr))
+       (cond [(lazy-array? arr)
+              (cond [(lazy-array? brr)  (lazy-array-equal? arr brr ds recur-equal?)]
+                    [else  (mixed-array-equal? arr brr ds recur-equal?)])]
+             [else
+              (cond [(lazy-array? brr)  (mixed-array-equal? brr arr ds recur-equal?)]
+                    [else  (recur-equal? (unsafe-array-data arr)
+                                         (unsafe-array-data brr))])])))
 
-(: array-hash (All (A) ((Array A) (Any -> Integer) -> Integer)))
-(define (array-hash arr recur-hash)
-  (let ([arr  (array-strict arr)])
-    (bitwise-xor (recur-hash (unsafe-array-shape arr))
-                 (recur-hash (unsafe-array-data arr)))))
+(: array-hash-code (All (A) ((Array A) (Any -> Integer) -> Integer)))
+(define (array-hash-code arr recur-hash-code)
+  (cond [(lazy-array? arr)
+         (define ds (unsafe-array-shape arr))
+         (define f (unsafe-array-proc arr))
+         (define h 0)
+         (for-each-array-index ds (λ (js) (set! h (bitwise-xor h (recur-hash-code (f js))))))
+         (bitwise-xor h (recur-hash-code ds))]
+        [else
+         (bitwise-xor (recur-hash-code (unsafe-array-shape arr))
+                      (recur-hash-code (unsafe-array-data arr)))]))
 
 ;; ===================================================================================================
 ;; Parent array data type
@@ -55,7 +85,7 @@
         [else  (error name "array size ~e (shape ~e) is not an Index" size ds)]))
 
 (struct: (A) array ([shape : (Vectorof Index)])
-  #:property prop:equal+hash (list array-equal? array-hash array-hash)
+  #:property prop:equal+hash (list array-equal? array-hash-code array-hash-code)
   #:guard array-guard)
 
 (: internal-array-size-error (All (A) ((Array A) Integer -> Nothing)))
@@ -143,7 +173,7 @@
   (define (-array? v) (or (lazy-array? v) (strict-array? v))))
 
 ;; ===================================================================================================
-;; Lazy conversion
+;; Lazy/strict conversion
 
 (: array-lazy (All (A) ((Array A) -> (lazy-array A))))
 (begin-encourage-inline
@@ -155,114 +185,14 @@
                   ds (λ: ([js : (Vectorof Index)])
                        (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))])))
 
-;; ===================================================================================================
-;; Strict conversion
-
 (: array-strict (All (A) ((Array A) -> (strict-array A))))
-(begin-encourage-inline
-  (define (array-strict arr)
-    (cond
-      [(lazy-array? arr)
-       (define ds (unsafe-array-shape arr))
-       (define proc (unsafe-array-proc arr))
-       (define size (array-size arr))
-       (define dims (vector-length ds))
-       (define: vs : (Vectorof A)
-         (if (= size 0)
-             (vector)
-             (case dims
-               [(0)  (vector (proc ds))]
-               [(1)  (make-strict-data-1 ds proc size)]
-               [(2)  (make-strict-data-2 ds proc size)]
-               [(3)  (make-strict-data-3 ds proc size)]
-               [(4)  (make-strict-data-4 ds proc size)]
-               [(5)  (make-strict-data-5 ds proc size)]
-               [else  (make-strict-data ds proc size dims)])))
-       (unsafe-strict-array ds vs)]
-      [else  arr])))
-
-(: make-strict-data (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum Index -> (Vectorof A))))
-(define (make-strict-data ds proc size dims)
-  (define: js : (Vectorof Index) (make-vector dims 0))
-  (define vs (make-vector size (proc js)))
-  (let: i-loop : Nonnegative-Fixnum ([i : Nonnegative-Fixnum  0]
-                                     [j : Nonnegative-Fixnum  0])
-    (cond [(i . < . dims)
-           (define di (unsafe-vector-ref ds i))
-           (let: ji-loop : Nonnegative-Fixnum ([ji : Nonnegative-Fixnum  0]
-                                               [j : Nonnegative-Fixnum  j])
-             (cond [(ji . < . di)
-                    (unsafe-vector-set! js i ji)
-                    (ji-loop (+ ji 1) (i-loop (+ i 1) j))]
-                   [else  j]))]
-          [else
-           (unsafe-vector-set! vs j (proc js))
-           (unsafe-fx+ j 1)]))
-  vs)
-
-(: make-strict-data-1 (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum -> (Vectorof A))))
-(define (make-strict-data-1 ds proc size)
-  (define d0 (unsafe-vector-ref ds 0))
-  (define: js : (Vectorof Index) (make-vector 1 0))
-  (define vs (make-vector size (proc js)))
-  (let j0-loop ([#{j0 : Nonnegative-Fixnum}  0])
-    (cond [(j0 . < . d0)
-           (unsafe-vector-set! js 0 j0)
-           (unsafe-vector-set! vs j0 (proc js))
-           (j0-loop (+ j0 1))]
-          [else  vs])))
-
-(define-syntax (define-make-strict-data-n stx)
-  (syntax-case stx ()
-    [(the-name dims)
-     (let ([n  (syntax->datum #'dims)])
-       (with-syntax*
-           ([name  (format-id #'the-name "make-strict-data-~a" n)]
-            [i #'j]
-            [(k ...)  (build-list n values)]
-            [(d ...)  (generate-temporaries (build-list n (λ (k) (format-id #'i "d~a" k))))]
-            [(j ...)  (generate-temporaries (build-list n (λ (k) (format-id #'i "j~a" k))))]
-            [(loop ...)  (generate-temporaries (build-list n (λ (k) (format-id #'i "j~a-loop" k))))])
-         (syntax/loc stx
-           (begin
-             (: name (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum -> (Vectorof A))))
-             (define (name ds proc size)
-               (define d (unsafe-vector-ref ds k)) ...
-               (define i 0)
-               (define: js : (Vectorof Index) (make-vector dims 0))
-               (define vs (make-vector size (proc js)))
-               (make-strict-data-n A i js proc vs (k ...) (d ...) (loop ...) (j ...) vs))))))]))
-
-(define-syntax (make-strict-data-n stx)
-  (syntax-case stx ()
-    [(_ A i js proc vs (k0) (dk) (jk-loop) (jk) next)
-     (syntax/loc stx
-       (let: jk-loop : (Vectorof A) ([jk : Nonnegative-Fixnum  0] [i : Nonnegative-Fixnum  i])
-         (cond [(jk . < . dk)
-                (unsafe-vector-set! js k0 jk)
-                (unsafe-vector-set! vs i (proc js))
-                (jk-loop (+ jk 1) (unsafe-fx+ i 1))]
-               [else  next])))]
-    [(_ A i js proc vs (k0 k ...) (dk d ...) (jk-loop loop ...) (jk j ...) next)
-     (syntax/loc stx
-       (let: jk-loop : (Vectorof A) ([jk : Nonnegative-Fixnum  0] [i : Nonnegative-Fixnum  i])
-         (cond [(jk . < . dk)
-                (unsafe-vector-set! js k0 jk)
-                (make-strict-data-n A i js proc vs (k ...) (d ...) (loop ...) (j ...)
-                                    (jk-loop (+ jk 1) i))]
-               [else  next])))]))
-
-(: make-strict-data-2 (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum -> (Vectorof A))))
-(define-make-strict-data-n 2)
-
-(: make-strict-data-3 (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum -> (Vectorof A))))
-(define-make-strict-data-n 3)
-
-(: make-strict-data-4 (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum -> (Vectorof A))))
-(define-make-strict-data-n 4)
-
-(: make-strict-data-5 (All (A) ((Vectorof Index) ((Vectorof Index) -> A) Fixnum -> (Vectorof A))))
-(define-make-strict-data-n 5)
+(define (array-strict arr)
+  (cond [(lazy-array? arr)
+         (define ds (unsafe-array-shape arr))
+         (define g (unsafe-array-proc arr))
+         (define size (array-size arr))
+         (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js))))]
+        [else  arr]))
 
 ;; ===================================================================================================
 ;; Printing

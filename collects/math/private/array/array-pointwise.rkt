@@ -5,6 +5,7 @@
          (for-syntax racket/base)
          "array-struct.rkt"
          "../vector/vector-pointwise.rkt"
+         "for-each.rkt"
          "utils.rkt")
 
 (provide array=
@@ -49,14 +50,35 @@
 ;; ===================================================================================================
 ;; Numeric equality
 
+(: lazy-array= ((lazy-array Number) (lazy-array Number) (Vectorof Index) -> Boolean))
+(define (lazy-array= arr brr ds)
+  (let/ec: return : Boolean
+    (define f (unsafe-array-proc arr))
+    (define g (unsafe-array-proc brr))
+    (for-each-array-index ds (λ (js) (unless (= (f js) (g js))
+                                       (return #f))))
+    #t))
+
+(: mixed-array= ((lazy-array Number) (strict-array Number) (Vectorof Index) -> Boolean))
+(define (mixed-array= arr brr ds)
+  (let/ec: return : Boolean
+    (define f (unsafe-array-proc arr))
+    (define vs (unsafe-array-data brr))
+    (for-each-array+data-index ds (λ (js j) (unless (= (f js) (unsafe-vector-ref vs j))
+                                              (return #f))))
+    #t))
+
 (: array= ((Array Number) (Array Number) -> Boolean))
 (define (array= arr brr)
-  (let ([arr  (array-strict arr)]
-        [brr  (array-strict brr)])
-    (and (equal? (unsafe-array-shape arr)
-                 (unsafe-array-shape brr))
-         (vector= (unsafe-array-data arr)
-                  (unsafe-array-data brr)))))
+  (define ds (unsafe-array-shape arr))
+  (and (equal? ds (unsafe-array-shape brr))
+       (cond [(lazy-array? arr)
+              (cond [(lazy-array? brr)  (lazy-array= arr brr ds)]
+                    [else  (mixed-array= arr brr ds)])]
+             [else
+              (cond [(lazy-array? brr)  (mixed-array= brr arr ds)]
+                    [else  (vector= (unsafe-array-data arr)
+                                    (unsafe-array-data brr))])])))
 
 ;; ===================================================================================================
 ;; Lifting

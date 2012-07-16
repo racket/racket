@@ -75,12 +75,13 @@
 ;; Whole-array fold
 
 (: array-fold (All (A) ((Array A) ((Array A) Index -> (lazy-array A)) -> (lazy-array A))))
-(define (array-fold arr f)
-  (define dims (array-dims arr))
-  (let loop ([#{k : Index} dims] [arr arr])
-    (cond [(zero? k)  (array-lazy arr)]
-          [else  (let ([k  (sub1 k)])
-                   (loop k (f arr k)))])))
+(begin-encourage-inline
+  (define (array-fold arr f)
+    (define dims (array-dims arr))
+    (let loop ([#{k : Index} dims] [arr arr])
+      (cond [(zero? k)  (array-lazy arr)]
+            [else  (let ([k  (sub1 k)])
+                     (loop k (f arr k)))]))))
 
 ;; ===================================================================================================
 
@@ -100,23 +101,19 @@
 
 ;; ===================================================================================================
 
-(: fold-axis-fold (All (A) (case-> ((Array A) ((Array A) Index -> (lazy-array A))
-                                              -> (lazy-array A))
-                                   ((Array A) ((Array A) Index A -> (lazy-array A)) A
-                                              -> (lazy-array A)))))
-(define fold-axis-fold
-  (case-lambda
-    [(arr f)  (array-fold arr f)]
-    [(arr f init)  (array-fold arr (λ: ([arr : (Array A)] [k : Index]) (f arr k init)))]))
-
 (define-syntax-rule (define-fold name array-axis-op T ...)
   (begin-encourage-inline
     (: name (case-> ((Array T) -> T) ...
                     ((Array T) T -> T) ...))
     (define name 
       (case-lambda
-        [(arr)  (array-ref* (fold-axis-fold arr array-axis-op))]
-        [(arr init)  (array-ref* (fold-axis-fold arr array-axis-op init))]))))
+        [(arr)  (array-ref* (array-fold arr array-axis-op))]
+        [(arr init)
+         (plet: (A) ([arr : (Array A)  arr]
+                     [array-axis-op : ((Array A) Index A -> (lazy-array A))  array-axis-op]
+                     [init : A  init])
+                (array-ref* (array-fold arr (λ: ([arr : (Array A)] [k : Index])
+                                              (array-axis-op arr k init)))))]))))
 
 (define-fold array-sum array-axis-sum Float Real Float-Complex Number)
 (define-fold array-prod array-axis-prod Float Real Float-Complex Number)

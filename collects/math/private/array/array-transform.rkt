@@ -92,33 +92,19 @@
              (unsafe-vector-set! js 0 j0)
              (unsafe-vector-set! js 1 j1)
              v))]
-    [(3)  (define g (unsafe-array-proc (array-lazy arr)))
-          (unsafe-lazy-array
-           new-ds
-           (λ: ([js : (Vectorof Index)])
-             (define j0 (unsafe-vector-ref js 0))
-             (define j1 (unsafe-vector-ref js 1))
-             (define j2 (unsafe-vector-ref js 2))
-             (unsafe-vector-set! js 0 (unsafe-vector-ref (unsafe-vector-ref old-jss* 0) j0))
-             (unsafe-vector-set! js 1 (unsafe-vector-ref (unsafe-vector-ref old-jss* 1) j1))
-             (unsafe-vector-set! js 2 (unsafe-vector-ref (unsafe-vector-ref old-jss* 2) j2))
-             (define v (g js))
-             (unsafe-vector-set! js 0 j0)
-             (unsafe-vector-set! js 1 j1)
-             (unsafe-vector-set! js 2 j2)
-             v))]
     [else
+     (define old-js (make-thread-local-indexes dims))
      (unsafe-array-transform
       arr new-ds
       (λ: ([new-js : (Vectorof Index)])
-        (define: old-js : (Vectorof Index) (make-vector dims 0))
-        (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
-          (cond [(i . < . dims)
-                 (define new-ji (unsafe-vector-ref new-js i))
-                 (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss* i) new-ji))
-                 (unsafe-vector-set! old-js i old-ji)
-                 (loop (+ i 1))]
-                [else  old-js]))))]))
+        (let ([old-js  (old-js)])
+          (let: loop : (Vectorof Index) ([i : Nonnegative-Fixnum  0])
+            (cond [(i . < . dims)
+                   (define new-ji (unsafe-vector-ref new-js i))
+                   (define old-ji (unsafe-vector-ref (unsafe-vector-ref old-jss* i) new-ji))
+                   (unsafe-vector-set! old-js i old-ji)
+                   (loop (+ i 1))]
+                  [else  old-js])))))]))
 
 (: array-slice (All (A) ((Array A) (Listof (Sequenceof Integer)) -> (lazy-array A))))
 (define (array-slice arr ss)
@@ -134,9 +120,7 @@
                            perm ds (λ () (raise-type-error 'array-permute "permutation"
                                                            1 arr perm)))])
     (define dims (vector-length ds))
-    (define old-js
-      (make-delayed-thread-cell (λ () (ann (make-vector dims 0) (Vectorof Index)))))
-    
+    (define old-js (make-thread-local-indexes dims))
     (unsafe-array-transform
      arr ds
      (λ: ([js : (Vectorof Index)])
@@ -156,6 +140,7 @@
          (raise-type-error 'array-transpose (format "Index < ~a" dims) 1 arr i0 i1)]
         [(or (i1 . < . 0) (i1 . >= . dims))
          (raise-type-error 'array-transpose (format "Index < ~a" dims) 2 arr i0 i1)]
+        [(= i0 i1)  (array-lazy arr)]
         [else
          (define new-ds (vector-copy-all ds))
          (define j0 (unsafe-vector-ref new-ds i0))
@@ -228,8 +213,7 @@
           [(lazy-array? arr)
            (define old-dims (vector-length old-ds))
            (define g (unsafe-array-proc arr))
-           (define old-js
-             (make-delayed-thread-cell (λ () (ann (make-vector old-dims 0) (Vectorof Index)))))
+           (define old-js (make-thread-local-indexes old-dims))
            (unsafe-lazy-array
             ds (λ: ([js : (Vectorof Index)])
                  (let ([old-js  (old-js)])
@@ -250,8 +234,7 @@
         [(lazy-array? arr)
          (define old-dims (vector-length old-ds))
          (define g (unsafe-array-proc arr))
-         (define old-js
-           (make-delayed-thread-cell (λ () (ann (make-vector old-dims 0) (Vectorof Index)))))
+         (define old-js (make-thread-local-indexes old-dims))
          (unsafe-lazy-array
           ds (λ: ([js : (Vectorof Index)])
                (let ([old-js  (old-js)])
