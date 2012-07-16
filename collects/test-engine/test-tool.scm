@@ -144,22 +144,7 @@
             (define/public (undock-report) 
               (when docked? (undock-tests) (preferences:set 'test-engine:test-window:docked? #f)))
             (super-instantiate ())))
-        
-        (define/override (add-show-menu-items show-menu)
-          (super add-show-menu-items show-menu)
-          (let ([dock? (preferences:get 'test-engine:test-window:docked?)])
-            (when (eq? dock-menu-item 'not-init)
-              (set! dock-menu-item 
-                    (make-object dock-menu-item% 
-                      (if dock? undock-label dock-label) 
-                      show-menu 
-                      (lambda (_1 _2)
-                        (if (send _1 is-report-docked?)
-                            (send _1 undock-report)
-                            (send _1 dock-report)))))
-              (register-capability-menu-item 'tests:dock-menu show-menu))
-            (send dock-menu-item set-docked?! dock?)))
-        
+
         (define/private (test-menu-init)
           (let ([language-menu (send this get-language-menu)]
                 [enable-label (string-constant test-engine-enable-tests)]
