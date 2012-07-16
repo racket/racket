@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types utils resolve abbrev numeric-tower substitute)
+         (types utils resolve base-abbrev numeric-tower substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          racket/match unstable/match

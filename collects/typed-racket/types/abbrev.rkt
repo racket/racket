@@ -4,6 +4,8 @@
 
 (require (rename-in (rep type-rep object-rep filter-rep rep-utils) [make-Base make-Base*])
          (utils tc-utils)
+         "base-abbrev.rkt"
+         (types union numeric-tower)
          racket/list
          racket/match
          racket/function
@@ -13,17 +15,16 @@
          unstable/function
          racket/udp
          unstable/lazy-require
-         (except-in racket/contract/base ->* ->)
+         (except-in racket/contract/base ->* -> one-of/c)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)
-	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
+         (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
          racket/pretty racket/udp
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
-(lazy-require ["resolve.rkt" (resolve)])
 
-(provide (except-out (all-defined-out) Promise make-Base)
+(provide (except-out (all-defined-out) make-Base)
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 
@@ -37,7 +38,6 @@
 (define -App make-App)
 (define -pair make-Pair)
 (define -mpair make-MPair)
-(define -val make-Value)
 (define -Param make-Param)
 (define -box make-Box)
 (define -channel make-Channel)
@@ -45,26 +45,17 @@
 (define -set make-Set)
 (define -vec make-Vector)
 (define -future make-Future)
+(define -val make-Value)
 (define (-seq . args) (make-Sequence args))
+(define (one-of/c . args)
+  (apply Un (map -val args)))
+(define (-opt t) (Un (-val #f) t))
 
 
-(define (flat t)
-  (match t
-    [(Union: es) es]
-    [(Values: (list (Result: (Union: es) _ _))) es]
-    [(Values: (list (Result: t _ _))) (list t)]
-    [_ (list t)]))
-
-;; TODO make this file depend on union.rkt, and use the real Union constructor.
-;; Simple union constructor.
-;; Flattens nested unions and sorts types, but does not check for
-;; overlapping subtypes.
-(define (*Un . args)
-  (make-Union (remove-dups (sort (apply append (map flat args)) type<?))))
 
 
-(define (make-Listof elem) (-mu list-rec (*Un (-val null) (-pair elem list-rec))))
-(define (make-MListof elem) (-mu mlist-rec (*Un (-val null) (-mpair elem mlist-rec))))
+(define (make-Listof elem) (-mu list-rec (Un (-val null) (-pair elem list-rec))))
+(define (make-MListof elem) (-mu mlist-rec (Un (-val null) (-mpair elem mlist-rec))))
 
 (define (-lst* #:tail [tail (-val null)] . args)
   (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
@@ -75,30 +66,7 @@
 (define (-Tuple* l b)
   (foldr -pair b l))
 
-(define (untuple t)
-  (match (resolve t)
-    [(Value: '()) null]
-    [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]
-                       [else #f])]
-    [_ #f]))
 
-(define-match-expander Listof:
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
-       (syntax/loc stx (Mu: var-pat (Union: (list (Value: '()) (Pair: elem-pat (F: var-pat))))))])))
-
-(define-match-expander List:
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ elem-pats)
-       #'(app untuple (? values elem-pats))])))
-
-(define-match-expander MListof:
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ elem-pat)
-       #'(Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))])))
 
 
 (define/cond-contract (-result t [f -no-filter] [o -no-obj])
@@ -114,15 +82,10 @@
 ;; basic types
 
 
-(define Promise #f)
-(define promise-id #'Promise)
-(define make-promise-ty
- (lambda (t)
-   (make-Struct promise-id #f (list (make-fld t #'values #f)) #f #f #'promise? values #'values)))
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
-(define -Boolean (*Un (-val #t) (-val #f)))
+(define -Boolean (Un (-val #t) (-val #f)))
 (define -Symbol (make-Base 'Symbol #'symbol? symbol? #'-Symbol))
 (define -Void (make-Base 'Void #'void? void? #'-Void))
 (define -Undefined
@@ -142,16 +105,16 @@
                             #'pregexp?
                             pregexp?
                             #'-PRegexp))
-(define -Regexp (*Un -PRegexp -Base-Regexp))
+(define -Regexp (Un -PRegexp -Base-Regexp))
 
 (define -Byte-Base-Regexp (make-Base 'Byte-Regexp
                                 #'(and/c byte-regexp? (not/c byte-pregexp?))
                                 (conjoin byte-regexp? (negate byte-pregexp?))
                                 #'-Byte-Regexp))
 (define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp? #'-Byte-PRegexp))
-(define -Byte-Regexp (*Un -Byte-Base-Regexp -Byte-PRegexp))
+(define -Byte-Regexp (Un -Byte-Base-Regexp -Byte-PRegexp))
 
-(define -Pattern (*Un -Bytes -Regexp -Byte-Regexp -String))
+(define -Pattern (Un -Bytes -Regexp -Byte-Regexp -String))
 
 
 
@@ -161,8 +124,15 @@
 
 
 (define -Keyword (make-Base 'Keyword #'keyword? keyword? #'-Keyword))
-(define -Char (make-Base 'Char #'char? char? #'-Char))
 (define -Thread (make-Base 'Thread #'thread? thread? #'-Thread))
+(define -Module-Path (Un -Symbol -String
+                         (-lst* (-val 'quote) -Symbol)
+                         (-lst* (-val 'lib) -String)
+                         (-lst* (-val 'file) -String)
+                         (-pair (-val 'planet)
+                          (Un (-lst* -Symbol)
+                              (-lst* -String)
+                              (-lst* -String (-lst* -String -String #:tail (make-Listof (Un -Nat (-lst* (Un -Nat (one-of/c '= '+ '-)) -Nat)))))))))
 (define -Resolved-Module-Path (make-Base 'Resolved-Module-Path #'resolved-module-path? resolved-module-path? #'-Resolved-Module-Path))
 (define -Module-Path-Index (make-Base 'Module-Path-Index #'module-path-index? module-path-index? #'-Module-Path-Index))
 (define -Compiled-Module-Expression (make-Base 'Compiled-Module-Expression #'compiled-module-expression? compiled-module-expression? #'-Compiled-Module-Expression))
@@ -171,7 +141,7 @@
              #'(and/c    compiled-expression? (not/c  compiled-module-expression?))
                (conjoin  compiled-expression? (negate compiled-module-expression?))
              #'-Compiled-Non-Module-Expression))
-(define -Compiled-Expression (*Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
+(define -Compiled-Expression (Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
 (define -Path (make-Base 'Path #'path? path? #'-Path))
@@ -188,29 +158,48 @@
 (define -FlVector (make-Base 'FlVector #'flvector? flvector? #'-FlVector))
 
 (define -Syntax make-Syntax)
+(define In-Syntax
+  (-mu e
+       (Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number
+           (make-Vector (-Syntax e))
+           (make-Box (-Syntax e))
+           (make-Listof (-Syntax e))
+           (-pair (-Syntax e) (-Syntax e)))))
+
+(define Any-Syntax (-Syntax In-Syntax))
+
+(define (-Sexpof t)
+  (-mu sexp
+       (Un (-val '())
+           -Number -Boolean -Symbol -String -Keyword -Char
+           (-pair sexp sexp)
+           (make-Vector sexp)
+           (make-Box sexp)
+           t)))
+
+(define -Sexp (-Sexpof (Un)))
+
+(define Syntax-Sexp (-Sexpof Any-Syntax))
+
+(define Ident (-Syntax -Symbol))
+
+
+
+
 (define -HT make-Hashtable)
-(define -Promise make-promise-ty)
 
 (define -HashTop (make-HashtableTop))
 (define -VectorTop (make-VectorTop))
 
-(define Univ (make-Univ))
-(define Err (make-Error))
 
-;A Type that corresponds to the any contract for the
-;return type of functions
-;FIXME
-;This is not correct as Univ is only a single value.
-(define ManyUniv Univ)
+(define -Port (Un -Output-Port -Input-Port))
 
-(define -Port (*Un -Output-Port -Input-Port))
-
-(define -SomeSystemPath (*Un -Path -OtherSystemPath))
-(define -Pathlike (*Un -String -Path))
-(define -SomeSystemPathlike (*Un -String -SomeSystemPath))
-(define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
-(define -SomeSystemPathlike* (*Un -String -SomeSystemPath(-val 'up) (-val 'same)))
-(define -PathConventionType (*Un (-val 'unix) (-val 'windows)))
+(define -SomeSystemPath (Un -Path -OtherSystemPath))
+(define -Pathlike (Un -String -Path))
+(define -SomeSystemPathlike (Un -String -SomeSystemPath))
+(define -Pathlike* (Un -String -Path (-val 'up) (-val 'same)))
+(define -SomeSystemPathlike* (Un -String -SomeSystemPath(-val 'up) (-val 'same)))
+(define -PathConventionType (Un (-val 'unix) (-val 'windows)))
 
 
 
@@ -262,6 +251,7 @@
 
 (define -Logger (make-Base 'Logger #'logger? logger? #'-Logger))
 (define -Log-Receiver (make-Base 'LogReceiver #'log-receiver? log-receiver? #'-Log-Receiver))
+(define -Log-Level (one-of/c 'fatal 'error 'warning 'info 'debug))
 
 
 (define -Place
@@ -269,7 +259,7 @@
 (define -Base-Place-Channel
   (make-Base 'Base-Place-Channel #'(and/c place-channel? (not/c place?))  (conjoin place-channel? (negate place?))  #'-Base-Place-Channel))
 
-(define -Place-Channel (*Un -Place -Base-Place-Channel))
+(define -Place-Channel (Un -Place -Base-Place-Channel))
 
 (define -Will-Executor
   (make-Base 'Will-Executor #'will-executor? will-executor? #'-Will-Executor))

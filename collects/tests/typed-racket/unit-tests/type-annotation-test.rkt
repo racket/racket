@@ -3,7 +3,7 @@
          (for-syntax scheme/base)
          typed-racket/private/type-annotation
          typed-racket/private/parse-type
-         (types abbrev numeric-tower utils)
+         (types convenience utils)
          (env type-env-structs init-envs)
          (utils tc-utils)
          (rep type-rep filter-rep object-rep)
