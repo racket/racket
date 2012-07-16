@@ -371,6 +371,10 @@
                  [just-filename (if (pair? filename)
                                     (cadr filename)
                                     filename)]
+                 [root-module-path (if (and (pair? module-path)
+                                            (eq? 'submod (car module-path)))
+                                       (cadr module-path)
+                                       module-path)]
                  [actual-filename just-filename] ; `set!'ed below to adjust file suffix
                  [name (let-values ([(base name dir?) (split-path just-filename)])
                          (path->string (path-replace-suffix name #"")))]
@@ -468,9 +472,13 @@
                                                               null)
                                                              #t
                                                              null)])
-                      (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
+                      (let ([sub-files (map (lambda (i) 
+                                              ;; use `just-filename', because i has submod name embedded
+                                              (normalize (resolve-module-path-index i just-filename)))
                                             all-file-imports)]
-                            [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
+                            [sub-paths (map (lambda (i) 
+                                              ;; use `root-module-path', because i has submod name embedded
+                                              (collapse-module-path-index i root-module-path))
                                             all-file-imports)]
                             [normalized-extra-paths (map (lambda (i) (collapse-module-path i module-path))
                                                          (append extra-runtime-paths extra-paths))]
@@ -628,7 +636,7 @@
                         [(library-table) (quote
                                           ,(filter values
                                                    (map (lambda (m)
-                                                          (let ([path (mod-mod-path m)])
+                                                          (let loop ([path (mod-mod-path m)])
                                                             (cond
                                                              [(and (pair? path)
                                                                    (eq? 'lib (car path)))
@@ -639,6 +647,12 @@
                                                               ;; Normalize planet path
                                                               (cons (collapse-module-path path current-directory)
                                                                     (mod-full-name m))]
+                                                             [(and (pair? path)
+                                                                   (eq? 'submod (car path)))
+                                                              (define m (loop (cadr path)))
+                                                              (and m
+                                                                   (cons `(submod ,(car m) ,@(cddr path))
+                                                                         (cdr m)))]
                                                              [else #f])))
                                                         code-l)))])
              (hash-set! regs 
@@ -701,9 +715,16 @@
                                                   (let-values ([(lname)
                                                                 ;; normalize `lib' to single string (same as lib-path->string):
                                                                 (let-values ([(name)
-                                                                              (if (symbol? name)
-                                                                                  (list 'lib (symbol->string name))
-                                                                                  name)])
+                                                                              (let-values ([(name) 
+                                                                                            ;; remove submod path; added back at end
+                                                                                            (if (pair? name)
+                                                                                                (if (eq? 'submod (car name))
+                                                                                                    (cadr name)
+                                                                                                    name)
+                                                                                                name)])
+                                                                                (if (symbol? name)
+                                                                                    (list 'lib (symbol->string name))
+                                                                                    name))])
                                                                   (if (pair? name)
                                                                       (if (eq? 'lib (car name))
                                                                           (if (null? (cddr name))
@@ -803,19 +824,40 @@
                                                                                 #t
                                                                                 #f)
                                                                             #f))
-                                                                      #f))])
+                                                                      #f))]
+                                                               [(restore-submod) (lambda (lname)
+                                                                                   (if (pair? name)
+                                                                                       (if (eq? (car name) 'submod)
+                                                                                           (list* 'submod lname (cddr name))
+                                                                                           lname)
+                                                                                       lname))])
                                                     ;; A library mapping that we have? 
                                                     (let-values ([(a3) (if lname
                                                                            (if (string? lname)
                                                                                ;; lib
-                                                                               (assoc lname library-table)
+                                                                               (assoc (restore-submod lname) library-table)
                                                                                ;; planet
                                                                                (ormap (lambda (e)
-                                                                                        (if (string? (car e))
-                                                                                            #f
-                                                                                            (if (planet-match? (cdar e) (cdr lname))
-                                                                                                e
-                                                                                                #f)))
+                                                                                        (let-values ([(e)
+                                                                                                      ;; handle submodule matching first:
+                                                                                                      (if (pair? name)
+                                                                                                          (if (eq? (car name) 'submod)
+                                                                                                              (if (pair? (car e))
+                                                                                                                  (if (eq? (caar e) 'submod)
+                                                                                                                      (if (equal? (cddar e) (cddr name))
+                                                                                                                          (cons (cadar e) (cdr e))
+                                                                                                                          #f)
+                                                                                                                      #f)
+                                                                                                                  #f)
+                                                                                                              e)
+                                                                                                          e)])
+                                                                                          (if e
+                                                                                              (if (string? (car e))
+                                                                                                  #f
+                                                                                                  (if (planet-match? (cdar e) (cdr lname))
+                                                                                                      e
+                                                                                                      #f))
+                                                                                              #f)))
                                                                                       library-table))
                                                                            #f)])
                                                       (if a3
