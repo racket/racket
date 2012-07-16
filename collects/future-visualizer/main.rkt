@@ -2,14 +2,14 @@
 (require racket/contract 
          slideshow/pict
          racket/bool 
-         racket/future/trace
+         future-visualizer/trace
          "private/visualizer-gui.rkt"  
          "private/visualizer-drawing.rkt")
+
 (provide visualize-futures 
          (contract-out 
-          [show-visualizer (-> void?)]
+          [show-visualizer (->* () (#:timeline (listof indexed-future-event?)) void?)]
           [visualize-futures-thunk ((-> any/c) . -> . any/c)]
-          [show-visualizer-for-events ((listof indexed-future-event?) . -> . void?)]
           [timeline-pict (->i ([indexed-fevents (listof indexed-future-event?)]) 
                               (#:x [x (or/c #f exact-nonnegative-integer?)] 
                                #:y [y (or/c #f exact-nonnegative-integer?)] 

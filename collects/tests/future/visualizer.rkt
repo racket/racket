@@ -2,10 +2,10 @@
 (require rackunit 
          racket/list 
          racket/vector
-         racket/future/private/visualizer-drawing
-         racket/future/private/visualizer-data 
-         racket/future/private/display 
-         racket/future/private/graph-drawing)  
+         future-visualizer/private/visualizer-drawing
+         future-visualizer/private/visualizer-data 
+         future-visualizer/private/display 
+         future-visualizer/private/graph-drawing)  
 
 (define (compile-trace-data logs) 
   (define tr (build-trace logs)) 

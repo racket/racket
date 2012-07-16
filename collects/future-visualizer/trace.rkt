@@ -4,7 +4,7 @@
 (provide (struct-out future-event) 
          (struct-out indexed-future-event) 
          trace-futures 
-         (contract-out 
+         (contract-out
           [start-performance-tracking! (-> void?)]
           [timeline-events (-> (listof indexed-future-event?))]
           [trace-futures-thunk ((-> any/c) . -> . (listof indexed-future-event?))]))

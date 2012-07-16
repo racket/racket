@@ -1,11 +1,11 @@
 #lang scribble/doc 
-@(require "mz.rkt" (for-label racket/future racket/future/trace)) 
+@(require "mz.rkt" (for-label racket/future future-visualizer/trace)) 
 
 @title[#:tag "futures-trace"]{Futures Tracing} 
 
 @guideintro["effective-futures"]{the future visualizer}
 
-@defmodule[racket/future/trace]
+@defmodule[future-visualizer/trace]
 
 The @deftech{futures trace} module exposes low-level information about 
 the execution of parallel programs written using @racket[future].   
@@ -22,7 +22,7 @@ the execution of parallel programs written using @racket[future].
  
  @racketblock[ 
     (require racket/future 
-             racket/future/trace) 
+             future-visualizer/trace) 
      
     (trace-futures  
      (let ([f (future (lambda () ...))]) 
@@ -34,7 +34,7 @@ the execution of parallel programs written using @racket[future].
  
  @racketblock[ 
     (require racket/future 
-             racket/future/trace) 
+             future-visualizer/trace) 
                                       
     (start-performance-tracking!) 
     (let ([f (future (lambda () ...))]) 
@@ -76,7 +76,7 @@ useful for debugging the performance of programs that use futures.
 Though textual log output can be viewed directly (or retrieved in 
 code via @racket[trace-futures]), it is much  
 easier to use the graphical profiler tool provided by 
-@racketmodname[racket/future/visualizer].  
+@racketmodname[future-visualizer].  
 
 In addition to its string message, each event logged for a future has
 a data value that is an instance of a @racket[future-event]

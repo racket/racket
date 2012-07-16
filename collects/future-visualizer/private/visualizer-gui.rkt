@@ -9,8 +9,7 @@
          "display.rkt" 
          "constants.rkt")    
 
-(provide show-visualizer 
-         show-visualizer-for-events) 
+(provide show-visualizer) 
 
 ;;rebuild-mouse-index : frame-info trace (listof segment) -> interval-map of (range --> interval-map)
 (define (rebuild-mouse-index frameinfo tr segs) 
@@ -84,12 +83,11 @@
   (values (min screen-w DEF-WINDOW-WIDTH) 
           (min screen-h DEF-WINDOW-HEIGHT)))
 
-;;show-visualizer-for-events : (listof indexed-fevent) -> void
-(define (show-visualizer-for-events logs) 
-  ;If for some reason the log is empty, error
-  (when (empty? logs) 
-      (error 'show-visualizer "No future log messages found."))
-  (define the-trace (build-trace logs))  
+(define (show-visualizer #:timeline [timeline #f]) 
+  (define the-tl (if timeline timeline (timeline-events))) 
+  (when (empty? the-tl) 
+    (error 'show-visualizer "No future log messages found."))
+  (define the-trace (build-trace the-tl))  
   (define-values (winw winh) (get-window-size))
   ;The event segment we are currently mousing over
   (define hover-seg #f) 
@@ -354,6 +352,3 @@
                    (set! showing-create-graph (not showing-create-graph)))])
   
   (send f show #t))
-
-(define (show-visualizer)
-  (show-visualizer-for-events (timeline-events)))

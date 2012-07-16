@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval "guide-utils.rkt"
-          (for-label racket/flonum racket/future))
+          (for-label racket/flonum racket/future future-visualizer))
 
 @(define future-eval (make-base-eval))
 @(interaction-eval #:eval future-eval (require racket/future 
-                                               racket/future/private/visualizer-drawing 
-                                               racket/future/private/visualizer-data))
+                                               future-visualizer/private/visualizer-drawing 
+                                               future-visualizer/trace))
 
 @title[#:tag "effective-futures"]{Parallelism with Futures}
 
@@ -105,10 +105,10 @@ Unfortunately, attempting to run the two computations in parallel with
          (touch f)))
 ]
 
-To see why, use the @racketmodname[racket/future/visualizer], like this:
+To see why, use the @racketmodname[future-visualizer], like this:
 
 @racketblock[ 
-  (require racket/future/visualizer) 
+  (require future-visualizer) 
   (visualize-futures 
    (let ([f (future (lambda () (mandelbrot 10000000 62 501 1000)))])
      (list (mandelbrot 10000000 62 500 1000)

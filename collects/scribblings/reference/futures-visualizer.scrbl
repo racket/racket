@@ -1,11 +1,11 @@
 #lang scribble/doc 
-@(require "mz.rkt" (for-label racket/future/trace racket/future)) 
+@(require "mz.rkt" (for-label future-visualizer/trace racket/future)) 
 
 @title[#:tag "futures-visualizer"]{Futures Visualizer} 
 
 @guideintro["effective-futures"]{the future visualizer}
 
-@defmodule[racket/future/visualizer] 
+@defmodule[future-visualizer] 
 
 The @deftech{futures visualizer} is a graphical profiling tool 
 for parallel programs written using @racket[future].  The tool 
@@ -27,7 +27,7 @@ at any point during the program's lifetime.
  
  @racketblock[
     (require racket/future 
-             racket/future/visualizer) 
+             future-visualizer) 
     
     (visualize-futures 
      (let ([f (future (lambda () ...))]) 
@@ -39,8 +39,8 @@ at any point during the program's lifetime.
  
  @racketblock[ 
     (require racket/future 
-             racket/future/trace
-             racket/future/visualizer) 
+             future-visualizer/trace
+             future-visualizer) 
                                       
     (start-performance-tracking!) 
     (let ([f (future (lambda () ...))]) 
@@ -51,10 +51,14 @@ at any point during the program's lifetime.
  ]
 }
 
-@defproc[(show-visualizer) void?]{
- Displays the profiler window.  Calls to this 
- function must be preceded by a call to @racket[start-performance-tracking!] (or can 
- be avoided altogether by using either @racket[visualize-futures] or @racket[visualize-futures-thunk]).
+@defproc[(show-visualizer [#:timeline timeline (listof indexed-future-event?)]) void?]{
+ Displays the visualizer window.  If the function is called with no arguments, 
+ it must be preceded by a call to @racket[start-performance-tracking!] -- in which case 
+ the visualizer will show data for all events logged in between (via @racket[timeline-events]).  
+ Note that @racket[visualize-futures] and @racket[visualize-futures-thunk] are simpler alternatives to using these 
+ primitives directly.
+ The @racket[timeline] argument can be used to show the visualizer for a previously-generated 
+ trace.
 }                                                      
 
 @section[#:tag "future-visualizer-timeline"]{Execution Timeline} 
