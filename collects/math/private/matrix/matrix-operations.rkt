@@ -17,7 +17,11 @@
          matrix-row-echelon-form
          matrix-reduced-row-echelon-form
          matrix-lu
-         matrix-ref)
+         matrix-ref
+         matrix-rank
+         matrix-nullity
+         ; matrix-column+null-space 
+         )
 
 (define-syntax (inline-matrix-scale-row stx)
   (syntax-case stx ()
@@ -118,15 +122,13 @@
            ((Matrix Number) Boolean         -> (Values (Result-Matrix Number) (Listof Integer)))
            ((Matrix Number)                 -> (Values (Result-Matrix Number) (Listof Integer)))))
 (define (matrix-gauss-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
-  (define dims (matrix-dimensions M))
-  (define m (vector-ref dims 0))
-  (define n (vector-ref dims 1))
+  (define-values (m n) (matrix-dimensions M))
   (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
                      -> (Values (Matrix Number) (Listof Integer))))
   (define (loop i j ; i from 0 to m
                 M
                 k   ; count rows without pivot
-                without-pivot) 
+                without-pivot)
     (cond
       [(or (= i m) (= j n)) (values M without-pivot)]
       [else
@@ -153,7 +155,8 @@
                  [(not (zero? (matrix-ref M l j))) l]
                  [else (first-loop (+ l 1))]))))
        (cond
-         [(eq? p #f)
+         [(or (eq? p #f)
+              (zero? (matrix-ref M p j)))
           ; no pivot found
           (loop i (+ j 1) M (+ k 1) (cons j without-pivot))]
          [else 
@@ -180,6 +183,46 @@
   (let-values ([(M without) (loop 0 0 M 0 '())])
     (values (array-lazy M) without)))
 
+(: matrix-rank : (Matrix Number) -> Integer)
+(define (matrix-rank M)
+  ; TODO: Use QR or SVD instead for inexact matrices
+  ; See answer: http://scicomp.stackexchange.com/questions/1861/understanding-how-numpy-does-svd
+  ; rank = dimension of column space = dimension of row space
+  (define-values (m n) (matrix-dimensions M))
+  (define-values (_ cols-without-pivot) (matrix-gauss-eliminate M))
+  (- n (length cols-without-pivot)))
+
+(: matrix-nullity : (Matrix Number) -> Integer)
+(define (matrix-nullity M)
+  ; nullity = dimension of null space
+  (define-values (m n) (matrix-dimensions M))
+  (define-values (_ cols-without-pivot) (matrix-gauss-eliminate M))
+  (length cols-without-pivot))
+
+(: matrix-column+null-space : 
+   (Matrix Number) -> (Values (Result-Matrix Number)
+                              (Listof (Result-Matrix Number))
+                              (Listof (Result-Matrix Number))))
+#;(define (matrix-column+null-space M)
+  (define-values (m n) (matrix-dimensions M))
+  (: M1 (Matrix Number))
+  (: cols-without-pivot (Listof Integer))
+  (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
+  (set! M1 (array-strict M1))
+  (define: null-space : (Listof (Result-Matrix Number))
+    (for/list: : (Listof (Result-Matrix Number)) 
+      ([i : Integer (in-list cols-without-pivot)])
+      (cond
+        [(not (index? i)) (error 'column+null-space "Internal error")]
+        [else (matrix-column M1 i)])))
+  (define: column-space : (Listof (Result-Matrix Number))
+    (for/list: : (Listof (Result-Matrix Number))
+      ([i : Index n]
+       #:when (not (member i cols-without-pivot)))
+      (matrix-column M1 i)))
+  (values (array-lazy M1) column-space null-space))
+
+
 (: matrix-row-echelon-form : 
    (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
            ((Matrix Number) Boolean -> (Result-Matrix Number))
@@ -193,9 +236,7 @@
            ((Matrix Number) Boolean         -> (Values (Result-Matrix Number) (Listof Integer)))
            ((Matrix Number)                 -> (Values (Result-Matrix Number) (Listof Integer)))))
 (define (matrix-gauss-jordan-eliminate M [unitize-pivot-row? #f] [partial-pivoting? #t])
-  (define dims (matrix-dimensions M))
-  (define m (vector-ref dims 0))
-  (define n (vector-ref dims 1))
+  (define-values (m n) (matrix-dimensions M))
   (: loop : (Integer Integer (Matrix Number) Integer (Listof Integer) 
                      -> (Values (Matrix Number) (Listof Integer))))
   (define (loop i j ; i from 0 to m
@@ -273,8 +314,7 @@
 (: matrix-lu : 
    (Matrix Number) -> (U False (List (Result-Matrix Number) (Result-Matrix Number))))
 (define (matrix-lu M)
-  (define dims (matrix-dimensions M))
-  (define m (vector-ref dims 0))
+  (define-values (m _) (matrix-dimensions M))
   (define: ms : (Listof Number) '())
   (define V
     (let/ec: return : (U False (Matrix Number))
@@ -328,3 +368,4 @@
                   (vector-ref L-matrix (+ (* i m) j))))))
         (list (array-lazy L) 
               (array-lazy V)))))
+
