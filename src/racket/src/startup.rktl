@@ -960,16 +960,14 @@
          [(s relto stx) (standard-module-name-resolver s relto stx #t)]
          [(s relto stx load?)
           ;; If stx is not #f, raise syntax error for ill-formed paths
-          ;; If s is #f, call to resolver is a notification from namespace-attach-module
-          (unless (or (path? s)
-                      (module-path? s))
+          (unless (module-path? s)
             (if stx
                 (raise-syntax-error #f
                                     "bad module path"
                                     stx)
                 (raise-argument-error 'standard-module-name-resolver
-                                     "(or/c module-path? path?)"
-                                     s)))
+                                      "module-path?"
+                                      s)))
           (define (flatten-sub-path base orig-l)
             (let loop ([a null] [l orig-l])
               (cond
@@ -1241,7 +1239,7 @@
                                               (if (hash-ref ht root-modname #f)
                                                   ;; Root is already loaded, so only use .zo
                                                   (cons #f subm-path)
-                                                  ;; Root isn't laoded, so it's ok to laod form source:
+                                                  ;; Root isn't loaded, so it's ok to load form source:
                                                   (cons sym subm-path))
                                               sym))))))))
                               ;; Possibly redundant, because notification should have arrived,

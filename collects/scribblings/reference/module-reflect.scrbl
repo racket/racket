@@ -92,9 +92,9 @@ A @tech{module name resolver} takes one and four arguments:
   shares the same module registry). The module name resolver's result
   is ignored.}
  
-  @item{When given four arguments, the first is a module path, either
-  equivalent to a quoted @racket[_module-path] for @racket[require] or
-  a file system path.  The second is name for the source module, if
+  @item{When given four arguments, the first is a module path,
+  equivalent to a quoted @racket[_module-path] for @racket[require].
+  The second is name for the source module, if
   any, to which the path is relative; if the second argument is
   @racket[#f], the module path is relative to @racket[(or
   (current-load-relative-directory) (current-directory))].  The third
@@ -108,7 +108,7 @@ A @tech{module name resolver} takes one and four arguments:
 
 For the second case, the standard module name resolver keeps a
 per-registry table of loaded module name. If a resolved module path is
-not in the table, and @racket[#f] is not provided as the third
+not in the table, and @racket[#f] is not provided as the fourth
 argument to the @tech{module name resolver}, then the name is put into
 the table and the corresponding file is loaded with a variant of
 @racket[load/use-compiled] that passes the expected module name to the
@@ -124,7 +124,7 @@ already exists; if such a continuation mark does exist in the current
 continuation, then the @exnraise[exn:fail] with a message about a
 dependency cycle.
 
-Module loading is suppressed (i.e., @racket[#f] is supplied as a third
+Module loading is suppressed (i.e., @racket[#f] is supplied as a fourth
 argument to the module name resolver) when resolving module paths in
 @tech{syntax objects} (see @secref["stxobj-model"]). When a
 @tech{syntax object} is manipulated, the current namespace might not
