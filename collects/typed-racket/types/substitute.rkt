@@ -6,7 +6,9 @@
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
          racket/match
-         racket/contract)
+         racket/contract
+         unstable/lazy-require)
+(lazy-require ("union.rkt" (Un)))
 
 (provide subst-all substitute substitute-dots substitute-dotted subst
          (struct-out t-subst) (struct-out i-subst) (struct-out i-subst/starred) (struct-out i-subst/dotted)
@@ -31,7 +33,7 @@
 
 
 ;; substitute : Type Name Type -> Type
-(define/cond-contract (substitute image name target #:Un [Un (get-union-maker)])
+(define/cond-contract (substitute image name target #:Un [Un (lambda (args) (apply Un args))])
   ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
   (define (sb t) (substitute image name t #:Un Un))
   (if (hash-ref (free-vars* target) name #f)
