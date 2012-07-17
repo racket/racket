@@ -80,7 +80,7 @@
   (log-missed-optimization
    "all args float-arg-expr, result not Float"
    (string-append
-    "This expression has a Real type. The optimizer could improve its performance if it had type Float."
+    "This expression has a Real type. The optimizer could optimize it if it had type Float."
     (if (null? irritants)
         ""
         "To fix, change the highlighted expression(s) to have Float type(s)."))
