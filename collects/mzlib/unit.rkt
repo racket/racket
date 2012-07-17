@@ -2,7 +2,7 @@
 
 ;; deprecated library, see `racket/unit`
 
-(require racket/unit
+(require (except-in racket/unit struct/ctc)
          (submod racket/unit compat))
-(provide (except-out (all-from-out racket/unit) struct/ctc)
+(provide (all-from-out racket/unit)
          (all-from-out (submod racket/unit compat)))

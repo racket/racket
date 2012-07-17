@@ -6,11 +6,14 @@
                      (only-in scheme/class printable<%>)
                      (only-in racket/class writable<%>)
                      (only-in racket/base struct hash hasheq hasheqv in-directory local-require)
+                     (only-in racket/unit struct/ctc)
                      (only-in scheme/gui/base make-gui-namespace make-gui-empty-namespace)
+                     (only-in mzlib/unit struct~s struct~s/ctc)
                      scheme/gui/base
                      scheme/sandbox))
 
 @(define-syntax-rule (def-extras unit-struct
+                                 unit-struct/ctc
                                  make-base-namespace-id
                                  make-base-empty-namespace-id
                                  sandbox-namespace-specs-id
@@ -19,12 +22,13 @@
                                  pretty-print-id
                                  printable<%>-id)
   (begin
-    (require (for-label (only-in scheme struct)
+    (require (for-label (only-in scheme struct struct/ctc)
                         (only-in racket/base make-base-namespace
                                              make-base-empty-namespace)
                         (only-in racket/pretty pretty-print)
                         racket/sandbox))
     (define unit-struct (racket struct))
+    (define unit-struct/ctc (racket struct/ctc))
     (define make-base-namespace-id (racket make-base-namespace))
     (define make-base-empty-namespace-id (racket make-base-empty-namespace))
     (define sandbox-namespace-specs-id (racket sandbox-namespace-specs))
@@ -33,6 +37,7 @@
     (define pretty-print-id (racket pretty-print))
     (define printable<%>-id (racket printable<%>))))
 @(def-extras unit-struct
+             unit-struct/ctc
              make-base-namespace-id
              make-base-empty-namespace-id
              sandbox-namespace-specs-id
@@ -58,7 +63,7 @@ old name. A few @seclink["compat-exe"]{old executables} are also provided.
 @table-of-contents[]
 
 @compat-except[scheme racket]{, except based on @racketmodname[scheme/base]
-instead of @racketmodname[racket/base], the @|unit-struct| from
+instead of @racketmodname[racket/base], the @|unit-struct| and @|unit-struct/ctc| from
 @racketmodname[scheme/unit] is exported, @racketmodname[scheme/set] is
 not re-exported, @racketmodname[scheme/system] is
 not re-exported, @racket[pretty-print] is re-directed in as
@@ -336,7 +341,13 @@ and @|make-module-evaluator-id| from @racketmodname[racket/sandbox].}
 @; @compat[scheme/trace racket/trace]
 @compat[scheme/trait racket/trait]
 @compat[scheme/udp racket/udp]
-@compat[scheme/unit racket/unit]
+
+@compat-except[scheme/unit racket/unit]{, except that @|unit-struct|
+and @|unit-struct/ctc| are @racket[struct~s] and
+@racket[struct~s/ctc] from @racketmodname[mzlib/unit] instead of
+@racket[struct] from @racket[racket/base] and @racket[struct/ctc] from
+@racketmodname[racket/unit]}
+
 @compat[scheme/unit-exptime racket/unit-exptime]
 @compat[scheme/unsafe/ops racket/unsafe/ops]
 @compat[scheme/vector racket/vector]
