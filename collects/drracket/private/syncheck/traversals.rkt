@@ -685,6 +685,7 @@
                               (self-module? path)))))])
         (cond
           [(get-ids varsets var)
+           (add-mouse-over var (string-constant cs-set!d-variable))
            (color var set!d-variable-style-name 'default-mode)]
           [lexical? (color var lexically-bound-variable-style-name 'default-mode)]
           [(pair? b) (color var imported-variable-style-name 'default-mode)])))
