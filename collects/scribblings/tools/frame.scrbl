@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.rkt" scribble/core)
 @(tools-title "frame")
 
 @defclass[drracket:frame:name-message% canvas% ()]{
@@ -191,27 +191,69 @@ This interface is the result of the @racket[drracket:frame:basics-mixin]
            void?]{
 @methspec{
 
-This method is called during the construction of the view
-menu.  This method is intended to be overridden. It is
-expected to add other Show/Hide menu items to the show menu.
+This method is called during the construction of the @onscreen{View}
+menu.  This method is intended to be overridden with the
+overriding methods adding other Show/Hide menu items to the @onscreen{View}
+menu.
 
 See also
+@method[drracket:frame:<%> set-show-menu-sort-key] and
 @method[drracket:frame:<%> get-show-menu].
-
 }
 @methimpl{
-
-Does nothing.
-
-
-
+  Does nothing.
 }}
 
+@defmethod[(set-show-menu-sort-key [item (is-a?/c menu-item<%>)]
+                                   [key (and/c real? positive?)])
+           void?]{
+  Controls the ordering of items in the @onscreen{View} menu.
+                                        
+The number determines the sorting order and where separators in the menu appear
+(smaller numbers first). 
+
+These are the numbers for many of the @onscreen{View} menu items that come
+built-in to DrRacket:
+@table[(style #f '())
+       (let ()
+         (define (add-blocks lol)
+           (for/list ([strs (in-list lol)])
+             (for/list ([str (in-list (reverse strs))]
+                        [i (in-naturals)])
+               @paragraph[(style #f '()) 
+                          (if (zero? i)
+                              (list str "\ua0\ua0\ua0\ua0\ua0")
+                              str)])))
+         (add-blocks
+          (list (list @racket[1] @onscreen{Toolbar})
+                (list @racket[2] @onscreen{Split})
+                (list @racket[3] @onscreen{Collapse})
+                (list @racket[101] @onscreen{Show Definitions})
+                (list @racket[102] @onscreen{Show Interactions})
+                (list @racket[103] @onscreen{Use Horizontal Layout})
+                (list @racket[205] @onscreen{Show Log})
+                (list @racket[206] @onscreen{Show Tracing})
+                (list @racket[207] @onscreen{Hide Profile})
+                (list @racket[301] @onscreen{Show Program Contour})
+                (list @racket[302] @onscreen{Show Line Numbers})
+                (list @racket[401] @onscreen{Show Module Browser}))))]
+
+In addition, a separator is inserted for each 100. So, for example,
+a separator is inserted between @onscreen{Collapse} and
+@onscreen{Show Definitions}.
+
+Note that the argument may be a rational number,
+effectively allowing insertion between any two menu items already in the menu.
+For this reason, avoid using @racket[0], or any number is that @racket[0]
+modulo @racket[100].
+
+}
+                 
 @defmethod[(get-show-menu)
            (is-a?/c menu%)]{
 @index{View menu}
 
-returns the view menu, for use by the
+returns the @onscreen{View} menu, for use by the
 @method[drracket:frame:<%> update-shown] method.
 
 See also
@@ -219,7 +261,7 @@ See also
 
 The method (and others) uses the word @tt{show} to preserve
 backwards compatibility from when the menu itself was named
-the Show menu.
+the @onscreen{Show} menu.
 
 }
 

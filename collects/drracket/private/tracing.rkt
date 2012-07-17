@@ -162,7 +162,7 @@
   
   (define frame-mixin 
     (mixin (drracket:frame:<%> drracket:unit:frame<%>) ()
-      (inherit get-current-tab)
+      (inherit get-current-tab set-show-menu-sort-key)
       (define show-tracing-menu-item #f)
       (define tracing-visible? #f)
       
@@ -183,7 +183,8 @@
               (new menu-item%
                    (parent show-menu)
                    (label (string-constant tracing-show-tracing-window))
-                   (callback (lambda (x y) (toggle-tracing))))))
+                   (callback (lambda (x y) (toggle-tracing)))))
+        (set-show-menu-sort-key show-tracing-menu-item 206))
       
       (define/public (show-tracing)
         (set! tracing-visible? #t)

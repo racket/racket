@@ -3190,7 +3190,8 @@ module browser threading seems wrong.
       (define/public (get-definitions/interactions-panel-parent)
         toolbar/rest-panel)
       
-      (inherit delegated-text-shown? hide-delegated-text show-delegated-text)
+      (inherit delegated-text-shown? hide-delegated-text show-delegated-text
+               set-show-menu-sort-key)
       (define/override (add-show-menu-items show-menu)
         (super add-show-menu-items show-menu)
         (set! definitions-item
@@ -3202,6 +3203,7 @@ module browser threading seems wrong.
                   (update-shown))
                 #\d
                 (string-constant definitions-menu-item-help-string)))
+        (set-show-menu-sort-key definitions-item 101)
         (set! interactions-item
               (make-object menu:can-restore-menu-item%
                 (string-constant show-interactions-menu-item-label)
@@ -3211,49 +3213,52 @@ module browser threading seems wrong.
                   (update-shown))
                 #\e
                 (string-constant interactions-menu-item-help-string)))
+        (set-show-menu-sort-key interactions-item 102)
         
-        (new menu:can-restore-menu-item%
-             [label (string-constant use-horizontal-layout)]
-             [parent (get-show-menu)]
-             [callback (λ (x y) 
-                         (define vertical? (send resizable-panel get-vertical?)) 
-                         (preferences:set 'drracket:defs/ints-horizontal vertical?)
-                         (send resizable-panel set-orientation vertical?)
-                         (define update-shown? (or (not interactions-shown?)
-                                                   (not definitions-shown?)))
-                         (unless interactions-shown?
-                           (toggle-show/hide-interactions))
-                         (unless definitions-shown?
-                           (toggle-show/hide-definitions))
-                         (when update-shown?
-                           (update-shown)))]
-             [demand-callback
-              (λ (mi) (send mi set-label (if (send resizable-panel get-vertical?)
-                                             (string-constant use-horizontal-layout)
-                                             (string-constant use-vertical-layout))))]
-             [shortcut #\l]
-             [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))])
+        (let ([layout-item
+               (new menu:can-restore-menu-item%
+                    [label (string-constant use-horizontal-layout)]
+                    [parent (get-show-menu)]
+                    [callback (λ (x y) 
+                                (define vertical? (send resizable-panel get-vertical?)) 
+                                (preferences:set 'drracket:defs/ints-horizontal vertical?)
+                                (send resizable-panel set-orientation vertical?)
+                                (define update-shown? (or (not interactions-shown?)
+                                                          (not definitions-shown?)))
+                                (unless interactions-shown?
+                                  (toggle-show/hide-interactions))
+                                (unless definitions-shown?
+                                  (toggle-show/hide-definitions))
+                                (when update-shown?
+                                  (update-shown)))]
+                    [demand-callback
+                     (λ (mi) (send mi set-label (if (send resizable-panel get-vertical?)
+                                                    (string-constant use-horizontal-layout)
+                                                    (string-constant use-vertical-layout))))]
+                    [shortcut #\l]
+                    [shortcut-prefix (cons 'shift (get-default-shortcut-prefix))])])
+          (set-show-menu-sort-key layout-item 103))
         
-        (new separator-menu-item% [parent (get-show-menu)])
-        
-        (new menu:can-restore-menu-item%
-             (shortcut #\u)
-             (label 
-              (if (delegated-text-shown?)
-                  (string-constant hide-overview)
-                  (string-constant show-overview)))
-             (parent (get-show-menu))
-             (callback
-              (λ (menu evt)
-                (if (delegated-text-shown?)
-                    (begin
-                      (send menu set-label (string-constant show-overview))
-                      (preferences:set 'framework:show-delegate? #f)
-                      (hide-delegated-text))
-                    (begin
-                      (send menu set-label (string-constant hide-overview))
-                      (preferences:set 'framework:show-delegate? #t)
-                      (show-delegated-text))))))
+        (let ([overview-menu-item 
+               (new menu:can-restore-menu-item%
+                    (shortcut #\u)
+                    (label 
+                     (if (delegated-text-shown?)
+                         (string-constant hide-overview)
+                         (string-constant show-overview)))
+                    (parent (get-show-menu))
+                    (callback
+                     (λ (menu evt)
+                       (if (delegated-text-shown?)
+                           (begin
+                             (send menu set-label (string-constant show-overview))
+                             (preferences:set 'framework:show-delegate? #f)
+                             (hide-delegated-text))
+                           (begin
+                             (send menu set-label (string-constant hide-overview))
+                             (preferences:set 'framework:show-delegate? #t)
+                             (show-delegated-text))))))])
+          (set-show-menu-sort-key overview-menu-item 301))
         
         (set! module-browser-menu-item
               (new menu:can-restore-menu-item%
@@ -3266,10 +3271,12 @@ module browser threading seems wrong.
                       (if module-browser-shown?
                           (hide-module-browser)
                           (show-module-browser))))))
+        (set-show-menu-sort-key module-browser-menu-item 401)
         
         (set! toolbar-menu (new menu% 
                                 [parent show-menu]
                                 [label (string-constant toolbar)]))
+        (set-show-menu-sort-key toolbar-menu 1)
         (set! toolbar-left-menu-item
               (new checkable-menu-item%
                    [label (string-constant toolbar-on-left)]
@@ -3300,7 +3307,43 @@ module browser threading seems wrong.
                    [label (string-constant show-log)]
                    [parent show-menu]
                    [callback
-                    (λ (x y) (send current-tab toggle-log))])))
+                    (λ (x y) (send current-tab toggle-log))]))
+        (set-show-menu-sort-key logger-menu-item 205)
+        
+        
+        
+          
+        (set! show-line-numbers-menu-item
+              (new menu:can-restore-menu-item%
+                   [label (if (show-line-numbers?)
+                              (string-constant hide-line-numbers/menu)
+                              (string-constant show-line-numbers/menu))]
+                   [parent (get-show-menu)]
+                   [callback (lambda (self event)
+                               (define value (preferences:get 'drracket:show-line-numbers?))
+                               (preferences:set 'drracket:show-line-numbers? (not value))
+                               (show-line-numbers! (not value)))]))
+        (set-show-menu-sort-key show-line-numbers-menu-item 302)
+        
+        (let ([split
+               (new menu:can-restore-menu-item%
+                    (shortcut (if (eq? (system-type) 'macosx) #f #\m))
+                    (label (string-constant split-menu-item-label))
+                    (parent (get-show-menu))
+                    (callback (λ (x y) (split)))
+                    (demand-callback (λ (item) (split-demand item))))]
+              [collapse
+               (new menu:can-restore-menu-item% 
+                    (shortcut (if (eq? (system-type) 'macosx) #f #\m))
+                    (shortcut-prefix (if (eq? (system-type) 'macosx) 
+                                         (get-default-shortcut-prefix)
+                                         (cons 'shift (get-default-shortcut-prefix))))
+                    (label (string-constant collapse-menu-item-label))
+                    (parent (get-show-menu))
+                    (callback (λ (x y) (collapse)))
+                    (demand-callback (λ (item) (collapse-demand item))))])
+          (set-show-menu-sort-key split 2)
+          (set-show-menu-sort-key collapse 3)))
       
       
       ;                                                                                                       
@@ -4081,35 +4124,6 @@ module browser threading seems wrong.
               #f
               has-editor-on-demand)
             (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
-          
-          (set! show-line-numbers-menu-item
-                (new menu:can-restore-menu-item%
-                     [label (if (show-line-numbers?)
-                                (string-constant hide-line-numbers/menu)
-                                (string-constant show-line-numbers/menu))]
-                     [parent (get-show-menu)]
-                     [callback (lambda (self event)
-                                 (define value (preferences:get 'drracket:show-line-numbers?))
-                                 (preferences:set 'drracket:show-line-numbers? (not value))
-                                 (show-line-numbers! (not value)))]))
-          
-          (make-object separator-menu-item% (get-show-menu))
-          
-          (new menu:can-restore-menu-item%
-               (shortcut (if (eq? (system-type) 'macosx) #f #\m))
-               (label (string-constant split-menu-item-label))
-               (parent (get-show-menu))
-               (callback (λ (x y) (split)))
-               (demand-callback (λ (item) (split-demand item))))
-          (new menu:can-restore-menu-item% 
-               (shortcut (if (eq? (system-type) 'macosx) #f #\m))
-               (shortcut-prefix (if (eq? (system-type) 'macosx) 
-                                    (get-default-shortcut-prefix)
-                                    (cons 'shift (get-default-shortcut-prefix))))
-               (label (string-constant collapse-menu-item-label))
-               (parent (get-show-menu))
-               (callback (λ (x y) (collapse)))
-               (demand-callback (λ (item) (collapse-demand item))))
           
           (frame:reorder-menus this)))
       

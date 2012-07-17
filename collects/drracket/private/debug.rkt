@@ -1579,7 +1579,7 @@ profile todo:
   (define profile-unit-frame-mixin
     (mixin (drracket:unit:frame<%> drracket:frame:<%>) ()
       
-      (inherit get-interactions-text get-current-tab)
+      (inherit get-interactions-text get-current-tab set-show-menu-sort-key)
       
       ;; update-shown : -> void
       ;; updates the state of the profile item's show menu
@@ -1600,7 +1600,8 @@ profile todo:
                 (parent show-menu)
                 (callback
                  (λ (x y)
-                   (show-profile-menu-callback))))))
+                   (show-profile-menu-callback)))))
+        (set-show-menu-sort-key show-profile-menu-item 207))
       
       (define show-profile-menu-item #f)
       (define profile-gui-constructed? #f)
