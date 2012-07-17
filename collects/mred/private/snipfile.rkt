@@ -241,29 +241,6 @@
         ;; don't load the file from source or reload useless bytecode:
         (void)])))
 
-  ;; cache modules that have hash codes:
-  (define module-cache (make-hash))
-
-  (define (check-module-cache in-port check-second? normal-k)
-    (let ([header (bytes-append #"^#~"
-                                (bytes (string-length (version)))
-                                (regexp-quote (string->bytes/utf-8 (version)))
-                                #"T")])
-      (cond
-       [(regexp-match-peek header in-port)
-        (define hash-code (peek-bytes 20 (+ 2 1 (string-length (version)) 1) in-port))
-        (cond
-         [(bytes=? hash-code (make-bytes 20 0))
-          (values (normal-k) #f check-second?)]
-         [else
-          (define key (cons hash-code (current-load-relative-directory)))
-          (define m (hash-ref module-cache key #f))
-          (if m
-              (values m #f #f)
-              (values (normal-k) key check-second?))])]
-       [else
-        (values (normal-k) #f check-second?)])))
-
   (define (text-editor-load-handler filename expected-module)
     (unless (path? filename)
       (raise-type-error 'text-editor-load-handler "path" filename))
@@ -282,27 +259,21 @@
                      (jump-to-submodule
                       in-port
                       expected-module
-                      (lambda (orig-check-second?)
+                      (lambda (check-second?)
                         (with-module-reading-parameterization 
                          (lambda ()
-                           (define-values (first cache-key check-second?)
-                             (check-module-cache in-port
-                                                 orig-check-second?
-                                                 (lambda () (read-syntax src in-port))))
-                           (define module-ized-exp
-                             (check-module-form first expected-module filename))
-                           (define second (if check-second?
+                           (let* ([first (read-syntax src in-port)]
+                                  [module-ized-exp (check-module-form first expected-module filename)]
+                                  [second (if check-second?
                                               (read in-port)
-                                              eof))
-                           (unless (eof-object? second)
-                             (raise-syntax-error
-                              'text-editor-load-handler
-                              (format "expected only a `module' declaration for `~s', but found an extra expression"
-                                      expected-module)
-                              second))
-                           (when cache-key
-                             (hash-set! module-cache cache-key module-ized-exp))
-                           (eval module-ized-exp)))))))
+                                              eof)])
+                             (unless (eof-object? second)
+                               (raise-syntax-error
+                                'text-editor-load-handler
+                                (format "expected only a `module' declaration for `~s', but found an extra expression"
+                                        expected-module)
+                                second))
+                             (eval module-ized-exp))))))))
 		  (let loop ([last-time-values (list (void))])
 		    (let ([exp (read-syntax src in-port)])
 		      (if (eof-object? exp)
