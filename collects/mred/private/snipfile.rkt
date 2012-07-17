@@ -241,58 +241,75 @@
         ;; don't load the file from source or reload useless bytecode:
         (void)])))
 
+  (define original-load-handler (current-load))
+
   (define (text-editor-load-handler filename expected-module)
     (unless (path? filename)
-      (raise-type-error 'text-editor-load-handler "path" filename))
-    (let-values ([(in-port src) (build-input-port filename)])
-      (dynamic-wind
-	  (lambda () (void))
-	  (lambda ()
-	    (parameterize ([read-accept-compiled #t]
-                           [read-accept-reader #t]
-                           [read-accept-lang #t]
-                           [read-on-demand-source (and (load-on-demand-enabled)
-                                                       (path->complete-path filename))])
-	      (if expected-module
-                  (with-module-reading-parameterization
-                   (lambda ()
-                     (jump-to-submodule
-                      in-port
-                      expected-module
-                      (lambda (check-second?)
-                        (with-module-reading-parameterization 
-                         (lambda ()
-                           (let* ([first (read-syntax src in-port)]
-                                  [module-ized-exp (check-module-form first expected-module filename)]
-                                  [second (if check-second?
-                                              (read in-port)
-                                              eof)])
-                             (unless (eof-object? second)
-                               (raise-syntax-error
-                                'text-editor-load-handler
-                                (format "expected only a `module' declaration for `~s', but found an extra expression"
-                                        expected-module)
-                                second))
-                             (eval module-ized-exp))))))))
-		  (let loop ([last-time-values (list (void))])
-		    (let ([exp (read-syntax src in-port)])
-		      (if (eof-object? exp)
-			  (apply values last-time-values)
-			  (call-with-values (lambda () (call-with-continuation-prompt
-                                                        (lambda () (eval 
-                                                                    (datum->syntax
-                                                                     #f
-                                                                     (cons '#%top-interaction exp)
-                                                                     exp)))
-                                                        (default-continuation-prompt-tag)
-                                                        (lambda args
-                                                          (apply
-                                                           abort-current-continuation
-                                                           (default-continuation-prompt-tag)
-                                                           args))))
-			    (lambda x (loop x)))))))))
-	  (lambda ()
-	    (close-input-port in-port)))))
+      (raise-argument-error 'text-editor-load-handler "path?" filename))
+    (unless (or (not expected-module)
+                (symbol? expected-module)
+                (and (pair? expected-module)
+                     (list? expected-module)
+                     (pair? (cdr expected-module))
+                     (or (not (car expected-module))
+                         (symbol? (car expected-module)))
+                     (andmap symbol? (cdr expected-module))))
+      (raise-argument-error 'text-editor-load-handler 
+                            "(or/c #f symbol? (cons/c (or/c #f symbol?) (non-empty-listof symbol?)))"
+                            expected-module))
+    (let-values ([(in-port src wxme?) (build-input-port filename)])
+      (if wxme?
+          (dynamic-wind
+              (lambda () (void))
+              (lambda ()
+                (parameterize ([read-accept-compiled #t]
+                               [read-accept-reader #t]
+                               [read-accept-lang #t]
+                               [read-on-demand-source (and (load-on-demand-enabled)
+                                                           (path->complete-path filename))])
+                  (if expected-module
+                      (with-module-reading-parameterization
+                       (lambda ()
+                         (jump-to-submodule
+                          in-port
+                          expected-module
+                          (lambda (check-second?)
+                            (with-module-reading-parameterization 
+                             (lambda ()
+                               (let* ([first (read-syntax src in-port)]
+                                      [module-ized-exp (check-module-form first expected-module filename)]
+                                      [second (if check-second?
+                                                  (read in-port)
+                                                  eof)])
+                                 (unless (eof-object? second)
+                                   (raise-syntax-error
+                                    'text-editor-load-handler
+                                    (format "expected only a `module' declaration for `~s', but found an extra expression"
+                                            expected-module)
+                                    second))
+                                 (eval module-ized-exp))))))))
+                      (let loop ([last-time-values (list (void))])
+                        (let ([exp (read-syntax src in-port)])
+                          (if (eof-object? exp)
+                              (apply values last-time-values)
+                              (call-with-values (lambda () (call-with-continuation-prompt
+                                                            (lambda () (eval 
+                                                                        (datum->syntax
+                                                                         #f
+                                                                         (cons '#%top-interaction exp)
+                                                                         exp)))
+                                                            (default-continuation-prompt-tag)
+                                                            (lambda args
+                                                              (apply
+                                                               abort-current-continuation
+                                                               (default-continuation-prompt-tag)
+                                                               args))))
+                                (lambda x (loop x)))))))))
+              (lambda ()
+                (close-input-port in-port)))
+          (begin
+            (close-input-port in-port)
+            (original-load-handler filename expected-module)))))
 
 
   ;; build-input-port : string -> (values input any)
@@ -301,18 +318,20 @@
   (define (build-input-port filename)
     (let ([p (open-input-file filename)])
       (port-count-lines! p)
-      (let ([p (cond
-		[(regexp-match-peek #rx#"^(?:#reader[(]lib\"read[.]ss\"\"wxme\"[)])?WXME01[0-9][0-9] ##[ \r\n]" p)
-		 (let ([t (make-object text%)])
-		   (send t insert-port p 'standard)
-		   (close-input-port p)
-		   (open-input-text-editor t 0 'end values filename))]
-		[else p])])
-	(port-count-lines! p) ; in case it's new
-	(values p filename))))
+      (define-values (new-p changed?)
+        (cond
+         [(regexp-match-peek #rx#"^(?:#reader[(]lib\"read[.]ss\"\"wxme\"[)])?WXME01[0-9][0-9] ##[ \r\n]" p)
+          (let ([t (make-object text%)])
+            (send t insert-port p 'standard)
+            (close-input-port p)
+            (values (open-input-text-editor t 0 'end values filename) #t))]
+         [else (values p #f)]))
+      (when changed?
+	(port-count-lines! p)) ; in case it's new
+      (values p filename changed?)))
 
   (define (open-input-graphical-file filename)
-    (let-values ([(p name) (build-input-port filename)])
+    (let-values ([(p name wxme?) (build-input-port filename)])
       p))
 
   (define open-output-text-editor 
