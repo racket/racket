@@ -1657,5 +1657,9 @@ please adhere to these guidelines:
   (ask-about-normalizing-strings "Ask about normalizing strings")
   
   (always-use-platform-specific-linefeed-convention "Always use the platform-specific linefeed convention")
+
+  ;; optimization coach
+  (hide-optimization-coach "Hide Optimization Coach Info")
+  (show-optimization-coach "Show Optimization Coach Info")
   
   )

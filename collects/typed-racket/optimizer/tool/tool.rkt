@@ -3,7 +3,8 @@
 (require racket/class racket/port racket/list racket/match unstable/sequence
          racket/gui/base racket/unit drracket/tool mrlib/switchable-button
          images/compile-time framework
-         (for-syntax racket/base images/icons/misc images/icons/style))
+         (for-syntax racket/base images/icons/misc images/icons/style)
+         string-constants)
 
 (require "report.rkt" "display.rkt")
 
@@ -33,6 +34,7 @@
      ,(match-lambda [(sub-report-entry s m 'mzc) #t]
                     [_ #f]))))
 
+(define-local-member-name get-coach-menu-item)
 
 (define-unit tool@
 
@@ -95,6 +97,9 @@
                  (cons (highlight-part start end-of-line)
                        (loop (add1 end-of-line)))])))
 
+      (define on? #f)
+      (define/public (highlighting-shown?) on?)
+      
       (define report-cache #f)
       (define/public (add-highlights #:use-cache? [use-cache? #f])
         (clear-highlights)
@@ -114,13 +119,15 @@
           (set! color-table (make-color-table max-badness)))
         (set! undo-thunks (for/fold ([res '()])
                               ([r (in-list report)])
-                            (append (highlight-entry r) res))))
+                            (append (highlight-entry r) res)))
+        (set! on? #t))
 
       (define/public (clear-highlights)
         (for ([h (in-list undo-thunks)]) (h))
         (set! highlights '())
-        (send (get-tab) hide-optimization-coach-panel))
-
+        (send (get-tab) hide-optimization-coach-panel)
+        (set! on? #f))
+        
       (define/augment (on-insert start len)
         (clear-highlights))
       (define/augment (on-delete start len)
@@ -202,10 +209,37 @@
 
   (define tab-switch-mixin
     (mixin (drracket:unit:frame<%>) ()
-      (super-new)
+      (inherit set-show-menu-sort-key get-current-tab)
+      
+      (define/public (get-coach-menu-item) coach-menu-item)
+      
+      (define/override (add-show-menu-items show-menu)
+        (super add-show-menu-items show-menu)
+        (set! coach-menu-item
+              (new menu-item% 
+                   [label (string-constant show-optimization-coach)]
+                   [parent show-menu]
+                   [demand-callback
+                    (λ (item)
+                      (send item set-label
+                            (if (get-field panel (get-current-tab))
+                                (string-constant hide-optimization-coach)
+                                (string-constant show-optimization-coach))))]
+                   [callback 
+                    (λ (a b)
+                      (define tab (get-current-tab))
+                      (if (get-field panel tab)
+                          (send (send tab get-defs) clear-highlights)
+                          (optimization-coach-callback this)))]))
+        (set-show-menu-sort-key coach-menu-item 403))
+      
       (define/augment (on-tab-change old-tab new-tab)
         (send old-tab hide-optimization-coach-panel #f) ; don't close it
         (when (get-field panel new-tab) ; if it was open before
-          (send new-tab show-optimization-coach-panel)))))
+          (send new-tab show-optimization-coach-panel)))
+      
+      (define coach-menu-item #f)
+      
+      (super-new)))
 
   (drracket:get/extend:extend-unit-frame tab-switch-mixin))
