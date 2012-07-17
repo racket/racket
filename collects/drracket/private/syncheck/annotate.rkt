@@ -4,7 +4,8 @@
          "local-member-names.rkt")
 (provide color color-range
          find-source-editor
-         find-source-editor/defs)
+         find-source-editor/defs
+         add-mouse-over)
 
 ;; color : syntax[original] str -> void
 ;; colors the syntax with style-name's style
@@ -22,6 +23,21 @@
   (define defs (current-annotations))
   (when defs
     (send defs syncheck:color-range source start finish style-name mode)))
+
+;; add-mouse-over : syntax[original] string -> void
+;; registers the range in the editor so that a mouse over
+;; this area shows up in the status line.
+(define (add-mouse-over stx str)
+  (let* ([source (find-source-editor stx)]
+         [defs-text (current-annotations)])
+    (when (and defs-text 
+               source
+               (syntax-position stx)
+               (syntax-span stx))
+      (let* ([pos-left (- (syntax-position stx) 1)]
+             [pos-right (+ pos-left (syntax-span stx))])
+        (send defs-text syncheck:add-mouse-over-status
+              source pos-left pos-right str)))))
 
 ;; find-source-editor : stx -> editor or false
 (define (find-source-editor stx)

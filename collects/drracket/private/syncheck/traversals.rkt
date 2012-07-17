@@ -720,21 +720,6 @@
                         to-source to-pos-left to-pos-right
                         actual? level))))))))
     
-    ;; add-mouse-over : syntax[original] string -> void
-    ;; registers the range in the editor so that a mouse over
-    ;; this area shows up in the status line.
-    (define (add-mouse-over stx str)
-      (let* ([source (find-source-editor stx)]
-             [defs-text (current-annotations)])
-        (when (and defs-text 
-                   source
-                   (syntax-position stx)
-                   (syntax-span stx))
-          (let* ([pos-left (- (syntax-position stx) 1)]
-                 [pos-right (+ pos-left (syntax-span stx))])
-            (send defs-text syncheck:add-mouse-over-status
-                  source pos-left pos-right str)))))
-    
     ;; add-jump-to-definition : syntax symbol path -> void
     ;; registers the range in the editor so that the
     ;; popup menu in this area allows the programmer to jump

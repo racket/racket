@@ -212,6 +212,11 @@ please adhere to these guidelines:
  (cs-unused-require "unused require")
  (cs-free-variable "free variable")
 
+  (cs-contract-my-obligation "Contract: this module's obligation")
+  (cs-contract-their-obligation "Contract: clients modules' obligation")
+  (cs-contract-both-obligation "Contract: both this module and client modules' obligation")
+  (cs-contract-unk-obligation "Contract: unknown obligation")
+  
   ;; mode sub-menu in the "view" menu
   (cs-check-syntax-mode "Check Syntax Mode")
   (cs-mode-menu-show-my-obligations "My Contract Obligations")
