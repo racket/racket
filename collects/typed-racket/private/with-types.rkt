@@ -79,7 +79,7 @@
                  ;; this parameter is just for printing types
                  ;; this is a parameter to avoid dependency issues
                  [current-type-names
-                  (delay
+                  (lazy
                     (append 
                      (type-name-env-map (lambda (id ty)
                                           (cons (syntax-e id) ty)))

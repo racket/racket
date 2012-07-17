@@ -151,7 +151,7 @@ don't depend on any other portion of the system
 
 ;; parameter for currently-defined type aliases
 ;; this is used only for printing type names
-(define current-type-names (make-parameter (delay '())))
+(define current-type-names (make-parameter (lazy '())))
 
 ;; for reporting internal errors in the type checker
 (define-struct (exn:fail:tc exn:fail) ())
