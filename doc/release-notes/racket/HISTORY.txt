@@ -1,3 +1,7 @@
+Version 5.3.0.15
+Changed module name resolver notification mode to supply
+ a source namespace for attaches
+
 Version 5.3.0.12
 racket/base: added impersonate-continuation-mark-key,
  chaperone-continuation-mark-key, make-continuation-mark-key,

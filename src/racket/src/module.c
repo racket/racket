@@ -463,7 +463,7 @@ void scheme_init_module_resolver(void)
 
   o = scheme_make_prim_w_arity(default_module_resolver,
 			       "default-module-name-resolver",
-			       1, 4);
+			       2, 4);
  
   scheme_set_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER, o);
 
@@ -906,7 +906,7 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv)
 {
   Scheme_Object *p = argv[0];
 
-  if (argc == 1)
+  if (argc == 2)
     return scheme_void; /* ignore notify */
 
   /* if (quote SYMBOL) */
@@ -926,12 +926,12 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv)
 
 static Scheme_Object *check_resolver(int argc, Scheme_Object **argv)
 {
-  if (scheme_check_proc_arity(NULL, 1, 0, argc, argv)
+  if (scheme_check_proc_arity(NULL, 2, 0, argc, argv)
       && scheme_check_proc_arity(NULL, 4, 0, argc, argv))
     return argv[0];
 
   scheme_wrong_contract("current-module-name-resolver", 
-                        "(case-> (any/c . -> . any) (any/c any/c any/c any/c . -> . any))", 
+                        "(case-> (any/c any/c . -> . any) (any/c any/c any/c any/c . -> . any))", 
                         0, argc, argv);
 
   return NULL;
@@ -1429,7 +1429,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 {
   Scheme_Env *from_env, *to_env, *menv, *menv2;
   Scheme_Object *todo, *next_phase_todo, *prev_phase_todo;
-  Scheme_Object *name, *notifies = scheme_null, *a[1], *resolver;
+  Scheme_Object *name, *notifies = scheme_null, *a[2], *resolver;
   Scheme_Object *to_modchain, *from_modchain, *l, *main_modidx;
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains, *past_todos;
@@ -2025,8 +2025,9 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
     resolver = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER);
     while (!SCHEME_NULLP(notifies)) {
       a[0] = SCHEME_CAR(notifies);
+      a[1] = (Scheme_Object *)from_env;
 
-      scheme_apply(resolver, 1, a);
+      scheme_apply(resolver, 2, a);
       
       notifies = SCHEME_CDR(notifies);
     }
@@ -6131,7 +6132,8 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
     Scheme_Object *resolver, *a[1];
     resolver = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER);
     a[0] = m->modname;
-    scheme_apply(resolver, 1, a);
+    a[1] = scheme_false;
+    scheme_apply(resolver, 2, a);
   }
 
   /* Replacing an already-running or already-syntaxing module? */

@@ -1234,10 +1234,10 @@
   (parameterize ([current-namespace (make-base-namespace)]
                  [current-module-name-resolver
                   (case-lambda
-                   [(name)
+                   [(name ns)
                     (if (equal? name "a")
                         (void)
-                        (old name))]
+                        (old name ns))]
                    [(name _ __) (make-resolved-module-path 'huh?)]
                    [(name base stx load?)
                     (if (equal? name "a")

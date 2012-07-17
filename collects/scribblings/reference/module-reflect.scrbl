@@ -63,7 +63,7 @@ the grammar for @racket[_module-path] for @racket[require],
 
 @defparam[current-module-name-resolver proc
            (case->
-            (resolved-module-path? . -> . any)
+            (resolved-module-path? (or/c #f namespace?) . -> . any)
             (module-path?
              (or/c #f resolved-module-path?)
              (or/c #f syntax?)
@@ -85,12 +85,22 @@ an absolute symbol or @tech{resolved module path}.
 A @tech{module name resolver} takes one and four arguments:
 @itemize[
 
-  @item{When given one argument, it is a name for a module declaration
-  that is already loaded. Such a call to the module name resolver is a
-  notification that the corresponding module does not need to be
-  loaded (for the current namespace, or any other namespace that
-  shares the same module registry). The module name resolver's result
-  is ignored.}
+  @item{When given two arguments, the first is a name for a module that
+  is now declared in the current namespace, and the second is optionally
+  a namespace from which the declaration was copied.
+  The module name resolver's result in this case is ignored.
+
+  The current module name resolver is called with two arguments by
+  @racket[namespace-attach-module] or
+  @racket[namespace-attach-module-declaration] to notify the resolver
+  that a module declaration was attached to the current namespace (and
+  should not be loaded in the future for the namespace's @tech{module registry}).
+  Evaluation of a module declaration also calls the current module
+  name resolver with two arguments, where the first is the declared
+  module and the second is @racket[#f]. No other Racket operation
+  invokes the module name resolver with two arguments, but other tools
+  (such as DrRacket) might call this resolver in this mode to avoid
+  redundant module loads.}
  
   @item{When given four arguments, the first is a module path,
   equivalent to a quoted @racket[_module-path] for @racket[require].
@@ -107,7 +117,7 @@ A @tech{module name resolver} takes one and four arguments:
 ]
 
 For the second case, the standard module name resolver keeps a
-per-registry table of loaded module name. If a resolved module path is
+table per @tech{module registry} containing loaded module name. If a resolved module path is
 not in the table, and @racket[#f] is not provided as the fourth
 argument to the @tech{module name resolver}, then the name is put into
 the table and the corresponding file is loaded with a variant of
@@ -124,20 +134,18 @@ already exists; if such a continuation mark does exist in the current
 continuation, then the @exnraise[exn:fail] with a message about a
 dependency cycle.
 
+The default module name resolver cooperates with the default
+@tech{compiled-load handler}: on a module-attach notification,
+bytecode-file information recorded by the @tech{compiled-load handler}
+for the source namespace's @tech{module registry} is transferred to
+the target namespace's @tech{module registry}.
+
 Module loading is suppressed (i.e., @racket[#f] is supplied as a fourth
 argument to the module name resolver) when resolving module paths in
 @tech{syntax objects} (see @secref["stxobj-model"]). When a
 @tech{syntax object} is manipulated, the current namespace might not
 match the original namespace for the syntax object, and the module
-should not necessarily be loaded in the current namespace.
-
-The current module name resolver is called with a single argument by
-@racket[namespace-attach-module] to notify the resolver that a module
-was attached to the current namespace (and should not be loaded in the
-future for the namespace's registry). No other Racket operation
-invokes the module name resolver with a single argument, but other
-tools (such as DrRacket) might call this resolver in this mode to
-avoid redundant module loads.}
+should not necessarily be loaded in the current namespace.}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{

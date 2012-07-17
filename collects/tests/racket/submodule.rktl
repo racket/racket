@@ -636,6 +636,33 @@
   (try-submods '(test main)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check stickiness of submodule-from-bytecode loading:
+
+(let ()
+  (define e `(module e racket/base
+               (module sub1 racket/base (provide x) (define x 'sub1))
+               (module sub2 racket/base (provide x) (define x 'sub2))
+               (module sub3 racket/base (provide x) (define x 'sub3))))
+  (define fn (build-path temp-dir "has-submod2.rkt"))
+  (define dir (build-path temp-dir "compiled"))
+  (define fn-zo (build-path dir "has-submod2_rkt.zo"))
+  (unless (directory-exists? dir) (make-directory dir))
+  (with-output-to-file fn
+    #:exists 'truncate
+    (lambda () (write e)))
+  (with-output-to-file fn-zo
+    #:exists 'truncate
+    (lambda () (write (compile e))))
+  (test 'sub1 dynamic-require `(submod ,fn sub1) 'x)
+  (parameterize ([use-compiled-file-paths null])
+    (test 'sub2 dynamic-require `(submod ,fn sub2) 'x))
+  (let ([ns (current-namespace)])
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [use-compiled-file-paths null])
+      (namespace-attach-module ns `(submod ,fn sub1))
+      (test 'sub3 dynamic-require `(submod ,fn sub3) 'x))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Delete the temp-dir
 
 (let loop ([x temp-dir])

@@ -660,35 +660,38 @@
                         (vector mapping-table library-table))
              (letrec-values ([(embedded-resolver)
                               (case-lambda 
-                               [(name)
-                                ;; a notification; if the name matches one of our special names,
-                                ;; assume that it's from a namespace that has the declaration
-                                ;; [it would be better if the notifier told us the source]
-                                (let-values ([(name) (if name (resolved-module-path-name name) #f)])
-                                  (let-values ([(a) (assq name mapping-table)])
-                                    (if a
-                                        (let-values ([(vec) (hash-ref regs (namespace-module-registry (current-namespace))
-                                                                      (lambda ()
-                                                                        (let-values ([(vec) (vector null null)])
-                                                                          (hash-set! regs (namespace-module-registry (current-namespace)) vec)
-                                                                          vec)))])
-                                          ;; add mapping:
-                                          (vector-set! vec 0 (cons a (vector-ref vec 0)))
-                                          ;; add library mappings:
-                                          (vector-set! vec 1 (append 
-                                                              (letrec-values ([(loop)
-                                                                               (lambda (l)
-                                                                                 (if (null? l)
-                                                                                     null
-                                                                                     (if (eq? (cdar l) name)
-                                                                                         (cons (car l) (loop (cdr l)))
-                                                                                         (loop (cdr l)))))])
-                                                                (loop library-table))
-                                                              (vector-ref vec 1))))
-                                        (void))))
-                                (orig name)]
-                               [(name rel-to stx)
-                                (embedded-resolver name rel-to stx #t)]
+                               [(name from-namespace)
+                                ;; A notification
+                                (if from-namespace
+                                  ;; If the source namespace has a mapping for `name',
+                                  ;; then copy it to the current namespace.
+                                  (let-values ([(name) (if name (resolved-module-path-name name) #f)])
+                                    (let-values ([(src-vec) (hash-ref regs (namespace-module-registry from-namespace) #f)])
+                                      (let-values ([(a) (if src-vec
+                                                            (assq name (vector-ref src-vec 0))
+                                                            #f)])
+                                        (if a
+                                            (let-values ([(vec) (hash-ref regs (namespace-module-registry (current-namespace))
+                                                                          (lambda ()
+                                                                            (let-values ([(vec) (vector null null)])
+                                                                              (hash-set! regs (namespace-module-registry (current-namespace)) vec)
+                                                                              vec)))])
+                                              ;; add mapping:
+                                              (vector-set! vec 0 (cons a (vector-ref vec 0)))
+                                              ;; add library mappings:
+                                              (vector-set! vec 1 (append 
+                                                                  (letrec-values ([(loop)
+                                                                                   (lambda (l)
+                                                                                     (if (null? l)
+                                                                                         null
+                                                                                         (if (eq? (cdar l) name)
+                                                                                             (cons (car l) (loop (cdr l)))
+                                                                                             (loop (cdr l)))))])
+                                                                    (loop library-table))
+                                                                  (vector-ref vec 1))))
+                                            (void)))))
+                                  (void))
+                                (orig name from-namespace)]
                                [(name rel-to stx load?)
                                 (if (not (module-path? name))
                                     ;; Bad input

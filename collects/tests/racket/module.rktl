@@ -528,7 +528,7 @@
            (read-syntax path
                         (open-input-string "#lang tests/racket (provide x) (define x 1)"
                                            path)))
-          ((current-module-name-resolver) (current-module-declare-name))))
+          ((current-module-name-resolver) (current-module-declare-name) #f)))
       (test '#(tests/racket/lang/getinfo get-info closure-data)
             module->language-info 'tests/racket/langm))))
 

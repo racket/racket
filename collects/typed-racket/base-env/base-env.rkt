@@ -1828,13 +1828,13 @@
 [resolved-module-path-name (-> -Resolved-Module-Path (Un -Path -Symbol))]
 [module-path? (asym-pred Univ B (-FS (-filter -Module-Path 0) -top))]
 
-[current-module-name-resolver (-Param (cl->* (-Resolved-Module-Path . -> . Univ)
+[current-module-name-resolver (-Param (cl->* (-Resolved-Module-Path Univ . -> . Univ)
                                              ((Un -Module-Path -Path)
                                               (-opt -Resolved-Module-Path)
                                               (-opt (-Syntax Univ))
                                               -Boolean
                                               . -> . -Resolved-Module-Path))
-                                      (cl->* (-Resolved-Module-Path . -> . Univ)
+                                      (cl->* (-Resolved-Module-Path Univ . -> . Univ)
                                              ((Un -Module-Path -Path)
                                               (-opt -Resolved-Module-Path)
                                               (-opt (-Syntax Univ))
