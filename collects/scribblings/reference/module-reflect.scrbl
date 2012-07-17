@@ -82,7 +82,7 @@ module, the @deftech{module path resolver} is also given the name of
 the enclosing module, so that a relative reference can be converted to
 an absolute symbol or @tech{resolved module path}.
 
-A @tech{module name resolver} takes one and four arguments:
+A @tech{module name resolver} takes two and four arguments:
 @itemize[
 
   @item{When given two arguments, the first is a name for a module that
