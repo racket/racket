@@ -1604,8 +1604,8 @@ void *scheme_extract_pointer(Scheme_Object *v) {
  * for both the function definition and calls */
 #ifdef SCHEME_BIG_ENDIAN
 #define C2SCHEME(ap,typ,src,delta,argsloc,gcsrc) c_to_scheme(ap,typ,src,delta,argsloc,gcsrc)
-#define REF_CTYPE(ctype) (((sizeof(ctype)<sizeof(int)) && args_loc) \
-  ? ((ctype)(((int*)W_OFFSET(src,delta))[0])) \
+#define REF_CTYPE(ctype) (((sizeof(ctype)<sizeof(intptr_t)) && args_loc) \
+  ? ((ctype)(((intptr_t*)W_OFFSET(src,delta))[0])) \
   : (((ctype *)W_OFFSET(src,delta))[0]))
 #else
 #define C2SCHEME(ap,typ,src,delta,argsloc,gcsrc) c_to_scheme(ap,typ,src,delta,gcsrc)
