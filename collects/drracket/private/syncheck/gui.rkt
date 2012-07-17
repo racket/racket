@@ -79,10 +79,6 @@ If the namespace does not, they are colored the unbound color.
 ;; be < 50ms)
 (define syncheck-arrow-delay 100)
 
-(preferences:set-default 'drracket:syncheck-mode 'default-mode
-                         (λ (x) (memq x '(default-mode 
-                                           my-obligations-mode 
-                                           client-obligations-mode))))
 (let ([number-between-zero-and-one?
        (λ (x) (and (number? x) (<= 0 x 1)))])
   (preferences:set-default 
@@ -354,7 +350,6 @@ If the namespace does not, they are colored the unbound color.
             
             ;; cleanup-texts : (or/c #f (listof text))
             (define cleanup-texts #f)
-            (define style-mapping #f)
             
             ;; bindings-table : hash-table[(list text number number) -o> (listof (list text number number))]
             ;; this is a private field
@@ -490,8 +485,7 @@ If the namespace does not, they are colored the unbound color.
               (set! tacked-hash-table (make-hasheq))
               (set! arrow-records (make-hasheq))
               (set! bindings-table (make-hash))
-              (set! cleanup-texts '())
-              (set! style-mapping (make-hash)))
+              (set! cleanup-texts '()))
             
             (define/public (syncheck:arrows-visible?)
               (or arrow-records cursor-pos cursor-text cursor-eles cursor-tooltip))
@@ -504,7 +498,6 @@ If the namespace does not, they are colored the unbound color.
                 (when (update-latent-arrows #f #f)
                   (update-drawn-arrows))
                 (syncheck:clear-coloring)
-                (set! style-mapping #f)
                 (invalidate-bitmap-cache)))
             
             (define/public (syncheck:clear-coloring)
@@ -514,19 +507,15 @@ If the namespace does not, they are colored the unbound color.
               (set! cleanup-texts #f))
             
             ;; syncheck:apply-style/remember : (is-a?/c text%) number number style% symbol -> void
-            (define/public (syncheck:apply-style/remember txt start finish style mode)
-              (when (eq? mode syncheck-mode)
-                (add-to-cleanup/apply-style txt start finish style))
-              (when cleanup-texts
-                (hash-set! style-mapping mode (cons (list txt start finish style)
-                                                    (hash-ref style-mapping mode '())))))
+            (define/public (syncheck:apply-style/remember txt start finish style)
+              (add-to-cleanup/apply-style txt start finish style))
             
-            (define/public (syncheck:color-range source start finish style-name mode)
+            (define/public (syncheck:color-range source start finish style-name)
               (when (is-a? source text%)
-                (define (apply-style/remember ed start finish style mode)
+                (define (apply-style/remember ed start finish style)
                   (let ([outermost (find-outermost-editor ed)])
                     (and (is-a? outermost syncheck-text<%>)
-                         (send outermost syncheck:apply-style/remember ed start finish style mode))))
+                         (send outermost syncheck:apply-style/remember ed start finish style))))
                 
                 (define (find-outermost-editor ed)
                   (let loop ([ed ed])
@@ -540,7 +529,7 @@ If the namespace does not, they are colored the unbound color.
                 (let ([style (send (send source get-style-list)
                                    find-named-style
                                    style-name)])
-                  (apply-style/remember source start finish style mode))))
+                  (apply-style/remember source start finish style))))
 
             ;; add-to-cleanup/apply-style : (is-a?/c text%) number number style% symbol -> boolean
             (define/private (add-to-cleanup/apply-style txt start finish style)
@@ -1390,47 +1379,6 @@ If the namespace does not, they are colored the unbound color.
                 (when frame
                   (send frame update-button-visibility/settings settings)))
               (inner (void) after-set-next-settings settings))
-            
-            (define syncheck-mode 'default-mode)
-            (define/public (set-syncheck-mode m) 
-              (let ([old-mode syncheck-mode])
-                (set! syncheck-mode m)
-                (when style-mapping
-                  (unless (eq? old-mode syncheck-mode)
-                    (apply-syncheck-mode)))))
-            (define/public (get-syncheck-mode) (if style-mapping
-                                                   syncheck-mode
-                                                   #f))
-            
-            (define/private (apply-syncheck-mode)
-              (let ([edit-sequences '()])
-                
-                ;; we need to reset the colors in every editor we can find, not just those that have new colors
-                (for ([(k v) (in-hash style-mapping)])
-                  (for ((l (in-list v)))
-                    (let-values ([(txt start finish style) (apply values l)])
-                      (unless (memq txt edit-sequences)
-                        (send txt begin-edit-sequence #f)
-                        
-                        ;; this little dance resets the 
-                        ;; colors to their natural values
-                        (begin
-                          (cond
-                            [(send txt is-frozen?)
-                             (send txt thaw-colorer)]
-                            [else
-                             (send txt freeze-colorer)
-                             (send txt thaw-colorer)])
-                          (send txt freeze-colorer))
-                        
-                        (set! edit-sequences (cons txt edit-sequences))))))
-                
-                (for ((l (in-list (reverse (hash-ref style-mapping syncheck-mode '())))))
-                  (let-values ([(txt start finish style) (apply values l)])
-                    (add-to-cleanup/apply-style txt start finish style)))
-                
-                (for ((txt (in-list edit-sequences)))
-                  (send txt end-edit-sequence))))
 
             (define/public (syncheck:find-source-object stx)
               (cond
@@ -1497,8 +1445,7 @@ If the namespace does not, they are colored the unbound color.
           (when error-report-visible?
             (cond
               [(is-current-tab?)
-               (send (get-frame) hide-error-report)
-               (send (get-frame) update-menu-status this)]
+               (send (get-frame) hide-error-report)]
               [else
                (set! error-report-visible? #f)])))
         
@@ -1540,7 +1487,6 @@ If the namespace does not, they are colored the unbound color.
               (show-error-report)
               (hide-error-report))
           (send report-error-canvas set-editor (send new-tab get-error-report-text))
-          (update-menu-status new-tab)
           (update-button-visibility/tab new-tab))
         
         (define/private (update-button-visibility/tab tab)
@@ -1669,13 +1615,9 @@ If the namespace does not, they are colored the unbound color.
         
         (define/augment (enable-evaluation)
           (send check-syntax-button enable #t)
-          (send mode-menu-item1 enable #t)
-          (send mode-menu-item2 enable #t)
           (inner (void) enable-evaluation))
         
         (define/augment (disable-evaluation)
-          (send mode-menu-item1 enable #f)
-          (send mode-menu-item2 enable #f)
           (send check-syntax-button enable #f)
           (inner (void) disable-evaluation))
         
@@ -1756,55 +1698,11 @@ If the namespace does not, they are colored the unbound color.
             (set! super-root s-root)
             (set! rest-panel r-root)
             r-root))
-        
-        (define mode-menu-item1 #f)
-        (define mode-menu-item2 #f)
-        (define mode-menu-item3 #f)
-        
-        (define/override (add-show-menu-items show-menu)
-          (define (start-checking mode)
-            (let* ([tab (get-current-tab)]
-                   [defs (send tab get-defs)])
-              (preferences:set 'drracket:syncheck-mode mode)
-              (cond
-                [(send defs get-syncheck-mode)
-                 (send defs set-syncheck-mode mode)
-                 (update-menu-status tab)]
-                [else
-                 (syncheck:button-callback #f mode)])))
-          
-          (super add-show-menu-items show-menu)
-          (let ([p (new menu%
-                        [parent show-menu]
-                        [label cs-check-syntax-mode])])
-            (set! mode-menu-item1
-                  (new checkable-menu-item% 
-                       [parent p]
-                       [label cs-mode-menu-show-syntax]
-                       [callback (λ (a b) (start-checking 'default-mode))]))
-            (set! mode-menu-item2
-                  (new checkable-menu-item% 
-                       [parent p]
-                       [label cs-mode-menu-show-my-obligations]
-                       [callback (λ (a b) (start-checking 'my-obligations-mode))]))
-            (set! mode-menu-item3
-                  (new checkable-menu-item%
-                       [parent p]
-                       [label cs-mode-menu-show-client-obligations]
-                       [callback (λ (a b) (start-checking 'client-obligations-mode))]))))
-        
-        (define/public (update-menu-status tab)
-          (when mode-menu-item1
-            (let ([mode (send (send (get-current-tab) get-defs) get-syncheck-mode)])
-              (send mode-menu-item1 check (eq? mode 'default-mode))
-              (send mode-menu-item2 check (eq? mode 'my-obligations-mode))
-              (send mode-menu-item3 check (eq? mode 'client-obligations-mode)))))
                 
         (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
         ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
         ;; this is the only function that has any code running on the user's thread
-        (define/public (syncheck:button-callback [jump-to-id #f] 
-                                                 [mode (preferences:get 'drracket:syncheck-mode)])
+        (define/public (syncheck:button-callback [jump-to-id #f])
           (when (send check-syntax-button is-enabled?)
             (open-status-line 'drracket:check-syntax:status)
             (update-status-line 'drracket:check-syntax:status status-init)
@@ -1952,8 +1850,6 @@ If the namespace does not, they are colored the unbound color.
                            (λ ()
                              (parameterize ([current-annotations definitions-text])
                                (expansion-completed))
-                             (send (send (get-current-tab) get-defs) set-syncheck-mode mode)
-                             (update-menu-status (get-current-tab))
                              (send definitions-text syncheck:sort-bindings-table)))
                           (cleanup)
                           (custodian-shutdown-all user-custodian))))]

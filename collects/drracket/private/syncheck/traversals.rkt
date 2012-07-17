@@ -544,7 +544,7 @@
                            (define fin (+ start span))
                            (send defs-text syncheck:add-background-color
                                  source-editor start fin "firebrick")))
-                       (color stx unused-require-style-name 'default-mode)))
+                       (color stx unused-require-style-name)))
                    (hash-ref requires k 
                              (λ ()
                                (error 'syncheck/traversals.rkt "requires doesn't have a mapping for ~s" k)))))))
@@ -667,10 +667,10 @@
                      #t)))])
         (cond
           [top-bound?
-           (color var lexically-bound-variable-style-name 'default-mode)]
+           (color var lexically-bound-variable-style-name)]
           [else
            (add-mouse-over var (format "~s is a free variable" (syntax-e var)))
-           (color var free-variable-style-name 'default-mode)])
+           (color var free-variable-style-name)])
         (connect-identifier var binders #f #f 0 user-namespace user-directory #t)))
     
     ;; color-variable : syntax phase-level identifier-mapping -> void
@@ -686,9 +686,9 @@
         (cond
           [(get-ids varsets var)
            (add-mouse-over var (string-constant cs-set!d-variable))
-           (color var set!d-variable-style-name 'default-mode)]
-          [lexical? (color var lexically-bound-variable-style-name 'default-mode)]
-          [(pair? b) (color var imported-variable-style-name 'default-mode)])))
+           (color var set!d-variable-style-name)]
+          [lexical? (color var lexically-bound-variable-style-name)]
+          [(pair? b) (color var imported-variable-style-name)])))
     
     ;; add-var : hash-table -> syntax -> void
     ;; adds the variable to the hash table.
