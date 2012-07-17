@@ -3,7 +3,7 @@
            racket/contract/base
            "stx.rkt"
            racket/struct-info)
-  (require (for-template mzscheme))
+  (require (for-template racket/base))
   
   (provide parse-define-struct
 
