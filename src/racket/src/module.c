@@ -1418,6 +1418,60 @@ static void check_phase(Scheme_Env *menv, Scheme_Env *env, int phase) { }
 static void check_modchain_consistency(Scheme_Hash_Table *ht, int phase) { }
 #endif
 
+void ensure_instantiate_for_label(const char *who, Scheme_Env *from_env, Scheme_Object *name, Scheme_Object *modidx)
+{
+  Scheme_Module *m2;
+
+  m2 = registry_get_loaded(from_env, name);
+  if (!m2)
+    scheme_contract_error(who,
+                          "module not declared (in the source namespace)",
+                          "name", 1, name,
+                          NULL);
+  else {
+    /* instantiate for-label: */
+    Scheme_Cont_Frame_Data cframe;
+    Scheme_Config *config;
+
+    /* make sure `from_env' is the current namespace, because
+       start_module() may need to resolve module paths: */
+    config = scheme_extend_config(scheme_current_config(),
+                                  MZCONFIG_ENV,
+                                  (Scheme_Object *)from_env);
+    scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+
+    start_module(m2, 
+                 from_env->label_env, 0, 
+                 modidx, 
+                 0, 0, -1,
+                 scheme_null,
+                 0);
+
+    scheme_pop_continuation_frame(&cframe);
+  } 
+}
+
+static Scheme_Object *make_sub_modidx(Scheme_Env *menv, Scheme_Object *name, int i)
+{
+  if (i) {
+    name = scheme_resolved_module_path_value(name);
+    while (SCHEME_PAIRP(SCHEME_CDR(name))) {
+      name = SCHEME_CDR(name);
+    }
+    name = SCHEME_CAR(name);
+  } else {
+    name = scheme_make_utf8_string("..");
+  }
+  
+  return scheme_make_modidx(scheme_make_pair(submod_symbol,
+                                             scheme_make_pair(scheme_make_utf8_string("."),
+                                                              scheme_make_pair(name,
+                                                                               scheme_null))),
+                            menv->link_midx,
+                            scheme_false);
+}
+
 #if 0
 # define LOG_ATTACH(x) (x, fflush(stdout))
 #else
@@ -1705,6 +1759,41 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
               }
             }
           }
+
+          if (!same_namespace) {
+            /* attached submodules: like for-label imports: */
+            int i;
+            for (i = 0; i < 3; i++) {
+              switch (i) {
+              case 0:
+                if (menv->module->supermodule)
+                  l = scheme_make_pair(menv->module->supermodule, scheme_null);
+                else
+                  l = scheme_null;
+                break;
+              case 1:
+                l = menv->module->post_submodules;
+                break;
+              case 2:
+              default:
+                l = menv->module->pre_submodules;
+                break;
+              }
+              if (l) {
+                while (!SCHEME_NULLP(l)) {
+                  name = ((Scheme_Module *)SCHEME_CAR(l))->modname;
+                  
+                  if (!scheme_hash_get(nophase_checked, name)) {
+                    LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(name, NULL)));
+                    nophase_todo = scheme_make_pair(scheme_make_pair(name, make_sub_modidx(menv, name, i)),
+                                                    nophase_todo);
+                    scheme_hash_set(nophase_checked, name, just_declare ? scheme_false : scheme_true);
+                  }
+                  l = SCHEME_CDR(l);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -1777,7 +1866,15 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 
   /* Recursively process phase-#f modules: */
   while (!SCHEME_NULLP(nophase_todo)) {
+    int is_submod;
+
     name = SCHEME_CAR(nophase_todo);
+    if (SCHEME_PAIRP(name)) {
+      is_submod = 1;
+      main_modidx = SCHEME_CDR(name);
+      name = SCHEME_CAR(name);
+    } else
+      is_submod = 0;
     nophase_todo = SCHEME_CDR(nophase_todo);      
 
     if (!is_builtin_modname(name)) {
@@ -1788,40 +1885,12 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
       LOG_ATTACH(printf("Check #f %s\n", scheme_write_to_string(name, 0)));
     
       if (!menv) {
-        if (only_declare && main_modidx) {
-          m2 = registry_get_loaded(from_env, name);
-	  if (!m2)
-            scheme_contract_error(who,
-                                  "module not declared (in the source namespace)",
-                                  "name", 1, name,
-                                  NULL);
-          else {
-            /* instantiate for-label: */
-            Scheme_Cont_Frame_Data cframe;
-            Scheme_Config *config;
-            
-            /* make sure `from_env' is the current namespace, because
-               start_module() may need to resolve module paths: */
-            config = scheme_extend_config(scheme_current_config(),
-                                          MZCONFIG_ENV,
-                                          (Scheme_Object *)from_env);
-            scheme_push_continuation_frame(&cframe);
-            scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
-
-            start_module(m2, 
-                         from_env->label_env, 0, 
-                         main_modidx, 
-                         0, 0, -1,
-                         scheme_null,
-                         0);
-
-            scheme_pop_continuation_frame(&cframe);
-            
-            /* try again: */
-            menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
-          }
-	}
-
+        if ((only_declare || is_submod) && main_modidx) {
+          ensure_instantiate_for_label(who, from_env, name, main_modidx);
+          /* try again: */
+          menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
+        }
+        
         if (!menv)
           scheme_arg_mismatch(who,
                               "internal error; unknown module (for label): ",
@@ -1872,6 +1941,38 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
               LOG_ATTACH(printf("Add .* %s\n", scheme_write_to_string(name, 0)));
               nophase_todo = scheme_make_pair(name, nophase_todo);
               scheme_hash_set(nophase_checked, name, scheme_true);
+            }
+            l = SCHEME_CDR(l);
+          }
+        }
+      }
+
+      for (i = 0; i < 3; i++) {
+        switch (i) {
+        case 0:
+          if (menv->module->supermodule)
+            l = scheme_make_pair(menv->module->supermodule, scheme_null);
+          else
+            l = scheme_null;
+          break;
+        case 1:
+          l = menv->module->post_submodules;
+          break;
+        case 2:
+        default:
+          l = menv->module->pre_submodules;
+          break;
+        }
+        
+        if (l) {
+          while (!SCHEME_NULLP(l)) {
+            name = ((Scheme_Module *)SCHEME_CAR(l))->modname;
+                  
+            if (!scheme_hash_get(nophase_checked, name)) {
+              LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(name, NULL)));
+              nophase_todo = scheme_make_pair(scheme_make_pair(name, make_sub_modidx(menv, name, i)),
+                                              nophase_todo);
+              scheme_hash_set(nophase_checked, name, just_declare ? scheme_false : scheme_true);
             }
             l = SCHEME_CDR(l);
           }
@@ -5943,7 +6044,8 @@ static void eval_exptime(Scheme_Object *names, int count,
 
 static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv, 
                                         int set_cache, int set_in_pre, 
-                                        Scheme_Object *prefix);
+                                        Scheme_Object *prefix,
+                                        Scheme_Object *supermodule);
 
 static Scheme_Object *do_module_execute_k()
 {
@@ -5951,17 +6053,20 @@ static Scheme_Object *do_module_execute_k()
   Scheme_Object *data = (Scheme_Object *)p->ku.k.p1;
   Scheme_Env *genv = (Scheme_Env *)p->ku.k.p2;
   Scheme_Object *prefix = (Scheme_Object *)p->ku.k.p3;
+  Scheme_Object *supermodule = (Scheme_Object *)p->ku.k.p4;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
 
-  return do_module_execute(data, genv, p->ku.k.i1, p->ku.k.i2, prefix);
+  return do_module_execute(data, genv, p->ku.k.i1, p->ku.k.i2, prefix, supermodule);
 }
 
 static Scheme_Object *do_module_execute_recur(Scheme_Object *data, Scheme_Env *genv, 
                                               int set_cache, int set_in_pre, 
-                                              Scheme_Object *prefix)
+                                              Scheme_Object *prefix,
+                                              Scheme_Object *supermodule)
 {
 # include "mzstkchk.h"
   {
@@ -5971,9 +6076,10 @@ static Scheme_Object *do_module_execute_recur(Scheme_Object *data, Scheme_Env *g
     p->ku.k.i1 = set_cache;
     p->ku.k.i2 = set_in_pre;
     p->ku.k.p3 = (void *)prefix;
+    p->ku.k.p4 = (void *)supermodule;
     return scheme_handle_stack_overflow(do_module_execute_k);
   } else {
-    return do_module_execute(data, genv, set_cache, set_in_pre, prefix);
+    return do_module_execute(data, genv, set_cache, set_in_pre, prefix, supermodule);
   }
 }
 
@@ -5992,7 +6098,8 @@ static void execute_submodules(Scheme_Module *m, int pre, Scheme_Env *genv,
     }
     
     while (!SCHEME_NULLP(p)) {
-      do_module_execute_recur(SCHEME_CAR(p), genv, set_cache, set_in_pre, prefix);
+      do_module_execute_recur(SCHEME_CAR(p), genv, set_cache, set_in_pre, prefix, 
+                              (Scheme_Object *)m);
       p = SCHEME_CDR(p);
     }
   }
@@ -6000,7 +6107,8 @@ static void execute_submodules(Scheme_Module *m, int pre, Scheme_Env *genv,
 
 static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv, 
                                         int set_cache, int set_in_pre, 
-                                        Scheme_Object *prefix)
+                                        Scheme_Object *prefix,
+                                        Scheme_Object *supermodule)
 {
   Scheme_Module *m;
   Scheme_Env *env;
@@ -6075,6 +6183,9 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
     }
     m->modsrc = src;
   }
+
+  if (supermodule)
+    m->supermodule = supermodule;
 
   if (genv)
     env = genv;
@@ -6152,7 +6263,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv)
 {
-  return do_module_execute(data, genv, 1, 0, NULL);
+  return do_module_execute(data, genv, 1, 0, NULL, NULL);
 }
 
 static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)
@@ -7854,7 +7965,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       else
         o = scheme_eval_clone(o);
       
-      (void)do_module_execute(o, env->genv, 0, 1, root_module_name);
+      (void)do_module_execute(o, env->genv, 0, 1, root_module_name, NULL);
     }
 
     if (!rec[drec].comp && (is_modulestar_stop(env))) {

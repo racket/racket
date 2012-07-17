@@ -672,5 +672,38 @@
                                (delete-directory x)]))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Module attach
+
+(let ()
+  (define (test-attach decl-only? pre-check?)
+    (let ([ns1 (make-base-namespace)]
+          [ns2 (make-base-namespace)]
+          [ns3 (make-base-namespace)])
+      (parameterize ([current-namespace ns1])
+        (eval '(module m racket/base 
+                 (provide root) (define root 'm)
+                 (module+ n (provide x) (define x 'x))))
+        (unless decl-only?
+          (dynamic-require ''m #f)
+          (when pre-check?
+            (test 'x dynamic-require '(submod 'm n) 'x))))
+      (parameterize ([current-namespace ns2])
+        ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
+         ns1 
+         ''m)
+        (test 'x dynamic-require '(submod 'm n) 'x))
+      (unless decl-only?
+        (parameterize ([current-namespace ns1])
+          (test 'x dynamic-require '(submod 'm n) 'x)))
+      (parameterize ([current-namespace ns3])
+        ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
+         ns1 
+         '(submod 'm n))
+        (test 'm dynamic-require ''m 'root))))
+  (test-attach #f #f)
+  (test-attach #f #t)
+  (test-attach #t #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
