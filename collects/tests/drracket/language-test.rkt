@@ -62,19 +62,19 @@ the settings above should match r5rs
     
     (test-expression "(define-struct spider (legs))(make-spider 4)" 
                      "#<spider>"
-                     #rx"define-values: cannot re-define a constant.*struct:spider")
+                     #rx"define-values: assignment disallowed.*struct:spider")
     
     (test-expression "(sqrt -1)" "0+1i")
     
     (test-expression "class" (regexp "class: bad syntax in: class"))
     (test-expression "shared" (regexp "shared: bad syntax in: shared"))
     
-    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"" "")
+    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of `\\.'" "")
     (test-expression "'(1 . 2)" "'(1 . 2)")
     
-    (test-expression "(define (f define) 1)" "" #rx"define-values: cannot re-define a constant.*: f")
-    (test-expression "(define (f car) 1)" "" #rx"define-values: cannot re-define a constant.*: f")
-    (test-expression "(define (f empty) 1)" "" #rx"define-values: cannot re-define a constant.*: f")
+    (test-expression "(define (f define) 1)" "" #rx"define-values: assignment disallowed.*: f")
+    (test-expression "(define (f car) 1)" "" #rx"define-values: assignment disallowed.*: f")
+    (test-expression "(define (f empty) 1)" "" #rx"define-values: assignment disallowed.*: f")
     
     (test-expression "call/cc" "#<procedure:call-with-current-continuation>")
     
@@ -87,11 +87,11 @@ the settings above should match r5rs
     (test-expression "true" "#t")
     (test-expression "mred^" 
                      #rx"unbound identifier in module in: mred\\^"
-                     #rx"reference to undefined identifier.*: mred\\^")
+                     #rx"mred\\^.*cannot reference undefined identifier")
     (test-expression "(eq? 'a 'A)" "#f")
     (test-expression "(set! x 1)" 
                      #rx"set!: unbound identifier in module in: x"
-                     #rx"set!: cannot set undefined.*: x")
+                     #rx"set!:.*cannot set undefined.*: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond [(= 1 2) 3])" "")
     (test-expression "(cons 1 2)" "'(1 . 2)")
@@ -99,7 +99,7 @@ the settings above should match r5rs
     (test-expression "'(1)" "'(1)")
     (test-expression "(define shrd (box 1)) (list shrd shrd)"
                      "'(#&1 #&1)"
-                     #rx"define-values: cannot re-define a constant.*: shrd")
+                     #rx"define-values: assignment disallowed.*: shrd")
     (test-expression "(local ((define x x)) 1)" "1")
     (test-expression "(letrec ([x x]) 1)" "1")
     (test-expression "(if 1 1 1)" "1")
@@ -176,7 +176,7 @@ the settings above should match r5rs
     (test-expression "class" (regexp "class: bad syntax in: class"))
     (test-expression "shared" (regexp "shared: bad syntax in: shared"))
     
-    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"")
+    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of `\\.'")
     (test-expression "'(1 . 2)" "(1 . 2)")
     
     (test-expression "(define (f define) 1)" "")
@@ -192,9 +192,9 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" "#t")
-    (test-expression "mred^" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: mred\\^")
+    (test-expression "mred^" #rx"{stop-multi.png} {stop-22x22.png} mred\\^.*cannot reference undefined identifier")
     (test-expression "(eq? 'a 'A)" "#f")
-    (test-expression "(set! x 1)" #rx"{stop-multi.png} {stop-22x22.png} set!: cannot set undefined.*: x")
+    (test-expression "(set! x 1)" #rx"{stop-multi.png} {stop-22x22.png} set!:.*cannot set undefined.*: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond [(= 1 2) 3])" "")
     (test-expression "(cons 1 2)" "(1 . 2)")
@@ -274,32 +274,32 @@ the settings above should match r5rs
     
     (test-expression 
      "(define-struct spider (legs))(make-spider 4)" 
-     #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: define-struct")
+     #rx"{stop-multi.png} {stop-22x22.png} define-struct:.*cannot reference undefined identifier")
     
     (test-expression "(sqrt -1)" "0+1i")
     
-    (test-expression "class" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: class")
-    (test-expression "shared" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: shared")
+    (test-expression "class" #rx"{stop-multi.png} {stop-22x22.png} class:.*cannot reference undefined identifier")
+    (test-expression "shared" #rx"{stop-multi.png} {stop-22x22.png} shared:.*cannot reference undefined identifier")
     
-    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"")
+    (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of `\\.'")
     (test-expression "'(1 . 2)" "(1 . 2)")
     
     (test-expression "(define (f define) 1)" "")
     (test-expression "(define (f car) 1)" "")
     (test-expression "(define (f empty) 1)" "")
     
-    (test-expression "call/cc" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: call/cc")
+    (test-expression "call/cc" #rx"{stop-multi.png} {stop-22x22.png} call/cc:.*cannot reference undefined identifier")
     
-    (test-expression "(error 'a \"~a\" 1)" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: error")
-    (test-expression "(error \"a\" \"a\")" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: error")
+    (test-expression "(error 'a \"~a\" 1)" #rx"{stop-multi.png} {stop-22x22.png} error:.*cannot reference undefined identifier")
+    (test-expression "(error \"a\" \"a\")" #rx"{stop-multi.png} {stop-22x22.png} error:.*cannot reference undefined identifier")
     
     (test-expression "(time 1)" 
-                     #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: time")
+                     #rx"{stop-multi.png} {stop-22x22.png} time.*cannot reference undefined identifier")
     
-    (test-expression "true" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: true")
-    (test-expression "mred^" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: mred\\^")
+    (test-expression "true" #rx"{stop-multi.png} {stop-22x22.png} true.*cannot reference undefined identifier")
+    (test-expression "mred^" #rx"{stop-multi.png} {stop-22x22.png} mred\\^.*cannot reference undefined identifier")
     (test-expression "(eq? 'a 'A)" "#t")
-    (test-expression "(set! x 1)" #rx"{stop-multi.png} {stop-22x22.png} set!: cannot set undefined.*: x")
+    (test-expression "(set! x 1)" #rx"{stop-multi.png} {stop-22x22.png} set!:.*cannot set undefined.*: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond ((= 1 2) 3))" "")
     (test-expression "(cons 1 2)" "(1 . 2)")
@@ -328,7 +328,7 @@ the settings above should match r5rs
     (test-expression "+1/2i" "0+1/2i")
     (test-expression "779625/32258" "{number 779625/32258 \"24 5433/32258\" mixed}")
     (test-expression "(exact? 1.5)" "#f")
-    (test-expression "(print (floor (sqrt 2)))" #rx"reference to undefined identifier.*: print")
+    (test-expression "(print (floor (sqrt 2)))" #rx"print:.*cannot reference undefined identifier")
     
     (test-expression "(let ((f (lambda (x) x))) f)" "#<procedure:f>")
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
@@ -337,7 +337,7 @@ the settings above should match r5rs
     (test-expression "(car (list))"
                      #rx"{stop-multi.png} {stop-22x22.png} mcar: contract violation.*given: [(][)]")
     
-    (test-expression "argv" #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: argv")
+    (test-expression "argv" #rx"{stop-multi.png} {stop-22x22.png} argv:.*cannot reference undefined identifier")
     (test-expression "(define-syntax app syntax-case)" 
                      "{stop-22x22.png} macro-transformer: only a `syntax-rules' form is allowed in: syntax-case")
     
@@ -345,7 +345,7 @@ the settings above should match r5rs
                      (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
                      #rx"read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     #rx"reference to undefined identifier")))
+                     #rx"cannot reference undefined identifier")))
 
 
 ;                                                             
@@ -396,8 +396,8 @@ the settings above should match r5rs
     
     (test-undefined-var "class") 
     (test-undefined-var "shared")
-    (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
-    (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
+    (test-expression "(define (. x y) (* x y))" "read: illegal use of `.'")
+    (test-expression "'(1 . 2)"  "read: illegal use of `.'")
     
     (test-undefined-var "call/cc")
     
@@ -550,8 +550,8 @@ the settings above should match r5rs
     (test-undefined-var "class")
     (test-undefined-var "shared")
     
-    (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
-    (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
+    (test-expression "(define (. x y) (* x y))"  "read: illegal use of `.'")
+    (test-expression "'(1 . 2)"  "read: illegal use of `.'")
     
     (test-undefined-var "call/cc")
     
@@ -699,8 +699,8 @@ the settings above should match r5rs
     (test-undefined-var "class")
     (test-undefined-var "shared")
     
-    (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
-    (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
+    (test-expression "(define (. x y) (* x y))"  "read: illegal use of `.'")
+    (test-expression "'(1 . 2)"  "read: illegal use of `.'")
     
     (test-undefined-var "call/cc")
     
@@ -846,8 +846,8 @@ the settings above should match r5rs
     (test-undefined-var "class")
     (test-undefined-var "shared")
     
-    (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
-    (test-expression "'(1 . 2)" "read: illegal use of \".\"")
+    (test-expression "(define (. x y) (* x y))" "read: illegal use of `.'")
+    (test-expression "'(1 . 2)" "read: illegal use of `.'")
     
     (test-undefined-var "call/cc")
     
@@ -989,8 +989,8 @@ the settings above should match r5rs
     
     (test-expression "shared" "shared: expected an open parenthesis before shared, but found none")
     
-    (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
-    (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
+    (test-expression "(define (. x y) (* x y))"  "read: illegal use of `.'")
+    (test-expression "'(1 . 2)"  "read: illegal use of `.'")
     
     (test-undefined-var "call/cc")
     
