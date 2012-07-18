@@ -1399,7 +1399,7 @@ This produces an ACK message
       
       (let* ([end (- (get-int-pos) 1)]
              [output (fetch-output drscheme-frame start end)]
-             [expected #rx"reference to undefined identifier.*: x"])
+             [expected #rx"x:.*cannot reference undefined identifier"])
         (unless (regexp-match expected output)
           (failure)
           (eprintf "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
