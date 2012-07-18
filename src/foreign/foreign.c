@@ -470,7 +470,7 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 /* These will make sense in Racket when longs are longer than ints (needed
  * for libffi's int32 types).  There is no need to deal with bignums because
  * mzscheme's fixnums are longs. */
-MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
+XFORM_NONGCING MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -481,7 +481,7 @@ MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
     return 1;
   } else return 0;
 }
-MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
+XFORM_NONGCING MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -499,7 +499,7 @@ MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 
 #endif /* SIXTY_FOUR_BIT_INTEGERS */
 
-MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
+XFORM_NONGCING MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -511,7 +511,7 @@ MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
   return 0;
 }
 
-MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
+XFORM_NONGCING MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -523,7 +523,7 @@ MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
   return 0;
 }
 
-MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
+XFORM_NONGCING MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -535,7 +535,7 @@ MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
   return 0;
 }
 
-MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
+XFORM_NONGCING MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -558,7 +558,7 @@ MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
 
 #define SCHEME_FALSEP_OR_CHAR_STRINGP(o) (SCHEME_FALSEP(o) || SCHEME_CHAR_STRINGP(o))
 
-static mzchar *ucs4_string_or_null_to_ucs4_pointer(Scheme_Object *ucs)
+XFORM_NONGCING static mzchar *ucs4_string_or_null_to_ucs4_pointer(Scheme_Object *ucs)
 {
   if (SCHEME_FALSEP(ucs)) return NULL;
   return SCHEME_CHAR_STR_VAL(ucs);
@@ -938,7 +938,7 @@ typedef union _ForeignAny {
 #define FOREIGN_array (28)
 #define FOREIGN_union (29)
 
-static int is_gcable_pointer(Scheme_Object *o) {
+XFORM_NONGCING static int is_gcable_pointer(Scheme_Object *o) {
   if (SCHEME_FFIOBJP(o)) return 0;
   return (!SCHEME_CPTRP(o)
           || !(SCHEME_CPTR_FLAGS(o) & 0x1));
@@ -1039,7 +1039,7 @@ static Scheme_Object *foreign_ctype_c_to_scheme(int argc, Scheme_Object *argv[])
 #undef MYNAME
 
 /* Returns a primitive type, or NULL if not a type */
-static Scheme_Object *get_ctype_base(Scheme_Object *type)
+XFORM_NONGCING static Scheme_Object *get_ctype_base(Scheme_Object *type)
 {
   if (!SCHEME_CTYPEP(type)) return NULL;
   while (CTYPE_USERP(type)) { type = CTYPE_BASETYPE(type); }
@@ -1047,7 +1047,7 @@ static Scheme_Object *get_ctype_base(Scheme_Object *type)
 }
 
 /* Returns the size, 0 for void, -1 if no such type */
-static intptr_t ctype_sizeof(Scheme_Object *type)
+XFORM_NONGCING static intptr_t ctype_sizeof(Scheme_Object *type)
 {
   type = get_ctype_base(type);
   if (type == NULL) return -1;
