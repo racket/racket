@@ -27,26 +27,17 @@ Invariants:
        #'(let ([time-sorted (sort log 
                                   #:key (λ (e) (future-event-time (indexed-future-event-fevent e))) 
                                   <)])
-           (let loop ([sorted time-sorted]) 
-             (define cur (car sorted))
-             (define rest (cdr sorted))
-             (unless (null? rest)
-               (define next (car rest)) 
-               (define curtime (future-event-time (indexed-future-event-fevent cur)))
-               (define curind (indexed-future-event-index cur)) 
-               (define nextind (indexed-future-event-index next))
-               (define nexttime (future-event-time (indexed-future-event-fevent cur))) 
-               (check-true (< curind 
-                              nextind) 
+           (for ([e (in-list time-sorted)]
+                 [i (in-naturals)]) 
+             (check-equal? (indexed-future-event-index e) 
+                           i
                            (format 
                             "Incorrect event ordering at line ~a: event with (index=~a, time=~a) 
-                                occurs before event with (index=~a, time=~a)\n" 
+                                occurs at actual index ~a\n" 
                             line 
-                            curind 
-                            curtime 
-                            nextind 
-                            nexttime))
-               (loop rest)))))]))
+                            (indexed-future-event-index e) 
+                            (future-event-time (indexed-future-event-fevent e)) 
+                            i)))))]))
 
 
 (define log1 (parameterize ([current-output-port (open-output-string)])
@@ -67,9 +58,10 @@ Invariants:
 (check-true (<= syncs-len 2000))
 (check-ordering log1)
 (define tr1 (build-trace log1)) 
-;Keys should include all unique future id's, and one entry for #f 
+;Keys should include all unique future id's, and one entry for #f (no future context, on rt thread)
 ;(events logged on runtime thread outside scope of any future)
 (check-equal? (length (hash-keys (trace-future-timelines tr1))) 1001)
+
 
 
 (define log3 (trace-futures 
@@ -77,6 +69,7 @@ Invariants:
                              [current-output-port (open-output-string)])
                 (void (dynamic-require 'tests/racket/benchmarks/shootout/mandelbrot-futures #f))))) 
 (check-true (> (length log3) 0))
+(check-true (list? (memf jitcompile-event? log3)) "No JIT compilation events found in mandelbrot")
 (define tr3 (build-trace log3)) 
 (check-equal? (length (hash-keys (trace-future-timelines tr3))) 2001)
 
