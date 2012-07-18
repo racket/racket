@@ -1,120 +1,82 @@
-Version 5.3.0.15
-Changed module name resolver notification mode to supply
- a source namespace for attaches
-
-Version 5.3.0.12
-racket/base: added impersonate-continuation-mark-key,
- chaperone-continuation-mark-key, make-continuation-mark-key,
- continuation-mark-key?
-racket/contract: added prompt-tag/c and continuation-mark-key/c
-
-Version 5.3.0.11
-Changed contract on date second field to disallow 61, since
- leap seconds never appear more than once per minute
-racket/base: added impersonate-prompt-tag & chaperone-prompt-tag
-racket/control: added call/prompt, call/comp, abort/cc and
- allow #:tag argument for % and f-control
-racket/future: handling of internal stack overflow without
- necessarily blocking on process 0; added 'overflow and
- 'start-overflow-work log events
-racket/base: guarantee portable results for current-seconds
- and file-or-directory-modify-seconds
-compiler/zo-structs: added a context field to all-from-module
-racket/list: added optional arguments to add-between, including
- #:splice?, #:before-first, #:before-last, and #:after-last
-
-Version 5.3.0.10
-racket/base: add progress-evt?, thread-cell-values?, prefab-key?,
- semaphore-peek-evt?, channel-put-evt?
-Changed #lang for most languages so that it cannot be nested;
- this change is within syntax/module-reader and applies to
- racket, racket/base, and more
-racket/com: don't always infer 'any for the element type of a
- multidimensional array 
-Changed local-expand to not add core forms if the stop list has
- just module*
-racket/math: added degrees->radians, radians->degrees, nan?,
- infinite?, exact-round, exact-floor, exact-ceiling, exact-truncate;
- fixed sinh and tanh to return correct answers given extreme and non-
- rational values like -inf.0, -0.0, -min.0 (see unstable/flonum for
- definition); fixed handling of single flonums in sinh, cosh, tanh
- and sgn
-
-Version 5.3.0.9
+Version 5.3, August 2012
+Added submodules, including module*
 Changed the format of error messages
 Added raise-argument-error, raise-result-error,
  raise-arguments-error, raise-range-error
-racket/contract: added procedure-arity-includes/c
-racket/sandbox: added sandbox-propagate-exceptions
-racket/cmdline: add #:ps for command-line
-slideshow/start: run a `slideshow' or `main' submodule, if any
-Changed impersonate-struct so that accessor impersonation requires
- work only if the field is accessible via the current impersonator
- or a mutator for the same field is also impersonated
-
-Version 5.3.0.8
-Required modules are instantiated in the order that they are required
+Added impersonate-continuation-mark-key,
+ chaperone-continuation-mark-key, make-continuation-mark-key,
+ continuation-mark-key?, impersonate-prompt-tag, and
+ chaperone-prompt-tag
+Added progress-evt?, thread-cell-values?, prefab-key?,
+ semaphore-peek-evt?, channel-put-evt?
+Fixed handle-evt to disallow a handle-evt
 Added variable-reference->module-path-index
-Added syntax-local-submodules
-Added relative-in
-
-Version 5.3.0.7
-compiler/zo-struct: added cancel-id field to phase-shift
-
-Version 5.3.0.6
-racket/flonum: added flexpt
-racket/unsafe/ops: added unsafe-flexpt
-scribble/eval: added eval:result and eval:results
-
-Version 5.3.0.5
-Added box-cas!
-racket/gui: changed open-output-text-editor to by default deliver 
- content via the current eventspace's handler thread; also
- added an #:eventspace optional argument
-
-Version 5.3.0.4
-racket/draw: added make-color, make-brush, make-pen
-
-Version 5.3.0.3
-Added module-path-index-submodule
+Added syntax-local-submodules, module-path-index-submodule,
+ and module-compiled-submodules
 Changed module-path-index-join to support a submodule argument
-
-Version 5.3.0.1
-ffi/unsafe: integer-type bounds consistently checked
-
-Version 5.2.900.1
-Add submodules, including module*, module-compiled-submodules
 Changed module-path? to report #t for paths
 Changed resolved module paths to allow lists that represent
  submodule paths; see the revised contract on resolve-module-path-name
 Changed the module name resolver protocol so that a module declaration
- always triggers a notifification
+ always triggers a notifification, and a notification supplies
+ a source namespace (i.e., an extra argument) for attaches
 Changed the load/use-compiled handler protocol to subpport a submodule
  module
-compiler/zo-struct: added pre-submodules and post-submodules field to
- mod, changed name field to allow a list of symbols
-
-Version 5.2.1.7
-racket/sandbox: added sandbox-gui-enabled and sandbox-make-namespace;
- deprecated gui?, which is no long used internally; changed the default
- for sandbox-namespace-specs to sandbox-make-namespsace
-
-Version 5.2.1.6
-Added prop:cpointer
-Fixed handle-evt to disallow a handle-evt
-mysterx: removed ActiveX support plus com-add-ref and 
- com-ref-count
-racket/draw: treat a face as a Pango font description
- only when it contains a comma
-racket/draw: add record-dc%
-
-Version 5.2.1.5
-Added racket/future to re-exports of racket
 Changed current-write-relative-directory to support a pair
  of paths: relative-to and base
-
-Version 5.2.1.4
-Changed ffi-lib to open libraries in local mode by default
+Changed local-expand to not add core forms if the stop list has
+ just module*
+Changed modules instantiation so that requires are instantiated
+ in the order that they are required
+Changed #lang for most languages so that it cannot be nested;
+ this change is within syntax/module-reader and applies to
+ racket, racket/base, and more
+Added relative-in
+Added box-cas!
+Changed contract on date second field to disallow 61, since
+ leap seconds never appear more than once per minute
+Changed guarantee of portability of current-seconds
+ and file-or-directory-modify-seconds
+Changed impersonate-struct so that accessor impersonation
+ works only if the field is accessible via the current impersonator
+ or a mutator for the same field is also impersonated
+Added racket/future to re-exports of racket
+racket/contract: added procedure-arity-includes/c, prompt-tag/c,
+ and continuation-mark-key/c
+racket/control: added call/prompt, call/comp, abort/cc and
+ allow #:tag argument for % and f-control
+racket/future: handle internal stack overflow without
+ necessarily blocking on process 0; added 'overflow and
+ 'start-overflow-work log events
+racket/list: added optional arguments to add-between, including
+ #:splice?, #:before-first, #:before-last, and #:after-last
+racket/math: added degrees->radians, radians->degrees, nan?,
+ infinite?, exact-round, exact-floor, exact-ceiling, exact-truncate
+racket/flonum: added flexpt
+racket/unsafe/ops: added unsafe-flexpt
+ffi/unsafe: changed ffi-lib to open libraries in local mode by
+ default; integer-type bounds are now consistently checked; 
+ added prop:cpointer
+racket/draw: added record-dc%, make-color, make-brush, and 
+ make-pen; treat a face as a Pango font description
+ only when it contains a comma
+racket/gui: changed open-output-text-editor to by default deliver 
+ content via the current eventspace's handler thread; also
+ added an #:eventspace optional argument
+ffi/com: added
+mysterx: removed ActiveX support plus com-add-ref and 
+ com-ref-count; use ffi/com, instead
+compiler/zo-structs: added a context field to all-from-module,
+ added a cancel-id field to phase-shift, added pre-submodules 
+ and post-submodules field to mod, changed name field to allow
+ a list of symbols
+racket/sandbox: added sandbox-propagate-exceptions; added
+ sandbox-gui-enabled and sandbox-make-namespace; deprecated gui?,
+ which is no long used internally; changed the default for
+ sandbox-namespace-specs to sandbox-make-namespsace
+racket/cmdline: add #:ps for command-line
+slideshow/start: run a `slideshow' or `main' submodule, if any
+scribble/eval: added eval:result and eval:results
 
 Version 5.2.1, January 2012
 Changed I/O scheduling to use epoll()/kqueue() when available
