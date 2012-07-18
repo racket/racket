@@ -327,8 +327,8 @@
             (values (open-input-text-editor t 0 'end values filename) #t))]
          [else (values p #f)]))
       (when changed?
-	(port-count-lines! p)) ; in case it's new
-      (values p filename changed?)))
+	(port-count-lines! new-p)) ; in case it's new
+      (values new-p filename changed?)))
 
   (define (open-input-graphical-file filename)
     (let-values ([(p name wxme?) (build-input-port filename)])
