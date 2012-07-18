@@ -2,13 +2,13 @@
 (require racket/bool 
          racket/list 
          racket/contract
-         racket/future 
+         racket/future
          racket/set 
          "constants.rkt"
          "graph-drawing.rkt" 
-         (only-in '#%futures init-visualizer-tracking!))
+         (only-in '#%futures init-visualizer-tracking!)) 
 
-(provide start-performance-tracking!
+(provide start-future-tracing! 
          (struct-out future-event)
          (struct-out indexed-future-event)
          (struct-out trace) 
@@ -19,21 +19,16 @@
          timeline-events
          organize-output 
          build-trace 
+         missing-data?
          event-has-duration? 
+         op-name 
          touch-event?
          allocation-event? 
          jitcompile-event? 
+         synchronization-event? 
+         runtime-synchronization-event?
          final-event? 
          relative-time)
-
-;Log message receiver
-(define recv #f) 
-
-;;start-performance-tracking! -> void
-(define (start-performance-tracking!) 
-  (when (not recv) 
-    (init-visualizer-tracking!)
-    (set! recv (make-log-receiver (current-logger) 'debug))))
 
 (define-struct future-event (future-id process-id what time prim-name user-data) 
   #:prefab)
@@ -106,16 +101,53 @@
     [(start-work start-0-work) #t] 
     [else #f]))
 
+(define (missing-data? log) 
+  (if (findf (λ (e) (equal? (future-event-what (indexed-future-event-fevent e)) 'missing)) log) 
+      #t 
+      #f))
+
+;;event-op-name : (or event indexed-future-event future-event) -> symbol
+(define (op-name evt) 
+  (cond 
+    [(event? evt) (event-prim-name evt)] 
+    [(indexed-future-event? evt) (future-event-prim-name (indexed-future-event-fevent evt))] 
+    [(future-event? evt) (future-event-prim-name evt)]))
+
+;;event-what : (or event indexed-future-event future-event) -> symbol
+(define (what evt) 
+  (cond 
+    [(event? evt) (event-type evt)] 
+    [(indexed-future-event? evt) (future-event-what (indexed-future-event-fevent evt))] 
+    [(future-event? evt) (future-event-what evt)]))
+
+;;process-id : (or event indexed-future-event future-event) -> exact-nonnegative-integer
+(define (process-id evt) 
+  (cond 
+    [(event? evt) (event-proc-id evt)] 
+    [(indexed-future-event? evt) (future-event-process-id (indexed-future-event-fevent evt))] 
+    [(future-event? evt) (future-event-process-id evt)]))
+
+;;touch-event? : (or event indexed-future-event future-event) -> symbol
 (define (touch-event? evt) 
-  (equal? (event-prim-name evt) 'touch))
+  (equal? (what evt) 'touch))
 
-;;allocation-event? : event -> bool
+;;allocation-event? : (or event indexed-future-event future-event) -> bool
 (define (allocation-event? evt) 
-  (equal? (event-prim-name evt) '|[allocate memory]|))
+  (equal? (op-name evt) '|[allocate memory]|))
 
-;;jitcompile-event : event -> bool
+;;jitcompile-event : (or event indexed-future-event future-event) -> bool
 (define (jitcompile-event? evt) 
-  (equal? (event-prim-name evt) '|[jit_on_demand]|))
+  (equal? (op-name evt) '|[jit_on_demand]|))
+
+;;synchronization-event? : (or event indexed-future-event future-event) -> bool
+(define (synchronization-event? evt) 
+  (case (what evt) 
+    [(block sync) #t] 
+    [else #f]))
+
+;;runtime-synchronization-event? : (or event indexed-future-event future-event) -> bool
+(define (runtime-synchronization-event? evt) 
+  (and (synchronization-event? evt) (= (process-id evt) RT-THREAD-ID)))
 
 ;;final-event? : event -> bool
 (define (final-event? evt) 
@@ -127,21 +159,32 @@
 (define (relative-time trace abs-time) 
   (- abs-time (trace-start-time trace)))
 
-;;timeline-events/private : integer -> (listof indexed-future-event)
-(define (timeline-events/private index) 
-  (let ([index 0] 
-        [info (sync/timeout 0 recv)]) 
+;Log message receiver 
+(define recv #f) 
+
+;;start-future-tracing! -> void
+(define (start-future-tracing!) 
+  (when (not recv) 
+    (set! recv (make-log-receiver (init-visualizer-tracking!) 'debug))))
+
+(define (timeline-events/private) 
+  (let ([info (sync/timeout 0 recv)]) 
     (if info 
         (let ([v (vector-ref info 2)]) 
           (if (future-event? v) 
-              (cons (indexed-future-event index v) (timeline-events/private (add1 index))) 
-              (timeline-events/private index))) 
+              (cons v (timeline-events/private)) 
+              (timeline-events/private))) 
         '())))
-
+          
 ;Gets log events for an execution timeline
 ;;timeline-events : (listof indexed-future-event)
 (define (timeline-events) 
-  (timeline-events/private 0))
+  (define sorted (sort (timeline-events/private)
+                       #:key future-event-time 
+                       <)) 
+  (for/list ([fe (in-list sorted)] 
+             [i (in-naturals)]) 
+    (indexed-future-event i fe)))
 
 ;Produces a vector of vectors, where each inner vector contains 
 ;all the log output messages for a specific process
@@ -156,23 +199,19 @@
   
 ;;build-trace : (listof indexed-future-event) -> trace
 (define (build-trace log-output) 
+  (when (empty? log-output) 
+    (error 'build-trace "Empty timeline in log-output"))
   (define data (organize-output log-output))
-  (define-values (start-time end-time unique-fids nblocks nsyncs) 
-    (for/fold ([start-time #f] 
-               [end-time #f] 
-               [unique-fids (set)]
+  (define start-time (future-event-time (indexed-future-event-fevent (car log-output)))) 
+  (define end-time (future-event-time (indexed-future-event-fevent (last log-output))))
+  (define-values (unique-fids nblocks nsyncs) 
+    (for/fold ([unique-fids (set)]
                [nblocks 0] 
                [nsyncs 0]) ([ie (in-list log-output)]) 
       (let* ([evt (indexed-future-event-fevent ie)] 
              [fid (future-event-future-id evt)]
              [is-future-thread? (not (= (future-event-process-id evt) RT-THREAD-ID))])
         (values 
-         (if start-time 
-             (min start-time (future-event-time evt)) 
-             (future-event-time evt)) 
-         (if end-time 
-             (max end-time (future-event-time evt))
-             (future-event-time evt))
          (if fid 
              (set-add unique-fids fid) 
              unique-fids)
@@ -225,10 +264,9 @@
                                                #f 
                                                #f
                                                #f)))))))
-  (define all-evts (sort (flatten (for/list ([tl (in-list tls)]) 
-                                    (process-timeline-events tl))) 
-                         (λ (a b) 
-                           (< (event-index a) (event-index b)))))
+  (define all-evts (sort (flatten (for/list ([tl (in-list tls)]) (process-timeline-events tl))) 
+                         #:key event-index 
+                         <))
   (define ftls (let ([h (make-hash)]) 
                  (for ([evt (in-list all-evts)]) 
                    (let* ([fid (event-future-id evt)]
@@ -341,10 +379,15 @@
 ;;buid-creation-graph/private : (uint -o-> (listof future-event)) -> (listof node)
 (define (build-creation-graph/private future-timelines evt) 
   (let* ([fid (event-user-data evt)] 
-         [fevents (filter creation-event? (hash-ref future-timelines fid))]) 
-    (for/list ([cevt (in-list fevents)]) 
-      (node cevt 
-            (build-creation-graph/private future-timelines cevt)))))
+         [ftimeline (hash-ref future-timelines fid #f)]) 
+    (if ftimeline 
+        (let ([fevents (filter creation-event? (hash-ref future-timelines fid #f))])
+          (for/list ([cevt (in-list fevents)]) 
+            (node cevt 
+                  (build-creation-graph/private future-timelines cevt)))) 
+        (begin 
+          (eprintf "WARNING: Could not find timeline for future ~a.  Creation tree may be truncated.\n" fid) 
+          '()))))
 
 ;;build-creation-graph : (uint -o-> (listof future-event)) -> node
 (define (build-creation-graph future-timelines) 

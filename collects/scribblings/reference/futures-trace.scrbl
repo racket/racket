@@ -36,7 +36,7 @@ the execution of parallel programs written using @racket[future].
     (require racket/future 
              future-visualizer/trace) 
                                       
-    (start-performance-tracking!) 
+    (start-future-tracing!) 
     (let ([f (future (lambda () ...))]) 
       ... 
       (touch f)) 
@@ -46,10 +46,10 @@ the execution of parallel programs written using @racket[future].
 }
 
 @deftogether[(
-  @defproc[(start-performance-tracking!) void?]
+  @defproc[(start-future-tracing!) void?]
   @defproc[(timeline-events) (listof indexed-future-event?)]
 )]{
- The @racket[start-performance-tracking!] procedure enables the collection 
+ The @racket[start-future-tracing!] procedure enables the collection 
  of future-related execution data.  This function should be called immediately 
  prior to executing code the programmer wishes to profile. 
  
