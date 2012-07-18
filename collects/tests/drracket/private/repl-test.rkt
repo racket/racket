@@ -135,20 +135,20 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('"
             "{stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
+            "{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
            'definitions
            #f
            void
            void)
    
    (mktest "."
-           ("{stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\""
-            "{stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\"")
+           ("{stop-22x22.png} read: illegal use of `.'"
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of `.'"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of `.'"
+            "{stop-22x22.png} read: illegal use of `.'"
+            "{stop-22x22.png} read: illegal use of `.'"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of `.'")
            'definitions
            #f
            void
@@ -180,12 +180,12 @@ This produces an ACK message
            void)
    
    (mktest "xx"
-           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*xx"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*xx"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier.*xx"
-            #rx"reference to undefined identifier.*xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier")
            'definitions
            #f
            void
@@ -253,12 +253,12 @@ This produces an ACK message
    
    ;; top-level semantics test
    (mktest "(define (f) (+ 1 1)) (define + -) (f)"
-           (#rx"define-values: cannot change constant.*: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+"
-            #rx"define-values: cannot change constant.*: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: define-values: cannot change constant.*: \\+")
+           (#rx"define-values:.*cannot change constant.*: \\+"
+            #rx"define-values:.*cannot change constant.*: \\+"
+            #rx"define-values:.*cannot change constant.*: \\+"
+            #rx"define-values:.*cannot change constant.*: \\+"
+            #rx"define-values:.*cannot change constant.*: \\+"
+            #rx"define-values:.*cannot change constant.*: \\+")
            'interactions
            #f
            void
@@ -289,12 +289,12 @@ This produces an ACK message
            void)
    
    (mktest "(begin xx (printf \"hi\\n\"))"
-           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: reference to undefined identifier.*: xx"
-            #rx"reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier")
            'definitions
            #f
            void
@@ -306,12 +306,12 @@ This produces an ACK message
             "(require 'n)\n"
             "s")
            
-           ("{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-22x22.png} repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
+           (#rx"{stop-22x22.png} [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1"
+            #rx"{stop-22x22.png} [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1"
+            #rx"{stop-22x22.png} repl-test-tmp3.rkt:1:43: [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1"
+            #rx"{stop-22x22.png} [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1"
+            #rx"{stop-22x22.png} [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1"
+            #rx"{stop-22x22.png} repl-test-tmp3.rkt:1:43: [?]: literal data is not allowed.*no #%datum syntax transformer is bound in: 1")
            'definitions
            #f
            void
@@ -332,12 +332,12 @@ This produces an ACK message
            void)
    
    (mktest "#!/bin/sh\nxx"
-           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: reference to undefined identifier.*: xx"
-            #rx"reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier")
            'definitions
            #f
            void
@@ -382,24 +382,24 @@ This produces an ACK message
            void)
    
    (mktest "    (read (open-input-string \".\"))"
-           ("{stop-multi.png} read: illegal use of \".\""
-            "{stop-multi.png} read: illegal use of \".\""
-            "{stop-multi.png} read: illegal use of \".\""
-            "read: illegal use of \".\""
-            "{stop-multi.png} read: illegal use of \".\""
-            "{stop-multi.png} read: illegal use of \".\"")
+           ("{stop-multi.png} read: illegal use of `.'"
+            "{stop-multi.png} read: illegal use of `.'"
+            "{stop-multi.png} read: illegal use of `.'"
+            "read: illegal use of `.'"
+            "read: illegal use of `.'"
+            "read: illegal use of `.'")
            'interactions
            #f
            void
            void)
    
    (mktest "    (eval 'x)"
-           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier.*: x"
-            #rx"reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x")
+           (#rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: x:.*cannot reference undefined identifier"
+            #rx"x:.*cannot reference undefined identifier"
+            #rx"x:.*cannot reference undefined identifier"
+            #rx"x:.*cannot reference undefined identifier")
            'definitions
            #f
            void
@@ -435,8 +435,8 @@ This produces an ACK message
             #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #<void>"
             #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: contract violation.*given: #<void>"
             #rx"expt: contract violation.*given: #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #<void>")
+            #rx"expt: contract violation.*given: #<void>"
+            #rx"expt: contract violation.*given: #<void>")
            'definitions
            #f
            void
@@ -448,20 +448,20 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('"
             "1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('")
+            "{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('")
            'definitions
            #f
            void
            void)
    
    (mktest "1 2 . 3 4"
-           ("1\n2\n{stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\""
-            "1\n2\n{stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\"")
+           ("1\n2\n{stop-22x22.png} read: illegal use of `.'"
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of `.'"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of `.'"
+            "1\n2\n{stop-22x22.png} read: illegal use of `.'"
+            "{stop-22x22.png} read: illegal use of `.'"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of `.'")
            'definitions
            #f
            void
@@ -480,12 +480,12 @@ This produces an ACK message
            void)
    
    (mktest "1 2 x 3 4"
-           (#rx"1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier.*: x"
-            #rx"1\n2\nreference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: x")
+           (#rx"1\n2\n{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: x:.*cannot reference undefined identifier"
+            #rx"1\n2\nx:.*cannot reference undefined identifier"
+            #rx".*cannot reference undefined identifier"
+            #rx".*cannot reference undefined identifier")
            'definitions
            #f
            void
@@ -548,7 +548,6 @@ This produces an ACK message
    
    ;; new namespace test
    (mktest "(current-namespace (make-namespace))\nif"
-           
            ("{stop-22x22.png} if: bad syntax in: if"
             "{stop-22x22.png} if: bad syntax in: if"
             "{stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if"
@@ -561,13 +560,12 @@ This produces an ACK message
            void)
    
    (mktest "(current-namespace (make-namespace 'empty))\nif"
-           
-           ("{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
+           ("{stop-22x22.png} #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
+            "{stop-22x22.png} #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
+            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
+            "{stop-22x22.png} #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
+            "{stop-22x22.png} #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction"
+            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: #%top-interaction: unbound identifier;\n also, no #%app syntax transformer is bound in: #%top-interaction")
            'definitions
            #f
            void
@@ -593,8 +591,8 @@ This produces an ACK message
      #rx"{stop-multi.png} {stop-22x22.png} expt: contract violation.*given: #f\n15"
      #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: contract violation.*given: #f\n15"
      #rx"expt: contract violation.*given: #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: contract violation.*given: #f\n15")
+     #rx"expt: contract violation.*given: #f\n15"
+     #rx"expt: contract violation.*given: #f\n15")
     'definitions
     #f
     void
@@ -758,12 +756,12 @@ This produces an ACK message
            void)
    
    (mktest "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
-           (#rx"{stop-multi.png} {stop-22x22.png} application: expected procedure.*given: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} application: expected procedure.*given: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:3:13: application: expected procedure.*given: 3"
-            #rx"application: expected procedure.*given: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: application: expected procedure.*given: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: application: expected procedure.*given: 3")
+           (#rx"{stop-multi.png} {stop-22x22.png} application:.*given: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} application:.*given: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:3:13: application:.*given: 3"
+            #rx"application:.*given: 3"
+            #rx"application:.*given: 3"
+            #rx"application:.*given: 3")
            'definitions
            #f
            void
@@ -842,12 +840,12 @@ This produces an ACK message
    
    ;; thread tests
    (mktest "(begin (thread (lambda () x)) (sleep 1/10))"
-           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: x"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: reference to undefined identifier.*: x"
-            #rx"reference to undefined identifier.*: x"
-            #rx"reference to undefined identifier.*: x"
-            #rx"reference to undefined identifier.*: x")
+           (#rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} x:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: x:.*cannot reference undefined identifier"
+            #rx"x:.*cannot reference undefined identifier"
+            #rx"x:.*cannot reference undefined identifier"
+            #rx"x:.*cannot reference undefined identifier")
            'definitions
            #f
            void
@@ -855,12 +853,12 @@ This produces an ACK message
    
    ;; brought down from above for comparison
    (mktest "xx"
-           (#rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier.*: xx"
-            #rx"reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: reference to undefined identifier.*: xx")
+           (#rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} xx:.*cannot reference undefined identifier"
+            #rx"{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier"
+            #rx"xx:.*cannot reference undefined identifier")
            'definitions
            #f
            void
