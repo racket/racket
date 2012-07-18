@@ -36,13 +36,13 @@
                                     [p pict?])])) 
 
 (define-syntax-rule (visualize-futures e ...) 
-  (begin (start-performance-tracking!) 
+  (begin (start-future-tracing!) 
          (begin0 (begin e ...) 
                  (show-visualizer))))
 
 ;;visualize-futures-thunk : (-> any/c) -> any/c
 (define (visualize-futures-thunk thunk) 
-  (start-performance-tracking!) 
+  (start-future-tracing!) 
   (begin0 
     (thunk) 
     (show-visualizer)))

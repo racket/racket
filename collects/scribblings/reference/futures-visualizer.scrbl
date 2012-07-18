@@ -42,7 +42,7 @@ at any point during the program's lifetime.
              future-visualizer/trace
              future-visualizer) 
                                       
-    (start-performance-tracking!) 
+    (start-future-tracing!) 
     (let ([f (future (lambda () ...))]) 
       ... 
       (touch f)) 
@@ -53,7 +53,7 @@ at any point during the program's lifetime.
 
 @defproc[(show-visualizer [#:timeline timeline (listof indexed-future-event?)]) void?]{
  Displays the visualizer window.  If the function is called with no arguments, 
- it must be preceded by a call to @racket[start-performance-tracking!] -- in which case 
+ it must be preceded by a call to @racket[start-future-tracing!] -- in which case 
  the visualizer will show data for all events logged in between (via @racket[timeline-events]).  
  Note that @racket[visualize-futures] and @racket[visualize-futures-thunk] are simpler alternatives to using these 
  primitives directly.
