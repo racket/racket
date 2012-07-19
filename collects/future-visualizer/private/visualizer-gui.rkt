@@ -70,7 +70,8 @@
           [(touch) 
            (send data-label1 set-label (format "Touching future ~a" (event-user-data evt)))]
           [else 
-           (send data-label1 set-label "")])) 
+           (send data-label1 set-label "")
+           (send data-label2 set-label "")])) 
       (begin 
         (send selected-label set-label "") 
         (send time-label set-label "") 
