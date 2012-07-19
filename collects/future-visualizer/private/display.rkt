@@ -26,7 +26,8 @@
          viewable-region-x-extent 
          viewable-region-y-extent
          in-viewable-region 
-         in-viewable-region-horiz
+         in-viewable-region-horiz 
+         in-viewable-region-vert?
          scale-viewable-region
          between)
 
@@ -54,6 +55,10 @@
 ;;in-viewable-region : viewable-region uint -> bool
 (define (in-viewable-region-horiz vregion x) 
   (between x (viewable-region-x vregion) (viewable-region-x-extent vregion)))
+
+;;in-viewable-region-vert : viewable-region uint -> bool
+(define (in-viewable-region-vert? vregion y) 
+  (between y (viewable-region-y vregion) (viewable-region-y-extent vregion)))
 
 ;;in-viewable-region : viewable-region segment -> bool
 (define (in-viewable-region vregion x y w h)

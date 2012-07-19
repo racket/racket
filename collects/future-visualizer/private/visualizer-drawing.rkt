@@ -199,8 +199,7 @@
                [last-label-x-extent 0]
                [remain-segs segs]) ([i (in-range 0 (floor (/ (- (trace-end-time tr) 
                                                          trace-start) 
-                                                      DEFAULT-TIME-INTERVAL)))]) 
-      #;(define tick-time (+ last-time DEFAULT-TIME-INTERVAL)) 
+                                                      DEFAULT-TIME-INTERVAL)))])
       (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL))
       (define tick-time (+ trace-start tick-rel-time))
       (define want-x (+ last-x (* DEFAULT-TIME-INTERVAL timeToPixMod)))
@@ -270,19 +269,11 @@
 
 ;; get-seg-previous-to-vregion : viewable-region segment -> segment
 (define (get-seg-previous-to-vregion vregion seg)
-  (define first-seg
-    (let loop ([cur seg])
-      (define prev (segment-prev-future-seg cur))
-      (if (not prev)
-          cur
-          (loop prev))))
-  (let loop ([cur first-seg])
-    (define next (segment-next-future-seg cur))
-    (if (or (not next)
-            (> (segment-x next) (viewable-region-x vregion)))
-        cur
-        (loop next))))
-
+  (let loop ([cur seg]) 
+    (define prev (segment-prev-future-seg cur)) 
+    (cond 
+      [(or (not prev) (not ((seg-in-vregion vregion) cur))) cur] 
+      [else (loop prev)])))
   
 ;;adjust-work-segs! : (listof segment) -> void
 (define (adjust-work-segs! segs) 
@@ -399,7 +390,7 @@
                 0 
                 (linestyle 'dot 
                            (colorize (vline 1 
-                                            (frame-info-adjusted-height frameinfo)) 
+                                            (viewable-region-height vregion)) 
                                      (timeline-tick-color)))))
     (if (timeline-tick-show-label? tick)
         (pin-over pinnedline 
@@ -413,8 +404,14 @@
   (pin-over base 
             0 
             0
-            (for/fold ([pct base]) ([tl (in-list (trace-proc-timelines tr))] 
-                                    [i (in-naturals)])
+            (for/fold ([pct base]) ([tl (in-list (filter (λ (tline)
+                                                           (define midy (calc-row-mid-y (process-timeline-proc-index tline) 
+                                                                                        (frame-info-row-height finfo)))
+                                                           (define topy (- midy (frame-info-row-height finfo))) 
+                                                           (define boty (+ midy (frame-info-row-height finfo))) 
+                                                           (or (in-viewable-region-vert? vregion topy) 
+                                                               (in-viewable-region-vert? vregion boty)))                                                           
+                                                         (trace-proc-timelines tr)))])
               (let* ([line-coords (list-ref (frame-info-process-line-coords finfo) 
                                            (process-timeline-proc-index tl))]
                      [line-start (car line-coords)] 
@@ -431,7 +428,8 @@
                               [(between line-end vregion-start vregion-end) 
                                (- line-end vregion-start)] 
                               [else vregion-end])]
-                     [proc-name (if (zero? i) 
+                     [index (process-timeline-proc-index tl)]
+                     [proc-name (if (zero? index) 
                                     "Thread 0 (Runtime Thread)" 
                                     (format "Thread ~a" (process-timeline-proc-id tl)))]
                      [proc-title (text-block-pict proc-name 
@@ -442,15 +440,15 @@
                                                   #:width (viewable-region-width vregion))]) 
                 (draw-stack-onto pct 
                                  (at 0 
-                                     (- (* (add1 i) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (- (* (add1 index) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                      (colorize (hline (viewable-region-width vregion) 1) (timeline-baseline-color))) 
                                  (at 0  
-                                     (+ (+ (- (* i (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (+ (+ (- (* index (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                            (- (frame-info-row-height finfo) (pict-height proc-title))) 
                                         1) 
                                      proc-title) 
                                  (at start-x 
-                                     (- (calc-row-mid-y (process-timeline-proc-index tl) (frame-info-row-height finfo))
+                                     (- (calc-row-mid-y index (frame-info-row-height finfo))
                                         (viewable-region-y vregion))
                                      (colorize (hline (- end-x start-x) 1) 
                                                (timeline-event-baseline-color))))))))
@@ -477,55 +475,6 @@
 (define (draw-frame-bg-onto base vregion finfo tr opacity) 
   (let ([with-ruler (draw-ruler-on base vregion finfo)])
     (draw-row-lines-on with-ruler vregion tr finfo opacity)))
-
-;;draw-connection : viewable-region segment segment pict string [uint bool symbol] -> pict
-(define (draw-connection vregion 
-                         start 
-                         end 
-                         base-pct 
-                         color 
-                         #:width [width 1] 
-                         #:with-arrow [with-arrow #f] 
-                         #:style [style 'solid]) 
-  (let*-values ([(midx midy) (calc-center (- (segment-x start) (viewable-region-x vregion)) 
-                                          (- (segment-y start) (viewable-region-y vregion)) 
-                                          MIN-SEG-WIDTH)] 
-                [(nextx nexty) (calc-center (- (segment-x end) (viewable-region-x vregion)) 
-                                            (- (segment-y end) (viewable-region-y vregion)) 
-                                            MIN-SEG-WIDTH)] 
-                [(dx dy) (values (- nextx midx) (- nexty midy))]) 
-    (if (and (zero? dy) 
-             (or (not (eq? (segment-next-proc-seg start) end)) 
-                 (< dx CONNECTION-LINE-HAT-THRESHOLD))) 
-        (let* ([dxa (/ dx 2)]  
-               [dya (- HAT-HEIGHT CONNECTION-LINE-HAT-THRESHOLD)] 
-               [breakx (+ midx dxa)] 
-               [breaky (+ midy dya)])
-          (draw-line-onto (draw-line-onto base-pct 
-                                          midx 
-                                          midy 
-                                          breakx 
-                                          breaky 
-                                          color 
-                                          #:width width
-                                          #:style style) 
-                          breakx 
-                          breaky 
-                          nextx 
-                          nexty 
-                          color 
-                          #:width width 
-                          #:with-arrow with-arrow 
-                          #:style style))
-        (draw-line-onto base-pct 
-                        midx 
-                        midy 
-                        nextx 
-                        nexty 
-                        color 
-                        #:width width 
-                        #:with-arrow with-arrow 
-                        #:style style))))
 
 ;;timeline-pict : (listof indexed-future-event) [viewable-region] [integer] -> pict
 (define (timeline-pict logs 
@@ -576,8 +525,74 @@
                overlay)] 
     [else tp]))
 
-;;draw-arrows : pict viewable-region segment -> pict
+;;draw-connection : viewable-region segment segment pict string [uint bool symbol] -> pict
+(define (draw-connection vregion 
+                         start 
+                         end 
+                         base-pct 
+                         color 
+                         #:width [width 1] 
+                         #:with-arrow [with-arrow #f] 
+                         #:style [style 'solid]) 
+  (let*-values ([(midx midy) (calc-center (- (segment-x start) (viewable-region-x vregion)) 
+                                          (- (segment-y start) (viewable-region-y vregion)) 
+                                          MIN-SEG-WIDTH)] 
+                [(nextx nexty) (calc-center (- (segment-x end) (viewable-region-x vregion)) 
+                                            (- (segment-y end) (viewable-region-y vregion)) 
+                                            MIN-SEG-WIDTH)] 
+                [(dx dy) (values (- nextx midx) (- nexty midy))]) 
+    (if (and (zero? dy) 
+             (or (not (eq? (segment-next-proc-seg start) end)) 
+                 (< dx CONNECTION-LINE-HAT-THRESHOLD))) 
+        (let* ([dxa (/ dx 2)]  
+               [dya (- HAT-HEIGHT CONNECTION-LINE-HAT-THRESHOLD)] 
+               [breakx (+ midx dxa)] 
+               [breaky (+ midy dya)])
+          (draw-line-onto (draw-line-onto base-pct 
+                                          midx 
+                                          midy 
+                                          breakx 
+                                          breaky 
+                                          color 
+                                          #:width width
+                                          #:style style) 
+                          breakx 
+                          breaky 
+                          nextx 
+                          nexty 
+                          color 
+                          #:width width 
+                          #:with-arrow with-arrow 
+                          #:style style))
+        (draw-line-onto base-pct 
+                        midx 
+                        midy 
+                        nextx 
+                        nexty 
+                        color 
+                        #:width width 
+                        #:with-arrow with-arrow 
+                        #:style style))))
+
 (define (draw-arrows base-pct vregion seg) 
+  (define fst (get-seg-previous-to-vregion vregion seg)) 
+  (let loop ([p base-pct] 
+             [cur-seg fst])
+    (define next-seg (segment-next-future-seg cur-seg))
+    (cond 
+      [(not next-seg) p] 
+      [else 
+       (define new-p (draw-connection vregion 
+                                      cur-seg 
+                                      next-seg 
+                                      p 
+                                      (event-connection-line-color) 
+                                      #:width 2)) 
+       (loop new-p next-seg)])))
+                            
+
+;;draw-arrows : pict viewable-region segment -> pict
+#;(define (draw-arrows base-pct vregion seg) 
   (let ([fst (get-seg-previous-to-vregion vregion seg)])
     (let loop ([pct base-pct] 
                [cur-seg fst])

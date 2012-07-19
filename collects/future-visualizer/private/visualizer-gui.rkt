@@ -133,7 +133,8 @@
                           [stretchable-width #t]))
   (define graphic-panel (new panel:horizontal-dragable% 
                              [parent right-panel] 
-                             [stretchable-height #t]))
+                             [stretchable-height #t] 
+                             [stretchable-width #t]))
   (define timeline-container (new vertical-panel% 
                                   [parent graphic-panel] 
                                   [stretchable-width #t] 
@@ -353,5 +354,7 @@
                          (send graphic-panel add-child graph-container) 
                          (send item set-label "Hide Creation Tree"))) 
                    (set! showing-create-graph (not showing-create-graph)))])
+  
+  (send main-panel set-percentages '(1/5 4/5))
  
   (send f show #t))
