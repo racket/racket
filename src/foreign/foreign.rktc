@@ -1490,7 +1490,7 @@ static void* SCHEME2C(const char *who,
                        @@IFDEF{SCHEME_BIG_ENDIAN}{
                        if (sizeof(@ctype)<sizeof(intptr_t) && ret_loc) {
                          ((int*)W_OFFSET(dst,delta))[0] = 0;
-                         delta += (sizeof(intptr_)-sizeof(@ctype));
+                         delta += (sizeof(intptr_t)-sizeof(@ctype));
                        }}
                        if (!(@(if ptr? "ret_loc" (pred "val" x)))) @;
                          @wrong-type["val" stype];
@@ -1500,7 +1500,7 @@ static void* SCHEME2C(const char *who,
                    @@IFDEF{SCHEME_BIG_ENDIAN}{
                    if (sizeof(@ctype)<sizeof(intptr_t) && ret_loc) {
                      ((int*)W_OFFSET(dst,delta))[0] = 0;
-                     delta += (sizeof(intptr_)-sizeof(@ctype));
+                     delta += (sizeof(intptr_t)-sizeof(@ctype));
                    }}
                    if (@f[pred]) {
                      @ctype tmp@";"@and[offset]{ intptr_t toff@";"}
