@@ -116,7 +116,10 @@
         [(motion) 
          (when mh 
            (when (mh x y vregion) ;Mouse handler returns non-false if a state change requiring redraw occurred
-             (redraw-the-bitmap/maybe-delayed! vregion #:only-the-overlay? #t)))]
+             #;(redraw-the-bitmap/maybe-delayed! vregion #:only-the-overlay? #t)
+             (set! repainting? #f)
+             (redraw-the-bitmap! vregion #:only-the-overlay? #t) 
+             (refresh)))]
         [(left-up) 
          (when ch (ch x y vregion)) ;Ditto for click handler
          (redraw-the-bitmap/maybe-delayed! vregion #:only-the-overlay? #t)]))
