@@ -966,7 +966,7 @@
                 (if (null? runtimes)
                     #f
                     (let* ([table-sym (module-path-index-resolve 
-                                       (module-path-index-join '(lib "runtime-path-table.rkt" "racket" "private")
+                                       (module-path-index-join '(lib "runtime-path-table.rkt" "mzlib" "private")
                                                                #f))]
                            [table-path (resolved-module-path-name table-sym)])
                       (assoc (normalize table-path) l)))])

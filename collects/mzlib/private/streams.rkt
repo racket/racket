@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/private/port)
+(require "port.rkt")
 
 (provide if-stream-out
          if-stream-in

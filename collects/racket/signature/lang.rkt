@@ -3,8 +3,8 @@
 (require scheme/unit
          scheme/contract
          (for-syntax scheme/base
-                     racket/private/unit-compiletime
-                     racket/private/unit-syntax))
+                     mzlib/private/unit-compiletime
+                     mzlib/private/unit-syntax))
 
 (provide (rename-out [module-begin #%module-begin])
          (except-out (all-from-out scheme/base) #%module-begin)
