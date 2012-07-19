@@ -12,13 +12,10 @@
 
 (define-syntax (mzlib stx)
   (syntax-case stx ()
-    [(_ #:mode section name #:use-sources (src ...))
+    [(_ #:mode section name)
      (with-syntax ([lib (string->symbol
                          (format "mzlib/~a" (syntax-e #'name)))])
        #'(begin
            (section #:style 'hidden (racket lib))
-           (defmodule lib #:use-sources (src ...))))]
-    [(_ #:mode section name)
-     #'(mzlib #:mode section name #:use-sources ())]
-    [(_ name) 
-     #'(mzlib #:mode section name #:use-sources ())]))
+           (defmodule lib)))]
+    [(_ name) #'(mzlib #:mode section name)]))

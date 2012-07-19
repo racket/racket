@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require (except-in racket/unit struct/ctc)
+(require racket/unit
          (submod racket/unit compat))
-(provide (all-from-out racket/unit)
+(provide (except-out (all-from-out racket/unit) struct/ctc)
          (rename-out [struct~s struct]
                      [struct~s/ctc struct/ctc]))
