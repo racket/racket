@@ -576,7 +576,7 @@ void scheme_finish_kernel(Scheme_Env *env)
 
     /* Since this is the first module rename, it's registered as
        the kernel module rename: */
-    rn = scheme_make_module_rename(scheme_make_integer(0), mzMOD_RENAME_NORMAL, NULL, NULL);
+    rn = scheme_make_module_rename(scheme_make_integer(0), mzMOD_RENAME_NORMAL, NULL, NULL, NULL);
     for (i = kernel->me->rt->num_provides; i--; ) {
       scheme_extend_module_rename(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
                                   0, scheme_make_integer(0), NULL, 0);
@@ -760,7 +760,7 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
-  rn = scheme_make_module_rename(scheme_make_integer(p), mzMOD_RENAME_NORMAL, NULL, NULL);
+  rn = scheme_make_module_rename(scheme_make_integer(p), mzMOD_RENAME_NORMAL, NULL, NULL, NULL);
 
   /* Add a module mapping for all kernel provides: */
   scheme_extend_module_rename_with_shared(rn, kernel_modidx, 
@@ -834,6 +834,7 @@ void scheme_save_initial_module_set(Scheme_Env *env)
   }
   initial_renames = scheme_make_module_rename(scheme_make_integer(0), 
                                               mzMOD_RENAME_NORMAL, 
+                                              NULL,
                                               NULL,
                                               NULL);
   scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);

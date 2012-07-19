@@ -1253,7 +1253,8 @@ Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Obje
     else
       marked_names = NULL;
 
-    mrn = (Module_Renames *)scheme_make_module_rename(phase, mrns->kind, marked_names, mrns->insp);
+    mrn = (Module_Renames *)scheme_make_module_rename(phase, mrns->kind, marked_names, mrns->insp,
+                                                      mrns->set_identity);
 
     scheme_add_module_rename_to_set(set, (Scheme_Object *)mrn);
   }
@@ -1283,13 +1284,13 @@ Scheme_Hash_Table *scheme_get_module_rename_marked_names(Scheme_Object *set, Sch
 }
 
 Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *marked_names, 
-                                         Scheme_Object *insp)
+                                         Scheme_Object *insp, Scheme_Object *set_identity)
 {
   Module_Renames *mr;
   Scheme_Hash_Table *ht;
-  Scheme_Object *mk;
 
-  mk = scheme_new_mark();
+  if (!set_identity)
+    set_identity = scheme_new_mark();
 
   mr = MALLOC_ONE_TAGGED(Module_Renames);
   mr->so.type = scheme_rename_table_type;
@@ -1299,7 +1300,7 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
   mr->ht = ht;
   mr->phase = phase;
   mr->kind = kind;
-  mr->set_identity = mk;
+  mr->set_identity = set_identity;
   mr->marked_names = marked_names;
   mr->shared_pes = scheme_null;
   mr->unmarshal_info = scheme_null;
@@ -1316,7 +1317,7 @@ void scheme_seal_module_rename(Scheme_Object *rn, int level)
 void scheme_seal_module_rename_set(Scheme_Object *_rns, int level)
 {
   Module_Renames_Set *rns = (Module_Renames_Set *)_rns;
-  
+
   rns->sealed = level;
   if (rns->rt)
     rns->rt->sealed = level;
@@ -1711,8 +1712,10 @@ Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx)
         scheme_signal_error("can't convert syntax to rename (two sets)");
       rns = v;
     } else if (SCHEME_RENAMESP(v)) {
-      if (!rns)
+      if (!rns) {
         rns = scheme_make_module_rename_set(((Module_Renames *)v)->kind, NULL, NULL);
+        ((Module_Renames_Set *)rns)->set_identity = ((Module_Renames *)v)->set_identity;
+      }
       scheme_add_module_rename_to_set(rns, v);
     } else {
       scheme_signal_error("can't convert syntax to rename (non-rename in wrap)");
@@ -1734,7 +1737,8 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
 
   nmrn = scheme_make_module_rename(((Module_Renames *)mrn)->phase, 
                                    mzMOD_RENAME_NORMAL, 
-                                   NULL, new_insp);
+                                   NULL, new_insp,
+                                   ((Module_Renames *)mrn)->set_identity);
 
   /* use "append" to copy most info: */
   do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0, 0);
@@ -3060,11 +3064,11 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
   Scheme_Object *result_id = scheme_false, *last_pr = NULL, *pr;
 
   WRAP_POS_INIT(awl, ((Scheme_Stx *)stx)->wraps);
-  
+
   while (!WRAP_POS_END_P(awl)) {
 
     a = WRAP_POS_FIRST(awl);
-    
+
     if (SCHEME_RENAMESP(a)
         || SCHEME_RENAMES_SETP(a)) {
       int kind;
@@ -3119,8 +3123,9 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
 
 #define EXPLAIN_RESOLVE 0
 #if EXPLAIN_RESOLVE
-int scheme_explain_resolves = 1;
+int scheme_explain_resolves = 0;
 # define EXPLAIN(x) if (scheme_explain_resolves) { x; }
+# define EXPLAIN_FOR_ID "..."
 #else
 # define EXPLAIN(x) /* empty */
 #endif
@@ -3737,6 +3742,11 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
   int mresult_skipped = -1;
   int depends_on_unsealed_rib = 0, mresult_depends_unsealed = 0;
 
+#ifdef EXPLAIN_FOR_ID
+  if (!strcmp(EXPLAIN_FOR_ID, SCHEME_SYM_VAL(SCHEME_STX_VAL(a))))
+    scheme_explain_resolves++;
+#endif
+
   EXPLAIN(fprintf(stderr, "%d Resolving %s@%d [skips: %s]: -------------\n", 
                   depth, SCHEME_SYM_VAL(SCHEME_STX_VAL(a)), SCHEME_INT_VAL(orig_phase),
                   scheme_write_to_string(skip_ribs ? skip_ribs : scheme_false, NULL)));
@@ -3877,6 +3887,10 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
         EXPLAIN(fprintf(stderr, "%d  phase %s\n", depth, scheme_write_to_string(get_names[3], NULL)));
       }
         
+#ifdef EXPLAIN_FOR_ID
+      if (!strcmp(EXPLAIN_FOR_ID, SCHEME_SYM_VAL(SCHEME_STX_VAL(a))))
+        --scheme_explain_resolves;
+#endif
 
       return result;
     } else if ((SCHEME_RENAMESP(WRAP_POS_FIRST(wraps)) 
@@ -4355,6 +4369,10 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
         /* Doesn't match pruned-to sym; already produce #f */
         if (_depends_on_unsealed_rib)
           *_depends_on_unsealed_rib = depends_on_unsealed_rib;
+#ifdef EXPLAIN_FOR_ID
+        if (!strcmp(EXPLAIN_FOR_ID, SCHEME_SYM_VAL(SCHEME_STX_VAL(a))))
+          --scheme_explain_resolves;
+#endif
         return scheme_false;
       }
     }
@@ -5941,6 +5959,86 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
   return v2l;
 }
 
+static Scheme_Object *add_rename_to_stack(Module_Renames* mrn, Scheme_Object *stack,
+                                          Scheme_Marshal_Tables *mt,
+                                          Scheme_Object *a)
+{
+  Scheme_Object *local_key;
+	  
+  local_key = scheme_marshal_lookup(mt, (Scheme_Object *)mrn);
+  if (!local_key) {
+    /* Convert hash table to vector, etc.: */
+    int i, j, count = 0;
+    Scheme_Hash_Table *ht;
+    Scheme_Object *l, *fil;
+	    
+    ht = mrn->ht;
+    count = ht->count;
+    l = scheme_make_vector(count * 2, NULL);                  
+    for (i = ht->size, j = 0; i--; ) {
+      if (ht->vals[i]) {
+        SCHEME_VEC_ELS(l)[j++] = ht->keys[i];
+        fil = ht->vals[i];
+        SCHEME_VEC_ELS(l)[j++] = fil;
+      }
+    }
+
+    ht = mrn->free_id_renames;
+    if (ht && ht->count) {
+      count = ht->count;
+      fil = scheme_make_vector(count * 2, NULL);                  
+      for (i = ht->size, j = 0; i--; ) {
+        if (ht->vals[i]) {
+          SCHEME_VEC_ELS(fil)[j++] = ht->keys[i];
+          SCHEME_VEC_ELS(fil)[j++] = ht->vals[i];
+        }
+      }
+    } else
+      fil = NULL;
+
+    if (mrn->marked_names && mrn->marked_names->count) {
+      Scheme_Object *d = scheme_null, *p;
+
+      for (i = mrn->marked_names->size; i--; ) {
+        if (mrn->marked_names->vals[i]
+            /* #f mapping used to store reverse-map cache: */
+            && !SCHEME_FALSEP(mrn->marked_names->keys[i])) {
+          p = CONS(mrn->marked_names->keys[i],
+                   mrn->marked_names->vals[i]);
+          d = CONS(p, d);
+        }
+      }
+
+      if (fil)
+        fil = CONS(fil, d);
+      else
+        fil = d;
+    } else if (fil)
+      fil = CONS(fil, scheme_null);
+    else
+      fil = scheme_null;
+                    
+    l = CONS(l, fil);
+                  
+    if (SCHEME_PAIRP(mrn->unmarshal_info))
+      l = CONS(mrn->unmarshal_info, l); 
+	      
+    l = CONS(mrn->set_identity, l);
+    l = CONS((mrn->kind == mzMOD_RENAME_MARKED) ? scheme_true : scheme_false, l);
+    l = CONS(mrn->phase, l);
+	    
+    local_key = scheme_marshal_lookup(mt, a);
+    if (local_key)
+      scheme_marshal_using_key(mt, a);
+    else {
+      local_key = scheme_marshal_wrap_set(mt, a, l);
+    }
+  } else {
+    scheme_marshal_using_key(mt, (Scheme_Object *)mrn);
+  }
+  return CONS(local_key, stack);
+}
+
 static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
                                      Scheme_Object *w_in, 
 				     Scheme_Marshal_Tables *mt,
@@ -6049,13 +6147,13 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
       /* simpliciation eliminates the need for rib delimiters */
     } else if (SCHEME_RENAMESP(a)
                || SCHEME_RENAMES_SETP(a)) {
-      int which = 0;
+      int which = 0, all_redundant = 1;
 
       while (1) {
         Module_Renames *mrn;
         int redundant = 0;
       
-        if (SCHEME_RENAMESP(a))  {
+        if (SCHEME_RENAMESP(a)) {
           if (!which) {
             mrn = (Module_Renames *)a;
             which++;
@@ -6139,6 +6237,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
           }
 
           if (!redundant) {
+            all_redundant = 0;
             if (just_simplify) {
               stack = CONS((Scheme_Object *)mrn, stack);
             } else {
@@ -6175,83 +6274,84 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
                 else
                   stack = CONS(scheme_false, stack);
               } else {
-                Scheme_Object *local_key;
-	  
-                local_key = scheme_marshal_lookup(mt, (Scheme_Object *)mrn);
-                if (!local_key) {
-                  /* Convert hash table to vector, etc.: */
-                  int i, j, count = 0;
-                  Scheme_Hash_Table *ht;
-                  Scheme_Object *l, *fil;
-	    
-                  ht = mrn->ht;
-                  count = ht->count;
-                  l = scheme_make_vector(count * 2, NULL);                  
-                  for (i = ht->size, j = 0; i--; ) {
-                    if (ht->vals[i]) {
-                      SCHEME_VEC_ELS(l)[j++] = ht->keys[i];
-                      fil = ht->vals[i];
-                      SCHEME_VEC_ELS(l)[j++] = fil;
-                    }
-                  }
-
-                  ht = mrn->free_id_renames;
-                  if (ht && ht->count) {
-                    count = ht->count;
-                    fil = scheme_make_vector(count * 2, NULL);                  
-                    for (i = ht->size, j = 0; i--; ) {
-                      if (ht->vals[i]) {
-                        SCHEME_VEC_ELS(fil)[j++] = ht->keys[i];
-                        SCHEME_VEC_ELS(fil)[j++] = ht->vals[i];
-                      }
-                    }
-                  } else
-                    fil = NULL;
-
-                  if (mrn->marked_names && mrn->marked_names->count) {
-                    Scheme_Object *d = scheme_null, *p;
-
-                    for (i = mrn->marked_names->size; i--; ) {
-                      if (mrn->marked_names->vals[i]
-                          /* #f mapping used to store reverse-map cache: */
-                          && !SCHEME_FALSEP(mrn->marked_names->keys[i])) {
-                        p = CONS(mrn->marked_names->keys[i],
-                                 mrn->marked_names->vals[i]);
-                        d = CONS(p, d);
-                      }
-                    }
-
-                    if (fil)
-                      fil = CONS(fil, d);
-                    else
-                      fil = d;
-                  } else if (fil)
-                    fil = CONS(fil, scheme_null);
-                  else
-                    fil = scheme_null;
-                    
-                  l = CONS(l, fil);
-                  
-                  if (SCHEME_PAIRP(mrn->unmarshal_info))
-                    l = CONS(mrn->unmarshal_info, l); 
-	      
-                  l = CONS(mrn->set_identity, l);
-                  l = CONS((mrn->kind == mzMOD_RENAME_MARKED) ? scheme_true : scheme_false, l);
-                  l = CONS(mrn->phase, l);
-	    
-                  local_key = scheme_marshal_lookup(mt, a);
-                  if (local_key)
-                    scheme_marshal_using_key(mt, a);
-                  else {
-                    local_key = scheme_marshal_wrap_set(mt, a, l);
-                  }
-                } else {
-                  scheme_marshal_using_key(mt, (Scheme_Object *)mrn);
-                }
-                stack = CONS(local_key, stack);
+                stack = add_rename_to_stack(mrn, stack, mt, a);
               }
             }
             stack_size++;
+          }
+        }
+      }
+
+      if (all_redundant) {
+        /* The rename isn't actually redundant if we need to keep the
+           rename-set identity --- but we can simplify to just the
+           identity. */
+        WRAP_POS l;
+        Scheme_Object *la, *this_set_identity, *set_identity;
+        int kind, sealed;
+
+        if (SCHEME_RENAMESP(a)) {
+          this_set_identity = ((Module_Renames *)a)->set_identity;
+          kind = ((Module_Renames *)a)->kind;
+          sealed = ((Module_Renames *)a)->sealed;
+        } else {
+          this_set_identity = ((Module_Renames_Set *)a)->set_identity;
+          kind = ((Module_Renames_Set *)a)->kind;
+          sealed = ((Module_Renames_Set *)a)->sealed;
+        }
+        
+        if (kind != mzMOD_RENAME_TOPLEVEL) {
+          WRAP_POS_COPY(l,w);
+        
+          for (; !WRAP_POS_END_P(l); WRAP_POS_INC(l)) {
+            la = WRAP_POS_FIRST(l);
+            if (SCHEME_RENAMESP(la))
+              set_identity = ((Module_Renames *)la)->set_identity;
+            else if (SCHEME_RENAMES_SETP(la))
+              set_identity = ((Module_Renames_Set *)la)->set_identity;
+            else if (SCHEME_BOXP(la)) {
+              set_identity = SCHEME_VEC_ELS(SCHEME_BOX_VAL(la))[5];
+              if (SAME_OBJ(set_identity, this_set_identity))
+                set_identity = scheme_false;
+              else
+                set_identity = NULL;
+            } else
+              set_identity = NULL;
+
+            if (set_identity) {
+              if (SAME_OBJ(set_identity, this_set_identity)) {
+                all_redundant = 0;
+                break;
+              } else
+                break;
+            }
+          }
+
+          if (all_redundant) {
+            Scheme_Hash_Table *identity_map;
+            Scheme_Object *key;
+
+            identity_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_eof);
+            if (!identity_map) {
+              identity_map = scheme_make_hash_table_equal();
+              scheme_hash_set(rns, scheme_eof, (Scheme_Object *)identity_map);
+            }
+
+            key = scheme_make_pair(scheme_make_integer(kind), 
+                                   scheme_make_pair(scheme_make_integer(sealed),
+                                                    this_set_identity));
+
+            la = scheme_hash_get(identity_map, key);
+            if (!la) {
+              la = scheme_make_module_rename(scheme_make_integer(0), kind, NULL, NULL, this_set_identity);
+              ((Module_Renames *)la)->sealed = sealed;
+              scheme_hash_set(identity_map, key, la);
+            }
+
+            if (just_simplify) 
+              stack = CONS(la, stack);
+            else
+              stack = add_rename_to_stack((Module_Renames *)la, stack, mt, a);
           }
         }
       }
@@ -6975,9 +7075,9 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       if (!set_identity) return_NULL;
       a = SCHEME_CDR(a);
       
-      mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, NULL, NULL);
-        
-      mrn->set_identity = set_identity;
+      mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, 
+                                                        NULL, NULL, 
+                                                        set_identity);
 
       if (!SCHEME_PAIRP(a)) return_NULL;
       mns = SCHEME_CDR(a);

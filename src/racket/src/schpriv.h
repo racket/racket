@@ -1013,7 +1013,8 @@ void scheme_seal_module_rename_set(Scheme_Object *rns, int level);
 #define STX_SEAL_BOUND 1
 #define STX_SEAL_ALL   2
 
-Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns, Scheme_Object *insp);
+Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns, 
+                                         Scheme_Object *insp, Scheme_Object *set_identity);
 Scheme_Object* scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
                                            Scheme_Object *locname, Scheme_Object *exname,
                                            Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
