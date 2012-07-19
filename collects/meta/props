@@ -749,6 +749,7 @@ path/s is either such a string or a list of them.
 "collects/frtime/demos/ufo.rkt" drdr:command-line (mzc *)
 "collects/frtime/gui/demo" drdr:command-line (mzc *)
 "collects/frtime/gui.rkt" drdr:command-line (mzc *)
+"collects/future-visualizer" responsible (jamesswaine)
 "collects/games" responsible (mflatt robby)
 "collects/games/chat-noir" responsible (robby matthias)
 "collects/games/gobblet/check.rkt" drdr:command-line (mzc "-k" *)

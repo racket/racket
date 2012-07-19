@@ -627,7 +627,7 @@ plt-extras :+= (- (+ (package: "games/" #:executable "plt-games")
                   "paint-by-numbers/{hattori|solution-sets|raw-problems}")
 
 ;; -------------------- texpict & slideshow
-plt-extras :+= (collects: "texpict/") 
+plt-extras :+= (collects: "texpict/")
                (package: "slideshow")
 
 ;; -------------------- frtime
@@ -693,6 +693,9 @@ plt-extras :+= (package: "datalog/")
 
 ;; -------------------- db
 mz-extras :+= (package: "db/") (lib: "sqlite*")
+
+;; -------------------- future-visualizer
+plt-extras :+= (package: "future-visualizer/")
 
 ;; ============================================================================
 ;; Readme header
