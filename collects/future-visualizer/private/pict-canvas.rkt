@@ -33,6 +33,7 @@
     (define delaying-redraw #f)
     (define cached-bitmap #f)
     (define cached-base-pict #f)
+    (define repainting? #f)
     
     (define/private (get-viewable-region) 
       (define-values (x y) (get-view-start)) 
@@ -80,7 +81,8 @@
          (new timer% [notify-callback (λ () 
                                         (set! delaying-redraw #f) 
                                         (set! needs-redraw #t)
-                                        (redraw-the-bitmap/maybe-delayed! (get-viewable-region)) 
+                                        (redraw-the-bitmap/maybe-delayed! (get-viewable-region) #:only-the-overlay? only-the-overlay?) 
+                                        (set! repainting? #t)
                                         (refresh))]
               [interval 100] 
               [just-once? #t]) 
@@ -95,7 +97,9 @@
     
     (define/override (on-paint)
       (define vregion (get-viewable-region)) 
-      (redraw-the-bitmap/maybe-delayed! vregion)
+      (unless repainting?
+        (redraw-the-bitmap/maybe-delayed! vregion))
+      (set! repainting? #f)
       (define dc (get-dc))
       (when cached-bitmap
         (send dc 

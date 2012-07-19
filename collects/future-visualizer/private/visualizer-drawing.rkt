@@ -526,47 +526,6 @@
                         #:width width 
                         #:with-arrow with-arrow 
                         #:style style))))
-        
-;;draw-arrows : pict viewable-region segment -> pict
-(define (draw-arrows base-pct vregion seg) 
-  (let ([fst (get-seg-previous-to-vregion vregion seg)])
-    (let loop ([pct base-pct] 
-               [cur-seg fst])
-        (if (not cur-seg)
-            pct 
-            (let ([next (segment-next-future-seg cur-seg)])
-              (let* ([next-targ (segment-next-targ-future-seg cur-seg)] 
-                     [prev-targ (segment-prev-targ-future-seg cur-seg)]              
-                     [ftl-arrows (if (not next) 
-                                     pct 
-                                     (draw-connection vregion 
-                                                      cur-seg 
-                                                      next 
-                                                      pct 
-                                                      (event-connection-line-color) 
-                                                      #:width 2))] 
-                     [prev-targ-arr (if (not prev-targ) 
-                                        ftl-arrows 
-                                        (draw-connection vregion 
-                                                         prev-targ 
-                                                         cur-seg 
-                                                         ftl-arrows 
-                                                         (event-target-future-line-color) 
-                                                         #:with-arrow #t 
-                                                         #:style 'dot))] 
-                     [next-targ-arr (if (not next-targ) 
-                                        prev-targ-arr 
-                                        (draw-connection vregion 
-                                                         cur-seg 
-                                                         next-targ 
-                                                         prev-targ-arr 
-                                                         (event-target-future-line-color) 
-                                                         #:with-arrow #t 
-                                                         #:style 'dot))])
-                (if (and next 
-                         ((seg-in-vregion vregion) next))
-                    (loop next-targ-arr next)
-                    next-targ-arr)))))))
 
 ;;timeline-pict : (listof indexed-future-event) [viewable-region] [integer] -> pict
 (define (timeline-pict logs 
@@ -617,6 +576,47 @@
                overlay)] 
     [else tp]))
 
+;;draw-arrows : pict viewable-region segment -> pict
+(define (draw-arrows base-pct vregion seg) 
+  (let ([fst (get-seg-previous-to-vregion vregion seg)])
+    (let loop ([pct base-pct] 
+               [cur-seg fst])
+        (if (not cur-seg)
+            pct 
+            (let ([next (segment-next-future-seg cur-seg)])
+              (let* ([next-targ (segment-next-targ-future-seg cur-seg)] 
+                     [prev-targ (segment-prev-targ-future-seg cur-seg)]              
+                     [ftl-arrows (if (not next) 
+                                     pct 
+                                     (draw-connection vregion 
+                                                      cur-seg 
+                                                      next 
+                                                      pct 
+                                                      (event-connection-line-color) 
+                                                      #:width 2))] 
+                     [prev-targ-arr (if (not prev-targ) 
+                                        ftl-arrows 
+                                        (draw-connection vregion 
+                                                         prev-targ 
+                                                         cur-seg 
+                                                         ftl-arrows 
+                                                         (event-target-future-line-color) 
+                                                         #:with-arrow #t 
+                                                         #:style 'dot))] 
+                     [next-targ-arr (if (not next-targ) 
+                                        prev-targ-arr 
+                                        (draw-connection vregion 
+                                                         cur-seg 
+                                                         next-targ 
+                                                         prev-targ-arr 
+                                                         (event-target-future-line-color) 
+                                                         #:with-arrow #t 
+                                                         #:style 'dot))])
+                (if (and next 
+                         ((seg-in-vregion vregion) next))
+                    (loop next-targ-arr next)
+                    next-targ-arr)))))))
+
 ;Draws the pict that is layered on top of the exec. timeline canvas 
 ;to highlight a specific future's event sequence
 ;;timeline-overlay : uint uint (or segment #f) (or segment #f) frame-info trace -> pict
@@ -629,17 +629,9 @@
     (if tacked (values tacked #t) (values hovered #f)))
   (if seg-with-arrows 
       (let* ([bg base] 
-             [dots (let loop ([p bg] [cur-seg (get-first-future-seg-in-region vregion seg-with-arrows)]) 
-                     (if (or (not cur-seg) (not ((seg-in-vregion vregion) cur-seg))) 
-                         p 
-                         (loop (pin-over p 
-                                         (- (segment-x cur-seg) (viewable-region-x vregion)) 
-                                         (- (segment-y cur-seg) (viewable-region-y vregion)) 
-                                         (pict-for-segment cur-seg)) 
-                               (segment-next-future-seg cur-seg))))]
              [aseg-rel-x (- (segment-x seg-with-arrows) (viewable-region-x vregion))] 
              [aseg-rel-y (- (segment-y seg-with-arrows) (viewable-region-y vregion))]
-             [line (pin-over dots
+             [line (pin-over bg
                              (- (+ aseg-rel-x 
                                    (/ (segment-width seg-with-arrows) 2)) 
                                 2)
