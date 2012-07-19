@@ -58,7 +58,8 @@
 ;Represents a vertical line depicting a specific time in the execution history
 (struct timeline-tick (x 
                        abs-time
-                       rel-time) #:transparent) 
+                       rel-time 
+                       show-label?) #:transparent) 
 
 ;;viewable-region-from-frame : frame-info -> viewable-region
 (define (viewable-region-from-frame finfo) 
@@ -179,19 +180,29 @@
       [else
        (loop (cdr ss))])))
 
+;;timeline-tick-label-pict : real -> pict
+(define (timeline-tick-label-pict rel-time) 
+  (text-block-pict (format "~a ms" (real->decimal-string rel-time)) 
+                   #:backcolor (timeline-tick-label-backcolor) 
+                   #:forecolor (timeline-tick-label-forecolor) 
+                   #:padding 3))
+
 ;;calc-ticks : (listof segment) float trace -> (listof timeline-tick)
 (define (calc-ticks segs timeToPixMod tr)
+  (define LABEL-PAD 3)
   (define trace-start (inexact->exact (trace-start-time tr)))
   (define segs-len (length segs)) 
-  (define-values (lt lx tks _) 
+  (define-values (lt lx tks _ __) 
     (for/fold ([last-time trace-start] 
                [last-x 0]
                [ticks '()]
+               [last-label-x-extent 0]
                [remain-segs segs]) ([i (in-range 0 (floor (/ (- (trace-end-time tr) 
                                                          trace-start) 
                                                       DEFAULT-TIME-INTERVAL)))]) 
-      (define tick-time (+ last-time DEFAULT-TIME-INTERVAL)) 
-      (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL)) 
+      #;(define tick-time (+ last-time DEFAULT-TIME-INTERVAL)) 
+      (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL))
+      (define tick-time (+ trace-start tick-rel-time))
       (define want-x (+ last-x (* DEFAULT-TIME-INTERVAL timeToPixMod)))
       (define-values (most-recent-seg next-seg r-segs)
         (find-most-recent-and-next remain-segs tick-time))
@@ -201,31 +212,37 @@
       (define next-evt-time (inexact->exact (event-start-time next-evt)))
       (define most-recent-edge (segment-edge most-recent-seg)) 
       (define next-edge (segment-x next-seg))
-      (cond 
-        [(= most-recent-time tick-time) 
-         (values tick-time 
-                 (segment-x most-recent-seg) 
-                 (cons (timeline-tick (segment-x most-recent-seg) tick-time tick-rel-time) ticks)
-                 r-segs)]
-        [(= (segment-x next-seg) (add1 (+ (segment-x most-recent-seg) (segment-width most-recent-seg))))
-         (values tick-time 
-                 (+ (segment-x most-recent-seg) (segment-width most-recent-seg)) 
-                 (cons (timeline-tick (+ (segment-x most-recent-seg) 
-                                         (segment-width most-recent-seg))
-                                      tick-time
-                                      tick-rel-time) 
-                       ticks)
-                 r-segs)]
-        [else 
-         (define start-x (max most-recent-edge last-x))
-         (define start-time (max most-recent-time last-time))
-         (define size-mod (/ (- next-edge start-x) (- next-evt-time start-time)))
-         (define x-offset (ceiling (* (- tick-time start-time) size-mod)))
-         (define tick-x (round (+ start-x x-offset)))
-         (values tick-time 
-                 tick-x 
-                 (cons (timeline-tick tick-x tick-time tick-rel-time) ticks)
-                 r-segs)]))) 
+      (define tick-x 
+        (cond 
+          [(= most-recent-time tick-time) (segment-x most-recent-seg)] 
+          [(= (segment-x next-seg) (add1 (+ (segment-x most-recent-seg) (segment-width most-recent-seg)))) 
+           (+ (segment-x most-recent-seg) (segment-width most-recent-seg))] 
+          [else 
+           (define start-x (max most-recent-edge last-x))
+           (define start-time (max most-recent-time last-time))
+           (define size-mod (/ (- next-edge start-x) (- next-evt-time start-time)))
+           (define x-offset (ceiling (* (- tick-time start-time) size-mod)))
+           (round (+ start-x x-offset))]))
+      (define show-tick? ((- tick-x last-x) . >= . TIMELINE-MIN-TICK-PADDING))
+      (define show-label? 
+        (if (not show-tick?) 
+            #f 
+            (>= tick-x (+ last-label-x-extent LABEL-PAD))))
+      (define new-label-x-extent 
+        (if show-label? 
+            (+ tick-x (pict-width (timeline-tick-label-pict tick-rel-time)))
+            last-label-x-extent))
+      (if show-tick? 
+          (values tick-time 
+                  tick-x 
+                  (cons (timeline-tick tick-x tick-time tick-rel-time show-label?) ticks) 
+                  new-label-x-extent 
+                  r-segs) 
+          (values tick-time 
+                  last-x 
+                  ticks 
+                  new-label-x-extent 
+                  r-segs))))
   tks)
 
 ;;calc-process-timespan-lines : trace (listof segment) -> (listof (uint . uint))
@@ -373,51 +390,23 @@
 
 ;;draw-ruler-on : pict viewable-region frameinfo -> pict
 (define (draw-ruler-on base vregion frameinfo)
-  (let loop ([pct base] 
-             [ticks (filter (λ (t) (in-viewable-region-horiz vregion (timeline-tick-x t)))
-                            (frame-info-timeline-ticks frameinfo))]
-             [next-label-x (viewable-region-x-extent vregion)] 
-             [next-tick-x (viewable-region-x-extent vregion)])
-    (cond 
-      [(null? ticks) pct] 
-      [(< (- next-tick-x (timeline-tick-x (car ticks))) TIMELINE-MIN-TICK-PADDING) 
-       (loop pct 
-             (cdr ticks) 
-             next-label-x 
-             next-tick-x)]
-      [else (let* ([LABEL-PAD 2] 
-                   [VERT-PAD 3]
-                   [cur-tick (car ticks)] 
-                   [cur-x (timeline-tick-x cur-tick)]
-                   [tick-desc (format "~a ms" (real->decimal-string 
-                                               (timeline-tick-rel-time cur-tick) 1))]
-                   [t (text-block-pict tick-desc 
-                                       #:backcolor (timeline-tick-label-backcolor) 
-                                       #:forecolor (timeline-tick-label-forecolor)
-                                       #:padding 3)] 
-                   [text-width (pict-width t)] 
-                   [show-label? (<= (+ cur-x LABEL-PAD text-width) next-label-x)]
-                   [pinnedline (pin-over pct 
-                                         (- cur-x (viewable-region-x vregion))
-                                         0 
-                                         (linestyle 'dot 
-                                                    (colorize (vline 1 
-                                                                     (frame-info-adjusted-height frameinfo)) 
-                                                              (if show-label? 
-                                                                  (timeline-tick-bold-color)
-                                                                  (timeline-tick-color)))))])
-              (if show-label? 
-                  (loop (pin-over pinnedline 
-                                  (- cur-x (viewable-region-x vregion)) 
-                                  VERT-PAD 
-                                  t) 
-                        (cdr ticks) 
-                        cur-x 
-                        cur-x)
-                  (loop pinnedline
-                        (cdr ticks) 
-                        next-label-x 
-                        cur-x)))])))
+  (for/fold ([pct base]) ([tick (in-list (filter (λ (t) (in-viewable-region-horiz vregion (timeline-tick-x t))) 
+                                                 (frame-info-timeline-ticks frameinfo)))])
+    (define cur-x (timeline-tick-x tick))
+    (define pinnedline 
+      (pin-over pct 
+                (- cur-x (viewable-region-x vregion)) 
+                0 
+                (linestyle 'dot 
+                           (colorize (vline 1 
+                                            (frame-info-adjusted-height frameinfo)) 
+                                     (timeline-tick-color)))))
+    (if (timeline-tick-show-label? tick)
+        (pin-over pinnedline 
+                  (- cur-x (viewable-region-x vregion)) 
+                  3 
+                  (timeline-tick-label-pict (timeline-tick-rel-time tick)))
+        pinnedline)))
 
 ;;draw-row-lines-on : pict viewable-region trace frameinfo -> pict
 (define (draw-row-lines-on base vregion tr finfo opacity) 

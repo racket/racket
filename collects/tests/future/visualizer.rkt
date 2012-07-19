@@ -41,11 +41,11 @@
   (check-true (in-viewable-region-horiz vr 222)))
 
 (let ([vr (viewable-region 0 0 732 685)] 
-      [ticks (list (timeline-tick 222.0 #f 0.4999999999999982) 
-                   (timeline-tick 169.0 #f 0.3999999999999986) 
-                   (timeline-tick 116.0 #f 0.29999999999999893) 
-                   (timeline-tick 63.0 #f 0.1999999999999993) 
-                   (timeline-tick 10 #f 0.09999999999999964))]) 
+      [ticks (list (timeline-tick 222.0 #f 0.4999999999999982 #f) 
+                   (timeline-tick 169.0 #f 0.3999999999999986 #f) 
+                   (timeline-tick 116.0 #f 0.29999999999999893 #f) 
+                   (timeline-tick 63.0 #f 0.1999999999999993 #f) 
+                   (timeline-tick 10 #f 0.09999999999999964 #f))]) 
   (define in-vr (filter (λ (t) 
                           (in-viewable-region-horiz vr (timeline-tick-x t))) 
                         ticks)) 
@@ -250,14 +250,9 @@
                (indexed-future-event 1 (future-event 0 0 'start-work 11.0 #f #f)) 
                (indexed-future-event 2 (future-event 0 0 'end-work 20.0 #f #f)))])
   (define-values (tr finfo segs ticks) (compile-trace-data l)) 
-  ;Check that number of ticks stays constant whatever the time->pixel modifier 
-  (check-equal? (length ticks) 100)
-  (check-equal? (length (calc-ticks segs 700 tr)) 100)
-  (for ([i (in-range 0.1 20)]) 
-    (check-equal? (length (calc-ticks segs i tr)) 
-                  100 
-                  (format "Wrong number of ticks for time->pix mod ~a\n" i)))
-  (check-seg-layout tr segs ticks))
+  ;Number of ticks can vary, but cannot exceed (total trace time / tick interval)
+  (check-true (<= (length ticks) 100))
+  (check-equal? (length (calc-ticks segs 1000 tr)) 99))
 
 (let ([l (list (indexed-future-event 0 '#s(future-event #f 0 create 1334778395768.733 #f 3))
                (indexed-future-event 1 '#s(future-event 3 2 start-work 1334778395768.771 #f #f))
@@ -267,7 +262,7 @@
   (define last-evt (indexed-future-event-fevent (list-ref l 3))) 
   (define first-evt (indexed-future-event-fevent (list-ref l 0))) 
   (define total-time (- (future-event-time last-evt) (future-event-time first-evt))) 
-  (check-equal? (length ticks) (inexact->exact (floor (* 10 total-time)))))
+  (check-true (<= (length ticks) (inexact->exact (floor (* 10 total-time))))))
 
 (define mand-first 
   (list (indexed-future-event 0 '#s(future-event #f 0 create 1334779294212.415 #f 1))
