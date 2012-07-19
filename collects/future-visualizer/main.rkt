@@ -4,7 +4,7 @@
          racket/bool 
          future-visualizer/trace
          "private/visualizer-gui.rkt"  
-         "private/visualizer-drawing.rkt")
+         "private/visualizer-drawing.rkt") 
 
 (provide visualize-futures 
          (contract-out 
@@ -38,6 +38,7 @@
 (define-syntax-rule (visualize-futures e ...) 
   (begin (start-future-tracing!) 
          (begin0 (begin e ...) 
+                 (stop-future-tracing!)
                  (show-visualizer))))
 
 ;;visualize-futures-thunk : (-> any/c) -> any/c
@@ -45,6 +46,7 @@
   (start-future-tracing!) 
   (begin0 
     (thunk) 
+    (stop-future-tracing!)
     (show-visualizer)))
                   
                   

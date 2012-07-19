@@ -6,9 +6,12 @@
          racket/set 
          "constants.rkt"
          "graph-drawing.rkt" 
-         (only-in '#%futures init-visualizer-tracking!)) 
+         (only-in '#%futures 
+                  reset-future-logs-for-tracing! 
+                  mark-future-trace-end!)) 
 
 (provide start-future-tracing! 
+         stop-future-tracing!
          (struct-out future-event)
          (struct-out indexed-future-event)
          (struct-out trace) 
@@ -163,22 +166,30 @@
 (define recv #f) 
 
 ;;start-future-tracing! -> void
-(define (start-future-tracing!) 
+(define (start-future-tracing!)
+  (reset-future-logs-for-tracing!)
   (when (not recv) 
-    (set! recv (make-log-receiver (init-visualizer-tracking!) 'debug))))
+    (set! recv (make-log-receiver (current-logger) 'debug))))
 
+;;stop-future-tracing! -> void
+(define (stop-future-tracing!) 
+  (mark-future-trace-end!))
+
+;;timeline-events/private : -> void
 (define (timeline-events/private) 
   (let ([info (sync/timeout 0 recv)]) 
     (if info 
         (let ([v (vector-ref info 2)]) 
           (if (future-event? v) 
-              (cons v (timeline-events/private)) 
+              (case (future-event-what v) 
+                [(stop-trace) '()] 
+                [else (cons v (timeline-events/private))]) 
               (timeline-events/private))) 
-        '())))
+        (timeline-events/private))))
           
 ;Gets log events for an execution timeline
 ;;timeline-events : (listof indexed-future-event)
-(define (timeline-events) 
+(define (timeline-events)
   (define sorted (sort (timeline-events/private)
                        #:key future-event-time 
                        <)) 
