@@ -40,18 +40,24 @@ the execution of parallel programs written using @racket[future].
     (let ([f (future (lambda () ...))]) 
       ... 
       (touch f)) 
-    
+    (stop-future-tracing!)
     (timeline-events)
  ]
 }
 
 @deftogether[(
   @defproc[(start-future-tracing!) void?]
+  @defproc[(stop-future-tracing!) void?]
   @defproc[(timeline-events) (listof indexed-future-event?)]
 )]{
  The @racket[start-future-tracing!] procedure enables the collection 
  of future-related execution data.  This function should be called immediately 
  prior to executing code the programmer wishes to profile. 
+ 
+ The @racket[stop-future-tracing!] procedure must be used to indicate the 
+ end of code the programmer wishes to trace.  Tracing works by simply using a 
+ log receiver to record all future-related log events; this procedure logs a 
+ special message that is well-known to the log receiver to mean 'stop recording'.
  
  The @racket[timeline-events] procedure returns the program trace as 
  a list of @racket[indexed-future-event] structures. 

@@ -46,15 +46,16 @@ at any point during the program's lifetime.
     (let ([f (future (lambda () ...))]) 
       ... 
       (touch f)) 
-    
+    (stop-future-tracing!)
     (show-visualizer)
  ]
 }
 
 @defproc[(show-visualizer [#:timeline timeline (listof indexed-future-event?)]) void?]{
  Displays the visualizer window.  If the function is called with no arguments, 
- it must be preceded by a call to @racket[start-future-tracing!] -- in which case 
- the visualizer will show data for all events logged in between (via @racket[timeline-events]).  
+ it must be preceded by the following sequence: a call to @racket[start-future-tracing!], 
+ program code that is being traced, and a call to @racket[stop-future-tracing!] -- in which case 
+ the visualizer will show data for all events logged in between those calls (via @racket[timeline-events]).  
  Note that @racket[visualize-futures] and @racket[visualize-futures-thunk] are simpler alternatives to using these 
  primitives directly.
  The @racket[timeline] argument can be used to show the visualizer for a previously-generated 

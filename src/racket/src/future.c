@@ -242,6 +242,11 @@ static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object *ar
   return scheme_void;
 }
 
+static Scheme_Object *mark_future_trace_end(int argc, Scheme_Object *argv[])
+{
+  return scheme_void;
+}
+
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
 void scheme_init_futures(Scheme_Env *newenv)
@@ -259,7 +264,8 @@ void scheme_init_futures(Scheme_Env *newenv)
   FUTURE_PRIM_W_ARITY("fsemaphore-count", scheme_fsemaphore_count, 1, 1, newenv);
   FUTURE_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
   FUTURE_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
-  FUTURE_PRIM_W_ARITY("init-visualizer-tracking!", reset_future_logs_for_tracking, 0, 0, newenv);
+  FUTURE_PRIM_W_ARITY("reset-future-logs-for-tracing!", reset_future_logs_for_tracking, 0, 0, newenv);
+  GLOBAL_PRIM_W_ARITY("mark-future-trace-end!", mark_future_trace_end, 0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -340,7 +346,8 @@ enum {
   FEVENT_OVERFLOW,
   FEVENT_TOUCH_PAUSE,
   FEVENT_TOUCH_RESUME,
-  FEVENT_MISSING,
+  FEVENT_MISSING, 
+  FEVENT_STOP_TRACE, 
   _FEVENT_COUNT_
 };
 
@@ -350,7 +357,7 @@ static const char * const fevent_strs[] = { "create", "complete",
                                             "sync", "sync", "block", "touch", "block",
                                             "result", "result", "abort", "abort", 
                                             "suspend", "overflow",
-                                            "touch-pause", "touch-resume", "missing" };
+                                            "touch-pause", "touch-resume", "missing", "stop-trace" };
 static const char * const fevent_long_strs[] = { "created", "completed",
                                                  "started work", "started (process 0, only)", "started (overflow)", 
                                                  "ended work",
@@ -360,7 +367,7 @@ static const char * const fevent_long_strs[] = { "created", "completed",
                                                  "abort from process 0", "abort determined",
                                                  "suspended", "overflow",
                                                  "paused for touch", "resumed for touch",
-                                                 "events missing" };
+                                                 "events missing", "stop future tracing" };
 
 
 typedef struct Scheme_Future_State {
@@ -429,6 +436,7 @@ static void pop_suspended_lw(Scheme_Future_State *fs, future_t *ft);
 static Scheme_Object *bad_multi_result_proc;
 static Scheme_Object *bad_multi_result(int argc, Scheme_Object **argv);
 static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object *argv[]);
+static Scheme_Object *mark_future_trace_end(int argc, Scheme_Object *argv[]);
 
 READ_ONLY static int cpucount;
 static void init_cpucount(void);
@@ -554,7 +562,8 @@ void scheme_init_futures(Scheme_Env *newenv)
 
   GLOBAL_PRIM_W_ARITY("would-be-future", would_be_future, 1, 1, newenv);
   GLOBAL_PRIM_W_ARITY("futures-enabled?", futures_enabled, 0, 0, newenv);
-  GLOBAL_PRIM_W_ARITY("init-visualizer-tracking!", reset_future_logs_for_tracking, 0, 0, newenv);
+  GLOBAL_PRIM_W_ARITY("reset-future-logs-for-tracing!", reset_future_logs_for_tracking, 0, 0, newenv);
+  GLOBAL_PRIM_W_ARITY("mark-future-trace-end!", mark_future_trace_end, 0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -985,7 +994,7 @@ static Scheme_Object *reset_future_logs_for_tracking(int argc, Scheme_Object **a
 
   }
 
-  return logger;
+  return scheme_void;
 }
 
 static double get_future_timestamp() XFORM_SKIP_PROC {
@@ -1109,6 +1118,22 @@ static void log_future_event(Scheme_Future_State *fs,
                     extra_str,
                     timestamp);
 
+}
+
+static Scheme_Object *mark_future_trace_end(int argc, Scheme_Object **argv) 
+{
+  Scheme_Future_State *fs;
+  fs = scheme_future_state;
+  log_future_event(fs,
+                   "future %d, process %d: %s: %s; time: %f",
+                   "tracing",
+                   -1, 
+                   FEVENT_STOP_TRACE, 
+                   get_future_timestamp(),
+                   0, 
+                   0);
+
+  return scheme_void;
 }
 
 static void log_overflow_event(Scheme_Future_State *fs, int which, double timestamp)
