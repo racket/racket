@@ -1453,8 +1453,10 @@ void ensure_instantiate_for_label(const char *who, Scheme_Env *from_env, Scheme_
   } 
 }
 
-static Scheme_Object *make_sub_modidx(Scheme_Env *menv, Scheme_Object *name, int i)
+static Scheme_Object *make_sub_modidx_pair(Scheme_Env *menv, Scheme_Object *name, int i)
 {
+  Scheme_Object *modidx;
+
   if (i) {
     name = scheme_resolved_module_path_value(name);
     while (SCHEME_PAIRP(SCHEME_CDR(name))) {
@@ -1465,12 +1467,15 @@ static Scheme_Object *make_sub_modidx(Scheme_Env *menv, Scheme_Object *name, int
     name = scheme_make_utf8_string("..");
   }
   
-  return scheme_make_modidx(scheme_make_pair(submod_symbol,
-                                             scheme_make_pair(scheme_make_utf8_string("."),
-                                                              scheme_make_pair(name,
-                                                                               scheme_null))),
-                            menv->link_midx,
-                            scheme_false);
+  modidx = scheme_make_modidx(scheme_make_pair(submod_symbol,
+                                               scheme_make_pair(scheme_make_utf8_string("."),
+                                                                scheme_make_pair(name,
+                                                                                 scheme_null))),
+                              menv->link_midx,
+                              scheme_false);
+  name = scheme_module_resolve(modidx, 0);
+  
+  return scheme_make_pair(name, modidx);
 }
 
 #if 0
@@ -1785,10 +1790,10 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
                   name = ((Scheme_Module *)SCHEME_CAR(l))->modname;
                   
                   if (!scheme_hash_get(nophase_checked, name)) {
-                    LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(name, NULL)));
-                    nophase_todo = scheme_make_pair(scheme_make_pair(name, make_sub_modidx(menv, name, i)),
-                                                    nophase_todo);
-                    scheme_hash_set(nophase_checked, name, just_declare ? scheme_false : scheme_true);
+                    name = make_sub_modidx_pair(menv, name, i);
+                    LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(SCHEME_CAR(name), NULL)));
+                    nophase_todo = scheme_make_pair(name, nophase_todo);
+                    scheme_hash_set(nophase_checked, SCHEME_CAR(name), just_declare ? scheme_false : scheme_true);
                   }
                   l = SCHEME_CDR(l);
                 }
@@ -1970,10 +1975,10 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
             name = ((Scheme_Module *)SCHEME_CAR(l))->modname;
                   
             if (!scheme_hash_get(nophase_checked, name)) {
-              LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(name, NULL)));
-              nophase_todo = scheme_make_pair(scheme_make_pair(name, make_sub_modidx(menv, name, i)),
-                                              nophase_todo);
-              scheme_hash_set(nophase_checked, name, just_declare ? scheme_false : scheme_true);
+              name = make_sub_modidx_pair(menv, name, i);
+              LOG_ATTACH(printf("Add s %s\n", scheme_write_to_string(SCHEME_CAR(name), NULL)));
+              nophase_todo = scheme_make_pair(name, nophase_todo);
+              scheme_hash_set(nophase_checked, SCHEME_CAR(name), just_declare ? scheme_false : scheme_true);
             }
             l = SCHEME_CDR(l);
           }

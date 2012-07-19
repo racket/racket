@@ -675,34 +675,41 @@
 ;; Module attach
 
 (let ()
-  (define (test-attach decl-only? pre-check?)
-    (let ([ns1 (make-base-namespace)]
-          [ns2 (make-base-namespace)]
-          [ns3 (make-base-namespace)])
-      (parameterize ([current-namespace ns1])
-        (eval '(module m racket/base 
-                 (provide root) (define root 'm)
-                 (module+ n (provide x) (define x 'x))))
-        (unless decl-only?
-          (dynamic-require ''m #f)
-          (when pre-check?
-            (test 'x dynamic-require '(submod 'm n) 'x))))
-      (parameterize ([current-namespace ns2])
-        ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
-         ns1 
-         ''m)
-        (test 'x dynamic-require '(submod 'm n) 'x))
-      (unless decl-only?
+  (define (attach-tests use-path?)
+    (define (test-attach decl-only? pre-check?)
+      (define path (and use-path?
+                        (build-path (find-system-path 'temp-dir) "mod.rkt")))
+      (let ([ns1 (make-base-namespace)]
+            [ns2 (make-base-namespace)]
+            [ns3 (make-base-namespace)])
         (parameterize ([current-namespace ns1])
-          (test 'x dynamic-require '(submod 'm n) 'x)))
-      (parameterize ([current-namespace ns3])
-        ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
-         ns1 
-         '(submod 'm n))
-        (test 'm dynamic-require ''m 'root))))
-  (test-attach #f #f)
-  (test-attach #f #t)
-  (test-attach #t #f))
+          (parameterize ([current-module-declare-name (and use-path?
+                                                           (make-resolved-module-path path))])
+            (eval '(module m racket/base 
+                     (provide root) (define root 'm)
+                     (module+ n (provide x) (define x 'x)))))
+          (unless decl-only?
+            (dynamic-require (or path ''m) #f)
+            (when pre-check?
+              (test 'x dynamic-require `(submod ,(or path ''m) n) 'x))))
+        (parameterize ([current-namespace ns2])
+          ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
+           ns1 
+           (or path ''m))
+          (test 'x dynamic-require `(submod ,(or path ''m) n) 'x))
+        (unless decl-only?
+          (parameterize ([current-namespace ns1])
+            (test 'x dynamic-require `(submod ,(or path ''m) n) 'x)))
+        (parameterize ([current-namespace ns3])
+          ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
+           ns1 
+           `(submod ,(or path ''m) n))
+          (test 'm dynamic-require (or path ''m) 'root))))
+    (test-attach #f #f)
+    (test-attach #f #t)
+    (test-attach #t #f))
+  (attach-tests #f)
+  (attach-tests #t))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
