@@ -412,16 +412,20 @@
  (let ()
    (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
    (define-values (prop:green green? green-ref) (make-struct-type-property 'green 'can-impersonate))
+   (define-values (prop:red red? red-ref)
+     (make-struct-type-property 'red (lambda (v i) (symbol->string v)) null #t))
    (define-struct a ([x #:mutable] y))
    (define-struct (b a) ([z #:mutable]))
    (define-struct (c b) ([n #:mutable]) #:transparent)
    (define-struct p (u) #:property prop:green 'green)
+   (define-struct r (t) #:property prop:red 'red)
    (define-struct (q p) (v w))
    (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v)
                                                       set-a-x! (lambda (a v) v)))
    (test #t chaperone?/impersonator (chaperone-struct (make-b 1 2 3) a-x (lambda (a v) v)
                                                       set-a-x! (lambda (a v) v)))
    (test #t chaperone?/impersonator (chaperone-struct (make-p 1) green-ref (lambda (a v) v)))
+   (test #t chaperone?/impersonator (chaperone-struct (make-r 1) red-ref (lambda (a v) v)))
    (test #t chaperone?/impersonator (chaperone-struct (make-a 1 2) a-x (lambda (a v) v)
                                                       set-a-x! (lambda (a v) v)
                                                       prop:blue 'blue))
@@ -552,6 +556,14 @@
            (begin
              (test 'bad a-x a2)
              (test 'bad a-x a3)))))))
+
+;; test to see if the guard is actually called even when impersonated
+(let ()
+  (define-values (prop:red red? red-ref)
+    (make-struct-type-property 'red (lambda (v i) (symbol->string v)) null #t))
+  (define-struct a (b) #:property prop:red 'red)
+  (test "red" red-ref (impersonate-struct (make-a 1) red-ref (lambda (v f-v) f-v)))
+  (test 5 red-ref (impersonate-struct (make-a 1) red-ref (lambda (v f-v) 5))))
 
 ;; ----------------------------------------
 

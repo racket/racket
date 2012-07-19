@@ -542,7 +542,7 @@ scheme_init_struct (Scheme_Env *env)
   scheme_add_global_constant("make-struct-type-property", 
 			    scheme_make_prim_w_arity2(make_struct_type_property,
 						      "make-struct-type-property",
-						      1, 3,
+						      1, 4,
 						      3, 3),
 			    env);
 
@@ -1112,6 +1112,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   char *name;
   int len;
   const char *who;
+  char can_impersonate = 0;
 
   if (type == scheme_struct_property_type)
     who = "make-struct-type-property";
@@ -1124,6 +1125,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
     if (SCHEME_SYMBOLP(argv[1])
         && !SCHEME_SYM_WEIRDP(argv[1])
         && !strcmp("can-impersonate", SCHEME_SYM_VAL(argv[1]))) {
+      can_impersonate = 1;
     } else if (SCHEME_TRUEP(argv[1])
                && !scheme_check_proc_arity(NULL, 2, 1, argc, argv))
       scheme_wrong_contract(who, "(or/c (any/c any/c . -> . any) #f 'can-impersonate)", 1, argc, argv);
@@ -1153,6 +1155,9 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
                               "(listof (cons struct-type-property? (any/c . -> . any)))", 
                               2, argc, argv);
       }
+
+      if (argc > 3)
+        can_impersonate = SCHEME_TRUEP(argv[3]);
     }
   }
 
@@ -1162,6 +1167,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   if ((argc > 1) && SCHEME_TRUEP(argv[1]))
     p->guard = argv[1];
   p->supers = supers;
+  p->can_impersonate = can_impersonate;
 
   a[0] = (Scheme_Object *)p;
 
@@ -5243,9 +5249,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
       prop = SCHEME_PRIM_CLOSURE_ELS(proc)[0];
       pi = NULL;
 
-      if (is_impersonator 
-          && (!((Scheme_Struct_Property *)prop)->guard
-              || !SCHEME_SYMBOLP(((Scheme_Struct_Property *)prop)->guard)))
+      if (is_impersonator
+          && !((Scheme_Struct_Property *)prop)->can_impersonate)
         scheme_contract_error(name,
                               "operation cannot be impersonated",
                               "operation kind", 0, kind,

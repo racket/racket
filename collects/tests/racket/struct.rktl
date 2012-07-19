@@ -7,7 +7,7 @@
 	     [(prop:p2 p2? p2-ref) (make-struct-type-property 'prop2)]
 	     [(insp1) (make-inspector)]
 	     [(insp2) (make-inspector)])
-  (arity-test make-struct-type-property 1 3)
+  (arity-test make-struct-type-property 1 4)
   (test 3 primitive-result-arity make-struct-type-property)
   (arity-test p? 1 1)
   (arity-test p-ref 1 2)
@@ -638,7 +638,7 @@
 ;; ------------------------------------------------------------
 ;; Property accessor errors
 
-(let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop1 'can-impersonate '())])
+(let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop1 #f '() #t)])
   (test 42 p-ref 5 42)
   (test 17 p-ref 5 (lambda () (* 1 17)))
   (err/rt-test (p-ref 5) exn:fail:contract?))

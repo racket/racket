@@ -147,7 +147,7 @@
 ;; property value for the right forcer to use
 (define-values [prop:force promise-forcer]
   (let-values ([(prop pred? get) ; no need for the predicate
-                (make-struct-type-property 'forcer 'can-impersonate)])
+                (make-struct-type-property 'forcer #f null #t)])
     (values prop get)))
 
 ;; A promise value can hold

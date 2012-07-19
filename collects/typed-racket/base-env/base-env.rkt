@@ -2093,7 +2093,8 @@
 [make-struct-type-property
  (->opt Sym
        [(Un (one-of/c #f 'can-impersonate) (-> Univ (-lst Univ)))
-        (-lst (-pair -Struct-Type-Property (-> Univ Univ)))]
+        (-lst (-pair -Struct-Type-Property (-> Univ Univ)))
+        Univ]
        (-values (list -Struct-Type-Property (-> Univ B) (-> Univ Univ))))]
 
 [struct-type-property? (make-pred-ty -Struct-Type-Property)]

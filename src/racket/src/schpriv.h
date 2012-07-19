@@ -729,6 +729,7 @@ typedef struct Scheme_Inspector {
 
 typedef struct Scheme_Struct_Property {
   Scheme_Object so;
+  char can_impersonate; /* 1 if impersonatable property, 0 otherwise */
   Scheme_Object *name; /* a symbol */
   Scheme_Object *guard; /* NULL, a procedure, or 'can-impersonate */
   Scheme_Object *supers; /* implied properties: listof (cons <prop> <proc>) */
