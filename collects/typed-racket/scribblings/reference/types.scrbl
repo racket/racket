@@ -444,6 +444,11 @@ recursive type in the body @racket[t]
 
     (define-type (List A) (Rec List (Pair A (U List Null))))]}
 
+@defform[(Struct st)]{is a type which is a supertype of all instances of the
+potentially-polymorphic structure type @racket[_st].  Note that structure
+accessors for @racket[_st] will @emph{not} accept @racket[(Struct st)] as an
+argument.}
+
 @defalias[→ ->]
 @defalias[case→ case->]
 @defalias[∀ All]
