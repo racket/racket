@@ -8,7 +8,7 @@
 
 (require "report.rkt" "display.rkt")
 
-(provide tool@)
+(provide tool@ optimization-coach-drracket-button)
 
 ;; DrRacket tool for reporting missed optimizations in the editor.
 
@@ -36,22 +36,18 @@
 
 (define-local-member-name get-coach-menu-item)
 
+(define optimization-coach-drracket-button
+  (list
+   "Optimization Coach"
+   optimization-coach-bitmap
+   optimization-coach-callback))
+
 (define-unit tool@
 
   (import drracket:tool^)
   (export drracket:tool-exports^)
 
-  (define (phase1)
-    (drracket:module-language-tools:add-opt-out-toolbar-button
-     (lambda (frame parent)
-       (new switchable-button%
-            [label "Optimization Coach"]
-            [callback (lambda (btn)
-                        (optimization-coach-callback frame))]
-            [parent parent]
-            [bitmap optimization-coach-bitmap]))
-     'optimization-coach
-     #:number 75))
+  (define (phase1) (void))
   (define (phase2) (void))
 
   (define highlights-mixin
