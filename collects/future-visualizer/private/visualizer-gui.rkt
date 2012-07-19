@@ -71,7 +71,7 @@
            (send data-label1 set-label (format "Touching future ~a" (event-user-data evt)))]
           [else 
            (send data-label1 set-label "")
-           (send data-label2 set-label "")])) 
+           (send data-label2 set-label "")]))  
       (begin 
         (send selected-label set-label "") 
         (send time-label set-label "") 
@@ -152,9 +152,13 @@
                               [parent timeline-container]
                               [pict-builder (λ (vregion) (timeline-pict-for-trace-data vregion the-trace frameinfo segments))] 
                               [hover-handler (λ (x y vregion) 
-                                               (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
-                                                 (set! hover-seg seg) 
-                                                 (post-event listener-table 'segment-hover timeline-panel seg)))]
+                                               (let ([seg (find-seg-for-coords x y timeline-mouse-index)])
+                                                 (cond 
+                                                   [(equal? seg hover-seg) #f] 
+                                                   [else 
+                                                    (set! hover-seg seg) 
+                                                    (post-event listener-table 'segment-hover timeline-panel seg) 
+                                                    #t])))]
                               [click-handler (λ (x y vregion) 
                                                (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
                                                  (set! tacked-seg seg)  

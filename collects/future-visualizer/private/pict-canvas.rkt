@@ -83,7 +83,7 @@
                                         (set! needs-redraw #t)
                                         (redraw-the-bitmap/maybe-delayed! (get-viewable-region) #:only-the-overlay? only-the-overlay?) 
                                         (set! repainting? #t)
-                                        (refresh))]
+                                        (refresh))] 
               [interval 100] 
               [just-once? #t]) 
          (set! delaying-redraw #t)]))
