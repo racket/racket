@@ -6240,7 +6240,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   }
 
   if (!set_in_pre) {
-    Scheme_Object *resolver, *a[1];
+    Scheme_Object *resolver, *a[2];
     resolver = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER);
     a[0] = m->modname;
     a[1] = scheme_false;
