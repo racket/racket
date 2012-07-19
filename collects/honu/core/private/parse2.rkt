@@ -19,6 +19,7 @@
          syntax/parse)
 ;; phase 1
 (require-syntax racket/base
+                "compile.rkt"
                 "debug.rkt")
 
 ;; phase -1
@@ -145,6 +146,8 @@
 (provide do-parse-rest)
 (define (do-parse-rest stx parse-more)
   (syntax-parse stx #:literal-sets (cruft)
+    
+    #;
     [(semicolon semicolon ... rest ...)
      (do-parse-rest #'(rest ...) parse-more)]
     [(stuff ...)
@@ -152,11 +155,7 @@
      (define-values (parsed unparsed)
                     (parse (strip-stops #'(stuff ...))))
      (debug "Parse more: ~a unparsed ~a\n" parsed unparsed)
-     (define output (if parsed
-                      parsed
-                      #;
-                      (honu->racket parsed)
-                      #'(void)))
+     (define output (if parsed parsed #'(void)))
      (debug "Output ~a unparsed ~a\n"
             (syntax->datum output)
             (syntax->datum unparsed))
@@ -211,6 +210,14 @@
     [(_ stuff ...)
      (do-parse-rest #'(stuff ...) #'do-parse-rest-macro)]))
 |#
+
+(define-syntax-rule (parse-delayed code ...)
+                    (let ()
+                      (define-syntax (parse-more stx)
+                        (syntax-case stx ()
+                          [(_ stuff (... ...))
+                           (racket-syntax (do-parse-rest #'(stuff (... ...)) #'parse-more))]))
+                      (parse-more code ...)))
 
 (provide honu-body)
 (define-syntax-class honu-body
@@ -347,40 +354,26 @@
     (debug "parse ~a precedence ~a left ~a current ~a properties ~a\n"
            (syntax->datum stream) precedence left current
            (syntax-property-symbol-keys stream))
-    (define final (if current current #'(void)))
+    (define final (if current current (racket-syntax (void))))
     (if (parsed-syntax? stream)
       (values (left stream) #'())
     (syntax-parse stream #:literal-sets (cruft)
       #;
       [x:id (values #'x #'())]
+      [((semicolon inner ...) rest ...)
+       ;; nothing on the left side should interact with a semicolon
+       (if current
+         (values (left current)
+                 stream)
+         (begin
+           (with-syntax (
+                         #;
+                         [inner* (parse-all #'(inner ...))])
+             (values (left (parse-delayed inner ...))
+                     #'(rest ...)))))]
       [()
        (debug "Empty input out: left ~a ~a\n" left (left final))
        (values (left final) #'())]
-      ;; dont reparse pure racket code
-      [(%racket racket)
-       (debug "Native racket expression ~a\n" #'racket)
-       (if current
-         (values (left current) stream)
-         (values (left #'racket) #'()))
-       #;
-       (if current
-         (values (left current) stream)
-         (values (left #'racket) #'(rest ...)))]
-      ;; for expressions that can keep parsing
-      #;
-      [((%racket-expression racket) rest ...)
-       (if current
-         (values (left current) stream)
-         (do-parse #'(rest ...)
-                   precedence left
-                   #'racket))]
-      #;
-      [(%racket-expression racket rest ...)
-       (if current
-         (values (left current) stream)
-         (do-parse #'(rest ...)
-                   precedence left
-                   #'racket))]
       [(head rest ...)
        (debug 2 "Not a special expression..\n")
        (cond
@@ -486,12 +479,6 @@
                (debug "Parse a single thing ~a\n" (syntax->datum #'head))
                (syntax-parse #'head
                      #:literal-sets (cruft)
-                     #;
-                     [(%racket x)
-                      (debug 2 "Native racket expression ~a\n" #'x)
-                      (if current
-                        (values (left current) stream)
-                        (do-parse #'(rest ...) precedence left #'head))]
                      [x:atom
                        (debug 2 "atom ~a current ~a\n" #'x current)
                        (if current
@@ -582,9 +569,9 @@
                       (error 'parse "function call")]
                      #;
                      [else (if (not current)
-                             (error 'what "dont know how to parse ~a" #'head)
+                             (error 'what "don't know how to parse ~a" #'head)
                              (values (left current) stream))]
-                     [else (error 'what "dont know how to parse ~a" #'head)])])])])))
+                     [else (error 'what "don't know how to parse ~a" #'head)])])])])))
 
   (define-values (parsed unparsed)
                  (do-parse input 0 (lambda (x) x) #f))
