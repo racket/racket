@@ -66,8 +66,10 @@
          [(or (list (Pair: _ _) _)
               (list _ (Pair: _ _)))
           #f]
-         [(or (list (Value: '()) (Struct: n _ flds _ _ _ _ _))
-              (list (Struct: n _ flds _ _ _ _ _) (Value: '())))
+         [(or (list (Value: (? (λ (e) (or (null? e) (symbol? e) (number? e) (boolean? e) (pair? e) (keyword? e)))))
+                    (Struct: n _ flds _ _ _ _ _))
+              (list (Struct: n _ flds _ _ _ _ _) 
+                    (Value: (? (λ (e) (or (null? e) (symbol? e) (number? e) (boolean? e) (pair? e) (keyword? e)))))))
           #f]
          [(list (Struct: n _ flds _ _ _ _ _)
                 (Struct: n* _ flds* _ _ _ _ _)) (=> nevermind)
