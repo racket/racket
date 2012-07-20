@@ -69,6 +69,7 @@ single-flonum versions of everything here
 (define (flulp x)
   (let ([x  (abs x)])
     (cond [(= x +inf.0)  +nan.0]
+          [(eqv? x +nan.0)  +nan.0]
           [(= x 0.0)  0.0]
           [else
            (define ulp (abs (- (flnext x) x)))
@@ -91,12 +92,28 @@ single-flonum versions of everything here
 
 (: flulp-error (Float Real -> Float))
 (define (flulp-error x r)
-  (real->double-flonum
-   (/ (abs (- (inexact->exact x) (inexact->exact r)))
-      (inexact->exact (flulp x)))))
+  (cond [(eqv? r +nan.0)  (if (eqv? x +nan.0) 0.0 +nan.0)]
+        [(= r +inf.0)     (if (= x +inf.0)    0.0 +inf.0)]
+        [(= r -inf.0)     (if (= x -inf.0)    0.0 +inf.0)]
+        [(zero? r)        (if (zero? x)       0.0 +inf.0)]
+        [(eqv? x +nan.0)  +nan.0]
+        [(= x +inf.0)     +inf.0]
+        [(= x -inf.0)     +inf.0]
+        [(zero? x)        +inf.0]
+        [else  (real->double-flonum
+                (/ (abs (- (inexact->exact x) (inexact->exact r)))
+                   (inexact->exact (flulp x))))]))
 
 (: relative-error (Real Real -> Float))
 (define (relative-error x r)
-  (let ([x  (inexact->exact x)]
-        [r  (inexact->exact r)])
-    (real->double-flonum (/ (abs (- x r)) r))))
+  (cond [(eqv? r +nan.0)  (if (eqv? x +nan.0) 0.0 +nan.0)]
+        [(= r +inf.0)     (if (= x +inf.0)    0.0 +inf.0)]
+        [(= r -inf.0)     (if (= x -inf.0)    0.0 +inf.0)]
+        [(zero? r)        (if (zero? x)       0.0 +inf.0)]
+        [(eqv? x +nan.0)  +nan.0]
+        [(= x +inf.0)     +inf.0]
+        [(= x -inf.0)     +inf.0]
+        [(zero? x)        +inf.0]
+        [else  (let ([x  (inexact->exact x)]
+                     [r  (inexact->exact r)])
+                 (real->double-flonum (/ (abs (- x r)) r)))]))
