@@ -639,6 +639,33 @@
   (two))
 
 ;; ----------------------------------------
+;; Related: check that matching no marks is considered less
+;; of a match than matching with marks:
+
+(module another-test-empty-marks-with-context racket/base
+  (require (for-syntax racket/base))
+
+  (define-for-syntax count 0)
+  (define-for-syntax (inc-count!) (set! count (add1 count)))
+  
+  (define-syntax (foo stx)
+    (syntax-case stx ()
+      [(_ x e)
+       (let ([cid-marker (make-syntax-introducer)])
+         (with-syntax ([y (cid-marker #'x)])
+           #'(begin
+               (define y e)
+               (+ y 1)
+               (define-syntax x
+                 (lambda (stx) 
+                   (inc-count!)
+                   (when (= count 5) (error "stop"))
+                   #'y)))))]))
+  
+  (module* test #f
+    (foo eX 3)))
+
+;; ----------------------------------------
 ;; Check `free-identifier=?' propagation,
 ;; definition contexts, and `syntax-local-bind-syntaxes'
 
