@@ -29,7 +29,7 @@
 (: matrix= : (Matrix Number) (Matrix Number) -> Boolean)
 (define matrix= array=)
 
-(: matrix-dimensions : (Matrix Number) -> (Vector Index Index))
+(: matrix-dimensions : (Matrix Number) -> (Values Index Index))
 (define (matrix-dimensions a)
   (define sh (unsafe-array-shape a))
-  (vector (vector-ref sh 0) (vector-ref sh 1)))
+  (values (vector-ref sh 0) (vector-ref sh 1)))

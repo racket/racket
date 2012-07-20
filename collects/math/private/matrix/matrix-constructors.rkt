@@ -9,7 +9,7 @@
          matrix->vector vector->matrix flvector->matrix
          const-matrix
          matrix-row
-         matrix-col
+         matrix-column
          submatrix)
 
 (: identity-matrix (Integer -> (Result-Matrix Real)))
@@ -52,14 +52,10 @@
 
 (: matrix-row : (Matrix Number) Index -> (Result-Matrix Number))
 (define (matrix-row a i)
-  (define ds (matrix-dimensions a))
-  (define col-dim (vector-ref ds 1))
-  ((inst array-slice Number) a (list (in-range i (add1 i)) (in-range col-dim))))
+  (define-values (m n) (matrix-dimensions a))
+  ((inst array-slice Number) a (list (in-range i (add1 i)) (in-range n))))
 
-(: matrix-col : (Matrix Number) Index -> (Result-Matrix Number))
-(define (matrix-col a j)
-  (define ds (matrix-dimensions a))
-  (define row-dim (vector-ref ds 0))
-  ((inst array-slice Number) a (list (in-range row-dim) (in-range j (add1 j)))))
-
-
+(: matrix-column : (Matrix Number) Index -> (Result-Matrix Number))
+(define (matrix-column a j)
+  (define-values (m n)(matrix-dimensions a))
+  ((inst array-slice Number) a (list (in-range m) (in-range j (add1 j)))))

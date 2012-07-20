@@ -1,7 +1,8 @@
 #lang typed/racket
 
 (require math/array
-         math/matrix)
+         math/matrix
+         typed/rackunit)
 
 (let ()
   (define arr (list->array number? '[[1 2]
@@ -35,7 +36,7 @@
     (time (for ([_  (in-range 10)])
             (array-strict (matrix* arr brr))))))
 
-(let ()
+#;(let ()
   (define arr ((inst make-strict-array Float)
                '(100 100)
                (build-vector (* 100 100) (λ: ([n : Real]) (real->double-flonum n)))))
@@ -43,5 +44,5 @@
                '(100 100)
                (build-vector (* 100 100) (λ: ([n : Real]) (real->double-flonum n)))))
   (for ([_  (in-range 5)])
-    (time (for ([_  (in-range 10)])
-            (array-strict (matrix-fl* arr brr))))))
+      (time (for ([_  (in-range 10)])
+              (array-strict (matrix-fl* arr brr))))))

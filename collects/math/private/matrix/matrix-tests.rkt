@@ -8,6 +8,8 @@
          "matrix-expt.rkt"
          "matrix-operations.rkt")
 
+(begin
+  )
 
 (begin
   (begin
@@ -44,22 +46,65 @@
     (list
      'matrix-add-scaled-row
      (equal? (matrix-add-scaled-row (list->array real? '[[1 2 3] [4 5 6] [7 8 9]]) 0 2 1)
-             (list->array real? '[[9 12 15] [4 5 6] [7 8 9]]))))
+             (list->array real? '[[9 12 15] [4 5 6] [7 8 9]])))
+    (let ()
+      (define M (list->matrix '[[1  1  0  3]
+                                [2  1 -1  1]
+                                [3 -1 -1  2]
+                                [-1  2  3 -1]]))
+      (define LU (matrix-lu M))
+      (if (eq? LU #f)
+          (list 'matrix-lu #f)
+          (let ()  
+            (define L (if (list? LU) (first LU) #f))
+            (define V (if (list? LU) (second LU) #f))
+            (list
+             'matrix-lu
+             (equal? L (list->matrix
+                        '[[1 0 0 0]
+                          [2 1 0 0]
+                          [3 4 1 0]
+                          [-1 -3 0 1]]))
+             (equal? V (list->matrix
+                        '[[1  1  0   3]
+                          [0 -1 -1  -5]
+                          [0  0  3  13]
+                          [0  0  0 -13]]))
+             (equal? (matrix* L V) M)))))
+    (list 
+     'matrix-rank
+     (equal? (matrix-rank (list->matrix '[[0 0] [0 0]])) 0)
+     (equal? (matrix-rank (list->matrix '[[1 0] [0 0]])) 1)
+     (equal? (matrix-rank (list->matrix '[[1 0] [0 3]])) 2)
+     (equal? (matrix-rank (list->matrix '[[1 2] [2 4]])) 1)
+     (equal? (matrix-rank (list->matrix '[[1 2] [3 4]])) 2))
+    (list 
+     'matrix-nullity
+     (equal? (matrix-nullity (list->matrix '[[0 0] [0 0]])) 2)
+     (equal? (matrix-nullity (list->matrix '[[1 0] [0 0]])) 1)
+     (equal? (matrix-nullity (list->matrix '[[1 0] [0 3]])) 0)
+     (equal? (matrix-nullity (list->matrix '[[1 2] [2 4]])) 1)
+     (equal? (matrix-nullity (list->matrix '[[1 2] [3 4]])) 0)))
   (begin "matrix-types.rkt"
          (list
           'array-matrix?
           (array-matrix? (list->array real? '[[1 2] [3 4]]))
-          (not (array-matrix? (list->array real? '[[[1 2] [3 4]] [[1 2] [3 4]]])))
+          (not (array-matrix? (list->array real? '[[[1 2] [3 4]] [[1 2] [3 4]]]))))
+         (list
           'square-matrix?
           (square-matrix? (list->array real? '[[1 2] [3 4]]))
-          (not (square-matrix? (list->array real? '[[1 2 3] [4 5 6]])))
+          (not (square-matrix? (list->array real? '[[1 2 3] [4 5 6]]))))
+         (list
           'square-matrix-size
-          (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]])))
+          (= 2 (square-matrix-size (list->array real? '[[1 2 3] [4 5 6]]))))
+         (list
           'matrix=-
           (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2] [3 4]]))
-          (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]])))
+          (not (matrix= (list->array real? '[[1 2] [3 4]]) (list->array real? '[[1 2]]))))
+         (list
           'matrix-dimensions
-          (equal? (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]])) #(2 3))))
+          (let-values ([(m n) (matrix-dimensions (list->matrix '[[1 2 3] [4 5 6]]))])
+            (equal? (list m n) '(2 3)))))
   
   (begin "matrix-constructors.rkt"
          (list
@@ -89,9 +134,9 @@
           (equal? (matrix-row (identity-matrix 3) 2) (list->matrix '[[0 0 1]])))
          (list
           'matrix-col
-          (equal? (matrix-col (identity-matrix 3) 0) (list->matrix '[[1] [0] [0]]))
-          (equal? (matrix-col (identity-matrix 3) 1) (list->matrix '[[0] [1] [0]]))
-          (equal? (matrix-col (identity-matrix 3) 2) (list->matrix '[[0] [0] [1]])))
+          (equal? (matrix-column (identity-matrix 3) 0) (list->matrix '[[1] [0] [0]]))
+          (equal? (matrix-column (identity-matrix 3) 1) (list->matrix '[[0] [1] [0]]))
+          (equal? (matrix-column (identity-matrix 3) 2) (list->matrix '[[0] [0] [1]])))
          (list
           'submatrix
           (equal? (submatrix (identity-matrix 3) 
