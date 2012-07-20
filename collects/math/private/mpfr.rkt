@@ -46,13 +46,21 @@
 ;; use MPFR for functions that don't have a Typed Racket implementation yet. On systems without MPFR,
 ;; no exceptions will be raised unless a user tries to use those functions.
 
+(define (try-paths)
+  (case (system-type)
+    [(macosx)
+     (list "/usr/local/lib"
+           "/opt/local/lib"
+           "/sw/local/lib")]
+    [else '()]))
+
 (define libgmp (delay (ffi-lib "libgmp")))
 (define-syntax-rule (get-gmp-fun name args ...)
   (let ()
     (define fun (delay (get-ffi-obj name (force libgmp) args ...)))
     (λ xs (apply (force fun) xs))))
 
-(define libmpfr (delay (ffi-lib "libmpfr")))
+(define libmpfr (delay (ffi-lib "libmpfr" #:get-lib-dirs try-paths)))
 (define-syntax-rule (get-mpfr-fun name args ...)
   (let ()
     (define fun (delay (get-ffi-obj name (force libmpfr) args ...)))
