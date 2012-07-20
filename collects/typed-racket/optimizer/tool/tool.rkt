@@ -34,12 +34,16 @@
      ,(match-lambda [(sub-report-entry s m 'mzc) #t]
                     [_ #f]))))
 
-(define-local-member-name get-optimization-coach-menu-item)
-(define-local-member-name highlighting-shown?)
-(define-local-member-name add-highlights)
-(define-local-member-name clear-highlights)
-(define-local-member-name show-optimization-coach-panel)
-(define-local-member-name hide-optimization-coach-panel)
+(define-local-member-name
+  get-optimization-coach-menu-item
+  highlighting-shown?
+  add-highlights
+  clear-highlights
+  show-optimization-coach-panel
+  hide-optimization-coach-panel
+  get-filters
+  set-filters!
+  optimization-coach-visible?)
 
 (define optimization-coach-drracket-button
   (list
@@ -70,7 +74,9 @@
       ;; sub, show it.
       ;; Note: at the point where these are called, report entries have
       ;; a single sub.
-      (init-field [filters (map cdr check-boxes)]) ; all enabled by default
+      (define filters (map cdr check-boxes)) ; all enabled by default
+      (define/public (get-filters) filters)
+      (define/public (set-filters! fs) (set! filters fs))
 
       ;; highlight-range, for ranges that span multiple lines, highlights
       ;; to the end of the first n-1 lines. Since the space at end of lines
@@ -173,7 +179,8 @@
 
       (inherit get-defs get-frame)
 
-      (init-field [panel #f])
+      (define panel #f)
+      (define/public (optimization-coach-visible?) panel)
 
       (define/public (show-optimization-coach-panel)
         (set! panel
@@ -185,16 +192,16 @@
              [label "Clear"]
              [parent panel]
              [callback (lambda _ (send definitions clear-highlights))])
-        (define filters (get-field filters definitions))
+        (define filters (send definitions get-filters))
         (for ([(l f) (in-pairs check-boxes)])
           (new check-box%
                [label l]
                [parent panel]
                [callback
                 (lambda _
-                  (set-field! filters definitions (if (memq f filters)
-                                                      (remq f filters)
-                                                      (cons f filters)))
+                  (send definitions set-filters! (if (memq f filters)
+                                                     (remq f filters)
+                                                     (cons f filters)))
                   ;; redraw
                   (send definitions add-highlights #:use-cache? #t))]
                [value (memq f filters)]))
@@ -224,20 +231,22 @@
                    [demand-callback
                     (λ (item)
                       (send item set-label
-                            (if (get-field panel (get-current-tab))
+                            (if (send (get-current-tab)
+                                      optimization-coach-visible?)
                                 (string-constant hide-optimization-coach)
                                 (string-constant show-optimization-coach))))]
                    [callback
                     (λ (a b)
                       (define tab (get-current-tab))
-                      (if (get-field panel tab)
+                      (if (send tab optimization-coach-visible?)
                           (send (send tab get-defs) clear-highlights)
                           (optimization-coach-callback this)))]))
         (set-show-menu-sort-key optimization-coach-menu-item 403))
 
       (define/augment (on-tab-change old-tab new-tab)
         (send old-tab hide-optimization-coach-panel #f) ; don't close it
-        (when (get-field panel new-tab) ; if it was open before
+        (when (send new-tab optimization-coach-visible?)
+          ;; if it was open before
           (send new-tab show-optimization-coach-panel)))
 
       (define optimization-coach-menu-item #f)
