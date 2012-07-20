@@ -1535,7 +1535,7 @@
 (define (make-a-VARIANT [mode 'atomic-interior])
   (define var (cast (malloc _VARIANT mode)
 		    _pointer 
-		    _VARIANT-pointer))
+		    (_gcable _VARIANT-pointer)))
   (VariantInit var)
   var)
 
@@ -1779,9 +1779,7 @@
            (define method-result
              (if (= inv-kind INVOKE_PROPERTYPUT)
                  #f
-                 (cast (malloc 'atomic _VARIANT) _pointer (_gcable _VARIANT-pointer))))
-           (when method-result
-             (VariantInit method-result))
+                 (make-a-VARIANT 'atomic)))
 	   (define-values (hr exn-info error-index)
              (Invoke (com-object-get-dispatch obj)
                      memid IID_NULL LOCALE_SYSTEM_DEFAULT
