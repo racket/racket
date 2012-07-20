@@ -77,6 +77,7 @@ racket/sandbox: added sandbox-propagate-exceptions; added
 racket/cmdline: add #:ps for command-line
 slideshow/start: run a `slideshow' or `main' submodule, if any
 scribble/eval: added eval:result and eval:results
+racket/system: improved error messages by replacing memv expressions with string-no-nuls? and bytes-no-nuls?
 
 Version 5.2.1, January 2012
 Changed I/O scheduling to use epoll()/kqueue() when available

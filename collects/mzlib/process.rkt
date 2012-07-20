@@ -6,7 +6,10 @@
          system
          system*
          system/exit-code
-         system*/exit-code)
+         system*/exit-code
+
+	 string-no-nuls?
+	 bytes-no-nuls?)
 
 (require "private/streams.rkt")
 
@@ -81,9 +84,6 @@
                         "      (and/c bytes? bytes-no-nuls?))")
          s)))])
   args)
-
-;; MF: fxing a somewhat awkward looking error message. Comment for Matthew in case he wants to improve on it. 
-(provide string-no-nuls? bytes-no-nuls?)
 
 (define (check-command who str)
   (unless (or (string-no-nuls? str)
