@@ -118,7 +118,11 @@ Re-exports @racketmodname[file/gzip].
 
 @; ----------------------------------------------------------------------
 
-@include-section["defmacro.scrbl"]
+@mzlib[defmacro]
+
+@deprecated[@racketmodname[racket/defmacro]]{}
+
+Re-exports @racketmodname[racket/defmacro].
 
 @; ----------------------------------------------------------------------
 

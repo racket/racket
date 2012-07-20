@@ -157,7 +157,7 @@
 ;;>     with `defsubst' above).
 ;;>   * A `letmacro' form for local macros is provided.
 
-(require-for-syntax mzlib/private/dmhelp)
+(require (for-syntax (submod racket/defmacro dmhelp)))
 (provide defmacro letmacro)
 (define-syntaxes (defmacro letmacro)
   (let ()

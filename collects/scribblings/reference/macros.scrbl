@@ -25,3 +25,4 @@ called.
 @include-section["stx-expand.scrbl"]
 @include-section["include.scrbl"]
 @include-section["syntax-util.scrbl"]
+@include-section["defmacro.scrbl"]
