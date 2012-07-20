@@ -159,13 +159,13 @@ preferable to vectors. Typed Racket can optimize struct access in all
 cases.
 
 
-@subsection{Performance Debugging}
+@subsection{Optimization Coaching}
 
-Typed Racket provides performance debugging support to help you get the
+Typed Racket provides optimization coaching support to help you get the
 most of its optimizer.
 
 The @deftech{Optimization Coach} DrRacket plugin can be used when editing a
-Typed Racket program in DrRacket. Clicking the Optimization Coach button
+Typed Racket program in DrRacket. Clicking the @bold{Optimization Coach} button
 runs the optimizer and reports the results. All performed optimizations are
 highlighted in green in the editor. In addition, the optimizer also reports
 cases where an optimization was close to happening, but was not ultimately safe
@@ -173,10 +173,17 @@ to perform. These cases are highlighted in shades of red in the editor. The
 redder the highlight, the higher the potential for optimization in the
 highlighted region is.
 
-Additional information can be accessed by clicking on the highlighted
-regions. A summary of the performed optimizations and advice on how to adjust
+Additional information can be accessed by right-clicking on the highlighted
+regions and picking the @bold{Show Optimization Info} menu entry.
+A summary of the performed optimizations and advice on how to adjust
 code to make it more amenable to optimization is provided as appropriate, and
-can as a starting point for performance debugging.
+can serve as a starting point for further optimization.
+
+Optimization Coach is also available for other Racket languages through the
+@bold{Show Optimization Coach} entry in the @bold{View} menu.
+When running from unytped Racket languages, Optimization Coach does not report
+information about Typed Racket optimizations, and only reports information from
+the Racket inliner.
 
 Similar information (albeit without in-depth explanations or advice) is
 available from the command line. When compiling a Typed Racket program, setting
