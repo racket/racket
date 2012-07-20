@@ -35,6 +35,11 @@
                     [_ #f]))))
 
 (define-local-member-name get-optimization-coach-menu-item)
+(define-local-member-name highlighting-shown?)
+(define-local-member-name add-highlights)
+(define-local-member-name clear-highlights)
+(define-local-member-name show-optimization-coach-panel)
+(define-local-member-name hide-optimization-coach-panel)
 
 (define optimization-coach-drracket-button
   (list
