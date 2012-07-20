@@ -18,7 +18,7 @@
 ;; optimization-coach-callback : drracket:unit:frame<%> -> void
 (define (optimization-coach-callback drr-frame)
   (with-handlers
-      ([exn?
+      ([(lambda (e) (and (exn? e) (not (exn:break? e))))
         ;; typechecking failed, report in the interactions window
         (lambda (e)
           (define interactions (send drr-frame get-interactions-text))
