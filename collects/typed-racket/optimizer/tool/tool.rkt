@@ -61,8 +61,8 @@
                get-tab get-canvas get-pos/text
                position-line line-end-position)
 
-      (define highlights  '()) ; (listof `(,start ,end ,popup-fun))
-      (define undo-thunks '()) ; list of thunks that undo highlights
+      (define highlights   '()) ; (listof `(,start ,end ,popup-fun))
+      (define clear-thunks '()) ; list of thunks that clear highlights
       (define color-table #f)
 
       ;; filters : Listof (sub-report-entry -> Bool)
@@ -118,13 +118,13 @@
           (apply max (cons 0 (map report-entry-badness report))))
         (unless (= max-badness 0) ; no missed opts, color table code would error
           (set! color-table (make-color-table max-badness)))
-        (set! undo-thunks (for/fold ([res '()])
-                              ([r (in-list report)])
-                            (append (highlight-entry r) res)))
+        (set! clear-thunks (for/fold ([res '()])
+                               ([r (in-list report)])
+                             (append (highlight-entry r) res)))
         (set! on? #t))
 
       (define/public (clear-highlights)
-        (for ([h (in-list undo-thunks)]) (h))
+        (for ([h (in-list clear-thunks)]) (h))
         (set! highlights '())
         (send (get-tab) hide-optimization-coach-panel)
         (set! on? #f))
