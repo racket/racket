@@ -482,3 +482,17 @@ returned list is @racket[#f].}
 Like @racket[process*], but with the port handling of
 @racket[process/ports].}
 
+@; ----------------------------------------------------------------------
+
+@;section{Contract Auxiliaries}
+
+@;note-lib[racket/system]
+
+The contracts of @racket[system] and related functions may signal a
+contract error with references to the following functions. 
+
+@defproc[(string-no-nuls? [x any/c]) boolean?]{
+Ensures that @racket[x] is a string and does not contain @racket["\0"].}
+
+@defproc[(bytes-no-nuls? [x any/c]) boolean?]{
+Ensures that @racket[x] is a byte-string and does not contain @racket["\0"].}
