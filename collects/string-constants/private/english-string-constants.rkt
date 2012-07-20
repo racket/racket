@@ -1659,7 +1659,7 @@ please adhere to these guidelines:
   (always-use-platform-specific-linefeed-convention "Always use the platform-specific linefeed convention")
 
   ;; optimization coach
-  (hide-optimization-coach "Hide Optimization Coach Info")
-  (show-optimization-coach "Show Optimization Coach Info")
+  (hide-optimization-coach "Hide Optimization Coach")
+  (show-optimization-coach "Show Optimization Coach")
   
   )
