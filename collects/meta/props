@@ -352,7 +352,9 @@ path/s is either such a string or a list of them.
     #rx"(?:^|/)[.]git"
     #rx"^(?:README|bin|lib|include|[.]mailmap)$"
     #rx"^collects/info-domain$"
-    #rx"^doc/[^/]*$"))
+    #rx"^doc/[^/]*$"
+    #rx"(?:^|/)[.]DS_Store$"
+    #rx"^[^/]*[.](?:app|exe)$"))
 
 (define (verify)
   (define errors 0)
@@ -622,13 +624,6 @@ path/s is either such a string or a list of them.
 ;; read the arguments here, so just requiring this file verifies the data
 (read-props)
 
-;; if we're running directly, do a verification
-;; Use this only when supported
-(require (for-syntax racket/base version/utils))
-(define-syntax (add-main stx)
-  (if ((version) . version<=? . "5.2.1") #'(begin) #'(module+ main (verify))))
-(add-main)
-
 ;; ----------------------------------------------------------------------------
 
 #| #:begin-props
@@ -806,7 +801,7 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
-"collects/meta/props" drdr:command-line (racket *) responsible (eli jay)
+"collects/meta/props" drdr:command-line (racket * "verify") responsible (eli jay)
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
