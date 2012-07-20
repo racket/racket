@@ -1779,7 +1779,7 @@
            (define method-result
              (if (= inv-kind INVOKE_PROPERTYPUT)
                  #f
-                 (cast (malloc 'atomic _VARIANT) _pointer _VARIANT-pointer)))
+                 (cast (malloc 'atomic _VARIANT) _pointer (_gcable _VARIANT-pointer))))
            (when method-result
              (VariantInit method-result))
 	   (define-values (hr exn-info error-index)
