@@ -1112,7 +1112,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
           if (SCHEME_NULLP(amarks)) {
             /* can always match empty marks */
             best_match = SCHEME_CDR(a);
-            best_match_skipped = 0;
+            best_match_skipped = scheme_proper_list_length(marks);
           } else if (!SCHEME_PAIRP(marks)) {
             /* To be better than nothing, could only match exactly: */
             if (scheme_equal(amarks, marks)) {
