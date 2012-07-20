@@ -89,7 +89,7 @@
 
 
 (module french-string-constants "string-constant-lang.rkt"
-  ;;; when translating this constant, substitue name of actual language for `English'
+  ;;; when translating this constant, substitute name of actual language for `English'
   (is-this-your-native-language "Le Français est-il votre langue maternelle ?")
   
   (are-you-sure-you-want-to-switch-languages
