@@ -198,7 +198,7 @@
                   ;; redraw
                   (send definitions add-highlights #:use-cache? #t))]
                [value (memq f filters)]))
-        panel) ; return panel, so that the other mixing can hide it
+        panel) ; return panel, so that the other mixin can hide it
 
       (define/public (hide-optimization-coach-panel [close #t])
         (when panel
