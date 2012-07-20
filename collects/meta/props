@@ -348,9 +348,10 @@ path/s is either such a string or a list of them.
 ;; Verify this database
 
 (define no-props-needed
-  '(#rx"/compiled$"
-    #rx"(?:^|/)[.]git"
-    #rx"^(?:README|bin|lib|include|[.]mailmap)$"
+  '(#rx"(?:~|[.]bak)$"
+    #rx"(?:^|/)(?:#|[.]git)"
+    #rx"/compiled$"
+    #rx"^(?:README|bin|lib|include|[.]mailmap|add-on)$"
     #rx"^collects/info-domain$"
     #rx"^doc/[^/]*$"
     #rx"(?:^|/)[.]DS_Store$"
