@@ -44,15 +44,13 @@
 (define (path-or-ok-string? s)
   ;; use `path-string?' t check for nul characters in a string,
   ;; but allow the empty string (which is not an ok path), too:
-  (or (path-string? s)
-      (equal? "" s)))
+  (or (path-string? s) (equal? "" s)))
 
 (define (string-no-nuls? s)
   (and (string? s) (path-or-ok-string? s)))
 
 (define (bytes-no-nuls? s)
-  (and (bytes? s)
-       (not (regexp-match? #rx#"\0" s))))
+  (and (bytes? s) (not (regexp-match? #rx#"\0" s))))
 
 (define (check-args who args)
   (cond
@@ -76,23 +74,13 @@
        (caddr args)))]
    [else
     (for ([s (in-list args)])
-      (unless (or (path-or-ok-string? s)
-                  (bytes-no-nuls? s))
-        (raise-argument-error
-         who
-         (string-append "(or/c path-string?\n"
-                        "      (and/c bytes? bytes-no-nuls?))")
-         s)))])
+      (unless (or (path-or-ok-string? s) (bytes-no-nuls? s))
+        (raise-argument-error who "(or/c path-string? bytes-no-nuls?)" s)))])
   args)
 
 (define (check-command who str)
-  (unless (or (string-no-nuls? str)
-              (bytes-no-nuls? str))
-    (raise-argument-error
-     who
-     (string-append "(or/c (and/c string? string-no-nuls?)\n"
-                    "      (and/c bytes? bytes-no-nuls?))")
-     str)))
+  (unless (or (string-no-nuls? str) (bytes-no-nuls? str))
+    (raise-argument-error who "(or/c string-no-nuls? bytes-no-nuls?)" str)))
 
 ;; Old-style functions: ----------------------------------------
 
