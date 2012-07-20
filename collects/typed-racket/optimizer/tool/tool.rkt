@@ -153,7 +153,7 @@
                    (and (<= start pos end)
                         (let ([menu (make-object popup-menu% #f)])
                           (new menu-item%
-                               [label "Show optimization info"]
+                               [label "Show Optimization Info"]
                                [parent menu]
                                [callback (lambda _ (popup-fun text start end))])
                           menu))))))
