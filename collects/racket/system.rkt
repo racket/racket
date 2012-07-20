@@ -59,7 +59,7 @@
       (raise-mismatch-error 
        who
        "expected a single string argument after: "
-       (car args)))
+       (car args))) 
     (unless (and (>= 2 (length args))
                  (string? (cadr args))
                  (path-or-ok-string? (cadr args)))
@@ -78,17 +78,20 @@
         (raise-argument-error
          who
          (string-append "(or/c path-string?\n"
-                        "      (and/c bytes? (lambda (bs) (not (memv 0 (bytes->list bs))))))")
+                        "      (and/c bytes? bytes-no-nuls?))")
          s)))])
   args)
+
+;; MF: fxing a somewhat awkward looking error message. Comment for Matthew in case he wants to improve on it. 
+(provide string-no-nuls? bytes-no-nuls?)
 
 (define (check-command who str)
   (unless (or (string-no-nuls? str)
               (bytes-no-nuls? str))
     (raise-argument-error
      who
-     (string-append "(or/c (and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))\n"
-                    "      (and/c bytes? (lambda (bs) (not (memv 0 (bytes->list bs))))))")
+     (string-append "(or/c (and/c string? string-no-nuls?)\n"
+                    "      (and/c bytes? bytes-no-nuls?))")
      str)))
 
 ;; Old-style functions: ----------------------------------------
