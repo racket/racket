@@ -1,9 +1,5 @@
 #lang typed/racket
 
-;
-; TODO: matrix-gauss-eliminate-for-lu not done.
-;
-
 (require math/array)
 (require racket/unsafe/ops
          "matrix-types.rkt"
@@ -20,7 +16,7 @@
          matrix-ref
          matrix-rank
          matrix-nullity
-         ; matrix-column+null-space 
+         ;matrix-column+null-space
          )
 
 (define-syntax (inline-matrix-scale-row stx)
@@ -199,28 +195,36 @@
   (define-values (_ cols-without-pivot) (matrix-gauss-eliminate M))
   (length cols-without-pivot))
 
-(: matrix-column+null-space : 
-   (Matrix Number) -> (Values (Result-Matrix Number)
-                              (Listof (Result-Matrix Number))
+#;(: matrix-column+null-space : 
+   (Matrix Number) -> (Values (Listof (Result-Matrix Number))
                               (Listof (Result-Matrix Number))))
-#;(define (matrix-column+null-space M)
+; Returns
+;  1) a list of column vectors spanning the column space
+;  2) a list of column vectors spanning the null space
+; TODO: Column space works, but wrong space is 
+;       not done yet.
+#;(define (matrix-column+null-space M)  
+  ; TODO:
+  ;    Null space from row reduction numerically unstable.
+  ;    USE QR or SVD instead.
+  ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
   (define-values (m n) (matrix-dimensions M))
   (: M1 (Matrix Number))
   (: cols-without-pivot (Listof Integer))
   (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
   (set! M1 (array-strict M1))
   (define: null-space : (Listof (Result-Matrix Number))
-    (for/list: : (Listof (Result-Matrix Number)) 
+    (for/list: 
       ([i : Integer (in-list cols-without-pivot)])
       (cond
         [(not (index? i)) (error 'column+null-space "Internal error")]
         [else (matrix-column M1 i)])))
   (define: column-space : (Listof (Result-Matrix Number))
-    (for/list: : (Listof (Result-Matrix Number))
+    (for/list:
       ([i : Index n]
        #:when (not (member i cols-without-pivot)))
       (matrix-column M1 i)))
-  (values (array-lazy M1) column-space null-space))
+  (values column-space null-space))
 
 
 (: matrix-row-echelon-form : 
@@ -368,4 +372,3 @@
                   (vector-ref L-matrix (+ (* i m) j))))))
         (list (array-lazy L) 
               (array-lazy V)))))
-

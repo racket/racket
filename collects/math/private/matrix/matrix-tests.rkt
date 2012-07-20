@@ -9,9 +9,6 @@
          "matrix-operations.rkt")
 
 (begin
-  )
-
-(begin
   (begin
     "matrix-operations.rkt"
     (let ()
@@ -84,7 +81,25 @@
      (equal? (matrix-nullity (list->matrix '[[1 0] [0 0]])) 1)
      (equal? (matrix-nullity (list->matrix '[[1 0] [0 3]])) 0)
      (equal? (matrix-nullity (list->matrix '[[1 2] [2 4]])) 1)
-     (equal? (matrix-nullity (list->matrix '[[1 2] [3 4]])) 0)))
+     (equal? (matrix-nullity (list->matrix '[[1 2] [3 4]])) 0))
+     #;(let ()
+       (define-values (c1 n1) 
+         (matrix-column+null-space (list->matrix '[[0 0] [0 0]])))
+       (define-values (c2 n2) 
+         (matrix-column+null-space (list->matrix '[[1 2] [2 4]])))
+       (define-values (c3 n3) 
+         (matrix-column+null-space (list->matrix '[[1 2] [2 5]])))
+       (list 
+        'matrix-column+null-space
+        (equal? c1 '())
+        (equal? n1 (list (list->matrix '[[0] [0]])
+                         (list->matrix '[[0] [0]])))
+        (equal? c2 (list (list->matrix '[[1] [2]])))
+        ;(equal? n2 '([0 0]))
+        (equal? c3 (list (list->matrix '[[1] [2]])
+                         (list->matrix '[[2] [5]])))
+        (equal? n3 '()))))
+                                  
   (begin "matrix-types.rkt"
          (list
           'array-matrix?
