@@ -11,6 +11,9 @@
 (begin
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-transpose
+          (equal? (matrix-transpose (list->matrix '[[1 2] [3 4]]))
+                  (list->matrix '[[1 3] [2 4]])))    
     (let ()
       (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Result-Matrix Number))
       (define (gauss-eliminate M u? p?)

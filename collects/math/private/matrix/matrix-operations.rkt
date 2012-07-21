@@ -5,7 +5,8 @@
          "matrix-types.rkt"
          "matrix-constructors.rkt")
 
-(provide matrix-scale-row
+(provide matrix-transpose
+         matrix-scale-row
          matrix-swap-rows
          matrix-add-scaled-row
          matrix-gauss-eliminate
@@ -18,6 +19,18 @@
          matrix-nullity
          ;matrix-column+null-space
          )
+
+;;;
+;;; Simple operators
+;;;
+
+(: matrix-transpose : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-transpose a)
+  (array-transform 
+   a (reverse (array-shape a))
+   (λ: ([js : (Listof Integer)])
+     (reverse js))))
+  
 
 (define-syntax (inline-matrix-scale-row stx)
   (syntax-case stx ()
@@ -105,6 +118,8 @@
 (: flmatrix-add-scaled-row : (Matrix Flonum) Index Flonum Index -> (Result-Matrix Flonum))
 (define (flmatrix-add-scaled-row a i c j)
   ((inline-matrix-add-scaled-row i c j) a))
+
+
 
 
 ;;; GAUSS ELIMINATION / ROW ECHELON FORM
