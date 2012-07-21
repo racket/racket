@@ -14,6 +14,12 @@
 (begin
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-determinant
+          (equal? (matrix-determinant (list->matrix '[[3]])) 3)
+          (equal? (matrix-determinant (list->matrix '[[1 2] [3 4]])) (- (* 1 4) (* 2 3)))
+          (equal? (matrix-determinant (list->matrix '[[1 2 3] [4  5 6] [7 8 9]])) 0)
+          (equal? (matrix-determinant (list->matrix '[[1 2 3] [4 -5 6] [7 8 9]])) 120)
+          (equal? (matrix-determinant (list->matrix '[[1 2 3 4] [-5 6 7 8] [9 10 -11 12] [13 14 15 16]])) 5280))
     (list 'matrix-scale
           (equal? (matrix-scale 2 (list->matrix '[[1 2] [3 4]]))
                   (list->matrix '[[2 4] [6 8]])))
@@ -249,3 +255,4 @@
         (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
         (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
         (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
+

@@ -33,6 +33,7 @@
  ; invariant
  matrix-rank
  matrix-nullity
+ matrix-determinant
  ; spaces
  ;matrix-column+null-space
  )
@@ -311,6 +312,39 @@
   (define-values (m n) (matrix-dimensions M))
   (define-values (_ cols-without-pivot) (matrix-gauss-eliminate M))
   (length cols-without-pivot))
+
+(: matrix-determinant : (Matrix Number) -> Number)
+(define (matrix-determinant M)
+  (define-values (m n) (matrix-dimensions M))
+  (cond
+    [(= m 1) (matrix-ref M 0 0)]
+    [(= m 2) (let ([a (matrix-ref M 0 0)]
+                   [b (matrix-ref M 0 1)]
+                   [c (matrix-ref M 1 0)]
+                   [d (matrix-ref M 1 1)])
+               (- (* a d) (* b c)))]
+    [(= m 3) (let ([a (matrix-ref M 0 0)]
+                   [b (matrix-ref M 0 1)]
+                   [c (matrix-ref M 0 2)]
+                   [d (matrix-ref M 1 0)]
+                   [e (matrix-ref M 1 1)]
+                   [f (matrix-ref M 1 2)]
+                   [g (matrix-ref M 2 0)]
+                   [h (matrix-ref M 2 1)]
+                   [i (matrix-ref M 2 2)])
+               (+ (*    a  (- (* e i) (* f h)))
+                  (* (- b) (- (* d i) (* f g)))
+                  (*    c  (- (* d h) (* e g)))))]
+    [else           
+     (let-values ([(M _) (matrix-gauss-eliminate M #f #f)])
+       ; TODO: #f #f turns off partial pivoting
+       #;(for/product: : Number ([i : Integer (in-range 0 10 1)])
+           (matrix-ref M i i))
+       (let ()
+         (define: product : Number 1)
+         (for: ([i : Integer (in-range 0 m 1)])
+           (set! product (* product (matrix-ref M i i))))
+         product))]))
 
 #;(: matrix-column+null-space : 
      (Matrix Number) -> (Values (Listof (Result-Matrix Number))
