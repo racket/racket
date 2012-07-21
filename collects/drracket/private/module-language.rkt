@@ -1151,11 +1151,28 @@
   (define error-message%
     (class canvas%
       (init-field msg err?)
-      (inherit refresh get-dc get-client-size)
+      (inherit refresh get-dc get-client-size popup-menu)
       (define/public (set-msg _msg _err?) 
         (set! msg _msg)
         (set! err? _err?)
         (refresh))
+      (define/override (on-event evt)
+        (cond
+          [(and (send evt button-down?) err?)
+           (define m (new popup-menu%))
+           (define itm (new menu-item% 
+                            [label (string-constant copy-menu-item)]
+                            [parent m]
+                            [callback
+                             (λ (itm evt)
+                               (send the-clipboard set-clipboard-string 
+                                     msg
+                                     (send evt get-time-stamp)))]))
+           (popup-menu m 
+                       (+ (send evt get-x) 1)
+                       (+ (send evt get-y) 1))]
+          [else
+           (super on-event evt)]))
       (define/override (on-paint)
         (define dc (get-dc))
         (define-values (cw ch) (get-client-size))
