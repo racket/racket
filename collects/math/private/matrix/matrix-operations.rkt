@@ -4,11 +4,15 @@
          racket/unsafe/ops
          "matrix-types.rkt"
          "matrix-constructors.rkt"
+         "matrix-pointwise.rkt"
          (for-syntax racket))
 
 (provide 
  ; basic
  matrix-ref
+ matrix-scale
+ ; norms
+ matrix-norm
  ; operators
  matrix-transpose
  matrix-conjugate
@@ -41,6 +45,25 @@
 (define (matrix-ref M i j)
   ((inst array-ref Number) M (list i j)))
 
+(: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-scale s a)
+  (array-scale s a))
+
+;;;
+;;; Norms
+;;; 
+
+(: matrix-norm : (Matrix Number) -> Real)
+(define (matrix-norm a)
+  (define n
+    (sqrt
+     (array-ref
+      (array-axis-sum 
+       (array-axis-sum 
+        (matrix.sqr (matrix.magnitude a)) 0) 0)
+      '())))
+  ; TODO: Is there a better way to get the correct type?
+  (if (real? n) n -42.0))
 
 ;;;
 ;;; Operators

@@ -67,3 +67,6 @@
    (vector
     (vector (/ a2 norm2) ab/norm2)
     (vector ab/norm2     (/ b2 norm2)))))
+
+      
+

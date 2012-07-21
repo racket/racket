@@ -2,7 +2,7 @@
 
 (require racket/unsafe/ops
          racket/performance-hint
-         (only-in racket/math conjugate)
+         (only-in racket/math conjugate sqr)
          (for-syntax racket/base)
          "array-struct.rkt"
          "../vector/vector-pointwise.rkt"
@@ -10,6 +10,7 @@
          "utils.rkt")
 
 (provide array=
+         array-scale
          ;; Lifting
          inline-array-lift
          inline-array-lift2
@@ -23,8 +24,10 @@
          array-floor
          array-ceiling
          array-truncate
+         array-sqr
          array-sqrt
          array-conjugate
+         array-magnitude
          array-log
          array-exp
          array-sin
@@ -39,7 +42,7 @@
          array/
          array-expt
          array-min
-         array-max
+         array-max         
          ;; Number conversions
          array-inexact->exact
          array-exact->inexact
@@ -145,6 +148,12 @@ array-number-exp.
   
   )  ; begin-encourage-inline
 
+(: array-scale (Number (Array Number) -> (lazy-array Number)))
+(define (array-scale s arr)
+  (: scale : Number -> Number)
+  (define (scale x) (* s x))
+  ((inst array-map Number Number) scale arr))
+
 ;; ===================================================================================================
 ;; Lifted operations on Real and Number
 
@@ -159,10 +168,15 @@ array-number-exp.
 (: array-truncate (case-> ((Array Float) -> (lazy-array Float))
                           ((Array Real)  -> (lazy-array Real))))
 
+
 (: array-sqrt      ((Array Number) -> (lazy-array Number)))
 (: array-conjugate ((Array Number) -> (lazy-array Number)))
+(: array-magnitude ((Array Number) -> (lazy-array Number)))
 (: array-log       ((Array Number) -> (lazy-array Number)))
 
+(: array-sqr  (case-> ((Array Float)  -> (lazy-array Float))
+                      ((Array Real)   -> (lazy-array Real))
+                      ((Array Number) -> (lazy-array Number))))
 (: array-exp  (case-> ((Array Float)  -> (lazy-array Float))
                       ((Array Real)   -> (lazy-array Real))
                       ((Array Number) -> (lazy-array Number))))
@@ -213,6 +227,9 @@ array-number-exp.
 (: array-max  (case-> ((Array Float) (Array Float) -> (lazy-array Float))
                       ((Array Real)  (Array Real)  -> (lazy-array Real))))
 
+
+
+
 (begin-encourage-inline
   
   (define array-abs       (inline-array-lift abs))
@@ -221,8 +238,10 @@ array-number-exp.
   (define array-ceiling   (inline-array-lift ceiling))
   (define array-truncate  (inline-array-lift truncate))
   
+  (define array-sqr       (inline-array-lift sqr))
   (define array-sqrt      (inline-array-lift sqrt))
   (define array-conjugate (inline-array-lift conjugate))
+  (define array-magnitude (inline-array-lift magnitude))
   (define array-log       (inline-array-lift log))
   (define array-exp       (inline-array-lift exp))
   (define array-sin       (inline-array-lift sin))
@@ -231,6 +250,7 @@ array-number-exp.
   (define array-asin      (inline-array-lift asin))
   (define array-acos      (inline-array-lift acos))
   (define array-atan      (inline-array-lift atan))
+  
   
   (define array+ (inline-array-lift2 'array+ +))
   (define array* (inline-array-lift2 'array* *))
@@ -250,6 +270,7 @@ array-number-exp.
   (define array-max  (inline-array-lift2 'array-max  max))
   
   )  ; begin-encourage-inline
+
 
 ;; ===================================================================================================
 ;; Conversions
@@ -279,3 +300,4 @@ array-number-exp.
   (define array-imag-part (array-lift imag-part))
   
   )  ; begin-encourage-inline
+
