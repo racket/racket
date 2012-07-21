@@ -363,7 +363,7 @@ and a transparent brush produces
 
 Drawing a single path with three line segments is not the same as
 drawing three separate lines. When multiple line segments are drawn at
-once, the corner frm one line to the next is shaped according to the
+once, the corner from one line to the next is shaped according to the
 pen's join style. The image above uses the default @racket['round]
 join style. With @racket['miter], line lines are joined with sharp
 corners:
