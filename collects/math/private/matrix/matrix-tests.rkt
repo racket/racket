@@ -14,6 +14,10 @@
 (begin
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-solve
+          (let* ([M (list->matrix '[[1 5] [2 3]])] 
+                 [b (list->matrix '[[5] [5]])])
+            (equal? (matrix* M (matrix-solve M b)) b)))
     (list 'matrix-inverse
           (equal? (let ([M (list->matrix '[[1 2] [3 4]])]) (matrix* M (matrix-inverse M)))
                   (identity-matrix 2))

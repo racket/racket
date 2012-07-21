@@ -37,6 +37,8 @@
  matrix-determinant
  ; spaces
  ;matrix-column+null-space
+ ; solvers
+ matrix-solve
  )
 
 ;;;
@@ -503,6 +505,43 @@
         (submatrix (matrix-reduced-row-echelon-form MI #t) 
                    (in-range 0 m) (in-range m 2m))
         (error 'matrix-inverse "internal error"))))
+
+(: matrix-solve : (Matrix Number) (Matrix Number) -> (Result-Matrix Number))
+;    Return a column-vector x such that Mx = b.
+;    If no such vector exists return #f.
+(define (matrix-solve M b)
+  (define-values (m n) (matrix-dimensions M))
+  (define-values (s t) (matrix-dimensions b))
+  (define m+1 (+ m 1))
+  (cond
+    [(not (= t 1)) (error 'matrix-solve "expected column vector (i.e. r x 1 - matrix), got: ~a " b)]
+    [(not (= m s)) (error 'matrix-solve "expected column vector with same number of rows as the matrix")]
+    [(index? m+1)
+     (submatrix
+      (matrix-reduced-row-echelon-form 
+       (matrix-augment M b) #t)
+      (in-range 0 m) (in-range m m+1))]
+    [else (error 'matrix-solve "internatl error")]))
+
+;(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
+;(define (matrix-solve-many M bs)
+;  (define-values (m n) (matrix-dimensions M))
+;  (define-values (s t) (matrix-dimensions (list-ref bs 0)))
+;  (define k (length bs))
+;  (define m+1 (+ m 1))
+;  (define m+k (+ m k))
+;  (cond
+;    [(not (= t 1)) (error 'matrix-solve-many "expected column vector (i.e. r x 1 - matrix), got: ~a " (list-ref bs 0))]
+;    [(not (= m s)) (error 'matrix-solve-many "expected column vectors with same number of rows as the matrix")]
+;    [(and (index? m+1) (index? m+k)) 
+;     (define bs-as-matrix "TODO")     
+;     (define MB (matrix-augment M bs-as-matrix))
+;     (define reduced-MB (matrix-reduced-row-echelon-form MB #t))
+;     (submatrix reduced-MB 
+;                (in-range 0 m+k)
+;                (in-range m m+1))]
+;    [else (error 'matrix-solve-many "internal error")]))
+
 
 
 ;;; LU Factorization
