@@ -159,7 +159,7 @@ preferable to vectors. Typed Racket can optimize struct access in all
 cases.
 
 
-@subsection{Optimization Coaching}
+@subsection[#:tag "optimization-coach"]{Optimization Coaching}
 
 Typed Racket provides optimization coaching support to help you get the
 most of its optimizer.
