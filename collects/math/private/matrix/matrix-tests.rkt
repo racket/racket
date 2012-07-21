@@ -13,7 +13,10 @@
     "matrix-operations.rkt"
     (list 'matrix-transpose
           (equal? (matrix-transpose (list->matrix '[[1 2] [3 4]]))
-                  (list->matrix '[[1 3] [2 4]])))    
+                  (list->matrix '[[1 3] [2 4]])))
+    (list 'matrix-hermitian
+          (equal? (matrix-hermitian (list->matrix '[[1+i 2-i] [3+i 4-i]]))
+                  (list->matrix '[[1-i 3-i] [2+i 4+i]])))
     (let ()
       (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Result-Matrix Number))
       (define (gauss-eliminate M u? p?)

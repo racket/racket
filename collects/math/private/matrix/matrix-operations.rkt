@@ -5,20 +5,29 @@
          "matrix-types.rkt"
          "matrix-constructors.rkt")
 
-(provide matrix-transpose
-         matrix-scale-row
-         matrix-swap-rows
-         matrix-add-scaled-row
-         matrix-gauss-eliminate
-         matrix-gauss-jordan-eliminate
-         matrix-row-echelon-form
-         matrix-reduced-row-echelon-form
-         matrix-lu
-         matrix-ref
-         matrix-rank
-         matrix-nullity
-         ;matrix-column+null-space
-         )
+(provide 
+ ; basic
+ matrix-ref
+ ; operators
+ matrix-transpose
+ matrix-hermitian
+ ; row        
+ matrix-scale-row
+ matrix-swap-rows
+ matrix-add-scaled-row
+ ; reduction
+ matrix-gauss-eliminate
+ matrix-gauss-jordan-eliminate
+ matrix-row-echelon-form
+ matrix-reduced-row-echelon-form
+ ; decomposition
+ matrix-lu
+ ; invariant
+ matrix-rank
+ matrix-nullity
+ ; spaces
+ ;matrix-column+null-space
+ )
 
 ;;;
 ;;; Simple operators
@@ -30,7 +39,11 @@
    a (reverse (array-shape a))
    (λ: ([js : (Listof Integer)])
      (reverse js))))
-  
+
+(: matrix-hermitian : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-hermitian a)
+  (matrix-transpose 
+   (array-conjugate a)))
 
 (define-syntax (inline-matrix-scale-row stx)
   (syntax-case stx ()
