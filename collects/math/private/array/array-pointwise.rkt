@@ -24,8 +24,8 @@
          array-ceiling
          array-truncate
          array-sqrt
-         array-log
          array-conjugate
+         array-log
          array-exp
          array-sin
          array-cos
@@ -160,8 +160,8 @@ array-number-exp.
                           ((Array Real)  -> (lazy-array Real))))
 
 (: array-sqrt      ((Array Number) -> (lazy-array Number)))
-(: array-log       ((Array Number) -> (lazy-array Number)))
 (: array-conjugate ((Array Number) -> (lazy-array Number)))
+(: array-log       ((Array Number) -> (lazy-array Number)))
 
 (: array-exp  (case-> ((Array Float)  -> (lazy-array Float))
                       ((Array Real)   -> (lazy-array Real))
