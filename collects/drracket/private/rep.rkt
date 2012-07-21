@@ -766,9 +766,10 @@ TODO
       
       (define/augment (after-edit-sequence)
         (inner (void) after-edit-sequence)
-        (let ([to-clean had-an-insert])
-          (set! had-an-insert '())
-	  (update-after-inserts to-clean)))
+        (unless (null? had-an-insert)
+          (let ([to-clean had-an-insert])
+            (set! had-an-insert '())
+            (update-after-inserts to-clean))))
       
       (define/private (update-after-inserts starts)
         (unless inserting-prompt?
