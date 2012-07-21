@@ -59,7 +59,7 @@
                      #f
                      "bad form"
                      stx))
-                  (let ([ht (make-hash-table)])
+                  (let ([ht (make-hash)])
                     (datum->syntax
                      stx
                      (dm-subst
