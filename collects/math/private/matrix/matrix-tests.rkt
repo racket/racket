@@ -14,6 +14,11 @@
 (begin
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-inverse
+          (equal? (let ([M (list->matrix '[[1 2] [3 4]])]) (matrix* M (matrix-inverse M)))
+                  (identity-matrix 2))
+          (equal? (let ([M (list->matrix '[[1 2] [3 4]])]) (matrix* (matrix-inverse M) M))
+                  (identity-matrix 2)))
     (list 'matrix-determinant
           (equal? (matrix-determinant (list->matrix '[[3]])) 3)
           (equal? (matrix-determinant (list->matrix '[[1 2] [3 4]])) (- (* 1 4) (* 2 3)))

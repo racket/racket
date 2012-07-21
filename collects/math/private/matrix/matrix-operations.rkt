@@ -17,6 +17,7 @@
  matrix-transpose
  matrix-conjugate
  matrix-hermitian
+ matrix-inverse
  ; row and column
  matrix-scale-row
  matrix-scale-column
@@ -460,6 +461,49 @@
 (define (matrix-reduced-row-echelon-form M [unitize-pivot-row? #f])
   (let-values ([(M wp) (matrix-gauss-jordan-eliminate M unitize-pivot-row?)])
     M))
+
+(: matrix-augment : (Matrix Number) (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-augment a b)
+  (define-values (m1 n1) (matrix-dimensions a))
+  (define-values (m2 n2) (matrix-dimensions b))
+  (define: la : (lazy-array Number) (array-lazy a))
+  (define: lb : (lazy-array Number) (array-lazy b))  
+  (unless (= m1 m2)
+    (error 'matrix-augment 
+           "expected two matrices with the same number of rows, got ~a and ~a"
+           a b))
+  (define g1 (unsafe-array-proc la))
+  (define g2 (unsafe-array-proc lb))
+  (define n1+n2 (+ n1 n2))
+  ((inst unsafe-lazy-array Number)
+   (vector m1 (if (index? n1+n2)
+                  n1+n2
+                  (error 'matrix-augment "n1+n2 must be an index")))
+   (λ: ([js : (Vectorof Index)])
+         (define j (vector-ref js 1))
+         (if (< j m1)
+             (g1 js)
+             (let ()
+               (define j-m1 (- j m1))
+               (if (index? j-m1)
+                   ((inst vector-set! Index) js 1 j-m1)
+                   (error 'matrix-augment "internal error"))
+               (begin0
+                 (g2 js)
+                 (vector-set! js 1 j)))))))
+
+
+(: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-inverse M)
+  (define-values (m n) (matrix-dimensions M))
+  (unless (= m n) (error 'matrix-inverse "matrix not square"))
+  (let ([MI (matrix-augment M (identity-matrix m))])
+    (define 2m (* 2 m))
+    (if (index? 2m)
+        (submatrix (matrix-reduced-row-echelon-form MI #t) 
+                   (in-range 0 m) (in-range m 2m))
+        (error 'matrix-inverse "internal error"))))
+
 
 ;;; LU Factorization
 ; Not all matrices can be LU-factored.
