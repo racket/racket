@@ -2,6 +2,7 @@
 
 (require racket/unsafe/ops
          racket/performance-hint
+         (only-in racket/math conjugate)
          (for-syntax racket/base)
          "array-struct.rkt"
          "../vector/vector-pointwise.rkt"
@@ -24,6 +25,7 @@
          array-truncate
          array-sqrt
          array-log
+         array-conjugate
          array-exp
          array-sin
          array-cos
@@ -157,8 +159,9 @@ array-number-exp.
 (: array-truncate (case-> ((Array Float) -> (lazy-array Float))
                           ((Array Real)  -> (lazy-array Real))))
 
-(: array-sqrt ((Array Number) -> (lazy-array Number)))
-(: array-log  ((Array Number) -> (lazy-array Number)))
+(: array-sqrt      ((Array Number) -> (lazy-array Number)))
+(: array-log       ((Array Number) -> (lazy-array Number)))
+(: array-conjugate ((Array Number) -> (lazy-array Number)))
 
 (: array-exp  (case-> ((Array Float)  -> (lazy-array Float))
                       ((Array Real)   -> (lazy-array Real))
@@ -212,21 +215,22 @@ array-number-exp.
 
 (begin-encourage-inline
   
-  (define array-abs      (inline-array-lift abs))
-  (define array-round    (inline-array-lift round))
-  (define array-floor    (inline-array-lift floor))
-  (define array-ceiling  (inline-array-lift ceiling))
-  (define array-truncate (inline-array-lift truncate))
+  (define array-abs       (inline-array-lift abs))
+  (define array-round     (inline-array-lift round))
+  (define array-floor     (inline-array-lift floor))
+  (define array-ceiling   (inline-array-lift ceiling))
+  (define array-truncate  (inline-array-lift truncate))
   
-  (define array-sqrt (inline-array-lift sqrt))
-  (define array-log  (inline-array-lift log))
-  (define array-exp  (inline-array-lift exp))
-  (define array-sin  (inline-array-lift sin))
-  (define array-cos  (inline-array-lift cos))
-  (define array-tan  (inline-array-lift tan))
-  (define array-asin (inline-array-lift asin))
-  (define array-acos (inline-array-lift acos))
-  (define array-atan (inline-array-lift atan))
+  (define array-sqrt      (inline-array-lift sqrt))
+  (define array-conjugate (inline-array-lift conjugate))
+  (define array-log       (inline-array-lift log))
+  (define array-exp       (inline-array-lift exp))
+  (define array-sin       (inline-array-lift sin))
+  (define array-cos       (inline-array-lift cos))
+  (define array-tan       (inline-array-lift tan))
+  (define array-asin      (inline-array-lift asin))
+  (define array-acos      (inline-array-lift acos))
+  (define array-atan      (inline-array-lift atan))
   
   (define array+ (inline-array-lift2 'array+ +))
   (define array* (inline-array-lift2 'array* *))
