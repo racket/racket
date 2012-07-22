@@ -29,9 +29,10 @@
     (define/public (set-scale-factor! s) 
       (set! scale-factor s))
     
-    (define needs-redraw #f)
+    (define need-redraw? #f)
     (define delaying-redraw #f)
     (define cached-bitmap #f)
+    (define cached-overlay-bitmap #f)
     (define cached-base-pict #f)
     (define repainting? #f)
     
@@ -46,45 +47,36 @@
     ;Rebuild both the bottom (base) and overlay (top) 
     ;pict layers for the canvas
     ;;rebuild-the-pict : viewable-region -> void
-    (define/private (rebuild-the-pict vregion #:only-the-overlay? [only-the-overlay? #f]) 
-      (define p (cond 
-                  [(or (not cached-base-pict) (not only-the-overlay?)) 
-                   (define base (scale (bp vregion) scale-factor)) 
-                   (set! cached-base-pict base) 
-                   (if ob 
-                       (pin-over base 
-                                 0 
-                                 0 
-                                 (ob vregion scale-factor)) 
-                       base)] 
-                  [else (if ob 
-                            (pin-over cached-base-pict 
-                                      0 
-                                      0 
-                                      (ob vregion scale-factor))
-                            cached-base-pict)]))                   
-      (pict->bitmap p))
+    (define/private (rebuild-the-pict! vregion #:only-the-overlay? [only-the-overlay? #f]) 
+      (when (or (not cached-base-pict) (not only-the-overlay?)) 
+         (define base (scale (bp vregion) scale-factor)) 
+         ;(set! cached-base-pict base) 
+         (set! cached-bitmap (pict->bitmap base)))
+      (when ob 
+        (set! cached-overlay-bitmap (pict->bitmap (ob vregion scale-factor)))))
     
     ;Rebuilds the pict and stashes in a bitmap 
     ;to be drawn to the canvas later
     ;;redraw-the-bitmap : viewable-region -> void
     (define/private (redraw-the-bitmap! vregion #:only-the-overlay? [only-the-overlay? #f]) 
-      (set! cached-bitmap (rebuild-the-pict vregion #:only-the-overlay? only-the-overlay?)) 
-      (set! needs-redraw #f))
+      (rebuild-the-pict! vregion #:only-the-overlay? only-the-overlay?) 
+      (set! need-redraw? #f))
     
     ;;redraw-the-bitmap/maybe-delayed! : viewable-region -> void
     (define/private (redraw-the-bitmap/maybe-delayed! vregion 
+                                                      #:delay [delay 100]
                                                       #:only-the-overlay? [only-the-overlay? #f]) 
       (cond 
-        [needs-redraw (redraw-the-bitmap! vregion #:only-the-overlay? only-the-overlay?)] 
+        [need-redraw? 
+         (redraw-the-bitmap! vregion #:only-the-overlay? only-the-overlay?) 
+         (set! need-redraw? #f)] 
         [(not delaying-redraw) 
          (new timer% [notify-callback (λ () 
                                         (set! delaying-redraw #f) 
-                                        (set! needs-redraw #t)
+                                        (set! need-redraw? #t)
                                         (redraw-the-bitmap/maybe-delayed! (get-viewable-region) #:only-the-overlay? only-the-overlay?) 
-                                        (set! repainting? #t)
                                         (refresh))] 
-              [interval 100] 
+              [interval delay] 
               [just-once? #t]) 
          (set! delaying-redraw #t)]))
     
@@ -95,16 +87,24 @@
       (when redraw-on-size
         (redraw-the-bitmap/maybe-delayed! (get-viewable-region))))
     
+    (define last-vregion #f)
+    
     (define/override (on-paint)
       (define vregion (get-viewable-region)) 
-      (unless repainting?
+      (when (and (not delaying-redraw) (not (equal? vregion last-vregion)))
         (redraw-the-bitmap/maybe-delayed! vregion))
-      (set! repainting? #f)
+      (set! last-vregion vregion)
       (define dc (get-dc))
       (when cached-bitmap
         (send dc 
               draw-bitmap 
               cached-bitmap 
+              (viewable-region-x vregion) 
+              (viewable-region-y vregion))) 
+      (when cached-overlay-bitmap 
+        (send dc 
+              draw-bitmap 
+              cached-overlay-bitmap 
               (viewable-region-x vregion) 
               (viewable-region-y vregion))))
     
@@ -116,10 +116,7 @@
         [(motion) 
          (when mh 
            (when (mh x y vregion) ;Mouse handler returns non-false if a state change requiring redraw occurred
-             #;(redraw-the-bitmap/maybe-delayed! vregion #:only-the-overlay? #t)
-             (set! repainting? #f)
-             (redraw-the-bitmap! vregion #:only-the-overlay? #t) 
-             (refresh)))]
+             (redraw-the-bitmap/maybe-delayed! vregion #:delay 0 #:only-the-overlay? #t)))]
         [(left-up) 
          (when ch (ch x y vregion)) ;Ditto for click handler
          (redraw-the-bitmap/maybe-delayed! vregion #:only-the-overlay? #t)]))
