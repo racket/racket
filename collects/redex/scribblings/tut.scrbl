@@ -603,7 +603,7 @@ To define a reduction relation, we also have to define substitution.
 Generally speaking, substitution functions are tricky to get right
 and, since they generally are not shown in papers, we have defined
 a workhorse substitution function in Racket that runs in near linear 
-time. The source code is included with Redex, if you'd like to have a look;
+time. The source code is included with Redex. If you'd like to have a look,
 evaluate the expression below in the REPL to find the precise path
 on your system:
 
@@ -847,8 +847,8 @@ shape. Use this definition of @racket[subst].
                subst : (x v) ... e -> e
                [(subst (x v) ... e) 
                 ,(subst/proc x?
-                             (list (term (x ...)))
-                             (list (term (v ...)))
+                             (term (x ...))
+                             (term (v ...))
                              (term e))])]
 
 Also, adjust the typing rules (and do not forget that an ellipsis can be named, 
