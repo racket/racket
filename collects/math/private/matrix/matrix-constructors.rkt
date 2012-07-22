@@ -7,7 +7,7 @@
 (provide identity-matrix flidentity-matrix 
          matrix->list list->matrix fllist->matrix
          matrix->vector vector->matrix flvector->matrix
-         const-matrix
+         const-matrix make-matrix
          matrix-row
          matrix-column
          submatrix)
@@ -21,6 +21,8 @@
 (: const-matrix (All (A) (Integer Integer A -> (Result-Matrix A))))
 (define (const-matrix m n x)
   (const-array (list m n) x))
+
+(define make-matrix const-matrix)
 
 (: list->matrix : (Listof* Number) -> (Result-Matrix Number))
 (define (list->matrix rows)

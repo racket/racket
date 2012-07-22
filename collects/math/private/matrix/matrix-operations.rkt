@@ -11,6 +11,8 @@
  ; basic
  matrix-ref
  matrix-scale
+ matrix-row-vector?
+ matrix-column-vector?
  ; norms
  matrix-norm
  ; operators
@@ -39,6 +41,7 @@
  ;matrix-column+null-space
  ; solvers
  matrix-solve
+ matrix-solve-many
  )
 
 ;;;
@@ -52,6 +55,15 @@
 (: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
 (define (matrix-scale s a)
   (array-scale s a))
+
+(: matrix-row-vector? : (Matrix Number) -> Boolean)
+(define (matrix-row-vector? a)
+  (= (matrix-row-dimension a) 1))
+
+(: matrix-column-vector? : (Matrix Number) -> Boolean)
+(define (matrix-column-vector? a)
+  (= (matrix-column-dimension a) 1))
+
 
 ;;;
 ;;; Norms
@@ -68,7 +80,8 @@
       '())))
   (if (real? n) 
       n 
-      (error 'matrix-norm "internal error: to keep the type checker happy")))
+      (error 'matrix-norm 
+             "internal error: to keep the type checker happy")))
 
 ;;;
 ;;; Operators
@@ -483,17 +496,17 @@
                   n1+n2
                   (error 'matrix-augment "n1+n2 must be an index")))
    (λ: ([js : (Vectorof Index)])
-         (define j (vector-ref js 1))
-         (if (< j n1)
-             (g1 js)
-             (let ()
-               (define j-n1 (- j n1))               
-               (if (index? j-n1)
-                   ((inst vector-set! Index) js 1 j-n1)
-                   (error 'matrix-augment "internal error"))
-               (begin0
-                 (g2 js)
-                 (vector-set! js 1 j)))))))
+     (define j (vector-ref js 1))
+     (if (< j n1)
+         (g1 js)
+         (let ()
+           (define j-n1 (- j n1))               
+           (if (index? j-n1)
+               ((inst vector-set! Index) js 1 j-n1)
+               (error 'matrix-augment "internal error"))
+           (begin0
+             (g2 js)
+             (vector-set! js 1 j)))))))
 
 
 (: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
@@ -524,25 +537,28 @@
       (in-range 0 m) (in-range m m+1))]
     [else (error 'matrix-solve "internatl error")]))
 
-;(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
-;(define (matrix-solve-many M bs)
-;  (define-values (m n) (matrix-dimensions M))
-;  (define-values (s t) (matrix-dimensions (list-ref bs 0)))
-;  (define k (length bs))
-;  (define m+1 (+ m 1))
-;  (define m+k (+ m k))
-;  (cond
-;    [(not (= t 1)) (error 'matrix-solve-many "expected column vector (i.e. r x 1 - matrix), got: ~a " (list-ref bs 0))]
-;    [(not (= m s)) (error 'matrix-solve-many "expected column vectors with same number of rows as the matrix")]
-;    [(and (index? m+1) (index? m+k)) 
-;     (define bs-as-matrix "TODO")     
-;     (define MB (matrix-augment M bs-as-matrix))
-;     (define reduced-MB (matrix-reduced-row-echelon-form MB #t))
-;     (submatrix reduced-MB 
-;                (in-range 0 m+k)
-;                (in-range m m+1))]
-;    [else (error 'matrix-solve-many "internal error")]))
-
+(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
+(define (matrix-solve-many M bs)
+  ; TODO: Rewrite matrix-augment* to use array-append when it is ready
+  (: matrix-augment* : (Listof (Matrix Number)) -> (Matrix Number))
+  (define (matrix-augment* vs)
+    (foldl matrix-augment (car vs) (cdr vs)))
+  (define-values (m n) (matrix-dimensions M))
+  (define-values (s t) (matrix-dimensions (car bs)))
+  (define k (length bs))
+  (define m+1 (+ m 1))
+  (define m+k (+ m k))
+  (cond
+    [(not (= t 1)) (error 'matrix-solve-many "expected column vector (i.e. r x 1 - matrix), got: ~a " (car bs))]
+    [(not (= m s)) (error 'matrix-solve-many "expected column vectors with same number of rows as the matrix")]
+    [(and (index? m+1) (index? m+k)) 
+     (define bs-as-matrix (matrix-augment* bs))     
+     (define MB (matrix-augment M bs-as-matrix))
+     (define reduced-MB (matrix-reduced-row-echelon-form MB #t))
+     (submatrix reduced-MB 
+                (in-range 0 m+k)
+                (in-range m m+1))]
+    [else (error 'matrix-solve-many "internal error")]))
 
 
 ;;; LU Factorization
@@ -607,3 +623,10 @@
                   (vector-ref L-matrix (+ (* i m) j))))))
         (list (array-lazy L) 
               (array-lazy V)))))
+
+; (in-row M i]
+;     Returns a sequence of all elements of row i,
+;     that is xi0, xi1, xi2, ...
+
+
+  

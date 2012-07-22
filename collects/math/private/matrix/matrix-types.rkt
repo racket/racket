@@ -5,7 +5,9 @@
          matrix=
          square-matrix? 
          square-matrix-size
-         matrix-dimensions)
+         matrix-dimensions
+         matrix-row-dimension
+         matrix-column-dimension)
 
 (require math/array)
 
@@ -33,3 +35,15 @@
 (define (matrix-dimensions a)
   (define sh (unsafe-array-shape a))
   (values (vector-ref sh 0) (vector-ref sh 1)))
+
+(: matrix-row-dimension : (Matrix Number) -> Index)
+(define (matrix-row-dimension a)
+  (define sh (unsafe-array-shape a))
+  (displayln (list 'matrix-row-dimension: 'sh= sh))
+  (displayln (list 'matrix-row-dimension: 'vector-ref-sh-0 (vector-ref sh 0)))
+  (vector-ref sh 0))
+
+(: matrix-column-dimension : (Matrix Number) -> Index)
+(define (matrix-column-dimension a)
+  (define sh (unsafe-array-shape a))
+  (vector-ref sh 1))
