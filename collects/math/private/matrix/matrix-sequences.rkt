@@ -64,18 +64,24 @@
          (flat-vector->matrix 
           m n (for*/vector #:length (* m n) (clause ...) . defs+exprs))))]))
 
-(equal? (matrix->list (for*/matrix 2 3 ([i 2] [j 3]) (+ i j)))
-        '[[0 1 2] [1 2 3]])
-(equal? (matrix->list (for*/matrix 2 3 #:column ([i 2] [j 3]) (+ i j)))
-        '[[0 2 2] [1 1 3]])
-(equal? (matrix->list (for*/matrix 2 2 #:column ([i 4]) i)) 
-        '[[0 2] [1 3]])
+(define-syntax (for*/matrix: stx)
+  (syntax-case stx ()
+    [(_ m-expr n-expr #:column (clause ...) . defs+exprs)
+     (syntax/loc stx
+       (let* ([m m-expr] 
+              [n n-expr]
+              [v (make-vector (* m n) 0)]
+              [w (for*/vector #:length (* m n) (clause ...) . defs+exprs)])
+         (for* ([i (in-range m)] [j (in-range n)])
+           (vector-set! v (+ (* i n) j)
+                        (vector-ref w (+ (* j m) i))))
+         (flat-vector->matrix m n v)))]
+    [(_ m-expr n-expr (clause ...) . defs+exprs)
+     (syntax/loc stx
+       (let ([m m-expr] [n n-expr])
+         (flat-vector->matrix 
+          m n (for*/vector #:length (* m n) (clause ...) . defs+exprs))))]))
 
-
-(equal? (matrix->list (for/matrix 2 2 ([i 4]) i)) 
-        '[[0 1] [2 3]])
-(equal? (matrix->list (for/matrix 2 3 ([i 6] [j (in-range 6 12)]) (+ i j)))
-        '[[6 8 10] [12 14 16]])
 
 #;(define-sequence-syntax in-row
   (λ () #'in-row/proc)

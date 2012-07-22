@@ -9,9 +9,25 @@
          "matrix-multiply.rkt"
          "matrix-expt.rkt"
          "matrix-operations.rkt"
-         "matrix-2d.rkt")
+         "matrix-2d.rkt"
+         "matrix-sequences.rkt")
 
 (begin
+  (begin
+    "matrix-sequences.rkt"
+    ; These work in racket not in typed racket
+    #;(list 'for*/matrix
+            (equal? (matrix->list (for*/matrix 2 3 ([i 2] [j 3]) (+ i j)))
+                  '[[0 1 2] [1 2 3]])
+          (equal? (matrix->list (for*/matrix 2 3 #:column ([i 2] [j 3]) (+ i j)))
+                  '[[0 2 2] [1 1 3]])
+          (equal? (matrix->list (for*/matrix 2 2 #:column ([i 4]) i)) 
+                  '[[0 2] [1 3]]))
+    #;(list 'for/matrix
+          (equal? (matrix->list (for/matrix 2 2 ([i 4]) i)) 
+                  '[[0 1] [2 3]])
+          (equal? (matrix->list (for/matrix 2 3 ([i 6] [j (in-range 6 12)]) (+ i j)))
+                  '[[6 8 10] [12 14 16]])))
   (begin
     "matrix-operations.rkt"
     (list 'matrix-solve
@@ -159,8 +175,8 @@
           (equal? (array->list (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]]))
          (list
           'const-matrix
-          (equal? (array->list (const-matrix 2 3 0)) '((0 0 0) (0 0 0)))
-          (equal? (array->list (const-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
+          (equal? (array->list (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
+          (equal? (array->list (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
          (list
           'matrix->list
           (equal? (matrix->list (list->matrix '((1 2) (3 4)))) '((1 2) (3 4)))

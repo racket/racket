@@ -186,16 +186,20 @@
 (: unsafe-vector-remove (All (I) ((Vectorof I) Index -> (Vectorof I))))
 (define (unsafe-vector-remove vec k)
   (define n (vector-length vec))
-  (define: new-vec : (Vectorof I) (make-vector (sub1 n) (unsafe-vector-ref vec 0)))
-  (let loop ([#{i : Nonnegative-Fixnum} 0])
-    (when (i . < . k)
-      (unsafe-vector-set! new-vec i (unsafe-vector-ref vec i))
-      (loop (+ i 1))))
-  (let loop ([#{i : Nonnegative-Fixnum} k])
-    (cond [(i . < . n)
-           (unsafe-vector-set! new-vec i (unsafe-vector-ref vec (+ i 1)))
-           (loop (+ i 1))]
-          [else  new-vec])))
+  (define n-1 (sub1 n))
+  (cond
+    [(not (index? n-1)) (error 'unsafe-vector-remove "internal error")]
+    [else
+     (define: new-vec : (Vectorof I) (make-vector n-1 (unsafe-vector-ref vec 0)))
+     (let loop ([#{i : Nonnegative-Fixnum} 0])
+       (when (i . < . k)
+         (unsafe-vector-set! new-vec i (unsafe-vector-ref vec i))
+         (loop (+ i 1))))
+     (let loop ([#{i : Nonnegative-Fixnum} k])
+       (cond [(i . < . n-1)
+              (unsafe-vector-set! new-vec i (unsafe-vector-ref vec (+ i 1)))
+              (loop (+ i 1))]
+             [else  new-vec]))]))
 
 (: unsafe-vector-insert (All (I) ((Vectorof I) Index I -> (Vectorof I))))
 (define (unsafe-vector-insert vec k v)

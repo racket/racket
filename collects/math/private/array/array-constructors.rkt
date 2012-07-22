@@ -4,15 +4,15 @@
          "array-struct.rkt"
          "utils.rkt")
 
-(provide const-array
+(provide make-array
          index-array
          indexes-array
          diagonal-array)
 
-(: const-array (All (A) ((Listof Integer) A -> (lazy-array A))))
-(define (const-array ds v)
+(: make-array (All (A) ((Listof Integer) A -> (lazy-array A))))
+(define (make-array ds v)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'const-array "(Listof Index)" 0 ds v)))])
+              ds (λ () (raise-type-error 'make-array "(Listof Index)" 0 ds v)))])
     (unsafe-lazy-array ds (λ (js) v))))
 
 (: index-array ((Listof Integer) Integer -> (lazy-array Integer)))
