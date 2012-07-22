@@ -26,7 +26,9 @@
          array-lazy
          ;; printing
          default-print-array
-         array-custom-printer)
+         array-custom-printer
+         ; matrix
+         flat-vector->matrix)
 
 ;; ===================================================================================================
 ;; Equality and hashing
@@ -158,6 +160,15 @@
   (strict-array ds vs))
 
 (define unsafe-array-data strict-array-data)
+
+(: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (lazy-array A))))
+(define (flat-vector->matrix m n v)
+  (if (= (* m n) (vector-length v))
+      (array-lazy (strict-array (ann (vector m n) (Vectorof Index)) v))
+      (error 'flat-vector->matrix
+             "dimensions and vector length does not match, got ~a, ~a, ~a"
+             m n v)))
+    
 
 ;; ===================================================================================================
 ;; More types

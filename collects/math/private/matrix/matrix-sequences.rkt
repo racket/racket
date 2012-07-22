@@ -11,15 +11,6 @@
 
 ;;; COMPREHENSIONS
 
-(define (flat-vector->vector-of-vectors m n fv)
-  (for/vector #:length m ([i (in-range m)])
-    (for/vector #:length n ([j (in-range n)])
-      (vector-ref fv (+ (* i n) j)))))
-
-(define (flat-vector->matrix m n fv)
-  (vector->matrix
-   (flat-vector->vector-of-vectors m n fv)))
-
 ; (for/matrix m n (clause ...) . defs+exprs)
 ;    Return an  m x n  matrix with elements from the last expr.
 ;    The first n values produced becomes the first row.

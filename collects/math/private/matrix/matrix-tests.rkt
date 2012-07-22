@@ -12,22 +12,27 @@
          "matrix-2d.rkt"
          "matrix-sequences.rkt")
 
-(begin
+#;(module testing racket
+  (require math/matrix
+           "matrix-sequences.rkt")
   (begin
     "matrix-sequences.rkt"
     ; These work in racket not in typed racket
-    #;(list 'for*/matrix
-            (equal? (matrix->list (for*/matrix 2 3 ([i 2] [j 3]) (+ i j)))
+    (list 'for*/matrix
+          (equal? (matrix->list (for*/matrix 2 3 ([i 2] [j 3]) (+ i j)))
                   '[[0 1 2] [1 2 3]])
           (equal? (matrix->list (for*/matrix 2 3 #:column ([i 2] [j 3]) (+ i j)))
                   '[[0 2 2] [1 1 3]])
           (equal? (matrix->list (for*/matrix 2 2 #:column ([i 4]) i)) 
                   '[[0 2] [1 3]]))
-    #;(list 'for/matrix
+    (list 'for/matrix
           (equal? (matrix->list (for/matrix 2 2 ([i 4]) i)) 
                   '[[0 1] [2 3]])
           (equal? (matrix->list (for/matrix 2 3 ([i 6] [j (in-range 6 12)]) (+ i j)))
-                  '[[6 8 10] [12 14 16]])))
+                  '[[6 8 10] [12 14 16]]))))
+;(require 'testing)
+
+(begin  
   (begin
     "matrix-operations.rkt"
     (list 'matrix-solve
@@ -255,7 +260,7 @@
       (define 4*e1 (matrix-scale 4 e1))
       (define 3*e2 (matrix-scale 3 e2))
       (define 4*e2 (matrix-scale 4 e2))
-      (list
+      (begin
        (list 'matrix-2d-rotation
              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) +epsilon.0) 
              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) +epsilon.0))

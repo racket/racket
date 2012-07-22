@@ -7,6 +7,7 @@
 (provide identity-matrix flidentity-matrix 
          matrix->list list->matrix fllist->matrix
          matrix->vector vector->matrix flvector->matrix
+         flat-vector->matrix
          make-matrix
          matrix-row
          matrix-column
