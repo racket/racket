@@ -159,7 +159,7 @@
                                                    [else 
                                                     (set! hover-seg seg) 
                                                     (post-event listener-table 'segment-hover timeline-panel seg) 
-                                                    #t])))]
+                                                    seg])))]
                               [click-handler (λ (x y vregion) 
                                                (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
                                                  (set! tacked-seg seg)  
@@ -356,5 +356,6 @@
                    (set! showing-create-graph (not showing-create-graph)))])
   
   (send main-panel set-percentages '(1/5 4/5))
+  (send right-panel set-percentages '(3/4 1/4))
  
   (send f show #t))
