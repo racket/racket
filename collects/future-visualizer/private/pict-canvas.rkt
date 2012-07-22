@@ -17,24 +17,15 @@
     (define ob overlay-builder) ;Hover overlay pict builder
     (define ch click-handler) ;Mouse click handler  
     (define redraw-on-size redraw-on-resize) ;Whether we should rebuild the pict for on-size events
-    
-    (define redraw-overlay #f) ;Whether we should redraw the overlay pict in the canvas 
-    (define redo-bitmap-on-paint #t) ;Redraw the base bitmap on paint? #f for mouse events
     (define scale-factor 1)
-    
-    ;;set-redraw-overlay! : bool -> void
-    (define/public (set-redraw-overlay! b) 
-      (set! redraw-overlay b))
     
     (define/public (set-scale-factor! s) 
       (set! scale-factor s))
     
     (define need-redraw? #f)
-    (define delaying-redraw #f)
-    (define cached-bitmap #f)
+    (define delaying-redraw? #f)
+    (define cached-base-bitmap #f)
     (define cached-overlay-bitmap #f)
-    (define cached-base-pict #f)
-    (define repainting? #f)
     
     (define/private (get-viewable-region) 
       (define-values (x y) (get-view-start)) 
@@ -48,10 +39,8 @@
     ;pict layers for the canvas
     ;;rebuild-the-pict : viewable-region -> void
     (define/private (rebuild-the-pict! vregion #:only-the-overlay? [only-the-overlay? #f]) 
-      (when (or (not cached-base-pict) (not only-the-overlay?)) 
-         (define base (scale (bp vregion) scale-factor)) 
-         ;(set! cached-base-pict base) 
-         (set! cached-bitmap (pict->bitmap base)))
+      (when (or (not cached-base-bitmap) (not only-the-overlay?))  
+        (set! cached-base-bitmap (pict->bitmap (scale (bp vregion) scale-factor))))
       (when ob 
         (set! cached-overlay-bitmap (pict->bitmap (ob vregion scale-factor)))))
     
@@ -70,35 +59,31 @@
         [need-redraw? 
          (redraw-the-bitmap! vregion #:only-the-overlay? only-the-overlay?) 
          (set! need-redraw? #f)] 
-        [(not delaying-redraw) 
+        [(not delaying-redraw?) 
          (new timer% [notify-callback (λ () 
-                                        (set! delaying-redraw #f) 
+                                        (set! delaying-redraw? #f) 
                                         (set! need-redraw? #t)
                                         (redraw-the-bitmap/maybe-delayed! (get-viewable-region) #:only-the-overlay? only-the-overlay?) 
                                         (refresh))] 
               [interval delay] 
               [just-once? #t]) 
-         (set! delaying-redraw #t)]))
-    
-    ;If we haven't already introduced a 100ms delay, 
-    ;add one.  If the delay's expired, rebuild the pict
-    ;;on-size : uint uint -> void
-    (define/override (on-size width height)
-      (when redraw-on-size
-        (redraw-the-bitmap/maybe-delayed! (get-viewable-region))))
+         (set! delaying-redraw? #t)]))
     
     (define last-vregion #f)
     
+    (define (scroll-or-size-event? vregion) 
+      (not (equal? vregion last-vregion)))
+    
     (define/override (on-paint)
       (define vregion (get-viewable-region)) 
-      (when (and (not delaying-redraw) (not (equal? vregion last-vregion)))
+      (when (and (not delaying-redraw?) (scroll-or-size-event? vregion))
         (redraw-the-bitmap/maybe-delayed! vregion))
       (set! last-vregion vregion)
       (define dc (get-dc))
-      (when cached-bitmap
+      (when cached-base-bitmap
         (send dc 
               draw-bitmap 
-              cached-bitmap 
+              cached-base-bitmap 
               (viewable-region-x vregion) 
               (viewable-region-y vregion))) 
       (when cached-overlay-bitmap 
@@ -115,7 +100,7 @@
       (case (send event get-event-type) 
         [(motion) 
          (when mh 
-           (when (mh x y vregion) ;Mouse handler returns non-false if a state change requiring redraw occurred
+           (when (mh x y vregion) ;Mouse handler returns non-false if a state change requiring redraw occurred 
              (redraw-the-bitmap/maybe-delayed! vregion #:delay 0 #:only-the-overlay? #t)))]
         [(left-up) 
          (when ch (ch x y vregion)) ;Ditto for click handler

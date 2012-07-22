@@ -437,20 +437,8 @@
                                                   #:forecolor (header-forecolor) 
                                                   #:padding HEADER-PADDING
                                                   #:opacity opacity 
-                                                  #:width (viewable-region-width vregion))]
-                     [row-mid (- (- (* index (frame-info-row-height finfo)) 
-                                    (pict-height proc-title)) 
-                                 (viewable-region-y vregion))])
+                                                  #:width (viewable-region-width vregion))])
                 (draw-stack-onto pct 
-                                 (at 0 
-                                     (- (* (add1 index) (frame-info-row-height finfo)) (frame-info-row-height finfo))
-                                     (colorize (filled-rectangle (viewable-region-width vregion) (/ (frame-info-row-height finfo) 2)) 
-                                               (make-object color% 212 210 214 0.3)))
-                                     
-                                 (at 0 
-                                     row-mid 
-                                     (colorize (filled-rectangle (viewable-region-width vregion) (/ (frame-info-row-height finfo) 2)) 
-                                               (make-object color% 230 229 231 0.3)))
                                  (at 0 
                                      (- (* (add1 index) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                      (colorize (hline (viewable-region-width vregion) 1) (timeline-baseline-color))) 
@@ -586,14 +574,14 @@
                         #:with-arrow with-arrow 
                         #:style style))))
 
-(define (get-seg-left-of-vregion vregion seg) 
+#;(define (get-seg-left-of-vregion vregion seg) 
   (define prev-in-time (segment-prev-future-seg seg))
   (cond 
-    [(or (not prev-in-time) (not (in-viewable-region-horiz vregion (segment-edge seg)))) 
-     seg] 
+    [(not prev-in-time) seg] 
+    [((segment-edge prev-in-time) . < . (viewable-region-x vregion)) prev-in-time]
     [else (get-seg-left-of-vregion vregion prev-in-time)]))
 
-(define (draw-arrows base-pct vregion seg) 
+#;(define (draw-arrows base-pct vregion seg) 
   (define fst (get-seg-left-of-vregion vregion seg))
   (let loop ([p base-pct] 
              [cur-seg fst])
@@ -606,14 +594,14 @@
                                       next-seg 
                                       p 
                                       (event-connection-line-color) 
-                                      #:width 2)) 
+                                      #:width 1)) 
        (if (not (in-viewable-region-horiz vregion (segment-x next-seg))) 
            new-p
            (loop new-p next-seg))])))
                             
 
 ;;draw-arrows : pict viewable-region segment -> pict
-#;(define (draw-arrows base-pct vregion seg) 
+(define (draw-arrows base-pct vregion seg) 
   (let ([fst (get-seg-previous-to-vregion vregion seg)])
     (let loop ([pct base-pct] 
                [cur-seg fst])
