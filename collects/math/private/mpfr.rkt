@@ -22,11 +22,11 @@
  bigfloat-sig+exp
  bigfloat-significand
  ;; Conversion to and from Real
- float->bigfloat
+ flonum->bigfloat
  integer->bigfloat
  rational->bigfloat
  real->bigfloat
- bigfloat->float
+ bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
  ;; String conversion
@@ -270,9 +270,9 @@
   (make-mpq (integer->mpz (numerator r))
             (integer->mpz (denominator r))))
 
-;; float->bigfloat : float -> bigfloat
+;; flonum->bigfloat : float -> bigfloat
 ;; Converts a Racket inexact real to a bigfloat; rounds if bf-precision < 53.
-(define (float->bigfloat value)
+(define (flonum->bigfloat value)
   (define x (new-mpfr (bf-precision)))
   (mpfr-set-d x value (bf-rounding-mode))
   x)
@@ -296,7 +296,7 @@
 ;; real->bigfloat : real -> bigfloat
 ;; Converts any real Racket value to a bigfloat; rounds if necessary.
 (define (real->bigfloat value)
-  (cond [(inexact? value)  (float->bigfloat value)]
+  (cond [(inexact? value)  (flonum->bigfloat value)]
         [(integer? value)  (integer->bigfloat value)]
         [(rational? value)  (rational->bigfloat value)]))
 
@@ -327,9 +327,9 @@
       (size+limbs->integer (mpz-size z) (mpz-limbs z))
       (mpz-get-si z)))
 
-;; bigfloat->float : bigfloat -> float
+;; bigfloat->flonum : bigfloat -> float
 ;; Converts a bigfloat to a Racket float; rounds if necessary.
-(define (bigfloat->float x)
+(define (bigfloat->flonum x)
   (mpfr-get-d x (bf-rounding-mode)))
 
 ;; bigfloat->integer : bigfloat -> integer
@@ -345,7 +345,7 @@
 ;; bigfloat->rational : bigfloat -> rational
 ;; Converts a bigfloat to a Racket rational; does not round.
 (define (bigfloat->rational x)
-  (unless (bffinite? x) (raise-type-error 'bigfloat->rational "finite Bigfloat" x))
+  (unless (bfrational? x) (raise-type-error 'bigfloat->rational "rational Bigfloat" x))
   (define-values (sig exp) (bigfloat-sig+exp x))
   (* sig (expt 2 exp)))
 
@@ -428,7 +428,7 @@
 (define (bigfloat-custom-write x port mode)
   (write-string
    (cond [(bfzero? x)  (if ((bigfloat-sign x) . < . 0) "-0.bf" "0.bf")]
-         [(bffinite? x)
+         [(bfrational? x)
           (define str (bigfloat->string x))
           (cond [(regexp-match #rx"\\.|e" str)
                  (define exp (bigfloat-exponent x))
@@ -478,9 +478,11 @@
  [bflog 'mpfr_log]
  [bflog2 'mpfr_log2]
  [bflog10 'mpfr_log10]
+ [bflog1p 'mpfr_log1p]
  [bfexp 'mpfr_exp]
  [bfexp2 'mpfr_exp2]
  [bfexp10 'mpfr_exp10]
+ [bfexpm1 'mpfr_expm1]
  [bfcos 'mpfr_cos]
  [bfsin 'mpfr_sin]
  [bftan 'mpfr_tan]
@@ -567,7 +569,7 @@
 (provide-1ary-preds
  [bfnan?  'mpfr_nan_p]
  [bfinfinite?  'mpfr_inf_p]
- [bffinite? 'mpfr_number_p]
+ [bfrational? 'mpfr_number_p]
  [bfinteger? 'mpfr_integer_p]
  [bfzero? 'mpfr_zero_p])
 
@@ -643,7 +645,7 @@
 (define (bfshift x n)
   (unless (fixnum? n) (raise-type-error 'bfshift "Fixnum" 1 x n))
   (cond [(bfzero? x)  x]
-        [(not (bffinite? x))  x]
+        [(not (bfrational x))  x]
         [else  (define exp (mpfr-get-exp x))
                (define y (new-mpfr (bf-precision)))
                (mpfr-set y x (bf-rounding-mode))
@@ -714,12 +716,12 @@
 
 (define-values (-inf.bf -0.bf 0.bf +inf.bf +nan.bf -nan.bf)
   (parameterize ([bf-precision  bf-min-precision])
-    (values (delay (float->bigfloat -inf.0))
-            (delay (float->bigfloat -0.0))
-            (delay (float->bigfloat  0.0))
-            (delay (float->bigfloat +inf.0))
-            (delay (float->bigfloat +nan.0))
-            (delay (bfneg (float->bigfloat +nan.0))))))
+    (values (delay (flonum->bigfloat -inf.0))
+            (delay (flonum->bigfloat -0.0))
+            (delay (flonum->bigfloat  0.0))
+            (delay (flonum->bigfloat +inf.0))
+            (delay (flonum->bigfloat +nan.0))
+            (delay (bfneg (flonum->bigfloat +nan.0))))))
 
 (provide -inf.bf -0.bf 0.bf +inf.bf +nan.bf -nan.bf)
 (begin-for-syntax
