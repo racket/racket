@@ -73,8 +73,22 @@
          (flat-vector->matrix 
           m n (for*/vector #:length (* m n) (clause ...) . defs+exprs))))]))
 
+(define (in-row/proc M r)
+  (define-values (m n) (matrix-dimensions M))
+  (make-do-sequence
+   (λ ()
+     (values
+      ; pos->element
+      (λ (j) (matrix-ref M r j))
+      ; next-pos
+      (λ (j) (+ j 1))
+      ; initial-pos
+      0
+      ; continue-with-pos?
+      (λ (j) (< j n))
+      #f #f ))))
 
-#;(define-sequence-syntax in-row
+(define-sequence-syntax in-row
   (λ () #'in-row/proc)
   (λ (stx)
     (syntax-case stx ()
@@ -84,15 +98,19 @@
            ([(M r n d) 
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
-               (values M1 r-expr rd cd))])
+               (values M1 r-expr rd 
+                       (unsafe-array-data
+                        (array-strict M1))))])
            (begin 
-             (unless (matrix? M) 
+             (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
              (unless (integer? r) 
+               (raise-type-error 'in-row "expected row number, got ~a" r))
+             (unless (and (integer? r) (and (<= 0 r ) (< r n))) 
                (raise-type-error 'in-row "expected row number, got ~a" r)))
            ([j 0])
            (< j n)
-           ([(x) (matrix-ref d (+ (* r n) j))])
+           ([(x) (vector-ref d (+ (* r n) j))])
            #true
            #true
            [(+ j 1)]))]
@@ -102,15 +120,17 @@
            ([(M r n d) 
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
-               (values M1 r-expr rd cd))])
+               (values M1 r-expr rd 
+                       (unsafe-array-data
+                        (array-strict M1))))])
            (begin 
-             (unless (matrix? M) 
+             (unless (array-matrix? M) 
                (raise-type-error 'in-row "expected matrix, got ~a" M))
              (unless (integer? r) 
                (raise-type-error 'in-row "expected row number, got ~a" r)))
            ([j 0])
            (< j n)
-           ([(x) (matrix-ref d (+ (* r n) j))]
+           ([(x) (vector-ref d (+ (* r n) j))]
             [(i) j])
            #true
            #true

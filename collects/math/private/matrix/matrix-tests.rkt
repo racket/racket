@@ -29,7 +29,11 @@
           (equal? (matrix->list (for/matrix 2 2 ([i 4]) i)) 
                   '[[0 1] [2 3]])
           (equal? (matrix->list (for/matrix 2 3 ([i 6] [j (in-range 6 12)]) (+ i j)))
-                  '[[6 8 10] [12 14 16]]))))
+                  '[[6 8 10] [12 14 16]])
+          (equal? (for/list ([(i x) (in-row (flat-vector->matrix 2 2 #(1 2 3 4)) 1)])
+                    (list i x))
+                  '((0 3) (1 4)))
+          )))
 ;(require 'testing)
 
 (begin  
