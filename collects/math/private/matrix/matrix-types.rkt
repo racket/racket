@@ -1,11 +1,12 @@
 #lang typed/racket
-
 (provide Matrix Result-Matrix
          array-matrix?
          matrix=
          square-matrix? 
          square-matrix-size
-         matrix-dimensions)
+         matrix-dimensions
+         matrix-row-dimension
+         matrix-column-dimension)
 
 (require math/array)
 
@@ -32,4 +33,18 @@
 (: matrix-dimensions : (Matrix Number) -> (Values Index Index))
 (define (matrix-dimensions a)
   (define sh (unsafe-array-shape a))
-  (values (vector-ref sh 0) (vector-ref sh 1)))
+  ; TODO: Remove list conversion when trbug1 is fixed
+  (define sh-tmp (vector->list sh))
+  (values (car sh-tmp) (cadr sh-tmp))
+  ; (values (vector-ref sh 0) (vector-ref sh 1))
+  )
+
+(: matrix-row-dimension : (Matrix Number) -> Index)
+(define (matrix-row-dimension a)
+  (define sh (unsafe-array-shape a))
+  (vector-ref sh 0))
+
+(: matrix-column-dimension : (Matrix Number) -> Index)
+(define (matrix-column-dimension a)
+  (define sh (unsafe-array-shape a))
+  (vector-ref sh 1))

@@ -9,11 +9,15 @@
          "matrix-multiply.rkt"
          "matrix-expt.rkt"
          "matrix-operations.rkt"
-         "matrix-2d.rkt")
+         "matrix-2d.rkt"
+         "matrix-sequences.rkt")
 
-(begin
+
+(begin  
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-trace
+          (equal? (matrix-trace (flat-vector->matrix 2 2 #(1 2 3 4))) 5))    
     (list 'matrix-solve
           (let* ([M (list->matrix '[[1 5] [2 3]])] 
                  [b (list->matrix '[[5] [5]])])
@@ -159,8 +163,8 @@
           (equal? (array->list (flidentity-matrix 3)) '[[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]]))
          (list
           'const-matrix
-          (equal? (array->list (const-matrix 2 3 0)) '((0 0 0) (0 0 0)))
-          (equal? (array->list (const-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
+          (equal? (array->list (make-matrix 2 3 0)) '((0 0 0) (0 0 0)))
+          (equal? (array->list (make-matrix 2 3 0.)) '((0. 0. 0.) (0. 0. 0.))))
          (list
           'matrix->list
           (equal? (matrix->list (list->matrix '((1 2) (3 4)))) '((1 2) (3 4)))
@@ -239,7 +243,7 @@
       (define 4*e1 (matrix-scale 4 e1))
       (define 3*e2 (matrix-scale 3 e2))
       (define 4*e2 (matrix-scale 4 e2))
-      (list
+      (begin
        (list 'matrix-2d-rotation
              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) +epsilon.0) 
              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) +epsilon.0))

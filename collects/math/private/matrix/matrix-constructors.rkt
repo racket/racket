@@ -7,7 +7,8 @@
 (provide identity-matrix flidentity-matrix 
          matrix->list list->matrix fllist->matrix
          matrix->vector vector->matrix flvector->matrix
-         const-matrix
+         flat-vector->matrix
+         make-matrix
          matrix-row
          matrix-column
          submatrix)
@@ -18,9 +19,9 @@
 (: flidentity-matrix (Integer -> (Result-Matrix Float)))
 (define (flidentity-matrix m) (diagonal-array 2 m 1.0 0.0))
 
-(: const-matrix (All (A) (Integer Integer A -> (Result-Matrix A))))
-(define (const-matrix m n x)
-  (const-array (list m n) x))
+(: make-matrix (All (A) (Integer Integer A -> (Result-Matrix A))))
+(define (make-matrix m n x)
+  (make-array (list m n) x))
 
 (: list->matrix : (Listof* Number) -> (Result-Matrix Number))
 (define (list->matrix rows)

@@ -11,6 +11,8 @@
  ; basic
  matrix-ref
  matrix-scale
+ matrix-row-vector?
+ matrix-column-vector?
  ; norms
  matrix-norm
  ; operators
@@ -35,10 +37,12 @@
  matrix-rank
  matrix-nullity
  matrix-determinant
+ matrix-trace
  ; spaces
  ;matrix-column+null-space
  ; solvers
  matrix-solve
+ matrix-solve-many
  )
 
 ;;;
@@ -53,6 +57,15 @@
 (define (matrix-scale s a)
   (array-scale s a))
 
+(: matrix-row-vector? : (Matrix Number) -> Boolean)
+(define (matrix-row-vector? a)
+  (= (matrix-row-dimension a) 1))
+
+(: matrix-column-vector? : (Matrix Number) -> Boolean)
+(define (matrix-column-vector? a)
+  (= (matrix-column-dimension a) 1))
+
+
 ;;;
 ;;; Norms
 ;;; 
@@ -66,8 +79,10 @@
        (array-axis-sum 
         (matrix.sqr (matrix.magnitude a)) 0) 0)
       '())))
-  ; TODO: Is there a better way to get the correct type?
-  (if (real? n) n -42.0))
+  (if (real? n) 
+      n 
+      (error 'matrix-norm 
+             "internal error: to keep the type checker happy")))
 
 ;;;
 ;;; Operators
@@ -341,13 +356,19 @@
     [else           
      (let-values ([(M _) (matrix-gauss-eliminate M #f #f)])
        ; TODO: #f #f turns off partial pivoting
-       #;(for/product: : Number ([i : Integer (in-range 0 10 1)])
-           (matrix-ref M i i))
+       #; (for/product: : Number ([i (in-range 0 m)])
+            (matrix-ref M i i))
        (let ()
          (define: product : Number 1)
          (for: ([i : Integer (in-range 0 m 1)])
            (set! product (* product (matrix-ref M i i))))
          product))]))
+
+(: matrix-trace : (Matrix Number) -> Number)
+(define (matrix-trace M)
+  (define-values (m n) (matrix-dimensions M))
+  (for/sum: : Number ([i (in-range 0 m)]) 
+      (matrix-ref M i i)))
 
 #;(: matrix-column+null-space : 
      (Matrix Number) -> (Values (Listof (Result-Matrix Number))
@@ -482,17 +503,17 @@
                   n1+n2
                   (error 'matrix-augment "n1+n2 must be an index")))
    (λ: ([js : (Vectorof Index)])
-         (define j (vector-ref js 1))
-         (if (< j m1)
-             (g1 js)
-             (let ()
-               (define j-m1 (- j m1))
-               (if (index? j-m1)
-                   ((inst vector-set! Index) js 1 j-m1)
-                   (error 'matrix-augment "internal error"))
-               (begin0
-                 (g2 js)
-                 (vector-set! js 1 j)))))))
+     (define j (vector-ref js 1))
+     (if (< j n1)
+         (g1 js)
+         (let ()
+           (define j-n1 (- j n1))               
+           (if (index? j-n1)
+               ((inst vector-set! Index) js 1 j-n1)
+               (error 'matrix-augment "internal error"))
+           (begin0
+             (g2 js)
+             (vector-set! js 1 j)))))))
 
 
 (: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
@@ -523,25 +544,28 @@
       (in-range 0 m) (in-range m m+1))]
     [else (error 'matrix-solve "internatl error")]))
 
-;(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
-;(define (matrix-solve-many M bs)
-;  (define-values (m n) (matrix-dimensions M))
-;  (define-values (s t) (matrix-dimensions (list-ref bs 0)))
-;  (define k (length bs))
-;  (define m+1 (+ m 1))
-;  (define m+k (+ m k))
-;  (cond
-;    [(not (= t 1)) (error 'matrix-solve-many "expected column vector (i.e. r x 1 - matrix), got: ~a " (list-ref bs 0))]
-;    [(not (= m s)) (error 'matrix-solve-many "expected column vectors with same number of rows as the matrix")]
-;    [(and (index? m+1) (index? m+k)) 
-;     (define bs-as-matrix "TODO")     
-;     (define MB (matrix-augment M bs-as-matrix))
-;     (define reduced-MB (matrix-reduced-row-echelon-form MB #t))
-;     (submatrix reduced-MB 
-;                (in-range 0 m+k)
-;                (in-range m m+1))]
-;    [else (error 'matrix-solve-many "internal error")]))
-
+(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
+(define (matrix-solve-many M bs)
+  ; TODO: Rewrite matrix-augment* to use array-append when it is ready
+  (: matrix-augment* : (Listof (Matrix Number)) -> (Matrix Number))
+  (define (matrix-augment* vs)
+    (foldl matrix-augment (car vs) (cdr vs)))
+  (define-values (m n) (matrix-dimensions M))
+  (define-values (s t) (matrix-dimensions (car bs)))
+  (define k (length bs))
+  (define m+1 (+ m 1))
+  (define m+k (+ m k))
+  (cond
+    [(not (= t 1)) (error 'matrix-solve-many "expected column vector (i.e. r x 1 - matrix), got: ~a " (car bs))]
+    [(not (= m s)) (error 'matrix-solve-many "expected column vectors with same number of rows as the matrix")]
+    [(and (index? m+1) (index? m+k)) 
+     (define bs-as-matrix (matrix-augment* bs))     
+     (define MB (matrix-augment M bs-as-matrix))
+     (define reduced-MB (matrix-reduced-row-echelon-form MB #t))
+     (submatrix reduced-MB 
+                (in-range 0 m+k)
+                (in-range m m+1))]
+    [else (error 'matrix-solve-many "internal error")]))
 
 
 ;;; LU Factorization

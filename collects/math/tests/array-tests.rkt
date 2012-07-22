@@ -199,7 +199,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Other constructors
 
-(check-equal? (const-array '(3 3) 0)
+(check-equal? (make-array '(3 3) 0)
               (make-lazy-array '(3 3) (λ (js) 0)))
 
 (check-equal? (index-array '(3 3) 0)
@@ -268,7 +268,7 @@
                 (list->array listof-flonum? '(( 16.0  9.0  4.0  1.0)
                                               (-16.0 -9.0 -4.0 -1.0)))))
 
-(let ([arr  (const-array '(3 0) 0)])
+(let ([arr  (make-array '(3 0) 0)])
   (check-equal? (array-axis-sum arr 0) (list->array number? '()))
   (check-equal? (array-axis-min arr 0) (list->array number? '()))
   (check-equal? (array-axis-max arr 0) (list->array number? '()))
@@ -276,31 +276,32 @@
   (check-equal? (array-axis-min arr 1 +inf.0) (list->array number? '(+inf.0 +inf.0 +inf.0)))
   (check-equal? (array-axis-max arr 1 -inf.0) (list->array number? '(-inf.0 -inf.0 -inf.0))))
 
-(check-exn exn? (λ () (array-axis-sum (const-array '() 0) 0)))
-(check-equal? (array-axis-sum (const-array '(4) 1) 0)
+(check-exn exn? (λ () (array-axis-sum (make-array '() 0) 0)))
+(check-equal? (array-axis-sum (make-array '(4) 1) 0)
               (list->array number? 4))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; FFT
 
-(check-exn exn? (λ () (array-fft (const-array '() 1))))
-(check-exn exn? (λ () (array-fft (const-array '(0) 1))))
-(check-exn exn? (λ () (array-fft (const-array '(3) 1))))
+(check-exn exn? (λ () (array-fft (make-array '() 1))))
+(check-exn exn? (λ () (array-fft (make-array '(0) 1))))
+(check-exn exn? (λ () (array-fft (make-array '(3) 1))))
 
-(let ([arr  (const-array '(4) 1)])
+(let ([arr  (make-array '(4) 1)])
   (check array= (array-fft arr) (list->array number? '(4 0 0 0)))
   (check array= (array-inverse-fft (array-fft arr)) arr))
 
-(let ([arr  (const-array '(2 2) 1)])
+(let ([arr  (make-array '(2 2) 1)])
   (check array= (array-fft arr) (list->array number? '((4 0) (0 0))))
   (check array= (array-inverse-fft (array-fft arr)) arr))
+
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Ref
 
 ;; Unsafe
 
-(let* ([l-arr  (const-array '() 0)]
+(let* ([l-arr  (make-array '() 0)]
        [s-arr  (array-strict l-arr)])
   (check-equal? (unsafe-array-ref* l-arr) 0)
   (check-equal? (unsafe-array-ref* s-arr) 0)
@@ -331,7 +332,7 @@
 
 ;; Safe
 
-(let* ([l-arr  (const-array '() 0)]
+(let* ([l-arr  (make-array '() 0)]
        [s-arr  (array-strict l-arr)])
   (check-equal? (array-ref* l-arr) 0)
   (check-equal? (array-ref* s-arr) 0)
@@ -417,7 +418,7 @@
 
 ;; Permutation
 
-(let ([arr  (const-array '() 0)])
+(let ([arr  (make-array '() 0)])
   (check-equal? (array->list (array-axis-permute arr '()))
                 0)
   (check-exn exn? (λ () (array-axis-permute arr '(0)))))
