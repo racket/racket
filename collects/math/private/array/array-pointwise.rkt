@@ -1,9 +1,9 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/performance-hint
+(require racket/performance-hint
          (only-in racket/math conjugate sqr)
          (for-syntax racket/base)
+         "../unsafe.rkt"
          "array-struct.rkt"
          "../vector/vector-pointwise.rkt"
          "for-each.rkt"

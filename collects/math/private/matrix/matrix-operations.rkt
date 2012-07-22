@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (require math/array
-         racket/unsafe/ops
+         "../unsafe.rkt"
          "matrix-types.rkt"
          "matrix-constructors.rkt"
          "matrix-pointwise.rkt"

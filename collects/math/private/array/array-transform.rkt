@@ -1,8 +1,8 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/sequence
+(require racket/sequence
          racket/vector
+         "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 

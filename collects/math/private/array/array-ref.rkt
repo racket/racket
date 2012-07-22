@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         (for-syntax racket/base racket/syntax)
+(require (for-syntax racket/base racket/syntax)
+         "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 

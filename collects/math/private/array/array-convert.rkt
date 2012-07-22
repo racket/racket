@@ -1,7 +1,7 @@
 #lang typed/racket
 
-(require racket/unsafe/ops
-         racket/vector racket/flonum
+(require racket/vector racket/flonum
+         "../unsafe.rkt"
          "array-struct.rkt"
          "utils.rkt")
 

@@ -1,8 +1,8 @@
 #lang typed/racket
 
-(require racket/unsafe/ops
-         racket/flonum
+(require racket/flonum
          racket/fixnum
+         "../unsafe.rkt"
          "../../parameters.rkt"
          "../../functions.rkt")
 

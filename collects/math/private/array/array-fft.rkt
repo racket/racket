@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
+(require "../unsafe.rkt"
          "../vector/vector-fft.rkt"
          "array-struct.rkt"
          "array-transform.rkt"

@@ -1,7 +1,7 @@
-#lang typed/racket
+#lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/performance-hint
+(require racket/performance-hint
+         "../unsafe.rkt"
          "utils.rkt")
 
 (provide (all-defined-out))

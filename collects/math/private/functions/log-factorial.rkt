@@ -1,8 +1,8 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/math racket/flonum racket/fixnum
+(require racket/flonum racket/fixnum
          "factorial.rkt"
+         "../../constants.rkt"
          "../utils.rkt")
 
 (provide fllog-factorial
@@ -24,7 +24,7 @@
          [log-x  (fllog x)])
     (+ (* x log-x)
        (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi)) log-x))
+       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x))
        (let ([1/x  (/ 1.0 x)])
          (* 1/x (+ (* #i-1/360 (* 1/x 1/x)) #i1/12))))))
 
@@ -36,7 +36,7 @@
          [log-x  (fllog x)])
     (+ (* x log-x)
        (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi)) log-x)))))
+       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x)))))
 
 (: fllog-factorial (Integer -> Float))
 (define (fllog-factorial n)

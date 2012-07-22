@@ -1,8 +1,8 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/performance-hint
+(require racket/performance-hint
          (for-syntax racket/base racket/syntax)
+         "../unsafe.rkt"
          "for-each.rkt"
          "utils.rkt")
 
@@ -106,7 +106,7 @@
     (cond [(index? n)  n]
           [else  (internal-array-size-error arr n)]))
   
-  (: safe-array-shape (All (A) ((Array A) -> (Listof Integer))))
+  (: safe-array-shape (All (A) ((Array A) -> (Listof Index))))
   (define (safe-array-shape arr) (array-shape-unsafe->safe (unsafe-array-shape arr)))
   
   )  ; begin-encourage-inline

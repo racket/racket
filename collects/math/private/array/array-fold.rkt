@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/performance-hint
+(require racket/performance-hint
+         "../unsafe.rkt"
          "array-struct.rkt"
          "array-ref.rkt"
          "utils.rkt")

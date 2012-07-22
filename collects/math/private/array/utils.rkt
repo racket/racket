@@ -1,9 +1,9 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/flonum racket/fixnum racket/list
+(require racket/flonum racket/fixnum racket/list
          racket/performance-hint
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         "../unsafe.rkt")
 
 (provide (all-defined-out))
 

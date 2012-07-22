@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
-(require racket/unsafe/ops
-         racket/math racket/flonum
+(require racket/math racket/flonum
+         "../unsafe.rkt"
          "../utils.rkt")
 
 (provide factorial binomial permutations multinomial)

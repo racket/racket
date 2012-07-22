@@ -1,7 +1,7 @@
 #lang typed/racket
 
-(require racket/unsafe/ops
-         math/array
+(require math/array
+         "../unsafe.rkt"
          "matrix-types.rkt")
 
 (provide identity-matrix flidentity-matrix 

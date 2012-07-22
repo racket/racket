@@ -2,8 +2,7 @@
 
 ;; The custom printer used for both strict-array and lazy-array struct types
 
-(require racket/unsafe/ops
-         racket/pretty
+(require racket/pretty
          racket/string
          "array-struct.rkt"
          "utils.rkt")

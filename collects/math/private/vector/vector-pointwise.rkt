@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(require racket/unsafe/ops)
+(require "../unsafe.rkt")
 
 (provide vector=)
 
