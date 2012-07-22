@@ -623,10 +623,3 @@
                   (vector-ref L-matrix (+ (* i m) j))))))
         (list (array-lazy L) 
               (array-lazy V)))))
-
-; (in-row M i]
-;     Returns a sequence of all elements of row i,
-;     that is xi0, xi1, xi2, ...
-
-
-  

@@ -1,5 +1,4 @@
 #lang typed/racket
-
 (provide Matrix Result-Matrix
          array-matrix?
          matrix=
