@@ -37,6 +37,7 @@
  matrix-rank
  matrix-nullity
  matrix-determinant
+ matrix-trace
  ; spaces
  ;matrix-column+null-space
  ; solvers
@@ -355,13 +356,19 @@
     [else           
      (let-values ([(M _) (matrix-gauss-eliminate M #f #f)])
        ; TODO: #f #f turns off partial pivoting
-       #;(for/product: : Number ([i : Integer (in-range 0 10 1)])
-           (matrix-ref M i i))
+       #; (for/product: : Number ([i (in-range 0 m)])
+            (matrix-ref M i i))
        (let ()
          (define: product : Number 1)
          (for: ([i : Integer (in-range 0 m 1)])
            (set! product (* product (matrix-ref M i i))))
          product))]))
+
+(: matrix-trace : (Matrix Number) -> Number)
+(define (matrix-trace M)
+  (define-values (m n) (matrix-dimensions M))
+  (for/sum: : Number ([i (in-range 0 m)]) 
+      (matrix-ref M i i)))
 
 #;(: matrix-column+null-space : 
      (Matrix Number) -> (Values (Listof (Result-Matrix Number))

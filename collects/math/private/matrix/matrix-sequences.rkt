@@ -189,19 +189,19 @@
 ;     that is x0j, x1j, x2j, ...
 
 
-(define (in-column/proc M r)
+(define (in-column/proc M s)
   (define-values (m n) (matrix-dimensions M))
   (make-do-sequence
    (λ ()
      (values
       ; pos->element
-      (λ (i) (matrix-ref M r i))
+      (λ (i) (matrix-ref M i s))
       ; next-pos
       (λ (i) (+ i 1))
       ; initial-pos
       0
       ; continue-with-pos?
-      (λ (i) (< j m))
+      (λ (i) (< i m))
       #f #f ))))
 
 (define-sequence-syntax in-column

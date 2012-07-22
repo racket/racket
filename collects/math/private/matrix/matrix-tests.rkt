@@ -39,6 +39,8 @@
 (begin  
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-trace
+          (equal? (matrix-trace (flat-vector->matrix 2 2 #(1 2 3 4))) 5))    
     (list 'matrix-solve
           (let* ([M (list->matrix '[[1 5] [2 3]])] 
                  [b (list->matrix '[[5] [5]])])

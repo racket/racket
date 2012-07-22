@@ -168,7 +168,7 @@
       (error 'flat-vector->matrix
              "dimensions and vector length does not match, got ~a, ~a, ~a"
              m n v)))
-    
+
 
 ;; ===================================================================================================
 ;; More types
