@@ -117,7 +117,7 @@
 (define (array-axis-permute arr perm)
   (define ds (unsafe-array-shape arr))
   (let-values ([(ds perm) (apply-permutation
-                           perm ds (λ () (raise-type-error 'array-permute "permutation"
+                           perm ds (λ () (raise-type-error 'array-axis-permute "permutation"
                                                            1 arr perm)))])
     (define dims (vector-length ds))
     (define old-js (make-thread-local-indexes dims))

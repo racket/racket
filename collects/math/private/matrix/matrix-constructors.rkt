@@ -13,10 +13,10 @@
          submatrix)
 
 (: identity-matrix (Integer -> (Result-Matrix Real)))
-(define (identity-matrix size) (diagonal-array 2 size 1 0))
+(define (identity-matrix m) (diagonal-array 2 m 1 0))
 
 (: flidentity-matrix (Integer -> (Result-Matrix Float)))
-(define (flidentity-matrix size) (diagonal-array 2 size 1.0 0.0))
+(define (flidentity-matrix m) (diagonal-array 2 m 1.0 0.0))
 
 (: const-matrix (All (A) (Integer Integer A -> (Result-Matrix A))))
 (define (const-matrix m n x)

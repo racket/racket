@@ -1,27 +1,98 @@
-#lang typed/racket
+#lang typed/racket/base
 
-;
-; TODO: matrix-gauss-eliminate-for-lu not done.
-;
-
-(require math/array)
-(require racket/unsafe/ops
+(require math/array
+         racket/unsafe/ops
          "matrix-types.rkt"
-         "matrix-constructors.rkt")
+         "matrix-constructors.rkt"
+         "matrix-pointwise.rkt"
+         (for-syntax racket))
 
-(provide matrix-scale-row
-         matrix-swap-rows
-         matrix-add-scaled-row
-         matrix-gauss-eliminate
-         matrix-gauss-jordan-eliminate
-         matrix-row-echelon-form
-         matrix-reduced-row-echelon-form
-         matrix-lu
-         matrix-ref
-         matrix-rank
-         matrix-nullity
-         ; matrix-column+null-space 
-         )
+(provide 
+ ; basic
+ matrix-ref
+ matrix-scale
+ ; norms
+ matrix-norm
+ ; operators
+ matrix-transpose
+ matrix-conjugate
+ matrix-hermitian
+ matrix-inverse
+ ; row and column
+ matrix-scale-row
+ matrix-scale-column
+ matrix-swap-rows
+ matrix-swap-columns
+ matrix-add-scaled-row
+ ; reduction
+ matrix-gauss-eliminate
+ matrix-gauss-jordan-eliminate
+ matrix-row-echelon-form
+ matrix-reduced-row-echelon-form
+ ; decomposition
+ matrix-lu
+ ; invariant
+ matrix-rank
+ matrix-nullity
+ matrix-determinant
+ ; spaces
+ ;matrix-column+null-space
+ ; solvers
+ matrix-solve
+ )
+
+;;;
+;;; Basic
+;;;
+
+(: matrix-ref : (Matrix Number) Integer Integer -> Number)
+(define (matrix-ref M i j)
+  ((inst array-ref Number) M (list i j)))
+
+(: matrix-scale : Number (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-scale s a)
+  (array-scale s a))
+
+;;;
+;;; Norms
+;;; 
+
+(: matrix-norm : (Matrix Number) -> Real)
+(define (matrix-norm a)
+  (define n
+    (sqrt
+     (array-ref
+      (array-axis-sum 
+       (array-axis-sum 
+        (matrix.sqr (matrix.magnitude a)) 0) 0)
+      '())))
+  ; TODO: Is there a better way to get the correct type?
+  (if (real? n) n -42.0))
+
+;;;
+;;; Operators
+;;;
+
+(: matrix-transpose : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-transpose a)
+  (array-axis-swap a 0 1))
+
+(: matrix-conjugate : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-conjugate a)
+  (array-conjugate a))
+
+(: matrix-hermitian : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-hermitian a)
+  (matrix-transpose 
+   (array-conjugate a)))
+
+;;;
+;;; Row and column
+;;;
+
+(: matrix-scale-row : (Matrix Number) Integer Number -> (Result-Matrix Number))
+(define (matrix-scale-row a i c)
+  ((inline-matrix-scale-row i c) a))
 
 (define-syntax (inline-matrix-scale-row stx)
   (syntax-case stx ()
@@ -42,9 +113,32 @@
                                           (* c (g js))
                                           (g js))))]))))]))
 
-(: matrix-scale-row : (Matrix Number) Integer Number -> (Result-Matrix Number))
-(define (matrix-scale-row a i c)
-  ((inline-matrix-scale-row i c) a))
+(: matrix-scale-column : (Matrix Number) Integer Number -> (Result-Matrix Number))
+(define (matrix-scale-column a i c)
+  ((inline-matrix-scale-column i c) a))
+
+(define-syntax (inline-matrix-scale-column stx)
+  (syntax-case stx ()
+    [(_ j c)
+     (syntax/loc stx
+       (λ (arr)
+         (let ([arr  (array-lazy arr)])
+           (define ds (unsafe-array-shape arr))
+           (define g (unsafe-array-proc arr))
+           (cond
+             [(< j 0)
+              (error 'matrix-scale-row "column index must be non-negative, got ~a" j)]
+             [(not (< j (vector-ref ds 1)))
+              (error 'matrix-scale-row "column index must be smaller than the number of rows, got ~a" j)]
+             [else
+              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+                                      (if (= j (vector-ref js 1))
+                                          (* c (g js))
+                                          (g js))))]))))]))
+
+(: matrix-swap-rows : (Matrix Number) Integer Integer -> (Result-Matrix Number))
+(define (matrix-swap-rows a i j)
+  ((inline-matrix-swap-rows i j) a))
 
 (define-syntax (inline-matrix-swap-rows stx)
   (syntax-case stx ()
@@ -73,9 +167,44 @@
                                         [else                    
                                          (g js)])))]))))]))
 
-(: matrix-swap-rows : (Matrix Number) Integer Integer -> (Result-Matrix Number))
-(define (matrix-swap-rows a i j)
-  ((inline-matrix-swap-rows i j) a))
+(: matrix-swap-columns : (Matrix Number) Integer Integer -> (Result-Matrix Number))
+(define (matrix-swap-columns a i j)
+  ((inline-matrix-swap-columns i j) a))
+
+(define-syntax (inline-matrix-swap-columns stx)
+  (syntax-case stx ()
+    [(_ i j)
+     (syntax/loc stx
+       (λ (arr)
+         (let ([arr  (array-lazy arr)])
+           (define ds (unsafe-array-shape arr))
+           (define g (unsafe-array-proc arr))
+           (cond
+             [(< i 0)
+              (error 'matrix-swap-columns "column index must be non-negative, got ~a" i)]
+             [(< j 0)
+              (error 'matrix-swap-columns "column index must be non-negative, got ~a" j)]
+             [(not (< i (vector-ref ds 0)))
+              (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" i)]
+             [(not (< j (vector-ref ds 0)))
+              (error 'matrix-swap-columns "column index must be smaller than the number of columns, got ~a" j)]
+             [else
+              (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) 
+                                      (cond
+                                        [(= i (vector-ref js 1)) 
+                                         (g (vector j (vector-ref js 1)))]
+                                        [(= j (vector-ref js 1)) 
+                                         (g (vector i (vector-ref js 1)))]
+                                        [else                    
+                                         (g js)])))]))))]))
+
+(: matrix-add-scaled-row : (Matrix Number) Integer Number Integer -> (Result-Matrix Number))
+(define (matrix-add-scaled-row a i c j)
+  ((inline-matrix-add-scaled-row i c j) a))
+
+(: flmatrix-add-scaled-row : (Matrix Flonum) Index Flonum Index -> (Result-Matrix Flonum))
+(define (flmatrix-add-scaled-row a i c j)
+  ((inline-matrix-add-scaled-row i c j) a))
 
 (define-syntax (inline-matrix-add-scaled-row stx)
   (syntax-case stx ()
@@ -102,20 +231,8 @@
                                           (+ (g js) (* c (g (vector j (vector-ref js 1)))))
                                           (g js))))]))))]))
 
-(: matrix-add-scaled-row : (Matrix Number) Integer Number Integer -> (Result-Matrix Number))
-(define (matrix-add-scaled-row a i c j)
-  ((inline-matrix-add-scaled-row i c j) a))
-
-(: flmatrix-add-scaled-row : (Matrix Flonum) Index Flonum Index -> (Result-Matrix Flonum))
-(define (flmatrix-add-scaled-row a i c j)
-  ((inline-matrix-add-scaled-row i c j) a))
-
 
 ;;; GAUSS ELIMINATION / ROW ECHELON FORM
-
-(: matrix-ref : (Matrix Number) Integer Integer -> Number)
-(define (matrix-ref M i j)
-  ((inst array-ref Number) M (list i j)))
 
 (: matrix-gauss-eliminate : 
    (case-> ((Matrix Number) Boolean Boolean -> (Values (Result-Matrix Number) (Listof Integer)))
@@ -199,28 +316,69 @@
   (define-values (_ cols-without-pivot) (matrix-gauss-eliminate M))
   (length cols-without-pivot))
 
-(: matrix-column+null-space : 
-   (Matrix Number) -> (Values (Result-Matrix Number)
-                              (Listof (Result-Matrix Number))
-                              (Listof (Result-Matrix Number))))
-#;(define (matrix-column+null-space M)
+(: matrix-determinant : (Matrix Number) -> Number)
+(define (matrix-determinant M)
   (define-values (m n) (matrix-dimensions M))
-  (: M1 (Matrix Number))
-  (: cols-without-pivot (Listof Integer))
-  (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
-  (set! M1 (array-strict M1))
-  (define: null-space : (Listof (Result-Matrix Number))
-    (for/list: : (Listof (Result-Matrix Number)) 
-      ([i : Integer (in-list cols-without-pivot)])
-      (cond
-        [(not (index? i)) (error 'column+null-space "Internal error")]
-        [else (matrix-column M1 i)])))
-  (define: column-space : (Listof (Result-Matrix Number))
-    (for/list: : (Listof (Result-Matrix Number))
-      ([i : Index n]
-       #:when (not (member i cols-without-pivot)))
-      (matrix-column M1 i)))
-  (values (array-lazy M1) column-space null-space))
+  (cond
+    [(= m 1) (matrix-ref M 0 0)]
+    [(= m 2) (let ([a (matrix-ref M 0 0)]
+                   [b (matrix-ref M 0 1)]
+                   [c (matrix-ref M 1 0)]
+                   [d (matrix-ref M 1 1)])
+               (- (* a d) (* b c)))]
+    [(= m 3) (let ([a (matrix-ref M 0 0)]
+                   [b (matrix-ref M 0 1)]
+                   [c (matrix-ref M 0 2)]
+                   [d (matrix-ref M 1 0)]
+                   [e (matrix-ref M 1 1)]
+                   [f (matrix-ref M 1 2)]
+                   [g (matrix-ref M 2 0)]
+                   [h (matrix-ref M 2 1)]
+                   [i (matrix-ref M 2 2)])
+               (+ (*    a  (- (* e i) (* f h)))
+                  (* (- b) (- (* d i) (* f g)))
+                  (*    c  (- (* d h) (* e g)))))]
+    [else           
+     (let-values ([(M _) (matrix-gauss-eliminate M #f #f)])
+       ; TODO: #f #f turns off partial pivoting
+       #;(for/product: : Number ([i : Integer (in-range 0 10 1)])
+           (matrix-ref M i i))
+       (let ()
+         (define: product : Number 1)
+         (for: ([i : Integer (in-range 0 m 1)])
+           (set! product (* product (matrix-ref M i i))))
+         product))]))
+
+#;(: matrix-column+null-space : 
+     (Matrix Number) -> (Values (Listof (Result-Matrix Number))
+                                (Listof (Result-Matrix Number))))
+; Returns
+;  1) a list of column vectors spanning the column space
+;  2) a list of column vectors spanning the null space
+; TODO: Column space works, but wrong space is 
+;       not done yet.
+#;(define (matrix-column+null-space M)  
+    ; TODO:
+    ;    Null space from row reduction numerically unstable.
+    ;    USE QR or SVD instead.
+    ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
+    (define-values (m n) (matrix-dimensions M))
+    (: M1 (Matrix Number))
+    (: cols-without-pivot (Listof Integer))
+    (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
+    (set! M1 (array-strict M1))
+    (define: null-space : (Listof (Result-Matrix Number))
+      (for/list: 
+          ([i : Integer (in-list cols-without-pivot)])
+        (cond
+          [(not (index? i)) (error 'column+null-space "Internal error")]
+          [else (matrix-column M1 i)])))
+    (define: column-space : (Listof (Result-Matrix Number))
+      (for/list:
+          ([i : Index n]
+           #:when (not (member i cols-without-pivot)))
+        (matrix-column M1 i)))
+    (values column-space null-space))
 
 
 (: matrix-row-echelon-form : 
@@ -290,11 +448,11 @@
                   [(= l m) (loop (+ i 1) (+ j 1) M k without-pivot)]
                   [(= l i) (l-loop (+ l 1) M)]
                   [else
-                    (let ([x_lj (matrix-ref M l j)])
-                      (l-loop (+ l 1)
-                              (if (zero? x_lj)
-                                  M
-                                  (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))]))))])]))
+                   (let ([x_lj (matrix-ref M l j)])
+                     (l-loop (+ l 1)
+                             (if (zero? x_lj)
+                                 M
+                                 (matrix-add-scaled-row M l (- (/ x_lj pivot)) i))))]))))])]))
   (let-values ([(M without) (loop 0 0 M 0 '())])
     (values (array-lazy M) without)))
 
@@ -305,6 +463,86 @@
 (define (matrix-reduced-row-echelon-form M [unitize-pivot-row? #f])
   (let-values ([(M wp) (matrix-gauss-jordan-eliminate M unitize-pivot-row?)])
     M))
+
+(: matrix-augment : (Matrix Number) (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-augment a b)
+  (define-values (m1 n1) (matrix-dimensions a))
+  (define-values (m2 n2) (matrix-dimensions b))
+  (define: la : (lazy-array Number) (array-lazy a))
+  (define: lb : (lazy-array Number) (array-lazy b))  
+  (unless (= m1 m2)
+    (error 'matrix-augment 
+           "expected two matrices with the same number of rows, got ~a and ~a"
+           a b))
+  (define g1 (unsafe-array-proc la))
+  (define g2 (unsafe-array-proc lb))
+  (define n1+n2 (+ n1 n2))
+  ((inst unsafe-lazy-array Number)
+   (vector m1 (if (index? n1+n2)
+                  n1+n2
+                  (error 'matrix-augment "n1+n2 must be an index")))
+   (λ: ([js : (Vectorof Index)])
+         (define j (vector-ref js 1))
+         (if (< j m1)
+             (g1 js)
+             (let ()
+               (define j-m1 (- j m1))
+               (if (index? j-m1)
+                   ((inst vector-set! Index) js 1 j-m1)
+                   (error 'matrix-augment "internal error"))
+               (begin0
+                 (g2 js)
+                 (vector-set! js 1 j)))))))
+
+
+(: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
+(define (matrix-inverse M)
+  (define-values (m n) (matrix-dimensions M))
+  (unless (= m n) (error 'matrix-inverse "matrix not square"))
+  (let ([MI (matrix-augment M (identity-matrix m))])
+    (define 2m (* 2 m))
+    (if (index? 2m)
+        (submatrix (matrix-reduced-row-echelon-form MI #t) 
+                   (in-range 0 m) (in-range m 2m))
+        (error 'matrix-inverse "internal error"))))
+
+(: matrix-solve : (Matrix Number) (Matrix Number) -> (Result-Matrix Number))
+;    Return a column-vector x such that Mx = b.
+;    If no such vector exists return #f.
+(define (matrix-solve M b)
+  (define-values (m n) (matrix-dimensions M))
+  (define-values (s t) (matrix-dimensions b))
+  (define m+1 (+ m 1))
+  (cond
+    [(not (= t 1)) (error 'matrix-solve "expected column vector (i.e. r x 1 - matrix), got: ~a " b)]
+    [(not (= m s)) (error 'matrix-solve "expected column vector with same number of rows as the matrix")]
+    [(index? m+1)
+     (submatrix
+      (matrix-reduced-row-echelon-form 
+       (matrix-augment M b) #t)
+      (in-range 0 m) (in-range m m+1))]
+    [else (error 'matrix-solve "internatl error")]))
+
+;(: matrix-solve-many : (Matrix Number) (Listof (Matrix Number)) -> (Result-Matrix Number))
+;(define (matrix-solve-many M bs)
+;  (define-values (m n) (matrix-dimensions M))
+;  (define-values (s t) (matrix-dimensions (list-ref bs 0)))
+;  (define k (length bs))
+;  (define m+1 (+ m 1))
+;  (define m+k (+ m k))
+;  (cond
+;    [(not (= t 1)) (error 'matrix-solve-many "expected column vector (i.e. r x 1 - matrix), got: ~a " (list-ref bs 0))]
+;    [(not (= m s)) (error 'matrix-solve-many "expected column vectors with same number of rows as the matrix")]
+;    [(and (index? m+1) (index? m+k)) 
+;     (define bs-as-matrix "TODO")     
+;     (define MB (matrix-augment M bs-as-matrix))
+;     (define reduced-MB (matrix-reduced-row-echelon-form MB #t))
+;     (submatrix reduced-MB 
+;                (in-range 0 m+k)
+;                (in-range m m+1))]
+;    [else (error 'matrix-solve-many "internal error")]))
+
+
 
 ;;; LU Factorization
 ; Not all matrices can be LU-factored.
@@ -368,4 +606,3 @@
                   (vector-ref L-matrix (+ (* i m) j))))))
         (list (array-lazy L) 
               (array-lazy V)))))
-
