@@ -3378,7 +3378,7 @@ const char *scheme_hostname_error(int err);
 
 int scheme_byte_string_has_null(Scheme_Object *o);
 int scheme_any_string_has_null(Scheme_Object *o);
-#define CHAR_STRING_W_NO_NULLS "(and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))"
+#define CHAR_STRING_W_NO_NULLS "string-no-nuls?"
 
 Scheme_Object *scheme_do_exit(int argc, Scheme_Object *argv[]);
 

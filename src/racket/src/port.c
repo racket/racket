@@ -8937,12 +8937,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       if (((!SCHEME_CHAR_STRINGP(args[i]) && !SCHEME_BYTE_STRINGP(args[i]))
            || scheme_any_string_has_null(args[i]))
           && !SCHEME_PATHP(args[i]))
-	scheme_wrong_contract(name, 
-                              ("(or/c path?\n"
-                               "      (and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))\n"
-                               "      (and/c bytes? (lambda (bs) (not (memv 0 (bytes->list bs))))))"),
+	scheme_wrong_contract(name,
+                              "(or/c path? string-no-nuls? bytes-no-nuls?)",
                               i, c, args);
-        
       {
 	Scheme_Object *bs;
         bs = args[i];
