@@ -25,10 +25,10 @@
  [bigfloat-sig+exp      (Bigfloat -> (Values Integer Integer))]
  [bigfloat-significand  (Bigfloat -> Integer)]
  ;; Conversion to and from Real
- [bigfloat->float     (Bigfloat -> Float)]
+ [bigfloat->flonum    (Bigfloat -> Float)]
  [bigfloat->integer   (Bigfloat -> Integer)]
  [bigfloat->rational  (Bigfloat -> Exact-Rational)]
- [float->bigfloat     (Float -> Bigfloat)]
+ [flonum->bigfloat    (Float -> Bigfloat)]
  [integer->bigfloat   (Integer -> Bigfloat)]
  [rational->bigfloat  (Exact-Rational -> Bigfloat)]
  [real->bigfloat      (Real -> Bigfloat)]
@@ -58,11 +58,11 @@
  bigfloat-sig+exp
  bigfloat-significand
  ;; Conversion to and from Real
- float->bigfloat
+ flonum->bigfloat
  integer->bigfloat
  rational->bigfloat
  real->bigfloat
- bigfloat->float
+ bigfloat->flonum
  bigfloat->integer
  bigfloat->rational
  ;; String conversion

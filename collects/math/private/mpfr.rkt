@@ -653,7 +653,7 @@
 (define (bfshift x n)
   (unless (fixnum? n) (raise-type-error 'bfshift "Fixnum" 1 x n))
   (cond [(bfzero? x)  x]
-        [(not (bfrational x))  x]
+        [(not (bfrational? x))  x]
         [else  (define exp (mpfr-get-exp x))
                (define y (new-mpfr (bf-precision)))
                (mpfr-set y x (bf-rounding-mode))
