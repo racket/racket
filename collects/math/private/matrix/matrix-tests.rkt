@@ -1,16 +1,43 @@
 #lang typed/racket
 
-(require math/array)
+(require math/array
+         math/constants
+         math/flonum)
 (require "matrix-types.rkt"
          "matrix-pointwise.rkt"
          "matrix-constructors.rkt"
          "matrix-multiply.rkt"
          "matrix-expt.rkt"
-         "matrix-operations.rkt")
+         "matrix-operations.rkt"
+         "matrix-2d.rkt")
 
 (begin
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-solve
+          (let* ([M (list->matrix '[[1 5] [2 3]])] 
+                 [b (list->matrix '[[5] [5]])])
+            (equal? (matrix* M (matrix-solve M b)) b)))
+    (list 'matrix-inverse
+          (equal? (let ([M (list->matrix '[[1 2] [3 4]])]) (matrix* M (matrix-inverse M)))
+                  (identity-matrix 2))
+          (equal? (let ([M (list->matrix '[[1 2] [3 4]])]) (matrix* (matrix-inverse M) M))
+                  (identity-matrix 2)))
+    (list 'matrix-determinant
+          (equal? (matrix-determinant (list->matrix '[[3]])) 3)
+          (equal? (matrix-determinant (list->matrix '[[1 2] [3 4]])) (- (* 1 4) (* 2 3)))
+          (equal? (matrix-determinant (list->matrix '[[1 2 3] [4  5 6] [7 8 9]])) 0)
+          (equal? (matrix-determinant (list->matrix '[[1 2 3] [4 -5 6] [7 8 9]])) 120)
+          (equal? (matrix-determinant (list->matrix '[[1 2 3 4] [-5 6 7 8] [9 10 -11 12] [13 14 15 16]])) 5280))
+    (list 'matrix-scale
+          (equal? (matrix-scale 2 (list->matrix '[[1 2] [3 4]]))
+                  (list->matrix '[[2 4] [6 8]])))
+    (list 'matrix-transpose
+          (equal? (matrix-transpose (list->matrix '[[1 2] [3 4]]))
+                  (list->matrix '[[1 3] [2 4]])))
+    (list 'matrix-hermitian
+          (equal? (matrix-hermitian (list->matrix '[[1+i 2-i] [3+i 4-i]]))
+                  (list->matrix '[[1-i 3-i] [2+i 4+i]])))
     (let ()
       (: gauss-eliminate : (Matrix Number) Boolean Boolean -> (Result-Matrix Number))
       (define (gauss-eliminate M u? p?)
@@ -199,4 +226,42 @@
             (equal? (matrix* (list->matrix A) (list->matrix B)) (list->matrix AB)))
           (let () 
             (define-values (A B AB) (values '[[1 2] [3 4]] '[[5 6 7] [8 9 10]] '[[21 24 27] [47 54 61]]))
-            (equal? (matrix* (list->matrix A) (list->matrix B)) (list->matrix AB))))))
+            (equal? (matrix* (list->matrix A) (list->matrix B)) (list->matrix AB)))))
+  (begin
+    "matrix-2d.rkt"
+    (let ()
+      (define  e1  (matrix-transpose (vector->matrix #(#( 1  0)))))
+      (define  e2  (matrix-transpose (vector->matrix #(#( 0  1)))))
+      (define -e1  (matrix-transpose (vector->matrix #(#(-1  0)))))
+      (define -e2  (matrix-transpose (vector->matrix #(#( 0 -1)))))
+      (define   O  (matrix-transpose (vector->matrix #(#( 0  0)))))
+      (define 2*e1 (matrix-scale 2 e1))
+      (define 4*e1 (matrix-scale 4 e1))
+      (define 3*e2 (matrix-scale 3 e2))
+      (define 4*e2 (matrix-scale 4 e2))
+      (list
+       (list 'matrix-2d-rotation
+             (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) +epsilon.0) 
+             (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) +epsilon.0))
+       (list
+        'matrix-2d-scaling
+        (equal? (matrix* (matrix-2d-scaling 2 3) (matrix+ e1 e2)) (matrix+ 2*e1 3*e2)))
+       (list
+        'matrix-2d-shear-x
+        (equal? (matrix* (matrix-2d-shear-x 3) (matrix+ e1 e2))   (matrix+ 4*e1   e2)))
+       (list
+        'matrix-2d-shear-y
+        (equal? (matrix* (matrix-2d-shear-y 3) (matrix+ e1 e2))   (matrix+   e1 4*e2)))
+       (list
+        'matrix-2d-reflection
+        (equal? (matrix* (matrix-2d-reflection 0 1) e1)           -e1)
+        (equal? (matrix* (matrix-2d-reflection 0 1) e2)            e2)
+        (equal? (matrix* (matrix-2d-reflection 1 0) e1)            e1)
+        (equal? (matrix* (matrix-2d-reflection 1 0) e2)           -e2))
+       (list
+        'matrix-2d-orthogonal-projection
+        (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e1) e1)
+        (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
+        (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
+        (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
+

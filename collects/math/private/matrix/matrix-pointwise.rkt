@@ -4,7 +4,8 @@
          "../../array.rkt"
          "matrix-types.rkt")
 
-(provide matrix+ matrix-)
+(provide matrix+ matrix-
+         matrix.sqr matrix.magnitude)
 
 ;; The `make-matrix-*' operators have to be macros; see ../array/array-pointwise.rkt for an
 ;; explanation.
@@ -49,3 +50,5 @@
 
 (define matrix+ (make-matrix-pointwise2 'matrix+ array+))
 (define matrix- (make-matrix-pointwise1/2 'matrix- array-))
+(define matrix.sqr array-sqr)
+(define matrix.magnitude array-magnitude)
