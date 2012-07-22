@@ -1008,6 +1008,8 @@ Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Obje
 Scheme_Hash_Table *scheme_get_module_rename_marked_names(Scheme_Object *set, Scheme_Object *phase, int create);
 
 void scheme_append_rename_set_to_env(Scheme_Object *rns, Scheme_Env *env);
+void scheme_install_prior_contexts_to_env(Scheme_Object *prior, Scheme_Env *env);
+Scheme_Object *scheme_accum_prior_contexts(Scheme_Object *rns, Scheme_Object *prior);
 
 void scheme_seal_module_rename(Scheme_Object *rn, int level);
 void scheme_seal_module_rename_set(Scheme_Object *rns, int level);
@@ -3123,7 +3125,7 @@ typedef struct Scheme_Module
 
   Scheme_Env *primitive;
 
-  Scheme_Object *rn_stx;
+  Scheme_Object *rn_stx; /* NULL, #t, a stx for a rename, a vector of stxes, or a pair to delay shifts */
 
   Scheme_Object *submodule_path; /* path to this module relative to enclosing top-level module */
   Scheme_Object *pre_submodules, *post_submodules; /* list of modules (when compiled or loaded as a group) */

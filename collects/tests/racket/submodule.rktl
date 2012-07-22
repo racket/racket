@@ -712,5 +712,56 @@
   (attach-tests #t))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; module->namespace
+
+(module check-to-namespace-1 racket/base
+  (module* main #f
+    (define x 10)
+    (define v
+      (eval 'x (variable-reference->namespace (#%variable-reference))))
+    (provide v)))
+
+(test 10 dynamic-require `(submod 'check-to-namespace-1 main) 'v)
+
+(module check-to-namespace-2 racket/base
+  (require racket/math)
+  (module* main #f
+    (define v
+      (eval 'pi (variable-reference->namespace (#%variable-reference))))
+    (provide v)))
+
+(require racket/math)
+(test pi dynamic-require `(submod 'check-to-namespace-2 main) 'v)
+
+(module check-to-namespace-3.0 racket/base
+  (define x 13)
+  (define v
+    (eval 'x (variable-reference->namespace (#%variable-reference))))
+  (provide v))
+
+(test 13 dynamic-require ''check-to-namespace-3.0 'v)
+
+(module check-to-namespace-3 racket/base
+  (define x 13)
+  (module* main #f
+    (define v
+      (eval 'x (variable-reference->namespace (#%variable-reference))))
+    (provide v)))
+
+(test 13 dynamic-require `(submod 'check-to-namespace-3 main) 'v)
+
+(let ([path (build-path (current-directory) "ctn-no-such-file.rkt")])
+  (parameterize ([current-module-declare-name (make-resolved-module-path path)])
+    (eval
+     '(module check-to-namespace-3 racket/base
+        (define x 130)
+        (module* main #f
+          (define v
+            (eval 'x (variable-reference->namespace (#%variable-reference))))
+          (provide v)))))
+  (test 130 dynamic-require `(submod ,path main) 'v))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

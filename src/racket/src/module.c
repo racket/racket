@@ -122,6 +122,7 @@ typedef struct Module_Begin_Expand_State {
   Scheme_Hash_Table *modidx_cache;
   Scheme_Object *redef_modname;
   Scheme_Object *end_statementss; /* list of lists */
+  Scheme_Object *rn_stx;
 } Module_Begin_Expand_State;
 
 static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -2912,17 +2913,45 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	m->rn_stx = rns;
       } else if (SCHEME_PAIRP(m->rn_stx)) {
 	/* Delayed shift: */
-	Scheme_Object *rn_stx, *midx;
-	rn_stx = SCHEME_CAR(m->rn_stx);
+	Scheme_Object *vec, *vec2, *rn_stx, *midx;
+        int i;
+
+	vec = SCHEME_CAR(m->rn_stx);
 	midx = SCHEME_CDR(m->rn_stx);
-	rns = scheme_stx_to_rename(rn_stx);
-	rns = scheme_stx_shift_rename_set(rns, midx, m->self_modidx, m->insp);
-	rn_stx = scheme_rename_to_stx(rns);
-	m->rn_stx = rn_stx;
+        
+        if (!SCHEME_VECTORP(vec))
+          vec = scheme_make_vector(1, vec);
+        vec2 = scheme_make_vector(SCHEME_VEC_SIZE(vec), NULL);
+
+        for (i = SCHEME_VEC_SIZE(vec); i--; ) {
+          rn_stx = SCHEME_VEC_ELS(vec)[i];
+          rns = scheme_stx_to_rename(rn_stx);
+          rns = scheme_stx_shift_rename_set(rns, midx, m->self_modidx, m->insp);
+          rn_stx = scheme_rename_to_stx(rns);
+          SCHEME_VEC_ELS(vec2)[i] = rn_stx;
+        }
+
+	m->rn_stx = vec2;
       }
 
-      rns = scheme_stx_to_rename(m->rn_stx);
-      scheme_append_rename_set_to_env(rns, menv);
+      /* add rename(s) to the environment's rename: */
+      {
+        int i;
+        Scheme_Object *vec = m->rn_stx, *prior = NULL;
+
+        if (!SCHEME_VECTORP(vec)) {
+          vec = scheme_make_vector(1, vec);
+          m->rn_stx = vec;
+        }
+
+        for (i = SCHEME_VEC_SIZE(vec); i--; ) {
+          rns = scheme_stx_to_rename(SCHEME_VEC_ELS(vec)[i]);
+          scheme_append_rename_set_to_env(rns, menv);
+          prior = scheme_accum_prior_contexts(rns, prior);
+        }
+        scheme_install_prior_contexts_to_env(prior, menv);
+      }
+
       menv->rename_set_ready = 1;
     }
   }
@@ -6898,7 +6927,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                               scheme_false);
   } else {
     void **super_bxs_info;
-    Scheme_Object *rn;
+    Scheme_Object *rn, *rnss, *rnss2, *rn2;
 
     iidx = scheme_make_modidx(scheme_make_pair(submod_symbol,
                                                scheme_make_pair(scheme_make_utf8_string(".."),
@@ -6912,14 +6941,25 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                           top_env->module->self_modidx, iidx, 
                                           menv->module_registry->exports,
                                           env->insp, NULL);
+
+    rnss2 = scheme_null;
+    for (rnss = super_bxs->rn_stx; SCHEME_PAIRP(rnss); rnss = SCHEME_CDR(rnss)) {
+      rn2 = scheme_stx_to_rename(SCHEME_CAR(rnss));
+      rn2 = scheme_stx_shift_rename_set(rn2,
+                                        top_env->module->self_modidx, iidx, 
+                                        env->insp);
+      rnss2 = scheme_make_pair(scheme_rename_to_stx(rn2), rnss2);
+    }
+    rnss2 = scheme_reverse(rnss2);
     
-    super_bxs_info = MALLOC_N(void*, 6);
+    super_bxs_info = MALLOC_N(void*, 7);
     super_bxs_info[0] = super_bxs;
     super_bxs_info[1] = rn;
     super_bxs_info[2] = top_env->module->self_modidx;
     super_bxs_info[3] = iidx;
     super_bxs_info[4] = top_env;
     super_bxs_info[5] = super_phase_shift;
+    super_bxs_info[6] = rnss2;
     m->super_bxs_info = super_bxs_info;
   }
 
@@ -7639,7 +7679,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   Scheme_Module_Export_Info **exp_infos, *exp_info;
   Scheme_Module_Phase_Exports *pt;
   Scheme_Object *post_ex_rn_set; /* phase -> post_ex_rn-like rename */
-  Scheme_Object *form, *redef_modname, *rn_set, *observer, **exis, *body_lists, *expanded_l;
+  Scheme_Object *form, *redef_modname, *rn_set, *observer, **exis, *body_lists, *expanded_l, *rn_stx;
   Scheme_Env *genv;
   Module_Begin_Expand_State *bxs;
   Scheme_Expand_Info crec;
@@ -7664,18 +7704,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   modidx_cache = scheme_make_hash_table_equal();
 
-  rn_set = env->genv->rename_set;
-  {
-    Scheme_Object *v;
-    v = scheme_rename_to_stx(rn_set);
-    env->genv->module->rn_stx = v;
-  }
-
   all_provided = scheme_make_hash_table_equal();
   all_reprovided = scheme_make_hash_table_equal();
   all_defs = scheme_make_hash_tree(1);
   all_defs_out = scheme_make_hash_table_equal();
 
+  rn_set = env->genv->rename_set;
   post_ex_rn_set = scheme_make_module_rename_set(mzMOD_RENAME_MARKED, rn_set, env->genv->module->insp);
 
   /* It's possible that #%module-begin expansion introduces
@@ -7690,6 +7724,22 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   all_simple_renames = (int *)scheme_malloc_atomic(sizeof(int));
   *all_simple_renames = 1;
+
+  if (env->genv->module->super_bxs_info) {
+    rn_stx = scheme_rename_to_stx(post_ex_rn_set);
+    *all_simple_renames = 0;
+  } else
+    rn_stx = scheme_rename_to_stx(rn_set);
+  if (env->genv->module->super_bxs_info && env->genv->module->super_bxs_info[6])
+    rn_stx = scheme_make_pair(rn_stx, env->genv->module->super_bxs_info[6]);
+  {
+    Scheme_Object *v;
+    if (SCHEME_PAIRP(rn_stx))
+      v = scheme_list_to_vector(rn_stx); 
+   else
+      v = rn_stx;
+    env->genv->module->rn_stx = v;
+  }
 
   bxs = scheme_malloc(sizeof(Module_Begin_Expand_State));
   bxs->post_ex_rn_set = post_ex_rn_set;
@@ -7973,6 +8023,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       
       (void)do_module_execute(o, env->genv, 0, 1, root_module_name, NULL);
     }
+
+    if (!SCHEME_PAIRP(rn_stx))
+      rn_stx = scheme_make_pair(rn_stx, scheme_null);
+    bxs->rn_stx = rn_stx;
 
     if (!rec[drec].comp && (is_modulestar_stop(env))) {
       Scheme_Object *l = bxs->saved_submodules;
@@ -9059,7 +9113,7 @@ static Scheme_Object *expand_submodules(Scheme_Compile_Expand_Info *rec, int dre
                                         Scheme_Comp_Env *env,
                                         Scheme_Object *l, int post,
                                         Module_Begin_Expand_State *bxs,
-                                        int keep_expanded) 
+                                        int keep_expanded)
 {
   Scheme_Object *mods = scheme_null, *mod, *ancestry;
   
