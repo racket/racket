@@ -39,8 +39,6 @@
 (: matrix-row-dimension : (Matrix Number) -> Index)
 (define (matrix-row-dimension a)
   (define sh (unsafe-array-shape a))
-  (displayln (list 'matrix-row-dimension: 'sh= sh))
-  (displayln (list 'matrix-row-dimension: 'vector-ref-sh-0 (vector-ref sh 0)))
   (vector-ref sh 0))
 
 (: matrix-column-dimension : (Matrix Number) -> Index)
