@@ -66,8 +66,9 @@
        (array-axis-sum 
         (matrix.sqr (matrix.magnitude a)) 0) 0)
       '())))
-  ; TODO: Is there a better way to get the correct type?
-  (if (real? n) n -42.0))
+  (if (real? n) 
+      n 
+      (error 'matrix-norm "internal error: to keep the type checker happy")))
 
 ;;;
 ;;; Operators
