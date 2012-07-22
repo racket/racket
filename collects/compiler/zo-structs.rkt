@@ -124,7 +124,7 @@
                                 [max-let-depth exact-nonnegative-integer?]
                                 [dummy toplevel?]
                                 [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
-                                [internal-context (or/c #f #t stx?)]
+                                [internal-context (or/c #f #t stx? (listof stx?))]
                                 [pre-submodules (listof mod?)]
                                 [post-submodules (listof mod?)]))
 

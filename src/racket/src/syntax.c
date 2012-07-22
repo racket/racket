@@ -170,6 +170,7 @@ typedef struct Module_Renames_Set {
   Scheme_Object so; /* scheme_rename_table_set_type */
   char kind, sealed;
   Scheme_Object *set_identity;
+  Scheme_Object *prior_contexts; /* for module->namespace */
   Module_Renames *rt, *et;
   Scheme_Hash_Table *other_phases;
   Scheme_Object *share_marked_names; /* a Module_Renames_Set */
@@ -1634,6 +1635,23 @@ void scheme_append_rename_set_to_env(Scheme_Object *_mrns, Scheme_Env *env)
   }
 }
 
+void scheme_install_prior_contexts_to_env(Scheme_Object *prior, Scheme_Env *env)
+{
+  if (prior) {
+    prior = SCHEME_CDR(prior);
+    if (!SCHEME_NULLP(prior)) {
+      ((Module_Renames_Set *)env->rename_set)->prior_contexts = prior;
+    }
+  }
+}
+
+Scheme_Object *scheme_accum_prior_contexts(Scheme_Object *rns, Scheme_Object *prior)
+{
+  if (!prior)
+    prior = scheme_null;
+  return scheme_make_pair(((Module_Renames_Set *)rns)->set_identity, prior);
+}
+
 void scheme_remove_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *localname)
 {
@@ -1715,6 +1733,9 @@ Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx)
       if (!rns) {
         rns = scheme_make_module_rename_set(((Module_Renames *)v)->kind, NULL, NULL);
         ((Module_Renames_Set *)rns)->set_identity = ((Module_Renames *)v)->set_identity;
+      } else if (!SAME_OBJ(((Module_Renames_Set *)rns)->set_identity,
+                           ((Module_Renames *)v)->set_identity)) {
+        scheme_signal_error("can't convert syntax to rename (identity mismatch)");
       }
       scheme_add_module_rename_to_set(rns, v);
     } else {
@@ -1798,6 +1819,8 @@ Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *_mrns,
 
   mrns2 = scheme_make_module_rename_set(mrns->kind, NULL, new_insp);
   ((Module_Renames_Set *)mrns2)->sealed = mrns->sealed;
+  ((Module_Renames_Set *)mrns2)->set_identity = mrns->set_identity;
+  
   if (mrns->rt) {
     mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->rt, old_midx, new_midx, new_insp);
     scheme_add_module_rename_to_set(mrns2, mrn);
@@ -3084,6 +3107,21 @@ static Scheme_Object *get_old_module_env(Scheme_Object *stx)
 
         kind = mrns->kind;
         set_identity = mrns->set_identity;
+
+        if (mrns->prior_contexts) {
+          /* A rename-set with a prior context should be last */
+          if (SCHEME_FALSEP(result_id)) {
+            result_id = mrns->prior_contexts;
+            if (SCHEME_NULLP(SCHEME_CDR(result_id)))
+              result_id = SCHEME_CAR(result_id);
+          } else {
+            if (!SCHEME_PAIRP(result_id)) {
+              result_id = scheme_make_pair(result_id, scheme_null);
+              last_pr = result_id;
+            }
+            SCHEME_CDR(last_pr) = mrns->prior_contexts;
+          }
+        }
       }
 
       if ((kind != mzMOD_RENAME_TOPLEVEL)
