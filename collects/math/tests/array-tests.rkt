@@ -507,3 +507,27 @@
                 '[0 1 2 3])
   (check-equal? (array->list (array-flatten (array-strict arr)))
                 '[0 1 2 3]))
+
+;; Append
+
+(let ([arr  (indexes-array '(3 2))]
+      [brr  (indexes-array '(2 2))])
+  (check-equal? (array->list (array-append arr 0 brr))
+                '[[(0 0) (0 1)]
+                  [(1 0) (1 1)]
+                  [(2 0) (2 1)]
+                  [(0 0) (0 1)]
+                  [(1 0) (1 1)]])
+  (check-exn exn? (λ () (array-append arr 1 brr)))
+  (check-exn exn? (λ () (array-append arr 2 brr))))
+
+(let ([arr  (indexes-array '(2 2))]
+      [brr  (indexes-array '(2 3))])
+  (check-equal? (array->list (array-append arr 1 brr))
+                '[[(0 0) (0 1) (0 0) (0 1) (0 2)]
+                  [(1 0) (1 1) (1 0) (1 1) (1 2)]])
+  (check-exn exn? (λ () (array-append arr 0 brr)))
+  (check-exn exn? (λ () (array-append arr 2 brr))))
+
+(check-exn exn? (λ () (array-append (indexes-array '()) 0 (indexes-array '()))))
+(check-exn exn? (λ () (array-append (indexes-array '(4)) 0 (indexes-array '(4 5)))))
