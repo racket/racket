@@ -1,16 +1,13 @@
 #lang racket
-
 (provide for/matrix
          for*/matrix
          in-row
          in-column)
 
-(require 
- math/array
- math/matrix
- (for-syntax math/matrix)
- (for-template math/matrix))
-
+(require math/array
+         math/matrix
+         (for-syntax math/matrix)
+         (for-template math/matrix))
 
 ;;; COMPREHENSIONS
 
@@ -240,7 +237,7 @@
                        (unsafe-array-data
                         (array-strict M1))))])
            (begin 
-             (unless (matrix? M) 
+             (unless (array-matrix? M) 
                (raise-type-error 'in-column "expected matrix, got ~a" M))
              (unless (integer? s) 
                (raise-type-error 'in-column "expected col number, got ~a" s))
@@ -256,3 +253,28 @@
       [[_ clause] (raise-syntax-error 
                    'in-column "expected (in-column <matrix> <column>)" #'clause #'clause)])))
 
+(module* test #f
+  (require math/matrix
+           rackunit)
+  ; "matrix-sequences.rkt"
+  ; These work in racket not in typed racket
+  (check-equal? (matrix->list (for*/matrix 2 3 ([i 2] [j 3]) (+ i j)))
+                '[[0 1 2] [1 2 3]])
+  (check-equal? (matrix->list (for*/matrix 2 3 #:column ([i 2] [j 3]) (+ i j)))
+                '[[0 2 2] [1 1 3]])
+  (check-equal? (matrix->list (for*/matrix 2 2 #:column ([i 4]) i)) 
+                '[[0 2] [1 3]])
+  (check-equal? (matrix->list (for/matrix 2 2 ([i 4]) i)) 
+                '[[0 1] [2 3]])
+  (check-equal? (matrix->list (for/matrix 2 3 ([i 6] [j (in-range 6 12)]) (+ i j)))
+                '[[6 8 10] [12 14 16]])
+  (check-equal? (for/list ([x     (in-row (flat-vector->matrix 2 2 #(1 2 3 4)) 1)]) x)
+                '(3 4))
+  (check-equal? (for/list ([(i x) (in-row (flat-vector->matrix 2 2 #(1 2 3 4)) 1)])
+                  (list i x))
+                '((0 3) (1 4)))
+  (check-equal? (for/list ([x     (in-column (flat-vector->matrix 2 2 #(1 2 3 4)) 1)]) x)
+                '(2 4))
+  (check-equal? (for/list ([(i x) (in-column (flat-vector->matrix 2 2 #(1 2 3 4)) 1)])
+                  (list i x))
+                '((0 2) (1 4))))

@@ -12,29 +12,6 @@
          "matrix-2d.rkt"
          "matrix-sequences.rkt")
 
-#;(module testing racket
-  (require math/matrix
-           "matrix-sequences.rkt")
-  (begin
-    "matrix-sequences.rkt"
-    ; These work in racket not in typed racket
-    (list 'for*/matrix
-          (equal? (matrix->list (for*/matrix 2 3 ([i 2] [j 3]) (+ i j)))
-                  '[[0 1 2] [1 2 3]])
-          (equal? (matrix->list (for*/matrix 2 3 #:column ([i 2] [j 3]) (+ i j)))
-                  '[[0 2 2] [1 1 3]])
-          (equal? (matrix->list (for*/matrix 2 2 #:column ([i 4]) i)) 
-                  '[[0 2] [1 3]]))
-    (list 'for/matrix
-          (equal? (matrix->list (for/matrix 2 2 ([i 4]) i)) 
-                  '[[0 1] [2 3]])
-          (equal? (matrix->list (for/matrix 2 3 ([i 6] [j (in-range 6 12)]) (+ i j)))
-                  '[[6 8 10] [12 14 16]])
-          (equal? (for/list ([(i x) (in-row (flat-vector->matrix 2 2 #(1 2 3 4)) 1)])
-                    (list i x))
-                  '((0 3) (1 4)))
-          )))
-;(require 'testing)
 
 (begin  
   (begin
