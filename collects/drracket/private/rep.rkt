@@ -812,7 +812,7 @@ TODO
              (user-break-parameterization #f)
              (user-logger (make-logger))
              
-             ;; user-exit-code (union #f (integer-in 0 255))
+             ;; user-exit-code (union #f byte?)
              ;; #f indicates that exit wasn't called. Integer indicates exit code
              (user-exit-code #f))
             

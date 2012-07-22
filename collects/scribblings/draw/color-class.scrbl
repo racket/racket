@@ -16,9 +16,7 @@ object using a color name, and see also @racket[make-color].
 
 
 @defconstructor*/make[(()
-                       ([red (integer-in 0 255)]
-                        [green (integer-in 0 255)]
-                        [blue (integer-in 0 255)]
+                       ([red byte?] [green byte?] [blue byte?]
                         [alpha (real-in 0 1) 1.0])
                        ([color-name string?]))]{
 
@@ -29,62 +27,31 @@ Creates a new color with the given RGB values and alpha, or matching
 
 }
 
-@defmethod[(alpha)
-           (real-in 0 1)]{
+@defmethod[(copy-from [src (is-a?/c color%)]) (is-a?/c color%)]{
+  Copies the RGB values of another color object to this one, returning
+  this object as the result.}
 
-Returns the alpha component (i.e., opacity) of the color.
+@defmethod[(is-immutable?) boolean?]{
+  Returns @racket[#t] if the color object is immutable.}
 
-}
+@defmethod[(ok?) boolean?]{
+  Returns @racket[#t] if the color object is valid.}
 
-@defmethod[(blue)
-           (integer-in 0 255)]{
+@defmethod[(red) byte?]{
+  Returns the red component of the color.}
 
-Returns the blue component of the color.
+@defmethod[(green) byte?]{
+  Returns the green component of the color.}
 
-}
+@defmethod[(blue) byte?]{
+  Returns the blue component of the color.}
 
-@defmethod[(copy-from [src (is-a?/c color%)])
-           (is-a?/c color%)]{
+@defmethod[(alpha) (real-in 0 1)]{
+  Returns the alpha component (i.e., opacity) of the color.}
 
-Copies the RGB values of another color object to this one, returning
- this object as the result.
-
-}
-
-@defmethod[(green)
-           (integer-in 0 255)]{
-
-Returns the green component of the color.
-
-}
-
-@defmethod[(is-immutable?)
-           boolean?]{
-
-Returns @racket[#t] if the color object is immutable.
-
-}
-
-@defmethod[(ok?)
-           boolean?]{
-
-Returns @racket[#t] if the color object is valid.
-
-}
-
-@defmethod[(red)
-           (integer-in 0 255)]{
-
-Returns the red component of the color.
-
-}
-
-@defmethod[(set [red (integer-in 0 255)]
-                [green (integer-in 0 255)]
-                [blue (integer-in 0 255)]
+@defmethod[(set [red byte?] [green byte?] [blue byte?]
                 [alpha (real-in 0 1) 1.0])
            void?]{
+  Sets the four (red, green, blue, and alpha) component values of the color.}
 
-Sets the four (red, green, blue, and alpha) component values of the color.
-}}
-
+}
