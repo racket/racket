@@ -148,9 +148,21 @@
     [(block sync) #t] 
     [else #f]))
 
+;;runtime-thread-evt? : (or event indexed-future-event future-event) -> bool
+(define (runtime-thread-evt? evt) 
+  (= (process-id evt) RT-THREAD-ID))
+
 ;;runtime-synchronization-event? : (or event indexed-future-event future-event) -> bool
 (define (runtime-synchronization-event? evt) 
   (and (synchronization-event? evt) (= (process-id evt) RT-THREAD-ID)))
+
+;;runtime-block-evt? : (or event indexed-future-event future-event) -> bool
+(define (runtime-block-evt? evt) 
+  (and (runtime-thread-evt? evt) (equal? (what evt) 'block))) 
+
+;;runtime-sync-evt? : (or event indexed-future-event future-event) -> bool
+(define (runtime-sync-evt? evt) 
+  (and (runtime-thread-evt? evt) (equal? (what evt) 'sync)))
 
 ;;final-event? : event -> bool
 (define (final-event? evt) 
@@ -311,18 +323,13 @@
   (define block-hash (make-hash)) 
   (define sync-hash (make-hash)) 
   (define rt-hash (make-hash)) 
-  (for ([evt (in-list (filter (λ (e) (and (= (event-proc-id e) RT-THREAD-ID) 
-                                              (or (equal? (event-type e) 'block) 
-                                                  (equal? (event-type e) 'sync)))) 
-                                  evts))])
-    (define isblock (case (event-type evt) 
-                      [(block) #t] 
-                      [else #f]))
+  (for ([evt (in-list (filter runtime-synchronization-event? evts))])
+    (define isblock (runtime-block-evt? evt))
     (define ophash (if isblock block-hash sync-hash))
     (hash-update! ophash 
                   (event-prim-name evt) 
-                  (λ (old) (add1 old)) 
-                  1) 
+                  (λ (old) (+ old 1)) 
+                  0) 
     (hash-update! rt-hash 
                   (event-future-id evt) 
                   (λ (old) 
@@ -331,19 +338,10 @@
                                  (rtcall-info-sync-hash old))]) 
                       (hash-update! h 
                                     (event-prim-name evt) 
-                                    (λ (o) (add1 o)) 
-                                    (λ () 1))) 
-                    old) 
-                  (λ ()
-                    (let* ([ri (rtcall-info (event-future-id evt) (make-hash) (make-hash))] 
-                           [h (if isblock 
-                                 (rtcall-info-block-hash ri) 
-                                 (rtcall-info-sync-hash ri))])
-                      (hash-update! h 
-                                    (event-prim-name evt) 
-                                    (λ (o) (add1 o)) 
-                                    (λ () 1)) 
-                      ri))))
+                                    (λ (o) (+ o 1)) 
+                                    0)) 
+                    old)  
+                  (rtcall-info (event-future-id evt) (make-hash) (make-hash))))
   (values block-hash sync-hash rt-hash))
                                 
 ;;connect-event-chains! : trace -> void
