@@ -60,6 +60,8 @@
  column-norm
  column-projection
  column-normalize 
+ scale-column
+ scale+
  ; projection
  projection-on-orthogonal-basis
  projection-on-orthonormal-basis
@@ -687,7 +689,38 @@
       (vector->column c)
       (array-lazy c)))
 
+(: scale-column : Number (Column Number) -> (Result-Column Number))
+(define (scale-column s a)
+  (if (vector? a)
+      (let*: ([n (vector-length a)]
+              [v : (Vectorof Number) (make-vector n 0)])
+        (for: ([i (in-range 0 n)]
+               [x : Number (in-vector a)]) 
+          (vector-set! v i (* s x)))
+        (vector->column v))
+      (matrix-scale s a)))
 
+(: column+ : (Column Number) (Column Number) -> (Result-Column Number))
+(define (column+ v w)
+  (cond [(and (vector? v) (vector? w))
+         (let ([n (vector-length v)]
+               [m (vector-length w)])
+           (unless (= m n)
+             (error 'column+ 
+                    "expected two column vectors of the same length, got ~a and ~a" v w))
+           (define: v+w : (Vectorof Number) (make-vector n 0))
+           (for: ([i (in-range 0 n)]
+                  [x : Number (in-vector v)]
+                  [y : Number (in-vector w)])
+             (vector-set! v+w i (+ x y)))
+           (result-column v+w))]
+        [else 
+         (unless (= (column-dimension v) (column-dimension w))
+           (error 'column+ 
+                  "expected two column vectors of the same length, got ~a and ~a" v w))
+         (matrix+ (result-column v) (result-column w))]))
+      
+      
 (: column-dot : (Column Number) (Column Number) -> Number)
 (define (column-dot c d)
   (define v (unsafe-column->vector c))
@@ -927,3 +960,4 @@
   (cond [(and (index? m) (index? n))
          (flat-vector->matrix m n (list->vector xs))]
         [else (error 'matrix/dim "expected two indices as dimensions, got ~a and ~a" m n)]))
+

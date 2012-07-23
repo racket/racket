@@ -11,8 +11,6 @@
          "matrix-operations.rkt"
          "matrix-2d.rkt"
          "matrix-sequences.rkt")
-
-
 (begin  
   (begin
     "matrix-operations.rkt"
