@@ -132,9 +132,15 @@
 	      (lambda (p) (cast p _pointer _string/utf-16))))
 
 (define current-cleanup (make-parameter #f))
+(define current-commit (make-parameter #f))
 
 (define (register-cleanup! proc)
   (let ([c (current-cleanup)])
+    (when c
+      (set-box! c (cons proc (unbox c))))))
+
+(define (register-commit! proc)
+  (let ([c (current-commit)])
     (when c
       (set-box! c (cons proc (unbox c))))))
 
@@ -285,12 +291,14 @@
                 refiid))
      (and p (cast p _pointer _type)))))
 
+(define AddRef/no-release
+  (lambda (obj)
+    (check-com-type 'AddRef 'IUknown IUnknown? obj)
+    ((IUnknown_vt-AddRef (cast (IUnknown-vt obj) _pointer _IUnknown_vt-pointer))
+     obj)))
+
 (define AddRef
-  ((retainer Release)
-   (lambda (obj)
-     (check-com-type 'AddRef 'IUknown IUnknown? obj)
-     ((IUnknown_vt-AddRef (cast (IUnknown-vt obj) _pointer _IUnknown_vt-pointer))
-      obj))))
+  ((retainer Release) AddRef/no-release))
 
 ;; --------------------------------------------------
 ;; IDispatch
@@ -1591,9 +1599,12 @@
   (make-ctype 
    _IUnknown-pointer
    (lambda (v)
-     (if (com-object? v)
-         (com-object-get-iunknown v)
-         v))
+     (define p
+       (if (com-object? v)
+           (com-object-get-iunknown v)
+           v))
+     (register-commit! (lambda () (AddRef/no-release p)))
+     p)
    (lambda (p) 
      (((allocator Release) (lambda () p)))
      (define obj (make-com-object p #f))
@@ -1691,7 +1702,9 @@
   (define cleanup (box (if vars
                            (list (lambda () (free vars)))
                            null)))
-  (parameterize ([current-cleanup cleanup])
+  (define commit (box null))
+  (parameterize ([current-cleanup cleanup]
+                 [current-commit commit])
     (for ([i (in-range count)]
           [a (in-sequences (in-list args)
                            (in-cycle (list com-omit)))]
@@ -1708,7 +1721,8 @@
                            (if (= inv-kind INVOKE_PROPERTYPUT)
                                count
                                0))
-          (unbox cleanup)))
+          (unbox cleanup)
+          (unbox commit)))
 
 (define (variant-to-scheme var)
   (define _t (to-ctype (vt-to-scheme-type (VARIANT-vt var))))
@@ -1761,7 +1775,7 @@
           (mx-com-type-desc-memid type-desc)
           (find-memid who obj name))
       => (lambda (memid)
-           (define-values (num-params-passed method-arguments cleanups)
+           (define-values (num-params-passed method-arguments cleanups commits)
              (build-method-arguments type-desc
                                      (cadr t)
                                      inv-kind
@@ -1780,6 +1794,7 @@
              (if (= inv-kind INVOKE_PROPERTYPUT)
                  #f
                  (make-a-VARIANT 'atomic)))
+           (for ([proc (in-list commits)]) (proc))
 	   (define-values (hr exn-info error-index)
              (Invoke (com-object-get-dispatch obj)
                      memid IID_NULL LOCALE_SYSTEM_DEFAULT
