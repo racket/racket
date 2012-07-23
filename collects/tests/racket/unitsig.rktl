@@ -714,6 +714,27 @@
 	(list (signature->symbols s^))
 	(list (list))))
 
+;; ----------------------------------------
+;; In a submodule
+
+(module unit-in-a-submodule racket/base
+  (require racket/unit)
+
+  (define-signature foo^ (f))
+  
+  (module+ main
+    (define-unit foo@
+      (import)
+      (export foo^)
+      
+      (define f (lambda (x) x)))
+    (define-values/invoke-unit/infer foo@)
+
+    (define out (f 50))
+    (provide out)))
+
+(test 50 dynamic-require '(submod 'unit-in-a-submodule main) 'out)
+
 ;; --------------------------------------------------
 
 (report-errs)
