@@ -101,8 +101,10 @@ sequencing for the ``then'' clause and no ``else'' clause:
 @specform[(when test-expr then-expr ...)]
 
 If @racket[_test-expr] produces a true value, then all of the
-@racket[_then-expr]s are evaluated. Otherwise, no @racket[_then-expr]s
-are evaluated. The result is @|void-const| in any case.
+@racket[_then-expr]s are evaluated. The result of the last
+@racket[_then-expr] is the result of the @racket[when] form.
+Otherwise, no @racket[_then-expr]s are evaluated and the
+result is @|void-const|.
 
 The @racket[unless] form is similar:
 
