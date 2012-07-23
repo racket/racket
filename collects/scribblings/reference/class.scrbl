@@ -1260,7 +1260,7 @@ initialization variables can be mutated with @racket[set!].
 
 @subsection[#:tag "methodcalls"]{Methods}
 
-Method names within a class can only be used in the procedure position
+Method names used within a class can only be used in the procedure position
 of an application expression; any other use is a syntax error.
 
 To allow methods to be applied to lists of arguments, a method
@@ -1313,7 +1313,7 @@ Calls the method on @racket[obj] whose name matches
 @racket[kw-arg]s.}
 
 
-@defform/subs[(send* obj-expr msg ...)
+@defform/subs[(send* obj-expr msg ...+)
               ([msg (method-id arg ...)
                     (method-id arg ... . arg-list-expr)])]{
 
