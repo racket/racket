@@ -9,11 +9,26 @@
          "matrix-multiply.rkt"
          "matrix-expt.rkt"
          "matrix-operations.rkt"
-         "matrix-2d.rkt"
-         "matrix-sequences.rkt")
+         "matrix-2d.rkt")
 (begin  
   (begin
     "matrix-operations.rkt"
+    (list 'in-column
+          (equal? (for/list: : (Listof Number) ([x : Number (in-column (matrix/dim 2 2  1 2 3 4) 0)]) x)
+                  '(1 3))
+          (equal? (for/list: : (Listof Number) ([x : Number (in-column (matrix/dim 2 2  1 2 3 4) 1)]) x)
+                  '(2 4)))
+    (list 'in-row
+          (equal? (for/list: : (Listof Number) ([x : Number (in-row (matrix/dim 2 2  1 2 3 4) 0)]) x)
+                  '(1 2))
+          (equal? (for/list: : (Listof Number) ([x : Number (in-row (matrix/dim 2 2  1 2 3 4) 1)]) x)
+                  '(3 4)))
+    (list 'for/matrix:
+          (equal? (for/matrix: : Number 3 3 ([i (in-range 10 100)]) i)
+                  (matrix/dim 3 3 10 11 12 13 14 15 16 17 18)))
+    (list 'for*/matrix:
+          (equal? (for*/matrix: : Number 3 3 ([i (in-range 3)] [j (in-range 3)]) (+ (* i 10) j))
+                  (matrix/dim 3 3 0 1 2 10 11 12 20 21 22)))    
     (list 'matrix-block-diagonal
           (equal? (matrix-block-diagonal (list (matrix/dim 2 2 1 2 3 4) (matrix/dim 1 3 5 6 7)))
                   (list->matrix '[[1 2 0 0 0] [3 4 0 0 0] [0 0 5 6 7]])))

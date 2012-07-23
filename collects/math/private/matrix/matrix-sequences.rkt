@@ -5,9 +5,9 @@
          in-column)
 
 (require math/array
-         math/matrix
-         (for-syntax math/matrix)
-         (for-template math/matrix))
+         (except-in math/matrix in-row in-column)
+         (for-syntax (except-in math/matrix in-row in-column))
+         (for-template (except-in math/matrix in-row in-column)))
 
 ;;; COMPREHENSIONS
 
@@ -38,24 +38,6 @@
 ;    The next m values becomes the second column and so on.
 ;    The bindings in clauses run nested.
 (define-syntax (for*/matrix stx)
-  (syntax-case stx ()
-    [(_ m-expr n-expr #:column (clause ...) . defs+exprs)
-     (syntax/loc stx
-       (let* ([m m-expr] 
-              [n n-expr]
-              [v (make-vector (* m n) 0)]
-              [w (for*/vector #:length (* m n) (clause ...) . defs+exprs)])
-         (for* ([i (in-range m)] [j (in-range n)])
-           (vector-set! v (+ (* i n) j)
-                        (vector-ref w (+ (* j m) i))))
-         (flat-vector->matrix m n v)))]
-    [(_ m-expr n-expr (clause ...) . defs+exprs)
-     (syntax/loc stx
-       (let ([m m-expr] [n n-expr])
-         (flat-vector->matrix 
-          m n (for*/vector #:length (* m n) (clause ...) . defs+exprs))))]))
-
-(define-syntax (for*/matrix: stx)
   (syntax-case stx ()
     [(_ m-expr n-expr #:column (clause ...) . defs+exprs)
      (syntax/loc stx
@@ -254,7 +236,7 @@
                    'in-column "expected (in-column <matrix> <column>)" #'clause #'clause)])))
 
 (module* test #f
-  (require math/matrix
+  (require (except-in math/matrix in-row in-column)
            rackunit)
   ; "matrix-sequences.rkt"
   ; These work in racket not in typed racket
