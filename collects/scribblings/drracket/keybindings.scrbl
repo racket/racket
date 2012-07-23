@@ -254,7 +254,7 @@ s-exp framework/keybinding-lang
    (λ (ed evt)
      (when (is-a? ed text:basic<%>)
        (define fr (send ed get-top-level-window))
-       ;; note: fr could be #f
+       @code:comment{note: fr could be #f}
        (when fr (send fr command))))))
 
 (frame-key "t" execute-callback)
