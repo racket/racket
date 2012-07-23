@@ -6,7 +6,7 @@
 
 (bf-precision 53)
 
-(define regular-test-num 100000)
+(define regular-test-num 10000)
 
 (define special-tests (list +nan.0 -inf.0 -max.0 -0.0 0.0 +max.0 +inf.0))
 
@@ -29,7 +29,7 @@
       (flush-output (current-output-port)))
     ;(printf "x = ~v~n" x)
     (define y0 (flfun x))
-    (define y1 (bigfloat->float (bffun (float->bigfloat x))))
+    (define y1 (bigfloat->flonum (bffun (flonum->bigfloat x))))
     (define err (flulp-error y0 y1))
     (when (err . > . 2.0)
       (printf "~n(~a ~v)~n(flulp-error ~v ~v) = ~v~n" name x y0 y1 err)))
@@ -51,7 +51,7 @@
       (printf "*")
       (flush-output (current-output-port)))
     (define z0 (flfun x y))
-    (define z1 (bigfloat->float (bffun (float->bigfloat x) (float->bigfloat y))))
+    (define z1 (bigfloat->flonum (bffun (flonum->bigfloat x) (flonum->bigfloat y))))
     (define err (flulp-error z0 z1))
     (when (err . > . 1.0)
       (printf "~n(~a ~v ~v)~n(flulp-error ~v ~v) = ~v~n" name x y z0 z1 err))

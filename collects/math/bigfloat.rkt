@@ -20,7 +20,7 @@
  [opaque Bigfloat bigfloat?]
  ;; Accessors
  [bigfloat-precision    (Bigfloat -> Integer)]
- [bigfloat-sign         (Bigfloat -> (U -1 0 1))]
+ [bigfloat-sign         (Bigfloat -> (U 0 1))]
  [bigfloat-exponent     (Bigfloat -> Integer)]
  [bigfloat-sig+exp      (Bigfloat -> (Values Integer Integer))]
  [bigfloat-significand  (Bigfloat -> Integer)]
@@ -36,7 +36,8 @@
  [bigfloat->string  (Bigfloat -> String)]
  [string->bigfloat  (String -> (U #f Bigfloat))]
  ;; Main constructor
- [bf  ((U String Real) -> Bigfloat)]
+ [bf  (case-> ((U String Real) -> Bigfloat)
+              (Integer Integer -> Bigfloat))]
  ;; Functions with non-uniform types
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
