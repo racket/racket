@@ -16,6 +16,12 @@
 (begin  
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-augment
+          (equal? (matrix-augment (column 1 2 3) (column 4 5 6) (column 7 8 9))
+                  (matrix/dim 3 3  1 4 7  2 5 8  3 6 9)))
+    (list 'matrix-stack
+          (equal? (matrix-stack (column 1 2 3) (column 4 5 6) (column 7 8 9))
+                  (column 1 2 3 4 5 6 7 8 9)))
     (list 'column-dimension
           (= (column-dimension #(1 2 3)) 3)
           (= (column-dimension (flat-vector->matrix 1 2 #(1 2))) 1))

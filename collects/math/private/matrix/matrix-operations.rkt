@@ -7,13 +7,20 @@
          "matrix-pointwise.rkt"
          (for-syntax racket))
 
+; TODO:
+; 1. compute null space from QR factorization
+;    (better numerical stability than from Gauss elimnation)
+; 2. S+N decomposition
+
 (provide 
  ; basic
  matrix-ref
  matrix-scale
  matrix-row-vector?
  matrix-column-vector?
- matrix/dim ; construct
+ matrix/dim     ; construct
+ matrix-augment ; horizontally
+ matrix-stack   ; vertically
  ; norms
  matrix-norm
  ; operators
@@ -522,35 +529,13 @@
   (let-values ([(M wp) (matrix-gauss-jordan-eliminate M unitize-pivot-row?)])
     M))
 
-(: matrix-augment : (Matrix Number) (Matrix Number) -> (Result-Matrix Number))
-(define (matrix-augment a b)
-  (define-values (m1 n1) (matrix-dimensions a))
-  (define-values (m2 n2) (matrix-dimensions b))
-  (define: la : (lazy-array Number) (array-lazy a))
-  (define: lb : (lazy-array Number) (array-lazy b))  
-  (unless (= m1 m2)
-    (error 'matrix-augment 
-           "expected two matrices with the same number of rows, got ~a and ~a"
-           a b))
-  (define g1 (unsafe-array-proc la))
-  (define g2 (unsafe-array-proc lb))
-  (define n1+n2 (+ n1 n2))
-  ((inst unsafe-lazy-array Number)
-   (vector m1 (if (index? n1+n2)
-                  n1+n2
-                  (error 'matrix-augment "n1+n2 must be an index")))
-   (λ: ([js : (Vectorof Index)])
-     (define j (vector-ref js 1))
-     (if (< j n1)
-         (g1 js)
-         (let ()
-           (define j-n1 (- j n1))               
-           (if (index? j-n1)
-               ((inst vector-set! Index) js 1 j-n1)
-               (error 'matrix-augment "internal error"))
-           (begin0
-             (g2 js)
-             (vector-set! js 1 j)))))))
+(: matrix-augment : (Matrix Number) (Matrix Number) * -> (Result-Matrix Number))
+(define (matrix-augment a . as)
+  (apply array-append a 1 as))
+
+(: matrix-stack : (Matrix Number) (Matrix Number) * -> (Result-Matrix Number))
+(define (matrix-stack a . as)
+  (apply array-append a 0 as))
 
 
 (: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
