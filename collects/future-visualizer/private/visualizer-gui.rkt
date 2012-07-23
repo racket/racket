@@ -106,14 +106,12 @@
                           [parent (send f get-area-container)]))
   
   (define left-panel (new panel:horizontal-dragable% [parent main-panel] 
-                          [stretchable-width #t] 
-                          [min-width 0]))
+                          [stretchable-width #t]))
   (define hlist-ctl (new hierarchical-list% 
                          [parent left-panel] 
                          [stretchable-width #t] 
                          [stretchable-height #t] 
-                         [style '(control-border)] 
-                         [min-width 0]))
+                         [style '(control-border)]))
   
   ;Build up items in the hierlist 
   (define block-node (send hlist-ctl new-list)) 
@@ -193,22 +191,30 @@
                                  [pict-builder (λ (vregion) 
                                                  (draw-creategraph-pict vregion 
                                                                          creation-tree-layout))]
-                                 #;[hover-handler #f (λ (x y vregion) 
+                                 [hover-handler (λ (x y vregion) 
+                                                  (define hovered (find-node-for-coords x y 
+                                                                                        (graph-layout-nodes creation-tree-layout))) 
+                                                  (cond 
+                                                    [(eq? hovered hovered-graph-node) #f] 
+                                                    [else 
                                                      (set! hovered-graph-node 
                                                            (find-node-for-coords x 
                                                                                  y 
-                                                                                 (graph-layout-nodes creation-tree-layout))))]
-                                 [click-handler (λ (x y vregion)
+                                                                                 (graph-layout-nodes creation-tree-layout))) 
+                                                     hovered-graph-node]))]
+                                 #;[click-handler (λ (x y vregion)
                                                   (define fid (find-fid-for-coords 
                                                                x y (graph-layout-nodes creation-tree-layout)
                                                                vregion))
-                                                  (when fid
-                                                    (define seg (first-seg-for-fid fid segments))
-                                                    (set! tacked-seg seg) 
-                                                    (send timeline-panel set-redraw-overlay! #t)
-                                                    (send timeline-panel refresh)
-                                                    (post-event listener-table 'segment-click timeline-panel seg)))]
-                                 #;[overlay-builder (λ (vregion scale-factor) 
+                                                  (cond 
+                                                    [(not fid) #f] 
+                                                    [else
+                                                     (define seg (first-seg-for-fid fid segments))
+                                                     (set! tacked-seg seg) 
+                                                     (send timeline-panel redraw-everything)
+                                                     (post-event listener-table 'segment-click timeline-panel seg) 
+                                                     #t]))]
+                                 [overlay-builder (λ (vregion scale-factor) 
                                                     (graph-overlay-pict hovered-graph-node 
                                                                         the-trace 
                                                                         creation-tree-layout 

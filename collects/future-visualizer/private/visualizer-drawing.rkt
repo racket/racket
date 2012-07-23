@@ -777,11 +777,16 @@
 
 ;;graph-overlay-pict : drawable-node trace graph-layout -> pict
 (define (graph-overlay-pict hover-node tr layout vregion scale-factor) 
-  (when hover-node 
-    (unless (equal? (node-data (drawable-node-node hover-node)) 'runtime-thread)
-      (define fid (event-user-data (node-data (drawable-node-node hover-node))))
-      (define ri (hash-ref (trace-future-rtcalls tr) fid (λ () #f)))
-      (when ri
+  (define (root-sym-or-first-evt n) (node-data (drawable-node-node n)))
+  (cond  
+    [(or (not hover-node) (equal? (root-sym-or-first-evt hover-node) 'runtime-thread)) 
+      #f]
+    [else
+     (define fid (event-user-data (root-sym-or-first-evt hover-node)))
+     (define ri (hash-ref (trace-future-rtcalls tr) fid #f))
+     (cond 
+       [(not ri) #f] 
+       [else 
         (define block-ops (sort (hash-keys (rtcall-info-block-hash ri)) 
                                 > 
                                 #:key (λ (p) 
@@ -831,5 +836,5 @@
                                  TOOLTIP-MARGIN 
                                  txtp)) 
              (+ yacc (pict-height txtbg) CREATE-GRAPH-PADDING))))
-        pct))))
+        pct])]))
   

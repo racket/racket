@@ -42,7 +42,11 @@
       (when (or (not cached-base-bitmap) (not only-the-overlay?))  
         (set! cached-base-bitmap (pict->bitmap (scale (bp vregion) scale-factor))))
       (when ob 
-        (set! cached-overlay-bitmap (pict->bitmap (ob vregion scale-factor)))))
+        (define overlay-pict (ob vregion scale-factor)) 
+        (set! cached-overlay-bitmap 
+              (if overlay-pict 
+                  (pict->bitmap overlay-pict) 
+                  #f))))
     
     ;Rebuilds the pict and stashes in a bitmap 
     ;to be drawn to the canvas later
