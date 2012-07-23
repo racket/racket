@@ -316,6 +316,137 @@
 (error-test #'(cond [(values 1 2) 8]) arity?)
 (error-test #'(case (values 1 2) [(a) 8]) arity?)
 
+;; test larger `case' dispatches to trigger for binary-search
+;; and hash-table-based dispatch:
+(let ()
+  (define (f x)
+    (case x
+      [(1003) 'even-further]
+      [(0 -1 -2) 'low]
+      [(1) 'one]
+      [(2 3 4 5 6) 'middle]
+      [(100) 'super]
+      [(7 8 9 10 11) 'upper]
+      [(1001) 'youch]
+      [(12) 'high]
+      [(1002) 'further]
+      [(13) 'extreme]
+      [(14) 'more]))
+  (test 'low f -2)
+  (test 'low f -1)
+  (test 'low f 0)
+  (test 'one f 1)
+  (test 'middle f 2)
+  (test 'middle f 3)
+  (test 'middle f 4)
+  (test 'middle f 5)
+  (test 'middle f 6)
+  (test 'upper f 7)
+  (test 'upper f 8)
+  (test 'upper f 9)
+  (test 'upper f 10)
+  (test 'upper f 11)
+  (test 'high f 12)
+  (test 'extreme f 13)
+  (test 'more f 14)
+  (test 'super f 100)
+  (test 'youch f 1001)
+  (test 'further f 1002)
+  (test 'even-further f 1003)
+  (test (void) f 1004)
+  (test (void) f 104)
+  (test (void) f -104))
+
+(let ()
+  (define (f x)
+    (case x
+      [(#\u1003) 'even-further]
+      [(#\u0) 'low]
+      [(#\u1) 'one]
+      [(#\u2 #\u3 #\u4 #\u5 #\u6) 'middle]
+      [(#\u100) 'super]
+      [(#\u7 #\u8 #\u9 #\u10 #\u11) 'upper]
+      [(#\u1001) 'youch]
+      [(#\u12) 'high]
+      [(#\u1002) 'further]
+      [(#\u13) 'extreme]
+      [(#\u14) 'more]))
+  (test 'low f #\u0)
+  (test 'one f #\u1)
+  (test 'middle f #\u2)
+  (test 'middle f #\u3)
+  (test 'middle f #\u4)
+  (test 'middle f #\u5)
+  (test 'middle f #\u6)
+  (test 'upper f #\u7)
+  (test 'upper f #\u8)
+  (test 'upper f #\u9)
+  (test 'upper f #\u10)
+  (test 'upper f #\u11)
+  (test 'high f #\u12)
+  (test 'extreme f #\u13)
+  (test 'more f #\u14)
+  (test 'super f #\u100)
+  (test 'youch f #\u1001)
+  (test 'further f #\u1002)
+  (test 'even-further f #\u1003)
+  (test (void) f #\u1004)
+  (test (void) f #\u104))
+
+(let ()
+  (define (f x)
+    (case x
+      [(low) 0]
+      [(one) 1]
+      [(middle) 2]
+      [(upper #t) 3]
+      [(high big up-there more) 4]
+      [(extreme massive huge #f gigantic) 5]))
+  (test 0 f 'low)
+  (test 1 f 'one)
+  (test 2 f 'middle)
+  (test 3 f 'upper)
+  (test 3 f #t)
+  (test 4 f 'high)
+  (test 4 f 'big)
+  (test 4 f 'up-there)
+  (test 4 f 'more)
+  (test 5 f 'extreme)
+  (test 5 f 'massive)
+  (test 5 f 'huge)
+  (test 5 f #f)
+  (test 5 f 'gigantic)
+  (test (void) f 'gigante)
+  (test (void) f 0))
+
+(let ()
+  ;; This test relies on interning of string literals.
+  (define (f x)
+    (case x
+      [("low") 0]
+      [("one") 1]
+      [("middle") 2]
+      [("upper" #t) 3]
+      [("high" "big" "up-there" "more") 4]
+      [("extreme" "massive" "huge" "gigantic" #f) 5]))
+  (test 0 f "low")
+  (test 1 f "one")
+  (test 2 f "middle")
+  (test 3 f "upper")
+  (test 3 f #t)
+  (test 4 f "high")
+  (test 4 f "big")
+  (test 4 f "up-there")
+  (test 4 f "more")
+  (test 5 f "extreme")
+  (test 5 f "massive")
+  (test 5 f "huge")
+  (test 5 f #f)
+  (test 5 f "gigantic")
+  (test (void) f "gigante")
+  (test (void) f 'gigante)
+  (test (void) f 0))
+
 (test #t 'and (and (= 2 2) (> 2 1)))
 (test #f 'and (and (= 2 2) (< 2 1)))
 (test '(f g) 'and (and 1 2 'c '(f g)))
