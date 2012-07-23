@@ -69,8 +69,8 @@
   (define-syntax (case/sequential-test stx)
     (syntax-case stx ()
       [(_ v ())         #'#f]
-      [(_ v (k))        #`(#,(eqv-stx-for #'k) v 'k)]
-      [(_ v (k ks ...)) #`(if (#,(eqv-stx-for #'k) v 'k)
+      [(_ v (k))        #`(eqv? v 'k)]
+      [(_ v (k ks ...)) #`(if (eqv? v 'k)
                               #t
                               (case/sequential-test v (ks ...)))]))
   
@@ -87,11 +87,7 @@
                          [exp #'0]
                          [exp (if (null? (consts-other ks))
                                   exp
-                                  #`(case/sequential 
-                                     v 
-                                     #,@(map (λ (x) #`[(#,(car x)) #,(cdr x)])
-                                             (consts-other ks))
-                                     [else #,exp]))]
+                                  (dispatch-other #'v (consts-other ks) exp))]
                          [exp (if (null? (consts-char ks))
                                   exp
                                   #`(if (char? v)
@@ -99,8 +95,8 @@
                                         #,exp))]
                          [exp (if (null? (consts-symbol ks))
                                   exp
-                                  #`(if (or (symbol? v) (keyword? v))
-                                        #,(dispatch-symbol #'v (consts-symbol ks))
+                                  #`(if #,(test-for-symbol #'v (consts-symbol ks))
+                                        #,(dispatch-symbol #'v (consts-symbol ks) #'0)
                                         #,exp))]
                          [exp (if (null? (consts-fixnum ks))
                                   exp
@@ -120,14 +116,6 @@
     (define interval-lo    car)
     (define interval-hi    cadr)
     (define interval-index caddr)
-    
-    (define (eqv-stx-for k-stx)
-      (define k (syntax-e k-stx))
-      (if (or (char? k)
-              (and (number? k)
-                   (not (fixnum? k))))
-          #'eqv?
-          #'eq?))
     
     (define (partition-constants stx)
       (define h (make-hasheqv))
@@ -170,18 +158,40 @@
                                           (cdr x)))
                                   char-alist))))
     
-    ;; Symbol dispatch is either sequential or hash-table-based, depending
-    ;; on how many constants we have.
-    (define (dispatch-symbol tmp-stx symbol-alist)
-      (if (< (length symbol-alist) *hash-threshold*)
+    ;; Symbol and "other" dispatch is either sequential or
+    ;; hash-table-based, depending on how many constants we
+    ;; have. Assume that `alist' does not map anything to `#f'.
+    (define (dispatch-hashable tmp-stx alist make-hashX else-exp)
+      (if (< (length alist) *hash-threshold*)
           #`(case/sequential #,tmp-stx 
                              #,@(map (λ (x)
                                        #`[(#,(car x)) #,(cdr x)])
-                                     symbol-alist)
-                             [else 0])
-          #`(let ([tbl #,(syntax-local-lift-expression
-                          #`(make-hasheq '#,(map (λ (x) #`(#,(car x) . #,(cdr x))) symbol-alist)))])
-              (hash-ref tbl #,tmp-stx 0))))
+                                     alist)
+                             [else #,else-exp])
+          #`(let ([tbl #,(make-hashX alist)])
+              #,(if (literal-expression? else-exp)
+                    #`(hash-ref tbl #,tmp-stx #,else-exp)
+                    #`(or (hash-ref tbl #,tmp-stx #f)
+                          #,else-exp)))))
+
+    (define (dispatch-symbol tmp-stx symbol-alist else-exp)
+      (dispatch-hashable tmp-stx symbol-alist make-hasheq else-exp))
+
+    (define (dispatch-other tmp-stx other-alist else-exp)
+      (dispatch-hashable tmp-stx other-alist make-hasheqv else-exp))
+
+    (define (test-for-symbol tmp-stx alist)
+      (define (contains? pred)
+        (ormap (lambda (p) (pred (car p))) alist))
+      (if (contains? symbol?)
+          (if (contains? keyword?)
+              #`(or (symbol? #,tmp-stx) (keyword? #,tmp-stx))
+              #`(symbol? #,tmp-stx))
+          #`(keyword? #,tmp-stx)))
+
+    (define (literal-expression? else-exp)
+      (define v (syntax-e else-exp))
+      (or (boolean? v) (number? v)))
     
     ;; Fixnum dispatch is either table lookup or binary search.
     (define (dispatch-fixnum tmp-stx fixnum-alist)
@@ -206,8 +216,7 @@
                                (interval-index int))))
                intervals))
         
-        #`(let ([tbl #,(syntax-local-lift-expression
-                        #`(vector #,@(apply append index-lists)))])
+        #`(let ([tbl #,(list->vector (apply append index-lists))])
             #,(bounded-expr tmp-stx lo hi lo-bound hi-bound
                             #`(unsafe-vector*-ref tbl (unsafe-fx- #,tmp-stx #,lo)))))
       
