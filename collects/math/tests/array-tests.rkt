@@ -531,3 +531,8 @@
 
 (check-exn exn? (λ () (array-append (indexes-array '()) 0 (indexes-array '()))))
 (check-exn exn? (λ () (array-append (indexes-array '(4)) 0 (indexes-array '(4 5)))))
+
+(check-equal? (array->list (array-append (indexes-array '(4)) 0
+                                         (indexes-array '(3))
+                                         (indexes-array '(2))))
+              '[(0) (1) (2) (3) (0) (1) (2) (0) (1)])
