@@ -5,7 +5,7 @@
 
 A @racket[timer%] object encapsulates an event-based alarm. To use a
  timer, either instantiate it with a @racket[timer-callback] thunk to
- perform the alarm-based action, to derive a new class and override
+ perform the alarm-based action, or derive a new class and override
  the @method[timer% notify] method to perform the alarm-based
  action. Start a timer with @method[timer% start] and stop it with
  @method[timer% stop]. Supplying an initial @racket[interval] (in
