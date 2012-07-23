@@ -83,7 +83,7 @@
     "This expression has a Real type. The optimizer could optimize it if it had type Float."
     (if (null? irritants)
         ""
-        "To fix, change the highlighted expression(s) to have Float type(s)."))
+        " To fix, change the highlighted expression(s) to have Float type(s)."))
    stx irritants))
 
 (define float-opt-msg "Float arithmetic specialization.")
