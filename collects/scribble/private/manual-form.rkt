@@ -139,7 +139,7 @@
         (*defforms k.kind #f
                    '(spec) (list (lambda (ignored) (racketblock0/form spec)))
                    null null
-                   (list (list (lambda () (racket c.contract-id))
+                   (list (list (lambda () (racket c.contract-nonterm))
                                (lambda () (racketblock0 c.contract-expr)))
                          ...)
                    (lambda () (list desc ...)))))]))
