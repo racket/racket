@@ -7,6 +7,8 @@
                      2htdp/image))
 @(require scribble/struct)
 
+@(define note-scene @margin-note*{See @secref{scene} for @racket[scene?].})
+
 @(define (table* . stuff)
   ;; (list paragraph paragraph) *-> Table
    (define (flow* x) (make-flow (list x)))
@@ -56,27 +58,40 @@ The purpose of this documentation is to give experienced Schemers and HtDP
  @link["http://world.cs.brown.edu/"]{How to Design Worlds}.
 
 @; -----------------------------------------------------------------------------
-@section{Background}
+@section[#:tag "scene"]{Background}
  
-The universe teachpack assumes working knowledge of the basic image manipulation primitives, 
-either @racketmodname[htdp/image] or @racketmodname[2htdp/image]. Its operations
-sometimes require scenes which for @racket[htdp/image] images means an image whose
-pinhole is at (0,0). For @racketmodname[2htdp/image], every image is a scene.
+The universe teachpack assumes working knowledge of the basic image
+manipulation operations, either @racketmodname[htdp/image] or
+@racketmodname[2htdp/image]. As far as this extended reference is
+concerned, the major difference between the two image teachpacks is
+the assumption that  
+@nested[#:style 'inset]{
+  @racketmodname[htdp/image] programs render their state as @emph{scenes}, 
+  i.e., images that satisfy the @racket[scene?] predicate.
+}
+Recall that @racketmodname[htdp/image] defines a scene to be an image whose
+pinhole is at @math{(0,0)}. If your program uses the operations of 
+@racketmodname[2htdp/image], all images are also scenes. 
 
-The example programs in this document are all written using @racketmodname[2htdp/image]
-primitives.
+While the operations of this teachpack work with both image teachpacks, we
+hope to eliminate @racketmodname[htdp/image] in the not-too-distant future.
+All example programs are already written using @racketmodname[2htdp/image]
+operations. We urge programmers to use @racketmodname[2htdp/image] when
+they design new ``world'' and ``universe'' programs and to rewrite their
+existing @racketmodname[htdp/image] programs to use
+@racketmodname[2htdp/image]. 
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "simulations"]{Simple Simulations}
 
 The simplest kind of animated @tech{world} program is a time-based
- simulation, which is a series of scenes.  The programmer's task is to
- supply a function that creates a scene for each natural number. Handing
+ simulation, which is a series of images.  The programmer's task is to
+ supply a function that creates an image for each natural number. Handing
  this function to the teachpack displays the simulation.
 
 @defproc[(animate [create-image (-> natural-number/c scene?)])
          natural-number/c]{
-
+@note-scene
  opens a canvas and starts a clock that ticks 28 times per second.  Every
  time the clock ticks, DrRacket applies @racket[create-image] to the
  number of ticks passed since this function call. The results of these
@@ -102,7 +117,7 @@ Example:
 
 @defproc[(run-simulation [create-image (-> natural-number/c scene?)])
          true]{
-
+@note-scene
  @racket[animate] was originally called @racket[run-simulation], and this
  binding is retained for backwards compatibility}
 
@@ -147,7 +162,7 @@ The following picture provides an intuitive overview of the workings of a
  The handlers @racket[tock], @racket[react], and @racket[click] transform
  one world into another one; each time an event is handled, @racket[done] is
  used to check whether the world is final, in which case the program is
- shut down; and finally, @racket[draw] renders each world as a scene, which
+ shut down; and finally, @racket[draw] renders each world as an image, which
  is then displayed on an external canvas. 
 
 @deftech{WorldState} : @racket[any/c]
@@ -190,7 +205,7 @@ The design of a world program demands that you come up with a data
  designated in the optional @racket[spec] clauses, especially how the
  @tech{world} program deals with clock ticks, with key events, with mouse
  events, and eventually with messages from the universe; how it renders
- itself as a scene; when the program must shut down; where to register the
+ itself as an image; when the program must shut down; where to register the
  world with a universe; and whether to record the stream of events. A world
  specification may not contain more than one @racket[on-tick],
  @racket[to-draw], or @racket[register] clause. A @racket[big-bang]
@@ -208,11 +223,11 @@ The only mandatory clause of a @racket[big-bang] description is
 @defform[(to-draw render-expr)
          #:contracts
          ([render-expr (-> (unsyntax @tech{WorldState}) scene?)])]{ 
-
+@note-scene
  tells DrRacket to call the function @racket[render-expr] whenever the
  canvas must be drawn. The external canvas is usually re-drawn after DrRacket has
  dealt with an event. Its size is determined by the size of the first
- generated @tech{scene}.}
+ generated image.}
 
 @defform/none[#:literals (to-draw)
               (to-draw render-expr width-expr height-expr)
@@ -220,9 +235,9 @@ The only mandatory clause of a @racket[big-bang] description is
               ([render-expr (-> (unsyntax @tech{WorldState}) scene?)]
 	       [width-expr natural-number/c]
                [height-expr natural-number/c])]{ 
-
+@note-scene
  tells DrRacket to use a @racket[width-expr] by @racket[height-expr]
- canvas instead of one determine by the first generated @tech{scene}.
+ canvas instead of one determine by the first generated image.
 }
 
 For compatibility reasons, the teachpack also supports the keyword
@@ -405,7 +420,7 @@ Second, some keys have multiple-character string representations. Strings
 
 @item{A @tech{PadEvent} is a @tech{KeyEvent} for a game-pad simulation via
 @racket[big-bang]. The presence of an @racket[on-pad] clause superimposes
-the game-pad image onto the current scene, suitably scaled to its size: 
+the game-pad image onto the current image, suitably scaled to its size: 
 
 @image["gamepad.png"]
 
@@ -644,9 +659,10 @@ All @tech{MouseEvent}s are represented via strings:
          #:contracts
          ([last-world? (-> (unsyntax @tech{WorldState}) boolean?)]
  	  [last-picture (-> (unsyntax @tech{WorldState}) scene?)])]{
+@note-scene
  tells DrRacket to call the @racket[last-world?] function whenever the canvas is
  drawn. If this call produces @racket[true], the world program is shut
- down after displaying the world one last time, this time using the scene
+ down after displaying the world one last time, this time using the image
  rendered with @racket[last-picture]. Specifically, the  clock is stopped; no more
  tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
  the respective handlers. The @racket[big-bang] expression returns this
@@ -681,7 +697,7 @@ and @racket[big-bang] will close down all event handling.}
          ([r-expr any/c])]{
  tells DrRacket to enable a visual replay of the interaction, 
  unless @racket[#f].
- The replay action generates one png image per scene and
+ The replay action generates one png image per image and
  an animated gif for the entire sequence in the directory of the user's
  choice.  If @racket[r-expr] evaluates to the name of an existing
  directory/folder (in the local directory/folder), the directory is used to
@@ -1758,8 +1774,8 @@ The communication protocol and the refined data definition of @tech{WorldState}
 ;; or stay @racket['resting]
 (define (move w) ...) 
 
-;; WorldState -> Scene
-;; render the world as a scene
+;; WorldState -> Image
+;; render the world as an image
 (define (render w) ...)
 ))
 
@@ -1786,9 +1802,9 @@ Since there are two kinds of states, we make up at least two kinds of
  to @emph{receive}: 
 
 @itemize[
-@item{@racket[HEIGHT] when the ball is at the bottom of the scene;}
-@item{@racket[(- HEIGHT 1)] when the ball is properly inside the scene; and}
-@item{@racket[0] when the ball has hit the top of the scene.}
+@item{@racket[HEIGHT] when the ball is at the bottom of the image;}
+@item{@racket[(- HEIGHT 1)] when the ball is properly inside the image; and}
+@item{@racket[0] when the ball has hit the top of the image.}
 ]
 
  In the third case the function could produce three distinct results:
@@ -1802,7 +1818,7 @@ We choose to design @emph{receive} so that it ignores the message and
  moves in a continuous fashion and that the @tech{world} remains active.
 
 Exercise: One alternative design is to move the ball back to the bottom of
-the scene every time @racket['it-is-your-turn] is received. Design this function, too. 
+the image every time @racket['it-is-your-turn] is received. Design this function, too. 
 
 @(begin
 #reader scribble/comment-reader
@@ -1858,13 +1874,13 @@ Exercise: what could happen if we had designed @emph{receive} so that it
  state change to the tick event handler instead of the message receipt
  handler?
 
-Finally, here is the third function, which renders the state as a scene: 
+Finally, here is the third function, which renders the state as an image: 
 
 @(begin
 #reader scribble/comment-reader
 (racketblock
-; WorldState -> Scene
-; render the state of the world as a scene 
+; WorldState -> Image
+; render the state of the world as an image 
 
 (check-expect (render HEIGHT) (underlay/xy MT 50 HEIGHT BALL))
 (check-expect (render 'resting)
@@ -1880,14 +1896,14 @@ Finally, here is the third function, which renders the state as a scene:
 
 ))
 
- Here is an improvement that adds a name to the scene and abstracts over
+ Here is an improvement that adds a name to the image and abstracts over
  the name at the same time:
 
 @(begin
 #reader scribble/comment-reader
 (racketblock
-; String -> (WorldState -> Scene)
-; render the state of the world as a scene 
+; String -> (WorldState -> Image)
+; render the state of the world as an image 
 
 (check-expect 
  ((draw "Carl") 100) 
