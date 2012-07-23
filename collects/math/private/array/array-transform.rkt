@@ -15,7 +15,8 @@
          array-axis-insert
          array-axis-remove
          array-reshape
-         array-flatten)
+         array-flatten
+         array-append)
 
 ;; ===================================================================================================
 ;; Arbitrary transforms
@@ -243,3 +244,72 @@
                  (g old-js))))]
         [else
          (unsafe-strict-array ds (unsafe-array-data arr))]))
+
+;; ===================================================================================================
+;; Append
+
+(: check-compatible-array-shapes! (Symbol (Listof (Vectorof Index)) Index -> Void))
+(define (check-compatible-array-shapes! name dss k)
+  (define (raise-error)
+    (error name "expected Arrays with the same shape except axis ~e; given shapes ~e" k dss))
+  (cond
+    [(or (null? dss) (null? (cdr dss)))  (void)]
+    [else
+     (let ([ds0  (car dss)]
+           [ds1  (cadr dss)]
+           [dss  (cddr dss)])
+       (unless (apply = (vector-length ds0) (vector-length ds1)
+                      (map vector-length dss))
+         (raise-error))
+       (define dims (vector-length ds0))
+       (let loop ([#{i : Nonnegative-Fixnum} 0])
+         (cond [(i . >= . dims)  (void)]
+               [(or (= i k) (apply = (unsafe-vector-ref ds0 i) (unsafe-vector-ref ds1 i)
+                                   (map (λ: ([ds : (Vectorof Index)])
+                                          (unsafe-vector-ref ds i))
+                                        dss)))
+              (loop (+ i 1))]
+             [else  (raise-error)])))]))
+
+(: array-append (All (A) ((Array A) Integer (Array A) * -> (lazy-array A))))
+(define (array-append arr k . arrs)
+  (define dims (vector-length (unsafe-array-shape arr)))
+  (cond
+    [(or (k . < . 0) (k . >= . dims))
+     (apply raise-type-error 'array-append (format "Index < ~a" dims) 0 k arr arrs)]
+    [else
+     (let ([arrs  (map (λ: ([arr : (Array A)]) (array-lazy arr)) (cons arr arrs))])
+       (define dss (map (λ: ([arr : (lazy-array A)]) (unsafe-array-shape arr)) arrs))
+       (check-compatible-array-shapes! 'array-append dss k)
+       (define dks (map (λ: ([ds : (Vectorof Index)]) (unsafe-vector-ref ds k)) dss))
+       (define new-dk (apply + dks))
+       (cond
+         [(index? new-dk)
+          (define new-ds (vector-copy-all (car dss)))
+          (unsafe-vector-set! new-ds k new-dk)
+          ;; Make two mappings:
+          ;; 1. old-procs : new array index -> old array procedure
+          ;; 2. old-jks :   new array index -> old array index
+          (define old-procs (make-vector new-dk (unsafe-array-proc (car arrs))))
+          (define: old-jks : (Vectorof Index) (make-vector new-dk 0))
+          (let arrs-loop ([arrs arrs] [dks  dks] [#{jk : Nonnegative-Fixnum} 0])
+            (unless (null? arrs)
+              (define arr (car arrs))
+              (define proc (unsafe-array-proc arr))
+              (define dk (car dks))
+              (let i-loop ([#{i : Nonnegative-Fixnum} 0]
+                           [#{jk : Nonnegative-Fixnum} jk])
+                (cond [(i . < . dk)  (unsafe-vector-set! old-procs jk proc)
+                                     (unsafe-vector-set! old-jks jk i)
+                                     (i-loop (+ i 1) (unsafe-fx+ jk 1))]
+                      [else  (arrs-loop (cdr arrs) (cdr dks) jk)]))))
+          
+          (unsafe-lazy-array
+           new-ds (λ: ([js : (Vectorof Index)])
+                    (define jk (unsafe-vector-ref js k))
+                    (unsafe-vector-set! js k (unsafe-vector-ref old-jks jk))
+                    (define v ((unsafe-vector-ref old-procs jk) js))
+                    (unsafe-vector-set! js k jk)
+                    v))]
+         [else
+          (error 'array-append "result is too large to be an array")]))]))
