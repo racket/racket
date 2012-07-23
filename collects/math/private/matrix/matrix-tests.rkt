@@ -14,6 +14,9 @@
 (begin  
   (begin
     "matrix-operations.rkt"
+    (list 'matrix-block-diagonal
+          (equal? (matrix-block-diagonal (list (matrix/dim 2 2 1 2 3 4) (matrix/dim 1 3 5 6 7)))
+                  (list->matrix '[[1 2 0 0 0] [3 4 0 0 0] [0 0 5 6 7]])))
     (list 'matrix-augment
           (equal? (matrix-augment (column 1 2 3) (column 4 5 6) (column 7 8 9))
                   (matrix/dim 3 3  1 4 7  2 5 8  3 6 9)))

@@ -11,6 +11,9 @@
 ; 1. compute null space from QR factorization
 ;    (better numerical stability than from Gauss elimnation)
 ; 2. S+N decomposition
+; 3. Linear least squares problems (data fitting)
+; 4. Pseudo inverse
+; 5. Eigenvalues and eigenvectors
 
 (provide 
  ; basic
@@ -21,6 +24,7 @@
  matrix/dim     ; construct
  matrix-augment ; horizontally
  matrix-stack   ; vertically
+ matrix-block-diagonal
  ; norms
  matrix-norm
  ; operators
@@ -61,7 +65,7 @@
  column-projection
  column-normalize 
  scale-column
- scale+
+ column+
  ; projection
  projection-on-orthogonal-basis
  projection-on-orthonormal-basis
@@ -418,34 +422,34 @@
   column-space)
 
 #;(: matrix-column+null-space : 
-   (Matrix Number) -> (Values (Listof (Result-Matrix Number)) (Listof (Result-Matrix Number))))
+     (Matrix Number) -> (Values (Listof (Result-Matrix Number)) (Listof (Result-Matrix Number))))
 ; Returns
 ;  1) a list of column vectors spanning the column space
 ;  2) a list of column vectors spanning the null space
 ; TODO: Column space works, but wrong space is 
 ;       not done yet.
 #;(define (matrix-column+null-space M)  
-  ; TODO:
-  ;    Null space from row reduction numerically unstable.
-  ;    USE QR or SVD instead.
-  ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
-  (define-values (m n) (matrix-dimensions M))
-  (: M1 (Matrix Number))
-  (: cols-without-pivot (Listof Integer))
-  (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
-  (set! M1 (array-strict M1))  
-  (define: column-space : (Listof (Result-Matrix Number))
-    (for/list:
-        ([i : Index n]
-         #:when (not (member i cols-without-pivot)))
-      (matrix-column M1 i)))
-  (define: null-space : (Listof (Result-Matrix Number))
-    (for/list: 
-        ([i : Integer (in-list cols-without-pivot)])
-      (cond
-        [(not (index? i)) (error 'column+null-space "Internal error")]
-        [else (matrix-column M1 i)])))
-  (values column-space null-space))
+    ; TODO:
+    ;    Null space from row reduction numerically unstable.
+    ;    USE QR or SVD instead.
+    ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
+    (define-values (m n) (matrix-dimensions M))
+    (: M1 (Matrix Number))
+    (: cols-without-pivot (Listof Integer))
+    (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
+    (set! M1 (array-strict M1))  
+    (define: column-space : (Listof (Result-Matrix Number))
+      (for/list:
+          ([i : Index n]
+           #:when (not (member i cols-without-pivot)))
+        (matrix-column M1 i)))
+    (define: null-space : (Listof (Result-Matrix Number))
+      (for/list: 
+          ([i : Integer (in-list cols-without-pivot)])
+        (cond
+          [(not (index? i)) (error 'column+null-space "Internal error")]
+          [else (matrix-column M1 i)])))
+    (values column-space null-space))
 
 
 (: matrix-row-echelon-form : 
@@ -535,9 +539,12 @@
 (define (matrix-augment a . as)
   (apply array-append a 1 as))
 
-(: matrix-stack : (Matrix Number) (Matrix Number) * -> (Result-Matrix Number))
-(define (matrix-stack a . as)
-  (apply array-append a 0 as))
+(: matrix-stack : (Matrix Number) * -> (Result-Matrix Number))
+(define (matrix-stack . as)
+  (if (null? as)
+      (error 'matrix-stack 
+             "expected non-empty list of matrices")
+      (apply array-append (car as) 0 (cdr as))))
 
 
 (: matrix-inverse : (Matrix Number) -> (Result-Matrix Number))
@@ -719,8 +726,8 @@
            (error 'column+ 
                   "expected two column vectors of the same length, got ~a and ~a" v w))
          (matrix+ (result-column v) (result-column w))]))
-      
-      
+
+
 (: column-dot : (Column Number) (Column Number) -> Number)
 (define (column-dot c d)
   (define v (unsafe-column->vector c))
@@ -881,7 +888,7 @@
         (if (index? n-1)
             (cons (car xs) (take (cdr xs) n-1))
             (error 'take "can not take more elements than the length of the list")))))
-        
+
 ; (list 'take (equal? (take (list 0 1 2 3 4) 2) '(0 1)))
 
 (: matrix->columns : (Matrix Number) -> (Listof (Matrix Number)))
@@ -960,4 +967,33 @@
   (cond [(and (index? m) (index? n))
          (flat-vector->matrix m n (list->vector xs))]
         [else (error 'matrix/dim "expected two indices as dimensions, got ~a and ~a" m n)]))
+
+(: matrix-block-diagonal : (Listof (Matrix Number)) -> (Result-Matrix Number))
+(define (matrix-block-diagonal as)
+  (define sum-m 0)
+  (define sum-n 0)
+  (define: ms : (Listof Index) '())
+  (define: ns : (Listof Index) '())
+  (for: ([a (in-list as)])
+    (define-values (m n) (matrix-dimensions a))
+    (set! sum-m (+ sum-m m))
+    (set! sum-n (+ sum-n n))
+    (set! ms (cons m ms))
+    (set! ns (cons n ns)))
+  (set! ms (reverse ms))
+  (set! ns (reverse ns))
+  (: loop : (Listof (Matrix Number)) (Listof Index) (Listof Index) 
+     (Listof (Result-Matrix Number)) Integer -> (Result-Matrix Number))
+  (define (loop as ms ns rows left)
+    (cond [(null? as) (apply matrix-stack (reverse rows))]
+          [else
+           (define m (car ms))
+           (define n (car ns))
+           (define a (car as))
+           (define row
+             (matrix-augment 
+              ((inst make-matrix Number) m left 0) a (make-matrix m (- sum-n n left) 0)))
+           (loop (cdr as) (cdr ms) (cdr ns) (cons row rows) (+ left n))]))
+  (loop as ms ns '() 0))
+
 
