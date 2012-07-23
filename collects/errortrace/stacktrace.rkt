@@ -127,16 +127,23 @@
                     [profile-key (datum->syntax
                                   #f profile-key (quote-syntax here))]
                     [register-profile-start register-profile-start]
-                    [register-profile-done register-profile-done])
+                    [register-profile-done register-profile-done]
+                    [app (syntax-shift-phase-level #'#%plain-app (- phase base-phase))]
+                    [lt (syntax-shift-phase-level #'let (- phase base-phase))]
+                    [qt (syntax-shift-phase-level #'quote (- phase base-phase))]
+                    [bgn (syntax-shift-phase-level #'begin (- phase base-phase))]
+                    [wcm (syntax-shift-phase-level #'with-continuation-mark (- phase base-phase))])
         (with-syntax ([rest
                        (insert-at-tail*
-                        (syntax (#%plain-app register-profile-done 'key start))
+                        (syntax (app (qt register-profile-done) (qt key) start))
                         bodies
                         phase)])
           (syntax
-           (let ([start (#%plain-app register-profile-start 'key)])
-             (with-continuation-mark 'profile-key 'key
-               (begin . rest))))))))
+           (lt ([start (app (qt register-profile-start) (qt key))])
+             (wcm 
+              (qt profile-key)
+              (qt key)
+              (bgn . rest))))))))
   
   (define (insert-at-tail* e exprs phase)
     (let ([new
@@ -153,21 +160,23 @@
   
   (define (insert-at-tail se sexpr phase)
     (with-syntax ([expr sexpr]
-                  [e se])
+                  [e se]
+                  [bgn (syntax-shift-phase-level #'begin (- phase base-phase))]
+                  [bgn0 (syntax-shift-phase-level #'begin0 (- phase base-phase))])
       (kernel-syntax-case/phase sexpr phase
         ;; negligible time to eval
         [id
          (identifier? sexpr)
-         (syntax (begin e expr))]
-        [(quote _) (syntax (begin e expr))]
-        [(quote-syntax _) (syntax (begin e expr))]
-        [(#%top . d) (syntax (begin e expr))]
-        [(#%variable-reference . d) (syntax (begin e expr))]
+         (syntax (bgn e expr))]
+        [(quote _) (syntax (bgn e expr))]
+        [(quote-syntax _) (syntax (bgn e expr))]
+        [(#%top . d) (syntax (bgn e expr))]
+        [(#%variable-reference . d) (syntax (bgn e expr))]
         
         ;; No tail effect, and we want to account for the time
-        [(#%plain-lambda . _) (syntax (begin0 expr e))]
-        [(case-lambda . _) (syntax (begin0 expr e))]
-        [(set! . _) (syntax (begin0 expr e))]
+        [(#%plain-lambda . _) (syntax (bgn0 expr e))]
+        [(case-lambda . _) (syntax (bgn0 expr e))]
+        [(set! . _) (syntax (bgn0 expr e))]
         
         [(let-values bindings . body)
          (insert-at-tail* se sexpr phase)]
@@ -182,7 +191,7 @@
          (insert-at-tail* se sexpr phase)]
         
         [(begin0 body ...)
-         (rearm sexpr (syntax (begin0 body ... e)))]
+         (rearm sexpr (syntax (bgn0 body ... e)))]
         
         [(if test then else)
          ;; WARNING: se inserted twice!
@@ -197,7 +206,7 @@
         [(#%plain-app . rest)
          (if (stx-null? (syntax rest))
              ;; null constant
-             (syntax (begin e expr))
+             (syntax (bgn e expr))
              ;; application; exploit guaranteed left-to-right evaluation
              (insert-at-tail* se sexpr phase))]
         
