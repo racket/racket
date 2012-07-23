@@ -179,39 +179,52 @@
 
       (inherit get-defs get-frame)
 
+      (define visible? #f)
+      (define/public (optimization-coach-visible?) visible?)
+
       (define panel #f)
-      (define/public (optimization-coach-visible?) panel)
 
       (define/public (show-optimization-coach-panel)
-        (set! panel
-              (new horizontal-panel%
-                   [parent (send (send this get-frame) get-area-container)]
-                   [stretchable-height #f]))
+        (set! visible? #t)
+        (define area-container (send (get-frame) get-area-container))
         (define definitions (get-defs))
-        (new button%
-             [label "Clear"]
-             [parent panel]
-             [callback (lambda _ (send definitions clear-highlights))])
         (define filters (send definitions get-filters))
-        (for ([(l f) (in-pairs check-boxes)])
-          (new check-box%
-               [label l]
-               [parent panel]
-               [callback
-                (lambda _
-                  (send definitions set-filters! (if (memq f filters)
-                                                     (remq f filters)
-                                                     (cons f filters)))
-                  ;; redraw
-                  (send definitions add-highlights #:use-cache? #t))]
-               [value (memq f filters)]))
-        panel) ; return panel, so that the other mixin can hide it
+        (cond [panel
+               (send area-container add-child panel)]
+              [else
+               (set! panel (new horizontal-panel%
+                                [parent area-container]
+                                [stretchable-height #f]))
+               (new button%
+                    [label "Clear"]
+                    [parent panel]
+                    [callback (lambda _ (send (get-defs) clear-highlights))])
+               (for ([(l f) (in-pairs check-boxes)])
+                 (new check-box%
+                      [label l]
+                      [parent panel]
+                      [callback
+                       (lambda _
+                         (define definitions (get-defs))
+                         (define filters (send definitions get-filters))
+                         (send definitions set-filters! (if (memq f filters)
+                                                            (remq f filters)
+                                                            (cons f filters)))
+                         ;; redraw
+                         (send definitions add-highlights #:use-cache? #t))]
+                      [value (memq f filters)]))])
+        ;; update check-boxes
+        (for ([c (in-list (for/list ([c (in-list (send panel get-children))]
+                                     #:when (is-a? c check-box%))
+                            c))]
+              [(l f) (in-pairs check-boxes)])
+          (send c set-value (memq f filters))))
 
       (define/public (hide-optimization-coach-panel [close #t])
-        (when panel
+        (when visible?
           (send (send (get-frame) get-area-container) delete-child panel)
-          (when close ; if we just switch tabs, keep panel around to restore it
-            (set! panel #f))))))
+          (when close
+            (set! visible? #f))))))
 
   (drracket:get/extend:extend-tab toolbar-mixin)
 
