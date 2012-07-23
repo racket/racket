@@ -1,5 +1,7 @@
 #lang typed/racket
 (provide Matrix Result-Matrix
+         Column Result-Column
+         Column-Matrix
          array-matrix?
          matrix=
          square-matrix? 
@@ -11,7 +13,16 @@
 (require math/array)
 
 (define-type (Matrix A) (Array A))
+; matrices are represented as arrays
 (define-type (Result-Matrix A) (lazy-array A))
+; all return values are lazy arrays
+(define-type (Column A)        (U (Vectorof A) (Matrix A)))
+; functions accepting column vectors accept
+; both mx1 matries and (Racket) vectors as column vectors
+(define-type (Result-Column A) (Result-Matrix A))
+; result columns are always lazy arrays
+(define-type (Column-Matrix A) (Matrix A))
+; a column vector represented as a matrix
 
 (: array-matrix? (All (A) ((Array A) -> Boolean)))
 (define (array-matrix? x)

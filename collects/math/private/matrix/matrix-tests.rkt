@@ -16,8 +16,74 @@
 (begin  
   (begin
     "matrix-operations.rkt"
+    (list 'column-dimension
+          (= (column-dimension #(1 2 3)) 3)
+          (= (column-dimension (flat-vector->matrix 1 2 #(1 2))) 1))
+    (let ([matrix: flat-vector->matrix])
+      (list 'column-dot
+            (= (column-dot (column 1 2)   (column 1 2)) 5)
+            (= (column-dot (column 1 2)   (column 3 4)) 11)
+            (= (column-dot (column 3 4)   (column 3 4)) 25)
+            (= (column-dot (column 1 2 3) (column 4 5 6))
+               (+ (* 1 4) (* 2 5) (* 3 6)))))
     (list 'matrix-trace
-          (equal? (matrix-trace (flat-vector->matrix 2 2 #(1 2 3 4))) 5))    
+          (equal? (matrix-trace (flat-vector->matrix 2 2 #(1 2 3 4))) 5))
+    (let ([matrix: flat-vector->matrix])
+      (list 'column-norm
+            (= (column-norm (column 2 4)) (sqrt 20))))
+    (list 'column-projection
+          (equal? (column-projection #(1 2 3) #(4 5 6)) (column 128/77 160/77 192/77))
+          (equal? (column-projection (column 1 2 3) (column 2 4 3))
+                  (matrix-scale 19/29 (column 2 4 3))))
+    (list 'projection-on-orthogonal-basis
+          (equal? (projection-on-orthogonal-basis #(3 -2 2) (list #(-1 0 2) #( 2 5 1)))
+                  (column -1/3 -1/3 1/3))
+          (equal? (projection-on-orthogonal-basis 
+                   (column 3 -2 2) (list #(-1 0 2) (column 2 5 1)))
+                  (column -1/3 -1/3 1/3)))
+    (list 'projection-on-orthonormal-basis
+          (equal? (projection-on-orthonormal-basis 
+                   #(1 2 3 4) 
+                   (list (matrix-scale 1/2 (column  1  1  1 1))
+                         (matrix-scale 1/2 (column -1  1 -1 1))
+                         (matrix-scale 1/2 (column  1 -1 -1 1))))
+                  (column 2 3 2 3)))
+    (list 'gram-schmidt-orthogonal
+          (equal? (gram-schmidt-orthogonal (list #(3 1) #(2 2)))
+                  (list (column 3 1) (column -2/5 6/5))))
+    (list 'vector-normalize
+          (equal? (column-normalize #(3 4)) 
+                  (column 3/5 4/5)))
+    (list 'gram-schmidt-orthonormal
+          (equal? (gram-schmidt-orthonormal (ann '(#(3 1) #(2 2)) (Listof (Column Number))))
+                  (list (column-normalize #(3 1))
+                        (column-normalize #(-2/5 6/5)))))
+    
+    (list 'projection-on-subspace
+          (equal? (projection-on-subspace #(1 2 3) '(#(2 4 3)))
+                  (matrix-scale 19/29 (column 2 4 3))))
+    (list 'unit-vector
+          (equal? (unit-column 4 1) (column 0 1 0 0)))
+    (list 'matrix-qr
+          (let-values ([(Q R) (matrix-qr (matrix/dim 3 2  1 1 0 1 1 1))])
+            (equal? (list Q R)
+                    (list (matrix/dim 3 2  0.7071067811865475 0 0 1 0.7071067811865475 0)
+                          (matrix/dim 2 2  1.414213562373095 1.414213562373095 0 1))))
+          (let ()
+            (define A (matrix/dim 4 4  1 2 3 4  1 2 4 5  1 2 5 6  1 2 6 7))
+            (define-values (Q R) (matrix-qr A))
+            (equal? (list Q R)
+                    (list
+                     (flat-vector->matrix 
+                      4 4 (ann #(1/2 -0.6708203932499369    0.5477225575051662  -0.0
+                                     1/2 -0.22360679774997896  -0.7302967433402214   0.4082482904638629
+                                     1/2  0.22360679774997896  -0.18257418583505536 -0.8164965809277259
+                                     1/2  0.6708203932499369    0.3651483716701107   0.408248290463863)
+                               (Vectorof Number)))
+                     (flat-vector->matrix 
+                      4 4  (ann #(2 4 9 11 0 0.0 2.23606797749979 2.23606797749979 
+                                    0 0 0.0 4.440892098500626e-16 0 0 0 0.0)
+                                (Vectorof Number)))))))
     (list 'matrix-solve
           (let* ([M (list->matrix '[[1 5] [2 3]])] 
                  [b (list->matrix '[[5] [5]])])
@@ -113,24 +179,24 @@
      (equal? (matrix-nullity (list->matrix '[[1 0] [0 3]])) 0)
      (equal? (matrix-nullity (list->matrix '[[1 2] [2 4]])) 1)
      (equal? (matrix-nullity (list->matrix '[[1 2] [3 4]])) 0))
-     #;(let ()
-       (define-values (c1 n1) 
-         (matrix-column+null-space (list->matrix '[[0 0] [0 0]])))
-       (define-values (c2 n2) 
-         (matrix-column+null-space (list->matrix '[[1 2] [2 4]])))
-       (define-values (c3 n3) 
-         (matrix-column+null-space (list->matrix '[[1 2] [2 5]])))
-       (list 
-        'matrix-column+null-space
-        (equal? c1 '())
-        (equal? n1 (list (list->matrix '[[0] [0]])
-                         (list->matrix '[[0] [0]])))
-        (equal? c2 (list (list->matrix '[[1] [2]])))
-        ;(equal? n2 '([0 0]))
-        (equal? c3 (list (list->matrix '[[1] [2]])
-                         (list->matrix '[[2] [5]])))
-        (equal? n3 '()))))
-                                  
+    #;(let ()
+        (define-values (c1 n1) 
+          (matrix-column+null-space (list->matrix '[[0 0] [0 0]])))
+        (define-values (c2 n2) 
+          (matrix-column+null-space (list->matrix '[[1 2] [2 4]])))
+        (define-values (c3 n3) 
+          (matrix-column+null-space (list->matrix '[[1 2] [2 5]])))
+        (list 
+         'matrix-column+null-space
+         (equal? c1 '())
+         (equal? n1 (list (list->matrix '[[0] [0]])
+                          (list->matrix '[[0] [0]])))
+         (equal? c2 (list (list->matrix '[[1] [2]])))
+         ;(equal? n2 '([0 0]))
+         (equal? c3 (list (list->matrix '[[1] [2]])
+                          (list->matrix '[[2] [5]])))
+         (equal? n3 '()))))
+  
   (begin "matrix-types.rkt"
          (list
           'array-matrix?
@@ -244,28 +310,28 @@
       (define 3*e2 (matrix-scale 3 e2))
       (define 4*e2 (matrix-scale 4 e2))
       (begin
-       (list 'matrix-2d-rotation
-             (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) +epsilon.0) 
-             (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) +epsilon.0))
-       (list
-        'matrix-2d-scaling
-        (equal? (matrix* (matrix-2d-scaling 2 3) (matrix+ e1 e2)) (matrix+ 2*e1 3*e2)))
-       (list
-        'matrix-2d-shear-x
-        (equal? (matrix* (matrix-2d-shear-x 3) (matrix+ e1 e2))   (matrix+ 4*e1   e2)))
-       (list
-        'matrix-2d-shear-y
-        (equal? (matrix* (matrix-2d-shear-y 3) (matrix+ e1 e2))   (matrix+   e1 4*e2)))
-       (list
-        'matrix-2d-reflection
-        (equal? (matrix* (matrix-2d-reflection 0 1) e1)           -e1)
-        (equal? (matrix* (matrix-2d-reflection 0 1) e2)            e2)
-        (equal? (matrix* (matrix-2d-reflection 1 0) e1)            e1)
-        (equal? (matrix* (matrix-2d-reflection 1 0) e2)           -e2))
-       (list
-        'matrix-2d-orthogonal-projection
-        (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e1) e1)
-        (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
-        (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
-        (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
+        (list 'matrix-2d-rotation
+              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e1) e2 )) +epsilon.0) 
+              (<= (matrix-norm (matrix- (matrix* (matrix-2d-rotation (/ pi.0 2)) e2) -e1)) +epsilon.0))
+        (list
+         'matrix-2d-scaling
+         (equal? (matrix* (matrix-2d-scaling 2 3) (matrix+ e1 e2)) (matrix+ 2*e1 3*e2)))
+        (list
+         'matrix-2d-shear-x
+         (equal? (matrix* (matrix-2d-shear-x 3) (matrix+ e1 e2))   (matrix+ 4*e1   e2)))
+        (list
+         'matrix-2d-shear-y
+         (equal? (matrix* (matrix-2d-shear-y 3) (matrix+ e1 e2))   (matrix+   e1 4*e2)))
+        (list
+         'matrix-2d-reflection
+         (equal? (matrix* (matrix-2d-reflection 0 1) e1)           -e1)
+         (equal? (matrix* (matrix-2d-reflection 0 1) e2)            e2)
+         (equal? (matrix* (matrix-2d-reflection 1 0) e1)            e1)
+         (equal? (matrix* (matrix-2d-reflection 1 0) e2)           -e2))
+        (list
+         'matrix-2d-orthogonal-projection
+         (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e1) e1)
+         (equal? (matrix* (matrix-2d-orthogonal-projection 1 0) e2) O)
+         (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e1) O)
+         (equal? (matrix* (matrix-2d-orthogonal-projection 0 1) e2) e2))))))
 

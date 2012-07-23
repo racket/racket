@@ -13,6 +13,7 @@
  matrix-scale
  matrix-row-vector?
  matrix-column-vector?
+ matrix/dim ; construct
  ; norms
  matrix-norm
  ; operators
@@ -31,8 +32,6 @@
  matrix-gauss-jordan-eliminate
  matrix-row-echelon-form
  matrix-reduced-row-echelon-form
- ; decomposition
- matrix-lu
  ; invariant
  matrix-rank
  matrix-nullity
@@ -43,6 +42,26 @@
  ; solvers
  matrix-solve
  matrix-solve-many
+ ; spaces
+ matrix-column-space
+ ; column vectors
+ column        ; construct
+ unit-column
+ result-column ; convert to lazy
+ column-dimension
+ column-dot
+ column-norm
+ column-projection
+ column-normalize 
+ ; projection
+ projection-on-orthogonal-basis
+ projection-on-orthonormal-basis
+ projection-on-subspace
+ gram-schmidt-orthogonal
+ gram-schmidt-orthonormal
+ ; factorization
+ matrix-lu
+ matrix-qr
  )
 
 ;;;
@@ -368,38 +387,56 @@
 (define (matrix-trace M)
   (define-values (m n) (matrix-dimensions M))
   (for/sum: : Number ([i (in-range 0 m)]) 
-      (matrix-ref M i i)))
+    (matrix-ref M i i)))
+
+(: matrix-column-space : (Matrix Number) -> (Listof (Result-Matrix Number)))
+; Returns
+;  1) a list of column vectors spanning the column space
+;  2) a list of column vectors spanning the null space
+; TODO: Column space works, but wrong space is 
+;       not done yet.
+(define (matrix-column-space M)  
+  (define-values (m n) (matrix-dimensions M))
+  (: M1 (Matrix Number))
+  (: cols-without-pivot (Listof Integer))
+  (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
+  (set! M1 (array-strict M1))  
+  (define: column-space : (Listof (Result-Matrix Number))
+    (for/list:
+        ([i : Index n]
+         #:when (not (member i cols-without-pivot)))
+      (matrix-column M1 i)))
+  column-space)
 
 #;(: matrix-column+null-space : 
-     (Matrix Number) -> (Values (Listof (Result-Matrix Number))
-                                (Listof (Result-Matrix Number))))
+   (Matrix Number) -> (Values (Listof (Result-Matrix Number)) (Listof (Result-Matrix Number))))
 ; Returns
 ;  1) a list of column vectors spanning the column space
 ;  2) a list of column vectors spanning the null space
 ; TODO: Column space works, but wrong space is 
 ;       not done yet.
 #;(define (matrix-column+null-space M)  
-    ; TODO:
-    ;    Null space from row reduction numerically unstable.
-    ;    USE QR or SVD instead.
-    ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
-    (define-values (m n) (matrix-dimensions M))
-    (: M1 (Matrix Number))
-    (: cols-without-pivot (Listof Integer))
-    (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
-    (set! M1 (array-strict M1))
-    (define: null-space : (Listof (Result-Matrix Number))
-      (for/list: 
-          ([i : Integer (in-list cols-without-pivot)])
-        (cond
-          [(not (index? i)) (error 'column+null-space "Internal error")]
-          [else (matrix-column M1 i)])))
-    (define: column-space : (Listof (Result-Matrix Number))
-      (for/list:
-          ([i : Index n]
-           #:when (not (member i cols-without-pivot)))
-        (matrix-column M1 i)))
-    (values column-space null-space))
+  ; TODO:
+  ;    Null space from row reduction numerically unstable.
+  ;    USE QR or SVD instead.
+  ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
+  (define-values (m n) (matrix-dimensions M))
+  (: M1 (Matrix Number))
+  (: cols-without-pivot (Listof Integer))
+  (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
+  (set! M1 (array-strict M1))  
+  (define: column-space : (Listof (Result-Matrix Number))
+    (for/list:
+        ([i : Index n]
+         #:when (not (member i cols-without-pivot)))
+      (matrix-column M1 i)))
+  (define: null-space : (Listof (Result-Matrix Number))
+    (for/list: 
+        ([i : Integer (in-list cols-without-pivot)])
+      (cond
+        [(not (index? i)) (error 'column+null-space "Internal error")]
+        [else (matrix-column M1 i)])))
+  (values column-space null-space))
 
 
 (: matrix-row-echelon-form : 
@@ -630,3 +667,278 @@
                   (vector-ref L-matrix (+ (* i m) j))))))
         (list (array-lazy L) 
               (array-lazy V)))))
+
+
+(: column-dimension : (Column Number) -> Index)
+(define (column-dimension v)
+  (if (vector? v)
+      (unsafe-vector-length v)
+      (matrix-row-dimension v)))
+
+
+(: unsafe-column->vector : (Column Number) -> (Vectorof Number))
+(define (unsafe-column->vector v)
+  (if (vector? v) v
+      (let ()
+        (define-values (m n) (matrix-dimensions v))
+        (if (= n 1)
+            (unsafe-array-data (array-strict v))
+            (error 'unsafe-column->vector
+                   "expected a column (vector or mx1 matrix), got ~a" v)))))
+
+(: vector->column : (Vectorof Number) -> (Result-Column Number))
+(define (vector->column v)
+  (define m (vector-length v))
+  (flat-vector->matrix m 1 v))
+
+(: column : Number * -> (Result-Column Number))
+(define (column . xs)
+  (vector->column 
+   (list->vector xs)))
+
+(: result-column : (Column Number) -> (Result-Column Number))
+(define (result-column c)
+  (if (vector? c)
+      (vector->column c)
+      (array-lazy c)))
+
+
+(: column-dot : (Column Number) (Column Number) -> Number)
+(define (column-dot c d)
+  (define v (unsafe-column->vector c))
+  (define w (unsafe-column->vector d))
+  (define m (column-dimension v))
+  (define s (column-dimension w))
+  (cond
+    [(not (= m s)) (error 'column-dot 
+                          "expected two mx1 matrices with same number of rows, got ~a and ~a"
+                          c d)]
+    [else
+     (for/sum: : Number ([i (in-range 0 m)])
+       (if (index? i)
+           (* (unsafe-vector-ref v i)
+              (unsafe-vector-ref w i))
+           0 ; never happens
+           ))]))
+
+
+
+(: column-norm : (Column Number) -> Real)
+(define (column-norm v)
+  (define norm (sqrt (column-dot v v)))
+  (assert norm real?))
+
+
+(: column-projection : (Column Number) (Column Number) -> (Result-Column Number))
+; (column-projection v w)
+;    Return the projection og vector v on vector w.
+(define (column-projection v w)
+  (let ([w.w (column-dot w w)])
+    (if (zero? w.w)
+        (error 'column-projection "projection on the zero vector not defined")
+        (matrix-scale (/ (column-dot v w) w.w) (result-column w)))))
+
+(: column-projection-on-unit : (Column Number) (Column Number) -> (Result-Column Number))
+; (column-projection-on-unit v w)
+;    Return the projection og vector v on a unit vector w.
+(define (column-projection-on-unit v w)
+  (matrix-scale (column-dot v w) (result-column w)))
+
+
+(: projection-on-orthogonal-basis : 
+   (Column Number) (Listof (Column Number)) -> (Result-Column Number))
+; (projection-on-orthogonal-basis v bs)
+;     Project the vector v on the orthogonal basis vectors in bs.
+;     The basis bs must be either the column vectors of a matrix
+;     or a sequence of column-vectors.
+(define (projection-on-orthogonal-basis v bs)
+  #;(for/matrix-sum ([b bs])
+      (matrix-scale (column-dot v b) b))
+  (define: sum : (U False (Result-Column Number)) #f)
+  (for ([b1 (in-list bs)])
+    (define: b : (Result-Column Number) (result-column b1))
+    (cond [(not sum) (set! sum (column-projection v b))]
+          [else      (set! sum (matrix+ (assert sum) (column-projection v b)))]))
+  (cond [sum (array-lazy (assert sum))]
+        [else (error 'projection-on-orthogonal-basis 
+                     "received empty list of basis vectors")]))
+
+
+; (projection-on-orthonormal-basis v bs)
+;     Project the vector v on the orthonormal basis vectors in bs.
+;     The basis bs must be either the column vectors of a matrix
+;     or a sequence of column-vectors.
+(: projection-on-orthonormal-basis : 
+   (Column Number) (Listof (Column Number)) -> (Result-Column Number))
+(define (projection-on-orthonormal-basis v bs)
+  #;(for/matrix-sum ([b bs]) (matrix-scale (column-dot v b) b))
+  (define: sum : (U False (Result-Column Number)) #f)
+  (for ([b1 (in-list bs)])
+    (define: b : (Result-Column Number) (result-column b1))
+    (cond [(not sum) (set! sum (column-projection-on-unit v b))]
+          [else      (set! sum (matrix+ (assert sum) (column-projection-on-unit v b)))]))
+  (cond [sum (array-lazy (assert sum))]
+        [else (error 'projection-on-orthogonal-basis 
+                     "received empty list of basis vectors")]))
+
+
+(: zero-column-vector? : (Matrix Number) -> Boolean)
+(define (zero-column-vector? v)
+  (define-values (m n) (matrix-dimensions v))
+  (for/and: ([i (in-range 0 m)])
+    (zero? (matrix-ref v i 0))))
+
+(: gram-schmidt-orthogonal : (Listof (Column Number)) -> (Listof (Result-Column Number)))
+; (gram-schmidt-orthogonal ws)
+;     Given a list ws of column vectors, produce 
+;     an orthogonal basis for the span of the
+;     vectors in ws.
+(define (gram-schmidt-orthogonal ws1)
+  (define ws (map result-column ws1))
+  (cond 
+    [(null? ws)       '()]
+    [(null? (cdr ws)) (list (array-lazy (car ws)))]
+    [else 
+     (: loop : (Listof (Result-Column Number)) (Listof (Column-Matrix Number)) -> (Listof (Result-Column Number)))
+     (define (loop vs ws)
+       (cond [(null? ws) vs]
+             [else
+              (define w (car ws))
+              (let ([w-proj (projection-on-orthogonal-basis w vs)])
+                ; Note: We project onto vs (not on the original ws)
+                ;       in order to get numerical stability.
+                (let ([w-minus-proj (matrix- w w-proj)])
+                  (if (zero-column-vector? w-minus-proj)
+                      (loop vs (cdr ws)) ; w in span{vs} => omit it
+                      (loop (cons (matrix- w w-proj) vs) (cdr ws)))))]))
+     (reverse (loop (list (array-lazy (car ws))) (cdr ws)))]))
+
+
+
+(: column-normalize : (Column Number) -> (Result-Column Number))
+; (column-vector-normalize v)
+;    Return unit vector with same direction as v.
+;    If v is the zero vector, the zero vector is returned.
+(define (column-normalize w)
+  (let ([norm (column-norm w)]
+        [w (result-column w)])
+    (cond [(zero? norm) w]
+          [else (matrix-scale (/ norm) w)])))
+
+(: gram-schmidt-orthonormal : (Listof (Column Number)) -> (Listof (Result-Column Number)))
+; (gram-schmidt-orthonormal ws)
+;     Given a list ws of column vectors, produce 
+;     an orthonormal basis for the span of the
+;     vectors in ws.
+(define (gram-schmidt-orthonormal ws)
+  (map column-normalize
+       (gram-schmidt-orthogonal ws)))
+
+(: projection-on-subspace :
+   (Column Number) (Listof (Column Number)) -> (Result-Column Number))
+; (projection-on-subspace v ws)
+;    Returns the projection of v on span{w_i}, w_i in ws.
+(define (projection-on-subspace v ws)
+  (projection-on-orthogonal-basis
+   v (gram-schmidt-orthogonal ws)))
+
+(: unit-column : Integer Integer -> (Result-Column Number))
+(define (unit-column m i)
+  (cond
+    [(and (index? m) (index? i))
+     (define v (make-vector m 0))
+     (if (< i m)
+         (vector-set! v i 1)
+         (error 'unit-vector "dimension must be largest"))
+     (flat-vector->matrix m 1 v)]
+    [else
+     (error 'unit-vector "expected two indices")]))
+
+
+(: take : (All (A) ((Listof A) Index -> (Listof A))))
+(define (take xs n)
+  (if (= n 0)
+      '()
+      (let ([n-1 (- n 1)])
+        (if (index? n-1)
+            (cons (car xs) (take (cdr xs) n-1))
+            (error 'take "can not take more elements than the length of the list")))))
+        
+; (list 'take (equal? (take (list 0 1 2 3 4) 2) '(0 1)))
+
+(: matrix->columns : (Matrix Number) -> (Listof (Matrix Number)))
+(define (matrix->columns M)
+  (define-values (m n) (matrix-dimensions M))  
+  (for/list: : (Listof (Matrix Number))
+    ([j (in-range 0 n)])    
+    (matrix-column M (assert j index?))))
+
+(: matrix-augment* : (Listof (Matrix Number)) -> (Matrix Number))
+(define (matrix-augment* Ms)
+  (define MM (car Ms))
+  (for: ([M (in-list (cdr Ms))])
+    (set! MM (matrix-augment MM M)))
+  MM)
+
+(: extend-span-to-basis :
+   (Listof (Matrix Number)) Integer -> (Listof (Matrix Number)))
+; Extend the basis in vs to with rdimensional basis
+(define (extend-span-to-basis vs r)
+  (define-values (m n) (matrix-dimensions (car vs)))
+  (: loop : (Listof (Matrix Number)) (Listof (Matrix Number)) Integer -> (Listof (Matrix Number)))
+  (define (loop vs ws i)
+    (if (>= i m)
+        ws
+        (let ()
+          (define ei (unit-column m i))
+          (define pi (projection-on-subspace ei vs))
+          (if (matrix= ei pi)
+              (loop vs ws (+ i 1))
+              (let ([w (matrix- ei pi)])
+                (loop (cons w vs) (cons w ws) (+ i 1)))))))
+  (: norm> : (Matrix Number) (Matrix Number) -> Boolean)
+  (define (norm> v w)
+    (> (column-norm v) (column-norm w)))
+  (if (index? r)
+      ((inst take (Matrix Number)) (sort (loop vs '() 0) norm>) r)
+      (error 'extend-span-to-basis "expected index as second argument, got ~a" r)))
+
+(: matrix-qr : (Matrix Number) -> (Values (Matrix Number) (Matrix Number)))
+(define (matrix-qr M)
+  ; compute the QR-facorization
+  ; 1) QR = M 
+  ; 2) columns of Q is are orthonormal
+  ; 3) R is upper-triangular
+  (define-values (m n) (matrix-dimensions M))
+  (let* ([basis-for-column-space
+          (gram-schmidt-orthonormal (matrix->columns M))]
+         [extension
+          (extend-span-to-basis 
+           basis-for-column-space (- n (length basis-for-column-space)))]
+         [Q (matrix-augment*
+             (append basis-for-column-space 
+                     (map column-normalize
+                          extension)))]
+         [R 
+          (let ()
+            (define v (make-vector (* n n) (ann 0 Number)))
+            (for*: ([i (in-range 0 n)]
+                    [j (in-range 0 n)])
+              (if (> i j) 
+                  (void) ; v(i,j)=0 already
+                  (let ()
+                    (define: sum : Number 0)
+                    (for: ([k (in-range m)])
+                      (set! sum (+ sum (* (matrix-ref Q k i)
+                                          (matrix-ref M k j)))))
+                    (vector-set! v (+ (* i n) j) sum))))
+            (flat-vector->matrix n n v))])
+    (values Q R)))
+
+(: matrix/dim : Integer Integer Number * -> (Result-Matrix Number))
+; construct a mxn matrix with elements from the values xs
+; the length of xs must be m*n
+(define (matrix/dim m n . xs)
+  (cond [(and (index? m) (index? n))
+         (flat-vector->matrix m n (list->vector xs))]
+        [else (error 'matrix/dim "expected two indices as dimensions, got ~a and ~a" m n)]))
