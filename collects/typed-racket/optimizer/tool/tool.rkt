@@ -63,7 +63,8 @@
     (mixin (text:basic<%> drracket:unit:definitions-text<%>) ()
       (inherit highlight-range unhighlight-range
                get-tab get-canvas get-pos/text
-               position-line line-end-position)
+               position-line line-end-position
+               begin-edit-sequence end-edit-sequence)
 
       (define highlights   '()) ; (listof `(,start ,end ,popup-fun))
       (define clear-thunks '()) ; list of thunks that clear highlights
@@ -124,9 +125,11 @@
           (apply max (cons 0 (map report-entry-badness report))))
         (unless (= max-badness 0) ; no missed opts, color table code would error
           (set! color-table (make-color-table max-badness)))
+        (begin-edit-sequence)
         (set! clear-thunks (for/fold ([res '()])
                                ([r (in-list report)])
                              (append (highlight-entry r) res)))
+        (end-edit-sequence)
         (set! on? #t))
 
       (define/public (clear-highlights)
