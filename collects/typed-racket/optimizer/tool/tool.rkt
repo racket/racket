@@ -100,11 +100,13 @@
       (define/public (highlighting-shown?) on?)
 
       (define report-cache #f)
-      (define/public (add-highlights #:use-cache? [use-cache? #f])
+      ;; TODO the 2 kws are mutually exclusive. merge them
+      (define/public (add-highlights #:use-cache?       [use-cache? #f]
+                                     #:definitions-copy [definitions-copy #f])
         (clear-highlights)
         (send (get-tab) show-optimization-coach-panel)
         (unless (and report-cache use-cache?)
-          (set! report-cache (generate-report this)))
+          (set! report-cache (generate-report definitions-copy)))
         (define report
           (collapse-report
            (for/list ([entry (in-list report-cache)]
@@ -258,7 +260,23 @@
 
       ;; entry point
       (define/public (optimization-coach-callback)
+        (define definitions  (get-definitions-text))
         (define interactions (get-interactions-text))
+        ;; copy contents of the definitions window before handing control back
+        ;; to the event loop
+        ;; this code is from Robby
+        (define definitions-copy
+          (new (class text:basic%
+                 ;; overriding get-port-name like this ensures
+                 ;; that the resulting syntax objects are connected
+                 ;; to the actual definitions-text, not this copy
+                 (define/override (get-port-name)
+                   (send definitions get-port-name))
+                 (super-new))))
+        (send definitions-copy set-style-list
+              (send definitions get-style-list)) ;; speeds up the copy
+        (send definitions copy-self-to definitions-copy)
+        ;; launch OC proper
         (send this update-running #t)
         (thread ; do the work in a separate thread, to avoid blocking the GUI
            (lambda ()
@@ -269,7 +287,8 @@
                      (send interactions reset-console)
                      (send interactions run-in-evaluation-thread
                            (lambda () (raise e))))])
-               (send (get-definitions-text) add-highlights))
+               (send (get-definitions-text) add-highlights
+                     #:definitions-copy definitions-copy))
              (send this update-running #f))))
 
       (super-new)))
