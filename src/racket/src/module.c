@@ -6196,7 +6196,10 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 	if (m->rn_stx && !SAME_OBJ(scheme_true, m->rn_stx)) {
 	  /* Delay the shift: */
 	  Scheme_Object *v;
-	  v = scheme_make_pair(m->rn_stx, (Scheme_Object *)midx);
+          v = m->rn_stx;
+          if (SCHEME_PAIRP(v))
+            v = scheme_list_to_vector(v);
+	  v = scheme_make_pair(v, (Scheme_Object *)midx);
 	  m->rn_stx = v;
 	}
       }
