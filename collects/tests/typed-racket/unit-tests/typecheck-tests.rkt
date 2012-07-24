@@ -208,7 +208,7 @@
         (tc-e (lcm (ann 3 Integer) -1/2) -NonNegRat)
         (tc-e (expt 0.5 0.3) -PosFlonum)
         (tc-e (expt 0.5 2) -PosFlonum)
-        (tc-e (expt 0.5 0) -PosReal)
+        (tc-e (expt 0.5 0) -PosFlonum)
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
