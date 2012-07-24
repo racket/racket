@@ -235,7 +235,7 @@ _raco_cmd_setup() {
   _racket_do_state
 }
 
-_racket_self_test 'raco scribble:3754386648'
+_racket_self_test 'raco scribble:4149265431'
 _raco_cmd_scribble() {
   _arguments "$RACKET_COMMON[@]" \
     '(--html --htmls --latex --pdf --latex-section --text)'--html'[Generate HTML-format output file (default)]' \
@@ -246,6 +246,7 @@ _raco_cmd_scribble() {
     '(--html --htmls --latex --pdf --latex-section --text)'--text'[Generate text-format output]' \
     '(--dest)'--dest'+[Write output in directory]:directory:_files -/' \
     '(--dest-name)'--dest-name'+[Write output as name]:name: ' \
+    '(--dest-base)'--dest-base'+[Start support-file names with prefix]:prefix: ' \
     '*'++style'+[Add given .css/.tex file after others]:style-file:_files -g \*.\(css\|tex\)' \
     '*'--style'+[Use given base .css/.tex file]:style-file:_files -g \*.\(css\|tex\)' \
     '*'--prefix'+[Use given .html/.tex prefix (for doctype/documentclass)]:prefix-file:_files -g \*.\(html\|htm\|tex\)' \
