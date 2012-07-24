@@ -67,6 +67,7 @@
 
   (define sixlib-canvas%
     (class mred:canvas% 
+      (super-new)
       (inherit get-parent
 	       min-client-width min-client-height
 	       stretchable-width stretchable-height)
