@@ -342,7 +342,7 @@
 
 (let ([no-nuls (lambda (thunk)
                  (err/rt-test (thunk) (lambda (exn)
-                                        (regexp-match? #rx"without nuls" (exn-message exn)))))])
+                                        (regexp-match? #rx"bytes-no-nuls[?]" (exn-message exn)))))])
   (no-nuls (lambda () (subprocess #f #f #f cat "\0")))
   (no-nuls (lambda () (subprocess #f #f #f cat #"\0")))
   (no-nuls (lambda () (process "\0")))

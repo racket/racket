@@ -32,5 +32,6 @@
 (load-in-sandbox "macrolib.rktl")
 (load-in-sandbox "resource.rktl")
 (load-in-sandbox "syntaxlibs.rktl")
+(load-in-sandbox "subprocess.rktl")
 
 (report-errs)
