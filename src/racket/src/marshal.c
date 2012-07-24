@@ -1173,11 +1173,6 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   return (Scheme_Object *)rp;
 }
 
-XFORM_NONGCING static Scheme_Object *wrap_mod_stx(Scheme_Object *stx)
-{
-  return (stx ? stx : scheme_false);
-}
-
 static Scheme_Object *write_module(Scheme_Object *obj)
 {
   Scheme_Module *m = (Scheme_Module *)obj;
@@ -1323,7 +1318,12 @@ static Scheme_Object *write_module(Scheme_Object *obj)
 
   l = cons(scheme_make_integer(m->max_let_depth), l);
 
-  l = cons(wrap_mod_stx(m->rn_stx), l);
+  v = m->rn_stx;
+  if (!v)
+    v = scheme_false;
+  else if (SCHEME_PAIRP(v))
+    v = scheme_list_to_vector(v);
+  l = cons(v, l);
 
   /* previously recorded "functional?" info: */
   l = cons(scheme_false, l);
