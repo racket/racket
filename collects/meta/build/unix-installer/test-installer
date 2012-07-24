@@ -173,7 +173,7 @@ exec racket "$0" "$@"
       drracket, gracket skipped (non-link exists), gracket-text, mred, @;
       mred-text, mzc, mzpp, mzscheme, mztext, pdf-slatex, planet, plt-games, @;
       plt-help, plt-r5rs, plt-r6rs, plt-web-server, racket, raco, scribble, @;
-      setup-plt, slatex, slideshow, swindle, tex2page
+      setup-plt, slatex, slideshow, swindle
       done.
     "@|testdir|/share/man/man1" does not exist, skipping.
     @||
@@ -186,7 +186,7 @@ exec racket "$0" "$@"
     @s|{drracket@, gracket, gracket-text@, mred@, mred-text@, mzc@, mzpp@,
         mzscheme@, mztext@, pdf-slatex@, planet@, plt-games@, plt-help@,
         plt-r5rs@, plt-r6rs@, plt-web-server@, racket@, raco@, scribble@,
-        setup-plt@, slatex@, slideshow@, swindle@, tex2page@}|
+        setup-plt@, slatex@, slideshow@, swindle@}|
     sh> @i{LS -l bin/ra*}
     lrwxrwxrwx. @... bin/racket -> @|testdir|/R/bin/racket*
     lrwxrwxrwx. @... bin/raco -> @|testdir|/R/bin/raco*
@@ -306,7 +306,7 @@ exec racket "$0" "$@"
     drracket*, gracket*, gracket-text*, mred*, mred-text*, mzc*, mzpp*,
     mzscheme*, mztext*, pdf-slatex*, planet*, plt-games*, plt-help*,
     plt-r5rs*, plt-r6rs*, plt-web-server*, racket*, racket-uninstall*,
-    raco*, scribble*, setup-plt*, slatex*, slideshow*, swindle*, tex2page*
+    raco*, scribble*, setup-plt*, slatex*, slideshow*, swindle*
     sh> @i{LS include && LS lib && LS share}
     racket@|N|/
     racket@|N|/
@@ -323,7 +323,7 @@ exec racket "$0" "$@"
     sh> @i{LS share/man && LS share/man/man1}
     man1/
     drracket.1, gracket.1, mred.1, mzc.1, mzscheme.1, plt-help.1, racket.1,
-    raco.1, setup-plt.1, tex2page.1
+    raco.1, setup-plt.1
     sh> @i{sh @installer}
     @...
     Enter yes/no (default: no) > @i{y}
