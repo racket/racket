@@ -535,7 +535,6 @@
  [bfeint 'mpfr_eint]
  [bfli2 'mpfr_li2]
  [bfgamma 'mpfr_gamma]
- [bflog-gamma 'mpfr_lngamma]
  [bfdigamma 'mpfr_digamma]
  [bfzeta 'mpfr_zeta]
  [bferf 'mpfr_erf]
@@ -598,6 +597,23 @@
  [bfsin+cos 'mpfr_sin_cos]
  [bfsinh+cosh 'mpfr_sinh_cosh]
  [bfmodf 'mpfr_modf])
+
+(define mpfr-lgamma
+  (get-mpfr-fun 'mpfr_lgamma (_fun _mpfr-pointer _pointer _mpfr-pointer _rnd_t -> _int)))
+
+(define (bflog-gamma/sign x)
+  (define y (new-mpfr (bf-precision)))
+  (define s (malloc _int 'atomic-interior))
+  (mpfr-lgamma y s x (bf-rounding-mode))
+  (values y (ptr-ref s _int)))
+
+(define (bflog-gamma x)
+  (define-values (y _) (bflog-gamma/sign x))
+  y)
+
+(provide bflog-gamma/sign bflog-gamma)
+(begin-for-syntax
+  (set! 1ary-funs (list* #'bflog-gamma 1ary-funs)))
 
 ;; ===================================================================================================
 ;; Unary predicates

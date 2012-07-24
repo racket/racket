@@ -41,7 +41,8 @@
  ;; Functions with non-uniform types
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
- [bfshift  (Bigfloat Integer -> Bigfloat)])
+ [bfshift  (Bigfloat Integer -> Bigfloat)]
+ [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))])
 
 (provide
  ;; Parameters
@@ -74,7 +75,8 @@
  ;; Functions with non-uniform types
  bfjn
  bfyn
- bfshift)
+ bfshift
+ bflog-gamma/sign)
 
 (define-syntax (req/prov-uniform-collection stx)
   (syntax-case stx ()

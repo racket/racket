@@ -6,9 +6,10 @@
 
 (bf-precision 53)
 
-(define regular-test-num 10000)
+(define regular-test-num 100000)
 
-(define special-tests (list +nan.0 -inf.0 -max.0 -0.0 0.0 +max.0 +inf.0))
+(define special-tests (list +nan.0 -inf.0 -max.0 -3.0 -2.0 -1.0 -min.0 -0.0
+                            0.0 +min.0 1.0 2.0 3.0 +max.0 +inf.0))
 
 (define min-ordinal (flonum->ordinal +min.0))
 (define max-ordinal (flonum->ordinal +max.0))
@@ -20,10 +21,10 @@
 (define 1d-negative-tests (map (λ: ([x : Float]) (fl* -1.0 x)) 1d-positive-tests))
 (define 1d-tests (append special-tests 1d-negative-tests 1d-positive-tests))
 
-(: test-1d-fun (Symbol (Float -> Float) (Bigfloat -> Bigfloat) -> Void))
-(define (test-1d-fun name flfun bffun)
+(: test-1d-fun (Symbol (Float -> Float) (Bigfloat -> Bigfloat) (Listof Float) -> Void))
+(define (test-1d-fun name flfun bffun extra-tests)
   (printf "Testing ~a: " name)
-  (for ([x  (in-list 1d-tests)] [j  (in-naturals)])
+  (for ([x  (in-list (append extra-tests 1d-tests))] [j  (in-naturals)])
     (when (zero? (modulo j 500))
       (printf "*")
       (flush-output (current-output-port)))
@@ -31,7 +32,7 @@
     (define y0 (flfun x))
     (define y1 (bigfloat->flonum (bffun (flonum->bigfloat x))))
     (define err (flulp-error y0 y1))
-    (when (err . > . 2.0)
+    (when (or (nan? err) (err . > . 3.0))
       (printf "~n(~a ~v)~n(flulp-error ~v ~v) = ~v~n" name x y0 y1 err)))
   (printf "~n~n"))
 
@@ -53,30 +54,36 @@
     (define z0 (flfun x y))
     (define z1 (bigfloat->flonum (bffun (flonum->bigfloat x) (flonum->bigfloat y))))
     (define err (flulp-error z0 z1))
-    (when (err . > . 1.0)
+    (when (or (nan? err) (err . > . 2.0))
       (printf "~n(~a ~v ~v)~n(flulp-error ~v ~v) = ~v~n" name x y z0 z1 err))
     (set! j (+ j 1)))
   (printf "~n~n"))
 
-(test-1d-fun 'fllog fllog bflog)
-(test-1d-fun 'flexp flexp bfexp)
-(test-1d-fun 'flsqrt flsqrt bfsqrt)
-(test-1d-fun 'flsin flsin bfsin)
-(test-1d-fun 'flcos flcos bfcos)
-(test-1d-fun 'fltan fltan bftan)
-(test-1d-fun 'flasin flasin bfasin)
-(test-1d-fun 'flacos flacos bfacos)
-(test-1d-fun 'flatan flatan bfatan)
+(test-1d-fun 'fllog fllog bflog '())
+(test-1d-fun 'flexp flexp bfexp '())
+(test-1d-fun 'flsqrt flsqrt bfsqrt '())
+(test-1d-fun 'flsin flsin bfsin '())
+(test-1d-fun 'flcos flcos bfcos '())
+(test-1d-fun 'fltan fltan bftan '())
+(test-1d-fun 'flasin flasin bfasin '())
+(test-1d-fun 'flacos flacos bfacos '())
+(test-1d-fun 'flatan flatan bfatan '())
 
 (test-2d-fun 'fl+ fl+ bf+)
 (test-2d-fun 'fl- fl- bf-)
 (test-2d-fun 'fl* fl* bf*)
 (test-2d-fun 'fl/ fl/ bf/)
+
 (test-2d-fun 'flexpt flexpt bfexpt)
 (test-2d-fun 'atan atan bfatan2)
 
-(test-1d-fun 'flgamma flgamma bfgamma)
-(test-1d-fun 'fllog-gamma fllog-gamma bflog-gamma)
+(define extra-gamma-tests
+  (append* (for/list: : (Listof (Listof Float)) ([x : Float  (in-range -2000.0 1.0 1.0)])
+             (for/list: : (Listof Float) ([n  (in-range -5 6)])
+               (flstep x n)))))
+
+(test-1d-fun 'flgamma flgamma bfgamma extra-gamma-tests)
+(test-1d-fun 'fllog-gamma fllog-gamma bflog-gamma extra-gamma-tests)
 
 #|
 (: flulp-error-near ((Float -> Float) (Bigfloat -> Bigfloat) Float -> Float))
@@ -85,7 +92,7 @@
     (for/list: : (Listof (Pair Float Float)) ([dx  (in-range -128 129)])
       (define y (flstep x dx))
       (define z0 (flfun y))
-      (define z1 (bigfloat->float (bffun (float->bigfloat y))))
+      (define z1 (bigfloat->flonum (bffun (flonum->bigfloat y))))
       (define w (flexp (- (/ (abs (real->double-flonum dx)) 10.0))))
       (cons (* w (flulp-error z0 z1)) w)))
   (/ (apply + (map (inst car Float Float) errs))
@@ -105,7 +112,7 @@
     (define err (flulp-error-near flfun bffun x))
     (printf "x = ~v  dx = ~v  err = ~v~n" x dx err)
     (cond [(and (rational? err) (err . >= . 2.0))
-           (loop (flstep x dx) x (dx-grow dx) (list* (cons x err) bad-xs))]
+           (loop (flstep x (- dx)) x (dx-grow dx) (list* (cons x err) bad-xs))]
           [(<= dx 6)
            (remove-duplicates (reverse bad-xs))]
           [else

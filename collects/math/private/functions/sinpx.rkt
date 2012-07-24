@@ -1,28 +1,30 @@
 #lang typed/racket/base
 
 (require "../../constants.rkt"
+         racket/flonum
          (only-in racket/math exact-floor))
 
-(provide sinpx)
+(provide log-pi-minus-log-sinpx sinpx)
 
-;; Computes x * sin(pi * x) in a way that keeps the argument to sin < 2*pi
-#;;(: sinpx (Float -> Float))
-(define (sinpx z)
-  (let ([z  (abs z)])  ; even function
-    (define x (- z (* 2.0 (floor (* 0.5 z)))))
-    (* z (sin (* x pi.0)))))
-
+;; Computes x * sin(pi * x) in a way that keeps the argument to sin < 1/2*pi
 (: sinpx (Float -> Float))
 (define (sinpx z)
-  (define sign 1.0)
-  (cond [(z . < . 0.0)  (set! z (- z))]
-        [else  (set! sign (- sign))])
-  (define fl (exact-floor z))
-  (define dist
-    (cond [(odd? fl)  (set! fl (+ fl 1))
-                      (set! sign (- sign))
-                      (- fl z)]
-          [else  (- z fl)]))
-  (when (dist . > . 0.5)
-    (set! dist (- 1.0 dist)))
-  (* sign z (sin (* dist pi.0))))
+  (let ([z  (flabs z)])
+    (define fl (exact-floor z))
+    (define-values (dist sign)
+      (cond [(odd? fl)  (values (+ 1.0 (- (->fl fl) z)) -1.0)]
+            [else       (values (- z (->fl fl)) 1.0)]))
+    (let ([dist  (if (dist . < . 0.5) dist (- 1.0 dist))])
+      (* sign z (sin (* dist pi.0))))))
+
+(: log-pi-minus-log-sinpx (Float -> Float))
+;; Computes log(pi) - log(abs(sinpx(x))) in a way that's accurate near zero
+(define (log-pi-minus-log-sinpx z)
+  (let ([z  (flabs z)])
+    (cond [(z . < . 1e-10)  (- (* 2.0 (fllog z)))]
+          [else  (define fl (exact-floor z))
+                 (define dist
+                   (cond [(odd? fl)  (+ 1.0 (- (->fl fl) z))]
+                         [else       (- z (->fl fl))]))
+                 (let ([dist  (if (dist . < . 0.5) dist (- 1.0 dist))])
+                   (- (log pi.0) (+ (fllog z) (fllog (sin (* dist pi.0))))))])))
