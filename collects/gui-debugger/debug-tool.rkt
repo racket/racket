@@ -184,30 +184,6 @@
                  get-tab)
         
         (define mouse-over-pos #f)
-        ;; pen and brush for drawing a breakpoint
-        (define bp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-        (define bp-brush (send the-brush-list find-or-create-brush "red" 'solid))
-        ;; pen and brush for marking a location that could have a breakpoint installed
-        (define bp-mo-pen (send the-pen-list find-or-create-pen "darkgray" 1 'solid))
-        (define bp-mo-brush (send the-brush-list find-or-create-brush "tomato"
-                                  'solid))
-        ;; pen and brush for marking a conditional breakpoint
-        (define bp-tmp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-        (define bp-tmp-brush (send the-brush-list find-or-create-brush "yellow"
-                                   'solid))
-        ;; pen and brush for drawing the normal execution location
-        (define pc-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-        (define pc-brush (send the-brush-list find-or-create-brush "forestgreen" 'solid))
-        ;; pen and brush for marking the expression when not at the top of the stack
-        (define pc-up-stack-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-        (define pc-up-stack-brush (send the-brush-list find-or-create-brush "lightgreen" 'solid))
-        ;; pen and brush for marking the location when there's an an error
-        (define pc-err-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-        (define pc-err-brush (send the-brush-list find-or-create-brush "red" 'solid))
-        ;; pen and brush for marking the location following a break
-        (define pc-brk-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-        (define pc-brk-brush (send the-brush-list find-or-create-brush "gray" 'solid))
-        
         (super-instantiate ())
         
         (define/augment (on-delete start len)
@@ -264,7 +240,7 @@
         ;; lookup id in the given set of stack frames;
         ;; if that fails, try the top-level environment
         ;; invokes sk on success, fk on failure
-        (define (lookup-var id frames sk fk)
+        (define/private (lookup-var id frames sk fk)
           (cond
             [(and id frames (lookup-first-binding
                              (lambda (id2) (free-identifier=? id id2))
@@ -339,7 +315,7 @@
         
         ;; mouse-event% integer -> ()
         ;; handles a right-click on a position that's not a breakable paren
-        (define (debugger-handle-right-click-non-breakable event pos)
+        (define/private (debugger-handle-right-click-non-breakable event pos)
           (let* ([frames (send (get-tab) get-stack-frames)]
                  [pos-vec (send (get-tab) get-pos-vec)]
                  [id (robust-vector-ref pos-vec pos)])
@@ -376,7 +352,7 @@
                      (lambda () #f))
               (super on-event event))))
         
-        (define (debugger-handle-right-click-breakable event breakpoints pos break-status)
+        (define/private (debugger-handle-right-click-breakable event breakpoints pos break-status)
           (let ([menu (make-object popup-menu% #f)])
             (make-object menu-item%
               (if break-status
@@ -441,7 +417,7 @@
                   (+ 1 (inexact->exact (floor (send event get-x))))
                   (+ 1 (inexact->exact (floor (send event get-y)))))))
         
-        (define (debugger-handle-right-click event breakpoints)
+        (define/private (debugger-handle-right-click event breakpoints)
           (let-values ([(pos text) (get-pos/text event)])
             (if (and pos text)
                 (let* ([pos (add1 pos)]
@@ -453,7 +429,7 @@
                      (debugger-handle-right-click-non-breakable event pos)]))
                 (super on-event event))))
         
-        (define (debugger-handle-event event)
+        (define/private (debugger-handle-event event)
           (let ([breakpoints (send (get-tab) get-breakpoints)])
             (cond
               [(send event leaving?)
@@ -583,6 +559,30 @@
             (when tlw
               (send tlw check-current-language-for-debugger)))
           (inner (void) after-set-next-settings s))))
+    
+    ;; pen and brush for drawing a breakpoint
+    (define bp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
+    (define bp-brush (send the-brush-list find-or-create-brush "red" 'solid))
+    ;; pen and brush for marking a location that could have a breakpoint installed
+    (define bp-mo-pen (send the-pen-list find-or-create-pen "darkgray" 1 'solid))
+    (define bp-mo-brush (send the-brush-list find-or-create-brush "tomato"
+                              'solid))
+    ;; pen and brush for marking a conditional breakpoint
+    (define bp-tmp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
+    (define bp-tmp-brush (send the-brush-list find-or-create-brush "yellow"
+                               'solid))
+    ;; pen and brush for drawing the normal execution location
+    (define pc-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
+    (define pc-brush (send the-brush-list find-or-create-brush "forestgreen" 'solid))
+    ;; pen and brush for marking the expression when not at the top of the stack
+    (define pc-up-stack-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
+    (define pc-up-stack-brush (send the-brush-list find-or-create-brush "lightgreen" 'solid))
+    ;; pen and brush for marking the location when there's an an error
+    (define pc-err-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
+    (define pc-err-brush (send the-brush-list find-or-create-brush "red" 'solid))
+    ;; pen and brush for marking the location following a break
+    (define pc-brk-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
+    (define pc-brk-brush (send the-brush-list find-or-create-brush "gray" 'solid))
     
     (define (debug-interactions-text-mixin super%)
       (class super%
@@ -908,7 +908,7 @@
         (define/public (get-current-frame-endpoints)
           (get-frame-endpoints (get-frame-num)))
         
-        (define (do-in-user-thread thunk)
+        (define/private (do-in-user-thread thunk)
           (if (get-break-status)
               ;; The evaluation thread is suspended, so it should be waiting for thunks
               ;; to arrive on in-user-ch, evaluating them, and sending the results back
@@ -955,7 +955,7 @@
           ;; only when a user thread is suspended
           (do-in-user-thread (lambda () (eprintf " ### DEBUGGER: ~s\n" v))))
         
-        (define (frame->end-breakpoint-status frame)
+        (define/private (frame->end-breakpoint-status frame)
           (let/ec k
             (let* ([stx (mark-source frame)]
                    [src (syntax-source stx)]
@@ -967,13 +967,13 @@
                    [bps (send tab get-breakpoints)])
               (hash-ref bps pos 'invalid))))
         
-        (define (can-step-over? frames status)
+        (define/private (can-step-over? frames status)
           (and (or (not (zero? (get-frame-num))) (eq? status 'entry-break))
                frames
                (not (empty? frames))
                (not (eq? (frame->end-breakpoint-status (list-ref frames (get-frame-num))) 'invalid))))
         
-        (define (can-step-out? frames status)
+        (define/private (can-step-out? frames status)
           (and frames
             (let ([frames (list-tail frames (get-frame-num))])
               (and (not (empty? frames))
