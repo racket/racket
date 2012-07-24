@@ -1,3 +1,7 @@
+5.3
+- Keyword and optional arguments
+- Faster startup
+- Random testing of the numeric tower
 5.2.1
 - Inference of functions with keyword arguments
 - `typecheck-fail' for explicit creation of type errors
