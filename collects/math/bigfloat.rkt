@@ -6,7 +6,6 @@
          (for-syntax racket/base racket/syntax syntax/strip-context))
 
 (define-type Rounding-Mode (U 'nearest 'zero 'up 'down))
-(define-type Print-Scientific (U 'always 'never 'shorter))
 
 (require/typed
  "private/mpfr.rkt"
@@ -15,7 +14,6 @@
  [bf-min-precision  Exact-Positive-Integer]
  [bf-max-precision  Exact-Positive-Integer]
  [bf-precision  (Parameterof Integer)]
- [bf-scientific  (Parameterof Print-Scientific)]
  ;; Type and predicate
  [opaque Bigfloat bigfloat?]
  ;; Accessors
@@ -50,7 +48,6 @@
  bf-min-precision
  bf-max-precision
  bf-precision
- bf-scientific
  ;; Type and predicate
  Bigfloat bigfloat?
  ;; Accessors

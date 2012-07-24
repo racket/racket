@@ -15,7 +15,6 @@
  bf-min-precision
  bf-max-precision
  bf-precision
- bf-scientific
  ;; Type predicate
  (rename-out [mpfr? bigfloat?])
  ;; Accessors
@@ -97,9 +96,6 @@
   (make-parameter 128 (λ (p) (cond [(p . < . bf-min-precision)  bf-min-precision]
                                    [(p . > . bf-max-precision)  bf-max-precision]
                                    [else  p]))))
-
-;; One of 'always 'never 'shorter
-(define bf-scientific (make-parameter 'shorter))
 
 ;; ===================================================================================================
 ;; MPFR types
@@ -428,16 +424,12 @@
           (if (char=? (string-ref str 0) #\-)
               (values "-" (substring str 1))
               (values "" str)))
-        (define scientific (bf-scientific))
-        (cond [(eq? scientific 'always)  (string-append sign (scientific-string exp digs))]
-              [(eq? scientific 'never)   (string-append sign (digit-string exp digs))]
+        (define sstr (scientific-string exp digs))
+        (define dstr (digit-string exp digs))
+        (cond [((string-length sstr) . < . (string-length dstr))
+               (string-append sign sstr)]
               [else
-               (define sstr (scientific-string exp digs))
-               (define dstr (digit-string exp digs))
-               (cond [((string-length sstr) . < . (string-length dstr))
-                      (string-append sign sstr)]
-                     [else
-                      (string-append sign dstr)])])])]))
+               (string-append sign dstr)])])]))
 
 ;; string->bigfloat : string [integer] -> bigfloat
 ;; Converts a Racket string to a bigfloat.
@@ -764,7 +756,7 @@
 (provide-0ary-funs
  [log2.bf 'mpfr_const_log2]
  [pi.bf 'mpfr_const_pi]
- [euler.bf 'mpfr_const_euler]
+ [gamma.bf 'mpfr_const_euler]
  [catalan.bf 'mpfr_const_catalan])
 
 (define-for-syntax consts (list))
