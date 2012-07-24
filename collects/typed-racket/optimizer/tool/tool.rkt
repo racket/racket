@@ -100,13 +100,14 @@
       (define/public (highlighting-shown?) on?)
 
       (define report-cache #f)
-      ;; TODO the 2 kws are mutually exclusive. merge them
-      (define/public (add-highlights #:use-cache?       [use-cache? #f]
-                                     #:definitions-copy [definitions-copy #f])
+      ;; source is either a copy of the definitions text (we're not in the
+      ;; main thread, so operating on the definitions directly is a bad idea)
+      ;; or #f, in which case the report cache is used.
+      (define/public (add-highlights #:source [source #f])
         (clear-highlights)
         (send (get-tab) show-optimization-coach-panel)
-        (unless (and report-cache use-cache?)
-          (set! report-cache (generate-report definitions-copy)))
+        (unless (and report-cache (not source))
+          (set! report-cache (generate-report source)))
         (define report
           (collapse-report
            (for/list ([entry (in-list report-cache)]
@@ -193,7 +194,7 @@
                                                             (remq f filters)
                                                             (cons f filters)))
                          ;; redraw
-                         (send definitions add-highlights #:use-cache? #t))]
+                         (send definitions add-highlights))]
                       [value (memq f filters)]))])
         ;; update check-boxes
         (for ([c (in-list (for/list ([c (in-list (send panel get-children))]
@@ -288,7 +289,7 @@
                      (send interactions run-in-evaluation-thread
                            (lambda () (raise e))))])
                (send (get-definitions-text) add-highlights
-                     #:definitions-copy definitions-copy))
+                     #:source definitions-copy))
              (send this update-running #f))))
 
       (super-new)))
