@@ -82,6 +82,8 @@
  ; sequences
  in-row
  in-column
+ ; special matrices
+ vandermonde-matrix
  )
 
 ;;;
@@ -413,8 +415,6 @@
 ; Returns
 ;  1) a list of column vectors spanning the column space
 ;  2) a list of column vectors spanning the null space
-; TODO: Column space works, but wrong space is 
-;       not done yet.
 (define (matrix-column-space M)  
   (define-values (m n) (matrix-dimensions M))
   (: M1 (Matrix Number))
@@ -427,37 +427,6 @@
          #:when (not (member i cols-without-pivot)))
       (matrix-column M1 i)))
   column-space)
-
-#;(: matrix-column+null-space : 
-     (Matrix Number) -> (Values (Listof (Result-Matrix Number)) (Listof (Result-Matrix Number))))
-; Returns
-;  1) a list of column vectors spanning the column space
-;  2) a list of column vectors spanning the null space
-; TODO: Column space works, but wrong space is 
-;       not done yet.
-#;(define (matrix-column+null-space M)  
-    ; TODO:
-    ;    Null space from row reduction numerically unstable.
-    ;    USE QR or SVD instead.
-    ;    See http://en.wikipedia.org/wiki/Kernel_(matrix)  
-    (define-values (m n) (matrix-dimensions M))
-    (: M1 (Matrix Number))
-    (: cols-without-pivot (Listof Integer))
-    (define-values (M1 cols-without-pivot) (matrix-gauss-eliminate M #t))
-    (set! M1 (array-strict M1))  
-    (define: column-space : (Listof (Result-Matrix Number))
-      (for/list:
-          ([i : Index n]
-           #:when (not (member i cols-without-pivot)))
-        (matrix-column M1 i)))
-    (define: null-space : (Listof (Result-Matrix Number))
-      (for/list: 
-          ([i : Integer (in-list cols-without-pivot)])
-        (cond
-          [(not (index? i)) (error 'column+null-space "Internal error")]
-          [else (matrix-column M1 i)])))
-    (values column-space null-space))
-
 
 (: matrix-row-echelon-form : 
    (case-> ((Matrix Number) Boolean -> (Result-Matrix Number))
@@ -947,6 +916,7 @@
   ; 1) QR = M 
   ; 2) columns of Q is are orthonormal
   ; 3) R is upper-triangular
+  ; Note: columnspace(A)=columnspace(Q) !
   (define-values (m n) (matrix-dimensions M))
   (let* ([basis-for-column-space
           (gram-schmidt-orthonormal (matrix->columns M))]
@@ -1009,35 +979,75 @@
            (loop (cdr as) (cdr ms) (cdr ns) (cons row rows) (+ left n))]))
   (loop as ms ns '() 0))
 
+(define-syntax (for/column: stx)
+  (syntax-case stx ()
+    [(_ : type m-expr (for:-clause ...) . defs+exprs)
+     (syntax/loc stx
+       (let ()
+         (define: m : Index m-expr)
+         (define: flat-vector : (Vectorof Number) (make-vector m 0))
+         (for: ([i (in-range m)] for:-clause ...)
+           (define x (let () . defs+exprs))
+           (vector-set! flat-vector i x))
+         (vector->column flat-vector)))]))
+
 (define-syntax (for/matrix: stx)
   (syntax-case stx ()
+    [(_ : type m-expr n-expr #:column (for:-clause ...) . defs+exprs)
+     (syntax/loc stx
+       (let ()
+         (define: m : Index m-expr)
+         (define: n : Index n-expr)
+         (define: m*n : Index (assert (* m n) index?))
+         (define: v : (Vectorof Number) (make-vector m*n 0))
+         (define: k : Index 0)
+         (for: ([i (in-range m*n)] for:-clause ...)
+           (define x (let () . defs+exprs))
+           (vector-set! v (+ (* n (remainder k m)) (quotient k m)) x)
+           (set! k (assert (+ k 1) index?)))         
+         (flat-vector->matrix m n v)))]
     [(_ : type m-expr n-expr (for:-clause ...) . defs+exprs)
      (syntax/loc stx
        (let ()
          (define: m : Index m-expr)
          (define: n : Index n-expr)
          (define: m*n : Index (assert (* m n) index?))
-         (define: flat-vector : (Vectorof Number) (make-vector m*n 0))
+         (define: v : (Vectorof Number) (make-vector m*n 0))
          (for: ([i (in-range m*n)] for:-clause ...)
            (define x (let () . defs+exprs))
-           (vector-set! flat-vector i x))
-         (flat-vector->matrix m n flat-vector)))]))
+           (vector-set! v i x))
+         (flat-vector->matrix m n v)))]))
 
 (define-syntax (for*/matrix: stx)
   (syntax-case stx ()
+    [(_ : type m-expr n-expr #:column (for:-clause ...) . defs+exprs)
+     (syntax/loc stx
+       (let ()
+         (define: m : Index m-expr)
+         (define: n : Index n-expr)
+         (define: m*n : Index (assert (* m n) index?))
+         (define: v : (Vectorof Number) (make-vector m*n 0))
+         (define: k : Index 0)
+         (for*: (for:-clause ...)
+           (define x (let () . defs+exprs))
+           (vector-set! v (+ (* n (remainder k m)) (quotient k m)) x)
+           (set! k (assert (+ k 1) index?)))
+         (flat-vector->matrix m n v)))]
     [(_ : type m-expr n-expr (for:-clause ...) . defs+exprs)
      (syntax/loc stx
        (let ()
          (define: m : Index m-expr)
          (define: n : Index n-expr)
          (define: m*n : Index (assert (* m n) index?))
-         (define: flat-vector : (Vectorof Number) (make-vector m*n 0))
+         (define: v : (Vectorof Number) (make-vector m*n 0))
          (define: i : Index 0) 
          (for*: (for:-clause ...)
            (define x (let () . defs+exprs))
-           (vector-set! flat-vector i x)
+           (vector-set! v i x)
            (set! i (assert (+ i 1) index?)))
-         (flat-vector->matrix m n flat-vector)))]))
+         (flat-vector->matrix m n v)))]))
+
+
 
 (define-syntax (for/matrix-sum: stx)
   (syntax-case stx ()
@@ -1147,6 +1157,25 @@
   (λ () #'in-column/proc)
   (λ (stx)
     (syntax-case stx ()
+      ; M-expr evaluates to column
+      [[(x) (_ M-expr)]
+       #'((x)
+          (:do-in
+           ([(M n m d) 
+             (let ([M1 M-expr])
+               (define-values (rd cd) (matrix-dimensions M1))
+               (values M1 rd cd 
+                       (unsafe-array-data
+                        (array-strict M1))))])
+           (unless (array-matrix? M) 
+             (raise-type-error 'in-row "expected matrix, got ~a" M))
+           ([j 0])
+           (< j n)
+           ([(x) (vector-ref d j)])
+           #true
+           #true
+           [(+ j 1)]))]
+      ; M-expr evaluats to matrix, s-expr to the column index
       [[(x) (_ M-expr s-expr)]
        #'((x)
           (:do-in
@@ -1194,3 +1223,22 @@
            [(+ j 1)]))]
       [[_ clause] (raise-syntax-error 
                    'in-column "expected (in-column <matrix> <column>)" #'clause #'clause)])))
+
+(: vandermonde-matrix : (Listof Number) Integer -> (Result-Matrix Number))
+(define (vandermonde-matrix xs n)
+  ; construct matrix M with M(i,j)=α_i^j ; where i and j begin from 0 ... 
+  ; Inefficient version:
+  (cond
+    [(not (index? n))
+     (error 'vandermonde-matrix "expected Index as second argument, got ~a" n)]
+    [else       (define: m : Index (length xs))
+                (define: αs :  (Vectorof Number) (list->vector xs))
+                (define: α^j : (Vectorof Number) (make-vector n 1))
+                (for*/matrix: : Number m n #:column
+                              ([j (in-range 0 n)]
+                               [i (in-range 0 m)])
+                              (define αi^j (vector-ref α^j i))
+                              (define αi   (vector-ref αs i ))
+                              (vector-set! α^j i (* αi^j αi))
+                              αi^j)]))
+

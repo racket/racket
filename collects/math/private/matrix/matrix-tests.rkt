@@ -13,17 +13,28 @@
 (begin  
   (begin
     "matrix-operations.rkt"
+    (list 'vandermonde-matrix
+          (equal? (vandermonde-matrix '(1 2 3) 5)
+                  (list->matrix '[[1 1 1 1 1] [1 2 4 8 16] [1 3 9 27 81]])))
     (list 'in-column
           (equal? (for/list: : (Listof Number) ([x : Number (in-column (matrix/dim 2 2  1 2 3 4) 0)]) x)
                   '(1 3))
           (equal? (for/list: : (Listof Number) ([x : Number (in-column (matrix/dim 2 2  1 2 3 4) 1)]) x)
-                  '(2 4)))
+                  '(2 4))
+          (equal? (for/list: : (Listof Number) ([x (in-column (column 5 2 3))]) x)
+                  '(5 2 3)))
     (list 'in-row
           (equal? (for/list: : (Listof Number) ([x : Number (in-row (matrix/dim 2 2  1 2 3 4) 0)]) x)
                   '(1 2))
           (equal? (for/list: : (Listof Number) ([x : Number (in-row (matrix/dim 2 2  1 2 3 4) 1)]) x)
                   '(3 4)))
     (list 'for/matrix:
+          (equal? (for/matrix: : Number 2 4 ([i (in-naturals)]) i)
+                  '[[0 1 2 3] 
+                    [4 5 6 7]])
+          (equal? (for/matrix: : Number 2 4 #:column ([i (in-naturals)]) i)
+                  '[[0 2 4 6] 
+                    [1 3 5 7]])        
           (equal? (for/matrix: : Number 3 3 ([i (in-range 10 100)]) i)
                   (matrix/dim 3 3 10 11 12 13 14 15 16 17 18)))
     (list 'for*/matrix:
