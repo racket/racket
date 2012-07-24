@@ -43,7 +43,8 @@
   hide-optimization-coach-panel
   get-filters
   set-filters!
-  optimization-coach-visible?)
+  optimization-coach-visible?
+  build-optimization-coach-popup-menu)
 
 (define optimization-coach-drracket-button
   (list
@@ -143,34 +144,20 @@
       (define/augment (on-delete start len)
         (clear-highlights))
 
-      (define/override (on-event event)
-        (if (send event button-down? 'right)
-            (let-values ([(pos text) (get-pos/text event)])
-              (define menu (build-optimization-coach-popup-menu pos text))
-              (if menu
-                  (send (get-canvas) popup-menu menu
-                        (+ 1 (inexact->exact (floor (send event get-x))))
-                        (+ 1 (inexact->exact (floor (send event get-y)))))
-                  ;; not for us, pass it on
-                  (super on-event event)))
-            ;; not a right click, pass it on
-            (super on-event event)))
-
-      (define (build-optimization-coach-popup-menu pos text)
+      (define/public (build-optimization-coach-popup-menu menu pos text)
         (and pos
              (is-a? text text%)
              ;; pos is in a highlight
-             (for/fold ([menu #f])
+             (for/fold ([new-item #f])
                  ([h (in-list highlights)])
                (match-define `(,start ,end ,popup-fun) h)
-               (or menu
+               (or new-item
                    (and (<= start pos end)
-                        (let ([menu (make-object popup-menu% #f)])
-                          (new menu-item%
-                               [label "Show Optimization Info"]
-                               [parent menu]
-                               [callback (lambda _ (popup-fun text start end))])
-                          menu))))))
+                        (new menu-item%
+                             [label "Show Optimization Info"]
+                             [parent menu]
+                             [callback (lambda _
+                                         (popup-fun text start end))]))))))
 
       (super-new)))
 
@@ -233,7 +220,8 @@
 
   (define tab-switch-mixin
     (mixin (drracket:unit:frame<%>) ()
-      (inherit set-show-menu-sort-key get-current-tab)
+      (inherit set-show-menu-sort-key get-current-tab
+               get-definitions-text)
 
       (define/public (get-optimization-coach-menu-item)
         optimization-coach-menu-item)
@@ -266,6 +254,17 @@
           (send new-tab show-optimization-coach-panel)))
 
       (define optimization-coach-menu-item #f)
+
+
+      ;; right-click menu
+      (keymap:add-to-right-button-menu
+       (let ([old (keymap:add-to-right-button-menu)])
+         (lambda (menu editor event)
+           (define definitions (get-definitions-text))
+           (let-values ([(pos text) (send definitions get-pos/text event)])
+             (send definitions build-optimization-coach-popup-menu
+                   menu pos text))
+           (old menu editor event))))
 
       (super-new)))
 
