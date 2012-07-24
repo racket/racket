@@ -148,11 +148,11 @@ array-number-exp.
   
   )  ; begin-encourage-inline
 
-(: array-scale (Number (Array Number) -> (lazy-array Number)))
+(: array-scale (case-> (Float  (Array Float)  -> (lazy-array Float))
+                       (Real   (Array Real)   -> (lazy-array Real))
+                       (Number (Array Number) -> (lazy-array Number))))
 (define (array-scale s arr)
-  (: scale : Number -> Number)
-  (define (scale x) (* s x))
-  ((inst array-map Number Number) scale arr))
+  ((inline-array-lift (λ (x) (* s x))) arr))
 
 ;; ===================================================================================================
 ;; Lifted operations on Real and Number
