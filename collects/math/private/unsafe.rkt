@@ -8,6 +8,7 @@
 
 (define unsafe-vector-ref vector-ref)
 (define unsafe-vector-set! vector-set!)
+(define unsafe-vector-length vector-length)
 
 (define unsafe-flvector-ref flvector-ref)
 (define unsafe-flvector-set! flvector-set!)
@@ -22,6 +23,7 @@
 #|
 (define unsafe-vector-ref :unsafe-vector-ref)
 (define unsafe-vector-set! :unsafe-vector-set!)
+(define unsafe-vector-length :unsafe-vector-length)
 
 (define unsafe-flvector-ref :unsafe-flvector-ref)
 (define unsafe-flvector-set! :unsafe-flvector-set!)
