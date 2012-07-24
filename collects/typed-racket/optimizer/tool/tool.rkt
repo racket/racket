@@ -15,17 +15,6 @@
 (define optimization-coach-bitmap
   (compiled-bitmap (stopwatch-icon #:height (toolbar-icon-height))))
 
-;; optimization-coach-callback : drracket:unit:frame<%> -> void
-(define (optimization-coach-callback drr-frame)
-  (with-handlers
-      ([(lambda (e) (and (exn? e) (not (exn:break? e))))
-        ;; typechecking failed, report in the interactions window
-        (lambda (e)
-          (define interactions (send drr-frame get-interactions-text))
-          (send interactions reset-console)
-          (send interactions run-in-evaluation-thread (lambda () (raise e))))])
-    (send (send drr-frame get-definitions-text) add-highlights)))
-
 (define check-boxes
   `(("Report Typed Racket optimizations?" .
      ,(match-lambda [(sub-report-entry s m 'typed-racket) #t]
@@ -44,13 +33,14 @@
   get-filters
   set-filters!
   optimization-coach-visible?
-  build-optimization-coach-popup-menu)
+  build-optimization-coach-popup-menu
+  optimization-coach-callback)
 
 (define optimization-coach-drracket-button
   (list
    "Optimization Coach"
    optimization-coach-bitmap
-   optimization-coach-callback))
+   (lambda (drr-frame) (send drr-frame optimization-coach-callback))))
 
 (define-unit tool@
 
@@ -218,10 +208,10 @@
 
   (drracket:get/extend:extend-tab toolbar-mixin)
 
-  (define tab-switch-mixin
+  (define frame-mixin
     (mixin (drracket:unit:frame<%>) ()
       (inherit set-show-menu-sort-key get-current-tab
-               get-definitions-text)
+               get-definitions-text get-interactions-text)
 
       (define/public (get-optimization-coach-menu-item)
         optimization-coach-menu-item)
@@ -266,6 +256,22 @@
                    menu pos text))
            (old menu editor event))))
 
+      ;; entry point
+      (define/public (optimization-coach-callback)
+        (define interactions (get-interactions-text))
+        (send this update-running #t)
+        (thread ; do the work in a separate thread, to avoid blocking the GUI
+           (lambda ()
+             (with-handlers
+                 ([(lambda (e) (and (exn? e) (not (exn:break? e))))
+                   ;; typechecking failed, report in the interactions window
+                   (lambda (e)
+                     (send interactions reset-console)
+                     (send interactions run-in-evaluation-thread
+                           (lambda () (raise e))))])
+               (send (get-definitions-text) add-highlights))
+             (send this update-running #f))))
+
       (super-new)))
 
-  (drracket:get/extend:extend-unit-frame tab-switch-mixin))
+  (drracket:get/extend:extend-unit-frame frame-mixin))
