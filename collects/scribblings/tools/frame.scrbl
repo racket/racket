@@ -265,20 +265,6 @@ the @onscreen{Show} menu.
 
 }
 
-@defmethod[(not-running)
-           void?]{
-updates the status pane at the bottom of the window to show
-that evaluation is not taking place in the user's program.
-
-}
-
-@defmethod[(running)
-           void?]{
-updates the status pane at the bottom of the window to show
-that evaluation is taking place in the user's program.
-
-}
-
 @defmethod[(update-shown)
            void?]{
 @methspec{
