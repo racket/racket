@@ -1616,6 +1616,21 @@
          (unsafe-s16vector-set! x x x)
          (unsafe-u16vector-set! x x x))))
 
+(test-comp '(lambda (x)
+              (hash-ref '#hash((x . y)) x (lambda () 10)))
+           '(lambda (x)
+              (hash-ref '#hash((x . y)) x 10)))
+(test-comp '(lambda (x)
+              (hash-ref x x (lambda () 10)))
+           '(lambda (x)
+              (hash-ref x x 10))
+           #f)
+(test-comp '(lambda (x)
+              (hash-ref '#hash((x . y)) x (lambda () add1)))
+           '(lambda (x)
+              (hash-ref '#hash((x . y)) x add1))
+           #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
