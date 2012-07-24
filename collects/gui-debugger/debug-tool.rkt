@@ -634,9 +634,12 @@
                                (let ([src (syntax-source orig-exp)])
                                  (and (path? src)
                                       src))))
-               (when (or (eq? (filename->defs fn) (send (get-tab) get-defs))
-                         (annotate-this-module? fn))
-                 (parameterize ([current-eval oe])
+               (cond
+                 [(or (eq? (filename->defs (and (syntax? orig-exp)
+                                                (syntax-source orig-exp)))
+                           (send (get-tab) get-defs))
+                      (annotate-this-module? fn))
+                  (parameterize ([current-eval oe])
                    (eval/annotations
                     top-e
                     ; annotate-module?
@@ -688,7 +691,8 @@
                         (hash-set!
                          breakpoints posn
                          (hash-ref breakpoints posn (lambda () #f))))
-                      annotated))))])))
+                      annotated)))]
+                 [else (oe top-e)])])))
         
         (define/private (annotate-this-module? fn)
           (cond
