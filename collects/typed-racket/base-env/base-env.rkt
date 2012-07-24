@@ -1426,10 +1426,9 @@
 [last   (-poly (a) ((-lst a) . -> . a))]
 [add-between (-poly (a b) ((-lst a) b
                            #:splice? -Boolean #f
-                           #:nothing Univ #f ; default is gensym
-                           #:before-first b #f
+                           #:before-first (-lst b) #f
                            #:before-last b #f
-                           #:after-last b #f
+                           #:after-last (-lst b) #f
                            . ->key . (-lst (Un a b))))]
 
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
