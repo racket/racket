@@ -77,18 +77,20 @@
   (make-extender get-base-unit-frame% 'drracket:unit:frame))
 
 (define (get-base-interactions-text%)
-  (drracket:debug:test-coverage-interactions-text-mixin
-   drracket:rep:text%))
+  (drracket:module-language:module-language-interactions-text-mixin
+   (drracket:debug:test-coverage-interactions-text-mixin
+    drracket:rep:text%)))
 
 (define-values (extend-interactions-text get-interactions-text)
   (make-extender get-base-interactions-text% 'interactions-text%))
 
 (define (get-base-definitions-text%)
-  (drracket:module-language:module-language-online-expand-text-mixin
-   (drracket:module-language-tools:definitions-text-mixin
-    (drracket:debug:test-coverage-definitions-text-mixin
-     (drracket:debug:profile-definitions-text-mixin
-      (drracket:unit:get-definitions-text%))))))
+  (drracket:module-language:module-language-definitions-text-mixin
+   (drracket:module-language:module-language-online-expand-text-mixin
+    (drracket:module-language-tools:definitions-text-mixin
+     (drracket:debug:test-coverage-definitions-text-mixin
+      (drracket:debug:profile-definitions-text-mixin
+       (drracket:unit:get-definitions-text%)))))))
 
 (define-values (extend-definitions-text get-definitions-text)
   (make-extender get-base-definitions-text% 'definitions-text%))

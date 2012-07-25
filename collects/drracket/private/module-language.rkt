@@ -1751,6 +1751,83 @@
       
       (super-new)))
   
+  (define defs/ints-font 
+    (send the-font-list find-or-create-font 72 'swiss 'normal 'normal))
+  
+  (define (mk-module-language-text-mixin id)
+    (mixin (editor<%>) ()
+      (inherit get-admin invalidate-bitmap-cache get-dc
+               dc-location-to-editor-location)
+      (define inside? #f)
+      (define/override (on-event evt)
+        (define new-inside?
+          (cond
+            [(send evt leaving?) #f]
+            [else (preferences:get 'drracket:defs/ints-labels)]))
+        (unless (equal? new-inside? inside?)
+          (set! inside? new-inside?)
+          (invalidate-bitmap-cache 0 0 'display-end 'display-end))
+        (cond
+          [(and (preferences:get 'drracket:defs/ints-labels)
+                (send evt button-down?)
+                (get-admin))
+           (define admin (get-admin))
+           (define dc (get-dc))
+           (define-values (tw th _1 _2) (send dc get-text-extent id defs/ints-font))
+           (define-values (mx my) (dc-location-to-editor-location 
+                                   (send evt get-x) (send evt get-y)))
+           (send admin get-view bx by bw bh)
+           (cond
+             [(and (<= (- (unbox bw) tw) mx (unbox bw))
+                   (<= (- (unbox bh) th) my (unbox bh)))
+              (define menu (new popup-menu%))
+              (new menu-item% 
+                   [label (string-constant hide-defs/ints-label)]
+                   [parent menu]
+                   [callback (λ (x y)
+                               (preferences:set 'drracket:defs/ints-labels #f))])
+              (send admin popup-menu menu (+ (send evt get-x) 1) (+ (send evt get-y) 1))]
+             [else
+              (super on-event evt)])]
+          [else (super on-event evt)]))
+      
+      (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+        (super on-paint before? dc left top right bottom dx dy draw-caret)
+        (unless before?
+          (when inside?
+            (define admin (get-admin))
+            (when admin
+              (send admin get-view bx by bw bh)
+              (define α (send dc get-alpha))
+              (define fore (send dc get-text-foreground))
+              (send dc set-font defs/ints-font)
+              (define-values (tw th _1 _2) (send dc get-text-extent id))
+              (define tx (- (unbox bw) tw))
+              (define ty (- (unbox bh) th))
+              (when (and (or (< left tx right)
+                             (< left (+ tx tw) right))
+                         (or (< top ty bottom)
+                             (< top (+ ty th) bottom)))
+                (send dc set-text-foreground "black")
+                (send dc set-alpha .5)
+                (send dc draw-text id (+ dx tx) (+ dy ty))
+                (send dc set-alpha α)
+                (send dc set-text-foreground fore))
+              (send dc set-font defs/ints-font)))))
+      (super-new)))
+
+        
+  (define bx (box 0))
+  (define by (box 0))
+  (define bw (box 0))
+  (define bh (box 0))
+  
+  
+  (define module-language-interactions-text-mixin
+    (mk-module-language-text-mixin (string-constant interactions-window-label)))
+  (define module-language-definitions-text-mixin
+    (mk-module-language-text-mixin (string-constant definitions-window-label)))
+  
   (define module-language-compile-lock (make-compile-lock))
   
   (define module-language-parallel-lock-client

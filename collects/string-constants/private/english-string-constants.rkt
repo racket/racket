@@ -1661,5 +1661,11 @@ please adhere to these guidelines:
   ;; optimization coach
   (hide-optimization-coach "Hide Optimization Coach")
   (show-optimization-coach "Show Optimization Coach")
+
+  ;; labels used (in a big font) in the background of the definitions and interactions windows
+  (definitions-window-label "definitions")
+  (interactions-window-label "interactions")
+  (hide-defs/ints-label "Hide Definitions/Interactions Labels") ;; popup menu
+  (show-defs/ints-label "Show definitions/interactions labels") ;; preferences checkbox
   
   )
