@@ -105,7 +105,7 @@
       ;; or #f, in which case the report cache is used.
       (define/public (add-highlights #:source [source #f])
         (clear-highlights)
-        (send (get-tab) show-optimization-coach-panel)
+        (send (get-tab) show-optimization-coach/tab)
         (unless (and report-cache (not source))
           (set! report-cache (generate-report source)))
         (define report
@@ -129,7 +129,7 @@
       (define/public (clear-highlights)
         (for ([h (in-list clear-thunks)]) (h))
         (set! highlights '())
-        (send (get-tab) hide-optimization-coach-panel)
+        (send (get-tab) hide-optimization-coach/tab)
         (set! on? #f))
 
       (define/augment (on-insert start len)
@@ -156,65 +156,22 @@
 
   (drracket:get/extend:extend-definitions-text highlights-mixin)
 
-  (define toolbar-mixin
+  (define tab-mixin
     (mixin (drracket:unit:tab<%>) ()
       (super-new)
-
-      (inherit get-defs get-frame)
-
       (define visible? #f)
       (define/public (optimization-coach-visible?) visible?)
+      (define/public (show-optimization-coach/tab)
+        (set! visible? #t))
+      (define/public (hide-optimization-coach/tab)
+        (set! visible? #f))))
 
-      (define panel #f)
-
-      (define/public (show-optimization-coach-panel)
-        (set! visible? #t)
-        (define area-container (send (get-frame) get-area-container))
-        (define definitions (get-defs))
-        (define filters (send definitions get-filters))
-        (cond [panel
-               (send area-container add-child panel)]
-              [else
-               (set! panel (new horizontal-panel%
-                                [parent area-container]
-                                [stretchable-height #f]))
-               (new button%
-                    [label "Clear"]
-                    [parent panel]
-                    [callback (lambda _ (send (get-defs) clear-highlights))])
-               (for ([(l f) (in-pairs check-boxes)])
-                 (new check-box%
-                      [label l]
-                      [parent panel]
-                      [callback
-                       (lambda _
-                         (define definitions (get-defs))
-                         (define filters (send definitions get-filters))
-                         (send definitions set-filters! (if (memq f filters)
-                                                            (remq f filters)
-                                                            (cons f filters)))
-                         ;; redraw
-                         (send definitions add-highlights))]
-                      [value (memq f filters)]))])
-        ;; update check-boxes
-        (for ([c (in-list (for/list ([c (in-list (send panel get-children))]
-                                     #:when (is-a? c check-box%))
-                            c))]
-              [(l f) (in-pairs check-boxes)])
-          (send c set-value (memq f filters))))
-
-      (define/public (hide-optimization-coach-panel [close #t])
-        (when visible?
-          (send (send (get-frame) get-area-container) delete-child panel)
-          (when close
-            (set! visible? #f))))))
-
-  (drracket:get/extend:extend-tab toolbar-mixin)
+  (drracket:get/extend:extend-tab tab-mixin)
 
   (define frame-mixin
     (mixin (drracket:unit:frame<%>) ()
       (inherit set-show-menu-sort-key get-current-tab
-               get-definitions-text get-interactions-text)
+               get-definitions-text get-interactions-text get-area-container)
 
 
       ;; view menu
@@ -254,12 +211,60 @@
            (old menu editor event))))
 
 
+      ;; control panel
+      (define panel #f)
+      (define/public (show-optimization-coach-panel)
+        (send (get-current-tab) show-optimization-coach/tab)
+        (define area-container (get-area-container))
+        (define definitions (get-definitions-text))
+        (define filters (send definitions get-filters))
+        (cond [panel
+               (send area-container add-child panel)]
+              [else
+               (set! panel (new horizontal-panel%
+                                [parent area-container]
+                                [stretchable-height #f]))
+               (new button%
+                    [label "Clear"]
+                    [parent panel]
+                    [callback
+                     (lambda _
+                       (hide-optimization-coach-panel)
+                       (send (get-definitions-text) clear-highlights))])
+               (for ([(l f) (in-pairs check-boxes)])
+                 (new check-box%
+                      [label l]
+                      [parent panel]
+                      [callback
+                       (lambda _
+                         (define definitions (get-definitions-text))
+                         (define filters (send definitions get-filters))
+                         (send definitions set-filters! (if (memq f filters)
+                                                            (remq f filters)
+                                                            (cons f filters)))
+                         ;; redraw
+                         (send definitions add-highlights))]
+                      [value (memq f filters)]))])
+        ;; update check-boxes
+        (for ([c (in-list (for/list ([c (in-list (send panel get-children))]
+                                     #:when (is-a? c check-box%))
+                            c))]
+              [(l f) (in-pairs check-boxes)])
+          (send c set-value (memq f filters))))
+
+      (define/public (hide-optimization-coach-panel [close #t])
+        (send (get-area-container) delete-child panel)
+        (when close
+          (send (get-current-tab) hide-optimization-coach/tab)))
+
+
       ;; tab switching
       (define/augment (on-tab-change old-tab new-tab)
-        (send old-tab hide-optimization-coach-panel #f) ; don't close it
+        (when (send old-tab optimization-coach-visible?)
+          (hide-optimization-coach-panel #f)) ; don't close it
         (when (send new-tab optimization-coach-visible?)
           ;; if it was open before
-          (send new-tab show-optimization-coach-panel)))
+          (show-optimization-coach-panel)))
 
 
       ;; entry point
@@ -281,6 +286,7 @@
               (send definitions get-style-list)) ;; speeds up the copy
         (send definitions copy-self-to definitions-copy)
         ;; launch OC proper
+        (show-optimization-coach-panel)
         (send this update-running #t)
         (thread ; do the work in a separate thread, to avoid blocking the GUI
            (lambda ()
