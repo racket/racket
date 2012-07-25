@@ -238,7 +238,7 @@
                       (define tab (get-current-tab))
                       (if (send tab optimization-coach-visible?)
                           (send (send tab get-defs) clear-highlights)
-                          (optimization-coach-callback this)))]))
+                          (optimization-coach-callback)))]))
         (set-show-menu-sort-key optimization-coach-menu-item 403))
       (define optimization-coach-menu-item #f)
 
