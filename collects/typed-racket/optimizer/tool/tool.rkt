@@ -33,13 +33,14 @@
   set-filters!
   optimization-coach-visible?
   build-optimization-coach-popup-menu
-  optimization-coach-callback)
+  launch-optimization-coach
+  close-optimization-coach)
 
 (define optimization-coach-drracket-button
   (list
    "Optimization Coach"
    optimization-coach-bitmap
-   (lambda (drr-frame) (send drr-frame optimization-coach-callback))))
+   (lambda (drr-frame) (send drr-frame launch-optimization-coach))))
 
 (define-unit tool@
 
@@ -179,8 +180,8 @@
                     (λ (a b)
                       (define defs (get-definitions-text))
                       (if (send defs optimization-coach-visible?)
-                          (hide-optimization-coach)
-                          (optimization-coach-callback)))]))
+                          (close-optimization-coach)
+                          (launch-optimization-coach)))]))
         (set-show-menu-sort-key optimization-coach-menu-item 403))
       (define optimization-coach-menu-item #f)
 
@@ -211,7 +212,7 @@
                (new button%
                     [label "Clear"]
                     [parent panel]
-                    [callback (lambda _ (hide-optimization-coach))])
+                    [callback (lambda _ (close-optimization-coach))])
                (for ([(l f) (in-pairs check-boxes)])
                  (new check-box%
                       [label l]
@@ -233,23 +234,21 @@
               [(l f) (in-pairs check-boxes)])
           (send c set-value (memq f filters))))
 
-      (define/public (hide-optimization-coach #:close? [close? #t])
-        (send (get-area-container) delete-child panel)
-        (when close?
-          (send (get-definitions-text) clear-highlights)))
+      (define/public (hide-optimization-coach)
+        (send (get-area-container) delete-child panel))
 
 
       ;; tab switching
       (define/augment (on-tab-change old-tab new-tab)
         (when (send (send old-tab get-defs) optimization-coach-visible?)
-          (hide-optimization-coach #:close? #f))
+          (hide-optimization-coach))
         (when (send (send new-tab get-defs) optimization-coach-visible?)
           ;; if it was open before
           (show-optimization-coach)))
 
 
       ;; entry point
-      (define/public (optimization-coach-callback)
+      (define/public (launch-optimization-coach)
         (define definitions  (get-definitions-text))
         (define interactions (get-interactions-text))
         ;; copy contents of the definitions window before handing control back
@@ -281,6 +280,10 @@
                (send (get-definitions-text) add-highlights
                      #:source definitions-copy))
              (send this update-running #f))))
+
+      (define/public (close-optimization-coach)
+        (hide-optimization-coach)
+        (send (get-definitions-text) clear-highlights))
 
       (super-new)))
 
