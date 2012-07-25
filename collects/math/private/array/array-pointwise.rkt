@@ -5,7 +5,6 @@
          (for-syntax racket/base)
          "../unsafe.rkt"
          "array-struct.rkt"
-         "../vector/vector-pointwise.rkt"
          "for-each.rkt"
          "utils.rkt")
 
@@ -56,6 +55,7 @@
 ;; Numeric equality
 
 (: lazy-array= ((lazy-array Number) (lazy-array Number) (Vectorof Index) -> Boolean))
+;; Assumes both arrays have shape `ds'
 (define (lazy-array= arr brr ds)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
@@ -65,6 +65,7 @@
     #t))
 
 (: mixed-array= ((lazy-array Number) (strict-array Number) (Vectorof Index) -> Boolean))
+;; Assumes both arrays have shape `ds'
 (define (mixed-array= arr brr ds)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
@@ -72,6 +73,18 @@
     (for-each-array+data-index ds (λ (js j) (unless (= (f js) (unsafe-vector-ref vs j))
                                               (return #f))))
     #t))
+
+(: strict-array= ((strict-array Number) (strict-array Number) -> Boolean))
+;; Assumes arrays have the same size, and returns nonsense if they have different shapes
+(define (strict-array= arr brr)
+  (define n (array-size arr))
+  (define xs (unsafe-array-data arr))
+  (define ys (unsafe-array-data brr))
+  (let loop ([#{j : Nonnegative-Fixnum} 0])
+    (cond [(j . < . n)
+           (cond [(not (= (unsafe-vector-ref xs j) (unsafe-vector-ref ys j)))  #f]
+                 [else  (loop (+ j 1))])]
+          [else  #t])))
 
 (: array= ((Array Number) (Array Number) -> Boolean))
 (define (array= arr brr)
@@ -82,8 +95,7 @@
                     [else  (mixed-array= arr brr ds)])]
              [else
               (cond [(lazy-array? brr)  (mixed-array= brr arr ds)]
-                    [else  (vector= (unsafe-array-data arr)
-                                    (unsafe-array-data brr))])])))
+                    [else  (strict-array= arr brr)])])))
 
 ;; ===================================================================================================
 ;; Lifting
