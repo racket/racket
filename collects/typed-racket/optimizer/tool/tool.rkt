@@ -216,9 +216,10 @@
       (inherit set-show-menu-sort-key get-current-tab
                get-definitions-text get-interactions-text)
 
+
+      ;; view menu
       (define/public (get-optimization-coach-menu-item)
         optimization-coach-menu-item)
-
       (define/override (add-show-menu-items show-menu)
         (super add-show-menu-items show-menu)
         (set! optimization-coach-menu-item
@@ -239,13 +240,6 @@
                           (send (send tab get-defs) clear-highlights)
                           (optimization-coach-callback this)))]))
         (set-show-menu-sort-key optimization-coach-menu-item 403))
-
-      (define/augment (on-tab-change old-tab new-tab)
-        (send old-tab hide-optimization-coach-panel #f) ; don't close it
-        (when (send new-tab optimization-coach-visible?)
-          ;; if it was open before
-          (send new-tab show-optimization-coach-panel)))
-
       (define optimization-coach-menu-item #f)
 
 
@@ -258,6 +252,15 @@
              (send definitions build-optimization-coach-popup-menu
                    menu pos text))
            (old menu editor event))))
+
+
+      ;; tab switching
+      (define/augment (on-tab-change old-tab new-tab)
+        (send old-tab hide-optimization-coach-panel #f) ; don't close it
+        (when (send new-tab optimization-coach-visible?)
+          ;; if it was open before
+          (send new-tab show-optimization-coach-panel)))
+
 
       ;; entry point
       (define/public (optimization-coach-callback)
