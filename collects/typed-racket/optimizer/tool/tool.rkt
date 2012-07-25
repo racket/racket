@@ -200,35 +200,34 @@
 
       ;; control panel
       (define panel #f)
+      (define (create-panel)
+        (set! panel (new horizontal-panel%
+                         [parent (get-area-container)]
+                         [stretchable-height #f]))
+        (new button%
+             [label "Clear"]
+             [parent panel]
+             [callback (lambda _ (close-optimization-coach))])
+        (for ([(l f) (in-pairs check-boxes)])
+          (new check-box%
+               [label l]
+               [parent panel]
+               [callback
+                (lambda _
+                  (define definitions (get-definitions-text))
+                  (define filters (send definitions get-filters))
+                  (send definitions set-filters! (if (memq f filters)
+                                                     (remq f filters)
+                                                     (cons f filters)))
+                  ;; redraw
+                  (send definitions add-highlights))]
+               [value #f]))) ; will be updated in `show-optimization-coach'
+
       (define/public (show-optimization-coach)
-        (define area-container (get-area-container))
-        (define definitions (get-definitions-text))
-        (define filters (send definitions get-filters))
-        (cond [panel
-               (send area-container add-child panel)]
-              [else
-               (set! panel (new horizontal-panel%
-                                [parent area-container]
-                                [stretchable-height #f]))
-               (new button%
-                    [label "Clear"]
-                    [parent panel]
-                    [callback (lambda _ (close-optimization-coach))])
-               (for ([(l f) (in-pairs check-boxes)])
-                 (new check-box%
-                      [label l]
-                      [parent panel]
-                      [callback
-                       (lambda _
-                         (define definitions (get-definitions-text))
-                         (define filters (send definitions get-filters))
-                         (send definitions set-filters! (if (memq f filters)
-                                                            (remq f filters)
-                                                            (cons f filters)))
-                         ;; redraw
-                         (send definitions add-highlights))]
-                      [value (memq f filters)]))])
+        (cond [panel (send (get-area-container) add-child panel)]
+              [else  (create-panel)])
         ;; update check-boxes
+        (define filters (send (get-definitions-text) get-filters))
         (for ([c (in-list (for/list ([c (in-list (send panel get-children))]
                                      #:when (is-a? c check-box%))
                             c))]
