@@ -27,8 +27,8 @@
   get-optimization-coach-menu-item
   add-highlights
   clear-highlights
-  show-optimization-coach-panel
-  hide-optimization-coach-panel
+  show-optimization-coach
+  hide-optimization-coach
   get-filters
   set-filters!
   optimization-coach-visible?
@@ -198,7 +198,7 @@
 
       ;; control panel
       (define panel #f)
-      (define/public (show-optimization-coach-panel)
+      (define/public (show-optimization-coach)
         (define area-container (get-area-container))
         (define definitions (get-definitions-text))
         (define filters (send definitions get-filters))
@@ -213,7 +213,7 @@
                     [parent panel]
                     [callback
                      (lambda _
-                       (hide-optimization-coach-panel)
+                       (hide-optimization-coach)
                        (send (get-definitions-text) clear-highlights))])
                (for ([(l f) (in-pairs check-boxes)])
                  (new check-box%
@@ -236,17 +236,17 @@
               [(l f) (in-pairs check-boxes)])
           (send c set-value (memq f filters))))
 
-      (define/public (hide-optimization-coach-panel [close #t])
+      (define/public (hide-optimization-coach [close #t])
         (send (get-area-container) delete-child panel))
 
 
       ;; tab switching
       (define/augment (on-tab-change old-tab new-tab)
         (when (send (send old-tab get-defs) optimization-coach-visible?)
-          (hide-optimization-coach-panel #f)) ; don't close it
+          (hide-optimization-coach #f)) ; don't close it
         (when (send (send new-tab get-defs) optimization-coach-visible?)
           ;; if it was open before
-          (show-optimization-coach-panel)))
+          (show-optimization-coach)))
 
 
       ;; entry point
@@ -268,7 +268,7 @@
               (send definitions get-style-list)) ;; speeds up the copy
         (send definitions copy-self-to definitions-copy)
         ;; launch OC proper
-        (show-optimization-coach-panel)
+        (show-optimization-coach)
         (send this update-running #t)
         (thread ; do the work in a separate thread, to avoid blocking the GUI
            (lambda ()
