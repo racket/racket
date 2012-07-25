@@ -25,7 +25,6 @@
 
 (define-local-member-name
   get-optimization-coach-menu-item
-  highlighting-shown?
   add-highlights
   clear-highlights
   show-optimization-coach-panel
@@ -97,7 +96,7 @@
                        (loop (add1 end-of-line)))])))
 
       (define on? #f)
-      (define/public (highlighting-shown?) on?)
+      (define/public (optimization-coach-visible?) on?)
 
       (define report-cache #f)
       ;; source is either a copy of the definitions text (we're not in the
@@ -105,7 +104,6 @@
       ;; or #f, in which case the report cache is used.
       (define/public (add-highlights #:source [source #f])
         (clear-highlights)
-        (send (get-tab) show-optimization-coach/tab)
         (unless (and report-cache (not source))
           (set! report-cache (generate-report source)))
         (define report
@@ -129,7 +127,6 @@
       (define/public (clear-highlights)
         (for ([h (in-list clear-thunks)]) (h))
         (set! highlights '())
-        (send (get-tab) hide-optimization-coach/tab)
         (set! on? #f))
 
       (define/augment (on-insert start len)
@@ -156,18 +153,6 @@
 
   (drracket:get/extend:extend-definitions-text highlights-mixin)
 
-  (define tab-mixin
-    (mixin (drracket:unit:tab<%>) ()
-      (super-new)
-      (define visible? #f)
-      (define/public (optimization-coach-visible?) visible?)
-      (define/public (show-optimization-coach/tab)
-        (set! visible? #t))
-      (define/public (hide-optimization-coach/tab)
-        (set! visible? #f))))
-
-  (drracket:get/extend:extend-tab tab-mixin)
-
   (define frame-mixin
     (mixin (drracket:unit:frame<%>) ()
       (inherit set-show-menu-sort-key get-current-tab
@@ -186,15 +171,15 @@
                    [demand-callback
                     (λ (item)
                       (send item set-label
-                            (if (send (get-current-tab)
+                            (if (send (get-definitions-text)
                                       optimization-coach-visible?)
                                 (string-constant hide-optimization-coach)
                                 (string-constant show-optimization-coach))))]
                    [callback
                     (λ (a b)
-                      (define tab (get-current-tab))
-                      (if (send tab optimization-coach-visible?)
-                          (send (send tab get-defs) clear-highlights)
+                      (define defs (get-definitions-text))
+                      (if (send defs optimization-coach-visible?)
+                          (send defs clear-highlights)
                           (optimization-coach-callback)))]))
         (set-show-menu-sort-key optimization-coach-menu-item 403))
       (define optimization-coach-menu-item #f)
@@ -214,7 +199,6 @@
       ;; control panel
       (define panel #f)
       (define/public (show-optimization-coach-panel)
-        (send (get-current-tab) show-optimization-coach/tab)
         (define area-container (get-area-container))
         (define definitions (get-definitions-text))
         (define filters (send definitions get-filters))
@@ -253,16 +237,14 @@
           (send c set-value (memq f filters))))
 
       (define/public (hide-optimization-coach-panel [close #t])
-        (send (get-area-container) delete-child panel)
-        (when close
-          (send (get-current-tab) hide-optimization-coach/tab)))
+        (send (get-area-container) delete-child panel))
 
 
       ;; tab switching
       (define/augment (on-tab-change old-tab new-tab)
-        (when (send old-tab optimization-coach-visible?)
+        (when (send (send old-tab get-defs) optimization-coach-visible?)
           (hide-optimization-coach-panel #f)) ; don't close it
-        (when (send new-tab optimization-coach-visible?)
+        (when (send (send new-tab get-defs) optimization-coach-visible?)
           ;; if it was open before
           (show-optimization-coach-panel)))
 
