@@ -179,7 +179,7 @@
                     (λ (a b)
                       (define defs (get-definitions-text))
                       (if (send defs optimization-coach-visible?)
-                          (send defs clear-highlights)
+                          (hide-optimization-coach)
                           (optimization-coach-callback)))]))
         (set-show-menu-sort-key optimization-coach-menu-item 403))
       (define optimization-coach-menu-item #f)
@@ -211,10 +211,7 @@
                (new button%
                     [label "Clear"]
                     [parent panel]
-                    [callback
-                     (lambda _
-                       (hide-optimization-coach)
-                       (send (get-definitions-text) clear-highlights))])
+                    [callback (lambda _ (hide-optimization-coach))])
                (for ([(l f) (in-pairs check-boxes)])
                  (new check-box%
                       [label l]
@@ -236,14 +233,16 @@
               [(l f) (in-pairs check-boxes)])
           (send c set-value (memq f filters))))
 
-      (define/public (hide-optimization-coach [close #t])
-        (send (get-area-container) delete-child panel))
+      (define/public (hide-optimization-coach #:close? [close? #t])
+        (send (get-area-container) delete-child panel)
+        (when close?
+          (send (get-definitions-text) clear-highlights)))
 
 
       ;; tab switching
       (define/augment (on-tab-change old-tab new-tab)
         (when (send (send old-tab get-defs) optimization-coach-visible?)
-          (hide-optimization-coach #f)) ; don't close it
+          (hide-optimization-coach #:close? #f))
         (when (send (send new-tab get-defs) optimization-coach-visible?)
           ;; if it was open before
           (show-optimization-coach)))
