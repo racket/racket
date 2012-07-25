@@ -190,10 +190,11 @@
       (keymap:add-to-right-button-menu
        (let ([old (keymap:add-to-right-button-menu)])
          (lambda (menu editor event)
-           (define definitions (get-definitions-text))
-           (let-values ([(pos text) (send definitions get-pos/text event)])
-             (send definitions build-optimization-coach-popup-menu
-                   menu pos text))
+           (let-values ([(pos text) (send editor get-pos/text event)])
+             (when (is-a? editor drracket:unit:definitions-text<%>)
+               ;; has the optimization-coach mixin
+               (send editor build-optimization-coach-popup-menu
+                     menu pos text)))
            (old menu editor event))))
 
 
