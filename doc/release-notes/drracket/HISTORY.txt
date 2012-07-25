@@ -1,13 +1,22 @@
 ------------------------------
-       Version 5.2.2
+       Version 5.3
 ------------------------------
+
+  . Added the Optimization Coach (see the 'View' menu)
+
+  . Adjusted Check Syntax so that set!'d variables and 
+    contract obligations are now in tooltips
 
   . DrRacket's toolbar buttons now have numbers associated with them
     to control what order they appear in.
 
+  . Ditto for the View menu items; also, cleaned up the View menu
+
   . The framework's color:text%'s token-sym->style init argument (also
     the same as the color:text%'s start-colorer method's argument of
     the same name) is a function that now might be passed 'white-space.
+
+  . record errors coming from user language implementations via log-debug
 
 ------------------------------
        Version 5.2.1
