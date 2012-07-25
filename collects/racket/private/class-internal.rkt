@@ -4975,9 +4975,9 @@ An example
     (for-each (lambda (from-id)
                 (unless (implementation? super% from-id)
                   (obj-error mixin-name 
-                             "argument class does not implement method" 
+                             "argument class does not implement interface" 
                              "argument" super% 
-                             "method name" (as-write from-id))))
+                             "interface name" (as-write from-id))))
               from-ids)))
 
 (define (check-mixin-from-interfaces all-from)
