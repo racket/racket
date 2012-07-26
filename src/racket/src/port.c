@@ -2325,9 +2325,11 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	unless_evt = SCHEME_PTR2_VAL(unless_evt);
 
       if (ip->pending_eof > 1) {
-	ip->pending_eof = 1;
-        if (ip->progress_evt)
-          post_progress(ip);
+        if (!peek) {
+          ip->pending_eof = 1;
+          if (ip->progress_evt)
+            post_progress(ip);
+        }
 	gc = EOF;
       } else {
 	/* Call port's get or peek function. But first, set up
