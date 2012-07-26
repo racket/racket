@@ -286,7 +286,7 @@
     (go-stream #t #t #t #t)))
 
 ;; make-input-port/read-to-peek
-(define (make-list-port . l)
+(define (make-list-port #:eof-as-special? [eof-as-special? #f] . l)
   (make-input-port/read-to-peek 
    'list-port
    (lambda (bytes)
@@ -301,6 +301,10 @@
        (bytes-set! bytes 0 (char->integer (car l)))
        (set! l (cdr l))
        1]
+      [(and (not eof-as-special?)
+            (eof-object? (car l)))
+       (set! l (cdr l))
+       eof]
       [else
        (let ([v (car l)])
 	 (set! l (cdr l))
@@ -345,10 +349,22 @@
   (test 'lo read p)
   (test eof read p)
   (test eof read p))
+(let ([p (make-list-port #:eof-as-special? #t #\h #\e #\l eof #\l #\o)])
+  (test 'hel read p)
+  (test eof read p)
+  (test 'lo read p)
+  (test eof read p)
+  (test eof read p))
 (let ([p (make-list-port #\h #\e #\l #\u7238 #\l #\o)])
   (test 'hel read p)
   (test #\u7238 read p)
   (test 'lo read p))
+
+(let ([p (make-list-port 65 eof 66 67)])
+  (test 65 peek-byte p 0)
+  (test eof peek-byte p 1)
+  (test #t port-commit-peeked 2 (port-progress-evt p) always-evt p)
+  (test 66 peek-byte p 0))
 
 ;; Check that make-input-port/read-to-peek isn't trying
 ;; to use chars when it should use bytes:
@@ -964,13 +980,13 @@
         (define-values (i o) (tcp-connect "localhost" PORT))
         (write-bytes s o)
         (close-output-port o)
-        (test s read-bytes M i)))
+        (test s read-bytes M i)
+        (close-input-port i)))
 
     (sync server)
     (tcp-close listener))
 
   (let ([integer->byte (lambda (s) (bitwise-and s #xFF))])
-    #;
     (check-can-reuse read-bytes-evt read-bytes write-bytes integer->byte list->bytes bytes?)
     ;; the following should work because we use the same evt only after
     ;; success or to start at the same point in the input stream:
@@ -979,7 +995,6 @@
                        (wrap-evt (read-bytes!-evt bstr in)
                                  (lambda (v) (if (eof-object? v) v bstr))))
                      read-bytes write-bytes integer->byte list->bytes bytes?))
-  #;
   (check-can-reuse read-string-evt read-string write-string integer->char list->string string?))
 
 ;; --------------------------------------------------

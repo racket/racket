@@ -1110,6 +1110,7 @@
   ;; go is the main reading function, either called directly for
   ;; a poll, or called in a thread for a non-poll read
   (define (go nack ch poll?)
+    ;; FIXME - what if the input port is closed?
     (let try-again ([pos 0] [bstr orig-bstr] [progress-evt #f])
       (let* ([progress-evt 
               ;; if no progress event is given, get one to ensure that
@@ -1152,10 +1153,10 @@
                                       (channel-put-evt ch result))
                                     input-port)
                 result]
-               [(and (eof-object? eof)
+               [(and (eof-object? v)
                      (zero? pos)
                      (not (sync/timeout 0 progress-evt)))
-                ;; Must be a true end-of-file
+                ;; Must be a true end-of-file, since commit failed
                 (let ([result (combo bstr eof)])
                   (if poll? result (channel-put ch result)))]
                [poll? #f]
