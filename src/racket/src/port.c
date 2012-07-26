@@ -8532,7 +8532,7 @@ static void kill_subproc(Scheme_Object *o, void *data)
 
 static void interrupt_subproc(Scheme_Object *o, void *data)
 {
-  (void)do_subprocess_kill(o, scheme_true, 0);
+  (void)do_subprocess_kill(o, scheme_false, 0);
 }
 #endif
 
