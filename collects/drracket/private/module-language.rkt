@@ -1759,6 +1759,36 @@
       (inherit get-admin invalidate-bitmap-cache get-dc
                dc-location-to-editor-location)
       (define inside? #f)
+      (define recently-typed? #f)
+      (define fade-amount 1)
+      
+      (define recently-typed-timer 
+        (new timer%
+             [notify-callback
+              (λ ()
+                (update-recently-typed #f)
+                (unless (equal? fade-amount 1)
+                  (cond
+                    [inside? 
+                     (set! fade-amount (+ fade-amount 1/10))
+                     (send recently-typed-timer start 100 #t)]
+                    [else
+                     (set! fade-amount 1)])
+                  (invalidate-bitmap-cache 0 0 'display-end 'display-end)))]))
+      
+      (define/override (on-char evt)
+        (when inside?
+          (update-recently-typed #t)
+          (set! fade-amount 0)
+          (send recently-typed-timer stop)
+          (send recently-typed-timer start 2000 #t))
+        (super on-char evt))
+      
+      (define/private (update-recently-typed nv)
+        (unless (equal? recently-typed? nv)
+          (set! recently-typed? nv)
+          (invalidate-bitmap-cache 0 0 'display-end 'display-end)))
+      
       (define/override (on-event evt)
         (define new-inside?
           (cond
@@ -1794,7 +1824,8 @@
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
         (super on-paint before? dc left top right bottom dx dy draw-caret)
         (unless before?
-          (when inside?
+          (when (and inside?
+                     (not recently-typed?))
             (define admin (get-admin))
             (when admin
               (send admin get-view bx by bw bh)
@@ -1808,7 +1839,7 @@
                      left top right bottom
                      tx ty (+ tx tw) (+ ty th))
                 (send dc set-text-foreground "black")
-                (send dc set-alpha .5)
+                (send dc set-alpha (* fade-amount .5))
                 (send dc draw-text id (+ dx tx) (+ dy ty))
                 (send dc set-alpha α)
                 (send dc set-text-foreground fore))
