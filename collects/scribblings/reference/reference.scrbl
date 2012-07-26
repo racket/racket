@@ -115,6 +115,12 @@ The @racketmodname[racket] library combines
             #:title "A Generalization of Exceptions and Control in ML-like Languages"
             #:location "Functional Programming Languages and Computer Architecture"
             #:date "1995")
+
+ (bib-entry #:key "Haynes84"
+            #:author "Christopher T. Haynes and Daniel P. Friedman"
+            #:title "Engines Build Process Abstractions"
+            #:location "Symposium on LISP and Functional Programming"
+            #:date "1984")
  
  (bib-entry #:key "Hayes97"
             #:author "Barry Hayes"
