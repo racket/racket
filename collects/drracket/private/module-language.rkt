@@ -1804,10 +1804,9 @@
               (define-values (tw th _1 _2) (send dc get-text-extent id))
               (define tx (+ (unbox bx) (- (unbox bw) tw)))
               (define ty (+ (unbox by) (- (unbox bh) th)))
-              (when (and (or (< left tx right)
-                             (< left (+ tx tw) right))
-                         (or (< top ty bottom)
-                             (< top (+ ty th) bottom)))
+              (when (rectangles-intersect?
+                     left top right bottom
+                     tx ty (+ tx tw) (+ ty th))
                 (send dc set-text-foreground "black")
                 (send dc set-alpha .5)
                 (send dc draw-text id (+ dx tx) (+ dy ty))
@@ -1815,13 +1814,22 @@
                 (send dc set-text-foreground fore))
               (send dc set-font defs/ints-font)))))
       (super-new)))
+  
+  (define (rectangles-intersect? l1 t1 r1 b1 l2 t2 r2 b2)
+    (or (point-in-rectangle? l1 t1 l2 t2 r2 b2)
+        (point-in-rectangle? r1 t1 l2 t2 r2 b2)
+        (point-in-rectangle? l1 b1 l2 t2 r2 b2)
+        (point-in-rectangle? r1 b1 l2 t2 r2 b2)))
+  
+  (define (point-in-rectangle? x y l t r b)
+    (and (<= l x r)
+         (<= t y b)))
 
         
   (define bx (box 0))
   (define by (box 0))
   (define bw (box 0))
   (define bh (box 0))
-  
   
   (define module-language-interactions-text-mixin
     (mk-module-language-text-mixin (string-constant interactions-window-label)))
