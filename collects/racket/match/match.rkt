@@ -6,15 +6,11 @@
          (only-in "match-expander.rkt"
                   define-match-expander)
          "define-forms.rkt"
-         "struct.rkt"
-         (for-syntax unstable/lazy-require
-                     (only-in "stxtime.rkt"
+         "struct.rkt"         
+         (for-syntax "parse.rkt"
+                     (only-in "patterns.rkt" 
                               match-...-nesting
-                              prop:match-expander
-                              prop:legacy-match-expander)))
-
-(begin-for-syntax
-  (lazy-require [racket/match/parse (parse)]))
+                              prop:match-expander prop:legacy-match-expander)))
 
 (provide (for-syntax match-...-nesting
                      prop:match-expander prop:legacy-match-expander)
@@ -26,5 +22,4 @@
 (define-forms parse
   match match* match-lambda match-lambda* match-lambda** match-let match-let*
   match-let-values match-let*-values
-  match-define match-define-values match-letrec match/values
-  match/derived match*/derived)
+  match-define match-define-values match-letrec match/values match/derived match*/derived)

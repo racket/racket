@@ -2,7 +2,7 @@
 (require racket/match/match-expander
          (for-syntax racket/base
                      racket/struct-info
-                     syntax/id-table
+                     syntax/boundmap
                      racket/list))
 
 (define-match-expander
@@ -17,7 +17,7 @@
               [v (if (identifier? #'struct-name)
                      (syntax-local-value #'struct-name fail)
                      (fail))]
-              [field-acc->pattern (make-free-id-table)])
+              [field-acc->pattern (make-free-identifier-mapping)])
          (unless (struct-info? v) (fail))
          ; Check each pattern and capture the field-accessor name
          (for-each (lambda (an)
@@ -34,9 +34,9 @@
                                                        (syntax-e #'struct-name)
                                                        (syntax-e #'field)))
                                               #'field)])
-                          (when (free-id-table-ref field-acc->pattern field-acc #f)
+                          (when (free-identifier-mapping-get field-acc->pattern field-acc (lambda () #f))
                             (raise-syntax-error 'struct* "Field name appears twice" stx #'field)) 
-                          (free-id-table-set! field-acc->pattern field-acc #'pat))]
+                          (free-identifier-mapping-put! field-acc->pattern field-acc #'pat))]
                        [_
                         (raise-syntax-error
                          'struct* "expected a field pattern of the form (<field-id> <pat>)"
@@ -54,13 +54,14 @@
                 [pats-in-order
                  (for/list ([field-acc (in-list acc)])
                    (begin0
-                     (free-id-table-ref
+                     (free-identifier-mapping-get
                       field-acc->pattern field-acc
-                      (syntax/loc stx _))
+                      (lambda () (syntax/loc stx _)))
                      ; Use up pattern
-                     (free-id-table-remove! field-acc->pattern field-acc)))])
+                     (free-identifier-mapping-put!
+                      field-acc->pattern field-acc #f)))])
            ; Check that all patterns were used
-           (free-id-table-for-each
+           (free-identifier-mapping-for-each
             field-acc->pattern
             (lambda (field-acc pat)
               (when pat

@@ -5,11 +5,8 @@
                      (only-in racket/list append* remove-duplicates)
                      unstable/sequence
                      syntax/parse
-                     unstable/lazy-require))
-
-(begin-for-syntax
- (lazy-require [racket/match/patterns (bound-vars)]
-               [racket/match/gen-match (go parse-id go/one)]))
+                     "patterns.rkt"
+                     "gen-match.rkt"))
 
 (provide define-forms)
 
