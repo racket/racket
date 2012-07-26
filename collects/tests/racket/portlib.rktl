@@ -876,27 +876,36 @@
     (test #t list? r)))
 
 ;; check proper locking for concurrent access:
-(for ([i 100])
-  (let* ([p (make-limited-input-port
-             (open-input-string "A\nB\nC\nD\n") 
-             4)]
-         [N 6]
-         [chs (for/list ([i N])
-                (let ([ch (make-channel)])
-                  (thread
-                   (lambda ()
-                     (when (even? i) (sleep))
-                     (channel-put ch (list (sync (read-bytes-line-evt p))
-                                           (file-position p)))))
-                  ch))]
-         [rs (for/list ([ch chs])
-               (channel-get ch))])
-    (test 2 apply + (for/list ([r rs]) (if (bytes? (car r)) 1 0)))
-    (test #t values (for/and ([r rs]) 
-                      (if (eof-object? (car r))
-                          (eq? (cadr r) 4)
-                          (and (memq (cadr r) '(2 4)) #t))))))
-
+(for ([mk-p (list
+             (lambda ()
+               (open-input-string "A\nB\n"))
+             (lambda ()
+               (make-limited-input-port
+                (open-input-string "A\nB\nC\nD\n") 
+                4)))])
+  (for ([i 100])
+    (let* ([p (mk-p)]
+           [N 6]
+           [chs (for/list ([i N])
+                  (let ([ch (make-channel)])
+                    (thread
+                     (lambda ()
+                       (when (even? i) (sleep))
+                       (channel-put ch (list (sync (read-bytes-line-evt p))
+                                             (file-position p)
+                                             (let ()
+                                               (define-values (l c pos) (port-next-location p))
+                                               (sub1 pos))))))
+                    ch))]
+           [rs (for/list ([ch chs])
+                 (channel-get ch))])
+      (test 2 apply + (for/list ([r rs]) (if (bytes? (car r)) 1 0)))
+      (for ([r rs]) 
+        (if (eof-object? (car r))
+            (test 4 cadr r)
+            (let ([memq? (lambda (a l) (and (memq a l) #t))])
+              (test #t memq? (cadr r) '(2 4))
+              (test #t = (cadr r) (caddr r))))))))
 
 (let-values ([(in out) (make-pipe-with-specials)])
   (struct str (v)    

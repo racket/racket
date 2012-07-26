@@ -2150,10 +2150,10 @@ intptr_t scheme_get_byte_string_unless(const char *who,
   while (1) {
     SCHEME_USE_FUEL(1);
 
-    CHECK_PORT_CLOSED(who, "input", port, ip->closed);
-
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, only_avail);
+
+    CHECK_PORT_CLOSED(who, "input", port, ip->closed);
 
     if (only_avail == -1) {
       /* We might need to break. */
@@ -3819,6 +3819,15 @@ scheme_need_wakeup (Scheme_Object *port, void *fds)
           CHECK_PORT_CLOSED(who, "output", port, ((Scheme_Output_Port *)port)->closed); \
         }
 
+static void check_input_port_lock(Scheme_Port *ip)
+{
+  if (SCHEME_INPORTP(ip)) {
+    Scheme_Input_Port *iip = (Scheme_Input_Port *)ip;
+    if (iip->input_lock)
+      scheme_wait_input_allowed(iip, 0);
+  }
+}
+
 intptr_t
 scheme_tell (Scheme_Object *port)
 {
@@ -3826,6 +3835,8 @@ scheme_tell (Scheme_Object *port)
   intptr_t pos;
 
   ip = scheme_port_record(port);
+  
+  check_input_port_lock(ip);
   
   CHECK_IOPORT_CLOSED("get-file-position", ip);
 
@@ -3848,6 +3859,8 @@ scheme_tell_line (Scheme_Object *port)
   if (!ip->count_lines || (ip->position < 0))
     return -1;
 
+  check_input_port_lock(ip);
+
   CHECK_IOPORT_CLOSED("get-file-line", ip);
 
   line = ip->lineNumber;
@@ -3865,7 +3878,9 @@ scheme_tell_column (Scheme_Object *port)
 
   if (!ip->count_lines || (ip->position < 0))
     return -1;
-  
+
+  check_input_port_lock(ip);
+
   CHECK_IOPORT_CLOSED("get-file-column", ip);
 
   col = ip->column;
@@ -4014,6 +4029,9 @@ scheme_close_input_port (Scheme_Object *port)
   Scheme_Input_Port *ip;
 
   ip = scheme_input_port_record(port);
+
+  if (ip->input_lock && scheme_force_port_closed)
+    scheme_wait_input_allowed(ip, 0);
 
   if (!ip->closed) {
     if (ip->close_fun) {
@@ -5099,6 +5117,9 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     Scheme_Input_Port *ip;
 
     ip = scheme_input_port_record(argv[0]);
+
+    if (ip->input_lock)
+      scheme_wait_input_allowed(ip, 0);
 
     if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
       f = ((Scheme_Input_File *)ip->port_data)->f;
