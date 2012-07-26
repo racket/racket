@@ -2123,6 +2123,26 @@
   (parse-string "()"))
 (err/rt-test (do-test-of-lift-fixpoint) exn:fail?)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; generate byecode with a lifted function that has
+;; a boxed argument and rest args, to test that case
+;; of the validator
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define o (open-output-bytes))
+  (write
+   (compile
+    '(lambda (x)
+       (define (g . y) (if (zero? (random 1))
+                           (reverse (cons x y))
+                           (g y y y y y y y y y)))
+       (set! x x)
+       (g 12 13)))
+   o)
+  (test '(13 12 10)
+        (parameterize ([read-accept-compiled #t])
+          (eval (read (open-input-bytes (get-output-bytes o)))))
+        10))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

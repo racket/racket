@@ -242,8 +242,9 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
         if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
           int sz;
           sz = data->num_params;
-          new_a = MALLOC_N_ATOMIC(mzshort, (sz + 1));
+          new_a = MALLOC_N_ATOMIC(mzshort, (sz + 2));
           new_a[0] = -sz;
+          new_a[sz+1] = !!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST);
           for (i = 0; i < sz; i++) {
             int bit = ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1)));
             if (data->closure_map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & bit)
@@ -623,7 +624,11 @@ int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
             /* try again */
             p = a[1];
           } else {
-            return a[pos + 1];
+            if (pos >= -a[0]) {
+              /* last slot indicates whether rest args are allowed */
+              return (a[-a[0]+1] ? hope : !hope);
+            } else
+              return a[pos + 1];
           }
         } else
           return 0;
