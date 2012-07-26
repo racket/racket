@@ -7,6 +7,7 @@
 (define-syntax-rule (test expect expr)
   (let ([val expr]
         [ex expect])
+    (printf "~s\n" 'expr)
     (unless (equal? ex val)
       (error 'test "~s failed: ~e" 'expr val))
     (set! count (add1 count))))
@@ -126,7 +127,7 @@
 
   (define doc (com-get-property ie "Document"))
   (test #t (com-object? doc))
-  (test "Racket" (com-get-property ie "Document" "title"))
+  (test "The Racket Language" (com-get-property ie "Document" "title"))
   (test (void) (com-set-property! ie "Document" "title" "The Racket Documentation"))
   (test "The Racket Documentation" (com-get-property ie "Document" "title"))
   (test '(-> () string) (com-get-property-type doc "title"))
