@@ -8622,6 +8622,8 @@ static char *cmdline_protect(char *s)
   int ds;
   int has_space = 0, has_quote = 0, was_slash = 0;
 
+  if (!*s) return "\"\""; /* quote an empty argument */
+
   for (ds = 0; s[ds]; ds++) {
     if (isspace(s[ds]) || (s[ds] == '\'')) {
       has_space = 1;
