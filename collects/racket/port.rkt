@@ -1000,7 +1000,10 @@
       (define (do-peek str skip progress-evt)
         (let ([count (max 0 (min (- limit got skip) (bytes-length str)))])
           (if (zero? count)
-              eof
+              (if (and progress-evt
+                       (sync/timeout 0 progress-evt))
+                  #f
+                  eof)
               (let ([n (peek-bytes-avail!* str skip progress-evt port 0 count)])
                 (if (eq? n 0)
                     (wrap-evt port (lambda (x) 0))
