@@ -353,9 +353,9 @@ but ports created with @racket[make-input-port] (see
 Attempts to commit as read the first @racket[amt] previously peeked
 bytes, non-byte specials, and @racket[eof]s from @racket[in], or the
 first @racket[eof] or special value peeked from
-@racket[in]. (Only mid-stream @racket[eof]s can be
-committed. An @racket[eof] when the port is exhausted does not
-correspond to data in the stream.)
+@racket[in]. Mid-stream @racket[eof]s can be
+committed, but an @racket[eof] when the port is exhausted does not
+necessarily commit, since it does not correspond to data in the stream.
 
 The read commits only if @racket[progress] does not become ready first
 (i.e., if no other process reads from @racket[in] first), and only if

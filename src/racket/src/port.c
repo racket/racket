@@ -2326,6 +2326,8 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 
       if (ip->pending_eof > 1) {
 	ip->pending_eof = 1;
+        if (ip->progress_evt)
+          post_progress(ip);
 	gc = EOF;
       } else {
 	/* Call port's get or peek function. But first, set up
@@ -2363,7 +2365,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	  gc = gs(ip, buffer, offset + got, size, nonblock, unless);
 
 	  if (!peek && gc && ip->progress_evt
-	      && (gc != EOF) 
+	      && ((gc != EOF) || ip->pending_eof)
 	      && (gc != SCHEME_UNLESS_READY))
 	    post_progress(ip);
 	}
@@ -2610,9 +2612,9 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
   buf = _buf;
   
   did = 0;
-  
+
   /* Target event is ready, so commit must succeed */
-  
+
   /* First remove ungotten_count chars */
   if (ip->ungotten_count) {
     int i, amt;
@@ -2643,7 +2645,7 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
       post_progress(ip);
     did = 1;
   }
-  
+
   if (size) {
     Scheme_Input_Port *pip;
 
@@ -2658,17 +2660,26 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
       if (ip->peeked_read) {
 	int cnt;
 	cnt = pipe_char_count(ip->peeked_read);
-	if ((cnt < size) && (ip->pending_eof == 2))
+        if ((cnt < size) && (ip->pending_eof == 2)) {
 	  ip->pending_eof = 1;
+          size--;
+          did = 1;
+        }
 	pip = (Scheme_Input_Port *)ip->peeked_read;
 	gs = pip->get_string_fun;
       } else {
+        if (ip->pending_eof == 2) {
+          ip->pending_eof = 1;
+          did = 1;
+          if (ip->progress_evt)
+            post_progress(ip);
+        }
 	gs = NULL;
 	pip = NULL;
       }
     }
       
-    if (gs) {
+    if (gs && size) {
       if (ip->p.count_lines) {
         if (buf_size < size) {
           buf = scheme_malloc_atomic(size);
@@ -2688,8 +2699,11 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
       }
     }
   }
-   
-  return did;
+
+  /* We used to return `did', but since an event has already been
+     selected, claim success at this point always. */
+
+  return 1;
 }
 
 static Scheme_Object *return_data(void *data, int argc, Scheme_Object **argv)
