@@ -333,7 +333,7 @@ like @racket[peek-bytes-avail!].}
 
 Returns a @tech{synchronizable event} that becomes ready after any subsequent read from
 @racket[in], or after @racket[in] is closed. After the event becomes
-ready, it remains ready..}
+ready, it remains ready.}
 
 
 @defproc[(port-provides-progress-evts? [in input-port?]) boolean]{
