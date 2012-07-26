@@ -300,7 +300,7 @@ void scheme_write_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
   if (((Scheme_Output_Port *)port)->write_handler)
     do_handled_print(obj, port, scheme_write_proc, maxl);
   else if (can_print_fast(obj))
-    return print_to_port("write", obj, port, 1, maxl, NULL);
+    print_to_port("write", obj, port, 1, maxl, NULL);
   else {
     Scheme_Thread *p = scheme_current_thread;
     
@@ -324,7 +324,7 @@ void scheme_display_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl
   if (((Scheme_Output_Port *)port)->display_handler)
     do_handled_print(obj, port, scheme_display_proc, maxl);
   else if (can_print_fast(obj))
-    return print_to_port("display", obj, port, 0, maxl, NULL);
+    print_to_port("display", obj, port, 0, maxl, NULL);
   else {
     Scheme_Thread *p = scheme_current_thread;
     
@@ -348,7 +348,7 @@ void scheme_print_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
   if (((Scheme_Output_Port *)port)->print_handler)
     do_handled_print(obj, port, scheme_print_proc, maxl);
   else if (can_print_fast(obj))
-    return print_to_port("print", obj, port, 2, maxl, NULL);
+    print_to_port("print", obj, port, 2, maxl, NULL);
   else {
     Scheme_Thread *p = scheme_current_thread;
     
