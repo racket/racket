@@ -392,9 +392,11 @@
          (let ([c (make-custodian)])
            (let ([l (parameterize ([current-custodian c])
                       (process* self
+                                "-e" "0"
                                 "-e"
                                 "(let loop () (loop))"))])
              (test 'running (list-ref l 4) 'status)
+             (read-line (car l)) ; wait until running
              (custodian-shutdown-all c)
              (sleep 0.1)
              (when (and wait?
