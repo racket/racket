@@ -199,6 +199,40 @@
   (test (vector 2.0 3.0 4.0) 'for/vector-many-body v2)
   (test (vector 3.0 4.0 5.0) 'for/vector-length-many-body v3))
 
+;; Stop when a length is specified, even if the sequence continues:
+(test '#(0 1 2 3 4 5 6 7 8 9)
+      'nat
+      (for/vector #:length 10 ([i (in-naturals)]) i))
+(test '#((0 . 0) (1 . 0) (2 . 0) (3 . 0) (4 . 0) (5 . 0) (6 . 0) (7 . 0) (8 . 0) (9 . 0))
+      'nats
+      (for*/vector #:length 10 ([i (in-naturals)] [j (in-naturals)]) (cons j i)))
+(test '#((0 . 0) (1 . 0) (2 . 0) (3 . 0) (4 . 0) (0 . 1) (1 . 1) (2 . 1) (3 . 1) (4 . 1))
+      'nat+5
+      (for*/vector #:length 10 ([i (in-naturals)] [j (in-range 5)]) (cons j i)))
+(test '#(1 3 5 7 9 11 13 15 17 19)
+      'parallel
+      (for*/vector #:length 10 ([(i j) (in-parallel (in-naturals)
+                                                    (in-naturals 1))])
+                   (+ i j)))
+
+;; Make sure the sequence stops at the length before consuming another element:
+(test '(#("1" "2" "3" "4" "5" "6" "7" "8" "9" "10") . 10)
+      'producer
+      (let ([c 0])
+        (cons
+         (for/vector #:length 10 ([i (in-producer (lambda () (set! c (add1 c)) c) #f)]) 
+                     (number->string i))
+         c)))
+(test '(#("1" "2" "3" "4" "5" "6" "7" "8" "9" "10") . 10)
+      'producer
+      (let ([c 0])
+        (cons
+         (for*/vector #:length 10 ([j '(0)]
+                                   [i (in-producer (lambda () (set! c (add1 c)) c) #f)])
+                      (number->string i))
+         c)))
+
+
 (test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
       (for/hash ([v (in-naturals)]
                  [k '(a b c)])
