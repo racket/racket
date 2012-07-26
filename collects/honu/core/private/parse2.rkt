@@ -296,7 +296,7 @@
     (if current
       (values (left current) stream)
       (begin
-        (debug "Honu macro at phase ~a: ~a\n" (syntax-local-phase-level) head)
+        (debug "Honu macro at phase ~a: ~a ~a\n" (syntax-local-phase-level) head (syntax-local-value head))
         (let-values ([(parsed unparsed terminate?)
                       ((syntax-local-value head)
                        (with-syntax ([head head]

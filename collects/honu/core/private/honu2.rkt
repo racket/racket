@@ -425,9 +425,11 @@
   (lambda (code)
     (syntax-parse code #:literal-sets (cruft)
                        #:literals (honu-in)
-      [(_ (~seq iterator:id honu-in stuff:honu-expression (~optional honu-comma)) ...
+      [(_ (~seq iterator:id honu-in stuff:honu-expression)
+          (~seq honu-comma iterator*:id honu-in stuff*:honu-expression) ...
           honu-do body:honu-expression . rest)
-       (values (racket-syntax (for ([iterator stuff.result] ...)
+       (values (racket-syntax (for ([iterator stuff.result]
+                                    [iterator* stuff*.result] ...)
                                 body.result))
                #'rest
                #t)])))
