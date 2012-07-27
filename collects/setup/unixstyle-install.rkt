@@ -450,9 +450,10 @@
 
 ;; --------------------------------------------------------------------------
 
-(case op
-  [(move) (move/copy-distribution #t)]
-  [(copy) (move/copy-distribution #f)]
-  [(make-install-copytree)    (make-install-copytree)]
-  [(make-install-destdir-fix) (make-install-destdir-fix)]
-  [else   (error (format "unknown operation: ~e" op))])
+(module+ main
+  (case op
+    [(move) (move/copy-distribution #t)]
+    [(copy) (move/copy-distribution #f)]
+    [(make-install-copytree)    (make-install-copytree)]
+    [(make-install-destdir-fix) (make-install-destdir-fix)]
+    [else   (error (format "unknown operation: ~e" op))]))
