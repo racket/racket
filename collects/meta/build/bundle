@@ -7,7 +7,7 @@
          racket/list ; for use in specs too
          racket/string
          racket/file (only-in racket/system system)
-         (except-in racket/mpair mappend)
+         (except-in compatibility/mpair mappend)
          meta/checker (prefix-in dist: meta/dist-specs) meta/specs)
 
 (define (/-ify x)

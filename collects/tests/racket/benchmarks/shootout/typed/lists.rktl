@@ -1,4 +1,4 @@
-(require racket/mpair)
+(require compatibility/mpair)
 (define SIZE 10000)
 
 (: sequence (Integer Integer -> (MListof Integer)))

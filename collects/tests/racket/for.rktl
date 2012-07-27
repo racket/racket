@@ -3,7 +3,7 @@
 
 (Section 'for)
 
-(require racket/mpair
+(require compatibility/mpair
          "for-util.rkt")
 
 (test-sequence [(0 1 2)] 3)

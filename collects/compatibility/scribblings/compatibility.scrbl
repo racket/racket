@@ -15,6 +15,7 @@ We @emph{strongly} recommend using these alternatives.
 
 @include-section["defmacro.scrbl"]
 @include-section["package.scrbl"]
+@include-section["mpairs.scrbl"]
 
 @(bibliography
   (bib-entry #:key "Waddell99"
