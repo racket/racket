@@ -575,6 +575,17 @@
 (begin-for-syntax
   (set! 1ary-funs (list* #'bfsgn #'bfround 1ary-funs)))
 
+(define mpfr-fac-ui (get-mpfr-fun 'mpfr_fac_ui (_fun _mpfr-pointer _ulong _rnd_t -> _int)))
+
+(define (bffactorial n)
+  (cond [(n . < . 0)  (raise-type-error 'bffactorial "Natural" n)]
+        [(n . > . 100000000)  (force +inf.bf)]
+        [else  (define y (new-mpfr (bf-precision)))
+               (mpfr-fac-ui y n (bf-rounding-mode))
+               y]))
+
+(provide bffactorial)
+
 (define-syntax-rule (provide-1ary-fun/noround name c-name)
   (begin
     (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))

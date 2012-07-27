@@ -37,6 +37,7 @@
  [bf  (case-> ((U String Real) -> Bigfloat)
               (Integer Integer -> Bigfloat))]
  ;; Functions with non-uniform types
+ [bffactorial  (Integer -> Bigfloat)]
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
@@ -71,6 +72,7 @@
  ;; Main constructor
  bf
  ;; Functions with non-uniform types
+ bffactorial
  bfjn
  bfyn
  bfshift
