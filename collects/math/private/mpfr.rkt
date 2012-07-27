@@ -786,3 +786,21 @@
 (begin-for-syntax
   (set! consts (list* #'-inf.bf #'-1.bf #'-0.bf #'+0.bf #'+1.bf #'+inf.bf #'+nan.bf #'-nan.bf
                       consts)))
+
+;; ===================================================================================================
+;; Extra functions
+
+(define (random-bits bits)
+  (let loop ([bits bits] [acc 0])
+    (cond [(= 0 bits)  acc]
+          [else
+           (define new-bits (min 24 bits))
+           (loop (- bits new-bits)
+                 (bitwise-ior (random (arithmetic-shift 1 new-bits))
+                              (arithmetic-shift acc new-bits)))])))
+
+(define (bfrandom)
+  (define bits (bf-precision))
+  (bf (random-bits bits) (- bits)))
+
+(provide bfrandom)

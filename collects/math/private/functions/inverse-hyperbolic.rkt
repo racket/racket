@@ -1,11 +1,5 @@
 #lang typed/racket/base
 
-#|
-TODO
-
-Error in acosh when exact x < 1
-|#
-
 (require racket/flonum
          "../../flonum.rkt"
          "log1p.rkt"
@@ -76,6 +70,7 @@ Error in acosh when exact x < 1
          (cond [(equal? x 1)  0]
                [(flonum? x)  (flacosh x)]
                [(single-flonum? x)  (real->single-flonum (flacosh (real->double-flonum x)))]
+               [(x . < . 1)  (raise-type-error 'acosh "Real >= 1" x)]
                [else  (flacosh (real->double-flonum x))])]
         [else
          (log (+ x (* (sqrt (+ x 1)) (sqrt (- x 1)))))]))

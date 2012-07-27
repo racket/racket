@@ -40,7 +40,8 @@
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
- [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))])
+ [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))]
+ [bfrandom  (-> Bigfloat)])
 
 (provide
  ;; Parameters
@@ -73,7 +74,8 @@
  bfjn
  bfyn
  bfshift
- bflog-gamma/sign)
+ bflog-gamma/sign
+ bfrandom)
 
 (define-syntax (req/prov-uniform-collection stx)
   (syntax-case stx ()
