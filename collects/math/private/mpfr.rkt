@@ -441,11 +441,24 @@
         (cond [((string-length sstr) . < . dlen)  (string-append sign sstr)]
               [else  (string-append sign (decimal-string exp digs))])])]))
 
+(define mpfr-set-str (get-mpfr-fun 'mpfr_set_str (_fun _mpfr-pointer _string _int _rnd_t -> _int)))
+
 ;; string->bigfloat : string [integer] -> bigfloat
 ;; Converts a Racket string to a bigfloat.
 (define (string->bigfloat str)
-  (define num (string->number (string-append "#e" str) 10))
-  (if num (rational->bigfloat num) #f))
+  (case str
+    [("-inf.bf" "-inf.0" "-inf.f")  (force -inf.bf)]
+    [("-1.bf")  (force -1.bf)]
+    [("-0.bf")  (force -0.bf)]
+    [("+0.bf")  (force +0.bf)]
+    [("+1.bf")  (force +1.bf)]
+    [("+inf.bf" "+inf.0" "+inf.f")  (force +inf.bf)]
+    [("+nan.bf" "+nan.0" "+nan.f")  (force +nan.bf)]
+    [("-nan.bf" "-nan.0" "-nan.f")  (force -nan.bf)]
+    [else
+     (define y (new-mpfr (bf-precision)))
+     (define bs (string->bytes/utf-8 str))
+     (if (zero? (mpfr-set-str y bs 10 'nearest)) y #f)]))
 
 (define (bigfloat-custom-write x port mode)
   (write-string
