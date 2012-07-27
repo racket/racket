@@ -286,10 +286,9 @@
          (check-subforms/with-handlers/check form expected)]
         [stx
          #:when (syntax-property form 'typechecker:ignore-some)
-         (let ([ty (check-subforms/ignore form)])
-           (unless ty
-             (int-err "internal error: ignore-some"))
-           (check-below ty expected))]
+         (check-subforms/ignore form)
+         ;; We trust ignore to be only on syntax objects objects that are well typed
+         expected]
         ;; explicit failure
         [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
          (explicit-fail #'stx #'msg #'var)]
@@ -397,10 +396,8 @@
          ty)]
       [stx
        #:when (syntax-property form 'typechecker:ignore-some)
-       (let ([ty (check-subforms/ignore form)])
-         (unless ty
-           (int-err "internal error: ignore-some"))
-         ty)]
+       (check-subforms/ignore form)
+       Univ]
       ;; explicit failure
       [(quote-syntax ((~literal typecheck-fail-internal) stx msg var))
        (explicit-fail #'stx #'msg #'var)]

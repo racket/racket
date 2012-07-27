@@ -100,7 +100,7 @@
   expected)
 
 ;; typecheck the expansion of a with-handlers form
-;; syntax -> any
+;; syntax -> void
 (define (check-subforms/ignore form)
   (let loop ([form form])
     (kernel-syntax-case* form #f ()
@@ -108,7 +108,7 @@
        ;; if this needs to be checked
        (syntax-property form 'typechecker:with-type)
        ;; the form should be already ascribed the relevant type
-       (tc-expr form)]
+       (void (tc-expr form))]
       [(a . b)
        (loop #'a)
        (loop #'b)]
