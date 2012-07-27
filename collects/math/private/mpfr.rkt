@@ -397,7 +397,19 @@
          (define sig (remove-trailing-zeros (format "~a.~a" (substring str 0 1) (substring str 1))))
          (if (= exp 1) sig (format "~ae~a" sig (number->string (- exp 1))))]))
 
-(define (digit-string exp digs)
+(define (decimal-string-length exp digs)
+  (cond [(exp . > . (string-length digs))
+         (+ (string-length digs) (- exp (string-length digs)))]
+        [(exp . <= . 0)
+         (let ([digs  (remove-trailing-zeros digs)])
+           (cond [(equal? digs "0")  1]
+                 [else  (+ 2 (- exp) (string-length digs))]))]
+        [else
+         (string-length
+          (remove-trailing-zeros
+           (string-append (substring digs 0 exp) "." (substring digs exp))))]))
+
+(define (decimal-string exp digs)
   (cond [(exp . > . (string-length digs))
          (string-append digs (make-string (- exp (string-length digs)) #\0))]
         [(exp . <= . 0)
@@ -425,11 +437,9 @@
               (values "-" (substring str 1))
               (values "" str)))
         (define sstr (scientific-string exp digs))
-        (define dstr (digit-string exp digs))
-        (cond [((string-length sstr) . < . (string-length dstr))
-               (string-append sign sstr)]
-              [else
-               (string-append sign dstr)])])]))
+        (define dlen (decimal-string-length exp digs))
+        (cond [((string-length sstr) . < . dlen)  (string-append sign sstr)]
+              [else  (string-append sign (decimal-string exp digs))])])]))
 
 ;; string->bigfloat : string [integer] -> bigfloat
 ;; Converts a Racket string to a bigfloat.
