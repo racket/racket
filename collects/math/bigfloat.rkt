@@ -38,6 +38,7 @@
               (Integer Integer -> Bigfloat))]
  ;; Functions with non-uniform types
  [bffactorial  (Integer -> Bigfloat)]
+ [bfsum  ((Listof Bigfloat) -> Bigfloat)]
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
  [bfshift  (Bigfloat Integer -> Bigfloat)]
@@ -73,6 +74,7 @@
  bf
  ;; Functions with non-uniform types
  bffactorial
+ bfsum
  bfjn
  bfyn
  bfshift

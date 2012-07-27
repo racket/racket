@@ -586,6 +586,16 @@
 
 (provide bffactorial)
 
+(define mpfr-sum (get-mpfr-fun 'mpfr_sum (_fun _mpfr-pointer (_list i _mpfr-pointer) _ulong
+                                               _rnd_t -> _int)))
+
+(define (bfsum xs)
+  (define y (new-mpfr (bf-precision)))
+  (mpfr-sum y xs (length xs) (bf-rounding-mode))
+  y)
+
+(provide bfsum)
+
 (define-syntax-rule (provide-1ary-fun/noround name c-name)
   (begin
     (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))
