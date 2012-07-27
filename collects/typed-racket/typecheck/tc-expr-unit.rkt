@@ -239,6 +239,13 @@
                   (check-below ts** expected))]
                ;; no annotations possible on dotted results
                [ty (add-typeof-expr form ty) ty])]
+            [(syntax-property form* 'typechecker:external-check)
+             =>
+             (lambda (check)
+               (check form*)
+               (loop (syntax-property form* 'typechecker:external-check #f)
+                     expected
+                     checked?))]
             ;; nothing to see here
             [checked? expected]
             [else 

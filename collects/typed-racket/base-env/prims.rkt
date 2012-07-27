@@ -39,7 +39,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (rename-in racket/contract/base [-> c->] [case-> c:case->])
          "base-types.rkt"
          "base-types-extra.rkt"
-         racket/flonum ; for for/flvector and for*/flvector         
+         racket/flonum ; for for/flvector and for*/flvector
          (for-syntax
           unstable/lazy-require
           syntax/parse
@@ -50,12 +50,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
+          "../types/utils.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it
 
 (begin-for-syntax 
-  (lazy-require ["../rep/type-rep.rkt" (make-Opaque)]
+  (lazy-require ["../rep/type-rep.rkt" (make-Opaque Error?)]
                 [syntax/define (normalize-definition)]))
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
@@ -195,6 +196,28 @@ This file defines two sorts of primitives. All of them are provided into any mod
                             'typechecker:ignore #t)
          ;; not a require, this is just the unchecked declaration syntax
          #,(internal #'(require/typed-internal name (Any -> Boolean : ty))))]))
+
+(define-syntax (make-predicate stx)
+  (syntax-parse stx
+    [(_ ty:expr)
+     (let ((name (syntax-local-lift-expression
+                   (syntax-property #'#f 'typechecker:flat-contract-def #'ty))))
+       (define (check-valid-type _)
+         (define type (parse-type #'ty))
+         (define vars (fv type))
+         ;; If there was an error don't create another one
+         (unless (or (Error? type) (null? vars))
+           (tc-error/delayed
+             "Type ~a could not be converted to a predicate because it contains free variables."
+             type)))
+
+       #`(ann
+           #,(syntax-property
+               (syntax-property name 'typechecker:ignore-some #t)
+               'typechecker:external-check check-valid-type)
+
+           (Any -> Boolean : ty)))]))
+
 
 (define-syntax (:type stx)
   (error ":type is only valid at the top-level of an interaction"))
@@ -855,7 +878,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (define ((mk l/c) stx)
       (syntax-parse stx
        [(_ (~var k (param-annotated-name (lambda (s) #`(#,s -> (U))))) . body)
-	(quasisyntax/loc stx (#,l/c k.ann-name . body))]))
+        (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
 
 ;; annotation to help tc-expr pick out keyword functions
