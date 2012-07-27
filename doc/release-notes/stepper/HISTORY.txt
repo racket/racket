@@ -3,7 +3,7 @@ Stepper
 
 Changes for 5.3:
 
-At least one bug fix.
+Minor bug fixes.
 
 Changes for v5.2.1:
 
