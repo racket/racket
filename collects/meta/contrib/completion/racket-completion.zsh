@@ -115,7 +115,7 @@ _racket_self_test() {
 
 ###############################################################################
 
-_racket_self_test 'racket:1847339606:grep -v "Welcome to Racket"'
+_racket_self_test 'racket:1580018499:grep -v "Welcome to Racket"'
 
 RACKET_COMMON=( -C -s -w -S : '(- : *)'{-h,--help}'[Display help]' )
 RACKET_ARGS=( "$RACKET_COMMON[@]" )
