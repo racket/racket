@@ -19,15 +19,34 @@
                (only-in unstable/contract sequence/c)
                (only-in racket/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
+;; These check if either the define form or the body form has the syntax
+;; property. Normally the define form will have the property but lifting an
+;; expression to the module level will put the property on the body.
+(define-values (typechecker:contract-def
+                typechecker:flat-contract-def
+                typechecker:contract-def/maker)
+  (let ()
+    (define ((get-contract-def property) stx)
+      (or (syntax-property stx property)
+          (syntax-case stx (define-values)
+            ((define-values (name) body)
+             (syntax-property #'body property))
+            (_ #f))))
+    (values
+      (get-contract-def 'typechecker:contract-def)
+      (get-contract-def 'typechecker:flat-contract-def)
+      (get-contract-def 'typechecker:contract-def/maker))))
+
 (define (define/fixup-contract? stx)
-  (or (syntax-property stx 'typechecker:contract-def)
-      (syntax-property stx 'typechecker:flat-contract-def)
-      (syntax-property stx 'typechecker:contract-def/maker)))
+  (or (typechecker:contract-def stx)
+      (typechecker:flat-contract-def stx)
+      (typechecker:contract-def/maker stx)))
+
 
 (define (generate-contract-def stx)
   (define prop (define/fixup-contract? stx))
-  (define maker? (syntax-property stx 'typechecker:contract-def/maker))
-  (define flat? (syntax-property stx 'typechecker:flat-contract-def))
+  (define maker? (typechecker:contract-def/maker stx))
+  (define flat? (typechecker:flat-contract-def stx))
   (define typ (parse-type prop))
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
