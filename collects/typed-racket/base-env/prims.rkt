@@ -218,6 +218,35 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
            (Any -> Boolean : ty)))]))
 
+(define-syntax (cast stx)
+  (syntax-parse stx
+    [(_ v:expr ty:expr)
+     (let ((ctc (syntax-local-lift-expression
+                   (syntax-property #'#f 'typechecker:contract-def #'ty))))
+       (define (check-valid-type _)
+         (define type (parse-type #'ty))
+         (define vars (fv type))
+         ;; If there was an error don't create another one
+         (unless (or (Error? type) (null? vars))
+           (tc-error/delayed
+             "Type ~a could not be converted to a contract because it contains free variables."
+             type)))
+       (define body
+         (syntax-property
+           #`(let ((val #,(syntax-property #'(ann v Any) 'with-type #t)))
+               (contract
+                 #,(syntax-property ctc 'typechecker:external-check check-valid-type)
+                 val
+                 'cast
+                 'typed-world
+                 val
+                 (quote-syntax #,stx)))
+             'typechecker:ignore-some #t))
+
+       #`(ann #,body ty))]))
+
+
+
 
 (define-syntax (:type stx)
   (error ":type is only valid at the top-level of an interaction"))
