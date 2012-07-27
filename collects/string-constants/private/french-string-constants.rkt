@@ -1647,5 +1647,15 @@
   (ask-about-normalizing-strings "Demander à propos de la normalisation des chaînes de caractères")
 
   (always-use-platform-specific-linefeed-convention "Toujours utiliser la convention spécifique au système d'exploitation pour les fins de lignes")
-  
+
+  ;; optimization coach
+  (hide-optimization-coach "Cacher le Coach d'Optimisation")
+  (show-optimization-coach "Montrer le Coach d'Optimisation")
+
+  ;; labels used (in a big font) in the background of the definitions and interactions windows
+  (definitions-window-label "définitions")
+  (interactions-window-label "interactions")
+  (hide-defs/ints-label "Cacher les étiquettes Définitions/Interactions") ;; popup menu
+  (show-defs/ints-label "Montrer les étiquettes définitions/interactions") ;; preferences checkbox
+
   ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
