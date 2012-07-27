@@ -1,12 +1,12 @@
 #lang scribble/doc
-@(require "mz.rkt"
-          (for-label racket/defmacro))
+@(require scribblings/reference/mz
+          (for-label compatibility/defmacro))
 
 @title[#:tag "defmacro"]{Legacy macro support}
 
-@note-lib-only[racket/defmacro]
+@defmodule[compatibility/defmacro]
 
-This @racketmodname[racket/defmacro] library provides support for
+This @racketmodname[compatibility/defmacro] library provides support for
 writing legacy macros. Support for @racket[defmacro] is provided
 primarily for porting code from other languages (e.g., some
 implementations of Scheme or Common Lisp) that use symbol-based
@@ -26,7 +26,8 @@ discouraged. Instead, consider using @racket[syntax-parse] or
 )]{
 
 Defines a (non-hygienic) macro @racket[id] through a procedure that
-manipulates S-expressions, as opposed to @tech{syntax objects}.
+manipulates S-expressions, as opposed to
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{syntax objects}.
 
 In the first form, @racket[expr] must produce a procedure. In the
 second form, @racket[formals] determines the formal arguments of the
@@ -35,7 +36,8 @@ procedure body. The last form, with @racket[defmacro], is like the
 second form, but with slightly different parentheses.
 
 In all cases, the procedure is generated in the
-@tech{transformer environment}, not the normal environment.
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
+transformer environment}, not the normal environment.
 
 In a use of the macro,
 

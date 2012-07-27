@@ -1,8 +1,8 @@
 #lang racket/base
 
-;; deprecated library, see racket/defmacro
+;; deprecated library, see compatibility/defmacro
 ;;
 ;; for legacy use only
 
-(require racket/defmacro)
-(provide (all-from-out racket/defmacro))
+(require compatibility/defmacro)
+(provide (all-from-out compatibility/defmacro))

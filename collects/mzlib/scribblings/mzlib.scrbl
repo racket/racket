@@ -120,9 +120,9 @@ Re-exports @racketmodname[file/gzip].
 
 @mzlib[defmacro]
 
-@deprecated[@racketmodname[racket/defmacro]]{}
+@deprecated[@racketmodname[compatibility/defmacro]]{}
 
-Re-exports @racketmodname[racket/defmacro].
+Re-exports @racketmodname[compatibility/defmacro].
 
 @; ----------------------------------------------------------------------
 
