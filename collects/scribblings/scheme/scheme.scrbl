@@ -60,6 +60,8 @@ Racket was once called ``PLT Scheme,'' and a number of libraries with
 names starting @racketidfont{scheme} provide compatibility with the
 old name. A few @seclink["compat-exe"]{old executables} are also provided.
 
+@deprecated[@racketmodname[racket]]{}
+
 @table-of-contents[]
 
 @compat-except[scheme racket]{, except based on @racketmodname[scheme/base]
