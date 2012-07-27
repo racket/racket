@@ -567,9 +567,13 @@
         [(= 0 (mpfr-signbit x))  (force +1.bf)]
         [else  (force -1.bf)]))
 
-(provide bfsgn)
+(define (bfround x)
+  (parameterize ([bf-rounding-mode  'nearest])
+    (bfrint x)))
+
+(provide bfsgn bfround)
 (begin-for-syntax
-  (set! 1ary-funs (list* #'bfsgn 1ary-funs)))
+  (set! 1ary-funs (list* #'bfsgn #'bfround 1ary-funs)))
 
 (define-syntax-rule (provide-1ary-fun/noround name c-name)
   (begin
@@ -587,7 +591,6 @@
 (provide-1ary-funs/noround
  [bfceiling 'mpfr_ceil]
  [bffloor 'mpfr_floor]
- [bfround 'mpfr_round]
  [bftruncate 'mpfr_trunc])
 
 (define-for-syntax 1ary2-funs (list))
