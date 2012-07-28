@@ -661,6 +661,7 @@ path/s is either such a string or a list of them.
 "collects/algol60" responsible (mflatt robby)
 "collects/at-exp" responsible (eli mflatt)
 "collects/browser" responsible (robby)
+"collects/compatibility" responsible (asumu stamourv)
 "collects/compiler" responsible (mflatt)
 "collects/compiler/commands/ctool.rkt" drdr:command-line #f
 "collects/compiler/commands/exe-dir.rkt" drdr:command-line #f
