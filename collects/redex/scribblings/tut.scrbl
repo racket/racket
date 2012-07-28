@@ -89,10 +89,14 @@
 @title[#:tag "tutorial"]{Amb: A Redex Tutorial}
 
 This tutorial is designed for those familiar with the call-by-value
-λ-calculus (and evaluation contexts), but not Redex or Racket. 
+λ-calculus (and evaluation contexts), but not Redex. 
 The tutorial works though a model of
 the λ-calculus extended with a variation on McCarthy's @racket[amb] operator
 for ambiguous choice@~cite[amb1 amb2].
+
+If you are not familiar with Racket, first try 
+@other-doc['(lib "quick.scrbl" "scribblings/quick")] or
+@other-doc['(lib "more.scrbl" "scribblings/more")].
 
 The model includes a standard evaluation reduction relation and a type system.
 Along the way, the tutorial demonstrates Redex's support for unit testing,
@@ -214,6 +218,20 @@ elements of the sequence in different ways:
 
 @exercise[]
 
+Use @racket[redex-match] to extract the body of the
+function from this object-language program:
+@racketblock[((λ (x) (+ x 1)) 
+              17)]
+
+@exercise[]
+
+Use @racket[redex-match] to extract the range portion
+of the type
+@racket[(→ num (→ num num))].
+
+
+@exercise[]
+
 Redex's pattern language supports ambiguity through non-terminals,
 the @racket[in-hole] pattern, and ellipsis placement (as in the example
 just above). Use the latter source of ambiguity to design a pattern
@@ -222,6 +240,19 @@ a sequence. That is, if you match the sequence @racket[(1 2 3 4)],
 then you'd expect one match for 1 & 2, one match for 2 & 3, and one match for 3 & 4.
 In general, this pattern should produce n matches when there are n+1
 expressions in the sequence.
+
+To test your solution use @racket[redex-match] like this:
+@racketblock[(redex-match
+              L
+               (code:comment @#,t{your solution goes here})
+              (term (1 2 3 4)))]
+where you expect a result like this
+@racketblock[(list
+              (match (list (bind 'e_1 1) (bind 'e_2 2)))
+              (match (list (bind 'e_1 2) (bind 'e_2 3)))
+              (match (list (bind 'e_1 3) (bind 'e_2 4))))]
+but possibly with more pattern variables in the resulting
+match.
 
 @amb/test[(redex-match
            L
