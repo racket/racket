@@ -503,6 +503,9 @@ mz-extras :+= (package: "parser-tools/")
 ;; -------------------- html
 mz-extras :+= (package: "html/")
 
+;; -------------------- compatibility
+mz-extras :+= (package: "compatibility/")
+
 ;; -------------------- r5rs
 mz-extras :+= (package: "r5rs/" #:executable "plt-r5rs")
               (doc: "r5rs-std")
