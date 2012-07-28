@@ -319,7 +319,7 @@ exec racket "$0" "$@"
     buildinfo, collects/, mzdyn3m.o, starter*
     sh> @i{LS share/r* && LS share/r*/doc}
     doc/
-    README, @... xrepl/
+    README, @|...|xrepl/
     sh> @i{LS share/man && LS share/man/man1}
     man1/
     drracket.1, gracket.1, mred.1, mzc.1, mzscheme.1, plt-help.1, racket.1,
