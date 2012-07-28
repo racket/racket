@@ -1,5 +1,12 @@
 #lang at-exp racket/base
 
+;; General note for anyone who tries to run these tests: since the tests check
+;; interactions it can be hard to find the problem, and sometimes it's best to
+;; just comment a suffix of the tests to find it.  In addition, when it fails
+;; it tries to provide information that helps finding the problem, but
+;; sometimes there's very little help, and it might also fail by just getting
+;; stuck.
+
 (define verbose? (make-parameter #f))
 
 (define global-ns (current-namespace))
@@ -102,11 +109,15 @@
   'foo> «,top»
   -> «(define enter! 123)»
   -> «(enter! 'foo)»
-  ; procedure application: expected procedure, given: 123; arguments were: 'foo
-  ;   [,bt for context]
+  ; application: not a procedure;
+  ;  expected a procedure that can be applied to arguments
+  ;   given: 123
+  ; [,bt for context]
   -> «(enter! 'fooo)»
-  ; procedure application: expected procedure, given: 123; arguments were:
-  ;   'fooo [,bt for context]
+  ; application: not a procedure;
+  ;  expected a procedure that can be applied to arguments
+  ;   given: 123
+  ; [,bt for context]
   -> «,en foo»                          ⇒ but this still works
   'foo> «,top»
   -> «,switch foo»
@@ -121,7 +132,9 @@
   typed/racket::-> «,switch *»
   ; *** Switching to the `*' namespace ***
   -> «bleh»
-  ; reference to undefined identifier: bleh [,bt for context]
+  ; bleh: undefined;
+  ;  cannot reference undefined identifier
+  ; [,bt for context]
   -> «,ap BLEH»
   ; No matches found.
   -> «,ap path->»
@@ -157,12 +170,16 @@
   123                                   ⇒ ...but we still got in
   'broken> «,top»
   -> «string->jsexpr»
-  ; reference to undefined identifier: string->jsexpr [,bt for context]
+  ; string->jsexpr: undefined;
+  ;  cannot reference undefined identifier
+  ; [,bt for context]
   -> «,r (only-in json string->jsexpr)» ⇒ works with an expression
   -> «string->jsexpr»
   #<procedure:string->jsexpr>
   -> «jsexpr->string»                   ⇒ didn't get this
-  ; reference to undefined identifier: jsexpr->string [,bt for context]
+  ; jsexpr->string: undefined;
+  ;  cannot reference undefined identifier
+  ; [,bt for context]
   -> «,en json»
   json/main> «,sh echo $F»
   @|collects|/json/main.rkt
