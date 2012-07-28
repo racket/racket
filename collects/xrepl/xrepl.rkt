@@ -701,7 +701,8 @@
         (printf ".\n"))))
   (define (show-exports exports kind)
     (for ([exps (in-list exports)])
-      (let ([phase (car exps)] [exps (cdr exps)])
+      (let ([phase (car exps)]
+            [exps (sort (cdr exps) string<? #:key symbol->string)])
         (printf ";   direct ~a exports~a: ~a"
                 kind (phase->name phase "-~a") (car exps))
         (for ([exp (in-list (cdr exps))]) (printf ", ~a" exp))

@@ -151,9 +151,13 @@
   -> «,desc racket/runtime-path»
   ; `racket/runtime-path' is a module,
   ;   located at racket/runtime-path.rkt
-  ;   imports: mzlib/runtime-path.rkt, racket/base.rkt.
+  ;   imports: racket/base.rkt, racket/list.rkt,
+  ;     racket/private/runtime-path-table.rkt,
+  ;     racket/private/this-expression-source-directory.rkt, setup/dirs.rkt.
   ;   imports-for-syntax: racket/base.rkt.
-  ;   direct syntax exports: define-runtime-module-path.
+  ;   direct syntax exports: define-runtime-module-path,
+  ;     define-runtime-module-path-index, define-runtime-path,
+  ;     define-runtime-path-list, define-runtime-paths, runtime-paths.
   -> «(current-directory "/( none )")»  ⇒ racket allows this
   ; now in /( none )                    ⇒ reports without ,cd
   -> «,cd @|tmp|»
