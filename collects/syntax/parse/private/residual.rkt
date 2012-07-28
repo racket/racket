@@ -205,7 +205,7 @@
 
 (define (predicate-ellipsis-parser x cx pr es pred? desc rl)
   (let ([elems (stx->list x)])
-    (if (and elems (andmap pred? elems))
+    (if (and elems (list? elems) (andmap pred? elems))
         (values 'ok elems)
         (let loop ([x x] [cx cx] [i 0])
           (cond [(syntax? x)
