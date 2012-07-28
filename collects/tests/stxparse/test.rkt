@@ -459,3 +459,14 @@
     (not #rx"expected foo") ;; y:nat was incorrectly considered part of opaque region
     #rx"expected exact-nonnegative-integer")
   )
+
+;; from Neil Van Dyke (7/28/2012)
+(test-case "specialized predicate-ellipsis-parser"
+  ;; test that it works on improper lists
+  ;; ... when input is syntax
+  (check-eq? (syntax-parse #'(a b c . d) [(x:id ...) #t] [_ #f]) #f)
+  ;; ... and when input is stx pair (but not syntax)
+  (check-eq? (syntax-parse #'(a b c . d) [(_ x:id ...) #t] [_ #f]) #f)
+  ;; test that it works on proper lists w/ embedded stxpairs
+  (check-eq? (syntax-parse #'(a b . (c  d)) [(x:id ...) #t] [_ #f]) #t)
+  (check-eq? (syntax-parse #'(a b . (c  d)) [(_ x:id ...) #t] [_ #f]) #t))
