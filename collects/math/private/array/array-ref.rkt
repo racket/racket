@@ -6,7 +6,9 @@
          "utils.rkt")
 
 (provide unsafe-array-ref* unsafe-array-ref
-         array-ref* array-ref)
+         array-ref* array-ref
+         unsafe-array-set!* unsafe-array-set!
+         array-set!* array-set!)
 
 ;; ===================================================================================================
 ;; Unsafe array ref
@@ -136,3 +138,106 @@
       ((unsafe-array-proc arr) (check-array-indexes 'array-ref ds js))
       (unsafe-vector-ref (unsafe-array-data arr)
                          (array-index->value-index 'array-ref ds js))))
+
+;; ===================================================================================================
+;; Unsafe array set
+
+(define-syntax (unsafe-array-set!* stx)
+  (syntax-case stx ()
+    [(_ arr-expr v-expr)
+     (syntax/loc stx
+       ((plambda: (A) ([arr : (strict-array A)] [v : A])
+          (unsafe-vector-set! (unsafe-array-data arr) 0 v))
+        arr-expr v-expr))]
+    [(_ arr-expr v-expr j0 js ...)
+     (with-syntax ([(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))])
+       (syntax/loc stx
+         ((plambda: (A) ([arr : (strict-array A)] [v : A] [new-j0 : Index] [new-js : Index] ...)
+            (let ([ds  (unsafe-array-shape arr)])
+              (unsafe-vector-set! (unsafe-array-data arr)
+                                  (unsafe-indexes->index ds 1 (new-js ...) new-j0)
+                                  v)))
+           arr-expr v-expr j0 js ...)))]
+    [_  (syntax/loc stx unsafe-array-set!*-proc)]))
+
+(: unsafe-array-set!*-proc
+   (All (A) (case-> ((strict-array A) A -> Void)
+                    ((strict-array A) A Index -> Void)
+                    ((strict-array A) A Index Index -> Void)
+                    ((strict-array A) A Index Index Index Index * -> Void))))
+(define unsafe-array-set!*-proc
+  (case-lambda:
+    [([arr : (strict-array A)] [v : A])
+     (unsafe-array-set!* arr v)]
+    [([arr : (strict-array A)] [v : A] [j0 : Index])
+     (unsafe-array-set!* arr v j0)]
+    [([arr : (strict-array A)] [v : A] [j0 : Index] [j1 : Index])
+     (unsafe-array-set!* arr v j0 j1)]
+    [([arr : (strict-array A)] [v : A] [j0 : Index] [j1 : Index] [j2 : Index])
+     (unsafe-array-set!* arr v j0 j1 j2)]
+    [([arr : (strict-array A)] [v : A] [j0 : Index] [j1 : Index] [j2 : Index] . [js : Index *])
+     (unsafe-array-set! arr ((inst list->vector Index) (list* j0 j1 j2 js)) v)]))
+
+(: unsafe-array-set! (All (A) ((strict-array A) (Vectorof Index) A -> Void)))
+(define (unsafe-array-set! arr js v)
+  (unsafe-vector-set! (unsafe-array-data arr)
+                      (unsafe-array-index->value-index (unsafe-array-shape arr) js)
+                      v))
+
+;; ===================================================================================================
+;; Safe array set
+
+(define-syntax (array-set!* stx)
+  (syntax-case stx ()
+    [(_ arr-expr v-expr)
+     (syntax/loc stx
+       ((plambda: (A) ([arr : (strict-array A)] [v : A])
+          (if (= 0 (array-dims arr))
+              (unsafe-vector-set! (unsafe-array-data arr) 0 v)
+              (raise-array-index-error 'array-set!* (unsafe-array-shape arr) null)))
+        arr-expr v-expr))]
+    [(_ arr-expr v-expr j0 js ...)
+     (with-syntax* ([len  (length (syntax->list #'(j0 js ...)))]
+                    [(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))]
+                    [(new-ds ...)  (generate-temporaries #'(js ...))]
+                    [(is ...)  (build-list (- (syntax->datum #'len) 1) add1)])
+       (syntax/loc stx
+         ((plambda: (A) ([arr : (strict-array A)] [v : A] [new-j0 : Integer] [new-js : Integer] ...)
+            (let* ([ds  (unsafe-array-shape arr)]
+                   [index-error  (λ () (raise-array-index-error
+                                        'array-set!* ds (list new-j0 new-js ...)))])
+              (if (= (vector-length ds) len)
+                  (let-values ([(new-ds ...)  (values (unsafe-vector-ref ds is) ...)])
+                    (if (and (and (0 . <= . new-j0) (new-j0 . < . (unsafe-vector-ref ds 0)))
+                             (and (0 . <= . new-js) (new-js . < . new-ds)) ...)
+                        (let ([j  (indexes->index (new-ds ...) (new-js ...) new-j0)])
+                          (unsafe-vector-set! (unsafe-array-data arr) j v))
+                        (index-error)))
+                  (index-error))))
+          arr-expr v-expr j0 js ...)))]
+    [_  (syntax/loc stx array-set!*-proc)]))
+
+(: array-set!*-proc
+   (All (A) (case-> ((strict-array A) A -> Void)
+                    ((strict-array A) A Integer -> Void)
+                    ((strict-array A) A Integer Integer -> Void)
+                    ((strict-array A) A Integer Integer Integer Integer * -> Void))))
+(define array-set!*-proc
+  (case-lambda:
+    [([arr : (strict-array A)] [v : A])
+     (array-set!* arr v)]
+    [([arr : (strict-array A)] [v : A] [j0 : Integer])
+     (array-set!* arr v j0)]
+    [([arr : (strict-array A)] [v : A] [j0 : Integer] [j1 : Integer])
+     (array-set!* arr v j0 j1)]
+    [([arr : (strict-array A)] [v : A] [j0 : Integer] [j1 : Integer] [j2 : Integer])
+     (array-set!* arr v j0 j1 j2)]
+    [([arr : (strict-array A)] [v : A] [j0 : Integer] [j1 : Integer] [j2 : Integer] . [js : Integer *])
+     (array-set! arr (list* j0 j1 j2 js) v)]))
+
+(: array-set! (All (A) ((strict-array A) (Listof Integer) A -> Void)))
+(define (array-set! arr js v)
+  (define ds (unsafe-array-shape arr))
+  (unsafe-vector-set! (unsafe-array-data arr)
+                      (array-index->value-index 'array-set! ds js)
+                      v))
