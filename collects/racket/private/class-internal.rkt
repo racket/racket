@@ -5014,9 +5014,11 @@ An example
     [(_ (from ...) (to ...) clauses ...)
      (let ([extract-renamed-names
             (λ (x)
-              (map (λ (x) (syntax-case x ()
-                            [(internal-name external-name) (syntax external-name)]
-                            [else x]))
+              (map (λ (x) 
+                     (localize
+                      (syntax-case x ()
+                        [(internal-name external-name) (syntax external-name)]
+                        [else x])))
                    (syntax->list x)))])
        (define (get-super-names stx)
          (syntax-case stx (inherit rename 
@@ -5077,7 +5079,7 @@ An example
                  (let ([to-ids to] ...)
                    (check-mixin-from-interfaces (list from-ids ...))
                    (check-mixin-to-interfaces (list to-ids ...))
-                   (check-interface-includes (list (quote super-vars) ...)
+                   (check-interface-includes (list (quasiquote super-vars) ...)
                                              (list from-ids ...))
                    mixin-expr)))))))]))
 
