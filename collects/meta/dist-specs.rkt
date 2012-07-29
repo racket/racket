@@ -391,7 +391,7 @@ mz-tests := (tests: "info.rkt" "racket/" "utils/" "match/"
 ;; Source definitions
 
 mz-src := (+ (- (src: "README" "configure" "Makefile.in" "lt/" "racket/"
-                      "get-libs.rkt" "utils/"
+                      "get-libs.rkt" "download-libs.rkt" "utils/"
                       (cond win => "worksp/{README|mzconfig.h}"
                                    "worksp/{build.bat|rbuildmode.c}"
                                    "worksp/{racket|libracket}/"
