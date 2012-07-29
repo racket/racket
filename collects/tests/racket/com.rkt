@@ -133,6 +133,10 @@
   (test '(-> () string) (com-get-property-type doc "title"))
   (test '(-> (string) void) (com-set-property-type doc "title"))
 
+  (test (void) (com-set-property! ie "Visible" #t))
+  (test (void) (com-invoke ie "Quit"))
+
+  (test (void) (com-release doc))
   (test (void) (com-release ie))
 
   (test #t (type-description? 'int))
