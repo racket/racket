@@ -247,12 +247,21 @@
     [(_ (#:release-with-method name) expr obj arg ...)
      (let ([self obj])
        (((allocator (lambda (v) (name self v)))
-         expr)
+         (let ([f expr])
+           (lambda args
+             (AddRef self)
+             (apply f args))))
         self
         arg ...))]
-    [(_ (#:releases) expr arg ...)
-     (((deallocator cadr) expr) arg ...)]))
-      
+    [(_ (#:releases) expr obj arg ...)
+     (let ([self obj])
+       (((deallocator cadr) 
+         (let ([f expr])
+           (lambda args
+             (Release self)
+             (apply f args))))
+        self arg ...))]))
+
 (define (check-com-type who id id? obj)
   (unless (id? obj)
     (raise-type-error who (symbol->string id) obj)))
@@ -630,8 +639,26 @@
            set-com-object-connection-point!)
      (bye! com-object-sink
            set-com-object-sink!)
-     (when (hash-count (com-object-types obj))
+     (when (positive? (hash-count (com-object-types obj)))
+       (for ([td (in-hash-values (com-object-types obj))])
+	 '(release-type-desc td))
        (set-com-object-types! obj (make-hash))))))
+
+(define (release-type-desc td)
+  ;; call in atomic mode
+  (define type-info (mx-com-type-desc-type-info td))
+  (define type-info-impl (mx-com-type-desc-type-info-impl td))
+  (define tdd (mx-com-type-desc-desc td))
+  (cond
+   [(list? tdd)
+    (ReleaseFuncDesc type-info (car tdd))
+    (when type-info-impl
+      (ReleaseFuncDesc type-info-impl (cadr tdd)))]
+   [else
+    (ReleaseVarDesc type-info tdd)])
+  (Release type-info)
+  (when type-info-impl
+    (Release type-info-impl)))
 
 (define (gen->clsid who name)
   (cond
@@ -876,12 +903,9 @@
     string-ci<?)
    (ReleaseTypeAttr event-type-info type-attr)))
 
-(struct mx-com-type-desc ([released? #:mutable]
-                          memid
+(struct mx-com-type-desc (memid
                           type-info
                           type-info-impl
-                          interface
-                          fun-ptr
                           fun-offset
                           impl-guid
                           desc))
@@ -934,13 +958,10 @@
    [(mx-com-type-desc? found) found]
    [(not found) #f]
    [(VARDESC? found)
-    (mx-com-type-desc #f
-                      (VARDESC-memid found)
+    (mx-com-type-desc (VARDESC-memid found)
                       (begin
                         (AddRef type-info)
                         type-info)
-                      #f
-                      #f
                       #f
                       #f
                       #f
@@ -963,16 +984,13 @@
              (begin0
               (if (or (= (FUNCDESC-funckind func-desc-impl) FUNC_VIRTUAL)
                       (= (FUNCDESC-funckind func-desc-impl) FUNC_PUREVIRTUAL))
-                  (mx-com-type-desc #f
-                                    (FUNCDESC-memid (car found))
+                  (mx-com-type-desc (FUNCDESC-memid (car found))
                                     (begin
                                       (AddRef type-info)
                                       type-info)
                                     (begin
                                       (AddRef type-info-impl)
                                       type-info-impl)
-                                    #f
-                                    #f
                                     (quotient (FUNCDESC-oVft func-desc-impl) (ctype-sizeof _pointer))
                                     (copy-guid (TYPEATTR-guid type-attr-impl))
                                     (list (car found)
@@ -984,13 +1002,10 @@
              (Release type-info-impl))))
 
     (or mx-type-desc
-        (mx-com-type-desc #f
-                          (FUNCDESC-memid (car found))
+        (mx-com-type-desc (FUNCDESC-memid (car found))
                           (begin
                             (AddRef type-info)
                             type-info)
-                          #f
-                          #f
                           #f
                           #f
                           #f
