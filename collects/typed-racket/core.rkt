@@ -90,8 +90,9 @@
                               (format "~a\n" cleaned)])))]
                    [_ (error (format "~a: not a function" (syntax->datum #'op) ))])))]
     [(_ . form)
+     (init)
      (tc-setup
-      stx #'form 'top-level body2 init tc-toplevel-form before type
+      stx #'form 'top-level body2 void tc-toplevel-form before type
       (with-syntax*
        ([optimized-body (car (maybe-optimize #`(#,body2)))])
        (syntax-parse body2

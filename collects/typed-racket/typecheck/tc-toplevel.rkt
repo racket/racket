@@ -186,11 +186,6 @@
        (syntax-property form 'typechecker:ignore)
        (void)]
 
-      ;; this is a form that we mostly ignore, but we check some interior parts
-      [stx
-       (syntax-property form 'typechecker:ignore-some)
-       (check-subforms/ignore form)]
-
       ;; these forms should always be ignored
       [(#%require . _) (void)]
       [(#%provide . _) (void)]
@@ -372,7 +367,7 @@
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
-;; syntax -> void
+;; syntax -> (values #f (or/c void? tc-results?))
 (define (tc-toplevel-form form)
   (tc-toplevel/pass1 form)
   (begin0 (values #f (tc-toplevel/pass2 form))

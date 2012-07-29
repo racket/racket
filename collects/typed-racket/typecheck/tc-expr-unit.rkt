@@ -404,7 +404,7 @@
       [stx
        #:when (syntax-property form 'typechecker:ignore-some)
        (check-subforms/ignore form)
-       Univ]
+       (ret Univ)]
       ;; explicit failure
       [(quote-syntax ((~literal typecheck-fail-internal) stx msg var))
        (explicit-fail #'stx #'msg #'var)]
