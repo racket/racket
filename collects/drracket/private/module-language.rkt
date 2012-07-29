@@ -1754,14 +1754,19 @@
   (define defs/ints-font 
     (send the-font-list find-or-create-font 72 'swiss 'normal 'normal))
   
+  (define big-defs/ints-label<%>
+    (interface ()
+      set-lang-wants-big-defs/ints-labels?))
+  
   (define (mk-module-language-text-mixin id)
-    (mixin (editor<%>) ()
+    (mixin (editor<%>) (big-defs/ints-label<%>)
       (inherit get-admin invalidate-bitmap-cache get-dc
                dc-location-to-editor-location)
       (define inside? #f)
       (define recently-typed? #f)
       (define fade-amount 1)
-      
+      (define lang-wants-big-defs/ints-labels? #f)
+
       (define recently-typed-timer 
         (new timer%
              [notify-callback
@@ -1776,12 +1781,22 @@
                      (set! fade-amount 1)])
                   (invalidate-bitmap-cache 0 0 'display-end 'display-end)))]))
       
+      (define/public (set-lang-wants-big-defs/ints-labels? w?) 
+        (unless (equal? lang-wants-big-defs/ints-labels? w?)
+          (set! lang-wants-big-defs/ints-labels? w?)
+
+          (send recently-typed-timer stop)  ;; reset the recently-typed timer so
+          (set! fade-amount 1)              ;; that changing the language makes the
+          (set! recently-typed? #f)         ;; labels appear immediately
+          
+          (invalidate-bitmap-cache 0 0 'display-end 'display-end)))
+      
       (define/override (on-char evt)
         (when inside?
           (update-recently-typed #t)
           (set! fade-amount 0)
           (send recently-typed-timer stop)
-          (send recently-typed-timer start 2000 #t))
+          (send recently-typed-timer start 10000 #t))
         (super on-char evt))
       
       (define/private (update-recently-typed nv)
@@ -1825,7 +1840,8 @@
         (super on-paint before? dc left top right bottom dx dy draw-caret)
         (unless before?
           (when (and inside?
-                     (not recently-typed?))
+                     (not recently-typed?)
+                     lang-wants-big-defs/ints-labels?)
             (define admin (get-admin))
             (when admin
               (send admin get-view bx by bw bh)
@@ -1855,16 +1871,15 @@
   (define (point-in-rectangle? x y l t r b)
     (and (<= l x r)
          (<= t y b)))
-
-        
+  
   (define bx (box 0))
   (define by (box 0))
   (define bw (box 0))
   (define bh (box 0))
   
-  (define module-language-interactions-text-mixin
+  (define module-language-big-defs/ints-interactions-text-mixin
     (mk-module-language-text-mixin (string-constant interactions-window-label)))
-  (define module-language-definitions-text-mixin
+  (define module-language-big-defs/ints-definitions-text-mixin
     (mk-module-language-text-mixin (string-constant definitions-window-label)))
   
   (define module-language-compile-lock (make-compile-lock))
