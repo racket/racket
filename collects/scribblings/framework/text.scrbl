@@ -417,7 +417,7 @@
 
   @defmethod*[#:mode override (((get-keymaps) (listof (is-a?/c keymap%))))]{
     This returns a list containing the super-class's keymaps, plus the result
-    of @racket[keymap:get-search]
+    of @racket[keymap:get-search].
   }
 
   @defmethod[#:mode augment (after-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
@@ -503,7 +503,7 @@
   string snip that just draws a single pixel for each character in the string.
 
   See also @racket[text:1-pixel-tab-snip%] for a similar extension to the
-  @racket[tab-snip%]class.
+  @racket[tab-snip%] class.
 
   This snip is used in conjunction with the @racket[frame:delegate<%>] and
   @racket[text:delegate<%>] interfaces.
@@ -546,7 +546,7 @@
   string snip that is always one pixel high.
 
   See also @racket[text:1-pixel-string-snip%] for a similar extension to the
-  @racket[string-snip%]class.
+  @racket[string-snip%] class.
 
   This snip is used in conjunction with the @racket[frame:delegate<%>] and
   @racket[text:delegate<%>] interfaces.
