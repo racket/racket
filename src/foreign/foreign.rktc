@@ -2246,6 +2246,8 @@ static mzrt_mutex *orig_place_mutex;
 static FFI_Orig_Place_Call *orig_place_calls, *orig_place_calls_tail;
 static void *orig_place_signal_handle;
 
+static void check_foreign_work(int check_for_in_original);
+
 static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
                                    int nargs, GC_CAN_IGNORE ForeignAny *ivals, void **avalues,
                                    intptr_t *offsets, void *p)
@@ -2335,6 +2337,13 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
       scheme_start_atomic();
       scheme_thread_block(0.0);
       scheme_end_atomic_no_swap();
+
+      /* Since we called scheme_thread_block() in atomic mode,
+         it doesn't check for foreign callbacks. We'd like
+         to handle those anyway, since the call in the original
+         place may lead to a callback that should run in
+         this place. */
+      check_foreign_work(0);
     }
   }
 }
@@ -2664,7 +2673,7 @@ static Scheme_Object *callback_thunk(void *_qc, int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
-void scheme_check_foreign_work(void)
+static void check_foreign_work(int check_for_in_original)
 {
   GC_CAN_IGNORE Queued_Callback *qc;
   ffi_callback_struct *data;
@@ -2699,7 +2708,7 @@ void scheme_check_foreign_work(void)
   }
 
 #ifdef MZ_USE_PLACES
-  if ((scheme_current_place_id == 0) && orig_place_mutex) {
+  if (check_for_in_original && (scheme_current_place_id == 0) && orig_place_mutex) {
     FFI_Orig_Place_Call *todo;
     void *sh;
 
@@ -2730,6 +2739,11 @@ void scheme_check_foreign_work(void)
     }
   }
 #endif
+}
+
+void scheme_check_foreign_work(void)
+{
+  check_foreign_work(1);
 }
 
 #endif
