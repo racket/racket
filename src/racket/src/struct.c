@@ -5366,7 +5366,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
           || !scheme_hash_tree_get(setter_positions, SCHEME_CAR(prop))) {
         scheme_contract_error(name,
                               "accessor redirection for a non-transparent field requires a mutator redirection",
-                              "explanaion", 0, "a mutator redirection acts as a witness that access is allowed",
+                              "explanation", 0, "a mutator redirection acts as a witness that access is allowed",
                               "accessor", 1, SCHEME_CDR(prop),
                               "value to impersonate", 1, argv[0],
                               NULL);
