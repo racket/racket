@@ -690,9 +690,11 @@ profile todo:
        ec1]
       [else #f]))
   
-  (define (add-one-set-to-frame text ec error-text dis editions defs ints)
+  (define (add-one-set-to-frame text ec error-text dups-dis dups-editions defs ints)
+    (define-values (dis editions skips) (remove-adjacent-duplicates dups-dis dups-editions))
     (letrec ([di-vec (list->vector dis)]
              [editions-vec (list->vector editions)]
+             [skip-counts (list->vector skips)]
              [index 0]
              [how-many-at-once 15]
              [show-next-dis
@@ -705,7 +707,7 @@ profile todo:
                     (cond
                       [(and (< n (vector-length di-vec))
                             (< n (+ index how-many-at-once)))
-                       (show-frame ec text (vector-ref di-vec n) (vector-ref editions-vec n) defs ints)
+                       (show-frame ec text (vector-ref di-vec n) (vector-ref editions-vec n) (vector-ref skip-counts n) defs ints)
                        (loop (+ n 1))]
                       [else
                        (set! index n)]))
@@ -763,6 +765,48 @@ profile todo:
       (send text hide-caret #t)
       (send current-backtrace-window show #t)))
   
+  (define (remove-adjacent-duplicates dis editions)
+    (cond
+      [(null? dis) (values '() '() '())]
+      [else
+       (let loop ([di (car dis)]
+                  [edition (car editions)]
+                  [dis (cdr dis)]
+                  [editions (cdr editions)])
+         (cond
+           [(null? dis) (values (list di) (list edition) (list 0))]
+           [else
+            (define di2 (car dis))
+            (define edition2 (car editions))
+            (define-values (res-dis res-editions skip-counts) (loop di2 edition2 (cdr dis) (cdr editions)))
+            (if (equal? di di2)
+                (values res-dis res-editions (cons (+ (car skip-counts) 1) (cdr skip-counts)))
+                (values (cons di res-dis)
+                        (cons edition res-editions)
+                        (cons 0 skip-counts)))]))]))
+  
+  (let ()
+    (define (check dis-in editions-in dis-expected editions-expected skip-expected)
+      (define-values (dis-got editions-got skip-got) (remove-adjacent-duplicates dis-in editions-in))
+      (unless (and (equal? dis-got dis-expected)
+                   (equal? editions-got editions-expected)
+                   (equal? skip-got skip-expected))
+        (eprintf "~s =\n  ~s, but expected\n  ~s\n\n"
+                 `(remove-adjacent-duplicates ',dis-in ',editions-in)
+                 `(values ',dis-got ',editions-got ',skip-got)
+                 `(values ',dis-expected ',editions-expected ',skip-expected))))
+    (check '() '() '() '() '())
+    (check '(1) '(2) '(1) '(2) '(0))
+    (check '(1 2 3) '(4 5 6) '(1 2 3) '(4 5 6) '(0 0 0))
+    (check '(1 1) '(2 3) '(1) '(3) '(1))
+    (check '(1 2) '(3 3) '(1 2) '(3 3) '(0 0))
+    (check '(1 2 2 3 4 4 3) '(a b c d e f g)
+           '(1 2 3 4 3) '(a c d f g) '(0 1 0 1 0))
+    (check '(1 2 2 2 2 2 3) '(a b c d e f g)
+           '(1 2 3) '(a f g) '(0 4 0)))
+    
+                 
+  
   ;; show-frame : (instanceof editor-canvas%)
   ;;              (instanceof text%) 
   ;;              st-mark?
@@ -770,7 +814,7 @@ profile todo:
   ;;              -> 
   ;;              void 
   ;; shows one frame of the continuation
-  (define (show-frame editor-canvas text di edition defs ints)
+  (define (show-frame editor-canvas text di edition skip-count defs ints)
     (let* ([debug-source (srcloc-source di)]
            [fn (get-filename debug-source)]
            [line (srcloc-line di)]
@@ -796,7 +840,13 @@ profile todo:
       (let ([bindings (st-mark-bindings di)])
         (when (not (null? bindings))
           (send text insert (render-bindings/snip bindings))))
-      (send text insert #\newline)
+      (unless (zero? skip-count)
+        (send text insert " skipped ")
+        (send text insert (number->string skip-count))
+        (send text insert " duplicate frame")
+        (unless (= skip-count 1)
+          (send text insert "s"))
+        (send text insert #\newline))
       
       (when (and start span)
         (insert-context editor-canvas text debug-source start span defs ints)
