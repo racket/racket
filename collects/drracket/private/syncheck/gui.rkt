@@ -377,8 +377,37 @@ If the namespace does not, they are colored the unbound color.
                       (hash-set! bindings-table key (cons new priors))
                       #t]))]))
             
-            ;; for use in the automatic test suite
-            (define/public (syncheck:get-bindings-table) bindings-table)
+            ;; for use in the automatic test suite (both)
+            (define/public (syncheck:get-bindings-table [tooltips? #f])
+              (cond
+                [tooltips?
+                 (define unsorted
+                   (apply 
+                    append
+                    (for/list ([(k interval-map) (in-hash arrow-records)])
+                      (apply
+                       append
+                       (dict-map
+                        interval-map
+                        (λ (key x)
+                          (for/list ([x (in-list x)]
+                                     #:when (tooltip-info? x))
+                            (list (tooltip-info-pos-left x)
+                                  (tooltip-info-pos-right x)
+                                  (tooltip-info-msg x)))))))))
+                 (define (compare l1 l2)
+                   (cond
+                     [(equal? (list-ref l1 0) (list-ref l2 0))
+                      (cond
+                        [(equal? (list-ref l1 2) (list-ref l2 2))
+                         (string<=? (list-ref l1 2) (list-ref l2 2))]
+                        [else
+                         (< (list-ref l1 1) (list-ref l2 1))])]
+                     [else
+                      (< (list-ref l1 0) (list-ref l2 0))]))
+                 (sort unsorted compare)]
+                [else
+                 bindings-table]))
             
             (define/public (syncheck:sort-bindings-table)
               

@@ -449,73 +449,81 @@
                                 module-lang-requires
                                 phase-to-requires)
       
-      (let ([unused-requires (make-hash)]
-            [unused-require-for-syntaxes (make-hash)]
-            [unused-require-for-templates (make-hash)]
-            [unused-require-for-labels (make-hash)]
-            [unused/phases (make-hash)])
-        
-        (for ([(level hash) (in-hash phase-to-requires)])
-          (define new-hash (make-hash))
-          (hash-set! unused/phases level new-hash)
-          (for ([(k v) (in-hash hash)])
-            (hash-set! new-hash k #t)))
-                
-        (for ([(level binders) (in-hash phase-to-binders)])
-          (for ([vars (in-list (get-idss binders))])
-            (for ([var (in-list vars)])
-              (define varset (lookup-phase-to-mapping phase-to-varsets level))
-              (color-variable var 0 varset)
-              (document-variable var 0))))
-        
-        (for ([(level varrefs) (in-hash phase-to-varrefs)])
-          (define binders (lookup-phase-to-mapping phase-to-binders level))
-          (define varsets (lookup-phase-to-mapping phase-to-varsets level)) 
-          (for ([vars (in-list (get-idss varrefs))])
-            (for ([var (in-list vars)])
-              (color-variable var level varsets)
-              (document-variable var level)
-              (connect-identifier var
-                                  binders
-                                  unused/phases
-                                  phase-to-requires
-                                  level
-                                  user-namespace 
-                                  user-directory
-                                  #t))))
-        
-        (for ([vars (in-list (get-idss templrefs))])
-          (for ([var (in-list vars)])
-            
-            ;; build a set of all of the known phases
-            (define phases (set))
-            (for ([phase (in-list (hash-keys phase-to-binders))])
-              (set! phases (set-add phases phase)))
-            (for ([phase (in-list (hash-keys phase-to-requires))])
-              (set! phases (set-add phases phase)))
-            
-            ;; connect every identifier inside a quote-syntax to each binder at any phase
-            (for ([phase (in-set phases)])
-              (connect-identifier var
-                                  (lookup-phase-to-mapping phase-to-binders phase)
-                                  unused/phases
-                                  phase-to-requires
-                                  phase
-                                  user-namespace
-                                  user-directory
-                                  #f))))
-        
-        (for ([(level tops) (in-hash phase-to-tops)])
-          (define binders (lookup-phase-to-mapping phase-to-binders level))
-          (for ([vars (in-list (get-idss tops))])
-            (for ([var (in-list vars)])
-              (color/connect-top user-namespace user-directory binders var))))
-        
-        (for ([(level require-hash) (in-hash phase-to-requires)])
-          (define unused-hash (hash-ref unused/phases level))
-          (color-unused require-hash unused-hash module-lang-requires))
+      (define unused-requires (make-hash))
+      (define unused-require-for-syntaxes (make-hash))
+      (define unused-require-for-templates (make-hash))
+      (define unused-require-for-labels (make-hash))
+      (define unused/phases (make-hash))
 
-        (make-rename-menus (list phase-to-binders phase-to-varrefs phase-to-tops))))
+      ;; hash[(list (list src pos pos) (list src pos pos)) -o> #t   ;; indicates if this arrow has been recorded
+      ;;      (list src pos pos) -o> (cons number number)]          ;; indicates the number of defs and uses at this spot
+      (define connections (make-hash))
+
+      (for ([(level hash) (in-hash phase-to-requires)])
+        (define new-hash (make-hash))
+        (hash-set! unused/phases level new-hash)
+        (for ([(k v) (in-hash hash)])
+          (hash-set! new-hash k #t)))
+      
+      (for ([(level binders) (in-hash phase-to-binders)])
+        (for ([vars (in-list (get-idss binders))])
+          (for ([var (in-list vars)])
+            (define varset (lookup-phase-to-mapping phase-to-varsets level))
+            (color-variable var 0 varset)
+            (document-variable var 0))))
+      
+      (for ([(level varrefs) (in-hash phase-to-varrefs)])
+        (define binders (lookup-phase-to-mapping phase-to-binders level))
+        (define varsets (lookup-phase-to-mapping phase-to-varsets level)) 
+        (for ([vars (in-list (get-idss varrefs))])
+          (for ([var (in-list vars)])
+            (color-variable var level varsets)
+            (document-variable var level)
+            (connect-identifier var
+                                binders
+                                unused/phases
+                                phase-to-requires
+                                level
+                                user-namespace 
+                                user-directory
+                                #t
+                                connections))))
+      
+      (for ([vars (in-list (get-idss templrefs))])
+        (for ([var (in-list vars)])
+          
+          ;; build a set of all of the known phases
+          (define phases (set))
+          (for ([phase (in-list (hash-keys phase-to-binders))])
+            (set! phases (set-add phases phase)))
+          (for ([phase (in-list (hash-keys phase-to-requires))])
+            (set! phases (set-add phases phase)))
+          
+          ;; connect every identifier inside a quote-syntax to each binder at any phase
+          (for ([phase (in-set phases)])
+            (connect-identifier var
+                                (lookup-phase-to-mapping phase-to-binders phase)
+                                unused/phases
+                                phase-to-requires
+                                phase
+                                user-namespace
+                                user-directory
+                                #f
+                                connections))))
+      
+      (for ([(level tops) (in-hash phase-to-tops)])
+        (define binders (lookup-phase-to-mapping phase-to-binders level))
+        (for ([vars (in-list (get-idss tops))])
+          (for ([var (in-list vars)])
+            (color/connect-top user-namespace user-directory binders var connections))))
+      
+      (for ([(level require-hash) (in-hash phase-to-requires)])
+        (define unused-hash (hash-ref unused/phases level))
+        (color-unused require-hash unused-hash module-lang-requires))
+      
+      (annotate-counts connections)
+      
+      (make-rename-menus (list phase-to-binders phase-to-varrefs phase-to-tops)))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t] -> void
     (define (color-unused requires unused module-lang-requires)
@@ -559,14 +567,16 @@
     ;;                      (union #f hash-table)
     ;;                      (union identifier-binding identifier-transformer-binding)
     ;;                      boolean
+    ;;                      connections-table (see its defn)
     ;;                   -> void
     ;; adds the arrows that correspond to binders/bindings
     (define (connect-identifier var all-binders unused/phases phase-to-requires
-                                phase-level user-namespace user-directory actual?)
+                                phase-level user-namespace user-directory actual?
+                                connections)
       (let ([binders (get-ids all-binders var)])
         (when binders
           (for ([x (in-list binders)])
-            (connect-syntaxes x var actual? (id-level phase-level x))))
+            (connect-syntaxes x var actual? (id-level phase-level x) connections)))
         
         (when (and unused/phases phase-to-requires)
           (let ([req-path/pr (get-module-req-path var phase-level)]
@@ -599,7 +609,8 @@
                                                  (syntax-e var)
                                                  req-path))
                                 (connect-syntaxes req-stx var actual?
-                                                  (id-level phase-level var))))
+                                                  (id-level phase-level var)
+                                                  connections)))
                             req-stxes))))))))
     
     (define (id/require-match? var id req-stx)
@@ -646,8 +657,8 @@
                       mod-path)]
                [else #f]))))
     
-    ;; color/connect-top : namespace directory id-set syntax -> void
-    (define (color/connect-top user-namespace user-directory binders var)
+    ;; color/connect-top : namespace directory id-set syntax connections[see defn for ctc] -> void
+    (define (color/connect-top user-namespace user-directory binders var connections)
       (let ([top-bound?
              (or (get-ids binders var)
                  (parameterize ([current-namespace user-namespace])
@@ -660,28 +671,72 @@
           [else
            (add-mouse-over var (format "~s is a free variable" (syntax-e var)))
            (color var free-variable-style-name)])
-        (connect-identifier var binders #f #f 0 user-namespace user-directory #t)))
+        (connect-identifier var binders #f #f 0 user-namespace user-directory #t connections)))
+    
+    ;; annotate-counts : connections[see defn] -> void
+    ;; this function doesn't try to show the number of uses at
+    ;; a use site, as it is not obvious how to compute that.
+    ;; in particular, you could think of following arrows from
+    ;; the use site back to the definition and then counting
+    ;; the number of arrows originating there, but consider this example:
+    ;; (define-syntax-rule (m x y z)
+    ;;   (list (let ([y 1]) x x)
+    ;;         (let ([z 1]) x)))
+    ;; (m w w w)
+    ;; if you do that here, then which def site do you pick? 
+    ;; and note that picking both of them leads to double counting
+    ;; it seems possible to have a different datastructure (one that
+    ;; records the src locs of each 'end' position of each arrow)
+    ;; to do this, but maybe lets leave that for another day.
+    (define (annotate-counts connections)
+      (for ([(key val) (in-hash connections)])
+        (when (pair? val) 
+          (define start (car val))
+          (define end (cdr val))
+          (define (show-starts)
+            (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2) 
+                                (cond
+                                  [(zero? start)
+                                   (string-constant cs-zero-varrefs)]
+                                  [(= 1 start)
+                                   (string-constant cs-one-varref)]
+                                  [else
+                                   (format (string-constant cs-n-varrefs) start)])))
+          (define (show-ends)
+            (unless (= 1 end)
+              (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2) 
+                                  (format (string-constant cs-binder-count) end))))
+          (cond
+            [(zero? end)   ;; assume this is a binder, show uses
+             (show-starts)]
+            [(zero? start) ;; assume this is a use, show bindings (usually just one, so do nothing)
+             (show-ends)]
+            [else          ;; crazyness, show both
+             (show-starts)
+             (show-ends)]))))
     
     ;; color-variable : syntax phase-level identifier-mapping -> void
     (define (color-variable var phase-level varsets)
-      (let* ([b (identifier-binding var phase-level)]
-             [lexical? 
-              (or (not b)
-                  (eq? b 'lexical)
-                  (and (pair? b)
-                       (let ([path (caddr b)])
-                         (and (module-path-index? path)
-                              (self-module? path)))))])
-        (cond
-          [(get-ids varsets var)
-           (add-mouse-over var (string-constant cs-set!d-variable))
-           (color var set!d-variable-style-name)]
-          [lexical? (color var lexically-bound-variable-style-name)]
-          [(pair? b) (color var imported-variable-style-name)])))
+      (define b (identifier-binding var phase-level))
+      (define lexical? (is-lexical? b))
+      (cond
+        [(get-ids varsets var)
+         (add-mouse-over var (string-constant cs-set!d-variable))
+         (color var set!d-variable-style-name)]
+        [lexical? (color var lexically-bound-variable-style-name)]
+        [(pair? b) (color var imported-variable-style-name)]))
     
-    ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol -> void
+    (define (is-lexical? b)
+      (or (not b)
+          (eq? b 'lexical)
+          (and (pair? b)
+               (let ([path (caddr b)])
+                 (and (module-path-index? path)
+                      (self-module? path))))))
+    
+    ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol connections -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
-    (define (connect-syntaxes from to actual? level)
+    (define (connect-syntaxes from to actual? level connections)
       (let ([from-source (find-source-editor from)] 
             [to-source (find-source-editor to)]
             [defs-text (current-annotations)])
@@ -696,6 +751,15 @@
                      [to-pos-left (- (syntax-position to) 1)]
                      [to-pos-right (+ to-pos-left (syntax-span to))])
                 (unless (= from-pos-left to-pos-left)
+                  (define connections-start (list from-source from-pos-left from-pos-right))
+                  (define connections-end (list to-source to-pos-left to-pos-right))
+                  (define connections-key (list connections-start connections-end))
+                  (unless (hash-ref connections connections-key #f)
+                    (hash-set! connections connections-key #t)
+                    (define start-before (or (hash-ref connections connections-start #f) (cons 0 0)))
+                    (define end-before (or (hash-ref connections connections-end #f) (cons 0 0)))
+                    (hash-set! connections connections-start (cons (+ (car start-before) 1) (cdr start-before)))
+                    (hash-set! connections connections-end (cons (car end-before) (+ 1 (cdr end-before)))))
                   (send defs-text syncheck:add-arrow
                         from-source from-pos-left from-pos-right
                         to-source to-pos-left to-pos-right

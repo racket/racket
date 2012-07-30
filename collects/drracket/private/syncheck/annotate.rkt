@@ -5,7 +5,8 @@
 (provide color color-range
          find-source-editor
          find-source-editor/defs
-         add-mouse-over)
+         add-mouse-over
+         add-mouse-over/loc)
 
 ;; color : syntax[original] str -> void
 ;; colors the syntax with style-name's style
@@ -28,16 +29,22 @@
 ;; registers the range in the editor so that a mouse over
 ;; this area shows up in the status line.
 (define (add-mouse-over stx str)
-  (let* ([source (find-source-editor stx)]
-         [defs-text (current-annotations)])
-    (when (and defs-text 
-               source
-               (syntax-position stx)
-               (syntax-span stx))
-      (let* ([pos-left (- (syntax-position stx) 1)]
-             [pos-right (+ pos-left (syntax-span stx))])
-        (send defs-text syncheck:add-mouse-over-status
-              source pos-left pos-right str)))))
+  (define source (find-source-editor stx))
+  (define defs-text (current-annotations))
+  (when (and defs-text 
+             source
+             (syntax-position stx)
+             (syntax-span stx))
+    (define pos-left (- (syntax-position stx) 1))
+    (define pos-right (+ pos-left (syntax-span stx)))
+    (send defs-text syncheck:add-mouse-over-status
+          source pos-left pos-right str)))
+
+(define (add-mouse-over/loc source pos-left pos-right str)
+  (define defs-text (current-annotations))
+  (when defs-text
+    (send defs-text syncheck:add-mouse-over-status
+          source pos-left pos-right str)))
 
 ;; find-source-editor : stx -> editor or false
 (define (find-source-editor stx)

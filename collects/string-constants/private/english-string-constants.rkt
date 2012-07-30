@@ -212,6 +212,11 @@ please adhere to these guidelines:
  (cs-unused-require "unused require")
  (cs-free-variable "free variable")
 
+  (cs-binder-count "~a binding occurrences")
+  (cs-zero-varrefs "no bound occurrences")
+  (cs-one-varref "1 bound occurrence")
+  (cs-n-varrefs "~a bound occurrences") ;; expected to have one ~a formatter that will accept a number
+  
   (cs-contract-my-obligation "Contract: this module's obligation")
   (cs-contract-their-obligation "Contract: clients modules' obligation")
   (cs-contract-both-obligation "Contract: both this module and client modules' obligation")
