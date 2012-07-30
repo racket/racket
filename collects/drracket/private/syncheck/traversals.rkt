@@ -258,11 +258,10 @@
                  
                  ;; tops are used here because a binding free use of a set!'d variable
                  ;; is treated just the same as (#%top . x).
-                 (when (syntax-original? (syntax var))
-                   (add-id varsets (syntax var))
-                   (if (identifier-binding (syntax var) 0)
-                       (add-id varrefs (syntax var))
-                       (add-id tops (syntax var))))
+                 (add-id varsets (syntax var))  
+                 (if (identifier-binding (syntax var) 0)
+                     (add-id varrefs (syntax var))
+                     (add-id tops (syntax var)))
                  
                  (loop (syntax e)))]
               [(quote datum)
@@ -272,8 +271,7 @@
                  (annotate-raw-keyword stx-obj varrefs)
                  (let loop ([stx #'datum])
                    (cond [(identifier? stx)
-                          (when (syntax-original? stx)
-                            (add-id templrefs stx))]
+                          (add-id templrefs stx)]
                          [(syntax? stx)
                           (loop (syntax-e stx))]
                          [(pair? stx)
@@ -297,8 +295,7 @@
               [(#%top . var)
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
-                 (when (syntax-original? (syntax var))
-                   (add-id tops (syntax var))))]
+                 (add-id tops (syntax var)))]
               [(define-values vars b)
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
@@ -374,13 +371,9 @@
                (let ([provided-varss (map extract-provided-vars
                                           (syntax->list (syntax (provide-specs ...))))])
                  (annotate-raw-keyword stx-obj varrefs)
-                 (for-each (λ (provided-vars)
-                             (for-each
-                              (λ (provided-var)
-                                (when (syntax-original? provided-var)
-                                  (add-id varrefs provided-var)))
-                              provided-vars))
-                           provided-varss))]
+                 (for ([provided-vars (in-list provided-varss)])
+                   (for ([provided-var (in-list provided-vars)])
+                     (add-id varrefs provided-var))))]
               
               [(#%expression arg)
                (begin
@@ -388,8 +381,7 @@
                  (tail-loop #'arg))]
               [id
                (identifier? (syntax id))
-               (when (syntax-original? stx-obj)
-                 (add-id varrefs stx-obj))]
+               (add-id varrefs stx-obj)]
               [_
                (begin
                  #;
@@ -415,7 +407,7 @@
                (loop (cdr prop))]
               [(identifier? prop)
                (add-origins prop disappaeared-uses)
-               (add-id binders prop)])))))
+               (add-id binders prop #:add-if-not-original? #T)])))))
     
     ;; add-disappeared-uses : syntax id-set -> void
     (define (add-disappeared-uses stx id-set)
@@ -427,7 +419,7 @@
                (loop (car prop))
                (loop (cdr prop))]
               [(identifier? prop)
-               (add-id id-set prop)])))))
+               (add-id id-set prop #:add-if-not-original? #t)])))))
     
     ;; add-require-spec : hash-table[sexp[require-spec] -o> (listof syntax)]
     ;;                 -> sexp[require-spec]
@@ -472,10 +464,9 @@
         (for ([(level binders) (in-hash phase-to-binders)])
           (for ([vars (in-list (get-idss binders))])
             (for ([var (in-list vars)])
-              (when (syntax-original? var)
-                (define varset (lookup-phase-to-mapping phase-to-varsets level))
-                (color-variable var 0 varset)
-                (document-variable var 0)))))
+              (define varset (lookup-phase-to-mapping phase-to-varsets level))
+              (color-variable var 0 varset)
+              (document-variable var 0))))
         
         (for ([(level varrefs) (in-hash phase-to-varrefs)])
           (define binders (lookup-phase-to-mapping phase-to-binders level))
@@ -483,8 +474,7 @@
           (for ([vars (in-list (get-idss varrefs))])
             (for ([var (in-list vars)])
               (color-variable var level varsets)
-              (when (syntax-original? var)
-                (document-variable var level))
+              (document-variable var level)
               (connect-identifier var
                                   binders
                                   unused/phases
@@ -576,8 +566,7 @@
       (let ([binders (get-ids all-binders var)])
         (when binders
           (for ([x (in-list binders)])
-            (when (syntax-original? x)
-              (connect-syntaxes x var actual? (id-level phase-level x)))))
+            (connect-syntaxes x var actual? (id-level phase-level x))))
         
         (when (and unused/phases phase-to-requires)
           (let ([req-path/pr (get-module-req-path var phase-level)]
@@ -689,14 +678,6 @@
            (color var set!d-variable-style-name)]
           [lexical? (color var lexically-bound-variable-style-name)]
           [(pair? b) (color var imported-variable-style-name)])))
-    
-    ;; add-var : hash-table -> syntax -> void
-    ;; adds the variable to the hash table.
-    (define (add-var ht)
-      (λ (var)
-        (let* ([key (syntax-e var)]
-               [prev (hash-ref ht key (λ () null))])
-          (hash-set! ht key (cons var prev)))))
     
     ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
@@ -817,8 +798,7 @@
                (loop (car ct))
                (loop (cdr ct))]
               [(syntax? ct) 
-               (when (syntax-original? ct)
-                 (add-id id-set ct))]
+               (add-id id-set ct)]
               [else (void)])))))
     
     ;; FIXME: handle for-template and for-label
@@ -875,18 +855,16 @@
                    [rst (cdr e)])
                (if (syntax? fst)
                    (begin
-                     (when (syntax-original? fst)
-                       (when binding-to-init
-                         (add-init-exp binding-to-init fst init-exp))
-                       (add-id id-set fst))
+                     (when binding-to-init
+                       (add-init-exp binding-to-init fst init-exp))
+                     (add-id id-set fst)
                      (loop rst))
                    (loop rst)))]
             [(null? e) (void)]
             [else 
-             (when (syntax-original? stx)
-               (when binding-to-init
-                 (add-init-exp binding-to-init stx init-exp))
-               (add-id id-set stx))]))))    
+             (when binding-to-init
+               (add-init-exp binding-to-init stx init-exp))
+             (add-id id-set stx)]))))    
     
     ;; annotate-raw-keyword : syntax id-map -> void
     ;; annotates keywords when they were never expanded. eg.
@@ -896,8 +874,7 @@
       (let ([lst (syntax-e stx)])
         (when (pair? lst)
           (let ([f-stx (car lst)])
-            (when (and (syntax-original? f-stx)
-                       (identifier? f-stx))
+            (when (identifier? f-stx)
               (add-id id-map f-stx))))))
     
 ;                                                                                             
@@ -1135,15 +1112,18 @@
     
     ;; add-init-exp : id-set identifier stx -> void
     (define (add-init-exp mapping id init-exp)
-      (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
-             [new (cons init-exp old)])
-        (free-identifier-mapping-put! mapping id new)))
+      (when (syntax-original? id)
+        (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
+               [new (cons init-exp old)])
+          (free-identifier-mapping-put! mapping id new))))
     
     ;; add-id : id-set identifier -> void
-    (define (add-id mapping id)
-      (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
-             [new (cons id old)])
-        (free-identifier-mapping-put! mapping id new)))
+    (define (add-id mapping id #:add-if-not-original? [add-if-not-original? #f])
+      (when (or add-if-not-original?
+                (syntax-original? id))
+        (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
+               [new (cons id old)])
+          (free-identifier-mapping-put! mapping id new))))
     
     ;; get-idss : id-set -> (listof (listof identifier))
     (define (get-idss mapping)
