@@ -4,11 +4,11 @@
          (for-syntax lang/private/rewrite-error-message)
          scheme/class
          scheme/match
-	 lang/private/continuation-mark-key
+	 lang/private/continuation-mark-key         
+         lang/private/rewrite-error-message
          (only-in scheme/base for memf findf)
          "test-engine.rkt"
-	 "test-info.scm"
-         )
+	 "test-info.scm")
 
 (require (for-syntax stepper/private/syntax-property))
 
@@ -291,7 +291,7 @@
                                 (lambda (e)
                                   (let ([display (error-display-handler)])
                                     (list (make-unexpected-error src (test-format) expect
-                                                                 (exn-message e) 
+                                                                 (get-rewriten-error-message e)
                                                                  e)
                                           'error
                                           e)))])
