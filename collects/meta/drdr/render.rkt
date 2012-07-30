@@ -76,6 +76,8 @@
         the-base-path*))
   (define prev-rev-url (format "/~a~a" (previous-rev) the-base-path))
   (define next-rev-url (format "/~a~a" (next-rev) the-base-path))
+  (define prev-change-url (format "/previous-change/~a~a" the-rev the-base-path))
+  (define next-change-url (format "/next-change/~a~a" the-rev the-base-path))
   (define cur-rev-url (format "/~a~a" "current" the-base-path))
   ; XXX Don't special case top level
   (values (apply string-append 
@@ -98,6 +100,12 @@
             (span ([class "revnav"])
                   (a ([href ,prev-rev-url])
                      (img ([src "/images/rewind.png"])))
+                  ,@(if directory?
+                      empty
+                      `((a ([href ,prev-change-url])
+                           (img ([src "/images/rewind-change.png"])))
+                        (a ([href ,next-change-url])
+                           (img ([src "/images/fast-forward-change.png"])))))
                   (a ([href ,next-rev-url])
                      (img ([src "/images/fast-forward.png"])))
                   (a ([href ,cur-rev-url])
@@ -927,6 +935,34 @@
             maybe
             (find-previous-rev maybe)))))
 
+(define (show-file/prev-change req rev path-to-file)
+  (show-file/change -1 rev path-to-file))
+(define (show-file/next-change req rev path-to-file)
+  (show-file/change +1 rev path-to-file))
+(define (show-file/change direction top-rev path-to-file)
+  (define the-rev
+    (let loop ([last-rev top-rev]
+               [this-rev (+ direction top-rev)])
+      (parameterize ([current-rev this-rev]
+                     [previous-rev (find-previous-rev this-rev)])
+        (define log-dir (revision-log-dir this-rev))
+        (define log-pth
+          (apply build-path log-dir path-to-file))
+        (match 
+            (with-handlers ([(lambda (x)
+                               (regexp-match #rx"No cache available" (exn-message x)))
+                             (lambda (x)
+                               #f)])
+              (log-rendering log-pth))
+          [#f
+           last-rev]
+          [(and the-log-rendering (struct rendering (_ _ _ _ _ _ _ changed)))
+           (if (empty? changed)
+             (loop this-rev (+ direction this-rev))
+             this-rev)]))))
+  (redirect-to
+   (top-url show-file the-rev path-to-file)))
+
 (define (show-file req rev path-to-file)
   (define log-dir (revision-log-dir rev))
   (parameterize ([current-rev rev]
@@ -1011,6 +1047,8 @@
    [("") show-revisions]
    [("diff" (integer-arg) (integer-arg) (string-arg) ...) show-diff]
    [("json" "timing" (string-arg) ...) json-timing]
+   [("previous-change" (integer-arg) (string-arg) ...) show-file/prev-change]
+   [("next-change" (integer-arg) (string-arg) ...) show-file/next-change]
    [("current" "") show-revision/current]
    [("current" (string-arg) ...) show-file/current]
    [((integer-arg) "") show-revision]
