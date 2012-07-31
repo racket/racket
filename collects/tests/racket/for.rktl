@@ -3,7 +3,7 @@
 
 (Section 'for)
 
-(require compatibility/mpair
+(require compatibility/mlist
          "for-util.rkt")
 
 (test-sequence [(0 1 2)] 3)

@@ -50,12 +50,3 @@ Changes the @tech{mutable pair} @racket[p] so that its first element is
 
 Changes the @tech{mutable pair} @racket[p] so that its second element is
 @racket[v].}
-
-@; ----------------------------------------
-@section{Mutable List Functions}
-
-@note-lib-only[racket/mpair]
-
-@deprecated[@racketmodname[compatibility/mpair]]{}
-
-Re-exports @racketmodname[compatibility/mpair].

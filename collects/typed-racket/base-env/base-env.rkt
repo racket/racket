@@ -15,7 +15,7 @@
   (only-in racket/private/pre-base new-apply-proc)
   racket/promise racket/system
   racket/function
-  compatibility/mpair
+  compatibility/mlist
   racket/base
   racket/set
   racket/place
