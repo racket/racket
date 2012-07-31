@@ -15,11 +15,12 @@
 
 (module+ main
   (define-values (node pl)
-    (spawn-node-supervise-place-thunk-at 
+    (spawn-node-supervise-place-at 
       "localhost"
       #:listen-port 6344
       (quote-module-path "..")
-      'hello-world))
+      'hello-world
+      #:thunk #t))
 
   (message-router
     node

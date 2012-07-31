@@ -32,14 +32,9 @@
 
          ;; New Design Pattern 2 API
          message-router
-         spawn-node-supervise-dynamic-place-at
-         spawn-node-supervise-place-thunk-at
-         spawn-node-with-dynamic-place-at
-         spawn-node-with-place-thunk-at
-         supervise-named-dynamic-place-at
-         supervise-named-place-thunk-at
-         supervise-place-thunk-at
-         supervise-dynamic-place-at
+         spawn-node-supervise-place-at
+         spawn-node-with-place-at
+         supervise-place-at
          supervise-thread-at
 
          supervise-process-at
@@ -1398,32 +1393,24 @@
                             . command-line-list)
   (new spawned-process% [cmdline-list command-line-list]))
 
-(define (supervise-named-place-thunk-at node name place-path place-func
-                            #:initial-message [initial-message #f]
-                            #:restart-on-exit [restart-on-exit #f])
-    (send node launch-place
-          (list 'place (->writeable-module-path place-path) place-func (->string name))
-          ;#:initial-message initial-message
-          #:restart-on-exit restart-on-exit
-          ))
+(define (mk-place-creation-addr place-path place-func name thunk)
+  (list* (if thunk 'place 'dynamic-place) 
+         (->writeable-module-path place-path) 
+         place-func 
+         (if name (list (->string name)) null)))
 
-(define (supervise-named-dynamic-place-at node name place-path place-func
-                            #:initial-message [initial-message #f]
-                            #:restart-on-exit [restart-on-exit #f])
-    (send node launch-place
-          (list 'dynamic-place (->writeable-module-path place-path) place-func (->string name))
-          ;#:initial-message initial-message
-          #:restart-on-exit restart-on-exit
-          ))
-
-(define (spawn-node-with-dynamic-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
+(define (spawn-node-with-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
                             #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
-                            #:restart-on-exit [restart-on-exit #f])
+                            #:restart-on-exit [restart-on-exit #f]
+                            #:named [named #f]
+                            #:thunk [thunk #f])
     (define-values (node pl)
-      (spawn-node-supervise-place-at/exec host (list 'dynamic-place (->writeable-module-path place-path) place-func) #:listen-port listen-port
+      (spawn-node-supervise-place-at/exec host 
+                            (mk-place-creation-addr (->writeable-module-path place-path) place-func thunk) 
+                            #:listen-port listen-port
                             #:initial-message initial-message
                             #:racket-path racketpath
                             #:ssh-bin-path sshpath
@@ -1431,41 +1418,17 @@
                             #:restart-on-exit restart-on-exit))
     node)
 
-(define (spawn-node-with-place-thunk-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
+(define (spawn-node-supervise-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
                             #:initial-message [initial-message #f]
                             #:racket-path [racketpath (racket-path)]
                             #:ssh-bin-path [sshpath (ssh-bin-path)]
                             #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
-                            #:restart-on-exit [restart-on-exit #f])
-    (define-values (node pl)
-      (spawn-node-supervise-place-at/exec host (list 'place (->writeable-module-path place-path) place-func) #:listen-port listen-port
-                            #:initial-message initial-message
-                            #:racket-path racketpath
-                            #:ssh-bin-path sshpath
-                            #:distributed-launch-path distributedlaunchpath
-                            #:restart-on-exit restart-on-exit))
-    node)
-
-(define (spawn-node-supervise-dynamic-place-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
-                            #:initial-message [initial-message #f]
-                            #:racket-path [racketpath (racket-path)]
-                            #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
-                            #:restart-on-exit [restart-on-exit #f])
-    (spawn-node-supervise-place-at/exec host (list 'dynamic-place (->writeable-module-path place-path) place-func) #:listen-port listen-port
-                            #:initial-message initial-message
-                            #:racket-path racketpath
-                            #:ssh-bin-path sshpath
-                            #:distributed-launch-path distributedlaunchpath
-                            #:restart-on-exit restart-on-exit))
-
-(define (spawn-node-supervise-place-thunk-at host place-path place-func #:listen-port [listen-port DEFAULT-ROUTER-PORT]
-                            #:initial-message [initial-message #f]
-                            #:racket-path [racketpath (racket-path)]
-                            #:ssh-bin-path [sshpath (ssh-bin-path)]
-                            #:distributed-launch-path [distributedlaunchpath (->writeable-module-path distributed-launch-path)]
-                            #:restart-on-exit [restart-on-exit #f])
-    (spawn-node-supervise-place-at/exec host (list 'place (->writeable-module-path place-path) place-func) #:listen-port listen-port
+                            #:restart-on-exit [restart-on-exit #f]
+                            #:named [named #f]
+                            #:thunk [thunk #f])
+    (spawn-node-supervise-place-at/exec host 
+                            (mk-place-creation-addr (->writeable-module-path place-path) place-func thunk) 
+                            #:listen-port listen-port
                             #:initial-message initial-message
                             #:racket-path racketpath
                             #:ssh-bin-path sshpath
@@ -1524,11 +1487,17 @@
                             #:distributed-launch-path distributedlaunchpath
                             #:use-current-ports use-current-ports))
 
-(define (supervise-dynamic-place-at remote-node place-path place-func)
-  (send remote-node launch-place (list 'dynamic-place (->writeable-module-path  place-path) place-func)))
+(define (supervise-place-at remote-node place-path place-func
+                                  ;#:initial-message [initial-message #f]
+                                  #:restart-on-exit [restart-on-exit #f]
+                                  #:named [named #f]
+                                  #:thunk [thunk #f])
 
-(define (supervise-place-thunk-at remote-node place-path place-func)
-  (send remote-node launch-place (list 'place (->writeable-module-path place-path) place-func)))
+  (send remote-node launch-place 
+        (mk-place-creation-addr place-path place-func named thunk)
+        #:restart-on-exit restart-on-exit
+        ;#:initial-message initial-message
+        ))
 
 (define (supervise-thread-at remote-node place-path place-func)
   (send remote-node launch-place (list 'thread (->writeable-module-path place-path) place-func)))

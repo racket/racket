@@ -48,7 +48,7 @@
              [(pl-place-enabled?) (pl-func p args ...)]
              [else (th-func p args ...)])))]))
 
-(lazy-require [racket/place/distributed (supervise-dynamic-place-at)])
+(lazy-require [racket/place/distributed (supervise-place-at)])
 
 (define (place-channel-put/get ch msg)
   (place-channel-put ch msg)
@@ -74,10 +74,10 @@
       (pl-place-pumper-threads p (vector t-in t-out t-err))]
     [else (void)]))
 
-(define (dynamic-place module-path function #:at [node #f])
+(define (dynamic-place module-path function #:at [node #f] #:named [named #f])
   (cond
     [node
-      (supervise-dynamic-place-at node module-path function)]
+      (supervise-place-at node module-path function #:named named)]
     [else
       (start-place 'dynamic-place module-path function
                    #f (current-output-port) (current-error-port))]))
