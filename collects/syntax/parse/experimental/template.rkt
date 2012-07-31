@@ -211,6 +211,8 @@ instead of integers and integer vectors.
         (vector 'struct (loop g1 loop-env))]
        [(vector 'box g1)
         (vector 'box (loop (unbox g) loop-env))]
+       [(vector 'props g1 props-alist)
+        (vector 'props (loop g1 loop-env) props-alist)]
        [(vector 'app-opt g1 drivers1)
         (vector 'app-opt
                 (loop g1 loop-env)
@@ -222,6 +224,19 @@ instead of integers and integer vectors.
    (loop g0 '#hash()))
 
  ;; ----------------------------------------
+
+ (define retain-props '(paren-shape))
+
+ (define (wrap-props stx env-set pre-guide)
+   (let ([prop-entries (for/fold ([entries null]) ([prop (in-list retain-props)])
+                         (let ([v (syntax-property stx prop)])
+                           (if (and v) ;; FIXME: add read-write-able check!
+                               (cons (cons prop v) entries)
+                               entries)))])
+     (values env-set
+             (if (pair? prop-entries)
+                 (vector 'props pre-guide prop-entries)
+                 pre-guide))))
 
  ;; parse-t : stx nat boolean -> (values (setof env-entry) pre-guide)
  (define (parse-t t depth esc?)
@@ -239,7 +254,8 @@ instead of integers and integer vectors.
                       (values (set pvar) pvar)]
                      [(template-metafunction? pvar)
                       (wrong-syntax t "illegal use of syntax metafunction")]
-                     [else (values (set) '_)]))])]
+                     [else
+                      (wrap-props #'id (set) '_)]))])]
      [(mf . template)
       (and (not esc?)
            (identifier? #'mf)
@@ -273,40 +289,42 @@ instead of integers and integer vectors.
                      [(tdrivers tguide) (parse-t tail depth esc?)])
           (unless (positive? (set-count hdrivers))
             (wrong-syntax #'head "no pattern variables in term before ellipsis"))
-          (values (set-union hdrivers tdrivers)
-                  ;; pre-guide hdrivers is (listof (setof pvar))
-                  ;; set of pvars new to each level
-                  (let* ([hdrivers/level
-                          (for/list ([i (in-range nesting)])
-                            (set-filter hdrivers (pvar/dd<=? (+ depth i))))]
-                         [new-hdrivers/level
-                          (let loop ([raw hdrivers/level] [last (set)])
-                            (cond [(null? raw) null]
-                                  [else
-                                   (cons (set-subtract (car raw) last)
-                                         (loop (cdr raw) (car raw)))]))])
-                    (vector 'dots hguide new-hdrivers/level nesting #f tguide)))))]
+          (wrap-props t
+                      (set-union hdrivers tdrivers)
+                      ;; pre-guide hdrivers is (listof (setof pvar))
+                      ;; set of pvars new to each level
+                      (let* ([hdrivers/level
+                              (for/list ([i (in-range nesting)])
+                                (set-filter hdrivers (pvar/dd<=? (+ depth i))))]
+                             [new-hdrivers/level
+                              (let loop ([raw hdrivers/level] [last (set)])
+                                (cond [(null? raw) null]
+                                      [else
+                                       (cons (set-subtract (car raw) last)
+                                             (loop (cdr raw) (car raw)))]))])
+                        (vector 'dots hguide new-hdrivers/level nesting #f tguide)))))]
      [(head . tail)
       (let-values ([(hdrivers hsplice? hguide) (parse-h #'head depth esc?)]
                    [(tdrivers tguide) (parse-t #'tail depth esc?)])
-        (values (set-union hdrivers tdrivers)
-                (cond [(and (eq? hguide '_) (eq? tguide '_)) '_]
-                      [hsplice? (vector 'app hguide tguide)]
-                      [else (cons hguide tguide)])))]
+        (wrap-props t
+                    (set-union hdrivers tdrivers)
+                    (cond [(and (eq? hguide '_) (eq? tguide '_)) '_]
+                          [hsplice? (vector 'app hguide tguide)]
+                          [else (cons hguide tguide)])))]
      [vec
       (vector? (syntax-e #'vec))
       (let-values ([(drivers guide) (parse-t (vector->list (syntax-e #'vec)) depth esc?)])
-        (values drivers (if (eq? guide '_) '_ (vector 'vector guide))))]
+        (wrap-props t drivers (if (eq? guide '_) '_ (vector 'vector guide))))]
      [pstruct
       (prefab-struct-key (syntax-e #'pstruct))
       (let-values ([(drivers guide)
                     (parse-t (cdr (vector->list (struct->vector (syntax-e #'pstruct)))) depth esc?)])
-        (values drivers (if (eq? guide '_) '_ (vector 'struct guide))))]
+        (wrap-props t drivers (if (eq? guide '_) '_ (vector 'struct guide))))]
      [#&template
       (let-values ([(drivers guide) (parse-t #'template depth esc?)])
-        (values drivers (if (eq? guide '_) '_ (vector 'box guide))))]
+        (wrap-props t drivers (if (eq? guide '_) '_ (vector 'box guide))))]
      [const
-      (values (set) '_)]))
+      (wrap-props t (set) '_)]))
 
  ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide)
  (define (parse-h h depth esc?)

@@ -29,6 +29,7 @@ A Guide (G) is one of:
   - (vector 'escaped G)
   - (vector 'orelse G (vector-of integer) G)
   - (vector 'metafun integer G)
+  - (vector 'props G (listof (cons any any)))
 
 A HeadGuide (HG) is one of:
   - G
@@ -193,7 +194,12 @@ A HeadGuide (HG) is one of:
     [(vector 'box g1)
      (let ([f1 (loop (unbox (syntax-e stx)) g1)])
        (lambda (env lenv)
-         (restx stx (box (f1 env lenv)))))]))
+         (restx stx (box (f1 env lenv)))))]
+    [(vector 'props g1 props-alist)
+     (let ([f1 (loop stx g1)])
+       (lambda (env lenv)
+         (for/fold ([v (f1 env lenv)]) ([entry (in-list props-alist)])
+           (syntax-property v (car entry) (cdr entry)))))]))
 
 (define (translate-hg stx0 stx hg env-length lenv-mode)
   (define (loop stx g) (translate-g stx0 stx g env-length lenv-mode))
@@ -283,11 +289,7 @@ A HeadGuide (HG) is one of:
 
 (define (restx basis val)
   (if (syntax? basis)
-      (let ([stx (datum->syntax basis val basis)]
-            [paren-shape (syntax-property basis 'paren-shape)])
-        (if paren-shape
-            (syntax-property stx 'paren-shape paren-shape)
-            stx))
+      (datum->syntax basis val basis)
       val))
 
 ;; nested-append : (listof^(nesting+1) A) nat (listof A) -> (listof A)
