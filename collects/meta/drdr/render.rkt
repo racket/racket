@@ -393,7 +393,7 @@
                            `(div ([class "error"])
                                  "This result of executing this file has changed since the previous push."
                                  " "
-                                 (a ([href ,(format "/diff/~a/~a~a" (current-rev) (previous-rev) the-base-path)])
+                                 (a ([href ,(format "/diff/~a/~a~a" (previous-rev) (current-rev) the-base-path)])
                                     "See the difference")))
                       ,@(if (empty? output)
                             '()
