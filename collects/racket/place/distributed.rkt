@@ -1409,7 +1409,7 @@
                             #:thunk [thunk #f])
     (define-values (node pl)
       (spawn-node-supervise-place-at/exec host 
-                            (mk-place-creation-addr (->writeable-module-path place-path) place-func thunk) 
+                            (mk-place-creation-addr (->writeable-module-path place-path) place-func #f thunk) 
                             #:listen-port listen-port
                             #:initial-message initial-message
                             #:racket-path racketpath
@@ -1427,7 +1427,7 @@
                             #:named [named #f]
                             #:thunk [thunk #f])
     (spawn-node-supervise-place-at/exec host 
-                            (mk-place-creation-addr (->writeable-module-path place-path) place-func thunk) 
+                            (mk-place-creation-addr (->writeable-module-path place-path) place-func #f thunk) 
                             #:listen-port listen-port
                             #:initial-message initial-message
                             #:racket-path racketpath

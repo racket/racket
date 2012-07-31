@@ -25,7 +25,7 @@
 
 
 (define (main)
-  (define bank-node (spawn-node-with--place-at "localhost" #:listen-port 6344 bank-path 'make-bank))
+  (define bank-node (spawn-node-with-place-at "localhost" #:listen-port 6344 bank-path 'make-bank))
   (define bank-place (send bank-node get-first-place))
   (message-router
     (spawn-place-worker-at 6341 "ONE")
