@@ -862,41 +862,30 @@ except that it can be faster.
 
 
 @defproc[(add-between [lst list?] [v any/c]
-                      [#:nothing nothing any/c (gensym)]
-                      [#:before-first before-first any/c nothing]
+                      [#:before-first before-first list? '()]
                       [#:before-last  before-last  any/c v]
-                      [#:after-last   after-last   any/c nothing]
+                      [#:after-last   after-last   list? '()]
                       [#:splice? splice? any/c #f])
          list?]{
 
 Returns a list with the same elements as @racket[lst], but with
 @racket[v] between each pair of elements in @racket[lst]; the last
 pair of elements will have @racket[before-last] between them, instead
-of @racket[v] (but @racket[before-last] defaults to @racket[v]). In
-addition, if @racket[before-first] is supplied as a value other than
-@racket[nothing], then @racket[before-first] is inserted before the first
-element; if @racket[after-last] is supplied as a value other than
-@racket[nothing], then @racket[after-last] is inserted after the last
-element.
+of @racket[v] (but @racket[before-last] defaults to @racket[v]).
 
-If @racket[splice?] is true, then @racket[v], @racket[before-first],
-@racket[before-last], and @racket[after-last] should be lists, and
-the list elements are spliced into the result.
+If @racket[splice?] is true, then @racket[v] and @racket[before-last]
+should be lists, and the list elements are spliced into the result.  In
+addition, when @racket[splice?] is true, @racket[before-first] and
+@racket[after-last] are inserted before the first element and after the
+last element respectively.
 
 @mz-examples[#:eval list-eval
   (add-between '(x y z) 'and)
   (add-between '(x) 'and)
   (add-between '("a" "b" "c" "d") "," #:before-last "and")
-  (add-between #:before-first "Todo:"
-               '("a" "b" "c") "," #:before-last "and"
-               #:after-last ".")
   (add-between '(x y z) '(-) #:before-last '(- -)
                #:before-first '(begin) #:after-last '(end LF)
                #:splice? #t)
-  (add-between '("a" "b" "c" "d") "," 
-               #:nothing #f #:before-first #f #:after-last "!")
-  (add-between '("a" "b" "c" "d") "," 
-               #:before-first #f #:after-last "!")
 ]}
 
 

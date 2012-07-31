@@ -1112,7 +1112,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
           if (SCHEME_NULLP(amarks)) {
             /* can always match empty marks */
             best_match = SCHEME_CDR(a);
-            best_match_skipped = 0;
+            best_match_skipped = scheme_proper_list_length(marks);
           } else if (!SCHEME_PAIRP(marks)) {
             /* To be better than nothing, could only match exactly: */
             if (scheme_equal(amarks, marks)) {
@@ -1951,7 +1951,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       pos = 0;
     else
       pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					      find_id, src_find_id, NULL, NULL, rename_insp, -1, 1,
+					      find_id, src_find_id, NULL, env->insp, rename_insp, -1, 1,
 					      _protected, NULL, env->genv, NULL, &mod_constant);
     modpos = (int)SCHEME_INT_VAL(pos);
   } else

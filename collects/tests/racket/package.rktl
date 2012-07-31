@@ -248,5 +248,21 @@
  q)
 
 ;; ----------------------------------------
+;; In a submodule
+
+(module package-in-a-submodule racket/base
+  (require racket/package)
+  
+  (define-package pkg (foo)
+    (define foo 5))
+  
+  (module+ main
+    (open-package pkg)
+    (define out foo)
+    (provide out)))
+
+(test 5 dynamic-require '(submod 'package-in-a-submodule main) 'out)
+
+;; ----------------------------------------
 
 (report-errs)

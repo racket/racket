@@ -2,7 +2,7 @@
 (module pconvert mzscheme
   
   (require (only racket/base sort)
-           racket/mpair
+           compatibility/mpair
 	   "pconvert-prop.rkt"
            "class.rkt")
   

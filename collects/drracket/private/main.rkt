@@ -69,6 +69,7 @@
                          (cons/c (list/c 'main)
                                  (cons/c (list/c 'test)
                                          (listof (listof symbol?)))))
+(preferences:set-default 'drracket:defs/ints-labels #t boolean?)
 
 (drr:set-default 'drracket:language-dialog:hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))
 
@@ -310,6 +311,10 @@
    (λ (editor-panel)
      (make-check-box 'drracket:show-line-numbers?
                      (string-constant show-line-numbers)
+                     editor-panel)
+     
+     (make-check-box 'drracket:defs/ints-labels
+                     (string-constant show-defs/ints-label)
                      editor-panel)
      
      ;; come back to this one.

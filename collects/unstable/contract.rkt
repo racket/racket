@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/contract racket/dict racket/match)
+(require racket/contract/base racket/contract/combinator)
 
 (define path-piece?
   (or/c path-string? (symbols 'up 'same)))
@@ -137,39 +137,44 @@
   (let* ([elem/cs (for/list ([elem/c (in-list elem/cs)])
                     (coerce-contract 'sequence/c elem/c))]
          [n-cs (length elem/cs)])
-    (make-proj-contract
-     (apply build-compound-type-name 'sequence/c elem/cs)
-     (lambda (pos neg src name blame)
-       (lambda (seq)
+    (make-contract
+     #:name (apply build-compound-type-name 'sequence/c elem/cs)
+     #:first-order sequence?
+     #:projection
+     (λ (blame)       
+       (λ (seq)
+         (define pos (blame-positive blame))
+         (define neg (blame-negative blame))
+         (define src (list (blame-source blame) (blame-value blame)))
+         (define name (blame-contract blame))
          (unless (sequence? seq)
-           (raise-contract-error
-            seq src pos name
+           (raise-blame-error
+            blame seq
             "expected a sequence, got: ~e"
             seq))
-           (make-do-sequence
-            (lambda ()
-              (let*-values ([(more? next) (sequence-generate seq)])
-                (values
-                 (lambda (idx)
-                   (call-with-values next
-                     (lambda elems
-                       (define n-elems (length elems))
-                       (unless (= n-elems n-cs)
-                         (raise-contract-error
-                          seq src pos name
-                          "expected a sequence of ~a values, got ~a values: ~s"
-                          n-cs n-elems elems))
-                       (apply
-                        values
-                        (for/list ([elem (in-list elems)]
-                                   [elem/c (in-list elem/cs)])
-                          (((contract-proc elem/c) pos neg src name blame) elem))))))
-                 (lambda (idx) idx)
-                 #f
-                 (lambda (idx) (more?))
-                 (lambda elems #t)
-                 (lambda (idx . elems) #t)))))))
-     sequence?)))
+         (make-do-sequence
+          (lambda ()
+            (let*-values ([(more? next) (sequence-generate seq)])
+              (values
+               (lambda (idx)
+                 (call-with-values next
+                                   (lambda elems
+                                     (define n-elems (length elems))
+                                     (unless (= n-elems n-cs)
+                                       (raise-blame-error
+                                        blame seq
+                                        "expected a sequence of ~a values, got ~a values: ~s"
+                                        n-cs n-elems elems))
+                                     (apply
+                                      values
+                                      (for/list ([elem (in-list elems)]
+                                                 [elem/c (in-list elem/cs)])
+                                        (((contract-projection elem/c) blame) elem))))))
+               (lambda (idx) idx)
+               #f
+               (lambda (idx) (more?))
+               (lambda elems #t)
+               (lambda (idx . elems) #t))))))))))
 
 ;; Added by ntoronto
 

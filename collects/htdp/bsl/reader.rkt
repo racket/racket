@@ -35,6 +35,8 @@
      ;; we don't want anything to confuse in the teaching languages.
      #f]
     
+    [(drracket:show-big-defs/ints-labels) #t]
+    
     [else (use-default key default)]))
 
 (define (make-language-info options)

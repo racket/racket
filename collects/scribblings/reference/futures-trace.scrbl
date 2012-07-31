@@ -1,11 +1,11 @@
 #lang scribble/doc 
-@(require "mz.rkt" (for-label racket/future racket/future/trace)) 
+@(require "mz.rkt" (for-label racket/future future-visualizer/trace)) 
 
 @title[#:tag "futures-trace"]{Futures Tracing} 
 
 @guideintro["effective-futures"]{the future visualizer}
 
-@defmodule[racket/future/trace]
+@defmodule[future-visualizer/trace]
 
 The @deftech{futures trace} module exposes low-level information about 
 the execution of parallel programs written using @racket[future].   
@@ -22,7 +22,7 @@ the execution of parallel programs written using @racket[future].
  
  @racketblock[ 
     (require racket/future 
-             racket/future/trace) 
+             future-visualizer/trace) 
      
     (trace-futures  
      (let ([f (future (lambda () ...))]) 
@@ -34,24 +34,30 @@ the execution of parallel programs written using @racket[future].
  
  @racketblock[ 
     (require racket/future 
-             racket/future/trace) 
+             future-visualizer/trace) 
                                       
-    (start-performance-tracking!) 
+    (start-future-tracing!) 
     (let ([f (future (lambda () ...))]) 
       ... 
       (touch f)) 
-    
+    (stop-future-tracing!)
     (timeline-events)
  ]
 }
 
 @deftogether[(
-  @defproc[(start-performance-tracking!) void?]
+  @defproc[(start-future-tracing!) void?]
+  @defproc[(stop-future-tracing!) void?]
   @defproc[(timeline-events) (listof indexed-future-event?)]
 )]{
- The @racket[start-performance-tracking!] procedure enables the collection 
+ The @racket[start-future-tracing!] procedure enables the collection 
  of future-related execution data.  This function should be called immediately 
  prior to executing code the programmer wishes to profile. 
+ 
+ The @racket[stop-future-tracing!] procedure must be used to indicate the 
+ end of code the programmer wishes to trace.  Tracing works by simply using a 
+ log receiver to record all future-related log events; this procedure logs a 
+ special message that is well-known to the log receiver to mean 'stop recording'.
  
  The @racket[timeline-events] procedure returns the program trace as 
  a list of @racket[indexed-future-event] structures. 
@@ -76,7 +82,7 @@ useful for debugging the performance of programs that use futures.
 Though textual log output can be viewed directly (or retrieved in 
 code via @racket[trace-futures]), it is much  
 easier to use the graphical profiler tool provided by 
-@racketmodname[racket/future/visualizer].  
+@racketmodname[future-visualizer].  
 
 In addition to its string message, each event logged for a future has
 a data value that is an instance of a @racket[future-event]

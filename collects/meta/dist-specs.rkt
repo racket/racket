@@ -391,7 +391,7 @@ mz-tests := (tests: "info.rkt" "racket/" "utils/" "match/"
 ;; Source definitions
 
 mz-src := (+ (- (src: "README" "configure" "Makefile.in" "lt/" "racket/"
-                      "get-libs.rkt" "utils/"
+                      "get-libs.rkt" "download-libs.rkt" "utils/"
                       (cond win => "worksp/{README|mzconfig.h}"
                                    "worksp/{build.bat|rbuildmode.c}"
                                    "worksp/{racket|libracket}/"
@@ -502,6 +502,9 @@ mz-extras :+= (package: "parser-tools/")
 
 ;; -------------------- html
 mz-extras :+= (package: "html/")
+
+;; -------------------- compatibility
+mz-extras :+= (package: "compatibility/")
 
 ;; -------------------- r5rs
 mz-extras :+= (package: "r5rs/" #:executable "plt-r5rs")
@@ -627,7 +630,7 @@ plt-extras :+= (- (+ (package: "games/" #:executable "plt-games")
                   "paint-by-numbers/{hattori|solution-sets|raw-problems}")
 
 ;; -------------------- texpict & slideshow
-plt-extras :+= (collects: "texpict/") 
+plt-extras :+= (collects: "texpict/")
                (package: "slideshow")
 
 ;; -------------------- frtime
@@ -693,6 +696,9 @@ plt-extras :+= (package: "datalog/")
 
 ;; -------------------- db
 mz-extras :+= (package: "db/") (lib: "sqlite*")
+
+;; -------------------- future-visualizer
+plt-extras :+= (package: "future-visualizer/")
 
 ;; ============================================================================
 ;; Readme header

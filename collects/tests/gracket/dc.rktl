@@ -577,23 +577,24 @@
   (define dc2 (make-object bitmap-dc% bm2))
   (define gl1 (send dc1 get-gl-context))
   (define gl2 (send dc2 get-gl-context))
-  (send gl1 call-as-current
-        (lambda ()
-          (test 5 'alt (send gl2 call-as-current
-                             (lambda () (error "not in this context!"))
-                             (wrap-evt always-evt (lambda (v) 5))))
-          (sync
-           (thread
-            (lambda ()
-              (test 8 'thread/alts
-                    (send gl1 call-as-current
-                          (lambda () (error "not in this thread!"))
-                          (wrap-evt always-evt (lambda (v) 8)))))))
-          (test 8 'reenter (send gl1 call-as-current
-                                 (lambda () 8)))))
-  (with-handlers ([exn? void])
-    (send gl1 call-as-current (lambda () (error "fail"))))
-  (test 12 'post-exn (send gl1 call-as-current (lambda () 12))))
+  (when (and gl1 gl2)
+    (send gl1 call-as-current
+          (lambda ()
+            (test 5 'alt (send gl2 call-as-current
+                               (lambda () (error "not in this context!"))
+                               (wrap-evt always-evt (lambda (v) 5))))
+            (sync
+             (thread
+              (lambda ()
+                (test 8 'thread/alts
+                      (send gl1 call-as-current
+                            (lambda () (error "not in this thread!"))
+                            (wrap-evt always-evt (lambda (v) 8)))))))
+            (test 8 'reenter (send gl1 call-as-current
+                                   (lambda () 8)))))
+    (with-handlers ([exn? void])
+      (send gl1 call-as-current (lambda () (error "fail"))))
+    (test 12 'post-exn (send gl1 call-as-current (lambda () 12)))))
 
 ;; ----------------------------------------
 

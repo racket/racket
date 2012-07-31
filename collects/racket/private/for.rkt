@@ -1360,38 +1360,73 @@
   (define-syntax (for/vector stx)
     (syntax-case stx ()
       [(for/vector (for-clause ...) body ...)
-       (syntax/loc stx
-         (list->vector
-          (for/list (for-clause ...) body ...)))]
+       (with-syntax ([orig-stx stx])
+         (syntax/loc stx
+           (list->vector
+            (reverse
+             (for/fold/derived 
+              orig-stx
+              ([l null])
+              (for-clause ...) 
+              (cons (let () body ...) l))))))]
       [(for/vector #:length length-expr (for-clause ...) body ...)
-       (syntax/loc stx
-         (let ([len length-expr])
-           (unless (exact-nonnegative-integer? len)
-             (raise-argument-error 'for/vector "exact-nonnegative-integer?" len))
-           (let ([v (make-vector len)])
-             (for/fold ([i 0])
-                 (for-clause ... #:when (< i len))
-               (vector-set! v i (let () body ...))
-               (add1 i))
-             v)))]))
+       (with-syntax ([orig-stx stx])
+         (syntax/loc stx
+           (let ([len length-expr])
+             (unless (exact-nonnegative-integer? len)
+               (raise-argument-error 'for/vector "exact-nonnegative-integer?" len))
+             (let ([v (make-vector len)])
+               (unless (zero? len)
+                 (let ([len-1 (sub1 len)])
+                   (for/fold/derived 
+                    orig-stx 
+                    ([vd (void)])
+                    ([i (stop-after (*in-naturals) (lambda (i) (= i len-1)))]
+                     for-clause ...)
+                    (vector-set! v i (let () body ...))
+                    (void))))
+               v))))]))
 
   (define-syntax (for*/vector stx)
     (syntax-case stx ()
       [(for*/vector (for-clause ...) body ...)
-       (syntax/loc stx
-         (list->vector
-          (for*/list (for-clause ...) body ...)))]
+       (with-syntax ([orig-stx stx])
+         (syntax/loc stx
+           (list->vector
+            (reverse
+             (for*/fold/derived
+              orig-stx
+              ([l null])
+              (for-clause ...) 
+              (cons (let () body ...) l))))))]
       [(for*/vector #:length length-expr (for-clause ...) body ...)
+       (with-syntax ([orig-stx stx]
+                     [(limited-for-clause ...)
+                      (map (lambda (fc)
+                             (syntax-case fc ()
+                               [[ids rhs]
+                                (or (identifier? #'ids)
+                                    (let ([l (syntax->list #'ids)])
+                                      (and l (andmap identifier? l))))
+                                (syntax/loc fc [ids (stop-after
+                                                     rhs
+                                                     (lambda x
+                                                       (= i len)))])]
+                               [_ fc]))
+                           (syntax->list #'(for-clause ...)))])
        (syntax/loc stx
          (let ([len length-expr])
            (unless (exact-nonnegative-integer? len)
              (raise-argument-error 'for*/vector "exact-nonnegative-integer?" len))
            (let ([v (make-vector len)])
-             (for*/fold ([i 0])
-                 (for-clause ... #:when (< i len))
-               (vector-set! v i (let () body ...))
-               (add1 i))
-             v)))]))
+             (unless (zero? len)
+               (for*/fold/derived
+                orig-stx 
+                ([i 0])
+                (limited-for-clause ...)
+                (vector-set! v i (let () body ...))
+                (add1 i)))
+             v))))]))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (syntax-case stx ()

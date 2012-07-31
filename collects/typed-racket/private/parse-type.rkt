@@ -2,16 +2,19 @@
 
 (require "../utils/utils.rkt"
 	 (except-in (rep type-rep) make-arr)
-         (rename-in (types convenience union utils printer filter-ops) [make-arr* make-arr])
+         (rename-in (types convenience union utils printer filter-ops resolve)
+                    [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: racket/contract)
          syntax/parse racket/dict
-         (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)
+         (env type-env-structs tvar-env type-name-env type-alias-env
+              lexical-env index-env)
          racket/match
          "parse-classes.rkt"
          (for-template racket/base "../base-env/colon.rkt")
          ;; needed at this phase for tests
-         (combine-in (prefix-in t: "../base-env/base-types-extra.rkt") "../base-env/colon.rkt")
+         "../base-env/colon.rkt"
+         (prefix-in t: "../base-env/base-types-extra.rkt")
          (for-template (prefix-in t: "../base-env/base-types-extra.rkt")))
 
 (define-struct poly (name vars) #:prefab)
@@ -132,7 +135,7 @@
     (syntax-parse
         stx
       #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda t:case->
-                          t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote)
+                  t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote t:Struct)
       [t
        #:declare t (3d Type?)
        (attribute t.datum)]
@@ -159,6 +162,13 @@
          [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
           (make-Refinement dom #'p? (syntax-local-certifier))]
          [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
+      [((~and kw t:Struct) t)
+       (add-disappeared-use #'kw)
+       (let ([v (parse-type #'t)])
+         (match (resolve v)
+           [(and s (Struct: _ _ _ _ _ _ _ _)) (make-StructTop s)]
+           [_ (tc-error/delayed "Argument to Struct must be a structure type, got ~a" v)
+              (make-Instance (Un))]))]
       [((~and kw t:Instance) t)
        (add-disappeared-use #'kw)
        (let ([v (parse-type #'t)])

@@ -244,9 +244,7 @@ A pen cannot be modified if it was obtained from a @racket[pen-list%]
               void?]
              [(set-color [color-name string?])
               void?]
-             [(set-color [red (integer-in 0 255)]
-                         [green (integer-in 0 255)]
-                         [blue (integer-in 0 255)])
+             [(set-color [red byte?] [green byte?] [blue byte?])
               void?])]{
 
 Sets the pen color.

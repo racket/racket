@@ -247,9 +247,12 @@
    [split-at-right
     (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
 
-   [vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
-   [unsafe-vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
-   [unsafe-vector*-ref (-poly (a) ((-vec a) index-type . -> . a))]
+   [vector-ref (-poly (a) (cl->* ((-vec a) index-type . -> . a)
+                                 (-VectorTop index-type . -> . Univ)))]
+   [unsafe-vector-ref (-poly (a) (cl->* ((-vec a) index-type . -> . a)
+                                        (-VectorTop index-type . -> . Univ)))]
+   [unsafe-vector*-ref (-poly (a) (cl->* ((-vec a) index-type . -> . a)
+                                         (-VectorTop index-type . -> . Univ)))]
    [build-vector (-poly (a) (index-type (-Index . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]

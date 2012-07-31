@@ -333,6 +333,51 @@
           ;; CG-Top
           [(_ (Univ:)) empty]
 
+          ;; check all non Type/c first so that calling subtype is safe
+
+          ;; check each element
+          [((Result: s f-s o-s)
+            (Result: t f-t o-t))
+           (cset-meet* (list (cg s t)
+                             (cgen/filter-set V X Y f-s f-t)
+                             (cgen/object V X Y o-s o-t)))]
+
+          ;; values are covariant
+          [((Values: ss) (Values: ts))
+           (unless (= (length ss) (length ts))
+             (fail! ss ts))
+           (cgen/list V X Y ss ts)]
+
+          ;; this constrains `dbound' to be |ts| - |ss|
+          [((ValuesDots: ss s-dty dbound) (Values: ts))
+           (unless (>= (length ts) (length ss)) (fail! ss ts))
+           (unless (memq dbound Y) (fail! S T))
+
+           (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
+                  ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
+                  [new-tys  (for/list ([var vars])
+                              (substitute (make-F var) dbound s-dty))]
+                  ;; generate constraints on the prefixes, and on the dummy types
+                  [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
+             ;; now take all the dummy types, and use them to constrain dbound appropriately
+             (move-vars-to-dmap new-cset dbound vars))]
+
+          ;; identical bounds - just unify pairwise
+          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
+           (when (memq dbound Y) (fail! ss ts))
+           (cgen/list V X Y (cons s-dty ss) (cons t-dty ts))]
+          [((ValuesDots: ss s-dty (? (λ (db) (memq db Y)) s-dbound)) (ValuesDots: ts t-dty t-dbound))
+           ;; What should we do if both are in Y?
+           (when (memq t-dbound Y) (fail! S T))
+           (cset-meet
+            (cgen/list V X Y ss ts)
+            (move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound))]
+          [((ValuesDots: ss s-dty s-dbound) (ValuesDots: ts t-dty (? (λ (db) (memq db Y)) t-dbound)))
+           ;; s-dbound can't be in Y, due to previous rule
+           (cset-meet
+            (cgen/list V X Y ss ts)
+            (move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound))]
+
           ;; they're subtypes. easy.
           [(a b) (=> nevermind)
            (if (subtype a b)
@@ -472,41 +517,6 @@
            (let ((T* (resolve-once T)))
             (if T* (cg S T*) (fail! S T)))]
 
-          ;; values are covariant
-          [((Values: ss) (Values: ts))
-           (unless (= (length ss) (length ts))
-             (fail! ss ts))
-           (cgen/list V X Y ss ts)]
-
-          ;; this constrains `dbound' to be |ts| - |ss|
-          [((ValuesDots: ss s-dty dbound) (Values: ts))
-           (unless (>= (length ts) (length ss)) (fail! ss ts))
-           (unless (memq dbound Y) (fail! S T))
-
-           (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
-                  ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
-                  [new-tys  (for/list ([var vars])
-                              (substitute (make-F var) dbound s-dty))]
-                  ;; generate constraints on the prefixes, and on the dummy types
-                  [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
-             ;; now take all the dummy types, and use them to constrain dbound appropriately
-             (move-vars-to-dmap new-cset dbound vars))]
-
-          ;; identical bounds - just unify pairwise
-          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
-           (when (memq dbound Y) (fail! ss ts))
-           (cgen/list V X Y (cons s-dty ss) (cons t-dty ts))]
-          [((ValuesDots: ss s-dty (? (λ (db) (memq db Y)) s-dbound)) (ValuesDots: ts t-dty t-dbound))
-           ;; What should we do if both are in Y?
-           (when (memq t-dbound Y) (fail! S T))
-           (cset-meet
-            (cgen/list V X Y ss ts)
-            (move-dotted-rest-to-dmap (cgen V (cons s-dbound X) Y s-dty t-dty) s-dbound))]
-          [((ValuesDots: ss s-dty s-dbound) (ValuesDots: ts t-dty (? (λ (db) (memq db Y)) t-dbound)))
-           ;; s-dbound can't be in Y, due to previous rule
-           (cset-meet
-            (cgen/list V X Y ss ts)
-            (move-dotted-rest-to-dmap (cgen V (cons t-dbound X) Y s-dty t-dty) t-dbound))]
           ;; vectors are invariant - generate constraints *both* ways
           [((Vector: e) (Vector: e*))
            (cset-meet (cg e e*) (cg e* e))]
@@ -554,12 +564,6 @@
                 ;; ensure that something produces a constraint set
                 (when (null? results) (fail! S T))
                 (cset-combine results))))]
-          ;; check each element
-          [((Result: s f-s o-s)
-            (Result: t f-t o-t))
-           (cset-meet* (list (cg s t)
-                             (cgen/filter-set V X Y f-s f-t)
-                             (cgen/object V X Y o-s o-t)))]
           [(_ _)
            ;; nothing worked, and we fail
            (fail! S T)]))))

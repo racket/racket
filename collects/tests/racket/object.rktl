@@ -1675,4 +1675,25 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; ----------------------------------------
+;; Mixins
+
+(let ()
+  (define-local-member-name m)
+  (define i<%> (interface () m n))
+  (define mix
+    (mixin (i<%>) ()
+      (inherit m n)
+      (super-new)
+      (define/public (x) (+ (m) (n)))))
+  (define c%
+    (class* object% (i<%>)
+      (define/public (m) 1)
+      (define/public (n) 2)
+      (super-new)))
+  (test 3 'mixin-with-local-member-names (send (new (mix c%)) x)))
+  
+
+
 (report-errs)
+

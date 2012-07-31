@@ -85,7 +85,7 @@
       #rx"first>")
 (test @t{(module m mzscheme (require (all-except mzlib/list foldl)))}
       @t{foldl}
-      #rx"[.] [.] reference to an identifier before its definition.*foldl")
+      #rx"[.] [.] foldl:.*cannot reference an identifier before its definition")
 (test @t{(module m mzscheme (require (prefix mz: mzscheme)))}
       @t{mz:+}
       #rx"procedure:[+]")
@@ -106,7 +106,7 @@
 ;; + shouldn't be bound in the REPL because it isn't bound in the module.
 (test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) x)}
       @t{+}
-      #rx"[.] [.] reference to an identifier before its definition.*[+]")
+      #rx"[.] [.] [+]:.*cannot reference an identifier before its definition")
 (test @t{(module m mzscheme (provide lambda))}
       @t{(lambda (x) x)}
       #rx"<procedure")
@@ -118,13 +118,13 @@
       ". s: illegal use of syntax in: s")
 (test @t{(module m mzscheme (define-syntax (x stx) #'(define a 10)) x x)}
       @t{a}
-      #rx"[.] [.] reference to an identifier before its definition.*a")
+      #rx"[.] [.] a:.*cannot reference an identifier before its definition")
 (test @t{(module m mzscheme
            (define-syntax (x stx) #'(define-syntax (a stx) #'10))
            x
            x)}
       @t{a}
-      #rx"[.] [.] reference to an identifier before its definition.*a")
+      #rx"[.] [.] a:.*cannot reference an identifier before its definition")
 (test @t{(module m mzscheme
            (define-syntax (x stx) #'(define a 10))
            x
@@ -144,9 +144,7 @@
            (provide s)
            (define-syntax (s stx) e))}
       @t{(require 'm) s}
-      @rx{compile: bad syntax;
-          literal data is not allowed, because no #%datum syntax transformer
-          is bound in: 1$})
+      @rx{[?]:.*literal data is not allowed.*no #%datum syntax transformer is bound in: 1$})
 (test @t{(module tmp mzscheme
            (provide (rename app #%app)
                     (rename -current-namespace current-namespace)
@@ -160,7 +158,7 @@
 (test @t{#lang racket
          (eval 'cons)}
       #f
-      @rx{compile: unbound identifier \(and no #%top syntax transformer is bound\) in: cons})
+      @rx{cons: unbound identifier.*no #%top syntax transformer is bound})
 (test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) 1 2 3)}
       @t{1} ;; just make sure no errors.
       "1")
@@ -186,8 +184,7 @@
          (define x 1)
          (define y (/ 0))}
       @t{(if x 123)}
-      @rx{. /: division by zero
-          . if: bad syntax.*"else"}
+      @rx{/: division by zero.*if: missing an "else"}
       #t)
 (test @t{#lang mzscheme
          (define x 1)
@@ -278,13 +275,13 @@
       @t{1@"\n"2@"\n". read: expected a `)' to close `('})
 (test @t{#lang racket/base}
       "1 2 . 3 4"
-      "1\n2\n. read: illegal use of \".\"")
+      "1\n2\n. read: illegal use of `.'")
 (test @t{#lang racket/base}
       "1 2 (lambda ()) 3 4"
       "1\n2\n. lambda: bad syntax in: (lambda ())")
 (test @t{#lang racket/base}
       "1 2 x 3 4"
-      #rx"1\n2\n[.] [.] reference to an identifier before its definition.*x")
+      #rx"1\n2\n[.] [.] x:.*cannot reference an identifier before its definition")
 (test @t{#lang racket/base}
       "1 2 (raise 1) 3 4"
       "1\n2\nuncaught exception: 1")
@@ -293,7 +290,7 @@
       "1\n2\nuncaught exception: #f")
 (test @t{#lang racket/base}
       "(current-namespace (make-empty-namespace)) if"
-      ". compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
+      #rx". #%top-interaction: unbound identifier.*no #%app syntax transformer is bound")
 (test @t{#lang racket/base}
       (string-append
        "(let ([old (error-escape-handler)])\n"
@@ -327,7 +324,7 @@
       (format "~s ~s" 
               '(define x 1) 
               '((λ (x y) y) (set! x (call/cc (lambda (x) x))) (x 3)))
-      #rx". . application: expected procedure.*given: 3")
+      #rx". . application:.*given: 3")
 (test @t{#lang racket/base}
       (format "~s ~s ~s ~s"
               '(begin (define k (call/cc (λ (x) x)))
@@ -352,7 +349,7 @@
       "(vector .)")
 (test @t{#lang racket/base}
       "(begin (thread (lambda () x)) (sleep 1/10))"
-      #rx"[.] [.] reference to an identifier before its definition.*x")
+      #rx"[.] [.] x:.*cannot reference an identifier before its definition")
 (test @t{#lang racket/base}
       "(require texpict/utils)(disk 3)"
       ".")

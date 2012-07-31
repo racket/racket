@@ -65,7 +65,7 @@
 
 (module+ compat
   ;; export only for compatibility with `mzlib/unit`
-  (provide (protect-out struct))
+  (provide (protect-out struct) struct/ctc)
 
   (define-signature-form (struct stx)
     (parameterize ((error-syntax stx))
@@ -551,7 +551,7 @@
                          stx))))
 (module+ compat
   ;; export only for compatibility with `mzlib/unit`
-  (provide (protect-out struct~s/ctc))
+  (provide (protect-out struct~s/ctc) struct~r/ctc)
   
   (define-signature-form (struct~s/ctc stx)
     (do-struct~/ctc stx #t)))

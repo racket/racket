@@ -114,4 +114,20 @@ Declares information that is collected into the copyright region of the paper.}
 )]{
 
 Typesets category, term, and keyword information for the paper, which
-is normally placed immediately after an @racket[abstract] form.}
+is normally placed immediately after an @racket[abstract] form.
+See also @url["http://www.acm.org/about/class/how-to-use"].
+
+For @racket[category], the @racket[subcategory] argument should be in
+titlecase (i.e., capitalize the first letter of each word) and a
+phrase at the level of ``Programming Languages'' or ``Software
+Engineering'' (as opposed to a category like ``Software'' or a
+third-level name like ``Concurrent Programming'' or ``Processors''). A
+@racket[third-level] phrase should be in titlecase.  A
+@racket[fourth-level] phrase, if any, should not be capitalized.
+
+For @racket[terms], each general term should be in titlecase. Terms
+are usually drawn from a fixed list, and they are usually optional.
+
+For @racket[keywords], capitalize only the first letter of the first
+word, separate phrases by commas, and do not include ``and'' before
+the last one. Keywords should be noun phrases, not adjectives.}

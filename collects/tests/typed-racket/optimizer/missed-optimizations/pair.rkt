@@ -50,7 +50,7 @@ TR missed opt: pair.rkt 84:17 (set-mcdr! (ann (quote ()) (MListof Integer)) (ann
 )
 
 #lang typed/racket
-(require racket/mpair)
+(require compatibility/mpair)
 
 ;; car/cdr can be optimized if they are guaranteed to be applied only to
 ;; non-empty lists. otherwise, we miss a potential optimization

@@ -16,6 +16,8 @@
   
  @item{@defmenuitem{New} Creates a new DrRacket window.}
 
+ @item{@defmenuitem{New Tab} Creates a new tab in the current DrRacket window.}
+
  @item{@defmenuitem{Open...} Opens a find-file dialog for choosing
   a file to load into a @tech{definitions window}.}
   
@@ -178,6 +180,22 @@ appears at any time.
 
 @itemize[
 
+ @item{@defmenuitem{Toolbar} 
+        @itemize[
+          @item{@defmenuitem{Toolbar on Left} Moves the tool bar (on the top of DrRacket's window by default) to the left-hand side, organized vertically.}
+          @item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrRacket window.}
+          @item{@defmenuitem{Toolbar on Right} Moves the tool bar to the right-hand side, organized vertically.}
+          @item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}]}
+
+ @item{@defmenuitem{Split} Splits the current window in half to
+  allow for two different portions of the current window to
+  be visible simultaneously.}
+
+ @item{@defmenuitem{Collapse} If the window has been split before, this
+   menu item becomes enabled, allowing you to collapse the split
+   window.}
+
+         
  @item{@defmenuitem{Show Definitions} Shows the definitions window.}
 
  @item{@defmenuitem{Hide Definitions} Hides the definitions window.}
@@ -186,12 +204,41 @@ appears at any time.
 
  @item{@defmenuitem{Hide Interactions} Hides interactions window.}
 
+ @item{@defmenuitem{Use Vertical Layout} and @defmenuitem{Use Horizontal Layout}
+        adjust the definitions and interactions window so they
+        are either beside each other or with the definitions above
+        the interactions window.}
+ 
+ @item{@defmenuitem{Show Log} Shows the current log messages.}
+ @item{@defmenuitem{Hide Log} Hides the current log messages.}
+
+ @item{@defmenuitem{Show Tracing} Shows a trace of functions called since
+   the last time @onscreen{Run} was clicked. This menu is useful only if
+   you have enabled tracing in the @onscreen{Choose Language...} dialog's
+   @onscreen{Details} section. Profiling does not apply to all languages.}
+   
+ @item{@defmenuitem{Hide Tracing} Hides the tracing display.}
+
+ @item{@defmenuitem{Show Profile} Shows the current profiling
+   report. This menu is useful only if you have enabled profiling in
+   the @onscreen{Choose Language...} dialog's @onscreen{Details}
+   section. Profiling does not apply to all languages.}
+   
+ @item{@defmenuitem{Hide Profile} Hides any profiling
+   information currently displayed in the DrRacket window.}
+ 
  @item{@defmenuitem{Show Program Contour} Shows a ``20,000 foot''
    overview window along the edge of the DrRacket
    window. Each pixel in this window corresponds to a letter
    in the program text.}
 
  @item{@defmenuitem{Hide Program Contour} Hides the contour window.}
+ 
+ @item{@defmenuitem{Show Line Numbers} Shows line numbers in the 
+        definitions window.}
+ 
+ @item{@defmenuitem{Hide Line Numbers} Hides the line numbers in the 
+        definitions window.}
    
  @item{@defmenuitem{Show Module Browser} Shows the module DAG rooted
    at the currently opened file in DrRacket.
@@ -201,46 +248,19 @@ appears at any time.
  @item{@defmenuitem{Hide Module Browser} Hides the module browser.
         
           See also @secref["module-browser"].}
-
- @item{@defmenuitem{Toolbar} 
-@itemize[
-@item{@defmenuitem{Toolbar on Left} Moves the tool bar (on the top of DrRacket's window by default) to the left-hand side, organized vertically.}
-@item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrRacket window.}
-@item{@defmenuitem{Toolbar on Right} Moves the tool bar to the right-hand side, organized vertically.}
-@item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}]}
-
- @item{@defmenuitem{Show Log} Shows the current log messages.}
- @item{@defmenuitem{Hide Log} Hides the current log messages.}
-
- @item{@defmenuitem{Show Profile} Shows the current profiling
-   report. This menu is useful only if you have enabled profiling in
-   the @onscreen{Choose Language...} dialog's @onscreen{Details}
-   section. Profiling does not apply to all languages.}
-   
- @item{@defmenuitem{Hide Profile} Hides any profiling
-   information currently displayed in the DrRacket window.}
-
- @item{@defmenuitem{Dock Test Report} Like the dock button on the test report
-   window, this causes all test report windows to merge with the appropriate
-   DrRacket window at the bottom of the frame.}
-  @item{@defmenuitem{Undock Test Report} Like the undock button on the test report
-   window, this causes the test reports attached to appropriate DrRacket tabs
-   to become separate windows.}
  
- @item{@defmenuitem{Show Tracing} Shows a trace of functions called since
-   the last time @onscreen{Run} was clicked. This menu is useful only if
-   you have enabled tracing in the @onscreen{Choose Language...} dialog's
-   @onscreen{Details} section. Profiling does not apply to all languages.}
+ @item{@defmenuitem{Show Optimization Coach} 
+        Shows information about opportunities for
+        optimizations.
    
- @item{@defmenuitem{Hide Tracing} Hides the tracing display.}
+   See also @secref[#:doc '(lib "ts-guide.scrbl" "typed-racket" "scribblings")
+                          "optimization-coach"].}
 
- @item{@defmenuitem{Split} Splits the current window in half to
-  allow for two different portions of the current window to
-  be visible simultaneously.}
+ @item{@defmenuitem{Hide Optimization Coach} Hides the optimization coach.
+        
+          See also @secref[#:doc '(lib "ts-guide.scrbl" "typed-racket" "scribblings")
+                                 "optimization-coach"].}
 
- @item{@defmenuitem{Collapse} If the window has been split before, this
-   menu item becomes enabled, allowing you to collapse the split
-   window.}
 
 ]
 

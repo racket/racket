@@ -188,13 +188,11 @@
 	[(Set: t) #`(set/c #,(t->c t))]
         [(Sequence: ts) #`(sequence/c #,@(map t->c ts))]
         [(Vector: t)
-         (if flat?
-             #`(vectorof #,(t->c t #:flat #t) #:flat? #t)
-             #`(vectorof #,(t->c t)))]
+         (when flat? (exit (fail)))
+         #`(vectorof #,(t->c t))]
         [(Box: t)
-         (if flat?
-             #`(box/c #,(t->c t #:flat #t) #:flat? #t)
-             #`(box/c #,(t->c t)))]
+         (when flat? (exit (fail)))
+         #`(box/c #,(t->c t))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
@@ -216,7 +214,8 @@
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
-               #`(flat-rec-contract n* #,(t->c b #:flat #t)))))]
+               #`(letrec ([n* (recursive-contract #,(t->c b))])
+                   n*))))]
         [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
          (when flat? (exit (fail)))
@@ -238,6 +237,8 @@
             =>
             cdr]
            [proc (exit (fail))]
+           [(and flat? (ormap values mut?))
+            (exit (fail))]
            [poly?
             (with-syntax* ([(rec blame val) (generate-temporaries '(rec blame val))]
                            [maker maker-id]
@@ -283,9 +284,8 @@
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
 	[(Hashtable: k v)
-         (if flat?
-             #`(hash/c #,(t->c k #:flat #t) #,(t->c v #:flat #t) #:flat? #t #:immutable 'dont-care)
-             #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care))]
+         (when flat? (exit (fail)))                  
+         #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
         [else
          (exit (fail))]))))
 

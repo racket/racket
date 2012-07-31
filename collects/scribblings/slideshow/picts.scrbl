@@ -581,11 +581,9 @@ Selects a specific pen style for drawing, which applies to pen drawing
 for @racket[pict] that does not already use a specific pen style.}
 
 
-@defproc[(colorize [pict pict?] [color (or/c string? 
-                                             (is-a?/c color%)
-                                             (list (integer-in 0 255)
-                                                   (integer-in 0 255)
-                                                   (integer-in 0 255)))])
+@defproc[(colorize [pict pict?]
+                   [color (or/c string? (is-a?/c color%)
+                                (list byte? byte? byte?))])
          pict?]{
 
 Selects a specific color drawing, which applies to drawing in

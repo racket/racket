@@ -12,7 +12,11 @@
          "tc-error.rkt")
 
 
-(provide (all-from-out "tc-result.rkt" "tc-error.rkt"))
+;; Don't provide things that may be exported with a contract
+(provide (except-out (all-from-out "tc-result.rkt" "tc-error.rkt")
+                     tc-error/expr
+                     lookup-fail
+                     lookup-type-fail))
 
 
 ;; unfold : Type -> Type

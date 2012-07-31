@@ -1,18 +1,20 @@
-#lang scheme/base
+#lang racket/base
 
-(require mzlib/foreign) (unsafe!)
+(require ffi/unsafe)
 
 (define (ffi-try-libs . libs)
   (let loop ([libs* libs]
              [exceptions '()])
     (if (null? libs*)
-      (error 'ffi-try-libs "Could not load any of the libraries in ~a\n~a\n" libs exceptions)
+      (error 'ffi-try-libs
+             "Could not load any of the libraries in ~a\n~a\n" libs exceptions)
       (let ([lib (caar libs*)]
             [version (cdar libs*)])
-        (with-handlers ([exn:fail:filesystem? (lambda (e)
-                                                (loop (cdr libs*) (cons e exceptions)))])
+        (with-handlers ([exn:fail:filesystem?
+                         (lambda (e)
+                           (loop (cdr libs*) (cons e exceptions)))])
           (ffi-lib lib version))))))
-     
+
 (define libwand (ffi-try-libs '("libWand" "6.0.1" "6")
                               '("libMagickWand" "1" "3")))
 

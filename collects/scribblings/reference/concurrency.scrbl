@@ -21,3 +21,4 @@ support for parallelism to improve performance.
 @include-section["futures-trace.scrbl"]
 @include-section["places.scrbl"]
 @include-section["distributed.scrbl"]
+@include-section["engine.scrbl"]

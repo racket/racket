@@ -1,17 +1,19 @@
-#lang scheme/base
+#lang racket/base
 
-(require mzlib/foreign) (unsafe!)
+(require ffi/unsafe)
 
 ;; This code demonstrates how to interface `printf' which can be used with
 ;; different arities and types.  Also, `printf' is unsafe unless this code will
-;; parse the format string and make sure that all the types match, instead,
-;; this code demonstrates how to provide unsafe bindings in a way that forces
-;; users to admit that `(c-printf-is-dangerous!)'.
+;; parse the format string and make sure that all the types match, instead, if
+;; this code is used in a library, it should be provided from a module with
+;; `unsafe' in its name.  (Note that originally there was an `unsafe!'
+;; declaration for using the ffi, and this code demonstrated adding a similar
+;; `c-printf-is-dangerous!' declaration.)
 
 ;; It's not too useful, since the C printf will obviously ignore
 ;; `current-output-port'.
 
-(provide* (unsafe c-printf))
+(provide c-printf)
 
 (define interfaces (make-hash))
 
@@ -35,5 +37,3 @@
                       (hash-set! interfaces itypes i)
                       i)))])
     (apply printf fmt args)))
-
-(define-unsafer c-printf-is-dangerous!)

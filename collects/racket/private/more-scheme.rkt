@@ -3,7 +3,7 @@
 ;; more-scheme : case, do, etc. - remaining syntax
 
 (module more-scheme '#%kernel
-  (#%require "small-scheme.rkt" "define.rkt" '#%paramz
+  (#%require "small-scheme.rkt" "define.rkt" '#%paramz "case.rkt"
              (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
   (define-syntax case-test
@@ -20,43 +20,38 @@
 	 (syntax (memv x '(k ...)))])))
 
   ;; Mostly from Dybvig:
-  (define-syntaxes (case old-case)
-    (let ([go
-           (lambda (x id=?)
-             (syntax-case* x (else) id=?
-               ((_ v)
-                (syntax (#%expression (begin v (void)))))
-               ((_ v (else e1 e2 ...))
-                (syntax/loc x (#%expression (begin v (let-values () e1 e2 ...)))))
-               ((_ v ((k ...) e1 e2 ...))
-                (syntax/loc x (if (case-test v (k ...)) (let-values () e1 e2 ...) (void))))
-               ((self v ((k ...) e1 e2 ...) c1 c2 ...)
-                (syntax/loc x (let ((x v))
-                                (if (case-test x (k ...))
-                                    (let-values () e1 e2 ...)
-                                    (self x c1 c2 ...)))))
-               ((_ v (bad e1 e2 ...) . rest)
-                (raise-syntax-error 
-                 #f
-                 "bad syntax (not a datum sequence)"
-                 x
-                 (syntax bad)))
-               ((_ v clause . rest)
-                (raise-syntax-error 
-                 #f
-                 "bad syntax (missing expression after datum sequence)"
-                 x
-                 (syntax clause)))
-               ((_ . v)
-                (not (null? (syntax-e (syntax v))))
-                (raise-syntax-error 
-                 #f
-                 "bad syntax (illegal use of `.')"
-                 x))))])
-      (values
-       (lambda (stx) (go stx free-identifier=?))
-       (let ([else-stx (datum->syntax #f 'else)])
-         (lambda (stx) (go stx (lambda (a b) (free-identifier=? a else-stx))))))))
+  (define-syntax (old-case x)
+    (syntax-case* x (else) (let ([else-stx (datum->syntax #f 'else)])
+                             (lambda (a b) (free-identifier=? a else-stx)))
+      ((_ v)
+       (syntax (#%expression (begin v (void)))))
+      ((_ v (else e1 e2 ...))
+       (syntax/loc x (#%expression (begin v (let-values () e1 e2 ...)))))
+      ((_ v ((k ...) e1 e2 ...))
+       (syntax/loc x (if (case-test v (k ...)) (let-values () e1 e2 ...) (void))))
+      ((self v ((k ...) e1 e2 ...) c1 c2 ...)
+       (syntax/loc x (let ((x v))
+                       (if (case-test x (k ...))
+                           (let-values () e1 e2 ...)
+                           (self x c1 c2 ...)))))
+      ((_ v (bad e1 e2 ...) . rest)
+       (raise-syntax-error 
+        #f
+        "bad syntax (not a datum sequence)"
+        x
+        (syntax bad)))
+      ((_ v clause . rest)
+       (raise-syntax-error 
+        #f
+        "bad syntax (missing expression after datum sequence)"
+        x
+        (syntax clause)))
+      ((_ . v)
+       (not (null? (syntax-e (syntax v))))
+       (raise-syntax-error 
+        #f
+        "bad syntax (illegal use of `.')"
+        x))))
 
   ;; From Dybvig:
   (define-syntax do

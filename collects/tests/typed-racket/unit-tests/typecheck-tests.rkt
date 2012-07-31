@@ -180,6 +180,22 @@
         (tc-e (- -23524623547234734568) -PosInt)
         (tc-e (- 241.3) -NegFlonum)
         (tc-e (- -24.3) -PosFlonum)
+
+        (tc-e (- (ann 1000 Index) 1) -Fixnum)
+        (tc-e (- (ann 1000 Positive-Index) 1) -Index)
+        (tc-e (- (ann 1000 Fixnum) 1) -Int)
+        (tc-e (- (ann 1000 Nonnegative-Fixnum) 1) -Fixnum)
+        (tc-e (- (ann 1000 Positive-Fixnum) 1) -NonNegFixnum)
+        (tc-e (- (ann 1000 Exact-Positive-Integer) 1) -Nat)
+
+        (tc-e (fx- (ann 1000 Index) 1) -Fixnum)
+        (tc-e (fx- (ann 1000 Positive-Index) 1) -Index)
+        (tc-e (fx- (ann 1000 Fixnum) 1) -Fixnum)
+        (tc-e (fx- (ann 1000 Nonnegative-Fixnum) 1) -Fixnum)
+        (tc-e (fx- (ann 1000 Positive-Fixnum) 1) -NonNegFixnum)
+        (tc-e (fx- (ann 1000 Exact-Positive-Integer) 1) -NonNegFixnum)
+
+
         (tc-e (*) -One)
 
         (tc-e (gcd 1/2) -PosRat)
@@ -213,6 +229,8 @@
         [tc-e/t #(2 3 #t) (make-HeterogenousVector (list -Integer -Integer -Boolean))]
         [tc-e (vector 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
         [tc-e (vector-immutable 2 "3" #t) (make-HeterogenousVector (list -Integer -String -Boolean))]
+        [tc-e (make-vector 4 1) (-vec -Integer)]
+        [tc-e (build-vector 4 (lambda (x) 1)) (-vec -Integer)]
         [tc-e (range 4) (-lst -Byte)]
         [tc-e (range 2 4 1) (-lst -PosByte)]
         [tc-e (range 0 4 1) (-lst -Byte)]
@@ -350,7 +368,7 @@
         [tc-e (string-join '("hello" "world") #:before-first "a") -String]
         [tc-e (add-between '(1 2 3) 0) (-lst -Byte)]
         [tc-e (add-between '(1 2 3) 'a) (-lst (t:Un -PosByte (-val 'a)))]
-        [tc-e ((inst add-between Positive-Byte Symbol) '(1 2 3) 'a #:before-first 'b) (-lst (t:Un -PosByte -Symbol))]
+        [tc-e ((inst add-between Positive-Byte Symbol) '(1 2 3) 'a #:splice? #t #:before-first '(b)) (-lst (t:Un -PosByte -Symbol))]
 
         [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -PosByte)]
         [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -PosByte)]
@@ -864,9 +882,9 @@
               #:ret (ret -Number -true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x)))
               #:ret (ret -One (-FS -top -top))]
-        [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
+        [tc-e (let: ([x : (U (Vectorof Integer) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
-         -Number]
+         -Integer]
         [tc-e (let ()
                 (define: foo : (Integer * -> Integer) +)
                 (foo 1 2 3 4 5))
@@ -1477,6 +1495,12 @@
               (-seq -Int)]
         [tc-e (sequence-add-between (inst empty-sequence Integer) 'foo)
               (-seq (t:Un -Int (-val 'foo)))]
+        [tc-e (let ()
+                (define: x : Any (vector 1 2 3))
+                (if (vector? x) (vector-ref x 0) #f))
+              Univ]
+        [tc-e ((inst vector Index) 0)
+              (-vec -Index)]
         )
   (test-suite
    "check-type tests"

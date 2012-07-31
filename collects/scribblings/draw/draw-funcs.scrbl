@@ -84,11 +84,8 @@ result brush is created via @method[brush-list% find-or-create-brush] of
 @racket[the-brush-list].}
 
 
-@defproc[(make-color
-          [red (integer-in 0 255)]
-          [green (integer-in 0 255)]
-          [blue (integer-in 0 255)]
-          [alpha (real-in 0 1) 1.0])
+@defproc[(make-color [red byte?] [green byte?] [blue byte?]
+                     [alpha (real-in 0 1) 1.0])
          (is-a?/c color%)]{
 
 Creates a @racket[color%] instance. This procedure provides a

@@ -32,6 +32,18 @@
   (test flv 'for*/flvector flv1)
   (test flv 'for*/flvector-fast flv2))
 
+;; Stop when a length is specified, even if the sequence continues:
+(test (flvector 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0)
+      'nat
+      (for/flvector #:length 10 ([i (in-naturals)]) (exact->inexact i)))
+(test (flvector 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0)
+      'nats
+      (for*/flvector #:length 10 ([i (in-naturals)] [j (in-naturals)]) (exact->inexact j)))
+(test (flvector 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0 1.0)
+      'nat+5
+      (for*/flvector #:length 10 ([i (in-naturals)] [j (in-range 5)]) (exact->inexact i)))
+
+
 ;; Test for both length too long and length too short
 (let ((v (make-flvector 3)))
   (flvector-set! v 0 0.0)

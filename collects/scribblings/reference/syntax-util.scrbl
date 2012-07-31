@@ -144,7 +144,7 @@ forms like @racket[with-disappeared-uses].
          #:contracts ([stx-expr syntax?])]{
 
 Evaluates the @racket[stx-expr], catching identifiers looked up using
-@racket[syntax-local-value/catch]. Adds the caught identifiers to the
+@racket[syntax-local-value/record]. Adds the caught identifiers to the
 @racket['disappeared-uses] syntax property of the resulting syntax
 object.
 }

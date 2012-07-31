@@ -712,7 +712,7 @@ Registers the menu item that was most recently added as
 being controlled by the capability @racket[key]. This means
 that the (boolean) value of the capability determines if the
 menu item is present in the menu (the capability is checked
-when the menus are cliked on).
+when the menus are clicked on).
 
 This assumes that the menu items in this menu are not moved
 around, except by the this capability. If they are, things

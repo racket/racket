@@ -6020,7 +6020,7 @@ find_system_path(int argc, Scheme_Object **argv)
     scheme_wrong_contract("find-system-path", 
                           "(or/c 'home-dir 'pref-dir 'pref-file 'temp-dir\n"
                           "       'init-dir 'init-file 'links-file 'addon-dir\n"
-                          "       'doc-dir 'desk-dir 'sys-dir 'exec-file run-file\n"
+                          "       'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                           "       'collects-dir 'orig-dir)",
                           0, argc, argv);
     return NULL;

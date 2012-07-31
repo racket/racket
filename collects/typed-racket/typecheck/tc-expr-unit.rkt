@@ -122,9 +122,7 @@
               (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
       [_ Univ]))
   
-  (if expected
-      (check-below r expected)
-      r))
+  (cond-check-below r expected))
 
 
 ;; do-inst : syntax type -> type
@@ -243,9 +241,10 @@
                [ty (add-typeof-expr form ty) ty])]
             ;; nothing to see here
             [checked? expected]
-            [else (let ([t (tc-expr/check/internal form* expected)])
-                    (add-typeof-expr form t)
-                    t)]))))
+            [else 
+             (define t (tc-expr/check/internal form* expected))
+             (add-typeof-expr form t)
+             t]))))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
@@ -255,6 +254,15 @@
                           (string-append (syntax-e msg) "; missing coverage of ~a")
                           t))]
          [else (tc-error/expr #:return (ret (Un)) #:stx stx (syntax-e msg))]))
+
+;; check that `expr` doesn't evaluate any references 
+;; to `name` that aren't under `lambda`
+;; value-restriction? : syntax identifier -> boolean
+(define (value-restriction? expr name)
+  (syntax-parse expr
+    [((~literal #%plain-lambda) . _) #true]
+    [((~literal case-lambda) . _) #true]
+    [_ #false]))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define/cond-contract (tc-expr/check/internal form expected)
@@ -290,7 +298,9 @@
         [(quote #t) (ret (-val #t) true-filter)]
         [(quote val)  (match expected
                         [(tc-result1: t)
-                         (ret (tc-literal #'val t) true-filter)])]
+                         (ret (tc-literal #'val t) true-filter)]
+                        [_ ;; this isn't going to work, defer error handling
+                         (check-below (ret (tc-literal #'val #f)) expected)])]
         ;; syntax
         [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
         ;; mutation!
@@ -345,8 +355,6 @@
          #:when (syntax-property form 'kw-lambda)
          (match expected
            [(tc-result1: (and f (Function: _))) 
-            ;(printf ">>> ~a\n" f)
-            ;(printf ">>>\t ~a\n" (kw-convert f #:split #t))
             (tc-expr/check/type #'fun (kw-convert f #:split #t))]
            [(tc-result1: (Poly-names: names (and f (Function: _))))
             (tc-expr/check/type #'fun (make-Poly names (kw-convert f #:split #t)))]
@@ -356,7 +364,8 @@
         [(let-values ([(name ...) expr] ...) . body)
          (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         [(letrec-values ([(name) expr]) name*)
-         #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*))
+         #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*)
+                     (value-restriction? #'expr #'name))
          (match expected
            [(tc-result1: t)
             (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
@@ -486,9 +495,7 @@
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)]
-               [retval (if expected
-                           (begin (check-below ret-ty expected) expected)
-                           ret-ty)])
+               [retval (cond-check-below ret-ty expected)])
           (add-typeof-expr form retval)
           retval)]
        [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]

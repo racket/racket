@@ -342,7 +342,7 @@
 
 (let ([no-nuls (lambda (thunk)
                  (err/rt-test (thunk) (lambda (exn)
-                                        (regexp-match? #rx"without nuls" (exn-message exn)))))])
+                                        (regexp-match? #rx"bytes-no-nuls[?]" (exn-message exn)))))])
   (no-nuls (lambda () (subprocess #f #f #f cat "\0")))
   (no-nuls (lambda () (subprocess #f #f #f cat #"\0")))
   (no-nuls (lambda () (process "\0")))
@@ -388,22 +388,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ([try
-       (lambda (post-shutdown)
+       (lambda (post-shutdown wait?)
          (let ([c (make-custodian)])
            (let ([l (parameterize ([current-custodian c])
                       (process* self
+                                "-e" "0"
                                 "-e"
                                 "(let loop () (loop))"))])
              (test 'running (list-ref l 4) 'status)
+             (read-line (car l)) ; wait until running
              (custodian-shutdown-all c)
              (sleep 0.1)
+             (when (and wait?
+                        (eq? post-shutdown 'done-error))
+               ((list-ref l 4) 'wait))
              (test post-shutdown (list-ref l 4) 'status)
              ((list-ref l 4) 'kill))))])
-  (try 'running)
+  (try 'running #f)
   (parameterize ([current-subprocess-custodian-mode 'kill])
-    (try 'done-error))
+    (try 'done-error #f))
   (parameterize ([current-subprocess-custodian-mode 'interrupt])
-    (try (if (eq? 'windows (system-type)) 'running 'done-error))))
+    (try (if (eq? 'windows (system-type)) 'running 'done-error) #t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; process groups

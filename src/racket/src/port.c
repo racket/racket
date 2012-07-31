@@ -2150,10 +2150,10 @@ intptr_t scheme_get_byte_string_unless(const char *who,
   while (1) {
     SCHEME_USE_FUEL(1);
 
-    CHECK_PORT_CLOSED(who, "input", port, ip->closed);
-
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, only_avail);
+
+    CHECK_PORT_CLOSED(who, "input", port, ip->closed);
 
     if (only_avail == -1) {
       /* We might need to break. */
@@ -2325,7 +2325,11 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	unless_evt = SCHEME_PTR2_VAL(unless_evt);
 
       if (ip->pending_eof > 1) {
-	ip->pending_eof = 1;
+        if (!peek) {
+          ip->pending_eof = 1;
+          if (ip->progress_evt)
+            post_progress(ip);
+        }
 	gc = EOF;
       } else {
 	/* Call port's get or peek function. But first, set up
@@ -2363,7 +2367,7 @@ intptr_t scheme_get_byte_string_unless(const char *who,
 	  gc = gs(ip, buffer, offset + got, size, nonblock, unless);
 
 	  if (!peek && gc && ip->progress_evt
-	      && (gc != EOF) 
+	      && ((gc != EOF) || ip->pending_eof)
 	      && (gc != SCHEME_UNLESS_READY))
 	    post_progress(ip);
 	}
@@ -2610,9 +2614,9 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
   buf = _buf;
   
   did = 0;
-  
+
   /* Target event is ready, so commit must succeed */
-  
+
   /* First remove ungotten_count chars */
   if (ip->ungotten_count) {
     int i, amt;
@@ -2643,7 +2647,7 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
       post_progress(ip);
     did = 1;
   }
-  
+
   if (size) {
     Scheme_Input_Port *pip;
 
@@ -2658,17 +2662,26 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
       if (ip->peeked_read) {
 	int cnt;
 	cnt = pipe_char_count(ip->peeked_read);
-	if ((cnt < size) && (ip->pending_eof == 2))
+        if ((cnt < size) && (ip->pending_eof == 2)) {
 	  ip->pending_eof = 1;
+          size--;
+          did = 1;
+        }
 	pip = (Scheme_Input_Port *)ip->peeked_read;
 	gs = pip->get_string_fun;
       } else {
+        if (ip->pending_eof == 2) {
+          ip->pending_eof = 1;
+          did = 1;
+          if (ip->progress_evt)
+            post_progress(ip);
+        }
 	gs = NULL;
 	pip = NULL;
       }
     }
       
-    if (gs) {
+    if (gs && size) {
       if (ip->p.count_lines) {
         if (buf_size < size) {
           buf = scheme_malloc_atomic(size);
@@ -2688,8 +2701,11 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
       }
     }
   }
-   
-  return did;
+
+  /* We used to return `did', but since an event has already been
+     selected, claim success at this point always. */
+
+  return 1;
 }
 
 static Scheme_Object *return_data(void *data, int argc, Scheme_Object **argv)
@@ -3805,6 +3821,15 @@ scheme_need_wakeup (Scheme_Object *port, void *fds)
           CHECK_PORT_CLOSED(who, "output", port, ((Scheme_Output_Port *)port)->closed); \
         }
 
+static void check_input_port_lock(Scheme_Port *ip)
+{
+  if (SCHEME_INPORTP(ip)) {
+    Scheme_Input_Port *iip = (Scheme_Input_Port *)ip;
+    if (iip->input_lock)
+      scheme_wait_input_allowed(iip, 0);
+  }
+}
+
 intptr_t
 scheme_tell (Scheme_Object *port)
 {
@@ -3812,6 +3837,8 @@ scheme_tell (Scheme_Object *port)
   intptr_t pos;
 
   ip = scheme_port_record(port);
+  
+  check_input_port_lock(ip);
   
   CHECK_IOPORT_CLOSED("get-file-position", ip);
 
@@ -3834,6 +3861,8 @@ scheme_tell_line (Scheme_Object *port)
   if (!ip->count_lines || (ip->position < 0))
     return -1;
 
+  check_input_port_lock(ip);
+
   CHECK_IOPORT_CLOSED("get-file-line", ip);
 
   line = ip->lineNumber;
@@ -3851,7 +3880,9 @@ scheme_tell_column (Scheme_Object *port)
 
   if (!ip->count_lines || (ip->position < 0))
     return -1;
-  
+
+  check_input_port_lock(ip);
+
   CHECK_IOPORT_CLOSED("get-file-column", ip);
 
   col = ip->column;
@@ -4000,6 +4031,9 @@ scheme_close_input_port (Scheme_Object *port)
   Scheme_Input_Port *ip;
 
   ip = scheme_input_port_record(port);
+
+  if (ip->input_lock && scheme_force_port_closed)
+    scheme_wait_input_allowed(ip, 0);
 
   if (!ip->closed) {
     if (ip->close_fun) {
@@ -5085,6 +5119,9 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     Scheme_Input_Port *ip;
 
     ip = scheme_input_port_record(argv[0]);
+
+    if (ip->input_lock)
+      scheme_wait_input_allowed(ip, 0);
 
     if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
       f = ((Scheme_Input_File *)ip->port_data)->f;
@@ -8532,7 +8569,7 @@ static void kill_subproc(Scheme_Object *o, void *data)
 
 static void interrupt_subproc(Scheme_Object *o, void *data)
 {
-  (void)do_subprocess_kill(o, scheme_true, 0);
+  (void)do_subprocess_kill(o, scheme_false, 0);
 }
 #endif
 
@@ -8621,6 +8658,8 @@ static char *cmdline_protect(char *s)
   char *naya;
   int ds;
   int has_space = 0, has_quote = 0, was_slash = 0;
+
+  if (!*s) return "\"\""; /* quote an empty argument */
 
   for (ds = 0; s[ds]; ds++) {
     if (isspace(s[ds]) || (s[ds] == '\'')) {
@@ -8937,12 +8976,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       if (((!SCHEME_CHAR_STRINGP(args[i]) && !SCHEME_BYTE_STRINGP(args[i]))
            || scheme_any_string_has_null(args[i]))
           && !SCHEME_PATHP(args[i]))
-	scheme_wrong_contract(name, 
-                              ("(or/c path?\n"
-                               "      (and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))\n"
-                               "      (and/c bytes? (lambda (bs) (not (memv 0 (bytes->list bs))))))"),
+	scheme_wrong_contract(name,
+                              "(or/c path? string-no-nuls? bytes-no-nuls?)",
                               i, c, args);
-        
       {
 	Scheme_Object *bs;
         bs = args[i];

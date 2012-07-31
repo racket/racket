@@ -58,7 +58,8 @@
 ;Represents a vertical line depicting a specific time in the execution history
 (struct timeline-tick (x 
                        abs-time
-                       rel-time) #:transparent) 
+                       rel-time 
+                       show-label?) #:transparent) 
 
 ;;viewable-region-from-frame : frame-info -> viewable-region
 (define (viewable-region-from-frame finfo) 
@@ -179,19 +180,28 @@
       [else
        (loop (cdr ss))])))
 
+;;timeline-tick-label-pict : real -> pict
+(define (timeline-tick-label-pict rel-time) 
+  (text-block-pict (format "~a ms" (real->decimal-string rel-time)) 
+                   #:backcolor (timeline-tick-label-backcolor) 
+                   #:forecolor (timeline-tick-label-forecolor) 
+                   #:padding 3))
+
 ;;calc-ticks : (listof segment) float trace -> (listof timeline-tick)
 (define (calc-ticks segs timeToPixMod tr)
+  (define LABEL-PAD 3)
   (define trace-start (inexact->exact (trace-start-time tr)))
   (define segs-len (length segs)) 
-  (define-values (lt lx tks _) 
+  (define-values (lt lx tks _ __) 
     (for/fold ([last-time trace-start] 
                [last-x 0]
                [ticks '()]
+               [last-label-x-extent 0]
                [remain-segs segs]) ([i (in-range 0 (floor (/ (- (trace-end-time tr) 
                                                          trace-start) 
-                                                      DEFAULT-TIME-INTERVAL)))]) 
-      (define tick-time (+ last-time DEFAULT-TIME-INTERVAL)) 
-      (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL)) 
+                                                      DEFAULT-TIME-INTERVAL)))])
+      (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL))
+      (define tick-time (+ trace-start tick-rel-time))
       (define want-x (+ last-x (* DEFAULT-TIME-INTERVAL timeToPixMod)))
       (define-values (most-recent-seg next-seg r-segs)
         (find-most-recent-and-next remain-segs tick-time))
@@ -201,31 +211,37 @@
       (define next-evt-time (inexact->exact (event-start-time next-evt)))
       (define most-recent-edge (segment-edge most-recent-seg)) 
       (define next-edge (segment-x next-seg))
-      (cond 
-        [(= most-recent-time tick-time) 
-         (values tick-time 
-                 (segment-x most-recent-seg) 
-                 (cons (timeline-tick (segment-x most-recent-seg) tick-time tick-rel-time) ticks)
-                 r-segs)]
-        [(= (segment-x next-seg) (add1 (+ (segment-x most-recent-seg) (segment-width most-recent-seg))))
-         (values tick-time 
-                 (+ (segment-x most-recent-seg) (segment-width most-recent-seg)) 
-                 (cons (timeline-tick (+ (segment-x most-recent-seg) 
-                                         (segment-width most-recent-seg))
-                                      tick-time
-                                      tick-rel-time) 
-                       ticks)
-                 r-segs)]
-        [else 
-         (define start-x (max most-recent-edge last-x))
-         (define start-time (max most-recent-time last-time))
-         (define size-mod (/ (- next-edge start-x) (- next-evt-time start-time)))
-         (define x-offset (ceiling (* (- tick-time start-time) size-mod)))
-         (define tick-x (round (+ start-x x-offset)))
-         (values tick-time 
-                 tick-x 
-                 (cons (timeline-tick tick-x tick-time tick-rel-time) ticks)
-                 r-segs)]))) 
+      (define tick-x 
+        (cond 
+          [(= most-recent-time tick-time) (segment-x most-recent-seg)] 
+          [(= (segment-x next-seg) (add1 (+ (segment-x most-recent-seg) (segment-width most-recent-seg)))) 
+           (+ (segment-x most-recent-seg) (segment-width most-recent-seg))] 
+          [else 
+           (define start-x (max most-recent-edge last-x))
+           (define start-time (max most-recent-time last-time))
+           (define size-mod (/ (- next-edge start-x) (- next-evt-time start-time)))
+           (define x-offset (ceiling (* (- tick-time start-time) size-mod)))
+           (round (+ start-x x-offset))]))
+      (define show-tick? ((- tick-x last-x) . >= . TIMELINE-MIN-TICK-PADDING))
+      (define show-label? 
+        (if (not show-tick?) 
+            #f 
+            (>= tick-x (+ last-label-x-extent LABEL-PAD))))
+      (define new-label-x-extent 
+        (if show-label? 
+            (+ tick-x (pict-width (timeline-tick-label-pict tick-rel-time)))
+            last-label-x-extent))
+      (if show-tick? 
+          (values tick-time 
+                  tick-x 
+                  (cons (timeline-tick tick-x tick-time tick-rel-time show-label?) ticks) 
+                  new-label-x-extent 
+                  r-segs) 
+          (values tick-time 
+                  last-x 
+                  ticks 
+                  new-label-x-extent 
+                  r-segs))))
   tks)
 
 ;;calc-process-timespan-lines : trace (listof segment) -> (listof (uint . uint))
@@ -253,19 +269,11 @@
 
 ;; get-seg-previous-to-vregion : viewable-region segment -> segment
 (define (get-seg-previous-to-vregion vregion seg)
-  (define first-seg
-    (let loop ([cur seg])
-      (define prev (segment-prev-future-seg cur))
-      (if (not prev)
-          cur
-          (loop prev))))
-  (let loop ([cur first-seg])
-    (define next (segment-next-future-seg cur))
-    (if (or (not next)
-            (> (segment-x next) (viewable-region-x vregion)))
-        cur
-        (loop next))))
-
+  (let loop ([cur seg]) 
+    (define prev (segment-prev-future-seg cur)) 
+    (cond 
+      [(or (not prev) (not ((seg-in-vregion vregion) cur))) cur] 
+      [else (loop prev)])))
   
 ;;adjust-work-segs! : (listof segment) -> void
 (define (adjust-work-segs! segs) 
@@ -373,59 +381,37 @@
 
 ;;draw-ruler-on : pict viewable-region frameinfo -> pict
 (define (draw-ruler-on base vregion frameinfo)
-  (let loop ([pct base] 
-             [ticks (filter (λ (t) (in-viewable-region-horiz vregion (timeline-tick-x t)))
-                            (frame-info-timeline-ticks frameinfo))]
-             [next-label-x (viewable-region-x-extent vregion)] 
-             [next-tick-x (viewable-region-x-extent vregion)])
-    (cond 
-      [(null? ticks) pct] 
-      [(< (- next-tick-x (timeline-tick-x (car ticks))) TIMELINE-MIN-TICK-PADDING) 
-       (loop pct 
-             (cdr ticks) 
-             next-label-x 
-             next-tick-x)]
-      [else (let* ([LABEL-PAD 2] 
-                   [VERT-PAD 3]
-                   [cur-tick (car ticks)] 
-                   [cur-x (timeline-tick-x cur-tick)]
-                   [tick-desc (format "~a ms" (real->decimal-string 
-                                               (timeline-tick-rel-time cur-tick) 1))]
-                   [t (text-block-pict tick-desc 
-                                       #:backcolor (timeline-tick-label-backcolor) 
-                                       #:forecolor (timeline-tick-label-forecolor)
-                                       #:padding 3)] 
-                   [text-width (pict-width t)] 
-                   [show-label? (<= (+ cur-x LABEL-PAD text-width) next-label-x)]
-                   [pinnedline (pin-over pct 
-                                         (- cur-x (viewable-region-x vregion))
-                                         0 
-                                         (linestyle 'dot 
-                                                    (colorize (vline 1 
-                                                                     (frame-info-adjusted-height frameinfo)) 
-                                                              (if show-label? 
-                                                                  (timeline-tick-bold-color)
-                                                                  (timeline-tick-color)))))])
-              (if show-label? 
-                  (loop (pin-over pinnedline 
-                                  (- cur-x (viewable-region-x vregion)) 
-                                  VERT-PAD 
-                                  t) 
-                        (cdr ticks) 
-                        cur-x 
-                        cur-x)
-                  (loop pinnedline
-                        (cdr ticks) 
-                        next-label-x 
-                        cur-x)))])))
+  (for/fold ([pct base]) ([tick (in-list (filter (λ (t) (in-viewable-region-horiz vregion (timeline-tick-x t))) 
+                                                 (frame-info-timeline-ticks frameinfo)))])
+    (define cur-x (timeline-tick-x tick))
+    (define pinnedline 
+      (pin-over pct 
+                (- cur-x (viewable-region-x vregion)) 
+                0 
+                (linestyle 'dot 
+                           (colorize (vline 1 
+                                            (viewable-region-height vregion)) 
+                                     (timeline-tick-color)))))
+    (if (timeline-tick-show-label? tick)
+        (pin-over pinnedline 
+                  (- cur-x (viewable-region-x vregion)) 
+                  3 
+                  (timeline-tick-label-pict (timeline-tick-rel-time tick)))
+        pinnedline)))
 
 ;;draw-row-lines-on : pict viewable-region trace frameinfo -> pict
 (define (draw-row-lines-on base vregion tr finfo opacity) 
   (pin-over base 
             0 
             0
-            (for/fold ([pct base]) ([tl (in-list (trace-proc-timelines tr))] 
-                                    [i (in-naturals)])
+            (for/fold ([pct base]) ([tl (in-list (filter (λ (tline)
+                                                           (define midy (calc-row-mid-y (process-timeline-proc-index tline) 
+                                                                                        (frame-info-row-height finfo)))
+                                                           (define topy (- midy (frame-info-row-height finfo))) 
+                                                           (define boty (+ midy (frame-info-row-height finfo))) 
+                                                           (or (in-viewable-region-vert? vregion topy) 
+                                                               (in-viewable-region-vert? vregion boty)))                                                           
+                                                         (trace-proc-timelines tr)))])
               (let* ([line-coords (list-ref (frame-info-process-line-coords finfo) 
                                            (process-timeline-proc-index tl))]
                      [line-start (car line-coords)] 
@@ -442,7 +428,8 @@
                               [(between line-end vregion-start vregion-end) 
                                (- line-end vregion-start)] 
                               [else vregion-end])]
-                     [proc-name (if (zero? i) 
+                     [index (process-timeline-proc-index tl)]
+                     [proc-name (if (zero? index) 
                                     "Thread 0 (Runtime Thread)" 
                                     (format "Thread ~a" (process-timeline-proc-id tl)))]
                      [proc-title (text-block-pict proc-name 
@@ -450,18 +437,18 @@
                                                   #:forecolor (header-forecolor) 
                                                   #:padding HEADER-PADDING
                                                   #:opacity opacity 
-                                                  #:width (viewable-region-width vregion))]) 
+                                                  #:width (viewable-region-width vregion))])
                 (draw-stack-onto pct 
                                  (at 0 
-                                     (- (* (add1 i) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (- (* (add1 index) (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                      (colorize (hline (viewable-region-width vregion) 1) (timeline-baseline-color))) 
                                  (at 0  
-                                     (+ (+ (- (* i (frame-info-row-height finfo)) (viewable-region-y vregion)) 
+                                     (+ (+ (- (* index (frame-info-row-height finfo)) (viewable-region-y vregion)) 
                                            (- (frame-info-row-height finfo) (pict-height proc-title))) 
                                         1) 
                                      proc-title) 
                                  (at start-x 
-                                     (- (calc-row-mid-y (process-timeline-proc-index tl) (frame-info-row-height finfo))
+                                     (- (calc-row-mid-y index (frame-info-row-height finfo))
                                         (viewable-region-y vregion))
                                      (colorize (hline (- end-x start-x) 1) 
                                                (timeline-event-baseline-color))))))))
@@ -488,96 +475,6 @@
 (define (draw-frame-bg-onto base vregion finfo tr opacity) 
   (let ([with-ruler (draw-ruler-on base vregion finfo)])
     (draw-row-lines-on with-ruler vregion tr finfo opacity)))
-
-;;draw-connection : viewable-region segment segment pict string [uint bool symbol] -> pict
-(define (draw-connection vregion 
-                         start 
-                         end 
-                         base-pct 
-                         color 
-                         #:width [width 1] 
-                         #:with-arrow [with-arrow #f] 
-                         #:style [style 'solid]) 
-  (let*-values ([(midx midy) (calc-center (- (segment-x start) (viewable-region-x vregion)) 
-                                          (- (segment-y start) (viewable-region-y vregion)) 
-                                          MIN-SEG-WIDTH)] 
-                [(nextx nexty) (calc-center (- (segment-x end) (viewable-region-x vregion)) 
-                                            (- (segment-y end) (viewable-region-y vregion)) 
-                                            MIN-SEG-WIDTH)] 
-                [(dx dy) (values (- nextx midx) (- nexty midy))]) 
-    (if (and (zero? dy) 
-             (or (not (eq? (segment-next-proc-seg start) end)) 
-                 (< dx CONNECTION-LINE-HAT-THRESHOLD))) 
-        (let* ([dxa (/ dx 2)]  
-               [dya (- HAT-HEIGHT CONNECTION-LINE-HAT-THRESHOLD)] 
-               [breakx (+ midx dxa)] 
-               [breaky (+ midy dya)])
-          (draw-line-onto (draw-line-onto base-pct 
-                                          midx 
-                                          midy 
-                                          breakx 
-                                          breaky 
-                                          color 
-                                          #:width width
-                                          #:style style) 
-                          breakx 
-                          breaky 
-                          nextx 
-                          nexty 
-                          color 
-                          #:width width 
-                          #:with-arrow with-arrow 
-                          #:style style))
-        (draw-line-onto base-pct 
-                        midx 
-                        midy 
-                        nextx 
-                        nexty 
-                        color 
-                        #:width width 
-                        #:with-arrow with-arrow 
-                        #:style style))))
-        
-;;draw-arrows : pict viewable-region segment -> pict
-(define (draw-arrows base-pct vregion seg) 
-  (let ([fst (get-seg-previous-to-vregion vregion seg)])
-    (let loop ([pct base-pct] 
-               [cur-seg fst])
-        (if (not cur-seg)
-            pct 
-            (let ([next (segment-next-future-seg cur-seg)])
-              (let* ([next-targ (segment-next-targ-future-seg cur-seg)] 
-                     [prev-targ (segment-prev-targ-future-seg cur-seg)]              
-                     [ftl-arrows (if (not next) 
-                                     pct 
-                                     (draw-connection vregion 
-                                                      cur-seg 
-                                                      next 
-                                                      pct 
-                                                      (event-connection-line-color) 
-                                                      #:width 2))] 
-                     [prev-targ-arr (if (not prev-targ) 
-                                        ftl-arrows 
-                                        (draw-connection vregion 
-                                                         prev-targ 
-                                                         cur-seg 
-                                                         ftl-arrows 
-                                                         (event-target-future-line-color) 
-                                                         #:with-arrow #t 
-                                                         #:style 'dot))] 
-                     [next-targ-arr (if (not next-targ) 
-                                        prev-targ-arr 
-                                        (draw-connection vregion 
-                                                         cur-seg 
-                                                         next-targ 
-                                                         prev-targ-arr 
-                                                         (event-target-future-line-color) 
-                                                         #:with-arrow #t 
-                                                         #:style 'dot))])
-                (if (and next 
-                         ((seg-in-vregion vregion) next))
-                    (loop next-targ-arr next)
-                    next-targ-arr)))))))
 
 ;;timeline-pict : (listof indexed-future-event) [viewable-region] [integer] -> pict
 (define (timeline-pict logs 
@@ -628,6 +525,122 @@
                overlay)] 
     [else tp]))
 
+;;draw-connection : viewable-region segment segment pict string [uint bool symbol] -> pict
+(define (draw-connection vregion 
+                         start 
+                         end 
+                         base-pct 
+                         color 
+                         #:width [width 1] 
+                         #:with-arrow [with-arrow #f] 
+                         #:style [style 'solid]) 
+  (let*-values ([(midx midy) (calc-center (- (segment-x start) (viewable-region-x vregion)) 
+                                          (- (segment-y start) (viewable-region-y vregion)) 
+                                          MIN-SEG-WIDTH)] 
+                [(nextx nexty) (calc-center (- (segment-x end) (viewable-region-x vregion)) 
+                                            (- (segment-y end) (viewable-region-y vregion)) 
+                                            MIN-SEG-WIDTH)] 
+                [(dx dy) (values (- nextx midx) (- nexty midy))]) 
+    (if (and (zero? dy) 
+             (or (not (eq? (segment-next-proc-seg start) end)) 
+                 (< dx CONNECTION-LINE-HAT-THRESHOLD))) 
+        (let* ([dxa (/ dx 2)]  
+               [dya (- HAT-HEIGHT CONNECTION-LINE-HAT-THRESHOLD)] 
+               [breakx (+ midx dxa)] 
+               [breaky (+ midy dya)])
+          (draw-line-onto (draw-line-onto base-pct 
+                                          midx 
+                                          midy 
+                                          breakx 
+                                          breaky 
+                                          color 
+                                          #:width width
+                                          #:style style) 
+                          breakx 
+                          breaky 
+                          nextx 
+                          nexty 
+                          color 
+                          #:width width 
+                          #:with-arrow with-arrow 
+                          #:style style))
+        (draw-line-onto base-pct 
+                        midx 
+                        midy 
+                        nextx 
+                        nexty 
+                        color 
+                        #:width width 
+                        #:with-arrow with-arrow 
+                        #:style style))))
+
+#;(define (get-seg-left-of-vregion vregion seg) 
+  (define prev-in-time (segment-prev-future-seg seg))
+  (cond 
+    [(not prev-in-time) seg] 
+    [((segment-edge prev-in-time) . < . (viewable-region-x vregion)) prev-in-time]
+    [else (get-seg-left-of-vregion vregion prev-in-time)]))
+
+#;(define (draw-arrows base-pct vregion seg) 
+  (define fst (get-seg-left-of-vregion vregion seg))
+  (let loop ([p base-pct] 
+             [cur-seg fst])
+    (define next-seg (segment-next-future-seg cur-seg))
+    (cond 
+      [(not next-seg) p] 
+      [else 
+       (define new-p (draw-connection vregion 
+                                      cur-seg 
+                                      next-seg 
+                                      p 
+                                      (event-connection-line-color) 
+                                      #:width 1)) 
+       (if (not (in-viewable-region-horiz vregion (segment-x next-seg))) 
+           new-p
+           (loop new-p next-seg))])))
+                            
+
+;;draw-arrows : pict viewable-region segment -> pict
+(define (draw-arrows base-pct vregion seg) 
+  (let ([fst (get-seg-previous-to-vregion vregion seg)])
+    (let loop ([pct base-pct] 
+               [cur-seg fst])
+        (if (not cur-seg)
+            pct 
+            (let ([next (segment-next-future-seg cur-seg)])
+              (let* ([next-targ (segment-next-targ-future-seg cur-seg)] 
+                     [prev-targ (segment-prev-targ-future-seg cur-seg)]              
+                     [ftl-arrows (if (not next) 
+                                     pct 
+                                     (draw-connection vregion 
+                                                      cur-seg 
+                                                      next 
+                                                      pct 
+                                                      (event-connection-line-color) 
+                                                      #:width 2))] 
+                     [prev-targ-arr (if (not prev-targ) 
+                                        ftl-arrows 
+                                        (draw-connection vregion 
+                                                         prev-targ 
+                                                         cur-seg 
+                                                         ftl-arrows 
+                                                         (event-target-future-line-color) 
+                                                         #:with-arrow #t 
+                                                         #:style 'dot))] 
+                     [next-targ-arr (if (not next-targ) 
+                                        prev-targ-arr 
+                                        (draw-connection vregion 
+                                                         cur-seg 
+                                                         next-targ 
+                                                         prev-targ-arr 
+                                                         (event-target-future-line-color) 
+                                                         #:with-arrow #t 
+                                                         #:style 'dot))])
+                (if (and next 
+                         ((seg-in-vregion vregion) next))
+                    (loop next-targ-arr next)
+                    next-targ-arr)))))))
+
 ;Draws the pict that is layered on top of the exec. timeline canvas 
 ;to highlight a specific future's event sequence
 ;;timeline-overlay : uint uint (or segment #f) (or segment #f) frame-info trace -> pict
@@ -640,17 +653,9 @@
     (if tacked (values tacked #t) (values hovered #f)))
   (if seg-with-arrows 
       (let* ([bg base] 
-             [dots (let loop ([p bg] [cur-seg (get-first-future-seg-in-region vregion seg-with-arrows)]) 
-                     (if (or (not cur-seg) (not ((seg-in-vregion vregion) cur-seg))) 
-                         p 
-                         (loop (pin-over p 
-                                         (- (segment-x cur-seg) (viewable-region-x vregion)) 
-                                         (- (segment-y cur-seg) (viewable-region-y vregion)) 
-                                         (pict-for-segment cur-seg)) 
-                               (segment-next-future-seg cur-seg))))]
              [aseg-rel-x (- (segment-x seg-with-arrows) (viewable-region-x vregion))] 
              [aseg-rel-y (- (segment-y seg-with-arrows) (viewable-region-y vregion))]
-             [line (pin-over dots
+             [line (pin-over bg
                              (- (+ aseg-rel-x 
                                    (/ (segment-width seg-with-arrows) 2)) 
                                 2)
@@ -772,11 +777,16 @@
 
 ;;graph-overlay-pict : drawable-node trace graph-layout -> pict
 (define (graph-overlay-pict hover-node tr layout vregion scale-factor) 
-  (when hover-node 
-    (unless (equal? (node-data (drawable-node-node hover-node)) 'runtime-thread)
-      (define fid (event-user-data (node-data (drawable-node-node hover-node))))
-      (define ri (hash-ref (trace-future-rtcalls tr) fid (λ () #f)))
-      (when ri
+  (define (root-sym-or-first-evt n) (node-data (drawable-node-node n)))
+  (cond  
+    [(or (not hover-node) (equal? (root-sym-or-first-evt hover-node) 'runtime-thread)) 
+      #f]
+    [else
+     (define fid (event-user-data (root-sym-or-first-evt hover-node)))
+     (define ri (hash-ref (trace-future-rtcalls tr) fid #f))
+     (cond 
+       [(not ri) #f] 
+       [else 
         (define block-ops (sort (hash-keys (rtcall-info-block-hash ri)) 
                                 > 
                                 #:key (λ (p) 
@@ -826,5 +836,5 @@
                                  TOOLTIP-MARGIN 
                                  txtp)) 
              (+ yacc (pict-height txtbg) CREATE-GRAPH-PADDING))))
-        pct))))
+        pct])]))
   

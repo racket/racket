@@ -348,11 +348,14 @@ path/s is either such a string or a list of them.
 ;; Verify this database
 
 (define no-props-needed
-  '(#rx"/compiled$"
-    #rx"(?:^|/)[.]git"
-    #rx"^(?:README|bin|lib|include|[.]mailmap)$"
+  '(#rx"(?:~|[.]bak)$"
+    #rx"(?:^|/)(?:#|[.]git)"
+    #rx"/compiled$"
+    #rx"^(?:README|bin|lib|include|[.]mailmap|add-on)$"
     #rx"^collects/info-domain$"
-    #rx"^doc/[^/]*$"))
+    #rx"^doc/[^/]*$"
+    #rx"(?:^|/)[.]DS_Store$"
+    #rx"^[^/]*[.](?:app|exe)$"))
 
 (define (verify)
   (define errors 0)
@@ -622,13 +625,6 @@ path/s is either such a string or a list of them.
 ;; read the arguments here, so just requiring this file verifies the data
 (read-props)
 
-;; if we're running directly, do a verification
-;; Use this only when supported
-(require (for-syntax racket/base version/utils))
-(define-syntax (add-main stx)
-  (if ((version) . version<=? . "5.2.1") #'(begin) #'(module+ main (verify))))
-(add-main)
-
 ;; ----------------------------------------------------------------------------
 
 #| #:begin-props
@@ -665,6 +661,7 @@ path/s is either such a string or a list of them.
 "collects/algol60" responsible (mflatt robby)
 "collects/at-exp" responsible (eli mflatt)
 "collects/browser" responsible (robby)
+"collects/compatibility" responsible (asumu stamourv)
 "collects/compiler" responsible (mflatt)
 "collects/compiler/commands/ctool.rkt" drdr:command-line #f
 "collects/compiler/commands/exe-dir.rkt" drdr:command-line #f
@@ -749,6 +746,7 @@ path/s is either such a string or a list of them.
 "collects/frtime/demos/ufo.rkt" drdr:command-line (mzc *)
 "collects/frtime/gui/demo" drdr:command-line (mzc *)
 "collects/frtime/gui.rkt" drdr:command-line (mzc *)
+"collects/future-visualizer" responsible (jamesswaine)
 "collects/games" responsible (mflatt robby)
 "collects/games/chat-noir" responsible (robby matthias)
 "collects/games/gobblet/check.rkt" drdr:command-line (mzc "-k" *)
@@ -763,6 +761,7 @@ path/s is either such a string or a list of them.
 "collects/games/paint-by-numbers/raw-problems/size-calculation.rkt" drdr:command-line (mzc *)
 "collects/games/parcheesi/make-bitmap.rkt" drdr:command-line (mzc *)
 "collects/graphics" responsible (mflatt robby)
+"collects/graphics/tests/sixlib.rktl" drdr:command-line #f
 "collects/graphics/turtle-test.rkt" drdr:command-line (mzc "-k" *)
 "collects/graphics/value-turtles-test.rkt" drdr:command-line (mzc *)
 "collects/gui-debugger" responsible (gmarceau mflatt)
@@ -805,7 +804,7 @@ path/s is either such a string or a list of them.
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
-"collects/meta/props" drdr:command-line (racket *) responsible (eli jay)
+"collects/meta/props" drdr:command-line (racket "-um" * "verify") responsible (eli jay)
 "collects/meta/web" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
@@ -1009,6 +1008,7 @@ path/s is either such a string or a list of them.
 "collects/tests/data" responsible (ryanc)
 "collects/tests/datalog" responsible (jay)
 "collects/tests/db" responsible (ryanc)
+"collects/tests/db/programs/web-test.rkt" drdr:command-line #f
 "collects/tests/deinprogramm" responsible (sperber)
 "collects/tests/drracket" responsible (robby) drdr:random #t
 "collects/tests/drracket/easter-egg.rkt" drdr:timeout 240
@@ -1017,7 +1017,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/io.rkt" drdr:command-line (gracket *) drdr:timeout 500
 "collects/tests/drracket/language-test.rkt" responsible (robby matthias) drdr:command-line (gracket *) drdr:timeout 1500
 "collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
-"collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket "-j" "-e" "(void (putenv \"PLTDRDRTEST\" \"yes\"))" "-t" *) drdr:timeout 400
+"collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket "-j" "-e" "(void (putenv \"PLTDRDRTEST\" \"yes\"))" "-t" *) drdr:timeout 800
 "collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *)
 "collects/tests/drracket/repl-test-debug.rkt" drdr:command-line (gracket *) drdr:timeout 300
@@ -1030,6 +1030,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *) drdr:timeout 200
 "collects/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (gracket *)
+"collects/tests/drracket/teaching-lang-sharing-modules.rkt" drdr:timeout 800
 "collects/tests/drracket/teachpack.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "collects/tests/drracket/test-engine-test.rkt" responsible (sperber) drdr:command-line (gracket *) drdr:timeout 480
 "collects/tests/eli-tester.rkt" responsible (eli)
@@ -1073,7 +1074,6 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/paramz.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/gracket/png.rktl" drdr:command-line #f
 "collects/tests/gracket/showkey.rkt" drdr:command-line #f
-"collects/tests/gracket/sixlib.rktl" drdr:command-line #f
 "collects/tests/gracket/text-scale.rktl" drdr:command-line #f
 "collects/tests/gracket/unflushed-circle.rkt" drdr:command-line #f
 "collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *)
@@ -1336,6 +1336,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/embed-me4.rktl" drdr:command-line #f
 "collects/tests/racket/embed-me9.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/alt.rkt" drdr:command-line #f
+"collects/tests/racket/embed-planet-1/dyn-sub.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/main.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-1/other.rkt" drdr:command-line #f
 "collects/tests/racket/embed-planet-2" drdr:command-line #f

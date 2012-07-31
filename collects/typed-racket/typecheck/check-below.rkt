@@ -12,12 +12,18 @@
          (only-in srfi/1 split-at))
 
 (provide/cond-contract
- [check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])])
+ [check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])]
+ [cond-check-below (-->d ([s (-or/c Type/c tc-results?)] [t (-or/c #f Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])])
 
 (define (print-object o)
   (match o
     [(Empty:) "no object"]
     [_ (format "object ~a" o)]))
+
+;; If expected is #f, then just return tr1
+;; else behave as check-below
+(define (cond-check-below tr1 expected)
+  (if expected (check-below tr1 expected) tr1))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)

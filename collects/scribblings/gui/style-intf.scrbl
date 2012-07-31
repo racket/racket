@@ -91,12 +91,8 @@ Returns the style's shift style if it is a join style. Otherwise, the
 
 }
 
-@defmethod[(get-size)
-           (integer-in 0 255)]{
-
-Returns the style's font size.
-
-}
+@defmethod[(get-size) byte?]{
+  Returns the style's font size.}
 
 @defmethod[(get-size-in-pixels)
            boolean?]{

@@ -1,7 +1,7 @@
 (load-relative "loadtest.rktl")
 
 (require syntax/id-table
-         scheme/dict)
+         racket/dict)
   
 (Section 'id-table)
 
@@ -10,6 +10,38 @@
 
 (test #t mutable-bound-id-table? (make-bound-id-table))
 (test #t immutable-bound-id-table? (make-immutable-bound-id-table))
+
+(let ()
+  (define a #'a)
+  (define b #'b)
+  (define b2 (let ([b 0]) #'b))
+  (define b3 ((make-syntax-introducer) #'b)) ;; free=? to b
+  (define alist (list (cons a 1) (cons b 2) (cons b2 3) (cons b3 4)))
+  (test 4 bound-id-table-count (make-bound-id-table alist))
+  (test 4 bound-id-table-count (make-immutable-bound-id-table alist))
+  (test 3 free-id-table-count (make-free-id-table alist))
+  (test 3 free-id-table-count (make-immutable-free-id-table alist))
+
+  (let ()
+    ;; Test in-dict, iteration methods for immutable id-tables
+    (define d1 (make-immutable-bound-id-table alist))
+    (test (+ 1 2 3 4) (lambda () (for/sum ([(id v) (in-dict d1)]) v)))
+    (define d2 (for/fold ([d (make-immutable-bound-id-table)])
+                   ([(id v) (in-dict d1)])
+                 (dict-set d id (add1 v))))
+    (test 2 bound-id-table-ref d2 a)
+    (test 3 bound-id-table-ref d2 b)
+    (test 4 bound-id-table-ref d2 b2)
+    (test 5 bound-id-table-ref d2 b3))
+
+  (let ()
+    ;; Test in-dict, iteration methods for mutable id-tables
+    ;; In particular, test that -set! of *existing* key does not disrupt iter.
+    (define d1 (make-bound-id-table alist))
+    (test (+ 1 2 3 4) (lambda () (for/sum ([(id v) (in-dict d1)]) v)))
+    (for ([(id v) (in-dict d1)])
+      (bound-id-table-set! d1 id (add1 v)))
+    (test (+ 2 3 4 5) (lambda () (for/sum ([(id v) (in-dict d1)]) v)))))
 
 (let ()
   ;; contains-same? : (listof x) (listof x) -> boolean

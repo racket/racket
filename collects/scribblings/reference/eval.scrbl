@@ -288,7 +288,21 @@ path of the loaded file, otherwise the
 If the original @racket[_file] is loaded or a @filepath{.zo} variant is
 loaded, the @tech{load handler} is called to load the file. If any
 other kind of file is loaded, the @tech{extension-load handler} is
-called.}
+called.
+
+When the default @tech{compiled-load handler} loads a module from a
+bytecode (i.e., @filepath{.zo}) file, the handler records the bytecode
+file path in the current namespace's @tech{module registry}. More
+specifically, the handler records the path for the top-level module of
+the loaded module, which is an enclosing module if the loaded module
+is a submodule. Thereafter, loads via the default @tech{compiled-load
+handler} for modules within the same top-level module use the recorded
+file, independent of the file that otherwise would be selected by the
+@tech{compiled-load handler} (e.g., even if the
+@racket[use-compiled-file-paths] parameter value changes). The default
+@tech{module name resolver} transfers bytecode-file information when a
+module declaration is attached to a new namespace. This protocol supports
+independent but consistent loading of submodules from bytecode files.}
 
 
 @defproc[(load/use-compiled [file path-string?]) any]{

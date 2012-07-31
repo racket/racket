@@ -89,7 +89,7 @@
 
 
 (module french-string-constants "string-constant-lang.rkt"
-  ;;; when translating this constant, substitue name of actual language for `English'
+  ;;; when translating this constant, substitute name of actual language for `English'
   (is-this-your-native-language "Le Français est-il votre langue maternelle ?")
   
   (are-you-sure-you-want-to-switch-languages
@@ -1270,7 +1270,7 @@
   (module-browser-font-size-gauge-label "Taille de la police")
   (module-browser-progress-label "Avancement du navigateur de modules")
   (module-browser-adding-file "Ajout du fichier : ~a...")
-  (module-browser-laying-out-graph-label "Tracer le graph")
+  (module-browser-laying-out-graph-label "Tracer le graphe")
   (module-browser-open-file-format "Ouvrir ~a")
   (module-browser "Navigateur de modules") ;; frame title
   (module-browser... "Navigateur de &modules...") ;; menu item title
@@ -1647,5 +1647,15 @@
   (ask-about-normalizing-strings "Demander à propos de la normalisation des chaînes de caractères")
 
   (always-use-platform-specific-linefeed-convention "Toujours utiliser la convention spécifique au système d'exploitation pour les fins de lignes")
-  
+
+  ;; optimization coach
+  (hide-optimization-coach "Cacher le Coach d'Optimisation")
+  (show-optimization-coach "Montrer le Coach d'Optimisation")
+
+  ;; labels used (in a big font) in the background of the definitions and interactions windows
+  (definitions-window-label "définitions")
+  (interactions-window-label "interactions")
+  (hide-defs/ints-label "Cacher les étiquettes Définitions/Interactions") ;; popup menu
+  (show-defs/ints-label "Montrer les étiquettes définitions/interactions") ;; preferences checkbox
+
   ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"

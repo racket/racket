@@ -125,37 +125,37 @@
     @interaction[#:eval (bsl) (>= 42 42)]
     }
     @defproc[((beginner-+ +) [x number][y number][z number] ...) number]{
-    Adds up all numbers.
+    @index["plus"]{}@index["add"]{Adds} up all numbers.
     @interaction[#:eval (bsl) (+ 2/3 1/16) (+ 3 2 5 8)]
     }
     @defproc[(- [x number][y number] ...) number]{
-    Subtracts the second (and following) number(s) from the first ;
+    @index["subtract"]{Subtracts} the second (and following) number(s) from the first ;
     negates the number if there is only one argument.
     @interaction[#:eval (bsl) (- 5) (- 5 3) (- 5 3 1)]
     }
     @defproc[((beginner-* *) [x number][y number][z number] ...) number]{
-    Multiplies all numbers. 
+    @index["times"]{}@index["product"]{}@index["multiply"]{Multiplies} all numbers. 
     @interaction[#:eval (bsl) (* 5 3) (* 5 3 2)]
     }
     @defproc[((beginner-/ /) [x number][y number][z number] ...) number]{
-    Divides the first by the second (and all following) number(s).
+    @index["divide"]{Divides} the first by the second (and all following) number(s).
     @interaction[#:eval (bsl) (/ 12 2) (/ 12 2 3)]
     }
     @defproc[(max [x real][y real] ...) real]{
-    Determines the largest number.
+    Determines the largest number---aka, the @index["maximum"]{maxiumum}. 
     @interaction[#:eval (bsl) (max 3 2 8 7 2 9 0)]
     }
     @defproc[(min [x real][y real] ...) real]{
-    Determines the smallest number.
+    Determines the smallest number---aka, the @index["minimum"]{miniumum}. 
     @interaction[#:eval (bsl) (min 3 2 8 7 2 9 0)]
     }
     @defproc[(quotient [x integer][y integer]) integer]{
     Divides the second integer---also called divisor---into the first---known as 
-    dividend---to obtain the quotient.
+    dividend---to obtain the @index[(list "divide" "quotient")]{quotient}.
     @interaction[#:eval (bsl) (quotient 9 2) (quotient 3 4)] 
     }
     @defproc[(remainder [x integer][y integer]) integer]{
-    Determines the remainder of dividing the first by the second integer
+    Determines the @index[(list "divide" "remainder")]{remainder} of dividing the first by the second integer
     (exact or inexact). 
     @interaction[#:eval (bsl) (remainder 9 2) (remainder 3 4)] 
     } 
@@ -164,7 +164,7 @@
     @interaction[#:eval (bsl) (modulo 9 2) (modulo 3 -4)] 
     }
     @defproc[((beginner-sqr sqr) [x number]) number]{
-    Computes the square of a number.
+    Computes the @index["square"]{square} of a number.
     @interaction[#:eval (bsl) (sqr 8)]
     }
     @defproc[(sqrt [x number]) number]{
@@ -200,15 +200,15 @@
   
     ;; trigonometry
     @defproc[(sin [x number]) number]{
-    Computes the sine of a number (radians).
+    Computes the @index["sine"]{sine} of a number (radians).
     @interaction[#:eval (bsl) (sin pi)]
     }
     @defproc[(cos [x number]) number]{
-    Computes the cosine of a number (radians).
+    Computes the @index["cosine"]{cosine} of a number (radians).
     @interaction[#:eval (bsl) (cos pi)]
     }
     @defproc[(tan [x number]) number]{
-    Computes the tangent of a number (radians). 
+    Computes the @index["tangent"]{tangent} of a number (radians). 
     @interaction[#:eval (bsl) (tan pi)]
     }
     @defproc[(asin [x number]) number]{

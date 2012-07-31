@@ -22,3 +22,4 @@ This manual documents data structure libraries available in the
 @include-section["skip-list.scrbl"]
 @include-section["interval-map.scrbl"]
 @include-section["heap.scrbl"]
+@include-section["integer-set.scrbl"]

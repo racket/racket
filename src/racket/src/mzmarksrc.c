@@ -1051,6 +1051,7 @@ module_val {
   gcMARK2(m->submodule_path, gc);
   gcMARK2(m->pre_submodules, gc);
   gcMARK2(m->post_submodules, gc);
+  gcMARK2(m->supermodule, gc);
   gcMARK2(m->submodule_ancestry, gc);
 
   gcMARK2(m->primitive, gc);

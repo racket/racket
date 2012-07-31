@@ -655,7 +655,7 @@
     (if m
         (datum->syntax s (string->symbol (cadr m)) s s)
         s)))
-(define re:beginner: (regexp "^beginner:(.*)$"))
+(define re:beginner: (regexp "^beginner-(.*)$"))
 
 
 ;; eval-quoted : take a syntax that is an application of quote, and evaluate it (for display)

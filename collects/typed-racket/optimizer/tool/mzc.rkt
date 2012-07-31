@@ -180,7 +180,8 @@
          ;; body (as opposed to `g') may make unboxing possible.
          ;; Of course, we lose precision if `g' has multiple call sites to `f'.
          (define n-unrollings   (length (filter unrolling?   group)))
-         (define is-a-loop?     (or any-self-o-o-f? (> n-unrollings 0)))
+         ;; TODO any-self-o-o-f? add too many false positives
+         (define is-a-loop?     (or #;any-self-o-o-f? (> n-unrollings 0)))
          (define inlining-sites
            (group-by equal? #:key (lambda (x)
                                     (inlining-event-where-loc

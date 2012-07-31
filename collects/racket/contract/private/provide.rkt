@@ -799,8 +799,8 @@
 (define-syntax (provide/contract stx)
   (define s-l-c (syntax-local-context))
   (case s-l-c
-   [(module-begin) ;; the case under discussion
-    #`(begin (define-values () (values))  ;; force us into the 'module' local context
+   [(module-begin)
+    #`(begin ;; force us into the 'module' local context
              #,stx)]
    [(module) ;; the good case
     (true-provide/contract stx #f 'provide/contract)]
