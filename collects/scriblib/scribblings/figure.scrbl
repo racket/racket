@@ -41,14 +41,14 @@ For a figure that demands left-aligned text, use @racket[left].
 Implements a style for left-aligned figures.
 }
 
-@defproc[(figure-ref [tag string?]) element?]{
+@defproc[(figure-ref [tag string?] ...+) element?]{
 
-Generates a reference to a figure, using a lowercase word ``figure''.}
+Generates a reference to one or more figures, using a lowercase word ``figure''.}
 
 
-@defproc[(Figure-ref [tag string?]) element?]{
+@defproc[(Figure-ref [tag string?] ...+) element?]{
 
-Generates a reference to a figure, capitalizing the word ``Figure''.}
+Generates a reference to one or more figures, capitalizing the word ``Figure''.}
 
 
 @defproc[(Figure-target [tag string?]) element?]{
