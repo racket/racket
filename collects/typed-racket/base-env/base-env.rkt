@@ -2587,7 +2587,10 @@
 [place? (make-pred-ty -Place)]
 [place-channel? (make-pred-ty -Place-Channel)]
 ;; FIXME: the `#:at` keyword is for remote places, not supported yet
-[dynamic-place (->key -Module-Path Sym #:at (-val #f) #f -Place)]
+[dynamic-place (->key -Module-Path Sym
+                      #:at (-val #f) #f
+                      #:named (Un (-val #f) -Symbol) #f
+                      -Place)]
 [place-wait (-> -Place -Int)]
 [place-break (-> -Place -Void)]
 [place-kill (-> -Place -Void)]
