@@ -29,8 +29,9 @@
          (rename-out [strict-array-data  unsafe-array-data])
          strict-array-data
          ;; conversion
-         array-strict
          array-view
+         array-strict
+         array-copy
          ;; printing
          default-print-array
          array-custom-printer
@@ -208,6 +209,12 @@
          (define size (array-size arr))
          (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js))))]
         [else  arr]))
+
+(: array-copy (All (A) ((Array A) -> (strict-array A))))
+(define (array-copy arr)
+  (cond [(view-array? arr)  (array-strict arr)]
+        [else  (unsafe-strict-array (unsafe-array-shape arr)
+                                    (vector-copy-all (strict-array-data arr)))]))
 
 ;; ===================================================================================================
 ;; Printing

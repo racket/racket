@@ -15,7 +15,7 @@
               ds (λ () (raise-type-error 'make-array "(Listof Index)" 0 ds v)))])
     (unsafe-view-array ds (λ (js) v))))
 
-(: index-array ((Listof Integer) Integer -> (view-array Integer)))
+(: index-array ((Listof Integer) Integer -> (view-array Index)))
 (define (index-array ds i)
   (let ([ds  (array-shape-safe->unsafe
               ds (λ () (raise-type-error 'index-array "(Listof Index)" 0 ds i)))])
@@ -24,7 +24,7 @@
            (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) (unsafe-vector-ref js i)))]
           [else  (raise-type-error 'index-array (format "Index < ~a" dims) 1 ds i)])))
 
-(: indexes-array ((Listof Integer) -> (view-array (Listof Integer))))
+(: indexes-array ((Listof Integer) -> (view-array (Listof Index))))
 (define (indexes-array ds)
   (let ([ds  (array-shape-safe->unsafe
               ds (λ () (raise-type-error 'indexes-array "(Listof Index)" ds)))])
