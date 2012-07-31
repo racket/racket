@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-;; The custom printer used for both strict-array and lazy-array struct types
+;; The custom printer used for both strict-array and view-array struct types
 
 (require racket/pretty
          racket/string
@@ -21,20 +21,20 @@
                              (print p port mode))]  ; pass the quote depth through
           [else write]))
   ;; Actually print the array
-  (do-print-array (array-lazy arr)  ; lazy arrays are easy to ref elements from
+  (do-print-array (array-view arr)  ; view arrays are easy to ref elements from
                   port
                   recur-print
-                  (if (lazy-array? arr) 'lazy-array 'strict-array)))
+                  (if (view-array? arr) 'view-array 'strict-array)))
 
 ;; An array is printed in one of three layouts:
 ;;   1. one-line     on one line, with " " between elements
 ;;   2. compact      on multiple lines, with "\n" between elements *except the innermost*
 ;;   3. multi-line   on multiple lines, with "\n" between elements
-;; The logic in `print-lazy-array' causes the REPL printer to try printing every array in those
+;; The logic in `print-view-array' causes the REPL printer to try printing every array in those
 ;; layouts, in that order. If a line overflows, it tries the next layout.
 (define-type Array-Layout (U 'one-line 'compact 'multi-line))
 
-(: do-print-array (All (A) ((lazy-array A) Output-Port (Any Output-Port -> Any) Symbol -> Any)))
+(: do-print-array (All (A) ((view-array A) Output-Port (Any Output-Port -> Any) Symbol -> Any)))
 (define (do-print-array arr port recur-print struct-name)
   ;; Width of a line
   (define cols (pretty-print-columns))

@@ -27,18 +27,18 @@
     [(_ arr-expr)
      (syntax/loc stx
        ((plambda: (A) ([arr : (Array A)])
-          (if (lazy-array? arr)
+          (if (view-array? arr)
               ((unsafe-array-proc arr) #())
-              (unsafe-vector-ref (unsafe-array-data arr) 0)))
+              (unsafe-vector-ref (strict-array-data arr) 0)))
         arr-expr))]
     [(_ arr-expr j0 js ...)
      (with-syntax ([(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))])
        (syntax/loc stx
          ((plambda: (A) ([arr : (Array A)] [new-j0 : Index] [new-js : Index] ...)
             (let ([ds  (unsafe-array-shape arr)])
-              (if (lazy-array? arr)
+              (if (view-array? arr)
                   ((unsafe-array-proc arr) (vector new-j0 new-js ...))
-                  (unsafe-vector-ref (unsafe-array-data arr)
+                  (unsafe-vector-ref (strict-array-data arr)
                                      (unsafe-indexes->index ds 1 (new-js ...) new-j0)))))
            arr-expr j0 js ...)))]
     [_  (syntax/loc stx unsafe-array-ref*-proc)]))
@@ -63,9 +63,9 @@
 
 (: unsafe-array-ref (All (A) ((Array A) (Vectorof Index) -> A)))
 (define (unsafe-array-ref arr js)
-  (if (lazy-array? arr)
+  (if (view-array? arr)
       ((unsafe-array-proc arr) js)
-      (unsafe-vector-ref (unsafe-array-data arr)
+      (unsafe-vector-ref (strict-array-data arr)
                          (unsafe-array-index->value-index (unsafe-array-shape arr) js))))
 
 ;; ===================================================================================================
@@ -85,9 +85,9 @@
      (syntax/loc stx
        ((plambda: (A) ([arr : (Array A)])
           (if (= 0 (array-dims arr))
-              (if (lazy-array? arr)
+              (if (view-array? arr)
                   ((unsafe-array-proc arr) #())
-                  (unsafe-vector-ref (unsafe-array-data arr) 0))
+                  (unsafe-vector-ref (strict-array-data arr) 0))
               (raise-array-index-error 'array-ref* (unsafe-array-shape arr) null)))
         arr-expr))]
     [(_ arr-expr j0 js ...)
@@ -104,10 +104,10 @@
                   (let-values ([(new-ds ...)  (values (unsafe-vector-ref ds is) ...)])
                     (if (and (and (0 . <= . new-j0) (new-j0 . < . (unsafe-vector-ref ds 0)))
                              (and (0 . <= . new-js) (new-js . < . new-ds)) ...)
-                        (if (lazy-array? arr)
+                        (if (view-array? arr)
                             ((unsafe-array-proc arr) (vector new-j0 new-js ...))
                             (let ([j  (indexes->index (new-ds ...) (new-js ...) new-j0)])
-                              (unsafe-vector-ref (unsafe-array-data arr) j)))
+                              (unsafe-vector-ref (strict-array-data arr) j)))
                         (index-error)))
                   (index-error))))
           arr-expr j0 js ...)))]
@@ -134,9 +134,9 @@
 (: array-ref (All (A) ((Array A) (Listof Integer) -> A)))
 (define (array-ref arr js)
   (define ds (unsafe-array-shape arr))
-  (if (lazy-array? arr)
+  (if (view-array? arr)
       ((unsafe-array-proc arr) (check-array-indexes 'array-ref ds js))
-      (unsafe-vector-ref (unsafe-array-data arr)
+      (unsafe-vector-ref (strict-array-data arr)
                          (array-index->value-index 'array-ref ds js))))
 
 ;; ===================================================================================================
@@ -147,14 +147,14 @@
     [(_ arr-expr v-expr)
      (syntax/loc stx
        ((plambda: (A) ([arr : (strict-array A)] [v : A])
-          (unsafe-vector-set! (unsafe-array-data arr) 0 v))
+          (unsafe-vector-set! (strict-array-data arr) 0 v))
         arr-expr v-expr))]
     [(_ arr-expr v-expr j0 js ...)
      (with-syntax ([(new-j0 new-js ...)  (generate-temporaries #'(j0 js ...))])
        (syntax/loc stx
          ((plambda: (A) ([arr : (strict-array A)] [v : A] [new-j0 : Index] [new-js : Index] ...)
             (let ([ds  (unsafe-array-shape arr)])
-              (unsafe-vector-set! (unsafe-array-data arr)
+              (unsafe-vector-set! (strict-array-data arr)
                                   (unsafe-indexes->index ds 1 (new-js ...) new-j0)
                                   v)))
            arr-expr v-expr j0 js ...)))]
@@ -180,7 +180,7 @@
 
 (: unsafe-array-set! (All (A) ((strict-array A) (Vectorof Index) A -> Void)))
 (define (unsafe-array-set! arr js v)
-  (unsafe-vector-set! (unsafe-array-data arr)
+  (unsafe-vector-set! (strict-array-data arr)
                       (unsafe-array-index->value-index (unsafe-array-shape arr) js)
                       v))
 
@@ -193,7 +193,7 @@
      (syntax/loc stx
        ((plambda: (A) ([arr : (strict-array A)] [v : A])
           (if (= 0 (array-dims arr))
-              (unsafe-vector-set! (unsafe-array-data arr) 0 v)
+              (unsafe-vector-set! (strict-array-data arr) 0 v)
               (raise-array-index-error 'array-set!* (unsafe-array-shape arr) null)))
         arr-expr v-expr))]
     [(_ arr-expr v-expr j0 js ...)
@@ -211,7 +211,7 @@
                     (if (and (and (0 . <= . new-j0) (new-j0 . < . (unsafe-vector-ref ds 0)))
                              (and (0 . <= . new-js) (new-js . < . new-ds)) ...)
                         (let ([j  (indexes->index (new-ds ...) (new-js ...) new-j0)])
-                          (unsafe-vector-set! (unsafe-array-data arr) j v))
+                          (unsafe-vector-set! (strict-array-data arr) j v))
                         (index-error)))
                   (index-error))))
           arr-expr v-expr j0 js ...)))]
@@ -238,6 +238,6 @@
 (: array-set! (All (A) ((strict-array A) (Listof Integer) A -> Void)))
 (define (array-set! arr js v)
   (define ds (unsafe-array-shape arr))
-  (unsafe-vector-set! (unsafe-array-data arr)
+  (unsafe-vector-set! (strict-array-data arr)
                       (array-index->value-index 'array-set! ds js)
                       v))
