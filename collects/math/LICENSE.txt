@@ -1,16 +1,18 @@
-The `math' library is distributed under the Lesser Gnu Public License (LGPL)
-just like the majority of Racket's libraries.
+The math collection is distributed under the GNU Lesser General Public
+License Version 2.1 (LGPLv2.1) just like the majority of Racket's libraries.
+The LGPLv2.1 license text is included in every Racket distribution, in the
+file "doc/release-notes/COPYING.txt".
 
 Some of the math library code is derived from the C++ project Boost, from
 source files released under the Boost Software License Version 1.0
-(BSLv1.0). This license is compatible with the LGPL, provided the BSLv1.0
-license text is distributed along with any source code derived from BSLv1.0
-works.
+(BSLv1.0). This license is compatible with the LGPLv2.1, provided the
+BSLv1.0 license text is distributed along with any source code derived from
+BSLv1.0 works.
 
 Some of the math library is derived from ubiquitous C libraries released
 under a license with similar terms.
 
-To comply with the terms of the BSLv1.0, we duplicate its text here:
+To comply with the terms of the BSLv1.0, its text is duplicated here:
 
 ============================================================================
 Boost Software License - Version 1.0 - August 17th, 2003
@@ -39,7 +41,7 @@ DEALINGS IN THE SOFTWARE.
 ============================================================================
 
 
-To comply with the terms of the other license, we duplicate its text here:
+To comply with the terms of the other license, its text is duplicated here:
 
 ============================================================================
 Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
