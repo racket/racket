@@ -98,16 +98,18 @@
                              ,(last string-parts)))
                      " / "))
             (span ([class "revnav"])
-                  (a ([href ,prev-rev-url])
-                     (img ([src "/images/rewind.png"])))
                   ,@(if directory?
                       empty
                       `((a ([href ,prev-change-url])
-                           (img ([src "/images/rewind-change.png"])))
-                        (a ([href ,next-change-url])
-                           (img ([src "/images/fast-forward-change.png"])))))
+                           (img ([src "/images/rewind-change.png"])))))
+                  (a ([href ,prev-rev-url])
+                     (img ([src "/images/rewind.png"])))
                   (a ([href ,next-rev-url])
                      (img ([src "/images/fast-forward.png"])))
+                  ,@(if directory?
+                      empty
+                      `((a ([href ,next-change-url])
+                           (img ([src "/images/fast-forward-change.png"])))))
                   (a ([href ,cur-rev-url])
                      (img ([src "/images/skip-forward1.png"])))))))
 
