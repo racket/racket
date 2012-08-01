@@ -15,6 +15,13 @@
 ; 4. Pseudo inverse
 ; 5. Eigenvalues and eigenvectors
 
+; 6. "Bug"
+;    (for*/matrix : Number 2 3 ([i (in-naturals)]) i)
+;    ought to generate a matrix with numbers from 0 to 5.
+;    Problem: In expansion of for/matrix an extra [i (in-range (* m n))]
+;    is added to make sure the comprehension stops.
+;    But TR has problems with #:when so what is the proper expansion ?
+
 (provide 
  ; basic
  matrix-ref
