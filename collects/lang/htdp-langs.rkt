@@ -1049,11 +1049,16 @@
                    (number? span))
               (with-syntax ([expr expr]
                             [mark (list source line col start-position span)]
-                            [teaching-languages-continuation-mark-key teaching-languages-continuation-mark-key])
-                #`(with-continuation-mark 'teaching-languages-continuation-mark-key
-                    'mark
+                            [teaching-languages-continuation-mark-key teaching-languages-continuation-mark-key]
+                            [wcm (syntax-shift-phase-level #'with-continuation-mark (- phase base-phase))]
+                            [quot (syntax-shift-phase-level #'quote (- phase base-phase))])
+                #`(wcm (quot teaching-languages-continuation-mark-key)
+                    (quot mark)
                     expr))
               expr)))
+
+      (define base-phase
+        (variable-reference->module-base-phase (#%variable-reference)))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;

@@ -1,11 +1,20 @@
 #lang scribble/doc
-@(require "common.rkt"
-          (for-label mzlib/defmacro
-                     (only-in scheme/base syntax->datum datum->syntax)))
+@(require scribblings/reference/mz
+          (for-label compatibility/defmacro))
 
-@(define ref '(lib "scribblings/reference/reference.scrbl"))
+@title[#:tag "defmacro"]{Legacy macro support}
 
-@mzlib[#:mode title defmacro]
+@defmodule[compatibility/defmacro]
+
+This @racketmodname[compatibility/defmacro] library provides support for
+writing legacy macros. Support for @racket[defmacro] is provided
+primarily for porting code from other languages (e.g., some
+implementations of Scheme or Common Lisp) that use symbol-based
+macro systems.
+
+Use of @racket[defmacro] for modern Racket code is @bold{@italic{strongly}}
+discouraged. Instead, consider using @racket[syntax-parse] or
+@racket[define-simple-macro].
 
 @deftogether[(
 @defform*[[(define-macro id expr)
@@ -17,8 +26,8 @@
 )]{
 
 Defines a (non-hygienic) macro @racket[id] through a procedure that
-manipulates S-expressions, as opposed to @techlink[#:doc ref]{syntax
-objects}.
+manipulates S-expressions, as opposed to
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{syntax objects}.
 
 In the first form, @racket[expr] must produce a procedure. In the
 second form, @racket[formals] determines the formal arguments of the
@@ -26,8 +35,9 @@ procedure, as in @racket[lambda], and the @racket[expr]s are the
 procedure body. The last form, with @racket[defmacro], is like the
 second form, but with slightly different parentheses.
 
-In all cases, the procedure is generated in the @techlink[#:doc
-ref]{transformer environment}, not the normal environment.
+In all cases, the procedure is generated in the
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
+transformer environment}, not the normal environment.
 
 In a use of the macro,
 

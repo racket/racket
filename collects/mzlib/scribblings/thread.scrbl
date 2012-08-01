@@ -1,65 +1,25 @@
 #lang scribble/doc
 @(require "common.rkt"
           (for-label mzlib/thread
+                     racket/engine
                      scheme/contract
                      scheme/tcp))
 
 @mzlib[#:mode title thread]
 
-@defproc[(coroutine [proc ((any/c . -> . void?) . -> . any/c)]) 
-         coroutine?]{
+@deprecated[@racketmodname[racket/engine]]{}
 
-Returns a coroutine object to encapsulate a thread that runs only when
-allowed. The @racket[proc] procedure should accept one argument, and
-@racket[proc] is run in the coroutine thread when
-@racket[coroutine-run] is called. If @racket[coroutine-run] returns
-due to a timeout, then the coroutine thread is suspended until a
-future call to @racket[coroutine-run]. Thus, @racket[proc] only
-executes during the dynamic extent of a @racket[coroutine-run] call.
+Re-exports the bindings from @racketmodname[racket/engine] under
+different names and also provides two extra bindings. The renamings
+are:
 
-The argument to @racket[proc] is a procedure that takes a boolean, and
-it can be used to disable suspends (in case @racket[proc] has critical
-regions where it should not be suspended). A true value passed to the
-procedure enables suspends, and @racket[#f] disables
-suspends. Initially, suspends are allowed.}
-
-
-@defproc[(coroutine? [v any/c]) any]{
-
-Returns @racket[#t] if @racket[v] is a coroutine produced by
-@racket[coroutine], @racket[#f] otherwise.}
-
-
-@defproc[(coroutine-run [until (or/c evt? real?)][coroutine coroutine?]) 
-         boolean?]{
-
-Allows the thread associated with @racket[coroutine] to execute for up
-as long as @racket[until] milliseconds (of @racket[until] is a real
-number) or @racket[until] is ready (if @racket[until] is an event). If
-@racket[coroutine]'s procedure disables suspends, then the coroutine
-can run arbitrarily long until it re-enables suspends.
-
-The @racket[coroutine-run] procedure returns @racket[#t] if
-@racket[coroutine]'s procedure completes (or if it completed earlier),
-and the result is available via @racket[coroutine-result].  The
-@racket[coroutine-run] procedure returns @racket[#f] if
-@racket[coroutine]'s procedure does not complete before it is
-suspended after @racket[timeout-secs]. If @racket[coroutine]'s
-procedure raises an exception, then it is re-raised by
-@racket[coroutine-run].}
-
-
-@defproc[(coroutine-result [coroutine coroutine]) any]{
-
-Returns the result for @racket[coroutine] if it has completed with a
-value (as opposed to an exception), @racket[#f] otherwise.}
-
-
-@defproc[(coroutine-kill [coroutine coroutine?]) void?]{
-
-Forcibly terminates the thread associated with @racket[coroutine] if
-it is still running, leaving the coroutine result unchanged.}
-
+@itemlist[
+  @item{@racket[engine] as @racket[coroutine]}
+  @item{@racket[engine?] as @racket[coroutine?]}
+  @item{@racket[engine-run] as @racket[coroutine-run]}
+  @item{@racket[engine-result] as @racket[coroutine-result]}
+  @item{@racket[engine-kill] as @racket[coroutine-kill]}
+]
 
 @defproc[(consumer-thread [f procedure?][init (-> any) void])
          (values thread? procedure?)]{

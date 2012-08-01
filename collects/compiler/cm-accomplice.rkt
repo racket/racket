@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide register-external-file)
 (define (register-external-file f)

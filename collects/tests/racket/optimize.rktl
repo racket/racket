@@ -1616,6 +1616,21 @@
          (unsafe-s16vector-set! x x x)
          (unsafe-u16vector-set! x x x))))
 
+(test-comp '(lambda (x)
+              (hash-ref '#hash((x . y)) x (lambda () 10)))
+           '(lambda (x)
+              (hash-ref '#hash((x . y)) x 10)))
+(test-comp '(lambda (x)
+              (hash-ref x x (lambda () 10)))
+           '(lambda (x)
+              (hash-ref x x 10))
+           #f)
+(test-comp '(lambda (x)
+              (hash-ref '#hash((x . y)) x (lambda () add1)))
+           '(lambda (x)
+              (hash-ref '#hash((x . y)) x add1))
+           #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
@@ -2025,6 +2040,109 @@
   (test-values '(-100001.0 100001.0) non-tail)
   (test -2200000.0 non-tail2)
   (test-values '(-100001.0 100001.0) tail))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for corect fixpoint calculation when lifting
+
+;; This test is especilly fragile. It's a minimized(?) variant
+;; of PR 12910, where just enbought `with-continuation-mark's
+;; are needed to thwart inlining, and enough functions are 
+;; present in the right order to require enough fixpoint
+;; iterations.
+
+(define a-top-level-variable 5)
+(define (do-test-of-lift-fixpoint)
+  (define-syntax-rule (wcm e) (with-continuation-mark a-top-level-variable 'e e))
+  (define (parse-string input-string)
+
+    (let* ((nextTokenIsReady #f)
+
+           (nextCharacter #\space)
+           (nextCharacterIsReady #f)
+           (count 0)
+
+           (input-index 0)
+
+           (input-length (string-length input-string)))
+      
+      (define (scanner0)
+        (state0 (wcm (scanchar))))
+      
+      (define (state0 c)
+        (if (eq? c #\()
+            (begin
+              (consumechar)
+              'lparen)
+            (if (eq? c #\,)
+                (wcm (state1 (scanchar)))
+                (void))))
+      (define (state1 c)
+        (wcm (consumechar)))
+
+      (define (parse-datum)
+        (let ([t (next-token)])
+          (if (eq? t 'lparen)
+              (parse-compound-datum)
+              (wcm (parse-simple-datum)))))
+      
+      (define (parse-simple-datum)
+        (wcm (next-token)))
+      
+      (define (parse-compound-datum)
+        (wcm
+         (begin
+           (consume-token!)
+           (parse-datum))))
+
+      (define (next-token)
+        (wcm (scanner0)))
+      
+      (define (consume-token!)
+        (set! nextTokenIsReady #f))
+      
+      (define (scanchar)
+        (when (= count 4) (error "looped correctly"))
+        (begin
+          (set! count (add1 count))
+          (if nextCharacterIsReady
+              nextCharacter
+              (begin
+                (if (< input-index input-length)
+                    (set! nextCharacter
+                          (wcm (string-ref input-string input-index)))
+                    (set! nextCharacter #\~))
+                (set! nextCharacterIsReady #t)
+                (scanchar)))))
+      
+      (define (consumechar)
+        (when (wcm (not nextCharacterIsReady))
+          (scanchar)))
+
+      (parse-datum)))
+  (set! parse-string parse-string)
+  (parse-string "()"))
+(err/rt-test (do-test-of-lift-fixpoint) exn:fail?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; generate byecode with a lifted function that has
+;; a boxed argument and rest args, to test that case
+;; of the validator
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define o (open-output-bytes))
+  (write
+   (compile
+    '(lambda (x)
+       (define (g . y) (if (zero? (random 1))
+                           (reverse (cons x y))
+                           (g y y y y y y y y y)))
+       (set! x x)
+       (g 12 13)))
+   o)
+  (test '(13 12 10)
+        (parameterize ([read-accept-compiled #t])
+          (eval (read (open-input-bytes (get-output-bytes o)))))
+        10))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -184,7 +184,7 @@ Here is an example typical of what you will find in many applications:
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
-                      #"http://racket-lang.org/downloads"))
+                      #"http://racket-lang.org/download"))
    (λ (op) (write-bytes #"Moved" op)))
  ]
 }
@@ -200,10 +200,10 @@ Here is an example typical of what you will find in many applications:
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
-                      #"http://racket-lang.org/downloads"))
+                      #"http://racket-lang.org/download"))
    (list #"<html><body><p>"
          #"Please go to <a href=\""
-         #"http://racket-lang.org/downloads"
+         #"http://racket-lang.org/download"
          #"\">here</a> instead."
          #"</p></body></html>"))
  ]

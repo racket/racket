@@ -7,7 +7,7 @@
  ;; that may appear in the residual program
  "utils/utils.rkt"
  (for-syntax "utils/utils.rkt")
- "utils/any-wrap.rkt" unstable/contract)
+ "utils/any-wrap.rkt" unstable/contract racket/contract/parametric)
 
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction])

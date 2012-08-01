@@ -1921,6 +1921,17 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args]);
   if (le) return finish_optimize_app(le, info, context, rator_flags);
 
+  /* Convert (hash-ref '#hash... key (lambda () literal))
+     to (hash-ref '#hash... key literal) */
+  if ((app->num_args == 3)
+      && SAME_OBJ(scheme_hash_ref_proc, app->args[0])
+      && SCHEME_HASHTRP(app->args[1])
+      && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(app->args[3]))
+      && (SCHEME_TYPE(((Scheme_Closure_Data *)app->args[3])->code) > _scheme_compiled_values_types_)
+      && !SCHEME_PROCP(((Scheme_Closure_Data *)app->args[3])->code)) {
+    app->args[3] = ((Scheme_Closure_Data *)app->args[3])->code;
+  }
+
   return finish_optimize_application(app, info, context, rator_flags);
 }
 

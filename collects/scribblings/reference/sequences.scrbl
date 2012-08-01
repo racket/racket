@@ -3,7 +3,7 @@
           (for-syntax racket/base)
           (for-label racket/generator
                      racket/generic
-                     racket/mpair))
+                     compatibility/mpair))
 
 @(define (info-on-seq where what)
    @margin-note{See @secref[where] for information on using @|what| as
@@ -496,7 +496,7 @@ in the sequence.
   so that @racket[stream-first] produces the same result each time
   is applied to a stream.
 
-  In extracting an element from @racket[seq] involves a side-effect,
+  If extracting an element from @racket[seq] involves a side-effect,
   then the effect is performed each time that either
   @racket[stream-first] or @racket[stream-rest] is first used to
   access or skip an element.}

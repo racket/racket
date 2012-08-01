@@ -26,37 +26,47 @@
 (let ([arr  (make-strict-array '(4) #(a b c d))])
   (check-eq? arr (array-strict arr)))
 
-(let ([arr  (make-lazy-array '() (λ (js) 'foo))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  (make-view-array '() (λ (js) 'foo))])
+  (check-equal? (strict-array-data (array-strict arr))
                 #(foo)))
 
-(let ([arr  ((inst make-lazy-array Float) '(4) (λ (js) (exact->inexact (first js))))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  ((inst make-view-array Float) '(4) (λ (js) (exact->inexact (first js))))])
+  (check-equal? (strict-array-data (array-strict arr))
                 #(0.0 1.0 2.0 3.0)))
 
-(let ([arr  ((inst make-lazy-array Float) '(0) (λ (js) (exact->inexact (first js))))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  ((inst make-view-array Float) '(0) (λ (js) (exact->inexact (first js))))])
+  (check-equal? (strict-array-data (array-strict arr))
                 #()))
 
-(let ([arr  (make-lazy-array '(3 3) (λ (js) js))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  (make-view-array '(3 3) (λ (js) js))])
+  (check-equal? (strict-array-data (array-strict arr))
                 (make-index-vector 2 3)))
 
-(let ([arr  (make-lazy-array '(2 2 2) (λ (js) js))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  (make-view-array '(2 2 2) (λ (js) js))])
+  (check-equal? (strict-array-data (array-strict arr))
                 (make-index-vector 3 2)))
 
-(let ([arr  (make-lazy-array '(2 2 2 2) (λ (js) js))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  (make-view-array '(2 2 2 2) (λ (js) js))])
+  (check-equal? (strict-array-data (array-strict arr))
                 (make-index-vector 4 2)))
 
-(let ([arr  (make-lazy-array '(2 2 2 2 2) (λ (js) js))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  (make-view-array '(2 2 2 2 2) (λ (js) js))])
+  (check-equal? (strict-array-data (array-strict arr))
                 (make-index-vector 5 2)))
 
-(let ([arr  (make-lazy-array '(2 2 2 2 2 2) (λ (js) js))])
-  (check-equal? (unsafe-array-data (array-strict arr))
+(let ([arr  (make-view-array '(2 2 2 2 2 2) (λ (js) js))])
+  (check-equal? (strict-array-data (array-strict arr))
                 (make-index-vector 6 2)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; array-copy
+
+(let* ([arr  ((inst array-strict Byte) (make-array '() 0))]
+       [brr  (array-copy arr)])
+  (array-set! arr '() 1)
+  (check-equal? (array-ref brr '()) 0)
+  (array-set! brr '() 2)
+  (check-equal? (array-ref arr '()) 1))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conversion
@@ -103,27 +113,27 @@
 
 ;; array->list
 
-(let ([arr  (make-lazy-array '() (λ (js) 'foo))])
+(let ([arr  (make-view-array '() (λ (js) 'foo))])
   (check-equal? (array->list arr) 'foo)
   (check-equal? arr (list->array symbol? (array->list arr))))
 
-(let ([arr  ((inst make-lazy-array Float) '(4) (λ (js) (exact->inexact (first js))))])
+(let ([arr  ((inst make-view-array Float) '(4) (λ (js) (exact->inexact (first js))))])
   (check-equal? (array->list arr) '(0.0 1.0 2.0 3.0))
   (check-equal? arr (list->array flonum? (array->list arr))))
 
-(let ([arr  (make-lazy-array '(3 3) (λ: ([js : (Listof Index)]) js))])
+(let ([arr  (make-view-array '(3 3) (λ: ([js : (Listof Index)]) js))])
   (check-equal? (array->list arr) '(((0 0) (0 1) (0 2))
                                     ((1 0) (1 1) (1 2))
                                     ((2 0) (2 1) (2 2))))
   (check-equal? arr (list->array listof-index? (array->list arr))))
 
-(let ([arr  (make-lazy-array '(2 2 2) (λ: ([js : (Listof Index)]) js))])
+(let ([arr  (make-view-array '(2 2 2) (λ: ([js : (Listof Index)]) js))])
   (check-equal? (array->list arr)
                 '((((0 0 0) (0 0 1)) ((0 1 0) (0 1 1)))
                   (((1 0 0) (1 0 1)) ((1 1 0) (1 1 1)))))
   (check-equal? arr (list->array listof-index? (array->list arr))))
 
-(let ([arr  (make-lazy-array '(2 2 2 2) (λ: ([js : (Listof Index)]) js))])
+(let ([arr  (make-view-array '(2 2 2 2) (λ: ([js : (Listof Index)]) js))])
   (check-equal? (array->list arr)
                 '(((((0 0 0 0) (0 0 0 1)) ((0 0 1 0) (0 0 1 1)))
                    (((0 1 0 0) (0 1 0 1)) ((0 1 1 0) (0 1 1 1))))
@@ -133,27 +143,27 @@
 
 ;; array->vector
 
-(let ([arr  (make-lazy-array '() (λ (js) 'foo))])
+(let ([arr  (make-view-array '() (λ (js) 'foo))])
   (check-equal? (array->vector arr) 'foo)
   (check-equal? arr (vector->array symbol? (array->vector arr))))
 
-(let ([arr  ((inst make-lazy-array Float) '(4) (λ (js) (exact->inexact (first js))))])
+(let ([arr  ((inst make-view-array Float) '(4) (λ (js) (exact->inexact (first js))))])
   (check-equal? (array->vector arr) #(0.0 1.0 2.0 3.0))
   (check-equal? arr (vector->array flonum? (array->vector arr))))
 
-(let ([arr  (make-lazy-array '(3 3) (λ: ([js : (Listof Index)]) js))])
+(let ([arr  (make-view-array '(3 3) (λ: ([js : (Listof Index)]) js))])
   (check-equal? (array->vector arr) #(#((0 0) (0 1) (0 2))
                                       #((1 0) (1 1) (1 2))
                                       #((2 0) (2 1) (2 2))))
   (check-equal? arr (vector->array listof-index? (array->vector arr))))
 
-(let ([arr  (make-lazy-array '(2 2 2) (λ: ([js : (Listof Index)]) js))])
+(let ([arr  (make-view-array '(2 2 2) (λ: ([js : (Listof Index)]) js))])
   (check-equal? (array->vector arr)
                 #(#(#((0 0 0) (0 0 1)) #((0 1 0) (0 1 1)))
                   #(#((1 0 0) (1 0 1)) #((1 1 0) (1 1 1)))))
   (check-equal? arr (vector->array listof-index? (array->vector arr))))
 
-(let ([arr  (make-lazy-array '(2 2 2 2) (λ: ([js : (Listof Index)]) js))])
+(let ([arr  (make-view-array '(2 2 2 2) (λ: ([js : (Listof Index)]) js))])
   (check-equal? (array->vector arr)
                 #(#(#(#((0 0 0 0) (0 0 0 1)) #((0 0 1 0) (0 0 1 1)))
                     #(#((0 1 0 0) (0 1 0 1)) #((0 1 1 0) (0 1 1 1))))
@@ -200,16 +210,16 @@
 ;; Other constructors
 
 (check-equal? (make-array '(3 3) 0)
-              (make-lazy-array '(3 3) (λ (js) 0)))
+              (make-view-array '(3 3) (λ (js) 0)))
 
 (check-equal? (index-array '(3 3) 0)
-              (make-lazy-array '(3 3) (λ: ([js : (Listof Integer)]) (first js))))
+              (make-view-array '(3 3) (λ: ([js : (Listof Integer)]) (first js))))
 
 (check-exn exn? (λ () (index-array '(3 3) -1)))
 (check-exn exn? (λ () (index-array '() 0)))
 
 (check-equal? (indexes-array '(3 3))
-              (make-lazy-array '(3 3) (λ: ([js : (Listof Integer)]) js)))
+              (make-view-array '(3 3) (λ: ([js : (Listof Integer)]) js)))
 
 (check-equal? (diagonal-array 0 0 1.0 0.0)
               (list->array flonum? 1.0))
@@ -257,28 +267,105 @@
 (let ([arr  (list->array flonum? '(( 1.0  4.0  9.0  16.0)
                                    (-1.0 -4.0 -9.0 -16.0)))])
   (check-equal? (array-axis-sum arr 0) (list->array flonum? '(0.0 0.0 0.0 0.0)))
+  (check-equal? (array-axis-prod arr 0) (list->array flonum? '(-1.0 -16.0 -81.0 -256.0)))
   (check-equal? (array-axis-min arr 0) (list->array flonum? '(-1.0 -4.0 -9.0 -16.0)))
   (check-equal? (array-axis-max arr 0) (list->array flonum? '( 1.0  4.0  9.0  16.0)))
   (check-equal? (array-axis-fold arr 0 (inst cons Float (Listof Float)) null)
                 (list->array listof-flonum? '((-1.0 1.0) (-4.0 4.0) (-9.0 9.0) (-16.0 16.0))))
   (check-equal? (array-axis-sum arr 1) (list->array flonum? '(30.0 -30.0)))
+  (check-equal? (array-axis-prod arr 1) (list->array flonum? '(576.0 576.0)))
   (check-equal? (array-axis-min arr 1) (list->array flonum? '(1.0 -16.0)))
   (check-equal? (array-axis-max arr 1) (list->array flonum? '(16.0 -1.0)))
   (check-equal? (array-axis-fold arr 1 (inst cons Float (Listof Float)) null)
                 (list->array listof-flonum? '(( 16.0  9.0  4.0  1.0)
-                                              (-16.0 -9.0 -4.0 -1.0)))))
+                                              (-16.0 -9.0 -4.0 -1.0))))
+  (check-equal? (array-sum arr) 0.0)
+  (check-equal? (array-prod arr) (* 576.0 576.0))
+  (check-equal? (array-min-value arr) -16.0)
+  (check-equal? (array-max-value arr)  16.0))
 
 (let ([arr  (make-array '(3 0) 0)])
   (check-equal? (array-axis-sum arr 0) (list->array number? '()))
+  (check-equal? (array-axis-prod arr 0) (list->array number? '()))
   (check-equal? (array-axis-min arr 0) (list->array number? '()))
   (check-equal? (array-axis-max arr 0) (list->array number? '()))
+  (check-exn exn? (λ () (array-axis-sum arr 1)))
+  (check-exn exn? (λ () (array-axis-prod arr 1)))
+  (check-exn exn? (λ () (array-axis-min arr 1)))
+  (check-exn exn? (λ () (array-axis-max arr 1)))
   (check-equal? (array-axis-sum arr 1 0) (list->array number? '(0 0 0)))
   (check-equal? (array-axis-min arr 1 +inf.0) (list->array number? '(+inf.0 +inf.0 +inf.0)))
-  (check-equal? (array-axis-max arr 1 -inf.0) (list->array number? '(-inf.0 -inf.0 -inf.0))))
+  (check-equal? (array-axis-max arr 1 -inf.0) (list->array number? '(-inf.0 -inf.0 -inf.0)))
+  (check-equal? (array-axis-prod arr 1 1) (list->array number? '(1 1 1)))
+  (check-exn exn? (λ () (array-sum arr)))
+  (check-exn exn? (λ () (array-prod arr)))
+  (check-exn exn? (λ () (array-min-value arr)))
+  (check-exn exn? (λ () (array-max-value arr)))
+  (check-equal? (array-sum arr 0) 0)
+  (check-equal? (array-prod arr 1) 1)
+  (check-equal? (array-min-value arr +inf.0) +inf.0)
+  (check-equal? (array-max-value arr -inf.0) -inf.0))
 
-(check-exn exn? (λ () (array-axis-sum (make-array '() 0) 0)))
-(check-equal? (array-axis-sum (make-array '(4) 1) 0)
-              (list->array number? 4))
+(let ([arr  (make-array '() 0)])
+  (check-exn exn? (λ () (array-axis-sum arr 0)))
+  (check-exn exn? (λ () (array-axis-prod arr 0)))
+  (check-exn exn? (λ () (array-axis-min arr 0)))
+  (check-exn exn? (λ () (array-axis-max arr 0)))
+  (check-equal? (array-sum arr) 0)
+  (check-equal? (array-prod arr) 0)
+  (check-equal? (array-min-value arr) 0)
+  (check-equal? (array-max-value arr) 0))
+
+(let ([arr  (list->array flonum? '((1.0 1.0 2.0 3.0) (0.0 -1.0 2.0 3.0)))])
+  (check-equal? (array-axis-count arr 0 positive?) (list->array index? '[1 1 2 2]))
+  (check-equal? (array-axis-count arr 1 positive?) (list->array index? '[4 2]))
+  (check-equal? (array-count arr positive?) 6)
+  (check-equal? (array-count (array-strict arr) positive?) 6))
+
+(let ([arr  (list->array flonum? '((1.0 1.0 2.0 3.0) (0.0 -1.0 2.0 3.0)))])
+  (check-equal? (array-axis-andmap arr 0 positive?) (list->array boolean? '[#f #f #t #t]))
+  (check-equal? (array-axis-andmap arr 1 positive?) (list->array boolean? '[#t #f]))
+  (check-equal? (array-andmap arr positive?) #f)
+  (check-equal? (array-andmap (array-strict arr) positive?) #f))
+
+(let ([arr  (list->array flonum? '((1.0 1.0 2.0 3.0) (2.0 3.0 2.0 3.0)))])
+  (check-equal? (array-axis-andmap arr 0 positive?) (list->array boolean? '[#t #t #t #t]))
+  (check-equal? (array-axis-andmap arr 1 positive?) (list->array boolean? '[#t #t]))
+  (check-equal? (array-andmap arr positive?) #t)
+  (check-equal? (array-andmap (array-strict arr) positive?) #t))
+
+(let ([arr  (list->array flonum? '((-1.0 -1.0 -2.0 -3.0) (0.0 -1.0 2.0 3.0)))])
+  (check-equal? (array-axis-ormap arr 0 positive?) (list->array boolean? '[#f #f #t #t]))
+  (check-equal? (array-axis-ormap arr 1 positive?) (list->array boolean? '[#f #t]))
+  (check-equal? (array-ormap arr positive?) #t)
+  (check-equal? (array-ormap (array-strict arr) positive?) #t))
+
+(let ([arr  (list->array flonum? '((-1.0 -1.0 -2.0 -3.0) (-2.0 -3.0 -2.0 -3.0)))])
+  (check-equal? (array-axis-ormap arr 0 positive?) (list->array boolean? '[#f #f #f #f]))
+  (check-equal? (array-axis-ormap arr 1 positive?) (list->array boolean? '[#f #f]))
+  (check-equal? (array-ormap arr positive?) #f)
+  (check-equal? (array-ormap (array-strict arr) positive?) #f))
+
+(let ([arr  (make-array '() 0.0)])
+  (check-equal? (array-count arr positive?) 0)
+  (check-equal? (array-andmap arr positive?) #f)
+  (check-equal? (array-ormap arr positive?) #f))
+
+(let ([arr  (make-array '() 1.0)])
+  (check-equal? (array-count arr positive?) 1)
+  (check-equal? (array-andmap arr positive?) #t)
+  (check-equal? (array-ormap arr positive?) #t))
+
+(let ([arr  (make-array '(4 0) 0.0)])
+  (check-equal? (array-axis-count arr 0 positive?)  (list->array index? '[]))
+  (check-equal? (array-axis-andmap arr 0 positive?) (list->array boolean? '[]))
+  (check-equal? (array-axis-ormap arr 0 positive?)  (list->array boolean? '[]))
+  (check-equal? (array-axis-count arr 1 positive?)  (list->array index? '[0 0 0 0]))
+  (check-equal? (array-axis-andmap arr 1 positive?) (list->array boolean? '[#t #t #t #t]))
+  (check-equal? (array-axis-ormap arr 1 positive?)  (list->array boolean? '[#f #f #f #f]))
+  (check-equal? (array-count arr positive?) 0)
+  (check-equal? (array-andmap arr positive?) #t)
+  (check-equal? (array-ormap arr positive?) #f))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; FFT
@@ -376,6 +463,69 @@
   (check-equal? (array-ref s-arr '(0 0)) '(0 0))
   (check-equal? (array-ref l-arr '(1 1)) '(1 1))
   (check-equal? (array-ref s-arr '(1 1)) '(1 1)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Set
+
+;; Unsafe
+
+(let* ([arr  ((inst array-strict Byte) (make-array '() 0))])
+  (unsafe-array-set!* arr 1)
+  (check-equal? (unsafe-array-ref* arr) 1)
+  (unsafe-array-set! arr (vector) 2)
+  (check-equal? (unsafe-array-ref arr (vector)) 2))
+
+(let* ([arr  (array-strict (indexes-array '(2)))])
+  (unsafe-array-set!* arr '(1) 0)
+  (unsafe-array-set!* arr '(2) 1)
+  (check-equal? (unsafe-array-ref* arr 0) '(1))
+  (check-equal? (unsafe-array-ref* arr 1) '(2))
+  (unsafe-array-set! arr ((inst vector Index) 0) '(2))
+  (unsafe-array-set! arr ((inst vector Index) 1) '(3))
+  (check-equal? (unsafe-array-ref arr ((inst vector Index) 0)) '(2))
+  (check-equal? (unsafe-array-ref arr ((inst vector Index) 1)) '(3)))
+
+(let* ([arr  (array-strict (indexes-array '(2 2)))])
+  (check-equal? (unsafe-array-ref* arr 0 0) '(0 0))
+  (check-equal? (unsafe-array-ref* arr 1 1) '(1 1))
+  (check-equal? (unsafe-array-ref arr (ann (vector 0 0) (Vectorof Index))) '(0 0))
+  (check-equal? (unsafe-array-ref arr (ann (vector 1 1) (Vectorof Index))) '(1 1)))
+
+;; Safe
+
+(let* ([arr  ((inst array-strict Byte) (make-array '() 0))])
+  (array-set!* arr 1)
+  (check-equal? (array-ref* arr) 1)
+  (array-set! arr '() 2)
+  (check-equal? (array-ref arr '()) 2)
+  (check-exn exn? (λ () (array-set!* arr 1 2)))
+  (check-exn exn? (λ () (array-set! arr '(1) 2))))
+
+(let* ([arr  (array-strict (indexes-array '(2)))])
+  (array-set!* arr '(1) 0)
+  (array-set!* arr '(2) 1)
+  (check-equal? (array-ref* arr 0) '(1))
+  (check-equal? (array-ref* arr 1) '(2))
+  (array-set! arr '(0) '(2))
+  (array-set! arr '(1) '(3))
+  (check-equal? (array-ref arr '(0)) '(2))
+  (check-equal? (array-ref arr '(1)) '(3))
+  (check-exn exn? (λ () (array-set!* arr '(1) 0 0)))
+  (check-exn exn? (λ () (array-set!* arr '(1) -1)))
+  (check-exn exn? (λ () (array-set!* arr '(1) 2)))
+  (check-exn exn? (λ () (array-set! arr '(0 0) '(1))))
+  (check-exn exn? (λ () (array-set! arr '(-1) '(1))))
+  (check-exn exn? (λ () (array-set! arr '(2) '(1)))))
+
+(let* ([arr  (array-strict (indexes-array '(2 2)))])
+  (array-set!* arr '(1 1) 0 0)
+  (array-set!* arr '(2 2) 1 1)
+  (check-equal? (array-ref* arr 0 0) '(1 1))
+  (check-equal? (array-ref* arr 1 1) '(2 2))
+  (array-set! arr '(0 0) '(2 2))
+  (array-set! arr '(1 1) '(3 3))
+  (check-equal? (array-ref arr '(0 0)) '(2 2))
+  (check-equal? (array-ref arr '(1 1)) '(3 3)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Transforms
@@ -531,3 +681,8 @@
 
 (check-exn exn? (λ () (array-append (indexes-array '()) 0 (indexes-array '()))))
 (check-exn exn? (λ () (array-append (indexes-array '(4)) 0 (indexes-array '(4 5)))))
+
+(check-equal? (array->list (array-append (indexes-array '(4)) 0
+                                         (indexes-array '(3))
+                                         (indexes-array '(2))))
+              '[(0) (1) (2) (3) (0) (1) (2) (0) (1)])

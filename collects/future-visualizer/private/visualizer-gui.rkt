@@ -7,10 +7,10 @@
          "gui-helpers.rkt" 
          "graph-drawing.rkt"
          "display.rkt" 
-         "constants.rkt")    
+         "constants.rkt" 
+         "pict-canvas.rkt")    
 
-(provide show-visualizer 
-         show-visualizer-for-events) 
+(provide show-visualizer) 
 
 ;;rebuild-mouse-index : frame-info trace (listof segment) -> interval-map of (range --> interval-map)
 (define (rebuild-mouse-index frameinfo tr segs) 
@@ -70,7 +70,8 @@
           [(touch) 
            (send data-label1 set-label (format "Touching future ~a" (event-user-data evt)))]
           [else 
-           (send data-label1 set-label "")])) 
+           (send data-label1 set-label "")
+           (send data-label2 set-label "")]))  
       (begin 
         (send selected-label set-label "") 
         (send time-label set-label "") 
@@ -84,12 +85,11 @@
   (values (min screen-w DEF-WINDOW-WIDTH) 
           (min screen-h DEF-WINDOW-HEIGHT)))
 
-;;show-visualizer-for-events : (listof indexed-fevent) -> void
-(define (show-visualizer-for-events logs) 
-  ;If for some reason the log is empty, error
-  (when (empty? logs) 
-      (error 'show-visualizer "No future log messages found."))
-  (define the-trace (build-trace logs))  
+(define (show-visualizer #:timeline [timeline #f]) 
+  (define the-tl (if timeline timeline (timeline-events))) 
+  (when (empty? the-tl) 
+    (error 'show-visualizer "No future log messages found."))
+  (define the-trace (build-trace the-tl))  
   (define-values (winw winh) (get-window-size))
   ;The event segment we are currently mousing over
   (define hover-seg #f) 
@@ -104,6 +104,7 @@
                  [height winh])) 
   (define main-panel (new panel:horizontal-dragable% 
                           [parent (send f get-area-container)]))
+  
   (define left-panel (new panel:horizontal-dragable% [parent main-panel] 
                           [stretchable-width #t]))
   (define hlist-ctl (new hierarchical-list% 
@@ -131,7 +132,7 @@
   (define graphic-panel (new panel:horizontal-dragable% 
                              [parent right-panel] 
                              [stretchable-height #t] 
-                             [min-width (inexact->exact (round (* winw .8)))]))
+                             [stretchable-width #t]))
   (define timeline-container (new vertical-panel% 
                                   [parent graphic-panel] 
                                   [stretchable-width #t] 
@@ -147,25 +148,27 @@
   (define-values (frameinfo segments) (calc-segments the-trace))
   (define timeline-mouse-index (rebuild-mouse-index frameinfo the-trace segments))   
   (define timeline-panel (new pict-canvas% 
-                              [parent timeline-container] 
-                              [redraw-on-resize #f] 
+                              [parent timeline-container]
                               [pict-builder (λ (vregion) (timeline-pict-for-trace-data vregion the-trace frameinfo segments))] 
                               [hover-handler (λ (x y vregion) 
-                                               (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
-                                                 (set! hover-seg seg) 
-                                                 (post-event listener-table 'segment-hover timeline-panel seg)))]
+                                               (let ([seg (find-seg-for-coords x y timeline-mouse-index)])
+                                                 (cond 
+                                                   [(equal? seg hover-seg) #f] 
+                                                   [else 
+                                                    (set! hover-seg seg) 
+                                                    (post-event listener-table 'segment-hover timeline-panel seg) 
+                                                    seg])))]
                               [click-handler (λ (x y vregion) 
                                                (let ([seg (find-seg-for-coords x y timeline-mouse-index)]) 
                                                  (set! tacked-seg seg)  
-                                                 (post-event listener-table 'segment-click timeline-panel seg)))] 
+                                                 (post-event listener-table 'segment-click timeline-panel seg) 
+                                                 seg))] 
                               [overlay-builder (λ (vregion scale-factor) 
                                                  (timeline-overlay vregion 
                                                                    tacked-seg 
                                                                    hover-seg 
                                                                    frameinfo 
                                                                    the-trace))]
-                              [min-width 500] 
-                              [min-height (inexact->exact (round (* winh .7)))] 
                               [style '(hscroll vscroll)] 
                               [stretchable-width #t]))
   ;; TODO sometimes the sizes passed to the scrollbars are so big we blow up!
@@ -184,34 +187,39 @@
   
   (define hovered-graph-node #f)
   (define creategraph-panel (new pict-canvas% 
-                                 [parent graph-container]  
-                                 [redraw-on-resize #f]
+                                 [parent graph-container]
                                  [pict-builder (λ (vregion) 
                                                  (draw-creategraph-pict vregion 
                                                                          creation-tree-layout))]
-                                 [hover-handler #f #;(λ (x y vregion) 
-                                                  (set! hovered-graph-node 
-                                                        (find-node-for-coords x 
-                                                                              y 
-                                                                              (graph-layout-nodes creation-tree-layout))))]
-                                 [click-handler (λ (x y vregion)
+                                 [hover-handler (λ (x y vregion) 
+                                                  (define hovered (find-node-for-coords x y 
+                                                                                        (graph-layout-nodes creation-tree-layout))) 
+                                                  (cond 
+                                                    [(eq? hovered hovered-graph-node) #f] 
+                                                    [else 
+                                                     (set! hovered-graph-node 
+                                                           (find-node-for-coords x 
+                                                                                 y 
+                                                                                 (graph-layout-nodes creation-tree-layout))) 
+                                                     hovered-graph-node]))]
+                                 #;[click-handler (λ (x y vregion)
                                                   (define fid (find-fid-for-coords 
                                                                x y (graph-layout-nodes creation-tree-layout)
                                                                vregion))
-                                                  (when fid
-                                                    (define seg (first-seg-for-fid fid segments))
-                                                    (set! tacked-seg seg) 
-                                                    (send timeline-panel set-redraw-overlay! #t)
-                                                    (send timeline-panel refresh)
-                                                    (post-event listener-table 'segment-click timeline-panel seg)))]
+                                                  (cond 
+                                                    [(not fid) #f] 
+                                                    [else
+                                                     (define seg (first-seg-for-fid fid segments))
+                                                     (set! tacked-seg seg) 
+                                                     (send timeline-panel redraw-everything)
+                                                     (post-event listener-table 'segment-click timeline-panel seg) 
+                                                     #t]))]
                                  [overlay-builder (λ (vregion scale-factor) 
                                                     (graph-overlay-pict hovered-graph-node 
                                                                         the-trace 
                                                                         creation-tree-layout 
                                                                         vregion 
                                                                         scale-factor))]
-                                 [min-width 500]
-                                 [min-height 500]
                                  [style '(hscroll vscroll)] 
                                  [stretchable-width #t]))   
     
@@ -220,7 +228,7 @@
         (inexact->exact (floor (graph-layout-width creation-tree-layout))) 
         (inexact->exact (floor (graph-layout-height creation-tree-layout)))
         0.0 
-        0.0)
+        0.0) 
   
   
   (define graph-footer (new horizontal-panel% 
@@ -353,7 +361,7 @@
                          (send item set-label "Hide Creation Tree"))) 
                    (set! showing-create-graph (not showing-create-graph)))])
   
+  (send main-panel set-percentages '(1/5 4/5))
+  (send right-panel set-percentages '(3/4 1/4))
+ 
   (send f show #t))
-
-(define (show-visualizer)
-  (show-visualizer-for-events (timeline-events)))

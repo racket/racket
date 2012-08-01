@@ -4,7 +4,8 @@
 
 This file polls mirror links: (mirror-link <url> <size>) will return the
 url only if it is live, and its size fits the expected size.  Otherwise
-it returns #f.
+it returns #f, or #t in some rare cases where the size is not known from
+the poll.
 
 This is done only if the "KNOWN_MIRRORS_FILE" environment variable is
 set, otherwise all mirror links are included.  If the variable is set,
@@ -108,10 +109,8 @@ Polling a URL can result in one of four options:
 
 (define (validate url size)
   (eprintf "  checking ~a\n" url)
-  (define scheme
-    (string->symbol (cadr (or (regexp-match #rx"^([^:]*):" url)
-                              (error 'mirror-link "bad url: ~a" url)))))
-  ((case scheme
+  ((case (string->symbol (cadr (or (regexp-match #rx"^([^:]*):" url)
+                                   (error 'mirror-link "bad url: ~a" url))))
      [(http https) verify-http]
      [(ftp) verify-ftp]
      [else (error 'mirror-link "unrecognizable url scheme: ~a\n" url)])
@@ -148,7 +147,7 @@ Polling a URL can result in one of four options:
                                       line)
                         => (compose string->number cadr)]
                        [else #f]))
-               (begin (eprintf "WARNING: no `content-length' for ~a" url)
+               (begin (eprintf "WARNING: no `content-length' for ~a\n" url)
                       #t))]))
   (define r
     (with-handlers+timeout 'http

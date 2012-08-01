@@ -224,6 +224,8 @@
   (one-mz-test "embed-me13.rkt" "This is 14\n" #f)
   (one-mz-test "embed-me14.rkt" "This is 14\n" #f)
   (one-mz-test "embed-me15.rkt" "This is 15.\n" #f)
+  (one-mz-test "embed-me17.rkt" "This is 17.\n" #f)
+  (one-mz-test "embed-me18.rkt" "This is 18.\n" #f)
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
@@ -500,6 +502,8 @@
     (go '(planet "private/sub.rkt" ("racket-tester" "p2.plt" 2 0)) "two\nsub\n")
     (go '(planet "private/sub.ss" ("racket-tester" "p2.plt" 2 0)) "two\nsub\n")
     (go '(planet "main.ss" ("racket-tester" "p2.plt" 2 0)) "two\n")
+
+    (go '(planet racket-tester/p1/dyn-sub) "out\n")
 
     (void))
   

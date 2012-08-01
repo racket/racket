@@ -1,11 +1,5 @@
 #lang typed/racket/base
 
-#|
-TODO
-
-Move racket/math functions here; racket/math reexports
-|#
-
 (require racket/flonum
          "private/functions/factorial.rkt"
          "private/functions/hyperbolic.rkt"

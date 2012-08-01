@@ -470,7 +470,7 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 /* These will make sense in Racket when longs are longer than ints (needed
  * for libffi's int32 types).  There is no need to deal with bignums because
  * mzscheme's fixnums are longs. */
-MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
+XFORM_NONGCING MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -481,7 +481,7 @@ MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
     return 1;
   } else return 0;
 }
-MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
+XFORM_NONGCING MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -499,7 +499,7 @@ MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 
 #endif /* SIXTY_FOUR_BIT_INTEGERS */
 
-MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
+XFORM_NONGCING MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -511,7 +511,7 @@ MZ_INLINE static int get_byte_val(Scheme_Object *o, Tsint8 *_v)
   return 0;
 }
 
-MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
+XFORM_NONGCING MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -523,7 +523,7 @@ MZ_INLINE static int get_ubyte_val(Scheme_Object *o, Tuint8 *_v)
   return 0;
 }
 
-MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
+XFORM_NONGCING MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -535,7 +535,7 @@ MZ_INLINE static int get_short_val(Scheme_Object *o, Tsint16 *_v)
   return 0;
 }
 
-MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
+XFORM_NONGCING MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
 {
   if (SCHEME_INTP(o)) {
     intptr_t v = SCHEME_INT_VAL(o);
@@ -558,7 +558,7 @@ MZ_INLINE static int get_ushort_val(Scheme_Object *o, Tuint16 *_v)
 
 #define SCHEME_FALSEP_OR_CHAR_STRINGP(o) (SCHEME_FALSEP(o) || SCHEME_CHAR_STRINGP(o))
 
-static mzchar *ucs4_string_or_null_to_ucs4_pointer(Scheme_Object *ucs)
+XFORM_NONGCING static mzchar *ucs4_string_or_null_to_ucs4_pointer(Scheme_Object *ucs)
 {
   if (SCHEME_FALSEP(ucs)) return NULL;
   return SCHEME_CHAR_STR_VAL(ucs);
@@ -938,7 +938,7 @@ typedef union _ForeignAny {
 #define FOREIGN_array (28)
 #define FOREIGN_union (29)
 
-static int is_gcable_pointer(Scheme_Object *o) {
+XFORM_NONGCING static int is_gcable_pointer(Scheme_Object *o) {
   if (SCHEME_FFIOBJP(o)) return 0;
   return (!SCHEME_CPTRP(o)
           || !(SCHEME_CPTR_FLAGS(o) & 0x1));
@@ -1039,7 +1039,7 @@ static Scheme_Object *foreign_ctype_c_to_scheme(int argc, Scheme_Object *argv[])
 #undef MYNAME
 
 /* Returns a primitive type, or NULL if not a type */
-static Scheme_Object *get_ctype_base(Scheme_Object *type)
+XFORM_NONGCING static Scheme_Object *get_ctype_base(Scheme_Object *type)
 {
   if (!SCHEME_CTYPEP(type)) return NULL;
   while (CTYPE_USERP(type)) { type = CTYPE_BASETYPE(type); }
@@ -1047,7 +1047,7 @@ static Scheme_Object *get_ctype_base(Scheme_Object *type)
 }
 
 /* Returns the size, 0 for void, -1 if no such type */
-static intptr_t ctype_sizeof(Scheme_Object *type)
+XFORM_NONGCING static intptr_t ctype_sizeof(Scheme_Object *type)
 {
   type = get_ctype_base(type);
   if (type == NULL) return -1;
@@ -1604,8 +1604,8 @@ void *scheme_extract_pointer(Scheme_Object *v) {
  * for both the function definition and calls */
 #ifdef SCHEME_BIG_ENDIAN
 #define C2SCHEME(ap,typ,src,delta,argsloc,gcsrc) c_to_scheme(ap,typ,src,delta,argsloc,gcsrc)
-#define REF_CTYPE(ctype) (((sizeof(ctype)<sizeof(int)) && args_loc) \
-  ? ((ctype)(((int*)W_OFFSET(src,delta))[0])) \
+#define REF_CTYPE(ctype) (((sizeof(ctype)<sizeof(intptr_t)) && args_loc) \
+  ? ((ctype)(((intptr_t*)W_OFFSET(src,delta))[0])) \
   : (((ctype *)W_OFFSET(src,delta))[0]))
 #else
 #define C2SCHEME(ap,typ,src,delta,argsloc,gcsrc) c_to_scheme(ap,typ,src,delta,gcsrc)
@@ -1718,81 +1718,81 @@ static void* SCHEME2C(const char *who,
       break;
     case FOREIGN_int8:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint8)<sizeof(int) && ret_loc) {
+      if (sizeof(Tsint8)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint8));
+        delta += (sizeof(intptr_t)-sizeof(Tsint8));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(get_byte_val(val,&(((Tsint8*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int8", val);;
       return NULL;
     case FOREIGN_uint8:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint8)<sizeof(int) && ret_loc) {
+      if (sizeof(Tuint8)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint8));
+        delta += (sizeof(intptr_t)-sizeof(Tuint8));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(get_ubyte_val(val,&(((Tuint8*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint8", val);;
       return NULL;
     case FOREIGN_int16:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint16)<sizeof(int) && ret_loc) {
+      if (sizeof(Tsint16)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint16));
+        delta += (sizeof(intptr_t)-sizeof(Tsint16));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(get_short_val(val,&(((Tsint16*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int16", val);;
       return NULL;
     case FOREIGN_uint16:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint16)<sizeof(int) && ret_loc) {
+      if (sizeof(Tuint16)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint16));
+        delta += (sizeof(intptr_t)-sizeof(Tuint16));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(get_ushort_val(val,&(((Tuint16*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint16", val);;
       return NULL;
     case FOREIGN_int32:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint32)<sizeof(int) && ret_loc) {
+      if (sizeof(Tsint32)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint32));
+        delta += (sizeof(intptr_t)-sizeof(Tsint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int32", val);;
       return NULL;
     case FOREIGN_uint32:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint32)<sizeof(int) && ret_loc) {
+      if (sizeof(Tuint32)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint32));
+        delta += (sizeof(intptr_t)-sizeof(Tuint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(scheme_get_unsigned_realint_val(val,&(((Tuint32*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint32", val);;
       return NULL;
     case FOREIGN_int64:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint64)<sizeof(int) && ret_loc) {
+      if (sizeof(Tsint64)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint64));
+        delta += (sizeof(intptr_t)-sizeof(Tsint64));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(scheme_get_long_long_val(val,&(((Tsint64*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int64", val);;
       return NULL;
     case FOREIGN_uint64:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint64)<sizeof(int) && ret_loc) {
+      if (sizeof(Tuint64)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint64));
+        delta += (sizeof(intptr_t)-sizeof(Tuint64));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(scheme_get_unsigned_long_long_val(val,&(((Tuint64*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint64", val);;
       return NULL;
     case FOREIGN_fixint:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tsint32)<sizeof(int) && ret_loc) {
+      if (sizeof(Tsint32)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tsint32));
+        delta += (sizeof(intptr_t)-sizeof(Tsint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
@@ -1805,9 +1805,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_ufixint:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Tuint32)<sizeof(int) && ret_loc) {
+      if (sizeof(Tuint32)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Tuint32));
+        delta += (sizeof(intptr_t)-sizeof(Tuint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
@@ -1820,9 +1820,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_fixnum:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(intptr_t)<sizeof(int) && ret_loc) {
+      if (sizeof(intptr_t)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(intptr_t));
+        delta += (sizeof(intptr_t)-sizeof(intptr_t));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
@@ -1835,9 +1835,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_ufixnum:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(uintptr_t)<sizeof(int) && ret_loc) {
+      if (sizeof(uintptr_t)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(uintptr_t));
+        delta += (sizeof(intptr_t)-sizeof(uintptr_t));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
@@ -1850,9 +1850,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_float:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(float)<sizeof(int) && ret_loc) {
+      if (sizeof(float)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(float));
+        delta += (sizeof(intptr_t)-sizeof(float));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FLOATP(val)) {
@@ -1865,9 +1865,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_double:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(double)<sizeof(int) && ret_loc) {
+      if (sizeof(double)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(double));
+        delta += (sizeof(intptr_t)-sizeof(double));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FLOATP(val)) {
@@ -1880,9 +1880,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_doubleS:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(double)<sizeof(int) && ret_loc) {
+      if (sizeof(double)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(double));
+        delta += (sizeof(intptr_t)-sizeof(double));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_REALP(val)) {
@@ -1895,9 +1895,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_bool:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(int)<sizeof(int) && ret_loc) {
+      if (sizeof(int)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(int));
+        delta += (sizeof(intptr_t)-sizeof(int));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (1) {
@@ -1910,9 +1910,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_string_ucs_4:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(mzchar*)<sizeof(int) && ret_loc) {
+      if (sizeof(mzchar*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(mzchar*));
+        delta += (sizeof(intptr_t)-sizeof(mzchar*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
@@ -1931,9 +1931,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_string_utf_16:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(unsigned short*)<sizeof(int) && ret_loc) {
+      if (sizeof(unsigned short*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(unsigned short*));
+        delta += (sizeof(intptr_t)-sizeof(unsigned short*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
@@ -1952,9 +1952,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_bytes:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(char*)<sizeof(int) && ret_loc) {
+      if (sizeof(char*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(char*));
+        delta += (sizeof(intptr_t)-sizeof(char*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP(val)||SCHEME_BYTE_STRINGP(val)) {
@@ -1973,9 +1973,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_path:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(char*)<sizeof(int) && ret_loc) {
+      if (sizeof(char*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(char*));
+        delta += (sizeof(intptr_t)-sizeof(char*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP(val)||SCHEME_PATH_STRINGP(val)) {
@@ -1994,9 +1994,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_symbol:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(char*)<sizeof(int) && ret_loc) {
+      if (sizeof(char*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(char*));
+        delta += (sizeof(intptr_t)-sizeof(char*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_SYMBOLP(val)) {
@@ -2015,9 +2015,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_pointer:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(void*)<sizeof(int) && ret_loc) {
+      if (sizeof(void*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(void*));
+        delta += (sizeof(intptr_t)-sizeof(void*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FFIANYPTRP(val)) {
@@ -2040,9 +2040,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_gcpointer:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(void*)<sizeof(int) && ret_loc) {
+      if (sizeof(void*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(void*));
+        delta += (sizeof(intptr_t)-sizeof(void*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FFIANYPTRP(val)) {
@@ -2065,9 +2065,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_scheme:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(Scheme_Object*)<sizeof(int) && ret_loc) {
+      if (sizeof(Scheme_Object*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(Scheme_Object*));
+        delta += (sizeof(intptr_t)-sizeof(Scheme_Object*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (1) {
@@ -2086,9 +2086,9 @@ static void* SCHEME2C(const char *who,
       }
     case FOREIGN_fpointer:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(void*)<sizeof(int) && ret_loc) {
+      if (sizeof(void*)<sizeof(intptr_t) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(void*));
+        delta += (sizeof(intptr_t)-sizeof(void*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (!(ret_loc)) wrong_value(who, "_fpointer", val);;
@@ -2887,6 +2887,8 @@ static mzrt_mutex *orig_place_mutex;
 static FFI_Orig_Place_Call *orig_place_calls, *orig_place_calls_tail;
 static void *orig_place_signal_handle;
 
+static void check_foreign_work(int check_for_in_original);
+
 static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
                                    int nargs, GC_CAN_IGNORE ForeignAny *ivals, void **avalues,
                                    intptr_t *offsets, void *p)
@@ -2976,6 +2978,13 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
       scheme_start_atomic();
       scheme_thread_block(0.0);
       scheme_end_atomic_no_swap();
+
+      /* Since we called scheme_thread_block() in atomic mode,
+         it doesn't check for foreign callbacks. We'd like
+         to handle those anyway, since the call in the original
+         place may lead to a callback that should run in
+         this place. */
+      check_foreign_work(0);
     }
   }
 }
@@ -3308,7 +3317,7 @@ static Scheme_Object *callback_thunk(void *_qc, int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
-void scheme_check_foreign_work(void)
+static void check_foreign_work(int check_for_in_original)
 {
   GC_CAN_IGNORE Queued_Callback *qc;
   ffi_callback_struct *data;
@@ -3343,7 +3352,7 @@ void scheme_check_foreign_work(void)
   }
 
 #ifdef MZ_USE_PLACES
-  if ((scheme_current_place_id == 0) && orig_place_mutex) {
+  if (check_for_in_original && (scheme_current_place_id == 0) && orig_place_mutex) {
     FFI_Orig_Place_Call *todo;
     void *sh;
 
@@ -3374,6 +3383,11 @@ void scheme_check_foreign_work(void)
     }
   }
 #endif
+}
+
+void scheme_check_foreign_work(void)
+{
+  check_foreign_work(1);
 }
 
 #endif

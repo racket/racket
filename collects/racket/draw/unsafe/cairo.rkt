@@ -31,76 +31,85 @@
 (define-cstruct _cairo_glyph_t ([index _long] [x _double*] [y _double*]))
 (provide make-cairo_glyph_t)
 
-(define-cairo cairo_destroy (_fun _cairo_t -> _void) 
+;; Cairo is supposed to be thread-safe, but concurrent use seems
+;; to cause trouble right now. (Try rendering the "plot" document
+;; in multiple places at once.) For now, treat Cairo as non-thread
+;; safe. Use `_cfun' for Cairo functions and `_cbfun' for callbacks:
+(define-syntax-rule (_cfun . rest)
+  (_fun #:in-original-place? #t . rest))
+(define-syntax-rule (_cbfun . rest)
+  (_fun #:async-apply (lambda (f) (f)) . rest))
+
+(define-cairo cairo_destroy (_cfun _cairo_t -> _void) 
   #:wrap (deallocator))
 
-(define-cairo cairo_surface_destroy (_fun _cairo_surface_t -> _void)
+(define-cairo cairo_surface_destroy (_cfun _cairo_surface_t -> _void)
   #:wrap (deallocator))
 
 (define-cairo cairo_quartz_surface_create
-  (_fun _int _uint _uint -> _cairo_surface_t)
+  (_cfun _int _uint _uint -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_quartz_surface_create_for_cg_context
-  (_fun _CGContextRef _uint _uint -> _cairo_surface_t)
+  (_cfun _CGContextRef _uint _uint -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_quartz_surface_get_cg_context
-  (_fun _cairo_surface_t -> _CGContextRef)
+  (_cfun _cairo_surface_t -> _CGContextRef)
   #:make-fail make-not-available)
 
 (define-cairo cairo_win32_surface_create
-  (_fun _pointer -> _cairo_surface_t)
+  (_cfun _pointer -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_win32_printing_surface_create
-  (_fun _pointer -> _cairo_surface_t)
+  (_cfun _pointer -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 
 (define-cairo cairo_surface_create_similar
-  (_fun _cairo_surface_t _int _int _int -> _cairo_surface_t))
+  (_cfun _cairo_surface_t _int _int _int -> _cairo_surface_t))
 
-(define-cairo cairo_xlib_surface_create (_fun _pointer ; Display*
-                                              _ulong   ; Drawable
-                                              _pointer ; Visual*
-                                              _int     ; width
-                                              _int     ; height
-                                              -> _cairo_surface_t)
+(define-cairo cairo_xlib_surface_create (_cfun _pointer ; Display*
+                                               _ulong   ; Drawable
+                                               _pointer ; Visual*
+                                               _int     ; width
+                                               _int     ; height
+                                               -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 
 (define-cairo cairo_win32_surface_create_with_dib 
-  (_fun _int _int _int -> _cairo_surface_t)
+  (_cfun _int _int _int -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_win32_surface_create_with_ddb 
-  (_fun _pointer _int _int _int -> _cairo_surface_t)
+  (_cfun _pointer _int _int _int -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_win32_surface_get_dc
-  (_fun _cairo_surface_t -> _pointer)
+  (_cfun _cairo_surface_t -> _pointer)
   #:make-fail make-not-available)
 
-(define-cairo cairo_create (_fun _cairo_surface_t -> _cairo_t)
+(define-cairo cairo_create (_cfun _cairo_surface_t -> _cairo_t)
   #:wrap (allocator cairo_destroy))
 
-(define-cairo cairo_get_target (_fun _cairo_t -> _cairo_surface_t)) ;; not an allocator
+(define-cairo cairo_get_target (_cfun _cairo_t -> _cairo_surface_t)) ;; not an allocator
 
 ;; Context
-(define-cairo cairo_paint (_fun _cairo_t -> _void))
-(define-cairo cairo_fill (_fun _cairo_t -> _void))
-(define-cairo cairo_fill_preserve (_fun _cairo_t -> _void))
-(define-cairo cairo_stroke (_fun _cairo_t -> _void))
-(define-cairo cairo_stroke_preserve (_fun _cairo_t -> _void))
-(define-cairo cairo_save (_fun _cairo_t -> _void))
-(define-cairo cairo_restore (_fun _cairo_t -> _void))
-(define-cairo cairo_clip (_fun _cairo_t -> _void))
-(define-cairo cairo_reset_clip (_fun _cairo_t -> _void))
+(define-cairo cairo_paint (_cfun _cairo_t -> _void))
+(define-cairo cairo_fill (_cfun _cairo_t -> _void))
+(define-cairo cairo_fill_preserve (_cfun _cairo_t -> _void))
+(define-cairo cairo_stroke (_cfun _cairo_t -> _void))
+(define-cairo cairo_stroke_preserve (_cfun _cairo_t -> _void))
+(define-cairo cairo_save (_cfun _cairo_t -> _void))
+(define-cairo cairo_restore (_cfun _cairo_t -> _void))
+(define-cairo cairo_clip (_cfun _cairo_t -> _void))
+(define-cairo cairo_reset_clip (_cfun _cairo_t -> _void))
 
-(define-cairo cairo_in_fill (_fun _cairo_t _double* _double* -> _bool))
+(define-cairo cairo_in_fill (_cfun _cairo_t _double* _double* -> _bool))
 
-(define-cairo cairo_clip_extents (_fun _cairo_t 
+(define-cairo cairo_clip_extents (_cfun _cairo_t 
                                        (x1 : (_ptr o _double)) 
                                        (y1 : (_ptr o _double)) 
                                        (x2 : (_ptr o _double)) 
@@ -117,127 +126,127 @@
                (values 0 0 0 0)))))
 
 ;; Transforms
-(define-cairo cairo_translate (_fun _cairo_t _double* _double* -> _void))
-(define-cairo cairo_scale (_fun _cairo_t _double* _double* -> _void))
-(define-cairo cairo_rotate (_fun _cairo_t _double* -> _void))
-(define-cairo cairo_transform (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
-(define-cairo cairo_identity_matrix (_fun _cairo_t -> _void))
-(define-cairo cairo_get_matrix (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
-(define-cairo cairo_set_matrix (_fun _cairo_t _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_translate (_cfun _cairo_t _double* _double* -> _void))
+(define-cairo cairo_scale (_cfun _cairo_t _double* _double* -> _void))
+(define-cairo cairo_rotate (_cfun _cairo_t _double* -> _void))
+(define-cairo cairo_transform (_cfun _cairo_t _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_identity_matrix (_cfun _cairo_t -> _void))
+(define-cairo cairo_get_matrix (_cfun _cairo_t _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_set_matrix (_cfun _cairo_t _cairo_matrix_t-pointer -> _void))
 
-(define-cairo cairo_matrix_init_translate (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
-(define-cairo cairo_matrix_init (_fun _cairo_matrix_t-pointer _double* _double* _double* _double* _double* _double* -> _void))
-(define-cairo cairo_matrix_translate (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
-(define-cairo cairo_matrix_scale (_fun _cairo_matrix_t-pointer _double* _double* -> _void))
-(define-cairo cairo_matrix_rotate (_fun _cairo_matrix_t-pointer _double* -> _void))
-(define-cairo cairo_matrix_multiply (_fun _cairo_matrix_t-pointer _cairo_matrix_t-pointer _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_matrix_init_translate (_cfun _cairo_matrix_t-pointer _double* _double* -> _void))
+(define-cairo cairo_matrix_init (_cfun _cairo_matrix_t-pointer _double* _double* _double* _double* _double* _double* -> _void))
+(define-cairo cairo_matrix_translate (_cfun _cairo_matrix_t-pointer _double* _double* -> _void))
+(define-cairo cairo_matrix_scale (_cfun _cairo_matrix_t-pointer _double* _double* -> _void))
+(define-cairo cairo_matrix_rotate (_cfun _cairo_matrix_t-pointer _double* -> _void))
+(define-cairo cairo_matrix_multiply (_cfun _cairo_matrix_t-pointer _cairo_matrix_t-pointer _cairo_matrix_t-pointer -> _void))
 
 ;; Stroke & Fill
-(define-cairo cairo_set_source_rgb (_fun _cairo_t _double* _double* _double* -> _void))
-(define-cairo cairo_set_source_rgba (_fun _cairo_t _double* _double* _double* _double* -> _void))
-(define-cairo cairo_set_line_width (_fun _cairo_t _double* -> _void))
-(define-cairo cairo_set_line_cap (_fun _cairo_t _int -> _void))
-(define-cairo cairo_set_line_join (_fun _cairo_t _int -> _void))
-(define-cairo cairo_set_dash (_fun _cairo_t (v : (_vector i _double*)) [_int = (vector-length v)] _double* -> _void))
-(define-cairo cairo_set_antialias (_fun _cairo_t _int -> _void))
+(define-cairo cairo_set_source_rgb (_cfun _cairo_t _double* _double* _double* -> _void))
+(define-cairo cairo_set_source_rgba (_cfun _cairo_t _double* _double* _double* _double* -> _void))
+(define-cairo cairo_set_line_width (_cfun _cairo_t _double* -> _void))
+(define-cairo cairo_set_line_cap (_cfun _cairo_t _int -> _void))
+(define-cairo cairo_set_line_join (_cfun _cairo_t _int -> _void))
+(define-cairo cairo_set_dash (_cfun _cairo_t (v : (_vector i _double*)) [_int = (vector-length v)] _double* -> _void))
+(define-cairo cairo_set_antialias (_cfun _cairo_t _int -> _void))
 
-(define-cairo cairo_set_fill_rule (_fun _cairo_t _int -> _void))
+(define-cairo cairo_set_fill_rule (_cfun _cairo_t _int -> _void))
 
-(define-cairo cairo_get_operator (_fun _cairo_t -> _int))
-(define-cairo cairo_set_operator (_fun _cairo_t _int -> _void))
+(define-cairo cairo_get_operator (_cfun _cairo_t -> _int))
+(define-cairo cairo_set_operator (_cfun _cairo_t _int -> _void))
 
 ;; Text
-(define-cairo cairo_font_options_destroy (_fun _cairo_font_options_t -> _void)
+(define-cairo cairo_font_options_destroy (_cfun _cairo_font_options_t -> _void)
   #:wrap (deallocator))
-(define-cairo cairo_font_options_create (_fun -> _cairo_font_options_t)
+(define-cairo cairo_font_options_create (_cfun -> _cairo_font_options_t)
   #:wrap (allocator cairo_font_options_destroy))
-(define-cairo cairo_font_options_copy (_fun _cairo_font_options_t _cairo_font_options_t -> _void))
-(define-cairo cairo_get_font_options (_fun _cairo_t _cairo_font_options_t -> _void))
-(define-cairo cairo_set_font_options (_fun _cairo_t _cairo_font_options_t -> _void))
-(define-cairo cairo_font_options_set_antialias (_fun _cairo_font_options_t _int -> _void))
-(define-cairo cairo_font_options_set_hint_metrics (_fun _cairo_font_options_t _int -> _void))
-(define-cairo cairo_font_options_set_hint_style (_fun _cairo_font_options_t _int -> _void))
+(define-cairo cairo_font_options_copy (_cfun _cairo_font_options_t _cairo_font_options_t -> _void))
+(define-cairo cairo_get_font_options (_cfun _cairo_t _cairo_font_options_t -> _void))
+(define-cairo cairo_set_font_options (_cfun _cairo_t _cairo_font_options_t -> _void))
+(define-cairo cairo_font_options_set_antialias (_cfun _cairo_font_options_t _int -> _void))
+(define-cairo cairo_font_options_set_hint_metrics (_cfun _cairo_font_options_t _int -> _void))
+(define-cairo cairo_font_options_set_hint_style (_cfun _cairo_font_options_t _int -> _void))
 
-(define-cairo cairo_show_glyphs (_fun _cairo_t _cairo_glyph_t-pointer _int -> _void))
+(define-cairo cairo_show_glyphs (_cfun _cairo_t _cairo_glyph_t-pointer _int -> _void))
 
 ;; Paths
-(define-cairo cairo_rectangle (_fun _cairo_t _double* _double* _double* _double* -> _void))
-(define-cairo cairo_move_to (_fun _cairo_t _double* _double* -> _void))
-(define-cairo cairo_rel_move_to (_fun _cairo_t _double* _double* -> _void))
-(define-cairo cairo_line_to (_fun _cairo_t _double* _double* -> _void))
-(define-cairo cairo_rel_line_to (_fun _cairo_t _double* _double* -> _void))
-(define-cairo cairo_arc (_fun _cairo_t _double* _double* _double* _double* _double* -> _void))
-(define-cairo cairo_arc_negative (_fun _cairo_t _double* _double* _double* _double* _double* -> _void))
-(define-cairo cairo_curve_to (_fun _cairo_t _double* _double* _double* _double* _double* _double* -> _void))
-(define-cairo cairo_new_path (_fun _cairo_t -> _void))
-(define-cairo cairo_close_path (_fun _cairo_t -> _void))
+(define-cairo cairo_rectangle (_cfun _cairo_t _double* _double* _double* _double* -> _void))
+(define-cairo cairo_move_to (_cfun _cairo_t _double* _double* -> _void))
+(define-cairo cairo_rel_move_to (_cfun _cairo_t _double* _double* -> _void))
+(define-cairo cairo_line_to (_cfun _cairo_t _double* _double* -> _void))
+(define-cairo cairo_rel_line_to (_cfun _cairo_t _double* _double* -> _void))
+(define-cairo cairo_arc (_cfun _cairo_t _double* _double* _double* _double* _double* -> _void))
+(define-cairo cairo_arc_negative (_cfun _cairo_t _double* _double* _double* _double* _double* -> _void))
+(define-cairo cairo_curve_to (_cfun _cairo_t _double* _double* _double* _double* _double* _double* -> _void))
+(define-cairo cairo_new_path (_cfun _cairo_t -> _void))
+(define-cairo cairo_close_path (_cfun _cairo_t -> _void))
 
-(define-cairo cairo_show_page (_fun _cairo_t -> _void))
+(define-cairo cairo_show_page (_cfun _cairo_t -> _void))
 
 ;; Patterns
-(define-cairo cairo_set_source (_fun _cairo_t _cairo_pattern_t -> _void))
-(define-cairo cairo_get_source (_fun _cairo_t -> _cairo_pattern_t)) ;; not an allocator
-(define-cairo cairo_set_source_surface (_fun _cairo_t _cairo_surface_t _double* _double* -> _void))
-(define-cairo cairo_mask (_fun _cairo_t _cairo_pattern_t -> _void))
-(define-cairo cairo_mask_surface (_fun _cairo_t _cairo_surface_t _double* _double* -> _void))
-(define-cairo cairo_pattern_destroy (_fun _cairo_pattern_t -> _void)
+(define-cairo cairo_set_source (_cfun _cairo_t _cairo_pattern_t -> _void))
+(define-cairo cairo_get_source (_cfun _cairo_t -> _cairo_pattern_t)) ;; not an allocator
+(define-cairo cairo_set_source_surface (_cfun _cairo_t _cairo_surface_t _double* _double* -> _void))
+(define-cairo cairo_mask (_cfun _cairo_t _cairo_pattern_t -> _void))
+(define-cairo cairo_mask_surface (_cfun _cairo_t _cairo_surface_t _double* _double* -> _void))
+(define-cairo cairo_pattern_destroy (_cfun _cairo_pattern_t -> _void)
   #:wrap (deallocator))
-(define-cairo cairo_pattern_create_for_surface (_fun _cairo_surface_t -> _cairo_pattern_t)
+(define-cairo cairo_pattern_create_for_surface (_cfun _cairo_surface_t -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
-(define-cairo cairo_pattern_reference (_fun _cairo_pattern_t -> _void)
+(define-cairo cairo_pattern_reference (_cfun _cairo_pattern_t -> _void)
   #:wrap (retainer cairo_pattern_destroy car))
-(define-cairo cairo_pattern_set_matrix (_fun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
-(define-cairo cairo_pattern_set_extend (_fun _cairo_pattern_t _int -> _void))
+(define-cairo cairo_pattern_set_matrix (_cfun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_pattern_set_extend (_cfun _cairo_pattern_t _int -> _void))
 
 ;; Gradients
-(define-cairo cairo_pattern_add_color_stop_rgb (_fun _cairo_pattern_t _double* _double* _double* _double* -> _void))
-(define-cairo cairo_pattern_add_color_stop_rgba (_fun _cairo_pattern_t _double* _double* _double* _double* _double* -> _void))
+(define-cairo cairo_pattern_add_color_stop_rgb (_cfun _cairo_pattern_t _double* _double* _double* _double* -> _void))
+(define-cairo cairo_pattern_add_color_stop_rgba (_cfun _cairo_pattern_t _double* _double* _double* _double* _double* -> _void))
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_get_color_stop_count (_fun _cairo_pattern_t (_ptr o _int)  -> _int)
+(define-cairo cairo_pattern_get_color_stop_count (_cfun _cairo_pattern_t (_ptr o _int)  -> _int)
   #:make-fail make-not-available)
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_get_color_stop_rgba (_fun _cairo_pattern_t _int (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+(define-cairo cairo_pattern_get_color_stop_rgba (_cfun _cairo_pattern_t _int (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
   #:make-fail make-not-available)
 
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_create_rgb (_fun _double* _double* _double* -> _cairo_pattern_t)
+(define-cairo cairo_pattern_create_rgb (_cfun _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_create_rgba (_fun _double* _double* _double* _double* -> _cairo_pattern_t)
+(define-cairo cairo_pattern_create_rgba (_cfun _double* _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_get_rgba (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+(define-cairo cairo_pattern_get_rgba (_cfun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
   #:make-fail make-not-available) ;; not an allocator
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_get_surface (_fun _cairo_pattern_t (_ptr o _cairo_surface_t) -> _int)
+(define-cairo cairo_pattern_get_surface (_cfun _cairo_pattern_t (_ptr o _cairo_surface_t) -> _int)
   #:make-fail make-not-available) ;; not an allocator
 
-(define-cairo cairo_pattern_create_linear (_fun _double* _double* _double* _double* -> _cairo_pattern_t)
+(define-cairo cairo_pattern_create_linear (_cfun _double* _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_get_linear_points (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+(define-cairo cairo_pattern_get_linear_points (_cfun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
   #:make-fail make-not-available)
-(define-cairo cairo_pattern_create_radial (_fun _double* _double* _double* _double* _double* _double* -> _cairo_pattern_t)
+(define-cairo cairo_pattern_create_radial (_cfun _double* _double* _double* _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
 #; ; 1.4 and later:
-(define-cairo cairo_pattern_get_radial_circles (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+(define-cairo cairo_pattern_get_radial_circles (_cfun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
   #:make-fail make-not-available)
-(define-cairo cairo_pattern_status (_fun _cairo_pattern_t -> _int))
+(define-cairo cairo_pattern_status (_cfun _cairo_pattern_t -> _int))
 
-(define-cairo cairo_pattern_get_extend (_fun _cairo_pattern_t -> _int))
-(define-cairo cairo_pattern_set_filter (_fun _cairo_pattern_t _int -> _void))
-(define-cairo cairo_pattern_get_filter (_fun _cairo_pattern_t -> _int))
-(define-cairo cairo_pattern_get_matrix (_fun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
-(define-cairo cairo_pattern_get_type (_fun _cairo_pattern_t -> _int))
+(define-cairo cairo_pattern_get_extend (_cfun _cairo_pattern_t -> _int))
+(define-cairo cairo_pattern_set_filter (_cfun _cairo_pattern_t _int -> _void))
+(define-cairo cairo_pattern_get_filter (_cfun _cairo_pattern_t -> _int))
+(define-cairo cairo_pattern_get_matrix (_cfun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_pattern_get_type (_cfun _cairo_pattern_t -> _int))
 
 
 ;; Surfaces
-(define-cairo cairo_surface_finish (_fun _cairo_surface_t -> _void))
-(define-cairo cairo_surface_flush (_fun _cairo_surface_t -> _void))
-(define-cairo cairo_surface_mark_dirty (_fun _cairo_surface_t -> _void))
-(define-cairo cairo_image_surface_create (_fun _int _int _int -> _cairo_surface_t)
+(define-cairo cairo_surface_finish (_cfun _cairo_surface_t -> _void))
+(define-cairo cairo_surface_flush (_cfun _cairo_surface_t -> _void))
+(define-cairo cairo_surface_mark_dirty (_cfun _cairo_surface_t -> _void))
+(define-cairo cairo_image_surface_create (_cfun _int _int _int -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
-(define-cairo cairo_ps_surface_create (_fun _path _double* _double* -> _cairo_surface_t)
+(define-cairo cairo_ps_surface_create (_cfun _path _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
 
 ;; Stream surfaces
@@ -249,9 +258,9 @@
 ;;  Externally, a stream-creation function takes
 ;;  just a closure --- not a function and data.
 (define _cairo_write_func_t 
-  (_fun #:atomic? #t _pointer _pointer _uint -> _int))
+  (_cbfun #:atomic? #t _pointer _pointer _uint -> _int))
 (define _stream-surface-proc 
-  (_fun _cairo_write_func_t _pointer _double* _double* -> _cairo_surface_t))
+  (_cfun _cairo_write_func_t _pointer _double* _double* -> _cairo_surface_t))
 (define cell-key (malloc 1 'raw))
 (define stream-surface-allocator 
   (lambda (p)
@@ -277,41 +286,42 @@
 
 (define current-sud-box (make-parameter #f))
 (define-cairo cairo_surface_set_user_data 
-  (_fun _cairo_surface_t _pointer _pointer 
-        (_fun #:atomic? #t #:keep (lambda (v) (set-box! (current-sud-box) v))
-              _pointer -> _void)
+  (_cfun _cairo_surface_t _pointer _pointer 
+        (_cbfun #:atomic? #t 
+                #:keep (lambda (v) (set-box! (current-sud-box) v))
+                _pointer -> _void)
         -> _int))
 
-(define-cairo cairo_ps_surface_set_eps (_fun _cairo_surface_t _bool -> _void)
+(define-cairo cairo_ps_surface_set_eps (_cfun _cairo_surface_t _bool -> _void)
   #:fail (lambda ()
 	   ;; cairo_ps_surface_set_eps is in version 1.6 and later;
 	   ;; if it's not available, we just do without
 	   (lambda (s b) (void))))
-(define-cairo cairo_ps_surface_dsc_begin_setup (_fun _cairo_surface_t -> _void))
-(define-cairo cairo_ps_surface_dsc_comment (_fun _cairo_surface_t _string -> _void))
-(define-cairo cairo_image_surface_get_data (_fun (s : _cairo_surface_t)
+(define-cairo cairo_ps_surface_dsc_begin_setup (_cfun _cairo_surface_t -> _void))
+(define-cairo cairo_ps_surface_dsc_comment (_cfun _cairo_surface_t _string -> _void))
+(define-cairo cairo_image_surface_get_data (_cfun (s : _cairo_surface_t)
                                                  -> (_bytes o
                                                             (* (cairo_image_surface_get_height s)
                                                                (cairo_image_surface_get_stride s)))))
-(define-cairo cairo_image_surface_get_width (_fun _cairo_surface_t -> _int))
-(define-cairo cairo_image_surface_get_height (_fun _cairo_surface_t -> _int))
-(define-cairo cairo_image_surface_get_stride (_fun _cairo_surface_t -> _int))
-(define-cairo cairo_image_surface_get_format (_fun _cairo_surface_t -> _int))
+(define-cairo cairo_image_surface_get_width (_cfun _cairo_surface_t -> _int))
+(define-cairo cairo_image_surface_get_height (_cfun _cairo_surface_t -> _int))
+(define-cairo cairo_image_surface_get_stride (_cfun _cairo_surface_t -> _int))
+(define-cairo cairo_image_surface_get_format (_cfun _cairo_surface_t -> _int))
 
 ;; Not recommended, because it's not registered as an allocator (can't
 ;; call it in atomic mode):
-(define-cairo cairo_image_surface_create_from_png_stream (_fun (_fun _pointer
-                                                                     (s : _pointer)
-                                                                     (len : _int) 
-                                                                     -> _int)
-                                                               (_pointer = #f)
-                                                               -> _cairo_surface_t/null))
+(define-cairo cairo_image_surface_create_from_png_stream (_cfun (_cbfun _pointer
+                                                                        (s : _pointer)
+                                                                        (len : _int) 
+                                                                        -> _int)
+                                                                (_pointer = #f)
+                                                                -> _cairo_surface_t/null))
 ;; Not recommended, unless it makes sense to make the allback atomic:
-(define-cairo cairo_surface_write_to_png_stream (_fun _cairo_surface_t
-                                                      (_fun _pointer
-                                                            (s : _pointer)
-                                                            (len : _int) 
-                                                            -> _int)
+(define-cairo cairo_surface_write_to_png_stream (_cfun _cairo_surface_t
+                                                      (_cbfun _pointer
+                                                              (s : _pointer)
+                                                              (len : _int) 
+                                                              -> _int)
                                                       (_pointer = #f)
                                                       -> _int))
 
@@ -424,10 +434,10 @@
                                [data _pointer]
                                [num_data _int]))
 
-(define-cairo cairo_path_destroy (_fun _cairo_path_t-pointer -> _void)
+(define-cairo cairo_path_destroy (_cfun _cairo_path_t-pointer -> _void)
   #:wrap (deallocator))
 
-(define-cairo cairo_copy_path (_fun _cairo_t -> _cairo_path_t-pointer)
+(define-cairo cairo_copy_path (_cfun _cairo_t -> _cairo_path_t-pointer)
   #:wrap (allocator cairo_path_destroy))
 
 (define-enum 0

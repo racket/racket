@@ -58,9 +58,8 @@
 ;; Simple union constructor.
 ;; Flattens nested unions and sorts types, but does not check for
 ;; overlapping subtypes.
-(define-syntax *Un
-  (syntax-rules ()
-    [(_ . args) (make-Union (remove-dups (sort (apply append (map flat (list . args))) type<?)))]))
+(define (*Un . args)
+  (make-Union (remove-dups (sort (apply append (map flat args)) type<?))))
 
 
 (define (make-Listof elem) (-mu list-rec (*Un (-val null) (-pair elem list-rec))))
@@ -192,6 +191,7 @@
 (define -Promise make-promise-ty)
 
 (define -HashTop (make-HashtableTop))
+(define -VectorTop (make-VectorTop))
 
 (define Univ (make-Univ))
 (define Err (make-Error))

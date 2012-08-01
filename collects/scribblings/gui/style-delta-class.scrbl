@@ -3,8 +3,8 @@
 
 @defclass/title[style-delta% object% ()]{
 
-A @racket[style-delta%] object encapsulates a style change. The changes expressible
-by a delta include:
+A @racket[style-delta%] object encapsulates a style change. The changes
+expressible by a delta include:
 @itemize[
 @item{changing the font family}
 @item{changing the font face}
@@ -86,7 +86,8 @@ The possible values for @racket[underlined-on] and @racket[underlined-off] are:
 @item{@racket[#t]}
 ]
 
-The possible values for @racket[size-in-pixels-on] and @racket[size-in-pixels-off] are:
+The possible values for @racket[size-in-pixels-on] and
+@racket[size-in-pixels-off] are:
 @itemize[
 @item{@racket[#f] (acts like @racket['base])}
 @item{@racket[#t]}
@@ -127,35 +128,32 @@ The family and face settings in a style delta are interdependent:
 ]
 
 
-
-
-@defconstructor*/make[(([change-command (or/c 'change-nothing 
-                                              'change-normal 
-                                              'change-toggle-underline 
-                                              'change-toggle-size-in-pixels 
-                                              'change-normal-color 
-                                              'change-bold) 
+@defconstructor*/make[(([change-command (or/c 'change-nothing
+                                              'change-normal
+                                              'change-toggle-underline
+                                              'change-toggle-size-in-pixels
+                                              'change-normal-color
+                                              'change-bold)
                                         'change-nothing])
-                       ([change-command (or/c 'change-family 
-                                              'change-style 
-                                              'change-toggle-style 
-                                              'change-weight 
-                                              'change-toggle-weight 
-                                              'change-smoothing 
+                       ([change-command (or/c 'change-family
+                                              'change-style
+                                              'change-toggle-style
+                                              'change-weight
+                                              'change-toggle-weight
+                                              'change-smoothing
                                               'change-toggle-smoothing
                                               'change-alignment)]
                         [v symbol])
-                       ([change-command (or/c 'change-size 
-                                              'change-bigger 
+                       ([change-command (or/c 'change-size
+                                              'change-bigger
                                               'change-smaller)]
-                        [v (integer-in 0 255)])
-                       ([change-command (or/c 'change-underline 
+                        [v byte?])
+                       ([change-command (or/c 'change-underline
                                               'change-size-in-pixels)]
                         [v any/c]))]{
 
-The initialization arguments are passed on to 
+The initialization arguments are passed on to
  @method[style-delta% set-delta].
-
 }
 
 
@@ -170,37 +168,20 @@ Tries to collapse into a single delta the changes that would be made
 
 }
 
-@defmethod[(copy [delta (is-a?/c style-delta%)])
-           void?]{
+@defmethod[(copy [delta (is-a?/c style-delta%)]) void?]{
+  Copies the given style delta's settings into this one.}
 
-Copies the given style delta's settings into this one.
+@defmethod[(equal? [delta (is-a?/c style-delta%)]) boolean?]{
+  Returns @racket[#t] if the given delta is equivalent to this one in
+  all contexts or @racket[#f] otherwise.}
 
-}
+@defmethod[(get-alignment-off) (or/c 'base 'top 'center 'bottom)]{
+  See @racket[style-delta%].}
 
-@defmethod[(equal? [delta (is-a?/c style-delta%)])
-           boolean?]{
+@defmethod[(get-alignment-on) (or/c 'base 'top 'center 'bottom)]{
+  See @racket[style-delta%].}
 
-Returns @racket[#t] if the given delta is equivalent to this one in
- all contexts or @racket[#f] otherwise.
-
-}
-
-@defmethod[(get-alignment-off)
-           (or/c 'base 'top 'center 'bottom)]{
-
-See  @racket[style-delta%].
-
-}
-
-@defmethod[(get-alignment-on)
-           (or/c 'base 'top 'center 'bottom)]{
-
-See  @racket[style-delta%].
-
-}
-
-@defmethod[(get-background-add)
-           (is-a?/c add-color<%>)]{
+@defmethod[(get-background-add) (is-a?/c add-color<%>)]{
 
 Gets the object additive color shift for the background (applied after
  the multiplicative factor). Call this @racket[add-color<%>] object's
@@ -248,13 +229,11 @@ Returns the delta's font family. The possible values are
 @item{@indexed-racket['system] (used to draw control labels)}
 ]
 
-See also
-@method[style-delta% get-face].
+See also @method[style-delta% get-face].
 
 }
 
-@defmethod[(get-foreground-add)
-           (is-a?/c add-color<%>)]{
+@defmethod[(get-foreground-add) (is-a?/c add-color<%>)]{
 
 Gets the additive color shift for the foreground (applied after the
  multiplicative factor). Call this @racket[add-color<%>] object's
@@ -272,120 +251,86 @@ Gets the multiplicative color shift for the foreground (applied before
 
 }
 
-@defmethod[(get-size-add)
-           (integer-in 0 255)]{
+@defmethod[(get-size-add) byte?]{
+  Gets the additive font size shift (applied after the multiplicative factor).}
 
-Gets the additive font size shift (applied after the multiplicative factor).
+@defmethod[(get-size-in-pixels-off) boolean?]{
+  See @racket[style-delta%].}
 
-}
+@defmethod[(get-size-in-pixels-on) boolean?]{
+  See @racket[style-delta%].}
 
-@defmethod[(get-size-in-pixels-off)
-           boolean?]{
-
-See  @racket[style-delta%].
-
-}
-
-@defmethod[(get-size-in-pixels-on)
-           boolean?]{
-
-See  @racket[style-delta%].
-
-}
-
-@defmethod[(get-size-mult)
-           real?]{
-
-Gets the multiplicative font size shift (applied before the additive factor).
-
-}
+@defmethod[(get-size-mult) real?]{
+  Gets the multiplicative font size shift (applied before the additive factor).}
 
 @defmethod[(get-smoothing-off)
            (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
-
-See  @racket[style-delta%].
-
+  See @racket[style-delta%].
 }
 
 @defmethod[(get-smoothing-on)
            (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)]{See 
-@racket[style-delta%].
+  @racket[style-delta%].
 }
 
 @defmethod[(get-style-off)
            (or/c 'base 'normal 'italic 'slant)]{See 
-@racket[style-delta%].
+  @racket[style-delta%].
 }
 
-@defmethod[(get-style-on)
-           (or/c 'base 'normal 'italic 'slant)]{See 
-@racket[style-delta%].
-}
+@defmethod[(get-style-on) (or/c 'base 'normal 'italic 'slant)]{
+  See @racket[style-delta%].}
 
-@defmethod[(get-transparent-text-backing-off)
-           boolean?]{See 
-@racket[style-delta%].
-}
+@defmethod[(get-transparent-text-backing-off) boolean?]{
+  See @racket[style-delta%].}
 
-@defmethod[(get-transparent-text-backing-on)
-           boolean?]{See 
-@racket[style-delta%].
-}
+@defmethod[(get-transparent-text-backing-on) boolean?]{
+  See @racket[style-delta%].}
 
 @defmethod[(get-underlined-off)
-           boolean?]{See 
-@racket[style-delta%].
-}
+           boolean?]{
+  See @racket[style-delta%].}
 
 @defmethod[(get-underlined-on)
-           boolean?]{See 
-@racket[style-delta%].
-}
+           boolean?]{
+  See @racket[style-delta%].}
 
-@defmethod[(get-weight-off)
-           (or/c 'base 'normal 'bold 'light)]{See 
-@racket[style-delta%].
-}
+@defmethod[(get-weight-off) (or/c 'base 'normal 'bold 'light)]{
+  See @racket[style-delta%].}
 
-@defmethod[(get-weight-on)
-           (or/c 'base 'normal 'bold 'light)]{See 
-@racket[style-delta%].
-}
+@defmethod[(get-weight-on) (or/c 'base 'normal 'bold 'light)]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-alignment-off [v (or/c 'base 'top 'center 'bottom)])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-alignment-off [v (or/c 'base 'top 'center 'bottom)]) void?]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-alignment-on [v (or/c 'base 'top 'center 'bottom)])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-alignment-on [v (or/c 'base 'top 'center 'bottom)]) void?]{
+  See @racket[style-delta%].}
 
-@defmethod*[([(set-delta [change-command (or/c 'change-nothing 
-                                               'change-normal 
-                                               'change-toggle-underline 
-                                               'change-toggle-size-in-pixels 
-                                               'change-normal-color 
-                                               'change-bold) 
+@defmethod*[([(set-delta [change-command (or/c 'change-nothing
+                                               'change-normal
+                                               'change-toggle-underline
+                                               'change-toggle-size-in-pixels
+                                               'change-normal-color
+                                               'change-bold)
                                          'change-nothing])
               (is-a?/c style-delta%)]
-             [(set-delta [change-command (or/c 'change-family 
-                                               'change-style 
-                                               'change-toggle-style 
-                                               'change-weight 
-                                               'change-toggle-weight 
-                                               'change-smoothing 
-                                               'change-toggle-smoothing 
+             [(set-delta [change-command (or/c 'change-family
+                                               'change-style
+                                               'change-toggle-style
+                                               'change-weight
+                                               'change-toggle-weight
+                                               'change-smoothing
+                                               'change-toggle-smoothing
                                                'change-alignment)]
                          [param symbol])
               (is-a?/c style-delta%)]
-             [(set-delta [change-command (or/c 'change-size 
-                                               'change-bigger 
+             [(set-delta [change-command (or/c 'change-size
+                                               'change-bigger
                                                'change-smaller)]
-                         [param (integer-in 0 255)])
+                         [param byte?])
               (is-a?/c style-delta%)]
-             [(set-delta [change-command (or/c 'change-underline 
+             [(set-delta [change-command (or/c 'change-underline
                                                'change-size-in-pixels)]
                          [on? any/c])
               (is-a?/c style-delta%)])]{
@@ -455,7 +400,7 @@ For the case that a string color name is supplied, see
 }
 
 @defmethod[(set-delta-face [name string?]
-                           [family (or/c 'base 'default 'decorative 'roman 
+                           [family (or/c 'base 'default 'decorative 'roman
                                          'script 'swiss 'modern 'symbol 'system)
                                    'default])
            (is-a?/c style-delta%)]{
@@ -493,7 +438,7 @@ For the case that a string color name is supplied, see
 
 }
 
-@defmethod[(set-family [v (or/c 'base 'default 'decorative 'roman 'script 
+@defmethod[(set-family [v (or/c 'base 'default 'decorative 'roman 'script
                                 'swiss 'modern 'symbol 'system)])
            void?]{
 Sets the delta's font family. See
@@ -501,72 +446,57 @@ Sets the delta's font family. See
 
 }
 
-@defmethod[(set-size-add [v (integer-in 0 255)])
-           void?]{Sets the additive font size shift (applied
-after the multiplicative factor).
-}
+@defmethod[(set-size-add [v byte?]) void?]{
+  Sets the additive font size shift (applied
+  after the multiplicative factor).}
 
-@defmethod[(set-size-in-pixels-off [v any/c])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-size-in-pixels-off [v any/c]) void?]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-size-in-pixels-on [v any/c])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-size-in-pixels-on [v any/c]) void?]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-size-mult [v real?])
-           void?]{Sets the multiplicative font size shift (applied
-before the additive factor).
-}
+@defmethod[(set-size-mult [v real?]) void?]{
+  Sets the multiplicative font size shift (applied before the additive factor).}
 
-@defmethod[(set-smoothing-off [v (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-smoothing-off [v (or/c 'base 'default 'partly-smoothed
+                                       'smoothed 'unsmoothed)])
+           void?]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-smoothing-on [v (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-smoothing-on [v (or/c 'base 'default 'partly-smoothed
+                                      'smoothed 'unsmoothed)])
+           void?]{
+  See @racket[style-delta%].}
 
 @defmethod[(set-style-off [v (or/c 'base 'normal 'italic 'slant)])
-           void?]{See 
-@racket[style-delta%].
-}
+           void?]{
+  See @racket[style-delta%].}
 
 @defmethod[(set-style-on [v (or/c 'base 'normal 'italic 'slant)])
-           void?]{See 
-@racket[style-delta%].
-}
+           void?]{
+  See @racket[style-delta%].}
 
 @defmethod[(set-transparent-text-backing-off [v any/c])
-           void?]{See 
-@racket[style-delta%].
-}
+           void?]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-transparent-text-backing-on [v any/c])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-transparent-text-backing-on [v any/c]) void?]{
+  See @racket[style-delta%].}
 
-@defmethod[(set-underlined-off [v any/c])
-           void?]{See 
-@racket[style-delta%].
-}
+@defmethod[(set-underlined-off [v any/c]) void?]{
+  See @racket[style-delta%].}
 
 @defmethod[(set-underlined-on [v any/c])
-           void?]{See 
-@racket[style-delta%].
-}
+           void?]{
+  See @racket[style-delta%].}
 
 @defmethod[(set-weight-off [v (or/c 'base 'normal 'bold 'light)])
-           void?]{See 
-@racket[style-delta%].
-}
+           void?]{
+  See @racket[style-delta%].}
 
 @defmethod[(set-weight-on [v (or/c 'base 'normal 'bold 'light)])
-           void?]{See 
-@racket[style-delta%].
-}}
+           void?]{
+  See @racket[style-delta%].}
+
+}

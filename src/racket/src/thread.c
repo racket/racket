@@ -6136,6 +6136,13 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
 
       sleep_end = r_sinfo.sleep_end;
 
+      /* Calling a guard can allow thread swap, which might choose a
+         semaphore or a channel, so check for a result: */
+      if (syncing->result) {
+        result = 1;
+        goto set_sleep_end_and_return;
+      }
+
       if ((i > r_sinfo.w_i) && sinfo->false_positive_ok) {
 	/* There was a redirection. Assert: !yep. 
 	   Give up if we've chained too much. */
@@ -6181,6 +6188,9 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
       set_sync_target(syncing, i, sema, o, NULL, repost, 1, NULL);
       j--; /* try again with this sema */
     }
+
+    if (syncing->result)
+      scheme_signal_error("internal error: sync result set unexpectedly");
   }
 
   if (syncing->timeout >= 0.0) {

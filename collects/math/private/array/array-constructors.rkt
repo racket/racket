@@ -9,28 +9,28 @@
          indexes-array
          diagonal-array)
 
-(: make-array (All (A) ((Listof Integer) A -> (lazy-array A))))
+(: make-array (All (A) ((Listof Integer) A -> (view-array A))))
 (define (make-array ds v)
   (let ([ds  (array-shape-safe->unsafe
               ds (λ () (raise-type-error 'make-array "(Listof Index)" 0 ds v)))])
-    (unsafe-lazy-array ds (λ (js) v))))
+    (unsafe-view-array ds (λ (js) v))))
 
-(: index-array ((Listof Integer) Integer -> (lazy-array Integer)))
+(: index-array ((Listof Integer) Integer -> (view-array Index)))
 (define (index-array ds i)
   (let ([ds  (array-shape-safe->unsafe
               ds (λ () (raise-type-error 'index-array "(Listof Index)" 0 ds i)))])
     (define dims (vector-length ds))
     (cond [(and (0 . <= . i) (i . < . dims))
-           (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) (unsafe-vector-ref js i)))]
+           (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) (unsafe-vector-ref js i)))]
           [else  (raise-type-error 'index-array (format "Index < ~a" dims) 1 ds i)])))
 
-(: indexes-array ((Listof Integer) -> (lazy-array (Listof Integer))))
+(: indexes-array ((Listof Integer) -> (view-array (Listof Index))))
 (define (indexes-array ds)
   (let ([ds  (array-shape-safe->unsafe
               ds (λ () (raise-type-error 'indexes-array "(Listof Index)" ds)))])
-    (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) (vector->list js)))))
+    (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) (vector->list js)))))
 
-(: diagonal-array (All (A) (Integer Integer A A -> (lazy-array A))))
+(: diagonal-array (All (A) (Integer Integer A A -> (view-array A))))
 (define (diagonal-array dims size on-value off-value)
   (cond [(not (index? dims))  (raise-type-error 'diagonal-array "Index" 0 dims size)]
         [(not (index? size))  (raise-type-error 'diagonal-array "Index" 1 dims size)]
@@ -38,15 +38,15 @@
          (define: ds : (Vectorof Index) (make-vector dims size))
          ;; specialize for various cases
          (cond [(or (dims . <= . 1) (size . <= . 1))
-                (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) on-value))]
+                (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) on-value))]
                [(= dims 2)
-                (unsafe-lazy-array
+                (unsafe-view-array
                  ds (λ: ([js : (Vectorof Index)])
                       (define j0 (unsafe-vector-ref js 0))
                       (define j1 (unsafe-vector-ref js 1))
                       (if (= j0 j1) on-value off-value)))]
                [else
-                (unsafe-lazy-array
+                (unsafe-view-array
                  ds (λ: ([js : (Vectorof Index)])
                       (define j0 (unsafe-vector-ref js 0))
                       (let: loop : A ([i : Nonnegative-Fixnum  1])

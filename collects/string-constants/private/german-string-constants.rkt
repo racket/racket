@@ -117,6 +117,11 @@
  (cs-unused-require "unbenutztes require")
  (cs-free-variable "freie Variable")
 
+ (cs-contract-my-obligation "Vertrag: Obliation dieses Moduls")
+ (cs-contract-their-obligation "Vertrag: Obligation des Klientenmoduls")
+ (cs-contract-both-obligation "Vertrag: Obligation sowohl dieses Moduls als auch des Klientenmoduls")
+ (cs-contract-unk-obligation "Vertrag: Oblikation unbekannt")
+
  ;; mode sub-menu in the "view" menu
  (cs-check-syntax-mode "Syntax-Check-Modus")
  (cs-mode-menu-show-my-obligations "Meine Vertragsobligationen")
@@ -193,7 +198,7 @@
  (error-erasing-log-directory "Fehler beim Löschen des Protokoll-Verzeichnisses.\n\n~a\n")
 
   ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
-  (show-log "&Log anzeigen")
+  (show-log "&Log einblenden")
   (hide-log "&Log ausblenden")
   (logging-all "Alle") ;; in the logging window in drscheme, shows all logs simultaneously
 
@@ -1549,6 +1554,17 @@
  (ask-about-normalizing-strings "Bei Normalisierung nachfragen")
  
   (always-use-platform-specific-linefeed-convention "Immer die plattformspezifische Linefeed-Konvention verwenden")
+
+
+  ;; optimization coach
+  (hide-optimization-coach "Optimierungs-Coach ausblenden")
+  (show-optimization-coach "Optimierungs-Coach einblenden")
   
+
+  ;; labels used (in a big font) in the background of the definitions and interactions windows
+  (definitions-window-label "Definitionen")
+  (interactions-window-label "Interaktionen")
+  (hide-defs/ints-label "Definitionen/Interaktionen-Beschriftung ausblenden") ;; popup menu
+  (show-defs/ints-label "Definitionen/Interaktionen-Beschriftung einblenden") ;; preferences checkbox
 
  )

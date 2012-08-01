@@ -636,6 +636,33 @@
   (try-submods '(test main)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check stickiness of submodule-from-bytecode loading:
+
+(let ()
+  (define e `(module e racket/base
+               (module sub1 racket/base (provide x) (define x 'sub1))
+               (module sub2 racket/base (provide x) (define x 'sub2))
+               (module sub3 racket/base (provide x) (define x 'sub3))))
+  (define fn (build-path temp-dir "has-submod2.rkt"))
+  (define dir (build-path temp-dir "compiled"))
+  (define fn-zo (build-path dir "has-submod2_rkt.zo"))
+  (unless (directory-exists? dir) (make-directory dir))
+  (with-output-to-file fn
+    #:exists 'truncate
+    (lambda () (write e)))
+  (with-output-to-file fn-zo
+    #:exists 'truncate
+    (lambda () (write (compile e))))
+  (test 'sub1 dynamic-require `(submod ,fn sub1) 'x)
+  (parameterize ([use-compiled-file-paths null])
+    (test 'sub2 dynamic-require `(submod ,fn sub2) 'x))
+  (let ([ns (current-namespace)])
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [use-compiled-file-paths null])
+      (namespace-attach-module ns `(submod ,fn sub1))
+      (test 'sub3 dynamic-require `(submod ,fn sub3) 'x))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Delete the temp-dir
 
 (let loop ([x temp-dir])
@@ -643,6 +670,96 @@
         [(directory-exists? x) (parameterize ([current-directory x])
                                  (for-each loop (directory-list)))
                                (delete-directory x)]))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Module attach
+
+(let ()
+  (define (attach-tests use-path?)
+    (define (test-attach decl-only? pre-check?)
+      (define path (and use-path?
+                        (build-path (find-system-path 'temp-dir) "mod.rkt")))
+      (let ([ns1 (make-base-namespace)]
+            [ns2 (make-base-namespace)]
+            [ns3 (make-base-namespace)])
+        (parameterize ([current-namespace ns1])
+          (parameterize ([current-module-declare-name (and use-path?
+                                                           (make-resolved-module-path path))])
+            (eval '(module m racket/base 
+                     (provide root) (define root 'm)
+                     (module+ n (provide x) (define x 'x)))))
+          (unless decl-only?
+            (dynamic-require (or path ''m) #f)
+            (when pre-check?
+              (test 'x dynamic-require `(submod ,(or path ''m) n) 'x))))
+        (parameterize ([current-namespace ns2])
+          ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
+           ns1 
+           (or path ''m))
+          (test 'x dynamic-require `(submod ,(or path ''m) n) 'x))
+        (unless decl-only?
+          (parameterize ([current-namespace ns1])
+            (test 'x dynamic-require `(submod ,(or path ''m) n) 'x)))
+        (parameterize ([current-namespace ns3])
+          ((if decl-only? namespace-attach-module-declaration namespace-attach-module) 
+           ns1 
+           `(submod ,(or path ''m) n))
+          (test 'm dynamic-require (or path ''m) 'root))))
+    (test-attach #f #f)
+    (test-attach #f #t)
+    (test-attach #t #f))
+  (attach-tests #f)
+  (attach-tests #t))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; module->namespace
+
+(module check-to-namespace-1 racket/base
+  (module* main #f
+    (define x 10)
+    (define v
+      (eval 'x (variable-reference->namespace (#%variable-reference))))
+    (provide v)))
+
+(test 10 dynamic-require `(submod 'check-to-namespace-1 main) 'v)
+
+(module check-to-namespace-2 racket/base
+  (require racket/math)
+  (module* main #f
+    (define v
+      (eval 'pi (variable-reference->namespace (#%variable-reference))))
+    (provide v)))
+
+(require racket/math)
+(test pi dynamic-require `(submod 'check-to-namespace-2 main) 'v)
+
+(module check-to-namespace-3.0 racket/base
+  (define x 13)
+  (define v
+    (eval 'x (variable-reference->namespace (#%variable-reference))))
+  (provide v))
+
+(test 13 dynamic-require ''check-to-namespace-3.0 'v)
+
+(module check-to-namespace-3 racket/base
+  (define x 13)
+  (module* main #f
+    (define v
+      (eval 'x (variable-reference->namespace (#%variable-reference))))
+    (provide v)))
+
+(test 13 dynamic-require `(submod 'check-to-namespace-3 main) 'v)
+
+(let ([path (build-path (current-directory) "ctn-no-such-file.rkt")])
+  (parameterize ([current-module-declare-name (make-resolved-module-path path)])
+    (eval
+     '(module check-to-namespace-3 racket/base
+        (define x 130)
+        (module* main #f
+          (define v
+            (eval 'x (variable-reference->namespace (#%variable-reference))))
+          (provide v)))))
+  (test 130 dynamic-require `(submod ,path main) 'v))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

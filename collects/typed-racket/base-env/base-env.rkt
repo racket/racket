@@ -15,7 +15,7 @@
   (only-in racket/private/pre-base new-apply-proc)
   racket/promise racket/system
   racket/function
-  racket/mpair
+  compatibility/mpair
   racket/base
   racket/set
   racket/place
@@ -1366,7 +1366,8 @@
 
 
 
-[values (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
+[values (-polydots (b a) (cl->* (->acc (list b) b null)
+                                (null (a a) . ->... . (make-ValuesDots null a 'a))))]
 [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
 
 [read-accept-reader (-Param B B)]
@@ -1425,10 +1426,9 @@
 [last   (-poly (a) ((-lst a) . -> . a))]
 [add-between (-poly (a b) ((-lst a) b
                            #:splice? -Boolean #f
-                           #:nothing Univ #f ; default is gensym
-                           #:before-first b #f
+                           #:before-first (-lst b) #f
                            #:before-last b #f
-                           #:after-last b #f
+                           #:after-last (-lst b) #f
                            . ->key . (-lst (Un a b))))]
 
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
@@ -1827,13 +1827,13 @@
 [resolved-module-path-name (-> -Resolved-Module-Path (Un -Path -Symbol))]
 [module-path? (asym-pred Univ B (-FS (-filter -Module-Path 0) -top))]
 
-[current-module-name-resolver (-Param (cl->* (-Resolved-Module-Path . -> . Univ)
+[current-module-name-resolver (-Param (cl->* (-Resolved-Module-Path Univ . -> . Univ)
                                              ((Un -Module-Path -Path)
                                               (-opt -Resolved-Module-Path)
                                               (-opt (-Syntax Univ))
                                               -Boolean
                                               . -> . -Resolved-Module-Path))
-                                      (cl->* (-Resolved-Module-Path . -> . Univ)
+                                      (cl->* (-Resolved-Module-Path Univ . -> . Univ)
                                              ((Un -Module-Path -Path)
                                               (-opt -Resolved-Module-Path)
                                               (-opt (-Syntax Univ))
@@ -2092,7 +2092,8 @@
 [make-struct-type-property
  (->opt Sym
        [(Un (one-of/c #f 'can-impersonate) (-> Univ (-lst Univ)))
-        (-lst (-pair -Struct-Type-Property (-> Univ Univ)))]
+        (-lst (-pair -Struct-Type-Property (-> Univ Univ)))
+        Univ]
        (-values (list -Struct-Type-Property (-> Univ B) (-> Univ Univ))))]
 
 [struct-type-property? (make-pred-ty -Struct-Type-Property)]

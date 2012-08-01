@@ -373,7 +373,7 @@
         (define (*post)
           (current-module-declare-name #f)
           (current-module-declare-source #f)
-          (when path ((current-module-name-resolver) resolved-modpath))
+          (when path ((current-module-name-resolver) resolved-modpath #f))
           (thread-cell-set! repl-init-thunk *init))
         (define (*error)
           (current-module-declare-name #f)
@@ -1151,11 +1151,28 @@
   (define error-message%
     (class canvas%
       (init-field msg err?)
-      (inherit refresh get-dc get-client-size)
+      (inherit refresh get-dc get-client-size popup-menu)
       (define/public (set-msg _msg _err?) 
         (set! msg _msg)
         (set! err? _err?)
         (refresh))
+      (define/override (on-event evt)
+        (cond
+          [(and (send evt button-down?) err?)
+           (define m (new popup-menu%))
+           (define itm (new menu-item% 
+                            [label (string-constant copy-menu-item)]
+                            [parent m]
+                            [callback
+                             (λ (itm evt)
+                               (send the-clipboard set-clipboard-string 
+                                     msg
+                                     (send evt get-time-stamp)))]))
+           (popup-menu m 
+                       (+ (send evt get-x) 1)
+                       (+ (send evt get-y) 1))]
+          [else
+           (super on-event evt)]))
       (define/override (on-paint)
         (define dc (get-dc))
         (define-values (cw ch) (get-client-size))
@@ -1733,6 +1750,137 @@
                (loop (+ pos 1))]))))
       
       (super-new)))
+  
+  (define defs/ints-font 
+    (send the-font-list find-or-create-font 72 'swiss 'normal 'normal))
+  
+  (define big-defs/ints-label<%>
+    (interface ()
+      set-lang-wants-big-defs/ints-labels?))
+  
+  (define (mk-module-language-text-mixin id)
+    (mixin (editor<%>) (big-defs/ints-label<%>)
+      (inherit get-admin invalidate-bitmap-cache get-dc
+               dc-location-to-editor-location)
+      (define inside? #f)
+      (define recently-typed? #f)
+      (define fade-amount 1)
+      (define lang-wants-big-defs/ints-labels? #f)
+
+      (define recently-typed-timer 
+        (new timer%
+             [notify-callback
+              (λ ()
+                (update-recently-typed #f)
+                (unless (equal? fade-amount 1)
+                  (cond
+                    [inside? 
+                     (set! fade-amount (+ fade-amount 1/10))
+                     (send recently-typed-timer start 100 #t)]
+                    [else
+                     (set! fade-amount 1)])
+                  (invalidate-bitmap-cache 0 0 'display-end 'display-end)))]))
+      
+      (define/public (set-lang-wants-big-defs/ints-labels? w?) 
+        (unless (equal? lang-wants-big-defs/ints-labels? w?)
+          (set! lang-wants-big-defs/ints-labels? w?)
+
+          (send recently-typed-timer stop)  ;; reset the recently-typed timer so
+          (set! fade-amount 1)              ;; that changing the language makes the
+          (set! recently-typed? #f)         ;; labels appear immediately
+          
+          (invalidate-bitmap-cache 0 0 'display-end 'display-end)))
+      
+      (define/override (on-char evt)
+        (when inside?
+          (update-recently-typed #t)
+          (set! fade-amount 0)
+          (send recently-typed-timer stop)
+          (send recently-typed-timer start 10000 #t))
+        (super on-char evt))
+      
+      (define/private (update-recently-typed nv)
+        (unless (equal? recently-typed? nv)
+          (set! recently-typed? nv)
+          (invalidate-bitmap-cache 0 0 'display-end 'display-end)))
+      
+      (define/override (on-event evt)
+        (define new-inside?
+          (cond
+            [(send evt leaving?) #f]
+            [else (preferences:get 'drracket:defs/ints-labels)]))
+        (unless (equal? new-inside? inside?)
+          (set! inside? new-inside?)
+          (invalidate-bitmap-cache 0 0 'display-end 'display-end))
+        (cond
+          [(and (preferences:get 'drracket:defs/ints-labels)
+                (send evt button-down?)
+                (get-admin))
+           (define admin (get-admin))
+           (define dc (get-dc))
+           (define-values (tw th _1 _2) (send dc get-text-extent id defs/ints-font))
+           (define-values (mx my) (dc-location-to-editor-location 
+                                   (send evt get-x) (send evt get-y)))
+           (send admin get-view bx by bw bh)
+           (cond
+             [(and (<= (- (unbox bw) tw) mx (unbox bw))
+                   (<= (- (unbox bh) th) my (unbox bh)))
+              (define menu (new popup-menu%))
+              (new menu-item% 
+                   [label (string-constant hide-defs/ints-label)]
+                   [parent menu]
+                   [callback (λ (x y)
+                               (preferences:set 'drracket:defs/ints-labels #f))])
+              (send admin popup-menu menu (+ (send evt get-x) 1) (+ (send evt get-y) 1))]
+             [else
+              (super on-event evt)])]
+          [else (super on-event evt)]))
+      
+      (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+        (super on-paint before? dc left top right bottom dx dy draw-caret)
+        (unless before?
+          (when (and inside?
+                     (not recently-typed?)
+                     lang-wants-big-defs/ints-labels?)
+            (define admin (get-admin))
+            (when admin
+              (send admin get-view bx by bw bh)
+              (define α (send dc get-alpha))
+              (define fore (send dc get-text-foreground))
+              (send dc set-font defs/ints-font)
+              (define-values (tw th _1 _2) (send dc get-text-extent id))
+              (define tx (+ (unbox bx) (- (unbox bw) tw)))
+              (define ty (+ (unbox by) (- (unbox bh) th)))
+              (when (rectangles-intersect?
+                     left top right bottom
+                     tx ty (+ tx tw) (+ ty th))
+                (send dc set-text-foreground "black")
+                (send dc set-alpha (* fade-amount .5))
+                (send dc draw-text id (+ dx tx) (+ dy ty))
+                (send dc set-alpha α)
+                (send dc set-text-foreground fore))
+              (send dc set-font defs/ints-font)))))
+      (super-new)))
+  
+  (define (rectangles-intersect? l1 t1 r1 b1 l2 t2 r2 b2)
+    (or (point-in-rectangle? l1 t1 l2 t2 r2 b2)
+        (point-in-rectangle? r1 t1 l2 t2 r2 b2)
+        (point-in-rectangle? l1 b1 l2 t2 r2 b2)
+        (point-in-rectangle? r1 b1 l2 t2 r2 b2)))
+  
+  (define (point-in-rectangle? x y l t r b)
+    (and (<= l x r)
+         (<= t y b)))
+  
+  (define bx (box 0))
+  (define by (box 0))
+  (define bw (box 0))
+  (define bh (box 0))
+  
+  (define module-language-big-defs/ints-interactions-text-mixin
+    (mk-module-language-text-mixin (string-constant interactions-window-label)))
+  (define module-language-big-defs/ints-definitions-text-mixin
+    (mk-module-language-text-mixin (string-constant definitions-window-label)))
   
   (define module-language-compile-lock (make-compile-lock))
   

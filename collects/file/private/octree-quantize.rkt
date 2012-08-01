@@ -106,7 +106,6 @@
 ;; The maximum level height of an octree.
 (define MAX-LEVEL 7)
 
-(define byte/c (integer-in 0 255))
 (define octet/c (integer-in 0 7))
 
 
@@ -129,7 +128,7 @@
                      bluesum        ; number
                      children       ; (vectorof (or/c #f node))
                      next           ; (or/c #f node)
-                     palette-index) ; (or/c #f (integer-in 0 255))
+                     palette-index) ; (or/c #f byte?)
   #:mutable)
 ;; node-next is used to accelerate the search for a reduction candidate.
 
@@ -355,7 +354,7 @@
          ([root node?]
           [leaf-count natural-number/c]
           [reduction-heads (vectorof (or/c node? false/c))]
-          [palette (vectorof (vector/c byte/c byte/c byte/c))])]
+          [palette (vectorof (vector/c byte? byte? byte?))])]
  [struct node
          ([leaf? boolean?]
           [npixels natural-number/c]
@@ -364,11 +363,11 @@
           [bluesum natural-number/c]
           [children (vectorof (or/c false/c node?))]
           [next (or/c node? false/c)]
-          [palette-index byte/c])]
+          [palette-index byte?])]
  [new-octree (-> octree?)]
- [octree-insert-color! (octree? byte/c byte/c byte/c . -> . any)]
+ [octree-insert-color! (octree? byte? byte? byte? . -> . any)]
  [octree-lookup
-  (octree? byte/c byte/c byte/c . -> . (values byte/c byte/c byte/c))]
+  (octree? byte? byte? byte? . -> . (values byte? byte? byte?))]
  [octree-reduce! (octree? . -> . any)]
  [octree-finalize! (octree? . -> . any)]
- [rgb->index (natural-number/c byte/c byte/c byte/c . -> . octet/c)])
+ [rgb->index (natural-number/c byte? byte? byte? . -> . octet/c)])

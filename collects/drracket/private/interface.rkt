@@ -21,7 +21,8 @@ remain the same for tools that use them.
   (interface (frame:editor<%> frame:basics<%> frame:text-info<%>)
     get-show-menu
     update-shown
-    add-show-menu-items))
+    add-show-menu-items
+    set-show-menu-sort-key))
 
 (define unit:frame<%>
   (interface (frame:<%>

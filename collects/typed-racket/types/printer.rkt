@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/require racket/match unstable/sequence racket/string
+(require racket/require racket/match unstable/sequence racket/string racket/promise
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
                   "rep/rep-utils.rkt" "types/abbrev.rkt" "types/subtype.rkt"
@@ -21,7 +21,7 @@
 ;; has-name : Type -> Maybe[Symbol]
 (define (has-name? t)
   (and print-aliases
-       (for/first ([(n t*) (in-pairs (in-list ((current-type-names))))]
+       (for/first ([(n t*) (in-pairs (in-list (force (current-type-names))))]
                    #:when (and (Type? t*) (type-equal? t t*)))
          n)))
 
@@ -86,7 +86,7 @@
                 [(cons name (and t* (Union: elts)))
                  (subtype t* t)]
                 [_ #f]))
-            ((current-type-names))))
+            (force (current-type-names))))
   ;; names and the sets themselves (not the union types)
   ;; we use srfi/1 lsets as sets, to use custom type equality.
   (define candidates
@@ -147,7 +147,7 @@
        [(Values: (list (Result: t
                                 (FilterSet: (TypeFilter: ft pth id)
                                             (NotTypeFilter: ft pth id))
-                                (Empty:))))
+                                (Empty:))))        
         (if (null? pth)
             (fp "-> ~a : ~a" t ft)
             (begin (fp "-> ~a : ~a @" t ft)
@@ -196,7 +196,7 @@
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
-    [(StructTop: st) (fp "(struct-top: ~a)" st)]
+    [(StructTop: (Struct: nm _ _ _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
     [(ThreadCellTop:) (fp "ThreadCell")]

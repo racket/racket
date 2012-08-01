@@ -2,14 +2,14 @@
 (require racket/contract 
          slideshow/pict
          racket/bool 
-         racket/future/trace
+         future-visualizer/trace
          "private/visualizer-gui.rkt"  
-         "private/visualizer-drawing.rkt")
+         "private/visualizer-drawing.rkt") 
+
 (provide visualize-futures 
          (contract-out 
-          [show-visualizer (-> void?)]
+          [show-visualizer (->* () (#:timeline (listof indexed-future-event?)) void?)]
           [visualize-futures-thunk ((-> any/c) . -> . any/c)]
-          [show-visualizer-for-events ((listof indexed-future-event?) . -> . void?)]
           [timeline-pict (->i ([indexed-fevents (listof indexed-future-event?)]) 
                               (#:x [x (or/c #f exact-nonnegative-integer?)] 
                                #:y [y (or/c #f exact-nonnegative-integer?)] 
@@ -36,15 +36,17 @@
                                     [p pict?])])) 
 
 (define-syntax-rule (visualize-futures e ...) 
-  (begin (start-performance-tracking!) 
+  (begin (start-future-tracing!) 
          (begin0 (begin e ...) 
+                 (stop-future-tracing!)
                  (show-visualizer))))
 
 ;;visualize-futures-thunk : (-> any/c) -> any/c
 (define (visualize-futures-thunk thunk) 
-  (start-performance-tracking!) 
+  (start-future-tracing!) 
   (begin0 
     (thunk) 
+    (stop-future-tracing!)
     (show-visualizer)))
                   
                   

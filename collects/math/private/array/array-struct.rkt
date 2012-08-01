@@ -6,24 +6,32 @@
          "for-each.rkt"
          "utils.rkt")
 
-(provide Array (rename-out [-array?        array?]
-                           [-lazy-array    lazy-array]
-                           [-strict-array  strict-array])
-         lazy-array? strict-array?
+(provide Array
+         (rename-out [-array?        array?]
+                     [-view-array    view-array]
+                     [-strict-array  strict-array])
+         view-array? strict-array?
+         (rename-out [-view-array  lazy-array]
+                     [view-array?  lazy-array?]
+                     [make-view-array  make-lazy-array]
+                     [unsafe-view-array  unsafe-lazy-array]
+                     [array-view  array-lazy])
          ;; accessors and constructors
          (rename-out [safe-array-shape array-shape])
          array-dims
          array-size
-         make-lazy-array
+         make-view-array
          make-strict-array
          unsafe-array-shape
-         unsafe-lazy-array
+         unsafe-view-array
          unsafe-strict-array
          unsafe-array-proc
-         unsafe-array-data
+         (rename-out [strict-array-data  unsafe-array-data])
+         strict-array-data
          ;; conversion
+         array-view
          array-strict
-         array-lazy
+         array-copy
          ;; printing
          default-print-array
          array-custom-printer
@@ -33,9 +41,9 @@
 ;; ===================================================================================================
 ;; Equality and hashing
 
-(: lazy-array-equal? (All (A) ((lazy-array A) (lazy-array A) (Vectorof Index) (Any Any -> Boolean)
+(: view-array-equal? (All (A) ((view-array A) (view-array A) (Vectorof Index) (Any Any -> Boolean)
                                               -> Boolean)))
-(define (lazy-array-equal? arr brr ds recur-equal?)
+(define (view-array-equal? arr brr ds recur-equal?)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
     (define g (unsafe-array-proc brr))
@@ -43,12 +51,12 @@
                                        (return #f))))
     #t))
 
-(: mixed-array-equal? (All (A) ((lazy-array A) (strict-array A) (Vectorof Index) (Any Any -> Boolean)
+(: mixed-array-equal? (All (A) ((view-array A) (strict-array A) (Vectorof Index) (Any Any -> Boolean)
                                                -> Boolean)))
 (define (mixed-array-equal? arr brr ds recur-equal?)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
-    (define vs (unsafe-array-data brr))
+    (define vs (strict-array-data brr))
     (for-each-array+data-index ds (λ (js j) (unless (recur-equal? (f js) (unsafe-vector-ref vs j))
                                               (return #f))))
     #t))
@@ -57,17 +65,17 @@
 (define (array-equal? arr brr recur-equal?)
   (define ds (unsafe-array-shape arr))
   (and (equal? ds (unsafe-array-shape brr))
-       (cond [(lazy-array? arr)
-              (cond [(lazy-array? brr)  (lazy-array-equal? arr brr ds recur-equal?)]
+       (cond [(view-array? arr)
+              (cond [(view-array? brr)  (view-array-equal? arr brr ds recur-equal?)]
                     [else  (mixed-array-equal? arr brr ds recur-equal?)])]
              [else
-              (cond [(lazy-array? brr)  (mixed-array-equal? brr arr ds recur-equal?)]
-                    [else  (recur-equal? (unsafe-array-data arr)
-                                         (unsafe-array-data brr))])])))
+              (cond [(view-array? brr)  (mixed-array-equal? brr arr ds recur-equal?)]
+                    [else  (recur-equal? (strict-array-data arr)
+                                         (strict-array-data brr))])])))
 
 (: array-hash-code (All (A) ((Array A) (Any -> Integer) -> Integer)))
 (define (array-hash-code arr recur-hash-code)
-  (cond [(lazy-array? arr)
+  (cond [(view-array? arr)
          (define ds (unsafe-array-shape arr))
          (define f (unsafe-array-proc arr))
          (define h 0)
@@ -75,7 +83,7 @@
          (bitwise-xor h (recur-hash-code ds))]
         [else
          (bitwise-xor (recur-hash-code (unsafe-array-shape arr))
-                      (recur-hash-code (unsafe-array-data arr)))]))
+                      (recur-hash-code (strict-array-data arr)))]))
 
 ;; ===================================================================================================
 ;; Parent array data type
@@ -114,26 +122,26 @@
   )  ; begin-encourage-inline
 
 ;; ===================================================================================================
-;; Lazy array data type
+;; View array data type
 
-(struct: (A) lazy-array array ([proc : ((Vectorof Index) -> A)])
+(struct: (A) view-array array ([proc : ((Vectorof Index) -> A)])
   #:property prop:custom-print-quotable 'never
   #:property prop:custom-write
   (λ (arr port mode)
     ((array-custom-printer) arr port mode)))
 
-(define unsafe-array-proc lazy-array-proc)
+(define unsafe-array-proc view-array-proc)
 
-(: make-lazy-array (All (A) ((Listof Integer) ((Listof Index) -> A) -> (lazy-array A))))
-(define (make-lazy-array ds proc)
+(: make-view-array (All (A) ((Listof Integer) ((Listof Index) -> A) -> (view-array A))))
+(define (make-view-array ds proc)
   (let ([ds  (array-shape-safe->unsafe
-              ds (λ () (raise-type-error 'lazy-array "(Listof Index)" 0 ds proc)))])
-    (lazy-array ds (λ: ([js : (Vectorof Index)]) (proc (vector->list js))))))
+              ds (λ () (raise-type-error 'view-array "(Listof Index)" 0 ds proc)))])
+    (view-array ds (λ: ([js : (Vectorof Index)]) (proc (vector->list js))))))
 
-;; A version of lazy-array that isn't also a type and a match expander
-(: unsafe-lazy-array (All (A) ((Vectorof Index) ((Vectorof Index) -> A) -> (lazy-array A))))
-(define (unsafe-lazy-array ds proc)
-  (lazy-array ds proc))
+;; A version of view-array that isn't also a type and a match expander
+(: unsafe-view-array (All (A) ((Vectorof Index) ((Vectorof Index) -> A) -> (view-array A))))
+(define (unsafe-view-array ds proc)
+  (view-array ds proc))
 
 ;; ===================================================================================================
 ;; Strict array data type
@@ -159,12 +167,10 @@
 (define (unsafe-strict-array ds vs)
   (strict-array ds vs))
 
-(define unsafe-array-data strict-array-data)
-
-(: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (lazy-array A))))
+(: flat-vector->matrix : (All (A) (Index Index (Vectorof A) -> (view-array A))))
 (define (flat-vector->matrix m n v)
   (if (= (* m n) (vector-length v))
-      (array-lazy (strict-array (ann (vector m n) (Vectorof Index)) v))
+      (array-view (strict-array (ann (vector m n) (Vectorof Index)) v))
       (error 'flat-vector->matrix
              "dimensions and vector length does not match, got ~a, ~a, ~a"
              m n v)))
@@ -172,37 +178,43 @@
 ;; ===================================================================================================
 ;; More types
 
-(define-type (Array A) (U (lazy-array A) (strict-array A)))
+(define-type (Array A) (U (view-array A) (strict-array A)))
 
-;; Versions of lazy-array and strict-array that aren't also constructors and match expanders
-(define-type (-lazy-array A) (lazy-array A))
+;; Versions of view-array and strict-array that aren't also constructors and match expanders
+(define-type (-view-array A) (view-array A))
 (define-type (-strict-array A) (strict-array A))
 
 ;; Predicate for the union type (`array?' is different: identifies instances of array's descendants)
 (begin-encourage-inline
-  (define (-array? v) (or (lazy-array? v) (strict-array? v))))
+  (define (-array? v) (or (view-array? v) (strict-array? v))))
 
 ;; ===================================================================================================
-;; Lazy/strict conversion
+;; View/strict conversion
 
-(: array-lazy (All (A) ((Array A) -> (lazy-array A))))
+(: array-view (All (A) ((Array A) -> (view-array A))))
 (begin-encourage-inline
-  (define (array-lazy arr)
-    (cond [(lazy-array? arr)  arr]
+  (define (array-view arr)
+    (cond [(view-array? arr)  arr]
           [else  (define ds (unsafe-array-shape arr))
-                 (define vs (unsafe-array-data arr))
-                 (unsafe-lazy-array
+                 (define vs (strict-array-data arr))
+                 (unsafe-view-array
                   ds (λ: ([js : (Vectorof Index)])
                        (unsafe-vector-ref vs (unsafe-array-index->value-index ds js))))])))
 
 (: array-strict (All (A) ((Array A) -> (strict-array A))))
 (define (array-strict arr)
-  (cond [(lazy-array? arr)
+  (cond [(view-array? arr)
          (define ds (unsafe-array-shape arr))
          (define g (unsafe-array-proc arr))
          (define size (array-size arr))
          (unsafe-strict-array ds (inline-build-array-data ds (λ (js j) (g js))))]
         [else  arr]))
+
+(: array-copy (All (A) ((Array A) -> (strict-array A))))
+(define (array-copy arr)
+  (cond [(view-array? arr)  (array-strict arr)]
+        [else  (unsafe-strict-array (unsafe-array-shape arr)
+                                    (vector-copy-all (strict-array-data arr)))]))
 
 ;; ===================================================================================================
 ;; Printing
@@ -229,8 +241,8 @@
           [else
            (write-string " " port)]))
   
-  (cond [(lazy-array? arr)
-         (write-string "(lazy-array" port)
+  (cond [(view-array? arr)
+         (write-string "(view-array" port)
          (maybe-print-newline 1)
          (recur-print (unsafe-array-shape arr) port)
          (maybe-print-newline 1)
@@ -241,7 +253,7 @@
          (maybe-print-newline 1)
          (recur-print (unsafe-array-shape arr) port)
          (maybe-print-newline 1)
-         (recur-print (unsafe-array-data arr) port)
+         (recur-print (strict-array-data arr) port)
          (write-string ")" port)]))
 
 ;; In "array.rkt", this is set to `print-array' from from "array-print.rkt"

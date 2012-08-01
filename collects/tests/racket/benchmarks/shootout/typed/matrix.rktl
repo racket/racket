@@ -75,7 +75,7 @@
   (let ((n (or (and (= (vector-length args) 1)
                     (assert (string->number (vector-ref args 0)) exact-integer?))
                1)))
-    (let: ((mm : Matrix (vector (vector 0)))
+    (let: ((mm : Matrix (vector ((inst vector Natural) 0)))
            (m1 : Matrix (mkmatrix size size))
            (m2 : Matrix (mkmatrix size size)))
       (let loop ((iter n))

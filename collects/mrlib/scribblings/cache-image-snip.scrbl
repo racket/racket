@@ -107,23 +107,23 @@ exactly match alpha channels.}}
 This snipclass is used for saved cache image snips.}
 
 
-@defproc[(make-argb [vectorof (integer-in 0 255)]
+@defproc[(make-argb [vectorof byte?]
                     [width exact-nonnegative-integer?]
                     [height exact-nonnegative-integer?])
          argb?]{
 
  Constructs a new argb value with the given width and height,
  using the data in the vector. The vector has four entries
-  for each pixel, an alpha, red, green, and blue value. 
-  The pixels are specified in row-major order, so that the 
+  for each pixel, an alpha, red, green, and blue value.
+  The pixels are specified in row-major order, so that the
   pixel at location (x,y) comes from vector entry (4*(x+(width*y))).
 }
 
-@defproc[(argb-vector [argb argb?]) (vectorof (integer-in 0 255))]{
+@defproc[(argb-vector [argb argb?]) (vectorof byte?)]{
 
   Extracts the vector from @racket[argb]. The resulting vector
  has entries in row-major order, so that the data for the pixel
- at (x,y) winds up in four vector entries beginning at 
+ at (x,y) winds up in four vector entries beginning at
  (4*(x+(width*y))).}
 
 @defproc[(argb-width [argb argb?]) exact-nonnegative-integer?]{

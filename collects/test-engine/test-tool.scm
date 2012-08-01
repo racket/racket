@@ -91,12 +91,10 @@
         (define/public (dock-tests)
           (for ([t test-windows]) (send t show #f))
           (let ([ed (send (get-current-tab) get-test-editor)])
-            (when ed (display-test-panel ed)))
-          (send dock-menu-item swap-labels))
+            (when ed (display-test-panel ed))))
         (define/public (undock-tests)
           (when (send test-panel is-shown?) (send test-panel remove))
-          (for ([t test-windows]) (send t show #t))
-          (send dock-menu-item swap-labels))
+          (for ([t test-windows]) (send t show #t)))
 
         (define/override (make-root-area-container cls parent)
           (let* ([outer-p (super make-root-area-container
@@ -124,42 +122,9 @@
 
         (inherit get-menu-bar get-menu% register-capability-menu-item get-definitions-text
                  get-insert-menu)
-        (define dock-menu-item 'not-init)
         (define dock-label (string-constant test-engine-dock-report))
         (define undock-label (string-constant test-engine-undock-report))
-        
-        (define dock-menu-item%
-          (class menu:can-restore-menu-item%
-            (inherit set-label)
-            (define docked? #t)
-            (define/public (is-report-docked?) docked?)
-            (define/public (set-docked?! d) (set! docked? d))
-            (define/public (swap-labels)
-              (if docked?
-                  (send this set-label dock-label)
-                  (send this set-label undock-label))
-              (set! docked? (not docked?)))
-            (define/public (dock-report) 
-              (unless docked? (dock-tests) (preferences:set 'test-engine:test-window:docked? #t)))
-            (define/public (undock-report) 
-              (when docked? (undock-tests) (preferences:set 'test-engine:test-window:docked? #f)))
-            (super-instantiate ())))
-        
-        (define/override (add-show-menu-items show-menu)
-          (super add-show-menu-items show-menu)
-          (let ([dock? (preferences:get 'test-engine:test-window:docked?)])
-            (when (eq? dock-menu-item 'not-init)
-              (set! dock-menu-item 
-                    (make-object dock-menu-item% 
-                      (if dock? undock-label dock-label) 
-                      show-menu 
-                      (lambda (_1 _2)
-                        (if (send _1 is-report-docked?)
-                            (send _1 undock-report)
-                            (send _1 dock-report)))))
-              (register-capability-menu-item 'tests:dock-menu show-menu))
-            (send dock-menu-item set-docked?! dock?)))
-        
+
         (define/private (test-menu-init)
           (let ([language-menu (send this get-language-menu)]
                 [enable-label (string-constant test-engine-enable-tests)]

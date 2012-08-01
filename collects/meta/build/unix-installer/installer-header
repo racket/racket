@@ -54,6 +54,22 @@ lookfor mkdir
 lookfor basename
 lookfor dirname
 
+# substitute env vars and tildes
+expand_path_var() {
+  eval "expanded_val=\"\$$1\""
+  first_part="${expanded_val%%/*}"
+  if [ "x$first_part" = "x$expanded_val" ]; then
+    rest_parts=""
+  else
+    rest_parts="/${expanded_val#*/}"
+  fi
+  case "x$first_part" in
+    x*" "* ) ;;
+    x~* ) expanded_val="`eval \"echo $first_part\"`$rest_parts" ;;
+  esac
+  eval "$1=\"$expanded_val\""
+}
+
 # Need this to make new `tail' respect old-style command-line arguments.  Can't
 # use `tail -n #' because some old tails won't know what to do with that.
 _POSIX2_VERSION=199209
@@ -133,10 +149,8 @@ case "x$where" in
   x2     ) where="/usr/local${TARGET1}" ;;
   x3     ) where="${HOME}${TARGET1}" ;;
   x4 | x. | x./ ) where="`pwd`${TARGET1}" ;;
+  * ) expand_path_var where ;;
 esac
-
-# substitute env vars and tildes
-where="`eval \"echo \\\"$where\\\"\"`"
 
 ###############################################################################
 ## Default system directories prefixed by $1, mimic configure behavior
@@ -332,6 +346,7 @@ unixstyle_install() {
     echon "> "; read change_what
     read_dir() {
       echon "New directory (absolute or relative to $where): "; read new_dir
+      expand_path_var new_dir
       case "$new_dir" in
         "/"* ) eval "$1=\"$new_dir\"" ;;
         *    ) eval "$1=\"$where/$new_dir\"" ;;

@@ -30,7 +30,7 @@
           (only-in racket/private/class-internal do-make-object)
           (only-in syntax/location module-name-fixup)))
 
-(import tc-expr^ tc-lambda^ tc-let^ tc-apply^)
+(import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-app-hetero^)
 (export tc-app^)
 
 
@@ -60,23 +60,23 @@
   (match* ((single-value v1) (single-value v2))
     [((tc-result1: t _ o) (tc-result1: (Value: (? ok? val))))
      (ret -Boolean
-	  (-FS (-filter-at (-val val) o)
-	       (-not-filter-at (-val val) o)))]
+          (-FS (-filter-at (-val val) o)
+               (-not-filter-at (-val val) o)))]
     [((tc-result1: (Value: (? ok? val))) (tc-result1: t _ o))
      (ret -Boolean
-	  (-FS (-filter-at (-val val) o)
-	       (-not-filter-at (-val val) o)))]
+          (-FS (-filter-at (-val val) o)
+               (-not-filter-at (-val val) o)))]
     [((tc-result1: t _ o)
       (or (and (? (lambda _ (free-identifier=? #'member comparator)))
-	       (tc-result1: (app untuple (list (and ts (Value: _)) ...))))
-	  (and (? (lambda _ (free-identifier=? #'memv comparator)))
-	       (tc-result1: (app untuple (list (and ts (Value: (? eqv?-able))) ...))))
-	  (and (? (lambda _ (free-identifier=? #'memq comparator)))
-	       (tc-result1: (app untuple (list (and ts (Value: (? eq?-able))) ...))))))
+               (tc-result1: (app untuple (list (and ts (Value: _)) ...))))
+          (and (? (lambda _ (free-identifier=? #'memv comparator)))
+               (tc-result1: (app untuple (list (and ts (Value: (? eqv?-able))) ...))))
+          (and (? (lambda _ (free-identifier=? #'memq comparator)))
+               (tc-result1: (app untuple (list (and ts (Value: (? eq?-able))) ...))))))
      (let ([ty (apply Un ts)])
        (ret (Un (-val #f) t)
-	    (-FS (-filter-at ty o)
-		 (-not-filter-at ty o))))]
+            (-FS (-filter-at ty o)
+                 (-not-filter-at ty o))))]
     [(_ _) (ret -Boolean)]))
 
 
@@ -257,16 +257,17 @@
                  (let* ([infer-t (or (type-annotation f #:infer #t)
                                      (find-annotation #'(begin . body*) f))])
                    (if infer-t
-                       (begin (check-below (tc-expr/t ac) infer-t)
-                              infer-t)
+                       (check-below (tc-expr/t ac) infer-t)
                        (generalize (tc-expr/t ac)))))])
        (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
        expected)]))
 
 
+
 ;; the main dispatching function
 ;; syntax tc-results? -> tc-results?
 (define (tc/app/internal form expected)
+  (or (tc/app-hetero form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not false? list list* call-with-values
@@ -303,241 +304,6 @@
                                                       Univ)))
                      (list (ret Univ) (single-value #'arg))
                      expected)])]
-    ;; unsafe struct operations
-    [(#%plain-app (~and op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
-     (let ([e-t (single-value #'e)])
-       (match (single-value #'s)
-         [(tc-result1:
-           (and t (or (Struct: _ _ (list (fld: flds _ muts) ...) _ _ _ _ _)
-                      (? needs-resolving?
-                         (app resolve-once
-                              (Struct: _ _ (list (fld: flds _ muts) ...) _ _ _ _ _))))))
-          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
-                          (match e-t
-                            [(tc-result1: (Value: (? number? i))) i]
-                            [_ #f]))])
-            (cond [(not ival)
-                   (check-below e-t -Integer)
-                   (if expected
-                       (check-below (ret (apply Un flds)) expected)
-                       (ret (apply Un flds)))]
-                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length flds))))
-                   (let ([result (if (list-ref muts ival)
-                                     (ret (list-ref flds ival))
-                                     ;; FIXME - could do something with paths here
-                                     (ret (list-ref flds ival)))])
-                     (if expected (check-below result expected) result))]
-                  [(not (and (integer? ival) (exact? ival)))
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                  "expected exact integer for struct index, but got ~a" ival)]
-                  [(< ival 0)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                  "index ~a too small for struct ~a" ival t)]
-                  [(not (<= ival (sub1 (length flds))))
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                  "index ~a too large for struct ~a" ival t)]))]
-         [s-ty
-          (let ([arg-tys (list s-ty e-t)])
-            (tc/funapp #'op #'(s e) (single-value #'op) arg-tys expected))]))]
-    [(#%plain-app (~and op (~or (~literal unsafe-struct-set!) (~literal unsafe-struct*-set!)))
-                  s e:expr val:expr)
-     (let ([e-t (single-value #'e)])
-       (match (single-value #'s)
-         [(tc-result1: (and t (or (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _)
-                                  (? needs-resolving?
-                                     (app resolve-once
-                                          (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))))
-          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
-                          (match e-t
-                            [(tc-result1: (Value: (? number? i))) i]
-                            [_ #f]))])
-            (cond [(not ival)
-                   (tc-error/expr 
-                    #:stx #'e
-                    #:return (or expected (ret -Void))
-                    "expected statically known index for unsafe struct mutation, but got ~a"
-                                  (match e-t [(tc-result1: t) t]))]
-                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length flds))))
-                   (tc-expr/check #'val (ret (list-ref flds ival)))
-                   (if expected
-                       (check-below (ret -Void) expected)
-                       (ret -Void))]
-                  [(not (and (integer? ival) (exact? ival)))
-                   (single-value #'val)
-                   (tc-error/expr 
-                    #:stx #'e #:return (or expected (ret (Un)))
-                    "expected exact integer for unsafe struct mutation, but got ~a" ival)]
-                  [(< ival 0)
-                   (single-value #'val)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                  "index ~a too small for struct ~a" ival t)]
-                  [(not (<= ival (sub1 (length flds))))
-                   (single-value #'val)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                  "index ~a too large for struct ~a" ival t)]))]
-         [s-ty
-          (let ([arg-tys (list s-ty e-t (single-value #'val))])
-            (tc/funapp #'op #'(s e val) (single-value #'op) arg-tys expected))]))]
-    ;; vector-ref on het vectors
-    [(#%plain-app (~and op (~or (~literal vector-ref)
-                                (~literal unsafe-vector-ref)
-                                (~literal unsafe-vector*-ref)))
-                  v e:expr)
-     (let ([e-t (single-value #'e)])
-       (let loop ((v-t (single-value #'v)))
-	 (match v-t
-           [(tc-result1: (and t (HeterogenousVector: es)))
-	    (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
-			    (match e-t
-			      [(tc-result1: (Value: (? number? i))) i]
-			      [_ #f]))])
-	      (cond [(not ival)
-		     (check-below e-t -Integer)
-		     (if expected
-			 (check-below (ret (apply Un es)) expected)
-			 (ret (apply Un es)))]
-		    [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
-		     (if expected
-			 (check-below (ret (list-ref es ival)) expected)
-			 (ret (list-ref es ival)))]
-		    [(not (and (integer? ival) (exact? ival)))
-		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                    "expected exact integer for vector index, but got ~a" ival)]
-		    [(< ival 0)
-		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                    "index ~a too small for vector ~a" ival t)]
-		    [(not (<= ival (sub1 (length es))))
-		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                    "index ~a too large for vector ~a" ival t)]))]
-	   [(tc-result1: (? needs-resolving? e) f o)
-	    (loop (ret (resolve-once e) f o))]
-	   [v-ty
-	    (let ([arg-tys (list v-ty e-t)])
-	      (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))])))]
-    [(#%plain-app (~and op (~or (~literal vector-set!)
-                                (~literal unsafe-vector-set!)
-                                (~literal unsafe-vector*-set!)))
-      v e:expr val:expr)
-     (let ([e-t (single-value #'e)])
-       (let loop ((v-t (single-value #'v)))
-	 (match v-t
-           [(tc-result1: (and t (HeterogenousVector: es)))
-	    (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
-			    (match e-t
-			      [(tc-result1: (Value: (? number? i))) i]
-			      [_ #f]))])
-	      (cond [(not ival)
-		     (tc-error/expr
-                      #:stx #'e #:return (or expected (ret -Void))
-                      "expected statically known index for heterogeneous vector, but got ~a"
-                      (match e-t [(tc-result1: t) t]))]
-		    [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
-		     (tc-expr/check #'val (ret (list-ref es ival)))
-		     (if expected
-			 (check-below (ret -Void) expected)
-			 (ret -Void))]
-		    [(not (and (integer? ival) (exact? ival)))
-		     (single-value #'val)
-		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                    "expected exact integer for vector index, but got ~a" ival)]
-		    [(< ival 0)
-		     (single-value #'val)
-		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                    "index ~a too small for vector ~a" ival t)]
-		    [(not (<= ival (sub1 (length es))))
-		     (single-value #'val)
-		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un)))
-                                    "index ~a too large for vector ~a" ival t)]))]
-	   [(tc-result1: (? needs-resolving? e) f o)
-	    (loop (ret (resolve-once e) f o))]
-	   [v-ty
-	    (let ([arg-tys (list v-ty e-t (single-value #'val))])
-	      (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))])))]
-    [(#%plain-app (~and op (~or (~literal vector-immutable) (~literal vector))) args:expr ...)
-     (let loop ([expected expected])
-       (match expected
-         [(tc-result1: (Vector: t))
-          (for ([e (in-list (syntax->list #'(args ...)))])
-            (tc-expr/check e (ret t)))
-          expected]
-         [(tc-result1: (HeterogenousVector: ts))
-          (unless (= (length ts) (length (syntax->list #'(args ...))))
-            (tc-error/expr "expected vector with ~a elements, but got ~a"
-                           (length ts)
-                           (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
-          (for ([e (in-list (syntax->list #'(args ...)))]
-                [t (in-list ts)])
-            (tc-expr/check e (ret t)))
-          expected]
-         [(tc-result1: (? needs-resolving? e) f o)
-          (loop (ret (resolve-once e) f o))]
-         [(tc-result1: (and T (Union: (app (λ (ts)
-                                             (for/list ([t ts]
-                                                        #:when (let ([k (Type-key t)])
-                                                                 (eq? 'vector k)))
-                                               t))
-                                         ts))))
-          (if (null? ts)
-            (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
-              (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
-            (check-below (for/first ([t ts]) (loop (ret t)))
-                         expected))]
-	 ;; since vectors are mutable, if there is no expected type,
-         ;; we want to generalize the element type
-         [(or #f (tc-result1: _))
-	  (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
-					     (syntax->list #'(args ...)))))]
-         [_ (int-err "bad expected: ~a" expected)]))]
-    ;; since vectors are mutable, if there is no expected type,
-    ;; we want to generalize the element type
-    [(#%plain-app (~and op (~literal make-vector)) n elt)
-     (match expected
-       [(tc-result1: (Vector: t))
-        (tc-expr/check #'n (ret -Integer))
-        (tc-expr/check #'elt (ret t))
-        expected]
-       [(or #f (tc-result1: _))
-        (tc/funapp #'op #'(n elt) (single-value #'op)
-                   (list (single-value #'n)
-                         (match (single-value #'elt)
-                           [(tc-result1: t) (ret (generalize t))]))
-                   expected)]
-       [_ (int-err "bad expected: ~a" expected)])]
-    [(#%plain-app (~and op (~literal build-vector)) n proc)
-     (match expected
-       [(tc-result1: (Vector: t))
-        (tc-expr/check #'n (ret -Integer))
-        (tc-expr/check #'proc (ret (-NonNegFixnum . -> . t)))
-        expected]
-       [(or #f (tc-result1: _))
-        (tc/funapp #'op #'(n elt) (single-value #'op)
-                   (list (single-value #'n)
-                         (match (tc/funapp #'proc #'(1) ; valid nonnegative-fixnum
-                                           (single-value #'proc)
-                                           (list (ret -NonNegFixnum))
-                                           #f)
-                           [(tc-result1: t) (ret (-> -NonNegFixnum (generalize t)))]))
-                   expected)]
-       [_ (int-err "bad expected: ~a" expected)])]
-    ;; special case for `-' used like `sub1'
-    [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
-     (add-typeof-expr #'arg2 (ret -PosFixnum))
-     (match-let ([(tc-result1: t) (single-value #'v)])
-       (cond
-        [(subtype t -PosFixnum) (ret -NonNegFixnum)]
-        [(subtype t -NonNegFixnum) (ret -Fixnum)]
-        [(subtype t -PosInt) (ret -Nat)]
-        [else (tc/funapp #'op #'(v arg2) (single-value #'op)
-                         (list (ret t) (single-value #'arg2)) expected)]))]
-    ;; idem for fx-
-    [(#%plain-app (~and op (~or (~literal fx-) (~literal unsafe-fx-)))
-                  v (~and arg2 ((~literal quote) 1)))
-     (add-typeof-expr #'arg2 (ret -PosFixnum))
-     (match-let ([(tc-result1: t) (single-value #'v)])
-       (cond
-        [(subtype t -PosInt) (ret -NonNegFixnum)]
-        [else (tc/funapp #'op #'(v arg2) (single-value #'op)
-                         (list (ret t) (single-value #'arg2)) expected)]))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
@@ -720,8 +486,7 @@
             (ret (apply -lst* tys)))]))]
     ;; special case for `list*'
     [(#%plain-app list* . args)
-     (match-let* ([(list last tys-r ...) (reverse (map tc-expr/t (syntax->list #'args)))]
-                  [tys (reverse tys-r)])
+     (match-let* ([(list tys ... last) (map tc-expr/t (syntax->list #'args))])
        (ret (foldr make-Pair last tys)))]
     ;; special case for `reverse' to propagate expected type info
     [(#%plain-app (~or reverse k:reverse) arg)
@@ -734,9 +499,7 @@
        [_
         (match (single-value #'arg)
           [(tc-result1: (List: ts))
-           (if expected
-               (check-below (ret (-Tuple (reverse ts))) expected)
-               (ret (-Tuple (reverse ts))))]
+           (cond-check-below (ret (-Tuple (reverse ts))) expected)]
           [arg-ty
            (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list arg-ty) expected)])])]
     ;; inference for ((lambda
@@ -763,6 +526,10 @@
          (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
                         #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
                         expected)))]
+    [else (tc/app/regular form expected)])))
+
+(define (tc/app/regular form expected)
+  (syntax-parse form #:literals (#%plain-app)
     [(#%plain-app f . args)
      (let* ([f-ty (single-value #'f)])
        (match f-ty
@@ -792,15 +559,3 @@
 (define (tc/app/check form expected)
     (define t (tc/app/internal form expected))
     (check-below t expected))
-
-(define (object-index os i)
-  (unless (number? i)
-    (int-err "object-index for keywords NYI"))
-  (list-ref os i))
-
-;; in-indexes : Listof[Type] -> Sequence[index/c]
-(define (in-indexes dom)
-  (in-range (length dom)))
-
-
-

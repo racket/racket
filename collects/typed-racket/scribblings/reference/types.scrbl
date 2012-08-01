@@ -340,8 +340,8 @@ corresponding to @racket[trest], where @racket[bound]
 
 @defform[(Futureof t)]{A @rtech{future} which produce a value of type @racket[t] when touched.}
 
-@defform[(Sequenceof t ...)]{A @rtech{sequence} that produces values of the
-types @racket[_t ...] on each iteration.}
+@defform[(Sequenceof t)]{A @rtech{sequence} that produces values of
+type @racket[_t] on each iteration.}
 
 @defform[(Custodian-Boxof t)]{A @rtech{custodian box} of @racket[t].}
 @defform[(Thread-Cellof t)]{A @rtech{thread cell} of @racket[t].}
@@ -443,6 +443,11 @@ recursive type in the body @racket[t]
 @ex[(define-type IntList (Rec List (Pair Integer (U List Null))))
 
     (define-type (List A) (Rec List (Pair A (U List Null))))]}
+
+@defform[(Struct st)]{is a type which is a supertype of all instances of the
+potentially-polymorphic structure type @racket[_st].  Note that structure
+accessors for @racket[_st] will @emph{not} accept @racket[(Struct st)] as an
+argument.}
 
 @defalias[→ ->]
 @defalias[case→ case->]

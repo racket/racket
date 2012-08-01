@@ -916,6 +916,18 @@ static int get_convert_arg_count(Scheme_Object *lift)
     return 0;
 }
 
+static mzshort* get_convert_arg_map(Scheme_Object *lift)
+{
+  if (!lift)
+    return NULL;
+  else if (SCHEME_RPAIRP(lift)) {
+    Scheme_Object **ca;
+    ca = (Scheme_Object **)SCHEME_CDR(lift);
+    return (mzshort *)ca[1];
+  } else
+    return NULL;
+}
+
 static Scheme_Object *drop_zero_value_return(Scheme_Object *expr)
 {
   if (SAME_TYPE(SCHEME_TYPE(expr), scheme_sequence_type)) {
@@ -1349,9 +1361,11 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
                      && is_nonconstant_procedure(clv->value, info, head->count)) {
             Scheme_Object *lift, *old_lift;
             int old_convert_count;
+            mzshort *old_convert_map, *convert_map;
 
             old_lift = lifted_recs[rpos];
             old_convert_count = get_convert_arg_count(old_lift);
+            old_convert_map = get_convert_arg_map(old_lift);
 
             lift = resolve_closure_compilation(clv->value, val_linfo, 1, 1, 1,
                                                (resolve_phase ? NULL : old_lift));
@@ -1363,6 +1377,14 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
               lifted_recs[rpos] = lift;
               if (get_convert_arg_count(lift) != old_convert_count)
                 converted = 1;
+              else if (old_convert_map) {
+                int z;
+                convert_map = get_convert_arg_map(lift);
+                for (z = 0; z < old_convert_count; z++) {
+                  if (old_convert_map[z] != convert_map[z])
+                    converted = 1;
+                }
+              }
             } else {
               lifted_recs = NULL;
               converted = 0;
@@ -1813,7 +1835,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       offset++;
     }
   }
-
+  
   /* Add bindings introduced by closure conversion. The `captured'
      table maps old positions to new positions. */
   while (lifteds) {
@@ -1919,7 +1941,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   if (convert
       && (offset || !has_tl) /* either need args, or treat as convert because it's fully closed */
       ) {
-    /* Take over closure_map to be the convert map, instead. */
+    /* Take over closure_map to be the convert map, instead. */ 
     convert_map = closure_map;
     convert_size = offset;
 
@@ -2008,7 +2030,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
      evaluated immediately) to new locations (where closures
      effectively shift and compact values on the stack). 
 
-     We don't have to include bindings added because an oiriginal
+     We don't have to include bindings added because an original
      binding was lifted (i.e., the extra bindings in `captured'),
      because they don't appear in the body. Instead, they are
      introduced directly in resolved form through the `lifted' info.
@@ -2042,26 +2064,37 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       --sz;
       cmap = MALLOC_N_ATOMIC(mzshort, sz);
       for (j = 0; j < sz; j++) {
+        int is_boxed = 0, is_flonum = 0;
         loc = SCHEME_VEC_ELS(vec)[j+1];
         if (SCHEME_BOXP(loc)) {
           if (!boxmap)
             boxmap = allocate_boxmap(sz);
           boxmap_set(boxmap, j, 1, 0);
           loc = SCHEME_BOX_VAL(loc);
+          is_boxed = 1;
         } else if (SCHEME_VECTORP(loc)) {
           if (!boxmap)
             boxmap = allocate_boxmap(sz);
           boxmap_set(boxmap, j, 2, 0);
           loc = SCHEME_VEC_ELS(loc)[0];
+          is_flonum = 1;
         }
         loc = scheme_hash_get(captured, scheme_make_integer(SCHEME_LOCAL_POS(loc)));
         cp = SCHEME_INT_VAL(loc);
         if (cp < 0) {
           cp = -cp;
-          if (cp & 0x1)
+          if (cp & 0x1) {
             cp = (cp - 1) / 2;
-          else
+            if (convert && !is_boxed)
+              scheme_signal_error("internal error: lift mismatch (boxed)");
+          } else {
             cp = (cp - 2) / 2;
+            if (convert && !is_flonum)
+              scheme_signal_error("internal error: lift mismatch (flonum)");
+          }
+        } else {
+          if (convert && (is_boxed || is_flonum))
+            scheme_signal_error("internal error: lift mismatch");
         }
         cmap[j] = cp + (has_tl && convert ? 1 : 0);
       }
@@ -2192,7 +2225,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       SCHEME_CAR(precomputed_lift) = result;
       SCHEME_CDR(precomputed_lift) = (Scheme_Object *)ca;
       result = precomputed_lift;
-    } else 
+    } else
       result = scheme_make_raw_pair(result, (Scheme_Object *)ca);
   }
 

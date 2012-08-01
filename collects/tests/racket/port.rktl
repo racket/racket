@@ -42,7 +42,8 @@
 	    (test eof peek-char p)
 	    (test eof read-char p)
 	    (test #f sync/timeout 0 progress-evt5)
-	    (test #f port-commit-peeked 1 progress-evt5 always-evt p)))))))
+            ;; it happens that a commit of EOF succeeds for tested ports:
+	    (test #t port-commit-peeked 1 progress-evt5 always-evt p)))))))
 
 (test-hello-port (open-input-string "hello") #f)
 (test-hello-port (open-input-string "hello") #t)

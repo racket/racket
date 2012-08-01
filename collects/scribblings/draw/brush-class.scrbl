@@ -177,9 +177,7 @@ Returns @racket[#t] if the brush object is immutable.
               void?]
              [(set-color [color-name string?])
               void?]
-             [(set-color [red (integer-in 0 255)]
-                         [green (integer-in 0 255)]
-                         [blue (integer-in 0 255)])
+             [(set-color [red byte?] [green byte?] [blue byte?])
               void?])]{
 
 Sets the brush's color.  A brush cannot be modified if it was obtained

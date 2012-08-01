@@ -529,7 +529,7 @@ extern void scheme_check_foreign_work(void);
 #endif
 
 #ifndef DONT_USE_FOREIGN
-extern void *scheme_extract_pointer(Scheme_Object *v);
+XFORM_NONGCING extern void *scheme_extract_pointer(Scheme_Object *v);
 #endif
 
 void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
@@ -729,6 +729,7 @@ typedef struct Scheme_Inspector {
 
 typedef struct Scheme_Struct_Property {
   Scheme_Object so;
+  char can_impersonate; /* 1 if impersonatable property, 0 otherwise */
   Scheme_Object *name; /* a symbol */
   Scheme_Object *guard; /* NULL, a procedure, or 'can-impersonate */
   Scheme_Object *supers; /* implied properties: listof (cons <prop> <proc>) */
@@ -1007,13 +1008,16 @@ Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Obje
 Scheme_Hash_Table *scheme_get_module_rename_marked_names(Scheme_Object *set, Scheme_Object *phase, int create);
 
 void scheme_append_rename_set_to_env(Scheme_Object *rns, Scheme_Env *env);
+void scheme_install_prior_contexts_to_env(Scheme_Object *prior, Scheme_Env *env);
+Scheme_Object *scheme_accum_prior_contexts(Scheme_Object *rns, Scheme_Object *prior);
 
 void scheme_seal_module_rename(Scheme_Object *rn, int level);
 void scheme_seal_module_rename_set(Scheme_Object *rns, int level);
 #define STX_SEAL_BOUND 1
 #define STX_SEAL_ALL   2
 
-Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns, Scheme_Object *insp);
+Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns, 
+                                         Scheme_Object *insp, Scheme_Object *set_identity);
 Scheme_Object* scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
                                            Scheme_Object *locname, Scheme_Object *exname,
                                            Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
@@ -3121,10 +3125,11 @@ typedef struct Scheme_Module
 
   Scheme_Env *primitive;
 
-  Scheme_Object *rn_stx;
+  Scheme_Object *rn_stx; /* NULL, #t, a stx for a rename, a vector of stxes, or a pair to delay shifts */
 
   Scheme_Object *submodule_path; /* path to this module relative to enclosing top-level module */
   Scheme_Object *pre_submodules, *post_submodules; /* list of modules (when compiled or loaded as a group) */
+  Scheme_Object *supermodule; /* supermodule for which this is in {pre,post}_submodules */
   Scheme_Object *submodule_ancestry; /* se by compile/expand, temporary */
 } Scheme_Module;
 
@@ -3373,7 +3378,7 @@ const char *scheme_hostname_error(int err);
 
 int scheme_byte_string_has_null(Scheme_Object *o);
 int scheme_any_string_has_null(Scheme_Object *o);
-#define CHAR_STRING_W_NO_NULLS "(and/c string? (lambda (s) (not (memv #\\nul (string->list s)))))"
+#define CHAR_STRING_W_NO_NULLS "string-no-nuls?"
 
 Scheme_Object *scheme_do_exit(int argc, Scheme_Object *argv[]);
 

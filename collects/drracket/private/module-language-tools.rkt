@@ -94,8 +94,14 @@
             (send defs move-to-new-language))))))
   
   (define definitions-text-mixin
-    (mixin (text:basic<%> drracket:unit:definitions-text<%>) (drracket:module-language-tools:definitions-text<%>)
-      (inherit get-next-settings get-filename)
+    (mixin (text:basic<%> 
+            drracket:unit:definitions-text<%>
+            drracket:module-language:big-defs/ints-label<%>)
+           (drracket:module-language-tools:definitions-text<%>)
+      (inherit get-next-settings
+               get-filename
+               set-lang-wants-big-defs/ints-labels?
+               get-tab)
       (define in-module-language? #f)      ;; true when we are in the module language
       (define hash-lang-last-location #f)  ;; non-false when we know where the hash-lang line ended
       (define hash-lang-language #f)       ;; non-false is the string that was parsed for the language
@@ -195,6 +201,11 @@
                               'hash-lang-racket
                               (get-lang-name pos))
                           'drracket/private/module-language-tools))
+              
+              (define lang-wants-big-defs/ints-labels? (and info-proc (info-proc 'drracket:show-big-defs/ints-labels #f)))
+              (set-lang-wants-big-defs/ints-labels? lang-wants-big-defs/ints-labels?)
+              (send (send (get-tab) get-ints) set-lang-wants-big-defs/ints-labels? lang-wants-big-defs/ints-labels?)
+              
               (when info-result
                 (register-new-buttons
                  (ctc-on-info-proc-result (or/c #f (listof (or/c (list/c string?
@@ -209,8 +220,7 @@
                  (ctc-on-info-proc-result (or/c #f (listof symbol?))
                                           (or (info-proc 'drracket:opt-out-toolbar-buttons '())
                                               (info-proc 'drscheme:opt-out-toolbar-buttons '())))))))))
-
-      (inherit get-tab)
+      
       
       (define/private (register-new-buttons buttons opt-out-ids)
         ;; cleaned-up-buttons : (listof (list/c string? (is-a?/c bitmap%) (-> (is-a?/c drracket:unit:frame<%>) any) (or/c real? #f)))

@@ -46,10 +46,18 @@
 ;                                          ;                                                         
 ;                                                                                                    
 
+(define-syntax (define/contract stx)
+  (define s-l-c (syntax-local-context))
+  (case s-l-c
+    [(module-begin)
+     #`(begin #,stx)]
+    [else
+     (define/contract-expander stx)]))
+
 ;; (define/contract id contract expr)
 ;; defines `id' with `contract'; initially binding
 ;; it to the result of `expr'.  These variables may not be set!'d.
-(define-syntax (define/contract define-stx)
+(define-for-syntax (define/contract-expander define-stx)
   (define-splicing-syntax-class fv-clause
     #:description "a free variable clause"
     #:attributes ([var 1] [ctc 1])

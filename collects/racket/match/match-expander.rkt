@@ -1,9 +1,25 @@
 #lang racket/base
 
-(require (for-syntax racket/base
-                     "patterns.rkt"))
+(require (for-syntax racket/base "stxtime.rkt"))
 
 (provide define-match-expander)
+
+(begin-for-syntax
+  (define make-match-expander
+    (let ()
+      (define-struct match-expander (match-xform legacy-xform macro-xform)
+        #:property prop:set!-transformer 
+        (λ (me stx)
+          (define xf (match-expander-macro-xform me))
+          (if (set!-transformer? xf)
+              ((set!-transformer-procedure xf) stx)
+              (syntax-case stx (set!)
+                [(set! . _)
+                 (raise-syntax-error #f "cannot mutate syntax identifier" stx)]
+                [_ (xf stx)])))
+        #:property prop:match-expander (struct-field-index match-xform)
+        #:property prop:legacy-match-expander (struct-field-index legacy-xform))
+      (values make-match-expander))))
 
 (define-syntax (define-match-expander stx)
   (define (lookup v alist)

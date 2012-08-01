@@ -766,9 +766,10 @@ TODO
       
       (define/augment (after-edit-sequence)
         (inner (void) after-edit-sequence)
-        (let ([to-clean had-an-insert])
-          (set! had-an-insert '())
-	  (update-after-inserts to-clean)))
+        (unless (null? had-an-insert)
+          (let ([to-clean had-an-insert])
+            (set! had-an-insert '())
+            (update-after-inserts to-clean))))
       
       (define/private (update-after-inserts starts)
         (unless inserting-prompt?
@@ -811,7 +812,7 @@ TODO
              (user-break-parameterization #f)
              (user-logger (make-logger))
              
-             ;; user-exit-code (union #f (integer-in 0 255))
+             ;; user-exit-code (union #f byte?)
              ;; #f indicates that exit wasn't called. Integer indicates exit code
              (user-exit-code #f))
             

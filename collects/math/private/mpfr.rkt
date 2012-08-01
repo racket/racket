@@ -6,13 +6,15 @@
          racket/promise
          (for-syntax racket/base))
 
+(require (only-in rnrs/arithmetic/bitwise-6
+                  bitwise-first-bit-set))
+
 (provide
  ;; Parameters
  bf-rounding-mode
  bf-min-precision
  bf-max-precision
  bf-precision
- bf-scientific
  ;; Type predicate
  (rename-out [mpfr? bigfloat?])
  ;; Accessors
@@ -54,16 +56,16 @@
            "/sw/local/lib")]
     [else '()]))
 
-(define libgmp (delay (ffi-lib "libgmp")))
+(define libgmp (lazy (ffi-lib "libgmp")))
 (define-syntax-rule (get-gmp-fun name args ...)
   (let ()
-    (define fun (delay (get-ffi-obj name (force libgmp) args ...)))
+    (define fun (lazy (get-ffi-obj name (force libgmp) args ...)))
     (λ xs (apply (force fun) xs))))
 
-(define libmpfr (delay (ffi-lib "libmpfr" #:get-lib-dirs try-paths)))
+(define libmpfr (lazy (ffi-lib "libmpfr" #:get-lib-dirs try-paths)))
 (define-syntax-rule (get-mpfr-fun name args ...)
   (let ()
-    (define fun (delay (get-ffi-obj name (force libmpfr) args ...)))
+    (define fun (lazy (get-ffi-obj name (force libmpfr) args ...)))
     (λ xs (apply (force fun) xs))))
 
 (define mpfr-free-cache (get-mpfr-fun 'mpfr_free_cache (_fun -> _void)))
@@ -94,9 +96,6 @@
   (make-parameter 128 (λ (p) (cond [(p . < . bf-min-precision)  bf-min-precision]
                                    [(p . > . bf-max-precision)  bf-max-precision]
                                    [else  p]))))
-
-;; One of 'always 'never 'shorter
-(define bf-scientific (make-parameter 'shorter))
 
 ;; ===================================================================================================
 ;; MPFR types
@@ -140,17 +139,26 @@
    ))
 
 (define (bigfloat-equal? x1 x2 _)
-  (define-values (sig1 exp1) (bigfloat-sig+exp x1))
-  (define-values (sig2 exp2) (bigfloat-sig+exp x2))
-  (and (= sig1 sig2)
-       (= exp1 exp2)
-       (= (bigfloat-sign x1) (bigfloat-sign x2))))
+  (define x1-rational? (bfrational? x1))
+  (define x2-rational? (bfrational? x2))
+  (and (= (bigfloat-sign x1) (bigfloat-sign x2))
+       (or (bf= x1 x2) 
+           (and (bfnan? x1) (bfnan? x2)))))
+
+(define (canonicalize-sig+exp sig exp)
+  (cond [(zero? sig)  (values 0 0)]
+        [else
+         (let-values ([(sgn sig)  (cond [(sig . < . 0)  (values -1 (- sig))]
+                                        [else           (values 1 sig)])])
+           (define shift (bitwise-first-bit-set sig))
+           (cond [(shift . > . 0)  (values (* sgn (arithmetic-shift sig (- shift)))
+                                           (+ exp shift))]
+                 [else  (values (* sgn sig) exp)]))]))
 
 (define (bigfloat-hash x recur-hash)
-  (define-values (sig exp) (bigfloat-sig+exp x))
-  (bitwise-xor (recur-hash sig)
-               (recur-hash exp)
-               (recur-hash (bigfloat-sign x))))
+  (let*-values ([(sig exp)  (bigfloat-sig+exp x)]
+                [(sig exp)  (canonicalize-sig+exp sig exp)])
+    (recur-hash (vector (bigfloat-sign x) sig exp))))
 
 ;; mpfr_t: a multi-precision float with rounding (the main data type)
 (define-cstruct _mpfr ([prec _prec_t] [sign _sign_t] [exp _exp_t] [d (_gcable _mpfr_limbs)])
@@ -389,7 +397,19 @@
          (define sig (remove-trailing-zeros (format "~a.~a" (substring str 0 1) (substring str 1))))
          (if (= exp 1) sig (format "~ae~a" sig (number->string (- exp 1))))]))
 
-(define (digit-string exp digs)
+(define (decimal-string-length exp digs)
+  (cond [(exp . > . (string-length digs))
+         (+ (string-length digs) (- exp (string-length digs)))]
+        [(exp . <= . 0)
+         (let ([digs  (remove-trailing-zeros digs)])
+           (cond [(equal? digs "0")  1]
+                 [else  (+ 2 (- exp) (string-length digs))]))]
+        [else
+         (string-length
+          (remove-trailing-zeros
+           (string-append (substring digs 0 exp) "." (substring digs exp))))]))
+
+(define (decimal-string exp digs)
   (cond [(exp . > . (string-length digs))
          (string-append digs (make-string (- exp (string-length digs)) #\0))]
         [(exp . <= . 0)
@@ -403,9 +423,9 @@
 ;; Outputs enough digits to exactly recreate the bigfloat using string->bigfloat.
 (define (bigfloat->string x)
   (cond
-    [(bfzero? x)  (if ((bigfloat-sign x) . < . 0) "-0" "0")]
-    [(bfinfinite? x)  (if ((bigfloat-sign x) . < . 0) "-inf.bf" "+inf.bf")]
-    [(bfnan? x)   (if ((bigfloat-sign x) . < . 0) "-nan.bf" "+nan.bf")]
+    [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "0.0" "-0.0")]
+    [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
+    [(bfnan? x)   (if (= 0 (bigfloat-sign x)) "+nan.bf" "-nan.bf")]
     [else
      (define-values (exp str) (mpfr-get-string x 10 'nearest))
      (cond
@@ -416,26 +436,33 @@
           (if (char=? (string-ref str 0) #\-)
               (values "-" (substring str 1))
               (values "" str)))
-        (define scientific (bf-scientific))
-        (cond [(eq? scientific 'always)  (string-append sign (scientific-string exp digs))]
-              [(eq? scientific 'never)   (string-append sign (digit-string exp digs))]
-              [else
-               (define sstr (scientific-string exp digs))
-               (define dstr (digit-string exp digs))
-               (cond [((string-length sstr) . < . (string-length dstr))
-                      (string-append sign sstr)]
-                     [else
-                      (string-append sign dstr)])])])]))
+        (define sstr (scientific-string exp digs))
+        (define dlen (decimal-string-length exp digs))
+        (cond [((string-length sstr) . < . dlen)  (string-append sign sstr)]
+              [else  (string-append sign (decimal-string exp digs))])])]))
+
+(define mpfr-set-str (get-mpfr-fun 'mpfr_set_str (_fun _mpfr-pointer _string _int _rnd_t -> _int)))
 
 ;; string->bigfloat : string [integer] -> bigfloat
 ;; Converts a Racket string to a bigfloat.
 (define (string->bigfloat str)
-  (define num (string->number (string-append "#e" str) 10))
-  (if num (rational->bigfloat num) #f))
+  (case str
+    [("-inf.bf" "-inf.0" "-inf.f")  (force -inf.bf)]
+    [("-1.bf")  (force -1.bf)]
+    [("-0.bf")  (force -0.bf)]
+    [("+0.bf")  (force +0.bf)]
+    [("+1.bf")  (force +1.bf)]
+    [("+inf.bf" "+inf.0" "+inf.f")  (force +inf.bf)]
+    [("+nan.bf" "+nan.0" "+nan.f")  (force +nan.bf)]
+    [("-nan.bf" "-nan.0" "-nan.f")  (force -nan.bf)]
+    [else
+     (define y (new-mpfr (bf-precision)))
+     (define bs (string->bytes/utf-8 str))
+     (if (zero? (mpfr-set-str y bs 10 'nearest)) y #f)]))
 
 (define (bigfloat-custom-write x port mode)
   (write-string
-   (cond [(bfzero? x)  (if ((bigfloat-sign x) . < . 0) "-0.bf" "0.bf")]
+   (cond [(bfzero? x)  (if (= 0 (bigfloat-sign x)) "+0.bf" "-0.bf")]
          [(bfrational? x)
           (define str (bigfloat->string x))
           (cond [(regexp-match #rx"\\.|e" str)
@@ -445,17 +472,28 @@
                      (format "(bf \"~a\")" str)
                      (format "(bf #e~a)" str))]
                 [else  (format "(bf ~a)" str)])]
-         [(bfinfinite? x)  (if ((bigfloat-sign x) . < . 0) "-inf.bf" "+inf.bf")]
-         [else  (if ((bigfloat-sign x) . < . 0) "-nan.bf" "+nan.bf")])
+         [(bfinfinite? x)  (if (= 0 (bigfloat-sign x)) "+inf.bf" "-inf.bf")]
+         [else  (if (= 0 (bigfloat-sign x)) "+nan.bf" "-nan.bf")])
    port))
 
 ;; ===================================================================================================
 ;; Main bigfloat constructor
 
+(define mpfr-set-z-2exp
+  (get-mpfr-fun 'mpfr_set_z_2exp (_fun _mpfr-pointer _mpz-pointer _exp_t _rnd_t -> _int)))
+
+(define (sig+exp->bigfloat n e)
+  (define y (new-mpfr (bf-precision)))
+  (mpfr-set-z-2exp y (integer->mpz n) e (bf-rounding-mode))
+  y)
+
 ;; bf : (or real string) -> bigfloat
-(define (bf v)
-  (cond [(string? v)  (string->bigfloat v)]
-        [else  (real->bigfloat v)]))
+;;    : integer integer -> bigfloat
+(define bf
+  (case-lambda
+    [(v)  (cond [(string? v)  (string->bigfloat v)]
+                [else  (real->bigfloat v)])]
+    [(n e)  (sig+exp->bigfloat n e)]))
 
 ;; ===================================================================================================
 ;; Unary functions
@@ -465,7 +503,7 @@
 
 (define-syntax-rule (provide-1ary-fun name c-name)
   (begin
-    (define cfun (get-mpfr-fun c-name (_fun (y : _mpfr-pointer) _mpfr-pointer _rnd_t -> _int)))
+    (define cfun (get-mpfr-fun c-name (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))
     (define (name x)
       (define y (new-mpfr (bf-precision)))
       (cfun y x (bf-rounding-mode))
@@ -512,7 +550,6 @@
  [bfeint 'mpfr_eint]
  [bfli2 'mpfr_li2]
  [bfgamma 'mpfr_gamma]
- [bflog-gamma 'mpfr_lngamma]
  [bfdigamma 'mpfr_digamma]
  [bfzeta 'mpfr_zeta]
  [bferf 'mpfr_erf]
@@ -522,7 +559,42 @@
  [bfy0 'mpfr_y0]
  [bfy1 'mpfr_y1]
  [bfrint 'mpfr_rint]
- [bffrac 'mpfr_frac])
+ [bffrac 'mpfr_frac]
+ [bfcopy 'mpfr_set])
+
+(define (bfsgn x)
+  (cond [(bfzero? x)  x]
+        [(= 0 (mpfr-signbit x))  (force +1.bf)]
+        [else  (force -1.bf)]))
+
+(define (bfround x)
+  (parameterize ([bf-rounding-mode  'nearest])
+    (bfrint x)))
+
+(provide bfsgn bfround)
+(begin-for-syntax
+  (set! 1ary-funs (list* #'bfsgn #'bfround 1ary-funs)))
+
+(define mpfr-fac-ui (get-mpfr-fun 'mpfr_fac_ui (_fun _mpfr-pointer _ulong _rnd_t -> _int)))
+
+(define (bffactorial n)
+  (cond [(n . < . 0)  (raise-type-error 'bffactorial "Natural" n)]
+        [(n . > . 100000000)  (force +inf.bf)]
+        [else  (define y (new-mpfr (bf-precision)))
+               (mpfr-fac-ui y n (bf-rounding-mode))
+               y]))
+
+(provide bffactorial)
+
+(define mpfr-sum (get-mpfr-fun 'mpfr_sum (_fun _mpfr-pointer (_list i _mpfr-pointer) _ulong
+                                               _rnd_t -> _int)))
+
+(define (bfsum xs)
+  (define y (new-mpfr (bf-precision)))
+  (mpfr-sum y xs (length xs) (bf-rounding-mode))
+  y)
+
+(provide bfsum)
 
 (define-syntax-rule (provide-1ary-fun/noround name c-name)
   (begin
@@ -534,10 +606,13 @@
     (provide name)
     (begin-for-syntax (set! 1ary-funs (cons #'name 1ary-funs)))))
 
-(provide-1ary-fun/noround bfceiling 'mpfr_ceil)
-(provide-1ary-fun/noround bffloor 'mpfr_floor)
-(provide-1ary-fun/noround bfround 'mpfr_round)
-(provide-1ary-fun/noround bftruncate 'mpfr_trunc)
+(define-syntax-rule (provide-1ary-funs/noround [name c-name] ...)
+  (begin (provide-1ary-fun/noround name c-name) ...))
+
+(provide-1ary-funs/noround
+ [bfceiling 'mpfr_ceil]
+ [bffloor 'mpfr_floor]
+ [bftruncate 'mpfr_trunc])
 
 (define-for-syntax 1ary2-funs (list))
 (provide (for-syntax 1ary2-funs))
@@ -554,9 +629,30 @@
     (provide name)
     (begin-for-syntax (set! 1ary2-funs (cons #'name 1ary2-funs)))))
 
-(provide-1ary2-fun bfsin+cos 'mpfr_sin_cos)
-(provide-1ary2-fun bfsinh+cosh 'mpfr_sinh_cosh)
-(provide-1ary2-fun bfmodf 'mpfr_modf)
+(define-syntax-rule (provide-1ary2-funs [name c-name] ...)
+  (begin (provide-1ary2-fun name c-name) ...))
+
+(provide-1ary2-funs
+ [bfsin+cos 'mpfr_sin_cos]
+ [bfsinh+cosh 'mpfr_sinh_cosh]
+ [bfmodf 'mpfr_modf])
+
+(define mpfr-lgamma
+  (get-mpfr-fun 'mpfr_lgamma (_fun _mpfr-pointer _pointer _mpfr-pointer _rnd_t -> _int)))
+
+(define (bflog-gamma/sign x)
+  (define y (new-mpfr (bf-precision)))
+  (define s (malloc _int 'atomic-interior))
+  (mpfr-lgamma y s x (bf-rounding-mode))
+  (values y (ptr-ref s _int)))
+
+(define (bflog-gamma x)
+  (define-values (y _) (bflog-gamma/sign x))
+  y)
+
+(provide bflog-gamma/sign bflog-gamma)
+(begin-for-syntax
+  (set! 1ary-funs (list* #'bflog-gamma 1ary-funs)))
 
 ;; ===================================================================================================
 ;; Unary predicates
@@ -582,10 +678,10 @@
  [bfzero? 'mpfr_zero_p])
 
 (define (bfpositive? x)
-  (bf> x (force 0.bf)))
+  (bf> x (force +0.bf)))
 
 (define (bfnegative? x)
-  (bf< x (force 0.bf)))
+  (bf< x (force +0.bf)))
 
 (define (bfeven? x)
   (unless (bfinteger? x) (raise-type-error 'bfeven? "bfinteger?" x))
@@ -707,7 +803,7 @@
 (provide-0ary-funs
  [log2.bf 'mpfr_const_log2]
  [pi.bf 'mpfr_const_pi]
- [euler.bf 'mpfr_const_euler]
+ [gamma.bf 'mpfr_const_euler]
  [catalan.bf 'mpfr_const_catalan])
 
 (define-for-syntax consts (list))
@@ -715,26 +811,43 @@
 
 (define-syntax-rule (define-bf-constant name expr)
   (begin
-    (define lazy-name (delay (parameterize ([bf-precision  bf-min-precision])
+    (define lazy-name (lazy (parameterize ([bf-precision  bf-min-precision])
                                expr)))
     (define-syntax (name stx)
       (syntax-case stx ()
         [(_ e (... ...))  (syntax/loc stx ((force lazy-name) e (... ...)))]
         [_  (syntax/loc stx (force lazy-name))]))))
 
-(define-values (-inf.bf -0.bf 0.bf +inf.bf +nan.bf -nan.bf)
-  (parameterize ([bf-precision  bf-min-precision])
-    (values (delay (flonum->bigfloat -inf.0))
-            (delay (flonum->bigfloat -0.0))
-            (delay (flonum->bigfloat  0.0))
-            (delay (flonum->bigfloat +inf.0))
-            (delay (flonum->bigfloat +nan.0))
-            (delay (bfneg (flonum->bigfloat +nan.0))))))
+(define-values (-inf.bf -1.bf -0.bf +0.bf +1.bf +inf.bf +nan.bf -nan.bf)
+  (values (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat -inf.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat -1.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat -0.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +0.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +1.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +inf.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision]) (flonum->bigfloat +nan.0)))
+          (lazy (parameterize ([bf-precision  bf-min-precision])
+                  (bfneg (flonum->bigfloat +nan.0))))))
 
-(provide -inf.bf -0.bf 0.bf +inf.bf +nan.bf -nan.bf)
+(provide -inf.bf -1.bf -0.bf +0.bf +1.bf +inf.bf +nan.bf -nan.bf)
 (begin-for-syntax
-  (set! consts (list* #'-inf.bf #'-0.bf #'0.bf #'+inf.bf #'+nan.bf #'-nan.bf consts)))
+  (set! consts (list* #'-inf.bf #'-1.bf #'-0.bf #'+0.bf #'+1.bf #'+inf.bf #'+nan.bf #'-nan.bf
+                      consts)))
 
 ;; ===================================================================================================
+;; Extra functions
 
-;(define mpfr-set-m (get-mpfr-fun 'mpfr_set (_fun _mpfr-pointer _mpfr-pointer _rnd_t -> _int)))
+(define (random-bits bits)
+  (let loop ([bits bits] [acc 0])
+    (cond [(= 0 bits)  acc]
+          [else
+           (define new-bits (min 24 bits))
+           (loop (- bits new-bits)
+                 (bitwise-ior (random (arithmetic-shift 1 new-bits))
+                              (arithmetic-shift acc new-bits)))])))
+
+(define (bfrandom)
+  (define bits (bf-precision))
+  (bf (random-bits bits) (- bits)))
+
+(provide bfrandom)

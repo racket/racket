@@ -4,68 +4,77 @@
          "../unsafe.rkt"
          "array-struct.rkt"
          "array-ref.rkt"
-         "utils.rkt")
+         "utils.rkt"
+         "for-each.rkt")
 
 (provide array-axis-fold
          array-axis-sum
          array-axis-prod
          array-axis-min
          array-axis-max
+         array-axis-count
+         array-axis-andmap
+         array-axis-ormap
          array-fold
          array-sum
          array-prod
          array-min-value
-         array-max-value)
+         array-max-value
+         array-count
+         array-andmap
+         array-ormap)
 
 ;; ===================================================================================================
 ;; Per-axis folds
 
-(: array-axis-fold/init (All (A B) ((Array A) Integer (A B -> B) B -> (lazy-array B))))
+(: check-array-axis (All (A) (Symbol (Array A) Integer -> Index)))
+(define (check-array-axis name arr k)
+  (define dims (array-dims arr))
+  (cond
+    [(= dims 0)  (raise-type-error 'name "Array with at least one axis" 0 arr k)]
+    [(or (0 . > . k) (k . >= . dims))
+     (raise-type-error 'name (format "Index < ~a" dims) 1 arr k)]
+    [else  k]))
+
+(: unsafe-array-axis-reduce (All (A B) ((Array A) Index (Index (Index -> A) -> B)
+                                                  -> (view-array B))))
+(begin-encourage-inline
+  (define (unsafe-array-axis-reduce arr k f)
+    (let ([arr  (array-view arr)])
+      (define ds (unsafe-array-shape arr))
+      (define dims (vector-length ds))
+      (define dk (unsafe-vector-ref ds k))
+      (define new-ds (unsafe-vector-remove ds k))
+      (define proc (unsafe-array-proc arr))
+      (unsafe-view-array
+       new-ds (λ: ([js : (Vectorof Index)])
+                (define old-js (unsafe-vector-insert js k 0))
+                (f dk (λ: ([jk : Index])
+                        (unsafe-vector-set! old-js k jk)
+                        (proc old-js))))))))
+
+(: array-axis-fold/init (All (A B) ((Array A) Integer (A B -> B) B -> (view-array B))))
 (define (array-axis-fold/init arr k f init)
-  (let ([arr  (array-lazy arr)])
-    (define ds (unsafe-array-shape arr))
-    (define dims (vector-length ds))
-    (cond
-      [(= dims 0)  (raise-type-error 'array-axis-fold "Array with at least one axis" 0 arr k)]
-      [(or (0 . > . k) (k . >= . dims))
-       (raise-type-error 'array-sum (format "Index < ~a" dims) 1 arr k)]
-      [else
-       (define dk (unsafe-vector-ref ds k))
-       (define new-ds (unsafe-vector-remove ds k))
-       (define proc (unsafe-array-proc arr))
-       (unsafe-lazy-array
-        new-ds (λ: ([js : (Vectorof Index)])
-                 (define old-js (unsafe-vector-insert js k 0))
-                 (let: loop : B ([i : Nonnegative-Fixnum  0] [acc : B  init])
-                   (cond [(i . < . dk)  (unsafe-vector-set! old-js k i)
-                                        (loop (+ i 1) (f (proc old-js) acc))]
-                         [else  acc]))))])))
+  (let ([k  (check-array-axis 'array-axis-fold arr k)])
+    (unsafe-array-axis-reduce
+     arr k (λ: ([dk : Index] [proc : (Index -> A)])
+             (let: loop : B ([jk : Nonnegative-Fixnum  0] [acc : B  init])
+               (cond [(jk . < . dk)  (loop (+ jk 1) (f (proc jk) acc))]
+                     [else  acc]))))))
 
-(: array-axis-fold/no-init (All (A) ((Array A) Integer (A A -> A) -> (lazy-array A))))
+(: array-axis-fold/no-init (All (A) ((Array A) Integer (A A -> A) -> (view-array A))))
 (define (array-axis-fold/no-init arr k f)
-  (let ([arr  (array-lazy arr)])
-    (define ds (unsafe-array-shape arr))
-    (define dims (vector-length ds))
-    (define size (array-size arr))
-    (cond
-      [(= dims 0)  (raise-type-error 'array-axis-fold "Array with at least one axis" 0 arr k)]
-      [(or (0 . > . k) (k . >= . dims))
-       (raise-type-error 'array-sum (format "Index < ~a" dims) 1 arr k)]
-      [else
-       (define dk (unsafe-vector-ref ds k))
-       (when (= dk 0) (raise-type-error 'array-axis-fold "nonzero axis" 0 arr k))
-       (define new-ds (unsafe-vector-remove ds k))
-       (define proc (unsafe-array-proc arr))
-       (unsafe-lazy-array
-        new-ds (λ: ([js : (Vectorof Index)])
-                 (define old-js (unsafe-vector-insert js k 0))
-                 (let: loop : A ([i : Nonnegative-Fixnum  1] [acc : A  (proc old-js)])
-                   (cond [(i . < . dk)  (unsafe-vector-set! old-js k i)
-                                        (loop (+ i 1) (f (proc old-js) acc))]
-                         [else  acc]))))])))
+  (let ([k  (check-array-axis 'array-axis-fold arr k)])
+    (when (= (unsafe-vector-ref (unsafe-array-shape arr) k) 0)
+      (raise-type-error 'array-axis-fold "nonzero axis" 0 arr k))
+    (unsafe-array-axis-reduce
+     arr k (λ: ([dk : Index] [proc : (Index -> A)])
+             (let: loop : A ([jk : Nonnegative-Fixnum  1] [acc : A  (proc 0)])
+               (cond [(jk . < . dk)  (loop (+ jk 1) (f (proc jk) acc))]
+                     [else  acc]))))))
 
-(: array-axis-fold (All (A B) (case-> ((Array A) Integer (A A -> A) -> (lazy-array A))
-                                      ((Array A) Integer (A B -> B) B -> (lazy-array B)))))
+(: array-axis-fold (All (A B) (case-> ((Array A) Integer (A A -> A) -> (view-array A))
+                                      ((Array A) Integer (A B -> B) B -> (view-array B)))))
 (define array-axis-fold
   (case-lambda
     [(arr k f)  (array-axis-fold/no-init arr k f)]
@@ -74,12 +83,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Whole-array fold
 
-(: array-fold (All (A) ((Array A) ((Array A) Index -> (lazy-array A)) -> (lazy-array A))))
+(: array-fold (All (A) ((Array A) ((Array A) Index -> (view-array A)) -> (view-array A))))
 (begin-encourage-inline
   (define (array-fold arr f)
     (define dims (array-dims arr))
     (let loop ([#{k : Index} dims] [arr arr])
-      (cond [(zero? k)  (array-lazy arr)]
+      (cond [(zero? k)  (array-view arr)]
             [else  (let ([k  (sub1 k)])
                      (loop k (f arr k)))]))))
 
@@ -87,8 +96,8 @@
 
 (define-syntax-rule (define-axis-fold name op T ...)
   (begin-encourage-inline
-    (: name (case-> ((Array T) Integer -> (lazy-array T)) ...
-                    ((Array T) Integer T -> (lazy-array T)) ...))
+    (: name (case-> ((Array T) Integer -> (view-array T)) ...
+                    ((Array T) Integer T -> (view-array T)) ...))
     (define name
       (case-lambda
         [(arr k)  (array-axis-fold arr k op)]
@@ -110,7 +119,7 @@
         [(arr)  (array-ref* (array-fold arr array-axis-op))]
         [(arr init)
          (plet: (A) ([arr : (Array A)  arr]
-                     [array-axis-op : ((Array A) Index A -> (lazy-array A))  array-axis-op]
+                     [array-axis-op : ((Array A) Index A -> (view-array A))  array-axis-op]
                      [init : A  init])
                 (array-ref* (array-fold arr (λ: ([arr : (Array A)] [k : Index])
                                               (array-axis-op arr k init)))))]))))
@@ -119,3 +128,108 @@
 (define-fold array-prod array-axis-prod Float Real Float-Complex Number)
 (define-fold array-min-value array-axis-min Float Real)
 (define-fold array-max-value array-axis-max Float Real)
+
+;; ===================================================================================================
+;; Count
+
+(: array-axis-count (All (A) ((Array A) Integer (A -> Any) -> (view-array Index))))
+(define (array-axis-count arr k pred?)
+  (let ([k  (check-array-axis 'array-axis-count arr k)])
+    (unsafe-array-axis-reduce
+     arr k (λ: ([dk : Index] [proc : (Index -> A)])
+             (let: loop : Index ([jk : Nonnegative-Fixnum  0] [acc : Nonnegative-Fixnum  0])
+               (if (jk . < . dk)
+                   (cond [(pred? (proc jk))  (loop (+ jk 1) (unsafe-fx+ acc 1))]
+                         [else  (loop (+ jk 1) acc)])
+                   (with-asserts ([acc index?]) acc)))))))
+
+(: view-array-count (All (A) ((view-array A) (A -> Any) -> Index)))
+(define (view-array-count arr pred?)
+  (define: i : (Boxof Nonnegative-Fixnum) (box 0))
+  (define proc (unsafe-array-proc arr))
+  (define ds (unsafe-array-shape arr))
+  (for-each-array-index ds (λ (js) (when (pred? (proc js)) (set-box! i (unsafe-fx+ (unbox i) 1)))))
+  (define j (unbox i))
+  (with-asserts ([j index?]) j))
+
+(: strict-array-count (All (A) ((strict-array A) (A -> Any) -> Index)))
+(define (strict-array-count arr pred?)
+  (define vs (strict-array-data arr))
+  (define n (vector-length vs))
+  (let loop ([#{j : Nonnegative-Fixnum} 0] [#{i : Nonnegative-Fixnum} 0])
+    (cond [(j . < . n)
+           (cond [(pred? (unsafe-vector-ref vs j))  (loop (+ j 1) (unsafe-fx+ i 1))]
+                 [else  (loop (+ j 1) i)])]
+          [else
+           (with-asserts ([i index?]) i)])))
+
+(: array-count (All (A) ((Array A) (A -> Any) -> Index)))
+(define (array-count arr pred?)
+  (cond [(view-array? arr)  (view-array-count arr pred?)]
+        [else  (strict-array-count arr pred?)]))
+
+;; ===================================================================================================
+;; Short-cutting andmap
+
+(: array-axis-andmap (All (A) ((Array A) Integer (A -> Any) -> (view-array Boolean))))
+(define (array-axis-andmap arr k pred?)
+  (let ([k  (check-array-axis 'array-axis-andmap arr k)])
+    (unsafe-array-axis-reduce
+     arr k (λ: ([dk : Index] [proc : (Index -> A)])
+             (let: loop : Boolean ([jk : Nonnegative-Fixnum  0])
+               (cond [(jk . < . dk)  (if (pred? (proc jk)) (loop (+ jk 1)) #f)]
+                     [else  #t]))))))
+
+(: view-array-andmap (All (A) ((view-array A) (A -> Any) -> Boolean)))
+(define (view-array-andmap arr pred?)
+  (let/ec: return : Boolean
+    (define proc (unsafe-array-proc arr))
+    (define ds (unsafe-array-shape arr))
+    (for-each-array-index ds (λ (js) (unless (pred? (proc js)) (return #f))))
+    #t))
+
+(: strict-array-andmap (All (A) ((strict-array A) (A -> Any) -> Boolean)))
+(define (strict-array-andmap arr pred?)
+  (define vs (strict-array-data arr))
+  (define n (vector-length vs))
+  (let loop ([#{j : Nonnegative-Fixnum} 0])
+    (cond [(j . < . n)  (if (pred? (unsafe-vector-ref vs j)) (loop (+ j 1)) #f)]
+          [else  #t])))
+
+(: array-andmap (All (A) ((Array A) (A -> Any) -> Boolean)))
+(define (array-andmap arr pred?)
+  (cond [(view-array? arr)  (view-array-andmap arr pred?)]
+        [else  (strict-array-andmap arr pred?)]))
+
+;; ===================================================================================================
+;; Short-cutting ormap
+
+(: array-axis-ormap (All (A) ((Array A) Integer (A -> Any) -> (view-array Boolean))))
+(define (array-axis-ormap arr k pred?)
+  (let ([k  (check-array-axis 'array-axis-ormap arr k)])
+    (unsafe-array-axis-reduce
+     arr k (λ: ([dk : Index] [proc : (Index -> A)])
+             (let: loop : Boolean ([jk : Nonnegative-Fixnum  0])
+               (cond [(jk . < . dk)  (if (pred? (proc jk)) #t (loop (+ jk 1)))]
+                     [else  #f]))))))
+
+(: view-array-ormap (All (A) ((view-array A) (A -> Any) -> Boolean)))
+(define (view-array-ormap arr pred?)
+  (let/ec: return : Boolean
+    (define f (unsafe-array-proc arr))
+    (define ds (unsafe-array-shape arr))
+    (for-each-array-index ds (λ (js) (when (pred? (f js)) (return #t))))
+    #f))
+
+(: strict-array-ormap (All (A) ((strict-array A) (A -> Any) -> Boolean)))
+(define (strict-array-ormap arr pred?)
+  (define vs (strict-array-data arr))
+  (define n (vector-length vs))
+  (let loop ([#{j : Nonnegative-Fixnum} 0])
+    (cond [(j . < . n)  (if (pred? (unsafe-vector-ref vs j)) #t (loop (+ j 1)))]
+          [else  #f])))
+
+(: array-ormap (All (A) ((Array A) (A -> Any) -> Boolean)))
+(define (array-ormap arr pred?)
+  (cond [(view-array? arr)  (view-array-ormap arr pred?)]
+        [else  (strict-array-ormap arr pred?)]))

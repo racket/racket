@@ -1,11 +1,5 @@
 #lang typed/racket/base
 
-#|
-TODO
-
-single-flonum versions of everything here
-|#
-
 (provide flonum->bit-field bit-field->flonum
          flonum->ordinal ordinal->flonum
          flstep flnext flprev flonums-between

@@ -8,7 +8,7 @@
 
 Based on "Fast mergesort implementation based on half-copying merge algorithm",
 Cezary Juszczak, http://kicia.ift.uni.wroc.pl/algorytmy/mergesortpaper.pdf
-Written in Scheme by Eli Barzilay.  (Note: the reason for the seemingly
+Written in Racket by Eli Barzilay.  (Note: the reason for the seemingly
 redundant pointer arithmetic in that paper is dealing with cases of uneven
 number of elements.)
 

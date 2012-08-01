@@ -8,17 +8,15 @@
          "sinpx.rkt"
          "polyfun.rkt")
 
-(provide (all-defined-out))
-
 (provide fllog-gamma log-gamma
          +fllog-gamma-max.0)
 
 (define +fllog-gamma-max.0 2.5563481638716906e+305)
 
+(: fllog-gamma-stirling (Float -> Float))
 ;; Computes log(Gamma(x)) using 5 terms from Stirling's series
 ;; For x >= 143, relative error ε < +epsilon.0
-(: fllog-gamma/stirling5 (Float -> Float))
-(define (fllog-gamma/stirling5 x)
+(define (fllog-gamma-stirling x)
   (let* ([x  (- x 1.0)]
          [log-x  (fllog x)])
     (+ (* x log-x)
@@ -27,22 +25,71 @@
        (let ([1/x  (/ 1.0 x)])
          (* 1/x (+ (* #i-1/360 (* 1/x 1/x)) #i1/12))))))
 
-;; Computes log(Gamma(x)) using 3 terms from Stirling's series
-;; For x >= 1e7, relative error ε < +epsilon.0
-(: fllog-gamma/stirling3 (Float -> Float))
-(define (fllog-gamma/stirling3 x)
-  (let* ([x  (- x 1.0)]
-         [log-x  (fllog x)])
-    (+ (* x log-x)
-       (- x)
-       (* 0.5 (+ (fllog (* 2.0 pi.0)) log-x)))))
+(: fllog-gamma-taylor-0.00 (Float -> Float))
+;; Good for -0.25 <= x <= 0.25
+(define (fllog-gamma-taylor-0.00 x)
+  (- (* x ((make-polyfun
+            Float
+            (-5.7721566490153286060651209008240243104216e-1
+             +8.2246703342411321823620758332301259460947e-1
+             -4.0068563438653142846657938717048333025499e-1
+             +2.7058080842778454787900092413529197569369e-1
+             -2.0738555102867398526627309729140683361142e-1
+             +1.6955717699740818995241965496515342131697e-1
+             -1.4404989676884611811997107854997096565712e-1
+             +1.2550966952474304242233565481358155815737e-1
+             -1.1133426586956469049087252991471245116507e-1
+             +1.000994575127818085337145958900319017006e-1
+             -9.0954017145829042232609298411497266951692e-2
+             +8.3353840546109004024886499837311639246699e-2
+             -7.6932516411352191472827064348181338131867e-2
+             +7.1432946295361336059232753221795380981961e-2
+             -6.6668705882420468032903448567376337505842e-2
+             +6.250095514121304074198328571797729512645e-2
+             -5.882397865868458233895727060550370760077e-2
+             +5.5555767627403611102214247869145663318357e-2
+             -5.2631679379616660733627666155673426387014e-2
+             +5.0000047698101693639805657601934172467295e-2
+             -4.7619070330142227990783957939028779668856e-2
+             +4.5454556293204669442408636529463034227041e-2
+             -4.3478266053040259361351002947335603579408e-2
+             +4.1666669150341210469144983851675330658383e-2
+             -4.000000119214014058609120744254820277464e-2))
+           x))
+     (fllog (flabs x))))
 
-(: fllog-gamma-integer (Float -> (Values Float Float)))
-(define (fllog-gamma-integer x)
-  (cond [(x . < . 0.0)  (values +nan.0 +nan.0)]
-        [(equal? x +0.0)  (values +inf.0 +1.0)]
-        [(equal? x -0.0)  (values +inf.0 -1.0)]
-        [else  (values (fllog-factorial (- (exact-truncate x) 1)) 1.0)]))
+(: fllog-gamma-taylor-0.25 (Float -> Float))
+;; Good for 0.2 <= x <= 0.3
+(define (fllog-gamma-taylor-0.25 x)
+  ((make-polyfun
+    Float
+    (+1.2880225246980774573706104402197172959254e0
+     -4.2274535333762654080895301460966835773672e0
+     +8.5986645772535553696356595596676120107535e0
+     -2.1554623322922820055556327863140664981215e1
+     +6.4115922667049516500949635159543127365351e1
+     -2.0486979490531611444631855960434965829803e2
+     +6.8271182467733512784147775999936646633190e2
+     -2.3406019221713673821639922031360341786831e3
+     +8.1920211733386271770257584477642417071823e3
+     -2.9127126102413786952705664233364266579143e4
+     +1.0485761076831147539267450999973685838075e5
+     -3.8130037145777091303332298313162618015895e5
+     +1.3981013390649692882433574562368969426983e6
+     -5.1622203119232470494907885079964686151354e6
+     +1.9173961145999447781172798758783596423575e7
+     -7.1582788269012640570224029670280449249173e7
+     +2.6843545600175936387731944917825625449913e8
+     -1.0105805402366187664874395906083166992963e9
+     +3.8177487075565563809425864802719934216549e9
+     -1.4467258260211284827499035133145761712036e10
+     +5.4975581388800576465277096191993634564536e10
+     -2.0943078624304805825772615550814087377792e11
+     +7.9964482020072760812343178266260768051649e11
+     -3.0595106164201741696941758669213590210283e12
+     +1.1728124029610666863432083838677809746289e13
+     -4.503599627370496015111579019136059236865e13))
+   (- x 0.25)))
 
 (: fllog-gamma-taylor-0.35 (Float -> Float))
 ;; Good for 0.3 <= x <= 0.4
@@ -308,18 +355,22 @@
      -3.5662792412112287754095936864694572751781e-17))
    (- x 4.0)))
 
-(: fllog-gamma-negative (Float -> (Values Float Float)))
-(define (fllog-gamma-negative x)
-  (define t (sinpx x))
-  (cond [(t . < . 0.0)  (values (- (log pi.0) (fllog-gamma (- x)) (log (- t))) 1.0)]
-        [else           (values (- (log pi.0) (fllog-gamma (- x)) (log t)) -1.0)]))
+(: fllog-gamma-integer (Float -> Float))
+(define (fllog-gamma-integer x)
+  (cond [(x . <= . 0.0)  +inf.0]
+        [else  (fllog-factorial (- (exact-truncate x) 1))]))
 
-(: fllog-gamma-small-nonnegative (Float -> Float))
+(: fllog-gamma-large-negative (Float -> Float))
+(define (fllog-gamma-large-negative x)
+  (cond [(x . < . -170.0)  (- (log-pi-minus-log-sinpx x) (fllog-gamma (- x)))]
+        [else  (fllog (flabs (flgamma x)))]))
+
+(: fllog-gamma-small-positive (Float -> Float))
 ;; Good for 0 <= x <= 5
-(define (fllog-gamma-small-nonnegative x)
+(define (fllog-gamma-small-positive x)
   (cond [(x . < . 0.85)
-         (cond [(x . < . 1e-16) (- (fllog x))]
-               [(x . < . 0.3)   (fllog (flgamma x))]
+         (cond [(x . < . 0.2)   (fllog-gamma-taylor-0.00 x)]
+               [(x . < . 0.3)   (fllog-gamma-taylor-0.25 x)]
                [(x . < . 0.4)   (fllog-gamma-taylor-0.35 x)]
                [(x . < . 0.6)   (fllog-gamma-taylor-0.50 x)]
                [else            (fllog-gamma-taylor-0.75 x)])]
@@ -330,22 +381,26 @@
                [(x . < . 3.4)   (fllog-gamma-taylor-3.00 x)]
                [else            (fllog-gamma-taylor-4.00 x)])]))
 
-(: fllog-abs-gamma (Float -> (Values Float Float)))
-(define (fllog-abs-gamma x)
-  (cond [(integer? x)  (fllog-gamma-integer x)]
-        [(x . > . +fllog-gamma-max.0)  (values +inf.0 1.0)]
-        [(x . < . (- (expt 2.0 53)))  (values +nan.0 +nan.0)]
-        [(eqv? x +nan.0)   (values +nan.0 +nan.0)]
-        [(x . < . 0.0)  (fllog-gamma-negative x)]
-        [(x . <= . 5.0)  (values (fllog-gamma-small-nonnegative x) 1.0)]
-        [(x . >= . 143.0)  (cond [(x . >= . 1e7)  (values (fllog-gamma/stirling3 x) 1.0)]
-                                 [else            (values (fllog-gamma/stirling5 x) 1.0)])]
-        [else  (values (fllog (flgamma x)) 1.0)]))
+(: fllog-gamma-small-negative (Float -> Float))
+(define (fllog-gamma-small-negative x)
+  (cond [(x . > . -0.25)  (fllog-gamma-taylor-0.00 x)]
+        [else  (fllog (flabs (flgamma x)))]))
+
+(: fllog-gamma-large-positive (Float -> Float))
+(define (fllog-gamma-large-positive x)
+  (cond [(x . < . 143.0)  (fllog (flgamma x))]
+        [else  (fllog-gamma-stirling x)]))
 
 (: fllog-gamma (Float -> Float))
 (define (fllog-gamma x)
-  (define-values (y s) (fllog-abs-gamma x))
-  y)
+  (cond [(integer? x)  (fllog-gamma-integer x)]
+        [(x . > . +fllog-gamma-max.0)  +inf.0]
+        [(x . = . -inf.0)  +inf.0]
+        [(eqv? x +nan.0)   +nan.0]
+        [(x . < . -5.5)  (fllog-gamma-large-negative x)]
+        [(x . < . 0.0)  (fllog-gamma-small-negative x)]
+        [(x . < . 4.5)  (fllog-gamma-small-positive x)]
+        [else  (fllog-gamma-large-positive x)]))
 
 (: log-gamma (Real -> Real))
 (define (log-gamma x)

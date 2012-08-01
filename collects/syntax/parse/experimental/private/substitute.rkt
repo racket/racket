@@ -222,7 +222,7 @@ A HeadGuide (HG) is one of:
        (lambda (env lenv)
          (let* ([v (f1 env lenv)]
                 [v* (stx->list v)])
-           (unless v*
+           (unless (list? v*)
              (raise-syntax-error 'template
                                  "splicing template did not produce a syntax list"
                                  stx))

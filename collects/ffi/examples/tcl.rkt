@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require mzlib/foreign) (unsafe!)
+(require ffi/unsafe)
 
 (define libtcl (ffi-lib "libtcl"))
 

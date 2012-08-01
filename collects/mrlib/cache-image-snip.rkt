@@ -843,7 +843,7 @@ for b3, we have:
    [argb->bitmap (argb? . -> . (or/c #f (is-a?/c bitmap%)))]
            
    [argb? (any/c . -> . boolean?)]
-   [make-argb ((vectorof (integer-in 0 255)) exact-nonnegative-integer? exact-nonnegative-integer? . -> . argb?)]
-   [argb-vector (argb? . -> . (vectorof (integer-in 0 255)))]
+   [make-argb ((vectorof byte?) exact-nonnegative-integer? exact-nonnegative-integer? . -> . argb?)]
+   [argb-vector (argb? . -> . (vectorof byte?))]
    [argb-width (argb? . -> . exact-nonnegative-integer?)]
    [argb-height (argb? . -> . exact-nonnegative-integer?)])

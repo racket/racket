@@ -75,7 +75,26 @@
 (define figures (new-counter "figure"))
 (define (Figure-target tag)
   (counter-target figures tag "Figure"))
-(define (Figure-ref tag)
-  (make-element #f (list (counter-ref figures tag "Figure"))))
-(define (figure-ref tag)
-  (make-element #f (list (counter-ref figures tag "figure"))))
+
+(define (ref-proc initial)
+  (case-lambda 
+   [(tag)
+    (make-element #f (list (counter-ref figures tag (string-append initial "igure"))))]
+   [(tag1 tag2)
+    (make-element #f (list (counter-ref figures tag1 (string-append initial "igures"))
+                           " and "
+                           (counter-ref figures tag2 #f)))]
+   [(tag . tags)
+    (make-element #f (cons (counter-ref figures tag (string-append initial "igures"))
+                           (let loop ([tags tags])
+                             (cond
+                              [(null? (cdr tags))
+                               (list ", and "
+                                     (counter-ref figures (car tags) #f))]
+                              [else
+                               (list* ", "
+                                      (counter-ref figures (car tags) #f)
+                                      (loop (cdr tags)))]))))]))
+
+(define Figure-ref (ref-proc "F"))
+(define figure-ref (ref-proc "f"))

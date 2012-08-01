@@ -11,7 +11,7 @@
 (check-= (bigfloat->integer (bf (expt 2 64)))
          (expt 2 64)  0)
 
-(check-= (bigfloat->float (bf 123.456))
+(check-= (bigfloat->flonum (bf 123.456))
          123.456  0)
 
 (check-= (bigfloat->rational (bf 123456/65536))
@@ -63,15 +63,15 @@
          (/ (sqr 22) (sqr 7))
          +epsilon.0)
 
-(check-= (bigfloat->float (bfsqrt (bf 2)))
+(check-= (bigfloat->flonum (bfsqrt (bf 2)))
          (sqrt 2)
          +epsilon.0)
 
-(check-= (bigfloat->float (bf1/sqrt (bf 2)))
+(check-= (bigfloat->flonum (bf1/sqrt (bf 2)))
          (/ 1 (sqrt 2))
          +epsilon.0)
 
-(check-= (bigfloat->float (bfcbrt (bf 2)))
+(check-= (bigfloat->flonum (bfcbrt (bf 2)))
          (flexpt 2.0 #i1/3)
          +epsilon.0)
 
@@ -103,7 +103,7 @@
   (begin
     (begin
       (printf "checking (~a ~v)~n" 'racket-fun v)
-      (check-equal?+exn (λ () (significant-part (bigfloat->float (fun (bf v)))))
+      (check-equal?+exn (λ () (significant-part (bigfloat->flonum (fun (bf v)))))
                         (λ () (significant-part (racket-fun v)))))
     ...))
 

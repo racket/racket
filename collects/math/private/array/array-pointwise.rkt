@@ -5,7 +5,6 @@
          (for-syntax racket/base)
          "../unsafe.rkt"
          "array-struct.rkt"
-         "../vector/vector-pointwise.rkt"
          "for-each.rkt"
          "utils.rkt")
 
@@ -55,8 +54,9 @@
 ;; ===================================================================================================
 ;; Numeric equality
 
-(: lazy-array= ((lazy-array Number) (lazy-array Number) (Vectorof Index) -> Boolean))
-(define (lazy-array= arr brr ds)
+(: view-array= ((view-array Number) (view-array Number) (Vectorof Index) -> Boolean))
+;; Assumes both arrays have shape `ds'
+(define (view-array= arr brr ds)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
     (define g (unsafe-array-proc brr))
@@ -64,26 +64,38 @@
                                        (return #f))))
     #t))
 
-(: mixed-array= ((lazy-array Number) (strict-array Number) (Vectorof Index) -> Boolean))
+(: mixed-array= ((view-array Number) (strict-array Number) (Vectorof Index) -> Boolean))
+;; Assumes both arrays have shape `ds'
 (define (mixed-array= arr brr ds)
   (let/ec: return : Boolean
     (define f (unsafe-array-proc arr))
-    (define vs (unsafe-array-data brr))
+    (define vs (strict-array-data brr))
     (for-each-array+data-index ds (λ (js j) (unless (= (f js) (unsafe-vector-ref vs j))
                                               (return #f))))
     #t))
+
+(: strict-array= ((strict-array Number) (strict-array Number) -> Boolean))
+;; Assumes arrays have the same size, and returns nonsense if they have different shapes
+(define (strict-array= arr brr)
+  (define n (array-size arr))
+  (define xs (strict-array-data arr))
+  (define ys (strict-array-data brr))
+  (let loop ([#{j : Nonnegative-Fixnum} 0])
+    (cond [(j . < . n)
+           (cond [(not (= (unsafe-vector-ref xs j) (unsafe-vector-ref ys j)))  #f]
+                 [else  (loop (+ j 1))])]
+          [else  #t])))
 
 (: array= ((Array Number) (Array Number) -> Boolean))
 (define (array= arr brr)
   (define ds (unsafe-array-shape arr))
   (and (equal? ds (unsafe-array-shape brr))
-       (cond [(lazy-array? arr)
-              (cond [(lazy-array? brr)  (lazy-array= arr brr ds)]
+       (cond [(view-array? arr)
+              (cond [(view-array? brr)  (view-array= arr brr ds)]
                     [else  (mixed-array= arr brr ds)])]
              [else
-              (cond [(lazy-array? brr)  (mixed-array= brr arr ds)]
-                    [else  (vector= (unsafe-array-data arr)
-                                    (unsafe-array-data brr))])])))
+              (cond [(view-array? brr)  (mixed-array= brr arr ds)]
+                    [else  (strict-array= arr brr)])])))
 
 ;; ===================================================================================================
 ;; Lifting
@@ -92,140 +104,140 @@
 The lift operators could be just functions, but then it wouldn't be possible to give the results more
 precise types. For example, (array-lift exp) can only have the type
 
-    ((Array Number) -> (lazy-array Number))
+    ((Array Number) -> (view-array Number))
 
 or the type
 
-    ((Array Real) -> (lazy-array Real))
+    ((Array Real) -> (view-array Real))
 
 but (inline-array-lift exp) can have the type
 
-    (case-> ((Array Real)   -> (lazy-array Real))
-            ((Array Number) -> (lazy-array Number)))
+    (case-> ((Array Real)   -> (view-array Real))
+            ((Array Number) -> (view-array Number)))
 
 IOW, the macro lift operators allow us to have array-exp do the job of both array-real-exp and
 array-number-exp.
 |#
 
-;(: inline-array-lift (All (A B) ((A -> B) -> ((Array A) -> (lazy-array B)))))
+;(: inline-array-lift (All (A B) ((A -> B) -> ((Array A) -> (view-array B)))))
 (define-syntax (inline-array-lift stx)
   (syntax-case stx ()
     [(_ f)
      (syntax/loc stx
        (λ (arr)
-         (let ([arr  (array-lazy arr)])
+         (let ([arr  (array-view arr)])
            (define ds (unsafe-array-shape arr))
            (define g (unsafe-array-proc arr))
-           (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) (f (g js)))))))]))
+           (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) (f (g js)))))))]))
 
-;(: inline-array-lift2 (All (A B C) ((A B -> C) -> ((Array A) (Array B) -> (lazy-array C)))))
+;(: inline-array-lift2 (All (A B C) ((A B -> C) -> ((Array A) (Array B) -> (view-array C)))))
 (define-syntax (inline-array-lift2 stx)
   (syntax-case stx ()
     [(_ name f)
      (syntax/loc stx
        (λ (arr1 arr2)
-         (let ([arr1  (array-lazy arr1)]
-               [arr2  (array-lazy arr2)])
+         (let ([arr1  (array-view arr1)]
+               [arr2  (array-view arr2)])
            (define ds (unsafe-array-shape arr1))
            (unsafe-check-equal-array-shape! name ds (unsafe-array-shape arr2))
            (define g1 (unsafe-array-proc arr1))
            (define g2 (unsafe-array-proc arr2))
-           (unsafe-lazy-array ds (λ: ([js : (Vectorof Index)]) (f (g1 js) (g2 js)))))))]))
+           (unsafe-view-array ds (λ: ([js : (Vectorof Index)]) (f (g1 js) (g2 js)))))))]))
 
 (begin-encourage-inline
   
-  (: array-lift (All (A B) ((A -> B) -> ((Array A) -> (lazy-array B)))))
+  (: array-lift (All (A B) ((A -> B) -> ((Array A) -> (view-array B)))))
   (define (array-lift f) (inline-array-lift f))
   
-  (: array-lift2 (All (A B C) (Symbol (A B -> C) -> ((Array A) (Array B) -> (lazy-array C)))))
+  (: array-lift2 (All (A B C) (Symbol (A B -> C) -> ((Array A) (Array B) -> (view-array C)))))
   (define (array-lift2 name f) (inline-array-lift2 name f))
   
-  (: array-map (All (A B) ((A -> B) (Array A) -> (lazy-array B))))
+  (: array-map (All (A B) ((A -> B) (Array A) -> (view-array B))))
   (define (array-map f arr) ((inline-array-lift f) arr))
   
-  (: array-map2 (All (A B C) ((A B -> C) (Array A) (Array B) -> (lazy-array C))))
+  (: array-map2 (All (A B C) ((A B -> C) (Array A) (Array B) -> (view-array C))))
   (define (array-map2 f arr1 arr2) ((inline-array-lift2 'array-map2 f) arr1 arr2))
   
   )  ; begin-encourage-inline
 
-(: array-scale (Number (Array Number) -> (lazy-array Number)))
+(: array-scale (case-> (Float  (Array Float)  -> (view-array Float))
+                       (Real   (Array Real)   -> (view-array Real))
+                       (Number (Array Number) -> (view-array Number))))
 (define (array-scale s arr)
-  (: scale : Number -> Number)
-  (define (scale x) (* s x))
-  ((inst array-map Number Number) scale arr))
+  ((inline-array-lift (λ (x) (* s x))) arr))
 
 ;; ===================================================================================================
 ;; Lifted operations on Real and Number
 
-(: array-abs      (case-> ((Array Float) -> (lazy-array Float))
-                          ((Array Real)  -> (lazy-array Real))))
-(: array-round    (case-> ((Array Float) -> (lazy-array Float))
-                          ((Array Real)  -> (lazy-array Real))))
-(: array-floor    (case-> ((Array Float) -> (lazy-array Float))
-                          ((Array Real)  -> (lazy-array Real))))
-(: array-ceiling  (case-> ((Array Float) -> (lazy-array Float))
-                          ((Array Real)  -> (lazy-array Real))))
-(: array-truncate (case-> ((Array Float) -> (lazy-array Float))
-                          ((Array Real)  -> (lazy-array Real))))
+(: array-abs      (case-> ((Array Float) -> (view-array Float))
+                          ((Array Real)  -> (view-array Real))))
+(: array-round    (case-> ((Array Float) -> (view-array Float))
+                          ((Array Real)  -> (view-array Real))))
+(: array-floor    (case-> ((Array Float) -> (view-array Float))
+                          ((Array Real)  -> (view-array Real))))
+(: array-ceiling  (case-> ((Array Float) -> (view-array Float))
+                          ((Array Real)  -> (view-array Real))))
+(: array-truncate (case-> ((Array Float) -> (view-array Float))
+                          ((Array Real)  -> (view-array Real))))
 
 
-(: array-sqrt      ((Array Number) -> (lazy-array Number)))
-(: array-conjugate ((Array Number) -> (lazy-array Number)))
-(: array-magnitude ((Array Number) -> (lazy-array Number)))
-(: array-log       ((Array Number) -> (lazy-array Number)))
+(: array-sqrt      ((Array Number) -> (view-array Number)))
+(: array-conjugate ((Array Number) -> (view-array Number)))
+(: array-magnitude ((Array Number) -> (view-array Number)))
+(: array-log       ((Array Number) -> (view-array Number)))
 
-(: array-sqr  (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-exp  (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-sin  (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-cos  (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-tan  (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-asin (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-acos (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
-(: array-atan (case-> ((Array Float)  -> (lazy-array Float))
-                      ((Array Real)   -> (lazy-array Real))
-                      ((Array Number) -> (lazy-array Number))))
+(: array-sqr  (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-exp  (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-sin  (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-cos  (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-tan  (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-asin (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-acos (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
+(: array-atan (case-> ((Array Float)  -> (view-array Float))
+                      ((Array Real)   -> (view-array Real))
+                      ((Array Number) -> (view-array Number))))
 
-(: array+ (case-> ((Array Float)  (Array Float)  -> (lazy-array Float))
-                  ((Array Real)   (Array Real)   -> (lazy-array Real))
-                  ((Array Number) (Array Number) -> (lazy-array Number))))
-(: array* (case-> ((Array Float)  (Array Float)  -> (lazy-array Float))
-                  ((Array Real)   (Array Real)   -> (lazy-array Real))
-                  ((Array Number) (Array Number) -> (lazy-array Number))))
+(: array+ (case-> ((Array Float)  (Array Float)  -> (view-array Float))
+                  ((Array Real)   (Array Real)   -> (view-array Real))
+                  ((Array Number) (Array Number) -> (view-array Number))))
+(: array* (case-> ((Array Float)  (Array Float)  -> (view-array Float))
+                  ((Array Real)   (Array Real)   -> (view-array Real))
+                  ((Array Number) (Array Number) -> (view-array Number))))
 
-(: array- (case-> ((Array Float)  -> (lazy-array Float))
-                  ((Array Real)   -> (lazy-array Real))
-                  ((Array Number) -> (lazy-array Number))
-                  ((Array Float)  (Array Float)  -> (lazy-array Float))
-                  ((Array Real)   (Array Real)   -> (lazy-array Real))
-                  ((Array Number) (Array Number) -> (lazy-array Number))))
+(: array- (case-> ((Array Float)  -> (view-array Float))
+                  ((Array Real)   -> (view-array Real))
+                  ((Array Number) -> (view-array Number))
+                  ((Array Float)  (Array Float)  -> (view-array Float))
+                  ((Array Real)   (Array Real)   -> (view-array Real))
+                  ((Array Number) (Array Number) -> (view-array Number))))
 
-(: array/ (case-> ((Array Float)  -> (lazy-array Float))
-                  ((Array Real)   -> (lazy-array Real))
-                  ((Array Number) -> (lazy-array Number))
-                  ((Array Float)  (Array Float)  -> (lazy-array Float))
-                  ((Array Real)   (Array Real)   -> (lazy-array Real))
-                  ((Array Number) (Array Number) -> (lazy-array Number))))
+(: array/ (case-> ((Array Float)  -> (view-array Float))
+                  ((Array Real)   -> (view-array Real))
+                  ((Array Number) -> (view-array Number))
+                  ((Array Float)  (Array Float)  -> (view-array Float))
+                  ((Array Real)   (Array Real)   -> (view-array Real))
+                  ((Array Number) (Array Number) -> (view-array Number))))
 
-(: array-expt ((Array Number) (Array Number) -> (lazy-array Number)))
+(: array-expt ((Array Number) (Array Number) -> (view-array Number)))
 
-(: array-min  (case-> ((Array Float) (Array Float) -> (lazy-array Float))
-                      ((Array Real)  (Array Real)  -> (lazy-array Real))))
-(: array-max  (case-> ((Array Float) (Array Float) -> (lazy-array Float))
-                      ((Array Real)  (Array Real)  -> (lazy-array Real))))
+(: array-min  (case-> ((Array Float) (Array Float) -> (view-array Float))
+                      ((Array Real)  (Array Real)  -> (view-array Real))))
+(: array-max  (case-> ((Array Float) (Array Float) -> (view-array Float))
+                      ((Array Real)  (Array Real)  -> (view-array Real))))
 
 
 
@@ -277,19 +289,19 @@ array-number-exp.
 
 (begin-encourage-inline
   
-  (: array-inexact->exact (case-> ((Array Real)   -> (lazy-array Exact-Rational))
-                                  ((Array Number) -> (lazy-array Exact-Number))))
+  (: array-inexact->exact (case-> ((Array Real)   -> (view-array Exact-Rational))
+                                  ((Array Number) -> (view-array Exact-Number))))
   
-  (: array-exact->inexact (case-> ((Array Real)   -> (lazy-array Inexact-Real))
-                                  ((Array Number) -> (lazy-array Number))))
+  (: array-exact->inexact (case-> ((Array Real)   -> (view-array Inexact-Real))
+                                  ((Array Number) -> (view-array Number))))
   
-  (: array-real->double-flonum ((Array Real) -> (lazy-array Float)))
-  (: array-real->single-flonum ((Array Real) -> (lazy-array Single-Flonum)))
+  (: array-real->double-flonum ((Array Real) -> (view-array Float)))
+  (: array-real->single-flonum ((Array Real) -> (view-array Single-Flonum)))
   
-  (: array-number->float-complex ((Array Number) -> (lazy-array Float-Complex)))
+  (: array-number->float-complex ((Array Number) -> (view-array Float-Complex)))
   
-  (: array-real-part ((Array Number) -> (lazy-array Real)))
-  (: array-imag-part ((Array Number) -> (lazy-array Real)))
+  (: array-real-part ((Array Number) -> (view-array Real)))
+  (: array-imag-part ((Array Number) -> (view-array Real)))
   
   (define array-inexact->exact (inline-array-lift inexact->exact))
   (define array-exact->inexact (inline-array-lift exact->inexact))

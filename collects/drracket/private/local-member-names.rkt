@@ -11,9 +11,16 @@
   insert-auto-text)
 
 ;; from module-language-tools.rkt
-(define-local-member-name when-initialized #;move-to-new-language get-in-module-language?)
+(define-local-member-name 
+  when-initialized
+  ;move-to-new-language 
+  get-in-module-language?)
   
 ;; for keybindings (otherwise private)
 (define-local-member-name
   jump-to-previous-error-loc
   jump-to-next-error-loc)
+
+;; defined in module-language.rkt
+(define-local-member-name
+  set-lang-wants-big-defs/ints-labels?)

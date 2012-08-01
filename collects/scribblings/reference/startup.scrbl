@@ -139,22 +139,27 @@ flags:
         evaluated from standard input.}
 
   @item{@FlagFirst{t} @nonterm{file} or @DFlagFirst{require}
-        @nonterm{file} : @racket[require]s @nonterm{file}.}
+        @nonterm{file} : @racket[require]s @nonterm{file}, and then
+        @racket[require]s @racket[(submod (file @#,nontermstr{file})
+        main)] if available.}
 
   @item{@FlagFirst{l} @nonterm{path} or @DFlagFirst{lib}
        @nonterm{path} : @racket[require]s @racket[(lib
-       @#,nontermstr{path})].}
+       @#,nontermstr{path})], and then @racket[require]s
+       @racket[(submod (lib @#,nontermstr{path}) main)] if available.}
 
   @item{@FlagFirst{p} @nonterm{package} :
-       @racket[require]s @racket[(planet @#,nontermstr{package})].
-
-       @margin-note{Despite its name, @DFlag{script} is not usually
-       used for Unix scripts. See @guidesecref["scripts"] for more
-       information on scripts.}}
+       @racket[require]s @racket[(planet @#,nontermstr{package})],
+       and then 
+        @racket[require]s @racket[(submod (planet @#,nontermstr{package})
+        main)] if available.}
 
   @item{@FlagFirst{r} @nonterm{file} or @DFlagFirst{script}
-        @nonterm{file} : @racket[load]s @nonterm{file} as a
-        script. This flag is like @Flag{t} @nonterm{file} plus
+        @nonterm{file} : @racket[load]s @nonterm{file}
+       @margin-note*{Despite its name, @DFlag{script} is not usually
+       used for Unix scripts. See @guidesecref["scripts"] for more
+       information on scripts.}
+        as a script. This flag is like @Flag{t} @nonterm{file} plus
         @Flag{N} @nonterm{file} to set the program name and @Flag{-}
         to cause all further command-line elements to be treated as
         non-flag arguments.}

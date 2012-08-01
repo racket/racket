@@ -45,7 +45,7 @@
     (define/public (syncheck:add-tail-arrow from-text from-pos to-text to-pos) (void))
     (define/public (syncheck:add-mouse-over-status text pos-left pos-right str) (void))
     (define/public (syncheck:add-jump-to-definition text start end id filename) (void))
-    (define/public (syncheck:color-range source start finish style-name mode) (void))
+    (define/public (syncheck:color-range source start finish style-name) (void))
     (super-new)))
 
 (provide syncheck-text<%>

@@ -175,7 +175,7 @@ generate events (see @racket[prop:evt]).
 
  @item{@elemtag["poll-guard-evt"]{@racket[_poll-guard]} --- an event
  returned by @racket[poll-guard-evt] applied to @racket[_proc]
- generates a new event every time that @racket[poll-guard] is used
+ generates a new event every time that @racket[_poll-guard] is used
  with @racket[sync] (or whenever it is part of a choice event used
  with @racket[sync], etc.); the generated event is the result of
  calling @racket[_proc] with a boolean: @racket[#t] if the event will

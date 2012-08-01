@@ -212,6 +212,16 @@ please adhere to these guidelines:
  (cs-unused-require "unused require")
  (cs-free-variable "free variable")
 
+  (cs-binder-count "~a binding occurrences")
+  (cs-zero-varrefs "no bound occurrences")
+  (cs-one-varref "1 bound occurrence")
+  (cs-n-varrefs "~a bound occurrences") ;; expected to have one ~a formatter that will accept a number
+  
+  (cs-contract-my-obligation "Contract: this module's obligation")
+  (cs-contract-their-obligation "Contract: clients modules' obligation")
+  (cs-contract-both-obligation "Contract: both this module and client modules' obligation")
+  (cs-contract-unk-obligation "Contract: unknown obligation")
+  
   ;; mode sub-menu in the "view" menu
   (cs-check-syntax-mode "Check Syntax Mode")
   (cs-mode-menu-show-my-obligations "My Contract Obligations")
@@ -1652,5 +1662,15 @@ please adhere to these guidelines:
   (ask-about-normalizing-strings "Ask about normalizing strings")
   
   (always-use-platform-specific-linefeed-convention "Always use the platform-specific linefeed convention")
+
+  ;; optimization coach
+  (hide-optimization-coach "Hide Optimization Coach")
+  (show-optimization-coach "Show Optimization Coach")
+
+  ;; labels used (in a big font) in the background of the definitions and interactions windows
+  (definitions-window-label "definitions")
+  (interactions-window-label "interactions")
+  (hide-defs/ints-label "Hide Definitions/Interactions Labels") ;; popup menu
+  (show-defs/ints-label "Show definitions/interactions labels") ;; preferences checkbox
   
   )

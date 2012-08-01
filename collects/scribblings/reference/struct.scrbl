@@ -304,7 +304,8 @@ A @deftech{structure type property} allows per-type information to be
                                     [guard (or/c procedure? #f 'can-impersonate) #f]
                                     [supers (listof (cons/c struct-type-property?
                                                             (any/c . -> . any/c)))
-                                            null])
+                                            null]
+                                    [can-impersonate? any/c #f])
          (values struct-type-property?
                  procedure?
                  procedure?)]{
@@ -355,9 +356,9 @@ returning a structure type descriptor.
 
 If @racket[guard] is @racket['can-impersonate], then the property's
 accessor can be redirected through
-@racket[impersonate-struct]. Otherwise, redirection of the property
-value through an @tech{impersonator} is disallowed, since redirection
-is tantamount to mutation.
+@racket[impersonate-struct]. This option is identical to supplying
+@racket[#t] as the @racket[can-impersonate?] argument and is provided
+for backwards compatibility.
 
 The optional @racket[supers] argument is a list of properties that are
 automatically associated with some structure type when the newly
@@ -366,6 +367,12 @@ created property is associated to the structure type. Each property in
 supplied for the new property (after it is processed by
 @racket[guard]) and returns a value for the associated property (which
 is then sent to that property's guard, of any).
+
+The optional @racket[can-impersonate?] argument determines if the
+structure type property can be redirected through @racket[impersonate-struct].
+If the argument is @racket[#f], then redirection is not allowed.
+Otherwise, the property accessor may be redirected by a struct
+impersonator.
 
 @examples[
 #:eval struct-eval

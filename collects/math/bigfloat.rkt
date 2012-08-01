@@ -6,7 +6,6 @@
          (for-syntax racket/base racket/syntax syntax/strip-context))
 
 (define-type Rounding-Mode (U 'nearest 'zero 'up 'down))
-(define-type Print-Scientific (U 'always 'never 'shorter))
 
 (require/typed
  "private/mpfr.rkt"
@@ -15,12 +14,11 @@
  [bf-min-precision  Exact-Positive-Integer]
  [bf-max-precision  Exact-Positive-Integer]
  [bf-precision  (Parameterof Integer)]
- [bf-scientific  (Parameterof Print-Scientific)]
  ;; Type and predicate
  [opaque Bigfloat bigfloat?]
  ;; Accessors
  [bigfloat-precision    (Bigfloat -> Integer)]
- [bigfloat-sign         (Bigfloat -> (U -1 0 1))]
+ [bigfloat-sign         (Bigfloat -> (U 0 1))]
  [bigfloat-exponent     (Bigfloat -> Integer)]
  [bigfloat-sig+exp      (Bigfloat -> (Values Integer Integer))]
  [bigfloat-significand  (Bigfloat -> Integer)]
@@ -36,11 +34,16 @@
  [bigfloat->string  (Bigfloat -> String)]
  [string->bigfloat  (String -> (U #f Bigfloat))]
  ;; Main constructor
- [bf  ((U String Real) -> Bigfloat)]
+ [bf  (case-> ((U String Real) -> Bigfloat)
+              (Integer Integer -> Bigfloat))]
  ;; Functions with non-uniform types
+ [bffactorial  (Integer -> Bigfloat)]
+ [bfsum  ((Listof Bigfloat) -> Bigfloat)]
  [bfjn  (Integer Bigfloat -> Bigfloat)]
  [bfyn  (Integer Bigfloat -> Bigfloat)]
- [bfshift  (Bigfloat Integer -> Bigfloat)])
+ [bfshift  (Bigfloat Integer -> Bigfloat)]
+ [bflog-gamma/sign  (Bigfloat -> (Values Bigfloat (U -1 1)))]
+ [bfrandom  (-> Bigfloat)])
 
 (provide
  ;; Parameters
@@ -48,7 +51,6 @@
  bf-min-precision
  bf-max-precision
  bf-precision
- bf-scientific
  ;; Type and predicate
  Bigfloat bigfloat?
  ;; Accessors
@@ -71,9 +73,13 @@
  ;; Main constructor
  bf
  ;; Functions with non-uniform types
+ bffactorial
+ bfsum
  bfjn
  bfyn
- bfshift)
+ bfshift
+ bflog-gamma/sign
+ bfrandom)
 
 (define-syntax (req/prov-uniform-collection stx)
   (syntax-case stx ()

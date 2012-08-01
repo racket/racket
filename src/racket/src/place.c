@@ -2589,7 +2589,11 @@ static Scheme_Object *places_serialize(Scheme_Object *so, void **msg_memory, Sch
 #endif
 }
 
-Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
+Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) 
+/* The caller must immediately drop any reference to `so' and
+   `msg_memory' after this function returns; otherwise, since the
+   `msg_memory' page may be deallocated, a GC could crash. */
+{
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Object *new_so = so;
 
@@ -2600,6 +2604,8 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
   if (GC_message_objects_size(msg_memory) < 1024) {
     new_so = do_places_deep_copy(so, mzPDC_UNCOPY, 1, NULL, NULL);
     GC_dispose_short_message_allocator(msg_memory);
+    /* from this point, we must return immediately, so that any
+       reference to `so' can be dropped before GC. */
     msg_memory = NULL;
   }
   else {
@@ -3096,7 +3102,9 @@ static void register_place_object_with_channel(Scheme_Place_Async_Channel *ch, S
   }
 }
 
-static Scheme_Object *scheme_place_async_try_receive_raw(Scheme_Place_Async_Channel *ch, void **msg_memory_ptr) {
+static Scheme_Object *scheme_place_async_try_receive_raw(Scheme_Place_Async_Channel *ch, void **msg_memory_ptr) 
+/* The result must not be retained past extraction from `*msg_memory_ptr'! */
+{
   Scheme_Object *msg = NULL;
   void *msg_memory = NULL;
   intptr_t sz;
@@ -3160,18 +3168,19 @@ static int scheme_place_async_ch_ready(Scheme_Place_Async_Channel *ch) {
   mzrt_mutex_unlock(ch->lock);
   return ready;
 }
-static Scheme_Object *place_channel_finish_ready(void *d, int argc, struct Scheme_Object *argv[]) {
+
+static Scheme_Object *place_channel_finish_ready(void *d, int argc, struct Scheme_Object *argv[]) 
+{
   Scheme_Object *msg;
+  Scheme_Thread *p = scheme_current_thread;                                                                 
 
-  msg = argv[0];
+  msg = *(Scheme_Object **)d;
 
-  if (msg) {
-    Scheme_Thread *p = scheme_current_thread;                                                                 
-    BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
-      msg = scheme_places_deserialize(msg, p->place_channel_msg_in_flight);
-      p->place_channel_msg_in_flight = NULL;
-    END_ESCAPEABLE();
-  }
+  BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
+  msg = scheme_places_deserialize(msg, p->place_channel_msg_in_flight);
+  p->place_channel_msg_in_flight = NULL;
+  END_ESCAPEABLE();
+
   return msg;
 }
 
@@ -3189,10 +3198,19 @@ static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
 
   msg = scheme_place_async_try_receive_raw((Scheme_Place_Async_Channel *) ch->recvch, &msg_memory);
   if (msg != NULL) {
+    Scheme_Object **msg_holder;
     Scheme_Thread *p = ((Syncing *)(sinfo->current_syncing))->thread;
+
+    /* Hold `msg' in atomic memory, because we're not allowed to hold onto
+       it beyond release of msg_memory, and `wrapper' and the result
+       flow into the evt system in general. */
+    msg_holder = (Scheme_Object **)scheme_malloc_atomic(sizeof(Scheme_Object*));
+    *msg_holder = msg;
+
     p->place_channel_msg_in_flight = msg_memory;
-    wrapper = scheme_make_closed_prim(place_channel_finish_ready, NULL);
-    scheme_set_sync_target(sinfo, msg, wrapper, NULL, 0, 0, NULL);
+    wrapper = scheme_make_closed_prim(place_channel_finish_ready, msg_holder);
+    scheme_set_sync_target(sinfo, scheme_void, wrapper, NULL, 0, 0, NULL);
+
     return 1;
   }
   return 0;

@@ -701,7 +701,8 @@
         (printf ".\n"))))
   (define (show-exports exports kind)
     (for ([exps (in-list exports)])
-      (let ([phase (car exps)] [exps (cdr exps)])
+      (let ([phase (car exps)]
+            [exps (sort (cdr exps) string<? #:key symbol->string)])
         (printf ";   direct ~a exports~a: ~a"
                 kind (phase->name phase "-~a") (car exps))
         (for ([exp (in-list (cdr exps))]) (printf ", ~a" exp))
@@ -1459,12 +1460,20 @@
       (let* ([s (get-output-string (current-error-port))]
              [s (regexp-replace* #rx"^\n+|\n+$" s "")]
              [s (regexp-replace* #rx"\n\n+" s "\n")])
-        (and (not (equal? str s))
+        ;; temporary hack: this is always on since it shows all fields,
+        ;; so ",bt" is now really a generic "more info"
+        (and ; (not (equal? str s))
              (begin (set! last-backtrace s) #t)))))
   (define msg "[,bt for context]")
   (parameterize ([current-output-port (current-error-port)])
-    (with-wrapped-output
-      (if backtrace? (printf "; ~a ~a\n" str msg) (printf "; ~a\n" str)))))
+    (let* ([s (regexp-replace* #rx"^\n+|\n+$" str "")]
+           [s (regexp-replace* #rx"\n\n+" s "\n")]
+           [s (regexp-replace* #rx"\n  [^\n]+\\.\\.\\.:(?:[^\n]+|\n   )+" s "")]
+           [s (regexp-replace* #rx"\n" s "\n; ")]
+           [s (if backtrace?
+                (string-append s (if (regexp-match? #rx"\n" s) "\n; " " ") msg)
+                s)])
+      (with-wrapped-output (printf "; ~a\n" s)))))
 
 ;; ----------------------------------------------------------------------------
 ;; set up the xrepl environment

@@ -5,9 +5,11 @@
 
 @guideintro["for"]{iterations and comprehensions}
 
+@(define for-eval (make-base-eval))
+@(for-eval '(require (for-syntax racket/base)))
+
 The @racket[for] iteration forms are based on SRFI-42
 @cite["SRFI-42"].
-
 
 @section{Iteration and Comprehension Forms}
 
@@ -284,9 +286,11 @@ Like @racket[for/list], etc., but with the implicit nesting of
 
 @defform[(for/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
-Like @racket[for/fold], but the extra @racket[orig-datum] is used as the source for all syntax errors.
 
-@mz-examples[
+Like @racket[for/fold], but the extra @racket[orig-datum] is used as the
+source for all syntax errors.
+
+@mz-examples[#:eval for-eval
 (define-syntax (for/digits stx)
   (syntax-case stx ()
     [(_ clauses . defs+exprs)
@@ -314,7 +318,7 @@ Like @racket[for/fold], but the extra @racket[orig-datum] is used as the source 
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
 Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source for all syntax errors.
 
-@mz-examples[
+@mz-examples[#:eval for-eval
 (define-syntax (for*/digits stx)
   (syntax-case stx ()
     [(_ clauses . defs+exprs)
@@ -373,7 +377,7 @@ use @racket[:do-in]. To protect identifiers in the result of
 @racket[clause-transform-expr], use @racket[for-clause-syntax-protect]
 instead of @racket[syntax-protect].
 
-@mz-examples[
+@mz-examples[#:eval for-eval
 (define-sequence-syntax in-digits
   (lambda () #'in-digits/proc)
   (lambda (stx)
@@ -482,3 +486,5 @@ When @racket[stop?-expr] produces a true value, then the
 evaluated in tail position to produce the overall value for the
 @racket[do] form. If no @racket[finish-expr] is provided, the value of
 the @racket[do] form is @|void-const|.}
+
+@close-eval[for-eval]
