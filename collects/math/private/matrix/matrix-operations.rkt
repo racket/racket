@@ -7,6 +7,7 @@
          "matrix-pointwise.rkt"
          (for-syntax racket))
 
+
 ; TODO:
 ; 1. compute null space from QR factorization
 ;    (better numerical stability than from Gauss elimnation)
@@ -659,7 +660,7 @@
       (let ()
         (define-values (m n) (matrix-dimensions v))
         (if (= n 1)
-            (unsafe-array-data (array-strict v))
+            (strict-array-data (array-strict v))
             (error 'unsafe-column->vector
                    "expected a column (vector or mx1 matrix), got ~a" v)))))
 
@@ -1117,7 +1118,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
@@ -1139,7 +1140,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
@@ -1172,7 +1173,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 rd cd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (unless (array-matrix? M) 
              (raise-type-error 'in-row "expected matrix, got ~a" M))
@@ -1190,7 +1191,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
@@ -1212,7 +1213,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
