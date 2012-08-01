@@ -657,15 +657,15 @@ extended non-terminals. For example, this language:
   (define-extended-language lc-num-lang
     lc-lang
     (v ....     (code:comment "extend the previous `v' non-terminal")
-       +
-       number)
+       number
+       +)
     (x (variable-except λ +)))
 ]
 
-extends lc-lang with two new alternatives for the @racket[v]
-non-terminal, carries forward the @racket[e] and @racket[c]
-non-terminals, and replaces the @racket[x] non-terminal with a
-new one (which happens to be equivalent to the one that would 
+extends lc-lang with two new alternatives (@racket[+] and @racket[number])
+for the @racket[v] non-terminal, carries forward the @racket[e] 
+and @racket[c] non-terminals, and replaces the @racket[x] non-terminal 
+with a new one (which happens to be equivalent to the one that would 
 have been inherited).
 
 The four-period ellipses indicates that the new language's
