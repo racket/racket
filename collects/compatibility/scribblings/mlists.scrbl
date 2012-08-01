@@ -151,3 +151,11 @@ Like @racket[assq], but for @tech[#:doc reference]{mutable lists} of
 Returns a procedure that returns @racket[#t] when given a
 @tech[#:doc reference]{mutable list} for which @racket[pred] returns a true
 value for all elements.}
+
+@; ----------------------------------------------------------------------
+
+@section[#:style '(hidden)]{Legacy Racket Mutable List Library}
+
+@defmodule[racket/mpair]{The @racket[racket/mpair] library
+re-exports @racketmodname[compatibility/mlist] for backward
+compatibility.}
