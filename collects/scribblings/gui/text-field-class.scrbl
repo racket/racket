@@ -69,13 +69,13 @@ The @racket[callback] procedure is called when the user changes the
  @indexed-racket['text-field-enter], otherwise it is
  @indexed-racket['text-field].
 
-If @racket[init-value] is not @racket[""], the minimum width of the
+If @racket[init-value] is not @racket[""], the @tech{graphical minimum size} for the
  text item is made wide enough to show @racket[init-value]. Otherwise,
  a built-in default width is selected. For a text field in single-line
- mode, the minimum height is set to show one line and only the
- control's width is stretchable. For a multiple-line text field, the
- minimum height shows three lines of text and is stretchable in both
- directions.
+ mode, the @tech{graphical minimum size} is set to show one line, and only the
+ control's width is stretchable by default. For a multiple-line text field, the
+ @tech{graphical minimum size} shows three lines of text, and it is stretchable in both
+ directions by default.
 
 The style must contain exactly one of @racket['single] or
  @racket['multiple]; the former specifies a single-line field and the
