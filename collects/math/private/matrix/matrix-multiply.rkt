@@ -27,8 +27,8 @@
     (let ([arr  (array-strict arr)]
           [brr  (array-strict brr)])
       ;; This next part could be done with array-permute, but it's much slower that way
-      (define avs (unsafe-array-data arr))
-      (define bvs (unsafe-array-data brr))
+      (define avs (strict-array-data arr))
+      (define bvs (strict-array-data brr))
       ;; Extend arr in the center dimension
       (define: ds-ext : (Vectorof Index) (vector ad0 bd1 ad1))
       (define arr-ext

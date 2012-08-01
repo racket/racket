@@ -124,7 +124,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
@@ -146,7 +146,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 r-expr rd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
@@ -194,7 +194,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd 
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
@@ -216,7 +216,7 @@
              (let ([M1 M-expr])
                (define-values (rd cd) (matrix-dimensions M1))
                (values M1 s-expr rd cd
-                       (unsafe-array-data
+                       (strict-array-data
                         (array-strict M1))))])
            (begin 
              (unless (array-matrix? M) 
