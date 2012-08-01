@@ -641,7 +641,7 @@
            set-com-object-sink!)
      (when (positive? (hash-count (com-object-types obj)))
        (for ([td (in-hash-values (com-object-types obj))])
-	 '(release-type-desc td))
+	 (release-type-desc td))
        (set-com-object-types! obj (make-hash))))))
 
 (define (release-type-desc td)
