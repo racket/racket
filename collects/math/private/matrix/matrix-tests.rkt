@@ -30,11 +30,13 @@
                   '(3 4)))
     (list 'for/matrix:
           (equal? (for/matrix: : Number 2 4 ([i (in-naturals)]) i)
-                  '[[0 1 2 3] 
-                    [4 5 6 7]])
+                  (matrix/dim 2 4 
+                              0 1 2 3
+                              4 5 6 7))
           (equal? (for/matrix: : Number 2 4 #:column ([i (in-naturals)]) i)
-                  '[[0 2 4 6] 
-                    [1 3 5 7]])        
+                  (matrix/dim 2 4    
+                              0 2 4 6
+                              1 3 5 7))
           (equal? (for/matrix: : Number 3 3 ([i (in-range 10 100)]) i)
                   (matrix/dim 3 3 10 11 12 13 14 15 16 17 18)))
     (list 'for*/matrix:
