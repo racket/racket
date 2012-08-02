@@ -109,7 +109,10 @@ produces a @tech{ProgID} with its version.}
 Releases the given @tech{COM object}. The given @racket[obj] is
 subsequently unusable, and the underlying COM object is destroyed
 unless its reference count has been incremented (via COM methods or
-unsafe operations).}
+unsafe operations).
+
+If @racket[obj] has already been released, @racket[com-release] has
+no effect.}
 
 
 @defproc[(com-get-active-object [clsid-or-progid (or/c clsid? string?)])
