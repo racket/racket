@@ -29,7 +29,8 @@ A Guide (G) is one of:
   - (vector 'escaped G)
   - (vector 'orelse G (vector-of integer) G)
   - (vector 'metafun integer G)
-  - (vector 'props G (listof (cons any any)))
+  - (vector 'copy-props G (listof symbol))
+  - (vector 'set-props G (listof (cons symbol any)))
 
 A HeadGuide (HG) is one of:
   - G
@@ -195,7 +196,14 @@ A HeadGuide (HG) is one of:
      (let ([f1 (loop (unbox (syntax-e stx)) g1)])
        (lambda (env lenv)
          (restx stx (box (f1 env lenv)))))]
-    [(vector 'props g1 props-alist)
+    [(vector 'copy-props g1 keys)
+     (let ([f1 (loop stx g1)])
+       (lambda (env lenv)
+         (for/fold ([v (f1 env lenv)]) ([key (in-list keys)])
+           ;; FIXME: avoid copying if no value
+           ;; (if that situation becomes possible in future)
+           (syntax-property v key (syntax-property stx key)))))]
+    [(vector 'set-props g1 props-alist)
      (let ([f1 (loop stx g1)])
        (lambda (env lenv)
          (for/fold ([v (f1 env lenv)]) ([entry (in-list props-alist)])

@@ -38,7 +38,12 @@ A HeadTemplate (H) is one of:
   (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       [(template t)
-       (let-values ([(guide deps) (parse-template #'t)])
+       #'(template t #:properties (paren-shape))]
+      [(template t #:properties (prop ...))
+       (andmap identifier? (syntax->list #'(prop ...)))
+       (let-values ([(guide deps props-guide)
+                     (parameterize ((retain-props (syntax->datum #'(prop ...))))
+                       (parse-template #'t))])
          (let ([vars
                 (for/list ([dep (in-vector deps)])
                   (cond [(pvar? dep)
@@ -61,24 +66,43 @@ A HeadTemplate (H) is one of:
                            var
                            (error/not-stx (quote-syntax t) var)))]
                   [(equal? guide '_) ;; constant
-                   #`(quote-syntax t)]
+                   (cond [(equal? props-guide '_) ;; no props
+                          #`(quote-syntax t)]
+                         [else
+                          (with-syntax ([props-guide props-guide])
+                            #`(substitute (quote-syntax t) 'props-guide '_ #f))])]
                   [else
                    (with-syntax ([guide guide]
-                                 [(var ...) vars])
+                                 [props-guide props-guide]
+                                 [vars-vector
+                                  (if (pair? vars)
+                                      #`(vector . #,vars)
+                                      #''#())])
                      #'(substitute (quote-syntax t)
+                                   'props-guide
                                    'guide
-                                   (vector var ...)))]))))])))
+                                   vars-vector))]))))])))
 
 ;; substitute-table : hash[stx => translated-template]
 ;; Cache for closure-compiled templates. Key is just syntax of
 ;; template, since eq? templates must have equal? guides.
 (define substitute-table (make-weak-hasheq))
 
-(define (substitute stx g main-env)
-  (let ([f (or (hash-ref substitute-table stx #f)
-               (let ([f (translate stx g (vector-length main-env))])
-                 (hash-set! substitute-table stx f)
-                 f))])
+;; props-syntax-table : hash[stx => stx]
+(define props-syntax-table (make-weak-hasheq))
+
+(define (substitute stx props-guide g main-env)
+  (let* ([stx (if (eq? props-guide '_)
+                  stx
+                  (or (hash-ref props-syntax-table stx #f)
+                      (let* ([pf (translate stx props-guide 0)]
+                             [pstx (pf '#() #f)])
+                        (hash-set! props-syntax-table stx pstx)
+                        pstx)))]
+         [f (or (hash-ref substitute-table stx #f)
+                (let ([f (translate stx g (vector-length main-env))])
+                  (hash-set! substitute-table stx f)
+                  f))])
     (f main-env #f)))
 
 ;; ----
@@ -145,13 +169,14 @@ instead of integers and integer vectors.
 
 (begin-for-syntax
 
- ;; parse-template : stx -> (values guide (vectorof env-entry))
+ ;; parse-template : stx -> (values guide (vectorof env-entry) guide)
  (define (parse-template t)
-   (let-values ([(drivers pre-guide) (parse-t t 0 #f)])
+   (let-values ([(drivers pre-guide props-guide) (parse-t t 0 #f)])
      (define main-env (set->env drivers (hash)))
      (define guide (guide-resolve-env pre-guide main-env))
      (values guide
-             (index-hash->vector main-env))))
+             (index-hash->vector main-env)
+             props-guide)))
 
  ;; set->env : (setof env-entry) -> hash[env-entry => nat]
  (define (set->env drivers init-env)
@@ -211,8 +236,10 @@ instead of integers and integer vectors.
         (vector 'struct (loop g1 loop-env))]
        [(vector 'box g1)
         (vector 'box (loop (unbox g) loop-env))]
-       [(vector 'props g1 props-alist)
-        (vector 'props (loop g1 loop-env) props-alist)]
+       [(vector 'copy-props g1 keys)
+        (vector 'copy-props (loop g1 loop-env) keys)]
+       [(vector 'set-props g1 props-alist)
+        (vector 'set-props (loop g1 loop-env) props-alist)]
        [(vector 'app-opt g1 drivers1)
         (vector 'app-opt
                 (loop g1 loop-env)
@@ -225,18 +252,46 @@ instead of integers and integer vectors.
 
  ;; ----------------------------------------
 
- (define retain-props '(paren-shape))
+ (define retain-props (make-parameter '(paren-shape)))
 
- (define (wrap-props stx env-set pre-guide)
-   (let ([prop-entries (for/fold ([entries null]) ([prop (in-list retain-props)])
-                         (let ([v (syntax-property stx prop)])
-                           (if (and v) ;; FIXME: add read-write-able check!
-                               (cons (cons prop v) entries)
-                               entries)))])
-     (values env-set
-             (if (pair? prop-entries)
-                 (vector 'props pre-guide prop-entries)
-                 pre-guide))))
+ (define (wrap-props stx env-set pre-guide props-guide)
+   (let ([prop-entries
+          (if (syntax? stx)
+              (for/fold ([entries null]) ([prop (in-list (retain-props))])
+                (let ([v (syntax-property stx prop)])
+                  (if (and v (quotable? v))
+                      (cons (cons prop v) entries)
+                      entries)))
+              null)])
+     (if (pair? prop-entries)
+         (values env-set
+                 (cond [(eq? pre-guide '_)
+                        ;; No need to copy props; already on constant.
+                        '_]
+                       [else (vector 'copy-props pre-guide (map car prop-entries))])
+                 (vector 'set-props props-guide prop-entries))
+         (values env-set pre-guide props-guide))))
+
+ (define (quotable? v)
+   (or (null? v)
+       (string? v)
+       (bytes? v)
+       (number? v)
+       (boolean? v)
+       (char? v)
+       (keyword? v)
+       (regexp? v)
+       (and (box? v) (quotable? (unbox v)))
+       (and (symbol? v) (symbol-interned? v))
+       (and (pair? v) (quotable? (car v)) (quotable? (cdr v)))
+       (and (vector? v) (andmap quotable? (vector->list v)))
+       (and (prefab-struct-key v) (andmap quotable? (struct->vector v)))))
+
+ (define (cons-guide g1 g2)
+   (if (and (eq? g1 '_) (eq? g2 '_)) '_ (cons g1 g2)))
+
+ (define (list-guide . gs)
+   (foldr cons-guide '_ gs))
 
  ;; parse-t : stx nat boolean -> (values (setof env-entry) pre-guide)
  (define (parse-t t depth esc?)
@@ -251,30 +306,33 @@ instead of integers and integer vectors.
             [else
              (let ([pvar (lookup #'id depth)])
                (cond [(pvar? pvar)
-                      (values (set pvar) pvar)]
+                      (values (set pvar) pvar '_)]
                      [(template-metafunction? pvar)
                       (wrong-syntax t "illegal use of syntax metafunction")]
                      [else
-                      (wrap-props #'id (set) '_)]))])]
+                      (wrap-props #'id (set) '_ '_)]))])]
      [(mf . template)
       (and (not esc?)
            (identifier? #'mf)
            (template-metafunction? (lookup #'mf #f)))
       (let-values ([(mf) (lookup #'mf #f)]
-                   [(drivers guide) (parse-t #'template depth esc?)])
+                   [(drivers guide props-guide) (parse-t #'template depth esc?)])
         (values (set-union (set mf) drivers)
-                (vector 'metafun mf guide)))]
+                (vector 'metafun mf guide)
+                (cons-guide '_ props-guide)))]
      [(DOTS template)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
-      (let-values ([(drivers guide) (parse-t #'template depth #t)])
-        (values drivers (vector 'escaped guide)))]
+      (let-values ([(drivers guide props-guide) (parse-t #'template depth #t)])
+        (values drivers (vector 'escaped guide)
+                (list-guide '_ props-guide)))]
      [(?? t1 t2)
       (not esc?)
-      (let-values ([(drivers1 guide1) (parse-t #'t1 depth esc?)]
-                   [(drivers2 guide2) (parse-t #'t2 depth esc?)])
+      (let-values ([(drivers1 guide1 props-guide1) (parse-t #'t1 depth esc?)]
+                   [(drivers2 guide2 props-guide2) (parse-t #'t2 depth esc?)])
         (values (set-union drivers1 drivers2)
-                (vector 'orelse guide1 (set-filter drivers1 pvar?) guide2)))]
+                (vector 'orelse guide1 (set-filter drivers1 pvar?) guide2)
+                (list-guide '_ props-guide1 props-guide2)))]
      [(head DOTS . tail)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
@@ -285,8 +343,10 @@ instead of integers and integer vectors.
                          (and (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
                          (loop (add1 nesting) #'tail)]
                         [else (values nesting tail)]))])
-        (let-values ([(hdrivers _hsplice? hguide) (parse-h #'head (+ depth nesting) esc?)]
-                     [(tdrivers tguide) (parse-t tail depth esc?)])
+        (let-values ([(hdrivers _hsplice? hguide hprops-guide)
+                      (parse-h #'head (+ depth nesting) esc?)]
+                     [(tdrivers tguide tprops-guide)
+                      (parse-t tail depth esc?)])
           (unless (positive? (set-count hdrivers))
             (wrong-syntax #'head "no pattern variables in term before ellipsis"))
           (wrap-props t
@@ -302,52 +362,68 @@ instead of integers and integer vectors.
                                       [else
                                        (cons (set-subtract (car raw) last)
                                              (loop (cdr raw) (car raw)))]))])
-                        (vector 'dots hguide new-hdrivers/level nesting #f tguide)))))]
+                        (vector 'dots hguide new-hdrivers/level nesting #f tguide))
+                      (cons-guide hprops-guide (cons-guide '_ tprops-guide)))))]
      [(head . tail)
-      (let-values ([(hdrivers hsplice? hguide) (parse-h #'head depth esc?)]
-                   [(tdrivers tguide) (parse-t #'tail depth esc?)])
+      (let-values ([(hdrivers hsplice? hguide hprops-guide)
+                    (parse-h #'head depth esc?)]
+                   [(tdrivers tguide tprops-guide)
+                    (parse-t #'tail depth esc?)])
         (wrap-props t
                     (set-union hdrivers tdrivers)
                     (cond [(and (eq? hguide '_) (eq? tguide '_)) '_]
                           [hsplice? (vector 'app hguide tguide)]
-                          [else (cons hguide tguide)])))]
+                          [else (cons hguide tguide)])
+                    (cons-guide hprops-guide tprops-guide)))]
      [vec
       (vector? (syntax-e #'vec))
-      (let-values ([(drivers guide) (parse-t (vector->list (syntax-e #'vec)) depth esc?)])
-        (wrap-props t drivers (if (eq? guide '_) '_ (vector 'vector guide))))]
+      (let-values ([(drivers guide props-guide)
+                    (parse-t (vector->list (syntax-e #'vec)) depth esc?)])
+        (wrap-props t drivers
+                    (if (eq? guide '_) '_ (vector 'vector guide))
+                    (if (eq? props-guide '_) '_ (vector 'vector props-guide))))]
      [pstruct
       (prefab-struct-key (syntax-e #'pstruct))
-      (let-values ([(drivers guide)
+      (let-values ([(drivers guide props-guide)
                     (parse-t (cdr (vector->list (struct->vector (syntax-e #'pstruct)))) depth esc?)])
-        (wrap-props t drivers (if (eq? guide '_) '_ (vector 'struct guide))))]
+        (wrap-props t drivers
+                    (if (eq? guide '_) '_ (vector 'struct guide))
+                    (if (eq? props-guide '_) '_ (vector 'struct props-guide))))]
      [#&template
-      (let-values ([(drivers guide) (parse-t #'template depth esc?)])
-        (wrap-props t drivers (if (eq? guide '_) '_ (vector 'box guide))))]
+      (let-values ([(drivers guide props-guide)
+                    (parse-t #'template depth esc?)])
+        (wrap-props t drivers
+                    (if (eq? guide '_) '_ (vector 'box guide))
+                    (if (eq? props-guide '_) '_ (vector 'box props-guide))))]
      [const
-      (wrap-props t (set) '_)]))
+      (wrap-props t (set) '_ '_)]))
 
  ;; parse-h : stx nat boolean -> (values (setof env-entry) boolean pre-head-guide)
  (define (parse-h h depth esc?)
    (syntax-case h (?? ?@)
      [(?? t)
       (not esc?)
-      (let-values ([(drivers splice? guide) (parse-h #'t depth esc?)])
-        (values drivers #t (vector 'app-opt guide (set-filter drivers pvar?))))]
+      (let-values ([(drivers splice? guide props-guide)
+                    (parse-h #'t depth esc?)])
+        (values drivers #t
+                (vector 'app-opt guide (set-filter drivers pvar?))
+                (list-guide '_ props-guide)))]
      [(?? t1 t2)
       (not esc?)
-      (let-values ([(drivers1 splice?1 guide1) (parse-h #'t1 depth esc?)]
-                   [(drivers2 splice?2 guide2) (parse-h #'t2 depth esc?)])
+      (let-values ([(drivers1 splice?1 guide1 props-guide1) (parse-h #'t1 depth esc?)]
+                   [(drivers2 splice?2 guide2 props-guide2) (parse-h #'t2 depth esc?)])
         (values (set-union drivers1 drivers2)
                 (or splice?1 splice?2)
                 (vector (if (or splice?1 splice?2) 'orelse-h 'orelse)
-                        guide1 (set-filter drivers1 pvar?) guide2)))]
+                        guide1 (set-filter drivers1 pvar?) guide2)
+                (list-guide '_ props-guide1 props-guide2)))]
      [(?@ . t)
       (not esc?)
-      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
-        (values drivers #t (vector 'splice guide)))]
+      (let-values ([(drivers guide props-guide) (parse-t #'t depth esc?)])
+        (values drivers #t (vector 'splice guide) (cons-guide '_ props-guide)))]
      [t
-      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
-        (values drivers #f guide))]))
+      (let-values ([(drivers guide props-guide) (parse-t #'t depth esc?)])
+        (values drivers #f guide props-guide))]))
 
  ;; Note: always creates equal?-based set.
  (define (set-filter s pred?)
