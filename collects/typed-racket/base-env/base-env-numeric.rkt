@@ -703,7 +703,8 @@
 [double-flonum? (make-pred-ty -Flonum)]
 [inexact-real? (make-pred-ty -InexactReal)]
 [complex? (make-pred-ty N)]
-[rational? (make-pred-ty -Real)]
+;; `rational?' includes all Reals, except infinities and NaN.
+[rational? (asym-pred Univ B (-FS (-filter -Real 0) (-not-filter -Rat 0)))]
 [exact? (asym-pred N B (-FS -top (-not-filter -Rat 0)))]
 [inexact? (asym-pred N B  (-FS -top (-not-filter (Un -InexactReal -FloatComplex) 0)))]
 [fixnum? (make-pred-ty -Fixnum)]
