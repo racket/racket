@@ -251,7 +251,7 @@
           (close-input-port ip)))
        (values in-pipe
                (apply string-append (map (λ (x) (string-append x "\r\n"))
-                                         (reverse headers))))])))
+                                         (cons status (reverse headers)))))])))
 
 ;; get-pure-port : url [x list (str)] -> in-port
 (define (get-pure-port url [strings '()] #:redirections [redirections 0])
