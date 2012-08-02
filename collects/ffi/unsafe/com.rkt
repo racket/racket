@@ -623,14 +623,18 @@
      (let ([mref (com-object-mref obj)])
        (when mref
 	 (scheme_remove_managed mref obj)))
+     ;; Although reference counting should let us release in any
+     ;; order, comments in the MysterX source suggest that the
+     ;; order matters, so release type descriptions first and
+     ;; the main object last.
+     (when (positive? (hash-count (com-object-types obj)))
+       (for ([td (in-hash-values (com-object-types obj))])
+	 (release-type-desc td))
+       (set-com-object-types! obj (make-hash)))
      (define (bye! sel st!)
        (when (sel obj)
          (Release (sel obj))
          (st! obj #f)))
-     (bye! com-object-dispatch
-           set-com-object-dispatch!)
-     (bye! com-object-unknown
-           set-com-object-unknown!)
      (bye! com-object-type-info
            set-com-object-type-info!)
      (bye! com-object-event-type-info
@@ -639,10 +643,10 @@
            set-com-object-connection-point!)
      (bye! com-object-sink
            set-com-object-sink!)
-     (when (positive? (hash-count (com-object-types obj)))
-       (for ([td (in-hash-values (com-object-types obj))])
-	 (release-type-desc td))
-       (set-com-object-types! obj (make-hash))))))
+     (bye! com-object-dispatch
+           set-com-object-dispatch!)
+     (bye! com-object-unknown
+           set-com-object-unknown!))))
 
 (define (release-type-desc td)
   ;; call in atomic mode
