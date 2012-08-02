@@ -678,9 +678,11 @@
 (define (com-get-active-object name)
   (init!)
   (define clsid (gen->clsid 'com-get-active-object name))
-  (define unknown (GetActiveObject clsid))
-  (and unknown
-       (make-com-object unknown clsid)))
+  (call-as-atomic
+   (lambda ()
+     (define unknown (GetActiveObject clsid))
+     (and unknown
+          (make-com-object unknown clsid)))))
 
 (define (check-com-obj who obj)
   (unless (com-object? obj)
@@ -868,11 +870,13 @@
    [else (raise-type-error who "com-object or com-type" obj)]))
 
 (define (do-get-methods who obj inv-kind)
-  (define type-info (extract-type-info who obj #t))
-  (define type-attr (GetTypeAttr type-info))
-  (begin0
-   (sort (get-type-names type-info type-attr null inv-kind) string-ci<?)
-   (ReleaseTypeAttr type-info type-attr)))
+  (call-as-atomic
+   (lambda ()
+     (define type-info (extract-type-info who obj #t))
+     (define type-attr (GetTypeAttr type-info))
+     (begin0
+      (sort (get-type-names type-info type-attr null inv-kind) string-ci<?)
+      (ReleaseTypeAttr type-info type-attr)))))
 
 (define (com-methods obj)
   (do-get-methods 'com-methods obj INVOKE_FUNC))
@@ -1207,80 +1211,82 @@
         0)))
 
 (define (do-get-method-type who obj name inv-kind internal?)
-  (define type-info (extract-type-info who obj (not internal?)))
-  (when (and (= inv-kind INVOKE_FUNC)
-             (is-dispatch-name? name))
-    (error who "IDispatch methods not available"))
-  (define mx-type-desc
-    (cond
-     [(com-object? obj) (get-method-type obj name inv-kind (not internal?))]
-     [else (define x-type-info
-             (if (= inv-kind INVOKE_EVENT)
-                 (event-type-info-from-com-type obj)
-                 type-info))
-           (type-desc-from-type-info name inv-kind x-type-info)]))
-  (cond
-   [(not mx-type-desc)
-    ;; there is no type info
-    #f]
-   [else
-    (define-values (args ret)
-      (cond
-       [(function-type-desc? mx-type-desc)
-        (define func-desc (car (mx-com-type-desc-desc mx-type-desc)))
-        (define num-actual-params (FUNCDESC-cParams func-desc))
-        (cond
-         [(= -1 (FUNCDESC-cParamsOpt func-desc))
-          ;; all args > pFuncDesc->cParams - 1 get packaged into SAFEARRAY
-          (values
-           (append
-            (for/list ([i (in-range num-actual-params)])
-              (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
+  (call-as-atomic
+   (lambda ()
+     (define type-info (extract-type-info who obj (not internal?)))
+     (when (and (= inv-kind INVOKE_FUNC)
+                (is-dispatch-name? name))
+       (error who "IDispatch methods not available"))
+     (define mx-type-desc
+       (cond
+        [(com-object? obj) (get-method-type obj name inv-kind (not internal?))]
+        [else (define x-type-info
+                (if (= inv-kind INVOKE_EVENT)
+                    (event-type-info-from-com-type obj)
+                    type-info))
+              (type-desc-from-type-info name inv-kind x-type-info)]))
+     (cond
+      [(not mx-type-desc)
+       ;; there is no type info
+       #f]
+      [else
+       (define-values (args ret)
+         (cond
+          [(function-type-desc? mx-type-desc)
+           (define func-desc (car (mx-com-type-desc-desc mx-type-desc)))
+           (define num-actual-params (FUNCDESC-cParams func-desc))
+           (cond
+            [(= -1 (FUNCDESC-cParamsOpt func-desc))
+             ;; all args > pFuncDesc->cParams - 1 get packaged into SAFEARRAY
+             (values
+              (append
+               (for/list ([i (in-range num-actual-params)])
+                 (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
+                                           #f
+                                           #f
+                                           internal?))
+               (list '...))
+              (elem-desc-to-scheme-type (FUNCDESC-elemdescFunc func-desc)
                                         #f
                                         #f
-                                        internal?))
-            (list '...))
-           (elem-desc-to-scheme-type (FUNCDESC-elemdescFunc func-desc)
-                                     #f
-                                     #f
-                                     internal?))]
-         [else
-          (define last-is-retval?
-            (is-last-param-retval? inv-kind func-desc))
-          (define num-params (- num-actual-params (if last-is-retval? 1 0)))
-          ;; parameters that are optional with a default value in IDL are not
-          ;; counted in pFuncDesc->cParamsOpt, so look for default bit flag
-          (define num-opt-params (get-opt-param-count func-desc num-params))
-          (define first-opt-arg (- num-params num-opt-params))
-          (values
-           (for/list ([i (in-range num-params)])
-             (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
-                                       #f
-                                       (i . >= . first-opt-arg)
-                                       internal?))
-           (elem-desc-to-scheme-type (if last-is-retval?
-                                         (elem-desc-ref func-desc num-params)
-                                         (FUNCDESC-elemdescFunc func-desc))
-                                     #t
-                                     #f
-                                     internal?))])]
-       [(= inv-kind INVOKE_PROPERTYGET)
-        (define var-desc (mx-com-type-desc-desc mx-type-desc))
-        (values null
-                (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
+                                        internal?))]
+            [else
+             (define last-is-retval?
+               (is-last-param-retval? inv-kind func-desc))
+             (define num-params (- num-actual-params (if last-is-retval? 1 0)))
+             ;; parameters that are optional with a default value in IDL are not
+             ;; counted in pFuncDesc->cParamsOpt, so look for default bit flag
+             (define num-opt-params (get-opt-param-count func-desc num-params))
+             (define first-opt-arg (- num-params num-opt-params))
+             (values
+              (for/list ([i (in-range num-params)])
+                (elem-desc-to-scheme-type (elem-desc-ref func-desc i)
                                           #f
-                                          #f
-                                          internal?))]
-       [(= inv-kind INVOKE_PROPERTYPUT)
-        (define var-desc (mx-com-type-desc-desc mx-type-desc))
-        (values (list (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
-                                                #f
-                                                #f
-                                                internal?))
-                'void)]
-       [(= inv-kind INVOKE_EVENT)
-        (values null 'void)]))
-    `(-> ,args ,ret)]))
+                                          (i . >= . first-opt-arg)
+                                          internal?))
+              (elem-desc-to-scheme-type (if last-is-retval?
+                                            (elem-desc-ref func-desc num-params)
+                                            (FUNCDESC-elemdescFunc func-desc))
+                                        #t
+                                        #f
+                                        internal?))])]
+          [(= inv-kind INVOKE_PROPERTYGET)
+           (define var-desc (mx-com-type-desc-desc mx-type-desc))
+           (values null
+                   (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
+                                             #f
+                                             #f
+                                             internal?))]
+          [(= inv-kind INVOKE_PROPERTYPUT)
+           (define var-desc (mx-com-type-desc-desc mx-type-desc))
+           (values (list (elem-desc-to-scheme-type (VARDESC-elemdescVar var-desc)
+                                                   #f
+                                                   #f
+                                                   internal?))
+                   'void)]
+          [(= inv-kind INVOKE_EVENT)
+           (values null 'void)]))
+       `(-> ,args ,ret)]))))
 
 (define (com-method-type obj name)
   (do-get-method-type 'com-method-type obj name INVOKE_FUNC #f))
@@ -1777,7 +1783,9 @@
 (define (do-com-invoke who obj name args inv-kind)
   (check-com-obj who obj)
   (unless (string? name) (raise-type-error who "string" name))
-  (let ([t (or (do-get-method-type who obj name inv-kind #t)
+  (let ([t (or (call-as-atomic
+                (lambda ()
+                  (do-get-method-type who obj name inv-kind #t)))
                ;; wing it by inferring types from the arguments:
                `(-> ,(map arg-to-type args) any))])
     (unless (<= (length (filter (lambda (v) (not (and (pair? v) (eq? (car v) 'opt))))
@@ -1788,64 +1796,66 @@
     (for ([arg (in-list args)]
           [type (in-list (cadr t))])
       (check-argument 'com-invoke name arg type))
-    (define type-desc (get-method-type obj name inv-kind #f)) ; cached
-    (cond
-     [(if type-desc
-          (mx-com-type-desc-memid type-desc)
-          (find-memid who obj name))
-      => (lambda (memid)
-           (define-values (num-params-passed method-arguments cleanups commits)
-             (build-method-arguments type-desc
-                                     (cadr t)
-                                     inv-kind
-                                     args))
-           ;; from this point, don't escape/return without running cleanups
-           (when #f
-	     ;; for debugging, inspect constructed arguments:
-	     (eprintf "~e ~e\n" 
-		      t
-		      (reverse
-		       (for/list ([i (in-range num-params-passed)])
-			 (variant-to-scheme (ptr-ref (DISPPARAMS-rgvarg method-arguments) 
-						     _VARIANT 
-						     i))))))
-           (define method-result
-             (if (= inv-kind INVOKE_PROPERTYPUT)
-                 #f
-                 (make-a-VARIANT 'atomic)))
-           (for ([proc (in-list commits)]) (proc))
-	   (define-values (hr exn-info error-index)
-             (Invoke (com-object-get-dispatch obj)
-                     memid IID_NULL LOCALE_SYSTEM_DEFAULT
-                     inv-kind method-arguments
-                     method-result))
-           (cond
-            [(zero? hr)
-             (begin0
-              (if method-result
-                  (variant-to-scheme method-result)
-                  (void))
-              (for ([proc (in-list cleanups)]) (proc)))]
-            [(= hr DISP_E_EXCEPTION)
-             (for ([proc (in-list cleanups)]) (proc))
-             (define has-error-code? (positive? (EXCEPINFO-wCode exn-info)))
-             (define desc (EXCEPINFO-bstrDescription exn-info))
-             (windows-error
-              (if has-error-code?
-                  (format "COM object exception during ~s, error code 0x~x~a~a"
-			  name
-                          (EXCEPINFO-wCode exn-info)
-                          (if desc "\nDescription: " "")
-                          (or desc ""))
-                  (format "COM object exception during ~s~a~a"
-			  name
-                          (if desc "\nDescription: " "")
-                          (or desc "")))
-              (EXCEPINFO-scode exn-info))]
-            [else
-             (for ([proc (in-list cleanups)]) (proc))
-             (windows-error (format "~a: failed for ~s" who name) hr)]))]
-     [else (error "not yet implemented")])))
+    (call-as-atomic
+     (lambda ()
+       (define type-desc (get-method-type obj name inv-kind #f)) ; cached
+       (cond
+        [(if type-desc
+             (mx-com-type-desc-memid type-desc)
+             (find-memid who obj name))
+         => (lambda (memid)
+              (define-values (num-params-passed method-arguments cleanups commits)
+                (build-method-arguments type-desc
+                                        (cadr t)
+                                        inv-kind
+                                        args))
+              ;; from this point, don't escape/return without running cleanups
+              (when #f
+                ;; for debugging, inspect constructed arguments:
+                (eprintf "~e ~e\n" 
+                         t
+                         (reverse
+                          (for/list ([i (in-range num-params-passed)])
+                            (variant-to-scheme (ptr-ref (DISPPARAMS-rgvarg method-arguments) 
+                                                        _VARIANT 
+                                                        i))))))
+              (define method-result
+                (if (= inv-kind INVOKE_PROPERTYPUT)
+                    #f
+                    (make-a-VARIANT 'atomic)))
+              (for ([proc (in-list commits)]) (proc))
+              (define-values (hr exn-info error-index)
+                (Invoke (com-object-get-dispatch obj)
+                        memid IID_NULL LOCALE_SYSTEM_DEFAULT
+                        inv-kind method-arguments
+                        method-result))
+              (cond
+               [(zero? hr)
+                (begin0
+                 (if method-result
+                     (variant-to-scheme method-result)
+                     (void))
+                 (for ([proc (in-list cleanups)]) (proc)))]
+               [(= hr DISP_E_EXCEPTION)
+                (for ([proc (in-list cleanups)]) (proc))
+                (define has-error-code? (positive? (EXCEPINFO-wCode exn-info)))
+                (define desc (EXCEPINFO-bstrDescription exn-info))
+                (windows-error
+                 (if has-error-code?
+                     (format "COM object exception during ~s, error code 0x~x~a~a"
+                             name
+                             (EXCEPINFO-wCode exn-info)
+                             (if desc "\nDescription: " "")
+                             (or desc ""))
+                     (format "COM object exception during ~s~a~a"
+                             name
+                             (if desc "\nDescription: " "")
+                             (or desc "")))
+                 (EXCEPINFO-scode exn-info))]
+               [else
+                (for ([proc (in-list cleanups)]) (proc))
+                (windows-error (format "~a: failed for ~s" who name) hr)]))]
+        [else (error "not yet implemented")])))))
 
 (define (com-invoke obj name . args)
   (do-com-invoke 'com-invoke obj name args INVOKE_FUNC))
@@ -2047,11 +2057,15 @@
 
 (define (com-object-get-iunknown obj)
   (check-com-obj 'com-object-get-iunknown obj)
-  (com-object-get-unknown obj))
+  (call-as-atomic
+   (lambda ()
+     (com-object-get-unknown obj))))
 
 (define (com-object-get-idispatch obj)
   (check-com-obj 'com-object-get-idispatch obj)
-  (com-object-get-dispatch obj))
+  (call-as-atomic
+   (lambda ()
+     (com-object-get-dispatch obj))))
 
 (define (com-iunknown? v) (and (IUnknown? v) #t))
 (define (com-idispatch? v) (and (IDispatch? v) #t))
