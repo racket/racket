@@ -686,3 +686,56 @@
                                          (indexes-array '(3))
                                          (indexes-array '(2))))
               '[(0) (1) (2) (3) (0) (1) (2) (0) (1)])
+
+
+;; ---------------------------------------------------------------------------------------------------
+;; Comprehensions
+
+(check-equal? (for/strict-array Integer 0 () () 3) 
+              (make-strict-array '() '#(3)))
+(check-equal? (for/strict-array Symbol 'a-sym () () 'foo) 
+              (make-strict-array '() '#(foo)))
+(check-equal? (for/strict-array Integer 0 (2) ([x (in-naturals)]) x) 
+              (make-strict-array '(2) '#(0 1)))
+(check-equal? (for/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)]) (list (quotient i 3) (remainder i 3)))
+              (indexes-array '(2 3)))
+
+(check-equal? (for*/strict-array Integer 0 () () 3)
+              (make-strict-array '() '#(3)))
+(check-equal? (for*/strict-array Symbol 'a-sym () () 'foo)
+              (make-strict-array '() '#(foo)))
+(check-equal? (for*/strict-array Integer 0 (2) ([x (in-naturals)]) x)
+              (make-strict-array '(2) '#(0 1)))
+(check-equal? (for*/strict-array (Listof Integer) '(0 0) (2 3) 
+                                 ([i (in-range 0 2)] [j (in-range 0 3)]) (list i j))
+              (indexes-array '(2 3)))
+
+(check-equal? (for/strict-array Integer 0 () () 3) 
+              (for/array Integer 0 () () 3))
+(check-equal? (for/strict-array Symbol 'a-sym () () 'foo) 
+              (for/array Symbol 'a-sym () () 'foo))
+(check-equal? (for/strict-array Integer 0 (2) ([x (in-naturals)]) x) 
+              (for/array Integer 0 (2) ([x (in-naturals)]) x))
+(check-equal? (for/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)]) (list (quotient i 3) (remainder i 3)))
+              (for/array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 6)]) (list (quotient i 3) (remainder i 3))))
+
+(check-equal? (for*/strict-array Integer 0 () () 3)
+              (for*/array Integer 0 () () 3))
+(check-equal? (for*/strict-array Symbol 'a-sym () () 'foo)
+              (for*/array Symbol 'a-sym () () 'foo))
+(check-equal? (for*/strict-array Integer 0 (2) ([x (in-naturals)]) x)
+              (for*/array Integer 0 (2) ([x (in-naturals)]) x))
+(check-equal? (for*/array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 2)] [j (in-range 0 3)]) (list i j))
+              (for*/strict-array (Listof Integer) '(0 0) (2 3) ([i (in-range 0 2)] [j (in-range 0 3)]) (list i j)))
+
+
+;; ---------------------------------------------------------------------------------------------------
+;; Sequences
+
+(check-equal? (for/list: : (Listof (Listof Index))
+                ([x (in-array (make-view-array '(2 2) (λ: ([js : (Listof Index)]) js)))]) x)
+              '((0 0) (0 1) (1 0) (1 1)))
+(let ()
+  (define s (in-array (make-view-array '(2 2) (λ: ([js : (Listof Index)]) js))))
+  (check-equal? (for/list: : (Listof (Listof Index)) ([x s]) x)
+                '((0 0) (0 1) (1 0) (1 1))))
