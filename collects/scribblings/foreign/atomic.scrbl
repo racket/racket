@@ -41,7 +41,7 @@ mode.
 
 When @racket[call-as-atomic] is used in the dynamic extent of
 @racket[call-as-atomic], then @racket[thunk] is simply called directly
-(as a tail call).}
+(as a non-tail call).}
 
 
 @defproc[(call-as-nonatomic [thunk (-> any)]) any]{
