@@ -106,11 +106,20 @@
                   [callback (λ (x y) (insert-comment-box))]
                   [demand-callback on-demand])])
         (func item))
+      (define plain-insert-callback (edit-menu:do 'insert-image))
+      (define lowercase-imgs "*.png;*.jpg;*.jpeg;*.gif;*.xpm;*.bmp")
+      (define imgs (string-append
+                    lowercase-imgs ";"
+                    (string-upcase lowercase-imgs)))
       (let ([item 
              (new c% 
                   [label (string-constant insert-image-item)]
                   [parent edit-menu]
-                  [callback (edit-menu:do 'insert-image)]
+                  [callback (λ (menu evt)
+                              (parameterize ([finder:default-filters 
+                                              `(["Image" ,imgs]
+                                                ["Any" "*.*"])])
+                                (plain-insert-callback menu evt)))]
                   [demand-callback on-demand])])
         (func item))
       (void))))
