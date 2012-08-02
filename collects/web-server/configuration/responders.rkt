@@ -28,6 +28,7 @@
 
 (define (pretty-exception-response url exn)
   (response/xexpr
+   #:code 500
    `(html
      (head
       (title "Servlet Error")
