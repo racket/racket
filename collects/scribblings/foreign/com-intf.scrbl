@@ -105,11 +105,17 @@ returning the new reference count and releasing the interface
 reference if the count goes to zero.}
 
 
-@defproc[(make-com-object [iunknown com-iunknown?] [clsid (or/c clsid? #f)])
+@defproc[(make-com-object [iunknown com-iunknown?] [clsid (or/c clsid? #f)]
+                          [#:manage? manage? any/c #t])
          com-object?]{
 
 Converts a @tech{COM object} into a object that can be used with the
-COM automation functions, such as @racket[com-invoke].}
+COM automation functions, such as @racket[com-invoke].
+
+If @racket[manage?] is true, the resulting object is registered with
+the current custodian and a finalizer to call @racket[com-release]
+when the custodian is shut down or when the object becomes
+inaccessible.}
 
 @; ----------------------------------------
 

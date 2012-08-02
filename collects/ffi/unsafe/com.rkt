@@ -258,8 +258,8 @@
        (((deallocator cadr) 
          (let ([f expr])
            (lambda args
-             (Release self)
-             (apply f args))))
+             (apply f args)
+             (Release self))))
         self arg ...))]))
 
 (define (check-com-type who id id? obj)
@@ -492,17 +492,12 @@
                                       -> GetActiveObject p)
   #:wrap (allocator Release))
 
-(struct com-object ([unknown #:mutable]
-                    [dispatch #:mutable]
-                    [type-info #:mutable]
-                    [event-type-info #:mutable]
-                    [clsid #:mutable]
-                    [connection-point #:mutable]
-                    [connection-cookie #:mutable]
-                    [sink #:mutable]
-                    [sink-table-links #:mutable]
-                    [types #:mutable]
-                    [mref #:mutable])
+;; We want to create a finalizer on a `com-object' value,
+;; and we don't want things that an object references to be
+;; finalized before the object. So we use an indirection,
+;; the the finalizer on a `com-object' will have the `impl'
+;; in its closure:
+(struct com-object (impl)
   #:property prop:equal+hash (list
                               (lambda (a b eql?)
                                 (ptr-equal? (com-object-unknown a) (com-object-unknown b)))
@@ -510,6 +505,30 @@
                                 (ehc (com-object-unknown a)))
                               (lambda (a ehc2)
                                 (ehc2 (com-object-unknown a)))))
+
+(struct com-impl ([unknown #:mutable]
+                  [dispatch #:mutable]
+                  [type-info #:mutable]
+                  [event-type-info #:mutable]
+                  [clsid #:mutable]
+                  [connection-point #:mutable]
+                  [connection-cookie #:mutable]
+                  [sink #:mutable]
+                  [sink-table-links #:mutable]
+                  [types #:mutable]
+                  [mref #:mutable]))
+
+(define (com-object-unknown obj) (com-impl-unknown (com-object-impl obj)))
+(define (com-object-dispatch obj) (com-impl-dispatch (com-object-impl obj)))
+(define (com-object-type-info obj) (com-impl-type-info (com-object-impl obj)))
+(define (com-object-event-type-info obj) (com-impl-event-type-info (com-object-impl obj)))
+(define (com-object-clsid obj) (com-impl-clsid (com-object-impl obj)))
+(define (com-object-connection-point obj) (com-impl-connection-point (com-object-impl obj)))
+(define (com-object-connection-cookie obj) (com-impl-connection-cookie (com-object-impl obj)))
+(define (com-object-sink obj) (com-impl-sink (com-object-impl obj)))
+(define (com-object-sink-table-links obj) (com-impl-sink-table-links (com-object-impl obj)))
+(define (com-object-types obj) (com-impl-types (com-object-impl obj)))
+(define (com-object-mref obj) (com-impl-mref (com-object-impl obj)))
 
 (define (com-object-eq? a b)
   (check-com-obj 'com-object-eq? a)
@@ -542,18 +561,31 @@
 (define scheme_remove_managed
   (get-ffi-obj 'scheme_remove_managed #f
                (_fun _gcpointer _racket -> _void)))
-(define (custodian-shutdown-com obj proc-self) (com-release obj))
+(define (custodian-shutdown-com impl proc-self) (impl-release impl))
 (define custodian_shutdown_com 
   (cast custodian-shutdown-com (_fun #:atomic? #t _racket _racket -> _void) _fpointer))
 
 (define (register-with-custodian obj)
-  (set-com-object-mref!
-   obj
+  (define impl (com-object-impl obj))
+  (set-com-impl-mref!
+   impl
    (scheme_add_managed (current-custodian) 
-                       obj 
+                       impl
                        custodian_shutdown_com 
                        custodian-shutdown-com ; proc as data -> ffi callback retained
-                       1)))
+                       1))
+  ;; If we don't finalize the object, then it could
+  ;; happen that the object becomes unreachable and
+  ;; pointers that the object references could be
+  ;; finalized at the same time that the custodian
+  ;; changes its weak reference to a strong one; then,
+  ;; a custodian shutdown would try to redundantly
+  ;; free the pointers. At the same time, use 1 as
+  ;; the last argument above to `scheme_add_managed',
+  ;; in case the custodian is shutdown between the
+  ;; time that the finalizer is enqueued and when it
+  ;; is run.
+  (register-finalizer obj (lambda (obj) (impl-release impl))))
 
 (define (do-cocreate-instance who clsid [where 'local])
   (init!)
@@ -597,56 +629,62 @@
            (error who "unable to obtain IUnknown interface for remote server"))
          unknown]))
 
-     (define obj (make-com-object unknown clsid))
-     (register-with-custodian obj)
-     obj)))
+     (make-com-object unknown clsid))))
 
-(define (make-com-object unknown clsid)
+(define (make-com-object unknown clsid #:manage? [manage? #t])
   (unless (com-iunknown? unknown) (raise-type-error 'make-com-object "com-iunknown" unknown))
   (unless (or (not clsid) (clsid? clsid)) (raise-type-error 'make-com-object "clsid or #f" clsid))
-  (com-object unknown
-              #f
-              #f
-              #f
-              clsid
-              #f
-              #f
-              #f
-              #f
-              (make-hash)
-              #f))
+  (define obj (com-object 
+               (com-impl unknown
+                         #f
+                         #f
+                         #f
+                         clsid
+                         #f
+                         #f
+                         #f
+                         #f
+                         (make-hash)
+                         #f)))
+  (when manage?
+    (register-with-custodian obj))
+  obj)
 
 (define (com-release obj)
   (check-com-obj 'com-release obj)
+  (impl-release (com-object-impl obj)))
+
+(define (impl-release impl)
   (call-as-atomic
    (lambda ()
-     (let ([mref (com-object-mref obj)])
+     (let ([mref (com-impl-mref impl)])
        (when mref
-	 (scheme_remove_managed mref obj)))
+         (set-com-impl-mref! impl #f)
+	 (scheme_remove_managed mref impl)))
      ;; Although reference counting should let us release in any
      ;; order, comments in the MysterX source suggest that the
      ;; order matters, so release type descriptions first and
-     ;; the main object last.
-     (when (positive? (hash-count (com-object-types obj)))
-       (for ([td (in-hash-values (com-object-types obj))])
+     ;; the main impl last.
+     (when (positive? (hash-count (com-impl-types impl)))
+       (for ([td (in-hash-values (com-impl-types impl))])
 	 (release-type-desc td))
-       (set-com-object-types! obj (make-hash)))
+       (set-com-impl-types! impl (make-hash)))
      (define (bye! sel st!)
-       (when (sel obj)
-         (Release (sel obj))
-         (st! obj #f)))
-     (bye! com-object-type-info
-           set-com-object-type-info!)
-     (bye! com-object-event-type-info
-           set-com-object-event-type-info!)
-     (bye! com-object-connection-point
-           set-com-object-connection-point!)
-     (bye! com-object-sink
-           set-com-object-sink!)
-     (bye! com-object-dispatch
-           set-com-object-dispatch!)
-     (bye! com-object-unknown
-           set-com-object-unknown!))))
+       (when (sel impl)
+         (Release (sel impl))
+         (st! impl #f)))
+     (bye! com-impl-type-info
+           set-com-impl-type-info!)
+     (bye! com-impl-event-type-info
+           set-com-impl-event-type-info!)
+     (bye! com-impl-connection-point
+           set-com-impl-connection-point!)
+     (bye! com-impl-sink
+           set-com-impl-sink!)
+     (bye! com-impl-dispatch
+           set-com-impl-dispatch!)
+     (bye! com-impl-unknown
+           set-com-impl-unknown!))))
 
 (define (release-type-desc td)
   ;; call in atomic mode
@@ -690,8 +728,8 @@
 
 (define (com-object-set-clsid! obj clsid)
   (check-com-obj 'com-object-set-clsid! obj)
-  (unless (clsid? clsid) (raise-type-error 'set-com-object-clsid! "clsid" clsid))
-  (set-com-object-clsid! obj clsid))
+  (unless (clsid? clsid) (raise-type-error 'com-object-set-clsid! "clsid" clsid))
+  (set-com-impl-clsid! (com-object-impl obj) clsid))
 
 ;; ----------------------------------------
 ;; Getting COM methods and types
@@ -707,7 +745,7 @@
                                       _IDispatch-pointer)])
         (unless dispatch
           (error 'com-object-get-idispatch "cannot get IDispatch interface for object: ~e" obj))
-        (set-com-object-dispatch! obj dispatch)
+        (set-com-impl-dispatch! (com-object-impl obj) dispatch)
         dispatch)))
 
 (define (type-info-from-com-object obj [exn? #t])
@@ -724,7 +762,7 @@
                               LOCALE_SYSTEM_DEFAULT)])
               (unless type-info
                 (error "Error getting COM type information"))
-              (set-com-object-type-info! obj type-info)
+              (set-com-impl-type-info! (com-object-impl obj) type-info)
               type-info)))))
 
 (define (com-object-type obj)
@@ -818,7 +856,7 @@
         (define event-type-info (event-type-info-from-coclass-type-info
                                  coclass-type-info))
         (Release coclass-type-info)
-        (set-com-object-event-type-info! obj event-type-info)
+        (set-com-impl-event-type-info! (com-object-impl obj) event-type-info)
         event-type-info)))
 
 (define (is-dispatch-name? s)
@@ -1632,9 +1670,7 @@
      p)
    (lambda (p) 
      (((allocator Release) (lambda () p)))
-     (define obj (make-com-object p #f))
-     (register-with-custodian obj)
-     obj)))
+     (make-com-object p #f))))
 
 (define (to-ctype type [as-boxed? #f])
   (cond
@@ -2020,10 +2056,11 @@
         (define sink (QueryInterface sink-unknown IID_ISink _ISink-pointer))
         (set_myssink_table sink myssink-table)
         (define cookie (Advise connection-point sink))
-        (set-com-object-connection-point! obj connection-point)
-        (set-com-object-connection-cookie! obj cookie)
-        (set-com-object-sink! obj sink)
-        (set-com-object-sink-table-links! obj sink-table-links)
+        (define impl (com-object-impl obj))
+        (set-com-impl-connection-point! impl connection-point)
+        (set-com-impl-connection-cookie! impl cookie)
+        (set-com-impl-sink! impl sink)
+        (set-com-impl-sink-table-links! impl sink-table-links)
         (Release connection-point-container)
         connection-point)))
 
