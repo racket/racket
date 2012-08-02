@@ -60,7 +60,9 @@
             (= (column-dot (column 1 2)   (column 3 4)) 11)
             (= (column-dot (column 3 4)   (column 3 4)) 25)
             (= (column-dot (column 1 2 3) (column 4 5 6))
-               (+ (* 1 4) (* 2 5) (* 3 6)))))
+               (+ (* 1 4) (* 2 5) (* 3 6)))
+            (= (column-dot (column +3i +4i) (column +3i +4i))
+               25)))
     (list 'matrix-trace
           (equal? (matrix-trace (flat-vector->matrix 2 2 #(1 2 3 4))) 5))
     (let ([matrix: flat-vector->matrix])

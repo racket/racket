@@ -1,6 +1,7 @@
 #lang typed/racket/base
 
 (require math/array
+         (only-in typed/racket conjugate)
          "../unsafe.rkt"
          "matrix-types.rkt"
          "matrix-constructors.rkt"
@@ -713,7 +714,7 @@
 
 
 (: column-dot : (Column Number) (Column Number) -> Number)
-(define (column-dot c d)
+(define (column-dot c d)  
   (define v (unsafe-column->vector c))
   (define w (unsafe-column->vector d))
   (define m (column-dimension v))
@@ -724,13 +725,11 @@
                           c d)]
     [else
      (for/sum: : Number ([i (in-range 0 m)])
-       (if (index? i)
-           (* (unsafe-vector-ref v i)
-              (unsafe-vector-ref w i))
-           0 ; never happens
-           ))]))
-
-
+       (assert i index?)
+       ; Note: If d is a vector of reals, 
+       ;       then the conjugate is a no-op
+       (* (unsafe-vector-ref v i)
+          (conjugate (unsafe-vector-ref w i))))]))
 
 (: column-norm : (Column Number) -> Real)
 (define (column-norm v)
