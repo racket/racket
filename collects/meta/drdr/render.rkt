@@ -662,6 +662,8 @@
                                    @p{They switch between revisions where there was a change from the previous revision.}
 
                                    @p{For example, if there where seven revisions with three different outputs---1A 2A 3A 4B 5B 6C 7C---then the green buttons will go from 1 to 4 to 6 to 7. (1 and 7 are included because they are the last possible revisions and the search stops.)}
+
+                                   @p{In other words, the green buttons go forwards and backwards to the nearest pushes that have the red 'This result of executing this file has changed' box on them.}
                                    
                                    @h1{How is this site organized?}
                                    @p{Each file's test results are displayed on a separate page, with a link to the previous push on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a push also includes the git commit messages with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested pushes.}
