@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/struct-info
-         (for-syntax scheme/base)
-         (for-template scheme/base))
+         (for-syntax racket/base)
+         (for-template racket/base))
 
 (provide build-struct-names
          build-struct-generation
