@@ -1354,6 +1354,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/object.rktl" drdr:command-line #f
 "collects/tests/racket/optimize.rktl" drdr:command-line #f
 "collects/tests/racket/package-gen.rktl" drdr:timeout 600
+"collects/tests/racket/parallel-plot.rkt" drdr:timeout 400
 "collects/tests/racket/parallel.rktl" drdr:command-line #f
 "collects/tests/racket/path.rktl" drdr:command-line #f
 "collects/tests/racket/pconvert.rktl" drdr:command-line #f
