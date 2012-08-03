@@ -2735,6 +2735,8 @@ double scheme_double_expt(double x, double y) {
     return not_a_number_val;
   else if ((x == 0.0) && (y <= 0))
     return not_a_number_val;
+  else if (isnan(x) || isnan(y))
+    return not_a_number_val;
   else
     return sch_pow(x, y);
 }

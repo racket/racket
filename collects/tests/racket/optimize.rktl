@@ -410,6 +410,9 @@
     (bin-exact 0.0 'flexpt 0.0 10.0 #t)
     (bin-exact +nan.0 'flexpt 0.0 -1.0 #t)
     (bin-exact +nan.0 'flexpt 0.0 0.0 #t)
+    (bin-exact +nan.0 'flexpt +nan.0 2.7 #t)
+    (bin-exact +nan.0 'flexpt 2.7 +nan.0 #t)
+    (bin-exact +nan.0 'flexpt +nan.0 +nan.0 #t)
     
     (un 1.0 'exact->inexact 1)
     (un 1073741823.0 'exact->inexact (sub1 (expt 2 30)))
