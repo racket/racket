@@ -1,5 +1,5 @@
 (module lang-core mzscheme
-  (require-for-syntax frtime/struct mzlib/list)
+  (require-for-syntax syntax/struct mzlib/list)
   (require mzlib/list
            frtime/core/frp
            (only srfi/43/vector-lib vector-any)
