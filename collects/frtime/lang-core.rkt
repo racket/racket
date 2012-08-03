@@ -5,14 +5,28 @@
   (require (only racket/list cons? first second rest empty empty?)
            (only frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister iq-enqueue value-now/no-copy
                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger set-cell!)
-           #;(only srfi/43/vector-lib vector-any)
-           (only racket/vector vector-count)
+           (only racket/base vector-ref)
            (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
            (only mzlib/etc build-vector rec build-list opt-lambda identity))
+  
+  #| (VECTOR-ANY <pred?> <vector>) -> value
+  ;;;   Apply PRED? to each element in VECTOR ...; if PRED?
+  ;;;   should ever return a true value, immediately stop and return that
+  ;;;   value; otherwise, when the vector runs out, return #f.
+  ;;;   The iteration and order of application of PRED? across elements
+  ;;;   is of the vectors is strictly left-to-right. Definition of this function taken from srfi/43/vector-lib. |#
+  (define vector-any
+    (letrec ((loop1 (lambda (pred? vec i len)
+                      (and (not (= i len))
+                           (or (pred? (vector-ref vec i))
+                               (loop1 pred? vec (add1 i) len))))))
+      (lambda (pred? vec)
+            (loop1 pred? vec 0 (vector-length vec)))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Fundamental Macros ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;
+  
     
   (define-syntax frp:letrec
     (syntax-rules ()
@@ -112,8 +126,7 @@
                          [(ctor) (struct-type-make-constructor info)])
              (ormap (lambda (i) (any-nested-reactivity? (acc obj i) (cons obj mem)))
                     (build-list init-k (lambda (x) x))))]
-          [(vector? obj) (not (= 0 
-                                 (vector-count (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)))]
+          [(vector? obj) (vector-any (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)]
           [else #f]))))
   
   (define (deep-value-now/update-deps obj deps table)
