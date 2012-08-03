@@ -1,6 +1,6 @@
 #lang racket/base
 (require frtime/core/frp
-         scheme/list
+         (only-in racket/list first second cons? empty empty? rest last-pair)
          (only-in mzlib/etc
                   rec identity)
          (for-syntax scheme/list
