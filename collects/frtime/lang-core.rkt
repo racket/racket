@@ -5,7 +5,8 @@
   (require (only racket/list cons? first second rest empty empty?)
            (only frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister iq-enqueue value-now/no-copy
                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger set-cell!)
-           (only srfi/43/vector-lib vector-any)
+           #;(only srfi/43/vector-lib vector-any)
+           (only racket/vector vector-count)
            (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
            (only mzlib/etc build-vector rec build-list opt-lambda identity))
   
@@ -111,7 +112,8 @@
                          [(ctor) (struct-type-make-constructor info)])
              (ormap (lambda (i) (any-nested-reactivity? (acc obj i) (cons obj mem)))
                     (build-list init-k (lambda (x) x))))]
-          [(vector? obj) (vector-any (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)]
+          [(vector? obj) (not (= 0 
+                                 (vector-count (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)))]
           [else #f]))))
   
   (define (deep-value-now/update-deps obj deps table)
