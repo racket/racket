@@ -6,7 +6,7 @@
                    posn-x posn-y make-posn make-rgb)
            mzlib/match
            (as-is:unchecked frtime/lang-ext lift)
-           mzlib/class
+           racket/class
            frtime/frlibs/list
            frtime/frlibs/etc
            frtime/frlibs/math
