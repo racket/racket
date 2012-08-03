@@ -62,7 +62,7 @@
            (only frtime/core/frp super-lift behavior? value-now)
            (rename "lang-ext.rkt"  undefined undefined)
            (rename "lang-ext.rkt" undefined? undefined?)
-           mzlib/class)
+           racket/class)
   (require (only racket/list empty))
   
   (define-syntax (lifted-send stx)
@@ -399,11 +399,7 @@
            read-case-sensitive
            file-exists?
            with-input-from-file
-           read
-           
-           
-           
-           )
+           read)
   
   ; from core
   (provide (all-from "lang-core.rkt"))
