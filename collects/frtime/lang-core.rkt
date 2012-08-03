@@ -1,5 +1,5 @@
 (module lang-core mzscheme
-  (require-for-syntax syntax/struct 
+  (require-for-syntax (only syntax/struct build-struct-names build-struct-generation build-struct-expand-info)
                       (only racket/base foldl)
                       (only racket/list empty))
   (require mzlib/list
