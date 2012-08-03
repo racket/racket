@@ -1606,7 +1606,9 @@
 (define (make-a-VARIANT [mode 'atomic-interior])
   (define var (cast (malloc _VARIANT mode)
 		    _pointer 
-		    (_gcable _VARIANT-pointer)))
+		    (if (eq? mode 'raw)
+		    	_VARIANT-pointer
+			(_gcable _VARIANT-pointer))))
   (VariantInit var)
   var)
 
@@ -1773,7 +1775,10 @@
       (define var (ptr-ref vars _VARIANT (- count i 1))) ; reverse order
       (VariantInit var)
       (scheme-to-variant! var a (and func-desc (elem-desc-ref func-desc i)) scheme-type)))
-  (values count
+  (define disp-params (cast (malloc _DISPPARAMS 'raw)
+			    _pointer
+			    _DISPPARAMS-pointer))
+  (memcpy disp-params
           (make-DISPPARAMS vars 
                            (if (= inv-kind INVOKE_PROPERTYPUT)
                                prop-put-long
@@ -1782,7 +1787,10 @@
                            (if (= inv-kind INVOKE_PROPERTYPUT)
                                count
                                0))
-          (unbox cleanup)
+	  (ctype-sizeof _DISPPARAMS))
+  (values count
+	  disp-params
+          (cons (lambda () (free disp-params)) (unbox cleanup))
           (unbox commit)))
 
 (define (variant-to-scheme var)
@@ -1840,7 +1848,7 @@
              (mx-com-type-desc-memid type-desc)
              (find-memid who obj name))
          => (lambda (memid)
-              (define-values (num-params-passed method-arguments cleanups commits)
+              (define-values (num-params-passed method-arguments arg-cleanups commits)
                 (build-method-arguments type-desc
                                         (cadr t)
                                         inv-kind
@@ -1855,12 +1863,19 @@
                             (variant-to-scheme (ptr-ref (DISPPARAMS-rgvarg method-arguments) 
                                                         _VARIANT 
                                                         i))))))
-              (define method-result
+              (define-values (method-result cleanups)
                 (if (= inv-kind INVOKE_PROPERTYPUT)
-                    #f
-                    (make-a-VARIANT 'atomic)))
+                    (values #f arg-cleanups)
+                    (let ([r (make-a-VARIANT 'raw)])
+		      (values r (cons (lambda () (free r))
+				      arg-cleanups)))))
               (for ([proc (in-list commits)]) (proc))
               (define-values (hr exn-info error-index)
+		;; Note that all arguments to `Invoke' should
+		;; not be movable by a GC. A call to `Invoke'
+		;; may use the Windows message queue, and other
+		;; libraries (notably `racket/gui') may have
+		;; callbacks triggered via messages.
                 (Invoke (com-object-get-dispatch obj)
                         memid IID_NULL LOCALE_SYSTEM_DEFAULT
                         inv-kind method-arguments
