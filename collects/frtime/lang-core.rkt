@@ -1,5 +1,7 @@
 (module lang-core mzscheme
-  (require-for-syntax syntax/struct mzlib/list)
+  (require-for-syntax syntax/struct 
+                      (only racket/base foldl)
+                      (only racket/list empty))
   (require mzlib/list
            frtime/core/frp
            (only srfi/43/vector-lib vector-any)
