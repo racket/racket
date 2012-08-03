@@ -64,7 +64,12 @@
 (define (->bytes x)
   (cond [(path? x) (path->bytes x)]
         [(string? x) (string->bytes/locale x)]
-        [(equal? x 'relative) (->bytes (path->complete-path (current-directory)))]))
+        [(equal? x 'relative) (->bytes (path->complete-path (current-directory)))]
+        [else (raise-argument-error '->bytes "(or/c path? string? 'relative)" x)]))
+
+(define (dir->bytes x)
+  (cond [(path? x) (path->bytes (path->complete-path x))]
+        [else (->bytes x)]))
 
 (define collects-queue% 
   (class* object% (work-queue<%>) 
@@ -118,7 +123,7 @@
             (values
               (list cc file last) 
               (list (->bytes (cc-name cc)) 
-                    (->bytes (cc-path cc))
+                    (dir->bytes (cc-path cc))
                     (->bytes file)
                     options)))
           (match cc
@@ -189,6 +194,7 @@
   (class* object% (work-queue<%>) 
     (init-field filelist handler options)
     (field (lock-mgr (new lock-manager%)))
+    (field [results (void)])
     (inspect #f)
 
     (define/public (work-done work wrkr msg)
@@ -197,7 +203,9 @@
           (match result-type
             [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
             [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
-            [(list 'ERROR msg) (handler 'error work msg out err) #t]
+            [(list 'ERROR msg) (handler 'error work msg out err) 
+                               (set! results #f)
+                               #t]
             ['DONE
               (define (string-!empty? s) (not (zero? (string-length s))))
               (if (ormap string-!empty? (list out err))
@@ -212,11 +220,11 @@
           [(cons hd tail)
               (define-values (dir file b) (split-path hd))
               (set! filelist tail)
-              (values hd (list (->bytes hd) (->bytes dir) (->bytes file) null))]
+              (values hd (list (->bytes hd) (dir->bytes dir) (->bytes file) null))]
           [(list) null]))
       (define/public (has-jobs?) (not (null? filelist)))
       (define/public (jobs-cnt) (length filelist))
-      (define/public (get-results) (void))
+      (define/public (get-results) results)
       (super-new)))
 
 (define (parallel-build work-queue worker-count)
@@ -281,7 +289,6 @@
                           [current-error-port err-str-port]
                           ;[manager-compile-notify-handler pp]
                          )
-
              (cmc (build-path dir file)))
            (send/resp 'DONE))]
         [x (send/error (format "DIDNT MATCH A ~v\n" x))]
@@ -291,7 +298,8 @@
                                 #:worker-count [worker-count (processor-count)]
                                 #:handler [handler void]
                                 #:options [options '()])
-  (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count))
+  (or (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count)
+      (exit 1)))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a processes ---" worker-count)

@@ -21,4 +21,18 @@
   (err/rt-test (path->relative-string/setup #"bleh"))
   (err/rt-test (path->relative-string/setup 'bleh)))
 
+(require unstable/file)
+(let ()
+  (define tmpdir (make-temporary-file "tmp~a" 'directory (current-directory)))
+  (define tmppath (build-path tmpdir "tmp.rkt"))
+  (with-output-to-file (build-path tmpdir "tmp.rkt")  #:exists 'replace
+                       (lambda () 
+                         (printf "#lang racket\n")))
+  (define exec-path (find-system-path 'exec-file))
+  (define relpath (find-relative-path (current-directory) tmppath))
+
+  (test #t system* exec-path "-l" "raco" "make" "-j" "2" (path->string relpath))
+  (delete-directory/files tmpdir))
+
+
 (report-errs)
