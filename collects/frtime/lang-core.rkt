@@ -3,13 +3,12 @@
                       (only racket/base foldl)
                       (only racket/list empty))
   (require (only racket/list cons? first second rest empty empty?)
+           (only racket/base vector-ref build-vector build-list)
+           (only racket/function identity)
+           (only mzlib/etc opt-lambda)
            (only frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister iq-enqueue value-now/no-copy
                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger set-cell!)
-           (only racket/base vector-ref)
-           (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
-           (only mzlib/etc opt-lambda)
-           (only racket/base build-vector build-list)
-           (only racket/function identity))
+           (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now))
   
   #| (VECTOR-ANY <pred?> <vector>) -> value
   ;;;   Apply PRED? to each element in VECTOR ...; if PRED?
