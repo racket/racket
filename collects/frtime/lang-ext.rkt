@@ -2,8 +2,8 @@
 (require frtime/core/frp
          (only-in racket/list first second cons? empty empty? rest last-pair)
          (only-in racket/function identity)
-         (for-syntax scheme/list
-                     scheme/base))
+         (for-syntax racket/base
+                     (only-in racket/list first second last-pair empty empty?)))
 
 (define nothing (void));(string->uninterned-symbol "nothing"))
 
