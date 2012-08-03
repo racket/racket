@@ -884,8 +884,6 @@
          value-now/no-copy
          value-now/sync
          signal-count
-         signal?
-         
-         )
+         signal?)
 
 
