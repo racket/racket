@@ -1,3 +1,7 @@
+Version 5.3.0.16
+scribble/base: add items/c
+scribble/decode: add spliceof
+
 Version 5.3, August 2012
 Added submodules, including module*
 Changed the format of error messages

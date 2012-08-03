@@ -3,6 +3,7 @@
          "private/provide-structs.rkt"
          "decode-struct.rkt"
          racket/contract/base
+         racket/contract/combinator
          scheme/list)
 
 (define (pre-content? i)
@@ -80,6 +81,16 @@
              content?)]
  [decode-string (-> string? content?)]
  [clean-up-index-string (-> string? string?)])
+
+(define (spliceof c)
+  (define name `(spliceof ,(contract-name c)))
+  (define p (flat-contract-predicate c))
+  (make-flat-contract #:name name
+                      #:first-order (lambda (x)
+                                      (and (splice? x)
+                                           (andmap p (splice-run x))))))
+(provide/contract
+ [spliceof (flat-contract? . -> . flat-contract?)])
 
 (define the-part-index-desc (make-part-index-desc))
 
