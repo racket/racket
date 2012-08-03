@@ -1,8 +1,7 @@
 #lang racket/base
 (require frtime/core/frp
          (only-in racket/list first second cons? empty empty? rest last-pair)
-         (only-in mzlib/etc
-                  rec identity)
+         (only-in racket/function identity)
          (for-syntax scheme/list
                      scheme/base))
 
@@ -228,7 +227,7 @@
 
 ; while-e : behavior[bool] behavior[number] -> event
 (define (while-e b interval)
-  (rec ret (event-producer2
+  (letrec ([ret (event-producer2
             (lambda (emit)
               (lambda the-args
                 (cond
@@ -236,7 +235,8 @@
                                  (lambda (v)
                                    (emit v)
                                    (schedule-alarm (+ (value-now interval) (current-inexact-milliseconds)) ret))])))
-            b)))
+            b)])
+    ret))
 
 ; ==> : event[a] (a -> b) -> event[b]
 (define (e . ==> . f)
