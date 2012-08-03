@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require scheme/struct-info
          (for-syntax scheme/base)
          (for-template scheme/base))
