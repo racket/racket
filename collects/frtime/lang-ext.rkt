@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require frtime/core/frp
          scheme/bool
          scheme/list
