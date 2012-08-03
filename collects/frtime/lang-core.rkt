@@ -7,7 +7,9 @@
                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger set-cell!)
            (only racket/base vector-ref)
            (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
-           (only mzlib/etc build-vector rec build-list opt-lambda identity))
+           (only mzlib/etc opt-lambda)
+           (only racket/base build-vector build-list)
+           (only racket/function identity))
   
   #| (VECTOR-ANY <pred?> <vector>) -> value
   ;;;   Apply PRED? to each element in VECTOR ...; if PRED?
