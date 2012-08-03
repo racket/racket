@@ -657,6 +657,11 @@
                                    
                                    @h1{What output patterns constitute a "change"?}
                                    @p{At the most basic level, if the bytes are different. However, there are a few subtleties. First, DrDr knows to ignore the result of @code{time}. Second, the standard output and standard error streams are compared independently. Finally, if the file has the @code{drdr:random} property, then changes do not affect any reporting DrDr would otherwise perform. The difference display pages present changed lines with a @span[([class "difference"])]{unique background}.}
+
+                                   @h1{What do the green buttons do?}
+                                   @p{They switch between revisions where there was a change from the previous revision.}
+
+                                   @p{For example, if there where seven revisions with three different outputs---1A 2A 3A 4B 5B 6C 7C---then the green buttons will go from 1 to 4 to 6 to 7. (1 and 7 are included because they are the last possible revisions and the search stops.)}
                                    
                                    @h1{How is this site organized?}
                                    @p{Each file's test results are displayed on a separate page, with a link to the previous push on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a push also includes the git commit messages with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested pushes.}
