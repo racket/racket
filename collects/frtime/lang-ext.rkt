@@ -1,9 +1,13 @@
 #lang racket/base
-(require frtime/core/frp
+(require (for-syntax racket/base
+                     (only-in racket/list first second last-pair empty empty?))
          (only-in racket/list first second cons? empty empty? rest last-pair)
          (only-in racket/function identity)
-         (for-syntax racket/base
-                     (only-in racket/list first second last-pair empty empty?)))
+         (only-in frtime/core/frp super-lift undefined undefined? behavior? do-in-manager-after do-in-manager proc->signal set-signal-thunk! register unregister 
+                  signal? signal-depth signal:switching? signal-value value-now signal:compound? signal:compound-content signal:switching-current signal:switching-trigger 
+                  set-cell! snap? iq-enqueue value-now/no-copy event-receiver event-set? proc->signal:switching set-signal-producers! set-signal-depth! safe-signal-depth 
+                  make-events-now iq-resort event-set-events current-logical-time event-set-time event-producer2 schedule-alarm value-now/sync set-signal-value! signal-thunk
+                  send-event exceptions send-synchronous-event send-synchronous-events signal-count))
 
 (define nothing (void));(string->uninterned-symbol "nothing"))
 
