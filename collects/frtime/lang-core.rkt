@@ -22,13 +22,13 @@
                            (or (pred? (vector-ref vec i))
                                (loop1 pred? vec (add1 i) len))))))
       (lambda (pred? vec)
-            (loop1 pred? vec 0 (vector-length vec)))))
+        (loop1 pred? vec 0 (vector-length vec)))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Fundamental Macros ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;
   
-    
+  
   (define-syntax frp:letrec
     (syntax-rules ()
       [(_ ([id val] ...) expr ...)
@@ -71,7 +71,7 @@
       [(_ ([vars expr] ...) body0 body1 ...)
        (let-values ([vars (split-multiple expr)] ...)
          body0 body1 ...)]))
-
+  
   (define-for-syntax (get-rest-arg arglist-stx)
     (syntax-case arglist-stx ()
       [var
@@ -88,8 +88,8 @@
        (let ([the-rest-arg (get-rest-arg #'bindings)])
          (if the-rest-arg
              #`(bindings
-                 (let ([#,the-rest-arg (frp:copy-list #,the-rest-arg)])
-                   body0 body1 ...))
+                (let ([#,the-rest-arg (frp:copy-list #,the-rest-arg)])
+                  body0 body1 ...))
              #'(bindings body0 body1 ...)))]))
   
   (define-syntax (frp:lambda stx)
@@ -179,7 +179,7 @@
   (define (public-dvn obj)
     (do-in-manager-after
      (deep-value-now obj empty)))
-
+  
   (define any-spinal-reactivity?
     (opt-lambda (lst [mem empty])
       (cond
@@ -301,15 +301,15 @@
                                   (lambda (_)
                                     (loop (unbox (signal:switching-current v))))
                                   (signal:switching-trigger v))]
-	  [(undefined? v) undefined]
+          [(undefined? v) undefined]
           [else (acc v)]))))
-    
+  
   (define frp:car
     (make-accessor car))
   
   (define frp:cdr
     (make-accessor cdr))
- 
+  
   (define frp:pair? (lambda (arg) (if (signal:compound? arg)
                                       (pair? (signal:compound-content arg))
                                       (lift #t pair? arg))))
@@ -330,7 +330,7 @@
          [(empty? lst) (ef)]
          [else (error "list-match: expected a list, got ~a" lst)]))
      lst))
-    
+  
   (define frp:append
     (case-lambda
       [() ()]
@@ -427,14 +427,14 @@
       [(_ s (field ...))
        #'(frp:define-struct (s #f) (field ...) (current-inspector))]))
   
- (define (find pred lst)
+  (define (find pred lst)
     (cond
       [(empty? lst) #f]
       [(pred (first lst)) (first lst)]
       [else (find pred (rest lst))]))
- 
   
- (define (ensure-no-signal-args val name)
+  
+  (define (ensure-no-signal-args val name)
     (if (procedure? val)
         (lambda args
           (cond
@@ -442,7 +442,7 @@
              =>
              (lambda (v)
                (raise-type-error name "non-signal"
-                               (format "#<signal: ~a>" (signal-value v))))]
+                                 (format "#<signal: ~a>" (signal-value v))))]
             [else (apply val args)]))))
   
   
@@ -534,7 +534,7 @@
                 #'(begin clause ... (require require-spec))])]))
         #'(begin)
         (syntax->list #'clauses))]))
-       
+  
   
   
   
@@ -545,12 +545,17 @@
            #%plain-module-begin
            #%module-begin
            #%top-interaction
+           
+           
            raise-reactivity
-           raise-list-for-apply
-           (rename public-dvn deep-value-now)
+           raise-list-for-apply 
            any-nested-reactivity?
            compound-lift
            list-match
+           frp:copy-list
+           frp:->boolean
+           
+           (rename public-dvn deep-value-now)
            (rename frp:if if)
            (rename frp:lambda lambda)
            (rename frp:case-lambda case-lambda)
@@ -571,6 +576,4 @@
            (rename frp:make-struct-field-mutator make-struct-field-mutator)
            (rename frp:define-struct define-struct)
            (rename frp:provide provide)
-           (rename frp:require require)
-           frp:copy-list
-           frp:->boolean))
+           (rename frp:require require)))
