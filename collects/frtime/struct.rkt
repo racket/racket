@@ -1,5 +1,5 @@
 #lang racket/base
-(require scheme/struct-info
+(require racket/struct-info
          (for-syntax scheme/base)
          (for-template scheme/base))
 
