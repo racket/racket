@@ -445,7 +445,9 @@
   (define fl+-type
     (lambda ()
       (from-cases (map (lambda (t) (commutative-binop t -FlonumZero t))
-                       all-flonum-types)
+                       ;; not all float types. singleton types are ruled out, since NaN can arise
+                       (list -FlonumZero -FlonumNan -PosFlonum -NonNegFlonum
+                             -NegFlonum -NonPosFlonum -Flonum))
                   (commutative-binop -NonNegFlonum -PosFlonum -PosFlonum)
                   (map binop (list -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum))
                   (-Flonum -Flonum . -> . -Flonum))))
@@ -458,10 +460,7 @@
                   (binop -Flonum))))
   (define fl*-type
     (lambda ()
-      (from-cases (map binop (list -FlonumPosZero -FlonumNegZero))
-                  (commutative-binop -FlonumNegZero -FlonumPosZero -FlonumNegZero)
-                  (binop -FlonumNegZero -FlonumPosZero)
-                  (binop -FlonumZero)
+      (from-cases (binop -FlonumZero)
                   ;; we don't have Pos Pos -> Pos, possible underflow
                   (binop -PosFlonum -NonNegFlonum)
                   (binop -NonNegFlonum)
@@ -470,10 +469,7 @@
                   (binop -Flonum))))
   (define fl/-type
     (lambda ()
-      (from-cases (-FlonumPosZero -PosFlonum . -> . -FlonumPosZero)
-                  (-FlonumPosZero -NegFlonum . -> . -FlonumNegZero)
-                  (-FlonumNegZero -PosFlonum . -> . -FlonumNegZero)
-                  (-FlonumNegZero -NegFlonum . -> . -FlonumPosZero)
+      (from-cases (-FlonumZero -Flonum . -> . -FlonumZero)
                   (-PosFlonum -PosFlonum . -> . -NonNegFlonum) ; possible underflow
                   (commutative-binop -PosFlonum -NegFlonum -NonPosFlonum)
                   (-NegFlonum -NegFlonum . -> . -NonNegFlonum)
@@ -1754,9 +1750,9 @@
                  (varop (Un -PosRat -NegRat) -PosRat)
                  (varop -Rat -NonNegRat)
                  ;; also supports inexact integers
-                 (commutative-case -FlonumZero -Real -FlonumPosZero)
-                 (commutative-case -SingleFlonumZero -Real -SingleFlonumPosZero)
-                 (commutative-case -InexactRealZero -Real -InexactRealPosZero)
+                 (commutative-case -FlonumZero -Real -FlonumZero)
+                 (commutative-case -SingleFlonumZero -Real -SingleFlonumZero)
+                 (commutative-case -InexactRealZero -Real -InexactRealZero)
                  (varop (Un -PosFlonum -NegFlonum) -PosFlonum)
                  (varop -Flonum -NonNegFlonum)
                  (commutative-case (Un -PosFlonum -NegFlonum) (Un -PosReal -NegReal) -PosFlonum)
