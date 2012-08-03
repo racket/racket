@@ -1,18 +1,43 @@
 (module lang-utils "lang-core.rkt"
   
-  (require (all-except mzscheme
+  (require (only mzscheme let define-syntax define apply procedure-arity syntax-object->datum with-input-from-file require-for-syntax make-namespace expand-path collection-path begin syntax-rules)
+           (all-except racket
+                       else
                        module
+                       begin
+                       syntax-rules
                        #%app
                        #%top
                        #%datum
                        #%plain-module-begin
                        #%module-begin
+                       #%top-interaction
+                       λ
+                       let
+                       define
+                       define-syntax
+                       define-for-syntax
+                       case
+                       apply
                        if
                        lambda
                        case-lambda
+                       chaperone-procedure
+                       free-identifier=?
                        reverse
+                       collection-path
+                       collection-file-path
                        list-ref
                        require
+                       collection-path
+                       raise-arity-error
+                       procedure-rename
+                       impersonate-procedure
+                       procedure-reduce-arity
+                       procedure-arity
+                       procedure->method
+                       prop:procedure
+                       regexp-replace*
                        provide
                        letrec
                        match
@@ -25,20 +50,20 @@
                        vector-ref
                        define-struct
                        list
-		       list*
-		       list?
-		       append
+                       list*
+                       list?
+                       append
                        and
                        or
                        cond when unless
-                       map ormap andmap assoc member)
+                       map ormap andmap assoc member open-input-file open-output-file open-input-output-file call-with-output-file call-with-input-file with-output-to-file with-input-from-file)
            (rename mzscheme mzscheme:if if)
            (rename "lang-ext.rkt" lift lift)
            (only frtime/core/frp super-lift behavior? value-now)
-           (rename "lang-ext.rkt" undefined undefined)
+           (rename "lang-ext.rkt"  undefined undefined)
            (rename "lang-ext.rkt" undefined? undefined?)
-	   mzlib/class)
-  (require mzlib/list)
+           mzlib/class)
+  (require (only racket/list empty))
   
   (define-syntax (lifted-send stx)
     (syntax-case stx ()
@@ -49,13 +74,13 @@
                  (lambda (obj-tmp arg-tmp ...)
                    (send obj-tmp meth arg-tmp ...))
                  obj arg ...))]))
-    
+  
   
   (define (list-ref lst idx)
     (if (lift #t positive? idx)
         (list-ref (cdr lst) (lift #t sub1 idx))
         (car lst)))
-    
+  
   (define-syntax cond
     (syntax-rules (else =>)
       [(_ [else result1 result2 ...])
@@ -104,7 +129,7 @@
                               (or-undef exps ...)))]))
   
   
-    (define-syntax or-undef
+  (define-syntax or-undef
     (syntax-rules ()
       [(_) undefined]
       [(_ exp) (let ([v exp]) (if v v undefined))]
@@ -114,7 +139,7 @@
                               (or-undef exps ...)
                               (or-undef exps ...)))]))
   
-
+  
   
   (define-syntax when
     (syntax-rules ()
@@ -181,7 +206,7 @@
   
   (define (cddddr v)
     (cdr (cdddr v)))
-   
+  
   (define (split-list acc lst)
     (if (null? (cdr lst))
         (values acc (car lst))
@@ -200,7 +225,7 @@
          (lambda (last-args)
            (apply apply fn (append first-args (cons last-args empty))))
          last-args))))
-    
+  
   (define-syntax frp:case
     (syntax-rules ()
       [(_ exp clause ...)
@@ -241,16 +266,16 @@
                       (cons (apply f (car l) (map car ls)) (apply map f (cdr l) (map cdr ls)))
                       null)]))
   
-
+  
   (define (frp:length lst)
     (cond
-     [(pair? lst) (lift #t add1 (frp:length (cdr lst)))]
-     [(null? lst) 0]
-     [else (error 'length (format "expects list, given ~a" lst))]))
+      [(pair? lst) (lift #t add1 (frp:length (cdr lst)))]
+      [(null? lst) 0]
+      [else (error 'length (format "expects list, given ~a" lst))]))
   
   (define (frp:list->string lst)
     (lift #t list->string (raise-reactivity lst)))
-
+  
   (define (reverse lst)
     (let loop ([lst lst] [acc ()])
       (if (pair? lst)
@@ -262,7 +287,7 @@
   ;; language.  Ironically, frtime-opt has its *own* definition of this
   ;; function; this one is just for source compatibility.
   (define (dont-optimize x) x)
-
+  
   (provide cond 
            and 
            or 
@@ -284,6 +309,8 @@
            cddddr
            build-path
            collection-path
+           lifted-send
+           dont-optimize
            
            list-ref
            (rename frp:case case)
@@ -318,7 +345,7 @@
                    expand syntax-object->datum exn-message continuation-mark-set->list exn-continuation-marks
                    exn:fail? regexp-match
                    vector->list list->vector make-vector)
-            
+           
            (rename eq? mzscheme:eq?)
            make-exn:fail  current-inspector make-inspector
            make-namespace namespace? namespace-symbol->identifier namespace-variable-value
@@ -346,7 +373,7 @@
            quasiquote
            unquote
            unquote-splicing
-
+           
            syntax
            let/ec
            with-handlers
@@ -363,9 +390,8 @@
            current-directory
            exit
            system-type 
-           lifted-send
            unsyntax-splicing 
-
+           
            delay
            force
            random
@@ -374,12 +400,12 @@
            file-exists?
            with-input-from-file
            read
-         
-           dont-optimize
+           
+           
            
            )
   
   ; from core
   (provide (all-from "lang-core.rkt"))
-
+  
   )
