@@ -574,7 +574,7 @@
                                       (syntax-e id)
                                       x))
                                    'disappeared-use
-                                   (car all-varss))
+                                   (map syntax-local-introduce (car all-varss)))
                                   (loop (cdr vars) (cdr bindings) (cdr all-varss)))]
                                 [else  (loop (cdr vars) (cdr bindings) (cdr all-varss))]))])
                       (if (identifier? pattern)
