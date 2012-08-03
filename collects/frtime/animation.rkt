@@ -4,7 +4,7 @@
                        make-posn posn-x posn-y make-rgb)
            (lifted frtime/animation/graphics
                    posn-x posn-y make-posn make-rgb)
-           mzlib/match
+           racket/match
            (as-is:unchecked frtime/lang-ext lift)
            racket/class
            frtime/frlibs/list
@@ -136,7 +136,7 @@
        (lambda (v)
          (match (v-n v)
            [(? undefined?) (void)]
-           [($ ring center radius color)
+           [(ring center radius color)
             (let ([center (v-n center)]
                   [radius (v-n radius)]
                   [color (v-n color)])
@@ -148,25 +148,25 @@
                  (* 2 radius)
                  (* 2 radius)
                  (if (undefined? color) "black" color))))]
-           [($ arc pos width height start-radians end-radians color)
+           [(arc pos width height start-radians end-radians color)
             (let ([pos (v-n pos)]
                   [width (v-n width)]
                   [height (v-n height)]
                   [start-radians (v-n start-radians)]
                   [end-radians (v-n end-radians)])
               ((draw-arc pixmap) pos width height start-radians end-radians color))]
-           [($ solid-arc pos width height start-radians end-radians color)
+           [(solid-arc pos width height start-radians end-radians color)
             (let ([pos (v-n pos)]
                   [width (v-n width)]
                   [height (v-n height)]
                   [start-radians (v-n start-radians)]
                   [end-radians (v-n end-radians)])
               ((draw-solid-arc pixmap) pos width height start-radians end-radians color))]
-           [($ image pos renderer)
+           [(image pos renderer)
             (let ([renderer (v-n renderer)]
                   [pos (v-n pos)])
               ((renderer pixmap) pos))]
-           [($ solid-ellipse ul w h color)
+           [(solid-ellipse ul w h color)
             (let ([ul (v-n ul)]
                   [w (v-n w)]
                   [h (v-n h)]
@@ -175,15 +175,15 @@
                           (undefined? w)
                           (undefined? h))
                 ((draw-solid-ellipse pixmap) ul w h (if (undefined? color) "black" color))))]
-           [($ graph-string pos text color) ((draw-string pixmap) (v-n pos) (v-n text) (v-n color))]
-           [($ line p1 p2 color)
+           [(graph-string pos text color) ((draw-string pixmap) (v-n pos) (v-n text) (v-n color))]
+           [(line p1 p2 color)
             (let ([p1 (v-n p1)]
                   [p2 (v-n p2)]
                   [color (v-n color)])
               (unless (or (undefined? p1)
                           (undefined? p2))
                 ((draw-line pixmap) p1 p2 (if (undefined? color) "black" color))))]
-           [($ rect ul w h color)
+           [(rect ul w h color)
             (let ([ul (v-n ul)]
                   [w (v-n w)]
                   [h (v-n h)]
@@ -193,8 +193,8 @@
               [(>= h 0) ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (posn-y ul)) (- w) h color)]
               [(>= w 0) ((draw-solid-rectangle pixmap) (make-posn (posn-x ul) (+ (posn-y ul) h)) w (- h) color)]
               [else ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (+ (posn-y ul) h)) (- w) (- h) color)]))]
-           [($ polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
-           [($ solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
+           [(polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
+           [(solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
            [(? list? x) (loop (v-n x))]
            [(? void?) (void)]))
        a-los v-n)))
@@ -206,7 +206,7 @@
   (define (draw-graph-color pm gc)
     (let ([dp (draw-pixel pm)])
       (match gc
-        [($ graph-color fn xmin xmax ymin ymax)
+        [(graph-color fn xmin xmax ymin ymax)
          (let ([xincr (/ (- xmax xmin) 300)]
                [yincr (/ (- ymax ymin) 300)])
            (let loop ([i 50] [y ymin])
@@ -301,9 +301,9 @@
                    (make-wave-state (value-now hz) 0)
                    (lambda (new-freq+time old-state)
                      (match new-freq+time
-                       [(h1 t)
+                       [(list h1 t)
                         (match old-state
-                          [($ wave-state h0 o0)
+                          [(wave-state h0 o0)
                            (make-wave-state
                             h1
                             (+ o0 (* .002 pi t (- h0 h1))))])])))])
