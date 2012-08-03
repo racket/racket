@@ -1,9 +1,11 @@
 (module list frtime/frtime-lang-only
   
-  (require (lifted mzlib/list sort
+  (require 
+   (lifted racket/base sort)
+   (lifted racket/list
                    fifth sixth seventh eighth
                    last-pair)
-           (rename mzlib/list empty empty))
+           (rename racket/list empty empty))
 
   (define first car)
   (define rest cdr)
