@@ -1,6 +1,5 @@
 #lang racket/base
 (require frtime/core/frp
-         scheme/bool
          scheme/list
          (only-in mzlib/etc
                   rec identity)
@@ -152,7 +151,7 @@
           new-clause ...)
        )]))
 
-(define undefined?/lifted (lambda (arg) (lift false undefined? arg)))
+(define undefined?/lifted (lambda (arg) (lift #f undefined? arg)))
 
 (define (event? v)
   (and (signal? v)
