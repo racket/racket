@@ -212,14 +212,21 @@
          (extend-tvars (list var)
            (let ([t* (parse-type #'t)])
              ;; is t in a productive position?
-             (unless (match t*
-                       [(Union: es)
-                        (define seq-tvar (Type-seq tvar))
-                        (not (memf (λ (e) (eq? (Type-seq e) seq-tvar)) es))]
-                       [_ #t]) ; it's fine
+             (define productive
+               (let loop ((ty t*))
+                 (match ty
+                  [(Union: elems) (andmap loop elems)]
+                  [(F: _) (not (equal? ty tvar))]
+                  [(App: rator rands stx)
+                   (loop (resolve-app rator rands stx))]
+                  [(Mu: _ body) (loop body)]
+                  [(Poly: names body) (loop body)]
+                  [(PolyDots: names body) (loop body)]
+                  [else #t])))
+             (unless productive
                (tc-error/stx
                 stx
-                "Recursive types are not allowed as members of unions directly inside their definition"))
+                "Recursive types are not allowed directly inside their definition"))
              (if (memq var (fv t*))
                  (make-Mu var t*)
                  t*))))]

@@ -772,6 +772,11 @@
                        (if (number? x)
                            (begin (f) (add1 x))
                            12))]
+
+        [tc-err (ann 3 (Rec a a))]
+        [tc-err (ann 3 (Rec a (U a 3)))]
+        [tc-err (ann 3 (Rec a (Rec b a)))]
+
         #;
         [tc-err (lambda: ([x : Any])
                          (if (number? (not (not x)))
