@@ -190,6 +190,9 @@
         [(Vector: t)
          (when flat? (exit (fail)))
          #`(vectorof #,(t->c t))]
+        [(HeterogenousVector: ts)
+         (when flat? (exit (fail)))
+         #`(vector/c #,@(map t->c ts))]
         [(Box: t)
          (when flat? (exit (fail)))
          #`(box/c #,(t->c t))]
