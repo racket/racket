@@ -73,6 +73,13 @@
   (test #t byte-ready? r)
   (test #f char-ready? r))
 
+;; Progress evts for a closed port should start out ready:
+(let ()
+  (define-values (i o) (make-pipe))
+  (close-input-port i)
+  (test #t evt? (sync/timeout 0 (port-progress-evt i)))
+  (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Based on the Racket manual...
 

@@ -2153,6 +2153,13 @@ intptr_t scheme_get_byte_string_unless(const char *who,
     if (ip->input_lock)
       scheme_wait_input_allowed(ip, only_avail);
 
+    /* check progress evt before checking for closed: */
+    if (unless_evt 
+        && SAME_TYPE(SCHEME_TYPE(unless_evt), scheme_progress_evt_type)
+        && SCHEME_SEMAP(SCHEME_PTR2_VAL(unless_evt))
+        && scheme_try_plain_sema(SCHEME_PTR2_VAL(unless_evt)))
+      return 0;
+
     CHECK_PORT_CLOSED(who, "input", port, ip->closed);
 
     if (only_avail == -1) {
@@ -2903,6 +2910,11 @@ Scheme_Object *scheme_progress_evt_via_get(Scheme_Input_Port *port)
     return port->progress_evt;
 
   sema = scheme_make_sema(0);
+
+  if (port->closed) {
+    scheme_post_sema_all(sema);
+    return sema;
+  }
 
   port->progress_evt = sema;
   port->slow = 1;
