@@ -308,6 +308,14 @@
 
 (time (plot (contour-intervals f1 -5 5 -5 5 #:label "z")))
 
+(time (plot (contour-intervals
+             (λ (x y)
+               (define z (- x y))
+               (cond [(< z -1) -1]
+                     [(> z 1)   1]
+                     [else      z]))
+             -2 2 -2 2)))
+
 (time (plot (list (tick-grid)
                   (contour-intervals f1 -5 2 -5 2
                                      #:levels 5
