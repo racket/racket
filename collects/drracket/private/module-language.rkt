@@ -1813,7 +1813,8 @@
           (set! inside? new-inside?)
           (invalidate-bitmap-cache 0 0 'display-end 'display-end))
         (cond
-          [(and (preferences:get 'drracket:defs/ints-labels)
+          [(and lang-wants-big-defs/ints-labels?
+                (preferences:get 'drracket:defs/ints-labels)
                 (send evt button-down?)
                 (get-admin))
            (define admin (get-admin))
