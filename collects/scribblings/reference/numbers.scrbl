@@ -519,7 +519,7 @@ Returns @racket[(floor (sqrt n))] for positive @racket[n]. For
 
 
 @defproc[(integer-sqrt/remainder [n integer?])
-         (values integer? integer?)]{
+         (values complex? integer?)]{
 
 Returns @racket[(integer-sqrt n)] and @racket[(- n (expt
  (integer-sqrt n) 2))].
