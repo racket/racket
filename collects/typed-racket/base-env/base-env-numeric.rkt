@@ -1665,7 +1665,25 @@
                   -InexactRealPosZero -InexactRealNegZero -InexactRealZero -NonNegInexactReal
                   -RealZero -NonNegReal))
   (-Rat . -> . -ExactNumber)
-  (N . -> . N))] ; defined on inexact integers too
+  (-Real . -> . N))] ; defined on inexact integers too, but not complex
+[integer-sqrt/remainder
+ (from-cases
+  (-Zero . -> . (-values -Zero -Zero))
+  (-One . -> . (-values -One -Zero))
+  (-Byte . -> . (-values -Byte -Byte))
+  (-Index . -> . (-values -Index -Index))
+  (-NonNegFixnum . -> . (-values -Index -NonNegFixnum))
+
+  (map (λ (t) (t . -> . (-values t -Int)))
+       (list -Nat -NonNegRat
+             -FlonumPosZero -FlonumNegZero -FlonumZero -NonNegFlonum
+             -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -NonNegSingleFlonum
+             -InexactRealPosZero -InexactRealNegZero -InexactRealZero -NonNegInexactReal
+             -RealZero -NonNegReal))
+
+  (-Rat . -> . (-values -ExactNumber -Int))
+  (-Real . -> . (-values N -Int)))] ; defined on inexact integers too
+
 [log (cl->*
       (-NonNegRat . -> . -Real)
       (-FlonumZero . -> . -NegFlonum)
