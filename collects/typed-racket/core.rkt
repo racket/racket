@@ -56,10 +56,11 @@
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
      #`(display #,(tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
-                            (format "~a\n"
-                                    (match type
-                                      [(tc-result1: t f o) t]
-                                      [(tc-results: t) (cons 'Values t)]))))]
+                            (parameterize ([print-multi-line-case-> #t])
+                              (format "~a\n"
+                                      (match type
+                                        [(tc-result1: t f o) t]
+                                        [(tc-results: t) (cons 'Values t)])))))]
     ;; given a function and a desired return type, fill in the blanks
     [(_ . ((~literal :query-result-type) op:expr desired-type:expr))
      (let ([expected (parse-type #'desired-type)])

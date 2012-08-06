@@ -172,9 +172,10 @@
          [(list) "(case->)"]
          [(list a) (format-arr a)]
          [(list a b ...)
-          (format "(case-> ~a ~a)"
+          (define multi-line? (print-multi-line-case->))
+          (format (string-append "(case-> ~a" (if multi-line? "\n        " " ") "~a)")
                   (format-arr a)
-                  (string-join (map format-arr b)))]))]))
+                  (string-join (map format-arr b) (if multi-line? "\n        " " ")))]))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void

@@ -20,7 +20,7 @@ at least theoretically.
  ;; logging
  printf/log show-input?
  ;; struct printing
- custom-printer define-struct/printer
+ custom-printer print-multi-line-case-> define-struct/printer
  ;; provide macros
  rep utils typecheck infer env private types)
 
@@ -123,6 +123,7 @@ at least theoretically.
   print-pathelem*)
 
 (define custom-printer (make-parameter #t))
+(define print-multi-line-case-> (make-parameter #f))
 
 (define-syntax (define-struct/printer stx)
   (syntax-parse stx
