@@ -155,7 +155,7 @@ Two kinds of files implement the two kinds of configuration:
        collection.}
 
  @item{A @deftech{style file} refines the implementation of styles
-       nused in the document---typically just the ``built-in'' styles
+       used in the document---typically just the ``built-in'' styles
        used by @racketmodname[scribble/base].
 
        The default style files, @filepath{scribble-style.css} and
