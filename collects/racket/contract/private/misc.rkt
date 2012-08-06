@@ -225,12 +225,12 @@
                 (if candidate-proc
                     (candidate-proc val)
                     (raise-blame-error blame val 
-                                       '("none of the branches of the or/c matched," given: "~e")
+                                       '("none of the branches of the or/c matched" given: "~e")
                                        val))]
                [((car checks) val)
                 (if candidate-proc
                     (raise-blame-error blame val
-                                       '("two of the clauses in the or/c might both match: ~s and ~s," given: "~e")
+                                       '("two of the clauses in the or/c might both match: ~s and ~s" given: "~e")
                                        (contract-name candidate-contract)
                                        (contract-name (car contracts))
                                        val)
@@ -367,7 +367,7 @@
                (raise-blame-error
                 blame
                 val
-                '(expected: "~s," given: "~e, which isn't ~s")
+                '(expected: "~s" given: "~e\n which isn't: ~s")
                 (contract-name ctc)
                 val
                 (contract-name (car ctcs))))])))))
@@ -647,7 +647,7 @@
               (λ (val)
                 (unless (predicate? val)
                   (raise-blame-error blame val
-                                     '(expected: "~s," given "~e")
+                                     '(expected: "~s" given "~e")
                                      'type-name 
                                      val))
                 (check-all p-app val))))
@@ -694,7 +694,7 @@
           (λ (v)
             (unless (pair? v)
               (raise-blame-error blame v 
-                                 '(expected "<pair?>," given: "~e")
+                                 '(expected "<pair?>" given: "~e")
                                  v))
             (combine v (car-p (car v)) (cdr-p (cdr v))))))
       (cond
@@ -748,14 +748,14 @@
      (lambda (blame)
        (lambda (x)
          (unless (list? x)
-           (raise-blame-error blame x '(expected "a list," given: "~e") x))
+           (raise-blame-error blame x '(expected "a list" given: "~e") x))
          (let* ([args (generic-list/c-args c)]
                 [expected (length args)]
                 [actual (length x)])
            (unless (= actual expected)
              (raise-blame-error
               blame x
-              '(expected "a list of ~a elements, but" given "~a element~a in: ~e")
+              '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
               expected 
               actual
               (if (= actual 1) "" "s")
@@ -775,12 +775,12 @@
                     (arg/c (add-list-context blame i))))
     (λ (x)
       (unless (list? x)
-        (raise-blame-error blame x '(expected "a list," given: "~e") x))
+        (raise-blame-error blame x '(expected: "a list" given: "~e") x))
       (define actual (length x))
       (unless (= actual expected)
         (raise-blame-error
          blame x
-         '(expected "a list of ~a elements, but" given "~a element~a in: ~e")
+         '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
          expected
          actual
          (if (= actual 1) "" "s")
@@ -839,7 +839,7 @@
                (raise-blame-error
                 blame
                 val
-                '(expected "<promise>," given: "~e")
+                '(expected: "<promise>" given: "~e")
                 val))
              (c/i-struct
               val
@@ -941,7 +941,7 @@
       (raise-blame-error
        blame
        val
-       '("~s accepts no values," given: "~e")
+       '("~s accepts no values" given: "~e")
        (none/c-name ctc)
        val))))
 
@@ -989,7 +989,7 @@
       (unless (contract-first-order-passes? ctc val)
         (raise-blame-error
          blame val
-         '(expected: "~s," given: "~e")
+         '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
       (proxy val proj1 proj2))))
@@ -1045,7 +1045,7 @@
       (unless (contract-first-order-passes? ctc val)
         (raise-blame-error
          blame val
-         '(expected: "~s," given: "~e")
+         '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
       (proxy val proj1 proj2))))

@@ -22,7 +22,7 @@ particular required arity (e.g., @racket[call-with-input-file],
 @racket[exn:fail:contract] if the arity is incorrect.
 
 @;----------------------------------------------------------------------
-@section{Error Message Conventions}
+@section[#:tag "err-msg-conventions"]{Error Message Conventions}
 
 Racket's @deftech{error message convention} is to produce error
 messages with the following shape:

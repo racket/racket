@@ -232,7 +232,7 @@
       (unless (contract-first-order-passes? ctc val)
         (raise-blame-error
          blame val
-         '(expected: "~s," given: "~e")
+         '(expected: "~s" given: "~e")
          (contract-name ctc)
          val))
       (define accessor (base-generic-instance/c-accessor ctc))

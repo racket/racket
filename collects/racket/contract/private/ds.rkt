@@ -253,7 +253,7 @@ it around flattened out.
                     (raise-blame-error
                      blame
                      val
-                     '(expected: "~s," given: "~e") 'name val))
+                     '(expected: "~s" given: "~e") 'name val))
                   (cond
                     [(already-there? contract/info val lazy-depth-to-look)
                      val]
@@ -459,7 +459,7 @@ it around flattened out.
                                 (raise-blame-error
                                  blame
                                  val
-                                 '(expected: "~s," given: "~e")
+                                 '(expected: "~s" given: "~e")
                                  (contract-name ctc)
                                  val)]))
                             #:lifts lifts
@@ -535,7 +535,7 @@ it around flattened out.
     (raise-blame-error
      (contract/info-blame contract/info)
      stct
-     '("failed `and' clause," given: "~e")
+     '("failed `and' clause" given: "~e")
      stct)))
 
 (define-values (evaluate-attr-prop evaluate-attr-prop-predicate evaluate-attr-prop-accessor)
