@@ -55,8 +55,8 @@
      #`(display #,(format "~a\n" (parse-type #'ty)))]
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
-     #`(display #,(format "~a\n"
-                          (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
+     #`(display #,(tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
+                            (format "~a\n"
                                     (match type
                                       [(tc-result1: t f o) t]
                                       [(tc-results: t) (cons 'Values t)]))))]
