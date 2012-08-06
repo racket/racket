@@ -18,6 +18,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
 (define invariant-output (make-parameter #f))
 (define time-limit (make-parameter +inf.0))
 (define randomize (make-parameter #f))
+(define num-processes (make-parameter (processor-count)))
 
 (define errors (make-hash))
 (define (record-common-error! exn-msg)
@@ -89,6 +90,10 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
                  number
                  "Limit the run to a given amount of time"
                  (time-limit (string->number number))]
+                [("-j") 
+                 n
+                 "Run <n> in parallel"
+                 (num-processes (string->number n))]
                 #:args p
                 (if (empty? p)
                     (list (find-collects-dir))
@@ -99,7 +104,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
 (define from-worker-ch (make-channel))
 
 (define worker-threads
-  (for/list ([i (in-range (processor-count))])
+  (for/list ([i (in-range (num-processes))])
     (thread
      (λ ()
        (let loop ()
