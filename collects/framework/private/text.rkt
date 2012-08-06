@@ -4081,7 +4081,7 @@ designates the character that triggers autocompletion
                    (get-highlight-background-color)
                    (if (preferences:get 'framework:white-on-black?)
                        "lime"
-                       "forestgreen"))
+                       "forestgreen"))               
                'solid)
          
          (send dc draw-rectangle ls final-y (- right-space single-w) single-h)
@@ -4171,13 +4171,22 @@ designates the character that triggers autocompletion
 
     (define old-position #f)
     (define/augment (after-set-position)
-      (when old-position
-        (invalidate-at-position old-position))
-      (set! old-position (and (= (get-start-position)
-                                 (get-end-position))
-                              (get-start-position)))
-      (when old-position
-        (invalidate-at-position old-position))
+      (cond
+        [(and old-position
+              (= (get-start-position)
+                 (get-end-position))
+              (= (position-line old-position)
+                 (position-line (get-start-position))))
+         ;; when the line stays the same, don't invalidate anything
+         (set! old-position (get-start-position))]
+        [else
+         (when old-position
+           (invalidate-at-position old-position))
+         (set! old-position (and (= (get-start-position)
+                                    (get-end-position))
+                                 (get-start-position)))
+         (when old-position
+           (invalidate-at-position old-position))])
       (inner (void) after-set-position))
     
     (define/private (invalidate-at-position pos)
